@@ -16,7 +16,7 @@ describe('secretValue', () => {
 
   it('template interpolation yields the redacted form, never the raw value', () => {
     const secret = secretValue('hunter2hunter2', 'ssh_password');
-    const line = `password=${secret}`;
+    const line = `password=${secret.toString()}`;
     expect(line).toBe('password=[REDACTED:ssh_password]');
     expect(line).not.toContain('hunter2hunter2');
   });

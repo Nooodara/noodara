@@ -114,6 +114,21 @@ describe('createRedactor', () => {
     expect(output).not.toContain('def');
   });
 
+  it('ignores an empty-string secret instead of matching everything', () => {
+    const redactor = createRedactor();
+    redactor.register('', 'ssh_password');
+    expect(redactor.redact('nothing sensitive here')).toBe('nothing sensitive here');
+  });
+
+  it('redacts string values inside a null-prototype plain object', () => {
+    const redactor = createRedactor();
+    redactor.register('inner-secret', 'ssh_password');
+    const input: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+    input.note = 'has inner-secret inside';
+    const output = redactor.redact(input);
+    expect(output).toEqual({ note: 'has [REDACTED:ssh_password] inside' });
+  });
+
   it('createRedactor returns an independent registry per instance', () => {
     const a = createRedactor();
     const b = createRedactor();
@@ -126,7 +141,7 @@ describe('createRedactor', () => {
     const redactor = createRedactor();
     const secrets: string[] = [];
     for (let i = 0; i < 50; i += 1) {
-      const value = `secret-value-number-${i}-${'x'.repeat(20)}`;
+      const value = `secret-value-number-${i.toString()}-${'x'.repeat(20)}`;
       secrets.push(value);
       redactor.register(value, 'api_key');
     }
@@ -136,7 +151,9 @@ describe('createRedactor', () => {
     let i = 0;
     while (size < 1_000_000) {
       const useSecret = i % 7 === 0;
-      const filler = useSecret ? (secrets[i % secrets.length] ?? '') : `filler-text-${i}-`;
+      const filler = useSecret
+        ? (secrets[i % secrets.length] ?? '')
+        : `filler-text-${i.toString()}-`;
       chunks.push(filler);
       size += filler.length;
       i += 1;
