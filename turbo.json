@@ -16,7 +16,7 @@
     "tags": {
       "pure-domain": {
         "dependencies": {
-          "allow": ["pure-domain"]
+          "allow": ["pure-domain", "@noodara/config"]
         }
       }
     }
