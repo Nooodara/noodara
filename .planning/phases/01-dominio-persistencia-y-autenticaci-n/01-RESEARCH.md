@@ -497,22 +497,25 @@ await migrate(db, { migrationsFolder: "./drizzle" });
 
 **If this table is empty:** N/A — see entries above; all four are medium/low risk implementation-detail questions, not open questions about core requirements.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Exact session semantics for D-05 (sliding 7-day / absolute 30-day cap)**
    - What we know: Better Auth exposes `expiresIn` (absolute TTL from creation) and `updateAge` (minimum interval before refreshing that TTL on activity) — confirmed via Context7.
    - What's unclear: Whether `expiresIn: 30d, updateAge: 7d` is an acceptable reading of D-05, or whether D-05 requires a stricter "renews every active request up to a hard 30-day wall" that needs a custom session hook.
    - Recommendation: Planner should have a task write the acceptance test for this exact behavior first (per TDD), then pick the Better Auth native config vs. custom hook based on whether the native config passes.
+   - **Resolved in plan 01-11:** `expiresIn` is the 7-day sliding window and `updateAge` is 1 day (activity renews the session, at most one renewal per day, per the clarified D-05), with an `absolute_expires_at` column set at creation that clamps every refresh so the 30-day ceiling cannot be exceeded; `expiresIn: 30d, updateAge: 7d` was rejected because it makes the sliding window 30 days.
 
 2. **Should `noodara admin reset` / `noodara secrets rotate` be commander or citty?**
    - What we know: Both are legitimate, current packages (see Package Legitimacy Audit). Commander is vastly more mature (2011–present); citty is unjs's modern TS-first CLI kit.
    - What's unclear: No project precedent yet (greenfield) to prefer one ecosystem's conventions.
    - Recommendation: Default to commander for these two security-sensitive commands given its exceptionally long track record; this is Claude's Discretion territory per CONTEXT.md, not a blocking question.
+   - **Resolved in plan 01-14:** `commander@15.0.0` is adopted for `noodara admin reset` and `noodara secrets rotate`, with `citty` recorded as the rejected alternative in `docs/adr/0002-cli-library.md`.
 
 3. **Does `@fastify/type-provider-zod`'s v1.0.0 API match the route patterns Better Auth integration examples assume, or should the project pin the more mature unscoped `fastify-type-provider-zod` v7.0.0 instead?**
    - What we know: Both exist on npm, both pass legitimacy checks, same underlying repo lineage.
    - What's unclear: Whether the scoped package's v1.0.0 has full feature parity with the unscoped package's v7.0.0 (see Assumptions Log A1).
    - Recommendation: A 15-minute spike task at the start of the scaffold work (before committing to route-layer code) to read both packages' current README/CHANGELOG and pick one — cheap to resolve, expensive to get wrong after dozens of routes are written against one type-inference shape.
+   - **Resolved in plan 01-03:** the first task compares both packages' current README/CHANGELOG (Zod 4 support, exported compiler surface, deprecation notices), pins exactly one, and records the decision and its consequence in `docs/adr/0001-fastify-zod-type-provider.md`; a Fastify route with a Zod 4 response schema must typecheck against the pinned package.
 
 ## Environment Availability
 
