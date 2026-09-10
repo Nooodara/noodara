@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createLogger, writableForTests } from './logger.js';
 
-interface LoggedRecord {
-  level: number;
-  msg?: string;
-  [key: string]: unknown;
-}
-
 describe('createLogger redaction', () => {
   it('redacts req.headers.cookie, req.headers.authorization and req.body.password', () => {
     const { stream, records } = writableForTests();
@@ -46,7 +40,7 @@ describe('createLogger redaction', () => {
       'canary check',
     );
 
-    const serialized = JSON.stringify(records() as unknown as LoggedRecord[]);
+    const serialized = JSON.stringify(records());
     expect(serialized).not.toContain(credentialCanary);
     expect(serialized).not.toContain('BEGIN OPENSSH PRIVATE KEY');
   });
