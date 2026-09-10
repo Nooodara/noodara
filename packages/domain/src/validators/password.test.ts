@@ -84,6 +84,11 @@ describe('validatePassword', () => {
     expect(!result.ok && result.code).toBe('PASSWORD_EQUALS_IDENTIFIER');
   });
 
+  it('succeeds when an email context is given but the password matches neither the email nor its local part', () => {
+    const result = validatePassword('a-safe-passphrase', { email: 'admin@example.com' });
+    expect(result.ok).toBe(true);
+  });
+
   it('does not echo the submitted password in the failure message', () => {
     const result = validatePassword('short');
     expect(result.ok).toBe(false);

@@ -160,6 +160,22 @@ describe('buildActivityEvent', () => {
     ).toThrow(SensitiveMetadataError);
   });
 
+  it('allows an array of non-sensitive values inside metadata', () => {
+    const event = buildActivityEvent(
+      {
+        actorType: 'user',
+        entityType: 'admin',
+        entityId: 'admin-1',
+        action: 'auth.login_succeeded',
+        outcome: 'success',
+        metadata: { tags: ['first-login', 'trusted-device'] },
+      },
+      NOW,
+    );
+
+    expect(event.metadata).toEqual({ tags: ['first-login', 'trusted-device'] });
+  });
+
   it('rejects a metadata value that is a SecretValue instance regardless of key name', () => {
     expect(() =>
       buildActivityEvent(
