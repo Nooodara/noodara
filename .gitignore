@@ -1,0 +1,17 @@
+# AI assistant config (not versioned)
+.claude/
+CLAUDE.md
+
+# Node
+node_modules/
+dist/
+.turbo/
+coverage/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
