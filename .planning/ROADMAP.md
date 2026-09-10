@@ -40,7 +40,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Automated package provenance check before the first dependency install
+- [x] 01-01-PLAN.md — Automated package provenance check before the first dependency install
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -162,7 +162,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Dominio, persistencia y autenticación | 0/15 | Planned | - |
+| 1. Dominio, persistencia y autenticación | 1/15 | In Progress|  |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 0/TBD | Not started | - |
 | 3. Servicios de aplicación, activity log y redacción | 0/TBD | Not started | - |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |

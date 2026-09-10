@@ -74,7 +74,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Quality
 
-- [ ] **QA-01**: Cada PR corre lint, typecheck, unit tests, integration ligera, gitleaks y `pnpm audit`; el merge se bloquea si algo falla.
+- [x] **QA-01**: Cada PR corre lint, typecheck, unit tests, integration ligera, gitleaks y `pnpm audit`; el merge se bloquea si algo falla.
 - [ ] **QA-02**: `packages/domain` mantiene ≥95% statement y ≥95% branch en validadores y state machines, verificado por umbral en CI.
 - [ ] **QA-03**: La suite de integración usa Testcontainers con sshd para Ubuntu 22.04 y 24.04 y cubre conexión exitosa, credenciales inválidas, host inválido, timeout de red, timeout de comando, pérdida de conexión, reconexión y ejecución segura de comandos, limpiando sus recursos.
 - [ ] **QA-04**: El E2E de Playwright cubre login → Servers → add server → connect → discovery → detail; nightly lo repite 20 veces y ejecuta 100 conexiones consecutivas.
@@ -138,7 +138,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-05 | Phase 1 | Pending |
 | SERV-05 | Phase 1 | Pending |
 | SEC-01 | Phase 1 | Pending |
-| QA-01 | Phase 1 | Pending |
+| QA-01 | Phase 1 | Complete |
 | QA-02 | Phase 1 | Pending |
 | QA-06 | Phase 1 | Pending |
 | SERV-07 | Phase 2 | Pending |
