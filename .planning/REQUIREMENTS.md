@@ -39,7 +39,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Security
 
-- [ ] **SEC-01**: Las credenciales SSH se cifran at-rest con AES-256-GCM, nonce único por operación y metadato de versión de clave por fila, listo para rotación.
+- [x] **SEC-01**: Las credenciales SSH se cifran at-rest con AES-256-GCM, nonce único por operación y metadato de versión de clave por fila, listo para rotación.
 - [ ] **SEC-02**: Ninguna credencial aparece en respuestas API, logs, mensajes de error, activity log ni telemetría; la redacción es por tipo (branded types) y un test con valores canary lo verifica en todas las salidas.
 - [ ] **SEC-03**: El host fingerprint se fija en la primera conexión exitosa (TOFU), se muestra al admin, y un cambio posterior falla con HOST_KEY_CHANGED hasta que el admin lo re-confirme explícitamente.
 - [ ] **SEC-04**: Los comandos SSH provienen de una allowlist de plantillas sin interpolar input del usuario; cada conexión y cada comando tienen timeout explícito.
@@ -137,7 +137,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-04 | Phase 1 | Pending |
 | AUTH-05 | Phase 1 | Pending |
 | SERV-05 | Phase 1 | Complete |
-| SEC-01 | Phase 1 | Pending |
+| SEC-01 | Phase 1 | Complete |
 | QA-01 | Phase 1 | Complete |
 | QA-02 | Phase 1 | Complete |
 | QA-06 | Phase 1 | Pending |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-09-10T21:24:15.283Z"
+stopped_at: Completed 01-05-PLAN.md
+last_updated: "2026-09-10T22:19:48.975Z"
 last_activity: 2026-09-10
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 15
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING
-Plan: 5 of 15
+Plan: 6 of 15
 Status: Ready to execute
 Last activity: 2026-09-10
 
-Progress: [███░░░░░░░] 27%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Progress: [███░░░░░░░] 27%
 | Phase 01 P02 | 14min | 3 tasks | 31 files |
 | Phase 01 P03 | 38min | 3 tasks | 16 files |
 | Phase 01 P04 | 14min | 2 tasks | 5 files |
+| Phase 01 P05 | 28min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,10 @@ Recent decisions affecting current work:
 - [Phase 01]: Server state machine (SERV-05): frozen TRANSITIONS table with satisfies for literal narrowing; D-13/D-14/D-15 reason-gated edges enforced via a separate Partial<Record> checked after canTransition
 - [Phase 01]: applyConnectionResult only accepts a result while status is CONNECTING via an explicit guard, since CONNECTED->ERROR is a generally valid edge but not a valid landing point for a stray connection result
 - [Phase 01]: Domain functions needing wall-clock time (applyConnectionResult) take now: Date as an explicit parameter instead of calling Date.now(), keeping packages/domain pure
+- [Phase 01]: SecretValue implemented as a class with a true private field (#raw), not a branded primitive string — a primitive cannot carry custom toString/toJSON/util.inspect.custom overrides needed to close all three leak paths
+- [Phase 01]: revealSecret(secret, registry?) uses a narrow structural SecretRegistry interface instead of importing Redactor directly, keeping createRedactor() a genuine per-call factory with no singleton coupling
+- [Phase 01]: envelope.ts's parseBlob validates segment count, v<n> prefix, base64 shape and decoded nonce/tag byte lengths before any crypto call, raising MalformedBlobError; any GCM auth failure (tamper or wrong key) is caught once and rethrown uniformly as SecretTamperError by design
+- [Phase 01]: Adopted a generic assertDefined<T>(value: T | undefined): T cast-helper (matching apps/control-plane/src/env.ts precedent) to narrow already-guaranteed-defined values without tripping either of two mutually-exclusive typescript-eslint rules banning 'as ConcreteType' and non-null assertions, and without leaving a dead branch that fails the 95% branch-coverage gate
 
 ### Pending Todos
 
@@ -99,6 +104,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-10T21:24:15.276Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-09-10T22:19:48.967Z
+Stopped at: Completed 01-05-PLAN.md
 Resume file: None
