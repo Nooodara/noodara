@@ -1,0 +1,26 @@
+{
+  "name": "@noodara/control-plane",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --experimental-strip-types src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint --config ../../packages/config/eslint.config.js .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --project apps",
+    "db:migrate": "echo 'db:migrate is configured in Plan 01-07' && exit 1"
+  },
+  "dependencies": {
+    "@fastify/type-provider-zod": "1.0.0",
+    "@noodara/domain": "workspace:*",
+    "fastify": "5.12.3",
+    "pino": "10.3.1",
+    "zod": "4.6.1"
+  },
+  "devDependencies": {
+    "@noodara/config": "workspace:*",
+    "@types/node": "^22.12.0",
+    "vitest": "5.0.0"
+  }
+}
