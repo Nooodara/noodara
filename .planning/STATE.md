@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-09-10T19:31:09.010Z"
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-09-10T20:51:22.655Z"
 last_activity: 2026-09-10
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 15
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING
-Plan: 3 of 15
+Plan: 4 of 15
 Status: Ready to execute
 Last activity: 2026-09-10
 
-Progress: [█░░░░░░░░░] 13%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [█░░░░░░░░░] 13%
 *Updated after each plan completion*
 | Phase 1 P01 | 13min | 1 tasks | 2 files |
 | Phase 01 P02 | 14min | 3 tasks | 31 files |
+| Phase 01 P03 | 38min | 3 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,8 @@ Recent decisions affecting current work:
 - [Phase 01]: typescript-eslint pinned to 8.70.0 instead of the planned 10.x: version 10 is not yet published on npm; verified its peer range still satisfies typescript@6.0.3 and eslint@9
 - [Phase 01]: Turborepo boundaries tags live in a package-level turbo.json file, not a package.json turbo.tags field as the plan stated; implemented the functional turbo.json tag plus a redundant package.json field
 - [Phase 01]: packages/domain's Turborepo boundaries allow-list permits @noodara/config by name (shared tsconfig only) alongside the pure-domain tag; every other workspace package/app remains denied
+- [Phase 01]: Pinned @fastify/type-provider-zod (official fastify-org scope, v1.0.0) over the unscoped fastify-type-provider-zod (v7.0.0, turkerdev): identical exported surface, both require Zod >=4.2 (see docs/adr/0001-fastify-zod-type-provider.md)
+- [Phase 01]: apps/control-plane/src/env.ts is hand-rolled validation instead of the Zod-schema sketch in RESEARCH.md: the D-04 admin-pair cross-field rule and never-echo-received-value requirement were simpler to guarantee correctly with plain functions than with Zod's error-customization API
 
 ### Pending Todos
 
@@ -92,6 +95,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-10T19:31:09.004Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-09-10T20:51:22.645Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None

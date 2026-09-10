@@ -16,7 +16,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **INST-03**: El instalador hace preflight (OS soportado, puertos en uso, Docker instalado vía snap, arquitectura, RAM mínima) y falla con un mensaje accionable antes de tocar el sistema.
 - [ ] **INST-04**: Al terminar, el instalador imprime la URL del panel y un setup token de un solo uso para crear el admin.
 - [ ] **INST-05**: El instalador acepta variables opcionales (`NOODARA_ADMIN_EMAIL`, `NOODARA_ADMIN_PASSWORD`) para crear el admin sin pasar por el setup interactivo.
-- [ ] **INST-06**: El control plane se niega a arrancar si falta o es débil cualquier secret requerido (clave de cifrado, auth secret, password de base de datos); no existen valores por defecto.
+- [x] **INST-06**: El control plane se niega a arrancar si falta o es débil cualquier secret requerido (clave de cifrado, auth secret, password de base de datos); no existen valores por defecto.
 
 ### Auth & Setup
 
@@ -130,7 +130,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INST-06 | Phase 1 | Pending |
+| INST-06 | Phase 1 | Complete |
 | AUTH-01 | Phase 1 | Pending |
 | AUTH-02 | Phase 1 | Pending |
 | AUTH-03 | Phase 1 | Pending |
