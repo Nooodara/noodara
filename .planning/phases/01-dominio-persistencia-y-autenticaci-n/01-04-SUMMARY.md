@@ -140,3 +140,20 @@ None - no external service configuration required.
 ---
 *Phase: 01-dominio-persistencia-y-autenticacion*
 *Completed: 2026-09-10*
+
+## Self-Check: PASSED
+
+- FOUND: packages/domain/src/server/server-state.ts
+- FOUND: packages/domain/src/server/server-state.test.ts
+- FOUND: packages/domain/src/server/connection-result.ts
+- FOUND: packages/domain/src/server/connection-result.test.ts
+- FOUND: docs/domain/server-state-transitions.md
+- FOUND: packages/domain/package.json
+- FOUND: .planning/phases/01-dominio-persistencia-y-autenticaci-n/deferred-items.md
+- FOUND commit: `9780b25` (Task 1 RED)
+- FOUND commit: `be50838` (Task 1 GREEN)
+- FOUND commit: `418c18b` (Task 2 RED)
+- FOUND commit: `e8aba8f` (Task 2 GREEN)
+- FOUND commit: `b994d26` (deviation fix)
+- FOUND commit: `ae2373a` (docs: summary)
+- Re-verified independently: `pnpm lint`, `pnpm typecheck`, `pnpm test` (148/148), `pnpm exec turbo boundaries` all exit 0; `packages/domain/src/server/{server-state,connection-result}.ts` both report 100% statement/branch coverage.
