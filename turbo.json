@@ -1,0 +1,24 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "lint": {},
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "test": {},
+    "test:integration": {}
+  },
+  "boundaries": {
+    "tags": {
+      "pure-domain": {
+        "dependencies": {
+          "allow": ["pure-domain"]
+        }
+      }
+    }
+  }
+}
