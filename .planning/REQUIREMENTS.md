@@ -130,13 +130,54 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (pending roadmap) | — | — |
+| INST-06 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| AUTH-04 | Phase 1 | Pending |
+| AUTH-05 | Phase 1 | Pending |
+| SERV-05 | Phase 1 | Pending |
+| SEC-01 | Phase 1 | Pending |
+| QA-01 | Phase 1 | Pending |
+| QA-02 | Phase 1 | Pending |
+| QA-06 | Phase 1 | Pending |
+| SERV-07 | Phase 2 | Pending |
+| SERV-08 | Phase 2 | Pending |
+| SEC-03 | Phase 2 | Pending |
+| SEC-04 | Phase 2 | Pending |
+| SEC-05 | Phase 2 | Pending |
+| DISC-01 | Phase 2 | Pending |
+| DISC-04 | Phase 2 | Pending |
+| QA-03 | Phase 2 | Pending |
+| SERV-01 | Phase 3 | Pending |
+| SERV-02 | Phase 3 | Pending |
+| SERV-03 | Phase 3 | Pending |
+| SEC-02 | Phase 3 | Pending |
+| DISC-03 | Phase 3 | Pending |
+| ACT-01 | Phase 3 | Pending |
+| SERV-06 | Phase 4 | Pending |
+| DISC-05 | Phase 4 | Pending |
+| SERV-04 | Phase 5 | Pending |
+| DETL-01 | Phase 5 | Pending |
+| DETL-02 | Phase 5 | Pending |
+| ACT-02 | Phase 5 | Pending |
+| SET-01 | Phase 5 | Pending |
+| UI-01 | Phase 5 | Pending |
+| UI-02 | Phase 5 | Pending |
+| DISC-02 | Phase 5 | Pending |
+| QA-04 | Phase 5 | Pending |
+| QA-05 | Phase 5 | Pending |
+| INST-01 | Phase 6 | Pending |
+| INST-02 | Phase 6 | Pending |
+| INST-03 | Phase 6 | Pending |
+| INST-04 | Phase 6 | Pending |
+| INST-05 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 40 total
-- Mapped to phases: 0
-- Unmapped: 40 ⚠️
+- v1 requirements: 42 total (corregido: el conteo original de 40 en este archivo estaba desactualizado; hay 42 IDs únicos listados arriba)
+- Mapped to phases: 42
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-10*
-*Last updated: 2026-09-10 after initial definition*
+*Last updated: 2026-09-10 after roadmap creation (traceability mapped, coverage corrected from 40 to 42)*
