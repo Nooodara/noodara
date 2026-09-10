@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-09-10T18:45:54.745Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-09-10T19:31:09.010Z"
 last_activity: 2026-09-10
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 15
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING
-Plan: 2 of 15
+Plan: 3 of 15
 Status: Ready to execute
 Last activity: 2026-09-10
 
-Progress: [█░░░░░░░░░] 7%
+Progress: [█░░░░░░░░░] 13%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [█░░░░░░░░░] 7%
 
 *Updated after each plan completion*
 | Phase 1 P01 | 13min | 1 tasks | 2 files |
+| Phase 01 P02 | 14min | 3 tasks | 31 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,9 @@ Recent decisions affecting current work:
 - [Roadmap]: v0.1 Foundation se ejecuta en capas horizontales (dominio → SSH → servicios de aplicación → HTTP/worker/SSE → UI → instalador), siguiendo el build order de research/ARCHITECTURE.md para de-riesgar el adaptador SSH temprano.
 - [Roadmap]: El instalador (INST-01..05) se planifica último a propósito, para reflejar env vars/healthchecks/entrypoints reales en vez de una suposición.
 - [Phase 1]: vitest, commander y @fastify/type-provider-zod verificados via scripts/check-package-provenance.mjs: repository.url normaliza al owner/repo esperado, confirmando los falsos positivos de slopcheck y la asuncion A1 de 01-RESEARCH.md
+- [Phase 01]: typescript-eslint pinned to 8.70.0 instead of the planned 10.x: version 10 is not yet published on npm; verified its peer range still satisfies typescript@6.0.3 and eslint@9
+- [Phase 01]: Turborepo boundaries tags live in a package-level turbo.json file, not a package.json turbo.tags field as the plan stated; implemented the functional turbo.json tag plus a redundant package.json field
+- [Phase 01]: packages/domain's Turborepo boundaries allow-list permits @noodara/config by name (shared tsconfig only) alongside the pure-domain tag; every other workspace package/app remains denied
 
 ### Pending Todos
 
@@ -88,6 +92,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-10T18:45:54.739Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-09-10T19:31:09.004Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None

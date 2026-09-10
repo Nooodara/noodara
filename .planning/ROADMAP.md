@@ -44,7 +44,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-02-PLAN.md — Monorepo workspace, shared config, Vitest harness and the packages/domain skeleton
+- [x] 01-02-PLAN.md — Monorepo workspace, shared config, Vitest harness and the packages/domain skeleton
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -162,7 +162,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Dominio, persistencia y autenticación | 1/15 | In Progress|  |
+| 1. Dominio, persistencia y autenticación | 2/15 | In Progress|  |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 0/TBD | Not started | - |
 | 3. Servicios de aplicación, activity log y redacción | 0/TBD | Not started | - |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |
