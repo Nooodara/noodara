@@ -16,7 +16,7 @@
   "scripts": {
     "lint": "eslint --config ../config/eslint.config.js .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --project packages"
+    "test": "vitest run --root ../.. --project packages"
   },
   "dependencies": {
     "zod": "4.6.1"
