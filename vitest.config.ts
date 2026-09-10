@@ -26,6 +26,19 @@ export default defineConfig({
         test: {
           name: 'apps',
           include: ['apps/*/src/**/*.test.ts'],
+          // apps/control-plane/src/env.ts fail-fasts at *import* time (INST-06: `export const env =
+          // loadEnv(process.env)` is a required module-level side effect, not something env.test.ts
+          // can opt out of). These are non-secret, obviously-fake stand-ins so that importing the
+          // module during the unit-test run doesn't call `process.exit(1)` before any test runs —
+          // they satisfy `parseEnv`'s shape/strength checks but are never used to reach a real
+          // database, Redis instance or auth boundary.
+          env: {
+            NOODARA_MASTER_KEY: 'eWB5OqY8pzJkJZV29xSd3tXvJl4T6vytT1ChtZa7wRM=',
+            BETTER_AUTH_SECRET: 'vitest-fixture-better-auth-secret-not-real-32chars',
+            DATABASE_URL: 'postgres://test_user:test-fixture-pw@localhost:5432/noodara_test',
+            REDIS_URL: 'redis://localhost:6379',
+            NOODARA_PUBLIC_URL: 'http://localhost:3000',
+          },
         },
       },
     ],

@@ -1,12 +1,14 @@
-import { buildApp } from './app.js';
+// Must be the very first import: `env.ts`'s module-level `loadEnv(process.env)` call is the
+// INST-06 fail-fast gate — it must run, and exit the process on failure, before anything else
+// (Fastify, the DB pool, etc.) is even constructed.
+import './env.js';
 
-// Plan 01-03 Task 2 replaces this literal with the Zod-validated `env.PORT` and adds the
-// `import './env.js'` fail-fast side effect as the very first import in this file.
-const PORT = 3000;
+import { env } from './env.js';
+import { buildApp } from './app.js';
 
 const app = buildApp();
 
-app.listen({ port: PORT, host: '0.0.0.0' }, (err) => {
+app.listen({ port: env.PORT, host: '0.0.0.0' }, (err) => {
   if (err) {
     app.log.error(err);
     process.exit(1);
