@@ -1,0 +1,150 @@
+import { describe, expect, it } from 'vitest';
+import { InvalidTransitionError, type ServerStatus } from './server-state.js';
+import {
+  SERVER_ERROR_CODES,
+  type ConnectionResult,
+  type ServerConnectionState,
+  applyConnectionResult,
+  statusForErrorCode,
+} from './connection-result.js';
+
+const ERROR_STATUS_TABLE: Readonly<Record<(typeof SERVER_ERROR_CODES)[number], ServerStatus>> = {
+  AUTH_FAILED: 'ERROR',
+  COMMAND_TIMEOUT: 'ERROR',
+  HOST_KEY_CHANGED: 'ERROR',
+  UNSUPPORTED_OS: 'ERROR',
+  HOST_UNRESOLVED: 'UNREACHABLE',
+  CONNECT_TIMEOUT: 'UNREACHABLE',
+  CONNECTION_LOST: 'UNREACHABLE',
+};
+
+function deepFreeze<T>(value: T): T {
+  Object.getOwnPropertyNames(value).forEach((key) => {
+    const prop = (value as Record<string, unknown>)[key];
+    if (prop !== null && (typeof prop === 'object' || typeof prop === 'function')) {
+      deepFreeze(prop);
+    }
+  });
+  return Object.freeze(value);
+}
+
+function buildState(overrides: Partial<ServerConnectionState> = {}): ServerConnectionState {
+  return {
+    status: 'CONNECTING',
+    lastErrorCode: null,
+    hostFingerprint: null,
+    pendingFingerprint: null,
+    lastSeenAt: null,
+    ...overrides,
+  };
+}
+
+const NOW = new Date('2026-09-10T12:00:00.000Z');
+
+describe('SERVER_ERROR_CODES', () => {
+  it('contains exactly the 7 documented codes', () => {
+    expect([...SERVER_ERROR_CODES].sort()).toEqual(
+      [
+        'AUTH_FAILED',
+        'HOST_UNRESOLVED',
+        'CONNECT_TIMEOUT',
+        'COMMAND_TIMEOUT',
+        'HOST_KEY_CHANGED',
+        'CONNECTION_LOST',
+        'UNSUPPORTED_OS',
+      ].sort(),
+    );
+  });
+});
+
+describe('statusForErrorCode', () => {
+  it.each(SERVER_ERROR_CODES.map((code) => [code, ERROR_STATUS_TABLE[code]] as const))(
+    '%s maps to %s',
+    (code, expected) => {
+      expect(statusForErrorCode(code)).toBe(expected);
+    },
+  );
+});
+
+describe('applyConnectionResult (success)', () => {
+  it('yields CONNECTED, clears lastErrorCode, and captures the fingerprint via TOFU when none was set', () => {
+    const state = deepFreeze(buildState({ status: 'CONNECTING', lastErrorCode: 'AUTH_FAILED' }));
+    const result: ConnectionResult = { ok: true, fingerprint: 'SHA256:abc' };
+
+    const next = applyConnectionResult(state, result, NOW);
+
+    expect(next.status).toBe('CONNECTED');
+    expect(next.lastErrorCode).toBeNull();
+    expect(next.hostFingerprint).toBe('SHA256:abc');
+    expect(next.lastSeenAt).toEqual(NOW);
+  });
+
+  it('does not overwrite an already-trusted hostFingerprint', () => {
+    const state = deepFreeze(
+      buildState({ status: 'CONNECTING', hostFingerprint: 'SHA256:trusted' }),
+    );
+    const result: ConnectionResult = { ok: true, fingerprint: 'SHA256:new' };
+
+    const next = applyConnectionResult(state, result, NOW);
+
+    expect(next.hostFingerprint).toBe('SHA256:trusted');
+  });
+});
+
+describe('applyConnectionResult (failure)', () => {
+  it('HOST_KEY_CHANGED lands in ERROR, parks the observed fingerprint, and leaves hostFingerprint untouched (D-15)', () => {
+    const state = deepFreeze(
+      buildState({ status: 'CONNECTING', hostFingerprint: 'SHA256:trusted' }),
+    );
+    const result: ConnectionResult = {
+      ok: false,
+      errorCode: 'HOST_KEY_CHANGED',
+      observedFingerprint: 'SHA256:observed',
+    };
+
+    const next = applyConnectionResult(state, result, NOW);
+
+    expect(next.status).toBe('ERROR');
+    expect(next.lastErrorCode).toBe('HOST_KEY_CHANGED');
+    expect(next.pendingFingerprint).toBe('SHA256:observed');
+    expect(next.hostFingerprint).toBe('SHA256:trusted');
+  });
+
+  it.each(SERVER_ERROR_CODES.filter((code) => code !== 'HOST_KEY_CHANGED'))(
+    '%s leaves pendingFingerprint unchanged',
+    (code) => {
+      const state = deepFreeze(buildState({ status: 'CONNECTING', pendingFingerprint: null }));
+      const result: ConnectionResult = { ok: false, errorCode: code };
+
+      const next = applyConnectionResult(state, result, NOW);
+
+      expect(next.status).toBe(ERROR_STATUS_TABLE[code]);
+      expect(next.lastErrorCode).toBe(code);
+      expect(next.pendingFingerprint).toBeNull();
+    },
+  );
+});
+
+describe('applyConnectionResult (invariants)', () => {
+  it.each(['PENDING', 'CONNECTED', 'DISCONNECTED', 'UNREACHABLE', 'ERROR'] as const)(
+    'throws InvalidTransitionError when the server is not CONNECTING (from %s)',
+    (status) => {
+      const state = deepFreeze(buildState({ status }));
+      const result: ConnectionResult = { ok: true, fingerprint: 'SHA256:abc' };
+
+      expect(() => applyConnectionResult(state, result, NOW)).toThrow(InvalidTransitionError);
+    },
+  );
+
+  it('is pure: does not mutate the input and returns deep-equal results for the same input', () => {
+    const state = deepFreeze(buildState({ status: 'CONNECTING' }));
+    const result: ConnectionResult = { ok: true, fingerprint: 'SHA256:abc' };
+
+    const first = applyConnectionResult(state, result, NOW);
+    const second = applyConnectionResult(state, result, NOW);
+
+    expect(first).toEqual(second);
+    expect(state.status).toBe('CONNECTING');
+    expect(state.hostFingerprint).toBeNull();
+  });
+});
