@@ -94,3 +94,11 @@ None - no external service configuration required.
 ---
 *Phase: 01-dominio-persistencia-y-autenticacion*
 *Completed: 2026-09-10*
+
+## Self-Check: PASSED
+
+- FOUND: scripts/check-package-provenance.mjs
+- FOUND: docs/adr/0000-package-legitimacy-approvals.md
+- FOUND: .planning/phases/01-dominio-persistencia-y-autenticaci-n/01-01-SUMMARY.md
+- FOUND commit: eacdfda
+- FOUND commit: 1f30e0d
