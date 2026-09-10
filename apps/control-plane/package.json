@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint --config ../../packages/config/eslint.config.js .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --project apps",
+    "test": "vitest run --root ../.. --project apps",
     "db:migrate": "echo 'db:migrate is configured in Plan 01-07' && exit 1"
   },
   "dependencies": {
