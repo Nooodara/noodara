@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-05-PLAN.md
-last_updated: "2026-09-10T22:19:48.975Z"
+stopped_at: Completed 01-06-PLAN.md
+last_updated: "2026-09-10T23:49:53.076Z"
 last_activity: 2026-09-10
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 15
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING
-Plan: 6 of 15
+Plan: 7 of 15
 Status: Ready to execute
 Last activity: 2026-09-10
 
-Progress: [███░░░░░░░] 33%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 01 P03 | 38min | 3 tasks | 16 files |
 | Phase 01 P04 | 14min | 2 tasks | 5 files |
 | Phase 01 P05 | 28min | 2 tasks | 6 files |
+| Phase 01 P06 | 40min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,9 @@ Recent decisions affecting current work:
 - [Phase 01]: revealSecret(secret, registry?) uses a narrow structural SecretRegistry interface instead of importing Redactor directly, keeping createRedactor() a genuine per-call factory with no singleton coupling
 - [Phase 01]: envelope.ts's parseBlob validates segment count, v<n> prefix, base64 shape and decoded nonce/tag byte lengths before any crypto call, raising MalformedBlobError; any GCM auth failure (tamper or wrong key) is caught once and rethrown uniformly as SecretTamperError by design
 - [Phase 01]: Adopted a generic assertDefined<T>(value: T | undefined): T cast-helper (matching apps/control-plane/src/env.ts precedent) to narrow already-guaranteed-defined values without tripping either of two mutually-exclusive typescript-eslint rules banning 'as ConcreteType' and non-null assertions, and without leaving a dead branch that fails the 95% branch-coverage gate
+- [Phase 01]: Domain validators (SERV-05, AUTH-02): shared ValidationResult<T> in network.ts reused by identity.ts/password.ts; validateHost branches explicitly on shell-metacharacter/scheme/whitespace, IPv6, IPv4, host:port, then RFC1123 label rules (no catch-all regex), since node:net is banned in packages/domain
+- [Phase 01]: Password policy (AUTH-02): 12-128 char bound, no composition rule, identifier-equality check, 270-entry offline common-password denylist kept in its own data file to keep policy-logic branch coverage clean
+- [Phase 01]: ActivityEvent (AUTH-04): buildActivityEvent recursively rejects metadata with a forbidden key (password/secret/token/credential/privateKey/sshPassword/masterKey, case-insensitive, nested through objects/arrays) or a SecretValue instance via SensitiveMetadataError; occurredAt always caller-supplied, never a platform wall-clock read
 
 ### Pending Todos
 
@@ -104,6 +108,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-10T22:19:48.967Z
-Stopped at: Completed 01-05-PLAN.md
+Last session: 2026-09-10T23:49:53.069Z
+Stopped at: Completed 01-06-PLAN.md
 Resume file: None

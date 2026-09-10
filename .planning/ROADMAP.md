@@ -51,7 +51,7 @@ Plans:
 - [x] 01-03-PLAN.md — Control-plane bootstrap: Zod type-provider pin, redacting logger, fail-fast env (INST-06)
 - [x] 01-04-PLAN.md — Domain: Server state machine and connection-result mapping (SERV-05)
 - [x] 01-05-PLAN.md — Domain: SecretValue, Redactor and AES-256-GCM envelope with key versioning (SEC-01)
-- [ ] 01-06-PLAN.md — Domain: network/identity validators, password policy and ActivityEvent type
+- [x] 01-06-PLAN.md — Domain: network/identity validators, password policy and ActivityEvent type
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -162,7 +162,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Dominio, persistencia y autenticación | 5/15 | In Progress|  |
+| 1. Dominio, persistencia y autenticación | 6/15 | In Progress|  |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 0/TBD | Not started | - |
 | 3. Servicios de aplicación, activity log y redacción | 0/TBD | Not started | - |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |
