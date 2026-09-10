@@ -32,6 +32,9 @@ Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.
 - [ ] Soporte comprobado para Ubuntu 22.04 LTS y 24.04 LTS.
 - [ ] Suite de calidad: unit ≥95% en core-domain, integration con infraestructura temporal (Testcontainers) para los escenarios SSH del roadmap, E2E del flujo connect-server, CI verde.
 - [ ] UI conforme al design system Apple-inspired de Noodara (dark y light), con el flujo login → Servers → add server → connect → discovery → detail.
+- [ ] Primer admin creado solo con un setup token de un solo uso impreso por el instalador (cierra el fallo "el primero que entra es admin" de Coolify/Dokploy); pre-seed opcional por variables de entorno.
+- [ ] Usuario SSH no-root con sudo sin password soportado, con validación de sudo y grupo docker durante el discovery.
+- [ ] Discovery mostrado paso a paso con pass/fail por check en la UI.
 
 ### Out of Scope
 
@@ -61,7 +64,7 @@ Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.
 - **Calidad:** TDD (RED → GREEN → REFACTOR) obligatorio; core-domain ≥95% statement y branch; cero tests skipped sin justificación, cero flaky, cero errores de TypeScript y lint; CI verde como condición de terminado.
 - **Instalación:** un comando en un VPS limpio debe dejar Noodara operativo; sin pasos manuales de SSH en el happy path.
 - **Alcance:** orden estricto de versiones; nada de v0.2+ salvo que desbloquee un criterio de aceptación de v0.1.
-- **Licencia:** Apache-2.0 (misma que Coolify y Dokploy; concesión de patentes explícita). Pendiente de confirmación del usuario, que consideraba MIT.
+- **Licencia:** Apache-2.0 (misma que Coolify y Dokploy; concesión de patentes explícita). Archivo LICENSE commiteado; el usuario puede cambiar a MIT si lo prefiere.
 
 ## Key Decisions
 
@@ -71,7 +74,13 @@ Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.
 | Público objetivo inicial: devs indie / solo con un VPS | Mismo público que Coolify/Dokploy; exige instalación de un comando y onboarding cuidado desde v0.1 | — Pending |
 | v0.1 opera por SSH desde el control plane, sin agent | Reduce superficie y complejidad; el roadmap no exige agent para conectar y descubrir | — Pending |
 | Stack abierto lo decide research | Evita fijar librerías con datos desactualizados; el usuario aprueba en la revisión de requisitos | — Pending |
-| Licencia Apache-2.0 | Alineada con Coolify/Dokploy, incluye grant de patentes, protege contribuidores | — Pending (usuario consideraba MIT) |
+| Licencia Apache-2.0 | Alineada con Coolify/Dokploy, incluye grant de patentes, protege contribuidores | — Pending (LICENSE commiteado; MIT sigue siendo opción) |
+| Stack v0.1: pnpm + Turborepo, Fastify 5, Drizzle, BullMQ, ssh2, pino, Zod 4, TypeScript 6.0, Node 22 LTS | Research 2026-09-10: TS 7 bloqueado por typescript-eslint; Redis ya fijado hace a BullMQ la opción natural; Drizzle es el precedente de Dokploy | — Pending |
+| Auth con Better Auth (email/password + Drizzle adapter) | Sucesor de Lucia, menos código propio que auditar; lo usa Dokploy. Aprobado por el usuario | — Pending |
+| UI web con Next.js 16 App Router como cliente delgado de la API Fastify | Madurez y ecosistema; revisar TanStack Start en v0.2 si crece la superficie en tiempo real. Aprobado por el usuario | — Pending |
+| Clave SSH por defecto, password como fallback documentado | Cumple el roadmap; ambos competidores priorizan clave. Aprobado por el usuario | — Pending |
+| Adiciones a v0.1: setup token, sudo no-root, narrativa de discovery, pre-seed de admin | Recomendadas por research (features + pitfalls); bajo costo, alto valor de confianza. Aprobadas por el usuario | — Pending |
+| Topología: Docker Compose con api y worker separados, SSE para estado en tiempo real, DiscoverySnapshot append-only, key-version en filas cifradas | Research de arquitectura: evita refactors forzados en v0.3 y v0.5 | — Pending |
 | TDD obligatorio y DoD estricto desde v0.1 | Definido en el roadmap; el valor central es confiabilidad, no velocidad | — Pending |
 | Design system Apple-inspired dark-first | Principios de diseño del roadmap + preferencia explícita del usuario por UX de Apple | — Pending |
 
