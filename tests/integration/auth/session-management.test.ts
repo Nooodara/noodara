@@ -125,7 +125,10 @@ describe('session management (D-06)', () => {
 
     expect(response.statusCode).toBe(200);
     const body = response.json() as SessionListItem[];
-    expect(body).toHaveLength(3);
+    // 4, not 3: `createAdmin` signs up via `/sign-up/email`, which Better Auth auto-signs-in —
+    // that sign-up itself already creates one session, in addition to the three explicit `signIn`
+    // calls above.
+    expect(body).toHaveLength(4);
     for (const item of body) {
       expect(item).toHaveProperty('id');
       expect(item).toHaveProperty('userAgent');
