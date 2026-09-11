@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-10-PLAN.md
-last_updated: "2026-09-11T17:08:26.356Z"
+stopped_at: Completed 01-11-PLAN.md
+last_updated: "2026-09-11T22:18:48.139Z"
 last_activity: 2026-09-11
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 15
-  completed_plans: 10
+  completed_plans: 11
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING
-Plan: 11 of 15
+Plan: 12 of 15
 Status: Ready to execute
 Last activity: 2026-09-11
 
-Progress: [███████░░░] 67%
+Progress: [███████░░░] 73%
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Progress: [███████░░░] 67%
 | Phase 01 P08 | 21min | 2 tasks | 4 files |
 | Phase 01 P09 | 41min | 2 tasks | 8 files |
 | Phase 01 P10 | 70min | 2 tasks | 20 files |
+| Phase 01 P11 | 100min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,8 @@ Recent decisions affecting current work:
 - [Phase 01]: auth.ts: drizzleAdapter needs an explicit plural-to-singular schema remap (usePlural does not cover this); validateSchema:false since accounts is deliberately email/password-only
 - [Phase 01]: routes/auth.ts bridges Fastify's already-parsed body onto request.raw before calling toNodeHandler, since Fastify keeps parsed output on the FastifyRequest wrapper, not on request.raw
 - [Phase 01]: session-policy.ts's config carries a 30-day additionalFields.absoluteExpiresAt default (hooks stays empty) so the NOT NULL sessions.absolute_expires_at column is populated until Plan 01-11's real D-05 clamp
+- [Phase 01]: expiresIn/updateAge map directly to D-05's 7-day sliding window; the 30-day ceiling is a separate absolute_expires_at column clamped on every refresh, not a second expiresIn/updateAge pair
+- [Phase 01]: session-service.ts queries the sessions table directly instead of auth.api.listSessions/revokeSession/revokeOtherSessions, since Better Auth's own revoke silently no-ops for a session it doesn't own and its listSessions output strips lastSeenAt
 
 ### Pending Todos
 
@@ -125,6 +128,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-11T17:08:26.347Z
-Stopped at: Completed 01-10-PLAN.md
+Last session: 2026-09-11T22:18:48.133Z
+Stopped at: Completed 01-11-PLAN.md
 Resume file: None

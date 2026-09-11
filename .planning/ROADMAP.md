@@ -65,7 +65,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 01-11-PLAN.md — Sliding 7-day session with a 30-day ceiling, plus session list and revoke endpoints
+- [x] 01-11-PLAN.md — Sliding 7-day session with a 30-day ceiling, plus session list and revoke endpoints
 - [ ] 01-12-PLAN.md — Setup token module, POST /api/setup and the sign-up gate (AUTH-01)
 - [ ] 01-13-PLAN.md — Per-IP and per-account progressive login lockout (AUTH-04)
 
@@ -162,7 +162,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Dominio, persistencia y autenticación | 10/15 | In Progress|  |
+| 1. Dominio, persistencia y autenticación | 11/15 | In Progress|  |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 0/TBD | Not started | - |
 | 3. Servicios de aplicación, activity log y redacción | 0/TBD | Not started | - |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |
