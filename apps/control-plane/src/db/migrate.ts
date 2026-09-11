@@ -1,17 +1,21 @@
 // The `pnpm db:migrate` entrypoint (QA-06). Fully non-interactive — no prompts, no TTY
-// assumptions — because the phase-6 installer runs this inside a container. Must be the first
-// import so INST-06's fail-fast env validation runs before a Pool is even constructed.
-import '../env.js';
-
+// assumptions — because the phase-6 installer runs this inside a container.
+//
+// `env.ts` is deliberately NOT imported at module top level here: doing so would run INST-06's
+// fail-fast `loadEnv(process.env)` the instant anything imports `runMigrations` — including the
+// Testcontainers integration harness (`tests/integration/helpers/postgres.ts`), which supplies
+// its own already-migrated connection string and has no reason to require the rest of the app's
+// env vars (BETTER_AUTH_SECRET, REDIS_URL, ...) to exist. `env.js` is imported lazily inside
+// `main()` instead, so it still runs — and still fail-fasts — first thing when this file is
+// executed as the actual CLI entrypoint, but never as a side effect of importing this module.
 import { pathToFileURL } from 'node:url';
 import { sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import { env } from '../env.js';
 import { createDb, type Database } from './client.js';
 
 // Resolved next to this file's own location (not `process.cwd()`), so the folder is found
 // identically whether this module runs as the CLI entrypoint or is imported by the Testcontainers
-// integration harness (`tests/integration/helpers/postgres.ts`) via `runMigrations`.
+// integration harness via `runMigrations`.
 export const MIGRATIONS_FOLDER = new URL('./migrations', import.meta.url).pathname;
 
 /** Drizzle's own migration-tracking table (default name/schema, never overridden here). */
@@ -37,6 +41,9 @@ export async function runMigrations(db: Database): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  // INST-06 fail-fast gate: runs (and exits the process on failure) before the Pool below is
+  // ever constructed.
+  const { env } = await import('../env.js');
   const { db, pool } = createDb(env.DATABASE_URL);
 
   try {
