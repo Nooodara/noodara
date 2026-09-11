@@ -22,7 +22,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **AUTH-01**: El primer admin solo puede crearse presentando el setup token; el token expira al usarse o a las 24 h y la ruta de setup desaparece después.
 - [x] **AUTH-02**: El admin inicia sesión con email y password (argon2id vía Better Auth) y la sesión persiste entre recargas del navegador.
-- [ ] **AUTH-03**: El admin cierra sesión desde cualquier pantalla y la sesión queda invalidada en el servidor.
+- [x] **AUTH-03**: El admin cierra sesión desde cualquier pantalla y la sesión queda invalidada en el servidor.
 - [x] **AUTH-04**: El login está limitado por tasa por IP y por cuenta; los intentos fallidos se registran en el activity log sin incluir el password.
 - [x] **AUTH-05**: Las cookies de sesión son `HttpOnly`, `Secure`, `SameSite=Lax`, con expiración configurable y rotación de id al iniciar sesión.
 
@@ -133,7 +133,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INST-06 | Phase 1 | Complete |
 | AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 1 | Complete |
-| AUTH-03 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Complete |
 | AUTH-04 | Phase 1 | Complete |
 | AUTH-05 | Phase 1 | Complete |
 | SERV-05 | Phase 1 | Complete |
