@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --root ../.. --project apps",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node --experimental-strip-types src/db/migrate.ts"
+    "db:migrate": "tsx src/db/migrate.ts"
   },
   "dependencies": {
     "@fastify/type-provider-zod": "1.0.0",
@@ -27,6 +27,7 @@
     "@types/node": "^22.12.0",
     "@types/pg": "8.23.1",
     "drizzle-kit": "0.31.10",
+    "tsx": "4.23.13",
     "vitest": "5.0.0"
   }
 }
