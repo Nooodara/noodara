@@ -60,7 +60,7 @@ Plans:
 **Wave 5** *(blocked on Wave 4 completion)*
 
 - [x] 01-08-PLAN.md — Migration tests from scratch and from the previous snapshot (QA-06)
-- [ ] 01-09-PLAN.md — Single activity-log writer for auth events plus the redaction canary proof
+- [x] 01-09-PLAN.md — Single activity-log writer for auth events plus the redaction canary proof
 - [ ] 01-10-PLAN.md — Better Auth core: argon2id, login/logout, hardened cookies, session-id rotation
 
 **Wave 6** *(blocked on Wave 5 completion)*
@@ -162,7 +162,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Dominio, persistencia y autenticación | 8/15 | In Progress|  |
+| 1. Dominio, persistencia y autenticación | 9/15 | In Progress|  |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 0/TBD | Not started | - |
 | 3. Servicios de aplicación, activity log y redacción | 0/TBD | Not started | - |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |

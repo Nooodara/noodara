@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-08-PLAN.md
-last_updated: "2026-09-11T01:52:33.528Z"
+stopped_at: Completed 01-09-PLAN.md
+last_updated: "2026-09-11T03:37:23.147Z"
 last_activity: 2026-09-11
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 15
-  completed_plans: 8
+  completed_plans: 9
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING
-Plan: 9 of 15
+Plan: 10 of 15
 Status: Ready to execute
 Last activity: 2026-09-11
 
-Progress: [█████░░░░░] 53%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [█████░░░░░] 53%
 | Phase 01 P06 | 40min | 2 tasks | 9 files |
 | Phase 01 P07 | 65min | 3 tasks | 23 files |
 | Phase 01 P08 | 21min | 2 tasks | 4 files |
+| Phase 01 P09 | 41min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,10 @@ Recent decisions affecting current work:
 - [Phase 01]: applyMigrationsUpTo manually writes the drizzle.__drizzle_migrations bookkeeping row (matching drizzle-orm's own hash/created_at shape) rather than only executing raw SQL, since drizzle's real migrate() decides what remains to apply solely by comparing each migration's journal 'when' against the most recent bookkeeping row's created_at
 - [Phase 01]: drizzle-orm promoted to a root devDependency (previously only apps/control-plane) because pnpm's isolated node_modules never symlinks a workspace dependency up to the root, and tests/integration/db files need to import sql/eq directly
 - [Phase 01]: representative-data.ts seeds all nine previous-snapshot tables including verifications, not just the eight named by example in 01-08-PLAN.md, since the plan's governing clause is 'every table that exists at the previous-snapshot point'
+- [Phase 01]: writeActivityEvent.ts is the single insert path into activity_events (ARCHITECTURE.md sec 6); handle is typed as the shared drizzle-orm/pg-core PgDatabase<NodePgQueryResultHKT, typeof schema> base class so it composes into a caller's transaction without special-casing
+- [Phase 01]: toLogSafe recognises a credentials row structurally (encryptedValue+keyVersion+type present) rather than importing the Drizzle table type, allowlisting it to {id, type, keyVersion}; every other entity is denylisted (credentialId, forbidden key names, SecretValue instances)
+- [Phase 01]: The canary test's HTTP-error channel wires app.setErrorHandler with appRedactor.redact(error.message) onto the test's own Fastify instance rather than modifying apps/control-plane/src/app.ts (fixed since Plan 01-03), proving the pattern phase 3/4's real routes must follow
+- [Phase 01]: @noodara/domain promoted to a root devDependency (same pnpm workspace-symlink fix Plan 01-08 applied for drizzle-orm) so root-level tests/integration files can import its subpath exports directly
 
 ### Pending Todos
 
@@ -116,6 +121,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-11T01:52:33.521Z
-Stopped at: Completed 01-08-PLAN.md
+Last session: 2026-09-11T03:37:23.142Z
+Stopped at: Completed 01-09-PLAN.md
 Resume file: None
