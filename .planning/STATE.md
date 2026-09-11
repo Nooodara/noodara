@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-07-PLAN.md
-last_updated: "2026-09-11T01:18:42.562Z"
+stopped_at: Completed 01-08-PLAN.md
+last_updated: "2026-09-11T01:52:33.528Z"
 last_activity: 2026-09-11
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 15
-  completed_plans: 7
+  completed_plans: 8
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING
-Plan: 8 of 15
+Plan: 9 of 15
 Status: Ready to execute
 Last activity: 2026-09-11
 
-Progress: [█████░░░░░] 47%
+Progress: [█████░░░░░] 53%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [█████░░░░░] 47%
 | Phase 01 P05 | 28min | 2 tasks | 6 files |
 | Phase 01 P06 | 40min | 2 tasks | 9 files |
 | Phase 01 P07 | 65min | 3 tasks | 23 files |
+| Phase 01 P08 | 21min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,9 @@ Recent decisions affecting current work:
 - [Phase 01]: setup_tokens' anti-race unique index is WHERE used_at IS NULL, not '...and unexpired' -- Postgres partial-index predicates must be IMMUTABLE and now() is only STABLE — Expiry is still checked at redemption time in the application layer (Plan 01-12); the index guarantees at most one live, un-redeemed token per purpose at the DB level
 - [Phase 01]: db:migrate runs via tsx src/db/migrate.ts, not raw node --experimental-strip-types — Confirmed Node 24's native type-stripping does not remap .js specifiers to sibling .ts files (the nodenext convention this codebase uses everywhere); tsx is the same tool Drizzle's own docs recommend
 - [Phase 01]: env.ts is imported lazily inside migrate.ts's main() and client.ts's getDb(), never at module top level — A static top-level import made merely importing runMigrations/createDb (as the Testcontainers harness does) trigger INST-06's fail-fast env validation and process.exit(1) before any test could run
+- [Phase 01]: applyMigrationsUpTo manually writes the drizzle.__drizzle_migrations bookkeeping row (matching drizzle-orm's own hash/created_at shape) rather than only executing raw SQL, since drizzle's real migrate() decides what remains to apply solely by comparing each migration's journal 'when' against the most recent bookkeeping row's created_at
+- [Phase 01]: drizzle-orm promoted to a root devDependency (previously only apps/control-plane) because pnpm's isolated node_modules never symlinks a workspace dependency up to the root, and tests/integration/db files need to import sql/eq directly
+- [Phase 01]: representative-data.ts seeds all nine previous-snapshot tables including verifications, not just the eight named by example in 01-08-PLAN.md, since the plan's governing clause is 'every table that exists at the previous-snapshot point'
 
 ### Pending Todos
 
@@ -112,6 +116,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-11T01:18:42.555Z
-Stopped at: Completed 01-07-PLAN.md
+Last session: 2026-09-11T01:52:33.521Z
+Stopped at: Completed 01-08-PLAN.md
 Resume file: None
