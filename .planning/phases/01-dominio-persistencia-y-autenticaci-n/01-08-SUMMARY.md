@@ -132,3 +132,9 @@ None — no external service configuration required. `pnpm test:integration` nee
 ---
 *Phase: 01-dominio-persistencia-y-autenticacion*
 *Completed: 2026-09-11*
+
+## Self-Check: PASSED
+
+- Key files present on disk: tests/integration/helpers/migrations.ts, tests/integration/fixtures/representative-data.ts, tests/integration/db/migrations.test.ts, tests/integration/db/migration-hygiene.test.ts
+- Commits verified in git: 9161859, 6a67119, 4ecbc7c, 617ea13
+- Verified by the orchestrator after execution (executor omitted this section).
