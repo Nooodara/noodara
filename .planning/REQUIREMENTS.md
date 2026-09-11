@@ -20,11 +20,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Auth & Setup
 
-- [ ] **AUTH-01**: El primer admin solo puede crearse presentando el setup token; el token expira al usarse o a las 24 h y la ruta de setup desaparece después.
+- [x] **AUTH-01**: El primer admin solo puede crearse presentando el setup token; el token expira al usarse o a las 24 h y la ruta de setup desaparece después.
 - [x] **AUTH-02**: El admin inicia sesión con email y password (argon2id vía Better Auth) y la sesión persiste entre recargas del navegador.
 - [ ] **AUTH-03**: El admin cierra sesión desde cualquier pantalla y la sesión queda invalidada en el servidor.
 - [x] **AUTH-04**: El login está limitado por tasa por IP y por cuenta; los intentos fallidos se registran en el activity log sin incluir el password.
-- [ ] **AUTH-05**: Las cookies de sesión son `HttpOnly`, `Secure`, `SameSite=Lax`, con expiración configurable y rotación de id al iniciar sesión.
+- [x] **AUTH-05**: Las cookies de sesión son `HttpOnly`, `Secure`, `SameSite=Lax`, con expiración configurable y rotación de id al iniciar sesión.
 
 ### Servers
 
@@ -79,7 +79,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **QA-03**: La suite de integración usa Testcontainers con sshd para Ubuntu 22.04 y 24.04 y cubre conexión exitosa, credenciales inválidas, host inválido, timeout de red, timeout de comando, pérdida de conexión, reconexión y ejecución segura de comandos, limpiando sus recursos.
 - [ ] **QA-04**: El E2E de Playwright cubre login → Servers → add server → connect → discovery → detail; nightly lo repite 20 veces y ejecuta 100 conexiones consecutivas.
 - [ ] **QA-05**: Un job de CI y nightly siembra secrets canary y verifica que no aparecen en ninguna salida.
-- [ ] **QA-06**: Las migraciones se prueban desde cero y desde el snapshot de la versión anterior.
+- [x] **QA-06**: Las migraciones se prueban desde cero y desde el snapshot de la versión anterior.
 
 ## v2 Requirements
 
@@ -131,16 +131,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | INST-06 | Phase 1 | Complete |
-| AUTH-01 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 1 | Complete |
 | AUTH-03 | Phase 1 | Pending |
 | AUTH-04 | Phase 1 | Complete |
-| AUTH-05 | Phase 1 | Pending |
+| AUTH-05 | Phase 1 | Complete |
 | SERV-05 | Phase 1 | Complete |
 | SEC-01 | Phase 1 | Complete |
 | QA-01 | Phase 1 | Complete |
 | QA-02 | Phase 1 | Complete |
-| QA-06 | Phase 1 | Pending |
+| QA-06 | Phase 1 | Complete |
 | SERV-07 | Phase 2 | Pending |
 | SERV-08 | Phase 2 | Pending |
 | SEC-03 | Phase 2 | Pending |

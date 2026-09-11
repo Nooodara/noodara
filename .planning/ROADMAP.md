@@ -55,7 +55,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 01-07-PLAN.md — Postgres schema, first migration applied for real, Testcontainers harness
+- [x] 01-07-PLAN.md — Postgres schema, first migration applied for real, Testcontainers harness
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -162,7 +162,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Dominio, persistencia y autenticación | 6/15 | In Progress|  |
+| 1. Dominio, persistencia y autenticación | 7/15 | In Progress|  |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 0/TBD | Not started | - |
 | 3. Servicios de aplicación, activity log y redacción | 0/TBD | Not started | - |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |

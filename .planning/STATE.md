@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-06-PLAN.md
-last_updated: "2026-09-10T23:49:53.076Z"
-last_activity: 2026-09-10
+stopped_at: Completed 01-07-PLAN.md
+last_updated: "2026-09-11T01:18:42.562Z"
+last_activity: 2026-09-11
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 15
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING
-Plan: 7 of 15
+Plan: 8 of 15
 Status: Ready to execute
-Last activity: 2026-09-10
+Last activity: 2026-09-11
 
-Progress: [████░░░░░░] 40%
+Progress: [█████░░░░░] 47%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [████░░░░░░] 40%
 | Phase 01 P04 | 14min | 2 tasks | 5 files |
 | Phase 01 P05 | 28min | 2 tasks | 6 files |
 | Phase 01 P06 | 40min | 2 tasks | 9 files |
+| Phase 01 P07 | 65min | 3 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Domain validators (SERV-05, AUTH-02): shared ValidationResult<T> in network.ts reused by identity.ts/password.ts; validateHost branches explicitly on shell-metacharacter/scheme/whitespace, IPv6, IPv4, host:port, then RFC1123 label rules (no catch-all regex), since node:net is banned in packages/domain
 - [Phase 01]: Password policy (AUTH-02): 12-128 char bound, no composition rule, identifier-equality check, 270-entry offline common-password denylist kept in its own data file to keep policy-logic branch coverage clean
 - [Phase 01]: ActivityEvent (AUTH-04): buildActivityEvent recursively rejects metadata with a forbidden key (password/secret/token/credential/privateKey/sshPassword/masterKey, case-insensitive, nested through objects/arrays) or a SecretValue instance via SensitiveMetadataError; occurredAt always caller-supplied, never a platform wall-clock read
+- [Phase 01]: setup_tokens' anti-race unique index is WHERE used_at IS NULL, not '...and unexpired' -- Postgres partial-index predicates must be IMMUTABLE and now() is only STABLE — Expiry is still checked at redemption time in the application layer (Plan 01-12); the index guarantees at most one live, un-redeemed token per purpose at the DB level
+- [Phase 01]: db:migrate runs via tsx src/db/migrate.ts, not raw node --experimental-strip-types — Confirmed Node 24's native type-stripping does not remap .js specifiers to sibling .ts files (the nodenext convention this codebase uses everywhere); tsx is the same tool Drizzle's own docs recommend
+- [Phase 01]: env.ts is imported lazily inside migrate.ts's main() and client.ts's getDb(), never at module top level — A static top-level import made merely importing runMigrations/createDb (as the Testcontainers harness does) trigger INST-06's fail-fast env validation and process.exit(1) before any test could run
 
 ### Pending Todos
 
@@ -108,6 +112,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-10T23:49:53.069Z
-Stopped at: Completed 01-06-PLAN.md
+Last session: 2026-09-11T01:18:42.555Z
+Stopped at: Completed 01-07-PLAN.md
 Resume file: None
