@@ -11,6 +11,9 @@ importers:
       '@eslint/js':
         specifier: ^9.39.5
         version: 9.39.5
+      '@noodara/domain':
+        specifier: workspace:*
+        version: link:packages/domain
       '@testcontainers/postgresql':
         specifier: 12.1.0
         version: 12.1.0
