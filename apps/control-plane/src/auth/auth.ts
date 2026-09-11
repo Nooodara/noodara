@@ -4,7 +4,7 @@ import { uuidv7 } from 'uuidv7';
 import { createDb } from '../db/client.js';
 import * as schema from '../db/schema/index.js';
 import { env } from '../env.js';
-import { composedAfter, composedBefore } from './hooks.js';
+import * as authHooks from './hooks.js';
 import { hashPassword, verifyPassword } from './password-hasher.js';
 import { sessionPolicy } from './session-policy.js';
 
@@ -47,10 +47,10 @@ export const auth = betterAuth({
       // Better Auth's handler ever runs.
       validateSchema: false,
     },
-    // D-08: Secure is derived only from the explicit opt-out flag, never from NODE_ENV — Better
-    // Auth's own default falls back to `NODE_ENV === 'production'` when this is left unset, which
-    // would silently drop Secure on any deployment with a misconfigured NODE_ENV. Task 2 covers
-    // the flag's warning-log side effect (see app.ts's boot sequence / logger.ts).
+    // D-08: Secure is derived only from the explicit opt-out flag, never from the runtime mode —
+    // Better Auth's own default falls back to a "running in production" heuristic when this is
+    // left unset, which would silently drop Secure on any deployment with a misconfigured runtime
+    // mode. The flag's warning-log side effect lives in routes/auth.ts.
     useSecureCookies: !env.NOODARA_COOKIE_INSECURE,
     defaultCookieAttributes: {
       httpOnly: true,
@@ -64,7 +64,7 @@ export const auth = betterAuth({
   session: sessionPolicy.config,
   databaseHooks: sessionPolicy.hooks,
   hooks: {
-    before: composedBefore,
-    after: composedAfter,
+    before: authHooks.composedBefore,
+    after: authHooks.composedAfter,
   },
 });

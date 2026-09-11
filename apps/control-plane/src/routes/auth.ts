@@ -21,15 +21,15 @@ const authRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
     // second layer, not a reason to log these objects directly.
     reply.hijack();
     try {
-      // Better Auth's Node handler (`better-call/node`, via `toNodeHandler`) reconstructs a
-      // Fetch API `Request` from `request.raw`. By the time this handler runs, Fastify's own
-      // default JSON parser has already consumed `request.raw`'s stream to produce
-      // `request.body` on the *FastifyRequest* wrapper — `request.raw` itself has no `.body` and
-      // its stream is already ended, so `getRequest()`'s own already-consumed fallback (which
-      // reads `.body` off the same object it was given) never finds it without this bridge. This
-      // mirrors Express's `req.body` convention, which is why `toNodeHandler`'s fallback exists
-      // at all — Fastify just keeps parsed output on a separate wrapper object instead of the
-      // raw stream (confirmed via `better-call`'s installed `getRequest()` source).
+      // Better Auth's Node handler (`better-call/node`) reconstructs a Fetch API `Request` from
+      // `request.raw`. By the time this handler runs, Fastify's own default JSON parser has
+      // already consumed `request.raw`'s stream to produce `request.body` on the *FastifyRequest*
+      // wrapper — `request.raw` itself has no `.body` and its stream is already ended, so the
+      // Node-handler's own already-consumed fallback (which reads `.body` off the same object it
+      // was given) never finds it without this bridge. This mirrors Express's `req.body`
+      // convention, which is why that fallback exists at all — Fastify just keeps parsed output
+      // on a separate wrapper object instead of the raw stream (confirmed via `better-call`'s
+      // installed `getRequest()` source).
       Object.assign(request.raw, { body: request.body });
       await authNode.toNodeHandler(auth.handler)(request.raw, reply.raw);
     } catch (error) {
