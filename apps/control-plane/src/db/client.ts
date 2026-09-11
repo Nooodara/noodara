@@ -6,7 +6,7 @@ export type Database = NodePgDatabase<typeof schema>;
 
 /**
  * Builds a fresh Drizzle client bound to `connectionString`, over its own `pg.Pool`. Used by
- * `db.ts`'s lazy default export, by `migrate.ts`, and by the Testcontainers integration harness
+ * `getDb()` below, by `migrate.ts`, and by the Testcontainers integration harness
  * (`tests/integration/helpers/postgres.ts`) so test setup and production migration share the same
  * connection path instead of diverging.
  */
