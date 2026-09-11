@@ -1,0 +1,40 @@
+name: noodara-dev
+
+# Local development dependencies only (PostgreSQL + Redis). The control-plane app itself is not
+# containerized here — that is the phase-6 installer's job. No inline password defaults: every
+# secret comes from `.env` (copy `.env.example`), matching INST-06's no-fallback rule.
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - noodara_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--requirepass', '${REDIS_PASSWORD}']
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - noodara_redis_data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -a $${REDIS_PASSWORD} ping | grep -q PONG']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  noodara_postgres_data:
+  noodara_redis_data:
