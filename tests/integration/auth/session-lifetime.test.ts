@@ -6,9 +6,9 @@ import { startTestApp, type TestAppFixture } from '../helpers/app.js';
 // Better Auth's session config (Plan 01-11, session-policy.ts): D-05's sliding-7-day/hard-30-day
 // ceiling proven against a real, migrated PostgreSQL through the real HTTP surface. Elapsed time
 // is simulated by writing directly to `sessions.expires_at`/`absolute_expires_at` via SQL —
-// deliberately never `vi.setSystemTime`, since the database's own stored timestamps (not the
-// Node process clock) are what `session-policy.ts`'s hooks and Better Auth's own refresh
-// calculation both read.
+// deliberately never a fake-timers API, since the database's own stored timestamps (not the Node
+// process clock) are what `session-policy.ts`'s hooks and Better Auth's own refresh calculation
+// both read.
 
 const ADMIN_EMAIL = 'admin@noodara.test';
 const ADMIN_PASSWORD = 'correct horse battery staple';
