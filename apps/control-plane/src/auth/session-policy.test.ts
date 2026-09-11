@@ -76,7 +76,7 @@ describe('sessionPolicy.hooks.session.update.before', () => {
       if (!before) throw new Error('session.update.before is not defined');
 
       const context = { context: { session: { session: { absoluteExpiresAt }, user: {} } } };
-      const result = await before({ expiresAt: proposedExpiresAt } as never, context as never);
+      const result = await before({ expiresAt: proposedExpiresAt }, context as never);
 
       expect(result).toMatchObject({ data: { lastSeenAt: now, expiresAt: proposedExpiresAt } });
     } finally {
@@ -94,7 +94,7 @@ describe('sessionPolicy.hooks.session.update.before', () => {
       if (!before) throw new Error('session.update.before is not defined');
 
       const context = { context: { session: { session: { absoluteExpiresAt }, user: {} } } };
-      const result = await before({ expiresAt: proposedExpiresAt } as never, context as never);
+      const result = await before({ expiresAt: proposedExpiresAt }, context as never);
 
       expect(result).toMatchObject({ data: { lastSeenAt: now, expiresAt: absoluteExpiresAt } });
     } finally {
@@ -109,7 +109,7 @@ describe('sessionPolicy.hooks.session.update.before', () => {
       const before = sessionPolicy.hooks.session?.update?.before;
       if (!before) throw new Error('session.update.before is not defined');
 
-      const result = await before({ expiresAt: new Date('2026-01-15T00:00:00.000Z') } as never, null);
+      const result = await before({ expiresAt: new Date('2026-01-15T00:00:00.000Z') }, null);
 
       expect(result).toMatchObject({ data: { lastSeenAt: now } });
       expect((result as { data: Record<string, unknown> }).data.expiresAt).toBeUndefined();
