@@ -1,6 +1,8 @@
 import { sql } from 'drizzle-orm';
 import parseSetCookie from 'set-cookie-parser';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { revealSecret } from '@noodara/domain/security';
+import { issueToken } from '../../../apps/control-plane/src/services/setup-token-repository.js';
 import { startTestApp, type TestAppFixture } from '../helpers/app.js';
 
 // Better Auth mounted in Fastify (Plan 01-10): AUTH-03 — logout invalidates the session
@@ -28,14 +30,22 @@ afterEach(async () => {
   expect(stray).toHaveLength(0);
 });
 
-async function createAdmin(app: TestAppFixture['app'], email: string, password: string): Promise<void> {
+// Plan 01-12 closed the generic `/sign-up/email` door for good (AUTH-01) — the admin is created
+// through `POST /api/setup` with a freshly issued one-shot token instead.
+async function createAdmin(
+  app: TestAppFixture['app'],
+  db: TestAppFixture['db'],
+  email: string,
+  password: string,
+): Promise<void> {
+  const issued = await issueToken(db, 'setup', new Date());
   const response = await app.inject({
     method: 'POST',
-    url: '/api/auth/sign-up/email',
-    payload: { email, password, name: 'Admin' },
+    url: '/api/setup',
+    payload: { token: revealSecret(issued.token), email, password, name: 'Admin' },
   });
   if (response.statusCode !== 200) {
-    throw new Error(`sign-up failed: ${response.statusCode.toString()} ${response.body}`);
+    throw new Error(`setup failed: ${response.statusCode.toString()} ${response.body}`);
   }
 }
 
@@ -56,7 +66,7 @@ function sessionTokenFromCookie(cookie: string): string {
 describe('logout (AUTH-03)', () => {
   it('returns 200 and, replaying the same cookie afterwards, get-session reports no session', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     const signInResponse = await fixture.app.inject({
       method: 'POST',
@@ -83,7 +93,7 @@ describe('logout (AUTH-03)', () => {
 
   it('deletes the corresponding row from the sessions table (server-side invalidation)', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     const signInResponse = await fixture.app.inject({
       method: 'POST',

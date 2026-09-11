@@ -1,12 +1,18 @@
 import { sql } from 'drizzle-orm';
 import parseSetCookie from 'set-cookie-parser';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { revealSecret } from '@noodara/domain/security';
+import { hashPassword } from '../../../apps/control-plane/src/auth/password-hasher.js';
+import { accounts, users } from '../../../apps/control-plane/src/db/schema/auth.js';
+import { issueToken } from '../../../apps/control-plane/src/services/setup-token-repository.js';
 import { startTestApp, type TestAppFixture } from '../helpers/app.js';
 
 // D-06: multi-session listing and revocation. Proven against a real, migrated PostgreSQL through
 // the real HTTP surface — three sessions for the same admin (three different user agents), one
-// other admin's session to prove the not-my-session 404 path, and the activity log's
-// `auth.session_revoked` row per revocation (noodara-security §5, ARCHITECTURE.md §6).
+// other user's session to prove the not-my-session 404 path (AUTH-01 forbids a second admin
+// through any public path, so that other user is inserted directly — see
+// `createOtherUserDirectly` below), and the activity log's `auth.session_revoked` row per
+// revocation (noodara-security §5, ARCHITECTURE.md §6).
 
 const ADMIN_EMAIL = 'admin@noodara.test';
 const ADMIN_PASSWORD = 'correct horse battery staple';
@@ -32,15 +38,43 @@ afterEach(async () => {
   expect(stray).toHaveLength(0);
 });
 
-async function createAdmin(app: TestAppFixture['app'], email: string, password: string): Promise<void> {
+// Plan 01-12 closed the generic `/sign-up/email` door for good (AUTH-01) — the admin is created
+// through `POST /api/setup` with a freshly issued one-shot token instead.
+async function createAdmin(
+  app: TestAppFixture['app'],
+  db: TestAppFixture['db'],
+  email: string,
+  password: string,
+): Promise<void> {
+  const issued = await issueToken(db, 'setup', new Date());
   const response = await app.inject({
     method: 'POST',
-    url: '/api/auth/sign-up/email',
-    payload: { email, password, name: 'Admin' },
+    url: '/api/setup',
+    payload: { token: revealSecret(issued.token), email, password, name: 'Admin' },
   });
   if (response.statusCode !== 200) {
-    throw new Error(`sign-up failed: ${response.statusCode.toString()} ${response.body}`);
+    throw new Error(`setup failed: ${response.statusCode.toString()} ${response.body}`);
   }
+}
+
+/**
+ * Inserts a second user row directly (bypassing every public HTTP path) purely to exercise
+ * `session-service.ts`'s ownership-based 404 against a genuinely different `userId`. AUTH-01
+ * makes this the only way to get a second row into `users` at all once the real admin exists —
+ * both `/sign-up/email` and `/api/setup` structurally refuse to ever create a second account,
+ * by design. Signing in as this row afterwards still goes through the real, ungated
+ * `/sign-in/email` path.
+ */
+async function createOtherUserDirectly(db: TestAppFixture['db'], email: string, password: string): Promise<void> {
+  const passwordHash = await hashPassword(password);
+  const [user] = await db.insert(users).values({ name: 'Other', email }).returning({ id: users.id });
+  if (!user) throw new Error('failed to insert the other test user');
+  await db.insert(accounts).values({
+    accountId: user.id,
+    providerId: 'credential',
+    userId: user.id,
+    password: passwordHash,
+  });
 }
 
 function cookieHeaderFrom(response: { headers: Record<string, unknown> }): string {
@@ -103,7 +137,7 @@ async function activityEventCount(db: TestAppFixture['db'], sessionId: string): 
 describe('session management (D-06)', () => {
   it('returns 401 for GET /api/sessions without a valid cookie', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     const response = await fixture.app.inject({ method: 'GET', url: '/api/sessions' });
 
@@ -112,7 +146,7 @@ describe('session management (D-06)', () => {
 
   it('lists every session for the caller with the required fields and exactly one isCurrent', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
     const session1 = await signIn(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD, 'device-1');
     const session2 = await signIn(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD, 'device-2');
     const session3 = await signIn(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD, 'device-3');
@@ -125,9 +159,9 @@ describe('session management (D-06)', () => {
 
     expect(response.statusCode).toBe(200);
     const body = response.json() as SessionListItem[];
-    // 4, not 3: `createAdmin` signs up via `/sign-up/email`, which Better Auth auto-signs-in —
-    // that sign-up itself already creates one session, in addition to the three explicit `signIn`
-    // calls above.
+    // 4, not 3: `createAdmin` redeems the setup token via `/api/setup`, which internally signs
+    // the admin up through Better Auth (auto-sign-in enabled) — that internal sign-up already
+    // creates one session, in addition to the three explicit `signIn` calls above.
     expect(body).toHaveLength(4);
     for (const item of body) {
       expect(item).toHaveProperty('id');
@@ -150,7 +184,7 @@ describe('session management (D-06)', () => {
 
   it('revokes a single session by id: the row is gone and its cookie is rejected afterwards', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
     const session1 = await signIn(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD, 'device-1');
     const session2 = await signIn(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD, 'device-2');
     const session2Id = await sessionIdForToken(fixture.db, session2.token);
@@ -175,7 +209,7 @@ describe('session management (D-06)', () => {
 
   it('returns 404 for a session id that does not exist', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
     const session1 = await signIn(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD, 'device-1');
 
     const response = await fixture.app.inject({
@@ -189,8 +223,8 @@ describe('session management (D-06)', () => {
 
   it('returns 404 (not 403) for a session id belonging to a different user', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
-    await createAdmin(fixture.app, OTHER_ADMIN_EMAIL, OTHER_ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createOtherUserDirectly(fixture.db, OTHER_ADMIN_EMAIL, OTHER_ADMIN_PASSWORD);
     const session1 = await signIn(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD, 'device-1');
     const otherSession = await signIn(fixture.app, OTHER_ADMIN_EMAIL, OTHER_ADMIN_PASSWORD, 'device-other');
     const otherSessionId = await sessionIdForToken(fixture.db, otherSession.token);
@@ -206,7 +240,7 @@ describe('session management (D-06)', () => {
 
   it('revoking the current session behaves like a sign-out', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
     const session1 = await signIn(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD, 'device-1');
     const session1Id = await sessionIdForToken(fixture.db, session1.token);
 
@@ -227,7 +261,7 @@ describe('session management (D-06)', () => {
 
   it('DELETE /api/sessions revokes every other session, leaving the current cookie valid', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
     const session1 = await signIn(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD, 'device-1');
     const session2 = await signIn(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD, 'device-2');
     const session3 = await signIn(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD, 'device-3');
@@ -260,7 +294,7 @@ describe('session management (D-06)', () => {
 
   it('records auth.session_revoked activity events with the session id and no token in metadata', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
     const session1 = await signIn(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD, 'device-1');
     const session2 = await signIn(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD, 'device-2');
     const session2Id = await sessionIdForToken(fixture.db, session2.token);

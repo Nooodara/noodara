@@ -1,12 +1,18 @@
 import type { createAuthMiddleware } from 'better-auth/api';
+import { isBootstrapInProgress } from './bootstrap-context.js';
 
-// Owned by Plan 01-12 (AUTH-01: the first admin comes only from the setup token; `/sign-up/email`
-// must 404 once an admin exists). Inert here — always lets the request through — so this plan's
-// `composedBefore` (hooks.ts) has a stable extension point Plan 01-12 fills in without touching
-// hooks.ts or auth.ts. A truthy return value short-circuits the request (see `ctx.json(...)` in
-// Better Auth's hooks docs); `undefined` means "continue".
+// AUTH-01/D-02: the only way `/sign-up/email` may ever create a user is through
+// `setup-service.ts`'s own internal call inside `runInBootstrap` — every other request to this
+// path, before or after an admin exists, gets a 404. 404 rather than 403 so the endpoint's very
+// existence is never confirmed to an unauthenticated caller (T-1-36), matching D-02's stance for
+// the `/api/setup` route itself. `composedBefore` (hooks.ts) short-circuits on this truthy return.
 type AuthHookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
 
-export function signupGate(_ctx: AuthHookContext): Promise<unknown> {
-  return Promise.resolve(undefined);
+const SIGN_UP_EMAIL_PATH = '/sign-up/email';
+
+export function signupGate(ctx: AuthHookContext): Promise<unknown> {
+  if (ctx.path !== SIGN_UP_EMAIL_PATH || isBootstrapInProgress()) {
+    return Promise.resolve(undefined);
+  }
+  return Promise.resolve(ctx.json(null, { status: 404 }));
 }

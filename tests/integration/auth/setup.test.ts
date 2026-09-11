@@ -4,7 +4,7 @@ import { revealSecret } from '@noodara/domain/security';
 import { activityEvents } from '../../../apps/control-plane/src/db/schema/activity-events.js';
 import { users } from '../../../apps/control-plane/src/db/schema/auth.js';
 import { setupTokens } from '../../../apps/control-plane/src/db/schema/setup-tokens.js';
-import { issueToken } from '../../../apps/control-plane/src/services/setup-token-repository.js';
+import { issueToken, markUsed } from '../../../apps/control-plane/src/services/setup-token-repository.js';
 import { startTestApp, type TestAppFixture } from '../helpers/app.js';
 
 // AUTH-01/D-02: the only way the first admin gets created is by redeeming a valid, single-use,
@@ -93,7 +93,27 @@ describe('POST /api/setup (AUTH-01)', () => {
     expect(response.statusCode).toBe(404);
   });
 
-  it('rejects a replayed token with 400 and leaves the user count at 1', async () => {
+  it('rejects an already-used token with 400 (ALREADY_USED) while no admin exists yet', async () => {
+    fixture = await startTestApp();
+    const issued = await issueToken(fixture.db, 'setup', new Date());
+    const token = revealSecret(issued.token);
+    // Marks the token used without going through a real sign-up, isolating isTokenUsable's
+    // ALREADY_USED branch from the route's separate adminExists() 404 gate (D-02) exercised by
+    // the "replayed after admin exists" test below — a genuinely already-used token can otherwise
+    // only exist once an admin already does, since redemption and admin creation are atomic.
+    await markUsed(fixture.db, issued.id, new Date());
+
+    const response = await fixture.app.inject({
+      method: 'POST',
+      url: '/api/setup',
+      payload: { token, email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(await userCount(fixture.db)).toBe(0);
+  });
+
+  it('replaying the exact token that created the admin returns 404, not the ALREADY_USED 400 (D-02 door-closing wins)', async () => {
     fixture = await startTestApp();
     const token = await issueSetupToken(fixture.db);
     const first = await fixture.app.inject({
@@ -109,7 +129,7 @@ describe('POST /api/setup (AUTH-01)', () => {
       payload: { token, email: 'second-admin@noodara.test', password: ADMIN_PASSWORD },
     });
 
-    expect(replay.statusCode).toBe(400);
+    expect(replay.statusCode).toBe(404);
     expect(await userCount(fixture.db)).toBe(1);
   });
 

@@ -1,6 +1,8 @@
 import { sql } from 'drizzle-orm';
 import parseSetCookie from 'set-cookie-parser';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { revealSecret } from '@noodara/domain/security';
+import { issueToken } from '../../../apps/control-plane/src/services/setup-token-repository.js';
 import { startTestApp, type TestAppFixture } from '../helpers/app.js';
 
 // Better Auth's session config (Plan 01-11, session-policy.ts): D-05's sliding-7-day/hard-30-day
@@ -35,14 +37,22 @@ afterEach(async () => {
   expect(stray).toHaveLength(0);
 });
 
-async function createAdmin(app: TestAppFixture['app'], email: string, password: string): Promise<void> {
+// Plan 01-12 closed the generic `/sign-up/email` door for good (AUTH-01) — the admin is created
+// through `POST /api/setup` with a freshly issued one-shot token instead.
+async function createAdmin(
+  app: TestAppFixture['app'],
+  db: TestAppFixture['db'],
+  email: string,
+  password: string,
+): Promise<void> {
+  const issued = await issueToken(db, 'setup', new Date());
   const response = await app.inject({
     method: 'POST',
-    url: '/api/auth/sign-up/email',
-    payload: { email, password, name: 'Admin' },
+    url: '/api/setup',
+    payload: { token: revealSecret(issued.token), email, password, name: 'Admin' },
   });
   if (response.statusCode !== 200) {
-    throw new Error(`sign-up failed: ${response.statusCode.toString()} ${response.body}`);
+    throw new Error(`setup failed: ${response.statusCode.toString()} ${response.body}`);
   }
 }
 
@@ -100,7 +110,7 @@ async function signInAndGetCookie(app: TestAppFixture['app']): Promise<{ cookie:
 describe('session lifetime (D-05: 7-day sliding, 30-day absolute ceiling)', () => {
   it('sets expires_at ~7 days out and absolute_expires_at ~30 days out on creation', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
     const { token } = await signInAndGetCookie(fixture.app);
 
     const row = await readSession(fixture.db, token);
@@ -113,7 +123,7 @@ describe('session lifetime (D-05: 7-day sliding, 30-day absolute ceiling)', () =
 
   it('leaves expires_at byte-identical on a second request inside the same updateAge window', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
     const { cookie, token } = await signInAndGetCookie(fixture.app);
 
     const before = await readSession(fixture.db, token);
@@ -131,7 +141,7 @@ describe('session lifetime (D-05: 7-day sliding, 30-day absolute ceiling)', () =
 
   it('extends expires_at on a refresh past updateAge, never exceeding absolute_expires_at', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
     const { cookie, token } = await signInAndGetCookie(fixture.app);
 
     // Backdate expires_at so Better Auth's own `shouldBeUpdated` calculation is true (still in
@@ -155,7 +165,7 @@ describe('session lifetime (D-05: 7-day sliding, 30-day absolute ceiling)', () =
 
   it('clamps expires_at into the past when absolute_expires_at has already passed, rejecting the cookie afterwards', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
     const { cookie, token } = await signInAndGetCookie(fixture.app);
 
     await fixture.db.execute(
@@ -186,7 +196,7 @@ describe('session lifetime (D-05: 7-day sliding, 30-day absolute ceiling)', () =
 
   it('rejects a session simply left idle past expires_at', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
     const { cookie, token } = await signInAndGetCookie(fixture.app);
 
     await fixture.db.execute(sql`update sessions set expires_at = now() - interval '1 hour' where token = ${token}`);

@@ -1,5 +1,7 @@
 import parseSetCookie from 'set-cookie-parser';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { revealSecret } from '@noodara/domain/security';
+import { issueToken } from '../../../apps/control-plane/src/services/setup-token-repository.js';
 import { startTestApp, type TestAppFixture } from '../helpers/app.js';
 
 // Better Auth mounted in Fastify (Plan 01-10): AUTH-02 (argon2id login, session survives a
@@ -33,18 +35,25 @@ afterEach(async () => {
 });
 
 /**
- * Creates the admin via the (currently open, ungated — Plan 01-12 owns the gate) sign-up
- * endpoint, so every test in this file exercises the real argon2id hasher wired into Better
- * Auth end to end rather than seeding a hash by hand.
+ * Creates the admin through `POST /api/setup` (Plan 01-12 closed the generic `/sign-up/email`
+ * door for good — AUTH-01), issuing a fresh one-shot setup token directly via the repository so
+ * every test in this file still exercises the real argon2id hasher wired into Better Auth end to
+ * end rather than seeding a password hash by hand.
  */
-async function createAdmin(app: TestAppFixture['app'], email: string, password: string): Promise<void> {
+async function createAdmin(
+  app: TestAppFixture['app'],
+  db: TestAppFixture['db'],
+  email: string,
+  password: string,
+): Promise<void> {
+  const issued = await issueToken(db, 'setup', new Date());
   const response = await app.inject({
     method: 'POST',
-    url: '/api/auth/sign-up/email',
-    payload: { email, password, name: 'Admin' },
+    url: '/api/setup',
+    payload: { token: revealSecret(issued.token), email, password, name: 'Admin' },
   });
   if (response.statusCode !== 200) {
-    throw new Error(`sign-up failed: ${response.statusCode.toString()} ${response.body}`);
+    throw new Error(`setup failed: ${response.statusCode.toString()} ${response.body}`);
   }
 }
 
@@ -59,7 +68,7 @@ function cookieHeaderFrom(response: { headers: Record<string, unknown> }): strin
 describe('login (AUTH-02)', () => {
   it('signs in with a valid email/password and returns a Set-Cookie header', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     const response = await fixture.app.inject({
       method: 'POST',
@@ -73,7 +82,7 @@ describe('login (AUTH-02)', () => {
 
   it('keeps the session alive for a second request carrying only the cookie (session survives a reload)', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     const signInResponse = await fixture.app.inject({
       method: 'POST',
@@ -95,7 +104,7 @@ describe('login (AUTH-02)', () => {
 
   it('rejects a wrong password with 401 and no Set-Cookie header', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     const response = await fixture.app.inject({
       method: 'POST',
@@ -109,7 +118,7 @@ describe('login (AUTH-02)', () => {
 
   it('generates UUIDv7 ids (version nibble 7)', async () => {
     fixture = await startTestApp();
-    await createAdmin(fixture.app, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createAdmin(fixture.app, fixture.db, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     const signInResponse = await fixture.app.inject({
       method: 'POST',
