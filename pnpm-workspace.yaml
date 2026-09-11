@@ -1,3 +1,8 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# argon2's native bindings must actually compile at install time (Docker build stage per
+# STACK.md), not be silently skipped by pnpm's build-script allowlist prompt (D-08/AUTH-02).
+onlyBuiltDependencies:
+  - argon2

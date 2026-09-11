@@ -15,6 +15,8 @@
   "dependencies": {
     "@fastify/type-provider-zod": "1.0.0",
     "@noodara/domain": "workspace:*",
+    "argon2": "0.45.1",
+    "better-auth": "1.7.4",
     "drizzle-orm": "0.45.2",
     "fastify": "5.12.3",
     "pg": "8.23.0",

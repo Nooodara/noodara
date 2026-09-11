@@ -12,6 +12,11 @@ export type Database = NodePgDatabase<typeof schema>;
  */
 export function createDb(connectionString: string): { db: Database; pool: Pool } {
   const pool = new Pool({ connectionString });
+  // node-postgres's own docs: an idle pooled client emits 'error' when its connection is lost
+  // (network blip, database restart/shutdown) — an unlistened 'error' event on an EventEmitter
+  // crashes the process. No infrastructure failure may take down the API (CLAUDE.md §2.2); the
+  // next query against the pool simply establishes a fresh client.
+  pool.on('error', () => undefined);
   const db = drizzle(pool, { schema, casing: 'snake_case' });
   return { db, pool };
 }

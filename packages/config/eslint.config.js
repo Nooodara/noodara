@@ -48,6 +48,11 @@ export default tseslint.config(
     rules: {
       'no-restricted-syntax': ['error', ...envFallbackSelectors],
       'no-restricted-imports': ['error', noDeepDomainImports],
+      // A leading underscore is a deliberate, explicit "intentionally unused" marker — most
+      // commonly an inert extension-point stub whose parameter list must match a future real
+      // implementation's signature (e.g. a hook a later plan fills in). This does not relax
+      // detection of accidentally-unused identifiers, which never start with `_`.
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
   },
   {
