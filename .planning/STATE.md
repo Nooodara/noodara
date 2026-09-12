@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-17-PLAN.md
-last_updated: "2026-09-12T06:12:14.086Z"
+status: ready_to_plan
+stopped_at: Phase 1 complete (17/17) — ready to discuss Phase 2
+last_updated: 2026-09-12T06:29:27.468Z
 last_activity: 2026-09-12
 progress:
   total_phases: 6
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente: sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto.
-**Current focus:** Phase 1 — Dominio, persistencia y autenticación
+**Current focus:** Phase 2 — adaptador ssh aislado y probado con testcontainers
 
 ## Current Position
 
-Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING (gap closure)
-Plan: 17 of 17 (01-16 gap-closure plan complete; 01-17 gap-closure plan remains)
-Status: Ready to execute
+Phase: 2
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-09-12
 
 Progress: [██████████] 100%
@@ -36,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 0
+- Total plans completed: 17
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -44,7 +44,7 @@ Progress: [██████████] 100%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 1 | 17 | - | - |
 
 **Recent Trend:**
 
