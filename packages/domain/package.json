@@ -7,13 +7,14 @@
     "tags": ["pure-domain"]
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./server": "./src/server/index.ts",
-    "./security": "./src/security/index.ts",
-    "./validators": "./src/validators/index.ts",
-    "./activity": "./src/activity/index.ts"
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./server": { "types": "./dist/server/index.d.ts", "default": "./dist/server/index.js" },
+    "./security": { "types": "./dist/security/index.d.ts", "default": "./dist/security/index.js" },
+    "./validators": { "types": "./dist/validators/index.d.ts", "default": "./dist/validators/index.js" },
+    "./activity": { "types": "./dist/activity/index.d.ts", "default": "./dist/activity/index.js" }
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "lint": "eslint --config ../config/eslint.config.js .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --root ../.. --project packages"

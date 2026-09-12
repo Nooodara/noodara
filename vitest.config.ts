@@ -1,10 +1,16 @@
 import { defineConfig } from 'vitest/config';
+import { domainSourceAliases } from './vitest.shared.js';
 
 // Vitest 5 uses `projects` (the config key that superseded the deprecated one removed since
 // 3.2). Each monorepo package gets its own project scoped to `src/**/*.test.ts` so integration
 // tests (tests/integration/**) never run as part of the unit pass, and a dedicated root project
 // covers the repo-level harness smoke test in tests/unit/.
 export default defineConfig({
+  // packages/domain's `exports` resolve through its built `dist` (01-16-PLAN.md Task 2); this
+  // alias keeps every in-process unit test resolving straight to packages/domain/src instead, so
+  // QA-02's coverage gate keeps measuring source and no build step is required to run `pnpm test`.
+  // See vitest.shared.ts for the ordering rule this alias array depends on.
+  resolve: { alias: domainSourceAliases },
   test: {
     projects: [
       {
