@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
+    "start": "pnpm --filter @noodara/control-plane start",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "vitest run",

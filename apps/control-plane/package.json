@@ -7,8 +7,9 @@
     "noodara": "./dist/cli/index.js"
   },
   "scripts": {
-    "dev": "node --watch --experimental-strip-types src/server.ts",
-    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "build": "tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs",
     "lint": "eslint --config ../../packages/config/eslint.config.js .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --root ../.. --project apps",

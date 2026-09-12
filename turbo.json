@@ -11,6 +11,31 @@
     "typecheck": {
       "dependsOn": ["^build"]
     },
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true,
+      "passThroughEnv": [
+        "NOODARA_MASTER_KEY",
+        "NOODARA_MASTER_KEY_PREVIOUS",
+        "BETTER_AUTH_SECRET",
+        "DATABASE_URL",
+        "REDIS_URL",
+        "NOODARA_PUBLIC_URL",
+        "NOODARA_ADMIN_EMAIL",
+        "NOODARA_ADMIN_PASSWORD",
+        "NOODARA_SESSION_SLIDING_SECONDS",
+        "NOODARA_SESSION_UPDATE_AGE_SECONDS",
+        "NOODARA_SESSION_ABSOLUTE_SECONDS",
+        "NOODARA_LOGIN_MAX_ATTEMPTS",
+        "NOODARA_LOGIN_WINDOW_SECONDS",
+        "NOODARA_LOGIN_BACKOFF_MAX_SECONDS",
+        "NOODARA_COOKIE_INSECURE",
+        "NOODARA_TRUST_PROXY",
+        "PORT",
+        "LOG_LEVEL"
+      ]
+    },
     "test": {},
     "test:integration": {}
   },
