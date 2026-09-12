@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-12-PLAN.md
-last_updated: "2026-09-12T00:01:25.460Z"
-last_activity: 2026-09-11
+stopped_at: Completed 01-13-PLAN.md
+last_updated: "2026-09-12T01:16:43.897Z"
+last_activity: 2026-09-12
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 15
-  completed_plans: 12
+  completed_plans: 13
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING
-Plan: 13 of 15
+Plan: 14 of 15
 Status: Ready to execute
-Last activity: 2026-09-11
+Last activity: 2026-09-12
 
-Progress: [████████░░] 80%
+Progress: [█████████░] 87%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [████████░░] 80%
 | Phase 01 P10 | 70min | 2 tasks | 20 files |
 | Phase 01 P11 | 100min | 2 tasks | 6 files |
 | Phase 01 P12 | 68min | 2 tasks | 18 files |
+| Phase 01-dominio-persistencia-y-autenticacion P13 | 60min | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,9 @@ Recent decisions affecting current work:
 - [Phase 01]: redeemSetupToken accepts non-atomic cross-pool user creation (Better Auth's own pool) rather than editing auth.ts; pg_advisory_xact_lock is server-side/database-scoped so the exactly-one-admin race guarantee still holds. — auth.ts and app.ts must not be touched by any plan since 01-10; the advisory lock's correctness does not depend on which connection pool acquires it.
 - [Phase 01]: signup-gate.ts returns 404 (not 403) unconditionally for /sign-up/email outside the bootstrap window, matching D-02's stance that the route's existence is never confirmed to an unauthenticated caller.
 - [Phase 01]: AUTH-01's single-admin invariant makes a second real sign-up unreachable through any public path; session-management.test.ts's not-my-session test now inserts its second user row directly via Drizzle instead of through /sign-up/email.
+- [Phase 01]: Reject a locked-out login by throwing a TOO_MANY_REQUESTS APIError from the before-hook, since better-call's dispatch pipeline cannot carry a non-200 status out of a before-hook's returned value
+- [Phase 01]: The per-IP scope key is bridged through an x-noodara-client-ip request header set server-side in routes/auth.ts from Fastify's own request.ip, since the reconstructed Fetch Request a Better Auth hook receives has no socket-level IP of its own
+- [Phase 01]: login_attempts gained a lockout_count column (migration 0001) to persist D-07's doubling schedule across lockouts, since deriving it from existing columns (locked_until/last_failure_at) is unrecoverable once a later window starts overwriting last_failure_at
 
 ### Pending Todos
 
@@ -132,6 +136,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-12T00:01:25.454Z
-Stopped at: Completed 01-12-PLAN.md
+Last session: 2026-09-12T01:16:43.891Z
+Stopped at: Completed 01-13-PLAN.md
 Resume file: None
