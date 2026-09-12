@@ -1,4 +1,6 @@
 import { randomBytes } from 'node:crypto';
+import { sql } from 'drizzle-orm';
+import { uuidv7 } from 'uuidv7';
 import type { Database } from '../../../apps/control-plane/src/db/client.js';
 import * as schema from '../../../apps/control-plane/src/db/schema/index.js';
 import { encryptSecret, type EncryptionKey } from '../../../packages/domain/src/security/envelope.js';
@@ -89,16 +91,19 @@ export async function seedRepresentativeData(db: Database): Promise<Representati
     .returning();
   const setupToken = assertDefined(insertedSetupTokens[0], 'setup token');
 
-  const insertedLoginAttempts = await db
-    .insert(schema.loginAttempts)
-    .values({
-      scope: 'account',
-      scopeKey: user.email,
-      failureCount: 2,
-      lastFailureAt: new Date(),
-    })
-    .returning();
-  const loginAttempt = assertDefined(insertedLoginAttempts[0], 'login attempt');
+  // Raw SQL restricted to the columns present in the *previous* migration snapshot (0000) —
+  // Plan 01-13's migration 0001 added `lockout_count`, which does not exist yet in the database
+  // at the point this fixture seeds data for the from-snapshot upgrade test (PITFALLS.md #10's
+  // own scenario, now real: the current `schema.loginAttempts` module reflects the *latest*
+  // migration, not necessarily the one applied so far, so `db.insert(schema.loginAttempts)`
+  // here would reference a column that has not been created yet).
+  const loginAttemptId = uuidv7();
+  const insertedLoginAttempts = await db.execute<{ id: string }>(sql`
+    insert into login_attempts (id, scope, scope_key, failure_count, last_failure_at)
+    values (${loginAttemptId}, 'account', ${user.email}, 2, now())
+    returning id
+  `);
+  const loginAttempt = assertDefined(insertedLoginAttempts.rows[0], 'login attempt');
 
   const encryptedValue = encryptSecret('representative-ssh-key-material', SEED_ENCRYPTION_KEY);
   const insertedCredentials = await db

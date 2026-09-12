@@ -16,6 +16,10 @@ export const loginAttempts = pgTable(
     windowStartedAt: timestamp('window_started_at', { withTimezone: true }).notNull().defaultNow(),
     // D-07: doubling backoff (15min -> 30 -> 60 -> ... -> 24h), never permanent.
     lockedUntil: timestamp('locked_until', { withTimezone: true }),
+    // How many times this scope has ever been locked out. Never reset except by a successful
+    // login (packages/domain's clearOnSuccess) — this is what makes each successive lockout
+    // longer than the last (Plan 01-13, D-07's doubling schedule).
+    lockoutCount: integer('lockout_count').notNull().default(0),
     lastFailureAt: timestamp('last_failure_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

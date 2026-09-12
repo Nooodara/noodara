@@ -31,6 +31,13 @@ const authRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
       // on a separate wrapper object instead of the raw stream (confirmed via `better-call`'s
       // installed `getRequest()` source).
       Object.assign(request.raw, { body: request.body });
+      // T-1-40/D-07: better-call's Node adapter reconstructs a Fetch API `Request` from
+      // `request.raw` alone (headers only — it never sees the raw socket), so the per-IP
+      // login-lockout guard (login-guard.ts, Plan 01-13) cannot resolve the real client address
+      // itself. Fastify's own `request.ip` already applies the `trustProxy` policy (app.ts) —
+      // this header carries that already-resolved value through, overwriting whatever a caller
+      // sent under the same name so it can never be spoofed by a client-supplied header.
+      request.raw.headers['x-noodara-client-ip'] = request.ip;
       await authNode.toNodeHandler(auth.handler)(request.raw, reply.raw);
     } catch (error) {
       // `reply.hijack()` means Fastify will not finalize this response on our behalf — an

@@ -163,6 +163,7 @@ describe('parseEnv', () => {
       expect(result.value.NOODARA_LOGIN_WINDOW_SECONDS).toBe(900);
       expect(result.value.NOODARA_LOGIN_BACKOFF_MAX_SECONDS).toBe(86400);
       expect(result.value.NOODARA_COOKIE_INSECURE).toBe(false);
+      expect(result.value.NOODARA_TRUST_PROXY).toBe(false);
       expect(result.value.PORT).toBe(3000);
       expect(result.value.LOG_LEVEL).toBe('info');
     });
@@ -177,6 +178,30 @@ describe('parseEnv', () => {
       expect(result.value.PORT).toBe(8080);
       expect(result.value.LOG_LEVEL).toBe('debug');
       expect(result.value.NOODARA_COOKIE_INSECURE).toBe(true);
+    });
+  });
+
+  describe('NOODARA_TRUST_PROXY (T-1-40)', () => {
+    it('defaults to false', () => {
+      const result = parseEnv(validSource());
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error('expected success');
+      expect(result.value.NOODARA_TRUST_PROXY).toBe(false);
+    });
+
+    it('accepts an explicit "true"', () => {
+      const result = parseEnv(validSource({ NOODARA_TRUST_PROXY: 'true' }));
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error('expected success');
+      expect(result.value.NOODARA_TRUST_PROXY).toBe(true);
+    });
+
+    it('rejects a non-boolean value', () => {
+      const result = parseEnv(validSource({ NOODARA_TRUST_PROXY: 'yes' }));
+
+      expect(result.ok).toBe(false);
     });
   });
 

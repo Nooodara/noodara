@@ -17,8 +17,10 @@ export interface BuildAppDeps {
 // tests can exercise it with `app.inject()`. Only `src/server.ts` puts the app on a socket.
 export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   // Fastify v5 takes a pre-built pino instance via `loggerInstance`, not `logger` (which only
-  // accepts a plain options object or boolean).
-  const app = Fastify({ loggerInstance: deps.logger ?? createLogger() });
+  // accepts a plain options object or boolean). `trustProxy` gates whether Fastify's own
+  // `request.ip` honours `X-Forwarded-For` (T-1-40, D-07) — `false` by default, so the header is
+  // ignored unless `NOODARA_TRUST_PROXY` is explicitly set.
+  const app = Fastify({ loggerInstance: deps.logger ?? createLogger(), trustProxy: env.NOODARA_TRUST_PROXY });
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);

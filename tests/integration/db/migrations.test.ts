@@ -78,10 +78,20 @@ async function fetchSeededSnapshot(db: Database, ids: RepresentativeDataIds) {
     .select()
     .from(schema.setupTokens)
     .where(eq(schema.setupTokens.id, ids.setupTokenId));
-  const [loginAttempt] = await db
-    .select()
-    .from(schema.loginAttempts)
-    .where(eq(schema.loginAttempts.id, ids.loginAttemptId));
+  // Raw SQL restricted to the columns present in the *previous* migration snapshot (0000): this
+  // snapshot is taken both before and after the upgrade step, and `schema.loginAttempts` (the
+  // current code's schema module) includes `lockout_count`, a column migration 0001 adds — that
+  // column does not exist yet when this function is called for the "before" snapshot, so
+  // selecting through the ORM's full column list would fail exactly like the fixture's insert
+  // would (see representative-data.ts's own comment on the same issue).
+  const loginAttemptResult = await db.execute<{
+    id: string;
+    scope: string;
+    scope_key: string;
+    failure_count: number;
+    last_failure_at: string | null;
+  }>(sql`select id, scope, scope_key, failure_count, last_failure_at from login_attempts where id = ${ids.loginAttemptId}`);
+  const loginAttempt = loginAttemptResult.rows[0];
   const [credential] = await db
     .select()
     .from(schema.credentials)
@@ -114,7 +124,7 @@ afterEach(async () => {
 
 describe('migrations applied from scratch (QA-06)', () => {
   it('readJournal returns the ordered list of migration tags', () => {
-    expect(readJournal()).toEqual(['0000_shiny_franklin_storm']);
+    expect(readJournal()).toEqual(['0000_shiny_franklin_storm', '0001_silky_lethal_legion']);
   });
 
   it('applies every migration to an empty database and creates every table and enum', async () => {
@@ -176,6 +186,7 @@ describe('migrations applied from the previous snapshot (QA-06, PITFALLS.md #10)
     // entry; once migration 3/4/5 exist this automatically shifts to journal[journal.length - 2]
     // with no edit to this test required.
     const previousTag = journal[journal.length - 2] ?? journal[0] ?? null;
+    const previousTagIndex = previousTag === null ? -1 : journal.indexOf(previousTag);
 
     await applyMigrationsUpTo(fixture.db, previousTag);
     const ids = await seedRepresentativeData(fixture.db);
@@ -183,19 +194,33 @@ describe('migrations applied from the previous snapshot (QA-06, PITFALLS.md #10)
     const bookkeepingRowsBeforeUpgrade = await countBookkeepingRows(fixture.db);
 
     // The upgrade step: apply whatever comes after `previousTag` via the exact production path
-    // (never a second, divergent code path) — a full no-op re-run when previousTag is already
-    // the latest journal entry, exactly like an in-place upgrade with no pending migrations.
+    // (never a second, divergent code path). This is a genuine, non-trivial upgrade whenever
+    // `previousTag` is not already the latest journal entry (true as soon as a second migration
+    // exists, as Plan 01-13's own migration 0001 now proves) — the earlier phase-1 comment here
+    // describing a "no-op re-run" only ever held true while exactly one migration existed.
     await runMigrations(fixture.db);
 
     const after = await fetchSeededSnapshot(fixture.db, ids);
     const bookkeepingRowsAfterUpgrade = await countBookkeepingRows(fixture.db);
 
     expect(after).toEqual(before);
-    expect(bookkeepingRowsAfterUpgrade).toBe(bookkeepingRowsBeforeUpgrade);
+    // Generic over the journal length: before the upgrade, exactly the migrations up to and
+    // including `previousTag` are recorded; after it, every migration in the journal is.
+    expect(bookkeepingRowsBeforeUpgrade).toBe(previousTagIndex + 1);
+    expect(bookkeepingRowsAfterUpgrade).toBe(journal.length);
 
     // The FK from servers.credential_id to the seeded credential still resolves, and status is
     // unchanged, after the upgrade step (Task 2 acceptance criteria).
     expect(after.server?.credentialId).toBe(ids.credentialId);
     expect(after.server?.status).toBe(before.server?.status);
+
+    // Plan 01-13's migration 0001 adds `lockout_count` to a table that already had rows: a
+    // pre-existing row (seeded before this migration ran) must backfill to the column's default
+    // (0), not NULL — proven directly against the real column, since `before`/`after` above never
+    // reference it (it does not exist yet at the "before" snapshot).
+    const lockoutCountResult = await fixture.db.execute<{ lockout_count: number }>(
+      sql`select lockout_count from login_attempts where id = ${ids.loginAttemptId}`,
+    );
+    expect(lockoutCountResult.rows[0]?.lockout_count).toBe(0);
   });
 });

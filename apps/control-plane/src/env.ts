@@ -31,6 +31,10 @@ export interface Env {
   NOODARA_LOGIN_WINDOW_SECONDS: number;
   NOODARA_LOGIN_BACKOFF_MAX_SECONDS: number;
   NOODARA_COOKIE_INSECURE: boolean;
+  // T-1-40: the per-IP login-lockout counter (Plan 01-13) only honours a forwarded-address header
+  // when this is explicitly enabled — otherwise it is attacker-controlled and would let a
+  // distributed attacker rotate through fake X-Forwarded-For values to dodge the per-IP scope.
+  NOODARA_TRUST_PROXY: boolean;
   PORT: number;
   LOG_LEVEL: string;
 }
@@ -247,6 +251,7 @@ export function parseEnv(source: EnvSource): EnvParseResult {
     false,
     issues,
   );
+  const trustProxy = parseTuningBool('NOODARA_TRUST_PROXY', source.NOODARA_TRUST_PROXY, false, issues);
   const port = parseTuningInt('PORT', source.PORT, 3000, issues);
   const logLevel = parseTuningString(source.LOG_LEVEL, 'info');
 
@@ -274,6 +279,7 @@ export function parseEnv(source: EnvSource): EnvParseResult {
       NOODARA_LOGIN_WINDOW_SECONDS: loginWindowSeconds,
       NOODARA_LOGIN_BACKOFF_MAX_SECONDS: loginBackoffMaxSeconds,
       NOODARA_COOKIE_INSECURE: cookieInsecure,
+      NOODARA_TRUST_PROXY: trustProxy,
       PORT: port,
       LOG_LEVEL: logLevel,
     },
