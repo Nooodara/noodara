@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-13-PLAN.md
-last_updated: "2026-09-12T01:16:43.897Z"
+stopped_at: Completed 01-14-PLAN.md
+last_updated: "2026-09-12T02:42:27.686Z"
 last_activity: 2026-09-12
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 15
-  completed_plans: 13
+  completed_plans: 14
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING
-Plan: 14 of 15
+Plan: 15 of 15
 Status: Ready to execute
 Last activity: 2026-09-12
 
-Progress: [█████████░] 87%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Progress: [█████████░] 87%
 | Phase 01 P11 | 100min | 2 tasks | 6 files |
 | Phase 01 P12 | 68min | 2 tasks | 18 files |
 | Phase 01-dominio-persistencia-y-autenticacion P13 | 60min | 2 tasks | 15 files |
+| Phase 01 P14 | 34min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -112,6 +113,10 @@ Recent decisions affecting current work:
 - [Phase 01]: Reject a locked-out login by throwing a TOO_MANY_REQUESTS APIError from the before-hook, since better-call's dispatch pipeline cannot carry a non-200 status out of a before-hook's returned value
 - [Phase 01]: The per-IP scope key is bridged through an x-noodara-client-ip request header set server-side in routes/auth.ts from Fastify's own request.ip, since the reconstructed Fetch Request a Better Auth hook receives has no socket-level IP of its own
 - [Phase 01]: login_attempts gained a lockout_count column (migration 0001) to persist D-07's doubling schedule across lockouts, since deriving it from existing columns (locked_until/last_failure_at) is unrecoverable once a later window starts overwriting last_failure_at
+- [Phase 01]: bootstrap-admin.ts derives the boot-time setup token deterministically (HMAC-SHA256 of the token row's own id, keyed by BETTER_AUTH_SECRET) instead of the shared issueToken()'s random generator, since D-01 requires reprinting the identical token on every boot while only its hash is ever persisted
+- [Phase 01]: redeemRecoveryToken lives in setup-service.ts rather than inline in routes/setup.ts, preserving ARCHITECTURE.md's invariant that only application services write activity events
+- [Phase 01]: noodara secrets rotate picks its target key_version by probing whether any row already decrypts under the new key at the current max version, not a blind max+1, so a second consecutive run with the same key pair is a safe no-op
+- [Phase 01]: commander@15.0.0 adopted for the noodara CLI over citty (docs/adr/0002-cli-library.md); the CLI is spawned via tsx rather than plain node since packages/domain's package.json exports point directly at .ts sources
 
 ### Pending Todos
 
@@ -136,6 +141,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-12T01:16:43.891Z
-Stopped at: Completed 01-13-PLAN.md
+Last session: 2026-09-12T02:42:27.680Z
+Stopped at: Completed 01-14-PLAN.md
 Resume file: None
