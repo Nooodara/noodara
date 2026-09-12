@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Los intentos de login fallidos están limitados por tasa (IP y cuenta) y se registran en el activity log sin incluir el password.
   5. Las credenciales SSH se cifran con AES-256-GCM (nonce único por operación, metadato de versión de clave por fila) antes de persistirse, con test de roundtrip que falla ante tamper en ciphertext o tag; `packages/domain` alcanza ≥95% statement/branch coverage en validadores y en la state machine de 6 estados (transiciones centralizadas y validadas); las migraciones aplican limpio desde cero y desde el snapshot de la versión anterior; CI bloquea el merge si falla lint, typecheck, unit, integration ligera, gitleaks o `pnpm audit`.
 
-**Plans**: 15 plans in 8 waves
+**Plans**: 17 plans in 10 waves
 
 Plans:
 **Wave 1**
@@ -76,6 +76,14 @@ Plans:
 **Wave 8** *(blocked on Wave 7 completion)*
 
 - [x] 01-15-PLAN.md — CI pipeline with the six QA-01 gates and the completed validation contract
+
+**Wave 9** *(gap closure — 01-VERIFICATION.md BLOCKER: the control plane does not boot through any documented command)*
+
+- [ ] 01-16-PLAN.md — Real boot path: packages/domain built to dist, `tsx watch` dev, plain-node `start`, child-process boot smoke test
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
+- [ ] 01-17-PLAN.md — boot-smoke CI gate, ADR 0003 runtime/module-resolution contract, closed validation map
 
 **Cross-cutting constraints:**
 
