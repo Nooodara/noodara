@@ -15,7 +15,8 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "echo 'test:e2e: Playwright E2E suite lands in phase 5' && exit 0",
     "db:migrate": "pnpm --filter @noodara/control-plane db:migrate",
-    "boundaries": "turbo boundaries"
+    "boundaries": "turbo boundaries",
+    "security:scan-leaks": "vitest run --config vitest.integration.config.ts tests/integration/activity/canary.test.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

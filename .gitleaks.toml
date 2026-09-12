@@ -1,0 +1,20 @@
+title = "noodara gitleaks configuration"
+
+# Extends gitleaks' built-in default ruleset (https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml)
+# rather than replacing it, so new upstream detection rules keep applying automatically.
+[extend]
+useDefault = true
+
+# Path-scoped allowlist ONLY (per QA-01 / 01-CONTEXT.md discretion and T-1-50 mitigation):
+# every entry below is an exact file path, never a broad regex or keyword, so a real secret
+# committed anywhere else in the tree still fails the scan. Each path here is a test fixture or
+# a Vitest-only fail-fast env stub, never a value that reaches a real database, Redis instance
+# or auth boundary (see the "apps" Vitest project comment in vitest.config.ts).
+[[allowlists]]
+description = "Deliberately fake credential material used only to satisfy fail-fast env validation and redaction/CLI test fixtures — never real secrets."
+condition = "OR"
+paths = [
+  '''^vitest\.config\.ts$''',
+  '''^tests/integration/cli/admin-reset\.test\.ts$''',
+  '''^packages/domain/src/security/redactor\.test\.ts$''',
+]

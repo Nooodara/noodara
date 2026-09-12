@@ -1,0 +1,161 @@
+name: CI
+
+# QA-01: every pull request runs lint, typecheck, unit, light integration, gitleaks and
+# `pnpm audit`, and a failure in any of them blocks the merge. Every job below calls the exact
+# same pnpm script a developer runs locally (see CLAUDE.md §3.2) rather than a parallel
+# CI-only invocation that could drift from what's actually enforced pre-commit.
+#
+# NOTE (repo layout): this workflow assumes `noodara/code` IS the repository root — there is
+# no `working-directory` indirection anywhere below. The monorepo currently lives nested under
+# a personal workspace and has not been pushed anywhere yet; when it is pushed, this directory
+# becomes the root of its own git repository, matching every path used here.
+#
+# Full E2E (Playwright) intentionally has no job here: it ships in phase 5. A job with nothing
+# to run would always pass and give false confidence, which is worse than no job at all.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Vitest 5 requires Node >=22.12; this is the Node 22 LTS line pinned in .nvmrc/engines.
+  NODE_VERSION: '22'
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
+  boundaries:
+    name: boundaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Enforces the Turborepo import rule keeping packages/domain pure (zero I/O), so the
+      # boundary can't erode silently once it's only checked by habit locally (T-1-52).
+      - run: pnpm boundaries
+
+  unit:
+    name: unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # `pnpm test --coverage` (NOT `pnpm test -- --coverage`, which pnpm forwards to Vitest
+      # as a literal `-- --coverage` positional filter and silently skips coverage). The
+      # `packages/domain` glob threshold (>=95% statements/branches) in vitest.config.ts is
+      # what actually enforces QA-02 here — a PR that erodes it fails this job.
+      - run: pnpm test --coverage
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+
+  integration:
+    name: integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # ubuntu-latest ships a working Docker daemon, so Testcontainers spins up real
+      # PostgreSQL (and, from later phases, Redis) rather than a mocked substitute.
+      - run: pnpm test:integration
+      - name: Fail if any noodara.test container survived
+        if: always()
+        run: |
+          stray=$(docker ps -aq --filter "label=noodara.test=true")
+          if [ -n "$stray" ]; then
+            echo "::error::stray containers labelled noodara.test=true survived the integration run"
+            docker ps -a --filter "label=noodara.test=true"
+            exit 1
+          fi
+          echo "no stray noodara.test=true containers"
+
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Full history so gitleaks can scan every commit, not just the checked-out tip.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # T-1-51: fails the merge on any high-or-critical advisory; --frozen-lockfile above
+      # already stops CI from silently resolving a different dependency tree than the lockfile.
+      - run: pnpm audit --audit-level=high
+      # This phase's canary subset of the noodara-security §9 flow-driven leak scan: proves a
+      # runtime secret doesn't survive the logger, an HTTP error body or the activity log.
+      # Expands with the full connect/deploy/AI-query flow in SEC-02 (phase 3) and QA-05 (phase 5).
+      - run: pnpm security:scan-leaks
+      # T-1-50: gitleaks against the pull-request diff (or the push event's new commits) with
+      # a path-scoped allowlist only (.gitleaks.toml) — never a broad regex that could hide a
+      # real key. GITLEAKS_LICENSE is only required for private organization-owned repos; it is
+      # a no-op for a public or personal-account repo and safe to leave unset.
+      - name: gitleaks (diff / pushed commits)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+      # A wider, whole-tree scan is only affordable on push-to-main (no PR-diff time pressure)
+      # and exists specifically so a narrow, path-scoped allowlist can't quietly widen over time
+      # without anyone noticing a real secret slipping through elsewhere in the tree.
+      - name: gitleaks (full tree, main only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks detect --source . --config .gitleaks.toml --redact
+
+  # No `e2e` job on purpose: Playwright arrives in phase 5. A job with nothing to run would
+  # always pass and would be worse than no job at all.
