@@ -7,8 +7,10 @@ import '../env.js';
 import { Command } from 'commander';
 import { appRedactor } from '../activity/redaction.js';
 import { getDb } from '../db/client.js';
+import { env } from '../env.js';
 import { createLogger } from '../logger.js';
 import { adminResetCommand } from './admin-reset.js';
+import { secretsRotateCommand } from './secrets-rotate.js';
 
 /** Never echoes a raw error's message verbatim: routes it through the shared app redactor first,
  *  so a `postgres://user:pass@host` connection string embedded in a driver error can never reach
@@ -45,8 +47,32 @@ adminCommand
     }
   });
 
-// `secrets rotate` is registered here too, in `secretsRotateCommand`'s own plan (Task 3).
-program.command('secrets').description('Master-key secret operations');
+const secretsCommand = program.command('secrets').description('Master-key secret operations');
+secretsCommand
+  .command('rotate')
+  .description('Re-encrypt every credential row under the new master key (D-11)')
+  .action(async () => {
+    try {
+      const db = await getDb();
+      const logger = createLogger();
+      const exitCode = await secretsRotateCommand({
+        db,
+        env,
+        logger: {
+          error: (msg: string) => {
+            logger.error(msg);
+          },
+          info: (msg: string) => {
+            logger.info(msg);
+          },
+        },
+      });
+      process.exitCode = exitCode;
+    } catch (err) {
+      printCliError('secrets rotate', err);
+      process.exitCode = 1;
+    }
+  });
 
 const isMainModule = process.argv[1] !== undefined && import.meta.url === `file://${process.argv[1]}`;
 if (isMainModule) {
