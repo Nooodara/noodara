@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 01-15-PLAN.md
-last_updated: "2026-09-12T03:22:22.244Z"
+status: executing
+stopped_at: Completed 01-16-PLAN.md
+last_updated: "2026-09-12T05:43:14.228Z"
 last_activity: 2026-09-12
 progress:
   total_phases: 6
-  completed_phases: 1
-  total_plans: 15
-  completed_plans: 15
-  percent: 17
+  completed_phases: 0
+  total_plans: 17
+  completed_plans: 16
+  percent: 0
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 ## Current Position
 
-Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING
-Plan: 15 of 15
-Status: Phase complete — ready for verification
+Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING (gap closure)
+Plan: 16 of 17 (01-16 gap-closure plan complete; 01-17 gap-closure plan remains)
+Status: Gap closure in progress — 01-VERIFICATION.md's BLOCKER (real boot path) resolved by 01-16
 Last activity: 2026-09-12
 
-Progress: [██████████] 100%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
@@ -67,6 +67,7 @@ Progress: [██████████] 100%
 | Phase 01-dominio-persistencia-y-autenticacion P13 | 60min | 2 tasks | 15 files |
 | Phase 01 P14 | 34min | 3 tasks | 13 files |
 | Phase 01 P15 | 45min | 2 tasks | 4 files |
+| Phase 01 P16 | 38min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,8 @@ Recent decisions affecting current work:
 - [Phase 01]: commander@15.0.0 adopted for the noodara CLI over citty (docs/adr/0002-cli-library.md); the CLI is spawned via tsx rather than plain node since packages/domain's package.json exports point directly at .ts sources
 - [Phase 01]: CI's unit job uses pnpm test --coverage, not pnpm test -- --coverage — the double-dash form silently disables coverage because pnpm forwards it to Vitest as a positional filter
 - [Phase 01]: gitleaks allowlist path-scoped to vitest.config.ts, tests/integration/cli/admin-reset.test.ts and packages/domain/src/security/redactor.test.ts (verified against real git history), not the plan's guessed tests/integration/fixtures/ / .env.example
+- [Phase 01]: packages/domain gets a real tsc build with exports pointing at dist/*.js+.d.ts; apps/control-plane's dev moves to tsx watch and gains a plain-node start script — Production-path-weighted fix for 01-VERIFICATION.md's BLOCKER (ERR_MODULE_NOT_FOUND under plain node)
+- [Phase 01]: turbo.json's dev task requires an explicit passThroughEnv allowlist naming every env.ts variable — Turborepo 2's default strict env mode silently strips undeclared environment variables before spawning a task; the literal root pnpm dev crashed INST-06 fail-fast even with a fully valid environment until this was added
 
 ### Pending Todos
 
@@ -144,6 +147,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-12T03:22:22.235Z
-Stopped at: Completed 01-15-PLAN.md
+Last session: 2026-09-12T05:39:30.469Z
+Stopped at: Completed 01-16-PLAN.md
 Resume file: None

@@ -79,7 +79,7 @@ Plans:
 
 **Wave 9** *(gap closure — 01-VERIFICATION.md BLOCKER: the control plane does not boot through any documented command)*
 
-- [ ] 01-16-PLAN.md — Real boot path: packages/domain built to dist, `tsx watch` dev, plain-node `start`, child-process boot smoke test
+- [x] 01-16-PLAN.md — Real boot path: packages/domain built to dist, `tsx watch` dev, plain-node `start`, child-process boot smoke test
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
@@ -170,7 +170,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Dominio, persistencia y autenticación | 15/15 | Complete   | 2026-09-12 |
+| 1. Dominio, persistencia y autenticación | 16/17 | In Progress|  |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 0/TBD | Not started | - |
 | 3. Servicios de aplicación, activity log y redacción | 0/TBD | Not started | - |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |
