@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-14-PLAN.md
-last_updated: "2026-09-12T02:42:27.686Z"
+status: verifying
+stopped_at: Completed 01-15-PLAN.md
+last_updated: "2026-09-12T03:22:22.244Z"
 last_activity: 2026-09-12
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 15
-  completed_plans: 14
-  percent: 0
+  completed_plans: 15
+  percent: 17
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING
 Plan: 15 of 15
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-12
 
-Progress: [█████████░] 93%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Progress: [█████████░] 93%
 | Phase 01 P12 | 68min | 2 tasks | 18 files |
 | Phase 01-dominio-persistencia-y-autenticacion P13 | 60min | 2 tasks | 15 files |
 | Phase 01 P14 | 34min | 3 tasks | 13 files |
+| Phase 01 P15 | 45min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,8 @@ Recent decisions affecting current work:
 - [Phase 01]: redeemRecoveryToken lives in setup-service.ts rather than inline in routes/setup.ts, preserving ARCHITECTURE.md's invariant that only application services write activity events
 - [Phase 01]: noodara secrets rotate picks its target key_version by probing whether any row already decrypts under the new key at the current max version, not a blind max+1, so a second consecutive run with the same key pair is a safe no-op
 - [Phase 01]: commander@15.0.0 adopted for the noodara CLI over citty (docs/adr/0002-cli-library.md); the CLI is spawned via tsx rather than plain node since packages/domain's package.json exports point directly at .ts sources
+- [Phase 01]: CI's unit job uses pnpm test --coverage, not pnpm test -- --coverage — the double-dash form silently disables coverage because pnpm forwards it to Vitest as a positional filter
+- [Phase 01]: gitleaks allowlist path-scoped to vitest.config.ts, tests/integration/cli/admin-reset.test.ts and packages/domain/src/security/redactor.test.ts (verified against real git history), not the plan's guessed tests/integration/fixtures/ / .env.example
 
 ### Pending Todos
 
@@ -141,6 +144,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-12T02:42:27.680Z
-Stopped at: Completed 01-14-PLAN.md
+Last session: 2026-09-12T03:22:22.235Z
+Stopped at: Completed 01-15-PLAN.md
 Resume file: None

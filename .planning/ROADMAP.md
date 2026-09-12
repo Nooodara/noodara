@@ -13,7 +13,7 @@ Noodara v0.1 Foundation prueba el core value del producto — conocer, registrar
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Dominio, persistencia y autenticación** - Base de datos migrada, dominio ≥95% cubierto y un admin único que inicia/cierra sesión de forma segura.
+- [x] **Phase 1: Dominio, persistencia y autenticación** - Base de datos migrada, dominio ≥95% cubierto y un admin único que inicia/cierra sesión de forma segura. (completed 2026-09-12)
 - [ ] **Phase 2: Adaptador SSH aislado y probado con Testcontainers** - Conexión SSH con TOFU, timeouts, allowlist de comandos y discovery, validado contra un `sshd` real.
 - [ ] **Phase 3: Servicios de aplicación, activity log y redacción** - Registrar/editar/eliminar servidores, snapshots de discovery y un activity log sin fugas de secrets.
 - [ ] **Phase 4: HTTP routes, worker BullMQ y SSE** - La API expone connect/discover en background y el estado llega a tiempo real sin polling.
@@ -75,7 +75,7 @@ Plans:
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 01-15-PLAN.md — CI pipeline with the six QA-01 gates and the completed validation contract
+- [x] 01-15-PLAN.md — CI pipeline with the six QA-01 gates and the completed validation contract
 
 **Cross-cutting constraints:**
 
@@ -162,7 +162,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Dominio, persistencia y autenticación | 14/15 | In Progress|  |
+| 1. Dominio, persistencia y autenticación | 15/15 | Complete   | 2026-09-12 |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 0/TBD | Not started | - |
 | 3. Servicios de aplicación, activity log y redacción | 0/TBD | Not started | - |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |
