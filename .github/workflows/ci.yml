@@ -157,5 +157,50 @@ jobs:
             | tar -xz -C /usr/local/bin gitleaks
           gitleaks detect --source . --config .gitleaks.toml --redact
 
+  # boot-smoke is its own job (not folded into `integration`) because it gates the one defect
+  # that survived all 33 tasks of phase 1: `pnpm dev` and `node dist/server.js` both failed with
+  # `ERR_MODULE_NOT_FOUND` before INST-06's fail-fast validation could even run, and every other
+  # "boot" proof in the phase went through Vitest's own module transform or `tsx`, never the
+  # real committed command (01-VERIFICATION.md's BLOCKER, closed in Plan 01-16). This job runs
+  # the real `pnpm build` then `pnpm test:boot`, so a resolution or task-graph regression fails
+  # a named, red step instead of hiding inside a green integration run.
+  #
+  # `pnpm build` is kept as its own explicit step even though `tests/integration/global-setup.ts`
+  # also builds the workspace: a build failure must surface as its own red step rather than as an
+  # opaque global-setup crash, and this gate must never pass against a stale `dist`. On a cold
+  # runner this build is the job's dominant cost; locally turbo caches it, so repeat local runs of
+  # `pnpm test:boot` are fast.
+  #
+  # `tests/integration/boot/boot-command.test.ts`'s fourth case deliberately deletes both
+  # `packages/domain/dist` and `apps/control-plane/dist` and then spawns the literal root
+  # `pnpm dev`, proving turbo's `dev` -> `^build` edge holds on a genuinely clean tree; it rebuilds
+  # in its own `afterAll`. That is why this job's `pnpm build` step is not redundant with the test
+  # suite, and why removing it would not make the job meaningfully faster. Do not add a
+  # `--filter`, a `--force`, or any cache-disabling flag here to work around that test, and do not
+  # reorder these steps.
+  boot-smoke:
+    name: boot-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test:boot
+      - name: Fail if any noodara.test container survived
+        if: always()
+        run: |
+          stray=$(docker ps -aq --filter "label=noodara.test=true")
+          if [ -n "$stray" ]; then
+            echo "::error::stray containers labelled noodara.test=true survived the boot-smoke run"
+            docker ps -a --filter "label=noodara.test=true"
+            exit 1
+          fi
+          echo "no stray noodara.test=true containers"
+
   # No `e2e` job on purpose: Playwright arrives in phase 5. A job with nothing to run would
   # always pass and would be worse than no job at all.
