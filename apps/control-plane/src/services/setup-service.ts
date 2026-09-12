@@ -10,14 +10,15 @@
 // second redemption can pass its own lock acquisition until the winning request's outer
 // transaction (which holds the lock for its full duration) commits or rolls back — so the
 // exactly-one-admin race guarantee (T-1-34) holds regardless of which pool created the user row.
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { hashSetupToken, isTokenUsable } from '@noodara/domain/security';
 import { validateEmail, validatePassword } from '@noodara/domain/validators';
 import { auth } from '../auth/auth.js';
 import { runInBootstrap } from '../auth/bootstrap-context.js';
+import { hashPassword } from '../auth/password-hasher.js';
 import { writeActivityEvent, type ActivityWriteHandle } from '../activity/write-activity-event.js';
 import { getDb } from '../db/client.js';
-import { users } from '../db/schema/auth.js';
+import { accounts, sessions, users } from '../db/schema/auth.js';
 import { findUsableByHash, markUsed } from './setup-token-repository.js';
 
 // Fixed, arbitrary application-wide advisory-lock key (Postgres `bigint` key space; any constant
@@ -121,5 +122,75 @@ export async function redeemSetupToken(input: RedeemSetupTokenInput): Promise<Re
     );
 
     return { ok: true, userId: signUpResult.user.id };
+  });
+}
+
+export type RedeemRecoveryTokenResult =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly code: RedeemSetupTokenFailureCode; readonly message: string };
+
+export interface RedeemRecoveryTokenInput {
+  readonly token: string;
+  readonly newPassword: string;
+  readonly now?: Date;
+}
+
+/**
+ * D-03: redeems a `recovery`-purpose token — verified by hash *and* purpose, so a `setup` token
+ * can never be replayed here and vice versa. Sets a new password for the sole admin directly on
+ * `accounts` (Better Auth's own API has no server-side "set password without a session" call, and
+ * this project's single-admin invariant makes "the sole admin" an unambiguous target), revokes
+ * every one of that admin's sessions, marks the token used, and writes `auth.password_reset` —
+ * all in one transaction, none of it naming the token or either password in its metadata.
+ */
+export async function redeemRecoveryToken(input: RedeemRecoveryTokenInput): Promise<RedeemRecoveryTokenResult> {
+  const now = input.now ?? new Date();
+  const db = await getDb();
+
+  return db.transaction(async (tx) => {
+    const tokenHash = hashSetupToken(input.token);
+    const row = await findUsableByHash(tx, tokenHash, 'recovery');
+    if (!row) {
+      return { ok: false, code: 'TOKEN_INVALID', message: 'Invalid or unknown recovery token' };
+    }
+
+    const usability = isTokenUsable(row, now);
+    if (!usability.usable) {
+      return {
+        ok: false,
+        code: usability.reason,
+        message: usability.reason === 'ALREADY_USED' ? 'Recovery token was already used' : 'Recovery token has expired',
+      };
+    }
+
+    const passwordResult = validatePassword(input.newPassword);
+    if (!passwordResult.ok) {
+      return { ok: false, code: passwordResult.code, message: passwordResult.message };
+    }
+
+    const [admin] = await tx.select({ id: users.id }).from(users).limit(1);
+    if (!admin) {
+      return { ok: false, code: 'ADMIN_MISSING', message: 'No admin exists to reset' };
+    }
+
+    const passwordHash = await hashPassword(passwordResult.value);
+    await tx.update(accounts).set({ password: passwordHash }).where(eq(accounts.userId, admin.id));
+    await tx.delete(sessions).where(eq(sessions.userId, admin.id));
+    await markUsed(tx, row.id, now);
+    await writeActivityEvent(
+      tx,
+      {
+        actorType: 'system',
+        actorId: admin.id,
+        entityType: 'user',
+        entityId: admin.id,
+        action: 'auth.password_reset',
+        outcome: 'success',
+        metadata: {},
+      },
+      now,
+    );
+
+    return { ok: true };
   });
 }
