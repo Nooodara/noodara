@@ -102,7 +102,42 @@ Plans:
   4. `runDiscovery` recolecta hostname, distribución, versión de OS, arquitectura, CPU, RAM, disco, uptime y Docker+versión mediante plantillas de comando fijas (nunca interpoladas con input del usuario) sobre una sola conexión reutilizada; un OS no soportado se marca `UNSUPPORTED_OS` sin bloquear el resto de los datos ya recolectados.
   5. La suite de integración con Testcontainers cubre, para ambas versiones de Ubuntu, conexión exitosa, credenciales inválidas, host inválido, timeout de red, timeout de comando, pérdida de conexión, reconexión y ejecución segura de comandos, limpiando sus recursos después de cada escenario; el stdout/stderr capturado pasa por el redactor antes de persistirse o mostrarse.
 
-**Plans**: TBD
+**Plans**: 10 plans in 6 waves
+
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — packages/ssh scaffold, the SshPort/discovery type contracts and the frozen command allowlist
+- [ ] 02-02-PLAN.md — Project-owned Ubuntu 22.04/24.04 sshd images and the Testcontainers helper
+- [ ] 02-03-PLAN.md — Migration 0002 fingerprint timestamps, its from-snapshot proof, and the three SSH timeout env knobs
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-04-PLAN.md — Empirical spikes for the three RESEARCH open questions, real discovery fixtures and ADR 0004
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-05-PLAN.md — Pure discovery parsers against real captures, plus D-11's UNSUPPORTED_OS remapping
+- [ ] 02-06-PLAN.md — Private key loading policy, fingerprint derivation and the TOFU verifier with no bypass
+- [ ] 02-07-PLAN.md — Exhaustive ssh2 error classification and the per-command timeout/redaction/truncation wrapper
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 02-08-PLAN.md — Ssh2Adapter implementing SshPort, the D-10 single retry and the per-server connection mutex
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 02-09-PLAN.md — runDiscovery orchestration, partial-failure warnings and the public @noodara/ssh surface
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 02-10-PLAN.md — QA-03: all eight roadmap §6.5 scenarios against real sshd containers on both Ubuntu versions
+
+**Cross-cutting constraints:**
+
+- packages/domain statement and branch coverage stays at or above 95% (QA-02)
+- `ssh2` is importable only from `packages/ssh`, enforced by Turborepo boundaries and a static guard test
+- Every scenario destroys its containers; no `noodara.test=true` resource survives a run
 
 ### Phase 3: Servicios de aplicación, activity log y redacción
 

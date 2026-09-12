@@ -430,7 +430,9 @@ for (const cmd of Object.values(DISCOVERY_COMMANDS)) {
 
 **If this table is empty:** N/A — five assumptions require Wave 0 empirical verification before the corresponding implementation tasks are considered safe to build on.
 
-## Open Questions
+## Open Questions (DEFERRED TO 02-04 / ADR 0004)
+
+Resolution of all three questions below is deferred by design to plan 02-04 (Wave 0 empirical spikes) and recorded in `docs/adr/0004-ssh-adapter-empirical-contracts.md`; no implementation plan in this phase may assume an answer before that ADR exists.
 
 1. **Does `ssh2`'s `hostVerifier` fire with the raw key Buffer when `hostHash` is omitted, and does `utils.parseKey` accept that same raw Buffer to extract `.type`?**
    - What we know: Context7's docs confirm `hostHash: 'sha256'` pre-hashes the argument passed to `hostVerifier`; the README states "otherwise it is the raw host key in Buffer form" when `hostHash` is unset.
