@@ -207,10 +207,11 @@ describe('isLockedOut', () => {
   });
 
   it('no state is permanent: some future now always resolves to unlocked', () => {
-    const state = freshState({ lockedUntil: new Date('2026-01-02T00:00:00.000Z'), lockoutCount: 999 });
+    const lockedUntil = new Date('2026-01-02T00:00:00.000Z');
+    const state = freshState({ lockedUntil, lockoutCount: 999 });
     // lockoutDurationSeconds caps at 86400s regardless of lockoutCount, so lockedUntil is always
     // finite — evaluating at exactly that instant is always enough to prove it is not permanent.
-    expect(isLockedOut(state, state.lockedUntil as Date)).toEqual({ locked: false });
+    expect(isLockedOut(state, lockedUntil)).toEqual({ locked: false });
   });
 });
 
