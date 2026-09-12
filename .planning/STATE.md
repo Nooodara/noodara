@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: ready_to_plan
-stopped_at: Phase 1 complete (17/17) — ready to discuss Phase 2
-last_updated: 2026-09-12T06:29:27.468Z
+status: planning
+stopped_at: Phase 2 context gathered
+last_updated: "2026-09-12T08:14:56.294Z"
 last_activity: 2026-09-12
 progress:
   total_phases: 6
@@ -150,6 +150,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-12T06:12:14.079Z
-Stopped at: Completed 01-17-PLAN.md
-Resume file: None
+Last session: 2026-09-12T08:14:56.283Z
+Stopped at: Phase 2 context gathered
+Resume file: .planning/phases/02-adaptador-ssh-aislado-y-probado-con-testcontainers/02-CONTEXT.md
