@@ -14,14 +14,18 @@ Noodara puede conocer, registrar y comunicarse con infraestructura real de forma
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Control plane con PostgreSQL, migraciones versionadas (0000, 0001), autenticación local de un admin y gestión de sesión (Better Auth, argon2id, cookies HttpOnly/Secure/Lax, sesión 7d deslizante con tope 30d, revocación) — Fase 1 (2026-09-12)
+- ✓ Primer admin solo con setup token de un solo uso (24 h, 404 tras existir admin, carrera de 10 intentos → 1 usuario) y pre-seed por env vars; recovery por CLI `noodara admin reset` — Fase 1
+- ✓ Lockout progresivo por IP y cuenta (5/15 min, backoff hasta 24 h) con activity log sin password — Fase 1
+- ✓ State machine de Server con 6 estados y transiciones D-13/D-14/D-15, validadores y política de password en `packages/domain` al 100% de cobertura — Fase 1
+- ✓ Cifrado AES-256-GCM con `key_version` y rotación `noodara secrets rotate`; arranque fail-fast sin secrets por defecto — Fase 1
+- ✓ CI con 7 puertas (lint, typecheck, boundaries, unit+coverage, integration, security, boot-smoke); arranque real por `pnpm dev` y `pnpm start` probado — Fase 1
 
 ### Active
 
 Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.1-v0.5.md](../docs/roadmap-v0.1-v0.5.md), sección 6).
 
 - [ ] Instalación de Noodara en un VPS Ubuntu con un solo comando, al nivel de simplicidad de Coolify y Dokploy.
-- [ ] Control plane con PostgreSQL, migraciones versionadas, autenticación local de un usuario admin y gestión de sesión.
 - [ ] Registrar, editar y eliminar servidores con host, puerto SSH y usuario SSH configurables, y credencial (clave o password) cifrada at-rest.
 - [ ] Probar conectividad y reflejar el estado real del servidor: PENDING, CONNECTING, CONNECTED, DISCONNECTED, UNREACHABLE, ERROR.
 - [ ] Discovery del servidor: hostname, distribución, versión de OS, arquitectura, CPU, RAM, disco, uptime, Docker instalado y su versión.
@@ -32,7 +36,6 @@ Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.
 - [ ] Soporte comprobado para Ubuntu 22.04 LTS y 24.04 LTS.
 - [ ] Suite de calidad: unit ≥95% en core-domain, integration con infraestructura temporal (Testcontainers) para los escenarios SSH del roadmap, E2E del flujo connect-server, CI verde.
 - [ ] UI conforme al design system Apple-inspired de Noodara (dark y light), con el flujo login → Servers → add server → connect → discovery → detail.
-- [ ] Primer admin creado solo con un setup token de un solo uso impreso por el instalador (cierra el fallo "el primero que entra es admin" de Coolify/Dokploy); pre-seed opcional por variables de entorno.
 - [ ] Usuario SSH no-root con sudo sin password soportado, con validación de sudo y grupo docker durante el discovery.
 - [ ] Discovery mostrado paso a paso con pass/fail por check en la UI.
 
@@ -75,7 +78,8 @@ Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.
 | v0.1 opera por SSH desde el control plane, sin agent | Reduce superficie y complejidad; el roadmap no exige agent para conectar y descubrir | — Pending |
 | Stack abierto lo decide research | Evita fijar librerías con datos desactualizados; el usuario aprueba en la revisión de requisitos | — Pending |
 | Licencia Apache-2.0 | Alineada con Coolify/Dokploy, incluye grant de patentes, protege contribuidores | — Pending (LICENSE commiteado; MIT sigue siendo opción) |
-| Stack v0.1: pnpm + Turborepo, Fastify 5, Drizzle, BullMQ, ssh2, pino, Zod 4, TypeScript 6.0, Node 22 LTS | Research 2026-09-10: TS 7 bloqueado por typescript-eslint; Redis ya fijado hace a BullMQ la opción natural; Drizzle es el precedente de Dokploy | — Pending |
+| Stack v0.1: pnpm + Turborepo, Fastify 5, Drizzle, BullMQ, ssh2, pino, Zod 4, TypeScript 6.0, Node 22 LTS | Research 2026-09-10: TS 7 bloqueado por typescript-eslint; Redis ya fijado hace a BullMQ la opción natural; Drizzle es el precedente de Dokploy | ✓ Good (Fase 1) |
+| Runtime: `packages/domain` compilado a `dist` con exports a `dist`, tests con alias a `src`, `tsx` para dev y CLI, node puro para `start` (ADR 0003) | Gap de la fase 1: Node no remapea `.js`→`.ts` y el paquete exportaba fuentes | ✓ Good (Fase 1) |
 | Auth con Better Auth (email/password + Drizzle adapter) | Sucesor de Lucia, menos código propio que auditar; lo usa Dokploy. Aprobado por el usuario | — Pending |
 | UI web con Next.js 16 App Router como cliente delgado de la API Fastify | Madurez y ecosistema; revisar TanStack Start en v0.2 si crece la superficie en tiempo real. Aprobado por el usuario | — Pending |
 | Clave SSH por defecto, password como fallback documentado | Cumple el roadmap; ambos competidores priorizan clave. Aprobado por el usuario | — Pending |
@@ -102,4 +106,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-10 after initialization*
+*Last updated: 2026-09-12 after Phase 1 completion*
