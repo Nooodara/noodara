@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-16-PLAN.md
-last_updated: "2026-09-12T05:43:14.228Z"
+stopped_at: Completed 01-17-PLAN.md
+last_updated: "2026-09-12T06:12:14.086Z"
 last_activity: 2026-09-12
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 17
-  completed_plans: 16
-  percent: 0
+  completed_plans: 17
+  percent: 17
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 1 (Dominio, persistencia y autenticación) — EXECUTING (gap closure)
-Plan: 16 of 17 (01-16 gap-closure plan complete; 01-17 gap-closure plan remains)
-Status: Gap closure in progress — 01-VERIFICATION.md's BLOCKER (real boot path) resolved by 01-16
+Plan: 17 of 17 (01-16 gap-closure plan complete; 01-17 gap-closure plan remains)
+Status: Ready to execute
 Last activity: 2026-09-12
 
-Progress: [█████████░] 94%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Progress: [█████████░] 94%
 | Phase 01 P14 | 34min | 3 tasks | 13 files |
 | Phase 01 P15 | 45min | 2 tasks | 4 files |
 | Phase 01 P16 | 38min | 3 tasks | 13 files |
+| Phase 01 P17 | 22min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -123,6 +124,8 @@ Recent decisions affecting current work:
 - [Phase 01]: gitleaks allowlist path-scoped to vitest.config.ts, tests/integration/cli/admin-reset.test.ts and packages/domain/src/security/redactor.test.ts (verified against real git history), not the plan's guessed tests/integration/fixtures/ / .env.example
 - [Phase 01]: packages/domain gets a real tsc build with exports pointing at dist/*.js+.d.ts; apps/control-plane's dev moves to tsx watch and gains a plain-node start script — Production-path-weighted fix for 01-VERIFICATION.md's BLOCKER (ERR_MODULE_NOT_FOUND under plain node)
 - [Phase 01]: turbo.json's dev task requires an explicit passThroughEnv allowlist naming every env.ts variable — Turborepo 2's default strict env mode silently strips undeclared environment variables before spawning a task; the literal root pnpm dev crashed INST-06 fail-fast even with a fully valid environment until this was added
+- [Phase 01]: boot-smoke CI job keeps an explicit pnpm build step even though global-setup.ts also builds, so a build failure surfaces as its own red step, not an opaque test-harness crash
+- [Phase 01]: ADR 0003 records the tsc-build/tsx-dev/plain-node-start runtime contract as Accepted, closing 01-VERIFICATION.md's BLOCKER for future phases
 
 ### Pending Todos
 
@@ -147,6 +150,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-12T05:39:30.469Z
-Stopped at: Completed 01-16-PLAN.md
+Last session: 2026-09-12T06:12:14.079Z
+Stopped at: Completed 01-17-PLAN.md
 Resume file: None
