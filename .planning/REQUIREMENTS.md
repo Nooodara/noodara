@@ -34,7 +34,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **SERV-04**: El admin ve la lista de servidores con nombre, host, status pill y last seen.
 - [x] **SERV-05**: Cada servidor tiene un estado explícito PENDING, CONNECTING, CONNECTED, DISCONNECTED, UNREACHABLE o ERROR, con transiciones centralizadas y validadas en el dominio.
 - [ ] **SERV-06**: El admin dispara "Connect" explícitamente; la conexión corre en el worker en segundo plano y el estado se refleja en la UI en tiempo real vía SSE sin recargar.
-- [ ] **SERV-07**: Un fallo de conexión produce un `error_code` específico (AUTH_FAILED, HOST_UNRESOLVED, CONNECT_TIMEOUT, COMMAND_TIMEOUT, HOST_KEY_CHANGED, CONNECTION_LOST, UNSUPPORTED_OS) con mensaje accionable; la API nunca cae.
+- [x] **SERV-07**: Un fallo de conexión produce un `error_code` específico (AUTH_FAILED, HOST_UNRESOLVED, CONNECT_TIMEOUT, COMMAND_TIMEOUT, HOST_KEY_CHANGED, CONNECTION_LOST, UNSUPPORTED_OS) con mensaje accionable; la API nunca cae.
 - [ ] **SERV-08**: Un usuario SSH no-root con sudo sin password es soportado; la validación comprueba `sudo -n` y pertenencia al grupo docker y reporta cada check.
 
 ### Security
@@ -42,7 +42,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **SEC-01**: Las credenciales SSH se cifran at-rest con AES-256-GCM, nonce único por operación y metadato de versión de clave por fila, listo para rotación.
 - [ ] **SEC-02**: Ninguna credencial aparece en respuestas API, logs, mensajes de error, activity log ni telemetría; la redacción es por tipo (branded types) y un test con valores canary lo verifica en todas las salidas.
 - [ ] **SEC-03**: El host fingerprint se fija en la primera conexión exitosa (TOFU), se muestra al admin, y un cambio posterior falla con HOST_KEY_CHANGED hasta que el admin lo re-confirme explícitamente.
-- [ ] **SEC-04**: Los comandos SSH provienen de una allowlist de plantillas sin interpolar input del usuario; cada conexión y cada comando tienen timeout explícito.
+- [x] **SEC-04**: Los comandos SSH provienen de una allowlist de plantillas sin interpolar input del usuario; cada conexión y cada comando tienen timeout explícito.
 - [ ] **SEC-05**: stdout/stderr de comandos remotos pasan por el redactor antes de persistirse o mostrarse.
 
 ### Discovery
@@ -141,10 +141,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QA-01 | Phase 1 | Complete |
 | QA-02 | Phase 1 | Complete |
 | QA-06 | Phase 1 | Complete |
-| SERV-07 | Phase 2 | Pending |
+| SERV-07 | Phase 2 | Complete |
 | SERV-08 | Phase 2 | Pending |
 | SEC-03 | Phase 2 | Pending |
-| SEC-04 | Phase 2 | Pending |
+| SEC-04 | Phase 2 | Complete |
 | SEC-05 | Phase 2 | Pending |
 | DISC-01 | Phase 2 | Pending |
 | DISC-04 | Phase 2 | Pending |

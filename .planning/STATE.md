@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-09-12T20:09:41.485Z"
-last_activity: 2026-09-12 -- Phase 2 planning complete
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-09-13T21:41:42.547Z"
+last_activity: 2026-09-13
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 27
-  completed_plans: 17
+  completed_plans: 18
   percent: 17
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente: sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto.
-**Current focus:** Phase 2 — adaptador ssh aislado y probado con testcontainers
+**Current focus:** Phase 2 — Adaptador SSH aislado y probado con Testcontainers
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
+Phase: 2 (Adaptador SSH aislado y probado con Testcontainers) — EXECUTING
+Plan: 2 of 10
 Status: Ready to execute
-Last activity: 2026-09-12 -- Phase 2 planning complete
+Last activity: 2026-09-13
 
-Progress: [██████████] 100%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -69,6 +69,7 @@ Progress: [██████████] 100%
 | Phase 01 P15 | 45min | 2 tasks | 4 files |
 | Phase 01 P16 | 38min | 3 tasks | 13 files |
 | Phase 01 P17 | 22min | 2 tasks | 5 files |
+| Phase 02 P01 | 55min | 4 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -126,6 +127,8 @@ Recent decisions affecting current work:
 - [Phase 01]: turbo.json's dev task requires an explicit passThroughEnv allowlist naming every env.ts variable — Turborepo 2's default strict env mode silently strips undeclared environment variables before spawning a task; the literal root pnpm dev crashed INST-06 fail-fast even with a fully valid environment until this was added
 - [Phase 01]: boot-smoke CI job keeps an explicit pnpm build step even though global-setup.ts also builds, so a build failure surfaces as its own red step, not an opaque test-harness crash
 - [Phase 01]: ADR 0003 records the tsc-build/tsx-dev/plain-node-start runtime contract as Accepted, closing 01-VERIFICATION.md's BLOCKER for future phases
+- [Phase 02]: turbo boundaries allow lists are undirected: pure-domain's own allow list had to add ssh-adapter for ssh->domain to pass, not just the reverse — Verified with the unmodified phase-1 pure-domain rule alone; domain->ssh containment stays guaranteed by purity.test.ts's independent frozen dependency list, unaffected by the tag change
+- [Phase 02]: packages/ssh/src/commands/index.ts ships a minimal CommandName stub in Task 3, fully replaced by Task 4's real barrel — Reconciles Task 3's own forward reference to a type Task 4 defines while keeping pnpm build green after every task
 
 ### Pending Todos
 
@@ -150,6 +153,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-12T08:14:56.283Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-adaptador-ssh-aislado-y-probado-con-testcontainers/02-CONTEXT.md
+Last session: 2026-09-13T21:41:42.541Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None

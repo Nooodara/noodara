@@ -107,7 +107,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — packages/ssh scaffold, the SshPort/discovery type contracts and the frozen command allowlist
+- [x] 02-01-PLAN.md — packages/ssh scaffold, the SshPort/discovery type contracts and the frozen command allowlist
 - [ ] 02-02-PLAN.md — Project-owned Ubuntu 22.04/24.04 sshd images and the Testcontainers helper
 - [ ] 02-03-PLAN.md — Migration 0002 fingerprint timestamps, its from-snapshot proof, and the three SSH timeout env knobs
 
@@ -206,7 +206,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Dominio, persistencia y autenticación | 17/17 | Complete    | 2026-09-12 |
-| 2. Adaptador SSH aislado y probado con Testcontainers | 0/TBD | Not started | - |
+| 2. Adaptador SSH aislado y probado con Testcontainers | 1/10 | In Progress|  |
 | 3. Servicios de aplicación, activity log y redacción | 0/TBD | Not started | - |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |
 | 5. UI web | 0/TBD | Not started | - |
