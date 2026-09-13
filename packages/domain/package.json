@@ -11,7 +11,8 @@
     "./server": { "types": "./dist/server/index.d.ts", "default": "./dist/server/index.js" },
     "./security": { "types": "./dist/security/index.d.ts", "default": "./dist/security/index.js" },
     "./validators": { "types": "./dist/validators/index.d.ts", "default": "./dist/validators/index.js" },
-    "./activity": { "types": "./dist/activity/index.d.ts", "default": "./dist/activity/index.js" }
+    "./activity": { "types": "./dist/activity/index.d.ts", "default": "./dist/activity/index.js" },
+    "./discovery": { "types": "./dist/discovery/index.d.ts", "default": "./dist/discovery/index.js" }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
