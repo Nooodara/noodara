@@ -1,5 +1,7 @@
-// Placeholder — Task 4 of 02-01-PLAN.md replaces this with the real barrel over discovery.ts,
-// docker.ts and access.ts, deriving `CommandName` from the frozen `COMMAND_NAMES` tuple. This
-// stub exists only so `ssh-port.ts` (Task 3) has a `CommandName` to import and the package keeps
-// building after every task in this plan, not just at the end of it.
-export type CommandName = string;
+// Pure barrel over the four command modules. COMMAND_TEMPLATES/commandFor/escapeShellArg are
+// deliberately declared in allowlist.ts, not here: vitest.config.ts's coverage config excludes
+// `**/index.ts`, and this content must be measured.
+export * from './discovery.js';
+export * from './docker.js';
+export * from './access.js';
+export * from './allowlist.js';
