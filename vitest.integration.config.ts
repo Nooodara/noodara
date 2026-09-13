@@ -1,12 +1,12 @@
 import { defineConfig } from 'vitest/config';
-import { domainSourceAliases } from './vitest.shared.js';
+import { domainSourceAliases, sshSourceAliases } from './vitest.shared.js';
 
 // Separate config for Testcontainers-backed integration tests: heavier timeouts, no coverage,
 // and file-parallelism disabled since containers are heavy and must not race each other.
 export default defineConfig({
   // See vitest.config.ts / vitest.shared.ts: keeps in-process integration test files resolving
   // @noodara/domain against source, not the built dist/ output.
-  resolve: { alias: domainSourceAliases },
+  resolve: { alias: [...domainSourceAliases, ...sshSourceAliases] },
   test: {
     include: ['tests/integration/**/*.test.ts'],
     testTimeout: 120_000,

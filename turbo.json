@@ -33,7 +33,10 @@
         "NOODARA_COOKIE_INSECURE",
         "NOODARA_TRUST_PROXY",
         "PORT",
-        "LOG_LEVEL"
+        "LOG_LEVEL",
+        "NOODARA_SSH_CONNECT_TIMEOUT_MS",
+        "NOODARA_SSH_COMMAND_TIMEOUT_MS",
+        "NOODARA_SSH_DISCOVERY_TIMEOUT_MS"
       ]
     },
     "test": {},
@@ -42,6 +45,11 @@
   "boundaries": {
     "tags": {
       "pure-domain": {
+        "dependencies": {
+          "allow": ["pure-domain", "@noodara/config", "ssh-adapter"]
+        }
+      },
+      "ssh-adapter": {
         "dependencies": {
           "allow": ["pure-domain", "@noodara/config"]
         }

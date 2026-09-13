@@ -14,6 +14,9 @@ importers:
       '@noodara/domain':
         specifier: workspace:*
         version: link:packages/domain
+      '@noodara/ssh':
+        specifier: workspace:*
+        version: link:packages/ssh
       '@testcontainers/postgresql':
         specifier: 12.1.0
         version: 12.1.0

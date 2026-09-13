@@ -31,7 +31,21 @@ export const domainSourceAliases: AliasOptions = [
     replacement: fileURLToPath(new URL('./packages/domain/src/activity/index.ts', import.meta.url)),
   },
   {
+    find: '@noodara/domain/discovery',
+    replacement: fileURLToPath(new URL('./packages/domain/src/discovery/index.ts', import.meta.url)),
+  },
+  {
     find: /^@noodara\/domain$/,
     replacement: fileURLToPath(new URL('./packages/domain/src/index.ts', import.meta.url)),
+  },
+];
+
+// Same rationale as domainSourceAliases above, for @noodara/ssh (02-CONTEXT.md, ADR 0003):
+// packages/ssh's `exports` map points at its built `dist` output, but every in-process Vitest
+// run must keep resolving straight to packages/ssh/src so unit tests never require a build step.
+export const sshSourceAliases: AliasOptions = [
+  {
+    find: /^@noodara\/ssh$/,
+    replacement: fileURLToPath(new URL('./packages/ssh/src/index.ts', import.meta.url)),
   },
 ];

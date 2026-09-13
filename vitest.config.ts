@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config';
-import { domainSourceAliases } from './vitest.shared.js';
+import { domainSourceAliases, sshSourceAliases } from './vitest.shared.js';
 
 // Vitest 5 uses `projects` (the config key that superseded the deprecated one removed since
 // 3.2). Each monorepo package gets its own project scoped to `src/**/*.test.ts` so integration
@@ -10,7 +10,7 @@ export default defineConfig({
   // alias keeps every in-process unit test resolving straight to packages/domain/src instead, so
   // QA-02's coverage gate keeps measuring source and no build step is required to run `pnpm test`.
   // See vitest.shared.ts for the ordering rule this alias array depends on.
-  resolve: { alias: domainSourceAliases },
+  resolve: { alias: [...domainSourceAliases, ...sshSourceAliases] },
   test: {
     projects: [
       {
@@ -54,7 +54,7 @@ export default defineConfig({
       reporter: ['text', 'json-summary', 'lcov'],
       all: true,
       include: ['packages/*/src/**/*.ts', 'apps/*/src/**/*.ts'],
-      exclude: ['**/*.test.ts', '**/*.d.ts', '**/index.ts'],
+      exclude: ['**/*.test.ts', '**/*.d.ts', '**/index.ts', 'packages/ssh/src/testing/**'],
       // QA-02: packages/domain must stay at >=95% statements/branches. No global threshold is
       // set for other packages/apps in v0.1 — coverage is reported for them, not gated.
       thresholds: {
