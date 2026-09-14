@@ -96,10 +96,44 @@ async function fetchSeededSnapshot(db: Database, ids: RepresentativeDataIds) {
     .select()
     .from(schema.credentials)
     .where(eq(schema.credentials.id, ids.credentialId));
-  const [server] = await db
-    .select()
-    .from(schema.servers)
-    .where(eq(schema.servers.id, ids.serverId));
+  // Raw SQL restricted to the columns present in the *previous* migration snapshot (0001):
+  // `schema.servers` (the current code's schema module) includes `host_fingerprint_captured_at`
+  // and `pending_fingerprint_seen_at`, the two columns migration 0002 adds — they do not exist yet
+  // when this function is called for the "before" snapshot, so selecting through the ORM's full
+  // column list would fail exactly like the login_attempts case above.
+  const serverResult = await db.execute<{
+    id: string;
+    name: string;
+    host: string;
+    ssh_port: number;
+    ssh_user: string;
+    credential_id: string;
+    status: string;
+    host_fingerprint: string | null;
+    pending_fingerprint: string | null;
+    hostname: string | null;
+    os_distribution: string | null;
+    os_version: string | null;
+    arch: string | null;
+    cpu_cores: number | null;
+    ram_mb: number | null;
+    disk_total_mb: number | null;
+    disk_used_mb: number | null;
+    uptime_seconds: number | null;
+    docker_installed: boolean | null;
+    docker_version: string | null;
+    last_seen_at: string | null;
+    last_error_code: string | null;
+    created_at: string;
+    updated_at: string;
+  }>(sql`
+    select id, name, host, ssh_port, ssh_user, credential_id, status, host_fingerprint,
+      pending_fingerprint, hostname, os_distribution, os_version, arch, cpu_cores, ram_mb,
+      disk_total_mb, disk_used_mb, uptime_seconds, docker_installed, docker_version, last_seen_at,
+      last_error_code, created_at, updated_at
+    from servers where id = ${ids.serverId}
+  `);
+  const server = serverResult.rows[0];
   const [activityEvent] = await db
     .select()
     .from(schema.activityEvents)
@@ -124,7 +158,11 @@ afterEach(async () => {
 
 describe('migrations applied from scratch (QA-06)', () => {
   it('readJournal returns the ordered list of migration tags', () => {
-    expect(readJournal()).toEqual(['0000_shiny_franklin_storm', '0001_silky_lethal_legion']);
+    expect(readJournal()).toEqual([
+      '0000_shiny_franklin_storm',
+      '0001_silky_lethal_legion',
+      '0002_phase2_fingerprint_timestamps',
+    ]);
   });
 
   it('applies every migration to an empty database and creates every table and enum', async () => {
@@ -211,7 +249,7 @@ describe('migrations applied from the previous snapshot (QA-06, PITFALLS.md #10)
 
     // The FK from servers.credential_id to the seeded credential still resolves, and status is
     // unchanged, after the upgrade step (Task 2 acceptance criteria).
-    expect(after.server?.credentialId).toBe(ids.credentialId);
+    expect(after.server?.credential_id).toBe(ids.credentialId);
     expect(after.server?.status).toBe(before.server?.status);
 
     // Plan 01-13's migration 0001 adds `lockout_count` to a table that already had rows: a
@@ -222,5 +260,32 @@ describe('migrations applied from the previous snapshot (QA-06, PITFALLS.md #10)
       sql`select lockout_count from login_attempts where id = ${ids.loginAttemptId}`,
     );
     expect(lockoutCountResult.rows[0]?.lockout_count).toBe(0);
+
+    // Migration 0002 adds `host_fingerprint_captured_at`/`pending_fingerprint_seen_at` to
+    // `servers`, a table that already has a row (seeded before this migration ran) with a
+    // non-null `host_fingerprint`. Both new columns are nullable with no default, so the ADD
+    // COLUMN backfill must be NULL, not a spurious value (Task 2 acceptance criteria).
+    const fingerprintTimestampsResult = await fixture.db.execute<{
+      host_fingerprint_captured_at: string | null;
+      pending_fingerprint_seen_at: string | null;
+    }>(
+      sql`select host_fingerprint_captured_at, pending_fingerprint_seen_at from servers where id = ${ids.serverId}`,
+    );
+    expect(fingerprintTimestampsResult.rows[0]?.host_fingerprint_captured_at).toBeNull();
+    expect(fingerprintTimestampsResult.rows[0]?.pending_fingerprint_seen_at).toBeNull();
+
+    // Round-trip a real Date through the new column to prove `withTimezone: true` actually landed
+    // as `timestamptz` (which normalizes to UTC and preserves the instant) rather than a naive
+    // `timestamp` (which would silently drop or misinterpret the offset).
+    const knownInstant = new Date('2026-05-01T12:34:56.000Z');
+    await fixture.db.execute(
+      sql`update servers set pending_fingerprint_seen_at = ${knownInstant.toISOString()}::timestamptz where id = ${ids.serverId}`,
+    );
+    const roundTripResult = await fixture.db.execute<{ pending_fingerprint_seen_at: string }>(
+      sql`select pending_fingerprint_seen_at from servers where id = ${ids.serverId}`,
+    );
+    const storedValue = roundTripResult.rows[0]?.pending_fingerprint_seen_at;
+    expect(storedValue).toBeDefined();
+    expect(new Date(storedValue as string).getTime()).toBe(knownInstant.getTime());
   });
 });

@@ -116,17 +116,31 @@ export async function seedRepresentativeData(db: Database): Promise<Representati
     .returning();
   const credential = assertDefined(insertedCredentials[0], 'credential');
 
-  const insertedServers = await db
-    .insert(schema.servers)
-    .values({
-      name: 'representative-server',
-      host: '198.51.100.20',
-      sshUser: 'deploy',
-      credentialId: credential.id,
-      status: 'CONNECTED',
-    })
-    .returning();
-  const server = assertDefined(insertedServers[0], 'server');
+  // Raw SQL restricted to the columns present in the *previous* migration snapshot (0001) — this
+  // plan's migration 0002 adds host_fingerprint_captured_at/pending_fingerprint_seen_at, which do
+  // not exist yet in the database at the point this fixture seeds data for the from-snapshot
+  // upgrade test (the same pattern login_attempts/lockout_count already established above).
+  // host_fingerprint is set to a realistic pinned value in the `ssh-ed25519 SHA256:...` shape
+  // (D-05) so the upgrade is exercised against a row that actually has a fingerprint.
+  const serverId = uuidv7();
+  const insertedServers = await db.execute<{
+    id: string;
+    credential_id: string;
+    status: string;
+  }>(sql`
+    insert into servers (id, name, host, ssh_user, credential_id, status, host_fingerprint)
+    values (
+      ${serverId},
+      'representative-server',
+      '198.51.100.20',
+      'deploy',
+      ${credential.id},
+      'CONNECTED',
+      'ssh-ed25519 SHA256:AbCdEf0123456789AbCdEf0123456789AbCdEf01234'
+    )
+    returning id, credential_id, status
+  `);
+  const server = assertDefined(insertedServers.rows[0], 'server');
 
   const insertedActivityEvents = await db
     .insert(schema.activityEvents)
