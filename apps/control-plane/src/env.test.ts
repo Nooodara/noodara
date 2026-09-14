@@ -205,6 +205,132 @@ describe('parseEnv', () => {
     });
   });
 
+  describe('SSH timeout knobs (D-08, D-09)', () => {
+    it('applies every documented default when unset', () => {
+      const result = parseEnv(validSource());
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error('expected success');
+      expect(result.value.NOODARA_SSH_CONNECT_TIMEOUT_MS).toBe(10000);
+      expect(result.value.NOODARA_SSH_COMMAND_TIMEOUT_MS).toBe(30000);
+      expect(result.value.NOODARA_SSH_DISCOVERY_TIMEOUT_MS).toBe(60000);
+    });
+
+    it('honors a valid explicit override for each knob', () => {
+      const result = parseEnv(
+        validSource({
+          NOODARA_SSH_CONNECT_TIMEOUT_MS: '5000',
+          NOODARA_SSH_COMMAND_TIMEOUT_MS: '45000',
+          NOODARA_SSH_DISCOVERY_TIMEOUT_MS: '90000',
+        }),
+      );
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error('expected success');
+      expect(result.value.NOODARA_SSH_CONNECT_TIMEOUT_MS).toBe(5000);
+      expect(result.value.NOODARA_SSH_COMMAND_TIMEOUT_MS).toBe(45000);
+      expect(result.value.NOODARA_SSH_DISCOVERY_TIMEOUT_MS).toBe(90000);
+    });
+
+    it.each([
+      ['NOODARA_SSH_CONNECT_TIMEOUT_MS', 1000],
+      ['NOODARA_SSH_CONNECT_TIMEOUT_MS', 120000],
+      ['NOODARA_SSH_COMMAND_TIMEOUT_MS', 1000],
+      ['NOODARA_SSH_COMMAND_TIMEOUT_MS', 300000],
+      ['NOODARA_SSH_DISCOVERY_TIMEOUT_MS', 5000],
+      ['NOODARA_SSH_DISCOVERY_TIMEOUT_MS', 600000],
+    ])('accepts the %s boundary value %d', (variable, value) => {
+      // The discovery/command coherence rule (discovery >= command) means the discovery lower
+      // boundary (5000) must be tested with a command timeout no larger than it, and the command
+      // upper boundary (300000) must be tested with a discovery timeout at least that large.
+      const overrides: Record<string, string> = { [variable]: String(value) };
+      if (variable === 'NOODARA_SSH_DISCOVERY_TIMEOUT_MS' && value === 5000) {
+        overrides.NOODARA_SSH_COMMAND_TIMEOUT_MS = '1000';
+      }
+      if (variable === 'NOODARA_SSH_COMMAND_TIMEOUT_MS' && value === 300000) {
+        overrides.NOODARA_SSH_DISCOVERY_TIMEOUT_MS = '600000';
+      }
+
+      const result = parseEnv(validSource(overrides));
+
+      expect(result.ok).toBe(true);
+    });
+
+    it('rejects a connect timeout below the minimum', () => {
+      const result = parseEnv(validSource({ NOODARA_SSH_CONNECT_TIMEOUT_MS: '999' }));
+
+      expect(result.ok).toBe(false);
+    });
+
+    it('rejects a connect timeout above the maximum', () => {
+      const result = parseEnv(validSource({ NOODARA_SSH_CONNECT_TIMEOUT_MS: '120001' }));
+
+      expect(result.ok).toBe(false);
+    });
+
+    it('rejects a non-integer value', () => {
+      const result = parseEnv(validSource({ NOODARA_SSH_COMMAND_TIMEOUT_MS: '1000.5' }));
+
+      expect(result.ok).toBe(false);
+    });
+
+    it('rejects a non-numeric value', () => {
+      const result = parseEnv(validSource({ NOODARA_SSH_DISCOVERY_TIMEOUT_MS: 'not-a-number' }));
+
+      expect(result.ok).toBe(false);
+    });
+
+    it('rejects a command timeout below the minimum with exactly one issue whose requirement omits the value', () => {
+      const result = parseEnv(validSource({ NOODARA_SSH_COMMAND_TIMEOUT_MS: '999' }));
+
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error('expected failure');
+      const issues = result.issues.filter((issue) => issue.variable === 'NOODARA_SSH_COMMAND_TIMEOUT_MS');
+      expect(issues).toHaveLength(1);
+      expect(issues[0]?.requirement).not.toContain('999');
+    });
+
+    it('rejects a discovery timeout smaller than the command timeout', () => {
+      const result = parseEnv(
+        validSource({
+          NOODARA_SSH_COMMAND_TIMEOUT_MS: '50000',
+          NOODARA_SSH_DISCOVERY_TIMEOUT_MS: '40000',
+        }),
+      );
+
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error('expected failure');
+      const variables = result.issues.map((issue) => issue.variable);
+      expect(variables).toContain('NOODARA_SSH_DISCOVERY_TIMEOUT_MS');
+    });
+
+    it('accepts a discovery timeout exactly equal to the command timeout', () => {
+      const result = parseEnv(
+        validSource({
+          NOODARA_SSH_COMMAND_TIMEOUT_MS: '30000',
+          NOODARA_SSH_DISCOVERY_TIMEOUT_MS: '30000',
+        }),
+      );
+
+      expect(result.ok).toBe(true);
+    });
+
+    it('never exposes the received value for any of the three timeout knobs', () => {
+      const result = parseEnv(
+        validSource({
+          NOODARA_SSH_CONNECT_TIMEOUT_MS: 'nope',
+          NOODARA_SSH_COMMAND_TIMEOUT_MS: 'nope',
+          NOODARA_SSH_DISCOVERY_TIMEOUT_MS: 'nope',
+        }),
+      );
+
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error('expected failure');
+      const serialized = JSON.stringify(result.issues);
+      expect(serialized).not.toContain('nope');
+    });
+  });
+
   describe('failure report safety', () => {
     it('never contains the offending value', () => {
       const badKey = 'totally-not-base64-and-should-never-appear';
