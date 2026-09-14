@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-05-PLAN.md
-last_updated: "2026-09-14T19:04:43.047Z"
+stopped_at: Completed 02-06-PLAN.md
+last_updated: "2026-09-14T20:12:32.636Z"
 last_activity: 2026-09-14
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 27
-  completed_plans: 22
+  completed_plans: 23
   percent: 17
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 2 (Adaptador SSH aislado y probado con Testcontainers) — EXECUTING
-Plan: 6 of 10
+Plan: 7 of 10
 Status: Ready to execute
 Last activity: 2026-09-14
 
-Progress: [████████░░] 81%
+Progress: [█████████░] 85%
 
 ## Performance Metrics
 
@@ -74,6 +74,7 @@ Progress: [████████░░] 81%
 | Phase 02-adaptador-ssh-aislado-y-probado-con-testcontainers P03 | 55min | 3 tasks | 9 files |
 | Phase 02 P04 | 170min | 3 tasks | 8 files |
 | Phase 02 P05 | 55min | 3 tasks | 14 files |
+| Phase 02 P06 | 60min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -142,6 +143,9 @@ Recent decisions affecting current work:
 - [Phase 02]: Mid-exec transport death maps to CONNECTION_LOST via a channel closing with no exit code; ssh2 never raises an 'error' event for this path
 - [Phase 02]: D-11: statusForErrorCode('UNSUPPORTED_OS') now returns CONNECTED (was ERROR) — unsupported OS is a warning recorded in last_error_code, not a failure state
 - [Phase 02]: Docker CLI/daemon detection returns a four-kind discriminated union (not_installed/daemon_unreachable/installed/unparseable) keyed on the ADR-0004 exit code, never on JSON.parse success alone (D-12)
+- [Phase 02]: generateTestKeys() adds a dsa key generated via openssl dsaparam/gendsa (not ssh-keygen -t dsa, which modern OpenSSH refuses) to exercise D-01's DSA-type-rejection path with a genuinely parseable key
+- [Phase 02]: key-loader.ts drops a defensive Array.isArray(parsed) branch: @types/ssh2 declares utils.parseKey's return as exactly ParsedKey | Error (never an array), and Array.isArray narrowing against a non-array type widens the ternary to any
+- [Phase 02]: createHostVerifier's only accepted input field is trusted; a test asserts Object.keys(input) directly so a future bypass-option addition fails a behavioural test, not just a grep
 
 ### Pending Todos
 
@@ -166,6 +170,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-14T19:04:43.039Z
-Stopped at: Completed 02-05-PLAN.md
+Last session: 2026-09-14T20:12:32.627Z
+Stopped at: Completed 02-06-PLAN.md
 Resume file: None
