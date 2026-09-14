@@ -8,9 +8,10 @@ import { credentials } from './credentials.js';
 export const serverStatusEnum = pgEnum('server_status', [...SERVER_STATUSES]);
 export const serverErrorCodeEnum = pgEnum('server_error_code', [...SERVER_ERROR_CODES]);
 
-// Every column phases 2 and 3 will fill (fingerprints, denormalised discovery fields,
-// last_seen_at, last_error_code) already exists here (01-CONTEXT.md Integration Points), so no
-// shape migration is needed once the SSH adapter and discovery land.
+// Every discovery/fingerprint column phase 2 fills already exists here (01-CONTEXT.md Integration
+// Points), with one exception: migration 0002 adds the two fingerprint capture timestamps (D-06)
+// below, because the connection-result contract needs both fingerprint dates, and that shape did
+// not exist before phase 2's own context.
 export const servers = pgTable('servers', {
   id: uuid('id').primaryKey().$defaultFn(() => uuidv7()),
   name: text('name').notNull(),
@@ -26,6 +27,11 @@ export const servers = pgTable('servers', {
   // "Trust new fingerprint" action copies it into host_fingerprint (Plan 01-04's
   // applyConnectionResult / server-state.ts transition() already models this edge).
   pendingFingerprint: text('pending_fingerprint'),
+  // D-06: stamped when a first-connect capture is persisted into host_fingerprint (D-07).
+  hostFingerprintCapturedAt: timestamp('host_fingerprint_captured_at', { withTimezone: true }),
+  // D-06: stamped when a HOST_KEY_CHANGED outcome parks an observed fingerprint into
+  // pending_fingerprint (D-15 from phase 1's server-state.ts transition()).
+  pendingFingerprintSeenAt: timestamp('pending_fingerprint_seen_at', { withTimezone: true }),
   // Discovery fields (phase 2/3) — nullable until a connection/discovery run fills them in.
   hostname: text('hostname'),
   osDistribution: text('os_distribution'),

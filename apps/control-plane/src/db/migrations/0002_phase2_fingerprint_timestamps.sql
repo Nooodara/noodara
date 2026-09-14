@@ -1,0 +1,2 @@
+ALTER TABLE "servers" ADD COLUMN IF NOT EXISTS "host_fingerprint_captured_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "servers" ADD COLUMN IF NOT EXISTS "pending_fingerprint_seen_at" timestamp with time zone;
