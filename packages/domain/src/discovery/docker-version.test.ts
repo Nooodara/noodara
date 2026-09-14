@@ -50,6 +50,14 @@ describe('parseDockerVersion (D-12 / T-2-17: unparseable must never masquerade a
     expect(result).toEqual({ kind: 'unparseable', reason: 'Command produced no output' });
   });
 
+  // Synthetic: valid JSON that parses to a non-object (a bare number) — JSON.parse succeeds, but
+  // there is no Client/Server shape to read at all.
+  it('reports unparseable when the JSON parses to a non-object value', () => {
+    const result = parseDockerVersion({ stdout: '42', stderr: '', exitCode: 1 });
+
+    expect(result.kind).toBe('unparseable');
+  });
+
   // Synthetic: JSON is valid but does not have the shape ADR 0004 measured at all.
   it('reports unparseable when the JSON has no Client field', () => {
     const result = parseDockerVersion({ stdout: '{"Server":null}', stderr: '', exitCode: 1 });
