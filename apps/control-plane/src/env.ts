@@ -35,6 +35,12 @@ export interface Env {
   // when this is explicitly enabled — otherwise it is attacker-controlled and would let a
   // distributed attacker rotate through fake X-Forwarded-For values to dodge the per-IP scope.
   NOODARA_TRUST_PROXY: boolean;
+  // D-08/D-09: the three SSH adapter timeout knobs (packages/ssh's SshTimeouts). Validated here
+  // with explicit ranges and passed to the adapter by parameter — packages/ssh never reads
+  // process.env itself.
+  NOODARA_SSH_CONNECT_TIMEOUT_MS: number;
+  NOODARA_SSH_COMMAND_TIMEOUT_MS: number;
+  NOODARA_SSH_DISCOVERY_TIMEOUT_MS: number;
   PORT: number;
   LOG_LEVEL: string;
 }
@@ -158,19 +164,58 @@ function validateAdminPair(
   }
 }
 
+interface TuningIntRange {
+  readonly min: number;
+  readonly max: number;
+}
+
 function parseTuningInt(
   variable: string,
   value: string | undefined,
   fallback: number,
   issues: EnvIssue[],
+  range?: TuningIntRange,
 ): number {
   if (value === undefined || value.length === 0) return fallback;
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
-    issues.push({ variable, requirement: `${variable} must be an integer` });
+    issues.push({
+      variable,
+      requirement:
+        range === undefined
+          ? `${variable} must be an integer`
+          : `${variable} must be an integer between ${String(range.min)} and ${String(range.max)}`,
+    });
+    return fallback;
+  }
+  if (range !== undefined && (parsed < range.min || parsed > range.max)) {
+    issues.push({
+      variable,
+      requirement: `${variable} must be between ${String(range.min)} and ${String(range.max)}`,
+    });
     return fallback;
   }
   return parsed;
+}
+
+/**
+ * D-08's three-level timeout scheme is incoherent if a single command may run longer than the
+ * whole discovery run it belongs to — this cross-field rule (in the same style as
+ * `validateAdminPair`) rejects that combination against the discovery variable, since the
+ * discovery budget is the one that must accommodate the command budget, not the other way round.
+ */
+function validateSshTimeoutCoherence(
+  commandTimeoutMs: number,
+  discoveryTimeoutMs: number,
+  issues: EnvIssue[],
+): void {
+  if (discoveryTimeoutMs < commandTimeoutMs) {
+    issues.push({
+      variable: 'NOODARA_SSH_DISCOVERY_TIMEOUT_MS',
+      requirement:
+        'NOODARA_SSH_DISCOVERY_TIMEOUT_MS must be greater than or equal to NOODARA_SSH_COMMAND_TIMEOUT_MS (D-08)',
+    });
+  }
 }
 
 function parseTuningBool(
@@ -252,6 +297,28 @@ export function parseEnv(source: EnvSource): EnvParseResult {
     issues,
   );
   const trustProxy = parseTuningBool('NOODARA_TRUST_PROXY', source.NOODARA_TRUST_PROXY, false, issues);
+  const sshConnectTimeoutMs = parseTuningInt(
+    'NOODARA_SSH_CONNECT_TIMEOUT_MS',
+    source.NOODARA_SSH_CONNECT_TIMEOUT_MS,
+    10000,
+    issues,
+    { min: 1000, max: 120000 },
+  );
+  const sshCommandTimeoutMs = parseTuningInt(
+    'NOODARA_SSH_COMMAND_TIMEOUT_MS',
+    source.NOODARA_SSH_COMMAND_TIMEOUT_MS,
+    30000,
+    issues,
+    { min: 1000, max: 300000 },
+  );
+  const sshDiscoveryTimeoutMs = parseTuningInt(
+    'NOODARA_SSH_DISCOVERY_TIMEOUT_MS',
+    source.NOODARA_SSH_DISCOVERY_TIMEOUT_MS,
+    60000,
+    issues,
+    { min: 5000, max: 600000 },
+  );
+  validateSshTimeoutCoherence(sshCommandTimeoutMs, sshDiscoveryTimeoutMs, issues);
   const port = parseTuningInt('PORT', source.PORT, 3000, issues);
   const logLevel = parseTuningString(source.LOG_LEVEL, 'info');
 
@@ -280,6 +347,9 @@ export function parseEnv(source: EnvSource): EnvParseResult {
       NOODARA_LOGIN_BACKOFF_MAX_SECONDS: loginBackoffMaxSeconds,
       NOODARA_COOKIE_INSECURE: cookieInsecure,
       NOODARA_TRUST_PROXY: trustProxy,
+      NOODARA_SSH_CONNECT_TIMEOUT_MS: sshConnectTimeoutMs,
+      NOODARA_SSH_COMMAND_TIMEOUT_MS: sshCommandTimeoutMs,
+      NOODARA_SSH_DISCOVERY_TIMEOUT_MS: sshDiscoveryTimeoutMs,
       PORT: port,
       LOG_LEVEL: logLevel,
     },
