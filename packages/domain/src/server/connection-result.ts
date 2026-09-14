@@ -31,16 +31,19 @@ export interface ServerConnectionState {
 }
 
 /**
- * Landing status per error code. `AUTH_FAILED`/`COMMAND_TIMEOUT`/`HOST_KEY_CHANGED`/
- * `UNSUPPORTED_OS` are treated as ERROR (something is wrong with credentials, the remote command,
- * host identity, or platform support); `HOST_UNRESOLVED`/`CONNECT_TIMEOUT`/`CONNECTION_LOST` are
- * UNREACHABLE (network-level, may resolve on retry).
+ * Landing status per error code. `AUTH_FAILED`/`COMMAND_TIMEOUT`/`HOST_KEY_CHANGED` are treated as
+ * ERROR (something is wrong with credentials, the remote command, or host identity);
+ * `HOST_UNRESOLVED`/`CONNECT_TIMEOUT`/`CONNECTION_LOST` are UNREACHABLE (network-level, may
+ * resolve on retry). `UNSUPPORTED_OS` is neither: the connection and discovery both succeeded,
+ * the platform is simply outside the supported matrix (Ubuntu 22.04/24.04) — D-11 lands it on
+ * CONNECTED, carrying the code in `last_error_code` as a warning for the detail view, since v0.2
+ * will use that warning to block deploys rather than this phase blocking the connection itself.
  */
 const ERROR_CODE_STATUS = {
   AUTH_FAILED: 'ERROR',
   COMMAND_TIMEOUT: 'ERROR',
   HOST_KEY_CHANGED: 'ERROR',
-  UNSUPPORTED_OS: 'ERROR',
+  UNSUPPORTED_OS: 'CONNECTED',
   HOST_UNRESOLVED: 'UNREACHABLE',
   CONNECT_TIMEOUT: 'UNREACHABLE',
   CONNECTION_LOST: 'UNREACHABLE',

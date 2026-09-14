@@ -57,10 +57,16 @@ resulting status (tested as a table over every entry in `SERVER_ERROR_CODES`):
 | `AUTH_FAILED` | ERROR |
 | `COMMAND_TIMEOUT` | ERROR |
 | `HOST_KEY_CHANGED` | ERROR (also sets `pending_fingerprint`, D-15) |
-| `UNSUPPORTED_OS` | ERROR |
+| `UNSUPPORTED_OS` | CONNECTED (warning code, D-11) |
 | `HOST_UNRESOLVED` | UNREACHABLE |
 | `CONNECT_TIMEOUT` | UNREACHABLE |
 | `CONNECTION_LOST` | UNREACHABLE |
+
+**D-11 (phase 2):** `UNSUPPORTED_OS` was `ERROR` in phase 1; phase 2 changes it to `CONNECTED`
+because the connection and discovery both succeeded and the platform is simply outside the
+supported matrix (Ubuntu 22.04/24.04) — the code is still recorded in `last_error_code` as a
+warning for the detail view, and v0.2 will use that warning to block deploys rather than this
+phase blocking the connection itself.
 
 `applyConnectionResult` only accepts results while the server is `CONNECTING` (a result arriving
 for any other status throws `InvalidTransitionError`), and routes every status change through
