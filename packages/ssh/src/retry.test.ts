@@ -25,8 +25,8 @@ describe('RETRYABLE_ERROR_CODES', () => {
   });
 
   it.each(SERVER_ERROR_CODES)('retries a %s failure only when it is CONNECT_TIMEOUT or CONNECTION_LOST', async (code) => {
-    const attempt = vi.fn(async () => fail(code));
-    const sleep = vi.fn(async () => undefined);
+    const attempt = vi.fn(() => Promise.resolve(fail(code)));
+    const sleep = vi.fn(() => Promise.resolve(undefined));
 
     const outcome = await withRetry(attempt, { sleep });
 
@@ -39,8 +39,8 @@ describe('RETRYABLE_ERROR_CODES', () => {
 
 describe('withRetry', () => {
   it('reports attempts: 1 on an immediate success and never calls sleep', async () => {
-    const attempt = vi.fn(async () => ok());
-    const sleep = vi.fn(async () => undefined);
+    const attempt = vi.fn(() => Promise.resolve(ok()));
+    const sleep = vi.fn(() => Promise.resolve(undefined));
 
     const outcome = await withRetry(attempt, { sleep });
 
@@ -50,8 +50,8 @@ describe('withRetry', () => {
   });
 
   it('waits exactly 2000ms via the injected clock before the second attempt', async () => {
-    const attempt = vi.fn(async () => fail('CONNECT_TIMEOUT'));
-    const sleep = vi.fn(async () => undefined);
+    const attempt = vi.fn(() => Promise.resolve(fail('CONNECT_TIMEOUT')));
+    const sleep = vi.fn(() => Promise.resolve(undefined));
 
     await withRetry(attempt, { sleep });
 
@@ -60,8 +60,8 @@ describe('withRetry', () => {
   });
 
   it('retries exactly once and reports attempts: 2 when the retry also fails, never a third attempt', async () => {
-    const attempt = vi.fn(async () => fail('CONNECTION_LOST'));
-    const sleep = vi.fn(async () => undefined);
+    const attempt = vi.fn(() => Promise.resolve(fail('CONNECTION_LOST')));
+    const sleep = vi.fn(() => Promise.resolve(undefined));
 
     const outcome = await withRetry(attempt, { sleep });
 
@@ -73,7 +73,7 @@ describe('withRetry', () => {
     const attempt = vi.fn<() => Promise<FakeOutcome>>();
     attempt.mockResolvedValueOnce(fail('CONNECTION_LOST'));
     attempt.mockResolvedValueOnce(ok('recovered'));
-    const sleep = vi.fn(async () => undefined);
+    const sleep = vi.fn(() => Promise.resolve(undefined));
 
     const outcome = await withRetry(attempt, { sleep });
 
@@ -81,8 +81,8 @@ describe('withRetry', () => {
   });
 
   it('returns immediately with attempts: 1 for a non-retryable failure and never calls sleep', async () => {
-    const attempt = vi.fn(async () => fail('AUTH_FAILED'));
-    const sleep = vi.fn(async () => undefined);
+    const attempt = vi.fn(() => Promise.resolve(fail('AUTH_FAILED')));
+    const sleep = vi.fn(() => Promise.resolve(undefined));
 
     const outcome = await withRetry(attempt, { sleep });
 

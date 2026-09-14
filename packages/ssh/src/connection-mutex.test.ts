@@ -15,15 +15,16 @@ describe('createConnectionMutex', () => {
   it('serialises two acquisitions for the same key', async () => {
     const mutex = createConnectionMutex();
     const order: string[] = [];
-    const first = deferred<void>();
+    const first = deferred<undefined>();
 
     const firstRun = mutex.runExclusive('host-a', async () => {
       order.push('first-start');
       await first.promise;
       order.push('first-end');
     });
-    const secondRun = mutex.runExclusive('host-a', async () => {
+    const secondRun = mutex.runExclusive('host-a', () => {
       order.push('second-start');
+      return Promise.resolve();
     });
 
     first.resolve(undefined);
@@ -35,15 +36,16 @@ describe('createConnectionMutex', () => {
   it('runs two different keys concurrently', async () => {
     const mutex = createConnectionMutex();
     const order: string[] = [];
-    const gate = deferred<void>();
+    const gate = deferred<undefined>();
 
     const runA = mutex.runExclusive('host-a', async () => {
       order.push('a-start');
       await gate.promise;
       order.push('a-end');
     });
-    const runB = mutex.runExclusive('host-b', async () => {
+    const runB = mutex.runExclusive('host-b', () => {
       order.push('b-start');
+      return Promise.resolve();
     });
 
     // host-b's run must not wait on host-a's still-outstanding lock.
@@ -59,19 +61,17 @@ describe('createConnectionMutex', () => {
     const mutex = createConnectionMutex();
 
     await expect(
-      mutex.runExclusive('host-a', async () => {
-        throw new Error('boom');
-      }),
+      mutex.runExclusive('host-a', () => Promise.reject(new Error('boom'))),
     ).rejects.toThrow('boom');
 
-    await expect(mutex.runExclusive('host-a', async () => 'recovered')).resolves.toBe('recovered');
+    await expect(mutex.runExclusive('host-a', () => Promise.resolve('recovered'))).resolves.toBe('recovered');
   });
 
   it('acquires, releases and re-acquires the same key in sequence', async () => {
     const mutex = createConnectionMutex();
 
-    await expect(mutex.runExclusive('host-a', async () => 1)).resolves.toBe(1);
-    await expect(mutex.runExclusive('host-a', async () => 2)).resolves.toBe(2);
-    await expect(mutex.runExclusive('host-a', async () => 3)).resolves.toBe(3);
+    await expect(mutex.runExclusive('host-a', () => Promise.resolve(1))).resolves.toBe(1);
+    await expect(mutex.runExclusive('host-a', () => Promise.resolve(2))).resolves.toBe(2);
+    await expect(mutex.runExclusive('host-a', () => Promise.resolve(3))).resolves.toBe(3);
   });
 });
