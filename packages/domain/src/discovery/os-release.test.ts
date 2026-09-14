@@ -73,12 +73,15 @@ describe('parseOsRelease', () => {
     });
   });
 
-  // Synthetic: exercises quoted/unquoted values, an '=' inside a value, comment lines, blank
-  // lines and CRLF line endings all in one input, none of which any real fixture combines.
-  it('handles quoted and unquoted values, "=" inside a value, comments, blank lines and CRLF', () => {
+  // Synthetic: exercises quoted/unquoted values (including a single-character unquoted value),
+  // an '=' inside a value, comment lines, blank lines, a line with no '=' at all, and CRLF line
+  // endings all in one input, none of which any real fixture combines.
+  it('handles quoted and unquoted values, "=" inside a value, comments, blank lines, a line with no "=", and CRLF', () => {
     const messyOsRelease = [
       '# this is a comment and must be skipped',
       '',
+      'A LINE WITH NO EQUALS SIGN AT ALL',
+      'X=1',
       'NAME=Ubuntu',
       'VERSION_ID="24.04"',
       'ID=ubuntu',
@@ -119,6 +122,19 @@ describe('parseOsRelease', () => {
     expect(result.ok).toBe(false);
     expect(!result.ok && result.code).toBe('OS_RELEASE_MISSING_FIELDS');
     expect(!result.ok && result.message).toContain('ID');
+  });
+
+  // Synthetic: the spec permits single-quoted values too, even though no captured fixture uses
+  // them (both Ubuntu images double-quote every value that needs quoting at all).
+  it('strips single quotes as well as double quotes', () => {
+    const singleQuoted = ["NAME='Ubuntu'", "VERSION_ID='24.04'", 'ID=ubuntu'].join('\n');
+
+    const result = parseOsRelease(singleQuoted);
+
+    expect(result).toEqual({
+      ok: true,
+      value: { distribution: 'Ubuntu', version: '24.04', supported: true },
+    });
   });
 
   it('falls back to ID for distribution when NAME is absent', () => {
