@@ -12,7 +12,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { computeFingerprint, formatFingerprint } from './fingerprint.js';
 import { createSsh2Adapter } from './ssh2-adapter.js';
 import { generateTestKeys, type TestKeySet } from './testing/generate-keys.js';
-import type { CommandName } from './commands/index.js';
 import type { ConnectInput, HostFingerprint, SshCredential, SshTimeouts } from './ssh-port.js';
 
 // --- Fakes -------------------------------------------------------------------------------------
@@ -75,9 +74,8 @@ class FakeClient {
 
   private readonly listeners = new Map<string, ((...args: never[]) => void)[]>();
 
-  on(event: 'ready', listener: () => void): this;
+  on(event: 'ready' | 'close', listener: () => void): this;
   on(event: 'error', listener: (err: unknown) => void): this;
-  on(event: 'close', listener: () => void): this;
   on(
     event: 'keyboard-interactive',
     listener: (
@@ -100,10 +98,13 @@ class FakeClient {
     for (const listener of this.listeners.get(event) ?? []) (listener as (...a: unknown[]) => void)(...args);
   }
 
-  connect(options: Record<string, unknown>): void {
+  // Typed `unknown` (not a concrete options shape) so this fake's `connect` is assignable to
+  // whatever concrete `Ssh2ConnectOptions` shape `ssh2-adapter.ts` declares internally — the seam
+  // only needs the fake to *accept* whatever the adapter passes, never to name that type.
+  connect(options: unknown): void {
     this.callOrder.push('connect');
-    this.connectCalls.push(options);
-    this.connectImpl?.(options);
+    this.connectCalls.push(options as Record<string, unknown>);
+    this.connectImpl?.(options as Record<string, unknown>);
   }
 
   end(): void {
@@ -199,11 +200,11 @@ describe('createSsh2Adapter', () => {
       expect(outcome.ok).toBe(true);
       const options = client.connectCalls[0];
       expect(options).toBeDefined();
-      expect(typeof options?.['hostVerifier']).toBe('function');
-      expect(options?.['hostHash']).toBeUndefined();
-      expect(options?.['readyTimeout']).toBe(TIMEOUTS.connectMs);
-      expect(options?.['keepaliveInterval']).toBe(10_000);
-      expect(options?.['algorithms']).toEqual({
+      expect(typeof options?.hostVerifier).toBe('function');
+      expect(options?.hostHash).toBeUndefined();
+      expect(options?.readyTimeout).toBe(TIMEOUTS.connectMs);
+      expect(options?.keepaliveInterval).toBe(10_000);
+      expect(options?.algorithms).toEqual({
         serverHostKey: [
           'ssh-ed25519',
           'ecdsa-sha2-nistp256',
@@ -275,7 +276,7 @@ describe('createSsh2Adapter', () => {
 
       expect(outcome.ok).toBe(true);
       const options = client.connectCalls[0];
-      expect(options?.['privateKey']).toBeDefined();
+      expect(options?.privateKey).toBeDefined();
     });
   });
 
@@ -306,7 +307,7 @@ describe('createSsh2Adapter', () => {
 
       expect(receivedAnswers).toEqual(['hunter2', 'hunter2']);
       expect(outcome.ok).toBe(true);
-      expect(client.connectCalls[0]?.['tryKeyboard']).toBe(true);
+      expect(client.connectCalls[0]?.tryKeyboard).toBe(true);
     });
 
     it('aborts with AUTH_FAILED when a keyboard-interactive challenge includes a non-password prompt', async () => {
@@ -391,7 +392,7 @@ describe('createSsh2Adapter', () => {
       const outcome = await adapter.connect(buildInput());
       if (!outcome.ok) throw new Error('test setup: expected a successful connect');
 
-      const execPromise = outcome.session.exec('discovery.hostname' as CommandName);
+      const execPromise = outcome.session.exec('discovery.hostname');
       channel.emitData(Buffer.from('myhost\n'));
       channel.emitClose(0);
       const result = await execPromise;
@@ -412,7 +413,7 @@ describe('createSsh2Adapter', () => {
       const outcome = await adapter.connect(buildInput());
       if (!outcome.ok) throw new Error('test setup: expected a successful connect');
 
-      const execPromise = outcome.session.exec('discovery.hostname' as CommandName);
+      const execPromise = outcome.session.exec('discovery.hostname');
       client.emit('close');
 
       await expect(execPromise).rejects.toMatchObject({ errorCode: 'CONNECTION_LOST' });
@@ -436,7 +437,7 @@ describe('createSsh2Adapter', () => {
   describe('connect() never hangs on a close before ready', () => {
     it('resolves { ok: false, errorCode: CONNECTION_LOST } when the client closes with no prior error before ready', async () => {
       const client = new FakeClient();
-      const barrier = deferred<void>();
+      const barrier = deferred<undefined>();
       client.connectImpl = () => {
         void barrier.promise.then(() => {
           client.emit('close');
@@ -445,7 +446,7 @@ describe('createSsh2Adapter', () => {
       const adapter = createSsh2Adapter({ createClient: () => client });
 
       const outcomePromise = adapter.connect(buildInput());
-      barrier.resolve();
+      barrier.resolve(undefined);
 
       await expect(outcomePromise).resolves.toMatchObject({ ok: false, errorCode: 'CONNECTION_LOST' });
     });
