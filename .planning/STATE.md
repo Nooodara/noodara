@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-09-14T04:06:43.674Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-09-14T05:28:23.372Z"
 last_activity: 2026-09-14
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 27
-  completed_plans: 19
+  completed_plans: 20
   percent: 17
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 2 (Adaptador SSH aislado y probado con Testcontainers) — EXECUTING
-Plan: 3 of 10
+Plan: 4 of 10
 Status: Ready to execute
 Last activity: 2026-09-14
 
-Progress: [███████░░░] 70%
+Progress: [███████░░░] 74%
 
 ## Performance Metrics
 
@@ -71,6 +71,7 @@ Progress: [███████░░░] 70%
 | Phase 01 P17 | 22min | 2 tasks | 5 files |
 | Phase 02 P01 | 55min | 4 tasks | 23 files |
 | Phase 02 P02 | 65min | 3 tasks | 8 files |
+| Phase 02-adaptador-ssh-aislado-y-probado-con-testcontainers P03 | 55min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -132,6 +133,8 @@ Recent decisions affecting current work:
 - [Phase 02]: packages/ssh/src/commands/index.ts ships a minimal CommandName stub in Task 3, fully replaced by Task 4's real barrel — Reconciles Task 3's own forward reference to a type Task 4 defines while keeping pnpm build green after every task
 - [Phase 02]: Docker CLI test variant uses docker-ce-cli from Docker's own apt repo (never Ubuntu's docker.io), so the WITH_DOCKER_CLI image genuinely ships no daemon binary
 - [Phase 02]: startSshd always injects a fresh SSH_TEST_KEY_PASSPHRASE, so every fixture always has an ed25519_locked key appended to root/deployer authorized_keys regardless of scenario
+- [Phase 02-adaptador-ssh-aislado-y-probado-con-testcontainers]: parseTuningInt takes an optional {min,max} range object rather than a parallel parser, keeping exactly one integer parser in env.ts
+- [Phase 02-adaptador-ssh-aislado-y-probado-con-testcontainers]: The discovery>=command SSH timeout coherence check runs after both values are parsed, reporting against NOODARA_SSH_DISCOVERY_TIMEOUT_MS
 
 ### Pending Todos
 
@@ -156,6 +159,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-14T04:06:43.664Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-09-14T05:28:23.362Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
