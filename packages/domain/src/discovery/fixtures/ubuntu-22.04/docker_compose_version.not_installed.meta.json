@@ -1,0 +1,5 @@
+{
+  "command": "docker compose version --short",
+  "exitCode": 127,
+  "stderr": "sh: 1: docker: not found\n"
+}

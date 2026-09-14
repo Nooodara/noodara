@@ -1,0 +1,5 @@
+{
+  "command": "docker version --format '{{json .}}'",
+  "exitCode": 127,
+  "stderr": "sh: 1: docker: not found\n"
+}

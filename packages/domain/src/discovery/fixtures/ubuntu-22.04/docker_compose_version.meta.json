@@ -1,0 +1,5 @@
+{
+  "command": "docker compose version --short",
+  "exitCode": 0,
+  "stderr": ""
+}

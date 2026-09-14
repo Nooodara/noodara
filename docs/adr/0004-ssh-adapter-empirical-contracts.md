@@ -127,3 +127,63 @@ fall back to a generic "unable to parse private key" message for every
 other `parseKey` failure — never propagating either message verbatim to
 an end user, per D-02's "classified as `AUTH_FAILED` without revealing
 more."
+
+## Open Question 2: Docker version detection shapes (D-12, A3)
+
+### Decision
+
+Three distinct, measured shapes, captured from the real fixture images
+into `packages/domain/src/discovery/fixtures/ubuntu-{22.04,24.04}/`
+(`README.md` in that directory documents which file is which, and which
+shapes are captured versus explicitly out of reach for this fixture
+matrix):
+
+| Scenario | Command | Exit code | stdout | stderr |
+|---|---|---|---|---|
+| `docker` binary absent (plain image) | `docker version --format '{{json .}}'` | **127** | *(empty)* | `sh: 1: docker: not found` |
+| `docker` binary absent (plain image) | `docker compose version --short` | **127** | *(empty)* | `sh: 1: docker: not found` |
+| CLI present, daemon unreachable (`dockerCli: true` image) | `docker version --format '{{json .}}'` | **1** | Valid JSON: `{"Client":{...},"Server":null}` | `failed to connect to the docker API at unix:///var/run/docker.sock; ...` |
+| CLI present, daemon unreachable (`dockerCli: true` image) | `docker compose version --short` | **0** | `5.5.1\n` | *(empty)* |
+
+Measured identically for Ubuntu 22.04 and 24.04 (Docker's own apt
+repository ships the same `docker-ce-cli`/`docker-compose-plugin` build
+for both `jammy` and `noble` at capture time). **stderr never contaminates
+stdout** in either failure case — `JSON.parse(stdout)` is safe to call
+directly without stripping anything, and the "not found" case never
+produces anything that looks like JSON on stdout at all. Both facts are
+asserted directly in `contracts.test.ts` against the real fixture images
+(not only recorded as static files), so a future Docker CLI release that
+changes either shape fails a standing test rather than silently
+invalidating the fixtures.
+
+**D-12's parser must therefore branch on exit code, not on
+`JSON.parse` success/failure alone:**
+
+- Exit 127 (or any outcome where `stdout` is empty/non-JSON) →
+  `docker_installed = false`.
+- Exit 1 (or non-zero) **with valid JSON on stdout containing a `Client`
+  key and a `null`/absent `Server` key** → `docker_installed = true`,
+  version read from `Client.Version`, daemon status reported separately
+  (out of DISC-01's v0.1 scope beyond the boolean split D-12 asks for).
+- Valid JSON on stdout that fails to parse for any other reason (should
+  not occur given the two shapes above, but Pitfall 2 forbids collapsing
+  this into `docker_installed = false` silently) → a distinct
+  parse-error path, never silently treated as "not installed".
+
+The captured `Client.Arch` field reads `"arm64"` in every fixture in this
+ADR, because the fixtures were built on an Apple Silicon host. **This is
+expected to read `"amd64"` on GitHub `ubuntu-latest`** (an x86_64 runner)
+— the parser must never assume a fixed `Arch` value; the fixtures'
+`Version`/`ApiVersion`/`GitCommit` fields are similarly host-build-specific
+and are captured as real examples of the shape, not as fields the parser
+should assert exact values for.
+
+**Not capturable from this fixture matrix:** the "Docker daemon present
+and responding" shape (a populated, non-null `.Server` key). Building a
+working Docker-in-Docker daemon inside the sshd fixture image is out of
+scope for this phase's Testcontainers setup. Plan 02-05 must test that
+branch against a **derived** fixture — hand-written from Docker's own
+documented JSON schema and clearly labelled as derived, never saved
+alongside the captured files in a way that could be mistaken for
+measured reality (`packages/domain/src/discovery/fixtures/README.md`
+states this explicitly).

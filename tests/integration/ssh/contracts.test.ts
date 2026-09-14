@@ -10,13 +10,17 @@ import { createHash } from 'node:crypto';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Client, utils } from '@noodara/ssh/testing';
 import type { ConnectConfig } from '@noodara/ssh/testing';
+import { commandFor } from '@noodara/ssh';
 import {
   assertNoStrayTestContainers,
   hostKeyFingerprint,
   readTestKey,
   startSshd,
   type SshdFixture,
+  type UbuntuVersion,
 } from '../helpers/ssh.js';
+
+const UBUNTU_VERSIONS = ['22.04', '24.04'] as const satisfies readonly UbuntuVersion[];
 
 // --- Shared spike plumbing (Tasks 1-3) --------------------------------------------------------
 
@@ -226,5 +230,72 @@ describe('Task 1: hostVerifier raw-key contract (open question 1, D-04/D-05)', (
       expect(wrongPassphrase.message).not.toBe(malformed.message);
       expect(wrongPassphrase.message.toLowerCase()).toContain('passphrase');
     }
+  });
+});
+
+// --- Task 2: Docker version detection shapes (open question 2, assumption A3) ------------------
+
+interface ExecCapture {
+  readonly stdout: string;
+  readonly stderr: string;
+  readonly exitCode: number | null;
+}
+
+async function runAs(fixture: SshdFixture, command: string, user: string): Promise<ExecCapture> {
+  const result = await fixture.container.exec(['sh', '-c', command], { user });
+  return { stdout: result.stdout, stderr: result.stderr, exitCode: result.exitCode };
+}
+
+describe.each(UBUNTU_VERSIONS)('Task 2: docker version detection shapes (Ubuntu %s)', (ubuntu) => {
+  let fixture: SshdFixture | undefined;
+
+  afterEach(async () => {
+    await fixture?.stop();
+    fixture = undefined;
+    await assertNoStrayTestContainers();
+  });
+
+  it('docker version --format json exits 127 with empty stdout when the docker binary is absent (plain image)', async () => {
+    fixture = await startSshd({ ubuntu });
+
+    const result = await runAs(fixture, commandFor('docker.version'), 'deployer');
+
+    expect(result.exitCode).toBe(127);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('docker: not found');
+  });
+
+  it('docker version --format json exits non-zero but stdout is valid JSON with a Client key when the CLI is present and the daemon is unreachable', async () => {
+    fixture = await startSshd({ ubuntu, dockerCli: true });
+
+    const result = await runAs(fixture, commandFor('docker.version'), 'deployer');
+
+    expect(result.exitCode).not.toBe(0);
+    // Pitfall 2: this must never be collapsed into `docker_installed = false` — stdout parses as
+    // real JSON with a `Client` key and a null `Server`, distinct from the exit-127 case above.
+    const parsed: unknown = JSON.parse(result.stdout);
+    expect(parsed).toMatchObject({ Client: expect.any(Object) as object, Server: null });
+    // stderr never contaminates stdout — JSON.parse above already proves this, but assert the
+    // failure text lives in stderr explicitly so a future ssh2/docker upgrade that starts mixing
+    // the two streams fails here.
+    expect(result.stderr).toContain('failed to connect to the docker API');
+  });
+
+  it('docker compose version --short exits 127 when the docker binary is absent (plain image)', async () => {
+    fixture = await startSshd({ ubuntu });
+
+    const result = await runAs(fixture, commandFor('docker.compose_version'), 'deployer');
+
+    expect(result.exitCode).toBe(127);
+    expect(result.stdout).toBe('');
+  });
+
+  it('docker compose version --short succeeds without a daemon when the CLI is present', async () => {
+    fixture = await startSshd({ ubuntu, dockerCli: true });
+
+    const result = await runAs(fixture, commandFor('docker.compose_version'), 'deployer');
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim().length).toBeGreaterThan(0);
   });
 });

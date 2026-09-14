@@ -1,0 +1,5 @@
+{
+  "command": "id -nG",
+  "exitCode": 0,
+  "stderr": ""
+}
