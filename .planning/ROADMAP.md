@@ -119,7 +119,7 @@ Plans:
 
 - [x] 02-05-PLAN.md — Pure discovery parsers against real captures, plus D-11's UNSUPPORTED_OS remapping
 - [x] 02-06-PLAN.md — Private key loading policy, fingerprint derivation and the TOFU verifier with no bypass
-- [ ] 02-07-PLAN.md — Exhaustive ssh2 error classification and the per-command timeout/redaction/truncation wrapper
+- [x] 02-07-PLAN.md — Exhaustive ssh2 error classification and the per-command timeout/redaction/truncation wrapper
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -206,7 +206,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Dominio, persistencia y autenticación | 17/17 | Complete    | 2026-09-12 |
-| 2. Adaptador SSH aislado y probado con Testcontainers | 6/10 | In Progress|  |
+| 2. Adaptador SSH aislado y probado con Testcontainers | 7/10 | In Progress|  |
 | 3. Servicios de aplicación, activity log y redacción | 0/TBD | Not started | - |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |
 | 5. UI web | 0/TBD | Not started | - |

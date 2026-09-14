@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-06-PLAN.md
-last_updated: "2026-09-14T20:12:32.636Z"
+stopped_at: Completed 02-07-PLAN.md
+last_updated: "2026-09-14T20:52:45.409Z"
 last_activity: 2026-09-14
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 27
-  completed_plans: 23
+  completed_plans: 24
   percent: 17
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 2 (Adaptador SSH aislado y probado con Testcontainers) — EXECUTING
-Plan: 7 of 10
+Plan: 8 of 10
 Status: Ready to execute
 Last activity: 2026-09-14
 
-Progress: [█████████░] 85%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
@@ -75,6 +75,7 @@ Progress: [█████████░] 85%
 | Phase 02 P04 | 170min | 3 tasks | 8 files |
 | Phase 02 P05 | 55min | 3 tasks | 14 files |
 | Phase 02 P06 | 60min | 2 tasks | 7 files |
+| Phase 02 P07 | 25min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -146,6 +147,9 @@ Recent decisions affecting current work:
 - [Phase 02]: generateTestKeys() adds a dsa key generated via openssl dsaparam/gendsa (not ssh-keygen -t dsa, which modern OpenSSH refuses) to exercise D-01's DSA-type-rejection path with a genuinely parseable key
 - [Phase 02]: key-loader.ts drops a defensive Array.isArray(parsed) branch: @types/ssh2 declares utils.parseKey's return as exactly ParsedKey | Error (never an array), and Array.isArray narrowing against a non-array type widens the ternary to any
 - [Phase 02]: createHostVerifier's only accepted input field is trusted; a test asserts Object.keys(input) directly so a future bypass-option addition fails a behavioural test, not just a grep
+- [Phase 02]: Added TransportClosedError and UnsupportedOsError markers to packages/ssh/src/errors.ts (beyond the plan's own SshFailure/CommandTimeoutError exports) so ADR 0004's mid-exec-transport-death (ssh2 never raises an 'error' event for it) and D-11's UNSUPPORTED_OS warning are both reachable through classifySshError's single rule table
+- [Phase 02]: classifySshError's ClassifyContext.phase only changes the outcome for the socket-reset rule (ECONNRESET/EPIPE -> CONNECTION_LOST regardless of connect/exec); every other rule's code does not depend on phase, since ADR 0004 measurements did not support inventing further phase-based distinctions
+- [Phase 02]: execWithTimeout's client/channel parameters are narrow structural interfaces (exec/on/destroy only), never ssh2's concrete Client/ClientChannel types, so its fake-timer/fake-channel unit tests exercise real timer/stream mechanics honestly rather than mocking ssh2 itself
 
 ### Pending Todos
 
@@ -170,6 +174,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-14T20:12:32.627Z
-Stopped at: Completed 02-06-PLAN.md
+Last session: 2026-09-14T20:52:45.403Z
+Stopped at: Completed 02-07-PLAN.md
 Resume file: None

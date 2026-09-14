@@ -43,7 +43,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **SEC-02**: Ninguna credencial aparece en respuestas API, logs, mensajes de error, activity log ni telemetría; la redacción es por tipo (branded types) y un test con valores canary lo verifica en todas las salidas.
 - [x] **SEC-03**: El host fingerprint se fija en la primera conexión exitosa (TOFU), se muestra al admin, y un cambio posterior falla con HOST_KEY_CHANGED hasta que el admin lo re-confirme explícitamente.
 - [x] **SEC-04**: Los comandos SSH provienen de una allowlist de plantillas sin interpolar input del usuario; cada conexión y cada comando tienen timeout explícito.
-- [ ] **SEC-05**: stdout/stderr de comandos remotos pasan por el redactor antes de persistirse o mostrarse.
+- [x] **SEC-05**: stdout/stderr de comandos remotos pasan por el redactor antes de persistirse o mostrarse.
 
 ### Discovery
 
@@ -145,7 +145,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SERV-08 | Phase 2 | Complete |
 | SEC-03 | Phase 2 | Complete |
 | SEC-04 | Phase 2 | Complete |
-| SEC-05 | Phase 2 | Pending |
+| SEC-05 | Phase 2 | Complete |
 | DISC-01 | Phase 2 | Complete |
 | DISC-04 | Phase 2 | Complete |
 | QA-03 | Phase 2 | Complete |
