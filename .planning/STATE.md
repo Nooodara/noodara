@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-09-14T05:28:23.372Z"
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-09-14T17:44:24.271Z"
 last_activity: 2026-09-14
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 27
-  completed_plans: 20
+  completed_plans: 21
   percent: 17
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 2 (Adaptador SSH aislado y probado con Testcontainers) — EXECUTING
-Plan: 4 of 10
+Plan: 5 of 10
 Status: Ready to execute
 Last activity: 2026-09-14
 
-Progress: [███████░░░] 74%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
@@ -72,6 +72,7 @@ Progress: [███████░░░] 74%
 | Phase 02 P01 | 55min | 4 tasks | 23 files |
 | Phase 02 P02 | 65min | 3 tasks | 8 files |
 | Phase 02-adaptador-ssh-aislado-y-probado-con-testcontainers P03 | 55min | 3 tasks | 9 files |
+| Phase 02 P04 | 170min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -135,6 +136,9 @@ Recent decisions affecting current work:
 - [Phase 02]: startSshd always injects a fresh SSH_TEST_KEY_PASSPHRASE, so every fixture always has an ed25519_locked key appended to root/deployer authorized_keys regardless of scenario
 - [Phase 02-adaptador-ssh-aislado-y-probado-con-testcontainers]: parseTuningInt takes an optional {min,max} range object rather than a parallel parser, keeping exactly one integer parser in env.ts
 - [Phase 02-adaptador-ssh-aislado-y-probado-con-testcontainers]: The discovery>=command SSH timeout coherence check runs after both values are parsed, reporting against NOODARA_SSH_DISCOVERY_TIMEOUT_MS
+- [Phase 02]: TOFU: use utils.parseKey(rawHostVerifierArgument).type to extract the host key algorithm name (measured to work directly against the raw wire-format Buffer)
+- [Phase 02]: CONNECT_TIMEOUT: keep the accept-then-silent blackhole listener as the chosen strategy, after fixing a real bug where nc without -e/-k didn't actually blackhole
+- [Phase 02]: Mid-exec transport death maps to CONNECTION_LOST via a channel closing with no exit code; ssh2 never raises an 'error' event for this path
 
 ### Pending Todos
 
@@ -159,6 +163,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-14T05:28:23.362Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-09-14T17:44:24.260Z
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None

@@ -113,7 +113,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-04-PLAN.md — Empirical spikes for the three RESEARCH open questions, real discovery fixtures and ADR 0004
+- [x] 02-04-PLAN.md — Empirical spikes for the three RESEARCH open questions, real discovery fixtures and ADR 0004
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -206,7 +206,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Dominio, persistencia y autenticación | 17/17 | Complete    | 2026-09-12 |
-| 2. Adaptador SSH aislado y probado con Testcontainers | 3/10 | In Progress|  |
+| 2. Adaptador SSH aislado y probado con Testcontainers | 4/10 | In Progress|  |
 | 3. Servicios de aplicación, activity log y redacción | 0/TBD | Not started | - |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |
 | 5. UI web | 0/TBD | Not started | - |

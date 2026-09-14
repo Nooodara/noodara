@@ -47,7 +47,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Discovery
 
-- [ ] **DISC-01**: Tras CONNECTED, Noodara descubre hostname, distribución, versión de OS, arquitectura, núcleos de CPU, RAM total, disco total y usado, uptime, Docker instalado y su versión, usando salidas estructuradas y parsers testeados.
+- [x] **DISC-01**: Tras CONNECTED, Noodara descubre hostname, distribución, versión de OS, arquitectura, núcleos de CPU, RAM total, disco total y usado, uptime, Docker instalado y su versión, usando salidas estructuradas y parsers testeados.
 - [ ] **DISC-02**: El admin ve el progreso del discovery check por check (SSH → auth → OS → recursos → Docker → sudo/docker group) con pass/fail y detalle, no un spinner genérico.
 - [ ] **DISC-03**: Cada discovery se guarda como snapshot append-only y el estado actual del servidor se denormaliza para la vista de detalle.
 - [ ] **DISC-04**: Un OS no soportado se reporta como UNSUPPORTED_OS con aviso claro, sin bloquear el resto de la información recolectada.
@@ -146,7 +146,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEC-03 | Phase 2 | Complete |
 | SEC-04 | Phase 2 | Complete |
 | SEC-05 | Phase 2 | Pending |
-| DISC-01 | Phase 2 | Pending |
+| DISC-01 | Phase 2 | Complete |
 | DISC-04 | Phase 2 | Pending |
 | QA-03 | Phase 2 | Complete |
 | SERV-01 | Phase 3 | Pending |
