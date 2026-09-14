@@ -35,7 +35,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **SERV-05**: Cada servidor tiene un estado explícito PENDING, CONNECTING, CONNECTED, DISCONNECTED, UNREACHABLE o ERROR, con transiciones centralizadas y validadas en el dominio.
 - [ ] **SERV-06**: El admin dispara "Connect" explícitamente; la conexión corre en el worker en segundo plano y el estado se refleja en la UI en tiempo real vía SSE sin recargar.
 - [x] **SERV-07**: Un fallo de conexión produce un `error_code` específico (AUTH_FAILED, HOST_UNRESOLVED, CONNECT_TIMEOUT, COMMAND_TIMEOUT, HOST_KEY_CHANGED, CONNECTION_LOST, UNSUPPORTED_OS) con mensaje accionable; la API nunca cae.
-- [ ] **SERV-08**: Un usuario SSH no-root con sudo sin password es soportado; la validación comprueba `sudo -n` y pertenencia al grupo docker y reporta cada check.
+- [x] **SERV-08**: Un usuario SSH no-root con sudo sin password es soportado; la validación comprueba `sudo -n` y pertenencia al grupo docker y reporta cada check.
 
 ### Security
 
@@ -76,7 +76,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **QA-01**: Cada PR corre lint, typecheck, unit tests, integration ligera, gitleaks y `pnpm audit`; el merge se bloquea si algo falla.
 - [x] **QA-02**: `packages/domain` mantiene ≥95% statement y ≥95% branch en validadores y state machines, verificado por umbral en CI.
-- [ ] **QA-03**: La suite de integración usa Testcontainers con sshd para Ubuntu 22.04 y 24.04 y cubre conexión exitosa, credenciales inválidas, host inválido, timeout de red, timeout de comando, pérdida de conexión, reconexión y ejecución segura de comandos, limpiando sus recursos.
+- [x] **QA-03**: La suite de integración usa Testcontainers con sshd para Ubuntu 22.04 y 24.04 y cubre conexión exitosa, credenciales inválidas, host inválido, timeout de red, timeout de comando, pérdida de conexión, reconexión y ejecución segura de comandos, limpiando sus recursos.
 - [ ] **QA-04**: El E2E de Playwright cubre login → Servers → add server → connect → discovery → detail; nightly lo repite 20 veces y ejecuta 100 conexiones consecutivas.
 - [ ] **QA-05**: Un job de CI y nightly siembra secrets canary y verifica que no aparecen en ninguna salida.
 - [x] **QA-06**: Las migraciones se prueban desde cero y desde el snapshot de la versión anterior.
@@ -142,13 +142,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QA-02 | Phase 1 | Complete |
 | QA-06 | Phase 1 | Complete |
 | SERV-07 | Phase 2 | Complete |
-| SERV-08 | Phase 2 | Pending |
+| SERV-08 | Phase 2 | Complete |
 | SEC-03 | Phase 2 | Pending |
 | SEC-04 | Phase 2 | Complete |
 | SEC-05 | Phase 2 | Pending |
 | DISC-01 | Phase 2 | Pending |
 | DISC-04 | Phase 2 | Pending |
-| QA-03 | Phase 2 | Pending |
+| QA-03 | Phase 2 | Complete |
 | SERV-01 | Phase 3 | Pending |
 | SERV-02 | Phase 3 | Pending |
 | SERV-03 | Phase 3 | Pending |

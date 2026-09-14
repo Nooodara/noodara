@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-09-13T21:41:42.547Z"
-last_activity: 2026-09-13
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-09-14T04:06:43.674Z"
+last_activity: 2026-09-14
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 27
-  completed_plans: 18
+  completed_plans: 19
   percent: 17
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 2 (Adaptador SSH aislado y probado con Testcontainers) — EXECUTING
-Plan: 2 of 10
+Plan: 3 of 10
 Status: Ready to execute
-Last activity: 2026-09-13
+Last activity: 2026-09-14
 
-Progress: [███████░░░] 67%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
@@ -70,6 +70,7 @@ Progress: [███████░░░] 67%
 | Phase 01 P16 | 38min | 3 tasks | 13 files |
 | Phase 01 P17 | 22min | 2 tasks | 5 files |
 | Phase 02 P01 | 55min | 4 tasks | 23 files |
+| Phase 02 P02 | 65min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,8 @@ Recent decisions affecting current work:
 - [Phase 01]: ADR 0003 records the tsc-build/tsx-dev/plain-node-start runtime contract as Accepted, closing 01-VERIFICATION.md's BLOCKER for future phases
 - [Phase 02]: turbo boundaries allow lists are undirected: pure-domain's own allow list had to add ssh-adapter for ssh->domain to pass, not just the reverse — Verified with the unmodified phase-1 pure-domain rule alone; domain->ssh containment stays guaranteed by purity.test.ts's independent frozen dependency list, unaffected by the tag change
 - [Phase 02]: packages/ssh/src/commands/index.ts ships a minimal CommandName stub in Task 3, fully replaced by Task 4's real barrel — Reconciles Task 3's own forward reference to a type Task 4 defines while keeping pnpm build green after every task
+- [Phase 02]: Docker CLI test variant uses docker-ce-cli from Docker's own apt repo (never Ubuntu's docker.io), so the WITH_DOCKER_CLI image genuinely ships no daemon binary
+- [Phase 02]: startSshd always injects a fresh SSH_TEST_KEY_PASSPHRASE, so every fixture always has an ed25519_locked key appended to root/deployer authorized_keys regardless of scenario
 
 ### Pending Todos
 
@@ -153,6 +156,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-13T21:41:42.541Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-09-14T04:06:43.664Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
