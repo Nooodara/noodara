@@ -8,11 +8,14 @@ import {
   statusForErrorCode,
 } from './connection-result.js';
 
+// D-11: UNSUPPORTED_OS is a warning, not an error — the connection and discovery both succeeded,
+// the platform is simply outside the supported matrix, so it lands on CONNECTED like a success
+// while still being recorded in lastErrorCode for display.
 const ERROR_STATUS_TABLE: Readonly<Record<(typeof SERVER_ERROR_CODES)[number], ServerStatus>> = {
   AUTH_FAILED: 'ERROR',
   COMMAND_TIMEOUT: 'ERROR',
   HOST_KEY_CHANGED: 'ERROR',
-  UNSUPPORTED_OS: 'ERROR',
+  UNSUPPORTED_OS: 'CONNECTED',
   HOST_UNRESOLVED: 'UNREACHABLE',
   CONNECT_TIMEOUT: 'UNREACHABLE',
   CONNECTION_LOST: 'UNREACHABLE',
@@ -123,6 +126,37 @@ describe('applyConnectionResult (failure)', () => {
       expect(next.pendingFingerprint).toBeNull();
     },
   );
+});
+
+describe('applyConnectionResult (D-11: UNSUPPORTED_OS is a warning, not an error)', () => {
+  it('lands on CONNECTED and records UNSUPPORTED_OS in lastErrorCode', () => {
+    const state = deepFreeze(buildState({ status: 'CONNECTING' }));
+    const result: ConnectionResult = { ok: false, errorCode: 'UNSUPPORTED_OS' };
+
+    const next = applyConnectionResult(state, result, NOW);
+
+    expect(next.status).toBe('CONNECTED');
+    expect(next.lastErrorCode).toBe('UNSUPPORTED_OS');
+  });
+
+  it('does not set lastSeenAt or hostFingerprint (only the ok:true branch may)', () => {
+    const state = deepFreeze(
+      buildState({ status: 'CONNECTING', lastSeenAt: null, hostFingerprint: null }),
+    );
+    const result: ConnectionResult = { ok: false, errorCode: 'UNSUPPORTED_OS' };
+
+    const next = applyConnectionResult(state, result, NOW);
+
+    expect(next.lastSeenAt).toBeNull();
+    expect(next.hostFingerprint).toBeNull();
+  });
+
+  it('still throws InvalidTransitionError when the source status is not CONNECTING (from PENDING)', () => {
+    const state = deepFreeze(buildState({ status: 'PENDING' }));
+    const result: ConnectionResult = { ok: false, errorCode: 'UNSUPPORTED_OS' };
+
+    expect(() => applyConnectionResult(state, result, NOW)).toThrow(InvalidTransitionError);
+  });
 });
 
 describe('applyConnectionResult (invariants)', () => {
