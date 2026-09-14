@@ -9,13 +9,16 @@
 import { createHash } from 'node:crypto';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Client, utils } from '@noodara/ssh/testing';
-import type { ConnectConfig } from '@noodara/ssh/testing';
+import type { ClientChannel, ConnectConfig } from '@noodara/ssh/testing';
 import { commandFor } from '@noodara/ssh';
 import {
   assertNoStrayTestContainers,
   hostKeyFingerprint,
   readTestKey,
+  startBlackholeListener,
   startSshd,
+  waitForSlowCommandStart,
+  type BlackholeListener,
   type SshdFixture,
   type UbuntuVersion,
 } from '../helpers/ssh.js';
@@ -69,6 +72,15 @@ function attemptConnect(config: ConnectConfig): Promise<ConnectAttempt> {
     const settle = (result: ConnectAttempt): void => {
       if (settled) return;
       settled = true;
+      // Swallow any further 'error' events after this promise has already settled. Some failure
+      // modes (e.g. the blackhole listener's readyTimeout firing) leave the underlying socket
+      // alive; when its peer container is later stopped in `afterEach`, a second, later 'error'
+      // can fire on this same abandoned Client — an unhandled 'error' event is a fatal, uncaught
+      // exception in Node, and this function's single caller has already moved on by then.
+      client.removeAllListeners('error');
+      client.on('error', () => {
+        /* intentionally ignored — see comment above */
+      });
       resolve(result);
     };
     client.once('ready', () => {
@@ -299,3 +311,305 @@ describe.each(UBUNTU_VERSIONS)('Task 2: docker version detection shapes (Ubuntu 
     expect(result.stdout.trim().length).toBeGreaterThan(0);
   });
 });
+
+// --- Task 3: CONNECT_TIMEOUT candidates and the ssh2 error-shape table (open question 3, A4/A5) -
+
+describe('Task 3: CONNECT_TIMEOUT candidate selection (open question 3, A4)', () => {
+  let fixture: SshdFixture | undefined;
+  let blackhole: BlackholeListener | undefined;
+
+  afterEach(async () => {
+    await fixture?.stop();
+    fixture = undefined;
+    await blackhole?.stop();
+    blackhole = undefined;
+    await assertNoStrayTestContainers();
+  });
+
+  it('candidate (a) — the blackhole listener — fails within a bounded window around the configured readyTimeout, level client-timeout (the chosen strategy)', async () => {
+    blackhole = await startBlackholeListener();
+    const configuredTimeout = 2000;
+
+    const attempt = await attemptConnect({
+      host: blackhole.host,
+      port: blackhole.port,
+      username: 'irrelevant',
+      password: 'irrelevant',
+      readyTimeout: configuredTimeout,
+      hostVerifier: () => true,
+    });
+
+    expect(attempt.ok).toBe(false);
+    if (!attempt.ok) {
+      expect(attempt.err.level).toBe('client-timeout');
+      expect(attempt.err.message).toBe('Timed out while waiting for handshake');
+      // Elapsed-time window, not a fixed sleep: must land at-or-after the configured timeout and
+      // within a few seconds of it — the whole point of this being a real readyTimeout.
+      expect(attempt.elapsedMs).toBeGreaterThanOrEqual(configuredTimeout);
+      expect(attempt.elapsedMs).toBeLessThan(configuredTimeout + 5000);
+    }
+  });
+
+  it('candidate (b) — the sshd fixture container-internal bridge IP, unpublished — fails on this host (recorded but rejected; see ADR for the CI-portability concern)', async () => {
+    fixture = await startSshd({ ubuntu: '24.04' });
+    const [networkName] = fixture.container.getNetworkNames();
+    const internalIp = fixture.container.getIpAddress(networkName as string);
+
+    const attempt = await attemptConnect({
+      host: internalIp,
+      port: 22,
+      username: 'irrelevant',
+      password: 'irrelevant',
+      readyTimeout: 2000,
+      hostVerifier: () => true,
+    });
+
+    // Only "this candidate fails somehow" is asserted — the ADR records the exact shape measured
+    // on this machine and explains why it is not portable to every CI environment.
+    expect(attempt.ok).toBe(false);
+  });
+
+  it('candidate (c) — 10.255.255.1 — fails on this host (recorded but rejected; see ADR for the CI-portability concern)', async () => {
+    const attempt = await attemptConnect({
+      host: '10.255.255.1',
+      port: 22,
+      username: 'irrelevant',
+      password: 'irrelevant',
+      readyTimeout: 2000,
+      hostVerifier: () => true,
+    });
+
+    expect(attempt.ok).toBe(false);
+  });
+});
+
+describe('Task 3: ssh2 error-shape table (SERV-07, A5)', () => {
+  let fixture: SshdFixture | undefined;
+
+  afterEach(async () => {
+    await fixture?.stop();
+    fixture = undefined;
+    await assertNoStrayTestContainers();
+  });
+
+  it('wrong password against pwuser -> level client-authentication, "All configured authentication methods failed"', async () => {
+    fixture = await startSshd({ ubuntu: '24.04' });
+
+    const attempt = await attemptConnect({
+      host: fixture.host,
+      port: fixture.port,
+      username: 'pwuser',
+      password: 'definitely-wrong',
+      readyTimeout: 5000,
+      hostVerifier: () => true,
+    });
+
+    expect(attempt.ok).toBe(false);
+    if (!attempt.ok) {
+      expect(attempt.err.level).toBe('client-authentication');
+      expect(attempt.err.message).toBe('All configured authentication methods failed');
+    }
+  });
+
+  it('a valid-but-unauthorized key against deployer -> the same client-authentication shape', async () => {
+    fixture = await startSshd({ ubuntu: '24.04' });
+    const key = await readTestKey(fixture, 'ed25519_unauthorized');
+
+    const attempt = await attemptConnect({
+      host: fixture.host,
+      port: fixture.port,
+      username: 'deployer',
+      privateKey: key,
+      readyTimeout: 5000,
+      hostVerifier: () => true,
+    });
+
+    expect(attempt.ok).toBe(false);
+    if (!attempt.ok) {
+      expect(attempt.err.level).toBe('client-authentication');
+      expect(attempt.err.message).toBe('All configured authentication methods failed');
+    }
+  });
+
+  it('a correct key against a nonexistent username -> the same client-authentication shape', async () => {
+    fixture = await startSshd({ ubuntu: '24.04' });
+    const key = await readTestKey(fixture, 'ed25519');
+
+    const attempt = await attemptConnect({
+      host: fixture.host,
+      port: fixture.port,
+      username: 'nonexistentuser',
+      privateKey: key,
+      readyTimeout: 5000,
+      hostVerifier: () => true,
+    });
+
+    expect(attempt.ok).toBe(false);
+    if (!attempt.ok) {
+      expect(attempt.err.level).toBe('client-authentication');
+      expect(attempt.err.message).toBe('All configured authentication methods failed');
+    }
+  });
+
+  it('a hostname under the .invalid TLD fails with the readyTimeout shape on this resolver, not a fast ENOTFOUND (measured, ADR row 4)', async () => {
+    const configuredTimeout = 5000;
+
+    const attempt = await attemptConnect({
+      host: 'noodara-test-nonexistent.invalid',
+      port: 22,
+      username: 'irrelevant',
+      password: 'irrelevant',
+      readyTimeout: configuredTimeout,
+      hostVerifier: () => true,
+    });
+
+    expect(attempt.ok).toBe(false);
+    if (!attempt.ok) {
+      expect(attempt.err.level).toBe('client-timeout');
+      expect(attempt.elapsedMs).toBeGreaterThanOrEqual(configuredTimeout);
+      expect(attempt.elapsedMs).toBeLessThan(configuredTimeout + 5000);
+    }
+  });
+
+  it('the host/port of a stopped container is refused -> level client-socket, code ECONNREFUSED', async () => {
+    fixture = await startSshd({ ubuntu: '24.04' });
+    const { host, port } = fixture;
+    await fixture.stop();
+    fixture = undefined;
+
+    const attempt = await attemptConnect({
+      host,
+      port,
+      username: 'irrelevant',
+      password: 'irrelevant',
+      readyTimeout: 5000,
+      hostVerifier: () => true,
+    });
+
+    expect(attempt.ok).toBe(false);
+    if (!attempt.ok) {
+      expect(attempt.err.level).toBe('client-socket');
+      expect(attempt.err.code).toBe('ECONNREFUSED');
+    }
+  });
+
+  it('a pinned fingerprint mismatch (hostVerifier returns false) -> level handshake, "Host denied (verification failed)"', async () => {
+    fixture = await startSshd({ ubuntu: '24.04' });
+    const key = await readTestKey(fixture, 'ed25519');
+
+    const attempt = await attemptConnect({
+      host: fixture.host,
+      port: fixture.port,
+      username: 'deployer',
+      privateKey: key,
+      readyTimeout: 5000,
+      hostVerifier: () => false,
+    });
+
+    expect(attempt.ok).toBe(false);
+    if (!attempt.ok) {
+      expect(attempt.err.level).toBe('handshake');
+      expect(attempt.err.message).toBe('Host denied (verification failed)');
+      expect(attempt.err.fatal).toBe(true);
+    }
+  });
+});
+
+describe.each(UBUNTU_VERSIONS)(
+  'Task 3: mid-exec transport death, no error event ever fires (Ubuntu %s)',
+  (ubuntu) => {
+    afterEach(async () => {
+      await assertNoStrayTestContainers();
+    });
+
+    it('a channel with an exec in flight closes with no exit code and no error event when the transport dies mid-command', async () => {
+      const fixture = await startSshd({ ubuntu, slowDf: true });
+      const key = await readTestKey(fixture, 'ed25519');
+
+      const connectResult = await attemptConnect({
+        host: fixture.host,
+        port: fixture.port,
+        username: 'deployer',
+        privateKey: key,
+        readyTimeout: 5000,
+        hostVerifier: () => true,
+      });
+      expect(connectResult.ok).toBe(true);
+      if (!connectResult.ok) return;
+      const client = connectResult.client;
+
+      const channel = await new Promise<ClientChannel>((resolve, reject) => {
+        client.exec(commandFor('discovery.disk'), (err: Error | undefined, stream: ClientChannel) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(stream);
+        });
+      });
+
+      let clientErrored = false;
+      let channelErrored = false;
+      let clientEnded = false;
+      let clientClosed = false;
+      let channelEnded = false;
+      let channelCloseArgs: unknown[] = [];
+
+      client.on('error', () => {
+        clientErrored = true;
+      });
+      client.on('end', () => {
+        clientEnded = true;
+      });
+      client.on('close', () => {
+        clientClosed = true;
+      });
+      channel.on('error', () => {
+        channelErrored = true;
+      });
+      channel.on('end', () => {
+        channelEnded = true;
+      });
+      const channelClosed = new Promise<void>((resolve) => {
+        channel.once('close', (...args: unknown[]) => {
+          channelCloseArgs = args;
+          resolve();
+        });
+      });
+      // Measured, load-bearing (ADR Open Question 3): a `ClientChannel` is a paused-mode Duplex
+      // until something consumes it — no 'data' listener and no `.resume()` means the internal
+      // `push(null)` ssh2 issues on transport death never surfaces as 'end'/'close' at all, even
+      // after waiting tens of seconds. The real adapter's `exec()` always attaches a `'data'`
+      // listener to accumulate stdout (Pattern 2, 02-RESEARCH.md), so this is not a production
+      // gap — but this spike must resume the streams itself or it measures nothing.
+      channel.resume();
+      channel.stderr.resume();
+
+      // Awaiting this marker (built in plan 02-02) is what makes the kill deterministic: the
+      // remote command is provably blocked with no output sent yet before the transport is cut.
+      await waitForSlowCommandStart(fixture);
+      await fixture.stop();
+
+      // Bounded wait for the real event, not a fixed sleep before an assertion — this races the
+      // measured graceful-close sequence against a generous ceiling so the test fails fast (with
+      // a clear message) if a future ssh2 upgrade ever starts raising an error here instead.
+      await Promise.race([
+        channelClosed,
+        new Promise((_resolve, reject) => {
+          setTimeout(() => {
+            reject(new Error('timed out waiting for channel close'));
+          }, 10_000);
+        }),
+      ]);
+
+      // The core measured fact (ADR Open Question 3): no 'error' event fires anywhere.
+      expect(clientErrored).toBe(false);
+      expect(channelErrored).toBe(false);
+      expect(clientEnded).toBe(true);
+      expect(clientClosed).toBe(true);
+      expect(channelEnded).toBe(true);
+      // No exit code, no signal — every argument 'close' received is undefined.
+      expect(channelCloseArgs.every((arg) => arg === undefined)).toBe(true);
+    });
+  },
+);

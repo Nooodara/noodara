@@ -132,15 +132,28 @@ export interface BlackholeListener {
  * scenario primitive (02-CONTEXT.md "Escenarios de red"; 02-RESEARCH.md Assumption A4). Unlike an
  * unroutable IP, an accept-then-silent listener makes `ssh2`'s `readyTimeout` the only possible
  * outcome deterministically on both macOS Docker Desktop and GitHub `ubuntu-latest` runners,
- * since no route-lookup behaviour is involved. `busybox nc -l` (Alpine's own `nc`) accepts a
- * connection and, with nothing on its stdin, never writes a byte back — exactly the primitive
- * needed. The `while true` loop means the listener survives more than one connection attempt.
+ * since no route-lookup behaviour is involved.
+ *
+ * 02-04-PLAN.md's empirical measurement found the original `while true; do nc -l -p 9000; done`
+ * form of this command does NOT blackhole: plain BusyBox `nc -l` (no `-e`) pipes the accepted
+ * socket to its own stdin/stdout, and as soon as `ssh2`'s client writes its identification banner
+ * immediately after connecting, that `nc` process's write side breaks (its stdout is not a real
+ * consumer) and it exits, resetting the connection — measured as `ssh2` failing in single-digit
+ * milliseconds with `Connection lost before handshake` / `level: 'protocol'`, never a
+ * `readyTimeout`. `-lk -e /bin/sleep infinity` fixes this: `-e` hands the accepted socket to
+ * `sleep infinity` (a process that never reads or writes it, so nothing is ever echoed back or
+ * used to signal an exit) and `-k` (BusyBox's own "persistent server" flag, documented as
+ * requiring `-e`) keeps the listener accepting further connections without the shell-loop
+ * respawn race that let the old form drop connections between iterations. Re-verified against a
+ * live container: two sequential connection attempts each failed with
+ * `level: 'client-timeout'` / `Timed out while waiting for handshake` at the configured
+ * `readyTimeout` (±~1-2ms), never a fast reset.
  */
 export async function startBlackholeListener(): Promise<BlackholeListener> {
   const container = await new GenericContainer('alpine:3.21')
     .withLabels({ 'noodara.test': 'true' })
     .withExposedPorts(9000)
-    .withCommand(['sh', '-c', 'while true; do nc -l -p 9000; done'])
+    .withCommand(['nc', '-lk', '-p', '9000', '-e', '/bin/sleep', 'infinity'])
     .withWaitStrategy(Wait.forListeningPorts())
     .start();
 
