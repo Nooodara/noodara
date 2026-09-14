@@ -43,7 +43,18 @@ export const domainSourceAliases: AliasOptions = [
 // Same rationale as domainSourceAliases above, for @noodara/ssh (02-CONTEXT.md, ADR 0003):
 // packages/ssh's `exports` map points at its built `dist` output, but every in-process Vitest
 // run must keep resolving straight to packages/ssh/src so unit tests never require a build step.
+//
+// `@noodara/ssh/testing` (02-04-PLAN.md) resolves to a Vitest-only source file
+// (packages/ssh/src/testing/raw-ssh2.ts) with no `exports` map entry of its own — it is never
+// reachable from plain Node, only from an in-process Vitest run aliasing straight to source,
+// exactly like the bare specifier below. Ordering rule (load-bearing, same reason as
+// domainSourceAliases): the subpath entry must come before the bare regex entry so a caller can
+// tell them apart, even though the bare entry's regex form already can't match the subpath.
 export const sshSourceAliases: AliasOptions = [
+  {
+    find: '@noodara/ssh/testing',
+    replacement: fileURLToPath(new URL('./packages/ssh/src/testing/raw-ssh2.ts', import.meta.url)),
+  },
   {
     find: /^@noodara\/ssh$/,
     replacement: fileURLToPath(new URL('./packages/ssh/src/index.ts', import.meta.url)),
