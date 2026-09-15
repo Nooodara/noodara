@@ -14,7 +14,7 @@ Noodara v0.1 Foundation prueba el core value del producto — conocer, registrar
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Dominio, persistencia y autenticación** - Base de datos migrada, dominio ≥95% cubierto y un admin único que inicia/cierra sesión de forma segura. (completed 2026-09-12)
-- [ ] **Phase 2: Adaptador SSH aislado y probado con Testcontainers** - Conexión SSH con TOFU, timeouts, allowlist de comandos y discovery, validado contra un `sshd` real.
+- [x] **Phase 2: Adaptador SSH aislado y probado con Testcontainers** - Conexión SSH con TOFU, timeouts, allowlist de comandos y discovery, validado contra un `sshd` real. (completed 2026-09-15)
 - [ ] **Phase 3: Servicios de aplicación, activity log y redacción** - Registrar/editar/eliminar servidores, snapshots de discovery y un activity log sin fugas de secrets.
 - [ ] **Phase 4: HTTP routes, worker BullMQ y SSE** - La API expone connect/discover en background y el estado llega a tiempo real sin polling.
 - [ ] **Phase 5: UI web** - El flujo login → Servers → add → connect → discovery → detail funciona en el design system Apple-inspired, dark y light.
@@ -131,7 +131,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 02-10-PLAN.md — QA-03: all eight roadmap §6.5 scenarios against real sshd containers on both Ubuntu versions
+- [x] 02-10-PLAN.md — QA-03: all eight roadmap §6.5 scenarios against real sshd containers on both Ubuntu versions
 
 **Cross-cutting constraints:**
 
@@ -206,7 +206,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Dominio, persistencia y autenticación | 17/17 | Complete    | 2026-09-12 |
-| 2. Adaptador SSH aislado y probado con Testcontainers | 9/10 | In Progress|  |
+| 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete   | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 0/TBD | Not started | - |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |
 | 5. UI web | 0/TBD | Not started | - |

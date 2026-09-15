@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: executing
-stopped_at: Completed 02-09-PLAN.md
-last_updated: "2026-09-15T07:07:37.321Z"
+status: verifying
+stopped_at: Completed 02-10-PLAN.md
+last_updated: "2026-09-15T19:23:38.203Z"
 last_activity: 2026-09-15
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 27
-  completed_plans: 26
-  percent: 17
+  completed_plans: 27
+  percent: 33
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 Phase: 2 (Adaptador SSH aislado y probado con Testcontainers) — EXECUTING
 Plan: 10 of 10
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-15
 
-Progress: [██████████] 96%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -78,6 +78,7 @@ Progress: [██████████] 96%
 | Phase 02 P07 | 25min | 2 tasks | 5 files |
 | Phase 02 P08 | 95min | 2 tasks | 6 files |
 | Phase 02 P09 | 55min | 2 tasks | 5 files |
+| Phase 02 P10 | 150min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -158,6 +159,10 @@ Recent decisions affecting current work:
 - [Phase ?]: daemon_unreachable's docker_version check reports pass (command+parse both succeeded), matching runDiscovery's pass criterion everywhere else
 - [Phase ?]: commandFor stays part of @noodara/ssh's public surface because tests/integration/ssh/contracts.test.ts (plan 02-04) already depends on it through the package's single export entry
 - [Phase ?]: D-08's discovery-total budget is checked once per loop iteration against an injected clock, never by racing session.exec() itself
+- [Phase 02]: tests/integration/ssh/tsconfig.json (+ @types/node promoted to a root devDependency, + pnpm typecheck extended with a tsc -p invocation) added because no tsc project anywhere in the repo covered tests/integration/** — the SEC-04 @ts-expect-error assertion in connect.test.ts needed a real static check behind it, not just a comment
+- [Phase 02]: The SERV-08 access-check matrix test connects to a dockerCli:true fixture, not the plain image, so the 'other nine checks still pass' assertion is genuinely about sudo/docker_group and not incidentally about Docker being absent
+- [Phase 02]: The command-timeout scenario proves 'the timeout destroyed the channel, not the connection' via a second exec on the same session plus a separate fresh connection with a normal budget, since SshTimeouts.commandMs cannot be varied per exec call on one session
+- [Phase 02]: The canary password in discovery.test.ts's SEC-05 test is fixture.password itself (already a fresh per-run randomUUID()), not a separately generated value, since a separately generated string cannot authenticate as the account's real password
 
 ### Pending Todos
 
@@ -172,6 +177,7 @@ None yet.
 - REQUIREMENTS.md traceability footer indicaba "40 total" pero el conteo real de IDs únicos en el documento es 42; corregido durante la creación del roadmap (ver traceability actualizada).
 - Dos decisiones de stack siguen abiertas por el usuario según research/SUMMARY.md: auth (Better Auth vs. hand-rolled) y framework web (Next.js vs. TanStack Start) — PROJECT.md ya registra Better Auth y Next.js 16 como decisión tomada; confirmar que sigue vigente al planificar Phase 1 y Phase 5.
 - tests/integration/ssh/contracts.test.ts's .invalid-TLD row (plan 02-04) now fails on this machine (err.level 'client-socket' instead of the ADR-0004-measured 'client-timeout') — pre-existing, resolver-dependent, unrelated to plan 02-08; see deferred-items.md
+- 02-10: a cold pnpm test:integration runtime was not measured (only warm, 555.87s) — this shared dev machine's Docker host has 2000+ images from unrelated projects and there is no safe way to selectively evict this phase's four sshd image variants; a local gitleaks detect run also flags the three already-known fake-credential fixtures because this machine's actual git root sits one level above noodara/code, shifting .gitleaks.toml's anchored allowlist paths — not a real leak, a local-layout artifact
 
 ## Deferred Items
 
@@ -183,6 +189,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-15T07:07:37.314Z
-Stopped at: Completed 02-09-PLAN.md
+Last session: 2026-09-15T19:23:30.966Z
+Stopped at: Completed 02-10-PLAN.md
 Resume file: None
