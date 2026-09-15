@@ -132,6 +132,18 @@ function revealCredential(credential: SshCredential, redactor: Redactor): Reveal
   return { rawPassword: revealSecret(credential.password, redactor) };
 }
 
+/** Releases every raw value this package revealed for one connect attempt (WR-02) — called on
+ *  every `attemptConnect` failure path and from `SshSession.close()`, so a `Redactor` shared
+ *  across multiple `connect()`/discovery calls never accumulates credentials for the lifetime of
+ *  the process. `Redactor.release` is a plain `Map.delete`, so calling this more than once for the
+ *  same attempt (e.g. both the transport-level 'close' handler and an explicit `session.close()`)
+ *  is always safe. */
+function releaseRevealed(revealed: RevealedCredential, redactor: Redactor): void {
+  if (revealed.rawKey !== undefined) redactor.release(revealed.rawKey);
+  if (revealed.rawPassphrase !== undefined) redactor.release(revealed.rawPassphrase);
+  if (revealed.rawPassword !== undefined) redactor.release(revealed.rawPassword);
+}
+
 /**
  * Builds the `client.connect()` options object in one named function so "every connect supplies a
  * hostVerifier" (T-2-31) is checkable — and true — in exactly one place.
@@ -192,6 +204,7 @@ function makeSession(
   redactor: Redactor,
   commandMs: number,
   sessionState: SessionState,
+  revealed: RevealedCredential,
 ): SshSession {
   async function exec(name: CommandName): Promise<ExecResult> {
     if (sessionState.closed) {
@@ -221,6 +234,7 @@ function makeSession(
   function close(): Promise<void> {
     if (!sessionState.closed) {
       sessionState.closed = true;
+      releaseRevealed(revealed, redactor); // WR-02: no longer needed once the session ends.
       try {
         client.end();
       } catch {
@@ -256,6 +270,7 @@ async function attemptConnect(
     const loaded = loadPrivateKey(credential, redactor);
     revealed = loaded.rawPassphrase === undefined ? { rawKey: loaded.rawKey } : { rawKey: loaded.rawKey, rawPassphrase: loaded.rawPassphrase };
     if (!loaded.ok) {
+      releaseRevealed(revealed, redactor); // WR-02: never opened a client — release immediately.
       return {
         ok: false,
         errorCode: loaded.kind === 'auth' ? loaded.errorCode : 'AUTH_FAILED',
@@ -274,6 +289,7 @@ async function attemptConnect(
   try {
     client = createClient();
   } catch (thrown) {
+    releaseRevealed(revealed, redactor); // WR-02: no client was ever created — release immediately.
     const failure = classifySshError(thrown, { phase: 'connect', redactor });
     return { ok: false, errorCode: failure.errorCode, message: failure.message, attempts: 1 };
   }
@@ -293,6 +309,7 @@ async function attemptConnect(
     // single most likely way SERV-07 gets violated in practice.
     client.on('error', (err: unknown) => {
       if (!settled) {
+        releaseRevealed(revealed, redactor); // WR-02: this attempt is ending in failure.
         const failure = classifySshError(err, { phase: 'connect', redactor });
         if (failure.errorCode === 'HOST_KEY_CHANGED' && trustedFingerprint !== null) {
           const observed = verifier.observed();
@@ -317,6 +334,10 @@ async function attemptConnect(
 
     client.on('close', () => {
       sessionState.closed = true;
+      // WR-02: covers both a pre-ready close (this attempt is failing) and a post-ready transport
+      // death (the session dies without an explicit `session.close()` ever being called) — the
+      // one place both fates share. Idempotent with the release `SshSession.close()` also does.
+      releaseRevealed(revealed, redactor);
       if (!settled) {
         settle({
           ok: false,
@@ -351,7 +372,7 @@ async function attemptConnect(
       const observed = verifier.observed();
       settle({
         ok: true,
-        session: makeSession(client, redactor, timeouts.commandMs, sessionState),
+        session: makeSession(client, redactor, timeouts.commandMs, sessionState, revealed),
         fingerprint: observed ?? { keyType: 'unknown', fingerprint: '' },
         fingerprintCaptured: verifier.captured(),
         attempts: 1,
@@ -361,6 +382,7 @@ async function attemptConnect(
     try {
       client.connect(options);
     } catch (thrown) {
+      releaseRevealed(revealed, redactor); // WR-02: connect() never got far enough to open anything.
       const failure = classifySshError(thrown, { phase: 'connect', redactor });
       settle({ ok: false, errorCode: failure.errorCode, message: failure.message, attempts: 1 });
     }

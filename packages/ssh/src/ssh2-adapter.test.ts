@@ -499,6 +499,125 @@ describe('createSsh2Adapter', () => {
       await expect(outcome.session.close()).resolves.toBeUndefined();
       expect(client.endCalls).toBe(1);
     });
+
+    it('releases the revealed credential from the Redactor once the session closes (WR-02)', async () => {
+      const client = new FakeClient();
+      client.connectImpl = acceptHandshakeThenReady(client);
+      const adapter = buildAdapter({ createClient: () => client });
+      const { redactor, releaseCalls } = countingRedactor();
+      const outcome = await adapter.connect(buildInput({ redactor }));
+      if (!outcome.ok) throw new Error('test setup: expected a successful connect');
+
+      expect(releaseCalls()).toBe(0);
+      await outcome.session.close();
+      expect(releaseCalls()).toBe(1);
+
+      // Idempotent: closing again (or the transport's own later 'close' event) must not throw and
+      // must not be required for the release to have already happened.
+      await outcome.session.close();
+      expect(releaseCalls()).toBe(1);
+    });
+
+    it('releases the revealed credential when the transport closes on its own, without an explicit session.close() (WR-02)', async () => {
+      const client = new FakeClient();
+      client.connectImpl = acceptHandshakeThenReady(client);
+      const adapter = buildAdapter({ createClient: () => client });
+      const { redactor, releaseCalls } = countingRedactor();
+      const outcome = await adapter.connect(buildInput({ redactor }));
+      if (!outcome.ok) throw new Error('test setup: expected a successful connect');
+
+      client.emit('close');
+
+      expect(releaseCalls()).toBe(1);
+    });
+  });
+
+  describe('WR-02: credential release on failure paths', () => {
+    it('releases the revealed credential when the private key fails validation, before any client is created', async () => {
+      const adapter = buildAdapter({ createClient: () => new FakeClient() });
+      const { redactor, releaseCalls, registerCalls } = countingRedactor();
+
+      const outcome = await adapter.connect(
+        buildInput({ credential: privateKeyCredential('not a real key'), redactor }),
+      );
+
+      expect(outcome.ok).toBe(false);
+      expect(registerCalls()).toBeGreaterThan(0);
+      expect(releaseCalls()).toBe(registerCalls());
+    });
+
+    it('releases the revealed credential when the client closes before ready, for every attempt made', async () => {
+      // A fresh client per attempt (mirroring the D-10 retry test below) — CONNECTION_LOST is
+      // retryable, so this exercises release happening on both the first (failed) attempt and,
+      // since the fake keeps closing immediately, the retried second attempt too.
+      const createClient = () => {
+        const client = new FakeClient();
+        client.connectImpl = () => {
+          client.emit('close');
+        };
+        return client;
+      };
+      const adapter = buildAdapter({ createClient });
+      const { redactor, releaseCalls, registerCalls } = countingRedactor();
+
+      const outcome = await adapter.connect(buildInput({ redactor }));
+
+      expect(outcome.ok).toBe(false);
+      expect(releaseCalls()).toBeGreaterThan(0);
+      expect(releaseCalls()).toBe(registerCalls());
+    });
+
+    it('releases and re-reveals independently across a D-10 retry between attempts', async () => {
+      let callCount = 0;
+      const registerCallsPerAttempt: number[] = [];
+      const releaseCallsPerAttempt: number[] = [];
+      const createClient = () => {
+        callCount += 1;
+        const client = new FakeClient();
+        client.connectImpl =
+          callCount === 1
+            ? () => {
+                client.emit(
+                  'error',
+                  ssh2Error({ message: 'Timed out while waiting for handshake', level: 'client-timeout' }),
+                );
+              }
+            : acceptHandshakeThenReady(client);
+        return client;
+      };
+      const inner = createRedactor();
+      let registers = 0;
+      let releases = 0;
+      const redactor: Redactor = {
+        register: (value, type) => {
+          registers += 1;
+          inner.register(value, type);
+        },
+        release: (value) => {
+          releases += 1;
+          inner.release(value);
+        },
+        redact: (input) => inner.redact(input),
+      };
+      const sleep = vi.fn(async () => {
+        // Snapshot the first attempt's counts before the retry reveals a fresh credential.
+        registerCallsPerAttempt.push(registers);
+        releaseCallsPerAttempt.push(releases);
+        return Promise.resolve();
+      });
+      const adapter = buildAdapter({ createClient, sleep });
+
+      const outcome = await adapter.connect(buildInput({ redactor }));
+
+      expect(outcome).toMatchObject({ ok: true, attempts: 2 });
+      // First attempt: revealed once, released once (the failed attempt) before the retry ran.
+      expect(registerCallsPerAttempt[0]).toBe(1);
+      expect(releaseCallsPerAttempt[0]).toBe(1);
+      // Second (successful) attempt reveals its own credential again; it stays registered until
+      // the caller eventually closes the session.
+      expect(registers).toBe(2);
+      expect(releases).toBe(1);
+    });
   });
 
   describe('connect() never hangs on a close before ready', () => {
