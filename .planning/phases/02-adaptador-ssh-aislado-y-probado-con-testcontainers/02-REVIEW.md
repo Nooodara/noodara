@@ -155,6 +155,14 @@ client.exec(command, (err, execChannel) => {
 });
 ```
 
+**Resolution:** Fixed in `packages/ssh/src/exec-with-timeout.ts` (commit `0f51669`). A `timedOut`
+flag is set inside the timer callback; if `client.exec`'s callback then arrives after settlement
+with a channel and no error, a no-op `'error'` listener is attached before `execChannel.destroy()`
+is called, so the late channel is never left open and unmanaged, and an `'error'` on the discarded
+channel can never crash the process. Covered by
+`exec-with-timeout.test.ts`'s "destroys a channel that arrives from client.exec() after the
+timeout has already fired, and never crashes if it later errors (CR-01)".
+
 ## Warnings
 
 ### WR-01: No `'error'` listener is ever attached to an exec channel
@@ -183,6 +191,15 @@ execChannel.on('error', () => {
 });
 ```
 
+**Resolution:** Fixed in `packages/ssh/src/exec-with-timeout.ts` (source change committed under
+`0f51669` alongside CR-01, since both touch the same channel-setup block; dedicated test coverage
+committed separately as `bea8924`). Rather than a no-op, the listener rejects with the same
+`TransportClosedError` marker mid-exec transport death already uses, so the caller's
+`classifySshError` produces a classified `CONNECTION_LOST` outcome instead of an unhandled/
+unclassified escape. Covered by `exec-with-timeout.test.ts`'s "execWithTimeout — channel-level
+error (WR-01)" describe block (rejects with `TransportClosedError`, classifies to
+`CONNECTION_LOST`, and ignores a late error after settlement).
+
 ### WR-02: Credentials registered with the `Redactor` are never released
 
 **Files:** `packages/ssh/src/key-loader.ts:71-73`, `packages/ssh/src/ssh2-adapter.ts:126-133`
@@ -206,6 +223,17 @@ e.g., in `SshSession.close()` and on every `attemptConnect` failure path, call
 `redactor.release(rawKey)` / `redactor.release(rawPassphrase)` / `redactor.release(rawPassword)`
 for whichever credential fields were revealed for that attempt.
 
+**Resolution:** Fixed in `packages/ssh/src/ssh2-adapter.ts` (commit `d432663`, built on top of the
+WR-03 reveal-once refactor in `36bb0e4`). A `releaseRevealed` helper calls `redactor.release(...)`
+for whichever of `rawKey`/`rawPassphrase`/`rawPassword` were revealed for the attempt; it is called
+on the `loadPrivateKey` validation-failure path, the `createClient()`/`client.connect()`
+synchronous-throw paths, the `'close'` transport event (covers both a pre-ready failure and a
+post-ready transport death with no explicit `session.close()`), and from `SshSession.close()` on
+success. `Redactor.release` is a plain `Map.delete`, so the paths are safely idempotent when more
+than one fires for the same attempt. Covered by `ssh2-adapter.test.ts`'s "session.close" release
+tests and the new "WR-02: credential release on failure paths" describe block, including a test
+that release/reveal are independent across a D-10 retry.
+
 ### WR-03: A `private_key` credential's raw key/passphrase is revealed twice per connection attempt
 
 **File:** `packages/ssh/src/ssh2-adapter.ts:250-263`
@@ -223,6 +251,15 @@ need auditing if this code is ever refactored.
 **Fix:** Have `attemptConnect` reveal the credential exactly once and pass the already-revealed
 raw values into both the key-parsing step and `buildConnectOptions`, rather than revealing twice
 from two different call sites.
+
+**Resolution:** Fixed in `packages/ssh/src/key-loader.ts` and `packages/ssh/src/ssh2-adapter.ts`
+(commit `36bb0e4`). `LoadPrivateKeyResult` now carries the already-revealed `rawKey`/
+`rawPassphrase` on every variant (success and failure), so `attemptConnect` reuses them for
+`buildConnectOptions` instead of calling `revealCredential` a second time for `private_key`
+credentials; the `password` credential path is unchanged (it only ever revealed once). Covered by
+`ssh2-adapter.test.ts`'s new "reveals a passphrase-less private key exactly once..." and "reveals a
+passphrase-protected private key exactly once per field..." tests, which count `Redactor.register`
+calls via a wrapping counting redactor.
 
 ## Info
 
@@ -243,6 +280,18 @@ rather than a functional defect.
 **Fix:** Have `HostVerifier` distinguish "could not parse the blob at all" from "parsed but didn't
 match", and have the adapter surface a distinct message (or reuse a generic `CONNECTION_LOST`/
 validation-style message) for the former when `trustedFingerprint === null`.
+
+**Resolution:** Fixed in `packages/ssh/src/host-verifier.ts` and `packages/ssh/src/ssh2-adapter.ts`
+(commit `6f3f601`). `HostVerifier` now exposes `parseFailed()`, true only when the most recent
+`verify()` call could not compute a fingerprint at all, reset on every call. The adapter's `'error'`
+handler checks `trustedFingerprint === null && verifier.parseFailed()` before its existing
+trusted-fingerprint branch and, when true, settles with `CONNECTION_LOST` and a dedicated
+"host key ... could not be parsed" message instead of `HOST_KEY_CHANGED` — no new
+`ServerErrorCode` was added, per the domain list being locked. The pinned-fingerprint case is
+unaffected (still `HOST_KEY_CHANGED`, via the pre-existing fallback path, when the blob can't be
+parsed). Covered by `host-verifier.test.ts`'s "parseFailed (IN-01)" describe block and
+`ssh2-adapter.test.ts`'s "reports a distinct, non-HOST_KEY_CHANGED failure..." and "still reports
+HOST_KEY_CHANGED for a pinned fingerprint..." tests.
 
 ---
 
