@@ -247,8 +247,14 @@ async function attemptConnect(
 ): Promise<ConnectOutcome> {
   const { target, credential, timeouts, trustedFingerprint, redactor } = input;
 
+  // WR-03: reveal the credential exactly once per attempt. `loadPrivateKey` already reveals the
+  // raw key/passphrase (to parse them) and hands the same raw values back on every result variant
+  // — reused here for `buildConnectOptions` instead of calling `revealCredential` a second time,
+  // which would otherwise re-reveal (and re-register) the identical `SecretValue`s.
+  let revealed: RevealedCredential;
   if (credential.kind === 'private_key') {
     const loaded = loadPrivateKey(credential, redactor);
+    revealed = loaded.rawPassphrase === undefined ? { rawKey: loaded.rawKey } : { rawKey: loaded.rawKey, rawPassphrase: loaded.rawPassphrase };
     if (!loaded.ok) {
       return {
         ok: false,
@@ -257,10 +263,11 @@ async function attemptConnect(
         attempts: 1,
       };
     }
+  } else {
+    revealed = revealCredential(credential, redactor);
   }
 
   const verifier = createHostVerifier({ trusted: trustedFingerprint });
-  const revealed = revealCredential(credential, redactor);
   const options = buildConnectOptions({ target, timeouts, verifier, revealed });
 
   let client: Ssh2ClientLike;

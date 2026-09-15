@@ -7,7 +7,7 @@
 // hostVerifier is always wired, no failure escapes as an exception, D-01/D-02/D-03 credential
 // handling and D-05/D-06 host-key behaviour are correct.
 import { utils, type ParsedKey } from 'ssh2';
-import { createRedactor, secretValue } from '@noodara/domain/security';
+import { createRedactor, secretValue, type Redactor } from '@noodara/domain/security';
 import { describe, expect, it, vi } from 'vitest';
 import { computeFingerprint, formatFingerprint } from './fingerprint.js';
 import { createSsh2Adapter } from './ssh2-adapter.js';
@@ -169,6 +169,26 @@ function passwordCredential(password: string): SshCredential {
   return { kind: 'password', password: secretValue(password, 'ssh_password') };
 }
 
+/** Wraps a real `Redactor` and counts `register` calls (WR-02/WR-03), without changing its
+ *  behaviour — `redact`/`release` delegate straight through. */
+function countingRedactor(): { readonly redactor: Redactor; readonly registerCalls: () => number; readonly releaseCalls: () => number } {
+  const inner = createRedactor();
+  let registers = 0;
+  let releases = 0;
+  const redactor: Redactor = {
+    register: (value, type) => {
+      registers += 1;
+      inner.register(value, type);
+    },
+    release: (value) => {
+      releases += 1;
+      inner.release(value);
+    },
+    redact: (input) => inner.redact(input),
+  };
+  return { redactor, registerCalls: () => registers, releaseCalls: () => releases };
+}
+
 function buildInput(overrides: Partial<ConnectInput> = {}): ConnectInput {
   return {
     target: { host: 'server.example.internal', port: 22, user: 'deployer' },
@@ -295,6 +315,35 @@ describe('createSsh2Adapter', () => {
       expect(outcome.ok).toBe(true);
       const options = client.connectCalls[0];
       expect(options?.privateKey).toBeDefined();
+    });
+
+    it('reveals a passphrase-less private key exactly once per attempt, not once for validation and again for connect options (WR-03)', async () => {
+      const client = new FakeClient();
+      client.connectImpl = acceptHandshakeThenReady(client);
+      const adapter = buildAdapter({ createClient: () => client });
+      const { redactor, registerCalls } = countingRedactor();
+
+      const outcome = await adapter.connect(buildInput({ redactor }));
+
+      expect(outcome.ok).toBe(true);
+      expect(registerCalls()).toBe(1);
+    });
+
+    it('reveals a passphrase-protected private key exactly once per field, not twice each (WR-03)', async () => {
+      const client = new FakeClient();
+      client.connectImpl = acceptHandshakeThenReady(client);
+      const adapter = buildAdapter({ createClient: () => client });
+      const { redactor, registerCalls } = countingRedactor();
+      const credential: SshCredential = {
+        kind: 'private_key',
+        privateKey: secretValue(keys.ed25519Locked, 'ssh_private_key'),
+        passphrase: secretValue(keys.ed25519LockedPassphrase, 'ssh_password'),
+      };
+
+      const outcome = await adapter.connect(buildInput({ credential, redactor }));
+
+      expect(outcome.ok).toBe(true);
+      expect(registerCalls()).toBe(2);
     });
   });
 

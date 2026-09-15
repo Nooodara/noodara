@@ -32,10 +32,25 @@ export class InvalidCredentialError extends Error {
   }
 }
 
+/** The raw values this module reveals for every credential it loads (WR-02/WR-03) — carried on
+ *  every result variant, success or failure, so a caller (`ssh2-adapter.ts`'s `attemptConnect`)
+ *  can thread them into `buildConnectOptions` without revealing the same `SecretValue`s a second
+ *  time, and can release them from the `Redactor` on every exit path without having to re-derive
+ *  what was revealed. */
+interface RevealedKeyMaterial {
+  readonly rawKey: string;
+  readonly rawPassphrase?: string;
+}
+
 export type LoadPrivateKeyResult =
-  | { readonly ok: true; readonly key: ParsedKey; readonly keyType: string }
-  | { readonly ok: false; readonly kind: 'validation'; readonly message: string }
-  | { readonly ok: false; readonly kind: 'auth'; readonly errorCode: 'AUTH_FAILED'; readonly message: string };
+  | ({ readonly ok: true; readonly key: ParsedKey; readonly keyType: string } & RevealedKeyMaterial)
+  | ({ readonly ok: false; readonly kind: 'validation'; readonly message: string } & RevealedKeyMaterial)
+  | ({
+      readonly ok: false;
+      readonly kind: 'auth';
+      readonly errorCode: 'AUTH_FAILED';
+      readonly message: string;
+    } & RevealedKeyMaterial);
 
 const ACCEPTED_KEY_TYPES = [
   'ssh-ed25519',
@@ -71,6 +86,9 @@ export function loadPrivateKey(credential: PrivateKeyCredential, redactor: Redac
   const rawKey = revealSecret(credential.privateKey, redactor);
   const rawPassphrase =
     credential.passphrase === undefined ? undefined : revealSecret(credential.passphrase, redactor);
+  // Threaded onto every result variant below (WR-03) — never re-revealed by a caller that already
+  // has this result, since `revealSecret` was already called, above, exactly once per field.
+  const revealed: RevealedKeyMaterial = rawPassphrase === undefined ? { rawKey } : { rawKey, rawPassphrase };
 
   const parsed = utils.parseKey(rawKey, rawPassphrase);
 
@@ -81,9 +99,10 @@ export function loadPrivateKey(credential: PrivateKeyCredential, redactor: Redac
         kind: 'auth',
         errorCode: 'AUTH_FAILED',
         message: 'wrong passphrase for the provided private key',
+        ...revealed,
       };
     }
-    return { ok: false, kind: 'validation', message: 'unable to parse private key' };
+    return { ok: false, kind: 'validation', message: 'unable to parse private key', ...revealed };
   }
 
   // @types/ssh2 declares this overload's return type as exactly `ParsedKey | Error` (never an
@@ -95,6 +114,7 @@ export function loadPrivateKey(credential: PrivateKeyCredential, redactor: Redac
       ok: false,
       kind: 'validation',
       message: `unsupported key type "${key.type}" — only ed25519, ECDSA and RSA (>=2048 bits) are accepted`,
+      ...revealed,
     };
   }
 
@@ -105,9 +125,10 @@ export function loadPrivateKey(credential: PrivateKeyCredential, redactor: Redac
         ok: false,
         kind: 'validation',
         message: 'RSA key is smaller than the required 2048-bit minimum',
+        ...revealed,
       };
     }
   }
 
-  return { ok: true, key, keyType: key.type };
+  return { ok: true, key, keyType: key.type, ...revealed };
 }
