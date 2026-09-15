@@ -296,3 +296,187 @@ describe('runDiscovery — single-connection, per-check reporting (DISC-01, D-13
     expect(closeCalls).toBe(0);
   });
 });
+
+// Builds a `now` stub that returns each value in `values` once, in order, and throws if called
+// more times than the test expected — every scenario below scripts the exact number of `now()`
+// calls `runDiscovery`'s loop is expected to make, so an unexpected extra call is itself a bug.
+function scriptedClock(values: readonly number[]): () => number {
+  let index = 0;
+  return () => {
+    const value = values[index];
+    index += 1;
+    if (value === undefined) {
+      throw new Error(`now() was called more times (${String(index)}) than this test scripted`);
+    }
+    return value;
+  };
+}
+
+describe('runDiscovery — warnings and the D-08 discovery-total budget (DISC-04, D-08, D-11, D-12)', () => {
+  it('an unsupported OS adds UNSUPPORTED_OS to warnings, keeps os_release passing, and leaves every other fact intact', async () => {
+    const scripts = successfulScripts();
+    scripts['discovery.os_release'] = execResult({
+      commandName: 'discovery.os_release',
+      stdout: 'ID=debian\nNAME="Debian"\nVERSION_ID="12"\n',
+    });
+    const { session } = buildFakeSession(scripts);
+
+    const snapshot = await runDiscovery({
+      session,
+      sshUser: 'deployer',
+      timeouts: DEFAULT_TIMEOUTS,
+      redactor: createRedactor(),
+    });
+
+    expect(snapshot.warnings).toContain('UNSUPPORTED_OS');
+    expect(snapshot.checks.find((c) => c.id === 'os_release')?.status).toBe('pass');
+    expect(snapshot.facts.hostname).toBe('web-01');
+    expect(snapshot.facts.cpuCores).toBe(4);
+    expect(snapshot.facts.dockerInstalled).toBe(true);
+  });
+
+  it('a not_installed docker_version sets dockerInstalled false, dockerVersion null, and skips docker_compose_version', async () => {
+    const scripts = successfulScripts();
+    scripts['docker.version'] = execResult({ commandName: 'docker.version', exitCode: 127, stdout: '' });
+    const { session, execCalls } = buildFakeSession(scripts);
+
+    const snapshot = await runDiscovery({
+      session,
+      sshUser: 'deployer',
+      timeouts: DEFAULT_TIMEOUTS,
+      redactor: createRedactor(),
+    });
+
+    expect(snapshot.facts.dockerInstalled).toBe(false);
+    expect(snapshot.facts.dockerVersion).toBeNull();
+    expect(snapshot.checks.find((c) => c.id === 'docker_version')?.status).toBe('fail');
+    expect(snapshot.checks.find((c) => c.id === 'docker_compose_version')?.status).toBe('skipped');
+    expect(execCalls).not.toContain('docker.compose_version');
+  });
+
+  it('an unparseable docker_version leaves dockerInstalled null, explicitly never false', async () => {
+    const scripts = successfulScripts();
+    scripts['docker.version'] = execResult({ commandName: 'docker.version', stdout: 'not json at all', exitCode: 0 });
+    const { session } = buildFakeSession(scripts);
+
+    const snapshot = await runDiscovery({
+      session,
+      sshUser: 'deployer',
+      timeouts: DEFAULT_TIMEOUTS,
+      redactor: createRedactor(),
+    });
+
+    expect(snapshot.facts.dockerInstalled).toBeNull();
+    expect(snapshot.facts.dockerInstalled).not.toBe(false);
+    expect(snapshot.checks.find((c) => c.id === 'docker_version')?.status).toBe('fail');
+    // docker_compose_version is not skipped for an unparseable result — only a measured
+    // not_installed does that (D-12, Pitfall 2).
+    expect(snapshot.checks.find((c) => c.id === 'docker_compose_version')?.status).not.toBe('skipped');
+  });
+
+  it('a daemon_unreachable docker_version keeps dockerInstalled true with the client version', async () => {
+    const scripts = successfulScripts();
+    scripts['docker.version'] = execResult({
+      commandName: 'docker.version',
+      stdout: '{"Client":{"Version":"24.0.7"},"Server":null}',
+      exitCode: 1,
+    });
+    const { session } = buildFakeSession(scripts);
+
+    const snapshot = await runDiscovery({
+      session,
+      sshUser: 'deployer',
+      timeouts: DEFAULT_TIMEOUTS,
+      redactor: createRedactor(),
+    });
+
+    expect(snapshot.facts.dockerInstalled).toBe(true);
+    expect(snapshot.facts.dockerVersion).toBe('24.0.7');
+  });
+
+  it('aborts the run once the injected clock exceeds the discovery-total budget, keeping what was already collected', async () => {
+    const { session } = buildFakeSession(successfulScripts());
+    // call 1: startedAt. calls 2-4: hostname/os_release/arch stay under the 100ms budget.
+    // call 5: cpu's own top-of-loop check is over budget — cpu becomes the aborted check and
+    // every entry after it is skipped without any further now() call.
+    const now = scriptedClock([0, 10, 50, 90, 150]);
+
+    const snapshot = await runDiscovery({
+      session,
+      sshUser: 'deployer',
+      timeouts: { discoveryMs: 100 },
+      redactor: createRedactor(),
+      now,
+    });
+
+    expect(snapshot.facts.hostname).toBe('web-01');
+    expect(snapshot.facts.osDistribution).toBe('Ubuntu');
+    expect(snapshot.facts.arch).toBe('x86_64');
+    expect(snapshot.facts.cpuCores).toBeNull();
+
+    const cpuCheck = snapshot.checks.find((c) => c.id === 'cpu');
+    expect(cpuCheck?.status).not.toBe('pass');
+    expect(cpuCheck?.detail.toLowerCase()).toContain('budget');
+
+    const stillPendingIds = [
+      'memory',
+      'disk',
+      'uptime',
+      'docker_version',
+      'docker_compose_version',
+      'sudo',
+      'docker_group',
+    ];
+    for (const id of stillPendingIds) {
+      expect(snapshot.checks.find((c) => c.id === id)?.status).toBe('skipped');
+    }
+
+    expect(snapshot.warnings).toContain('COMMAND_TIMEOUT');
+  });
+
+  it('warnings contains no duplicates across a run that triggers two distinct warning sources', async () => {
+    const scripts = successfulScripts();
+    scripts['discovery.os_release'] = execResult({
+      commandName: 'discovery.os_release',
+      stdout: 'ID=debian\nNAME="Debian"\nVERSION_ID="12"\n',
+    });
+    const { session } = buildFakeSession(scripts);
+    // call 1: startedAt. calls 2-4: hostname/os_release (triggers UNSUPPORTED_OS)/arch pass.
+    // call 5: cpu trips the 100ms budget (triggers COMMAND_TIMEOUT).
+    const now = scriptedClock([0, 5, 10, 20, 200]);
+
+    const snapshot = await runDiscovery({
+      session,
+      sshUser: 'deployer',
+      timeouts: { discoveryMs: 100 },
+      redactor: createRedactor(),
+      now,
+    });
+
+    expect(snapshot.warnings).toContain('UNSUPPORTED_OS');
+    expect(snapshot.warnings).toContain('COMMAND_TIMEOUT');
+    expect(new Set(snapshot.warnings).size).toBe(snapshot.warnings.length);
+  });
+});
+
+describe('@noodara/ssh public surface (T-2-42)', () => {
+  // `commandFor` is included alongside the plan's own named list because
+  // tests/integration/ssh/contracts.test.ts (plan 02-04, predating this plan) already reads it
+  // from `@noodara/ssh` directly — the package's single `.` export entry is the only path that
+  // file can reach it through, so removing it would break a standing, already-passing suite.
+  const EXPECTED_RUNTIME_EXPORTS = [
+    'COMMAND_NAMES',
+    'RETRYABLE_ERROR_CODES',
+    'commandFor',
+    'createSsh2Adapter',
+    'formatFingerprint',
+    'parseFingerprint',
+    'runDiscovery',
+  ] as const;
+
+  it('exports exactly the deliberate public surface, no internal module leaking through', async () => {
+    const publicSurface: Record<string, unknown> = await import('./index.js');
+
+    expect(Object.keys(publicSurface).sort()).toEqual([...EXPECTED_RUNTIME_EXPORTS].sort());
+  });
+});
