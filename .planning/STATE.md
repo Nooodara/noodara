@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-07-PLAN.md
-last_updated: "2026-09-14T20:52:45.409Z"
-last_activity: 2026-09-14
+stopped_at: Completed 02-08-PLAN.md
+last_updated: "2026-09-15T00:26:18.932Z"
+last_activity: 2026-09-15
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 27
-  completed_plans: 24
+  completed_plans: 25
   percent: 17
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 2 (Adaptador SSH aislado y probado con Testcontainers) — EXECUTING
-Plan: 8 of 10
+Plan: 9 of 10
 Status: Ready to execute
-Last activity: 2026-09-14
+Last activity: 2026-09-15
 
-Progress: [█████████░] 89%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -76,6 +76,7 @@ Progress: [█████████░] 89%
 | Phase 02 P05 | 55min | 3 tasks | 14 files |
 | Phase 02 P06 | 60min | 2 tasks | 7 files |
 | Phase 02 P07 | 25min | 2 tasks | 5 files |
+| Phase 02 P08 | 95min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -150,6 +151,9 @@ Recent decisions affecting current work:
 - [Phase 02]: Added TransportClosedError and UnsupportedOsError markers to packages/ssh/src/errors.ts (beyond the plan's own SshFailure/CommandTimeoutError exports) so ADR 0004's mid-exec-transport-death (ssh2 never raises an 'error' event for it) and D-11's UNSUPPORTED_OS warning are both reachable through classifySshError's single rule table
 - [Phase 02]: classifySshError's ClassifyContext.phase only changes the outcome for the socket-reset rule (ECONNRESET/EPIPE -> CONNECTION_LOST regardless of connect/exec); every other rule's code does not depend on phase, since ADR 0004 measurements did not support inventing further phase-based distinctions
 - [Phase 02]: execWithTimeout's client/channel parameters are narrow structural interfaces (exec/on/destroy only), never ssh2's concrete Client/ClientChannel types, so its fake-timer/fake-channel unit tests exercise real timer/stream mechanics honestly rather than mocking ssh2 itself
+- [Phase 02]: Private-key credential validation failures (loadPrivateKey's validation and auth kinds) both land on ConnectOutcome's AUTH_FAILED, the closest of the seven ServerErrorCodes to an unusable credential
+- [Phase 02]: Ssh2Adapter's connect-phase error/close listener pair is attached once, before connect(), and shared via a mutable SessionState with the post-ready session, so no second listener pair is ever registered for the same client
+- [Phase 02]: Mutex on the outside, retry on the inside in Ssh2Adapter.connect — both attempts of a D-10 retried connect share one per-target createConnectionMutex slot
 
 ### Pending Todos
 
@@ -163,6 +167,7 @@ None yet.
 
 - REQUIREMENTS.md traceability footer indicaba "40 total" pero el conteo real de IDs únicos en el documento es 42; corregido durante la creación del roadmap (ver traceability actualizada).
 - Dos decisiones de stack siguen abiertas por el usuario según research/SUMMARY.md: auth (Better Auth vs. hand-rolled) y framework web (Next.js vs. TanStack Start) — PROJECT.md ya registra Better Auth y Next.js 16 como decisión tomada; confirmar que sigue vigente al planificar Phase 1 y Phase 5.
+- tests/integration/ssh/contracts.test.ts's .invalid-TLD row (plan 02-04) now fails on this machine (err.level 'client-socket' instead of the ADR-0004-measured 'client-timeout') — pre-existing, resolver-dependent, unrelated to plan 02-08; see deferred-items.md
 
 ## Deferred Items
 
@@ -174,6 +179,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-14T20:52:45.403Z
-Stopped at: Completed 02-07-PLAN.md
+Last session: 2026-09-15T00:26:18.926Z
+Stopped at: Completed 02-08-PLAN.md
 Resume file: None
