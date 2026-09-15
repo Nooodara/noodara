@@ -152,7 +152,44 @@ Plans:
   4. Se registran eventos tipados para setup, login, logout, login fallido, servidor creado/editado/eliminado, intento de conexión con su resultado y discovery ejecutado — escritos solo desde los servicios de aplicación, nunca desde rutas o el worker directamente.
   5. Un test con valores canary alimenta logs de aplicación, errores simulados y `ActivityEvent` con un secret conocido y confirma que no aparece en ninguna salida.
 
-**Plans**: TBD
+**Plans**: 10 plans in 6 waves
+
+Plans:
+
+**Wave 1** *(parallel)*
+
+- [ ] 03-01-PLAN.md — Wiring de @noodara/ssh en control-plane, export aditivo de loadPrivateKey (D-15) y semántica D-03 en el doc de transiciones
+- [ ] 03-02-PLAN.md — Funciones puras de dominio: mergeDiscoveryFacts, classifySnapshotOutcome, classifyServerEdit y las seis acciones server.*
+- [ ] 03-03-PLAN.md — [BLOCKING] Esquema + migración 0003: discovery_snapshots, docker_compose_version e índices únicos lower(name) y (host, ssh_port)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-04-PLAN.md — credential-store (envelope ↔ SshCredential, D-15), proyección ServerView (D-19) y dependencias inyectadas + ServiceActor
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 03-05-PLAN.md — registerServer (SERV-01) y el harness de integración compartido para los servicios
+
+**Wave 4** *(parallel, blocked on Wave 3 completion)*
+
+- [ ] 03-06-PLAN.md — editServer (SERV-02): reemplazo de credencial in situ, SERVER_BUSY y transiciones D-14
+- [ ] 03-07-PLAN.md — deleteServer (SERV-03): confirmación por nombre, evento antes del borrado y cascada de snapshots
+- [ ] 03-08-PLAN.md — connectAndDiscover (DISC-03): lock D-05, fingerprints, snapshot append-only y denormalización
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 03-09-PLAN.md — trustFingerprint (D-04), factoría createServerServices y boundary test de ACT-01
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 03-10-PLAN.md — SEC-02: canary de flujo completo contra sshd real y `pnpm security:scan-leaks` como gate de CI
+
+**Cross-cutting constraints:**
+
+- Sin rutas HTTP, worker BullMQ, SSE, UI ni instalador: esta fase entrega solo servicios de aplicación
+- Todo evento de `activity_events` se escribe únicamente desde `src/services/` (test de boundary estático)
+- packages/domain sigue puro y con cobertura ≥95% statement/branch (QA-02)
+- `pnpm security:scan-leaks`, `pnpm test`, `pnpm test:integration`, `pnpm typecheck`, `pnpm lint` y `turbo boundaries` en verde antes de verificar la fase
 
 ### Phase 4: HTTP routes, worker BullMQ y SSE
 
