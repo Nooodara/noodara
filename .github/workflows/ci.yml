@@ -105,6 +105,21 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # ubuntu-latest ships a working Docker daemon, so Testcontainers spins up real
       # PostgreSQL (and, from later phases, Redis) rather than a mocked substitute.
+      #
+      # Phase 2 (02-10): this suite now also builds up to four project-owned sshd image variants
+      # from `tests/integration/images/` (plain, `WITH_DOCKER_CLI=true`, `WITH_SLOW_DF=true`, per
+      # Ubuntu version) via Testcontainers' `GenericContainer.fromDockerfile`. The cost of a cold
+      # build is dominated by `apt-get` inside those Dockerfiles, not by anything Vitest itself
+      # does — every base-image layer up to the conditional `RUN` is shared across the variants,
+      # so a cold build pays for `apt-get` roughly once per Ubuntu version, not once per variant
+      # (02-VALIDATION.md's "Cache note"). `ubuntu-latest` runners start cold on every run (no
+      # persistent Docker layer cache across jobs), so this job pays the full image-build cost on
+      # every invocation; a local `pnpm test:integration` re-run hits Docker's own layer cache and
+      # skips the builds entirely. No cold-runner build time has been measured against a real
+      # GitHub Actions run for this phase — see 02-VALIDATION.md's Test Infrastructure table for
+      # what was and wasn't measured. No image-publishing or cross-job image-caching step is added
+      # here on purpose: every image is built locally, used within this same job, and discarded —
+      # none of that extra machinery is needed for a suite that never ships an image anywhere.
       - run: pnpm test:integration
       - name: Fail if any noodara.test container survived
         if: always()
