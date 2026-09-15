@@ -183,9 +183,16 @@ function acceptHandshakeThenReady(client: FakeClient): ConnectImpl {
   };
 }
 
+function buildAdapter(deps: Parameters<typeof createSsh2Adapter>[0] = {}) {
+  // Defaults `sleep` to a fast no-op so a test that unintentionally produces a retryable outcome
+  // (CONNECT_TIMEOUT/CONNECTION_LOST) never waits the real 2s D-10 gap; a test that specifically
+  // exercises the retry wiring overrides `sleep` explicitly.
+  return createSsh2Adapter({ sleep: () => Promise.resolve(), ...deps });
+}
+
 describe('createSsh2Adapter', () => {
   it('returns an object satisfying SshPort', () => {
-    const adapter = createSsh2Adapter({ createClient: () => new FakeClient() });
+    const adapter = buildAdapter({ createClient: () => new FakeClient() });
     expect(typeof adapter.connect).toBe('function');
   });
 
@@ -193,7 +200,7 @@ describe('createSsh2Adapter', () => {
     it('always supplies a hostVerifier, never a hostHash, the configured connect timeout, the fixed keepalive and the exact host key algorithm order', async () => {
       const client = new FakeClient();
       client.connectImpl = acceptHandshakeThenReady(client);
-      const adapter = createSsh2Adapter({ createClient: () => client });
+      const adapter = buildAdapter({ createClient: () => client });
 
       const outcome = await adapter.connect(buildInput());
 
@@ -219,7 +226,7 @@ describe('createSsh2Adapter', () => {
     it('attaches an error listener before calling connect()', async () => {
       const client = new FakeClient();
       client.connectImpl = acceptHandshakeThenReady(client);
-      const adapter = createSsh2Adapter({ createClient: () => client });
+      const adapter = buildAdapter({ createClient: () => client });
 
       await adapter.connect(buildInput());
 
@@ -236,13 +243,13 @@ describe('createSsh2Adapter', () => {
       client.connect = () => {
         throw new Error('synchronous boom');
       };
-      const adapter = createSsh2Adapter({ createClient: () => client });
+      const adapter = buildAdapter({ createClient: () => client });
 
       await expect(adapter.connect(buildInput())).resolves.toMatchObject({ ok: false });
     });
 
     it('resolves { ok: false } when the injected createClient itself throws', async () => {
-      const adapter = createSsh2Adapter({
+      const adapter = buildAdapter({
         createClient: () => {
           throw new Error('cannot construct client');
         },
@@ -255,7 +262,7 @@ describe('createSsh2Adapter', () => {
   describe('private-key credentials (D-01, D-02)', () => {
     it('validates the key before opening any socket, returning the loader message on failure', async () => {
       const createClient = vi.fn(() => new FakeClient());
-      const adapter = createSsh2Adapter({ createClient });
+      const adapter = buildAdapter({ createClient });
 
       const outcome = await adapter.connect(buildInput({ credential: privateKeyCredential('not a real key') }));
 
@@ -270,7 +277,7 @@ describe('createSsh2Adapter', () => {
     it('connects successfully with a valid private key', async () => {
       const client = new FakeClient();
       client.connectImpl = acceptHandshakeThenReady(client);
-      const adapter = createSsh2Adapter({ createClient: () => client });
+      const adapter = buildAdapter({ createClient: () => client });
 
       const outcome = await adapter.connect(buildInput());
 
@@ -301,7 +308,7 @@ describe('createSsh2Adapter', () => {
           },
         );
       };
-      const adapter = createSsh2Adapter({ createClient: () => client });
+      const adapter = buildAdapter({ createClient: () => client });
 
       const outcome = await adapter.connect(buildInput({ credential: passwordCredential('hunter2') }));
 
@@ -325,7 +332,7 @@ describe('createSsh2Adapter', () => {
           },
         );
       };
-      const adapter = createSsh2Adapter({ createClient: () => client });
+      const adapter = buildAdapter({ createClient: () => client });
 
       const outcome = await adapter.connect(buildInput({ credential: passwordCredential('hunter2') }));
 
@@ -337,7 +344,7 @@ describe('createSsh2Adapter', () => {
     it('captures the fingerprint on first connection when no fingerprint is trusted yet', async () => {
       const client = new FakeClient();
       client.connectImpl = acceptHandshakeThenReady(client);
-      const adapter = createSsh2Adapter({ createClient: () => client });
+      const adapter = buildAdapter({ createClient: () => client });
 
       const outcome = await adapter.connect(buildInput({ trustedFingerprint: null }));
 
@@ -351,7 +358,7 @@ describe('createSsh2Adapter', () => {
     it('does not report a capture when the observed key matches an already-pinned fingerprint', async () => {
       const client = new FakeClient();
       client.connectImpl = acceptHandshakeThenReady(client);
-      const adapter = createSsh2Adapter({ createClient: () => client });
+      const adapter = buildAdapter({ createClient: () => client });
 
       const outcome = await adapter.connect(buildInput({ trustedFingerprint: ed25519Fingerprint }));
 
@@ -365,7 +372,7 @@ describe('createSsh2Adapter', () => {
     it('rejects a mismatching host key with HOST_KEY_CHANGED, the observed fingerprint, and both renderings in the message', async () => {
       const client = new FakeClient();
       client.connectImpl = acceptHandshakeThenReady(client);
-      const adapter = createSsh2Adapter({ createClient: () => client });
+      const adapter = buildAdapter({ createClient: () => client });
       const wrongTrusted: HostFingerprint = { keyType: 'ssh-ed25519', fingerprint: 'SHA256:notTheRealFingerprintAtAll' };
 
       const outcome = await adapter.connect(buildInput({ trustedFingerprint: wrongTrusted }));
@@ -388,7 +395,7 @@ describe('createSsh2Adapter', () => {
       client.execImpl = (_command, callback) => {
         callback(undefined, channel);
       };
-      const adapter = createSsh2Adapter({ createClient: () => client });
+      const adapter = buildAdapter({ createClient: () => client });
       const outcome = await adapter.connect(buildInput());
       if (!outcome.ok) throw new Error('test setup: expected a successful connect');
 
@@ -409,7 +416,7 @@ describe('createSsh2Adapter', () => {
       client.execImpl = (_command, callback) => {
         callback(undefined, channel); // channel never closes — ADR 0004 row 8's exact hang
       };
-      const adapter = createSsh2Adapter({ createClient: () => client });
+      const adapter = buildAdapter({ createClient: () => client });
       const outcome = await adapter.connect(buildInput());
       if (!outcome.ok) throw new Error('test setup: expected a successful connect');
 
@@ -424,7 +431,7 @@ describe('createSsh2Adapter', () => {
     it('calls client.end(), is safe to call more than once, and resolves even if the connection is already gone', async () => {
       const client = new FakeClient();
       client.connectImpl = acceptHandshakeThenReady(client);
-      const adapter = createSsh2Adapter({ createClient: () => client });
+      const adapter = buildAdapter({ createClient: () => client });
       const outcome = await adapter.connect(buildInput());
       if (!outcome.ok) throw new Error('test setup: expected a successful connect');
 
@@ -443,12 +450,80 @@ describe('createSsh2Adapter', () => {
           client.emit('close');
         });
       };
-      const adapter = createSsh2Adapter({ createClient: () => client });
+      const adapter = buildAdapter({ createClient: () => client });
 
       const outcomePromise = adapter.connect(buildInput());
       barrier.resolve(undefined);
 
       await expect(outcomePromise).resolves.toMatchObject({ ok: false, errorCode: 'CONNECTION_LOST' });
+    });
+  });
+
+  describe('D-10 retry and the per-target mutex', () => {
+    it('retries once after a CONNECT_TIMEOUT and reports attempts: 2, using the injected sleep', async () => {
+      let callCount = 0;
+      const createClient = () => {
+        callCount += 1;
+        const client = new FakeClient();
+        client.connectImpl =
+          callCount === 1
+            ? () => {
+                client.emit(
+                  'error',
+                  ssh2Error({ message: 'Timed out while waiting for handshake', level: 'client-timeout' }),
+                );
+              }
+            : acceptHandshakeThenReady(client);
+        return client;
+      };
+      const sleep = vi.fn(() => Promise.resolve());
+      const adapter = buildAdapter({ createClient, sleep });
+
+      const outcome = await adapter.connect(buildInput());
+
+      expect(callCount).toBe(2);
+      expect(sleep).toHaveBeenCalledWith(2000);
+      expect(outcome).toMatchObject({ ok: true, attempts: 2 });
+    });
+
+    it('never retries AUTH_FAILED and reports attempts: 1', async () => {
+      let callCount = 0;
+      const createClient = () => {
+        callCount += 1;
+        return new FakeClient();
+      };
+      const sleep = vi.fn(() => Promise.resolve());
+      const adapter = buildAdapter({ createClient, sleep });
+
+      const outcome = await adapter.connect(buildInput({ credential: privateKeyCredential('not a real key') }));
+
+      expect(callCount).toBe(0); // validation failure — no client ever created, let alone retried
+      expect(sleep).not.toHaveBeenCalled();
+      expect(outcome).toMatchObject({ ok: false, errorCode: 'AUTH_FAILED', attempts: 1 });
+    });
+
+    it('serialises concurrent connects to the same target', async () => {
+      const order: string[] = [];
+      let index = 0;
+      const createClient = () => {
+        index += 1;
+        const current = index;
+        const client = new FakeClient();
+        client.connectImpl = (options) => {
+          order.push(`start-${String(current)}`);
+          (options.hostVerifier as (buf: Buffer) => boolean)(ed25519Blob);
+          order.push(`ready-${String(current)}`);
+          client.emit('ready');
+        };
+        return client;
+      };
+      const adapter = buildAdapter({ createClient });
+
+      const first = adapter.connect(buildInput());
+      const second = adapter.connect(buildInput());
+      await Promise.all([first, second]);
+
+      expect(order).toEqual(['start-1', 'ready-1', 'start-2', 'ready-2']);
     });
   });
 });

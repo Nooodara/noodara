@@ -18,6 +18,8 @@ import { execWithTimeout, type ExecChannel } from './exec-with-timeout.js';
 import { formatFingerprint } from './fingerprint.js';
 import { createHostVerifier, type HostVerifier } from './host-verifier.js';
 import { loadPrivateKey } from './key-loader.js';
+import { sleep, withRetry } from './retry.js';
+import { createConnectionMutex } from './connection-mutex.js';
 import type {
   ConnectInput,
   ConnectOutcome,
@@ -93,6 +95,9 @@ interface Ssh2ConnectOptions {
 export interface CreateSsh2AdapterDeps {
   /** Defaults to a real `ssh2.Client`. Overridden by tests only. */
   readonly createClient?: () => Ssh2ClientLike;
+  /** Defaults to `retry.ts`'s real `setTimeout`-backed wait. Overridden by tests only, so no test
+   *  in this file waits real wall-clock time for D-10's 2s retry gap. */
+  readonly sleep?: (ms: number) => Promise<void>;
 }
 
 /**
@@ -356,15 +361,21 @@ async function attemptConnect(
 }
 
 /**
- * The one entrypoint every future adapter or test double implements (`SshPort`). Plan 02-08 Task
- * 2 wraps `attemptConnect` with D-10's single retry and a per-target mutex; this task's `connect`
- * is exactly one attempt.
+ * The one entrypoint every future adapter or test double implements (`SshPort`). D-10's single
+ * retry (`withRetry`) wraps each attempt; a per-target mutex (`createConnectionMutex`) ensures at
+ * most one connection per `user@host:port` is active inside this adapter at a time — mutex on the
+ * outside, retry on the inside, so both attempts of a retried connect share the one slot.
  */
 export function createSsh2Adapter(deps: CreateSsh2AdapterDeps = {}): SshPort {
   const createClient = deps.createClient ?? (() => new Client() as unknown as Ssh2ClientLike);
+  const sleepFn = deps.sleep ?? sleep;
+  const mutex = createConnectionMutex();
 
   async function connect(input: ConnectInput): Promise<ConnectOutcome> {
-    return attemptConnect(input, createClient);
+    const mutexKey = `${input.target.user}@${input.target.host}:${String(input.target.port)}`;
+    return mutex.runExclusive(mutexKey, () =>
+      withRetry(() => attemptConnect(input, createClient), { sleep: sleepFn }),
+    );
   }
 
   return { connect };
