@@ -6,8 +6,17 @@
 // against real `ssh-keygen -lf` output — this file's own unit tests check the digest by an
 // independently-computed value, never by duplicating that integration assertion.
 import { createHash } from 'node:crypto';
-import { utils } from 'ssh2';
+// `ssh2` is a CommonJS module whose `utils` property is not statically detected by Node's own
+// CJS/ESM interop (cjs-module-lexer) — only `Client`/`AgentProtocol`/`BaseAgent`/`createAgent` are
+// (verified via `node -e "import('ssh2').then(m => console.log(Object.keys(m)))"`). A named
+// `import { utils } from 'ssh2'` type-checks and works under Vitest's resolver, but throws
+// `SyntaxError: The requested module 'ssh2' does not provide an export named 'utils'` under plain
+// Node — exactly the failure this package's own `node -e "import('@noodara/ssh')"` smoke check
+// exists to catch. Importing the default export and destructuring from it works under both.
+import ssh2 from 'ssh2';
 import type { HostFingerprint } from './ssh-port.js';
+
+const { utils } = ssh2;
 
 /** Raised for a host key blob this module cannot safely fingerprint. Never carries key bytes. */
 export class InvalidHostKeyError extends Error {

@@ -6,9 +6,16 @@
 // `Error`, distinguishable only by message text) — it is never propagated to a caller, since
 // 02-RESEARCH.md records it can carry partial key bytes or the key's comment.
 import { createPublicKey } from 'node:crypto';
-import { utils, type ParsedKey } from 'ssh2';
+// `ssh2` is CommonJS; its `utils` property is not statically detected by Node's own CJS/ESM
+// interop (cjs-module-lexer only picks up `Client`/`AgentProtocol`/`BaseAgent`/`createAgent`), so
+// a named `import { utils } from 'ssh2'` throws under plain Node even though it type-checks and
+// works under Vitest's resolver — see fingerprint.ts's fuller note. Destructuring off the default
+// export works under both.
+import ssh2, { type ParsedKey } from 'ssh2';
 import { revealSecret, type Redactor } from '@noodara/domain/security';
 import type { SshCredential } from './ssh-port.js';
+
+const { utils } = ssh2;
 
 export type PrivateKeyCredential = Extract<SshCredential, { kind: 'private_key' }>;
 
