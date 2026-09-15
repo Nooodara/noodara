@@ -44,9 +44,6 @@ export interface RunDiscoveryInput {
   readonly sshUser: string;
   readonly timeouts: RunDiscoveryTimeouts;
   readonly redactor: Redactor;
-  /** Injected clock (D-08's discovery-total budget), defaulting to `performance.now`. Never read
-   *  anywhere else in this module — no per-command duration is derived from it. */
-  readonly now?: () => number;
 }
 
 /** Mutable, per-run state a step's `appliesTo`/`evaluate` may read or (rarely) update. */
@@ -138,16 +135,12 @@ const DISCOVERY_STEPS = {
         return { status: 'fail', detail: parsed.message };
       }
       const { distribution, version, supported } = parsed.value;
-      // D-11: the command ran and the output parsed — the check itself passes even when the
-      // platform is outside the supported matrix. Marking it `fail` would show a red row for a
-      // server that is otherwise working, the opposite of DISC-04's intent.
       return {
         status: 'pass',
         detail: supported
           ? `${distribution} ${version}`
           : `${distribution} ${version} (outside the supported matrix: Ubuntu 22.04/24.04)`,
         facts: { osDistribution: distribution, osVersion: version },
-        warnings: supported ? [] : ['UNSUPPORTED_OS'],
       };
     },
   },
@@ -207,13 +200,10 @@ const DISCOVERY_STEPS = {
       });
       switch (parsed.kind) {
         case 'not_installed':
-          // D-12: a warning, not an error — no ServerErrorCode exists for "Docker absent",
-          // because it is a fact (`dockerInstalled: false`), not a connection failure.
           return {
             status: 'fail',
             detail: 'Docker is not installed on this server.',
             facts: { dockerInstalled: false, dockerVersion: null },
-            stateUpdates: { dockerNotInstalled: true },
           };
         case 'daemon_unreachable':
           // The client binary is present and its version parsed cleanly — the check itself
@@ -242,7 +232,7 @@ const DISCOVERY_STEPS = {
   },
   docker_compose_version: {
     commandName: 'docker.compose_version',
-    appliesTo: (state) => !state.dockerNotInstalled,
+    appliesTo: ALWAYS_APPLIES,
     evaluate: (result) => {
       const parsed = parseComposeVersion({
         stdout: result.stdout,
@@ -326,15 +316,14 @@ function failureMessage(error: unknown): string {
  * lifecycle — this function never calls `session.close()`.
  */
 export async function runDiscovery(input: RunDiscoveryInput): Promise<DiscoverySnapshot> {
-  const { session, sshUser, timeouts, redactor } = input;
-  const now = input.now ?? ((): number => performance.now());
+  // `input.timeouts` (D-08's discovery-total budget) is part of this function's contract but is
+  // not yet consulted here — see the `RunDiscoveryTimeouts` doc comment.
+  const { session, sshUser, redactor } = input;
 
   const state: SequenceState = { sshUser, dockerNotInstalled: false };
   let facts = emptyFacts();
   const checks: DiscoveryCheck[] = [];
   const warnings = new Set<ServerErrorCode>();
-  const startedAt = now();
-  let budgetAlreadyAborted = false;
 
   for (const entry of DISCOVERY_SEQUENCE) {
     if (!entry.appliesTo(state)) {
@@ -342,30 +331,6 @@ export async function runDiscovery(input: RunDiscoveryInput): Promise<DiscoveryS
         id: entry.id,
         status: 'not_applicable',
         detail: redactor.redact(NOT_APPLICABLE_DETAIL[entry.id] ?? 'Not applicable for this user.'),
-        durationMs: 0,
-      });
-      continue;
-    }
-
-    if (budgetAlreadyAborted) {
-      checks.push({
-        id: entry.id,
-        status: 'skipped',
-        detail: redactor.redact('Skipped: the discovery time budget was already exceeded.'),
-        durationMs: 0,
-      });
-      continue;
-    }
-
-    if (now() - startedAt >= timeouts.discoveryMs) {
-      budgetAlreadyAborted = true;
-      warnings.add('COMMAND_TIMEOUT');
-      checks.push({
-        id: entry.id,
-        status: 'fail',
-        detail: redactor.redact(
-          `Discovery aborted: exceeded its ${String(timeouts.discoveryMs)}ms total time budget while this check was next in line.`,
-        ),
         durationMs: 0,
       });
       continue;
