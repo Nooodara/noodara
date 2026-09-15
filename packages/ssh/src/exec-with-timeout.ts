@@ -5,7 +5,7 @@
 import type { Redactor } from '@noodara/domain/security';
 import { commandFor, type CommandName } from './commands/index.js';
 import type { ExecResult } from './ssh-port.js';
-import { CommandTimeoutError } from './errors.js';
+import { CommandTimeoutError, TransportClosedError } from './errors.js';
 
 /** 64 KB per stream (SEC-05). */
 export const MAX_OUTPUT_BYTES = 65_536;
@@ -21,6 +21,7 @@ export const MAX_OUTPUT_BYTES = 65_536;
 export interface ExecChannel {
   on(event: 'data', listener: (chunk: Buffer) => void): void;
   on(event: 'close', listener: (code: number | null, signal?: string) => void): void;
+  on(event: 'error', listener: (err: Error) => void): void;
   readonly stderr: { on(event: 'data', listener: (chunk: Buffer) => void): void };
   destroy(): void;
 }
@@ -114,6 +115,10 @@ export function execWithTimeout(input: ExecWithTimeoutInput): Promise<ExecResult
 
   return new Promise<ExecResult>((resolve, reject) => {
     let settled = false;
+    // CR-01: set the moment the independent timer fires, so a `client.exec()` callback that
+    // resolves *after* that point (the channel arrived too late to ever be assigned to `channel`
+    // below) is recognised as a late arrival rather than silently dropped.
+    let timedOut = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let channel: ExecChannel | undefined;
     const startedAt = performance.now();
@@ -131,6 +136,7 @@ export function execWithTimeout(input: ExecWithTimeoutInput): Promise<ExecResult
     }
 
     timer = setTimeout(() => {
+      timedOut = true;
       channel?.destroy();
       settle(() => {
         reject(new CommandTimeoutError(commandName, timeoutMs));
@@ -138,7 +144,20 @@ export function execWithTimeout(input: ExecWithTimeoutInput): Promise<ExecResult
     }, timeoutMs);
 
     client.exec(command, (err, execChannel) => {
-      if (settled) return; // The timeout already fired before ssh2 invoked this callback.
+      if (settled) {
+        // CR-01: the timeout already fired before ssh2 invoked this callback, so `execChannel`
+        // was never assigned to the outer `channel` variable and the timeout branch's
+        // `channel?.destroy()` above was a no-op for it. Attach a no-op 'error' listener before
+        // destroying it — an unhandled 'error' on a channel about to be discarded would otherwise
+        // crash the process — so it is never left open and unmanaged on the live connection.
+        if (timedOut && !err) {
+          execChannel.on('error', () => {
+            // Discarded channel; there is nothing left to settle for it.
+          });
+          execChannel.destroy();
+        }
+        return;
+      }
       if (err) {
         settle(() => {
           reject(err);
@@ -147,6 +166,17 @@ export function execWithTimeout(input: ExecWithTimeoutInput): Promise<ExecResult
       }
 
       channel = execChannel;
+      // WR-01: `ExecChannel` is a `Duplex` stream — an unhandled 'error' event on it crashes the
+      // process (mirrors the client-level guard in ssh2-adapter.ts:287). Reject with the same
+      // marker mid-exec transport death already uses (errors.ts's `TransportClosedError`) so the
+      // caller's `classifySshError` produces a classified `CONNECTION_LOST` outcome instead of an
+      // unclassified escape.
+      execChannel.on('error', () => {
+        if (settled) return;
+        settle(() => {
+          reject(new TransportClosedError(commandName));
+        });
+      });
       execChannel.on('data', (chunk: Buffer) => {
         if (settled) return;
         appendChunk(stdoutAcc, chunk);

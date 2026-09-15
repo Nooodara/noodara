@@ -14,6 +14,7 @@ import { execWithTimeout, MAX_OUTPUT_BYTES, type ExecChannel } from './exec-with
 class FakeChannel implements ExecChannel {
   readonly dataListeners: ((chunk: Buffer) => void)[] = [];
   readonly closeListeners: ((code: number | null, signal?: string) => void)[] = [];
+  readonly errorListeners: ((err: Error) => void)[] = [];
   readonly stderrDataListeners: ((chunk: Buffer) => void)[] = [];
   destroyCalls = 0;
 
@@ -25,14 +26,20 @@ class FakeChannel implements ExecChannel {
 
   on(event: 'data', listener: (chunk: Buffer) => void): void;
   on(event: 'close', listener: (code: number | null, signal?: string) => void): void;
+  on(event: 'error', listener: (err: Error) => void): void;
   on(
-    event: 'data' | 'close',
-    listener: ((chunk: Buffer) => void) | ((code: number | null, signal?: string) => void),
+    event: 'data' | 'close' | 'error',
+    listener:
+      | ((chunk: Buffer) => void)
+      | ((code: number | null, signal?: string) => void)
+      | ((err: Error) => void),
   ): void {
     if (event === 'data') {
       this.dataListeners.push(listener as (chunk: Buffer) => void);
-    } else {
+    } else if (event === 'close') {
       this.closeListeners.push(listener as (code: number | null, signal?: string) => void);
+    } else {
+      this.errorListeners.push(listener as (err: Error) => void);
     }
   }
 
@@ -50,6 +57,10 @@ class FakeChannel implements ExecChannel {
 
   emitClose(code: number | null): void {
     for (const listener of this.closeListeners) listener(code);
+  }
+
+  emitError(err: Error): void {
+    for (const listener of this.errorListeners) listener(err);
   }
 }
 
@@ -187,6 +198,33 @@ describe('execWithTimeout — timeout path', () => {
     }).not.toThrow();
 
     await expect(resultPromise).rejects.toBeInstanceOf(CommandTimeoutError);
+  });
+
+  it('destroys a channel that arrives from client.exec() after the timeout has already fired, and never crashes if it later errors (CR-01)', async () => {
+    const client = new FakeClient();
+    const redactor = createRedactor();
+
+    const resultPromise = execWithTimeout({
+      client,
+      commandName: 'discovery.disk',
+      timeoutMs: TIMEOUT_MS,
+      redactor,
+    });
+
+    // No channel has been handed back yet when the timeout fires — client.exec()'s callback
+    // resolves only afterward, exactly the late-arrival race CR-01 covers.
+    vi.advanceTimersByTime(TIMEOUT_MS);
+    await expect(resultPromise).rejects.toBeInstanceOf(CommandTimeoutError);
+
+    const lateChannel = new FakeChannel();
+    expect(() => {
+      client.triggerChannel(lateChannel);
+    }).not.toThrow();
+
+    expect(lateChannel.destroyCalls).toBe(1);
+    expect(() => {
+      lateChannel.emitError(new Error('late channel blew up after being discarded'));
+    }).not.toThrow();
   });
 
   it('clears the timer on the client.exec callback-error path, and rejects with the raw error', async () => {

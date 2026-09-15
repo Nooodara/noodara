@@ -24,6 +24,7 @@ interface KeyboardInteractivePrompt {
 class FakeExecChannel {
   readonly dataListeners: ((chunk: Buffer) => void)[] = [];
   readonly closeListeners: ((code: number | null, signal?: string) => void)[] = [];
+  readonly errorListeners: ((err: Error) => void)[] = [];
   readonly stderrDataListeners: ((chunk: Buffer) => void)[] = [];
   destroyCalls = 0;
 
@@ -35,14 +36,20 @@ class FakeExecChannel {
 
   on(event: 'data', listener: (chunk: Buffer) => void): void;
   on(event: 'close', listener: (code: number | null, signal?: string) => void): void;
+  on(event: 'error', listener: (err: Error) => void): void;
   on(
-    event: 'data' | 'close',
-    listener: ((chunk: Buffer) => void) | ((code: number | null, signal?: string) => void),
+    event: 'data' | 'close' | 'error',
+    listener:
+      | ((chunk: Buffer) => void)
+      | ((code: number | null, signal?: string) => void)
+      | ((err: Error) => void),
   ): void {
     if (event === 'data') {
       this.dataListeners.push(listener as (chunk: Buffer) => void);
-    } else {
+    } else if (event === 'close') {
       this.closeListeners.push(listener as (code: number | null, signal?: string) => void);
+    } else {
+      this.errorListeners.push(listener as (err: Error) => void);
     }
   }
 
@@ -56,6 +63,10 @@ class FakeExecChannel {
 
   emitClose(code: number | null): void {
     for (const listener of this.closeListeners) listener(code);
+  }
+
+  emitError(err: Error): void {
+    for (const listener of this.errorListeners) listener(err);
   }
 }
 
