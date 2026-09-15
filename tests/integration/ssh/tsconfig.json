@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      // Mirrors vitest.shared.ts's sshSourceAliases: `@noodara/ssh/testing` has no `exports`
+      // entry in packages/ssh/package.json (it is Vitest-only, never reachable from plain Node),
+      // so a bare tsc invocation over this directory needs the same alias Vitest applies.
+      "@noodara/ssh/testing": ["../../../packages/ssh/src/testing/raw-ssh2.ts"]
+    }
+  },
+  "include": ["**/*.ts", "../helpers/ssh.ts"]
+}

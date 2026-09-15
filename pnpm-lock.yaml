@@ -20,6 +20,9 @@ importers:
       '@testcontainers/postgresql':
         specifier: 12.1.0
         version: 12.1.0
+      '@types/node':
+        specifier: ^22.12.0
+        version: 22.20.2
       '@vitest/coverage-v8':
         specifier: 5.0.0
         version: 5.0.0(vitest@5.0.0)

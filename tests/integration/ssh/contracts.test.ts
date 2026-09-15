@@ -186,11 +186,13 @@ describe('Task 1: hostVerifier raw-key contract (open question 1, D-04/D-05)', (
       fixture = await startSshd({ ubuntu: '24.04' });
       const privateKey = await readTestKey(fixture, 'ed25519'); // user-auth key; unrelated to which host key type is forced below
 
-      const forcedAlgorithm = {
-        ed25519: 'ssh-ed25519',
-        rsa3072: 'rsa-sha2-512',
-        ecdsa: 'ecdsa-sha2-nistp256',
-      }[keyName];
+      const forcedAlgorithm = (
+        {
+          ed25519: 'ssh-ed25519',
+          rsa3072: 'rsa-sha2-512',
+          ecdsa: 'ecdsa-sha2-nistp256',
+        } as const
+      )[keyName];
       const keygenType = { ed25519: 'ed25519', rsa3072: 'rsa', ecdsa: 'ecdsa' }[keyName];
 
       let observed: Buffer | undefined;
@@ -344,8 +346,12 @@ describe('Task 3: CONNECT_TIMEOUT candidate selection (open question 3, A4)', ()
       expect(attempt.err.level).toBe('client-timeout');
       expect(attempt.err.message).toBe('Timed out while waiting for handshake');
       // Elapsed-time window, not a fixed sleep: must land at-or-after the configured timeout and
-      // within a few seconds of it — the whole point of this being a real readyTimeout.
-      expect(attempt.elapsedMs).toBeGreaterThanOrEqual(configuredTimeout);
+      // within a few seconds of it — the whole point of this being a real readyTimeout. A 5ms
+      // lower-bound tolerance absorbs real setTimeout/libuv timer-firing jitter (measured on this
+      // machine: 1999ms for a 2000ms configured timeout) without weakening what's actually being
+      // proven — this is still a real ~2s wait, not the near-instant failure a non-timeout shape
+      // would produce.
+      expect(attempt.elapsedMs).toBeGreaterThanOrEqual(configuredTimeout - 5);
       expect(attempt.elapsedMs).toBeLessThan(configuredTimeout + 5000);
     }
   });
