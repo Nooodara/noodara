@@ -445,6 +445,42 @@ describe('createSsh2Adapter', () => {
         expect(outcome.message).toContain(formatFingerprint(ed25519Fingerprint));
       }
     });
+
+    it('reports a distinct, non-HOST_KEY_CHANGED failure when a first-connection host key blob cannot be parsed at all (IN-01)', async () => {
+      const client = new FakeClient();
+      client.connectImpl = (options) => {
+        const accepted = (options.hostVerifier as (buf: Buffer) => boolean)(Buffer.alloc(0));
+        expect(accepted).toBe(false);
+        client.emit('error', ssh2Error({ message: 'Host denied (verification failed)', level: 'handshake' }));
+      };
+      const adapter = buildAdapter({ createClient: () => client });
+
+      const outcome = await adapter.connect(buildInput({ trustedFingerprint: null }));
+
+      expect(outcome.ok).toBe(false);
+      if (!outcome.ok) {
+        expect(outcome.errorCode).not.toBe('HOST_KEY_CHANGED');
+        expect(outcome.message).not.toMatch(/previously trusted/i);
+        expect(outcome.observedFingerprint).toBeUndefined();
+      }
+    });
+
+    it('still reports HOST_KEY_CHANGED for a pinned fingerprint when the observed blob cannot be parsed at all (unaffected by IN-01)', async () => {
+      const client = new FakeClient();
+      client.connectImpl = (options) => {
+        const accepted = (options.hostVerifier as (buf: Buffer) => boolean)(Buffer.alloc(0));
+        expect(accepted).toBe(false);
+        client.emit('error', ssh2Error({ message: 'Host denied (verification failed)', level: 'handshake' }));
+      };
+      const adapter = buildAdapter({ createClient: () => client });
+
+      const outcome = await adapter.connect(buildInput({ trustedFingerprint: ed25519Fingerprint }));
+
+      expect(outcome.ok).toBe(false);
+      if (!outcome.ok) {
+        expect(outcome.errorCode).toBe('HOST_KEY_CHANGED');
+      }
+    });
   });
 
   describe('session.exec (SEC-04, D-08)', () => {

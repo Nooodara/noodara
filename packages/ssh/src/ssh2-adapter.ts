@@ -190,6 +190,14 @@ function buildHostKeyChangedMessage(trusted: HostFingerprint, observed: HostFing
   );
 }
 
+/** IN-01: a first connection (no fingerprint ever trusted) whose host key blob could not be
+ *  parsed at all is not "changed" — there was nothing to compare against. Reusing the
+ *  `HOST_KEY_CHANGED` wording here would be factually wrong, so this is reported as a distinct,
+ *  redacted `CONNECTION_LOST` outcome instead of inventing a new `ServerErrorCode`. */
+const HOST_KEY_UNPARSEABLE_MESSAGE =
+  "The server presented a host key that could not be parsed. This is not a host-key-change warning — " +
+  "no fingerprint could be computed to compare against a trusted one. Check the server's SSH host key configuration.";
+
 /** Mutable state shared between the connect-phase listeners and the session created after
  *  'ready' — a single 'error'/'close' listener pair (attached once, kept for the connection's
  *  lifetime) reads and writes this so no ssh2 event can arrive with no listener attached. */
@@ -311,17 +319,31 @@ async function attemptConnect(
       if (!settled) {
         releaseRevealed(revealed, redactor); // WR-02: this attempt is ending in failure.
         const failure = classifySshError(err, { phase: 'connect', redactor });
-        if (failure.errorCode === 'HOST_KEY_CHANGED' && trustedFingerprint !== null) {
-          const observed = verifier.observed();
-          if (observed !== null) {
+        if (failure.errorCode === 'HOST_KEY_CHANGED') {
+          // IN-01: a first connection (nothing was ever pinned) whose blob could not be parsed at
+          // all is a distinct failure from a real fingerprint mismatch — checked before the
+          // trusted-fingerprint branch below so it is never misreported as "changed".
+          if (trustedFingerprint === null && verifier.parseFailed()) {
             settle({
               ok: false,
-              errorCode: 'HOST_KEY_CHANGED',
-              message: redactor.redact(buildHostKeyChangedMessage(trustedFingerprint, observed)),
+              errorCode: 'CONNECTION_LOST',
+              message: redactor.redact(HOST_KEY_UNPARSEABLE_MESSAGE),
               attempts: 1,
-              observedFingerprint: observed,
             });
             return;
+          }
+          if (trustedFingerprint !== null) {
+            const observed = verifier.observed();
+            if (observed !== null) {
+              settle({
+                ok: false,
+                errorCode: 'HOST_KEY_CHANGED',
+                message: redactor.redact(buildHostKeyChangedMessage(trustedFingerprint, observed)),
+                attempts: 1,
+                observedFingerprint: observed,
+              });
+              return;
+            }
           }
         }
         settle({ ok: false, errorCode: failure.errorCode, message: failure.message, attempts: 1 });

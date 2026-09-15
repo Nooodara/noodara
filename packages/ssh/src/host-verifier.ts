@@ -21,6 +21,12 @@ export interface HostVerifier {
   observed(): HostFingerprint | null;
   /** True once a first-connection capture (`trusted === null`) has occurred. */
   captured(): boolean;
+  /**
+   * True when the most recent `verify()` call could not parse the host key blob at all (IN-01) —
+   * distinct from a blob that parsed cleanly but simply didn't match the trusted fingerprint.
+   * Reset at the start of every `verify()` call, so only the latest call's outcome is reported.
+   */
+  parseFailed(): boolean;
 }
 
 /**
@@ -33,6 +39,7 @@ export function createHostVerifier(input: HostVerifierInput): HostVerifier {
   const { trusted } = input;
   let lastObserved: HostFingerprint | null = null;
   let didCapture = false;
+  let lastParseFailed = false;
 
   /**
    * Returns `false` (never throws) for anything short of an accepted match — including a host key
@@ -40,6 +47,8 @@ export function createHostVerifier(input: HostVerifierInput): HostVerifier {
    * `handshake`-level `'error'` event (ADR 0004 row 7, `"Host denied (verification failed)"`)
    * that plan 02-07's classifier maps to `HOST_KEY_CHANGED`; throwing from inside this callback
    * would escape `ssh2`'s own error channel entirely and violate SERV-07's "connect never throws".
+   * IN-01: `lastParseFailed` records the unparseable case separately, so a caller (the adapter)
+   * can tell it apart from a blob that parsed but simply didn't match.
    */
   function verify(rawHostKey: Buffer): boolean {
     let candidate: HostFingerprint;
@@ -47,8 +56,10 @@ export function createHostVerifier(input: HostVerifierInput): HostVerifier {
       candidate = computeFingerprint(rawHostKey);
     } catch {
       lastObserved = null;
+      lastParseFailed = true;
       return false;
     }
+    lastParseFailed = false;
     lastObserved = candidate;
 
     if (trusted === null) {
@@ -63,5 +74,6 @@ export function createHostVerifier(input: HostVerifierInput): HostVerifier {
     verify,
     observed: () => lastObserved,
     captured: () => didCapture,
+    parseFailed: () => lastParseFailed,
   };
 }

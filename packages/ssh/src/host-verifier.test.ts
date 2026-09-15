@@ -109,6 +109,42 @@ describe('createHostVerifier', () => {
     });
   });
 
+  describe('parseFailed (IN-01)', () => {
+    it('is false before any verify() call and after a blob that parses cleanly', () => {
+      const verifier = createHostVerifier({ trusted: null });
+
+      expect(verifier.parseFailed()).toBe(false);
+      verifier.verify(blobs.ed25519);
+      expect(verifier.parseFailed()).toBe(false);
+    });
+
+    it('is true when the presented blob cannot be parsed at all, on a first connection', () => {
+      const verifier = createHostVerifier({ trusted: null });
+
+      expect(verifier.verify(Buffer.alloc(0))).toBe(false);
+      expect(verifier.parseFailed()).toBe(true);
+      expect(verifier.observed()).toBeNull();
+      expect(verifier.captured()).toBe(false);
+    });
+
+    it('is true when the presented blob cannot be parsed at all, against a pinned fingerprint', () => {
+      const verifier = createHostVerifier({ trusted: fingerprints.ed25519 });
+
+      expect(verifier.verify(Buffer.alloc(0))).toBe(false);
+      expect(verifier.parseFailed()).toBe(true);
+    });
+
+    it('resets to false on the next verify() call once a parseable blob is presented', () => {
+      const verifier = createHostVerifier({ trusted: null });
+
+      verifier.verify(Buffer.alloc(0));
+      expect(verifier.parseFailed()).toBe(true);
+
+      verifier.verify(blobs.ed25519);
+      expect(verifier.parseFailed()).toBe(false);
+    });
+  });
+
   describe('idempotent observation (ssh2 calls the verifier once, but a real defect could still lurk)', () => {
     it('calling verify twice with the same key is safe and records the same observation', () => {
       const verifier = createHostVerifier({ trusted: fingerprints.ed25519 });
