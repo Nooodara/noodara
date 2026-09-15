@@ -127,7 +127,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 02-09-PLAN.md — runDiscovery orchestration, partial-failure warnings and the public @noodara/ssh surface
+- [x] 02-09-PLAN.md — runDiscovery orchestration, partial-failure warnings and the public @noodara/ssh surface
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
@@ -206,7 +206,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Dominio, persistencia y autenticación | 17/17 | Complete    | 2026-09-12 |
-| 2. Adaptador SSH aislado y probado con Testcontainers | 8/10 | In Progress|  |
+| 2. Adaptador SSH aislado y probado con Testcontainers | 9/10 | In Progress|  |
 | 3. Servicios de aplicación, activity log y redacción | 0/TBD | Not started | - |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |
 | 5. UI web | 0/TBD | Not started | - |

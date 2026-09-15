@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-08-PLAN.md
-last_updated: "2026-09-15T00:26:18.932Z"
+stopped_at: Completed 02-09-PLAN.md
+last_updated: "2026-09-15T07:07:37.321Z"
 last_activity: 2026-09-15
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 27
-  completed_plans: 25
+  completed_plans: 26
   percent: 17
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 2 (Adaptador SSH aislado y probado con Testcontainers) — EXECUTING
-Plan: 9 of 10
+Plan: 10 of 10
 Status: Ready to execute
 Last activity: 2026-09-15
 
-Progress: [█████████░] 93%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
@@ -77,6 +77,7 @@ Progress: [█████████░] 93%
 | Phase 02 P06 | 60min | 2 tasks | 7 files |
 | Phase 02 P07 | 25min | 2 tasks | 5 files |
 | Phase 02 P08 | 95min | 2 tasks | 6 files |
+| Phase 02 P09 | 55min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -154,6 +155,9 @@ Recent decisions affecting current work:
 - [Phase 02]: Private-key credential validation failures (loadPrivateKey's validation and auth kinds) both land on ConnectOutcome's AUTH_FAILED, the closest of the seven ServerErrorCodes to an unusable credential
 - [Phase 02]: Ssh2Adapter's connect-phase error/close listener pair is attached once, before connect(), and shared via a mutable SessionState with the post-ready session, so no second listener pair is ever registered for the same client
 - [Phase 02]: Mutex on the outside, retry on the inside in Ssh2Adapter.connect — both attempts of a D-10 retried connect share one per-target createConnectionMutex slot
+- [Phase ?]: daemon_unreachable's docker_version check reports pass (command+parse both succeeded), matching runDiscovery's pass criterion everywhere else
+- [Phase ?]: commandFor stays part of @noodara/ssh's public surface because tests/integration/ssh/contracts.test.ts (plan 02-04) already depends on it through the package's single export entry
+- [Phase ?]: D-08's discovery-total budget is checked once per loop iteration against an injected clock, never by racing session.exec() itself
 
 ### Pending Todos
 
@@ -179,6 +183,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-15T00:26:18.926Z
-Stopped at: Completed 02-08-PLAN.md
+Last session: 2026-09-15T07:07:37.314Z
+Stopped at: Completed 02-09-PLAN.md
 Resume file: None
