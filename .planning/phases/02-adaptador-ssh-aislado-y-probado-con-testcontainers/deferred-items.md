@@ -33,6 +33,8 @@ behavior against the `projects` config's per-project `include` vs. the top-level
 
 ## 02-08: `tests/integration/ssh/contracts.test.ts`'s `.invalid`-TLD row now fails on this machine
 
+**RESOLVED (orchestrator, 2026-09-14):** the row now asserts the union of both resolver-dependent shapes (`client-timeout` or `client-socket` + ENOTFOUND/EAI_AGAIN); ADR 0004 carries a post-spike note. Committed as `fix(02-04)`.
+
 **Found during:** 02-08's full-suite verification (`pnpm test:integration`), run after Task 2's
 retry/mutex wiring commit — this file is untouched by 02-08 (last modified in plan 02-04,
 `8c0f2b6`).

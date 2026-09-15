@@ -254,6 +254,8 @@ over any message-string match, exactly as A5 flagged.
 | 7 | Pinned fingerprint mismatch (`hostVerifier` returns `false`) | `handshake` | — | — | `Host denied (verification failed)` | ~11ms (`fatal: true` also set) |
 | 8 | Mid-exec transport death (see below — separate from row 5: a channel already existed and had produced no output) | *(no error at all — see below)* | — | — | — | see below |
 
+**Post-spike note (2026-09-14):** the same `.invalid` lookup failed fast with `client-socket` + `ENOTFOUND` on another resolver during plan 02-08, confirming this row is resolver-dependent. `contracts.test.ts` therefore asserts the union of both shapes (each independently classified as `CONNECT_TIMEOUT` or `HOST_UNRESOLVED`), never a single resolver's behaviour.
+
 **Row 4 is a genuine, measured surprise worth flagging explicitly:** a
 hostname under the `.invalid` TLD does **not** fail fast with `ENOTFOUND`
 on this machine — it hangs for the full configured `readyTimeout` with
