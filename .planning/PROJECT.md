@@ -20,6 +20,9 @@ Noodara puede conocer, registrar y comunicarse con infraestructura real de forma
 - ✓ State machine de Server con 6 estados y transiciones D-13/D-14/D-15, validadores y política de password en `packages/domain` al 100% de cobertura — Fase 1
 - ✓ Cifrado AES-256-GCM con `key_version` y rotación `noodara secrets rotate`; arranque fail-fast sin secrets por defecto — Fase 1
 - ✓ CI con 7 puertas (lint, typecheck, boundaries, unit+coverage, integration, security, boot-smoke); arranque real por `pnpm dev` y `pnpm start` probado — Fase 1
+- ✓ Adaptador SSH (`packages/ssh`) sobre ssh2: claves OpenSSH/PEM con passphrase, password + keyboard-interactive, TOFU con fingerprint `SHA256:` y tipo, allowlist de 11 plantillas sin interpolación, timeouts independientes (10/30/60 s por env), reintento único para transitorios, clasificador exhaustivo de los 7 error codes, redacción y truncado — Fase 2 (2026-09-15)
+- ✓ `runDiscovery` en una sola conexión con checks por paso (hostname, arch, OS, CPU, RAM, disco, uptime, Docker + compose, sudo y grupo docker para no-root), OS no soportado y Docker ausente como advertencias en CONNECTED — Fase 2
+- ✓ Suite QA-03: ocho escenarios × Ubuntu 22.04 y 24.04 contra sshd real con Testcontainers (incluida pérdida de conexión a mitad de comando), matriz sudo/docker-group, canary de redacción; 620 unit + 208 integration — Fase 2
 
 ### Active
 
@@ -27,16 +30,12 @@ Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.
 
 - [ ] Instalación de Noodara en un VPS Ubuntu con un solo comando, al nivel de simplicidad de Coolify y Dokploy.
 - [ ] Registrar, editar y eliminar servidores con host, puerto SSH y usuario SSH configurables, y credencial (clave o password) cifrada at-rest.
-- [ ] Probar conectividad y reflejar el estado real del servidor: PENDING, CONNECTING, CONNECTED, DISCONNECTED, UNREACHABLE, ERROR.
-- [ ] Discovery del servidor: hostname, distribución, versión de OS, arquitectura, CPU, RAM, disco, uptime, Docker instalado y su versión.
 - [ ] Vista de detalle del servidor con hostname, status, OS, CPU, RAM, disk, uptime, Docker y last seen.
 - [ ] Activity log de las operaciones relevantes sobre servidores y sesión.
 - [ ] Configuración global del control plane.
 - [ ] Credenciales nunca expuestas en API responses, logs, errores ni telemetría; timeouts explícitos en SSH; estrategia de host fingerprint (TOFU) definida; eliminar servidor elimina sus credenciales.
-- [ ] Soporte comprobado para Ubuntu 22.04 LTS y 24.04 LTS.
 - [ ] Suite de calidad: unit ≥95% en core-domain, integration con infraestructura temporal (Testcontainers) para los escenarios SSH del roadmap, E2E del flujo connect-server, CI verde.
 - [ ] UI conforme al design system Apple-inspired de Noodara (dark y light), con el flujo login → Servers → add server → connect → discovery → detail.
-- [ ] Usuario SSH no-root con sudo sin password soportado, con validación de sudo y grupo docker durante el discovery.
 - [ ] Discovery mostrado paso a paso con pass/fail por check en la UI.
 
 ### Out of Scope
@@ -75,7 +74,9 @@ Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.
 |----------|-----------|---------|
 | Primer milestone = solo v0.1 Foundation | Un milestone por versión del roadmap permite revisar arquitectura y producto antes de crecer | — Pending |
 | Público objetivo inicial: devs indie / solo con un VPS | Mismo público que Coolify/Dokploy; exige instalación de un comando y onboarding cuidado desde v0.1 | — Pending |
-| v0.1 opera por SSH desde el control plane, sin agent | Reduce superficie y complejidad; el roadmap no exige agent para conectar y descubrir | — Pending |
+| v0.1 opera por SSH desde el control plane, sin agent | Reduce superficie y complejidad; el roadmap no exige agent para conectar y descubrir | ✓ Good (Fase 2) |
+| `UNSUPPORTED_OS` y Docker ausente son advertencias con el servidor en CONNECTED (D-11/D-12 fase 2), revirtiendo el mapeo a ERROR de la fase 1 | El admin ve su servidor y sus datos; v0.2 bloqueará el deploy sobre él | ✓ Good (Fase 2) |
+| Tests de integración nunca dependen del resolver DNS de la máquina (ADR 0004 row 4 resultó variable) | Un spike midió `client-timeout` y otra máquina dio `client-socket`; se aserta la unión de formas | ✓ Good (Fase 2) |
 | Stack abierto lo decide research | Evita fijar librerías con datos desactualizados; el usuario aprueba en la revisión de requisitos | — Pending |
 | Licencia Apache-2.0 | Alineada con Coolify/Dokploy, incluye grant de patentes, protege contribuidores | — Pending (LICENSE commiteado; MIT sigue siendo opción) |
 | Stack v0.1: pnpm + Turborepo, Fastify 5, Drizzle, BullMQ, ssh2, pino, Zod 4, TypeScript 6.0, Node 22 LTS | Research 2026-09-10: TS 7 bloqueado por typescript-eslint; Redis ya fijado hace a BullMQ la opción natural; Drizzle es el precedente de Dokploy | ✓ Good (Fase 1) |
@@ -106,4 +107,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-12 after Phase 1 completion*
+*Last updated: 2026-09-15 after Phase 2 completion*
