@@ -8,7 +8,8 @@
 import { createRedactor } from '@noodara/domain/security';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { commandFor } from './commands/index.js';
-import { CommandTimeoutError } from './errors.js';
+import { classifySshError } from './error-classifier.js';
+import { CommandTimeoutError, TransportClosedError } from './errors.js';
 import { execWithTimeout, MAX_OUTPUT_BYTES, type ExecChannel } from './exec-with-timeout.js';
 
 class FakeChannel implements ExecChannel {
@@ -242,6 +243,69 @@ describe('execWithTimeout — timeout path', () => {
 
     await expect(resultPromise).rejects.toBe(upstreamError);
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe('execWithTimeout — channel-level error (WR-01)', () => {
+  it('rejects with TransportClosedError, never crashing, when the channel itself emits an unhandled error', async () => {
+    const client = new FakeClient();
+    const channel = new FakeChannel();
+    const redactor = createRedactor();
+
+    const resultPromise = execWithTimeout({
+      client,
+      commandName: 'discovery.disk',
+      timeoutMs: TIMEOUT_MS,
+      redactor,
+    });
+    client.triggerChannel(channel);
+
+    expect(() => {
+      channel.emitError(new Error('channel died unexpectedly'));
+    }).not.toThrow();
+
+    await expect(resultPromise).rejects.toBeInstanceOf(TransportClosedError);
+  });
+
+  it('classifies the channel-level error to CONNECTION_LOST via the same table mid-exec transport death uses', async () => {
+    const client = new FakeClient();
+    const channel = new FakeChannel();
+    const redactor = createRedactor();
+
+    const resultPromise = execWithTimeout({
+      client,
+      commandName: 'discovery.disk',
+      timeoutMs: TIMEOUT_MS,
+      redactor,
+    });
+    client.triggerChannel(channel);
+    channel.emitError(new Error('channel died unexpectedly'));
+
+    await resultPromise.catch((err: unknown) => {
+      const failure = classifySshError(err, { phase: 'exec', redactor });
+      expect(failure.errorCode).toBe('CONNECTION_LOST');
+    });
+  });
+
+  it('ignores a channel-level error that arrives after the outcome has already settled', async () => {
+    const client = new FakeClient();
+    const channel = new FakeChannel();
+    const redactor = createRedactor();
+
+    const resultPromise = execWithTimeout({
+      client,
+      commandName: 'discovery.hostname',
+      timeoutMs: TIMEOUT_MS,
+      redactor,
+    });
+    client.triggerChannel(channel);
+    channel.emitData(Buffer.from('my-host\n'));
+    channel.emitClose(0);
+    await resultPromise;
+
+    expect(() => {
+      channel.emitError(new Error('too late to matter'));
+    }).not.toThrow();
   });
 });
 
