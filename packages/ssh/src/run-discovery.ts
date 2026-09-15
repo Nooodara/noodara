@@ -44,6 +44,10 @@ export interface RunDiscoveryInput {
   readonly sshUser: string;
   readonly timeouts: RunDiscoveryTimeouts;
   readonly redactor: Redactor;
+  /** Injected clock for D-08's discovery-total budget, defaulting to `performance.now`. Read only
+   *  to compare elapsed time against `timeouts.discoveryMs` — no per-command duration is ever
+   *  derived from it, since `ExecResult.durationMs` already measures that. */
+  readonly now?: () => number;
 }
 
 /** Mutable, per-run state a step's `appliesTo`/`evaluate` may read or (rarely) update. */
@@ -63,11 +67,21 @@ interface CheckOutcome {
   readonly stateUpdates?: Partial<SequenceState>;
 }
 
+/** Whether a step runs at all this time — and, when it doesn't, exactly which non-run status and
+ *  detail to report. `sudo`/`docker_group` report `not_applicable` for root (D-13); `docker_
+ *  compose_version` reports `skipped` once `docker_version` has already reported the Docker CLI
+ *  absent (D-12) — two different reasons for not running a command need two different statuses. */
+type Applicability =
+  | { readonly applies: true }
+  | { readonly applies: false; readonly status: 'skipped' | 'not_applicable'; readonly detail: string };
+
 interface DiscoveryStepDefinition {
   readonly commandName: CommandName;
-  readonly appliesTo: (state: SequenceState) => boolean;
+  readonly appliesTo: (state: SequenceState) => Applicability;
   readonly evaluate: (result: ExecResult, state: SequenceState) => CheckOutcome;
 }
+
+const APPLIES: Applicability = { applies: true };
 
 /** All-null `DiscoveryFacts` — a step that never ran leaves its field null rather than absent
  *  (`exactOptionalPropertyTypes`), matching the `servers` columns these facts fill (all nullable). */
@@ -88,7 +102,7 @@ function emptyFacts(): DiscoveryFacts {
   };
 }
 
-const ALWAYS_APPLIES = (): boolean => true;
+const ALWAYS_APPLIES = (): Applicability => APPLIES;
 
 function nonZeroExitDetail(commandLabel: string, result: ExecResult): string {
   return `${commandLabel} exited with code ${result.exitCode === null ? 'null' : String(result.exitCode)}: ${result.stderr}`;
@@ -135,12 +149,16 @@ const DISCOVERY_STEPS = {
         return { status: 'fail', detail: parsed.message };
       }
       const { distribution, version, supported } = parsed.value;
+      // D-11: the command ran and the output parsed — the check itself passes even when the
+      // platform is outside the supported matrix. Marking it `fail` would show a red row for a
+      // server that is otherwise working, the opposite of DISC-04's intent.
       return {
         status: 'pass',
         detail: supported
           ? `${distribution} ${version}`
           : `${distribution} ${version} (outside the supported matrix: Ubuntu 22.04/24.04)`,
         facts: { osDistribution: distribution, osVersion: version },
+        warnings: supported ? [] : ['UNSUPPORTED_OS'],
       };
     },
   },
@@ -200,10 +218,15 @@ const DISCOVERY_STEPS = {
       });
       switch (parsed.kind) {
         case 'not_installed':
+          // D-12: a warning, not an error — no ServerErrorCode exists for "Docker absent",
+          // because it is a fact (`dockerInstalled: false`), not a connection failure.
+          // `dockerNotInstalled` lets `docker_compose_version` skip a round trip that would
+          // only reproduce the same absence.
           return {
             status: 'fail',
             detail: 'Docker is not installed on this server.',
             facts: { dockerInstalled: false, dockerVersion: null },
+            stateUpdates: { dockerNotInstalled: true },
           };
         case 'daemon_unreachable':
           // The client binary is present and its version parsed cleanly — the check itself
@@ -232,7 +255,16 @@ const DISCOVERY_STEPS = {
   },
   docker_compose_version: {
     commandName: 'docker.compose_version',
-    appliesTo: ALWAYS_APPLIES,
+    // D-12: running this after a measured `not_installed` would only cost a round trip to
+    // reproduce the same absence — skip it and say why, rather than re-deriving "not found".
+    appliesTo: (state) =>
+      state.dockerNotInstalled
+        ? {
+            applies: false,
+            status: 'skipped',
+            detail: 'Skipped: Docker is not installed on this server.',
+          }
+        : APPLIES,
     evaluate: (result) => {
       const parsed = parseComposeVersion({
         stdout: result.stdout,
@@ -258,7 +290,14 @@ const DISCOVERY_STEPS = {
   },
   sudo: {
     commandName: 'access.sudo',
-    appliesTo: (state) => state.sshUser !== 'root',
+    appliesTo: (state) =>
+      state.sshUser === 'root'
+        ? {
+            applies: false,
+            status: 'not_applicable',
+            detail: 'Not applicable: connected as root, which already has full privileges.',
+          }
+        : APPLIES,
     evaluate: (result) => {
       if (result.exitCode === null) {
         return { status: 'fail', detail: '"sudo -n true" did not report an exit code.' };
@@ -272,7 +311,14 @@ const DISCOVERY_STEPS = {
   },
   docker_group: {
     commandName: 'access.docker_group',
-    appliesTo: (state) => state.sshUser !== 'root',
+    appliesTo: (state) =>
+      state.sshUser === 'root'
+        ? {
+            applies: false,
+            status: 'not_applicable',
+            detail: 'Not applicable: connected as root, which does not need docker group membership.',
+          }
+        : APPLIES,
     evaluate: (result) => {
       if (result.exitCode !== 0) {
         return { status: 'fail', detail: nonZeroExitDetail('the docker group check', result) };
@@ -300,11 +346,6 @@ export const DISCOVERY_SEQUENCE: readonly DiscoverySequenceEntry[] = DISCOVERY_C
   (id) => ({ id, ...DISCOVERY_STEPS[id] }),
 );
 
-const NOT_APPLICABLE_DETAIL: Partial<Record<DiscoveryCheckId, string>> = {
-  sudo: 'Not applicable: connected as root, which already has full privileges.',
-  docker_group: 'Not applicable: connected as root, which does not need docker group membership.',
-};
-
 function failureMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -316,21 +357,52 @@ function failureMessage(error: unknown): string {
  * lifecycle — this function never calls `session.close()`.
  */
 export async function runDiscovery(input: RunDiscoveryInput): Promise<DiscoverySnapshot> {
-  // `input.timeouts` (D-08's discovery-total budget) is part of this function's contract but is
-  // not yet consulted here — see the `RunDiscoveryTimeouts` doc comment.
-  const { session, sshUser, redactor } = input;
+  const { session, sshUser, timeouts, redactor } = input;
+  const now = input.now ?? ((): number => performance.now());
 
   const state: SequenceState = { sshUser, dockerNotInstalled: false };
   let facts = emptyFacts();
   const checks: DiscoveryCheck[] = [];
   const warnings = new Set<ServerErrorCode>();
+  const startedAt = now();
+  // Set once the discovery-total budget (D-08) has already been exceeded — every step from then
+  // on is reported `skipped` without ever calling `now()` or `session.exec()` again.
+  let budgetAlreadyExceeded = false;
 
   for (const entry of DISCOVERY_SEQUENCE) {
-    if (!entry.appliesTo(state)) {
+    const applicability = entry.appliesTo(state);
+    if (!applicability.applies) {
       checks.push({
         id: entry.id,
-        status: 'not_applicable',
-        detail: redactor.redact(NOT_APPLICABLE_DETAIL[entry.id] ?? 'Not applicable for this user.'),
+        status: applicability.status,
+        detail: redactor.redact(applicability.detail),
+        durationMs: 0,
+      });
+      continue;
+    }
+
+    if (budgetAlreadyExceeded) {
+      checks.push({
+        id: entry.id,
+        status: 'skipped',
+        detail: redactor.redact('Skipped: the discovery time budget was already exceeded.'),
+        durationMs: 0,
+      });
+      continue;
+    }
+
+    // Checked at the top of every iteration (D-08): once the elapsed time already exceeds the
+    // total budget, this step — the one that was "next in line" when the budget ran out — is the
+    // one D-08 calls out by name, and every step after it becomes `skipped`.
+    if (now() - startedAt >= timeouts.discoveryMs) {
+      budgetAlreadyExceeded = true;
+      warnings.add('COMMAND_TIMEOUT');
+      checks.push({
+        id: entry.id,
+        status: 'fail',
+        detail: redactor.redact(
+          `Discovery aborted: exceeded its ${String(timeouts.discoveryMs)}ms total time budget.`,
+        ),
         durationMs: 0,
       });
       continue;
