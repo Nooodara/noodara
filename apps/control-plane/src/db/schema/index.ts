@@ -6,3 +6,4 @@ export * from './login-attempts.js';
 export * from './credentials.js';
 export * from './servers.js';
 export * from './activity-events.js';
+export * from './discovery-snapshots.js';

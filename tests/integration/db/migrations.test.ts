@@ -273,7 +273,7 @@ describe('phase-3 schema objects (D-06, D-09, D-10)', () => {
       fixture.db
         .insert(schema.servers)
         .values({ name: 'SRV-1', host: '10.0.0.2', sshUser: 'root', credentialId }),
-    ).rejects.toMatchObject({ code: '23505' });
+    ).rejects.toMatchObject({ cause: { code: '23505' } });
   });
 
   it('rejects two servers sharing (host, ssh_port) with different names (D-10)', async () => {
@@ -288,7 +288,7 @@ describe('phase-3 schema objects (D-06, D-09, D-10)', () => {
       fixture.db
         .insert(schema.servers)
         .values({ name: 'srv-b', host: '10.0.0.5', sshPort: 22, sshUser: 'root', credentialId }),
-    ).rejects.toMatchObject({ code: '23505' });
+    ).rejects.toMatchObject({ cause: { code: '23505' } });
   });
 
   it('accepts two servers with the same host but different ssh_port', async () => {
