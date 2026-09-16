@@ -55,9 +55,16 @@ const FORBIDDEN_KEYS = [
 ];
 
 describe('SERVER_VIEW_KEYS', () => {
-  it('has exactly 26 entries and includes dockerComposeVersion', () => {
-    expect(SERVER_VIEW_KEYS).toHaveLength(26);
+  // 03-04-PLAN.md's own field list enumerates 26 `servers` columns (id..updatedAt) "plus
+  // credentialType" — 27 total. The plan's acceptance criterion elsewhere says "26 entries",
+  // which undercounts its own listed fields by one; every `servers` column plus `credentialType`
+  // (the must_haves.truths requirement, and the literal RESEARCH.md ServerView interface) is
+  // authoritative here, so this asserts the real total (Rule 1: plan-arithmetic bug, not a code
+  // bug — see 03-04-SUMMARY.md).
+  it('has exactly 27 entries and includes dockerComposeVersion', () => {
+    expect(SERVER_VIEW_KEYS).toHaveLength(27);
     expect(SERVER_VIEW_KEYS).toContain('dockerComposeVersion');
+    expect(SERVER_VIEW_KEYS).toContain('credentialType');
   });
 });
 
@@ -82,7 +89,9 @@ describe('toServerView', () => {
 
     for (const field of SERVER_VIEW_KEYS) {
       if (field === 'credentialType') continue;
-      expect((view as Record<string, unknown>)[field]).toEqual((row as Record<string, unknown>)[field]);
+      expect((view as unknown as Record<string, unknown>)[field]).toEqual(
+        (row as unknown as Record<string, unknown>)[field],
+      );
     }
   });
 
@@ -97,7 +106,7 @@ describe('toServerView', () => {
       secret: 's',
       token: 't',
     };
-    const view = toServerView(polluted as unknown as ServerRow, 'ssh_password');
+    const view = toServerView(polluted, 'ssh_password');
     const keysLower = Object.keys(view).map((k) => k.toLowerCase());
 
     for (const forbidden of FORBIDDEN_KEYS) {
