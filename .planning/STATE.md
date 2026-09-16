@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-06-PLAN.md
-last_updated: "2026-09-16T04:41:14.260Z"
+stopped_at: Completed 03-07-PLAN.md
+last_updated: "2026-09-16T05:04:32.383Z"
 last_activity: 2026-09-16
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 37
-  completed_plans: 33
+  completed_plans: 34
   percent: 33
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 03 (servicios-de-aplicaci-n-activity-log-y-redacci-n) — EXECUTING
-Plan: 7 of 10
+Plan: 8 of 10
 Status: Ready to execute
 Last activity: 2026-09-16
 
-Progress: [█████████░] 89%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -86,6 +86,7 @@ Progress: [█████████░] 89%
 | Phase 03 P04 | 42min | 3 tasks | 6 files |
 | Phase 03 P05 | 35min | 2 tasks | 3 files |
 | Phase 03 P06 | 40min | 2 tasks | 2 files |
+| Phase 03 P07 | 25min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -181,6 +182,8 @@ Recent decisions affecting current work:
 - [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: Service integration tests live in tests/integration/services/*.test.ts against real Postgres (never colocated unit tests) since every service in this phase opens db.transaction; registerServer/register-server.test.ts both load each other's env-sensitive dependency graph via a dynamic await import(...), never a static top-level import, since redaction.ts reads env.NOODARA_MASTER_KEY at module load time and env.ts process.exit(1)s on an invalid env
 - [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: editServer runs currentKeyVersion/encodeCredential against the open transaction handle (tx), not deps.db, since this plan's task order places credential encoding inside the single db.transaction (a deliberate departure from registerServer's precedent of computing the key version before opening its transaction)
 - [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: The NAME_TAKEN integration test for editServer uses an exact-duplicate name rather than a case-differing one, since validateServerName rejects uppercase input outright -- the lower() unique index still guards the exact-duplicate collision path
+- [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: deleteServer's success result carries only { ok: true, serverId } instead of a ServerView (D-19 excludes it -- the row no longer exists after commit)
+- [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: deleteServer has no unique-violation catch block unlike registerServer/editServer, since delete has no uniqueness pre-check that could race a 23505
 
 ### Pending Todos
 
@@ -207,6 +210,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-16T04:41:14.251Z
-Stopped at: Completed 03-06-PLAN.md
+Last session: 2026-09-16T05:04:32.373Z
+Stopped at: Completed 03-07-PLAN.md
 Resume file: None
