@@ -164,7 +164,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 03-04-PLAN.md — credential-store (envelope ↔ SshCredential, D-15), proyección ServerView (D-19) y dependencias inyectadas + ServiceActor
+- [x] 03-04-PLAN.md — credential-store (envelope ↔ SshCredential, D-15), proyección ServerView (D-19) y dependencias inyectadas + ServiceActor
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -244,7 +244,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Dominio, persistencia y autenticación | 17/17 | Complete    | 2026-09-12 |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
-| 3. Servicios de aplicación, activity log y redacción | 3/10 | In Progress|  |
+| 3. Servicios de aplicación, activity log y redacción | 4/10 | In Progress|  |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |
 | 5. UI web | 0/TBD | Not started | - |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |
