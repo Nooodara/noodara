@@ -46,6 +46,23 @@ exactly, or `transition()` throws `MissingTransitionReasonError`:
 | `ERROR → PENDING` | `fingerprint_trusted` | **D-15** | A `HOST_KEY_CHANGED` connection failure parks the observed fingerprint in `pending_fingerprint` and leaves the server in `ERROR`. Only the explicit "Trust new fingerprint" action (which copies `pending_fingerprint` into `host_fingerprint`) may move it back to `PENDING`. |
 | `CONNECTED → DISCONNECTED` | `clean_close` | **D-13** | There is no admin "Disconnect" action in v0.1 — every connect/discovery opens and closes its own SSH session. `DISCONNECTED` is assigned only by the system when a session that was `CONNECTED` closes cleanly, never by a user-requested action. |
 
+## Session lifecycle and CONNECTED semantics (D-03, phase 3)
+
+CONNECTED means the last operation succeeded, not that a session is open. There is no persistent
+SSH session tied to a `CONNECTED` server between requests: every `connect`/`connectAndDiscover`
+call opens its own connection and closes it before returning.
+
+`connectAndDiscover` closes its SSH session at the end of every run and deliberately does NOT
+transition to `DISCONNECTED`; it never uses the `clean_close` edge. The `CONNECTED -> DISCONNECTED`
+(`clean_close`) edge is reserved for D-14 of phase 1 (editing the SSH user or replacing the
+credential on a `CONNECTED` server) and future system shutdowns — it is not a byproduct of a
+normal, successful discovery run.
+
+D-02's post-connect discovery failures use a second, direct `transition()` call: `CONNECTED ->
+ERROR` for `COMMAND_TIMEOUT` and `CONNECTED -> UNREACHABLE` for `CONNECTION_LOST`, never a second
+`applyConnectionResult` (which throws once the status is already `CONNECTED` — see
+"Connection-result mapping" below).
+
 ## Connection-result mapping
 
 `packages/domain/src/server/connection-result.ts` maps each SSH connection outcome to exactly one
