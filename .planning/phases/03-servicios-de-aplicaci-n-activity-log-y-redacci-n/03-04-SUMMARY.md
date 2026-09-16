@@ -150,3 +150,8 @@ None -- no external service configuration required.
 ---
 *Phase: 03-servicios-de-aplicaci-n-activity-log-y-redacci-n*
 *Completed: 2026-09-16*
+
+## Self-Check: PASSED
+
+All six created source/test files and this SUMMARY are present on disk; all seven commits
+(6b2404b, 030edcd, 6031864, 96122b0, 7a31acb, 925823f, 946c673) are present in git history.
