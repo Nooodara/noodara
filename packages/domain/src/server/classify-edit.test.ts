@@ -74,13 +74,13 @@ describe('classifyServerEdit', () => {
   // Exhaustive 16-row table over (host changed, port changed, user changed, credentialReplaced).
   // This carries the branch-coverage bar (SERV-02).
   const BOOLS = [false, true];
-  const rows: Array<{
+  const rows: {
     hostChanged: boolean;
     portChanged: boolean;
     userChanged: boolean;
     credentialReplaced: boolean;
     expected: 'none' | 'identity' | 'access';
-  }> = [];
+  }[] = [];
 
   for (const hostChanged of BOOLS) {
     for (const portChanged of BOOLS) {
