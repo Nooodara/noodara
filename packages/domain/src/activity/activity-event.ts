@@ -24,6 +24,35 @@ export const AUTH_ACTIONS = [
 
 export type AuthAction = (typeof AUTH_ACTIONS)[number];
 
+/**
+ * The six typed `server.*` activity actions this phase adds (ACT-01, D-16). Metadata shape per
+ * action (never before/after values for identity/access fields — those never travel in metadata):
+ * - `server.created` — `{ name, host, sshPort, sshUser, credentialType }`
+ * - `server.updated` — `{ changedFields: string[], credentialReplaced: boolean }`
+ * - `server.deleted` — `{ name, host }`
+ * - `server.connection_attempted` — `{ attempts, durationMs, fingerprintCaptured }`, with
+ *   `outcome`/`errorCode` carried on the event itself, not in metadata
+ * - `server.discovery_completed` — `{ snapshotId, warnings, checksFailed: string[] }`, with
+ *   `outcome`/`errorCode` carried on the event itself
+ * - `server.fingerprint_trusted` — `{ previousFingerprint, newFingerprint }` (fingerprints are
+ *   public, D-16, so they are safe in metadata)
+ */
+export const SERVER_ACTIONS = [
+  'server.created',
+  'server.updated',
+  'server.deleted',
+  'server.connection_attempted',
+  'server.discovery_completed',
+  'server.fingerprint_trusted',
+] as const;
+
+export type ServerAction = (typeof SERVER_ACTIONS)[number];
+
+/** The combined set of actions `buildActivityEvent` accepts (auth phase 1 + server phase 3). */
+export type ActivityAction = AuthAction | ServerAction;
+
+const ACTIVITY_ACTIONS: readonly string[] = [...AUTH_ACTIONS, ...SERVER_ACTIONS];
+
 export type ActivityActorType = 'user' | 'system';
 export type ActivityOutcome = 'success' | 'failure';
 
@@ -35,7 +64,7 @@ export interface ActivityEvent {
   readonly actorId: string | null;
   readonly entityType: string;
   readonly entityId: string;
-  readonly action: AuthAction;
+  readonly action: ActivityAction;
   readonly outcome: ActivityOutcome;
   readonly errorCode?: string;
   readonly metadata: ActivityMetadata;
@@ -47,17 +76,17 @@ export interface BuildActivityEventInput {
   readonly actorId?: string | null;
   readonly entityType: string;
   readonly entityId: string;
-  readonly action: AuthAction;
+  readonly action: ActivityAction;
   readonly outcome: ActivityOutcome;
   readonly errorCode?: string;
   readonly metadata?: ActivityMetadata;
 }
 
-/** Raised when `input.action` is not one of `AUTH_ACTIONS` (a caller bypassing the static type,
- *  e.g. data loaded from persistence). */
+/** Raised when `input.action` is not one of the combined `AUTH_ACTIONS`/`SERVER_ACTIONS` set (a
+ *  caller bypassing the static type, e.g. data loaded from persistence). */
 export class InvalidActivityActionError extends Error {
   constructor(action: string) {
-    super(`Unknown auth action: "${action}"`);
+    super(`Unknown activity action: "${action}"`);
     this.name = 'InvalidActivityActionError';
   }
 }
@@ -117,7 +146,7 @@ function assertNoSensitiveMetadata(value: unknown): void {
  * and this function's output deterministic in tests.
  */
 export function buildActivityEvent(input: BuildActivityEventInput, now: Date): ActivityEvent {
-  if (!(AUTH_ACTIONS as readonly string[]).includes(input.action)) {
+  if (!ACTIVITY_ACTIONS.includes(input.action)) {
     throw new InvalidActivityActionError(input.action);
   }
 
