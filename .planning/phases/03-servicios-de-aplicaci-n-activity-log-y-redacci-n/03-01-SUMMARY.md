@@ -61,11 +61,11 @@ completed: 2026-09-15
 
 Each task was committed atomically:
 
-1. **Task 1: Declare @noodara/ssh as a runtime dependency of apps/control-plane** - `decc774` (feat)
-2. **Task 2: Export loadPrivateKey from @noodara/ssh (D-15)** - `884cb60` (test, RED), `8051238` (feat, GREEN)
-3. **Task 3: Record D-03 CONNECTED semantics in the committed transition doc** - `7042679` (docs)
+1. **Task 1: Declare @noodara/ssh as a runtime dependency of apps/control-plane** - `dd93766` (feat)
+2. **Task 2: Export loadPrivateKey from @noodara/ssh (D-15)** - `73a7f9b` (test, RED), `81b083d` (feat, GREEN)
+3. **Task 3: Record D-03 CONNECTED semantics in the committed transition doc** - `dd273fb` (docs)
 
-**Plan metadata:** pending (this SUMMARY + STATE/ROADMAP update)
+**Plan metadata:** `3187e1c` (docs: complete plan)
 
 _Note: Task 2 followed the plan-mandated RED/GREEN TDD cycle (no separate REFACTOR commit needed — the GREEN change was already minimal and additive)._
 
@@ -106,5 +106,16 @@ None - no external service configuration required.
 ## Self-Check: PASSED
 
 All claimed files exist (apps/control-plane/package.json, packages/ssh/src/index.ts,
-docs/domain/server-state-transitions.md) and all four task commits (decc774, 884cb60, 8051238,
-7042679) are present in git history.
+docs/domain/server-state-transitions.md) and all four task commits (dd93766, 73a7f9b, 81b083d,
+dd273fb) are present in git history.
+
+## Commit History Correction
+
+The four task commits above were initially created with a `Co-Authored-By: Claude Sonnet 5`
+trailer, which violates this project's CLAUDE.md ("Sin trailers de atribución a Claude ni
+Co-Authored-By") and the explicit no-attribution instruction given for this execution. Since no
+push had occurred and the repo is local-only at this stage, the trailer was stripped from all
+five commits (four task commits + this plan's metadata commit) via `git commit-tree`, preserving
+identical trees, authors, and timestamps — verified with `git diff <old-head> <new-head> --stat`
+showing zero changes. `refs/heads/main` was updated with `git update-ref` using its old-value
+safety check. The hashes recorded in this SUMMARY are the corrected ones.
