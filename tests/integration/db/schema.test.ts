@@ -12,6 +12,7 @@ const EXPECTED_TABLES = [
   'servers',
   'credentials',
   'activity_events',
+  'discovery_snapshots',
 ];
 
 const EXPECTED_ENUMS = [

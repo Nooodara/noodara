@@ -1,9 +1,11 @@
 import { eq, sql } from 'drizzle-orm';
+import { uuidv7 } from 'uuidv7';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { Database } from '../../../apps/control-plane/src/db/client.js';
 import { runMigrations } from '../../../apps/control-plane/src/db/migrate.js';
 import * as schema from '../../../apps/control-plane/src/db/schema/index.js';
 import {
+  seedDiscoverySnapshot,
   seedRepresentativeData,
   type RepresentativeDataIds,
 } from '../fixtures/representative-data.js';
@@ -22,6 +24,7 @@ const EXPECTED_TABLES = [
   'servers',
   'credentials',
   'activity_events',
+  'discovery_snapshots',
 ];
 
 const EXPECTED_ENUMS = [
@@ -162,6 +165,7 @@ describe('migrations applied from scratch (QA-06)', () => {
       '0000_shiny_franklin_storm',
       '0001_silky_lethal_legion',
       '0002_phase2_fingerprint_timestamps',
+      '0003_phase3_discovery_snapshots',
     ]);
   });
 
@@ -212,6 +216,156 @@ describe('migrations applied from scratch (QA-06)', () => {
     const secondRunCount = await countBookkeepingRows(fixture.db);
 
     expect(secondRunCount).toBe(firstRunCount);
+  });
+});
+
+describe('phase-3 schema objects (D-06, D-09, D-10)', () => {
+  it('servers.docker_compose_version exists as nullable text', async () => {
+    fixture = await startPostgres();
+
+    const result = await fixture.db.execute<{
+      data_type: string;
+      is_nullable: string;
+    }>(sql`
+      select data_type, is_nullable from information_schema.columns
+      where table_name = 'servers' and column_name = 'docker_compose_version'
+    `);
+
+    expect(result.rows[0]?.data_type).toBe('text');
+    expect(result.rows[0]?.is_nullable).toBe('YES');
+  });
+
+  it('creates the two servers unique indexes and the discovery_snapshots index', async () => {
+    fixture = await startPostgres();
+
+    const result = await fixture.db.execute<{ indexname: string }>(sql`
+      select indexname from pg_indexes where schemaname = 'public'
+    `);
+    const indexNames = result.rows.map((row) => row.indexname);
+
+    expect(indexNames).toContain('servers_name_lower_unique_idx');
+    expect(indexNames).toContain('servers_host_port_unique_idx');
+    expect(indexNames).toContain('discovery_snapshots_server_id_collected_at_idx');
+  });
+
+  async function insertCredential(db: Database): Promise<string> {
+    const [credential] = await db
+      .insert(schema.credentials)
+      .values({ type: 'ssh_password', encryptedValue: 'v1:nonce:cipher:tag', keyVersion: 1 })
+      .returning();
+    return assertDefined(credential, 'credential').id;
+  }
+
+  function assertDefined<T>(value: T | undefined, what: string): T {
+    if (value === undefined) throw new Error(`expected ${what} insert to return a row`);
+    return value;
+  }
+
+  it('rejects a second server whose name differs only by case (D-10)', async () => {
+    fixture = await startPostgres();
+    const credentialId = await insertCredential(fixture.db);
+
+    await fixture.db
+      .insert(schema.servers)
+      .values({ name: 'srv-1', host: '10.0.0.1', sshUser: 'root', credentialId });
+
+    await expect(
+      fixture.db
+        .insert(schema.servers)
+        .values({ name: 'SRV-1', host: '10.0.0.2', sshUser: 'root', credentialId }),
+    ).rejects.toMatchObject({ code: '23505' });
+  });
+
+  it('rejects two servers sharing (host, ssh_port) with different names (D-10)', async () => {
+    fixture = await startPostgres();
+    const credentialId = await insertCredential(fixture.db);
+
+    await fixture.db
+      .insert(schema.servers)
+      .values({ name: 'srv-a', host: '10.0.0.5', sshPort: 22, sshUser: 'root', credentialId });
+
+    await expect(
+      fixture.db
+        .insert(schema.servers)
+        .values({ name: 'srv-b', host: '10.0.0.5', sshPort: 22, sshUser: 'root', credentialId }),
+    ).rejects.toMatchObject({ code: '23505' });
+  });
+
+  it('accepts two servers with the same host but different ssh_port', async () => {
+    fixture = await startPostgres();
+    const credentialId = await insertCredential(fixture.db);
+
+    await fixture.db
+      .insert(schema.servers)
+      .values({ name: 'srv-c', host: '10.0.0.9', sshPort: 22, sshUser: 'root', credentialId });
+
+    const inserted = await fixture.db
+      .insert(schema.servers)
+      .values({ name: 'srv-d', host: '10.0.0.9', sshPort: 2222, sshUser: 'root', credentialId })
+      .returning();
+
+    expect(inserted).toHaveLength(1);
+  });
+
+  it('cascades discovery_snapshots deletion when the owning server is deleted (D-08)', async () => {
+    fixture = await startPostgres();
+    const credentialId = await insertCredential(fixture.db);
+    const [server] = await fixture.db
+      .insert(schema.servers)
+      .values({ name: 'srv-cascade', host: '10.0.0.20', sshUser: 'root', credentialId })
+      .returning();
+    const serverId = assertDefined(server, 'server').id;
+
+    await seedDiscoverySnapshot(fixture.db, serverId);
+
+    await fixture.db.delete(schema.servers).where(eq(schema.servers.id, serverId));
+
+    const remaining = await fixture.db.execute<{ count: number }>(
+      sql`select count(*)::int as count from discovery_snapshots where server_id = ${serverId}`,
+    );
+    expect(remaining.rows[0]?.count).toBe(0);
+  });
+
+  it('round-trips a DiscoverySnapshot-shaped payload through jsonb, and accepts a NULL error_code', async () => {
+    fixture = await startPostgres();
+    const credentialId = await insertCredential(fixture.db);
+    const [server] = await fixture.db
+      .insert(schema.servers)
+      .values({ name: 'srv-payload', host: '10.0.0.30', sshUser: 'root', credentialId })
+      .returning();
+    const serverId = assertDefined(server, 'server').id;
+
+    const payload = {
+      facts: {
+        hostname: 'roundtrip-host',
+        osDistribution: 'ubuntu',
+        osVersion: '22.04',
+        arch: 'aarch64',
+        cpuCores: 2,
+        ramMb: 4096,
+        diskTotalMb: 51200,
+        diskUsedMb: 10240,
+        uptimeSeconds: 120,
+        dockerInstalled: false,
+        dockerVersion: null,
+        dockerComposeVersion: null,
+      },
+      checks: [{ id: 'hostname', status: 'pass', detail: 'roundtrip-host', durationMs: 5 }],
+      warnings: [],
+    };
+
+    const snapshotId = uuidv7();
+    await fixture.db.execute(sql`
+      insert into discovery_snapshots (id, server_id, collected_at, outcome, error_code, payload)
+      values (${snapshotId}, ${serverId}, now(), 'ok', null, ${JSON.stringify(payload)}::jsonb)
+    `);
+
+    const result = await fixture.db.execute<{ payload: unknown; error_code: string | null }>(
+      sql`select payload, error_code from discovery_snapshots where id = ${snapshotId}`,
+    );
+
+    expect(result.rows[0]?.payload).toEqual(payload);
+    expect(result.rows[0]?.error_code).toBeNull();
   });
 });
 
@@ -273,6 +427,14 @@ describe('migrations applied from the previous snapshot (QA-06, PITFALLS.md #10)
     );
     expect(fingerprintTimestampsResult.rows[0]?.host_fingerprint_captured_at).toBeNull();
     expect(fingerprintTimestampsResult.rows[0]?.pending_fingerprint_seen_at).toBeNull();
+
+    // Migration 0003 adds `docker_compose_version` (D-09) to `servers`, a table that already has a
+    // row (seeded before this migration ran). The column is nullable with no default, so the ADD
+    // COLUMN backfill must be NULL, not a spurious value.
+    const dockerComposeVersionResult = await fixture.db.execute<{
+      docker_compose_version: string | null;
+    }>(sql`select docker_compose_version from servers where id = ${ids.serverId}`);
+    expect(dockerComposeVersionResult.rows[0]?.docker_compose_version).toBeNull();
 
     // Round-trip a real Date through the new column to prove `withTimezone: true` actually landed
     // as `timestamptz` (which normalizes to UTC and preserves the instant) rather than a naive

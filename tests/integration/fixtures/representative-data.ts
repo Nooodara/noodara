@@ -168,3 +168,42 @@ export async function seedRepresentativeData(db: Database): Promise<Representati
     activityEventId: activityEvent.id,
   };
 }
+
+/**
+ * Inserts one representative row into `discovery_snapshots` (D-06) for `serverId`. Only usable
+ * AFTER the from-snapshot upgrade step has run migration 0003 — the table does not exist at the
+ * 0002 snapshot `seedRepresentativeData` above is restricted to. Returns the inserted row's id.
+ */
+export async function seedDiscoverySnapshot(db: Database, serverId: string): Promise<string> {
+  const insertedSnapshots = await db.execute<{ id: string }>(sql`
+    insert into discovery_snapshots (id, server_id, collected_at, outcome, error_code, payload)
+    values (
+      ${uuidv7()},
+      ${serverId},
+      now(),
+      'partial',
+      'COMMAND_TIMEOUT',
+      ${JSON.stringify({
+        facts: {
+          hostname: 'representative-host',
+          osDistribution: 'ubuntu',
+          osVersion: '24.04',
+          arch: 'x86_64',
+          cpuCores: 4,
+          ramMb: 8192,
+          diskTotalMb: 102400,
+          diskUsedMb: 20480,
+          uptimeSeconds: 3600,
+          dockerInstalled: true,
+          dockerVersion: '27.3.1',
+          dockerComposeVersion: null,
+        },
+        checks: [{ id: 'hostname', status: 'pass', detail: 'representative-host', durationMs: 12 }],
+        warnings: [],
+      })}::jsonb
+    )
+    returning id
+  `);
+  const snapshot = assertDefined(insertedSnapshots.rows[0], 'discovery snapshot');
+  return snapshot.id;
+}
