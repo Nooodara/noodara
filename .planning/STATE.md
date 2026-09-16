@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-07-PLAN.md
-last_updated: "2026-09-16T05:04:32.383Z"
+stopped_at: Completed 03-08-PLAN.md
+last_updated: "2026-09-16T15:54:25.443Z"
 last_activity: 2026-09-16
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 37
-  completed_plans: 34
+  completed_plans: 35
   percent: 33
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 03 (servicios-de-aplicaci-n-activity-log-y-redacci-n) — EXECUTING
-Plan: 8 of 10
+Plan: 9 of 10
 Status: Ready to execute
 Last activity: 2026-09-16
 
-Progress: [█████████░] 92%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -87,6 +87,7 @@ Progress: [█████████░] 92%
 | Phase 03 P05 | 35min | 2 tasks | 3 files |
 | Phase 03 P06 | 40min | 2 tasks | 2 files |
 | Phase 03 P07 | 25min | 2 tasks | 2 files |
+| Phase 03 P08 | 50min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -184,6 +185,8 @@ Recent decisions affecting current work:
 - [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: The NAME_TAKEN integration test for editServer uses an exact-duplicate name rather than a case-differing one, since validateServerName rejects uppercase input outright -- the lower() unique index still guards the exact-duplicate collision path
 - [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: deleteServer's success result carries only { ok: true, serverId } instead of a ServerView (D-19 excludes it -- the row no longer exists after commit)
 - [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: deleteServer has no unique-violation catch block unlike registerServer/editServer, since delete has no uniqueness pre-check that could race a 23505
+- [Phase 03]: connectAndDiscover accepts an optional discover?: typeof runDiscovery on its own input, defaulting to the real runDiscovery -- scripting runDiscovery's internals through the fake SshSession's exec map was impractical for the D-02 warnings/checks matrix this plan's tests needed
+- [Phase 03]: classifyDiscoveryOutcome's D-02 mapping returns a 3-arm discriminated union keyed on status rather than a flat interface, so the discovery_completed activity event's conditional errorCode spread type-checks under exactOptionalPropertyTypes with no as assertion
 
 ### Pending Todos
 
@@ -210,6 +213,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-16T05:04:32.373Z
-Stopped at: Completed 03-07-PLAN.md
+Last session: 2026-09-16T15:54:25.432Z
+Stopped at: Completed 03-08-PLAN.md
 Resume file: None
