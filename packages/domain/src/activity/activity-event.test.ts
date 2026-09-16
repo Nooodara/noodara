@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { secretValue } from '../security/secret-value.js';
 import {
   AUTH_ACTIONS,
+  InvalidActivityActionError,
+  SERVER_ACTIONS,
   SensitiveMetadataError,
   buildActivityEvent,
+  type ActivityAction,
   type AuthAction,
 } from './activity-event.js';
 
@@ -190,5 +193,134 @@ describe('buildActivityEvent', () => {
         NOW,
       ),
     ).toThrow(SensitiveMetadataError);
+  });
+
+  it('rejects an unknown action with the updated "Unknown activity action" wording', () => {
+    expect(() =>
+      buildActivityEvent(
+        {
+          actorType: 'user',
+          entityType: 'admin',
+          entityId: 'admin-1',
+          action: 'auth.bogus_action' as AuthAction,
+          outcome: 'success',
+        },
+        NOW,
+      ),
+    ).toThrow('Unknown activity action: "auth.bogus_action"');
+  });
+});
+
+describe('server actions (ACT-01, D-16)', () => {
+  it('SERVER_ACTIONS has length 6 and equals the exact ordered tuple', () => {
+    expect(SERVER_ACTIONS.length).toBe(6);
+    expect([...SERVER_ACTIONS]).toEqual([
+      'server.created',
+      'server.updated',
+      'server.deleted',
+      'server.connection_attempted',
+      'server.discovery_completed',
+      'server.fingerprint_trusted',
+    ]);
+  });
+
+  it('AUTH_ACTIONS still has exactly 8 entries', () => {
+    expect(AUTH_ACTIONS.length).toBe(8);
+  });
+
+  it.each(SERVER_ACTIONS)('builds a %s event and round-trips the action', (action) => {
+    const event = buildActivityEvent(
+      {
+        actorType: 'user',
+        entityType: 'server',
+        entityId: 'srv-1',
+        action,
+        outcome: 'success',
+      },
+      NOW,
+    );
+
+    expect(event.action).toBe(action);
+  });
+
+  it('throws InvalidActivityActionError for an unknown server.* action', () => {
+    expect(() =>
+      buildActivityEvent(
+        {
+          actorType: 'user',
+          entityType: 'server',
+          entityId: 'srv-1',
+          action: 'server.exploded' as ActivityAction,
+          outcome: 'failure',
+        },
+        NOW,
+      ),
+    ).toThrow(InvalidActivityActionError);
+  });
+
+  it('throws InvalidActivityActionError for an unknown namespace (project.created)', () => {
+    expect(() =>
+      buildActivityEvent(
+        {
+          actorType: 'user',
+          entityType: 'project',
+          entityId: 'proj-1',
+          action: 'project.created' as ActivityAction,
+          outcome: 'success',
+        },
+        NOW,
+      ),
+    ).toThrow(InvalidActivityActionError);
+  });
+
+  it('throws SensitiveMetadataError for a server.created event with a credential key', () => {
+    expect(() =>
+      buildActivityEvent(
+        {
+          actorType: 'user',
+          entityType: 'server',
+          entityId: 'srv-1',
+          action: 'server.created',
+          outcome: 'success',
+          metadata: { credential: 'x' },
+        },
+        NOW,
+      ),
+    ).toThrow(SensitiveMetadataError);
+  });
+
+  it('builds a server.updated event with changedFields and credentialReplaced metadata', () => {
+    const event = buildActivityEvent(
+      {
+        actorType: 'user',
+        entityType: 'server',
+        entityId: 'srv-1',
+        action: 'server.updated',
+        outcome: 'success',
+        metadata: { changedFields: ['host', 'sshPort'], credentialReplaced: true },
+      },
+      NOW,
+    );
+
+    expect(event.metadata).toEqual({ changedFields: ['host', 'sshPort'], credentialReplaced: true });
+  });
+
+  it('builds a server.fingerprint_trusted event with public fingerprint metadata', () => {
+    const event = buildActivityEvent(
+      {
+        actorType: 'user',
+        entityType: 'server',
+        entityId: 'srv-1',
+        action: 'server.fingerprint_trusted',
+        outcome: 'success',
+        metadata: { previousFingerprint: 'SHA256:old', newFingerprint: 'SHA256:new' },
+      },
+      NOW,
+    );
+
+    expect(event.metadata).toEqual({
+      previousFingerprint: 'SHA256:old',
+      newFingerprint: 'SHA256:new',
+    });
   });
 });
