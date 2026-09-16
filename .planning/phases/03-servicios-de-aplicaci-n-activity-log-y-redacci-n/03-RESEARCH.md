@@ -548,14 +548,14 @@ Not applicable — every technology in this phase is already pinned and proven w
 
 **If this table is empty:** N/A — see entries above. All four are low-risk, bounded-impact judgment calls, not compliance/security-critical unknowns; none block planning.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **How does `registerServer`/`editServer` satisfy D-15's "valida formato y tipo de clave con las reglas de packages/ssh" given `loadPrivateKey` is not in `@noodara/ssh`'s public surface, and 03-CONTEXT.md's phase-boundary text states `packages/ssh`'s contract does not change this phase?**
+1. **RESOLVED in plan 03-01 Task 2 (additive export of `loadPrivateKey`, `LoadPrivateKeyResult`, `InvalidCredentialError`, `PrivateKeyCredential`).** How does `registerServer`/`editServer` satisfy D-15's "valida formato y tipo de clave con las reglas de packages/ssh" given `loadPrivateKey` is not in `@noodara/ssh`'s public surface, and 03-CONTEXT.md's phase-boundary text states `packages/ssh`'s contract does not change this phase?**
    - What we know: `loadPrivateKey` (format/type/RSA-bit-length validation, D-01 of Phase 2) exists, is pure (no I/O), and is exactly the logic D-15 asks the service to reuse. It is not exported. `packages/ssh/src/index.ts`'s export list is guarded by an exact-match test (`run-discovery.test.ts`'s `EXPECTED_RUNTIME_EXPORTS`).
    - What's unclear: whether "no cambian de contrato" in 03-CONTEXT.md's phase boundary was written with this specific function in mind, or whether it only meant "no *behavioral* change to `SshPort`/`runDiscovery`" (in which case *adding* an export, with zero behavior change to anything existing, would not violate the spirit of that sentence).
    - Recommendation: **Export `loadPrivateKey`, `LoadPrivateKeyResult`, and `InvalidCredentialError` from `packages/ssh/src/index.ts`.** This is additive-only (no existing export changes shape), requires updating exactly one test's expected-exports array (`run-discovery.test.ts`), and is the only option that lets D-15 literally reuse "the rules of `packages/ssh`" rather than duplicating them. Flag this as a one-line phase-boundary amendment for the user/planner to confirm rather than silently deciding it — it is a real, if narrow, deviation from CONTEXT.md's stated scope.
 
-2. **Should the D-18 full-flow canary live in a new file or extend `canary.test.ts` in place?**
+2. **RESOLVED in plan 03-10 (new file `tests/integration/activity/canary-full-flow.test.ts`, `security:scan-leaks` widened to both canaries).** Should the D-18 full-flow canary live in a new file or extend `canary.test.ts` in place?**
    - What we know: the existing file's own comment already anticipates this exact expansion ("The full flow-driven scan covering SSH stdout/stderr and AI prompts arrives with SEC-02 (phase 3)"), and the `security:scan-leaks` script currently names the one file explicitly.
    - What's unclear: no locked decision states which; this is purely organizational.
    - Recommendation: new file (`canary-full-flow.test.ts`), script widened to a two-file glob — see Code Examples. Low-stakes either way; flagged only so the planner picks one deliberately rather than by accident.
