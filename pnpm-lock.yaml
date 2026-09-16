@@ -68,6 +68,9 @@ importers:
       '@noodara/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@noodara/ssh':
+        specifier: workspace:*
+        version: link:../../packages/ssh
       argon2:
         specifier: 0.45.1
         version: 0.45.1

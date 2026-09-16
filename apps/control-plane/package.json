@@ -19,6 +19,7 @@
   "dependencies": {
     "@fastify/type-provider-zod": "1.0.0",
     "@noodara/domain": "workspace:*",
+    "@noodara/ssh": "workspace:*",
     "argon2": "0.45.1",
     "better-auth": "1.7.4",
     "commander": "15.0.0",
