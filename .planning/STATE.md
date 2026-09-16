@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-09-16T01:34:14.287Z"
+stopped_at: Completed 03-03-PLAN.md
+last_updated: "2026-09-16T02:22:24.680Z"
 last_activity: 2026-09-16
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 37
-  completed_plans: 29
+  completed_plans: 30
   percent: 33
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 03 (servicios-de-aplicaci-n-activity-log-y-redacci-n) — EXECUTING
-Plan: 3 of 10
+Plan: 4 of 10
 Status: Ready to execute
 Last activity: 2026-09-16
 
-Progress: [████████░░] 78%
+Progress: [████████░░] 81%
 
 ## Performance Metrics
 
@@ -82,6 +82,7 @@ Progress: [████████░░] 78%
 | Phase 02 P10 | 150min | 3 tasks | 11 files |
 | Phase 03 P01 | 24min | 3 tasks | 5 files |
 | Phase 03 P02 | 28min | 3 tasks | 8 files |
+| Phase 03 P03 | 31min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -169,6 +170,8 @@ Recent decisions affecting current work:
 - [Phase 03]: loadPrivateKey/InvalidCredentialError exported additively from @noodara/ssh's index.ts with zero changes to key-loader.ts itself — keeps the additive-only contract change the plan required (D-15, T-3-10, T-3-15)
 - [Phase 03]: D-03 CONNECTED semantics recorded as a new doc section in docs/domain/server-state-transitions.md rather than altering the existing transition tables — no edge changed, only clarifying prose was needed
 - [Phase 03]: InvalidActivityActionError message wording changed from 'Unknown auth action' to 'Unknown activity action' now that the guard spans auth.* and server.* namespaces — ACT-01/D-16 widened the action union; no caller depended on the old error text
+- [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: Test assertions for D-10 unique violations check err.cause.code, not err.code, since drizzle-orm 0.45 wraps the raw pg error in DrizzleQueryError
+- [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: discoveryOutcomeEnum is declared fresh in discovery-snapshots.ts rather than derived from packages/domain's SnapshotOutcome, since a TS union has no runtime array to spread into pgEnum
 
 ### Pending Todos
 
@@ -195,6 +198,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-16T01:34:14.266Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-09-16T02:22:24.667Z
+Stopped at: Completed 03-03-PLAN.md
 Resume file: None

@@ -132,3 +132,12 @@ None - no external service configuration required.
 ---
 *Phase: 03-servicios-de-aplicaci-n-activity-log-y-redacci-n*
 *Completed: 2026-09-15*
+
+## Self-Check: PASSED
+
+- FOUND: apps/control-plane/src/db/schema/discovery-snapshots.ts
+- FOUND: apps/control-plane/src/db/migrations/0003_phase3_discovery_snapshots.sql
+- FOUND: apps/control-plane/src/db/migrations/meta/0003_snapshot.json
+- FOUND commit: 52dc819 (test)
+- FOUND commit: a66ca1a (feat)
+- FOUND commit: 3e4e03c (docs: summary)
