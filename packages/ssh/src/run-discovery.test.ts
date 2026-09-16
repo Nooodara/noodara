@@ -4,7 +4,7 @@
 // `discovery.test.ts`. This file's job is the pass/fail/parser-failure/timeout/root/non-root
 // branch matrix, which needs dozens of scripted permutations that would cost a container start
 // each otherwise.
-import { createRedactor } from '@noodara/domain/security';
+import { createRedactor, secretValue } from '@noodara/domain/security';
 import { DISCOVERY_CHECK_IDS } from '@noodara/domain/discovery';
 import { describe, expect, it, vi } from 'vitest';
 import { COMMAND_NAMES, type CommandName } from './commands/index.js';
@@ -466,10 +466,12 @@ describe('@noodara/ssh public surface (T-2-42)', () => {
   // file can reach it through, so removing it would break a standing, already-passing suite.
   const EXPECTED_RUNTIME_EXPORTS = [
     'COMMAND_NAMES',
+    'InvalidCredentialError',
     'RETRYABLE_ERROR_CODES',
     'commandFor',
     'createSsh2Adapter',
     'formatFingerprint',
+    'loadPrivateKey',
     'parseFingerprint',
     'runDiscovery',
   ] as const;
@@ -478,5 +480,31 @@ describe('@noodara/ssh public surface (T-2-42)', () => {
     const publicSurface: Record<string, unknown> = await import('./index.js');
 
     expect(Object.keys(publicSurface).sort()).toEqual([...EXPECTED_RUNTIME_EXPORTS].sort());
+  });
+});
+
+describe('public key-loader surface (D-15)', () => {
+  it('loadPrivateKey imported from @noodara/ssh returns a validation failure for an unparseable key', async () => {
+    const { loadPrivateKey } = await import('@noodara/ssh');
+    const credential = {
+      kind: 'private_key' as const,
+      privateKey: secretValue('not-a-key', 'ssh_private_key'),
+    };
+
+    const result = loadPrivateKey(credential, createRedactor());
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.kind).toBe('validation');
+    }
+  });
+
+  it('InvalidCredentialError imported from @noodara/ssh is a constructible Error subclass', async () => {
+    const { InvalidCredentialError } = await import('@noodara/ssh');
+
+    const error = new InvalidCredentialError('bad credential');
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error.name).toBe('InvalidCredentialError');
   });
 });
