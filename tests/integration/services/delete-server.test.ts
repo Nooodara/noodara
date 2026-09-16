@@ -280,7 +280,7 @@ describe('deleteServer (SERV-03, ACT-01, D-11, D-12, D-14)', () => {
 
     const otherRowAfter = await fetchServerRow(fixture, other.id);
     expect(otherRowAfter).toEqual(otherRowBefore);
-    const otherCredential = await fetchCredentialRow(fixture, other.credentialId);
+    const otherCredential = await fetchCredentialRow(fixture, otherRowBefore!.credentialId);
     expect(otherCredential).toBeDefined();
     expect(await countDiscoverySnapshots(fixture, other.id)).toBe(1);
   });
