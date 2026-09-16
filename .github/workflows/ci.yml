@@ -149,10 +149,25 @@ jobs:
       # T-1-51: fails the merge on any high-or-critical advisory; --frozen-lockfile above
       # already stops CI from silently resolving a different dependency tree than the lockfile.
       - run: pnpm audit --audit-level=high
-      # This phase's canary subset of the noodara-security §9 flow-driven leak scan: proves a
-      # runtime secret doesn't survive the logger, an HTTP error body or the activity log.
-      # Expands with the full connect/deploy/AI-query flow in SEC-02 (phase 3) and QA-05 (phase 5).
+      # SEC-02 (phase 3): this script now runs two suites — the fast, container-free Phase-1
+      # canary (logger/HTTP-error/activity-log) plus a full-flow canary that builds and starts a
+      # real Ubuntu sshd Testcontainer and drives a genuine register -> connect+discover -> edit ->
+      # trust-fingerprint -> delete flow through it (D-18), proving no per-run secret reaches the
+      # logger, a service result, activity_events.metadata, discovery_snapshots.payload or a
+      # simulated service error. That container is the intentional reason this step's runtime is
+      # now noticeably longer than the Phase-1-only version. Expands further with the full
+      # connect/deploy/AI-query flow in QA-05 (phase 5).
       - run: pnpm security:scan-leaks
+      - name: Fail if any noodara.test container survived
+        if: always()
+        run: |
+          stray=$(docker ps -aq --filter "label=noodara.test=true")
+          if [ -n "$stray" ]; then
+            echo "::error::stray containers labelled noodara.test=true survived the security run"
+            docker ps -a --filter "label=noodara.test=true"
+            exit 1
+          fi
+          echo "no stray noodara.test=true containers"
       # T-1-50: gitleaks against the pull-request diff (or the push event's new commits) with
       # a path-scoped allowlist only (.gitleaks.toml) — never a broad regex that could hide a
       # real key. GITLEAKS_LICENSE is only required for private organization-owned repos; it is
