@@ -31,3 +31,9 @@ export { runDiscovery } from './run-discovery.js';
 export type { RunDiscoveryInput, RunDiscoveryTimeouts } from './run-discovery.js';
 export { formatFingerprint, parseFingerprint } from './fingerprint.js';
 export { RETRYABLE_ERROR_CODES } from './retry.js';
+// Additive phase-3 amendment (D-15, plan 03-01): apps/control-plane's registerServer/editServer
+// must validate a private-key credential with the same ACCEPTED_KEY_TYPES/RSA_MIN_MODULUS_BITS
+// rules the adapter enforces, never duplicating them locally (T-3-10/T-3-15). No existing export
+// changes shape and key-loader.ts's own behaviour is untouched.
+export { InvalidCredentialError, loadPrivateKey } from './key-loader.js';
+export type { LoadPrivateKeyResult, PrivateKeyCredential } from './key-loader.js';
