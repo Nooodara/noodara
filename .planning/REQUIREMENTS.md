@@ -28,8 +28,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Servers
 
-- [ ] **SERV-01**: El admin registra un servidor con nombre, host o IP, puerto SSH (default 22), usuario SSH (default root) y credencial de tipo clave privada (recomendada, ed25519 sugerida) o password (fallback).
-- [ ] **SERV-02**: El admin edita nombre, host, puerto y usuario, y puede reemplazar la credencial; la credencial existente nunca se muestra ni se precarga.
+- [x] **SERV-01**: El admin registra un servidor con nombre, host o IP, puerto SSH (default 22), usuario SSH (default root) y credencial de tipo clave privada (recomendada, ed25519 sugerida) o password (fallback).
+- [x] **SERV-02**: El admin edita nombre, host, puerto y usuario, y puede reemplazar la credencial; la credencial existente nunca se muestra ni se precarga.
 - [ ] **SERV-03**: El admin elimina un servidor previa confirmación con su nombre; la credencial se borra en la misma transacción y se registra el evento.
 - [ ] **SERV-04**: El admin ve la lista de servidores con nombre, host, status pill y last seen.
 - [x] **SERV-05**: Cada servidor tiene un estado explícito PENDING, CONNECTING, CONNECTED, DISCONNECTED, UNREACHABLE o ERROR, con transiciones centralizadas y validadas en el dominio.
@@ -149,8 +149,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISC-01 | Phase 2 | Complete |
 | DISC-04 | Phase 2 | Complete |
 | QA-03 | Phase 2 | Complete |
-| SERV-01 | Phase 3 | Pending |
-| SERV-02 | Phase 3 | Pending |
+| SERV-01 | Phase 3 | Complete |
+| SERV-02 | Phase 3 | Complete |
 | SERV-03 | Phase 3 | Pending |
 | SEC-02 | Phase 3 | Pending |
 | DISC-03 | Phase 3 | Pending |

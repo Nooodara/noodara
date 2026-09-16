@@ -158,7 +158,7 @@ Plans:
 
 **Wave 1** *(parallel)*
 
-- [ ] 03-01-PLAN.md — Wiring de @noodara/ssh en control-plane, export aditivo de loadPrivateKey (D-15) y semántica D-03 en el doc de transiciones
+- [x] 03-01-PLAN.md — Wiring de @noodara/ssh en control-plane, export aditivo de loadPrivateKey (D-15) y semántica D-03 en el doc de transiciones
 - [ ] 03-02-PLAN.md — Funciones puras de dominio: mergeDiscoveryFacts, classifySnapshotOutcome, classifyServerEdit y las seis acciones server.*
 - [ ] 03-03-PLAN.md — [BLOCKING] Esquema + migración 0003: discovery_snapshots, docker_compose_version e índices únicos lower(name) y (host, ssh_port)
 
@@ -244,7 +244,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Dominio, persistencia y autenticación | 17/17 | Complete    | 2026-09-12 |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
-| 3. Servicios de aplicación, activity log y redacción | 0/TBD | Not started | - |
+| 3. Servicios de aplicación, activity log y redacción | 1/10 | In Progress|  |
 | 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |
 | 5. UI web | 0/TBD | Not started | - |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-09-16T00:05:46.508Z"
-last_activity: 2026-09-16 -- Phase 3 planning complete
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-09-16T00:55:09.755Z"
+last_activity: 2026-09-16
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 37
-  completed_plans: 27
+  completed_plans: 28
   percent: 33
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente: sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto.
-**Current focus:** Phase 3 — servicios de aplicación, activity log y redacción
+**Current focus:** Phase 03 — servicios-de-aplicaci-n-activity-log-y-redacci-n
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
+Phase: 03 (servicios-de-aplicaci-n-activity-log-y-redacci-n) — EXECUTING
+Plan: 2 of 10
 Status: Ready to execute
-Last activity: 2026-09-16 -- Phase 3 planning complete
+Last activity: 2026-09-16
 
-Progress: [██████████] 100%
+Progress: [████████░░] 76%
 
 ## Performance Metrics
 
@@ -80,6 +80,7 @@ Progress: [██████████] 100%
 | Phase 02 P08 | 95min | 2 tasks | 6 files |
 | Phase 02 P09 | 55min | 2 tasks | 5 files |
 | Phase 02 P10 | 150min | 3 tasks | 11 files |
+| Phase 03 P01 | 24min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -164,6 +165,8 @@ Recent decisions affecting current work:
 - [Phase 02]: The SERV-08 access-check matrix test connects to a dockerCli:true fixture, not the plain image, so the 'other nine checks still pass' assertion is genuinely about sudo/docker_group and not incidentally about Docker being absent
 - [Phase 02]: The command-timeout scenario proves 'the timeout destroyed the channel, not the connection' via a second exec on the same session plus a separate fresh connection with a normal budget, since SshTimeouts.commandMs cannot be varied per exec call on one session
 - [Phase 02]: The canary password in discovery.test.ts's SEC-05 test is fixture.password itself (already a fresh per-run randomUUID()), not a separately generated value, since a separately generated string cannot authenticate as the account's real password
+- [Phase 03]: loadPrivateKey/InvalidCredentialError exported additively from @noodara/ssh's index.ts with zero changes to key-loader.ts itself — keeps the additive-only contract change the plan required (D-15, T-3-10, T-3-15)
+- [Phase 03]: D-03 CONNECTED semantics recorded as a new doc section in docs/domain/server-state-transitions.md rather than altering the existing transition tables — no edge changed, only clarifying prose was needed
 
 ### Pending Todos
 
@@ -190,6 +193,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-15T21:17:40.622Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-servicios-de-aplicaci-n-activity-log-y-redacci-n/03-CONTEXT.md
+Last session: 2026-09-16T00:55:09.747Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: None
