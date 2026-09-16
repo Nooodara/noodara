@@ -90,7 +90,13 @@ function buildLockedEd25519Key(): LockedKey {
     stdio: 'ignore',
   });
   const pem = readFileSync(join(dir, 'key'), 'utf8');
-  return { pem, passphrase, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
+  return {
+    pem,
+    passphrase,
+    cleanup: () => {
+      rmSync(dir, { recursive: true, force: true });
+    },
+  };
 }
 
 function buildRsaPem(modulusLength: number): string {
@@ -266,7 +272,7 @@ describe('credential-store', () => {
       if (decoded.kind !== 'private_key') return;
       expect('passphrase' in decoded).toBe(true);
       expect(revealSecret(decoded.privateKey)).toBe(locked.pem);
-      if ('passphrase' in decoded && decoded.passphrase !== undefined) {
+      if ('passphrase' in decoded) {
         expect(revealSecret(decoded.passphrase)).toBe(locked.passphrase);
         expect(decoded.passphrase.kind).toBe('ssh_private_key');
       }
@@ -292,7 +298,12 @@ describe('credential-store', () => {
       if (!encrypted.ok) throw new Error('test setup: expected encodeCredential to succeed');
 
       const segments = (encrypted.encryptedValue as string).split(':');
-      const tampered = `${segments[0]}:${segments[1]}:${segments[2]!.slice(0, -4)}AAAA:${segments[3]}` as EncryptedBlob;
+      const versionPart = segments[0] ?? '';
+      const noncePart = segments[1] ?? '';
+      const ciphertextPart = segments[2] ?? '';
+      const tagPart = segments[3] ?? '';
+      const tampered =
+        `${versionPart}:${noncePart}:${ciphertextPart.slice(0, -4)}AAAA:${tagPart}` as EncryptedBlob;
 
       expect(() =>
         decodeCredential({ type: 'ssh_password', encryptedValue: tampered, keyVersion: encrypted.keyVersion }, {
@@ -309,8 +320,9 @@ describe('credential-store', () => {
         { type: 'ssh_password', encryptedValue: encrypted.encryptedValue, keyVersion: encrypted.keyVersion },
         { current: key.key },
       );
+      if (decoded.kind !== 'password') throw new Error('test setup: expected password kind');
 
-      expect(String(decoded)).not.toContain('never-leak-me');
+      expect(String(decoded.password)).not.toContain('never-leak-me');
       expect(JSON.stringify(decoded)).not.toContain('never-leak-me');
     });
   });
