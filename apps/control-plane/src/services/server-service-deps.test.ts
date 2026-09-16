@@ -26,7 +26,7 @@ describe('ServiceActor (D-17)', () => {
 describe('resolveServerServicesDeps', () => {
   it('returns overrides unchanged when supplied (fake SshPort)', async () => {
     const fakeSsh: ServerServicesDeps['ssh'] = {
-      connect: async () => ({ ok: false, errorCode: 'AUTH_FAILED', message: 'fake', attempts: 1 }),
+      connect: () => Promise.resolve({ ok: false, errorCode: 'AUTH_FAILED', message: 'fake', attempts: 1 }),
     };
 
     const deps = await resolveServerServicesDeps({ db: fakeDb, ssh: fakeSsh });
