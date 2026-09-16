@@ -56,7 +56,11 @@ function uniqueHost(): string {
 
 type FixtureCredential =
   | { readonly kind: 'password'; readonly password: string }
-  | { readonly kind: 'private_key'; readonly privateKey: string; readonly passphrase?: string };
+  | {
+      readonly kind: 'private_key';
+      readonly privateKey: string;
+      readonly passphrase?: string;
+    };
 
 type FixtureActor = { readonly type: 'user'; readonly id: string } | { readonly type: 'system' };
 
@@ -75,7 +79,10 @@ async function loadRegisterServer() {
   return import('../../../apps/control-plane/src/services/register-server.js');
 }
 
-async function registerFixtureServer(fx: ServiceFixture, overrides: RegisterFixtureServerOverrides = {}) {
+async function registerFixtureServer(
+  fx: ServiceFixture,
+  overrides: RegisterFixtureServerOverrides = {},
+) {
   const { registerServer } = await loadRegisterServer();
   return registerServer(fx.deps, {
     actor: overrides.actor ?? { type: 'system' },
@@ -83,7 +90,10 @@ async function registerFixtureServer(fx: ServiceFixture, overrides: RegisterFixt
     host: overrides.host ?? uniqueHost(),
     ...(overrides.sshPort !== undefined ? { sshPort: overrides.sshPort } : {}),
     ...(overrides.sshUser !== undefined ? { sshUser: overrides.sshUser } : {}),
-    credential: overrides.credential ?? { kind: 'password', password: freshPassword() },
+    credential: overrides.credential ?? {
+      kind: 'password',
+      password: freshPassword(),
+    },
   });
 }
 
@@ -99,7 +109,11 @@ async function tableCounts(fx: ServiceFixture): Promise<TableCounts> {
     fx.db.select({ id: credentials.id }).from(credentials),
     fx.db.select({ id: activityEvents.id }).from(activityEvents),
   ]);
-  return { servers: serverRows.length, credentials: credentialRows.length, activityEvents: activityRows.length };
+  return {
+    servers: serverRows.length,
+    credentials: credentialRows.length,
+    activityEvents: activityRows.length,
+  };
 }
 
 describe('registerServer (SERV-01, ACT-01)', () => {
@@ -134,7 +148,9 @@ describe('registerServer (SERV-01, ACT-01)', () => {
     fixture = await startServiceFixture();
     const password = freshPassword();
 
-    const result = await registerFixtureServer(fixture, { credential: { kind: 'password', password } });
+    const result = await registerFixtureServer(fixture, {
+      credential: { kind: 'password', password },
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -154,7 +170,9 @@ describe('registerServer (SERV-01, ACT-01)', () => {
     fixture = await startServiceFixture();
     const password = freshPassword();
 
-    const passwordResult = await registerFixtureServer(fixture, { credential: { kind: 'password', password } });
+    const passwordResult = await registerFixtureServer(fixture, {
+      credential: { kind: 'password', password },
+    });
     const keyResult = await registerFixtureServer(fixture, {
       credential: { kind: 'private_key', privateKey: VALID_PRIVATE_KEY },
     });
@@ -217,7 +235,9 @@ describe('registerServer (SERV-01, ACT-01)', () => {
     fixture = await startServiceFixture();
     const userId = randomUUID();
 
-    const result = await registerFixtureServer(fixture, { actor: { type: 'user', id: userId } });
+    const result = await registerFixtureServer(fixture, {
+      actor: { type: 'user', id: userId },
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -233,7 +253,9 @@ describe('registerServer (SERV-01, ACT-01)', () => {
   it('attributes the event to a system actor with a null actorId (D-17)', async () => {
     fixture = await startServiceFixture();
 
-    const result = await registerFixtureServer(fixture, { actor: { type: 'system' } });
+    const result = await registerFixtureServer(fixture, {
+      actor: { type: 'system' },
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -261,7 +283,9 @@ describe('registerServer (SERV-01, ACT-01)', () => {
     const first = await registerFixtureServer(fixture, { name });
     expect(first.ok).toBe(true);
 
-    const second = await registerFixtureServer(fixture, { name: name.toUpperCase() === name ? name : 'srv-1' });
+    const second = await registerFixtureServer(fixture, {
+      name: name.toUpperCase() === name ? name : 'srv-1',
+    });
     expect(second).toMatchObject({ ok: false, code: 'NAME_TAKEN' });
   });
 
@@ -283,7 +307,10 @@ describe('registerServer (SERV-01, ACT-01)', () => {
     const first = await registerFixtureServer(fixture, { host, sshPort: 22 });
     expect(first.ok).toBe(true);
 
-    const second = await registerFixtureServer(fixture, { host, sshPort: 2222 });
+    const second = await registerFixtureServer(fixture, {
+      host,
+      sshPort: 2222,
+    });
     expect(second.ok).toBe(true);
   });
 

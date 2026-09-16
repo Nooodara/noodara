@@ -51,8 +51,11 @@ function buildUnconfiguredSshPort(): SshPort {
 
 // This file's own dynamic-import surface — resolved once, lazily, the first time
 // `startServiceFixture` runs, so importing this module alone never triggers `env.ts`.
-type ServerServiceDepsModule = typeof import('../../../../apps/control-plane/src/services/server-service-deps.js');
-export type ServiceFixtureDeps = Awaited<ReturnType<ServerServiceDepsModule['resolveServerServicesDeps']>>;
+type ServerServiceDepsModule =
+  typeof import('../../../../apps/control-plane/src/services/server-service-deps.js');
+export type ServiceFixtureDeps = Awaited<
+  ReturnType<ServerServiceDepsModule['resolveServerServicesDeps']>
+>;
 
 export interface ServiceFixture {
   readonly db: PostgresFixture['db'];
@@ -74,9 +77,8 @@ export async function startServiceFixture(): Promise<ServiceFixture> {
   const postgres = await startPostgres();
   setTestEnv(postgres.connectionString);
 
-  const { resolveServerServicesDeps } = await import(
-    '../../../../apps/control-plane/src/services/server-service-deps.js'
-  );
+  const { resolveServerServicesDeps } =
+    await import('../../../../apps/control-plane/src/services/server-service-deps.js');
 
   let currentSsh: SshPort = buildUnconfiguredSshPort();
   const forwardingSsh: SshPort = {
