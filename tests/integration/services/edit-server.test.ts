@@ -6,7 +6,7 @@
 // import time (INST-06) and would otherwise crash the whole worker process if imported before
 // `startServiceFixture()` has written a valid test env.
 import { generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   activityEvents,
@@ -167,6 +167,17 @@ async function fetchActivityEventsFor(fx: ServiceFixture, entityId: string) {
   return fx.db.select().from(activityEvents).where(eq(activityEvents.entityId, entityId));
 }
 
+/** `registerFixtureServer` arrangement already writes one `server.created` event for the same
+ *  entity, so any assertion about the `server.updated` event this suite is actually testing must
+ *  filter to that specific action rather than assume array position. */
+async function fetchServerUpdatedEvent(fx: ServiceFixture, entityId: string) {
+  const [event] = await fx.db
+    .select()
+    .from(activityEvents)
+    .where(and(eq(activityEvents.entityId, entityId), eq(activityEvents.action, 'server.updated')));
+  return event;
+}
+
 describe('editServer (SERV-02, ACT-01, D-11, D-13, D-14, D-16)', () => {
   it('returns NOT_FOUND for an unknown serverId', async () => {
     fixture = await startServiceFixture();
@@ -209,12 +220,16 @@ describe('editServer (SERV-02, ACT-01, D-11, D-13, D-14, D-16)', () => {
     const row = await fetchServerRow(fixture, server.id);
     expect(row?.name).toBe(newName);
 
-    const [event] = await fetchActivityEventsFor(fixture, server.id);
+    const event = await fetchServerUpdatedEvent(fixture, server.id);
     expect(event?.action).toBe('server.updated');
     expect(event?.metadata).toEqual({ changedFields: ['name'], credentialReplaced: false });
   });
 
-  it('rejects a rename colliding case-insensitively with another server with NAME_TAKEN and writes nothing', async () => {
+  it('rejects a rename colliding with another server (D-10 lower() uniqueness) with NAME_TAKEN and writes nothing', async () => {
+    // Server names are already-lowercase slugs (validateServerName rejects uppercase outright,
+    // matching register-server.test.ts's own precedent), so a genuinely case-differing valid
+    // input can never reach this check — the exact-duplicate case below is what the `lower()`
+    // uniqueness index actually guards in practice.
     fixture = await startServiceFixture();
     const other = await registerFixtureServer(fixture, { name: 'srv-taken-name' });
     const server = await registerFixtureServer(fixture);
@@ -222,7 +237,7 @@ describe('editServer (SERV-02, ACT-01, D-11, D-13, D-14, D-16)', () => {
 
     const result = await editFixtureServer(fixture, {
       serverId: server.id,
-      name: other.name.toUpperCase(),
+      name: other.name,
     });
 
     expect(result).toMatchObject({ ok: false, code: 'NAME_TAKEN' });
@@ -348,7 +363,7 @@ describe('editServer (SERV-02, ACT-01, D-11, D-13, D-14, D-16)', () => {
     expect(row?.hostFingerprint).toBeNull();
     expect(row?.hostFingerprintCapturedAt).toBeNull();
 
-    const [event] = await fetchActivityEventsFor(fixture, server.id);
+    const event = await fetchServerUpdatedEvent(fixture, server.id);
     expect((event?.metadata as { changedFields: string[] } | null)?.changedFields).toContain(
       'host',
     );
@@ -395,7 +410,7 @@ describe('editServer (SERV-02, ACT-01, D-11, D-13, D-14, D-16)', () => {
     if (!result.ok) return;
     expect(result.server.status).toBe('DISCONNECTED');
 
-    const [event] = await fetchActivityEventsFor(fixture, server.id);
+    const event = await fetchServerUpdatedEvent(fixture, server.id);
     expect((event?.metadata as { credentialReplaced: boolean } | null)?.credentialReplaced).toBe(
       true,
     );
@@ -457,7 +472,7 @@ describe('editServer (SERV-02, ACT-01, D-11, D-13, D-14, D-16)', () => {
     });
 
     expect(result).toMatchObject({ ok: true });
-    const [event] = await fetchActivityEventsFor(fixture, server.id);
+    const event = await fetchServerUpdatedEvent(fixture, server.id);
     const metadata = event?.metadata as { changedFields: string[] } | null;
     expect(metadata?.changedFields).toEqual([...metadata!.changedFields].sort());
     for (const field of metadata?.changedFields ?? []) {
@@ -480,7 +495,7 @@ describe('editServer (SERV-02, ACT-01, D-11, D-13, D-14, D-16)', () => {
     });
 
     expect(result).toMatchObject({ ok: true });
-    const [event] = await fetchActivityEventsFor(fixture, server.id);
+    const event = await fetchServerUpdatedEvent(fixture, server.id);
     expect(event?.actorType).toBe('user');
     expect(event?.actorId).toBe(userId);
   });
@@ -496,7 +511,7 @@ describe('editServer (SERV-02, ACT-01, D-11, D-13, D-14, D-16)', () => {
     });
 
     expect(result).toMatchObject({ ok: true });
-    const [event] = await fetchActivityEventsFor(fixture, server.id);
+    const event = await fetchServerUpdatedEvent(fixture, server.id);
     expect(event?.actorType).toBe('system');
     expect(event?.actorId).toBeNull();
   });
