@@ -23,17 +23,18 @@ Noodara puede conocer, registrar y comunicarse con infraestructura real de forma
 - ✓ Adaptador SSH (`packages/ssh`) sobre ssh2: claves OpenSSH/PEM con passphrase, password + keyboard-interactive, TOFU con fingerprint `SHA256:` y tipo, allowlist de 11 plantillas sin interpolación, timeouts independientes (10/30/60 s por env), reintento único para transitorios, clasificador exhaustivo de los 7 error codes, redacción y truncado — Fase 2 (2026-09-15)
 - ✓ `runDiscovery` en una sola conexión con checks por paso (hostname, arch, OS, CPU, RAM, disco, uptime, Docker + compose, sudo y grupo docker para no-root), OS no soportado y Docker ausente como advertencias en CONNECTED — Fase 2
 - ✓ Suite QA-03: ocho escenarios × Ubuntu 22.04 y 24.04 contra sshd real con Testcontainers (incluida pérdida de conexión a mitad de comando), matriz sudo/docker-group, canary de redacción; 620 unit + 208 integration — Fase 2
+- ✓ Servicios de aplicación `registerServer`, `editServer`, `deleteServer`, `connectAndDiscover` y `trustFingerprint` compuestos por `createServerServices`: host, puerto y usuario SSH configurables, credencial (clave o password) validada con `loadPrivateKey` y cifrada at-rest, reemplazo in-place de credencial, borrado con confirmación por nombre que elimina credencial y snapshots en la misma transacción — Fase 3 (2026-09-16)
+- ✓ Snapshots de discovery (`discovery_snapshots`, migración 0003) con `mergeDiscoveryFacts` (null nunca sobrescribe), `classifySnapshotOutcome`, desnormalización de facts en `servers` e índices únicos por nombre y host:puerto — Fase 3
+- ✓ Activity log con seis acciones `server.*`, escritura en la misma transacción que la operación, guard de metadata sensible y test de frontera que restringe `writeActivityEvent` a servicios y módulo `activity` — Fase 3
+- ✓ `ServerView` con allowlist de 27 campos sin material de credencial; canary full-flow (register → connect → edit → host-key change → trust → connect → delete contra sshd real) sin fuga en logger, resultados, `activity_events.metadata` ni `discovery_snapshots.payload`; `pnpm security:scan-leaks` en el job `security` de CI; 739 unit + 102 integration del alcance de la fase — Fase 3
 
 ### Active
 
 Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.1-v0.5.md](../docs/roadmap-v0.1-v0.5.md), sección 6).
 
 - [ ] Instalación de Noodara en un VPS Ubuntu con un solo comando, al nivel de simplicidad de Coolify y Dokploy.
-- [ ] Registrar, editar y eliminar servidores con host, puerto SSH y usuario SSH configurables, y credencial (clave o password) cifrada at-rest.
 - [ ] Vista de detalle del servidor con hostname, status, OS, CPU, RAM, disk, uptime, Docker y last seen.
-- [ ] Activity log de las operaciones relevantes sobre servidores y sesión.
 - [ ] Configuración global del control plane.
-- [ ] Credenciales nunca expuestas en API responses, logs, errores ni telemetría; timeouts explícitos en SSH; estrategia de host fingerprint (TOFU) definida; eliminar servidor elimina sus credenciales.
 - [ ] Suite de calidad: unit ≥95% en core-domain, integration con infraestructura temporal (Testcontainers) para los escenarios SSH del roadmap, E2E del flujo connect-server, CI verde.
 - [ ] UI conforme al design system Apple-inspired de Noodara (dark y light), con el flujo login → Servers → add server → connect → discovery → detail.
 - [ ] Discovery mostrado paso a paso con pass/fail por check en la UI.
@@ -107,4 +108,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-15 after Phase 2 completion*
+*Last updated: 2026-09-16 after Phase 3 completion*
