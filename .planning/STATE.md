@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-04-PLAN.md
-last_updated: "2026-09-16T02:58:18.282Z"
+stopped_at: Completed 03-05-PLAN.md
+last_updated: "2026-09-16T03:34:01.364Z"
 last_activity: 2026-09-16
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 37
-  completed_plans: 31
+  completed_plans: 32
   percent: 33
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 03 (servicios-de-aplicaci-n-activity-log-y-redacci-n) — EXECUTING
-Plan: 5 of 10
+Plan: 6 of 10
 Status: Ready to execute
 Last activity: 2026-09-16
 
-Progress: [████████░░] 84%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
@@ -84,6 +84,7 @@ Progress: [████████░░] 84%
 | Phase 03 P02 | 28min | 3 tasks | 8 files |
 | Phase 03 P03 | 31min | 2 tasks | 9 files |
 | Phase 03 P04 | 42min | 3 tasks | 6 files |
+| Phase 03 P05 | 35min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -176,6 +177,7 @@ Recent decisions affecting current work:
 - [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: MasterKeys declared once in server-service-deps.ts and imported by credential-store.ts rather than redeclared, per D-17's declared-once-and-shared rule
 - [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: credential-store.test.ts hand-assembles an unencrypted OpenSSH ed25519 private-key container in pure JS around node:crypto-generated raw key material (no shell-out); ssh-keygen is shelled out to only for the passphrase-protected variant, whose bcrypt-pbkdf wrapping is infeasible to reproduce by hand
 - [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: SERVER_VIEW_KEYS has 27 entries, not 03-04-PLAN.md's stated 26 -- the plan's own field list already enumerates 26 servers columns before adding credentialType (27 total); must_haves.truths and RESEARCH.md's literal ServerView interface confirm 27 is correct
+- [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: Service integration tests live in tests/integration/services/*.test.ts against real Postgres (never colocated unit tests) since every service in this phase opens db.transaction; registerServer/register-server.test.ts both load each other's env-sensitive dependency graph via a dynamic await import(...), never a static top-level import, since redaction.ts reads env.NOODARA_MASTER_KEY at module load time and env.ts process.exit(1)s on an invalid env
 
 ### Pending Todos
 
@@ -202,6 +204,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-16T02:58:18.276Z
-Stopped at: Completed 03-04-PLAN.md
+Last session: 2026-09-16T03:34:01.358Z
+Stopped at: Completed 03-05-PLAN.md
 Resume file: None
