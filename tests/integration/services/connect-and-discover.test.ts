@@ -168,7 +168,10 @@ async function connectionAttemptedEvents(fx: ServiceFixture, serverId: string) {
     .select()
     .from(activityEvents)
     .where(
-      and(eq(activityEvents.entityId, serverId), eq(activityEvents.action, 'server.connection_attempted')),
+      and(
+        eq(activityEvents.entityId, serverId),
+        eq(activityEvents.action, 'server.connection_attempted'),
+      ),
     );
 }
 
@@ -177,7 +180,10 @@ async function discoveryCompletedEvents(fx: ServiceFixture, serverId: string) {
     .select()
     .from(activityEvents)
     .where(
-      and(eq(activityEvents.entityId, serverId), eq(activityEvents.action, 'server.discovery_completed')),
+      and(
+        eq(activityEvents.entityId, serverId),
+        eq(activityEvents.action, 'server.discovery_completed'),
+      ),
     );
 }
 
@@ -199,7 +205,10 @@ describe('connect phase (D-01, D-05, fingerprints)', () => {
     fixture = await startServiceFixture();
     const { connectAndDiscover } = await loadConnectAndDiscover();
 
-    const result = await connectAndDiscover(fixture.deps, { actor: SYSTEM, serverId: randomUUID() });
+    const result = await connectAndDiscover(fixture.deps, {
+      actor: SYSTEM,
+      serverId: randomUUID(),
+    });
 
     expect(result).toMatchObject({ ok: false, code: 'NOT_FOUND' });
   });
@@ -249,7 +258,11 @@ describe('connect phase (D-01, D-05, fingerprints)', () => {
 
     expect(fakeSsh.calls).toHaveLength(1);
     const [input] = fakeSsh.calls;
-    expect(input?.target).toEqual({ host: server.host, port: server.sshPort, user: server.sshUser });
+    expect(input?.target).toEqual({
+      host: server.host,
+      port: server.sshPort,
+      user: server.sshUser,
+    });
     expect(input?.timeouts).toBe(fixture.deps.timeouts);
     expect(input?.redactor).toBe(fixture.deps.redactor);
     expect(input?.trustedFingerprint).toBeNull();
@@ -354,7 +367,12 @@ describe('connect phase (D-01, D-05, fingerprints)', () => {
     fixture = await startServiceFixture();
     const server = await registerFixtureServer(fixture);
     fixture.setSshPort(
-      buildFakeSshPort({ ok: false, errorCode: 'AUTH_FAILED', message: 'bad credentials', attempts: 1 }),
+      buildFakeSshPort({
+        ok: false,
+        errorCode: 'AUTH_FAILED',
+        message: 'bad credentials',
+        attempts: 1,
+      }),
     );
 
     const { connectAndDiscover } = await loadConnectAndDiscover();
@@ -375,7 +393,12 @@ describe('connect phase (D-01, D-05, fingerprints)', () => {
     fixture = await startServiceFixture();
     const server = await registerFixtureServer(fixture);
     fixture.setSshPort(
-      buildFakeSshPort({ ok: false, errorCode: 'CONNECT_TIMEOUT', message: 'timed out', attempts: 2 }),
+      buildFakeSshPort({
+        ok: false,
+        errorCode: 'CONNECT_TIMEOUT',
+        message: 'timed out',
+        attempts: 2,
+      }),
     );
 
     const { connectAndDiscover } = await loadConnectAndDiscover();
@@ -453,7 +476,12 @@ describe('connect phase (D-01, D-05, fingerprints)', () => {
     fixture = await startServiceFixture();
     const server = await registerFixtureServer(fixture);
     fixture.setSshPort(
-      buildFakeSshPort({ ok: false, errorCode: 'AUTH_FAILED', message: 'bad credentials', attempts: 1 }),
+      buildFakeSshPort({
+        ok: false,
+        errorCode: 'AUTH_FAILED',
+        message: 'bad credentials',
+        attempts: 1,
+      }),
     );
 
     const { connectAndDiscover } = await loadConnectAndDiscover();
@@ -475,7 +503,12 @@ describe('connect phase (D-01, D-05, fingerprints)', () => {
     fixture = await startServiceFixture();
     const server = await registerFixtureServer(fixture);
     fixture.setSshPort(
-      buildFakeSshPort({ ok: false, errorCode: 'AUTH_FAILED', message: 'bad credentials', attempts: 1 }),
+      buildFakeSshPort({
+        ok: false,
+        errorCode: 'AUTH_FAILED',
+        message: 'bad credentials',
+        attempts: 1,
+      }),
     );
 
     const { connectAndDiscover } = await loadConnectAndDiscover();
@@ -490,7 +523,13 @@ describe('connect phase (D-01, D-05, fingerprints)', () => {
     const server = await registerFixtureServer(fixture);
     const session = buildFakeSshSession({});
     fixture.setSshPort(
-      buildFakeSshPort({ ok: true, session, fingerprint: FP1, fingerprintCaptured: true, attempts: 1 }),
+      buildFakeSshPort({
+        ok: true,
+        session,
+        fingerprint: FP1,
+        fingerprintCaptured: true,
+        attempts: 1,
+      }),
     );
 
     const { connectAndDiscover } = await loadConnectAndDiscover();
@@ -508,7 +547,13 @@ describe('connect phase (D-01, D-05, fingerprints)', () => {
     const server = await registerFixtureServer(fixture);
     const session = buildFakeSshSession({});
     fixture.setSshPort(
-      buildFakeSshPort({ ok: true, session, fingerprint: FP1, fingerprintCaptured: true, attempts: 1 }),
+      buildFakeSshPort({
+        ok: true,
+        session,
+        fingerprint: FP1,
+        fingerprintCaptured: true,
+        attempts: 1,
+      }),
     );
 
     const { connectAndDiscover } = await loadConnectAndDiscover();
