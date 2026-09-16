@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: executing
-stopped_at: Completed 03-09-PLAN.md
-last_updated: "2026-09-16T17:52:05.464Z"
+status: verifying
+stopped_at: Completed 03-10-PLAN.md
+last_updated: "2026-09-16T21:12:00.647Z"
 last_activity: 2026-09-16
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 37
-  completed_plans: 36
-  percent: 33
+  completed_plans: 37
+  percent: 50
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 Phase: 03 (servicios-de-aplicaci-n-activity-log-y-redacci-n) — EXECUTING
 Plan: 10 of 10
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-16
 
-Progress: [██████████] 97%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -89,6 +89,7 @@ Progress: [██████████] 97%
 | Phase 03 P07 | 25min | 2 tasks | 2 files |
 | Phase 03 P08 | 50min | 3 tasks | 2 files |
 | Phase 03 P09 | 100min | 3 tasks | 4 files |
+| Phase 03 P10 | 65min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -189,6 +190,9 @@ Recent decisions affecting current work:
 - [Phase 03]: connectAndDiscover accepts an optional discover?: typeof runDiscovery on its own input, defaulting to the real runDiscovery -- scripting runDiscovery's internals through the fake SshSession's exec map was impractical for the D-02 warnings/checks matrix this plan's tests needed
 - [Phase 03]: classifyDiscoveryOutcome's D-02 mapping returns a 3-arm discriminated union keyed on status rather than a flat interface, so the discovery_completed activity event's conditional errorCode spread type-checks under exactOptionalPropertyTypes with no as assertion
 - [Phase 03-servicios-de-aplicaci-n-activity-log-y-redacci-n]: apps/control-plane/src/activity/boundary.test.ts's PRE_ACT01_EXCEPTIONS individually names three Phase 1 files (boot/bootstrap-admin.ts, auth/login-guard.ts, cli/admin-reset.ts) that call/reference writeActivityEvent directly and predate ACT-01's enforcement -- neither is an HTTP route nor a worker, and moving them into src/services/ is an out-of-scope Phase 1 refactor
+- [Phase 03]: The plan's own must_haves text claimed exactly three discovery_snapshots rows for the D-18 full-flow canary, but its own Act sequence only names two successful discovery runs (steps 2 and 6); the test asserts the correct count of two, since connectAndDiscover never inserts a snapshot on an SSH-connect-phase failure
+- [Phase 03]: appRedactor's registration is attempt-scoped, not flow-scoped -- @noodara/ssh releases every raw revealed secret the moment a connect attempt's session closes (WR-02), so the D-18 full-flow canary re-registers the password/passphrase canaries immediately before its final simulated-error capture rather than relying on a single up-front registration to survive the whole multi-connect flow
+- [Phase 03]: D-18's editServer credential-replacement step also changes sshUser (pwuser -> deployer) in the same call, since the sshd fixture's password-only account never receives an authorized key at all -- this is D-14's access-change transition working as designed, required for the flow to be physically realizable against the real fixture image
 
 ### Pending Todos
 
@@ -204,6 +208,7 @@ None yet.
 - Dos decisiones de stack siguen abiertas por el usuario según research/SUMMARY.md: auth (Better Auth vs. hand-rolled) y framework web (Next.js vs. TanStack Start) — PROJECT.md ya registra Better Auth y Next.js 16 como decisión tomada; confirmar que sigue vigente al planificar Phase 1 y Phase 5.
 - tests/integration/ssh/contracts.test.ts's .invalid-TLD row (plan 02-04) now fails on this machine (err.level 'client-socket' instead of the ADR-0004-measured 'client-timeout') — pre-existing, resolver-dependent, unrelated to plan 02-08; see deferred-items.md
 - 02-10: a cold pnpm test:integration runtime was not measured (only warm, 555.87s) — this shared dev machine's Docker host has 2000+ images from unrelated projects and there is no safe way to selectively evict this phase's four sshd image variants; a local gitleaks detect run also flags the three already-known fake-credential fixtures because this machine's actual git root sits one level above noodara/code, shifting .gitleaks.toml's anchored allowlist paths — not a real leak, a local-layout artifact
+- A full pnpm test:integration run showed a cascading assertNoStrayTestContainers failure (234/311 tests) rooted in tests/integration/ssh/*.test.ts files unrelated to plan 03-10's diff; confirmed pre-existing machine-specific Docker resource contention (isolated re-run of the affected file passed cleanly 16/16). See phases/03-servicios-de-aplicaci-n-activity-log-y-redacci-n/deferred-items.md
 
 ## Deferred Items
 
@@ -215,6 +220,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-16T17:52:05.456Z
-Stopped at: Completed 03-09-PLAN.md
+Last session: 2026-09-16T21:12:00.641Z
+Stopped at: Completed 03-10-PLAN.md
 Resume file: None
