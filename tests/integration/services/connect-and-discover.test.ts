@@ -912,6 +912,10 @@ describe('discovery phase (DISC-03, D-02, D-06, D-07)', () => {
       ...buildSnapshot({ checks: [buildCheck('hostname', 'pass')] }),
       warnings: [{ password: 'leaked' }] as unknown as readonly ServerErrorCode[],
     };
+    // registerFixtureServer already wrote its own `server.created` event — capture the count
+    // before the call under test so the assertion below is about events TX2 itself would add,
+    // not about the server having zero activity history.
+    const before = await eventsFor(fixture, server.id);
 
     const { connectAndDiscover } = await loadConnectAndDiscover();
     await expect(
@@ -930,7 +934,7 @@ describe('discovery phase (DISC-03, D-02, D-06, D-07)', () => {
     expect(row?.status).toBe('CONNECTING');
     expect(row?.hostFingerprint).toBeNull();
     const events = await eventsFor(fixture, server.id);
-    expect(events).toHaveLength(0);
+    expect(events).toHaveLength(before.length);
   });
 
   it('attributes both events to a user actor (D-17)', async () => {
@@ -954,9 +958,13 @@ describe('discovery phase (DISC-03, D-02, D-06, D-07)', () => {
       discover: () => Promise.resolve(buildSnapshot()),
     });
 
-    const events = await eventsFor(fixture, server.id);
-    expect(events.length).toBeGreaterThanOrEqual(2);
-    for (const event of events) {
+    // Only this call's own two events — `registerFixtureServer` already wrote a `server.created`
+    // event attributed to the system actor, which must not be counted here.
+    const connectionEvents = await connectionAttemptedEvents(fixture, server.id);
+    const discoveryEvents = await discoveryCompletedEvents(fixture, server.id);
+    expect(connectionEvents).toHaveLength(1);
+    expect(discoveryEvents).toHaveLength(1);
+    for (const event of [...connectionEvents, ...discoveryEvents]) {
       expect(event.actorType).toBe('user');
       expect(event.actorId).toBe(userId);
     }
@@ -982,9 +990,11 @@ describe('discovery phase (DISC-03, D-02, D-06, D-07)', () => {
       discover: () => Promise.resolve(buildSnapshot()),
     });
 
-    const events = await eventsFor(fixture, server.id);
-    expect(events.length).toBeGreaterThanOrEqual(2);
-    for (const event of events) {
+    const connectionEvents = await connectionAttemptedEvents(fixture, server.id);
+    const discoveryEvents = await discoveryCompletedEvents(fixture, server.id);
+    expect(connectionEvents).toHaveLength(1);
+    expect(discoveryEvents).toHaveLength(1);
+    for (const event of [...connectionEvents, ...discoveryEvents]) {
       expect(event.actorType).toBe('system');
       expect(event.actorId).toBeNull();
     }
