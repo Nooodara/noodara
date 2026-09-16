@@ -13,7 +13,7 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
-import { formatFingerprint, type HostFingerprint } from '@noodara/ssh';
+import type { HostFingerprint } from '@noodara/ssh';
 import type {
   DiscoveryCheck,
   DiscoveryCheckId,
@@ -366,7 +366,13 @@ describe('createServerServices factory (D-01, D-17)', () => {
     const services = createServerServices(fixture.deps);
 
     expect(Object.keys(services).sort()).toEqual(
-      ['connectAndDiscover', 'deleteServer', 'editServer', 'registerServer', 'trustFingerprint'].sort(),
+      [
+        'connectAndDiscover',
+        'deleteServer',
+        'editServer',
+        'registerServer',
+        'trustFingerprint',
+      ].sort(),
     );
   });
 
