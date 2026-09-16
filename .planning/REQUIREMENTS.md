@@ -49,7 +49,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **DISC-01**: Tras CONNECTED, Noodara descubre hostname, distribución, versión de OS, arquitectura, núcleos de CPU, RAM total, disco total y usado, uptime, Docker instalado y su versión, usando salidas estructuradas y parsers testeados.
 - [ ] **DISC-02**: El admin ve el progreso del discovery check por check (SSH → auth → OS → recursos → Docker → sudo/docker group) con pass/fail y detalle, no un spinner genérico.
-- [ ] **DISC-03**: Cada discovery se guarda como snapshot append-only y el estado actual del servidor se denormaliza para la vista de detalle.
+- [x] **DISC-03**: Cada discovery se guarda como snapshot append-only y el estado actual del servidor se denormaliza para la vista de detalle.
 - [x] **DISC-04**: Un OS no soportado se reporta como UNSUPPORTED_OS con aviso claro, sin bloquear el resto de la información recolectada.
 - [ ] **DISC-05**: El admin puede volver a ejecutar el discovery bajo demanda desde el detalle del servidor.
 
@@ -60,7 +60,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Activity Log
 
-- [ ] **ACT-01**: Se registran eventos tipados para setup, login, logout, login fallido, servidor creado/editado/eliminado, intento de conexión y su resultado, discovery ejecutado.
+- [x] **ACT-01**: Se registran eventos tipados para setup, login, logout, login fallido, servidor creado/editado/eliminado, intento de conexión y su resultado, discovery ejecutado.
 - [ ] **ACT-02**: El admin ve el activity log como lista cronológica inversa con actor, entidad, acción y timestamp; los metadatos nunca contienen valores sensibles.
 
 ### Settings
@@ -153,8 +153,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SERV-02 | Phase 3 | Complete |
 | SERV-03 | Phase 3 | Pending |
 | SEC-02 | Phase 3 | Pending |
-| DISC-03 | Phase 3 | Pending |
-| ACT-01 | Phase 3 | Pending |
+| DISC-03 | Phase 3 | Complete |
+| ACT-01 | Phase 3 | Complete |
 | SERV-06 | Phase 4 | Pending |
 | DISC-05 | Phase 4 | Pending |
 | SERV-04 | Phase 5 | Pending |
