@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Phase 4 context gathered
-last_updated: "2026-09-17T02:48:04.488Z"
-last_activity: 2026-09-17 -- Phase 4 planning complete
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-09-17T12:19:06.383Z"
+last_activity: 2026-09-17
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 48
-  completed_plans: 37
+  completed_plans: 38
   percent: 50
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente: sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto.
-**Current focus:** Phase 4 — http routes, worker bullmq y sse
+**Current focus:** Phase 04 — http-routes-worker-bullmq-y-sse
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
+Phase: 04 (http-routes-worker-bullmq-y-sse) — EXECUTING
+Plan: 2 of 11
 Status: Ready to execute
-Last activity: 2026-09-17 -- Phase 4 planning complete
+Last activity: 2026-09-17
 
-Progress: [██████████] 100%
+Progress: [████████░░] 79%
 
 ## Performance Metrics
 
@@ -91,6 +91,7 @@ Progress: [██████████] 100%
 | Phase 03 P08 | 50min | 3 tasks | 2 files |
 | Phase 03 P09 | 100min | 3 tasks | 4 files |
 | Phase 03 P10 | 65min | 2 tasks | 3 files |
+| Phase 04 P01 | 110min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -194,6 +195,9 @@ Recent decisions affecting current work:
 - [Phase 03]: The plan's own must_haves text claimed exactly three discovery_snapshots rows for the D-18 full-flow canary, but its own Act sequence only names two successful discovery runs (steps 2 and 6); the test asserts the correct count of two, since connectAndDiscover never inserts a snapshot on an SSH-connect-phase failure
 - [Phase 03]: appRedactor's registration is attempt-scoped, not flow-scoped -- @noodara/ssh releases every raw revealed secret the moment a connect attempt's session closes (WR-02), so the D-18 full-flow canary re-registers the password/passphrase canaries immediately before its final simulated-error capture rather than relying on a single up-front registration to survive the whole multi-connect flow
 - [Phase 03]: D-18's editServer credential-replacement step also changes sshUser (pwuser -> deployer) in the same call, since the sshd fixture's password-only account never receives an authorized key at all -- this is D-14's access-change transition working as designed, required for the flow to be physically realizable against the real fixture image
+- [Phase 04]: ioredis pinned to 5.11.1, never 6.0.0 (RESP3-by-default not yet validated against BullMQ's Lua reply parsing) — RESEARCH Pitfall 2 / Open Question 1
+- [Phase 04]: concurrently deliberately not installed; a second Turborepo dev:worker task wires pnpm dev in Plan 04-07 instead — Keeps the zero-new-tooling-dependency posture this project has held since Phase 1
+- [Phase 04]: ioredis promoted to a root devDependency at the same 5.11.1 pin so root-level integration tests can import it directly — pnpm's isolated node_modules never hoists a workspace package's own dependency to the root; same fix Phase 1 applied to drizzle-orm and @noodara/domain
 
 ### Pending Todos
 
@@ -210,6 +214,7 @@ None yet.
 - tests/integration/ssh/contracts.test.ts's .invalid-TLD row (plan 02-04) now fails on this machine (err.level 'client-socket' instead of the ADR-0004-measured 'client-timeout') — pre-existing, resolver-dependent, unrelated to plan 02-08; see deferred-items.md
 - 02-10: a cold pnpm test:integration runtime was not measured (only warm, 555.87s) — this shared dev machine's Docker host has 2000+ images from unrelated projects and there is no safe way to selectively evict this phase's four sshd image variants; a local gitleaks detect run also flags the three already-known fake-credential fixtures because this machine's actual git root sits one level above noodara/code, shifting .gitleaks.toml's anchored allowlist paths — not a real leak, a local-layout artifact
 - A full pnpm test:integration run showed a cascading assertNoStrayTestContainers failure (234/311 tests) rooted in tests/integration/ssh/*.test.ts files unrelated to plan 03-10's diff; confirmed pre-existing machine-specific Docker resource contention (isolated re-run of the affected file passed cleanly 16/16). See phases/03-servicios-de-aplicaci-n-activity-log-y-redacci-n/deferred-items.md
+- REQUIREMENTS.md marks SERV-06 'Complete' after Plan 04-01, but 04-01 only ships infra (deps, env knobs, job-budget function, Redis test fixture) — no worker, routes, or SSE stream yet. SERV-06's actual behavior lands across Plans 04-02..04-11; this checkbox is a plan-frontmatter artifact of 04-01-PLAN.md declaring requirements: [SERV-06] on the first wave-0 plan, not a real completion. Re-verify SERV-06 at phase-4 close, not from this checkbox alone.
 
 ## Deferred Items
 
@@ -221,6 +226,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-16T23:53:32.754Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-http-routes-worker-bullmq-y-sse/04-CONTEXT.md
+Last session: 2026-09-17T05:10:40.863Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: None

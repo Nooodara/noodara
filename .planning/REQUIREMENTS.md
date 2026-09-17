@@ -33,7 +33,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **SERV-03**: El admin elimina un servidor previa confirmación con su nombre; la credencial se borra en la misma transacción y se registra el evento.
 - [ ] **SERV-04**: El admin ve la lista de servidores con nombre, host, status pill y last seen.
 - [x] **SERV-05**: Cada servidor tiene un estado explícito PENDING, CONNECTING, CONNECTED, DISCONNECTED, UNREACHABLE o ERROR, con transiciones centralizadas y validadas en el dominio.
-- [ ] **SERV-06**: El admin dispara "Connect" explícitamente; la conexión corre en el worker en segundo plano y el estado se refleja en la UI en tiempo real vía SSE sin recargar.
+- [x] **SERV-06**: El admin dispara "Connect" explícitamente; la conexión corre en el worker en segundo plano y el estado se refleja en la UI en tiempo real vía SSE sin recargar.
 - [x] **SERV-07**: Un fallo de conexión produce un `error_code` específico (AUTH_FAILED, HOST_UNRESOLVED, CONNECT_TIMEOUT, COMMAND_TIMEOUT, HOST_KEY_CHANGED, CONNECTION_LOST, UNSUPPORTED_OS) con mensaje accionable; la API nunca cae.
 - [x] **SERV-08**: Un usuario SSH no-root con sudo sin password es soportado; la validación comprueba `sudo -n` y pertenencia al grupo docker y reporta cada check.
 
@@ -155,7 +155,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEC-02 | Phase 3 | Complete |
 | DISC-03 | Phase 3 | Complete |
 | ACT-01 | Phase 3 | Complete |
-| SERV-06 | Phase 4 | Pending |
+| SERV-06 | Phase 4 | Complete |
 | DISC-05 | Phase 4 | Pending |
 | SERV-04 | Phase 5 | Pending |
 | DETL-01 | Phase 5 | Pending |
