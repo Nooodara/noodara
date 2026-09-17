@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-06-PLAN.md
-last_updated: "2026-09-17T21:23:40.743Z"
+stopped_at: Completed 04-07-PLAN.md
+last_updated: "2026-09-17T22:43:47.435Z"
 last_activity: 2026-09-17
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 48
-  completed_plans: 43
+  completed_plans: 44
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 04 (http-routes-worker-bullmq-y-sse) — EXECUTING
-Plan: 7 of 11
+Plan: 8 of 11
 Status: Ready to execute
 Last activity: 2026-09-17
 
-Progress: [█████████░] 90%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -97,6 +97,7 @@ Progress: [█████████░] 90%
 | Phase 04 P04 | 125min | 3 tasks | 14 files |
 | Phase 04 P05 | 35min | 2 tasks | 4 files |
 | Phase 04 P06 | 90min | 2 tasks | 7 files |
+| Phase 04 P07 | 55min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -218,6 +219,9 @@ Recent decisions affecting current work:
 - [Phase 04]: jobIdForServer returns connect-<serverId> (hyphen), not connect:<serverId> as D-09 literally names — BullMQ 6.3.6's Job.validateOptions rejects any custom jobId containing exactly one ':'
 - [Phase 04]: bullmq promoted to a root devDependency at the same 6.3.6 pin so root-level integration tests can build a raw probe Queue directly — same pnpm workspace-symlink fix already applied to ioredis/zod/drizzle-orm/@noodara-domain
 - [Phase 04]: ioredis's Redis class imported by name (import { Redis } from 'ioredis'), not the default export — under this project's verbatimModuleSyntax + nodenext ESM config the default-import binding fails apps/control-plane's own tsc build with "not constructable"
+- [Phase 04]: maxStalledCount:0 + a stalled listener holds against real bullmq@6.3.6/ioredis@5.11.1 (D-12 assumption A3 confirmed empirically, 3 consecutive stalled-recovery test runs, no flake, no second SSH connect)
+- [Phase 04]: Root pnpm dev now runs turbo run dev dev:worker (api+worker together) with a byte-for-byte copied passThroughEnv array — zero new devDependency, the concurrently alternative flagged in 04-01 was not needed
+- [Phase 04]: worker.ts pings the queue Redis connection (bounded commandTimeout/maxRetriesPerRequest:1) to fail fast at boot, never the worker connection (maxRetriesPerRequest:null would hang against a dead Redis)
 
 ### Pending Todos
 
@@ -246,6 +250,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-17T21:23:40.731Z
-Stopped at: Completed 04-06-PLAN.md
+Last session: 2026-09-17T22:43:47.428Z
+Stopped at: Completed 04-07-PLAN.md
 Resume file: None
