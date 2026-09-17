@@ -10,10 +10,10 @@ import { appRedactor } from './activity/redaction.js';
 import { decodeMasterKey, logMasterKeyWarning } from './boot/master-key.js';
 import { env } from './env.js';
 import { createLogger } from './logger.js';
+import apiScope from './routes/api-scope.js';
 import authRoutes from './routes/auth.js';
 import healthRoutes from './routes/health.js';
 import { toErrorBody, toValidationErrorBody } from './routes/http-errors.js';
-import sessionsRoutes from './routes/sessions.js';
 import setupRoutes from './routes/setup.js';
 
 export interface BuildAppDeps {
@@ -58,10 +58,13 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   // key material itself.
   logMasterKeyWarning(app.log, decodeMasterKey(env.NOODARA_MASTER_KEY));
 
+  // D-17: `healthRoutes`/`authRoutes`/`setupRoutes` stay siblings of `apiScope`, never inside it —
+  // that sibling relationship is what keeps `/health`, `/api/auth/*`, `/api/setup` and
+  // `/api/recovery` unguarded with no allowlist/denylist branch anywhere.
   app.register(healthRoutes);
   app.register(authRoutes);
   app.register(setupRoutes);
-  app.register(sessionsRoutes);
+  app.register(apiScope);
 
   return app;
 }

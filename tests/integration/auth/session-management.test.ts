@@ -142,6 +142,7 @@ describe('session management (D-06)', () => {
     const response = await fixture.app.inject({ method: 'GET', url: '/api/sessions' });
 
     expect(response.statusCode).toBe(401);
+    expect(response.json()).toStrictEqual({ error: 'UNAUTHORIZED', message: expect.any(String) });
   });
 
   it('lists every session for the caller with the required fields and exactly one isCurrent', async () => {
@@ -219,6 +220,7 @@ describe('session management (D-06)', () => {
     });
 
     expect(response.statusCode).toBe(404);
+    expect(response.json()).toStrictEqual({ error: 'NOT_FOUND', message: expect.any(String) });
   });
 
   it('returns 404 (not 403) for a session id belonging to a different user', async () => {
@@ -236,6 +238,7 @@ describe('session management (D-06)', () => {
     });
 
     expect(response.statusCode).toBe(404);
+    expect(response.json()).toStrictEqual({ error: 'NOT_FOUND', message: expect.any(String) });
   });
 
   it('revoking the current session behaves like a sign-out', async () => {

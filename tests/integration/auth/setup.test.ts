@@ -110,6 +110,7 @@ describe('POST /api/setup (AUTH-01)', () => {
     });
 
     expect(response.statusCode).toBe(400);
+    expect(response.json()).toStrictEqual({ error: 'ALREADY_USED', message: expect.any(String) });
     expect(await userCount(fixture.db)).toBe(0);
   });
 
@@ -130,6 +131,7 @@ describe('POST /api/setup (AUTH-01)', () => {
     });
 
     expect(replay.statusCode).toBe(404);
+    expect(replay.json()).toStrictEqual({ error: 'NOT_FOUND', message: expect.any(String) });
     expect(await userCount(fixture.db)).toBe(1);
   });
 
@@ -146,6 +148,7 @@ describe('POST /api/setup (AUTH-01)', () => {
     });
 
     expect(response.statusCode).toBe(400);
+    expect(response.json()).toStrictEqual({ error: 'EXPIRED', message: expect.any(String) });
     expect(await userCount(fixture.db)).toBe(0);
   });
 
@@ -159,6 +162,7 @@ describe('POST /api/setup (AUTH-01)', () => {
     });
 
     expect(response.statusCode).toBe(400);
+    expect(response.json()).toStrictEqual({ error: 'TOKEN_INVALID', message: expect.any(String) });
   });
 
   it('returns 404 (not 403) once an admin exists, before evaluating the token', async () => {
@@ -178,6 +182,7 @@ describe('POST /api/setup (AUTH-01)', () => {
 
     expect(response.statusCode).toBe(404);
     expect(response.statusCode).not.toBe(403);
+    expect(response.json()).toStrictEqual({ error: 'NOT_FOUND', message: expect.any(String) });
   });
 
   it('rejects a weak password with 400 and leaves the token unused', async () => {
@@ -191,6 +196,8 @@ describe('POST /api/setup (AUTH-01)', () => {
     });
 
     expect(response.statusCode).toBe(400);
+    const body = response.json() as { error: string; message: string };
+    expect(body.error).toMatch(/^[A-Z_]+$/);
     expect(await userCount(fixture.db)).toBe(0);
 
     const [row] = await fixture.db.select().from(setupTokens);

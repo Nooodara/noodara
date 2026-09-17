@@ -9,10 +9,18 @@ import {
   toFetchHeaders,
   UnauthorizedError,
 } from '../services/session-service.js';
+import { ErrorBodySchema, toErrorBody } from './http-errors.js';
 
 // D-06: session listing/revocation. Routes only authenticate, call the service, and map its
 // errors to status codes (noodara-domain-model/ARCHITECTURE.md §3 — no business logic here, and
 // `session-service.ts` is the only writer of `auth.session_revoked` activity events).
+//
+// D-17/D-18: this plugin now lives inside `routes/api-scope.ts`'s guarded scope, so
+// `requireSession`'s `onRequest` hook 401s an anonymous caller before any handler here runs and
+// decorates `request.actor`. The service calls below still pass `toFetchHeaders(request.headers)`
+// (never `request.actor`) — their queries are keyed on the caller's *own* session row, not on the
+// actor id, and `requireCurrentSession`'s own `UnauthorizedError` throw stays as a defensive
+// second line even though it should now be unreachable in production.
 
 const SessionItemSchema = z.object({
   id: z.string(),
@@ -24,8 +32,6 @@ const SessionItemSchema = z.object({
   isCurrent: z.boolean(),
 });
 
-const UnauthorizedSchema = z.object({ error: z.literal('unauthorized') });
-const NotFoundSchema = z.object({ error: z.literal('not_found') });
 const RevokedSchema = z.object({ revoked: z.literal(true) });
 const RevokedCountSchema = z.object({ revokedCount: z.number() });
 const SessionIdParamSchema = z.object({ id: z.string() });
@@ -39,7 +45,7 @@ const sessionsRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
     schema: {
       response: {
         200: z.array(SessionItemSchema),
-        401: UnauthorizedSchema,
+        401: ErrorBodySchema,
       },
     },
     handler: async (request, reply) => {
@@ -48,7 +54,7 @@ const sessionsRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         await reply.send(items);
       } catch (error) {
         if (error instanceof UnauthorizedError) {
-          await reply.code(401).send({ error: 'unauthorized' as const });
+          await reply.code(401).send(toErrorBody('UNAUTHORIZED', 'No active session'));
           return;
         }
         throw error;
@@ -63,8 +69,8 @@ const sessionsRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
       params: SessionIdParamSchema,
       response: {
         200: RevokedSchema,
-        401: UnauthorizedSchema,
-        404: NotFoundSchema,
+        401: ErrorBodySchema,
+        404: ErrorBodySchema,
       },
     },
     handler: async (request, reply) => {
@@ -73,11 +79,11 @@ const sessionsRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         await reply.send({ revoked: true as const });
       } catch (error) {
         if (error instanceof UnauthorizedError) {
-          await reply.code(401).send({ error: 'unauthorized' as const });
+          await reply.code(401).send(toErrorBody('UNAUTHORIZED', 'No active session'));
           return;
         }
         if (error instanceof SessionNotFoundError) {
-          await reply.code(404).send({ error: 'not_found' as const });
+          await reply.code(404).send(toErrorBody('NOT_FOUND', 'Session not found'));
           return;
         }
         throw error;
@@ -91,7 +97,7 @@ const sessionsRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
     schema: {
       response: {
         200: RevokedCountSchema,
-        401: UnauthorizedSchema,
+        401: ErrorBodySchema,
       },
     },
     handler: async (request, reply) => {
@@ -100,7 +106,7 @@ const sessionsRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         await reply.send({ revokedCount });
       } catch (error) {
         if (error instanceof UnauthorizedError) {
-          await reply.code(401).send({ error: 'unauthorized' as const });
+          await reply.code(401).send(toErrorBody('UNAUTHORIZED', 'No active session'));
           return;
         }
         throw error;
