@@ -331,6 +331,108 @@ describe('parseEnv', () => {
     });
   });
 
+  describe('NOODARA_WORKER_CONCURRENCY (D-24)', () => {
+    it('applies the documented default when unset', () => {
+      const result = parseEnv(validSource());
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error('expected success');
+      expect(result.value.NOODARA_WORKER_CONCURRENCY).toBe(5);
+    });
+
+    it('honors a valid explicit override', () => {
+      const result = parseEnv(validSource({ NOODARA_WORKER_CONCURRENCY: '10' }));
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error('expected success');
+      expect(result.value.NOODARA_WORKER_CONCURRENCY).toBe(10);
+    });
+
+    it('rejects a value of 0 with exactly one issue naming the variable', () => {
+      const result = parseEnv(validSource({ NOODARA_WORKER_CONCURRENCY: '0' }));
+
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error('expected failure');
+      const issues = result.issues.filter((issue) => issue.variable === 'NOODARA_WORKER_CONCURRENCY');
+      expect(issues).toHaveLength(1);
+      expect(issues[0]).not.toHaveProperty('received');
+    });
+
+    it('rejects a value of 21 with exactly one issue naming the variable', () => {
+      const result = parseEnv(validSource({ NOODARA_WORKER_CONCURRENCY: '21' }));
+
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error('expected failure');
+      const issues = result.issues.filter((issue) => issue.variable === 'NOODARA_WORKER_CONCURRENCY');
+      expect(issues).toHaveLength(1);
+    });
+
+    it('accepts the boundary values 1 and 20', () => {
+      expect(parseEnv(validSource({ NOODARA_WORKER_CONCURRENCY: '1' })).ok).toBe(true);
+      expect(parseEnv(validSource({ NOODARA_WORKER_CONCURRENCY: '20' })).ok).toBe(true);
+    });
+
+    it('rejects a non-integer value instead of producing NaN', () => {
+      const result = parseEnv(validSource({ NOODARA_WORKER_CONCURRENCY: '2.5' }));
+
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error('expected failure');
+      const issues = result.issues.filter((issue) => issue.variable === 'NOODARA_WORKER_CONCURRENCY');
+      expect(issues).toHaveLength(1);
+    });
+  });
+
+  describe('NOODARA_SSE_MAX_CONNECTIONS (D-07)', () => {
+    it('applies the documented default when unset', () => {
+      const result = parseEnv(validSource());
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error('expected success');
+      expect(result.value.NOODARA_SSE_MAX_CONNECTIONS).toBe(32);
+    });
+
+    it('honors a valid explicit override', () => {
+      const result = parseEnv(validSource({ NOODARA_SSE_MAX_CONNECTIONS: '100' }));
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error('expected success');
+      expect(result.value.NOODARA_SSE_MAX_CONNECTIONS).toBe(100);
+    });
+
+    it('rejects a value of 0 with exactly one issue naming the variable', () => {
+      const result = parseEnv(validSource({ NOODARA_SSE_MAX_CONNECTIONS: '0' }));
+
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error('expected failure');
+      const issues = result.issues.filter((issue) => issue.variable === 'NOODARA_SSE_MAX_CONNECTIONS');
+      expect(issues).toHaveLength(1);
+      expect(issues[0]).not.toHaveProperty('received');
+    });
+
+    it('rejects a value of 1001 with exactly one issue naming the variable', () => {
+      const result = parseEnv(validSource({ NOODARA_SSE_MAX_CONNECTIONS: '1001' }));
+
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error('expected failure');
+      const issues = result.issues.filter((issue) => issue.variable === 'NOODARA_SSE_MAX_CONNECTIONS');
+      expect(issues).toHaveLength(1);
+    });
+
+    it('accepts the boundary values 1 and 1000', () => {
+      expect(parseEnv(validSource({ NOODARA_SSE_MAX_CONNECTIONS: '1' })).ok).toBe(true);
+      expect(parseEnv(validSource({ NOODARA_SSE_MAX_CONNECTIONS: '1000' })).ok).toBe(true);
+    });
+
+    it('rejects a non-integer value instead of producing NaN', () => {
+      const result = parseEnv(validSource({ NOODARA_SSE_MAX_CONNECTIONS: '2.5' }));
+
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error('expected failure');
+      const issues = result.issues.filter((issue) => issue.variable === 'NOODARA_SSE_MAX_CONNECTIONS');
+      expect(issues).toHaveLength(1);
+    });
+  });
+
   describe('failure report safety', () => {
     it('never contains the offending value', () => {
       const badKey = 'totally-not-base64-and-should-never-appear';

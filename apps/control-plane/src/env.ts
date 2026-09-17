@@ -41,6 +41,13 @@ export interface Env {
   NOODARA_SSH_CONNECT_TIMEOUT_MS: number;
   NOODARA_SSH_COMMAND_TIMEOUT_MS: number;
   NOODARA_SSH_DISCOVERY_TIMEOUT_MS: number;
+  // D-24: global worker concurrency for the BullMQ `servers` queue. Per-server concurrency is
+  // guaranteed by the row lock in connectAndDiscover (fase 3 D-05) plus the deterministic jobId
+  // (D-09), not by this knob.
+  NOODARA_WORKER_CONCURRENCY: number;
+  // D-07: max simultaneous SSE connections per API process; exceeding it returns 503 rather than
+  // accumulating unbounded open sockets.
+  NOODARA_SSE_MAX_CONNECTIONS: number;
   PORT: number;
   LOG_LEVEL: string;
 }
@@ -319,6 +326,20 @@ export function parseEnv(source: EnvSource): EnvParseResult {
     { min: 5000, max: 600000 },
   );
   validateSshTimeoutCoherence(sshCommandTimeoutMs, sshDiscoveryTimeoutMs, issues);
+  const workerConcurrency = parseTuningInt(
+    'NOODARA_WORKER_CONCURRENCY',
+    source.NOODARA_WORKER_CONCURRENCY,
+    5,
+    issues,
+    { min: 1, max: 20 },
+  );
+  const sseMaxConnections = parseTuningInt(
+    'NOODARA_SSE_MAX_CONNECTIONS',
+    source.NOODARA_SSE_MAX_CONNECTIONS,
+    32,
+    issues,
+    { min: 1, max: 1000 },
+  );
   const port = parseTuningInt('PORT', source.PORT, 3000, issues);
   const logLevel = parseTuningString(source.LOG_LEVEL, 'info');
 
@@ -350,6 +371,8 @@ export function parseEnv(source: EnvSource): EnvParseResult {
       NOODARA_SSH_CONNECT_TIMEOUT_MS: sshConnectTimeoutMs,
       NOODARA_SSH_COMMAND_TIMEOUT_MS: sshCommandTimeoutMs,
       NOODARA_SSH_DISCOVERY_TIMEOUT_MS: sshDiscoveryTimeoutMs,
+      NOODARA_WORKER_CONCURRENCY: workerConcurrency,
+      NOODARA_SSE_MAX_CONNECTIONS: sseMaxConnections,
       PORT: port,
       LOG_LEVEL: logLevel,
     },
