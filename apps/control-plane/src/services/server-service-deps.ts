@@ -11,6 +11,7 @@ import { appRedactor } from '../activity/redaction.js';
 import { decodeMasterKey } from '../boot/master-key.js';
 import { getDb, type Database } from '../db/client.js';
 import { env } from '../env.js';
+import { noopServerEventPublisher, type ServerEventPublisher } from '../events/server-event-publisher.js';
 
 /**
  * Every application service's caller identity — a specific admin user, or the system itself
@@ -34,6 +35,7 @@ export interface ServerServicesDeps {
   readonly ssh: SshPort;
   readonly timeouts: SshTimeouts;
   readonly redactor: Redactor;
+  readonly events: ServerEventPublisher;
   readonly masterKeys: MasterKeys;
   readonly now: () => Date;
 }
@@ -61,8 +63,9 @@ export async function resolveServerServicesDeps(
     discoveryMs: env.NOODARA_SSH_DISCOVERY_TIMEOUT_MS,
   };
   const redactor = overrides.redactor ?? appRedactor;
+  const events = overrides.events ?? noopServerEventPublisher;
   const masterKeys = overrides.masterKeys ?? defaultMasterKeys();
   const now = overrides.now ?? (() => new Date());
 
-  return { db, ssh, timeouts, redactor, masterKeys, now };
+  return { db, ssh, timeouts, redactor, events, masterKeys, now };
 }

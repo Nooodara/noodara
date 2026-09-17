@@ -57,12 +57,26 @@ export type ServiceFixtureDeps = Awaited<
   ReturnType<ServerServiceDepsModule['resolveServerServicesDeps']>
 >;
 
+// The D-04 events port's types, derived from `ServiceFixtureDeps['events']` itself (already
+// resolved through the dynamic-import-only `ServerServiceDepsModule` above) — no second static or
+// dynamic import needed just to name `ServerEvent`/`ServerEventPublisher`.
+export type ServiceFixtureEventPublisher = ServiceFixtureDeps['events'];
+export type ServiceFixtureEvent = Parameters<ServiceFixtureEventPublisher['publish']>[0];
+
 export interface ServiceFixture {
   readonly db: PostgresFixture['db'];
   readonly deps: ServiceFixtureDeps;
+  /** Every `ServerEvent` published through `deps.events` during this fixture's lifetime, in call
+   *  order (D-04). Populated by the fixture's own recording `ServerEventPublisher` unless swapped
+   *  out via `setEventPublisher`. */
+  readonly events: ServiceFixtureEvent[];
   /** Swaps the `SshPort` implementation `deps.ssh.connect` forwards to, for a later test case —
    *  `deps` itself is the same object for the fixture's whole lifetime. */
   setSshPort(port: SshPort): void;
+  /** Swaps the `ServerEventPublisher` implementation `deps.events.publish` forwards to (e.g. a
+   *  rejecting fake for the "a rejecting publisher changes no result" test). Recording into
+   *  `events` stops once a replacement is installed. */
+  setEventPublisher(publisher: ServiceFixtureEventPublisher): void;
   /** Safe to call more than once. */
   stop(): Promise<void>;
 }
@@ -85,14 +99,33 @@ export async function startServiceFixture(): Promise<ServiceFixture> {
     connect: (input: ConnectInput): Promise<ConnectOutcome> => currentSsh.connect(input),
   };
 
+  // D-04: records every event a service publishes, in call order, unless a test swaps it out
+  // (e.g. for the "a rejecting publisher changes no result" case) via `setEventPublisher`.
+  const events: ServiceFixtureEvent[] = [];
+  const recordingEventPublisher: ServiceFixtureEventPublisher = {
+    publish(event) {
+      events.push(event);
+      return Promise.resolve();
+    },
+  };
+  let currentEventPublisher: ServiceFixtureEventPublisher = recordingEventPublisher;
+  const forwardingEventPublisher: ServiceFixtureEventPublisher = {
+    publish: (event) => currentEventPublisher.publish(event),
+  };
+
   const deps = await resolveServerServicesDeps({
     db: postgres.db,
     ssh: forwardingSsh,
+    events: forwardingEventPublisher,
     now: () => FIXED_NOW,
   });
 
   const setSshPort = (port: SshPort): void => {
     currentSsh = port;
+  };
+
+  const setEventPublisher = (publisher: ServiceFixtureEventPublisher): void => {
+    currentEventPublisher = publisher;
   };
 
   let stopped = false;
@@ -102,7 +135,7 @@ export async function startServiceFixture(): Promise<ServiceFixture> {
     await postgres.stop();
   };
 
-  return { db: postgres.db, deps, setSshPort, stop };
+  return { db: postgres.db, deps, events, setSshPort, setEventPublisher, stop };
 }
 
 export interface FakeSshPort extends SshPort {

@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { appRedactor } from '../activity/redaction.js';
 import { decodeMasterKey } from '../boot/master-key.js';
 import { env } from '../env.js';
+import { noopServerEventPublisher } from '../events/server-event-publisher.js';
 import { resolveServerServicesDeps, type ServiceActor, type ServerServicesDeps } from './server-service-deps.js';
 
 // A fake `db` override so no test ever opens a real Postgres pool.
@@ -100,5 +101,19 @@ describe('resolveServerServicesDeps', () => {
     const deps = await resolveServerServicesDeps({ db: fakeDb, now });
 
     expect(deps.now()).toBe(fixed);
+  });
+
+  it('events defaults to noopServerEventPublisher', async () => {
+    const deps = await resolveServerServicesDeps({ db: fakeDb });
+
+    expect(deps.events).toBe(noopServerEventPublisher);
+  });
+
+  it('an overridden events publisher wins and never constructs the noop default', async () => {
+    const fake = { publish: () => Promise.resolve() };
+    const deps = await resolveServerServicesDeps({ db: fakeDb, events: fake });
+
+    expect(deps.events).toBe(fake);
+    expect(deps.events).not.toBe(noopServerEventPublisher);
   });
 });
