@@ -21,6 +21,7 @@ import type { ActivityWriteHandle } from '../activity/write-activity-event.js';
 import { writeActivityEvent } from '../activity/write-activity-event.js';
 import { credentials } from '../db/schema/credentials.js';
 import { servers } from '../db/schema/servers.js';
+import { publishServerEvent } from '../events/server-event-publisher.js';
 import {
   currentKeyVersion,
   encodeCredential,
@@ -94,7 +95,7 @@ export async function editServer(
   input: EditServerInput,
 ): Promise<EditServerResult> {
   try {
-    return await deps.db.transaction(async (tx) => {
+    const result: EditServerResult = await deps.db.transaction(async (tx) => {
       // D-11/T-3-06: the row lock is what stops a concurrent connectAndDiscover from writing
       // status/fingerprint onto a row being edited.
       const [row] = await tx
@@ -279,6 +280,12 @@ export async function editServer(
         credentialUpdate?.type ?? (await fetchCredentialType(tx, updatedRow.credentialId));
       return { ok: true, server: toServerView(updatedRow, credentialType) };
     });
+
+    // D-04: publish only after the transaction has committed.
+    if (result.ok) {
+      await publishServerEvent(deps.events, { type: 'server.updated', server: result.server });
+    }
+    return result;
   } catch (error) {
     const constraint = uniqueViolationConstraint(error);
     if (constraint === NAME_UNIQUE_CONSTRAINT) {

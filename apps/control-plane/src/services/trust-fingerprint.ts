@@ -7,6 +7,7 @@ import { transition, type ServerStatus } from '@noodara/domain/server';
 import { writeActivityEvent } from '../activity/write-activity-event.js';
 import { credentials } from '../db/schema/credentials.js';
 import { servers } from '../db/schema/servers.js';
+import { publishServerEvent } from '../events/server-event-publisher.js';
 import type { ServerServicesDeps, ServiceActor } from './server-service-deps.js';
 import { toServerView, type ServerView } from './server-view.js';
 
@@ -36,7 +37,7 @@ export async function trustFingerprint(
   deps: ServerServicesDeps,
   input: TrustFingerprintInput,
 ): Promise<TrustFingerprintResult> {
-  return deps.db.transaction(async (tx) => {
+  const result: TrustFingerprintResult = await deps.db.transaction(async (tx) => {
     const [row] = await tx
       .select()
       .from(servers)
@@ -111,4 +112,10 @@ export async function trustFingerprint(
 
     return { ok: true, server: toServerView(updatedRow, credentialRow.type) };
   });
+
+  // D-04: publish only after the transaction has committed.
+  if (result.ok) {
+    await publishServerEvent(deps.events, { type: 'server.updated', server: result.server });
+  }
+  return result;
 }

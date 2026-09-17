@@ -9,6 +9,7 @@ import { eq } from 'drizzle-orm';
 import { writeActivityEvent } from '../activity/write-activity-event.js';
 import { credentials } from '../db/schema/credentials.js';
 import { servers } from '../db/schema/servers.js';
+import { publishServerEvent } from '../events/server-event-publisher.js';
 import type { ServerServicesDeps, ServiceActor } from './server-service-deps.js';
 
 export interface DeleteServerInput {
@@ -33,7 +34,7 @@ export async function deleteServer(
   deps: ServerServicesDeps,
   input: DeleteServerInput,
 ): Promise<DeleteServerResult> {
-  return deps.db.transaction(async (tx) => {
+  const result: DeleteServerResult = await deps.db.transaction(async (tx) => {
     // D-11/T-3-06: the row lock stops a concurrently in-flight connectAndDiscover from writing
     // status/fingerprint onto a row about to disappear.
     const [row] = await tx
@@ -85,4 +86,11 @@ export async function deleteServer(
 
     return { ok: true, serverId: row.id };
   });
+
+  // D-04: publish only after the transaction has committed — no ServerView exists for a row that
+  // no longer exists (D-19), so this carries only the id.
+  if (result.ok) {
+    await publishServerEvent(deps.events, { type: 'server.deleted', id: result.serverId });
+  }
+  return result;
 }

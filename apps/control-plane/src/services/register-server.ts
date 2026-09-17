@@ -14,6 +14,7 @@ import {
 import { writeActivityEvent } from '../activity/write-activity-event.js';
 import { credentials } from '../db/schema/credentials.js';
 import { servers } from '../db/schema/servers.js';
+import { publishServerEvent } from '../events/server-event-publisher.js';
 import { currentKeyVersion, encodeCredential, type CredentialInput } from './credential-store.js';
 import type { ServerServicesDeps, ServiceActor } from './server-service-deps.js';
 import { toServerView, type ServerView } from './server-view.js';
@@ -110,7 +111,7 @@ export async function registerServer(
   }
 
   try {
-    return await deps.db.transaction(async (tx) => {
+    const result: RegisterServerResult = await deps.db.transaction(async (tx) => {
       const [existingByName] = await tx
         .select({ id: servers.id })
         .from(servers)
@@ -176,6 +177,13 @@ export async function registerServer(
 
       return { ok: true, server: toServerView(serverRow, encoded.type) };
     });
+
+    // D-04: publish only after the transaction has committed — a rolled-back registration never
+    // reaches this line (the catch block below returns before it does).
+    if (result.ok) {
+      await publishServerEvent(deps.events, { type: 'server.updated', server: result.server });
+    }
+    return result;
   } catch (error) {
     const constraint = uniqueViolationConstraint(error);
     if (constraint === NAME_UNIQUE_CONSTRAINT) {
