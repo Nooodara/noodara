@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-03-PLAN.md
-last_updated: "2026-09-17T15:28:59.123Z"
+stopped_at: Completed 04-04-PLAN.md
+last_updated: "2026-09-17T18:11:08.317Z"
 last_activity: 2026-09-17
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 48
-  completed_plans: 40
+  completed_plans: 41
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 04 (http-routes-worker-bullmq-y-sse) — EXECUTING
-Plan: 4 of 11
+Plan: 5 of 11
 Status: Ready to execute
 Last activity: 2026-09-17
 
-Progress: [████████░░] 83%
+Progress: [█████████░] 85%
 
 ## Performance Metrics
 
@@ -94,6 +94,7 @@ Progress: [████████░░] 83%
 | Phase 04 P01 | 110min | 3 tasks | 14 files |
 | Phase 04 P02 | 30min | 3 tasks | 8 files |
 | Phase 04 P03 | 50min | 3 tasks | 10 files |
+| Phase 04 P04 | 125min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -207,6 +208,9 @@ Recent decisions affecting current work:
 - [Phase 04]: connectAndDiscover has 2 publish call sites (not 3): TX2's two success branches share one post-transaction publish call since publishing inside each branch separately would violate the never-inside-a-transaction rule
 - [Phase 04]: const result: XxxResult type annotations added to register/edit/delete/trust-fingerprint's transaction assignments to stop TypeScript widening the ok discriminant to boolean once the transaction call left a bare return statement
 - [Phase 04]: The no-event-before-commit truth is proven with a genuine Postgres unique-violation race between two concurrent registerServer calls rather than a synthetic forced-throw
+- [Phase 04]: zod promoted to a root devDependency (same 4.6.1 pin) so root-level integration tests can build Zod-schema probe routes directly
+- [Phase 04]: startTestApp() gained a buildLogger callback (not a pre-built instance) invoked after setTestEnv, since logger.ts imports env.ts which fail-fasts at import time against whatever is currently in process.env
+- [Phase 04]: api-scope.ts registers the Origin guard before requireSession's onRequest hook, so a cross-origin mutating request is rejected before spending a session lookup on it
 
 ### Pending Todos
 
@@ -235,6 +239,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-17T15:28:59.099Z
-Stopped at: Completed 04-03-PLAN.md
+Last session: 2026-09-17T18:11:08.306Z
+Stopped at: Completed 04-04-PLAN.md
 Resume file: None
