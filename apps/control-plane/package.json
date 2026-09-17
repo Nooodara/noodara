@@ -8,7 +8,9 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:worker": "tsx watch src/worker.ts",
     "start": "node dist/server.js",
+    "start:worker": "node dist/worker.js",
     "build": "tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs",
     "lint": "eslint --config ../../packages/config/eslint.config.js .",
     "typecheck": "tsc --noEmit",

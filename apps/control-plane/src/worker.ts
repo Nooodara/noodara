@@ -1,0 +1,91 @@
+// Must be the very first import: `env.ts`'s module-level `loadEnv(process.env)` call is the
+// INST-06 fail-fast gate — it must run, and exit the process on failure, before anything else
+// (the DB pool, Redis connections, the BullMQ worker) is even constructed. Mirrors server.ts's
+// entrypoint shape exactly (D-23): env-first, fail-fast dependencies, then start.
+import './env.js';
+
+import { hostname } from 'node:os';
+import { getDb } from './db/client.js';
+import { env } from './env.js';
+import { noopServerEventPublisher } from './events/server-event-publisher.js';
+import { createLogger } from './logger.js';
+import { computeJobLockDurationMs } from './queue/job-budget.js';
+import { createConnectServerQueue } from './queue/connect-server-queue.js';
+import { createWorker, sweepAbandonedConnections } from './queue/connect-server-worker.js';
+import { startWorkerHeartbeat } from './queue/worker-heartbeat.js';
+import { createQueueRedisConnection, createWorkerRedisConnection } from './redis/connections.js';
+import { resolveServerServicesDeps } from './services/server-service-deps.js';
+import { createServerServices } from './services/server-services.js';
+
+const logger = createLogger();
+const workerId = `${hostname()}-${String(process.pid)}`;
+
+async function main(): Promise<void> {
+  // D-25: the worker demands both Postgres and Redis at startup (fail-fast) — a Postgres pool
+  // that never establishes, or a Redis that never answers a bounded `ping`, must abort the boot
+  // loudly rather than start a worker that silently never processes a job.
+  const db = await getDb();
+
+  const queueConnection = createQueueRedisConnection(env.REDIS_URL);
+  const workerConnection = createWorkerRedisConnection(env.REDIS_URL);
+  // The queue connection's own `commandTimeout`/`maxRetriesPerRequest: 1` (D-27) bound this ping
+  // to a few seconds — the worker connection deliberately has neither (BullMQ's own requirement),
+  // so it is never the one probed for reachability at boot.
+  await queueConnection.ping();
+
+  // TODO(04-09): swap this noop for the Redis-backed ServerEventPublisher once Plan 04-09 lands —
+  // every Phase 3 service already calls `deps.events` unconditionally, so no service changes.
+  const deps = await resolveServerServicesDeps({ db, events: noopServerEventPublisher });
+  const services = createServerServices(deps);
+  const queue = createConnectServerQueue({ connection: queueConnection });
+
+  const lockDurationMs = computeJobLockDurationMs({
+    connectMs: env.NOODARA_SSH_CONNECT_TIMEOUT_MS,
+    commandMs: env.NOODARA_SSH_COMMAND_TIMEOUT_MS,
+    discoveryMs: env.NOODARA_SSH_DISCOVERY_TIMEOUT_MS,
+  });
+
+  const sweptCount = await sweepAbandonedConnections(services, queue, logger);
+  logger.info({ sweptCount }, 'worker startup sweep for abandoned CONNECTING servers complete');
+
+  const stopHeartbeat = startWorkerHeartbeat(workerConnection, workerId);
+
+  const handle = createWorker(deps, {
+    connection: workerConnection,
+    queue,
+    logger,
+    concurrency: env.NOODARA_WORKER_CONCURRENCY,
+    lockDurationMs,
+    stalledIntervalMs: lockDurationMs,
+  });
+
+  // The literal "Worker ready" is the boot smoke test's deterministic stdout marker, mirroring
+  // how server.ts's "Server listening" line is used today.
+  logger.info({ concurrency: env.NOODARA_WORKER_CONCURRENCY, workerId }, 'Worker ready');
+
+  let shuttingDown = false;
+  async function shutdown(): Promise<void> {
+    if (shuttingDown) return;
+    shuttingDown = true;
+
+    // D-25: stop intake and wait for active jobs up to the D-14 budget; exceeding it still exits
+    // — the next startup's CONNECTING sweep cleans up whatever was mid-flight.
+    await Promise.race([
+      handle.close(),
+      new Promise<void>((resolve) => {
+        setTimeout(resolve, lockDurationMs);
+      }),
+    ]);
+
+    stopHeartbeat();
+    await queue.close();
+    workerConnection.disconnect();
+    queueConnection.disconnect();
+    process.exit(0);
+  }
+
+  process.on('SIGTERM', () => void shutdown());
+  process.on('SIGINT', () => void shutdown());
+}
+
+void main();

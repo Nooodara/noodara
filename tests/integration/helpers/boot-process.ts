@@ -20,8 +20,13 @@ const CONTROL_PLANE_DIST = path.join(repoRoot, 'apps/control-plane/dist');
  * A fresh, valid boot environment for the control plane. Every secret-shaped value is generated
  * per call from `randomBytes`/`randomUUID` (T-1-54) — never a committed literal — and this
  * object must never be interpolated into an assertion message or a log line.
+ *
+ * `redisUrl` is a required second parameter (Plan 04-07): once the root `pnpm dev` also spawns
+ * the worker (`turbo run dev dev:worker`), the worker's own INST-06 fail-fast demands a real,
+ * reachable Redis at boot — the previous hardcoded loopback-port placeholder only ever worked
+ * because nothing before this plan actually connected to it.
  */
-export function buildValidBootEnv(connectionString: string): NodeJS.ProcessEnv {
+export function buildValidBootEnv(connectionString: string, redisUrl: string): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {};
   if (process.env.PATH !== undefined) env.PATH = process.env.PATH;
   if (process.env.HOME !== undefined) env.HOME = process.env.HOME;
@@ -29,7 +34,7 @@ export function buildValidBootEnv(connectionString: string): NodeJS.ProcessEnv {
   env.NOODARA_MASTER_KEY = randomBytes(32).toString('base64');
   env.BETTER_AUTH_SECRET = `boot-test-${randomUUID()}-${randomUUID()}`;
   env.DATABASE_URL = connectionString;
-  env.REDIS_URL = 'redis://localhost:6379';
+  env.REDIS_URL = redisUrl;
   env.NOODARA_PUBLIC_URL = 'http://localhost:3000';
   // OS-assigned free port so two boot tests can never collide.
   env.PORT = '0';

@@ -7,9 +7,10 @@
   },
   "packageManager": "pnpm@10.34.5",
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "turbo run dev dev:worker",
     "build": "turbo run build",
     "start": "pnpm --filter @noodara/control-plane start",
+    "start:worker": "pnpm --filter @noodara/control-plane start:worker",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck && tsc -p tests/integration/ssh/tsconfig.json --noEmit",
     "test": "vitest run",
