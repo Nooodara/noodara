@@ -359,7 +359,10 @@ describe('trustFingerprint (D-04)', () => {
 });
 
 describe('createServerServices factory (D-01, D-17)', () => {
-  it('returns exactly the five service keys', async () => {
+  // Plan 04-05 grows this facade to seven members (failInFlightConnection,
+  // listConnectingServerIds); the exhaustive-membership assertion itself now lives in
+  // fail-in-flight-connection.test.ts's own "ServerServices facade exposes recovery" suite.
+  it('returns the five phase-3 service keys plus the phase-4 recovery members', async () => {
     fixture = await startServiceFixture();
     const { createServerServices } = await loadServerServices();
 
@@ -370,6 +373,8 @@ describe('createServerServices factory (D-01, D-17)', () => {
         'connectAndDiscover',
         'deleteServer',
         'editServer',
+        'failInFlightConnection',
+        'listConnectingServerIds',
         'registerServer',
         'trustFingerprint',
       ].sort(),

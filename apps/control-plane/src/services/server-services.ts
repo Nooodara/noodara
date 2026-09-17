@@ -10,6 +10,12 @@ import {
 import { deleteServer, type DeleteServerInput, type DeleteServerResult } from './delete-server.js';
 import { editServer, type EditServerInput, type EditServerResult } from './edit-server.js';
 import {
+  failInFlightConnection,
+  listConnectingServerIds,
+  type FailInFlightConnectionInput,
+  type FailInFlightConnectionResult,
+} from './fail-in-flight-connection.js';
+import {
   registerServer,
   type RegisterServerInput,
   type RegisterServerResult,
@@ -28,6 +34,8 @@ export type {
   DeleteServerResult,
   EditServerInput,
   EditServerResult,
+  FailInFlightConnectionInput,
+  FailInFlightConnectionResult,
   RegisterServerInput,
   RegisterServerResult,
   TrustFingerprintInput,
@@ -40,12 +48,14 @@ export interface ServerServices {
   deleteServer(input: DeleteServerInput): Promise<DeleteServerResult>;
   connectAndDiscover(input: ConnectAndDiscoverInput): Promise<ConnectAndDiscoverResult>;
   trustFingerprint(input: TrustFingerprintInput): Promise<TrustFingerprintResult>;
+  failInFlightConnection(input: FailInFlightConnectionInput): Promise<FailInFlightConnectionResult>;
+  listConnectingServerIds(): Promise<string[]>;
 }
 
 /**
- * D-01: binds `deps` once and returns the five server services as plain input-only functions —
- * every later caller (phase 4's routes, the connect-server worker) takes a `ServerServices`
- * instance instead of threading `deps` through each call site itself.
+ * D-01: binds `deps` once and returns the server services as plain input-only functions — every
+ * later caller (phase 4's routes, the connect-server worker) takes a `ServerServices` instance
+ * instead of threading `deps` through each call site itself.
  */
 export function createServerServices(deps: ServerServicesDeps): ServerServices {
   return {
@@ -54,5 +64,7 @@ export function createServerServices(deps: ServerServicesDeps): ServerServices {
     deleteServer: (input) => deleteServer(deps, input),
     connectAndDiscover: (input) => connectAndDiscover(deps, input),
     trustFingerprint: (input) => trustFingerprint(deps, input),
+    failInFlightConnection: (input) => failInFlightConnection(deps, input),
+    listConnectingServerIds: () => listConnectingServerIds(deps),
   };
 }
