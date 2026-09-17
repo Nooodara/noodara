@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-09-17T12:19:06.383Z"
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-09-17T13:09:49.439Z"
 last_activity: 2026-09-17
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 48
-  completed_plans: 38
+  completed_plans: 39
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 04 (http-routes-worker-bullmq-y-sse) — EXECUTING
-Plan: 2 of 11
+Plan: 3 of 11
 Status: Ready to execute
 Last activity: 2026-09-17
 
-Progress: [████████░░] 79%
+Progress: [████████░░] 81%
 
 ## Performance Metrics
 
@@ -92,6 +92,7 @@ Progress: [████████░░] 79%
 | Phase 03 P09 | 100min | 3 tasks | 4 files |
 | Phase 03 P10 | 65min | 2 tasks | 3 files |
 | Phase 04 P01 | 110min | 3 tasks | 14 files |
+| Phase 04 P02 | 30min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -198,6 +199,10 @@ Recent decisions affecting current work:
 - [Phase 04]: ioredis pinned to 5.11.1, never 6.0.0 (RESP3-by-default not yet validated against BullMQ's Lua reply parsing) — RESEARCH Pitfall 2 / Open Question 1
 - [Phase 04]: concurrently deliberately not installed; a second Turborepo dev:worker task wires pnpm dev in Plan 04-07 instead — Keeps the zero-new-tooling-dependency posture this project has held since Phase 1
 - [Phase 04]: ioredis promoted to a root devDependency at the same 5.11.1 pin so root-level integration tests can import it directly — pnpm's isolated node_modules never hoists a workspace package's own dependency to the root; same fix Phase 1 applied to drizzle-orm and @noodara/domain
+- [Phase 04]: toValidationErrorBody normalizes both AJV-style instancePath and a raw Zod path array, preferring instancePath — matches the real shape @fastify/type-provider-zod's createValidationError produces
+- [Phase 04]: requireSession's onRequest hook catches a getSession rejection and replies opaque 500 INTERNAL_ERROR itself — Fastify's default error handler otherwise echoes the raw exception message onto the wire before app.ts's global error handler exists
+- [Phase 04]: require-session.test.ts invokes createRequireSession(deps) directly against a scope's instance instead of via instance.register(...) — a plain non-fastify-plugin-wrapped plugin creates its own child encapsulation context when registered normally, so a sibling route would never see its hook; this is the composition routes/api-scope.ts (Plan 04-04) must use
+- [Phase 04]: createOriginGuard implements Fastify's synchronous done-callback onRequestHookHandler signature, short-circuiting via reply.send() plus return without calling done() — matches the literal type named in the plan and Fastify's own documented short-circuit pattern for that hook shape
 
 ### Pending Todos
 
@@ -226,6 +231,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-17T05:10:40.863Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-09-17T13:09:49.433Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None

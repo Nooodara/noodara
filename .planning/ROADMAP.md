@@ -210,7 +210,7 @@ Plans:
 **Wave 1** *(parallel — foundation, no cross-dependencies)*
 
 - [x] 04-01-PLAN.md — Dependencias verificadas (bullmq/ioredis/@testcontainers/redis), env knobs, fixture de Redis y el presupuesto puro del job
-- [ ] 04-02-PLAN.md — Vocabulario de la API: mapa único código→status (D-16), plugin `requireSession` (D-17) y guard de `Origin` (D-29)
+- [x] 04-02-PLAN.md — Vocabulario de la API: mapa único código→status (D-16), plugin `requireSession` (D-17) y guard de `Origin` (D-29)
 - [ ] 04-03-PLAN.md — Puerto `events` en `ServerServicesDeps` y publicación post-commit en los cinco servicios de fase 3 (D-04)
 
 **Wave 2** *(parallel, blocked on Wave 1)*
@@ -283,6 +283,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Dominio, persistencia y autenticación | 17/17 | Complete    | 2026-09-12 |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
-| 4. HTTP routes, worker BullMQ y SSE | 1/11 | In Progress|  |
+| 4. HTTP routes, worker BullMQ y SSE | 2/11 | In Progress|  |
 | 5. UI web | 0/TBD | Not started | - |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |
