@@ -1,10 +1,7 @@
 import type { ZodTypeProvider } from '@fastify/type-provider-zod';
 import type { FastifyPluginCallback } from 'fastify';
 import { z } from 'zod';
-
-// Fixed at build time; this route exists primarily as the compile-time proof that the pinned
-// type provider (docs/adr/0001-fastify-zod-type-provider.md) infers Zod 4 schemas end to end.
-const CONTROL_PLANE_VERSION = '0.0.0';
+import { CONTROL_PLANE_VERSION } from '../config-version.js';
 
 const healthRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
   fastify.withTypeProvider<ZodTypeProvider>().route({
