@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-09-17T13:09:49.439Z"
+stopped_at: Completed 04-03-PLAN.md
+last_updated: "2026-09-17T15:28:59.123Z"
 last_activity: 2026-09-17
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 48
-  completed_plans: 39
+  completed_plans: 40
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 04 (http-routes-worker-bullmq-y-sse) — EXECUTING
-Plan: 3 of 11
+Plan: 4 of 11
 Status: Ready to execute
 Last activity: 2026-09-17
 
-Progress: [████████░░] 81%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
@@ -93,6 +93,7 @@ Progress: [████████░░] 81%
 | Phase 03 P10 | 65min | 2 tasks | 3 files |
 | Phase 04 P01 | 110min | 3 tasks | 14 files |
 | Phase 04 P02 | 30min | 3 tasks | 8 files |
+| Phase 04 P03 | 50min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -203,6 +204,9 @@ Recent decisions affecting current work:
 - [Phase 04]: requireSession's onRequest hook catches a getSession rejection and replies opaque 500 INTERNAL_ERROR itself — Fastify's default error handler otherwise echoes the raw exception message onto the wire before app.ts's global error handler exists
 - [Phase 04]: require-session.test.ts invokes createRequireSession(deps) directly against a scope's instance instead of via instance.register(...) — a plain non-fastify-plugin-wrapped plugin creates its own child encapsulation context when registered normally, so a sibling route would never see its hook; this is the composition routes/api-scope.ts (Plan 04-04) must use
 - [Phase 04]: createOriginGuard implements Fastify's synchronous done-callback onRequestHookHandler signature, short-circuiting via reply.send() plus return without calling done() — matches the literal type named in the plan and Fastify's own documented short-circuit pattern for that hook shape
+- [Phase 04]: connectAndDiscover has 2 publish call sites (not 3): TX2's two success branches share one post-transaction publish call since publishing inside each branch separately would violate the never-inside-a-transaction rule
+- [Phase 04]: const result: XxxResult type annotations added to register/edit/delete/trust-fingerprint's transaction assignments to stop TypeScript widening the ok discriminant to boolean once the transaction call left a bare return statement
+- [Phase 04]: The no-event-before-commit truth is proven with a genuine Postgres unique-violation race between two concurrent registerServer calls rather than a synthetic forced-throw
 
 ### Pending Todos
 
@@ -231,6 +235,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-17T13:09:49.433Z
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-09-17T15:28:59.099Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None
