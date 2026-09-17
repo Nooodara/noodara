@@ -203,7 +203,45 @@ Plans:
   3. El discovery puede volver a dispararse bajo demanda (`POST /servers/:id/discover`) en cualquier momento después de CONNECTED, reutilizando el mismo `DiscoverServerService` que el flujo automático post-connect.
   4. Las rutas de auth, servers, activity y config validan su input con Zod y devuelven códigos HTTP correctos; un host inválido o un timeout de conexión responden con un error controlado y el proceso de la API sigue vivo.
 
-**Plans**: TBD
+**Plans**: 11 plans in 6 waves
+
+Plans:
+
+**Wave 1** *(parallel — foundation, no cross-dependencies)*
+
+- [ ] 04-01-PLAN.md — Dependencias verificadas (bullmq/ioredis/@testcontainers/redis), env knobs, fixture de Redis y el presupuesto puro del job
+- [ ] 04-02-PLAN.md — Vocabulario de la API: mapa único código→status (D-16), plugin `requireSession` (D-17) y guard de `Origin` (D-29)
+- [ ] 04-03-PLAN.md — Puerto `events` en `ServerServicesDeps` y publicación post-commit en los cinco servicios de fase 3 (D-04)
+
+**Wave 2** *(parallel, blocked on Wave 1)*
+
+- [ ] 04-04-PLAN.md — Composición de `app.ts`: error handler global (D-22), scope `/api` con guard y migración D-18 de setup/sessions/health
+- [ ] 04-05-PLAN.md — `failInFlightConnection` y `listConnectingServerIds`: un servidor nunca queda en CONNECTING (D-12)
+- [ ] 04-06-PLAN.md — Contrato del job, conexiones ioredis por rol y productor de cola acotado con dedupe (D-09, D-27, D-28)
+
+**Wave 3** *(parallel, blocked on Wave 2)*
+
+- [ ] 04-07-PLAN.md — Worker BullMQ: handler, política de desenlace (D-15), recuperación de stalled/arranque, heartbeat y `worker.ts` + scripts (D-23)
+- [ ] 04-08-PLAN.md — Rutas `/api/servers`: CRUD, trust-fingerprint y el 202 de connect/discover (SERV-06, DISC-05)
+
+**Wave 4** *(blocked on Wave 3)*
+
+- [ ] 04-09-PLAN.md — Puente Redis pub/sub, broadcaster y `GET /api/events` con heartbeat, re-validación de sesión, límite y `preClose`
+
+**Wave 5** *(blocked on Wave 4)*
+
+- [ ] 04-10-PLAN.md — `GET /api/activity` con cursor keyset (D-20), `GET /api/config` (D-21) y `/health` con checks postgres/redis/worker (D-26)
+
+**Wave 6** *(blocked on Wave 5 — puerta de fase)*
+
+- [ ] 04-11-PLAN.md — E2E de la API contra sshd real vía SSE, canary de fugas ampliado a HTTP/SSE, boot-smoke de api+worker y contrato de validación cerrado
+
+**Cross-cutting constraints:**
+
+- Solo `src/services/` y `src/activity/` escriben `activity_events` (boundary test de fase 3 sin cambios)
+- `packages/domain` y `packages/ssh` no cambian de contrato; `auth/auth.ts` y `routes/auth.ts` no se tocan
+- Cada tarea sigue RED → GREEN → REFACTOR con un `<automated>` verify propio
+- `pnpm test`, `pnpm test:integration`, `pnpm test:boot`, `pnpm security:scan-leaks`, `pnpm typecheck`, `pnpm lint` y `pnpm boundaries` en verde antes de verificar la fase
 
 ### Phase 5: UI web
 
@@ -245,6 +283,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Dominio, persistencia y autenticación | 17/17 | Complete    | 2026-09-12 |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
-| 4. HTTP routes, worker BullMQ y SSE | 0/TBD | Not started | - |
+| 4. HTTP routes, worker BullMQ y SSE | 0/11 | Planned     | - |
 | 5. UI web | 0/TBD | Not started | - |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |
