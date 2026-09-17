@@ -24,6 +24,11 @@ import { writeActivityEvent } from '../activity/write-activity-event.js';
 import { getDb } from '../db/client.js';
 import { sessions } from '../db/schema/auth.js';
 
+// D-17 (Plan 04-02): `toFetchHeaders` moved to `auth/fetch-headers.ts` (zero-dependency, so
+// `require-session.test.ts` can import it with no database connection). Re-exported here so
+// `routes/sessions.ts`'s existing import path keeps working unchanged.
+export { toFetchHeaders } from '../auth/fetch-headers.js';
+
 const SESSION_REVOKED: AuthAction = 'auth.session_revoked';
 
 export class UnauthorizedError extends Error {
@@ -48,21 +53,6 @@ export interface SessionListItem {
   lastSeenAt: string | null;
   expiresAt: string;
   isCurrent: boolean;
-}
-
-/** Fastify's `request.headers` (an `IncomingHttpHeaders`-shaped object) into a fetch-standard
- *  `Headers` instance — the only shape `auth.api.*` accepts (`better-call`'s `requireHeaders`). */
-export function toFetchHeaders(headers: Record<string, string | string[] | undefined>): Headers {
-  const result = new Headers();
-  for (const [key, value] of Object.entries(headers)) {
-    if (value === undefined) continue;
-    if (Array.isArray(value)) {
-      for (const entry of value) result.append(key, entry);
-    } else {
-      result.set(key, value);
-    }
-  }
-  return result;
 }
 
 interface CurrentSession {
