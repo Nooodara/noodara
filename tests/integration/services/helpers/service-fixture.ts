@@ -39,7 +39,9 @@ function setTestEnv(connectionString: string): void {
  * `setSshPort` first, or this default makes the omission fail immediately instead of silently
  * resolving.
  */
-function buildUnconfiguredSshPort(): SshPort {
+// Exported (beyond this file's own use) so tests/integration/helpers/worker-fixture.ts (Plan
+// 04-07) can reuse the identical fail-loudly-by-default double instead of duplicating it.
+export function buildUnconfiguredSshPort(): SshPort {
   return {
     connect(): Promise<ConnectOutcome> {
       return Promise.reject(
