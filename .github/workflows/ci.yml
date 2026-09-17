@@ -104,7 +104,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # ubuntu-latest ships a working Docker daemon, so Testcontainers spins up real
-      # PostgreSQL (and, from later phases, Redis) rather than a mocked substitute.
+      # PostgreSQL and, from Phase 4 (04-01), a real `redis:7-alpine` container too, via
+      # `tests/integration/helpers/redis.ts` — not a GitHub Actions `services:` block. The
+      # fixture owns the container's lifecycle (start/stop, labelling) exactly like Postgres
+      # and the sshd fixtures already do, so no static service container is declared here; the
+      # `noodara.test=true` stray-container check below already covers any Redis container a
+      # test forgets to stop.
       #
       # Phase 2 (02-10): this suite now also builds up to four project-owned sshd image variants
       # from `tests/integration/images/` (plain, `WITH_DOCKER_CLI=true`, `WITH_SLOW_DF=true`, per
@@ -220,6 +225,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      # From Phase 4 (04-01), `pnpm test:boot` also starts an ephemeral `redis:7-alpine`
+      # Testcontainer (same `noodara.test=true`-labelled fixture as the `integration` job) so the
+      # worker entrypoint's real Postgres+Redis fail-fast boot path is exercised here too — again
+      # via the fixture's own lifecycle, never a `services:` block.
       - run: pnpm test:boot
       - name: Fail if any noodara.test container survived
         if: always()
