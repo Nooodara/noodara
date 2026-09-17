@@ -216,7 +216,7 @@ Plans:
 **Wave 2** *(parallel, blocked on Wave 1)*
 
 - [x] 04-04-PLAN.md — Composición de `app.ts`: error handler global (D-22), scope `/api` con guard y migración D-18 de setup/sessions/health
-- [ ] 04-05-PLAN.md — `failInFlightConnection` y `listConnectingServerIds`: un servidor nunca queda en CONNECTING (D-12)
+- [x] 04-05-PLAN.md — `failInFlightConnection` y `listConnectingServerIds`: un servidor nunca queda en CONNECTING (D-12)
 - [ ] 04-06-PLAN.md — Contrato del job, conexiones ioredis por rol y productor de cola acotado con dedupe (D-09, D-27, D-28)
 
 **Wave 3** *(parallel, blocked on Wave 2)*
@@ -283,6 +283,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Dominio, persistencia y autenticación | 17/17 | Complete    | 2026-09-12 |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
-| 4. HTTP routes, worker BullMQ y SSE | 4/11 | In Progress|  |
+| 4. HTTP routes, worker BullMQ y SSE | 5/11 | In Progress|  |
 | 5. UI web | 0/TBD | Not started | - |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |
