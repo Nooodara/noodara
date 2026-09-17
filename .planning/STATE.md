@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-05-PLAN.md
-last_updated: "2026-09-17T20:00:29.086Z"
+stopped_at: Completed 04-06-PLAN.md
+last_updated: "2026-09-17T21:23:40.743Z"
 last_activity: 2026-09-17
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 48
-  completed_plans: 42
+  completed_plans: 43
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 04 (http-routes-worker-bullmq-y-sse) — EXECUTING
-Plan: 6 of 11
+Plan: 7 of 11
 Status: Ready to execute
 Last activity: 2026-09-17
 
-Progress: [█████████░] 88%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -96,6 +96,7 @@ Progress: [█████████░] 88%
 | Phase 04 P03 | 50min | 3 tasks | 10 files |
 | Phase 04 P04 | 125min | 3 tasks | 14 files |
 | Phase 04 P05 | 35min | 2 tasks | 4 files |
+| Phase 04 P06 | 90min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -214,6 +215,9 @@ Recent decisions affecting current work:
 - [Phase 04]: api-scope.ts registers the Origin guard before requireSession's onRequest hook, so a cross-origin mutating request is rejected before spending a session lookup on it
 - [Phase 04]: trust-fingerprint.test.ts's pre-existing five-key facade assertion updated to seven members once failInFlightConnection/listConnectingServerIds landed on createServerServices
 - [Phase 04]: fail-in-flight-connection.test.ts's activity-row-count helper filters on action = server.connection_attempted, not just entityId, since registerFixtureServer's own registerServer call already writes an unrelated server.created row for the same server
+- [Phase 04]: jobIdForServer returns connect-<serverId> (hyphen), not connect:<serverId> as D-09 literally names — BullMQ 6.3.6's Job.validateOptions rejects any custom jobId containing exactly one ':'
+- [Phase 04]: bullmq promoted to a root devDependency at the same 6.3.6 pin so root-level integration tests can build a raw probe Queue directly — same pnpm workspace-symlink fix already applied to ioredis/zod/drizzle-orm/@noodara-domain
+- [Phase 04]: ioredis's Redis class imported by name (import { Redis } from 'ioredis'), not the default export — under this project's verbatimModuleSyntax + nodenext ESM config the default-import binding fails apps/control-plane's own tsc build with "not constructable"
 
 ### Pending Todos
 
@@ -242,6 +246,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-17T20:00:29.076Z
-Stopped at: Completed 04-05-PLAN.md
+Last session: 2026-09-17T21:23:40.731Z
+Stopped at: Completed 04-06-PLAN.md
 Resume file: None
