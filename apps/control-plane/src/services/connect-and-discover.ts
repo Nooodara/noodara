@@ -34,6 +34,7 @@ import { writeActivityEvent } from '../activity/write-activity-event.js';
 import { credentials } from '../db/schema/credentials.js';
 import { discoverySnapshots } from '../db/schema/discovery-snapshots.js';
 import { servers } from '../db/schema/servers.js';
+import { publishServerEvent } from '../events/server-event-publisher.js';
 import { decodeCredential } from './credential-store.js';
 import type { ServerServicesDeps, ServiceActor } from './server-service-deps.js';
 import { toServerView, type ServerView } from './server-view.js';
@@ -288,6 +289,14 @@ export async function connectAndDiscover(
   }
   const { row, credentialRow } = locked;
 
+  // D-04: announce CONNECTING the instant TX1 commits, before the credential is decoded or the
+  // (potentially multi-second) SSH phase starts — `locked.row` is already TX1's `.returning()`
+  // value, so no extra read is needed.
+  await publishServerEvent(deps.events, {
+    type: 'server.updated',
+    server: toServerView(row, credentialRow.type),
+  });
+
   // SSH work happens between the two transactions, in no transaction of its own — see this
   // file's header note.
   const credential = decodeCredential(credentialRow, deps.masterKeys);
@@ -322,7 +331,7 @@ export async function connectAndDiscover(
     }
   }
 
-  return deps.db.transaction(async (tx) => {
+  const result = await deps.db.transaction(async (tx) => {
     const currentState: ServerConnectionState = {
       status: row.status,
       lastErrorCode: row.lastErrorCode,
@@ -437,4 +446,10 @@ export async function connectAndDiscover(
       },
     };
   });
+
+  // D-04: publish the outcome only after TX2 has committed — never inside the transaction
+  // callback. Both branches above always resolve `{ ok: true }` (this function's only `ok: false`
+  // exits are TX1's `lockAndBeginConnecting`, already returned above).
+  await publishServerEvent(deps.events, { type: 'server.updated', server: result.server });
+  return result;
 }

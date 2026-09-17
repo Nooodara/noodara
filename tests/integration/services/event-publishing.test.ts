@@ -1,12 +1,18 @@
-// D-04/T-4-05/T-4-17/T-4-18: RED for the four post-commit publication sites this task adds —
-// registerServer/editServer/deleteServer/trustFingerprint each publish exactly once after their
-// transaction commits. Every case below fails today because none of these services calls
-// `deps.events.publish` yet — the fixture's `events` array stays empty for every successful call.
-// connectAndDiscover's two-publish case (Task 3) extends this same file below.
+// D-04/T-4-05/T-4-17/T-4-18/T-4-19: the four post-commit publication sites from Task 2
+// (registerServer/editServer/deleteServer/trustFingerprint publish exactly once each) plus
+// connectAndDiscover's two-publish case (Task 3): TX1's CONNECTING, then TX2's outcome.
+//
+// `connectAndDiscover`'s ordering proof (D-04's "CONNECTING is visible the instant the worker
+// picks up the job") is the one behaviour that cannot be asserted after the fact: the fake
+// `SshPort.connect` reads `fixture.events.length` *at call time*, before this suite's own
+// assertions ever run, which is the only way to prove the first publish happened strictly before
+// the SSH phase started.
 import { randomUUID } from 'node:crypto';
+import { sql } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { formatFingerprint, type HostFingerprint } from '@noodara/ssh';
 import type { DiscoveryCheck, DiscoveryFacts, DiscoverySnapshot } from '@noodara/domain/discovery';
+import { SERVER_VIEW_KEYS } from '../../../apps/control-plane/src/services/server-view.js';
 import { assertNoStrayTestContainers } from '../helpers/ssh.js';
 import {
   buildFakeSshPort,
@@ -328,5 +334,169 @@ describe('trustFingerprint publication (D-04)', () => {
 
     expect(result).toMatchObject({ ok: false, code: 'NO_PENDING_FINGERPRINT' });
     expect(fixture.events).toHaveLength(0);
+  });
+});
+
+describe('connectAndDiscover publication (D-04)', () => {
+  it('publishes exactly two server.updated events for a successful connect + discovery', async () => {
+    fixture = await startServiceFixture();
+    const server = await registerFixtureServer(fixture);
+    fixture.events.length = 0;
+
+    fixture.setSshPort(
+      buildFakeSshPort({
+        ok: true,
+        session: buildFakeSshSession({}),
+        fingerprint: FP1,
+        fingerprintCaptured: true,
+        attempts: 1,
+      }),
+    );
+
+    const { connectAndDiscover } = await loadConnectAndDiscover();
+    const result = await connectAndDiscover(fixture.deps, {
+      actor: SYSTEM,
+      serverId: server.id,
+      discover: () => Promise.resolve(buildSnapshot()),
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(fixture.events).toHaveLength(2);
+    expect(fixture.events[0]).toMatchObject({ type: 'server.updated' });
+    expect(fixture.events[1]).toMatchObject({ type: 'server.updated' });
+
+    const first = fixture.events[0] as { type: 'server.updated'; server: { status: string } };
+    expect(first.server.status).toBe('CONNECTING');
+
+    const second = fixture.events[1] as { type: 'server.updated'; server: unknown };
+    expect(second.server).toEqual(result.server);
+    expect((second.server as { status: string }).status).toBe('CONNECTED');
+  });
+
+  it('publishes the CONNECTING event before the SSH phase begins', async () => {
+    fixture = await startServiceFixture();
+    const server = await registerFixtureServer(fixture);
+    fixture.events.length = 0;
+    const fx = fixture;
+
+    let eventCountAtConnectTime = -1;
+    // A hand-written SshPort (not buildFakeSshPort) so `connect` can read `fx.events.length` at
+    // the exact moment the SSH phase would start, before resolving — this is the only way to
+    // prove the CONNECTING publish happened strictly before the SSH work, not just before this
+    // test's own assertions run.
+    fx.setSshPort({
+      connect: () => {
+        eventCountAtConnectTime = fx.events.length;
+        return Promise.resolve({
+          ok: true as const,
+          session: buildFakeSshSession({}),
+          fingerprint: FP1,
+          fingerprintCaptured: true,
+          attempts: 1,
+        });
+      },
+    });
+
+    const { connectAndDiscover } = await loadConnectAndDiscover();
+    const result = await connectAndDiscover(fixture.deps, {
+      actor: SYSTEM,
+      serverId: server.id,
+      discover: () => Promise.resolve(buildSnapshot()),
+    });
+
+    expect(result.ok).toBe(true);
+    expect(eventCountAtConnectTime).toBe(1);
+    const firstEvent = fixture.events[0] as { type: 'server.updated'; server: { status: string } };
+    expect(firstEvent.server.status).toBe('CONNECTING');
+  });
+
+  it('publishes two events with the failure status/lastErrorCode when SSH connect fails', async () => {
+    fixture = await startServiceFixture();
+    const server = await registerFixtureServer(fixture);
+    fixture.events.length = 0;
+
+    fixture.setSshPort(
+      buildFakeSshPort({
+        ok: false,
+        errorCode: 'AUTH_FAILED',
+        message: 'bad credential',
+        attempts: 1,
+      }),
+    );
+
+    const { connectAndDiscover } = await loadConnectAndDiscover();
+    const result = await connectAndDiscover(fixture.deps, { actor: SYSTEM, serverId: server.id });
+
+    expect(result.ok).toBe(true);
+    expect(fixture.events).toHaveLength(2);
+    const second = fixture.events[1] as {
+      type: 'server.updated';
+      server: { status: string; lastErrorCode: string | null };
+    };
+    expect(second.server.status).toBe('ERROR');
+    expect(second.server.lastErrorCode).toBe('AUTH_FAILED');
+  });
+
+  it('publishes nothing for ALREADY_CONNECTING', async () => {
+    fixture = await startServiceFixture();
+    const server = await registerFixtureServer(fixture);
+    // Deterministic arrangement (mirrors trust-fingerprint.test.ts's own SERVER_BUSY case): a
+    // direct row patch to CONNECTING, since a genuine CONNECTING row is a transient in-flight
+    // state no service call can be made to pause on.
+    await fixture.db.execute(
+      sql`update servers set status = 'CONNECTING'::server_status where id = ${server.id}`,
+    );
+    fixture.events.length = 0;
+
+    const { connectAndDiscover } = await loadConnectAndDiscover();
+    const result = await connectAndDiscover(fixture.deps, { actor: SYSTEM, serverId: server.id });
+
+    expect(result).toMatchObject({ ok: false, code: 'ALREADY_CONNECTING' });
+    expect(fixture.events).toHaveLength(0);
+  });
+
+  it('publishes nothing for NOT_FOUND', async () => {
+    fixture = await startServiceFixture();
+
+    const { connectAndDiscover } = await loadConnectAndDiscover();
+    const result = await connectAndDiscover(fixture.deps, {
+      actor: SYSTEM,
+      serverId: randomUUID(),
+    });
+
+    expect(result).toMatchObject({ ok: false, code: 'NOT_FOUND' });
+    expect(fixture.events).toHaveLength(0);
+  });
+
+  it('both published events carry exactly the 27 SERVER_VIEW_KEYS', async () => {
+    fixture = await startServiceFixture();
+    const server = await registerFixtureServer(fixture);
+    fixture.events.length = 0;
+
+    fixture.setSshPort(
+      buildFakeSshPort({
+        ok: true,
+        session: buildFakeSshSession({}),
+        fingerprint: FP1,
+        fingerprintCaptured: true,
+        attempts: 1,
+      }),
+    );
+
+    const { connectAndDiscover } = await loadConnectAndDiscover();
+    const result = await connectAndDiscover(fixture.deps, {
+      actor: SYSTEM,
+      serverId: server.id,
+      discover: () => Promise.resolve(buildSnapshot()),
+    });
+
+    expect(result.ok).toBe(true);
+    expect(fixture.events).toHaveLength(2);
+    for (const event of fixture.events) {
+      expect(event.type).toBe('server.updated');
+      const server = (event as { server: object }).server;
+      expect(Object.keys(server).sort()).toEqual([...SERVER_VIEW_KEYS].sort());
+    }
   });
 });
