@@ -45,6 +45,30 @@ expected GitHub `owner/repo`. All four packages passed on 2026-09-10.
 All four packages are approved for installation in this repository under
 their currently pinned versions.
 
+### Phase 4 additions
+
+`04-RESEARCH.md` ran its own package legitimacy audit for the three new
+dependencies Phase 4 needs (BullMQ worker + Redis pub/sub SSE bridge +
+Testcontainers Redis fixture). All three came back `[OK]` under slopcheck —
+no `[SUS]`/`[ASSUMED]` human checkpoint was required for any of them.
+
+| Package | Expected repository | Observed repository | Resolved version | slopcheck verdict | Automated verdict | Date |
+|---|---|---|---|---|---|---|
+| bullmq | taskforcesh/bullmq | `git+https://github.com/taskforcesh/bullmq.git` | 6.3.6 | `[OK]` | verified | 2026-09-17 |
+| ioredis | redis/ioredis | `git+https://github.com/redis/ioredis.git` | 5.11.1 | `[OK]` | verified | 2026-09-17 |
+| @testcontainers/redis | testcontainers/testcontainers-node | `git+https://github.com/testcontainers/testcontainers-node.git` | 12.1.0 | `[OK]` | verified | 2026-09-17 |
+
+`ioredis@6.0.0` (the latest release on the registry at audit time) was
+considered and rejected for this phase on compatibility grounds, not
+legitimacy grounds: it switches its default wire protocol to RESP3 and
+BullMQ 6.3.6 declares `ioredis` only as an optional peer (`>=5.0.0`) with no
+recorded validation against RESP3-by-default behaviour. `ioredis@5.11.1`,
+the last pre-RESP3 release, is pinned instead (04-RESEARCH.md Pitfall 2 /
+Open Question 1). `concurrently` was also evaluated (as a way to run the API
+and worker entrypoints together in `pnpm dev`) and was not installed — this
+phase uses a second Turborepo `dev:worker` task instead, keeping the
+zero-new-tooling-dependency posture this project has held since Phase 1.
+
 ## Re-running this check
 
 This check must be re-run whenever one of these pins changes, or before

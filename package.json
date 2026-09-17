@@ -25,6 +25,7 @@
     "@noodara/domain": "workspace:*",
     "@noodara/ssh": "workspace:*",
     "@testcontainers/postgresql": "12.1.0",
+    "@testcontainers/redis": "12.1.0",
     "@types/node": "^22.12.0",
     "@vitest/coverage-v8": "5.0.0",
     "drizzle-orm": "0.45.2",

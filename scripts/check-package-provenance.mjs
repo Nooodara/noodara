@@ -33,6 +33,12 @@ const EXPECTED_PACKAGES = [
     name: 'fastify-type-provider-zod',
     expectedOwnerRepo: 'turkerdev/fastify-type-provider-zod',
   },
+  { name: 'bullmq', expectedOwnerRepo: 'taskforcesh/bullmq' },
+  { name: 'ioredis', expectedOwnerRepo: 'redis/ioredis' },
+  {
+    name: '@testcontainers/redis',
+    expectedOwnerRepo: 'testcontainers/testcontainers-node',
+  },
 ];
 
 /**
