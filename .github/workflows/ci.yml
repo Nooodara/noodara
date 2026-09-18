@@ -233,7 +233,12 @@ jobs:
       # From Phase 4 (04-01), `pnpm test:boot` also starts an ephemeral `redis:7-alpine`
       # Testcontainer (same `noodara.test=true`-labelled fixture as the `integration` job) so the
       # worker entrypoint's real Postgres+Redis fail-fast boot path is exercised here too — again
-      # via the fixture's own lifecycle, never a `services:` block.
+      # via the fixture's own lifecycle, never a `services:` block. From Plan 04-11, one case boots
+      # both real entrypoints (`node dist/server.js` and `node dist/worker.js`) together against
+      # that same Postgres+Redis and asserts `GET /health`'s `checks.worker` reports `pass` while
+      # the worker is alive, then `degraded`/`fail` once it is killed and its real 30s heartbeat
+      # TTL expires — the exact liveness signal Phase 6's Compose healthchecks/restart policy will
+      # key on.
       - run: pnpm test:boot
       - name: Fail if any noodara.test container survived
         if: always()

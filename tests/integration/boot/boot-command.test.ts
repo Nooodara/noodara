@@ -89,8 +89,14 @@ describe('start: real boot against a migrated database', () => {
 
       const response = await fetch(`http://127.0.0.1:${String(port)}/health`);
       expect(response.status).toBe(200);
-      const body = (await response.json()) as { status: string };
-      expect(body.status).toBe('ok');
+      const body = (await response.json()) as { status: string; checks: { postgres: string; worker: string } };
+      // D-26 (Plan 04-10): this case boots only the API, with no worker process ever running, so
+      // there is genuinely no `noodara:worker:*` heartbeat key for `/health` to find — `degraded`
+      // with `checks.worker: 'fail'` is the correct, honest answer here (still 200, never 503;
+      // the two-process case in the describe block below is what proves `checks.worker: 'pass'`).
+      expect(body.status).toBe('degraded');
+      expect(body.checks.postgres).toBe('pass');
+      expect(body.checks.worker).toBe('fail');
 
       // A clean SIGTERM shutdown reports `code: null` (Node only sets a numeric exit code for a
       // process that exited on its own; one terminated by a signal reports the signal instead).
@@ -126,6 +132,83 @@ describe('start:worker: real boot against a migrated database and Redis', () => 
       activeProcess.kill();
       await activeProcess.waitForExit(15_000);
     } finally {
+      await postgres.stop();
+      await redis.stop();
+    }
+  });
+});
+
+// D-26/T-4-43/T-4-44 (Plan 04-11 Task 3): both real entrypoints, booted together against one
+// Postgres and one Redis, with `/health` proving it can tell a live worker from a dead one — the
+// exact operational signal Phase 6's Compose healthchecks/restart policy will key on. This test
+// manages its own two child processes directly (not the shared `activeProcess` this file's other
+// describes use, which only ever tracks one process at a time) and cleans both up in its own
+// `finally`.
+describe('two-process boot: api + worker together, /health tells a live worker from a dead one', () => {
+  it('reports checks.worker pass while the worker is alive, then degraded/fail once it is killed and its heartbeat TTL expires', async () => {
+    const postgres = await startPostgres({ migrate: true });
+    const redis = await startRedis();
+    let apiProcess: BootProcess | undefined;
+    let workerProcess: BootProcess | undefined;
+
+    try {
+      const env = buildValidBootEnv(postgres.connectionString, redis.connectionUrl);
+
+      apiProcess = spawnBootProcess({ command: execPath, args: [SERVER_DIST_ENTRY], cwd: CONTROL_PLANE_DIR, env });
+      workerProcess = spawnBootProcess({ command: execPath, args: [WORKER_DIST_ENTRY], cwd: CONTROL_PLANE_DIR, env });
+
+      const listeningMatch = await apiProcess.waitForStdoutMatch(LISTENING_PATTERN, 60_000);
+      const port = parseListeningPort(listeningMatch);
+      await workerProcess.waitForStdoutMatch(WORKER_READY_PATTERN, 60_000);
+
+      // The worker writes its first heartbeat immediately on boot (worker-heartbeat.ts), but the
+      // write is fire-and-forget against Redis — a short, bounded wait for it to land avoids a
+      // hairline race against `/health`'s own SCAN, without depending on any fixed sleep to prove
+      // the *degraded* transition below (that one is bounded by the real 30s TTL instead).
+      await new Promise((resolve) => {
+        setTimeout(resolve, 500);
+      });
+
+      const healthyResponse = await fetch(`http://127.0.0.1:${String(port)}/health`);
+      expect(healthyResponse.status).toBe(200);
+      const healthyBody = (await healthyResponse.json()) as {
+        status: string;
+        checks: { postgres: string; redis: string; worker: string };
+      };
+      expect(healthyBody.status).toBe('ok');
+      expect(healthyBody.checks.worker).toBe('pass');
+
+      // Kill the worker and wait past its real, undoctored 30s heartbeat TTL (worker-heartbeat.ts
+      // `startWorkerHeartbeat`'s own default) — no production env knob is added purely for this
+      // test (Plan 04-11 Task 3's own instruction), so this genuinely proves what a container
+      // orchestrator would see after the worker process dies.
+      workerProcess.kill();
+      await workerProcess.waitForExit(15_000);
+      workerProcess = undefined;
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, 31_000);
+      });
+
+      const degradedResponse = await fetch(`http://127.0.0.1:${String(port)}/health`);
+      expect(degradedResponse.status).toBe(200);
+      const degradedBody = (await degradedResponse.json()) as {
+        status: string;
+        checks: { postgres: string; redis: string; worker: string };
+      };
+      // T-4-41: still only `pass`/`fail` literals and the version — no error text, no connection
+      // detail — and the API itself answers 200 the whole time; a dead worker never restarts it.
+      expect(degradedBody.status).toBe('degraded');
+      expect(degradedBody.checks.postgres).toBe('pass');
+      expect(degradedBody.checks.worker).toBe('fail');
+
+      apiProcess.kill();
+      await apiProcess.waitForExit(15_000);
+    } finally {
+      workerProcess?.kill();
+      await workerProcess?.waitForExit(10_000).catch(() => undefined);
+      apiProcess?.kill();
+      await apiProcess?.waitForExit(10_000).catch(() => undefined);
       await postgres.stop();
       await redis.stop();
     }
