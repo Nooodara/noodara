@@ -17,6 +17,7 @@ import { createOriginGuard } from '../auth/origin-guard.js';
 import { createRequireSession } from '../auth/require-session.js';
 import { env } from '../env.js';
 import type { SseBroadcaster } from '../events/sse-broadcaster.js';
+import activityRoutes from './activity.js';
 import createEventsRoutes from './events.js';
 import serversRoutes from './servers.js';
 import sessionsRoutes from './sessions.js';
@@ -48,10 +49,11 @@ const apiScope: FastifyPluginCallback<ApiScopeOptions> = (fastify, opts, done) =
       }),
     );
 
+    fastify.register(activityRoutes);
+
     // Ordered extension point for the rest of this phase — every later route plugin joins this
     // same scope, never a second guarded scope:
-    //   1. activityRoutes  (Plan 04-10)
-    //   2. configRoutes    (Plan 04-10)
+    //   1. configRoutes    (Plan 04-10)
 
     done();
   });

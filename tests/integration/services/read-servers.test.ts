@@ -137,7 +137,8 @@ describe('listServerViews (D-19)', () => {
 });
 
 describe('ServerServices facade exposes reads (D-01)', () => {
-  it('has nine members including getServer and listServers', async () => {
+  // Plan 04-10 (Task 2) grows this facade to ten members (listActivity).
+  it('has ten members including getServer, listServers and listActivity', async () => {
     fixture = await startServiceFixture();
     const { createServerServices } = await loadServerServices();
 
@@ -150,6 +151,7 @@ describe('ServerServices facade exposes reads (D-01)', () => {
         'editServer',
         'failInFlightConnection',
         'getServer',
+        'listActivity',
         'listConnectingServerIds',
         'listServers',
         'registerServer',

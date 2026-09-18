@@ -15,6 +15,12 @@ import {
   type FailInFlightConnectionInput,
   type FailInFlightConnectionResult,
 } from './fail-in-flight-connection.js';
+import {
+  listActivityEvents,
+  type ActivityItem,
+  type ListActivityEventsInput,
+  type ListActivityEventsResult,
+} from './read-activity.js';
 import { getServerView, listServerViews } from './read-servers.js';
 import {
   registerServer,
@@ -30,6 +36,7 @@ import {
 } from './trust-fingerprint.js';
 
 export type {
+  ActivityItem,
   ConnectAndDiscoverInput,
   ConnectAndDiscoverResult,
   DeleteServerInput,
@@ -38,6 +45,8 @@ export type {
   EditServerResult,
   FailInFlightConnectionInput,
   FailInFlightConnectionResult,
+  ListActivityEventsInput,
+  ListActivityEventsResult,
   RegisterServerInput,
   RegisterServerResult,
   TrustFingerprintInput,
@@ -54,6 +63,7 @@ export interface ServerServices {
   listConnectingServerIds(): Promise<string[]>;
   getServer(serverId: string): Promise<ServerView | null>;
   listServers(): Promise<ServerView[]>;
+  listActivity(input: ListActivityEventsInput): Promise<ListActivityEventsResult>;
 }
 
 /**
@@ -72,5 +82,6 @@ export function createServerServices(deps: ServerServicesDeps): ServerServices {
     listConnectingServerIds: () => listConnectingServerIds(deps),
     getServer: (serverId) => getServerView(deps, serverId),
     listServers: () => listServerViews(deps),
+    listActivity: (input) => listActivityEvents(deps, input),
   };
 }

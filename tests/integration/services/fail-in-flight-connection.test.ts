@@ -358,10 +358,10 @@ describe('ServerServices facade exposes recovery (D-01, D-17)', () => {
     expect(viaFacade).toContain(server.id);
   });
 
-  // Plan 04-08 (Task 1) grows this facade further to nine members (getServer, listServers) —
-  // the exhaustive-membership assertion itself now lives in read-servers.test.ts's own
-  // "ServerServices facade exposes reads" suite.
-  it('returns exactly nine members from createServerServices', async () => {
+  // Plan 04-08 (Task 1) grew this facade further to nine members (getServer, listServers);
+  // Plan 04-10 (Task 2) grows it to ten (listActivity) — the exhaustive-membership assertion
+  // itself now lives in read-servers.test.ts's own "ServerServices facade exposes reads" suite.
+  it('returns exactly ten members from createServerServices', async () => {
     fixture = await startServiceFixture();
     const { createServerServices } = await loadServerServices();
 
@@ -374,6 +374,7 @@ describe('ServerServices facade exposes recovery (D-01, D-17)', () => {
         'editServer',
         'failInFlightConnection',
         'getServer',
+        'listActivity',
         'listConnectingServerIds',
         'listServers',
         'registerServer',
