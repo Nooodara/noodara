@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: executing
-stopped_at: Completed 04-10-PLAN.md
-last_updated: "2026-09-18T06:26:03.752Z"
+status: verifying
+stopped_at: Completed 04-11-PLAN.md
+last_updated: "2026-09-18T16:03:43.006Z"
 last_activity: 2026-09-18
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 48
-  completed_plans: 47
-  percent: 50
+  completed_plans: 48
+  percent: 67
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 Phase: 04 (http-routes-worker-bullmq-y-sse) — EXECUTING
 Plan: 11 of 11
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-18
 
-Progress: [██████████] 98%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -101,6 +101,7 @@ Progress: [██████████] 98%
 | Phase 04 P08 | 195min | 3 tasks | 14 files |
 | Phase 04 P09 | 100min | 3 tasks | 10 files |
 | Phase 04 P10 | 140min | 3 tasks | 16 files |
+| Phase 04 P11 | 170min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -233,6 +234,8 @@ Recent decisions affecting current work:
 - [Phase 04]: activity.ts's querystring schema is .strict(): an unrecognised key like ?action= is 400, never a silently-ignored no-op filter (D-20 no-filters scope)
 - [Phase 04]: GET /health gets its own dedicated, lazily-built, per-app-instance-memoised Redis connection (getHealthRedis) since none of the existing queue/subscriber/publisher connections are structurally reusable for a PING+SCAN probe
 - [Phase 04]: Every health check (postgres/redis/worker) is independently wrapped in a Promise.race-against-a-fixed-timer (withTimeout), the same bounded-race shape app.ts's onReady/preClose hooks already use
+- [Phase 04]: BullMQ's add() silently treats a completed job's still-present jobId hash as a duplicate, never re-enqueuing — connect-server-queue.ts now removes a genuinely terminal job before re-adding under the same deterministic jobId, fixing a real DISC-05-breaking bug found by api-e2e.test.ts
+- [Phase 04]: boot-command.test.ts's single-process /health case now expects status:degraded/checks.worker:fail — D-26 is correct here since no worker ever runs in that case; the pre-04-10 stale status:ok literal was the bug
 
 ### Pending Todos
 
@@ -263,6 +266,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-18T06:26:03.744Z
-Stopped at: Completed 04-10-PLAN.md
+Last session: 2026-09-18T16:03:43.000Z
+Stopped at: Completed 04-11-PLAN.md
 Resume file: None

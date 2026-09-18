@@ -51,7 +51,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **DISC-02**: El admin ve el progreso del discovery check por check (SSH → auth → OS → recursos → Docker → sudo/docker group) con pass/fail y detalle, no un spinner genérico.
 - [x] **DISC-03**: Cada discovery se guarda como snapshot append-only y el estado actual del servidor se denormaliza para la vista de detalle.
 - [x] **DISC-04**: Un OS no soportado se reporta como UNSUPPORTED_OS con aviso claro, sin bloquear el resto de la información recolectada.
-- [ ] **DISC-05**: El admin puede volver a ejecutar el discovery bajo demanda desde el detalle del servidor.
+- [x] **DISC-05**: El admin puede volver a ejecutar el discovery bajo demanda desde el detalle del servidor.
 
 ### Server Detail
 
@@ -156,7 +156,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISC-03 | Phase 3 | Complete |
 | ACT-01 | Phase 3 | Complete |
 | SERV-06 | Phase 4 | Complete |
-| DISC-05 | Phase 4 | Pending |
+| DISC-05 | Phase 4 | Complete |
 | SERV-04 | Phase 5 | Pending |
 | DETL-01 | Phase 5 | Pending |
 | DETL-02 | Phase 5 | Pending |
