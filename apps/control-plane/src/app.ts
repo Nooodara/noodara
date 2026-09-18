@@ -16,6 +16,7 @@ import { createSseBroadcaster, type SseBroadcaster } from './events/sse-broadcas
 import { createLogger } from './logger.js';
 import { createConnectServerQueue, type ConnectServerQueue } from './queue/connect-server-queue.js';
 import {
+  createHealthRedisConnection,
   createPublisherRedisConnection,
   createQueueRedisConnection,
   createSubscriberRedisConnection,
@@ -34,6 +35,7 @@ export interface BuildAppDeps {
   queue?: ConnectServerQueue;
   broadcaster?: SseBroadcaster;
   eventPublisher?: ServerEventPublisher;
+  healthRedis?: Redis;
   sseHeartbeatMs?: number;
 }
 
@@ -147,6 +149,28 @@ function resolveEventPublisher(
   };
 }
 
+/**
+ * Same caller-owns-what-it-injects shape as `resolveBroadcaster`/`resolveEventPublisher`, for
+ * `/health`'s own Redis connection (Plan 04-10) — built lazily on first health check, memoised
+ * per `buildApp()` instance, and never rebuilt per request.
+ */
+function createHealthRedisResolver(deps: BuildAppDeps): {
+  getHealthRedis: () => Redis;
+  closeOwnedConnection: () => void;
+} {
+  if (deps.healthRedis !== undefined) {
+    const injected = deps.healthRedis;
+    return { getHealthRedis: () => injected, closeOwnedConnection: () => undefined };
+  }
+  let connection: Redis | undefined;
+  return {
+    getHealthRedis: () => (connection ??= createHealthRedisConnection(env.REDIS_URL)),
+    closeOwnedConnection: () => {
+      connection?.disconnect();
+    },
+  };
+}
+
 // D-27: an unreachable Redis must never hold up the API's own readiness — `onReady` bounds the
 // initial subscribe attempt so `app.listen`/`app.ready()`/`app.inject()` never hangs waiting on a
 // dead connection's offline command queue. ioredis's own `autoResubscribe` (default `true`)
@@ -208,6 +232,11 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   const { getQueue, closeOwnedResources } = createQueueResolver(deps);
   app.decorate('getQueue', getQueue);
 
+  // Plan 04-10: `/health`'s own Postgres/Redis/worker checks reuse one memoised connection,
+  // never opening a fresh one per request.
+  const { getHealthRedis, closeOwnedConnection: closeHealthRedisConnection } = createHealthRedisResolver(deps);
+  app.decorate('getHealthRedis', getHealthRedis);
+
   // Plan 04-09: the subscriber half of the SSE bridge — built eagerly (unlike `getQueue`/
   // `getServerServices`, which defer to first request) because `apiScope`/`createEventsRoutes`
   // need a real `SseBroadcaster` instance to register `GET /api/events` against, and the
@@ -248,6 +277,7 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
     // overrides keep ownership with whoever injected them, same as `getQueue` above).
     closeBroadcasterConnection();
     closeEventPublisherConnection();
+    closeHealthRedisConnection();
   });
 
   // D-17: `healthRoutes`/`authRoutes`/`setupRoutes` stay siblings of `apiScope`, never inside it —

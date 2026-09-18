@@ -72,6 +72,27 @@ export function createPublisherRedisConnection(url: string): Redis {
 }
 
 /**
+ * Connection for `/health`'s own Postgres/Redis/worker checks (Plan 04-10) — built once and
+ * reused via `app.ts`'s own memoised resolver, never rebuilt per request. Same short
+ * `commandTimeout` profile as the Queue producer/publisher connections: a `PING` and the bounded
+ * worker-heartbeat `SCAN` are both short commands that must fail fast against a dead or hanging
+ * Redis, never sit indefinitely in ioredis's own offline command queue.
+ */
+export function createHealthRedisConnection(url: string): Redis {
+  const connection = new Redis(url, {
+    commandTimeout: 2000,
+    maxRetriesPerRequest: 1,
+    lazyConnect: false,
+  });
+
+  connection.on('error', (err: Error) => {
+    console.warn(`[redis] health connection error: ${err.name}`);
+  });
+
+  return connection;
+}
+
+/**
  * The dedicated SSE subscriber connection (Plan 04-09) — must never be shared with the Queue or
  * the publisher connection, because ioredis puts a subscribed client into a restricted command
  * mode (subscribe/unsubscribe/ping/quit only; see ioredis's own "Pub/Sub" docs). No
