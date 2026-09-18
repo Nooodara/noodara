@@ -20,6 +20,14 @@ export interface StartTestAppOptions {
    * crashes the test with `process.exit(1)`.
    */
   buildLogger?: () => FastifyInstance['log'] | Promise<FastifyInstance['log']>;
+  /**
+   * Plan 04-08: a real Testcontainers Redis connection string (`startRedis().connectionUrl`) for
+   * tests exercising `/api/servers/:id/connect|discover`, whose default queue resolver in
+   * `app.ts` builds its own connection from `env.REDIS_URL`. Defaults to the same unreachable
+   * placeholder every earlier plan in this phase used, since most integration tests never touch
+   * the queue at all.
+   */
+  redisUrl?: string;
 }
 
 /**
@@ -31,11 +39,11 @@ export interface StartTestAppOptions {
  * — the only difference here is `DATABASE_URL` points at a live, freshly migrated container
  * instead of a fixture string that is never actually connected to.
  */
-function setTestEnv(connectionString: string): void {
+function setTestEnv(connectionString: string, redisUrl: string): void {
   process.env.NOODARA_MASTER_KEY = randomBytes(32).toString('base64');
   process.env.BETTER_AUTH_SECRET = `test-fixture-${randomUUID()}-${randomUUID()}`;
   process.env.DATABASE_URL = connectionString;
-  process.env.REDIS_URL = 'redis://localhost:6379';
+  process.env.REDIS_URL = redisUrl;
   process.env.NOODARA_PUBLIC_URL = 'http://localhost:3000';
 }
 
@@ -45,7 +53,7 @@ function setTestEnv(connectionString: string): void {
  */
 export async function startTestApp(options: StartTestAppOptions = {}): Promise<TestAppFixture> {
   const postgres = await startPostgres();
-  setTestEnv(postgres.connectionString);
+  setTestEnv(postgres.connectionString, options.redisUrl ?? 'redis://localhost:6379');
 
   const logger = options.buildLogger ? await options.buildLogger() : undefined;
 

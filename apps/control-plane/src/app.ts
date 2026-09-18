@@ -6,10 +6,13 @@ import {
   validatorCompiler,
 } from '@fastify/type-provider-zod';
 import Fastify from 'fastify';
+import type { Redis } from 'ioredis';
 import { appRedactor } from './activity/redaction.js';
 import { decodeMasterKey, logMasterKeyWarning } from './boot/master-key.js';
 import { env } from './env.js';
 import { createLogger } from './logger.js';
+import { createConnectServerQueue, type ConnectServerQueue } from './queue/connect-server-queue.js';
+import { createQueueRedisConnection } from './redis/connections.js';
 import apiScope from './routes/api-scope.js';
 import authRoutes from './routes/auth.js';
 import healthRoutes from './routes/health.js';
@@ -21,6 +24,7 @@ import { createServerServices, type ServerServices } from './services/server-ser
 export interface BuildAppDeps {
   logger?: FastifyInstance['log'];
   serverServices?: ServerServices;
+  queue?: ConnectServerQueue;
 }
 
 /**
@@ -39,6 +43,44 @@ function createServerServicesResolver(deps: BuildAppDeps): () => Promise<ServerS
     }
     return (cached ??= resolveServerServicesDeps().then(createServerServices));
   };
+}
+
+/**
+ * Builds `fastify.getQueue` the same per-instance-memoised way as `getServerServices` above, and
+ * its matching `closeOwnedResources()` for the `onClose` hook below. A queue the caller injected
+ * via `deps.queue` (every test in this phase) is never closed here — the caller owns that
+ * instance's lifetime; only a queue this resolver built itself (its own `ioredis` connection
+ * included, per `connect-server-queue.ts`'s own "the caller owns the connection" contract) is
+ * closed on shutdown.
+ */
+function createQueueResolver(deps: BuildAppDeps): {
+  getQueue: () => Promise<ConnectServerQueue>;
+  closeOwnedResources: () => Promise<void>;
+} {
+  let cached: Promise<ConnectServerQueue> | undefined;
+  let ownedConnection: Redis | undefined;
+
+  const getQueue = (): Promise<ConnectServerQueue> => {
+    if (deps.queue !== undefined) {
+      return Promise.resolve(deps.queue);
+    }
+    return (cached ??= Promise.resolve().then(() => {
+      const connection = createQueueRedisConnection(env.REDIS_URL);
+      ownedConnection = connection;
+      return createConnectServerQueue({ connection });
+    }));
+  };
+
+  const closeOwnedResources = async (): Promise<void> => {
+    if (deps.queue !== undefined || cached === undefined) {
+      return;
+    }
+    const queue = await cached;
+    await queue.close();
+    ownedConnection?.disconnect();
+  };
+
+  return { getQueue, closeOwnedResources };
 }
 
 // Builds a fully configured Fastify instance that never starts a network server, so integration
@@ -82,6 +124,15 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   // Plan 04-08: `routes/servers.ts` calls `await fastify.getServerServices()` once per request —
   // never at module load, which would open a Postgres pool merely by importing the route file.
   app.decorate('getServerServices', createServerServicesResolver(deps));
+
+  // Plan 04-08 (Task 3): the connect/discover routes' queue producer. A queue has no open
+  // streaming response, so `onClose` (not `preClose`, which Plan 04-09's SSE streams need) is the
+  // right shutdown hook for it.
+  const { getQueue, closeOwnedResources } = createQueueResolver(deps);
+  app.decorate('getQueue', getQueue);
+  app.addHook('onClose', async () => {
+    await closeOwnedResources();
+  });
 
   // D-17: `healthRoutes`/`authRoutes`/`setupRoutes` stay siblings of `apiScope`, never inside it —
   // that sibling relationship is what keeps `/health`, `/api/auth/*`, `/api/setup` and

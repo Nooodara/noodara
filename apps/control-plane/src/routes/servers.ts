@@ -1,13 +1,14 @@
-// D-19: the five `/api/servers` CRUD routes. Every handler does exactly three things — read
-// `request.actor`, call exactly one service, and map a `{ ok: false }` result through
-// `mapServiceCodeToStatus`/`toErrorBody` — never a hand-written status literal for a service code
-// and never any business logic of its own (noodara-domain-model/ARCHITECTURE.md §3). The
-// trust-fingerprint/connect/discover routes join this file in Plan 04-08's Task 3.
+// D-19/SERV-06/DISC-05: the eight `/api/servers` routes. Every handler does exactly three
+// things — read `request.actor`, call exactly one service, and map a `{ ok: false }` result
+// through `mapServiceCodeToStatus`/`toErrorBody` — never a hand-written status literal for a
+// service code and never any business logic of its own (noodara-domain-model/ARCHITECTURE.md §3).
 import type { ZodTypeProvider } from '@fastify/type-provider-zod';
-import type { FastifyPluginCallback, FastifyReply } from 'fastify';
+import type { FastifyInstance, FastifyPluginCallback, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import type { ConnectServerQueue } from '../queue/connect-server-queue.js';
 import type { EditServerInput, RegisterServerInput, ServerServices } from '../services/server-services.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
+import type { ServerView } from '../services/server-view.js';
 import { ErrorBodySchema, mapServiceCodeToStatus, toErrorBody, ValidationErrorBodySchema } from './http-errors.js';
 import {
   CreateServerBodySchema,
@@ -23,6 +24,7 @@ import {
 declare module 'fastify' {
   interface FastifyInstance {
     getServerServices(): Promise<ServerServices>;
+    getQueue(): Promise<ConnectServerQueue>;
   }
 }
 
@@ -87,6 +89,53 @@ function buildEditServerInput(
 
 const ListServersResponseSchema = z.object({ items: z.array(ServerViewSchema) });
 const DeleteServerResponseSchema = z.object({ ok: z.literal(true), serverId: z.uuid() });
+const ConnectResponseSchema = z.object({ server: ServerViewSchema, jobId: z.string() });
+
+/**
+ * D-10: the one enqueue code path both `/connect` and `/discover` drive — the only behavioural
+ * difference between them is the `trigger === 'discover'` precondition below. `jobId` exists for
+ * logs, tests and correlation only — the progress this responds to arrives over SSE (Plan 04-09),
+ * never by polling this id.
+ */
+async function enqueueConnect(
+  services: ServerServices,
+  queue: ConnectServerQueue,
+  fastify: FastifyInstance,
+  input: { readonly serverId: string; readonly actor: ServiceActor; readonly trigger: 'connect' | 'discover' },
+): Promise<
+  | { readonly ok: true; readonly server: ServerView; readonly jobId: string }
+  | { readonly ok: false; readonly code: string; readonly message: string }
+> {
+  const server = await services.getServer(input.serverId);
+  if (!server) {
+    return { ok: false, code: 'NOT_FOUND', message: `Server "${input.serverId}" not found` };
+  }
+  if (server.status === 'CONNECTING') {
+    return { ok: false, code: 'ALREADY_CONNECTING', message: 'A connection attempt is already in flight' };
+  }
+  if (input.trigger === 'discover' && server.status !== 'CONNECTED') {
+    return { ok: false, code: 'SERVER_NOT_CONNECTED', message: 'Server is not connected' };
+  }
+
+  const enqueueResult = await queue.enqueue({
+    serverId: input.serverId,
+    actor: input.actor,
+    requestedAt: new Date().toISOString(),
+    trigger: input.trigger,
+  });
+  if (!enqueueResult.ok) {
+    return enqueueResult;
+  }
+
+  // D-13: enqueueing writes no activity event — server.connection_attempted/discovery_completed
+  // already tell the story once the worker acts. This is the one log line the route itself owns.
+  fastify.log.info(
+    { serverId: input.serverId, jobId: enqueueResult.jobId, trigger: input.trigger },
+    'connect-server job enqueued',
+  );
+
+  return { ok: true, server, jobId: enqueueResult.jobId };
+}
 
 const serversRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
@@ -207,6 +256,92 @@ const serversRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         return;
       }
       await reply.send({ ok: true as const, serverId: result.serverId });
+    },
+  });
+
+  app.route({
+    method: 'POST',
+    url: '/api/servers/:id/trust-fingerprint',
+    schema: {
+      params: ServerIdParamSchema,
+      response: {
+        200: ServerViewSchema,
+        401: ErrorBodySchema,
+        404: ErrorBodySchema,
+        409: ErrorBodySchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const services = await fastify.getServerServices();
+      const result = await services.trustFingerprint({ actor, serverId: request.params.id });
+      if (!result.ok) {
+        await sendServiceError(reply, result.code, result.message);
+        return;
+      }
+      await reply.send(result.server);
+    },
+  });
+
+  app.route({
+    method: 'POST',
+    url: '/api/servers/:id/connect',
+    schema: {
+      params: ServerIdParamSchema,
+      response: {
+        202: ConnectResponseSchema,
+        401: ErrorBodySchema,
+        404: ErrorBodySchema,
+        409: ErrorBodySchema,
+        503: ErrorBodySchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const services = await fastify.getServerServices();
+      const queue = await fastify.getQueue();
+      const result = await enqueueConnect(services, queue, fastify, {
+        serverId: request.params.id,
+        actor,
+        trigger: 'connect',
+      });
+      if (!result.ok) {
+        await sendServiceError(reply, result.code, result.message);
+        return;
+      }
+      // jobId is for logs/correlation only — progress arrives over SSE (Plan 04-09), never by
+      // polling this id.
+      await reply.code(202).send({ server: result.server, jobId: result.jobId });
+    },
+  });
+
+  app.route({
+    method: 'POST',
+    url: '/api/servers/:id/discover',
+    schema: {
+      params: ServerIdParamSchema,
+      response: {
+        202: ConnectResponseSchema,
+        401: ErrorBodySchema,
+        404: ErrorBodySchema,
+        409: ErrorBodySchema,
+        503: ErrorBodySchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const services = await fastify.getServerServices();
+      const queue = await fastify.getQueue();
+      const result = await enqueueConnect(services, queue, fastify, {
+        serverId: request.params.id,
+        actor,
+        trigger: 'discover',
+      });
+      if (!result.ok) {
+        await sendServiceError(reply, result.code, result.message);
+        return;
+      }
+      await reply.code(202).send({ server: result.server, jobId: result.jobId });
     },
   });
 
