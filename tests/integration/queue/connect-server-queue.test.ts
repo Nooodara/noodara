@@ -120,6 +120,58 @@ describe('connect-server-queue', () => {
     }
   });
 
+  // Plan 04-11's own real-worker E2E test found this: BullMQ's `add()` treats *any* existing job
+  // hash under a jobId as a duplicate and returns the stale reference without ever creating a new
+  // "waiting" entry — including a job that has already reached `completed` and is only still
+  // present because `removeOnComplete: { count: 100 }` keeps it around for observability. Without
+  // handling this, every `/connect` or `/discover` call issued after the very first job for a
+  // server ever finishes would 202 with a jobId the worker never touches again, silently breaking
+  // DISC-05 ("re-run discovery") the moment a server has connected even once.
+  it('allows a fresh enqueue once the prior job has genuinely COMPLETED (not just been manually removed)', async () => {
+    fixture = await startRedis();
+    const { createQueueRedisConnection, createWorkerRedisConnection } = await loadConnections();
+    const { createConnectServerQueue } = await loadConnectServerQueue();
+
+    const connection = createQueueRedisConnection(fixture.connectionUrl);
+    extraConnections.push(connection);
+    const queue = createConnectServerQueue({ connection });
+
+    try {
+      const serverId = randomUUID();
+      const first = await queue.enqueue(buildPayload(serverId));
+      expect(first.ok).toBe(true);
+
+      const bullmq = await import('bullmq');
+      const workerConnection = createWorkerRedisConnection(fixture.connectionUrl);
+      extraConnections.push(workerConnection);
+      const worker = new bullmq.Worker('servers', () => Promise.resolve({ outcome: 'ok' }), {
+        connection: workerConnection,
+        prefix: 'noodara',
+      });
+      try {
+        await new Promise<void>((resolve, reject) => {
+          worker.on('completed', () => {
+            resolve();
+          });
+          worker.on('failed', (_job, err: unknown) => {
+            reject(err instanceof Error ? err : new Error(String(err)));
+          });
+        });
+      } finally {
+        await worker.close();
+      }
+
+      // The prior job for this server has now genuinely completed — its jobId hash still exists
+      // in Redis (removeOnComplete's count-based retention), which is exactly the condition that
+      // previously made a second enqueue a silent no-op.
+      const second = await queue.enqueue(buildPayload(serverId));
+      expect(second).toEqual({ ok: true, jobId: `connect-${serverId}` });
+      expect(await queue.isJobPending(serverId)).toBe(true);
+    } finally {
+      await queue.close();
+    }
+  });
+
   it('creates a job with attempts 1, removeOnComplete 100, removeOnFail 500 and name connect-server', async () => {
     fixture = await startRedis();
     const { createQueueRedisConnection } = await loadConnections();
