@@ -15,9 +15,30 @@ import authRoutes from './routes/auth.js';
 import healthRoutes from './routes/health.js';
 import { toErrorBody, toValidationErrorBody } from './routes/http-errors.js';
 import setupRoutes from './routes/setup.js';
+import { resolveServerServicesDeps } from './services/server-service-deps.js';
+import { createServerServices, type ServerServices } from './services/server-services.js';
 
 export interface BuildAppDeps {
   logger?: FastifyInstance['log'];
+  serverServices?: ServerServices;
+}
+
+/**
+ * Builds the per-`buildApp()`-call resolver `fastify.getServerServices` decorates onto the
+ * instance — a closure holding its own memoised promise, never a module-level singleton, so two
+ * apps built in the same test process (or the API and worker, if either ever shared this module)
+ * never share state. Deps are resolved lazily, on first call, not at `buildApp()` time: resolving
+ * them eagerly would open a Postgres pool merely by building the app, even for a test that never
+ * calls a `/api/servers` route.
+ */
+function createServerServicesResolver(deps: BuildAppDeps): () => Promise<ServerServices> {
+  let cached: Promise<ServerServices> | undefined;
+  return () => {
+    if (deps.serverServices !== undefined) {
+      return Promise.resolve(deps.serverServices);
+    }
+    return (cached ??= resolveServerServicesDeps().then(createServerServices));
+  };
 }
 
 // Builds a fully configured Fastify instance that never starts a network server, so integration
@@ -57,6 +78,10 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   // D-12: every boot logs the fixed backup warning with the master key's fingerprint, never the
   // key material itself.
   logMasterKeyWarning(app.log, decodeMasterKey(env.NOODARA_MASTER_KEY));
+
+  // Plan 04-08: `routes/servers.ts` calls `await fastify.getServerServices()` once per request —
+  // never at module load, which would open a Postgres pool merely by importing the route file.
+  app.decorate('getServerServices', createServerServicesResolver(deps));
 
   // D-17: `healthRoutes`/`authRoutes`/`setupRoutes` stay siblings of `apiScope`, never inside it —
   // that sibling relationship is what keeps `/health`, `/api/auth/*`, `/api/setup` and

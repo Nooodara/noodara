@@ -16,6 +16,7 @@ import { auth } from '../auth/auth.js';
 import { createOriginGuard } from '../auth/origin-guard.js';
 import { createRequireSession } from '../auth/require-session.js';
 import { env } from '../env.js';
+import serversRoutes from './servers.js';
 import sessionsRoutes from './sessions.js';
 
 const apiScope: FastifyPluginCallback = (fastify, _opts, done) => {
@@ -30,13 +31,13 @@ const apiScope: FastifyPluginCallback = (fastify, _opts, done) => {
 
   requireSession(fastify, {}, () => {
     fastify.register(sessionsRoutes);
+    fastify.register(serversRoutes);
 
     // Ordered extension point for the rest of this phase — every later route plugin joins this
     // same scope, never a second guarded scope:
-    //   1. serversRoutes   (Plan 04-08)
-    //   2. eventsRoutes    (Plan 04-09)
-    //   3. activityRoutes  (Plan 04-10)
-    //   4. configRoutes    (Plan 04-10)
+    //   1. eventsRoutes    (Plan 04-09)
+    //   2. activityRoutes  (Plan 04-10)
+    //   3. configRoutes    (Plan 04-10)
 
     done();
   });
