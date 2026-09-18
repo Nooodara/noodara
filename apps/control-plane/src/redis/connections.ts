@@ -49,3 +49,45 @@ export function createWorkerRedisConnection(url: string): Redis {
 
   return connection;
 }
+
+/**
+ * Connection for the `ServerEventPublisher` Redis adapter (Plan 04-09) — a normal client used
+ * only for `PUBLISH`. Gets the same short `commandTimeout` as the Queue producer connection: a
+ * publish call must never hold a service's transaction-committed return path open (D-04's
+ * "publish is best-effort" guarantee starts at this connection's own settings, not just the
+ * adapter's try/catch).
+ */
+export function createPublisherRedisConnection(url: string): Redis {
+  const connection = new Redis(url, {
+    commandTimeout: 2000,
+    maxRetriesPerRequest: 1,
+    lazyConnect: false,
+  });
+
+  connection.on('error', (err: Error) => {
+    console.warn(`[redis] publisher connection error: ${err.name}`);
+  });
+
+  return connection;
+}
+
+/**
+ * The dedicated SSE subscriber connection (Plan 04-09) — must never be shared with the Queue or
+ * the publisher connection, because ioredis puts a subscribed client into a restricted command
+ * mode (subscribe/unsubscribe/ping/quit only; see ioredis's own "Pub/Sub" docs). No
+ * `commandTimeout` here: a subscription is long-lived by design, unlike the Queue producer's or
+ * publisher's short-lived commands. `maxRetriesPerRequest: null` plus ioredis's own default
+ * `autoResubscribe: true` means a reconnect after a Redis restart re-subscribes on its own (D-27),
+ * with no code in this file needing to re-issue `SUBSCRIBE` itself.
+ */
+export function createSubscriberRedisConnection(url: string): Redis {
+  const connection = new Redis(url, {
+    maxRetriesPerRequest: null,
+  });
+
+  connection.on('error', (err: Error) => {
+    console.warn(`[redis] subscriber connection error: ${err.name}`);
+  });
+
+  return connection;
+}
