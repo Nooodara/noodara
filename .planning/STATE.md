@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-07-PLAN.md
-last_updated: "2026-09-17T22:43:47.435Z"
-last_activity: 2026-09-17
+stopped_at: Completed 04-08-PLAN.md
+last_updated: "2026-09-18T02:48:34.744Z"
+last_activity: 2026-09-18
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 48
-  completed_plans: 44
+  completed_plans: 45
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 04 (http-routes-worker-bullmq-y-sse) — EXECUTING
-Plan: 8 of 11
+Plan: 9 of 11
 Status: Ready to execute
-Last activity: 2026-09-17
+Last activity: 2026-09-18
 
-Progress: [█████████░] 92%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
@@ -98,6 +98,7 @@ Progress: [█████████░] 92%
 | Phase 04 P05 | 35min | 2 tasks | 4 files |
 | Phase 04 P06 | 90min | 2 tasks | 7 files |
 | Phase 04 P07 | 55min | 3 tasks | 15 files |
+| Phase 04 P08 | 195min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -222,6 +223,8 @@ Recent decisions affecting current work:
 - [Phase 04]: maxStalledCount:0 + a stalled listener holds against real bullmq@6.3.6/ioredis@5.11.1 (D-12 assumption A3 confirmed empirically, 3 consecutive stalled-recovery test runs, no flake, no second SSH connect)
 - [Phase 04]: Root pnpm dev now runs turbo run dev dev:worker (api+worker together) with a byte-for-byte copied passThroughEnv array — zero new devDependency, the concurrently alternative flagged in 04-01 was not needed
 - [Phase 04]: worker.ts pings the queue Redis connection (bounded commandTimeout/maxRetriesPerRequest:1) to fail fast at boot, never the worker connection (maxRetriesPerRequest:null would hang against a dead Redis)
+- [Phase 04]: sendServiceError(reply: FastifyReply, code, message) is the one non-route-generic-typed function every service-result failure branch uses -- Fastify's own .code<Code> generic narrows to the specific route's declared response-status literals, which a runtime mapServiceCodeToStatus() number can never satisfy without this indirection
+- [Phase 04]: jobId format is connect-<serverId> (hyphen), matching Plan 04-06's own recorded BullMQ jobId-cannot-contain-':' deviation, not 04-CONTEXT.md's literal 'connect:<id>' -- no new deviation, just consistent use of the already-corrected format
 
 ### Pending Todos
 
@@ -250,6 +253,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-17T22:43:47.428Z
-Stopped at: Completed 04-07-PLAN.md
+Last session: 2026-09-18T02:48:34.735Z
+Stopped at: Completed 04-08-PLAN.md
 Resume file: None

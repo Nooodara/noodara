@@ -222,7 +222,7 @@ Plans:
 **Wave 3** *(parallel, blocked on Wave 2)*
 
 - [x] 04-07-PLAN.md — Worker BullMQ: handler, política de desenlace (D-15), recuperación de stalled/arranque, heartbeat y `worker.ts` + scripts (D-23)
-- [ ] 04-08-PLAN.md — Rutas `/api/servers`: CRUD, trust-fingerprint y el 202 de connect/discover (SERV-06, DISC-05)
+- [x] 04-08-PLAN.md — Rutas `/api/servers`: CRUD, trust-fingerprint y el 202 de connect/discover (SERV-06, DISC-05)
 
 **Wave 4** *(blocked on Wave 3)*
 
@@ -283,6 +283,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Dominio, persistencia y autenticación | 17/17 | Complete    | 2026-09-12 |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
-| 4. HTTP routes, worker BullMQ y SSE | 7/11 | In Progress|  |
+| 4. HTTP routes, worker BullMQ y SSE | 8/11 | In Progress|  |
 | 5. UI web | 0/TBD | Not started | - |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |
