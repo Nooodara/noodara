@@ -154,14 +154,19 @@ jobs:
       # T-1-51: fails the merge on any high-or-critical advisory; --frozen-lockfile above
       # already stops CI from silently resolving a different dependency tree than the lockfile.
       - run: pnpm audit --audit-level=high
-      # SEC-02 (phase 3): this script now runs two suites — the fast, container-free Phase-1
-      # canary (logger/HTTP-error/activity-log) plus a full-flow canary that builds and starts a
-      # real Ubuntu sshd Testcontainer and drives a genuine register -> connect+discover -> edit ->
-      # trust-fingerprint -> delete flow through it (D-18), proving no per-run secret reaches the
-      # logger, a service result, activity_events.metadata, discovery_snapshots.payload or a
-      # simulated service error. That container is the intentional reason this step's runtime is
-      # now noticeably longer than the Phase-1-only version. Expands further with the full
-      # connect/deploy/AI-query flow in QA-05 (phase 5).
+      # SEC-02 (phase 3) / D-22 (phase 4): this script now runs three suites — the fast,
+      # container-free Phase-1 canary (logger/HTTP-error/activity-log), a full-flow canary that
+      # builds and starts a real Ubuntu sshd Testcontainer and drives a genuine register ->
+      # connect+discover -> edit -> trust-fingerprint -> delete flow through it (D-18), and a
+      # Phase-4 HTTP/SSE canary that submits per-run secrets through the real /api/servers routes
+      # and scans success bodies, error bodies (4xx and a forced 500 through the real production
+      # error handler), GET /api/events SSE frames, captured logs, activity_events.metadata and
+      # discovery_snapshots.payload. Together they prove no per-run secret reaches the logger, a
+      # service result, an HTTP response, an SSE frame, activity_events.metadata,
+      # discovery_snapshots.payload or a simulated service error. The sshd container is the
+      # intentional reason this step's runtime is longer than the Phase-1-only version, and the
+      # phase-4 addition grows it further still. Expands further with the full connect/deploy/
+      # AI-query flow in QA-05 (phase 5).
       - run: pnpm security:scan-leaks
       - name: Fail if any noodara.test container survived
         if: always()
