@@ -15,12 +15,14 @@ import {
   type FailInFlightConnectionInput,
   type FailInFlightConnectionResult,
 } from './fail-in-flight-connection.js';
+import { getServerView, listServerViews } from './read-servers.js';
 import {
   registerServer,
   type RegisterServerInput,
   type RegisterServerResult,
 } from './register-server.js';
 import type { ServerServicesDeps } from './server-service-deps.js';
+import type { ServerView } from './server-view.js';
 import {
   trustFingerprint,
   type TrustFingerprintInput,
@@ -50,6 +52,8 @@ export interface ServerServices {
   trustFingerprint(input: TrustFingerprintInput): Promise<TrustFingerprintResult>;
   failInFlightConnection(input: FailInFlightConnectionInput): Promise<FailInFlightConnectionResult>;
   listConnectingServerIds(): Promise<string[]>;
+  getServer(serverId: string): Promise<ServerView | null>;
+  listServers(): Promise<ServerView[]>;
 }
 
 /**
@@ -66,5 +70,7 @@ export function createServerServices(deps: ServerServicesDeps): ServerServices {
     trustFingerprint: (input) => trustFingerprint(deps, input),
     failInFlightConnection: (input) => failInFlightConnection(deps, input),
     listConnectingServerIds: () => listConnectingServerIds(deps),
+    getServer: (serverId) => getServerView(deps, serverId),
+    listServers: () => listServerViews(deps),
   };
 }
