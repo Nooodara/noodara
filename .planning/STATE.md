@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-09-PLAN.md
-last_updated: "2026-09-18T04:43:22.843Z"
+stopped_at: Completed 04-10-PLAN.md
+last_updated: "2026-09-18T06:26:03.752Z"
 last_activity: 2026-09-18
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 48
-  completed_plans: 46
+  completed_plans: 47
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 04 (http-routes-worker-bullmq-y-sse) — EXECUTING
-Plan: 10 of 11
+Plan: 11 of 11
 Status: Ready to execute
 Last activity: 2026-09-18
 
-Progress: [██████████] 96%
+Progress: [██████████] 98%
 
 ## Performance Metrics
 
@@ -100,6 +100,7 @@ Progress: [██████████] 96%
 | Phase 04 P07 | 55min | 3 tasks | 15 files |
 | Phase 04 P08 | 195min | 3 tasks | 14 files |
 | Phase 04 P09 | 100min | 3 tasks | 10 files |
+| Phase 04 P10 | 140min | 3 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -228,6 +229,10 @@ Recent decisions affecting current work:
 - [Phase 04]: jobId format is connect-<serverId> (hyphen), matching Plan 04-06's own recorded BullMQ jobId-cannot-contain-':' deviation, not 04-CONTEXT.md's literal 'connect:<id>' -- no new deviation, just consistent use of the already-corrected format
 - [Phase 04]: closeAll()'s unsubscribe() bounded with the same Promise.race timeout as onReady's subscribe() -- an unbounded unsubscribe against a never-fully-connected subscriber would reproduce the exact preClose-vs-onClose shutdown deadlock this plan exists to prevent
 - [Phase 04]: routes/events.ts is a factory (createEventsRoutes(deps)), mirroring createRequireSession's shape, so api-scope.ts builds it with the real broadcaster/getSession/heartbeatMs/maxConnections and registers the returned plugin normally inside the already-guarded scope
+- [Phase 04]: listActivity joins the ServerServices facade (grown to ten members) rather than a second decorator, mirroring Plan 04-08's getServer/listServers precedent
+- [Phase 04]: activity.ts's querystring schema is .strict(): an unrecognised key like ?action= is 400, never a silently-ignored no-op filter (D-20 no-filters scope)
+- [Phase 04]: GET /health gets its own dedicated, lazily-built, per-app-instance-memoised Redis connection (getHealthRedis) since none of the existing queue/subscriber/publisher connections are structurally reusable for a PING+SCAN probe
+- [Phase 04]: Every health check (postgres/redis/worker) is independently wrapped in a Promise.race-against-a-fixed-timer (withTimeout), the same bounded-race shape app.ts's onReady/preClose hooks already use
 
 ### Pending Todos
 
@@ -246,6 +251,7 @@ None yet.
 - A full pnpm test:integration run showed a cascading assertNoStrayTestContainers failure (234/311 tests) rooted in tests/integration/ssh/*.test.ts files unrelated to plan 03-10's diff; confirmed pre-existing machine-specific Docker resource contention (isolated re-run of the affected file passed cleanly 16/16). See phases/03-servicios-de-aplicaci-n-activity-log-y-redacci-n/deferred-items.md
 - REQUIREMENTS.md marks SERV-06 'Complete' after Plan 04-01, but 04-01 only ships infra (deps, env knobs, job-budget function, Redis test fixture) — no worker, routes, or SSE stream yet. SERV-06's actual behavior lands across Plans 04-02..04-11; this checkbox is a plan-frontmatter artifact of 04-01-PLAN.md declaring requirements: [SERV-06] on the first wave-0 plan, not a real completion. Re-verify SERV-06 at phase-4 close, not from this checkbox alone.
 - events-sse.test.ts: 2 of 10 tests (server.updated publish, connect+worker E2E) intermittently fail on this shared dev machine waiting for a real Redis subscription (waitForActiveSubscriber timeout) -- diagnosed as machine-specific Docker/network flakiness (CLIENT LIST showed a public non-Docker IP sharing the container's mapped port during one failure), not a code defect; a standalone non-Vitest reproduction succeeded deterministically every run. Matches this repo's pre-existing 'shared dev machine Docker resource contention' pattern. Re-verify on a clean machine/CI.
+- 04-10: a combined tests/integration/routes/+services/ run (18 files, extra-broad regression check beyond this plan's scope) showed 137 failing stray-container-count assertions concentrated in register-server.test.ts/trust-fingerprint.test.ts (files this plan did not modify); isolated re-runs of those files (28/28) and the servers-crud/connect/discover files (38/38) passed cleanly, confirming the pre-existing shared-dev-machine Docker resource contention pattern, not a regression.
 
 ## Deferred Items
 
@@ -257,6 +263,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-18T04:43:22.835Z
-Stopped at: Completed 04-09-PLAN.md
+Last session: 2026-09-18T06:26:03.744Z
+Stopped at: Completed 04-10-PLAN.md
 Resume file: None
