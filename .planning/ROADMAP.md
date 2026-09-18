@@ -226,7 +226,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3)*
 
-- [ ] 04-09-PLAN.md — Puente Redis pub/sub, broadcaster y `GET /api/events` con heartbeat, re-validación de sesión, límite y `preClose`
+- [x] 04-09-PLAN.md — Puente Redis pub/sub, broadcaster y `GET /api/events` con heartbeat, re-validación de sesión, límite y `preClose`
 
 **Wave 5** *(blocked on Wave 4)*
 
@@ -283,6 +283,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Dominio, persistencia y autenticación | 17/17 | Complete    | 2026-09-12 |
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
-| 4. HTTP routes, worker BullMQ y SSE | 8/11 | In Progress|  |
+| 4. HTTP routes, worker BullMQ y SSE | 9/11 | In Progress|  |
 | 5. UI web | 0/TBD | Not started | - |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-08-PLAN.md
-last_updated: "2026-09-18T02:48:34.744Z"
+stopped_at: Completed 04-09-PLAN.md
+last_updated: "2026-09-18T04:43:22.843Z"
 last_activity: 2026-09-18
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 48
-  completed_plans: 45
+  completed_plans: 46
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 04 (http-routes-worker-bullmq-y-sse) — EXECUTING
-Plan: 9 of 11
+Plan: 10 of 11
 Status: Ready to execute
 Last activity: 2026-09-18
 
-Progress: [█████████░] 94%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
@@ -99,6 +99,7 @@ Progress: [█████████░] 94%
 | Phase 04 P06 | 90min | 2 tasks | 7 files |
 | Phase 04 P07 | 55min | 3 tasks | 15 files |
 | Phase 04 P08 | 195min | 3 tasks | 14 files |
+| Phase 04 P09 | 100min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -225,6 +226,8 @@ Recent decisions affecting current work:
 - [Phase 04]: worker.ts pings the queue Redis connection (bounded commandTimeout/maxRetriesPerRequest:1) to fail fast at boot, never the worker connection (maxRetriesPerRequest:null would hang against a dead Redis)
 - [Phase 04]: sendServiceError(reply: FastifyReply, code, message) is the one non-route-generic-typed function every service-result failure branch uses -- Fastify's own .code<Code> generic narrows to the specific route's declared response-status literals, which a runtime mapServiceCodeToStatus() number can never satisfy without this indirection
 - [Phase 04]: jobId format is connect-<serverId> (hyphen), matching Plan 04-06's own recorded BullMQ jobId-cannot-contain-':' deviation, not 04-CONTEXT.md's literal 'connect:<id>' -- no new deviation, just consistent use of the already-corrected format
+- [Phase 04]: closeAll()'s unsubscribe() bounded with the same Promise.race timeout as onReady's subscribe() -- an unbounded unsubscribe against a never-fully-connected subscriber would reproduce the exact preClose-vs-onClose shutdown deadlock this plan exists to prevent
+- [Phase 04]: routes/events.ts is a factory (createEventsRoutes(deps)), mirroring createRequireSession's shape, so api-scope.ts builds it with the real broadcaster/getSession/heartbeatMs/maxConnections and registers the returned plugin normally inside the already-guarded scope
 
 ### Pending Todos
 
@@ -242,6 +245,7 @@ None yet.
 - 02-10: a cold pnpm test:integration runtime was not measured (only warm, 555.87s) — this shared dev machine's Docker host has 2000+ images from unrelated projects and there is no safe way to selectively evict this phase's four sshd image variants; a local gitleaks detect run also flags the three already-known fake-credential fixtures because this machine's actual git root sits one level above noodara/code, shifting .gitleaks.toml's anchored allowlist paths — not a real leak, a local-layout artifact
 - A full pnpm test:integration run showed a cascading assertNoStrayTestContainers failure (234/311 tests) rooted in tests/integration/ssh/*.test.ts files unrelated to plan 03-10's diff; confirmed pre-existing machine-specific Docker resource contention (isolated re-run of the affected file passed cleanly 16/16). See phases/03-servicios-de-aplicaci-n-activity-log-y-redacci-n/deferred-items.md
 - REQUIREMENTS.md marks SERV-06 'Complete' after Plan 04-01, but 04-01 only ships infra (deps, env knobs, job-budget function, Redis test fixture) — no worker, routes, or SSE stream yet. SERV-06's actual behavior lands across Plans 04-02..04-11; this checkbox is a plan-frontmatter artifact of 04-01-PLAN.md declaring requirements: [SERV-06] on the first wave-0 plan, not a real completion. Re-verify SERV-06 at phase-4 close, not from this checkbox alone.
+- events-sse.test.ts: 2 of 10 tests (server.updated publish, connect+worker E2E) intermittently fail on this shared dev machine waiting for a real Redis subscription (waitForActiveSubscriber timeout) -- diagnosed as machine-specific Docker/network flakiness (CLIENT LIST showed a public non-Docker IP sharing the container's mapped port during one failure), not a code defect; a standalone non-Vitest reproduction succeeded deterministically every run. Matches this repo's pre-existing 'shared dev machine Docker resource contention' pattern. Re-verify on a clean machine/CI.
 
 ## Deferred Items
 
@@ -253,6 +257,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-18T02:48:34.735Z
-Stopped at: Completed 04-08-PLAN.md
+Last session: 2026-09-18T04:43:22.835Z
+Stopped at: Completed 04-09-PLAN.md
 Resume file: None
