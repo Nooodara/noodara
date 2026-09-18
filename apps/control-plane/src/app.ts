@@ -1,4 +1,4 @@
-import type { FastifyError, FastifyInstance } from 'fastify';
+import type { FastifyBaseLogger, FastifyError, FastifyInstance } from 'fastify';
 import {
   hasZodFastifySchemaValidationErrors,
   isResponseSerializationError,
@@ -10,9 +10,16 @@ import type { Redis } from 'ioredis';
 import { appRedactor } from './activity/redaction.js';
 import { decodeMasterKey, logMasterKeyWarning } from './boot/master-key.js';
 import { env } from './env.js';
+import { createRedisServerEventPublisher } from './events/redis-server-event-publisher.js';
+import type { ServerEventPublisher } from './events/server-event-publisher.js';
+import { createSseBroadcaster, type SseBroadcaster } from './events/sse-broadcaster.js';
 import { createLogger } from './logger.js';
 import { createConnectServerQueue, type ConnectServerQueue } from './queue/connect-server-queue.js';
-import { createQueueRedisConnection } from './redis/connections.js';
+import {
+  createPublisherRedisConnection,
+  createQueueRedisConnection,
+  createSubscriberRedisConnection,
+} from './redis/connections.js';
 import apiScope from './routes/api-scope.js';
 import authRoutes from './routes/auth.js';
 import healthRoutes from './routes/health.js';
@@ -25,6 +32,9 @@ export interface BuildAppDeps {
   logger?: FastifyInstance['log'];
   serverServices?: ServerServices;
   queue?: ConnectServerQueue;
+  broadcaster?: SseBroadcaster;
+  eventPublisher?: ServerEventPublisher;
+  sseHeartbeatMs?: number;
 }
 
 /**
@@ -35,13 +45,19 @@ export interface BuildAppDeps {
  * them eagerly would open a Postgres pool merely by building the app, even for a test that never
  * calls a `/api/servers` route.
  */
-function createServerServicesResolver(deps: BuildAppDeps): () => Promise<ServerServices> {
+function createServerServicesResolver(
+  deps: BuildAppDeps,
+  eventPublisher: ServerEventPublisher,
+): () => Promise<ServerServices> {
   let cached: Promise<ServerServices> | undefined;
   return () => {
     if (deps.serverServices !== undefined) {
       return Promise.resolve(deps.serverServices);
     }
-    return (cached ??= resolveServerServicesDeps().then(createServerServices));
+    // D-04: a `registerServer`/`editServer`/... issued through the API publishes through the same
+    // Redis-backed adapter the worker uses — `resolveServerServicesDeps`'s own `events` default
+    // (`noopServerEventPublisher`) would otherwise silently swallow every HTTP-triggered event.
+    return (cached ??= resolveServerServicesDeps({ events: eventPublisher }).then(createServerServices));
   };
 }
 
@@ -83,6 +99,60 @@ function createQueueResolver(deps: BuildAppDeps): {
   return { getQueue, closeOwnedResources };
 }
 
+/**
+ * Resolves the SSE broadcaster (and its owned subscriber connection, if any) the same
+ * caller-owns-what-it-injects way as `createQueueResolver` above. Unlike the queue/service
+ * resolvers, this one is *not* deferred to first request — `routes/api-scope.ts` needs a real
+ * `SseBroadcaster` instance at `buildApp()` time to pass into `createEventsRoutes`, and
+ * `onReady`'s `broadcaster.start()` call (below) must run regardless of whether any request ever
+ * arrives, so every open SSE stream can be fed as soon as one connects.
+ */
+function resolveBroadcaster(
+  deps: BuildAppDeps,
+  logger: FastifyBaseLogger,
+): { broadcaster: SseBroadcaster; closeOwnedConnection: () => void } {
+  if (deps.broadcaster !== undefined) {
+    return { broadcaster: deps.broadcaster, closeOwnedConnection: () => undefined };
+  }
+  const subscriberConnection = createSubscriberRedisConnection(env.REDIS_URL);
+  const broadcaster = createSseBroadcaster({
+    subscriber: subscriberConnection,
+    logger,
+    maxConnections: env.NOODARA_SSE_MAX_CONNECTIONS,
+  });
+  return {
+    broadcaster,
+    closeOwnedConnection: () => {
+      subscriberConnection.disconnect();
+    },
+  };
+}
+
+/** Same caller-owns-what-it-injects shape as `resolveBroadcaster`, for the publisher side of the
+ *  bridge every Phase 3 service's `deps.events` call ends up going through. */
+function resolveEventPublisher(
+  deps: BuildAppDeps,
+  logger: FastifyBaseLogger,
+): { eventPublisher: ServerEventPublisher; closeOwnedConnection: () => void } {
+  if (deps.eventPublisher !== undefined) {
+    return { eventPublisher: deps.eventPublisher, closeOwnedConnection: () => undefined };
+  }
+  const publisherConnection = createPublisherRedisConnection(env.REDIS_URL);
+  const eventPublisher = createRedisServerEventPublisher(publisherConnection, logger);
+  return {
+    eventPublisher,
+    closeOwnedConnection: () => {
+      publisherConnection.disconnect();
+    },
+  };
+}
+
+// D-27: an unreachable Redis must never hold up the API's own readiness — `onReady` bounds the
+// initial subscribe attempt so `app.listen`/`app.ready()`/`app.inject()` never hangs waiting on a
+// dead connection's offline command queue. ioredis's own `autoResubscribe` (default `true`)
+// finishes the job once Redis actually comes back, with no further code needed here.
+const BROADCASTER_STARTUP_TIMEOUT_MS = 2000;
+
 // Builds a fully configured Fastify instance that never starts a network server, so integration
 // tests can exercise it with `app.inject()`. Only `src/server.ts` puts the app on a socket.
 export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
@@ -121,17 +191,63 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   // key material itself.
   logMasterKeyWarning(app.log, decodeMasterKey(env.NOODARA_MASTER_KEY));
 
+  // Plan 04-09: the publisher half of the SSE bridge, built before `getServerServices` so its
+  // resolver can inject it as `deps.events` on every HTTP-triggered service call.
+  const { eventPublisher, closeOwnedConnection: closeEventPublisherConnection } = resolveEventPublisher(
+    deps,
+    app.log,
+  );
+
   // Plan 04-08: `routes/servers.ts` calls `await fastify.getServerServices()` once per request —
   // never at module load, which would open a Postgres pool merely by importing the route file.
-  app.decorate('getServerServices', createServerServicesResolver(deps));
+  app.decorate('getServerServices', createServerServicesResolver(deps, eventPublisher));
 
   // Plan 04-08 (Task 3): the connect/discover routes' queue producer. A queue has no open
   // streaming response, so `onClose` (not `preClose`, which Plan 04-09's SSE streams need) is the
   // right shutdown hook for it.
   const { getQueue, closeOwnedResources } = createQueueResolver(deps);
   app.decorate('getQueue', getQueue);
+
+  // Plan 04-09: the subscriber half of the SSE bridge — built eagerly (unlike `getQueue`/
+  // `getServerServices`, which defer to first request) because `apiScope`/`createEventsRoutes`
+  // need a real `SseBroadcaster` instance to register `GET /api/events` against, and the
+  // subscription itself must be live before the first SSE client ever connects, not lazily
+  // started by that client's own request.
+  const { broadcaster, closeOwnedConnection: closeBroadcasterConnection } = resolveBroadcaster(deps, app.log);
+
+  app.addHook('onReady', async () => {
+    try {
+      await Promise.race([
+        broadcaster.start(),
+        new Promise<never>((_resolve, reject) => {
+          setTimeout(() => {
+            reject(new Error('sse broadcaster subscribe timed out'));
+          }, BROADCASTER_STARTUP_TIMEOUT_MS);
+        }),
+      ]);
+    } catch (err) {
+      // D-27: Redis being unreachable at boot must never stop the API from becoming ready —
+      // `GET /api/events` still accepts connections and heartbeats; only the fan-out is missing
+      // until ioredis's own `autoResubscribe` restores it on reconnect.
+      app.log.warn({ err }, 'sse broadcaster failed to start within the boot window');
+    }
+  });
+
+  // RESEARCH.md Anti-Patterns / Pitfall 3: streams are ended in `preClose`, not `onClose` —
+  // Fastify's shutdown sequence drains in-flight connections *before* running `onClose` hooks, and
+  // an SSE stream never ends on its own, so ending it only in `onClose` would deadlock
+  // `app.close()` forever waiting for a drain step that can never complete.
+  app.addHook('preClose', async () => {
+    await broadcaster.closeAll();
+  });
+
   app.addHook('onClose', async () => {
     await closeOwnedResources();
+    // Closed here, after `preClose` has already ended every stream — never before, and never a
+    // connection this instance did not itself open (`deps.broadcaster`/`deps.eventPublisher`
+    // overrides keep ownership with whoever injected them, same as `getQueue` above).
+    closeBroadcasterConnection();
+    closeEventPublisherConnection();
   });
 
   // D-17: `healthRoutes`/`authRoutes`/`setupRoutes` stay siblings of `apiScope`, never inside it —
@@ -140,7 +256,10 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   app.register(healthRoutes);
   app.register(authRoutes);
   app.register(setupRoutes);
-  app.register(apiScope);
+  app.register(apiScope, {
+    broadcaster,
+    ...(deps.sseHeartbeatMs !== undefined ? { sseHeartbeatMs: deps.sseHeartbeatMs } : {}),
+  });
 
   return app;
 }

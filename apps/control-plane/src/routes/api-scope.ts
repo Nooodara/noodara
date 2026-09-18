@@ -16,10 +16,17 @@ import { auth } from '../auth/auth.js';
 import { createOriginGuard } from '../auth/origin-guard.js';
 import { createRequireSession } from '../auth/require-session.js';
 import { env } from '../env.js';
+import type { SseBroadcaster } from '../events/sse-broadcaster.js';
+import createEventsRoutes from './events.js';
 import serversRoutes from './servers.js';
 import sessionsRoutes from './sessions.js';
 
-const apiScope: FastifyPluginCallback = (fastify, _opts, done) => {
+export interface ApiScopeOptions {
+  readonly broadcaster: SseBroadcaster;
+  readonly sseHeartbeatMs?: number;
+}
+
+const apiScope: FastifyPluginCallback<ApiScopeOptions> = (fastify, opts, done) => {
   // D-29: the CSRF-lite Origin check runs before session resolution — it needs no session state
   // and rejecting a cross-origin mutation before spending an auth lookup on it is the cheaper,
   // safer order. `GET`/`HEAD`/`OPTIONS` and an absent `Origin` are always exempt (origin-guard.ts).
@@ -32,12 +39,19 @@ const apiScope: FastifyPluginCallback = (fastify, _opts, done) => {
   requireSession(fastify, {}, () => {
     fastify.register(sessionsRoutes);
     fastify.register(serversRoutes);
+    fastify.register(
+      createEventsRoutes({
+        broadcaster: opts.broadcaster,
+        getSession: (headers) => auth.api.getSession({ headers }),
+        ...(opts.sseHeartbeatMs !== undefined ? { heartbeatMs: opts.sseHeartbeatMs } : {}),
+        maxConnections: env.NOODARA_SSE_MAX_CONNECTIONS,
+      }),
+    );
 
     // Ordered extension point for the rest of this phase — every later route plugin joins this
     // same scope, never a second guarded scope:
-    //   1. eventsRoutes    (Plan 04-09)
-    //   2. activityRoutes  (Plan 04-10)
-    //   3. configRoutes    (Plan 04-10)
+    //   1. activityRoutes  (Plan 04-10)
+    //   2. configRoutes    (Plan 04-10)
 
     done();
   });

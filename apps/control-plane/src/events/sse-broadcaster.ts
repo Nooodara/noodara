@@ -39,6 +39,13 @@ export interface CreateSseBroadcasterOptions {
 // ever reaching a stream's `write` (T-4-36).
 const KNOWN_EVENT_TYPES = new Set(['server.updated', 'server.deleted']);
 
+// D-27/T-4-37: an `UNSUBSCRIBE` issued on a connection that has never actually reached Redis (or
+// is stuck retrying against an unreachable one) sits in ioredis's offline command queue forever —
+// it never rejects, it just never settles. `closeAll()` is called from `app.ts`'s `preClose` hook,
+// which `app.close()` itself waits on; an unbounded `unsubscribe()` here would silently reproduce
+// the exact shutdown deadlock `preClose` (over `onClose`) exists to prevent in the first place.
+const UNSUBSCRIBE_TIMEOUT_MS = 2000;
+
 interface ParsedMessageEnvelope {
   readonly type: unknown;
 }
@@ -112,7 +119,12 @@ export function createSseBroadcaster(options: CreateSseBroadcasterOptions): SseB
     }
     streams.clear();
 
-    await options.subscriber.unsubscribe(SERVER_EVENTS_CHANNEL);
+    await Promise.race([
+      options.subscriber.unsubscribe(SERVER_EVENTS_CHANNEL).catch(() => undefined),
+      new Promise<void>((resolve) => {
+        setTimeout(resolve, UNSUBSCRIBE_TIMEOUT_MS);
+      }),
+    ]);
   }
 
   return {

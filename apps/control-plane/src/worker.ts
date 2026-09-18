@@ -7,13 +7,17 @@ import './env.js';
 import { hostname } from 'node:os';
 import { getDb } from './db/client.js';
 import { env } from './env.js';
-import { noopServerEventPublisher } from './events/server-event-publisher.js';
+import { createRedisServerEventPublisher } from './events/redis-server-event-publisher.js';
 import { createLogger } from './logger.js';
 import { computeJobLockDurationMs } from './queue/job-budget.js';
 import { createConnectServerQueue } from './queue/connect-server-queue.js';
 import { createWorker, sweepAbandonedConnections } from './queue/connect-server-worker.js';
 import { startWorkerHeartbeat } from './queue/worker-heartbeat.js';
-import { createQueueRedisConnection, createWorkerRedisConnection } from './redis/connections.js';
+import {
+  createPublisherRedisConnection,
+  createQueueRedisConnection,
+  createWorkerRedisConnection,
+} from './redis/connections.js';
 import { resolveServerServicesDeps } from './services/server-service-deps.js';
 import { createServerServices } from './services/server-services.js';
 
@@ -33,9 +37,12 @@ async function main(): Promise<void> {
   // so it is never the one probed for reachability at boot.
   await queueConnection.ping();
 
-  // TODO(04-09): swap this noop for the Redis-backed ServerEventPublisher once Plan 04-09 lands —
-  // every Phase 3 service already calls `deps.events` unconditionally, so no service changes.
-  const deps = await resolveServerServicesDeps({ db, events: noopServerEventPublisher });
+  // D-04: the worker publishes through the same Redis-backed adapter the API's HTTP routes do —
+  // `connectAndDiscover`'s two publish sites (Plan 04-03) reach the API's SSE broadcaster only
+  // because this is a real `ServerEventPublisher`, not the noop default.
+  const publisherConnection = createPublisherRedisConnection(env.REDIS_URL);
+  const eventPublisher = createRedisServerEventPublisher(publisherConnection, logger);
+  const deps = await resolveServerServicesDeps({ db, events: eventPublisher });
   const services = createServerServices(deps);
   const queue = createConnectServerQueue({ connection: queueConnection });
 
@@ -81,6 +88,7 @@ async function main(): Promise<void> {
     await queue.close();
     workerConnection.disconnect();
     queueConnection.disconnect();
+    publisherConnection.disconnect();
     process.exit(0);
   }
 

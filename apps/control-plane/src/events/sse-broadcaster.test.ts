@@ -189,6 +189,21 @@ describe('createSseBroadcaster', () => {
     expect(subscriber.unsubscribe).toHaveBeenCalledWith(SERVER_EVENTS_CHANNEL);
   });
 
+  it('closeAll() resolves within a bound even when unsubscribe never settles (unreachable Redis)', async () => {
+    const subscriber = buildFakeSubscriber();
+    subscriber.unsubscribe.mockReturnValue(new Promise(() => undefined)); // never settles
+    const logger = buildFakeLogger();
+    const broadcaster = createSseBroadcaster({ subscriber: subscriber as never, logger: logger as never, maxConnections: 32 });
+    const stream = buildFakeStream();
+    broadcaster.add(stream);
+    await broadcaster.start();
+
+    const startedAt = Date.now();
+    await broadcaster.closeAll();
+    expect(Date.now() - startedAt).toBeLessThan(3000);
+    expect(stream.end).toHaveBeenCalledTimes(1);
+  });
+
   it('closeAll() is idempotent', async () => {
     const subscriber = buildFakeSubscriber();
     const logger = buildFakeLogger();
