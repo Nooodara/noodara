@@ -65,7 +65,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Settings
 
-- [ ] **SET-01**: Existe una pantalla de configuración global con información de la instancia (versión, URL pública) como contenedor mínimo para futuros ajustes.
+- [x] **SET-01**: Existe una pantalla de configuración global con información de la instancia (versión, URL pública) como contenedor mínimo para futuros ajustes.
 
 ### UI
 
@@ -161,7 +161,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DETL-01 | Phase 5 | Complete |
 | DETL-02 | Phase 5 | Complete |
 | ACT-02 | Phase 5 | Complete |
-| SET-01 | Phase 5 | Pending |
+| SET-01 | Phase 5 | Complete |
 | UI-01 | Phase 5 | Complete |
 | UI-02 | Phase 5 | Pending |
 | DISC-02 | Phase 5 | Pending |

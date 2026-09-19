@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-15-PLAN.md
-last_updated: "2026-09-19T20:02:16.786Z"
+stopped_at: Completed 05-16-PLAN.md
+last_updated: "2026-09-19T20:18:34.103Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 67
+  completed_plans: 68
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 15 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-12..05-21 remain incomplete)
+Plan: 16 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-12..05-21 remain incomplete)
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [█████████░] 92%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -122,6 +122,7 @@ Progress: [█████████░] 92%
 | Phase 05 P13 | 19min | 3 tasks | 11 files |
 | Phase 05-ui-web P14 | 8min | 3 tasks | 9 files |
 | Phase 05 P15 | 10min | 3 tasks | 9 files |
+| Phase 05 P16 | 5min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -303,6 +304,9 @@ Recent decisions affecting current work:
 - [Phase 05]: Server-name resolution splits an injected live-lookup (ServerLookup) from activity-copy.ts's own three-tier fallback (live link -> metadata.name plain text -> id-prefix mono)
 - [Phase 05]: A page-1 activity refresh merges new items but never moves nextCursor -- only Load older (append mode) advances pagination
 - [Phase 05]: curatedDetailFor(item) reads the whole ActivityItem, not just metadata, since errorCode lives outside metadata per the domain's own comment
+- [Phase 05-16]: LabelValue.tsx's value span gained a data-mono='true'/'false' attribute (matching Input.tsx/Textarea.tsx's own always-present convention) -- purely additive, ServerFacts.test.tsx's document-wide count assertion rescoped to its own tiles container
+- [Phase 05-16]: The settings page deliberately never imports require-session.ts and treats every failure (401 included) as a generic error -- D-15's no-session-management scope made literal by the plan's own acceptance criterion forbidding session/revoke in page.tsx's non-comment source
+- [Phase 05-16]: SettingsGroups.tsx composes the public URL's copy button explicitly (LabelValue + a separate CopyButton) rather than through LabelValue's own built-in copyable, so the file visibly satisfies its own contains-Disclosure-and-CopyButton acceptance criterion
 
 ### Pending Todos
 
@@ -350,6 +354,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T20:02:16.779Z
-Stopped at: Completed 05-15-PLAN.md
+Last session: 2026-09-19T20:18:34.096Z
+Stopped at: Completed 05-16-PLAN.md
 Resume file: None
