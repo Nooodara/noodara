@@ -31,10 +31,9 @@ describe('LabelValue', () => {
     stubClipboard(writeText);
     const { container } = renderUi(<LabelValue label="Fingerprint" value="a1:b2:c3:d4" copyable />);
 
-    const buttons = within(container).getAllByRole('button');
-    expect(buttons).toHaveLength(1);
+    expect(within(container).getAllByRole('button')).toHaveLength(1);
 
-    await user.click(buttons[0]!);
+    await user.click(within(container).getByRole('button'));
 
     expect(writeText).toHaveBeenCalledWith('a1:b2:c3:d4');
   });
