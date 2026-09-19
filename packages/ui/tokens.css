@@ -1,0 +1,151 @@
+/*
+ * Noodara design tokens (skill `noodara-ux-apple` SS 2.1-2.3, locked source of truth).
+ * Light values live under :root (the default, applied with no `data-theme` attribute present);
+ * dark values live under [data-theme="dark"]. Both selectors are always explicit -- never a
+ * bare `prefers-color-scheme` media query -- so a manual theme override always wins over the
+ * OS-level preference (see 05-UI-SPEC.md's "Theme switching" section for the JS side of this).
+ *
+ * Typography, spacing, radii and motion tokens below are theme-independent (identical in both
+ * modes) and are declared once, under :root only.
+ */
+
+:root {
+  /* --- Color (light) --------------------------------------------------------------------- */
+  --canvas: #f5f5f7;
+  --surface-1: #ffffff;
+  --surface-2: #fafafc;
+  --surface-3: #f0f0f2;
+  --hairline: rgba(0, 0, 0, 0.08);
+  --hairline-strong: rgba(0, 0, 0, 0.14);
+  --ink: #1d1d1f;
+  --ink-secondary: #6e6e73;
+  --ink-tertiary: #aeaeb2;
+  --accent: #0071e3;
+  --accent-soft: rgba(0, 113, 227, 0.1);
+  --on-accent: #ffffff;
+
+  /* Semantic status colors (light). Reserved exclusively for infrastructure state -- never
+     decoration. Each has a -soft variant at 14% alpha for pill backgrounds; text on -soft
+     always uses the full-saturation token, never the -soft one. */
+  --status-ok: #34c759;
+  --status-ok-soft: rgba(52, 199, 89, 0.14);
+  --status-warn: #ff9500;
+  --status-warn-soft: rgba(255, 149, 0, 0.14);
+  --status-error: #ff3b30;
+  --status-error-soft: rgba(255, 59, 48, 0.14);
+  --status-idle: #8e8e93;
+  --status-idle-soft: rgba(142, 142, 147, 0.14);
+  /* OPEN QUESTION (05-UI-SPEC.md SS Accessibility / Open Question 1): full-saturation status
+     text on its own -soft background computes to ~2.0-3.1:1 contrast in light mode -- fails
+     WCAG AA for pill-sized (12px) text. This reproduces the locked skill's tokens as-is; it is
+     not silently patched here with an invented token. Re-raised for the user at Plan 05-21's
+     review checkpoint. */
+
+  /* --- Typography (theme-independent) ----------------------------------------------------- */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, 'JetBrains Mono', 'Geist Mono', Menlo, monospace;
+
+  /* Eight semantic type roles (skill SS2.2), decomposed into size/line-height/tracking/weight
+     sub-tokens rather than a single shorthand value, so Tailwind's own --text-*/--text-*--
+     line-height/--tracking-* namespaces (theme.css) can bind directly to them. --font-display
+     is used for the two roles the skill sizes at >=20px (display, title), matching Apple's own
+     SF Pro Display/Text split; every other role uses --font-sans. Weight tokens are 400 or 600
+     only (500 is the sidebar/table-header exception applied at the component level, never 700 --
+     skill SS2.2). */
+  --text-display-size: 28px;
+  --text-display-line-height: 1.14;
+  --text-display-tracking: -0.02em;
+  --text-display-weight: 600;
+  --text-display-font: var(--font-display);
+
+  --text-title-size: 20px;
+  --text-title-line-height: 1.2;
+  --text-title-tracking: -0.015em;
+  --text-title-weight: 600;
+  --text-title-font: var(--font-display);
+
+  --text-headline-size: 15px;
+  --text-headline-line-height: 1.33;
+  --text-headline-tracking: -0.01em;
+  --text-headline-weight: 600;
+  --text-headline-font: var(--font-sans);
+
+  --text-body-size: 15px;
+  --text-body-line-height: 1.47;
+  --text-body-tracking: -0.01em;
+  --text-body-weight: 400;
+  --text-body-font: var(--font-sans);
+
+  --text-callout-size: 13px;
+  --text-callout-line-height: 1.38;
+  --text-callout-tracking: 0em;
+  --text-callout-weight: 400;
+  --text-callout-font: var(--font-sans);
+
+  --text-caption-size: 12px;
+  --text-caption-line-height: 1.33;
+  --text-caption-tracking: 0em;
+  --text-caption-weight: 400;
+  --text-caption-font: var(--font-sans);
+
+  --text-label-size: 11px;
+  --text-label-line-height: 1.2;
+  --text-label-tracking: 0.04em;
+  --text-label-weight: 600;
+  --text-label-font: var(--font-sans);
+  --text-label-transform: uppercase;
+
+  --text-mono-size: 13px;
+  --text-mono-line-height: 1.5;
+  --text-mono-tracking: 0em;
+  --text-mono-weight: 400;
+  --text-mono-font: var(--font-mono);
+
+  /* --- Spacing (8px base grid; 4 and 12 reserved for typographic micro-adjustments) ------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* --- Radii --------------------------------------------------------------------------- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-pill: 9999px;
+
+  /* --- Motion (skill SS2.4) -------------------------------------------------------------- */
+  --duration-micro: 120ms;
+  --duration-panel: 200ms;
+  --duration-sheet: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+[data-theme="dark"] {
+  /* --- Color (dark) ----------------------------------------------------------------------- */
+  --canvas: #161618;
+  --surface-1: #1d1d1f;
+  --surface-2: #252527;
+  --surface-3: #2a2a2c;
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-strong: rgba(255, 255, 255, 0.14);
+  --ink: #f5f5f7;
+  --ink-secondary: #a1a1a6;
+  --ink-tertiary: #6e6e73;
+  --accent: #2997ff;
+  --accent-soft: rgba(41, 151, 255, 0.16);
+  --on-accent: #ffffff;
+
+  --status-ok: #30d158;
+  --status-ok-soft: rgba(48, 209, 88, 0.14);
+  --status-warn: #ff9f0a;
+  --status-warn-soft: rgba(255, 159, 10, 0.14);
+  --status-error: #ff453a;
+  --status-error-soft: rgba(255, 69, 58, 0.14);
+  --status-idle: #8e8e93;
+  --status-idle-soft: rgba(142, 142, 147, 0.14);
+}

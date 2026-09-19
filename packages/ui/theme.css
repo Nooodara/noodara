@@ -1,0 +1,85 @@
+/*
+ * Tailwind v4 CSS-first `@theme` binding for the Noodara design system. Every value here is a
+ * `var(--token)` reference into tokens.css -- zero literal colours or sizes, so a design value
+ * is never duplicated into a JS config or re-typed anywhere else. `apps/web` imports this file
+ * (alongside tokens.css) and uses Tailwind utility classes; it never redefines a colour, size or
+ * radius locally.
+ *
+ * Namespace reference (Tailwind v4 docs): --color-* -> bg-*/text-*/border-* utilities,
+ * --font-* -> font-* family utilities, --text-*/--text-*--line-height -> text-* size utilities,
+ * --tracking-* -> tracking-* utilities, --radius-* -> rounded-* utilities, --spacing -> the
+ * single base multiplier every numeric spacing utility (p-4, gap-6, m-8, ...) scales from.
+ */
+@theme {
+  /* --- Color --------------------------------------------------------------------------- */
+  --color-canvas: var(--canvas);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-tertiary: var(--ink-tertiary);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+
+  --color-status-ok: var(--status-ok);
+  --color-status-ok-soft: var(--status-ok-soft);
+  --color-status-warn: var(--status-warn);
+  --color-status-warn-soft: var(--status-warn-soft);
+  --color-status-error: var(--status-error);
+  --color-status-error-soft: var(--status-error-soft);
+  --color-status-idle: var(--status-idle);
+  --color-status-idle-soft: var(--status-idle-soft);
+
+  /* --- Font families --------------------------------------------------------------------- */
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+
+  /* --- Font sizes (the eight semantic type roles, skill SS2.2) --------------------------- */
+  --text-display: var(--text-display-size);
+  --text-display--line-height: var(--text-display-line-height);
+  --tracking-display: var(--text-display-tracking);
+
+  --text-title: var(--text-title-size);
+  --text-title--line-height: var(--text-title-line-height);
+  --tracking-title: var(--text-title-tracking);
+
+  --text-headline: var(--text-headline-size);
+  --text-headline--line-height: var(--text-headline-line-height);
+  --tracking-headline: var(--text-headline-tracking);
+
+  --text-body: var(--text-body-size);
+  --text-body--line-height: var(--text-body-line-height);
+  --tracking-body: var(--text-body-tracking);
+
+  --text-callout: var(--text-callout-size);
+  --text-callout--line-height: var(--text-callout-line-height);
+  --tracking-callout: var(--text-callout-tracking);
+
+  --text-caption: var(--text-caption-size);
+  --text-caption--line-height: var(--text-caption-line-height);
+  --tracking-caption: var(--text-caption-tracking);
+
+  --text-label: var(--text-label-size);
+  --text-label--line-height: var(--text-label-line-height);
+  --tracking-label: var(--text-label-tracking);
+
+  --text-mono: var(--text-mono-size);
+  --text-mono--line-height: var(--text-mono-line-height);
+  --tracking-mono: var(--text-mono-tracking);
+
+  /* --- Spacing: bind Tailwind's single base multiplier to --space-1 (4px). Every numeric
+     spacing utility (p-1 .. p-12, gap-*, m-*) then falls out of the same 4px/8px-based scale
+     tokens.css already defines, with no separate per-step utility declaration needed. -------- */
+  --spacing: var(--space-1);
+
+  /* --- Radii --------------------------------------------------------------------------- */
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-pill: var(--r-pill);
+}
