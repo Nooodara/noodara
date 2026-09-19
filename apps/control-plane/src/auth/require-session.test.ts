@@ -93,6 +93,23 @@ describe('createRequireSession', () => {
     expect(response.statusCode).toBe(500);
     expect(response.body).not.toContain('super-secret-internal-db-detail');
   });
+
+  it('a getSession that never settles still answers 500 INTERNAL_ERROR within the bound, rather than hanging (T-4-02)', async () => {
+    vi.useFakeTimers();
+    try {
+      const getSession: SessionResolver = () => new Promise(() => undefined);
+      const app = buildTestApp(getSession);
+
+      const pending = app.inject({ method: 'GET', url: '/inside' });
+      await vi.advanceTimersByTimeAsync(2000);
+      const response = await pending;
+
+      expect(response.statusCode).toBe(500);
+      expect(response.json()).toStrictEqual({ error: 'INTERNAL_ERROR', message: 'Internal error' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('toFetchHeaders', () => {

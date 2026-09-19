@@ -9,6 +9,7 @@
 import type { FastifyPluginCallback } from 'fastify';
 import { toFetchHeaders } from '../auth/fetch-headers.js';
 import type { SessionResolver } from '../auth/require-session.js';
+import { withSessionLookupTimeout } from '../auth/session-lookup.js';
 import type { SseBroadcaster, SseStream } from '../events/sse-broadcaster.js';
 import { toErrorBody } from './http-errors.js';
 
@@ -79,7 +80,13 @@ export default function createEventsRoutes(deps: EventsRoutesDeps): FastifyPlugi
         void (async (): Promise<void> => {
           let session: Awaited<ReturnType<SessionResolver>>;
           try {
-            session = await deps.getSession(toFetchHeaders(request.headers));
+            // T-5-02: bounded so a hung session lookup closes this stream within
+            // SESSION_LOOKUP_TIMEOUT_MS of this heartbeat tick instead of keeping a possibly
+            // revoked session's connection open indefinitely — a timeout rejection falls into
+            // the same catch as any other resolution failure below.
+            session = await withSessionLookupTimeout(() =>
+              deps.getSession(toFetchHeaders(request.headers)),
+            );
           } catch {
             // D-06: a session-resolution failure is treated the same as "no session" for a
             // heartbeat — the connection has no reliable proof of an active session anymore, so

@@ -14,6 +14,7 @@ import type { FastifyPluginCallback } from 'fastify';
 import { toErrorBody } from '../routes/http-errors.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
 import { toFetchHeaders } from './fetch-headers.js';
+import { withSessionLookupTimeout } from './session-lookup.js';
 
 export type SessionResolver = (
   headers: Headers,
@@ -38,7 +39,10 @@ export function createRequireSession(deps: RequireSessionDeps): FastifyPluginCal
     fastify.addHook('onRequest', async (request, reply) => {
       let session: Awaited<ReturnType<SessionResolver>>;
       try {
-        session = await deps.getSession(toFetchHeaders(request.headers));
+        // T-5-02: bounded so a hung session lookup answers 500 within
+        // SESSION_LOOKUP_TIMEOUT_MS instead of holding this request open indefinitely — a
+        // timeout rejection falls into the same catch as any other resolution failure below.
+        session = await withSessionLookupTimeout(() => deps.getSession(toFetchHeaders(request.headers)));
       } catch (err) {
         // D-22: a session-resolution failure (Better Auth's own dependency down, a bug) is a
         // server error, never something the caller's response body may echo — this hook cannot
