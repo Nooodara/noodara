@@ -90,6 +90,12 @@ export interface DestructiveConfirmDialogProps {
   readonly requiredName: string;
   readonly onConfirm: (typedValue: string) => void;
   readonly error?: string;
+  /** Optional extra content rendered between the description and the type-the-name input --
+   *  05-19-PLAN.md's trust-new-fingerprint dialog (D-03) repeats both fingerprints in mono here
+   *  (SS5.7: "fingerprints repeated in mono above the input"), so the admin never has to scroll
+   *  back up to the banner while confirming. `undefined` renders nothing extra, matching every
+   *  existing caller (delete-server) unchanged. */
+  readonly children?: ReactNode;
   readonly 'data-testid'?: string;
 }
 
@@ -110,6 +116,7 @@ export function DestructiveConfirmDialog({
   requiredName,
   onConfirm,
   error,
+  children,
   'data-testid': testId,
 }: DestructiveConfirmDialogProps) {
   const [typed, setTyped] = useState('');
@@ -124,6 +131,7 @@ export function DestructiveConfirmDialog({
 
   return (
     <DialogShell open={open} onOpenChange={onOpenChange} title={title} body={body} data-testid={testId}>
+      {children}
       <Field label="Type the name to confirm" {...(error === undefined ? {} : { error })}>
         {(controlProps) => (
           <Input
