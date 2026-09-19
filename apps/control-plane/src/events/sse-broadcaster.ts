@@ -51,6 +51,15 @@ const KNOWN_EVENT_TYPES = new Set([
 // the exact shutdown deadlock `preClose` (over `onClose`) exists to prevent in the first place.
 const UNSUBSCRIBE_TIMEOUT_MS = 2000;
 
+function whenReady(subscriber: Redis): Promise<void> {
+  if (subscriber.status === 'ready') return Promise.resolve();
+  return new Promise((resolve) => {
+    subscriber.once('ready', () => {
+      resolve();
+    });
+  });
+}
+
 interface ParsedMessageEnvelope {
   readonly type: unknown;
 }
@@ -111,6 +120,18 @@ export function createSseBroadcaster(options: CreateSseBroadcasterOptions): SseB
     options.subscriber.on('error', (err: Error) => {
       options.logger.warn({ err }, 'sse broadcaster subscriber redis error');
     });
+
+    // Never `subscribe()` before the connection is `ready`. `SUBSCRIBE` carries Redis's `loading`
+    // flag, so ioredis writes it straight to the socket while its own status is still `connect`
+    // -- ahead of its ready check. That check (`INFO`) then fails on a connection already in
+    // subscriber mode, ioredis drops and reconnects, and `autoResubscribe` replays nothing because
+    // it only remembers the subscriptions of a connection that had reached `ready`. The
+    // `subscribe()` promise has long since resolved by then, so the process would carry on with
+    // no subscription at all until restarted (tests/integration/events/
+    // sse-broadcaster-subscribe.test.ts). D-27 is unaffected: against an unreachable Redis this
+    // simply stays pending past `app.ts`'s own boot bound and subscribes once `ready` fires.
+    await whenReady(options.subscriber);
+    if (closed) return;
 
     await options.subscriber.subscribe(SERVER_EVENTS_CHANNEL);
   }
