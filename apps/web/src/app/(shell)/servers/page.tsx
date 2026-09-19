@@ -94,14 +94,22 @@ export default function ServersPage() {
     [subscribe],
   );
 
+  // The empty state (ServerList.tsx's own EmptyState) already renders the one "Add server"
+  // action for that state -- the toolbar suppresses its own copy of the same action while empty
+  // so the screen never shows two "Add server" buttons at once (05-UI-SPEC.md SS2.3's empty
+  // state is explicit about "single button").
+  const isEmpty = state.kind === 'ready' && state.servers.length === 0;
+
   return (
     <>
       <Toolbar
         title="Servers"
         primaryAction={
-          <Button variant="primary" data-testid="servers-add-button" onClick={noopAddServer}>
-            Add server
-          </Button>
+          isEmpty ? undefined : (
+            <Button variant="primary" data-testid="servers-add-button" onClick={noopAddServer}>
+              Add server
+            </Button>
+          )
         }
       />
       <div className="mx-auto max-w-[1120px] p-8">
