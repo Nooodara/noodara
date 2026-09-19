@@ -12,7 +12,7 @@ function fakeStorage(): StorageLike & { readonly writes: Record<string, string> 
   const writes: Record<string, string> = {};
   return {
     writes,
-    getItem: (key) => (key in writes ? writes[key]! : null),
+    getItem: (key) => (key in writes ? (writes[key] ?? null) : null),
     setItem: (key, value) => {
       writes[key] = value;
     },
@@ -63,7 +63,9 @@ describe('shouldShowFirstTrustNotice', () => {
   });
 
   it('dismissFirstTrustNotice never throws when the storage backend throws on write', () => {
-    expect(() => dismissFirstTrustNotice(throwingStorage(), 'server-a')).not.toThrow();
+    expect(() => {
+      dismissFirstTrustNotice(throwingStorage(), 'server-a');
+    }).not.toThrow();
   });
 });
 
