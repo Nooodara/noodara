@@ -143,3 +143,7 @@ None -- no external service configuration required. No new packages were install
 ---
 *Phase: 05-ui-web*
 *Completed: 2026-09-19*
+
+## Self-Check: PASSED
+
+Verified on disk: `packages/ui/src/ListRow.tsx`, `ListRow.test.tsx`, `RowMenu.tsx`, `RowMenu.test.tsx`, `Disclosure.tsx`, `Disclosure.test.tsx`, `ThemeToggle.tsx`, `ThemeToggle.test.tsx`. All seven task commits plus this SUMMARY's own docs commit (`02f30ee`, `3bb21bc`, `c05b249`, `6d7049e`, `a70fe12`, `fc2afbf`, `af9e233`, `af5b384`) confirmed present in `git log --oneline --all`. `pnpm test` (1151 tests), `pnpm build`, `pnpm lint`, `pnpm typecheck` and `pnpm boundaries` all green; the acceptance-criteria greps (`<div[^>]*onClick` on `ListRow.tsx` = 0, `data-height`/`data-testid` counts present, `@radix-ui/react-collapsible`/`prefers-reduced-motion` present and `onKeyDown` = 0 on `Disclosure.tsx`, `noodara-theme` matching exactly one file (`ThemeToggle.tsx`) across `packages/ui/src`, `#[0-9a-fA-F]{3,8}|rgb\(` = 0 across `packages/ui/src`) all report their required counts.
