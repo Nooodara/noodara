@@ -17,10 +17,22 @@ export interface SettingsGroupsProps {
   readonly config: ConfigResponse;
 }
 
+/** `"Master key fingerprint"` -> `"master-key-fingerprint"` -- a stable per-row test hook
+ *  (05-UI-SPEC.md SS9's `data-testid` convention) derived from the row's own label rather than a
+ *  second, hand-maintained id list that could drift out of sync with `settings-rows.ts`. */
+function rowSlug(label: string): string {
+  return label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 function SettingsRowView({ row }: { readonly row: SettingsRow }) {
+  const testId = `settings-row-${rowSlug(row.label)}`;
+
   if (row.copyable) {
     return (
-      <div className="flex items-center gap-2">
+      <div data-testid={testId} className="flex items-center gap-2">
         <div className="flex-1">
           <LabelValue label={row.label} value={row.value} mono />
         </div>
@@ -29,7 +41,15 @@ function SettingsRowView({ row }: { readonly row: SettingsRow }) {
     );
   }
 
-  return <LabelValue label={row.label} value={row.value} mono {...(row.caption !== undefined ? { caption: row.caption } : {})} />;
+  return (
+    <LabelValue
+      data-testid={testId}
+      label={row.label}
+      value={row.value}
+      mono
+      {...(row.caption !== undefined ? { caption: row.caption } : {})}
+    />
+  );
 }
 
 export function SettingsGroups({ config }: SettingsGroupsProps) {
