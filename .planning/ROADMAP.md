@@ -320,7 +320,7 @@ Plans:
 
 **Wave 13** *(blocked on Wave 12)*
 
-- [ ] 05-19-PLAN.md — Superficies de host key: aviso TOFU único, banner `HOST_KEY_CHANGED` y diálogo de confianza (D-02, D-03, D-17)
+- [x] 05-19-PLAN.md — Superficies de host key: aviso TOFU único, banner `HOST_KEY_CHANGED` y diálogo de confianza (D-02, D-03, D-17)
 
 **Wave 14** *(blocked on Wave 13)*
 
@@ -366,5 +366,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 22/25 | In Progress|  |
+| 5. UI web | 23/25 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |
