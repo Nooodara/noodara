@@ -70,9 +70,29 @@ export function applyServerEvent(list: readonly ServerView[], event: ServerEvent
 
 /**
  * Folds the events that arrived while a `GET /api/servers` snapshot was in flight onto that
- * snapshot. RED placeholder (.planning/debug/sse-lost-event-race.md): returns the snapshot
- * untouched, which is exactly today's lossy behavior -- the next commit implements it.
+ * snapshot, in arrival order. There is no event replay (05-UI-SPEC.md SS6), so an event delivered
+ * during a fetch is either already reflected in the snapshot or strictly newer than it -- and the
+ * screen cannot tell which from timing alone:
+ *
+ * - `server.updated` for an id the snapshot lacks was created after the snapshot was read: insert.
+ * - `server.updated` for a known id is applied unless the snapshot's own entry is strictly newer
+ *   (`updatedAt`, which every server write bumps) -- an event the snapshot already superseded must
+ *   never regress the row back to an older version.
+ * - `server.deleted` always applies: a server id is never reused, so a deletion can only ever be
+ *   newer than any snapshot that still lists it.
+ *
+ * Returns `snapshot` itself when nothing was buffered.
  */
-export function reconcileSnapshot(snapshot: readonly ServerView[], _events: readonly ServerEvent[]): readonly ServerView[] {
-  return snapshot;
+export function reconcileSnapshot(snapshot: readonly ServerView[], events: readonly ServerEvent[]): readonly ServerView[] {
+  let list = snapshot;
+  for (const event of events) {
+    if (event.type === 'server.updated') {
+      const known = list.find((entry) => entry.id === event.server.id);
+      if (known !== undefined && Date.parse(known.updatedAt) > Date.parse(event.server.updatedAt)) {
+        continue;
+      }
+    }
+    list = applyServerEvent(list, event);
+  }
+  return list;
 }

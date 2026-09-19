@@ -17,7 +17,8 @@ import { DeleteServerDialog } from '../../../components/DeleteServerDialog';
 import { apiGet, type ApiErrorCode, type ServerView } from '../../../lib/api-client';
 import { copyForErrorCode } from '../../../lib/error-copy';
 import { requireSession } from '../../../lib/require-session';
-import { applyServerEvent } from '../../../lib/server-store';
+import type { ServerEvent } from '../../../lib/server-events';
+import { applyServerEvent, reconcileSnapshot } from '../../../lib/server-store';
 import { useShellContext } from '../../../lib/shell-context';
 
 const INITIAL_STATE: ServerListState = { kind: 'loading' };
@@ -43,15 +44,37 @@ interface ListServersResponse {
 export default function ServersPage() {
   const { subscribe, registerResync } = useShellContext();
   const [state, setState] = useState<ServerListState>(INITIAL_STATE);
-  // Read inside the SSE subscription callback -- that callback is registered once (empty deps)
-  // and must always see the current kind, not the kind from the render it was created in.
-  const stateKindRef = useRef(state.kind);
-  stateKindRef.current = state.kind;
+  // The snapshot/stream contract (.planning/debug/sse-lost-event-race.md). There is no event
+  // replay, and a `GET /api/servers` snapshot is read at some unknown moment between its request
+  // and its response -- so an event delivered in that window may or may not be in it:
+  //
+  // - `pendingEventsRef` is non-null exactly while a snapshot is in flight. Every event delivered
+  //   meanwhile is buffered there -- never dropped because the screen happens to be `loading` --
+  //   and folded onto the snapshot by `reconcileSnapshot` the moment it lands.
+  // - `latestRequestRef` makes the newest request the only one allowed to publish its snapshot.
+  //   The mount GET and the resync-on-open GET routinely overlap; without this the older one,
+  //   landing last, would overwrite the fresher list. The buffer deliberately outlives a
+  //   superseded request, so it always spans the winning request's own whole flight.
+  //
+  // With `open` only ever firing after the stream is registered server-side (routes/events.ts
+  // registers in the same tick it writes the headers) and every `open` triggering a resync, each
+  // event is therefore either inside the snapshot or replayed over it -- by construction, not by
+  // timing. Both are refs: the subscription callback is registered once and must see them live.
+  const pendingEventsRef = useRef<ServerEvent[] | null>(null);
+  const latestRequestRef = useRef(0);
 
   const fetchServers = useCallback((): void => {
+    latestRequestRef.current += 1;
+    const request = latestRequestRef.current;
+    pendingEventsRef.current ??= [];
     setState({ kind: 'loading' });
 
     void apiGet<ListServersResponse>('/api/servers').then((result) => {
+      if (request !== latestRequestRef.current) return; // superseded by a newer snapshot request
+
+      const bufferedEvents = pendingEventsRef.current ?? [];
+      pendingEventsRef.current = null;
+
       if (!result.ok) {
         if (result.unauthorized) {
           // The shell's own session guard owns the redirect (T-5-53) -- this screen never
@@ -70,7 +93,7 @@ export default function ServersPage() {
         return;
       }
 
-      setState({ kind: 'ready', servers: result.data.items });
+      setState({ kind: 'ready', servers: reconcileSnapshot(result.data.items, bufferedEvents) });
     });
     // fetchServers is self-referential (its own `error` branch stores itself as `onRetry`); it
     // reads no state/props, so an empty dependency array is correct, not a staleness bug.
@@ -87,7 +110,10 @@ export default function ServersPage() {
   useEffect(
     () =>
       subscribe((event) => {
-        if (stateKindRef.current !== 'ready') return;
+        if (pendingEventsRef.current !== null) {
+          pendingEventsRef.current.push(event);
+          return;
+        }
         setState((prev) => (prev.kind === 'ready' ? { kind: 'ready', servers: applyServerEvent(prev.servers, event) } : prev));
       }),
     [subscribe],
