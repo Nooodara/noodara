@@ -102,3 +102,25 @@ describe('SettingsRow shape', () => {
     }
   });
 });
+
+describe('secret canary', () => {
+  // A structural guard: the mappers read named fields only, so a backend response that one day
+  // grows a secret-shaped field must still never reach a row. The values are obviously fake.
+  const CANARY_FIELDS = {
+    databaseUrl: 'postgres://canary-user:canary-db-password@db.internal:5432/noodara',
+    redisUrl: 'redis://:canary-redis-password@redis.internal:6379',
+    encryptionKey: 'canary-encryption-key-value',
+    betterAuthSecret: 'canary-better-auth-secret-value',
+  } as const;
+
+  it('never surfaces the name or value of an unknown secret-shaped field in any row', () => {
+    const config = { ...buildConfig(), ...CANARY_FIELDS } as ConfigResponse;
+    const serialized = JSON.stringify([...instanceRows(config), ...advancedRows(config)]);
+
+    for (const [name, value] of Object.entries(CANARY_FIELDS)) {
+      expect(serialized).not.toContain(name);
+      expect(serialized).not.toContain(value);
+    }
+    expect(serialized).not.toContain('canary');
+  });
+});
