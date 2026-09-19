@@ -13,6 +13,7 @@ import { computeJobLockDurationMs } from './queue/job-budget.js';
 import { createConnectServerQueue } from './queue/connect-server-queue.js';
 import { createWorker, sweepAbandonedConnections } from './queue/connect-server-worker.js';
 import { startWorkerHeartbeat } from './queue/worker-heartbeat.js';
+import { runWorkerShutdown } from './queue/worker-shutdown.js';
 import {
   createPublisherRedisConnection,
   createQueueRedisConnection,
@@ -70,26 +71,39 @@ async function main(): Promise<void> {
   // how server.ts's "Server listening" line is used today.
   logger.info({ concurrency: env.NOODARA_WORKER_CONCURRENCY, workerId }, 'Worker ready');
 
+  // T-4-32: kept alongside `runWorkerShutdown`'s own identity-keyed re-entry guard — this local
+  // flag is checked/set synchronously before `runWorkerShutdown` is even called, so a second
+  // SIGTERM/SIGINT arriving while shutdown is already in flight never starts a second shutdown
+  // sequence (the helper's own guard would not dedupe two separately-built deps object literals).
   let shuttingDown = false;
   async function shutdown(): Promise<void> {
     if (shuttingDown) return;
     shuttingDown = true;
 
     // D-25: stop intake and wait for active jobs up to the D-14 budget; exceeding it still exits
-    // — the next startup's CONNECTING sweep cleans up whatever was mid-flight.
-    await Promise.race([
-      handle.close(),
-      new Promise<void>((resolve) => {
-        setTimeout(resolve, lockDurationMs);
-      }),
-    ]);
-
-    stopHeartbeat();
-    await queue.close();
-    workerConnection.disconnect();
-    queueConnection.disconnect();
-    publisherConnection.disconnect();
-    process.exit(0);
+    // — the next startup's CONNECTING sweep cleans up whatever was mid-flight. Every cleanup step
+    // now runs even if `handle.close()` or `queue.close()` rejects (T-4-32).
+    await runWorkerShutdown({
+      close: () => handle.close(),
+      graceMs: lockDurationMs,
+      stopHeartbeat,
+      closeQueue: () => queue.close(),
+      disconnect: [
+        () => {
+          workerConnection.disconnect();
+        },
+        () => {
+          queueConnection.disconnect();
+        },
+        () => {
+          publisherConnection.disconnect();
+        },
+      ],
+      logger,
+      exit: (code) => {
+        process.exit(code);
+      },
+    });
   }
 
   process.on('SIGTERM', () => void shutdown());
