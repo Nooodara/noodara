@@ -205,7 +205,7 @@ export async function editServer(
       let statusPatch: Partial<
         Pick<
           typeof servers.$inferInsert,
-          'status' | 'hostFingerprint' | 'hostFingerprintCapturedAt'
+          'status' | 'hostFingerprint' | 'hostFingerprintCapturedAt' | 'pendingFingerprint' | 'pendingFingerprintSeenAt'
         >
       > = {};
       if (row.status === 'CONNECTED') {
@@ -227,6 +227,17 @@ export async function editServer(
             reason: 'clean_close',
           });
           statusPatch = { status: newStatus };
+        }
+      } else if (row.status === 'ERROR' && row.pendingFingerprint !== null) {
+        // UF-01: `pendingFingerprint` is only ever non-null while `ERROR` (parked there by a
+        // HOST_KEY_CHANGED connect failure, see connect-and-discover.ts) — the CONNECTED-only
+        // guard above never covered this status, so an identity-changing edit made here could
+        // leave a fingerprint captured against the *old* host/port/user promotable via
+        // trustFingerprint against the *new* identity. Clear it in the same edit that changes
+        // identity; a non-identity edit (e.g. renaming) leaves it untouched.
+        const identityChanged = host !== row.host || sshPort !== row.sshPort || sshUser !== row.sshUser;
+        if (identityChanged) {
+          statusPatch = { pendingFingerprint: null, pendingFingerprintSeenAt: null };
         }
       }
 

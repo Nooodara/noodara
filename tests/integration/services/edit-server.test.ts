@@ -80,6 +80,13 @@ async function loadEditServer() {
   return import('../../../apps/control-plane/src/services/edit-server.js');
 }
 
+/** Loaded dynamically on every call — mirrors this file's own `loadEditServer` discipline
+ *  (avoids importing `activity/redaction.ts`, which reads `env.NOODARA_MASTER_KEY` at import
+ *  time, before `startServiceFixture()` has written a valid test env). */
+async function loadTrustFingerprint() {
+  return import('../../../apps/control-plane/src/services/trust-fingerprint.js');
+}
+
 async function registerFixtureServer(
   fx: ServiceFixture,
   overrides: RegisterFixtureServerOverrides = {},
@@ -149,6 +156,27 @@ async function setServerFingerprint(
   await fx.db.execute(
     sql`update servers
         set host_fingerprint = ${fingerprint}, host_fingerprint_captured_at = now()
+        where id = ${serverId}`,
+  );
+}
+
+/** Test-arrangement-only raw SQL: lands a row in `ERROR` with a non-null `pendingFingerprint`
+ *  the way a real `HOST_KEY_CHANGED` connect failure would, without driving an actual SSH
+ *  session (per this plan's own action note — a direct Drizzle/SQL update of status,
+ *  lastErrorCode, pendingFingerprint and pendingFingerprintSeenAt is preferable here). Only
+ *  ever used to arrange UF-01's regression state — `editServer` itself must never write
+ *  `pendingFingerprint` outside its own new ERROR-branch clear. */
+async function setServerErrorWithPendingFingerprint(
+  fx: ServiceFixture,
+  serverId: string,
+  pendingFingerprint: string,
+): Promise<void> {
+  await fx.db.execute(
+    sql`update servers
+        set status = 'ERROR'::server_status,
+            last_error_code = 'HOST_KEY_CHANGED'::server_error_code,
+            pending_fingerprint = ${pendingFingerprint},
+            pending_fingerprint_seen_at = now()
         where id = ${serverId}`,
   );
 }
@@ -514,5 +542,77 @@ describe('editServer (SERV-02, ACT-01, D-11, D-13, D-14, D-16)', () => {
     const event = await fetchServerUpdatedEvent(fixture, server.id);
     expect(event?.actorType).toBe('system');
     expect(event?.actorId).toBeNull();
+  });
+
+  describe('UF-01: a stale pendingFingerprint on an ERROR-status identity edit', () => {
+    it('clears pendingFingerprint and pendingFingerprintSeenAt on a host change, so a following trustFingerprint fails safely', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture);
+      await setServerErrorWithPendingFingerprint(fixture, server.id, 'SHA256:stale-pending-fp');
+      const rowBefore = await fetchServerRow(fixture, server.id);
+      expect(rowBefore?.pendingFingerprint).not.toBeNull();
+
+      const result = await editFixtureServer(fixture, { serverId: server.id, host: uniqueHost() });
+
+      expect(result).toMatchObject({ ok: true });
+      const row = await fetchServerRow(fixture, server.id);
+      expect(row?.pendingFingerprint).toBeNull();
+      expect(row?.pendingFingerprintSeenAt).toBeNull();
+
+      const { trustFingerprint } = await loadTrustFingerprint();
+      const trustResult = await trustFingerprint(fixture.deps, {
+        actor: { type: 'system' },
+        serverId: server.id,
+      });
+      expect(trustResult).toMatchObject({ ok: false, code: 'NO_PENDING_FINGERPRINT' });
+      const rowAfterTrust = await fetchServerRow(fixture, server.id);
+      expect(rowAfterTrust?.hostFingerprint).toBe(rowBefore?.hostFingerprint ?? null);
+    });
+
+    it('clears pendingFingerprint on an sshPort-only change', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture, { sshPort: 22 });
+      await setServerErrorWithPendingFingerprint(fixture, server.id, 'SHA256:stale-pending-fp');
+
+      const result = await editFixtureServer(fixture, { serverId: server.id, sshPort: 2222 });
+
+      expect(result).toMatchObject({ ok: true });
+      const row = await fetchServerRow(fixture, server.id);
+      expect(row?.pendingFingerprint).toBeNull();
+      expect(row?.pendingFingerprintSeenAt).toBeNull();
+    });
+
+    it('clears pendingFingerprint on an sshUser-only change', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture, { sshUser: 'deployer' });
+      await setServerErrorWithPendingFingerprint(fixture, server.id, 'SHA256:stale-pending-fp');
+
+      const result = await editFixtureServer(fixture, { serverId: server.id, sshUser: 'operator' });
+
+      expect(result).toMatchObject({ ok: true });
+      const row = await fetchServerRow(fixture, server.id);
+      expect(row?.pendingFingerprint).toBeNull();
+      expect(row?.pendingFingerprintSeenAt).toBeNull();
+    });
+
+    it('leaves pendingFingerprint untouched on a non-identity (name-only) edit', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture);
+      await setServerErrorWithPendingFingerprint(fixture, server.id, 'SHA256:stale-pending-fp');
+
+      const result = await editFixtureServer(fixture, { serverId: server.id, name: uniqueName() });
+
+      expect(result).toMatchObject({ ok: true });
+      const row = await fetchServerRow(fixture, server.id);
+      expect(row?.pendingFingerprint).toBe('SHA256:stale-pending-fp');
+      expect(row?.pendingFingerprintSeenAt).not.toBeNull();
+
+      const { trustFingerprint } = await loadTrustFingerprint();
+      const trustResult = await trustFingerprint(fixture.deps, {
+        actor: { type: 'system' },
+        serverId: server.id,
+      });
+      expect(trustResult).toMatchObject({ ok: true });
+    });
   });
 });
