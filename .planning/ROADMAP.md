@@ -273,7 +273,7 @@ Plans:
 **Wave 3** *(parallel, blocked on Wave 2)*
 
 - [x] 05-05-PLAN.md — `GET /api/servers/:id/discovery` con schema Zod y drift guard, más extensión del canary (DISC-02, QA-05)
-- [ ] 05-06-PLAN.md — Scaffold de `packages/ui`, proyecto Vitest `dom` + arnés `@noodara/ui/testing`, `tokens.css`, tema Tailwind v4 y ADR-0005
+- [x] 05-06-PLAN.md — Scaffold de `packages/ui`, proyecto Vitest `dom` + arnés `@noodara/ui/testing`, `tokens.css`, tema Tailwind v4 y ADR-0005
 
 **Wave 4** *(parallel, blocked on Wave 3)*
 
@@ -366,5 +366,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 5/25 | In Progress|  |
+| 5. UI web | 6/25 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |
