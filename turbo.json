@@ -78,12 +78,17 @@
     "tags": {
       "pure-domain": {
         "dependencies": {
-          "allow": ["pure-domain", "@noodara/config", "ssh-adapter"]
+          "allow": ["pure-domain", "@noodara/config", "ssh-adapter", "ui-components"]
         }
       },
       "ssh-adapter": {
         "dependencies": {
           "allow": ["pure-domain", "@noodara/config"]
+        }
+      },
+      "ui-components": {
+        "dependencies": {
+          "allow": ["ui-components", "@noodara/config", "pure-domain", "ssh-adapter"]
         }
       }
     }

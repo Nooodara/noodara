@@ -6,3 +6,12 @@ packages:
 # STACK.md), not be silently skipped by pnpm's build-script allowlist prompt (D-08/AUTH-02).
 onlyBuiltDependencies:
   - argon2
+
+# Pins react/react-dom to one exact resolved version across the whole workspace (root +
+# packages/ui devDependencies + the future apps/web dependency). Without this, pnpm's
+# isolated node_modules can resolve the root copy and a workspace package's own copy to
+# different physical directories, loading two React instances in one test process --
+# every hook call then throws "invalid hook call" (05-06-PLAN.md Task 1).
+overrides:
+  react: 19.3.0
+  react-dom: 19.3.0
