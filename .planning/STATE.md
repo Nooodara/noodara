@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-11-PLAN.md
-last_updated: "2026-09-19T18:14:13.082Z"
+stopped_at: Completed 05-12-PLAN.md
+last_updated: "2026-09-19T18:54:57.278Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 63
+  completed_plans: 64
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 11 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-12..05-21 remain incomplete)
-Status: Ready to execute (next: 05-12)
+Plan: 12 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-12..05-21 remain incomplete)
+Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [█████████░] 86%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
@@ -118,6 +118,7 @@ Progress: [█████████░] 86%
 | Phase 05 P24 | 25min | 3 tasks | 12 files |
 | Phase 05-ui-web P25 | 14min | 3 tasks | 9 files |
 | Phase 05 P11 | 35min | 3 tasks | 9 files |
+| Phase 05 P12 | 31min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -287,6 +288,9 @@ Recent decisions affecting current work:
 - [Phase 05-25]: ThemeToggle's noodara-theme storage key is declared exactly once (exported STORAGE_KEY constant) and ThemeToggle.test.tsx imports it rather than re-typing the literal, so the plan's own single-file grep acceptance criterion holds by construction
 - [Phase 05-11]: error-copy.ts's ServiceErrorCode reuses api-client.ts's own hand-copied ApiErrorCode (minus NETWORK_ERROR) rather than importing http-errors.ts from apps/control-plane, and ServerErrorCode imports directly from @noodara/domain/server -- apps/web never depends on a control-plane-internal module in the browser bundle
 - [Phase 05-11]: Login always redirects to /servers on success with no originally-requested-path query parameter, since proxy.ts (out of this plan's scope) does not set one and implementing an unreachable, untested redirect-target reader would add a real open-redirect surface with no way to prove it safe -- deferred to whichever plan has proxy.ts in scope
+- [Phase 05-12]: ShellContext lives in its own apps/web/src/lib/shell-context.tsx module rather than defined inline in (shell)/layout.tsx, avoiding an import cycle (Sidebar -> SignOutButton -> layout -> Sidebar)
+- [Phase 05-12]: GET /api/events moved off next.config.ts's generic rewrites() proxy onto its own Route Handler (apps/web/src/app/api/events/route.ts) after this plan's own security review found the generic proxy buffers a long-lived SSE response instead of streaming it -- confirmed empirically, not a design preference
+- [Phase 05-12]: A minimal apps/web/src/app/(shell)/servers/page.tsx placeholder was added (outside this plan's own files_modified list) since without at least one real page inside the (shell) route group the shell never renders for a real navigation; Plan 05-13 replaces it with the real servers list screen
 
 ### Pending Todos
 
@@ -320,6 +324,7 @@ None yet.
 - 05-24-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only adds Tooltip/RelativeTime/CopyButton/StatTile/LabelValue to packages/ui -- no shell, sidebar, toolbar or screens exist yet. DETL-01 (also named in this plan's must_haves) is likewise not satisfied end-to-end: StatTile/LabelValue's contracts are real and tested but no screen wires them to real discovery data yet (Plan 05-14's job). Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01/UI-02 itself (05-06, 05-22, 05-07, 05-08, 05-23, 05-09). Re-verify UI-01/UI-02/DETL-01 against whichever later plan actually builds the shell and screens.
 - 05-25-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only completes 05-UI-SPEC.md's Component Inventory (ListRow, RowMenu, Disclosure, ThemeToggle) -- no shell, sidebar, toolbar or screens exist yet. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for UI-01/UI-02 across every prior packages/ui-only plan this phase (05-06, 05-22, 05-07, 05-08, 05-23, 05-09, 05-24). Re-verify UI-01/UI-02 against whichever later plan actually builds the shell and screens.
 - 05-11-PLAN.md declares requirements: [UI-02] in its frontmatter, but only builds 2 of the 7 screens UI-02 requires (setup, login) -- servers list, add/edit sheet, server detail, activity log and settings still need Plans 05-12 through 05-21. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for UI-01/UI-02 across every prior plan this phase (05-06 through 05-25). Re-verify UI-02 once the remaining screens and the authenticated shell land.
+- 05-12-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter; only UI-01 is marked Complete here (the authenticated shell, proven by six passing @shell E2E behaviours). UI-02 stays Pending -- this plan's own /servers page is a minimal placeholder (no list, no empty/loading/error states), not a real screen; UI-02 needs Plans 05-13..05-21's actual servers list, add/edit sheet, server detail, activity log and settings screens. Matches the same plan-frontmatter-artifact pattern already flagged for every prior UI-01/UI-02 plan this phase.
 
 ## Deferred Items
 
@@ -331,6 +336,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T18:14:13.074Z
-Stopped at: Completed 05-11-PLAN.md
+Last session: 2026-09-19T18:54:57.271Z
+Stopped at: Completed 05-12-PLAN.md
 Resume file: None
