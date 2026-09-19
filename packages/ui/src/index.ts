@@ -19,5 +19,6 @@ export { FileButton, type FileButtonProps } from './FileButton.js';
 export { Input, type InputProps } from './Input.js';
 export { isConfirmationMatch } from './confirm-match.js';
 export { SegmentedControl, type SegmentedControlOption, type SegmentedControlProps } from './SegmentedControl.js';
+export { Sheet, type SheetProps } from './Sheet.js';
 export { StatusPill, type StatusPillProps } from './StatusPill.js';
 export { Textarea, type TextareaProps } from './Textarea.js';
