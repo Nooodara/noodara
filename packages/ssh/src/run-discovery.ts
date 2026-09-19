@@ -378,37 +378,33 @@ export async function runDiscovery(input: RunDiscoveryInput): Promise<DiscoveryS
   for (const entry of DISCOVERY_SEQUENCE) {
     const applicability = entry.appliesTo(state);
     if (!applicability.applies) {
-      checks.push({
+      const check: DiscoveryCheck = {
         id: entry.id,
         status: applicability.status,
         detail: redactor.redact(applicability.detail),
         durationMs: 0,
-      });
-      {
-        const pushedCheck = checks[checks.length - 1]!;
-        try {
-          input.onCheck?.(pushedCheck);
-        } catch {
-          // A listener must never abort discovery — same discipline as publishServerEvent's swallow.
-        }
+      };
+      checks.push(check);
+      try {
+        input.onCheck?.(check);
+      } catch {
+        // A listener must never abort discovery — same discipline as publishServerEvent's swallow.
       }
       continue;
     }
 
     if (budgetAlreadyExceeded) {
-      checks.push({
+      const check: DiscoveryCheck = {
         id: entry.id,
         status: 'skipped',
         detail: redactor.redact('Skipped: the discovery time budget was already exceeded.'),
         durationMs: 0,
-      });
-      {
-        const pushedCheck = checks[checks.length - 1]!;
-        try {
-          input.onCheck?.(pushedCheck);
-        } catch {
-          // A listener must never abort discovery — same discipline as publishServerEvent's swallow.
-        }
+      };
+      checks.push(check);
+      try {
+        input.onCheck?.(check);
+      } catch {
+        // A listener must never abort discovery — same discipline as publishServerEvent's swallow.
       }
       continue;
     }
@@ -419,21 +415,19 @@ export async function runDiscovery(input: RunDiscoveryInput): Promise<DiscoveryS
     if (now() - startedAt >= timeouts.discoveryMs) {
       budgetAlreadyExceeded = true;
       warnings.add('COMMAND_TIMEOUT');
-      checks.push({
+      const check: DiscoveryCheck = {
         id: entry.id,
         status: 'fail',
         detail: redactor.redact(
           `Discovery aborted: exceeded its ${String(timeouts.discoveryMs)}ms total time budget.`,
         ),
         durationMs: 0,
-      });
-      {
-        const pushedCheck = checks[checks.length - 1]!;
-        try {
-          input.onCheck?.(pushedCheck);
-        } catch {
-          // A listener must never abort discovery — same discipline as publishServerEvent's swallow.
-        }
+      };
+      checks.push(check);
+      try {
+        input.onCheck?.(check);
+      } catch {
+        // A listener must never abort discovery — same discipline as publishServerEvent's swallow.
       }
       continue;
     }
@@ -465,19 +459,17 @@ export async function runDiscovery(input: RunDiscoveryInput): Promise<DiscoveryS
       }
     }
 
-    checks.push({
+    const check: DiscoveryCheck = {
       id: entry.id,
       status: outcome.status,
       detail: redactor.redact(outcome.detail),
       durationMs,
-    });
-    {
-      const pushedCheck = checks[checks.length - 1]!;
-      try {
-        input.onCheck?.(pushedCheck);
-      } catch {
-        // A listener must never abort discovery — same discipline as publishServerEvent's swallow.
-      }
+    };
+    checks.push(check);
+    try {
+      input.onCheck?.(check);
+    } catch {
+      // A listener must never abort discovery — same discipline as publishServerEvent's swallow.
     }
   }
 
