@@ -22,9 +22,13 @@ const CAPTION_CLASSES = 'text-caption text-ink-tertiary';
 // Docker/Connection groups and the Settings screen. `mono` renders technical values (host,
 // fingerprint, IDs) in `--text-mono`; `dimmed` renders the value in `--ink-tertiary` and always
 // carries `data-dimmed`, so DETL-02's attenuated last-good-discovery treatment is assertable
-// without computing styles. `copyable` renders exactly one `CopyButton` beside the value -- this
-// component never renders a raw credential, since `ServerView` structurally cannot carry one
-// (SEC-02); the fingerprint/public-URL/command rows are its only intended `copyable` callers.
+// without computing styles. The value span always carries `data-mono` (true/false, matching
+// Input.tsx/Textarea.tsx's own always-present convention), added by Plan 05-16 so the Settings
+// screen's own "every value is mono" behaviour (D-16) is assertable from the DOM rather than a
+// computed style -- purely additive, no existing caller's rendered output changes. `copyable`
+// renders exactly one `CopyButton` beside the value -- this component never renders a raw
+// credential, since `ServerView` structurally cannot carry one (SEC-02); the fingerprint/public-
+// URL/command rows are its only intended `copyable` callers.
 export function LabelValue({
   label,
   value,
@@ -42,7 +46,9 @@ export function LabelValue({
       <span className={LABEL_CLASSES}>{label}</span>
       <div className="flex items-center gap-2">
         {caption !== undefined ? <span className={CAPTION_CLASSES}>{caption}</span> : null}
-        <span className={valueClasses}>{displayValue}</span>
+        <span data-mono={mono ? 'true' : 'false'} className={valueClasses}>
+          {displayValue}
+        </span>
         {copyable && value !== null ? <CopyButton value={value} label={`Copy ${label}`} /> : null}
       </div>
     </div>

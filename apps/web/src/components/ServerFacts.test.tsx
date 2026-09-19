@@ -78,7 +78,11 @@ describe('ServerFacts', () => {
     expect(screen.getByTestId('server-fact-disk')).toHaveTextContent(formatDiskUsage(server.diskUsedMb, server.diskTotalMb).text);
     expect(screen.getByTestId('server-fact-uptime')).toHaveTextContent(formatUptime(server.uptimeSeconds));
 
-    expect(document.querySelectorAll('[data-mono="true"]')).toHaveLength(4);
+    // Scoped to the tiles container: Plan 05-16 added `data-mono` to LabelValue's own value span
+    // too (packages/ui/src/LabelValue.tsx), so a document-wide query would also pick up this
+    // component's mono label/value rows below (Hostname, Architecture, versions, Connection
+    // fields) -- this assertion is specifically about the four stat tiles, not the whole screen.
+    expect(screen.getByTestId('server-facts-tiles').querySelectorAll('[data-mono="true"]')).toHaveLength(4);
   });
 
   it("carries the disk tile's fraction in data-fraction, and renders no meter on the other three tiles", () => {

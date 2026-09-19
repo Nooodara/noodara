@@ -57,4 +57,12 @@ describe('LabelValue', () => {
 
     expect(screen.getByText(PLACEHOLDER)).toBeInTheDocument();
   });
+
+  it('always carries data-mono on the value, true when mono is set and false otherwise', () => {
+    renderUi(<LabelValue label="Host" value="203.0.113.4" mono />);
+    expect(screen.getByText('203.0.113.4')).toHaveAttribute('data-mono', 'true');
+
+    renderUi(<LabelValue label="OS" value="Ubuntu 24.04" />);
+    expect(screen.getByText('Ubuntu 24.04')).toHaveAttribute('data-mono', 'false');
+  });
 });
