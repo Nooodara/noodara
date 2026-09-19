@@ -316,7 +316,7 @@ Plans:
 **Wave 12** *(parallel, blocked on Wave 11)*
 
 - [x] 05-17-PLAN.md — Sheet de alta/edición con credencial leída en el navegador y diálogo de borrado (D-01, D-04)
-- [ ] 05-18-PLAN.md — Narrativa de discovery: seis pasos, severidades honestas y la regla de no inventar progreso (DISC-02)
+- [x] 05-18-PLAN.md — Narrativa de discovery: seis pasos, severidades honestas y la regla de no inventar progreso (DISC-02)
 
 **Wave 13** *(blocked on Wave 12)*
 
@@ -366,5 +366,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 21/25 | In Progress|  |
+| 5. UI web | 22/25 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |

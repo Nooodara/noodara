@@ -4,13 +4,13 @@ milestone: v0.1
 milestone_name: milestone
 status: executing
 stopped_at: Completed 05-17-PLAN.md
-last_updated: "2026-09-19T21:16:45.954Z"
+last_updated: "2026-09-19T21:42:35.489Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 69
+  completed_plans: 70
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 17 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-18..05-21 remain incomplete)
+Plan: 18 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-18..05-21 remain incomplete)
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [██████████] 95%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
@@ -124,6 +124,7 @@ Progress: [██████████] 95%
 | Phase 05 P15 | 10min | 3 tasks | 9 files |
 | Phase 05 P16 | 5min | 3 tasks | 9 files |
 | Phase 05 P17 | 55min | 3 tasks | 15 files |
+| Phase 05-ui-web P18 | 55min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -311,6 +312,9 @@ Recent decisions affecting current work:
 - [Phase 05-17]: CredentialFields is uncontrolled (own local state, reports via onChange) so the no-leak/unmount claims hold by construction; ServerSheet stays mounted with open toggling since Sheet's own Radix Content already unmounts real fields on close
 - [Phase 05-17]: Sheet.tsx needed min-h-0 on its flex-1 overflow-y-auto body, and apps/web's globals.css needed an explicit @source '../../../../packages/ui/src' directive -- both real, previously-latent bugs first exercised by this plan's Sheet usage
 - [Phase 05-17]: E2E server-sheet.spec.ts generates a real throwaway ed25519 key via ssh-keygen rather than a fake string, since credential-store.ts genuinely parses/validates a private key at registration time
+- [Phase 05-18]: buildChecklist collapses the domain's four DiscoveryCheckStatus values into a seven-word CheckState union (pass/warning/fail/not_applicable/skipped/pending/running), never a generic idle bucket, so every rendered word matches SS4.2's vocabulary exactly at both check and step granularity
+- [Phase 05-18]: DISC-02 marked Complete on a real @ssh-live E2E test: a real sshd Testcontainers fixture, a real connect-and-discover run, eleven distinct time-separated server.discovery_progress SSE frames captured via an EventSource subclass, and a single never-reloaded browser page reaching the correct settled state
+- [Phase 05-18]: the Discovery section's own Re-run discovery button carries a dedicated discovery-rerun-button testid, distinct from the toolbar's server-detail-primary-action, since both can render the identical accessible name simultaneously for a CONNECTED server
 
 ### Pending Todos
 
@@ -358,6 +362,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T21:16:45.947Z
+Last session: 2026-09-19T21:42:35.482Z
 Stopped at: Completed 05-17-PLAN.md
 Resume file: None
