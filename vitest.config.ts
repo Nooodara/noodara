@@ -11,6 +11,21 @@ export default defineConfig({
   // QA-02's coverage gate keeps measuring source and no build step is required to run `pnpm test`.
   // See vitest.shared.ts for the ordering rule this alias array depends on.
   resolve: { alias: [...domainSourceAliases, ...sshSourceAliases, ...uiSourceAliases] },
+  // This project's `vite@8.3.0` is rolldown-powered Vite, whose default transform engine is oxc
+  // (esbuild options are accepted but silently ignored when both are set -- confirmed by Vite's
+  // own runtime warning). oxc's JSX transform infers its `jsx` runtime from the nearest
+  // tsconfig.json to each source file -- packages/ui/tsconfig.json sets `"jsx": "react-jsx"`
+  // (fine), but apps/web/tsconfig.json deliberately sets `"jsx": "preserve"` (apps/web/tsconfig.
+  // json's own comment: required by Next.js's own webpack/Turbopack build, which does its own JSX
+  // transform). This plan's ServerList.test.tsx is the first .tsx test file to ever exist under
+  // apps/web/src -- before it, nothing exercised this path, so the break was real but latent. With
+  // `jsx: "preserve"` inferred, oxc leaves `<Foo />` untransformed and Vitest's Rolldown-based
+  // module loader then fails to parse the emitted JSX as plain JS ("Unexpected JSX expression").
+  // An explicit top-level `oxc.jsx` option here always wins over a per-package tsconfig's own
+  // `jsx` field, so every project in this config transforms JSX the same way regardless of which
+  // app/package a test file lives in -- apps/web's real Next.js build is untouched, since Next.js
+  // never goes through this Vite config at all.
+  oxc: { jsx: { runtime: 'automatic' } },
   test: {
     projects: [
       {
