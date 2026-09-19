@@ -26,19 +26,14 @@ export interface ServerListProps {
    *  (no platform clock read inside this component or its rows). */
   readonly now: Date;
   readonly onAddServer: () => void;
+  /** 05-17-PLAN.md: opens the real edit sheet / destructive delete confirm dialog for the given
+   *  row -- this component owns no dialog/sheet state itself, only forwards the row menu's
+   *  selection up to whichever screen composes it. */
+  readonly onEditServer: (server: ServerView) => void;
+  readonly onDeleteServer: (server: ServerView) => void;
 }
 
-// Plan 05-17 connects the real edit sheet and the destructive delete confirm dialog to each row's
-// `...` menu -- this plan only builds the row and its menu, so both handlers are deliberate
-// no-ops, named for the plan that replaces them rather than left unexplained.
-function noopEditServer(): void {
-  // Plan 05-17 opens the edit sheet for this server.
-}
-function noopDeleteServer(): void {
-  // Plan 05-17 opens the destructive delete confirm dialog for this server.
-}
-
-export function ServerList({ state, now, onAddServer }: ServerListProps) {
+export function ServerList({ state, now, onAddServer, onEditServer, onDeleteServer }: ServerListProps) {
   if (state.kind === 'loading') {
     return (
       <div data-testid="servers-loading">
@@ -76,7 +71,7 @@ export function ServerList({ state, now, onAddServer }: ServerListProps) {
   return (
     <div data-testid="servers-list">
       {state.servers.map((server) => (
-        <ServerRow key={server.id} server={server} now={now} onEdit={noopEditServer} onDelete={noopDeleteServer} />
+        <ServerRow key={server.id} server={server} now={now} onEdit={onEditServer} onDelete={onDeleteServer} />
       ))}
     </div>
   );

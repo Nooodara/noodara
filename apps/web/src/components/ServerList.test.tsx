@@ -48,7 +48,7 @@ function buildServer(overrides: Partial<ServerView> & Pick<ServerView, 'id' | 'n
 
 describe('ServerList empty state', () => {
   it('renders the exact title, the exact sentence, and exactly one "Add server" button', () => {
-    renderUi(<ServerList state={{ kind: 'ready', servers: [] }} now={NOW} onAddServer={vi.fn()} />);
+    renderUi(<ServerList state={{ kind: 'ready', servers: [] }} now={NOW} onAddServer={vi.fn()} onEditServer={vi.fn()} onDeleteServer={vi.fn()} />);
 
     expect(screen.getByText('No servers yet')).toBeInTheDocument();
     expect(
@@ -61,7 +61,7 @@ describe('ServerList empty state', () => {
 
 describe('ServerList loading state', () => {
   it('renders exactly five 44px row skeletons and zero spinner/progressbar/status elements', () => {
-    const { container } = renderUi(<ServerList state={{ kind: 'loading' }} now={NOW} onAddServer={vi.fn()} />);
+    const { container } = renderUi(<ServerList state={{ kind: 'loading' }} now={NOW} onAddServer={vi.fn()} onEditServer={vi.fn()} onDeleteServer={vi.fn()} />);
 
     const skeletons = container.querySelectorAll('[data-height="44"]');
     expect(skeletons).toHaveLength(5);
@@ -84,6 +84,8 @@ describe('ServerList error state', () => {
         }}
         now={NOW}
         onAddServer={vi.fn()}
+        onEditServer={vi.fn()}
+        onDeleteServer={vi.fn()}
       />,
     );
 
@@ -100,7 +102,7 @@ describe('ServerList error state', () => {
   it('never renders an extra field carried on the error payload', () => {
     const error = { message: 'Something broke.', code: 'INTERNAL_ERROR', requestId: 'req-super-secret-123' };
     const { container } = renderUi(
-      <ServerList state={{ kind: 'error', error, onRetry: vi.fn() }} now={NOW} onAddServer={vi.fn()} />,
+      <ServerList state={{ kind: 'error', error, onRetry: vi.fn() }} now={NOW} onAddServer={vi.fn()} onEditServer={vi.fn()} onDeleteServer={vi.fn()} />,
     );
 
     expect(container.textContent).not.toContain('req-super-secret-123');
@@ -113,7 +115,7 @@ describe('ServerList populated state', () => {
     const alpha = buildServer({ id: 'a', name: 'Alpha', host: 'alpha.example.test', sshPort: 22, status: 'CONNECTED' });
     const beta = buildServer({ id: 'b', name: 'Beta', host: 'beta.example.test', sshPort: 2222, status: 'ERROR' });
 
-    renderUi(<ServerList state={{ kind: 'ready', servers: [alpha, beta] }} now={NOW} onAddServer={vi.fn()} />);
+    renderUi(<ServerList state={{ kind: 'ready', servers: [alpha, beta] }} now={NOW} onAddServer={vi.fn()} onEditServer={vi.fn()} onDeleteServer={vi.fn()} />);
 
     const rows = screen.getAllByTestId('servers-row');
     expect(rows).toHaveLength(2);
@@ -135,7 +137,7 @@ describe('ServerList populated state', () => {
     const only = buildServer({ id: 'a', name: 'Alpha' });
 
     const { container } = renderUi(
-      <ServerList state={{ kind: 'ready', servers: [only] }} now={NOW} onAddServer={vi.fn()} />,
+      <ServerList state={{ kind: 'ready', servers: [only] }} now={NOW} onAddServer={vi.fn()} onEditServer={vi.fn()} onDeleteServer={vi.fn()} />,
     );
 
     expect(screen.getAllByTestId('servers-row')).toHaveLength(1);

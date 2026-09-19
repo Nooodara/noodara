@@ -2,8 +2,8 @@
 // mono, a StatusPill and a relative last-seen with its own ISO tooltip. The whole row is a real
 // link to `/servers/{id}` (built on `ListRow`'s own `href` activation, never a `<div>` click
 // handler), so click and keyboard activation are entirely native. `RowMenu`'s "Edit"/"Delete"
-// handlers are props this plan wires to no-ops (see below) -- Plan 05-17 connects the real edit
-// sheet and the destructive delete confirm dialog.
+// handlers are required props -- 05-17-PLAN.md wires them to the real edit sheet and the
+// destructive delete confirm dialog via `ServerList`/`(shell)/servers/page.tsx`.
 //
 // Wrapped in its own `data-testid="servers-row"`/`data-server-name` div rather than adding those
 // two attributes to `ListRow` itself: `ListRow` is a shared primitive every list this phase needs

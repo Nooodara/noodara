@@ -6,10 +6,37 @@
 // worker, the built web app), with the preseeded E2E admin. Every credential used here is an
 // obviously-fake value (never a real key/password), matching the harness-hygiene rule that
 // Playwright traces may capture typed secrets.
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { expect, test, type Page, type Request } from '@playwright/test';
 import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './fixtures/stack.js';
 
-const FAKE_PRIVATE_KEY = '-----BEGIN OPENSSH PRIVATE KEY-----\nfake-e2e-only-key-material-zK9qLdistinctive\n-----END OPENSSH PRIVATE KEY-----';
+// A real, throwaway ed25519 key generated fresh for this run only -- the credential store
+// actually parses/validates a private key at registration time (apps/control-plane/src/services/
+// credential-store.ts's encodePrivateKey calls @noodara/ssh's own loadPrivateKey), so an
+// obviously-fake string is rejected as INVALID_CREDENTIAL before ever reaching a row. Generated
+// with the host's own `ssh-keygen`, the same tool packages/ssh/src/testing/generate-keys.ts
+// already uses for this identical purpose -- never written to the repository, never a real
+// server's credential. A distinctive substring of the real encoded key body (never the fixed
+// header/footer lines every OpenSSH key shares) is used as the leak-detection canary.
+function generateFixtureEd25519Key(): { readonly privateKey: string; readonly canary: string } {
+  const dir = mkdtempSync(join(tmpdir(), 'noodara-e2e-key-'));
+  try {
+    execFileSync('ssh-keygen', ['-q', '-N', '', '-t', 'ed25519', '-f', join(dir, 'key')], { stdio: 'ignore' });
+    const privateKey = readFileSync(join(dir, 'key'), 'utf8');
+    const bodyLine = privateKey.split('\n').find((line) => line.length >= 40 && !line.startsWith('-----'));
+    if (bodyLine === undefined) {
+      throw new Error('generateFixtureEd25519Key: no encoded body line found in the generated key');
+    }
+    return { privateKey, canary: bodyLine.slice(0, 40) };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+const FIXTURE_KEY = generateFixtureEd25519Key();
 const FAKE_PASSWORD = 'e2e-fixture-only-password-Qx7vB';
 
 async function login(page: Page): Promise<void> {
@@ -57,10 +84,10 @@ test('@sheet Choose file fills the private-key textarea from a real file read, a
   await page.locator('input[type="file"]').setInputFiles({
     name: 'e2e-fake-key.pem',
     mimeType: 'text/plain',
-    buffer: Buffer.from(FAKE_PRIVATE_KEY, 'utf8'),
+    buffer: Buffer.from(FIXTURE_KEY.privateKey, 'utf8'),
   });
 
-  await expect(page.getByLabel('Private key')).toHaveValue(FAKE_PRIVATE_KEY);
+  await expect(page.getByLabel('Private key')).toHaveValue(FIXTURE_KEY.privateKey);
 
   const requests: Request[] = [];
   page.on('request', (request) => {
@@ -76,10 +103,16 @@ test('@sheet Choose file fills the private-key textarea from a real file read, a
   expect(createRequest).toBeDefined();
   expect(createRequest?.headers()['content-type']).toBe('application/json');
   const body = createRequest?.postDataJSON() as { credential?: { privateKey?: string } };
-  expect(body.credential?.privateKey).toBe(FAKE_PRIVATE_KEY);
+  expect(body.credential?.privateKey).toBe(FIXTURE_KEY.privateKey);
 
   for (const request of requests) {
-    expect(request.headers()['content-type']).not.toContain('multipart/form-data');
+    // The best-effort /connect follow-up carries no body at all (apiSend never sets a
+    // Content-Type header when there's nothing to send), so this only asserts against requests
+    // that actually declared one -- never multipart, whichever ones exist.
+    const contentType = request.headers()['content-type'];
+    if (contentType !== undefined) {
+      expect(contentType).not.toContain('multipart/form-data');
+    }
   }
 });
 
@@ -191,7 +224,7 @@ test('@sheet opening Edit shows the credential collapsed to dots plus Replace, w
     data: {
       name,
       host: `${name}.example.test`,
-      credential: { type: 'ssh_private_key', privateKey: FAKE_PRIVATE_KEY },
+      credential: { type: 'ssh_private_key', privateKey: FIXTURE_KEY.privateKey },
     },
   });
   await page.reload();
@@ -204,11 +237,11 @@ test('@sheet opening Edit shows the credential collapsed to dots plus Replace, w
   await expect(page.getByTestId('server-sheet')).toBeVisible();
   await expect(page.getByText('••••••••')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Replace' })).toBeVisible();
-  await expect(page.getByRole('textbox')).toHaveCount(2); // Name, Host only -- no credential textbox yet
+  await expect(page.getByRole('textbox')).toHaveCount(3); // Name, Host, SSH user only -- no credential textbox yet
 
   const html = await page.content();
-  expect(html).not.toContain(FAKE_PRIVATE_KEY);
-  expect(html).not.toContain('fake-e2e-only-key-material-zK9qLdistinctive');
+  expect(html).not.toContain(FIXTURE_KEY.privateKey);
+  expect(html).not.toContain(FIXTURE_KEY.canary);
 });
 
 test('@sheet Delete requires the exact name: the confirm button stays disabled until it matches, then deletes the row', async ({
@@ -254,7 +287,7 @@ test('@sheet after the whole create/edit flow, neither storage nor navigation hi
   const name = `no-leak-${String(Date.now())}`;
   await page.getByLabel('Name').fill(name);
   await page.getByLabel('Host').fill(`${name}.example.test`);
-  await page.getByLabel('Private key').fill(FAKE_PRIVATE_KEY);
+  await page.getByLabel('Private key').fill(FIXTURE_KEY.privateKey);
   await page.getByRole('button', { name: 'Save without connecting' }).click();
   await expect(page.getByTestId('server-sheet')).toHaveCount(0);
 
@@ -279,7 +312,7 @@ test('@sheet after the whole create/edit flow, neither storage nor navigation hi
     return values;
   });
 
-  const secretFragment = 'fake-e2e-only-key-material-zK9qLdistinctive';
+  const secretFragment = FIXTURE_KEY.canary;
   expect(storedValues.some((value) => value.includes(secretFragment))).toBe(false);
   expect(storedValues.some((value) => value.includes(FAKE_PASSWORD))).toBe(false);
   expect(page.url()).not.toContain(secretFragment);

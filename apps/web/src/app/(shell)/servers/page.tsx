@@ -12,6 +12,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@noodara/ui';
 import { Toolbar } from '../../../components/Toolbar';
 import { ServerList, type ServerListState } from '../../../components/ServerList';
+import { ServerSheet } from '../../../components/ServerSheet';
+import { DeleteServerDialog } from '../../../components/DeleteServerDialog';
 import { apiGet, type ApiErrorCode, type ServerView } from '../../../lib/api-client';
 import { copyForErrorCode } from '../../../lib/error-copy';
 import { requireSession } from '../../../lib/require-session';
@@ -29,13 +31,10 @@ function genericFailureMessage(code: ApiErrorCode, message: string): string {
   return copyForErrorCode(code);
 }
 
-// Plan 05-17 wires the real add-server sheet to this action -- this plan only builds the screen's
-// chrome and data flow, so the handler is a deliberate no-op, named for that later plan rather
-// than left unexplained. Both the toolbar's primary action and the empty state's own button call
-// this same function.
-function noopAddServer(): void {
-  // Plan 05-17 opens the add-server sheet.
-}
+// 05-17-PLAN.md: the sheet's own open/mode/target-server state, owned by this page (not the
+// sheet itself) -- `null` means closed. Both the toolbar's primary action and the empty state's
+// own "Add server" button open the same create sheet.
+type SheetState = { readonly mode: 'create'; readonly server: null } | { readonly mode: 'edit'; readonly server: ServerView };
 
 interface ListServersResponse {
   readonly items: ServerView[];
@@ -100,21 +99,54 @@ export default function ServersPage() {
   // state is explicit about "single button").
   const isEmpty = state.kind === 'ready' && state.servers.length === 0;
 
+  const [sheetState, setSheetState] = useState<SheetState | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ServerView | null>(null);
+
+  function openCreateSheet(): void {
+    setSheetState({ mode: 'create', server: null });
+  }
+  function openEditSheet(server: ServerView): void {
+    setSheetState({ mode: 'edit', server });
+  }
+
   return (
     <>
       <Toolbar
         title="Servers"
         primaryAction={
           isEmpty ? undefined : (
-            <Button variant="primary" data-testid="servers-add-button" onClick={noopAddServer}>
+            <Button variant="primary" data-testid="servers-add-button" onClick={openCreateSheet}>
               Add server
             </Button>
           )
         }
       />
       <div className="mx-auto max-w-[1120px] p-8">
-        <ServerList state={state} now={new Date()} onAddServer={noopAddServer} />
+        <ServerList
+          state={state}
+          now={new Date()}
+          onAddServer={openCreateSheet}
+          onEditServer={openEditSheet}
+          onDeleteServer={setDeleteTarget}
+        />
       </div>
+      <ServerSheet
+        open={sheetState !== null}
+        onOpenChange={(open) => {
+          if (!open) setSheetState(null);
+        }}
+        mode={sheetState?.mode ?? 'create'}
+        server={sheetState?.server ?? null}
+        onSaved={fetchServers}
+      />
+      <DeleteServerDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        server={deleteTarget}
+        onDeleted={fetchServers}
+      />
     </>
   );
 }
