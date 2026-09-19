@@ -6,12 +6,13 @@
 // (apps/web/src/lib/detail-state.ts): `never-discovered`/`failed-no-history`/`failed-with-
 // history`/`discovered`/`host-key-changed`.
 //
-// One surface from 05-UI-SPEC.md SS2.5's own layout is deliberately left as a documented seam,
-// never even a stubbed empty section, matching D-05's "never invent progress" discipline extended
-// to every not-yet-built part of this page:
-//   - The first-trust notice (layout position 1) and the real `HOST_KEY_CHANGED` banner + trust
-//     dialog (D-02/D-03) -- Plan 05-19. This plan renders only a neutral placeholder block for the
-//     `host-key-changed` detail state, named for that plan.
+// 05-19-PLAN.md wires D-02/D-03 in at this page's two remaining documented seams: the first-trust
+// notice (layout position 1, gated by apps/web/src/lib/first-trust.ts's
+// shouldShowFirstTrustNotice) and the real HOST_KEY_CHANGED banner + type-the-name trust dialog
+// (layout position 2, replacing Plan 05-14's neutral placeholder for the `host-key-changed` detail
+// state). Both are the TOFU-critical surfaces (05-01-SUMMARY.md's UF-01 finding is exactly what
+// this trust path has to defend against) -- see HostKeyChangedBanner.tsx/TrustFingerprintDialog.tsx
+// for the full security contract.
 //
 // The Discovery section (layout position 6, DISC-02/D-05..D-08) is wired in by this plan: this
 // page owns accumulating `server.discovery_progress` events for this server id (the live progress
@@ -28,11 +29,15 @@ import type { DiscoveryCheck } from '@noodara/domain/discovery';
 import type { ServerErrorCode } from '@noodara/domain/server';
 import { Banner, EmptyState, Skeleton, SkeletonText } from '@noodara/ui';
 import { DiscoverySection } from '../../../../components/DiscoverySection';
+import { FirstTrustNotice } from '../../../../components/FirstTrustNotice';
+import { HostKeyChangedBanner } from '../../../../components/HostKeyChangedBanner';
 import { ServerDetailToolbar } from '../../../../components/ServerDetailToolbar';
 import { ServerFacts } from '../../../../components/ServerFacts';
+import { TrustFingerprintDialog } from '../../../../components/TrustFingerprintDialog';
 import { apiGet, type ApiErrorCode, type ServerView } from '../../../../lib/api-client';
 import { deriveDetailState, derivePrimaryAction } from '../../../../lib/detail-state';
 import { copyForErrorCode, copyForServerErrorCode } from '../../../../lib/error-copy';
+import { dismissFirstTrustNotice, shouldShowFirstTrustNotice } from '../../../../lib/first-trust';
 import { requireSession } from '../../../../lib/require-session';
 import { useShellContext } from '../../../../lib/shell-context';
 
@@ -89,6 +94,15 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
   // transition into `CONNECTING` for this same server id.
   const [liveChecks, setLiveChecks] = useState<readonly DiscoveryCheck[]>([]);
   const previousStatusRef = useRef<ServerView['status'] | null>(null);
+  // D-02: a dismissal is client-side, cosmetic state read fresh on every render via
+  // first-trust.ts's own shouldShowFirstTrustNotice/dismissFirstTrustNotice -- this setter only
+  // forces a re-render after a click so the notice disappears immediately; the counter's value
+  // itself is never read, storage is always the source of truth.
+  const [, setDismissTick] = useState(0);
+  // D-03: the trust-new-fingerprint dialog's own open state, owned by this page (matching
+  // ServersPage's own sheet/dialog ownership precedent) since it must survive independently of
+  // whichever detail state is currently rendered underneath it.
+  const [trustDialogOpen, setTrustDialogOpen] = useState(false);
 
   const fetchServer = useCallback((): void => {
     if (!hasLoadedRef.current) {
@@ -196,21 +210,38 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         onActionSettled={fetchServer}
       />
       <div className="mx-auto flex max-w-[1120px] flex-col gap-8 p-8">
-        {/* Plan 05-19 mounts the first-trust notice here (05-UI-SPEC.md SS2.5 layout position 1)
-            and replaces the HOST_KEY_CHANGED placeholder immediately below with the real SS5.3
-            banner and trust-new-fingerprint dialog. */}
+        {/* D-02, 05-UI-SPEC.md SS2.5 layout position 1 -- shown once per server, gated on the
+            real browser localStorage (never reached from a unit test; see first-trust.test.ts
+            for the storage-injected pure logic this reads). Recomputed fresh on every render --
+            `setDismissTick` above only exists to trigger the re-render after a click. */}
+        {shouldShowFirstTrustNotice(window.localStorage, server.id, server.hostFingerprintCapturedAt) &&
+        server.hostFingerprint !== null ? (
+          <FirstTrustNotice
+            fingerprint={server.hostFingerprint}
+            onDismiss={() => {
+              dismissFirstTrustNotice(window.localStorage, server.id);
+              setDismissTick((tick) => tick + 1);
+            }}
+          />
+        ) : null}
+
+        {/* D-03, 05-UI-SPEC.md SS2.5 layout position 2 -- the dedicated banner replaces the
+            generic DETL-02 banner entirely for this one code; the two are never rendered
+            together (see the `failed-*` branch immediately below, which only fires for every
+            other ServerErrorCode). */}
         {detailState === 'host-key-changed' ? (
-          <div
-            data-testid="server-detail-host-key-changed-placeholder"
-            className="flex flex-col gap-2 rounded-md border border-hairline bg-surface-1 px-5 py-4"
-          >
-            <p className="text-body text-ink">
-              This server&apos;s host key changed since it was last trusted. Verify it before continuing.
-            </p>
-            <span data-mono="true" className="text-mono text-ink-tertiary">
-              HOST_KEY_CHANGED
-            </span>
-          </div>
+          <HostKeyChangedBanner
+            host={server.host}
+            sshPort={server.sshPort}
+            hostFingerprint={server.hostFingerprint}
+            hostFingerprintCapturedAt={server.hostFingerprintCapturedAt}
+            pendingFingerprint={server.pendingFingerprint}
+            pendingFingerprintSeenAt={server.pendingFingerprintSeenAt}
+            now={now}
+            onTrustClick={() => {
+              setTrustDialogOpen(true);
+            }}
+          />
         ) : null}
 
         {(detailState === 'failed-no-history' || detailState === 'failed-with-history') &&
@@ -246,6 +277,13 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
           now={now}
         />
       </div>
+      <TrustFingerprintDialog
+        open={trustDialogOpen}
+        onOpenChange={setTrustDialogOpen}
+        server={server}
+        onSettled={fetchServer}
+        now={now}
+      />
     </>
   );
 }
