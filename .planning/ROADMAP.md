@@ -308,7 +308,7 @@ Plans:
 
 **Wave 11** *(parallel, blocked on Wave 10)*
 
-- [ ] 05-13-PLAN.md — Lista de servidores con filas de 44px, actualización en vivo y los tres estados (SERV-04, D-09)
+- [x] 05-13-PLAN.md — Lista de servidores con filas de 44px, actualización en vivo y los tres estados (SERV-04, D-09)
 - [ ] 05-14-PLAN.md — Detalle: cuatro stat tiles, grupos System/Docker/Connection y los dos estados de DETL-02
 - [ ] 05-15-PLAN.md — Activity log: frases por acción, claves curadas, agrupación por día y paginación por cursor (ACT-02)
 - [ ] 05-16-PLAN.md — Settings de solo lectura con grupos Instance y Advanced (SET-01, D-16)
@@ -366,5 +366,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 16/25 | In Progress|  |
+| 5. UI web | 17/25 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |
