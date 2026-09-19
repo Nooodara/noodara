@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-22-PLAN.md
-last_updated: "2026-09-19T15:40:44.227Z"
+stopped_at: Completed 05-07-PLAN.md
+last_updated: "2026-09-19T16:05:30.846Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 55
+  completed_plans: 56
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 8 of 25
+Plan: 9 of 25
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [████████░░] 75%
+Progress: [████████░░] 77%
 
 ## Performance Metrics
 
@@ -110,6 +110,7 @@ Progress: [████████░░] 75%
 | Phase 05 P05 | 21min | 3 tasks | 11 files |
 | Phase 05-ui-web P06 | 15min | 3 tasks | 17 files |
 | Phase 05 P22 | 25min | 3 tasks | 11 files |
+| Phase 05-ui-web P07 | 35min | 3 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -260,6 +261,9 @@ Recent decisions affecting current work:
 - [Phase 05-06]: tokens.css decomposes each of the eight type roles into size/line-height/tracking/weight sub-tokens (not a single shorthand) so theme.css's Tailwind v4 text/tracking namespaces can bind directly with zero literal values
 - [Phase 05-22]: packages/ui gained a real dependencies entry on @noodara/domain (workspace:*), not just a devDependency -- pnpm boundaries requires the importing package to directly declare anything it imports, matching the packages/ssh precedent
 - [Phase 05-22]: StatusPill's CONNECTING pulse uses Tailwind's built-in motion-safe: variant rather than a hand-written arbitrary keyframe, and Button's aria-busy renders as true-or-undefined (never literal false) so the attribute is genuinely absent when only disabled is set
+- [Phase 05-07]: No apps/web/turbo.json and no root package.json dev script change -- Turborepo dispatches a task to every package whose package.json declares a matching script name, so apps/web's own 'dev' script automatically joins the existing shared 'dev' task; verified with 'turbo run dev dev:worker --dry-run=json' before relying on it
+- [Phase 05-07]: packages/ui/tokens.css and theme.css had a literal */ substring inside prose doc comments (describing Tailwind's --text-*/--text-*--line-height namespace), prematurely terminating the CSS comment -- this plan's apps/web build is the first real Tailwind pipeline run this phase, surfacing a pre-existing Plan 05-06/05-22 bug; reworded the comments, no functional change
+- [Phase 05-07]: buildValidBootEnv() and CI's workflow env both gained NOODARA_API_ORIGIN -- once apps/web's dev script joined the shared turbo dev task, the real clean-tree pnpm dev boot-smoke test and pnpm test:integration's global build setup both now build/boot apps/web too; same class of gap Plan 04-07 fixed for REDIS_URL
 
 ### Pending Todos
 
@@ -285,6 +289,7 @@ None yet.
 - 05-05-PLAN.md declares requirements: [DISC-02, QA-05] in its frontmatter, but only closes DISC-02's read-endpoint surface (GET /api/servers/:id/discovery) and extends canary-http.test.ts to scan it plus the server.discovery_progress SSE frame -- CI's ci.yml security job already runs pnpm security:scan-leaks (Phase 4), but the nightly job (.github/workflows/nightly.yml) QA-05 also requires per REQUIREMENTS.md's own wording ('Un job de CI y nightly...') still has not landed (flagged pending since 05-02/05-03). QA-05 stays Pending in REQUIREMENTS.md; DISC-02 was already Complete before this plan. Re-verify QA-05 once nightly.yml exists.
 - 05-06-PLAN.md declares requirements: [UI-01] in its frontmatter, but only builds the packages/ui scaffold, component-test harness and tokens.css/theme.css -- no shell, sidebar, toolbar or navigation exists (apps/web itself is not created by this plan). Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03) and DISC-02/QA-05 (05-05). Re-verify UI-01 against whichever later plan actually builds the shell (05-UI-SPEC.md section 1).
 - 05-22-PLAN.md declares requirements: [UI-01] in its frontmatter, but only adds Button/StatusPill/cn/tone to packages/ui -- no shell, sidebar, toolbar or apps/web exists yet. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01 itself (05-06). Re-verify UI-01 against whichever later plan actually builds the shell (05-UI-SPEC.md section 1).
+- 05-07-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only builds apps/web's infrastructure (same-origin proxy, no-flash theme bootstrap, tested fetch client) -- no sidebar, toolbar, navigation, or any of the seven screens 05-UI-SPEC.md describes exist yet (Plan 05-12 adds the authenticated shell route-group layout this plan deliberately leaves for later). Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05), and UI-01 itself (05-06, 05-22). Re-verify UI-01/UI-02 against whichever later plan actually builds the shell and screens.
 
 ## Deferred Items
 
@@ -296,6 +301,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T15:40:44.220Z
-Stopped at: Completed 05-22-PLAN.md
+Last session: 2026-09-19T16:05:30.839Z
+Stopped at: Completed 05-07-PLAN.md
 Resume file: None

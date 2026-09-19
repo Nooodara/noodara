@@ -277,7 +277,7 @@ Plans:
 
 **Wave 4** *(parallel, blocked on Wave 3)*
 
-- [ ] 05-07-PLAN.md — Scaffold de `apps/web`: proxy same-origin, tema sin flash, cliente de API probado y ADR-0006
+- [x] 05-07-PLAN.md — Scaffold de `apps/web`: proxy same-origin, tema sin flash, cliente de API probado y ADR-0006
 - [x] 05-22-PLAN.md — `tone`, `cn`, `Button` y `StatusPill` test-first: las cuatro variantes y los seis estados con cobertura de comportamiento
 
 **Wave 5** *(parallel, blocked on Wave 4)*
@@ -366,5 +366,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 7/25 | In Progress|  |
+| 5. UI web | 8/25 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |
