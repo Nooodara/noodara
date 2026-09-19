@@ -48,6 +48,12 @@ export interface RunDiscoveryInput {
    *  to compare elapsed time against `timeouts.discoveryMs` — no per-command duration is ever
    *  derived from it, since `ExecResult.durationMs` already measures that. */
   readonly now?: () => number;
+  /** D-05: invoked once per `DiscoveryCheck` as it is recorded, including `skipped`/`not_applicable`
+   *  entries, in `DISCOVERY_SEQUENCE` order — so a listener's "next pending check" inference stays
+   *  in lockstep with the fixed sequence. Synchronous; never awaited. Optional — defaults to a
+   *  no-op — and never allowed to throw out of `runDiscovery` (same swallow discipline as
+   *  `publishServerEvent`, matching this module's own "never throws, never rejects" contract). */
+  readonly onCheck?: (check: DiscoveryCheck) => void;
 }
 
 /** Mutable, per-run state a step's `appliesTo`/`evaluate` may read or (rarely) update. */
@@ -378,6 +384,14 @@ export async function runDiscovery(input: RunDiscoveryInput): Promise<DiscoveryS
         detail: redactor.redact(applicability.detail),
         durationMs: 0,
       });
+      {
+        const pushedCheck = checks[checks.length - 1]!;
+        try {
+          input.onCheck?.(pushedCheck);
+        } catch {
+          // A listener must never abort discovery — same discipline as publishServerEvent's swallow.
+        }
+      }
       continue;
     }
 
@@ -388,6 +402,14 @@ export async function runDiscovery(input: RunDiscoveryInput): Promise<DiscoveryS
         detail: redactor.redact('Skipped: the discovery time budget was already exceeded.'),
         durationMs: 0,
       });
+      {
+        const pushedCheck = checks[checks.length - 1]!;
+        try {
+          input.onCheck?.(pushedCheck);
+        } catch {
+          // A listener must never abort discovery — same discipline as publishServerEvent's swallow.
+        }
+      }
       continue;
     }
 
@@ -405,6 +427,14 @@ export async function runDiscovery(input: RunDiscoveryInput): Promise<DiscoveryS
         ),
         durationMs: 0,
       });
+      {
+        const pushedCheck = checks[checks.length - 1]!;
+        try {
+          input.onCheck?.(pushedCheck);
+        } catch {
+          // A listener must never abort discovery — same discipline as publishServerEvent's swallow.
+        }
+      }
       continue;
     }
 
@@ -441,6 +471,14 @@ export async function runDiscovery(input: RunDiscoveryInput): Promise<DiscoveryS
       detail: redactor.redact(outcome.detail),
       durationMs,
     });
+    {
+      const pushedCheck = checks[checks.length - 1]!;
+      try {
+        input.onCheck?.(pushedCheck);
+      } catch {
+        // A listener must never abort discovery — same discipline as publishServerEvent's swallow.
+      }
+    }
   }
 
   return { facts, checks, warnings: [...warnings] };
