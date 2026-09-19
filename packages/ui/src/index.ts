@@ -31,8 +31,10 @@ export {
 export { Input, type InputProps } from './Input.js';
 export { isConfirmationMatch } from './confirm-match.js';
 export { Notice, type NoticeProps } from './Notice.js';
+export { RelativeTime, type RelativeTimeProps } from './RelativeTime.js';
 export { SegmentedControl, type SegmentedControlOption, type SegmentedControlProps } from './SegmentedControl.js';
 export { Sheet, type SheetProps } from './Sheet.js';
 export { Skeleton, type SkeletonProps, SkeletonRow, type SkeletonRowProps, SkeletonText, type SkeletonTextProps } from './Skeleton.js';
 export { StatusPill, type StatusPillProps } from './StatusPill.js';
 export { Textarea, type TextareaProps } from './Textarea.js';
+export { Tooltip, TooltipProvider, type TooltipProps } from './Tooltip.js';
