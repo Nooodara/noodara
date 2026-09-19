@@ -27,6 +27,10 @@ Noodara puede conocer, registrar y comunicarse con infraestructura real de forma
 - ✓ Snapshots de discovery (`discovery_snapshots`, migración 0003) con `mergeDiscoveryFacts` (null nunca sobrescribe), `classifySnapshotOutcome`, desnormalización de facts en `servers` e índices únicos por nombre y host:puerto — Fase 3
 - ✓ Activity log con seis acciones `server.*`, escritura en la misma transacción que la operación, guard de metadata sensible y test de frontera que restringe `writeActivityEvent` a servicios y módulo `activity` — Fase 3
 - ✓ `ServerView` con allowlist de 27 campos sin material de credencial; canary full-flow (register → connect → edit → host-key change → trust → connect → delete contra sshd real) sin fuga en logger, resultados, `activity_events.metadata` ni `discovery_snapshots.payload`; `pnpm security:scan-leaks` en el job `security` de CI; 739 unit + 102 integration del alcance de la fase — Fase 3
+- ✓ API HTTP de servidores (ocho rutas `/api/servers`: CRUD, trust-fingerprint, connect y discover) con schemas Zod estrictos, un único mapa código→status, handler global de errores opaco con redacción y scope `/api` protegido por sesión y guard de Origin — Fase 4 (2026-09-19)
+- ✓ Worker BullMQ como segundo proceso (`pnpm start:worker`): `connectAndDiscover` corre fuera del proceso de la API, jobId determinístico `connect-<serverId>`, recuperación de conexiones abandonadas (listener `stalled` + barrido al arrancar vía `failInFlightConnection`), heartbeat y apagado acotado — Fase 4
+- ✓ Estado en tiempo real por SSE (`GET /api/events`) sobre Redis pub/sub, con allowlist de tipos de evento, tope de conexiones y revalidación de sesión en el heartbeat; re-ejecución de discovery bajo demanda (SERV-06, DISC-05) — Fase 4
+- ✓ Activity log paginado por cursor, `/api/config` de solo lectura y `/health` que distingue Postgres, Redis y worker; E2E contra sshd, Redis y worker reales, canary de fuga extendido a HTTP y SSE, boot smoke de dos procesos; 865 unit — Fase 4. Pendiente antes de Fase 5: cuatro amenazas abiertas en `04-SECURITY.md`, un bypass de TOFU en `editServer` y dos sub-tests flaky de `events-sse.test.ts` por verificar en CI
 
 ### Active
 
@@ -86,7 +90,8 @@ Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.
 | UI web con Next.js 16 App Router como cliente delgado de la API Fastify | Madurez y ecosistema; revisar TanStack Start en v0.2 si crece la superficie en tiempo real. Aprobado por el usuario | — Pending |
 | Clave SSH por defecto, password como fallback documentado | Cumple el roadmap; ambos competidores priorizan clave. Aprobado por el usuario | — Pending |
 | Adiciones a v0.1: setup token, sudo no-root, narrativa de discovery, pre-seed de admin | Recomendadas por research (features + pitfalls); bajo costo, alto valor de confianza. Aprobadas por el usuario | — Pending |
-| Topología: Docker Compose con api y worker separados, SSE para estado en tiempo real, DiscoverySnapshot append-only, key-version en filas cifradas | Research de arquitectura: evita refactors forzados en v0.3 y v0.5 | — Pending |
+| Topología: Docker Compose con api y worker separados, SSE para estado en tiempo real, DiscoverySnapshot append-only, key-version en filas cifradas | Research de arquitectura: evita refactors forzados en v0.3 y v0.5 | ✓ Good (Fase 4: api y worker separados + SSE; Compose llega en Fase 6) |
+| JobId de BullMQ `connect-<serverId>` con guion, y borrado del job terminal retenido antes de re-encolar | BullMQ 6.x rechaza `:` en ids custom; un job `completed` retenido hacía que todo re-discover posterior fuera un no-op silencioso (hallado por el E2E de 04-11) | ✓ Good (Fase 4) |
 | TDD obligatorio y DoD estricto desde v0.1 | Definido en el roadmap; el valor central es confiabilidad, no velocidad | — Pending |
 | Design system Apple-inspired dark-first | Principios de diseño del roadmap + preferencia explícita del usuario por UX de Apple | — Pending |
 
@@ -108,4 +113,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-16 after Phase 3 completion*
+*Last updated: 2026-09-19 after Phase 4 completion*
