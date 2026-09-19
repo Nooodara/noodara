@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-25-PLAN.md
-last_updated: "2026-09-19T17:43:11.169Z"
+stopped_at: Completed 05-11-PLAN.md
+last_updated: "2026-09-19T18:14:13.082Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 62
+  completed_plans: 63
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 25 of 25 (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-11..05-21 remain incomplete)
-Status: Ready to execute
+Plan: 11 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-12..05-21 remain incomplete)
+Status: Ready to execute (next: 05-12)
 Last activity: 2026-09-19
 
-Progress: [█████████░] 85%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
@@ -117,6 +117,7 @@ Progress: [█████████░] 85%
 | Phase 05 P09 | 15min | 3 tasks | 11 files |
 | Phase 05 P24 | 25min | 3 tasks | 12 files |
 | Phase 05-ui-web P25 | 14min | 3 tasks | 9 files |
+| Phase 05 P11 | 35min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -284,6 +285,8 @@ Recent decisions affecting current work:
 - [Phase 05-24]: Radix TooltipTrigger suppresses its own onFocus-driven open when a pointer-down just occurred, so a plain click never opens an uncontrolled Tooltip -- CopyButton's forced-open pattern via a controlled open prop is the precedent for any future component needing a click-triggered tooltip confirmation
 - [Phase 05-25]: RowMenu is built on @radix-ui/react-dialog's non-modal usage (modal={false}) since no ADR-0000-approved primitive is a purpose-built popover/dropdown-menu -- role=menu/menuitem override the primitive's own default role=dialog (verified by reading its source), plus arrow-key roving focus, the one behaviour the primitive does not provide once that role is chosen
 - [Phase 05-25]: ThemeToggle's noodara-theme storage key is declared exactly once (exported STORAGE_KEY constant) and ThemeToggle.test.tsx imports it rather than re-typing the literal, so the plan's own single-file grep acceptance criterion holds by construction
+- [Phase 05-11]: error-copy.ts's ServiceErrorCode reuses api-client.ts's own hand-copied ApiErrorCode (minus NETWORK_ERROR) rather than importing http-errors.ts from apps/control-plane, and ServerErrorCode imports directly from @noodara/domain/server -- apps/web never depends on a control-plane-internal module in the browser bundle
+- [Phase 05-11]: Login always redirects to /servers on success with no originally-requested-path query parameter, since proxy.ts (out of this plan's scope) does not set one and implementing an unreachable, untested redirect-target reader would add a real open-redirect surface with no way to prove it safe -- deferred to whichever plan has proxy.ts in scope
 
 ### Pending Todos
 
@@ -316,6 +319,7 @@ None yet.
 - 05-09-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only adds format.ts plus Banner/Notice/EmptyState/Skeleton to packages/ui -- no shell, sidebar, toolbar or screens exist yet. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01/UI-02 itself (05-06, 05-22, 05-07, 05-08, 05-23). Re-verify UI-01/UI-02 against whichever later plan actually builds the shell and screens.
 - 05-24-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only adds Tooltip/RelativeTime/CopyButton/StatTile/LabelValue to packages/ui -- no shell, sidebar, toolbar or screens exist yet. DETL-01 (also named in this plan's must_haves) is likewise not satisfied end-to-end: StatTile/LabelValue's contracts are real and tested but no screen wires them to real discovery data yet (Plan 05-14's job). Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01/UI-02 itself (05-06, 05-22, 05-07, 05-08, 05-23, 05-09). Re-verify UI-01/UI-02/DETL-01 against whichever later plan actually builds the shell and screens.
 - 05-25-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only completes 05-UI-SPEC.md's Component Inventory (ListRow, RowMenu, Disclosure, ThemeToggle) -- no shell, sidebar, toolbar or screens exist yet. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for UI-01/UI-02 across every prior packages/ui-only plan this phase (05-06, 05-22, 05-07, 05-08, 05-23, 05-09, 05-24). Re-verify UI-01/UI-02 against whichever later plan actually builds the shell and screens.
+- 05-11-PLAN.md declares requirements: [UI-02] in its frontmatter, but only builds 2 of the 7 screens UI-02 requires (setup, login) -- servers list, add/edit sheet, server detail, activity log and settings still need Plans 05-12 through 05-21. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for UI-01/UI-02 across every prior plan this phase (05-06 through 05-25). Re-verify UI-02 once the remaining screens and the authenticated shell land.
 
 ## Deferred Items
 
@@ -327,6 +331,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T17:43:11.160Z
-Stopped at: Completed 05-25-PLAN.md
+Last session: 2026-09-19T18:14:13.074Z
+Stopped at: Completed 05-11-PLAN.md
 Resume file: None
