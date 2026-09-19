@@ -16,11 +16,11 @@ function compareServerNames(a: string, b: string): number {
 
 /** Every server ordered by name, case-insensitively -- the same order `listServerViews` returns
  *  from the API, so the initial fetch and every subsequent live insert agree on placement. */
-export function sortServers(list: ServerView[]): ServerView[] {
+export function sortServers(list: readonly ServerView[]): ServerView[] {
   return [...list].sort((a, b) => compareServerNames(a.name, b.name));
 }
 
-function insertSorted(list: ServerView[], server: ServerView): ServerView[] {
+function insertSorted(list: readonly ServerView[], server: ServerView): ServerView[] {
   const next = [...list];
   let index = next.findIndex((entry) => compareServerNames(entry.name, server.name) > 0);
   if (index === -1) {
@@ -39,7 +39,7 @@ function insertSorted(list: ServerView[], server: ServerView): ServerView[] {
  * - `server.discovery_progress` is ignored here (the detail screen owns it) and returns `list`
  *   itself unchanged.
  */
-export function applyServerEvent(list: ServerView[], event: ServerEvent): ServerView[] {
+export function applyServerEvent(list: readonly ServerView[], event: ServerEvent): readonly ServerView[] {
   switch (event.type) {
     case 'server.updated': {
       const index = list.findIndex((entry) => entry.id === event.server.id);
