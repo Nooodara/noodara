@@ -91,6 +91,11 @@ export async function startStack(): Promise<Stack> {
     throw new Error('startStack: a stack is already running — call stopStack first');
   }
 
+  // apps/web's `next.config.ts` fails fast on a missing NOODARA_API_ORIGIN at build time
+  // (docs/adr/0006) — CI's workflow-level env already provides it for `pnpm build`
+  // (05-07-PLAN.md), but a plain local `pnpm test:e2e` invocation has no reason to have it set
+  // in the ambient shell, so this fixture sets it itself before building.
+  process.env.NOODARA_API_ORIGIN = API_ORIGIN;
   // Always exercises current sources, never a stale dist/.next (mirrors
   // tests/integration/global-setup.ts's own rationale, now also covering apps/web's `next build`
   // since Plan 05-07 wired it into the shared `build` task graph).
