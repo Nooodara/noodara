@@ -49,4 +49,18 @@ describe('StatTile', () => {
 
     expect(container.querySelector('[data-fraction]')).toBeNull();
   });
+
+  // DETL-02 (05-UI-SPEC.md SS2.5): "facts from the last good discovery stay visible ... visually
+  // dimmed" applies to the stat tile row too, not only LabelValue rows -- data-dimmed is always
+  // present (never omitted) so a caller can assert both the true and false case from the DOM
+  // rather than a computed style, matching LabelValue's own already-established contract.
+  it('carries data-dimmed="true" when dimmed, and "false" by default', () => {
+    const { rerender } = renderUi(<StatTile label="CPU cores" value="4" data-testid="tile" />);
+
+    expect(screen.getByTestId('tile')).toHaveAttribute('data-dimmed', 'false');
+
+    rerender(<StatTile label="CPU cores" value="4" dimmed data-testid="tile" />);
+
+    expect(screen.getByTestId('tile')).toHaveAttribute('data-dimmed', 'true');
+  });
 });
