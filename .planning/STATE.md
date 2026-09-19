@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-16-PLAN.md
-last_updated: "2026-09-19T20:18:34.103Z"
+stopped_at: Completed 05-17-PLAN.md
+last_updated: "2026-09-19T21:16:45.954Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 68
+  completed_plans: 69
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 16 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-12..05-21 remain incomplete)
+Plan: 17 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-18..05-21 remain incomplete)
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [█████████░] 93%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -123,6 +123,7 @@ Progress: [█████████░] 93%
 | Phase 05-ui-web P14 | 8min | 3 tasks | 9 files |
 | Phase 05 P15 | 10min | 3 tasks | 9 files |
 | Phase 05 P16 | 5min | 3 tasks | 9 files |
+| Phase 05 P17 | 55min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -307,6 +308,9 @@ Recent decisions affecting current work:
 - [Phase 05-16]: LabelValue.tsx's value span gained a data-mono='true'/'false' attribute (matching Input.tsx/Textarea.tsx's own always-present convention) -- purely additive, ServerFacts.test.tsx's document-wide count assertion rescoped to its own tiles container
 - [Phase 05-16]: The settings page deliberately never imports require-session.ts and treats every failure (401 included) as a generic error -- D-15's no-session-management scope made literal by the plan's own acceptance criterion forbidding session/revoke in page.tsx's non-comment source
 - [Phase 05-16]: SettingsGroups.tsx composes the public URL's copy button explicitly (LabelValue + a separate CopyButton) rather than through LabelValue's own built-in copyable, so the file visibly satisfies its own contains-Disclosure-and-CopyButton acceptance criterion
+- [Phase 05-17]: CredentialFields is uncontrolled (own local state, reports via onChange) so the no-leak/unmount claims hold by construction; ServerSheet stays mounted with open toggling since Sheet's own Radix Content already unmounts real fields on close
+- [Phase 05-17]: Sheet.tsx needed min-h-0 on its flex-1 overflow-y-auto body, and apps/web's globals.css needed an explicit @source '../../../../packages/ui/src' directive -- both real, previously-latent bugs first exercised by this plan's Sheet usage
+- [Phase 05-17]: E2E server-sheet.spec.ts generates a real throwaway ed25519 key via ssh-keygen rather than a fake string, since credential-store.ts genuinely parses/validates a private key at registration time
 
 ### Pending Todos
 
@@ -354,6 +358,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T20:18:34.096Z
-Stopped at: Completed 05-16-PLAN.md
+Last session: 2026-09-19T21:16:45.947Z
+Stopped at: Completed 05-17-PLAN.md
 Resume file: None

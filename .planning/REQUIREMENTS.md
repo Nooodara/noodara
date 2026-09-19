@@ -70,7 +70,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### UI
 
 - [x] **UI-01**: La app tiene el shell del design system (sidebar, toolbar, contenido, inspector opcional) con dark y light mode y navegación por teclado.
-- [ ] **UI-02**: Existen las pantallas de setup, login, lista de servidores, sheet de crear/editar servidor, detalle de servidor, activity log y settings, con estados vacío, carga y error.
+- [x] **UI-02**: Existen las pantallas de setup, login, lista de servidores, sheet de crear/editar servidor, detalle de servidor, activity log y settings, con estados vacío, carga y error.
 
 ### Quality
 
@@ -163,7 +163,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ACT-02 | Phase 5 | Complete |
 | SET-01 | Phase 5 | Complete |
 | UI-01 | Phase 5 | Complete |
-| UI-02 | Phase 5 | Pending |
+| UI-02 | Phase 5 | Complete |
 | DISC-02 | Phase 5 | Pending |
 | QA-04 | Phase 5 | Pending |
 | QA-05 | Phase 5 | Pending |
