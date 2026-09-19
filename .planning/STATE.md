@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-09-PLAN.md
-last_updated: "2026-09-19T17:11:09.946Z"
+stopped_at: Completed 05-24-PLAN.md
+last_updated: "2026-09-19T17:26:33.418Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 60
+  completed_plans: 61
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 13 of 25
+Plan: 24 of 25 (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-11..05-21 remain incomplete)
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [████████░░] 82%
+Progress: [████████░░] 84%
 
 ## Performance Metrics
 
@@ -115,6 +115,7 @@ Progress: [████████░░] 82%
 | Phase 05 P10 | 55min | 3 tasks | 10 files |
 | Phase 05 P23 | 15min | 3 tasks | 11 files |
 | Phase 05 P09 | 15min | 3 tasks | 11 files |
+| Phase 05 P24 | 25min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -277,6 +278,9 @@ Recent decisions affecting current work:
 - [Phase 05-23]: DestructiveConfirmDialog.onConfirm(typedValue: string) hands the typed confirmation value back to the caller (not a no-arg signal) since a later plan's delete/trust-fingerprint flow needs it for the API request body CONFIRMATION_MISMATCH validates
 - [Phase 05-09]: Intl.RelativeTimeFormat('en', { numeric: 'always' }) matched the plan's literal expected relative-time strings once thresholds were ordered day>=86400s/hour>=3600s/minute>=60s else 'just now' -- only formatUptime needed hand-rolled pluralization, since Intl has no compound day+hour duration mode
 - [Phase 05-09]: SkeletonRow defaults its own data-testid to 'skeleton-row' (overridable) so Plan 05-13's 5-row list-loading state can render five instances and count them via a single querySelectorAll without threading unique ids through each
+- [Phase 05-24]: Tooltip's controlled open prop is additive to the primitive's own uncontrolled hover/focus/Escape logic (undefined leaves it fully untouched) -- CopyButton conditionally spreads {...(copied ? { open: true } : {})} rather than open={cond ? true : undefined}, which exactOptionalPropertyTypes rejects for an optional boolean prop
+- [Phase 05-24]: renderUi mounts TooltipProvider with delayDuration=0 for test speed/determinism only -- apps/web's real root layout mounts the same TooltipProvider without that override
+- [Phase 05-24]: Radix TooltipTrigger suppresses its own onFocus-driven open when a pointer-down just occurred, so a plain click never opens an uncontrolled Tooltip -- CopyButton's forced-open pattern via a controlled open prop is the precedent for any future component needing a click-triggered tooltip confirmation
 
 ### Pending Todos
 
@@ -307,6 +311,7 @@ None yet.
 - 05-10-PLAN.md declares requirements: [QA-04] in its frontmatter, but only builds the Playwright harness and proves the unauthenticated-redirect + 401-guard behaviours -- the full critical-path E2E and nightly 20x repetition are Plan 05-20's job. QA-04 stays Pending in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), UI-01/UI-02 (05-06 through 05-08). Re-verify QA-04 against Plan 05-20.
 - 05-23-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only adds isConfirmationMatch/FileButton/Sheet/ConfirmDialog/DestructiveConfirmDialog to packages/ui -- no shell, sidebar, toolbar or screens exist yet. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01/UI-02 itself (05-06, 05-22, 05-07, 05-08). Re-verify UI-01/UI-02 against whichever later plan actually builds the shell and screens.
 - 05-09-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only adds format.ts plus Banner/Notice/EmptyState/Skeleton to packages/ui -- no shell, sidebar, toolbar or screens exist yet. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01/UI-02 itself (05-06, 05-22, 05-07, 05-08, 05-23). Re-verify UI-01/UI-02 against whichever later plan actually builds the shell and screens.
+- 05-24-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only adds Tooltip/RelativeTime/CopyButton/StatTile/LabelValue to packages/ui -- no shell, sidebar, toolbar or screens exist yet. DETL-01 (also named in this plan's must_haves) is likewise not satisfied end-to-end: StatTile/LabelValue's contracts are real and tested but no screen wires them to real discovery data yet (Plan 05-14's job). Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01/UI-02 itself (05-06, 05-22, 05-07, 05-08, 05-23, 05-09). Re-verify UI-01/UI-02/DETL-01 against whichever later plan actually builds the shell and screens.
 
 ## Deferred Items
 
@@ -318,6 +323,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T17:11:09.937Z
-Stopped at: Completed 05-09-PLAN.md
+Last session: 2026-09-19T17:26:33.411Z
+Stopped at: Completed 05-24-PLAN.md
 Resume file: None
