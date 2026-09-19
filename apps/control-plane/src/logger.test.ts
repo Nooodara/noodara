@@ -45,3 +45,53 @@ describe('createLogger redaction', () => {
     expect(serialized).not.toContain('BEGIN OPENSSH PRIVATE KEY');
   });
 });
+
+describe('createLogger err serialization (T-4-10, T-4-38)', () => {
+  it('never puts a logged error\'s message or stack on the wire, only its name', () => {
+    const { stream, records } = writableForTests();
+    const logger = createLogger({ level: 'info', destination: stream });
+    const secretMessage = 'CANARY-SECRET-BEARING-MESSAGE-DO-NOT-LEAK';
+
+    logger.error({ err: new Error(secretMessage) }, 'boom');
+
+    const [record] = records() as unknown as [{ err: { name: string; message?: string; stack?: string } }];
+    expect(record.err.name).toBe('Error');
+    expect(record.err.message).toBeUndefined();
+    expect(record.err.stack).toBeUndefined();
+    const serialized = JSON.stringify(records());
+    expect(serialized).not.toContain(secretMessage);
+    expect(serialized).not.toContain('stack');
+  });
+
+  it('keeps the specific error class name for a non-generic Error subtype', () => {
+    const { stream, records } = writableForTests();
+    const logger = createLogger({ level: 'info', destination: stream });
+
+    logger.error({ err: new TypeError('some type error') }, 'boom');
+
+    const [record] = records() as unknown as [{ err: { name: string } }];
+    expect(record.err.name).toBe('TypeError');
+  });
+
+  it('serializes a non-Error err value to name UnknownError without echoing the value', () => {
+    const { stream, records } = writableForTests();
+    const logger = createLogger({ level: 'info', destination: stream });
+
+    logger.error({ err: 'a raw string, not an Error instance' }, 'boom');
+
+    const [record] = records() as unknown as [{ err: { name: string } }];
+    expect(record.err.name).toBe('UnknownError');
+    const serialized = JSON.stringify(records());
+    expect(serialized).not.toContain('a raw string, not an Error instance');
+  });
+
+  it('still redacts req.headers.cookie alongside the new err serializer', () => {
+    const { stream, records } = writableForTests();
+    const logger = createLogger({ level: 'info', destination: stream });
+
+    logger.info({ req: { headers: { cookie: 'session=abc123' } } }, 'request received');
+
+    const [record] = records() as unknown as [{ req: { headers: { cookie: string } } }];
+    expect(record.req.headers.cookie).toBe('[REDACTED]');
+  });
+});
