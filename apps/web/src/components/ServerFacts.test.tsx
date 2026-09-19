@@ -140,19 +140,24 @@ describe('ServerFacts', () => {
 
   it('flips data-dimmed on every LabelValue and tile with the dimmed prop', () => {
     const server = buildDiscoveredServer();
-    const { container, rerender } = renderUi(<ServerFacts server={server} now={NOW} />);
 
-    const dimmedEls = () => container.querySelectorAll('[data-dimmed]');
-    expect(dimmedEls().length).toBeGreaterThan(0);
-    for (const el of dimmedEls()) {
+    // Two independent renders, not `rerender` -- `renderUi` wraps its own root in
+    // `TooltipProvider` (05-06-PLAN.md/ADR-0005), and the fingerprint row's `CopyButton` pulls in
+    // `Tooltip`; RTL's `rerender` replaces the tree it was given directly, dropping that outer
+    // wrapper (unlike `options.wrapper`), which throws "Tooltip must be used within
+    // TooltipProvider" the moment a second render swaps in an un-wrapped tree.
+    const notDimmed = renderUi(<ServerFacts server={server} now={NOW} />);
+    const notDimmedEls = notDimmed.container.querySelectorAll('[data-dimmed]');
+    expect(notDimmedEls.length).toBeGreaterThan(0);
+    for (const el of notDimmedEls) {
       expect(el).toHaveAttribute('data-dimmed', 'false');
     }
+    notDimmed.unmount();
 
-    rerender(<ServerFacts server={server} now={NOW} dimmed />);
-
-    const dimmedElsAfter = container.querySelectorAll('[data-dimmed]');
-    expect(dimmedElsAfter.length).toBe(dimmedEls().length);
-    for (const el of dimmedElsAfter) {
+    const dimmed = renderUi(<ServerFacts server={server} now={NOW} dimmed />);
+    const dimmedEls = dimmed.container.querySelectorAll('[data-dimmed]');
+    expect(dimmedEls.length).toBe(notDimmedEls.length);
+    for (const el of dimmedEls) {
       expect(el).toHaveAttribute('data-dimmed', 'true');
     }
   });
@@ -168,12 +173,17 @@ describe('ServerFacts', () => {
     expect(document.querySelector('[data-tone="error"]')).toBeNull();
   });
 
-  it('renders no privateKey/password/passphrase label or value anywhere', () => {
+  it('renders no privateKey/passphrase label or a raw credential value anywhere -- only the human credentialType label', () => {
     const server = buildDiscoveredServer();
     renderUi(<ServerFacts server={server} now={NOW} />);
 
+    // "Password" itself legitimately appears once, as the human label for `credentialType:
+    // 'ssh_password'` (05-UI-SPEC.md SS2.5's Connection group) -- never a raw secret value.
+    // `privateKey`/`passphrase` (the two other WireCredential field names, SEC-02) must never
+    // appear at all, and neither must PEM's own private-key marker.
     expect(screen.queryByText(/privateKey/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/passphrase/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/^password$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/BEGIN.*PRIVATE KEY/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText('Password')).toHaveLength(1);
   });
 });
