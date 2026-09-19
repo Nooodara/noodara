@@ -15,4 +15,6 @@ export { cn } from './cn.js';
 export { discoveryCheckTone, serverStatusTone, STATUS_WORDS } from './tone.js';
 export type { Tone } from './tone.js';
 export { Field, type FieldControlProps, type FieldProps } from './Field.js';
+export { Input, type InputProps } from './Input.js';
 export { StatusPill, type StatusPillProps } from './StatusPill.js';
+export { Textarea, type TextareaProps } from './Textarea.js';
