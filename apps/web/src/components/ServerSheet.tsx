@@ -165,15 +165,18 @@ export function ServerSheet({ open, onOpenChange, mode, server, onSaved }: Serve
       }
 
       const created = result.data;
+      onOpenChange(false);
+      onSaved();
+
       if (connectAfter) {
         // Best-effort: a failed connect still closes the sheet and lands on the detail page --
         // that page renders whatever state resulted, per 05-UI-SPEC.md SS2.4. The response body
         // is discarded entirely; nothing here is ever read back or polled.
         await apiSend('POST', `/api/servers/${encodeURIComponent(created.id)}/connect`);
+        router.push(`/servers/${created.id}`);
       }
-      onOpenChange(false);
-      onSaved();
-      router.push(`/servers/${created.id}`);
+      // "Save without connecting" registers the server and stays on the list -- no navigation,
+      // matching 05-UI-SPEC.md SS2.4's "registers and stays on the list".
       return;
     }
 
@@ -197,9 +200,23 @@ export function ServerSheet({ open, onOpenChange, mode, server, onSaved }: Serve
 
   const title = mode === 'create' ? 'Add server' : `Edit ${server?.name ?? ''}`;
 
+  function handleCancel(): void {
+    // Discards all field state, including any loaded key text -- the `open` effect above already
+    // resets `formState` the instant `open` becomes false, on top of `CredentialFields`' own
+    // unmount-on-close behaviour.
+    onOpenChange(false);
+  }
+
+  const cancelButton = (
+    <Button type="button" variant="ghost" disabled={submitting} onClick={handleCancel}>
+      Cancel
+    </Button>
+  );
+
   const footer =
     mode === 'create' ? (
       <>
+        {cancelButton}
         <Button type="button" variant="ghost" disabled={submitting} onClick={() => void handleSubmit(false)}>
           Save without connecting
         </Button>
@@ -214,9 +231,12 @@ export function ServerSheet({ open, onOpenChange, mode, server, onSaved }: Serve
         </Button>
       </>
     ) : (
-      <Button type="button" variant="primary" loading={submitting} onClick={() => void handleSubmit(false)}>
-        Save
-      </Button>
+      <>
+        {cancelButton}
+        <Button type="button" variant="primary" loading={submitting} onClick={() => void handleSubmit(false)}>
+          Save
+        </Button>
+      </>
     );
 
   return (
