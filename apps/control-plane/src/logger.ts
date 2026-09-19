@@ -30,6 +30,18 @@ export function createLogger(options: CreateLoggerOptions = {}): Logger {
       paths: REDACT_PATHS,
       censor: '[REDACTED]',
     },
+    // T-4-10/T-4-38: the single control that makes every `{ err }` call site in this codebase
+    // safe by default — pino's own default `err` serializer includes `message` and `stack`,
+    // which is exactly the leak 04-SECURITY.md found in `queue/connect-server-worker.ts`'s
+    // `worker.on('failed', ...)` and `events/redis-server-event-publisher.ts` /
+    // `events/sse-broadcaster.ts`'s warn logs. Only `name` survives; do not "helpfully" restore
+    // `message`, `stack`, `cause` or `code` here, and do not add a per-call-site fix instead —
+    // this option is what closes all three sites without editing any of them.
+    serializers: {
+      err: (e: unknown): { name: string } => ({
+        name: e instanceof Error ? e.name : 'UnknownError',
+      }),
+    },
   };
 
   return options.destination ? pino(loggerOptions, options.destination) : pino(loggerOptions);
