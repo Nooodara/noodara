@@ -7,6 +7,11 @@ import { createSseBroadcaster, type SseStream } from './sse-broadcaster.js';
 // fan-out/registry/injection-guard logic as a pure unit, entirely independent of the HTTP layer.
 
 interface FakeSubscriber {
+  /** Mirrors ioredis's own `status` field -- `start()` must never issue `SUBSCRIBE` before it is
+   *  `'ready'` (.planning/debug/sse-lost-event-race.md). */
+  status: string;
+  once: ReturnType<typeof vi.fn>;
+  emitReady: () => void;
   subscribe: ReturnType<typeof vi.fn>;
   unsubscribe: ReturnType<typeof vi.fn>;
   on: ReturnType<typeof vi.fn>;
@@ -14,14 +19,20 @@ interface FakeSubscriber {
   emitError: (err: Error) => void;
 }
 
-function buildFakeSubscriber(): FakeSubscriber {
+function buildFakeSubscriber(initialStatus = 'ready'): FakeSubscriber {
   const handlers = new Map<string, ((...args: unknown[]) => void)[]>();
   const on = vi.fn((event: string, handler: (...args: unknown[]) => void) => {
     const list = handlers.get(event) ?? [];
     list.push(handler);
     handlers.set(event, list);
   });
-  return {
+  const fake: FakeSubscriber = {
+    status: initialStatus,
+    once: on,
+    emitReady: () => {
+      fake.status = 'ready';
+      for (const handler of handlers.get('ready') ?? []) handler();
+    },
     subscribe: vi.fn().mockResolvedValue(1),
     unsubscribe: vi.fn().mockResolvedValue(1),
     on,
@@ -32,6 +43,7 @@ function buildFakeSubscriber(): FakeSubscriber {
       for (const handler of handlers.get('error') ?? []) handler(err);
     },
   };
+  return fake;
 }
 
 interface FakeLogger {
@@ -66,6 +78,39 @@ describe('createSseBroadcaster', () => {
 
     expect(subscriber.subscribe).toHaveBeenCalledTimes(1);
     expect(subscriber.subscribe).toHaveBeenCalledWith(SERVER_EVENTS_CHANNEL);
+  });
+
+  // ioredis writes a `SUBSCRIBE` issued while its status is still `connect` straight to the
+  // socket, ahead of its own ready check; that check then fails on a connection already in
+  // subscriber mode, ioredis reconnects, and -- because the drop happened before `ready` -- never
+  // re-subscribes. `start()` would have resolved successfully on a subscription that no longer
+  // exists (tests/integration/events/sse-broadcaster-subscribe.test.ts proves it on real Redis).
+  it('start() never issues SUBSCRIBE before the subscriber connection is ready', async () => {
+    const subscriber = buildFakeSubscriber('connect');
+    const logger = buildFakeLogger();
+    const broadcaster = createSseBroadcaster({ subscriber: subscriber as never, logger: logger as never, maxConnections: 32 });
+
+    const started = broadcaster.start();
+    await Promise.resolve();
+    expect(subscriber.subscribe).not.toHaveBeenCalled();
+
+    subscriber.emitReady();
+    await started;
+    expect(subscriber.subscribe).toHaveBeenCalledTimes(1);
+    expect(subscriber.subscribe).toHaveBeenCalledWith(SERVER_EVENTS_CHANNEL);
+  });
+
+  it('start() never subscribes once closeAll() has already run while it was still waiting for ready', async () => {
+    const subscriber = buildFakeSubscriber('connecting');
+    const logger = buildFakeLogger();
+    const broadcaster = createSseBroadcaster({ subscriber: subscriber as never, logger: logger as never, maxConnections: 32 });
+
+    const started = broadcaster.start();
+    await broadcaster.closeAll();
+    subscriber.emitReady();
+    await started;
+
+    expect(subscriber.subscribe).not.toHaveBeenCalled();
   });
 
   it('fans a server.updated message out to every registered stream', async () => {
