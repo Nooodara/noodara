@@ -225,3 +225,81 @@ test('@servers a row\'s actions menu is absent until opened, then exposes Edit a
   await expect(page.getByRole('menuitem', { name: 'Edit' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
 });
+
+// .planning/debug/sse-lost-event-race.md: the real-browser form of the snapshot/stream race. The
+// two tests above create their server the instant the URL turns `/servers` -- i.e. while the
+// list's mount GET and its resync-on-open GET are both still in flight -- and rely on the live
+// `server.updated` event alone for the row. The list used to drop every event delivered during a
+// fetch, so whenever both snapshots had been read before the insert committed, the row was lost
+// for good (1 failure in 6 full-suite iterations). This test pins that exact interleaving instead
+// of leaving it to timing: both snapshots are read from the real API *before* the server exists
+// and held back until the event has provably crossed the real Redis -> SSE -> Next proxy path.
+interface ObserverWindow {
+  __noodaraObserver?: { readonly source: EventSource; readonly seen: Promise<void> };
+}
+
+test('@servers a server created while the list snapshots are still in flight still appears as a row', async ({ page }) => {
+  const name = `midflight-${String(Date.now())}`;
+
+  let snapshotsRead = 0;
+  let signalBothSnapshotsRead: () => void = () => undefined;
+  const bothSnapshotsRead = new Promise<void>((resolve) => {
+    signalBothSnapshotsRead = resolve;
+  });
+  let releaseSnapshots: () => void = () => undefined;
+  const snapshotsReleased = new Promise<void>((resolve) => {
+    releaseSnapshots = resolve;
+  });
+
+  await page.route('**/api/servers', async (route) => {
+    if (route.request().method() !== 'GET') {
+      await route.continue();
+      return;
+    }
+    const response = await route.fetch(); // the real snapshot, read right now
+    snapshotsRead += 1;
+    // A fresh login mounts the shell and the list together: one mount GET, plus one resync GET
+    // when the shared stream opens.
+    if (snapshotsRead === 2) signalBothSnapshotsRead();
+    await snapshotsReleased;
+    await route.fulfill({ response });
+  });
+
+  await login(page);
+  await bothSnapshotsRead;
+
+  // A second stream from the same page is the readiness signal: the broadcaster fans one message
+  // out to every registered stream in a single pass, so once this observer has seen the event the
+  // page's own shared stream has been handed it too.
+  await page.evaluate((serverName) => {
+    const source = new EventSource('/api/events');
+    let markSeen: () => void = () => undefined;
+    const seen = new Promise<void>((resolve) => {
+      markSeen = resolve;
+    });
+    source.addEventListener('server.updated', (raw) => {
+      if ((raw as MessageEvent<string>).data.includes(serverName)) markSeen();
+    });
+    (window as ObserverWindow).__noodaraObserver = { source, seen };
+    return new Promise<void>((resolve) => {
+      source.addEventListener('open', () => {
+        resolve();
+      });
+    });
+  }, name);
+
+  await page.request.post('/api/servers', {
+    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+  });
+
+  await page.evaluate(async () => {
+    const observer = (window as ObserverWindow).__noodaraObserver;
+    if (observer === undefined) throw new Error('observer stream was never opened');
+    await observer.seen;
+    observer.source.close();
+  });
+
+  releaseSnapshots();
+
+  await expect(page.getByTestId('servers-row').filter({ hasText: name })).toBeVisible();
+});
