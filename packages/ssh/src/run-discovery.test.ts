@@ -5,7 +5,7 @@
 // branch matrix, which needs dozens of scripted permutations that would cost a container start
 // each otherwise.
 import { createRedactor, secretValue } from '@noodara/domain/security';
-import { DISCOVERY_CHECK_IDS } from '@noodara/domain/discovery';
+import { DISCOVERY_CHECK_IDS, type DiscoveryCheck } from '@noodara/domain/discovery';
 import { describe, expect, it, vi } from 'vitest';
 import { COMMAND_NAMES, type CommandName } from './commands/index.js';
 import type { ExecResult, SshSession } from './ssh-port.js';
@@ -456,6 +456,117 @@ describe('runDiscovery — warnings and the D-08 discovery-total budget (DISC-04
     expect(snapshot.warnings).toContain('UNSUPPORTED_OS');
     expect(snapshot.warnings).toContain('COMMAND_TIMEOUT');
     expect(new Set(snapshot.warnings).size).toBe(snapshot.warnings.length);
+  });
+});
+
+describe('runDiscovery — onCheck callback (D-05)', () => {
+  it('invokes onCheck once per check, in DISCOVERY_SEQUENCE order, deeply equal to the returned snapshot', async () => {
+    const { session } = buildFakeSession(successfulScripts());
+    const received: DiscoveryCheck[] = [];
+
+    const snapshot = await runDiscovery({
+      session,
+      sshUser: 'deployer',
+      timeouts: DEFAULT_TIMEOUTS,
+      redactor: createRedactor(),
+      onCheck: (check) => {
+        received.push(check);
+      },
+    });
+
+    expect(received).toHaveLength(DISCOVERY_CHECK_IDS.length);
+    expect(received.map((c) => c.id)).toEqual(DISCOVERY_SEQUENCE.map((e) => e.id));
+    expect(received).toEqual(snapshot.checks);
+  });
+
+  it('still invokes onCheck for docker_compose_version (skipped) when docker_version is not installed', async () => {
+    const scripts = successfulScripts();
+    scripts['docker.version'] = execResult({ commandName: 'docker.version', exitCode: 127, stdout: '' });
+    const { session } = buildFakeSession(scripts);
+    const received: DiscoveryCheck[] = [];
+
+    await runDiscovery({
+      session,
+      sshUser: 'deployer',
+      timeouts: DEFAULT_TIMEOUTS,
+      redactor: createRedactor(),
+      onCheck: (check) => {
+        received.push(check);
+      },
+    });
+
+    const composeCheck = received.find((c) => c.id === 'docker_compose_version');
+    expect(composeCheck).toBeDefined();
+    expect(composeCheck?.status).toBe('skipped');
+  });
+
+  it('invokes onCheck for the aborted check (fail) and every subsequent skipped check once the budget is exceeded', async () => {
+    const { session } = buildFakeSession(successfulScripts());
+    const now = scriptedClock([0, 10, 50, 90, 150]);
+    const received: DiscoveryCheck[] = [];
+
+    await runDiscovery({
+      session,
+      sshUser: 'deployer',
+      timeouts: { discoveryMs: 100 },
+      redactor: createRedactor(),
+      now,
+      onCheck: (check) => {
+        received.push(check);
+      },
+    });
+
+    const cpuCheck = received.find((c) => c.id === 'cpu');
+    expect(cpuCheck?.status).toBe('fail');
+    const stillPendingIds = [
+      'memory',
+      'disk',
+      'uptime',
+      'docker_version',
+      'docker_compose_version',
+      'sudo',
+      'docker_group',
+    ];
+    for (const id of stillPendingIds) {
+      expect(received.find((c) => c.id === id)?.status).toBe('skipped');
+    }
+    expect(received).toHaveLength(DISCOVERY_CHECK_IDS.length);
+  });
+
+  it('a throwing onCheck does not change the returned snapshot and does not reject runDiscovery', async () => {
+    const { session: sessionA } = buildFakeSession(successfulScripts());
+    const baseline = await runDiscovery({
+      session: sessionA,
+      sshUser: 'deployer',
+      timeouts: DEFAULT_TIMEOUTS,
+      redactor: createRedactor(),
+    });
+
+    const { session: sessionB } = buildFakeSession(successfulScripts());
+    const snapshot = await runDiscovery({
+      session: sessionB,
+      sshUser: 'deployer',
+      timeouts: DEFAULT_TIMEOUTS,
+      redactor: createRedactor(),
+      onCheck: () => {
+        throw new Error('listener blew up');
+      },
+    });
+
+    expect(snapshot).toEqual(baseline);
+  });
+
+  it('omitting onCheck entirely behaves exactly as before', async () => {
+    const { session } = buildFakeSession(successfulScripts());
+
+    const snapshot = await runDiscovery({
+      session,
+      sshUser: 'deployer',
+      timeouts: DEFAULT_TIMEOUTS,
+      redactor: createRedactor(),
+    });
+
+    expect(snapshot.checks).toHaveLength(DISCOVERY_CHECK_IDS.length);
   });
 });
 
