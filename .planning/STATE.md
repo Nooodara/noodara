@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-12-PLAN.md
-last_updated: "2026-09-19T19:20:43.970Z"
+stopped_at: Completed 05-14-PLAN.md
+last_updated: "2026-09-19T19:40:59.914Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 65
+  completed_plans: 66
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 13 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-12..05-21 remain incomplete)
+Plan: 14 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-12..05-21 remain incomplete)
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [█████████░] 89%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -120,6 +120,7 @@ Progress: [█████████░] 89%
 | Phase 05 P11 | 35min | 3 tasks | 9 files |
 | Phase 05 P12 | 31min | 3 tasks | 13 files |
 | Phase 05 P13 | 19min | 3 tasks | 11 files |
+| Phase 05-ui-web P14 | 8min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -296,6 +297,8 @@ Recent decisions affecting current work:
 - [Phase 05-13]: The toolbar's Add server action hides while the servers list is empty (ServerList's EmptyState already renders the one action for that state) -- caught before Task 3's E2E to keep exactly one Add server button on screen at once
 - [Phase 05-13]: Task 3's populated-rows E2E test sources its two servers from a stubbed GET /api/servers rather than the real API, since the domain only ever sets lastSeenAt after a real successful SSH connect, which this harness has no reachable sshd fixture to produce
 - [Phase 05-13]: vitest.config.ts gained a top-level oxc.jsx option and apps/web gained its own vitest-matchers.d.ts + a direct @testing-library/jest-dom devDependency -- apps/web's Next.js-required tsconfig jsx:preserve was silently breaking every .tsx Vitest test under apps/web/src via this project's rolldown-powered oxc transform, latent until this plan's ServerList.test.tsx became the first such file
+- [Phase 05-14]: deriveDetailState excludes lastErrorCode === 'UNSUPPORTED_OS' from the generic-failure branch -- resolves a conflict between the plan's own literal Task 1 text and 05-UI-SPEC.md SS5.1/D-11's 'never an error banner' requirement in the requirement's favor
+- [Phase 05-14]: StatTile gained a backward-compatible dimmed/data-dimmed prop (default false) so DETL-02's attenuated-facts treatment applies to the stat tile row too, matching LabelValue's already-established contract
 
 ### Pending Todos
 
@@ -331,6 +334,7 @@ None yet.
 - 05-11-PLAN.md declares requirements: [UI-02] in its frontmatter, but only builds 2 of the 7 screens UI-02 requires (setup, login) -- servers list, add/edit sheet, server detail, activity log and settings still need Plans 05-12 through 05-21. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for UI-01/UI-02 across every prior plan this phase (05-06 through 05-25). Re-verify UI-02 once the remaining screens and the authenticated shell land.
 - 05-12-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter; only UI-01 is marked Complete here (the authenticated shell, proven by six passing @shell E2E behaviours). UI-02 stays Pending -- this plan's own /servers page is a minimal placeholder (no list, no empty/loading/error states), not a real screen; UI-02 needs Plans 05-13..05-21's actual servers list, add/edit sheet, server detail, activity log and settings screens. Matches the same plan-frontmatter-artifact pattern already flagged for every prior UI-01/UI-02 plan this phase.
 - 05-13-PLAN.md declares requirements: [SERV-04, UI-02] in its frontmatter; only SERV-04 is marked Complete here (the servers list screen, proven by 6 passing @servers E2E behaviours). UI-02 stays Pending -- this plan builds the third of the seven screens UI-02 requires (setup, login, servers list now done; sheet, server detail, activity log, settings remain -- Plans 05-14 through 05-21). Matches the same plan-frontmatter-artifact pattern already flagged in STATE.md for every prior UI-01/UI-02 plan this phase.
+- 05-14-PLAN.md declares requirements: [DETL-01, DETL-02, UI-02] in its frontmatter; only DETL-01/DETL-02 are marked Complete here. UI-02 stays Pending -- this plan builds the fourth of the seven screens UI-02 requires (setup, login, servers list, server detail now done; add/edit sheet, activity log, settings remain -- Plans 05-16/05-17/05-21). Matches the same plan-frontmatter-artifact pattern already flagged in STATE.md for every prior UI-01/UI-02 plan this phase.
 
 ## Deferred Items
 
@@ -342,6 +346,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T19:20:43.963Z
-Stopped at: Completed 05-12-PLAN.md
+Last session: 2026-09-19T19:40:59.906Z
+Stopped at: Completed 05-14-PLAN.md
 Resume file: None

@@ -55,8 +55,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Server Detail
 
-- [ ] **DETL-01**: El detalle del servidor muestra hostname, status, OS, CPU, RAM, disco, uptime, Docker, last seen y host fingerprint, conforme al design system.
-- [ ] **DETL-02**: El detalle distingue los estados vacíos "aún no descubierto" y "discovery falló", cada uno con una sola acción.
+- [x] **DETL-01**: El detalle del servidor muestra hostname, status, OS, CPU, RAM, disco, uptime, Docker, last seen y host fingerprint, conforme al design system.
+- [x] **DETL-02**: El detalle distingue los estados vacíos "aún no descubierto" y "discovery falló", cada uno con una sola acción.
 
 ### Activity Log
 
@@ -158,8 +158,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SERV-06 | Phase 4 | Complete |
 | DISC-05 | Phase 4 | Complete |
 | SERV-04 | Phase 5 | Complete |
-| DETL-01 | Phase 5 | Pending |
-| DETL-02 | Phase 5 | Pending |
+| DETL-01 | Phase 5 | Complete |
+| DETL-02 | Phase 5 | Complete |
 | ACT-02 | Phase 5 | Pending |
 | SET-01 | Phase 5 | Pending |
 | UI-01 | Phase 5 | Complete |
