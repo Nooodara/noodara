@@ -39,6 +39,79 @@ const EXPECTED_PACKAGES = [
     name: '@testcontainers/redis',
     expectedOwnerRepo: 'testcontainers/testcontainers-node',
   },
+
+  // Phase 5 (05-03): the whole Next.js/Radix/Tailwind/Playwright frontend stack,
+  // plus the Vitest component-test DOM stack. Repos verified in 05-RESEARCH.md's
+  // "Package Legitimacy Audit" (14 packages) and this plan's Task 1 blocking
+  // human checkpoint (8 packages absent from that research pass), recorded in
+  // ADR-0000's "Phase 5 additions" section.
+  //
+  // `react` and `react-dom` legitimately resolve to `react/react`, not
+  // `facebook/react`: GitHub redirects the renamed `facebook/react` org to
+  // `react/react` (evidence: 05-RESEARCH.md's Package Legitimacy Audit table,
+  // confirmed live via `curl -I https://github.com/facebook/react` -> 301 ->
+  // `github.com/react/react`).
+  //
+  // The four `@testing-library/*` packages deliberately do NOT share one
+  // repository expectation — each has its own (`dom-testing-library`,
+  // `react-testing-library`, `jest-dom`, `user-event`) — a single shared org
+  // string would weaken the gate against a typosquat landing under the right
+  // org but the wrong repo.
+  { name: 'next', expectedOwnerRepo: 'vercel/next.js' },
+  { name: 'react', expectedOwnerRepo: 'react/react' },
+  { name: 'react-dom', expectedOwnerRepo: 'react/react' },
+  { name: 'tailwindcss', expectedOwnerRepo: 'tailwindlabs/tailwindcss' },
+  {
+    name: '@tailwindcss/postcss',
+    expectedOwnerRepo: 'tailwindlabs/tailwindcss',
+  },
+  { name: '@types/react', expectedOwnerRepo: 'DefinitelyTyped/DefinitelyTyped' },
+  {
+    name: '@types/react-dom',
+    expectedOwnerRepo: 'DefinitelyTyped/DefinitelyTyped',
+  },
+  { name: 'lucide-react', expectedOwnerRepo: 'lucide-icons/lucide' },
+  { name: 'playwright', expectedOwnerRepo: 'microsoft/playwright' },
+  { name: '@playwright/test', expectedOwnerRepo: 'microsoft/playwright' },
+  { name: '@radix-ui/react-dialog', expectedOwnerRepo: 'radix-ui/primitives' },
+  { name: '@radix-ui/react-tooltip', expectedOwnerRepo: 'radix-ui/primitives' },
+  {
+    name: '@radix-ui/react-collapsible',
+    expectedOwnerRepo: 'radix-ui/primitives',
+  },
+  {
+    name: '@radix-ui/react-radio-group',
+    expectedOwnerRepo: 'radix-ui/primitives',
+  },
+  {
+    name: '@radix-ui/react-scroll-area',
+    expectedOwnerRepo: 'radix-ui/primitives',
+  },
+  {
+    name: '@radix-ui/react-visually-hidden',
+    expectedOwnerRepo: 'radix-ui/primitives',
+  },
+  {
+    name: '@radix-ui/react-checkbox',
+    expectedOwnerRepo: 'radix-ui/primitives',
+  },
+  { name: 'jsdom', expectedOwnerRepo: 'jsdom/jsdom' },
+  {
+    name: '@testing-library/dom',
+    expectedOwnerRepo: 'testing-library/dom-testing-library',
+  },
+  {
+    name: '@testing-library/react',
+    expectedOwnerRepo: 'testing-library/react-testing-library',
+  },
+  {
+    name: '@testing-library/jest-dom',
+    expectedOwnerRepo: 'testing-library/jest-dom',
+  },
+  {
+    name: '@testing-library/user-event',
+    expectedOwnerRepo: 'testing-library/user-event',
+  },
 ];
 
 /**
@@ -48,9 +121,9 @@ const EXPECTED_PACKAGES = [
  * then lowercases the result.
  *
  * Comparison must use exact string equality against the expected value,
- * never `.includes()` — a URL like `github.com/evil/vitest-dev-vitest`
- * would satisfy `.includes('vitest-dev/vitest')` while pointing at an
- * entirely different, attacker-controlled repository.
+ * never a loose substring match — a URL like `github.com/evil/vitest-dev-vitest`
+ * would satisfy a substring check against `vitest-dev/vitest` while pointing at
+ * an entirely different, attacker-controlled repository.
  */
 function normaliseRepoUrl(rawUrl) {
   if (!rawUrl || typeof rawUrl !== 'string') return null;

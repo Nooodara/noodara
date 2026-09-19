@@ -69,6 +69,57 @@ and worker entrypoints together in `pnpm dev`) and was not installed — this
 phase uses a second Turborepo `dev:worker` task instead, keeping the
 zero-new-tooling-dependency posture this project has held since Phase 1.
 
+### Phase 5 additions
+
+`05-RESEARCH.md` ran `slopcheck scan --pkg npm <name> --json` for 14 of the 22 net-new
+packages this phase needs (the Next.js/React/Tailwind/Radix/lucide/Playwright stack). All
+14 came back `[OK]`. The remaining 8 packages — 3 build/type packages
+(`@tailwindcss/postcss`, `@types/react`, `@types/react-dom`) and the 5-package Vitest
+component-test DOM stack (`jsdom`, `@testing-library/dom`, `@testing-library/react`,
+`@testing-library/jest-dom`, `@testing-library/user-event`) — were not covered by that
+research pass and went through `05-03-PLAN.md` Task 1's blocking `checkpoint:human-verify`.
+The user (Pablo Gutierrez) explicitly approved all eight on 2026-09-19, with evidence
+gathered from npm registry metadata (repository link, weekly downloads, publisher) and a
+`slopcheck` status check for each — not a manual per-page inspection.
+
+The five component-test packages are `devDependencies` of the workspace root only and
+never reach a browser bundle. `@vitejs/plugin-react` was considered and declined: Vite's
+esbuild transform already honours `jsx: "react-jsx"` from `packages/ui/tsconfig.json`, so no
+separate React transform plugin is needed for a Vitest test run.
+
+| Package | Expected repository | Observed repository | Resolved version | slopcheck verdict | Automated verdict | Date |
+|---|---|---|---|---|---|---|
+| next | vercel/next.js | `git+https://github.com/vercel/next.js.git` | 16.3.5 | `[OK]` | verified | 2026-09-19 |
+| react | react/react | `git+https://github.com/react/react.git` | 19.3.0 | `[OK]` | verified | 2026-09-19 |
+| react-dom | react/react | `git+https://github.com/react/react.git` | 19.3.0 | `[OK]` | verified | 2026-09-19 |
+| tailwindcss | tailwindlabs/tailwindcss | `https://github.com/tailwindlabs/tailwindcss.git` | 4.3.3 | `[OK]` | verified | 2026-09-19 |
+| @tailwindcss/postcss | tailwindlabs/tailwindcss | `https://github.com/tailwindlabs/tailwindcss.git` | 4.3.3 | human-verified, registry page | verified | 2026-09-19 |
+| @types/react | DefinitelyTyped/DefinitelyTyped | `https://github.com/DefinitelyTyped/DefinitelyTyped.git` | 19.3.0 | human-verified, registry page | verified | 2026-09-19 |
+| @types/react-dom | DefinitelyTyped/DefinitelyTyped | `https://github.com/DefinitelyTyped/DefinitelyTyped.git` | 19.3.0 | human-verified, registry page | verified | 2026-09-19 |
+| lucide-react | lucide-icons/lucide | `https://github.com/lucide-icons/lucide.git` | 1.47.0 | `[OK]` | verified | 2026-09-19 |
+| playwright | microsoft/playwright | `git+https://github.com/microsoft/playwright.git` | 1.63.0 | `[OK]` | verified | 2026-09-19 |
+| @playwright/test | microsoft/playwright | `git+https://github.com/microsoft/playwright.git` | 1.63.0 | `[OK]` | verified | 2026-09-19 |
+| @radix-ui/react-dialog | radix-ui/primitives | `git+https://github.com/radix-ui/primitives.git` | 1.1.23 | `[OK]` | verified | 2026-09-19 |
+| @radix-ui/react-tooltip | radix-ui/primitives | `git+https://github.com/radix-ui/primitives.git` | 1.2.16 | `[OK]` | verified | 2026-09-19 |
+| @radix-ui/react-collapsible | radix-ui/primitives | `git+https://github.com/radix-ui/primitives.git` | 1.1.20 | `[OK]` | verified | 2026-09-19 |
+| @radix-ui/react-radio-group | radix-ui/primitives | `git+https://github.com/radix-ui/primitives.git` | 1.4.7 | `[OK]` | verified | 2026-09-19 |
+| @radix-ui/react-scroll-area | radix-ui/primitives | `git+https://github.com/radix-ui/primitives.git` | 1.2.18 | `[OK]` | verified | 2026-09-19 |
+| @radix-ui/react-visually-hidden | radix-ui/primitives | `git+https://github.com/radix-ui/primitives.git` | 1.2.11 | `[OK]` | verified | 2026-09-19 |
+| @radix-ui/react-checkbox | radix-ui/primitives | `git+https://github.com/radix-ui/primitives.git` | 1.3.11 | `[OK]` | verified | 2026-09-19 |
+| jsdom | jsdom/jsdom | `git+https://github.com/jsdom/jsdom.git` | 30.1.0 | human-verified, registry page | verified | 2026-09-19 |
+| @testing-library/dom | testing-library/dom-testing-library | `git+https://github.com/testing-library/dom-testing-library.git` | 10.4.2 | human-verified, registry page | verified | 2026-09-19 |
+| @testing-library/react | testing-library/react-testing-library | `git+https://github.com/testing-library/react-testing-library.git` | 16.3.3 | human-verified, registry page | verified | 2026-09-19 |
+| @testing-library/jest-dom | testing-library/jest-dom | `git+https://github.com/testing-library/jest-dom.git` | 7.0.1 | human-verified, registry page | verified | 2026-09-19 |
+| @testing-library/user-event | testing-library/user-event | `git+https://github.com/testing-library/user-event.git` | 14.6.7 | human-verified, registry page | verified | 2026-09-19 |
+
+`react`/`react-dom` legitimately resolve to `react/react`, not `facebook/react`: GitHub
+redirects the renamed `facebook/react` org to `react/react` (confirmed live via
+`curl -I https://github.com/facebook/react` -> 301 -> `github.com/react/react`;
+05-RESEARCH.md's own audit table records the same finding). `ioredis` resolves to
+`6.0.0`'s repository at the time this script last ran in this section — the project's own
+pin stays at `5.11.1` per the Phase 4 RESP3 decision above; this script only verifies
+repository provenance, not version pins.
+
 ## Re-running this check
 
 This check must be re-run whenever one of these pins changes, or before

@@ -154,6 +154,11 @@ jobs:
       # T-1-51: fails the merge on any high-or-critical advisory; --frozen-lockfile above
       # already stops CI from silently resolving a different dependency tree than the lockfile.
       - run: pnpm audit --audit-level=high
+      # T-5-SC/T-5-09/T-5-11 (phase 5): makes ADR-0000's package-provenance gate part of the
+      # merge gate rather than a manual habit — a future dependency addition that skips this
+      # check (or a typosquat landing under the wrong owner/repo) now fails CI, not just a
+      # local run someone forgot to do.
+      - run: node scripts/check-package-provenance.mjs
       # SEC-02 (phase 3) / D-22 (phase 4): this script now runs three suites — the fast,
       # container-free Phase-1 canary (logger/HTTP-error/activity-log), a full-flow canary that
       # builds and starts a real Ubuntu sshd Testcontainer and drives a genuine register ->
