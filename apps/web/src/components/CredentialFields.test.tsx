@@ -48,6 +48,25 @@ describe('CredentialFields', () => {
     }
   });
 
+  it('disables OS/browser spellcheck and auto-correction on every credential-bearing input in both branches (noodara-security SS3)', async () => {
+    const user = userEvent.setup();
+    const { container } = renderUi(<CredentialFields mode="create" onChange={() => undefined} />);
+
+    for (const el of credentialInputs(container)) {
+      expect(el).toHaveAttribute('spellcheck', 'false');
+      expect(el).toHaveAttribute('autocapitalize', 'off');
+      expect(el).toHaveAttribute('autocorrect', 'off');
+    }
+
+    await user.click(within(screen.getByTestId('server-sheet-credential-type')).getByRole('radio', { name: 'Password' }));
+
+    for (const el of credentialInputs(container)) {
+      expect(el).toHaveAttribute('spellcheck', 'false');
+      expect(el).toHaveAttribute('autocapitalize', 'off');
+      expect(el).toHaveAttribute('autocorrect', 'off');
+    }
+  });
+
   it('switching from Private key to Password removes the key/passphrase fields and renders one masked password input, and switching back removes it', async () => {
     const user = userEvent.setup();
     renderUi(<CredentialFields mode="create" onChange={() => undefined} />);
