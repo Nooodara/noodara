@@ -4,13 +4,13 @@ milestone: v0.1
 milestone_name: milestone
 status: executing
 stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-09-19T07:19:09.994Z"
+last_updated: "2026-09-19T07:40:59.873Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 49
+  completed_plans: 50
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 2 of 25
+Plan: 3 of 25
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [███████░░░] 67%
+Progress: [███████░░░] 68%
 
 ## Performance Metrics
 
@@ -104,6 +104,7 @@ Progress: [███████░░░] 67%
 | Phase 04 P10 | 140min | 3 tasks | 16 files |
 | Phase 04 P11 | 170min | 3 tasks | 9 files |
 | Phase 05 P01 | 22min | 3 tasks | 8 files |
+| Phase 05 P02 | 18min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -240,6 +241,7 @@ Recent decisions affecting current work:
 - [Phase 04]: boot-command.test.ts's single-process /health case now expects status:degraded/checks.worker:fail — D-26 is correct here since no worker ever runs in that case; the pre-04-10 stale status:ok literal was the bug
 - [Phase 05]: session-lookup.ts is a new file rather than added to require-session.ts or events.ts, since both call sites need to import the same helper with no circular dependency
 - [Phase 05]: The SSE heartbeat's bounded-getSession regression test lives in a new apps/control-plane/src/routes/events.test.ts unit test rather than in the Testcontainers-backed events-sse.test.ts — api-scope.ts hardwires that file's getSession to the real auth.api.getSession with no injection seam, exactly the fallback the plan's own read_first anticipated for the request-guard case
+- [Phase 05-02]: runWorkerShutdown's re-entry guard is a WeakSet keyed by the deps object identity, not a single module-level boolean — worker.ts keeps its own local shuttingDown flag as the primary guard, the helper's own guard is intentionally redundant defense-in-depth
 
 ### Pending Todos
 
@@ -260,6 +262,7 @@ None yet.
 - events-sse.test.ts: 2 of 10 tests (server.updated publish, connect+worker E2E) intermittently fail on this shared dev machine waiting for a real Redis subscription (waitForActiveSubscriber timeout) -- diagnosed as machine-specific Docker/network flakiness (CLIENT LIST showed a public non-Docker IP sharing the container's mapped port during one failure), not a code defect; a standalone non-Vitest reproduction succeeded deterministically every run. Matches this repo's pre-existing 'shared dev machine Docker resource contention' pattern. Re-verify on a clean machine/CI.
 - 04-10: a combined tests/integration/routes/+services/ run (18 files, extra-broad regression check beyond this plan's scope) showed 137 failing stray-container-count assertions concentrated in register-server.test.ts/trust-fingerprint.test.ts (files this plan did not modify); isolated re-runs of those files (28/28) and the servers-crud/connect/discover files (38/38) passed cleanly, confirming the pre-existing shared-dev-machine Docker resource contention pattern, not a regression.
 - 05-01-PLAN.md declares requirements: [DETL-02, QA-05] in its frontmatter, but only implements the two security-remediation items (UF-01 pendingFingerprint clear, T-4-02 bounded session lookups) -- no UI empty-state work (DETL-02) or CI canary job (QA-05) landed in this plan. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 after Plan 04-01. Re-verify DETL-02/QA-05 against the plans that actually implement them, not this checkbox.
+- 05-02-PLAN.md declares requirements: [QA-05] in its frontmatter but only closes the T-4-10/T-4-38/T-4-32 threat-remediation tasks that make QA-05's canary safe against real err output -- it does not add the nightly CI job (.github/workflows/nightly.yml, still Wave 2+ per 05-PATTERNS.md). CI already runs pnpm security:scan-leaks (Phase 4's ci.yml); QA-05 also needs a nightly job before it can be marked Complete. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01) and DETL-02/QA-05 (05-01).
 
 ## Deferred Items
 
@@ -271,6 +274,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T07:16:39.444Z
+Last session: 2026-09-19T07:40:09.188Z
 Stopped at: Completed 05-01-PLAN.md
 Resume file: None
