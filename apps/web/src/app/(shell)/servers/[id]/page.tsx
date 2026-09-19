@@ -6,21 +6,28 @@
 // (apps/web/src/lib/detail-state.ts): `never-discovered`/`failed-no-history`/`failed-with-
 // history`/`discovered`/`host-key-changed`.
 //
-// Two surfaces from 05-UI-SPEC.md SS2.5's own layout are deliberately left as documented seams,
+// One surface from 05-UI-SPEC.md SS2.5's own layout is deliberately left as a documented seam,
 // never even a stubbed empty section, matching D-05's "never invent progress" discipline extended
 // to every not-yet-built part of this page:
 //   - The first-trust notice (layout position 1) and the real `HOST_KEY_CHANGED` banner + trust
 //     dialog (D-02/D-03) -- Plan 05-19. This plan renders only a neutral placeholder block for the
 //     `host-key-changed` detail state, named for that plan.
-//   - The Discovery section (layout position 6, DISC-02/D-05..D-08) -- Plan 05-18.
+//
+// The Discovery section (layout position 6, DISC-02/D-05..D-08) is wired in by this plan: this
+// page owns accumulating `server.discovery_progress` events for this server id (the live progress
+// `DiscoverySection` renders through `buildChecklist`), clearing that accumulator the instant a
+// new run starts (a transition into `CONNECTING`) -- `DiscoverySection` itself never reads the SSE
+// stream directly, only the checks this page hands it.
 //
 // `[id]` is an untrusted route param: every use in an API path goes through
 // `encodeURIComponent`, and an unknown/malformed id renders the same `NOT_FOUND` "This server no
 // longer exists." state as a deleted one, never a raw error dump (05-UI-SPEC.md SS10).
 import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import type { DiscoveryCheck } from '@noodara/domain/discovery';
 import type { ServerErrorCode } from '@noodara/domain/server';
 import { Banner, EmptyState, Skeleton, SkeletonText } from '@noodara/ui';
+import { DiscoverySection } from '../../../../components/DiscoverySection';
 import { ServerDetailToolbar } from '../../../../components/ServerDetailToolbar';
 import { ServerFacts } from '../../../../components/ServerFacts';
 import { apiGet, type ApiErrorCode, type ServerView } from '../../../../lib/api-client';
@@ -77,6 +84,11 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
   // First-load-only skeleton (05-UI-SPEC.md SS2.5's loading rule): an event-driven update later
   // must patch in place, never re-skeletonize an already-visible screen.
   const hasLoadedRef = useRef(false);
+  // DISC-02/D-05: this run's `server.discovery_progress` checks, accumulated here (never inside
+  // `DiscoverySection` itself) and cleared the instant a new run starts -- detected below as a
+  // transition into `CONNECTING` for this same server id.
+  const [liveChecks, setLiveChecks] = useState<readonly DiscoveryCheck[]>([]);
+  const previousStatusRef = useRef<ServerView['status'] | null>(null);
 
   const fetchServer = useCallback((): void => {
     if (!hasLoadedRef.current) {
@@ -100,12 +112,15 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
       }
 
       hasLoadedRef.current = true;
+      previousStatusRef.current = result.data.status;
       setState({ kind: 'ready', server: result.data });
     });
   }, [id]);
 
   useEffect(() => {
     hasLoadedRef.current = false;
+    previousStatusRef.current = null;
+    setLiveChecks([]);
     fetchServer();
   }, [fetchServer]);
 
@@ -118,10 +133,18 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
       subscribe((event) => {
         if (event.type === 'server.updated' && event.server.id === id) {
           hasLoadedRef.current = true;
+          if (previousStatusRef.current !== 'CONNECTING' && event.server.status === 'CONNECTING') {
+            // A new run just started -- discard whatever the previous run's live progress was.
+            setLiveChecks([]);
+          }
+          previousStatusRef.current = event.server.status;
           setState({ kind: 'ready', server: event.server });
         }
         if (event.type === 'server.deleted' && event.id === id) {
           setState({ kind: 'not-found' });
+        }
+        if (event.type === 'server.discovery_progress' && event.serverId === id) {
+          setLiveChecks((prev) => (prev.some((check) => check.id === event.check.id) ? prev : [...prev, event.check]));
         }
       }),
     [subscribe, id],
@@ -215,7 +238,13 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
           )
         ) : null}
 
-        {/* Plan 05-18 mounts the Discovery section here (05-UI-SPEC.md SS2.5 layout position 6). */}
+        <DiscoverySection
+          serverId={server.id}
+          serverStatus={server.status}
+          sshUser={server.sshUser}
+          receivedChecks={liveChecks}
+          now={now}
+        />
       </div>
     </>
   );
