@@ -85,6 +85,43 @@ describe('createSseBroadcaster', () => {
     expect(streamB.chunks).toStrictEqual([`event: server.updated\ndata: ${message}\n\n`]);
   });
 
+  it('fans a server.discovery_progress message out to every registered stream (D-05)', async () => {
+    const subscriber = buildFakeSubscriber();
+    const logger = buildFakeLogger();
+    const broadcaster = createSseBroadcaster({ subscriber: subscriber as never, logger: logger as never, maxConnections: 32 });
+    const streamA = buildFakeStream();
+    const streamB = buildFakeStream();
+    broadcaster.add(streamA);
+    broadcaster.add(streamB);
+    await broadcaster.start();
+
+    const message = JSON.stringify({
+      type: 'server.discovery_progress',
+      serverId: 'x',
+      check: { id: 'hostname', status: 'pass', detail: 'Hostname: web-01', durationMs: 5 },
+    });
+    subscriber.emitMessage(SERVER_EVENTS_CHANNEL, message);
+
+    expect(streamA.chunks).toStrictEqual([`event: server.discovery_progress\ndata: ${message}\n\n`]);
+    expect(streamB.chunks).toStrictEqual([`event: server.discovery_progress\ndata: ${message}\n\n`]);
+  });
+
+  it('drops a near-miss type (server.discovery_progresss) without writing to any stream, proving the allowlist is a literal set, not a prefix match', async () => {
+    const subscriber = buildFakeSubscriber();
+    const logger = buildFakeLogger();
+    const broadcaster = createSseBroadcaster({ subscriber: subscriber as never, logger: logger as never, maxConnections: 32 });
+    const stream = buildFakeStream();
+    broadcaster.add(stream);
+    await broadcaster.start();
+
+    subscriber.emitMessage(
+      SERVER_EVENTS_CHANNEL,
+      JSON.stringify({ type: 'server.discovery_progresss', serverId: 'x' }),
+    );
+
+    expect(stream.chunks).toStrictEqual([]);
+  });
+
   it('drops a message with an unknown type without writing to any stream', async () => {
     const subscriber = buildFakeSubscriber();
     const logger = buildFakeLogger();
