@@ -172,7 +172,7 @@ Waves 1–3 act as this phase's Wave 0: nothing in `packages/ui` or `apps/web` m
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify, or are one of the two declared blocking human checkpoints (05-03 T1, 05-21 T3)
+- [ ] All tasks have `<automated>` verify, or are one of the three declared blocking human checkpoints (05-03 T1, 05-20 T3, 05-21 T3)
 - [ ] Sampling continuity: no 3 consecutive tasks without automated verify
 - [ ] Every component-producing task recorded its RED observation in its SUMMARY (CLAUDE.md §2.1)
 - [ ] Wave 0 (waves 1–3) items all shipped
