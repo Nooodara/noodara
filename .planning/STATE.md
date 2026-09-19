@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-08-PLAN.md
-last_updated: "2026-09-19T16:17:22.710Z"
+stopped_at: Completed 05-10-PLAN.md
+last_updated: "2026-09-19T16:39:54.686Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 57
+  completed_plans: 58
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 10 of 25
+Plan: 11 of 25
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [████████░░] 78%
+Progress: [████████░░] 79%
 
 ## Performance Metrics
 
@@ -112,6 +112,7 @@ Progress: [████████░░] 78%
 | Phase 05 P22 | 25min | 3 tasks | 11 files |
 | Phase 05-ui-web P07 | 35min | 3 tasks | 19 files |
 | Phase 05-ui-web P08 | 8min | 3 tasks | 11 files |
+| Phase 05 P10 | 55min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -267,6 +268,9 @@ Recent decisions affecting current work:
 - [Phase 05-07]: buildValidBootEnv() and CI's workflow env both gained NOODARA_API_ORIGIN -- once apps/web's dev script joined the shared turbo dev task, the real clean-tree pnpm dev boot-smoke test and pnpm test:integration's global build setup both now build/boot apps/web too; same class of gap Plan 04-07 fixed for REDIS_URL
 - [Phase 05-08]: Field's children prop is a render function (children: (controlProps) => ReactNode), not a cloned element -- lets the same component wrap a bare <input> in its own test and Input/Textarea in later screens without cloneElement typing fragility under exactOptionalPropertyTypes
 - [Phase 05-08]: SegmentedControl needed no extra guard against re-firing onValueChange on the already-selected option -- Radix RadioGroup's useControllableState already only calls onChange on an actual value change, confirmed by the RED-then-GREEN cycle rather than assumed
+- [Phase 05-10]: e2e:install runs playwright install chromium with no --with-deps -- the session's harness-hygiene instructions forbid sudo/apt-get on the dev machine, overriding the plan text's literal --with-deps chromium
+- [Phase 05-10]: tests/e2e/tsconfig.json extends @noodara/config/tsconfig.base.json by package name (matching packages/*/tsconfig.json), requiring @noodara/config to be promoted to a root devDependency (workspace:*)
+- [Phase 05-10]: apps/web's unauthenticated-redirect file is proxy.ts, not middleware.ts -- Next.js 16.3.5 deprecates middleware.ts in favor of proxy.ts (export function proxy), confirmed by a real next build warning
 
 ### Pending Todos
 
@@ -294,6 +298,7 @@ None yet.
 - 05-22-PLAN.md declares requirements: [UI-01] in its frontmatter, but only adds Button/StatusPill/cn/tone to packages/ui -- no shell, sidebar, toolbar or apps/web exists yet. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01 itself (05-06). Re-verify UI-01 against whichever later plan actually builds the shell (05-UI-SPEC.md section 1).
 - 05-07-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only builds apps/web's infrastructure (same-origin proxy, no-flash theme bootstrap, tested fetch client) -- no sidebar, toolbar, navigation, or any of the seven screens 05-UI-SPEC.md describes exist yet (Plan 05-12 adds the authenticated shell route-group layout this plan deliberately leaves for later). Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05), and UI-01 itself (05-06, 05-22). Re-verify UI-01/UI-02 against whichever later plan actually builds the shell and screens.
 - 05-08-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only adds Field/Input/Textarea/SegmentedControl plus the seven Radix primitive installs to packages/ui -- no shell, sidebar, toolbar or screens exist yet. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01/UI-02 itself (05-06, 05-22, 05-07). Re-verify UI-01/UI-02 against whichever later plan actually builds the shell and screens.
+- 05-10-PLAN.md declares requirements: [QA-04] in its frontmatter, but only builds the Playwright harness and proves the unauthenticated-redirect + 401-guard behaviours -- the full critical-path E2E and nightly 20x repetition are Plan 05-20's job. QA-04 stays Pending in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), UI-01/UI-02 (05-06 through 05-08). Re-verify QA-04 against Plan 05-20.
 
 ## Deferred Items
 
@@ -305,6 +310,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T16:17:12.999Z
-Stopped at: Completed 05-08-PLAN.md
+Last session: 2026-09-19T16:39:54.679Z
+Stopped at: Completed 05-10-PLAN.md
 Resume file: None

@@ -283,7 +283,7 @@ Plans:
 **Wave 5** *(parallel, blocked on Wave 4)*
 
 - [x] 05-08-PLAN.md — Componentes de formulario en Radix test-first: `Field`, `Input`, `Textarea`, `SegmentedControl`
-- [ ] 05-10-PLAN.md — Arnés Playwright real: stack completo (Postgres, Redis, API, worker, web), config y smoke spec (QA-04)
+- [x] 05-10-PLAN.md — Arnés Playwright real: stack completo (Postgres, Redis, API, worker, web), config y smoke spec (QA-04)
 
 **Wave 6** *(blocked on Wave 5)*
 
@@ -366,5 +366,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 9/25 | In Progress|  |
+| 5. UI web | 10/25 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |
