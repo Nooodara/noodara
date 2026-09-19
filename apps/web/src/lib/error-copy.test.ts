@@ -5,7 +5,7 @@ import {
   fieldErrorsFromIssues,
   fieldForErrorCode,
   formatRetryAfterDuration,
-} from './error-copy.js';
+} from './error-copy';
 
 // 05-UI-SPEC.md SS5.4 -- every ServiceErrorCode's copy is asserted verbatim. Entries that carry a
 // literal "{token}" placeholder (NAME_TAKEN, HOST_TAKEN, CONFIRMATION_MISMATCH) are returned

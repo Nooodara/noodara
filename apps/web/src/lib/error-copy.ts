@@ -9,7 +9,7 @@
 // `@noodara/domain/server` (pure, already an apps/web dependency), matching the precedent
 // packages/ui/src/tone.ts already set for importing domain unions instead of re-typing them.
 import type { ServerErrorCode } from '@noodara/domain/server';
-import type { ApiErrorCode, ApiIssue } from './api-client.js';
+import type { ApiErrorCode, ApiIssue } from './api-client';
 
 export type ServiceErrorCode = Exclude<ApiErrorCode, 'NETWORK_ERROR'>;
 
