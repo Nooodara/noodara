@@ -4,13 +4,13 @@ milestone: v0.1
 milestone_name: milestone
 status: executing
 stopped_at: Completed 05-04-PLAN.md
-last_updated: "2026-09-19T14:39:25.956Z"
+last_updated: "2026-09-19T15:07:52.033Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 52
+  completed_plans: 53
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 5 of 25
+Plan: 6 of 25
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [███████░░░] 71%
+Progress: [███████░░░] 73%
 
 ## Performance Metrics
 
@@ -107,6 +107,7 @@ Progress: [███████░░░] 71%
 | Phase 05 P02 | 18min | 3 tasks | 5 files |
 | Phase 05 P04 | 9min | 3 tasks | 7 files |
 | Phase 05 P03 | 6min | 3 tasks | 4 files |
+| Phase 05 P05 | 21min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -248,6 +249,8 @@ Recent decisions affecting current work:
 - [Phase 05-03]: Reworded scripts/check-package-provenance.mjs's normaliseRepoUrl docstring to avoid the literal substring 'includes(' since the pre-existing prose tripped this plan's own acceptance-criteria grep even though the actual comparison logic was never touched or relaxed
 - [Phase 05-03]: 04-SECURITY.md's Sign-Off Approval line is worded as evidence-based automated closure per Task 3, explicitly not framed as a human security review or product-owner sign-off, since none was requested or performed
 - [Phase 05-03]: UF-02 (worker.ts main()'s unhandled-rejection gap) left open and unmodified: out of scope for D-17, which names only T-4-02/T-4-10/T-4-32/T-4-38 and UF-01
+- [Phase 05-05]: The route handler spreads readLatestDiscovery's readonly checks/warnings arrays into plain arrays before reply.send() rather than loosening the service's own readonly return type
+- [Phase 05-05]: Three pre-existing ServerServices facade key-count tests (fail-in-flight-connection.test.ts, read-servers.test.ts, trust-fingerprint.test.ts) updated from ten to eleven members after readLatestDiscovery joined the factory -- direct, expected consequence of Task 1, not scope creep
 
 ### Pending Todos
 
@@ -270,6 +273,7 @@ None yet.
 - 05-01-PLAN.md declares requirements: [DETL-02, QA-05] in its frontmatter, but only implements the two security-remediation items (UF-01 pendingFingerprint clear, T-4-02 bounded session lookups) -- no UI empty-state work (DETL-02) or CI canary job (QA-05) landed in this plan. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 after Plan 04-01. Re-verify DETL-02/QA-05 against the plans that actually implement them, not this checkbox.
 - 05-02-PLAN.md declares requirements: [QA-05] in its frontmatter but only closes the T-4-10/T-4-38/T-4-32 threat-remediation tasks that make QA-05's canary safe against real err output -- it does not add the nightly CI job (.github/workflows/nightly.yml, still Wave 2+ per 05-PATTERNS.md). CI already runs pnpm security:scan-leaks (Phase 4's ci.yml); QA-05 also needs a nightly job before it can be marked Complete. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01) and DETL-02/QA-05 (05-01).
 - 05-03-PLAN.md declares requirements: [UI-01, QA-05] in its frontmatter, but only extends the package provenance gate and closes 04-SECURITY.md's sign-off -- no design-system shell (UI-01) or nightly canary CI job (QA-05, still pending per 05-02's own note) landed in this plan. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01) and QA-05 (05-02). Re-verify UI-01/QA-05 against the plans that actually implement them.
+- 05-05-PLAN.md declares requirements: [DISC-02, QA-05] in its frontmatter, but only closes DISC-02's read-endpoint surface (GET /api/servers/:id/discovery) and extends canary-http.test.ts to scan it plus the server.discovery_progress SSE frame -- CI's ci.yml security job already runs pnpm security:scan-leaks (Phase 4), but the nightly job (.github/workflows/nightly.yml) QA-05 also requires per REQUIREMENTS.md's own wording ('Un job de CI y nightly...') still has not landed (flagged pending since 05-02/05-03). QA-05 stays Pending in REQUIREMENTS.md; DISC-02 was already Complete before this plan. Re-verify QA-05 once nightly.yml exists.
 
 ## Deferred Items
 
@@ -281,6 +285,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T14:39:06.737Z
+Last session: 2026-09-19T15:07:28.674Z
 Stopped at: Completed 05-04-PLAN.md
 Resume file: None
