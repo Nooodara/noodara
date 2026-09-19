@@ -125,7 +125,7 @@ describe('ActivityRow -- no raw JSON ever reaches the DOM', () => {
 
     for (const item of cases) {
       const { container, unmount } = renderUi(<ActivityRow item={item} now={NOW} lookupServer={foundLookup} />);
-      expect(container.textContent ?? '').not.toMatch(/\{"/);
+      expect(container.textContent).not.toMatch(/\{"/);
       unmount();
     }
   });
