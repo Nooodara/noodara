@@ -3,6 +3,7 @@
 // an HTTP status or calls a service — this module only describes shapes and translates a wire
 // vocabulary difference (see the `WireCredentialSchema` note below).
 import { z } from 'zod';
+import { DISCOVERY_CHECK_IDS, DISCOVERY_CHECK_STATUSES } from '@noodara/domain/discovery';
 import { SERVER_ERROR_CODES, SERVER_STATUSES } from '@noodara/domain/server';
 import type { CredentialInput } from '../services/credential-store.js';
 import { SERVER_VIEW_KEYS } from '../services/server-view.js';
@@ -111,3 +112,39 @@ export const ServerViewSchema = z.object({
 export function assertServerViewSchemaKeysMatch(): boolean {
   return Object.keys(ServerViewSchema.shape).sort().join(',') === [...SERVER_VIEW_KEYS].sort().join(',');
 }
+
+// D-05/DISC-02: the wire shape of one discovery check, built directly from the domain's own
+// frozen tuples — the eleven ids and four statuses are never re-typed by hand here.
+export const DiscoveryCheckSchema = z.object({
+  id: z.enum(DISCOVERY_CHECK_IDS),
+  status: z.enum(DISCOVERY_CHECK_STATUSES),
+  detail: z.string(),
+  durationMs: z.number(),
+});
+
+// Drift guard, same discipline as `assertServerViewSchemaKeysMatch`: a check id or status added
+// to (or removed from) the domain tuples without updating `DiscoveryCheckSchema` fails this
+// assertion — exercised by server-schemas.test.ts, not just declared.
+export function assertDiscoveryCheckSchemaLiteralsMatch(): boolean {
+  const idsMatch =
+    [...DiscoveryCheckSchema.shape.id.options].sort().join(',') === [...DISCOVERY_CHECK_IDS].sort().join(',');
+  const statusesMatch =
+    [...DiscoveryCheckSchema.shape.status.options].sort().join(',') ===
+    [...DISCOVERY_CHECK_STATUSES].sort().join(',');
+  return idsMatch && statusesMatch;
+}
+
+// D-05/DISC-02: `GET /api/servers/:id/discovery`'s response — the latest discovery run only
+// (D-07 limits v0.1 to the latest run). `.strict()` so an accidental extra field (notably `facts`,
+// T-5-18) is a serialization failure rather than a silent leak, mirroring `ServerViewSchema`'s
+// explicit-allowlist discipline. `collectedAt` follows the same `z.date()` convention as every
+// other timestamp in `ServerViewSchema` — a real `Date` instance validated here, serialized to its
+// ISO string on the wire by `JSON.stringify`'s own `Date.prototype.toJSON`.
+export const DiscoveryReadResponseSchema = z
+  .object({
+    collectedAt: z.date().nullable(),
+    outcome: z.enum(['ok', 'partial', 'failed']).nullable(),
+    checks: z.array(DiscoveryCheckSchema),
+    warnings: z.array(z.enum(SERVER_ERROR_CODES)),
+  })
+  .strict();
