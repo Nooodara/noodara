@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-06-PLAN.md
-last_updated: "2026-09-19T15:27:51.443Z"
+stopped_at: Completed 05-22-PLAN.md
+last_updated: "2026-09-19T15:40:44.227Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 54
+  completed_plans: 55
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 7 of 25
+Plan: 8 of 25
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [███████░░░] 74%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -109,6 +109,7 @@ Progress: [███████░░░] 74%
 | Phase 05 P03 | 6min | 3 tasks | 4 files |
 | Phase 05 P05 | 21min | 3 tasks | 11 files |
 | Phase 05-ui-web P06 | 15min | 3 tasks | 17 files |
+| Phase 05 P22 | 25min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -257,6 +258,8 @@ Recent decisions affecting current work:
 - [Phase 05-06]: packages/ui declares its own @testing-library/react, @testing-library/user-event and @testing-library/jest-dom devDependencies -- pnpm boundaries requires a package to directly declare anything it imports, not merely inherit it via root hoisting
 - [Phase 05-06]: pnpm 10 silently ignores package.json's pnpm.overrides field -- the react/react-dom single-resolved-version pin moved to pnpm-workspace.yaml's own overrides key instead
 - [Phase 05-06]: tokens.css decomposes each of the eight type roles into size/line-height/tracking/weight sub-tokens (not a single shorthand) so theme.css's Tailwind v4 text/tracking namespaces can bind directly with zero literal values
+- [Phase 05-22]: packages/ui gained a real dependencies entry on @noodara/domain (workspace:*), not just a devDependency -- pnpm boundaries requires the importing package to directly declare anything it imports, matching the packages/ssh precedent
+- [Phase 05-22]: StatusPill's CONNECTING pulse uses Tailwind's built-in motion-safe: variant rather than a hand-written arbitrary keyframe, and Button's aria-busy renders as true-or-undefined (never literal false) so the attribute is genuinely absent when only disabled is set
 
 ### Pending Todos
 
@@ -281,6 +284,7 @@ None yet.
 - 05-03-PLAN.md declares requirements: [UI-01, QA-05] in its frontmatter, but only extends the package provenance gate and closes 04-SECURITY.md's sign-off -- no design-system shell (UI-01) or nightly canary CI job (QA-05, still pending per 05-02's own note) landed in this plan. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01) and QA-05 (05-02). Re-verify UI-01/QA-05 against the plans that actually implement them.
 - 05-05-PLAN.md declares requirements: [DISC-02, QA-05] in its frontmatter, but only closes DISC-02's read-endpoint surface (GET /api/servers/:id/discovery) and extends canary-http.test.ts to scan it plus the server.discovery_progress SSE frame -- CI's ci.yml security job already runs pnpm security:scan-leaks (Phase 4), but the nightly job (.github/workflows/nightly.yml) QA-05 also requires per REQUIREMENTS.md's own wording ('Un job de CI y nightly...') still has not landed (flagged pending since 05-02/05-03). QA-05 stays Pending in REQUIREMENTS.md; DISC-02 was already Complete before this plan. Re-verify QA-05 once nightly.yml exists.
 - 05-06-PLAN.md declares requirements: [UI-01] in its frontmatter, but only builds the packages/ui scaffold, component-test harness and tokens.css/theme.css -- no shell, sidebar, toolbar or navigation exists (apps/web itself is not created by this plan). Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03) and DISC-02/QA-05 (05-05). Re-verify UI-01 against whichever later plan actually builds the shell (05-UI-SPEC.md section 1).
+- 05-22-PLAN.md declares requirements: [UI-01] in its frontmatter, but only adds Button/StatusPill/cn/tone to packages/ui -- no shell, sidebar, toolbar or apps/web exists yet. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01 itself (05-06). Re-verify UI-01 against whichever later plan actually builds the shell (05-UI-SPEC.md section 1).
 
 ## Deferred Items
 
@@ -292,6 +296,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T15:27:51.436Z
-Stopped at: Completed 05-06-PLAN.md
+Last session: 2026-09-19T15:40:44.220Z
+Stopped at: Completed 05-22-PLAN.md
 Resume file: None
