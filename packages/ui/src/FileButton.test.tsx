@@ -104,6 +104,40 @@ describe('FileButton', () => {
     });
   });
 
+  it('rejects a file over the size cap with a fixed message, never reading its contents (05-17-PLAN.md security item 4)', async () => {
+    const user = userEvent.setup();
+    const onText = vi.fn();
+    const onError = vi.fn();
+    // A private key is a few KB at most (even RSA-4096) -- this exceeds the component's own cap
+    // by one byte, proving the boundary is enforced rather than a loose approximation.
+    const oversized = new File([new Uint8Array(64 * 1024 + 1)], 'too-big.pem', { type: 'text/plain' });
+    const { container } = renderUi(<FileButton onText={onText} onError={onError} />);
+
+    await user.upload(findFileInput(container), oversized);
+
+    await waitFor(() => {
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+    expect(onText).not.toHaveBeenCalled();
+    const [message] = onError.mock.calls[0] as [string];
+    expect(message.toLowerCase()).toContain('too large');
+  });
+
+  it('accepts a file at exactly the size cap', async () => {
+    const user = userEvent.setup();
+    const onText = vi.fn();
+    const onError = vi.fn();
+    const atCap = new File([new Uint8Array(64 * 1024)], 'exactly-at-cap.pem', { type: 'text/plain' });
+    const { container } = renderUi(<FileButton onText={onText} onError={onError} />);
+
+    await user.upload(findFileInput(container), atCap);
+
+    await waitFor(() => {
+      expect(onText).toHaveBeenCalledTimes(1);
+    });
+    expect(onError).not.toHaveBeenCalled();
+  });
+
   it('invokes onError with a fixed generic message on a failing read, never the raw error or file contents', async () => {
     const user = userEvent.setup();
     const onText = vi.fn();
