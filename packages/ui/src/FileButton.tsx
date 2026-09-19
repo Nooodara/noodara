@@ -15,6 +15,12 @@ export interface FileButtonProps {
 // one fixed sentence, the same discipline the backend's own error responses follow.
 const READ_ERROR_MESSAGE = 'Could not read the selected file. Try again, or paste the value instead.';
 
+// 05-17-PLAN.md security item 4: a private key is a few KB at most (even RSA-4096 in PEM form) --
+// 64KB is a generous ceiling that still rejects an obviously-wrong file (a whole disk image, a
+// screenshot, ...) before ever reading it into memory or handing its contents to a caller.
+const MAX_FILE_BYTES = 64 * 1024;
+const FILE_TOO_LARGE_MESSAGE = 'This file is too large. Choose a smaller key file, or paste the value instead.';
+
 // FileButton (D-04, 05-UI-SPEC.md SS2.4 "Choose file") -- a ghost Button that triggers a
 // visually-hidden native file input and reads the chosen file entirely client-side with
 // FileReader.readAsText. The resulting text is handed to the caller's onText callback and
@@ -31,6 +37,12 @@ export function FileButton({ label = 'Choose file', accept, disabled = false, on
     const input = event.currentTarget;
     const file = input.files?.[0];
     if (!file) {
+      return;
+    }
+
+    if (file.size > MAX_FILE_BYTES) {
+      onError(FILE_TOO_LARGE_MESSAGE);
+      input.value = '';
       return;
     }
 
