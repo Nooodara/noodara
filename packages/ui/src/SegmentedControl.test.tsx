@@ -14,21 +14,21 @@ const OPTIONS = [
 
 describe('SegmentedControl', () => {
   it('renders exactly two radio roles inside one radiogroup role', () => {
-    renderUi(<SegmentedControl value="privateKey" onValueChange={() => {}} options={OPTIONS} />);
+    renderUi(<SegmentedControl value="privateKey" onValueChange={vi.fn()} options={OPTIONS} />);
 
     expect(screen.getByRole('radiogroup')).toBeInTheDocument();
     expect(screen.getAllByRole('radio')).toHaveLength(2);
   });
 
   it('marks the option matching value as checked and the other as unchecked', () => {
-    renderUi(<SegmentedControl value="privateKey" onValueChange={() => {}} options={OPTIONS} />);
+    renderUi(<SegmentedControl value="privateKey" onValueChange={vi.fn()} options={OPTIONS} />);
 
     expect(screen.getByRole('radio', { name: 'Private key' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByRole('radio', { name: 'Password' })).toHaveAttribute('aria-checked', 'false');
   });
 
   it('renders each option label as visible text', () => {
-    renderUi(<SegmentedControl value="privateKey" onValueChange={() => {}} options={OPTIONS} />);
+    renderUi(<SegmentedControl value="privateKey" onValueChange={vi.fn()} options={OPTIONS} />);
 
     expect(screen.getByText('Private key')).toBeInTheDocument();
     expect(screen.getByText('Password')).toBeInTheDocument();
@@ -59,7 +59,7 @@ describe('SegmentedControl', () => {
     renderUi(
       <SegmentedControl
         value="privateKey"
-        onValueChange={() => {}}
+        onValueChange={vi.fn()}
         options={OPTIONS}
         data-testid="server-sheet-credential-type"
       />,
