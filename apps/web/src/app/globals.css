@@ -1,0 +1,23 @@
+@import 'tailwindcss';
+@import '@noodara/ui/tokens.css';
+@import '@noodara/ui/theme.css';
+
+/*
+ * Global base element styles only -- everything else in apps/web is a Tailwind utility class bound
+ * to a --token (theme.css's @theme block), never a literal colour/size/radius here (skill
+ * `noodara-ux-apple` SS2, 05-UI-SPEC.md Tokens).
+ */
+html,
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* skill SS4.1 / 05-UI-SPEC.md SS8 Accessibility: a visible focus ring everywhere, no exceptions
+   without a replacement focus style. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
