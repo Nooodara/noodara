@@ -14,6 +14,7 @@ export { Banner, type BannerAction, type BannerProps } from './Banner.js';
 export { Button, type ButtonProps, type ButtonVariant } from './Button.js';
 export { cn } from './cn.js';
 export { ConfirmDialog, type ConfirmDialogProps, DestructiveConfirmDialog, type DestructiveConfirmDialogProps } from './Dialog.js';
+export { CopyButton, type CopyButtonProps } from './CopyButton.js';
 export { discoveryCheckTone, serverStatusTone, STATUS_WORDS } from './tone.js';
 export type { Tone } from './tone.js';
 export { EmptyState, type EmptyStateAction, type EmptyStateProps } from './EmptyState.js';

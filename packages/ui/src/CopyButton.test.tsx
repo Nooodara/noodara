@@ -58,9 +58,9 @@ describe('CopyButton', () => {
     const user = userEvent.setup();
     const writeText = vi.fn().mockRejectedValue(new Error('denied'));
     stubClipboard(writeText);
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
     try {
       renderUi(<CopyButton value="a1:b2:c3:d4" />);
