@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config';
-import { domainSourceAliases, sshSourceAliases } from './vitest.shared.js';
+import { domainSourceAliases, sshSourceAliases, uiSourceAliases } from './vitest.shared.js';
 
 // Vitest 5 uses `projects` (the config key that superseded the deprecated one removed since
 // 3.2). Each monorepo package gets its own project scoped to `src/**/*.test.ts` so integration
@@ -10,7 +10,7 @@ export default defineConfig({
   // alias keeps every in-process unit test resolving straight to packages/domain/src instead, so
   // QA-02's coverage gate keeps measuring source and no build step is required to run `pnpm test`.
   // See vitest.shared.ts for the ordering rule this alias array depends on.
-  resolve: { alias: [...domainSourceAliases, ...sshSourceAliases] },
+  resolve: { alias: [...domainSourceAliases, ...sshSourceAliases, ...uiSourceAliases] },
   test: {
     projects: [
       {
@@ -25,6 +25,20 @@ export default defineConfig({
         test: {
           name: 'packages',
           include: ['packages/*/src/**/*.test.ts'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'dom',
+          // Separate project, not a widening of `packages`/`apps` above: those two include only
+          // `*.test.ts` and run in the node environment. jsdom is meaningfully slower than node,
+          // and apps/web (once it exists) must not inherit the `apps` project's control-plane
+          // env stand-ins below -- a browser-side app has no business reading
+          // NOODARA_MASTER_KEY/DATABASE_URL/etc.
+          include: ['packages/ui/src/**/*.test.tsx', 'apps/web/src/**/*.test.tsx'],
+          environment: 'jsdom',
+          setupFiles: ['./vitest.setup.dom.ts'],
         },
       },
       {
@@ -53,8 +67,15 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json-summary', 'lcov'],
       all: true,
-      include: ['packages/*/src/**/*.ts', 'apps/*/src/**/*.ts'],
-      exclude: ['**/*.test.ts', '**/*.d.ts', '**/index.ts', 'packages/ssh/src/testing/**'],
+      include: ['packages/*/src/**/*.{ts,tsx}', 'apps/*/src/**/*.{ts,tsx}'],
+      exclude: [
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/*.d.ts',
+        '**/index.ts',
+        'packages/ssh/src/testing/**',
+        'packages/ui/src/testing/**',
+      ],
       // QA-02: packages/domain must stay at >=95% statements/branches. No global threshold is
       // set for other packages/apps in v0.1 — coverage is reported for them, not gated.
       thresholds: {

@@ -60,3 +60,21 @@ export const sshSourceAliases: AliasOptions = [
     replacement: fileURLToPath(new URL('./packages/ssh/src/index.ts', import.meta.url)),
   },
 ];
+
+// Same rationale as domainSourceAliases/sshSourceAliases above, for @noodara/ui (05-06-PLAN.md
+// Task 2): packages/ui's `exports` map points at its built `dist` output, but every in-process
+// Vitest run (including apps/web's future component tests, once that app exists) must keep
+// resolving straight to packages/ui/src -- otherwise every component test would require a build
+// before `pnpm test` could run. Ordering rule (load-bearing, same reason as the arrays above): the
+// `@noodara/ui/testing` subpath entry must come before the bare `@noodara/ui` regex entry, longest
+// specifier first, so a caller resolving the subpath is never swallowed by the bare match.
+export const uiSourceAliases: AliasOptions = [
+  {
+    find: '@noodara/ui/testing',
+    replacement: fileURLToPath(new URL('./packages/ui/src/testing/render.tsx', import.meta.url)),
+  },
+  {
+    find: /^@noodara\/ui$/,
+    replacement: fileURLToPath(new URL('./packages/ui/src/index.ts', import.meta.url)),
+  },
+];

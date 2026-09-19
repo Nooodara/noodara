@@ -6,8 +6,8 @@
 // exact component -> plan assignment). Keep the export list alphabetical as it grows, so
 // appends stay reviewable in diffs.
 //
-// Never export anything from `src/testing/` here -- that surface is reachable only through
-// the explicit `@noodara/ui/testing` subpath (see packages/ui/src/testing/render.tsx), is
-// excluded from coverage, and Plan 05-21's `check:ui-safety` gate fails if any non-test file
-// imports it.
+// Never export anything from the `src/testing` subdirectory here -- that surface is reachable
+// only through the explicit `@noodara/ui/testing` subpath (see the render harness module under
+// `src/testing/`), is excluded from coverage, and Plan 05-21's `check:ui-safety` gate fails if
+// any non-test file imports it.
 export {};
