@@ -67,3 +67,12 @@ export function applyServerEvent(list: readonly ServerView[], event: ServerEvent
     }
   }
 }
+
+/**
+ * Folds the events that arrived while a `GET /api/servers` snapshot was in flight onto that
+ * snapshot. RED placeholder (.planning/debug/sse-lost-event-race.md): returns the snapshot
+ * untouched, which is exactly today's lossy behavior -- the next commit implements it.
+ */
+export function reconcileSnapshot(snapshot: readonly ServerView[], _events: readonly ServerEvent[]): readonly ServerView[] {
+  return snapshot;
+}

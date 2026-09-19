@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyServerEvent, sortServers } from './server-store';
+import { applyServerEvent, reconcileSnapshot, sortServers } from './server-store';
 import type { ServerView } from './api-client';
 import type { ServerEvent } from './server-events';
 
@@ -110,5 +110,71 @@ describe('sortServers', () => {
     const sorted = sortServers(list);
 
     expect(sorted.map((s) => s.id)).toEqual(['2', '3', '1']);
+  });
+});
+
+// .planning/debug/sse-lost-event-race.md: there is no event replay, so an event delivered while a
+// `GET /api/servers` snapshot is in flight has to be folded onto that snapshot once it lands --
+// without ever letting an event the snapshot already reflects regress it.
+describe('reconcileSnapshot', () => {
+  it('inserts a server created after the snapshot was read', () => {
+    const snapshot = [buildServer({ id: '1', name: 'alpha' })];
+    const created = buildServer({ id: '2', name: 'beta' });
+
+    const result = reconcileSnapshot(snapshot, [{ type: 'server.updated', server: created }]);
+
+    expect(result.map((s) => s.id)).toEqual(['1', '2']);
+  });
+
+  it('applies a buffered update that is newer than the snapshot entry', () => {
+    const snapshot = [buildServer({ id: '1', name: 'alpha', status: 'CONNECTING', updatedAt: '2026-09-19T10:00:00.000Z' })];
+    const newer = buildServer({ id: '1', name: 'alpha', status: 'CONNECTED', updatedAt: '2026-09-19T10:00:05.000Z' });
+
+    const result = reconcileSnapshot(snapshot, [{ type: 'server.updated', server: newer }]);
+
+    expect(result[0]?.status).toBe('CONNECTED');
+  });
+
+  it('ignores a buffered update that is older than the snapshot entry', () => {
+    const snapshot = [buildServer({ id: '1', name: 'alpha', status: 'CONNECTED', updatedAt: '2026-09-19T10:00:05.000Z' })];
+    const older = buildServer({ id: '1', name: 'alpha', status: 'CONNECTING', updatedAt: '2026-09-19T10:00:00.000Z' });
+
+    const result = reconcileSnapshot(snapshot, [{ type: 'server.updated', server: older }]);
+
+    expect(result[0]?.status).toBe('CONNECTED');
+  });
+
+  it('applies a buffered update carrying the same updatedAt as the snapshot entry', () => {
+    const at = '2026-09-19T10:00:00.000Z';
+    const snapshot = [buildServer({ id: '1', name: 'alpha', status: 'PENDING', updatedAt: at })];
+    const same = buildServer({ id: '1', name: 'alpha', status: 'CONNECTING', updatedAt: at });
+
+    const result = reconcileSnapshot(snapshot, [{ type: 'server.updated', server: same }]);
+
+    expect(result[0]?.status).toBe('CONNECTING');
+  });
+
+  it('removes a server whose deletion was buffered, even though the snapshot still lists it', () => {
+    const snapshot = [buildServer({ id: '1', name: 'alpha' }), buildServer({ id: '2', name: 'beta' })];
+
+    const result = reconcileSnapshot(snapshot, [{ type: 'server.deleted', id: '1' }]);
+
+    expect(result.map((s) => s.id)).toEqual(['2']);
+  });
+
+  it('folds buffered events in arrival order, so an update followed by its deletion ends deleted', () => {
+    const created = buildServer({ id: '9', name: 'short-lived' });
+    const events: ServerEvent[] = [
+      { type: 'server.updated', server: created },
+      { type: 'server.deleted', id: '9' },
+    ];
+
+    expect(reconcileSnapshot([], events)).toEqual([]);
+  });
+
+  it('returns the snapshot itself when nothing was buffered', () => {
+    const snapshot = [buildServer({ id: '1', name: 'alpha' })];
+
+    expect(reconcileSnapshot(snapshot, [])).toBe(snapshot);
   });
 });
