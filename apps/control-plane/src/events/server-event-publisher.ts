@@ -3,15 +3,25 @@
 // HTTP route, the connect-server worker (Plan 04-09+), or a future CLI — without the caller having
 // to remember to publish anything.
 //
-// Exactly two event types this phase (D-02): `server.updated` carries the whole `ServerView` (the
-// same 27-field allowlist `GET /api/servers/:id` returns, never transformed) and `server.deleted`
-// carries only `{ id }`. There is deliberately no per-transition event type — the UI discriminates
-// on `server.status`.
+// Three event types (D-02, extended by D-05 in Phase 5): `server.updated` carries the whole
+// `ServerView` (the same 27-field allowlist `GET /api/servers/:id` returns, never transformed) and
+// `server.deleted` carries only `{ id }`. `server.discovery_progress` carries a single
+// `DiscoveryCheck` — the exact value `runDiscovery`'s `onCheck` callback reported, whose `detail`
+// was already `redactor.redact`-passed inside `runDiscovery` before it ever reached this publisher
+// (D-05, T-5-13) — never raw command output, and deliberately never facts, a snapshot or a
+// `ServerView`. There is deliberately no per-transition event type — the UI discriminates on
+// `server.status`.
+import type { DiscoveryCheck } from '@noodara/domain/discovery';
 import type { ServerView } from '../services/server-view.js';
 
 export type ServerEvent =
   | { readonly type: 'server.updated'; readonly server: ServerView }
-  | { readonly type: 'server.deleted'; readonly id: string };
+  | { readonly type: 'server.deleted'; readonly id: string }
+  | {
+      readonly type: 'server.discovery_progress';
+      readonly serverId: string;
+      readonly check: DiscoveryCheck;
+    };
 
 /**
  * The publication port every Phase 3 service depends on through `ServerServicesDeps.events`.

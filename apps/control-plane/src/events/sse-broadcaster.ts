@@ -34,10 +34,15 @@ export interface CreateSseBroadcasterOptions {
   readonly maxConnections: number;
 }
 
-// D-02: the only two event types this phase ever forwards. A message whose `type` is anything
-// else — including a foreign publisher's message on a shared Redis instance — is dropped before
-// ever reaching a stream's `write` (T-4-36).
-const KNOWN_EVENT_TYPES = new Set(['server.updated', 'server.deleted']);
+// D-02/D-05: the only three event types this phase ever forwards. A message whose `type` is
+// anything else — including a foreign publisher's message on a shared Redis instance — is dropped
+// before ever reaching a stream's `write` (T-4-36). Extended with a literal string only, never a
+// wildcard/prefix/regex match (T-4-36, T-5-14).
+const KNOWN_EVENT_TYPES = new Set([
+  'server.updated',
+  'server.deleted',
+  'server.discovery_progress',
+]);
 
 // D-27/T-4-37: an `UNSUBSCRIBE` issued on a connection that has never actually reached Redis (or
 // is stuck retrying against an unreachable one) sits in ioredis's offline command queue forever —
