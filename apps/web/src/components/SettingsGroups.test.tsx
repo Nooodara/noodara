@@ -71,7 +71,7 @@ describe('SettingsGroups', () => {
     await user.click(screen.getByRole('button', { name: 'Advanced' }));
 
     expect(screen.getByText('a1b2c3d4e5f6a7b8')).toBeInTheDocument();
-    expect(container.textContent ?? '').not.toMatch(/[A-Za-z0-9+/]{44}/);
+    expect(container.textContent).not.toMatch(/[A-Za-z0-9+/]{44}/);
   });
 
   it('renders second-suffixed timeout values, never a raw millisecond count', async () => {
