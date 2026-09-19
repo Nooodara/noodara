@@ -170,6 +170,32 @@ pnpm add -D -w @playwright/test
 | @radix-ui/react-visually-hidden | npm | (current, OK) | github.com/radix-ui/primitives | OK | Approved |
 | @radix-ui/react-checkbox | npm | (current, OK) | github.com/radix-ui/primitives | OK | Approved |
 
+### Component-test DOM stack — NOT audited by this research pass (pending human checkpoint in Plan 05-03)
+
+The five packages below were **not** part of this research pass's `slopcheck` run, because this pass
+recommended a Playwright-only component-verification strategy. That recommendation was overturned during
+plan review: CLAUDE.md §2.1 makes RED→GREEN test-first non-negotiable, so `packages/ui` and `apps/web`
+components get colocated Vitest component tests and the DOM stack below becomes necessary. These rows
+therefore carry **no verdict from this research pass** and must not be treated as approved.
+
+| Package | Registry | Resolved version (npm view, 2026-09-19) | Expected repo | slopcheck | Disposition |
+|---------|----------|------------------------------------------|---------------|-----------|-------------|
+| jsdom | npm | 30.1.0 | github.com/jsdom/jsdom | not run this pass | **pending human checkpoint (05-03)** |
+| @testing-library/dom | npm | 10.4.2 | github.com/testing-library/dom-testing-library | not run this pass | **pending human checkpoint (05-03)** |
+| @testing-library/react | npm | 16.3.3 | github.com/testing-library/react-testing-library | not run this pass | **pending human checkpoint (05-03)** |
+| @testing-library/jest-dom | npm | 7.0.1 | github.com/testing-library/jest-dom | not run this pass | **pending human checkpoint (05-03)** |
+| @testing-library/user-event | npm | 14.6.7 | github.com/testing-library/user-event | not run this pass | **pending human checkpoint (05-03)** |
+
+`@testing-library/dom` is listed because `@testing-library/react` 16.x declares it as a required
+peerDependency (`^10.0.0`) and `@testing-library/jest-dom` 7.x declares `>=10 <11` — it is not an optional
+extra. No React Vitest transform plugin (`@vitejs/plugin-react`) is needed: Vite's esbuild transform honours
+`packages/ui/tsconfig.json`'s `jsx: "react-jsx"`, and Fast Refresh is irrelevant in a test run.
+
+Per ADR-0000's `[ASSUMED]`-package rule these five go through the **existing** blocking human checkpoint in
+Plan 05-03 Task 1 (extended from three packages to eight) before any install, and then into the **existing**
+`EXPECTED_PACKAGES` gate and the ADR-0000 "Phase 5 additions" table with the repositories above. No second
+gate is created.
+
 **Packages removed due to slopcheck `[SLOP]` verdict:** none.
 **Packages flagged as suspicious `[SUS]`:** none.
 
@@ -442,27 +468,31 @@ type ServiceErrorCode = 'VALIDATION_FAILED' | 'INVALID_CREDENTIAL' | 'UNAUTHORIZ
 
 **If this table is empty:** N/A — assumptions are listed above.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Are 04-SECURITY.md's 4 open threats + UF-01 already fixed by the time this phase is planned/executed?**
    - What we know: as of this research pass (2026-09-19), `edit-server.ts:211` is unfixed (confirmed by direct code read) and `04-SECURITY.md`'s frontmatter still reads `status: open, threats_open: 4`.
    - What's unclear: whether a separate remediation phase/commit lands between this research and plan execution.
    - Recommendation: the plan's Wave 0 must re-check this file's `status`/`threats_open` fields at execution time and only skip the remediation wave if they read `verified`/`0` with a dated audit trail entry newer than 2026-09-18.
+   - **RESOLVED:** no separate remediation landed before planning, so D-17's fixes are this phase's first two waves. Plan 05-01 closes UF-01 (`edit-server.ts` clears `pendingFingerprint` on the `ERROR` branch) and T-4-02 (bounded `getSession`); Plan 05-02 closes T-4-10/T-4-38 (pino `err` serializer) and T-4-32 (worker shutdown try/catch); Plan 05-03 Task 3 flips `04-SECURITY.md` to `status: verified` / `threats_open: 0` against those two SUMMARYs' evidence. No `packages/ui` or `apps/web` work starts before that gate.
 
 2. **Exact naming/payload for the DISC-02 backend addition (SSE event + read endpoint).**
    - What we know: 05-UI-SPEC.md §7 proposes `server.discovery_progress` / `GET /api/servers/:id/discovery`, fully specified with payload shapes and constraints (allowlisted, best-effort, session-scoped, `detail`-only).
    - What's unclear: whether these exact names are final or the planner should rename them (UI-SPEC's own §11 item 4 says this is free to change).
    - Recommendation: treat the proposed shape as the default plan; only deviate if a naming collision or a stronger convention emerges during Wave 1 implementation.
+   - **RESOLVED:** the proposed names are adopted verbatim — no collision exists. `server.discovery_progress` joins `KNOWN_EVENT_TYPES` in Plan 05-04; `GET /api/servers/:id/discovery` is added in Plan 05-05, which also extends the canary to both surfaces. The client mirrors the same three-type allowlist in Plan 05-12 and consumes the read endpoint in Plan 05-18.
 
 3. **Light-mode status pill contrast failure (skill-level token gap).**
    - What we know: computed contrast for full-saturation status text on `-soft` backgrounds fails WCAG AA in light mode across all four semantic colors (≈2.0–3.1:1 vs. required 4.5:1), while dark mode passes comfortably.
    - What's unclear: whether the skill owner will patch `noodara-ux-apple`'s tokens before or during this phase, or whether this phase should proceed with a documented, accepted accessibility gap.
    - Recommendation: escalate to the user/skill owner before or at the start of planning — do not let the executor invent a new token to fix this unilaterally (05-UI-SPEC.md §11 item 1 already raises this; this research confirms it is a real, computed finding, not a false positive).
+   - **RESOLVED:** escalated, not patched. Plan 05-06 reproduces the locked skill tokens verbatim and marks the status block with a comment pointing at 05-UI-SPEC.md Open Question 1; threat `T-5-25` records the disposition as `accept`. The decision (patch the skill / accept as a documented v0.1 gap / hold the phase open) is put to the user at Plan 05-21's blocking `checkpoint:human-verify` and recorded in `docs/ui-review-05.md` plus 05-VALIDATION.md's Manual-Only Verifications table. No executor invents a token.
 
 4. **Whether a client-side data-fetching/cache library is needed.**
    - What we know: 05-UI-SPEC.md defers this to the planner; this research's Architecture Patterns section defaults to hand-rolled fetch+SSE.
    - What's unclear: actual implementation complexity once list+detail+activity all need to react to the same SSE stream with different refetch triggers.
    - Recommendation: attempt the hand-rolled approach first (matches project precedent); revisit only if Wave 1/2 implementation reveals genuine unmanageable complexity, and bring that back to the user rather than deciding unilaterally mid-execution.
+   - **RESOLVED:** no library. The plans commit to a hand-rolled `fetch` wrapper (`apps/web/src/lib/api-client.ts`, Plan 05-07) plus one shared `EventSource` owned by the shell (`use-server-events.ts`, Plan 05-12); each screen registers its own refetch with the shell's `onResync` and folds events through its own tested pure reducer (`server-store.ts`, `detail-state.ts`, `activity-groups.ts`, `discovery-progress.ts`). TanStack Query and SWR are not installed and do not appear in the provenance gate. If this proves unmanageable during execution the executor stops and returns to the user rather than adding a cache layer mid-phase.
 
 ## Environment Availability
 

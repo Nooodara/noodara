@@ -256,7 +256,7 @@ Plans:
   4. El activity log se ve como lista cronológica inversa con actor, entidad, acción y timestamp sin metadatos sensibles; settings muestra la versión y la URL pública de la instancia.
   5. El E2E de Playwright cubre login → Servers → add server → connect → discovery → detail, y el nightly lo repite 20/20 veces; un job de canary secrets confirma en el mismo run que ningún secret aparece en ninguna salida de la UI ni de la API a lo largo de ese flujo completo.
 
-**Plans**: 21 plans in 11 waves
+**Plans**: 25 plans in 15 waves
 
 Plans:
 
@@ -267,59 +267,75 @@ Plans:
 
 **Wave 2** *(parallel, blocked on Wave 1)*
 
-- [ ] 05-03-PLAN.md — Puertas: procedencia de los 17 paquetes nuevos, addendum ADR-0000 y firma de `04-SECURITY.md` (checkpoint humano)
+- [ ] 05-03-PLAN.md — Puertas: procedencia de los 22 paquetes nuevos (incluido el stack de test de componentes), addendum ADR-0000 y firma de `04-SECURITY.md` (checkpoint humano)
 - [ ] 05-04-PLAN.md — Callback `onCheck` en `runDiscovery`, evento `server.discovery_progress` y allowlist del broadcaster (D-05)
 
 **Wave 3** *(parallel, blocked on Wave 2)*
 
 - [ ] 05-05-PLAN.md — `GET /api/servers/:id/discovery` con schema Zod y drift guard, más extensión del canary (DISC-02, QA-05)
-- [ ] 05-06-PLAN.md — Scaffold de `packages/ui`, `tokens.css`, tema Tailwind v4, tag de boundaries, `Button`, `StatusPill` y ADR-0005
+- [ ] 05-06-PLAN.md — Scaffold de `packages/ui`, proyecto Vitest `dom` + arnés `@noodara/ui/testing`, `tokens.css`, tema Tailwind v4 y ADR-0005
 
 **Wave 4** *(parallel, blocked on Wave 3)*
 
 - [ ] 05-07-PLAN.md — Scaffold de `apps/web`: proxy same-origin, tema sin flash, cliente de API probado y ADR-0006
-- [ ] 05-08-PLAN.md — Componentes de formulario y overlay en Radix: `Field`, `Input`, `Textarea`, `SegmentedControl`, `FileButton`, `Sheet`, `Dialog`
+- [ ] 05-22-PLAN.md — `tone`, `cn`, `Button` y `StatusPill` test-first: las cuatro variantes y los seis estados con cobertura de comportamiento
 
 **Wave 5** *(parallel, blocked on Wave 4)*
 
-- [ ] 05-09-PLAN.md — Componentes de presentación y formatters puros: banners, tiles, filas, skeletons, disclosure, tooltip, theme toggle
+- [ ] 05-08-PLAN.md — Componentes de formulario en Radix test-first: `Field`, `Input`, `Textarea`, `SegmentedControl`
 - [ ] 05-10-PLAN.md — Arnés Playwright real: stack completo (Postgres, Redis, API, worker, web), config y smoke spec (QA-04)
 
-**Wave 6** *(parallel, blocked on Wave 5)*
+**Wave 6** *(blocked on Wave 5)*
+
+- [ ] 05-23-PLAN.md — Overlays y lectura de fichero test-first: `confirm-match`, `FileButton`, `Sheet`, `Dialog` (D-04, D-12)
+
+**Wave 7** *(blocked on Wave 6)*
+
+- [ ] 05-09-PLAN.md — Formatters puros y componentes de estado test-first: `Banner`, `Notice`, `EmptyState`, `Skeleton` (UI-02)
+
+**Wave 8** *(blocked on Wave 7)*
+
+- [ ] 05-24-PLAN.md — Presentación de datos test-first: `Tooltip`, `RelativeTime`, `CopyButton`, `StatTile`, `LabelValue` (D-11)
+
+**Wave 9** *(blocked on Wave 8)*
+
+- [ ] 05-25-PLAN.md — Interacción test-first: `ListRow`, `RowMenu`, `Disclosure`, `ThemeToggle` (D-09, D-16)
+
+**Wave 10** *(parallel, blocked on Wave 9)*
 
 - [ ] 05-11-PLAN.md — Pantallas de setup y login con mapa de copy de errores exhaustivo, sin oráculo de existencia de cuenta
 - [ ] 05-12-PLAN.md — Shell autenticado (UI-01): sidebar, toolbar, sign out y el único `EventSource` con resync
 
-**Wave 7** *(parallel, blocked on Wave 6)*
+**Wave 11** *(parallel, blocked on Wave 10)*
 
 - [ ] 05-13-PLAN.md — Lista de servidores con filas de 44px, actualización en vivo y los tres estados (SERV-04, D-09)
 - [ ] 05-14-PLAN.md — Detalle: cuatro stat tiles, grupos System/Docker/Connection y los dos estados de DETL-02
 - [ ] 05-15-PLAN.md — Activity log: frases por acción, claves curadas, agrupación por día y paginación por cursor (ACT-02)
 - [ ] 05-16-PLAN.md — Settings de solo lectura con grupos Instance y Advanced (SET-01, D-16)
 
-**Wave 8** *(parallel, blocked on Wave 7)*
+**Wave 12** *(parallel, blocked on Wave 11)*
 
 - [ ] 05-17-PLAN.md — Sheet de alta/edición con credencial leída en el navegador y diálogo de borrado (D-01, D-04)
 - [ ] 05-18-PLAN.md — Narrativa de discovery: seis pasos, severidades honestas y la regla de no inventar progreso (DISC-02)
 
-**Wave 9** *(blocked on Wave 8)*
+**Wave 13** *(blocked on Wave 12)*
 
-- [ ] 05-19-PLAN.md — Aviso de primer trust, banner `HOST_KEY_CHANGED` y diálogo de confianza con regresión UF-01 (D-02, D-03)
+- [ ] 05-19-PLAN.md — Superficies de host key: aviso TOFU único, banner `HOST_KEY_CHANGED` y diálogo de confianza (D-02, D-03, D-17)
 
-**Wave 10** *(blocked on Wave 9)*
+**Wave 14** *(blocked on Wave 13)*
 
-- [ ] 05-20-PLAN.md — E2E del flujo crítico contra sshd real, job de CI y workflow nightly 20/20 + stress (QA-04, checkpoint humano)
+- [ ] 05-20-PLAN.md — Critical path E2E contra el contenedor sshd real, job de CI y workflow nightly 20/20 (QA-04)
 
-**Wave 11** *(blocked on Wave 10 — puerta de fase)*
+**Wave 15** *(blocked on Wave 14)*
 
-- [ ] 05-21-PLAN.md — Canary de secrets sobre la salida de la UI, puertas de seguridad de UI en CI, suite completa y revisión UX (QA-05, checkpoint humano)
+- [ ] 05-21-PLAN.md — Canary de secrets en las superficies del navegador, `check:ui-safety`, suite completa y revisión de design system (QA-05)
 
 **Cross-cutting constraints:**
 
 - D-17 es bloqueante: nada de `packages/ui` ni `apps/web` se toca antes de que las cinco amenazas de fase 4 estén cerradas con evidencia
 - `packages/domain` y `packages/ssh` solo cambian de forma aditiva (`onCheck`); ningún cambio de esquema de base de datos en esta fase
 - Toda dependencia nueva pasa por `scripts/check-package-provenance.mjs` antes de instalarse (ADR-0000)
-- Cada tarea sigue RED → GREEN → REFACTOR con un `<automated>` verify propio
+- Cada tarea sigue RED → GREEN → REFACTOR con un `<automated>` verify propio; los componentes se verifican con tests de componente Vitest colocados (proyecto `dom`, jsdom + Testing Library) escritos **antes** del componente, y Playwright cubre flujos, teclado real, theming y fugas de credenciales (ADR-0005, CLAUDE.md §2.1)
 - Tokens y componentes solo desde la skill `noodara-ux-apple`; cero literales de color, cero spinners, cero `dangerouslySetInnerHTML` salvo el bootstrap de tema revisado
 - `pnpm test`, `pnpm test:integration`, `pnpm test:boot`, `pnpm test:e2e`, `pnpm security:scan-leaks`, `pnpm check:ui-safety`, `pnpm typecheck`, `pnpm lint` y `pnpm boundaries` en verde antes de verificar la fase
 
