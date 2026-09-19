@@ -14,6 +14,7 @@ import {
   CreateServerBodySchema,
   type CreateServerBody,
   DeleteServerBodySchema,
+  DiscoveryReadResponseSchema,
   ServerIdParamSchema,
   ServerViewSchema,
   toCredentialInput,
@@ -342,6 +343,37 @@ const serversRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         return;
       }
       await reply.code(202).send({ server: result.server, jobId: result.jobId });
+    },
+  });
+
+  app.route({
+    method: 'GET',
+    url: '/api/servers/:id/discovery',
+    schema: {
+      params: ServerIdParamSchema,
+      response: {
+        200: DiscoveryReadResponseSchema,
+        401: ErrorBodySchema,
+        404: ErrorBodySchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const services = await fastify.getServerServices();
+      const server = await services.getServer(request.params.id);
+      if (!server) {
+        await sendServiceError(reply, 'NOT_FOUND', `Server "${request.params.id}" not found`);
+        return;
+      }
+      const discovery = await services.readLatestDiscovery(request.params.id);
+      // `LatestDiscoveryView`'s arrays are `readonly` (matching `DiscoveryCheck`'s own domain
+      // shape); the response serializer's inferred type wants a plain mutable array — spread
+      // rather than loosen the service's own readonly contract.
+      await reply.send({
+        collectedAt: discovery.collectedAt,
+        outcome: discovery.outcome,
+        checks: [...discovery.checks],
+        warnings: [...discovery.warnings],
+      });
     },
   });
 
