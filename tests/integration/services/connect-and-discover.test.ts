@@ -1000,6 +1000,146 @@ describe('discovery phase (DISC-03, D-02, D-06, D-07)', () => {
     }
   });
 
+  it('publishes one server.discovery_progress event per check, each carrying the server id and the exact check, in order (D-05)', async () => {
+    fixture = await startServiceFixture();
+    const server = await registerFixtureServer(fixture);
+    fixture.setSshPort(
+      buildFakeSshPort({
+        ok: true,
+        session: buildFakeSshSession({}),
+        fingerprint: FP1,
+        fingerprintCaptured: true,
+        attempts: 1,
+      }),
+    );
+    const checks = [
+      buildCheck('hostname', 'pass'),
+      buildCheck('cpu', 'pass'),
+      buildCheck('arch', 'fail'),
+    ];
+    const snapshot = buildSnapshot({ checks });
+    fixture.events.length = 0;
+
+    const { connectAndDiscover } = await loadConnectAndDiscover();
+    const result = await connectAndDiscover(fixture.deps, {
+      actor: SYSTEM,
+      serverId: server.id,
+      // Mirrors what the real runDiscovery does: calls onCheck once per check, synchronously,
+      // before resolving — the only way to exercise the wiring under test without a real SSH
+      // session (03-CONTEXT.md D-01's own injection-seam rationale for this suite).
+      discover: (discoverInput) => {
+        for (const check of checks) {
+          discoverInput.onCheck?.(check);
+        }
+        return Promise.resolve(snapshot);
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    const progressEvents = fixture.events.filter((e) => e.type === 'server.discovery_progress');
+    expect(progressEvents).toEqual(
+      checks.map((check) => ({ type: 'server.discovery_progress', serverId: server.id, check })),
+    );
+  });
+
+  it('publishes every progress event before the final server.updated event for the run (D-05)', async () => {
+    fixture = await startServiceFixture();
+    const server = await registerFixtureServer(fixture);
+    fixture.setSshPort(
+      buildFakeSshPort({
+        ok: true,
+        session: buildFakeSshSession({}),
+        fingerprint: FP1,
+        fingerprintCaptured: true,
+        attempts: 1,
+      }),
+    );
+    const checks = [buildCheck('hostname', 'pass'), buildCheck('cpu', 'pass')];
+    const snapshot = buildSnapshot({ checks });
+    // Drain registerFixtureServer's own `server.created` publish so events[0] below is
+    // unambiguously this call's own CONNECTING announcement.
+    fixture.events.length = 0;
+
+    const { connectAndDiscover } = await loadConnectAndDiscover();
+    await connectAndDiscover(fixture.deps, {
+      actor: SYSTEM,
+      serverId: server.id,
+      discover: (discoverInput) => {
+        for (const check of checks) {
+          discoverInput.onCheck?.(check);
+        }
+        return Promise.resolve(snapshot);
+      },
+    });
+
+    // [0] CONNECTING announcement, [1..N] progress events (during the SSH/discovery phase,
+    // strictly before TX2 opens), [last] the post-commit final server.updated (D-04).
+    expect(fixture.events[0]).toMatchObject({ type: 'server.updated' });
+    expect(fixture.events[0]).toMatchObject({ server: { status: 'CONNECTING' } });
+    const middle = fixture.events.slice(1, -1);
+    expect(middle).toHaveLength(checks.length);
+    for (const event of middle) {
+      expect(event.type).toBe('server.discovery_progress');
+    }
+    const last = fixture.events.at(-1);
+    expect(last).toMatchObject({ type: 'server.updated' });
+    expect(last).toMatchObject({ server: { status: 'CONNECTED' } });
+  });
+
+  it('publishes zero progress events on a connect-phase failure (no session, discover never called)', async () => {
+    fixture = await startServiceFixture();
+    const server = await registerFixtureServer(fixture);
+    fixture.setSshPort(
+      buildFakeSshPort({
+        ok: false,
+        errorCode: 'AUTH_FAILED',
+        message: 'bad credentials',
+        attempts: 1,
+      }),
+    );
+    fixture.events.length = 0;
+
+    const { connectAndDiscover } = await loadConnectAndDiscover();
+    const result = await connectAndDiscover(fixture.deps, { actor: SYSTEM, serverId: server.id });
+
+    expect(result.ok).toBe(true);
+    const progressEvents = fixture.events.filter((e) => e.type === 'server.discovery_progress');
+    expect(progressEvents).toHaveLength(0);
+  });
+
+  it('an always-rejecting events publisher still yields ok: true and still writes the discovery snapshot row (D-05 best-effort rule)', async () => {
+    fixture = await startServiceFixture();
+    const server = await registerFixtureServer(fixture);
+    fixture.setSshPort(
+      buildFakeSshPort({
+        ok: true,
+        session: buildFakeSshSession({}),
+        fingerprint: FP1,
+        fingerprintCaptured: true,
+        attempts: 1,
+      }),
+    );
+    fixture.setEventPublisher({ publish: () => Promise.reject(new Error('publish boom')) });
+    const checks = [buildCheck('hostname', 'pass')];
+    const snapshot = buildSnapshot({ checks });
+
+    const { connectAndDiscover } = await loadConnectAndDiscover();
+    const result = await connectAndDiscover(fixture.deps, {
+      actor: SYSTEM,
+      serverId: server.id,
+      discover: (discoverInput) => {
+        for (const check of checks) {
+          discoverInput.onCheck?.(check);
+        }
+        return Promise.resolve(snapshot);
+      },
+    });
+
+    expect(result).toMatchObject({ ok: true });
+    const rows = await snapshotsFor(fixture, server.id);
+    expect(rows).toHaveLength(1);
+  });
+
   it('never leaks credential material in the result or the persisted snapshot', async () => {
     fixture = await startServiceFixture();
     const password = freshPassword();
