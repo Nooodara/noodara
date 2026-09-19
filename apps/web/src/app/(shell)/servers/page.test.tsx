@@ -168,4 +168,20 @@ describe('ServersPage snapshot/stream race', () => {
 
     expect(screen.getByText('only-in-resync-snapshot')).toBeInTheDocument();
   });
+
+  // The shape behind a `row.hover()` that hangs on a row the test had just seen (servers-list.
+  // spec.ts's row-menu test): with both GETs in flight, the first one landing made the list
+  // `ready`, the event inserted the row, and the second snapshot -- read before the insert --
+  // then replaced the list without it.
+  it('never removes a row a live event already inserted when a snapshot read before it lands afterwards', async () => {
+    const page = renderPage();
+    const created = buildServer({ id: 'a3', name: 'inserted-then-overwritten' });
+
+    page.openStream(); // both the mount GET and the resync GET are now in flight
+    await page.resolveOldestGet([]);
+    page.emit({ type: 'server.updated', server: created });
+    await page.resolveOldestGet([]); // the resync snapshot, also read before the insert
+
+    expect(screen.getByText('inserted-then-overwritten')).toBeInTheDocument();
+  });
 });
