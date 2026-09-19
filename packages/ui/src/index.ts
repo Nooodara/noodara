@@ -10,6 +10,7 @@
 // only through the explicit `@noodara/ui/testing` subpath (see the render harness module under
 // `src/testing/`), is excluded from coverage, and Plan 05-21's `check:ui-safety` gate fails if
 // any non-test file imports it.
+export { Banner, type BannerAction, type BannerProps } from './Banner.js';
 export { Button, type ButtonProps, type ButtonVariant } from './Button.js';
 export { cn } from './cn.js';
 export { ConfirmDialog, type ConfirmDialogProps, DestructiveConfirmDialog, type DestructiveConfirmDialogProps } from './Dialog.js';
@@ -28,6 +29,7 @@ export {
 } from './format.js';
 export { Input, type InputProps } from './Input.js';
 export { isConfirmationMatch } from './confirm-match.js';
+export { Notice, type NoticeProps } from './Notice.js';
 export { SegmentedControl, type SegmentedControlOption, type SegmentedControlProps } from './SegmentedControl.js';
 export { Sheet, type SheetProps } from './Sheet.js';
 export { StatusPill, type StatusPillProps } from './StatusPill.js';
