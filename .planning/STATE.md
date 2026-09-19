@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-09-19T07:40:59.873Z"
+stopped_at: Completed 05-04-PLAN.md
+last_updated: "2026-09-19T07:55:37.140Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 50
+  completed_plans: 51
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 3 of 25
+Plan: 4 of 25
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [███████░░░] 68%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
@@ -105,6 +105,7 @@ Progress: [███████░░░] 68%
 | Phase 04 P11 | 170min | 3 tasks | 9 files |
 | Phase 05 P01 | 22min | 3 tasks | 8 files |
 | Phase 05 P02 | 18min | 3 tasks | 5 files |
+| Phase 05 P04 | 9min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -242,6 +243,7 @@ Recent decisions affecting current work:
 - [Phase 05]: session-lookup.ts is a new file rather than added to require-session.ts or events.ts, since both call sites need to import the same helper with no circular dependency
 - [Phase 05]: The SSE heartbeat's bounded-getSession regression test lives in a new apps/control-plane/src/routes/events.test.ts unit test rather than in the Testcontainers-backed events-sse.test.ts — api-scope.ts hardwires that file's getSession to the real auth.api.getSession with no injection seam, exactly the fallback the plan's own read_first anticipated for the request-guard case
 - [Phase 05-02]: runWorkerShutdown's re-entry guard is a WeakSet keyed by the deps object identity, not a single module-level boolean — worker.ts keeps its own local shuttingDown flag as the primary guard, the helper's own guard is intentionally redundant defense-in-depth
+- [Phase 05-04]: onCheck invocation inlined at each of runDiscovery's four checks.push sites via a local const, not an array read-back with a non-null assertion — the project's ESLint config forbids @typescript-eslint/no-non-null-assertion
 
 ### Pending Todos
 
@@ -274,6 +276,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T07:40:09.188Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-09-19T07:55:37.131Z
+Stopped at: Completed 05-04-PLAN.md
 Resume file: None
