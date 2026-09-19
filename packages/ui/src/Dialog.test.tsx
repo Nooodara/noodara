@@ -148,6 +148,12 @@ describe('DestructiveConfirmDialog', () => {
     expect(alert).toHaveTextContent('That doesn\'t match. Type "srv-1" exactly to continue.');
   });
 
+  it('renders supplied children between the description and the type-the-name input (05-19-PLAN.md: repeated fingerprints above the confirm input)', () => {
+    renderDialog({ children: <p data-testid="dialog-extra-content">Extra content</p> });
+
+    expect(screen.getByTestId('dialog-extra-content')).toBeInTheDocument();
+  });
+
   it('never echoes the typed confirmation value into any attribute other than the input value', async () => {
     const user = userEvent.setup();
     const { container } = renderDialog({ requiredName: 'zK9qLdistinctive' });
