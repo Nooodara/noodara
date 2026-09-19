@@ -3,8 +3,8 @@
 //
 // The first two behaviours are Plan 05-10's own scope (apps/web/src/proxy.ts's minimal redirect +
 // the control plane's pre-existing 401 guard). The three login-dependent behaviours below were
-// `test.fixme`d pending the login screen (Plan 05-10's own instruction) -- Plan 05-11 builds
-// `/login` and removes those markers here; `tests/e2e/auth.spec.ts` (also 05-11) covers the
+// marked expected-failing pending the login screen (Plan 05-10's own instruction) -- Plan 05-11
+// builds `/login` and activates them here; `tests/e2e/auth.spec.ts` (also 05-11) covers the
 // screen's error/empty/theme states this file does not.
 import { expect, test } from '@playwright/test';
 import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './fixtures/stack.js';
