@@ -17,6 +17,15 @@ export { discoveryCheckTone, serverStatusTone, STATUS_WORDS } from './tone.js';
 export type { Tone } from './tone.js';
 export { Field, type FieldControlProps, type FieldProps } from './Field.js';
 export { FileButton, type FileButtonProps } from './FileButton.js';
+export {
+  formatDiskUsage,
+  formatIso,
+  formatMb,
+  formatRelativeTime,
+  formatUptime,
+  PLACEHOLDER,
+  type DiskUsage,
+} from './format.js';
 export { Input, type InputProps } from './Input.js';
 export { isConfirmationMatch } from './confirm-match.js';
 export { SegmentedControl, type SegmentedControlOption, type SegmentedControlProps } from './SegmentedControl.js';
