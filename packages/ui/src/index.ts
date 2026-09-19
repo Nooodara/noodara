@@ -43,4 +43,5 @@ export { Skeleton, type SkeletonProps, SkeletonRow, type SkeletonRowProps, Skele
 export { StatTile, type StatTileProps } from './StatTile.js';
 export { StatusPill, type StatusPillProps } from './StatusPill.js';
 export { Textarea, type TextareaProps } from './Textarea.js';
+export { ThemeToggle, type ThemeToggleProps } from './ThemeToggle.js';
 export { Tooltip, TooltipProvider, type TooltipProps } from './Tooltip.js';
