@@ -17,7 +17,7 @@ import {
 } from '../../integration/helpers/boot-process.js';
 import { startPostgres, type PostgresFixture } from '../../integration/helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../../integration/helpers/redis.js';
-import { assertNoStrayTestContainers } from '../../integration/helpers/ssh.js';
+import { assertNoStrayTestContainers, startSshd, type SshdFixture } from '../../integration/helpers/ssh.js';
 
 const API_PORT = 3100;
 const WEB_PORT = 3000;
@@ -61,6 +61,16 @@ interface RunningStack extends Stack {
 // reconstructed from anything serializable). global-setup.ts additionally persists the
 // serializable `Stack` fields to a JSON file so a crashed run still leaves a debuggable record.
 let activeStack: RunningStack | undefined;
+
+// 05-20-PLAN.md Task 1 (QA-04): the critical-path spec's own real sshd container, started through
+// this module rather than by calling `startSshd` (tests/integration/helpers/ssh.ts) directly from
+// the spec, so `stopStack`'s own guarded teardown sequence can tear it down as a safety net if the
+// spec's own `finally` never runs (a hard crash mid-test) -- mirroring `activeStack`'s own
+// singleton discipline immediately above. Every other real-ssh spec in this directory
+// (discovery.spec.ts's `@ssh-live`, host-key.spec.ts's `@hostkey`) still owns its own fixture
+// directly, unaffected: this module-level handle exists only for the one spec that routes through
+// it.
+let activeSshd: SshdFixture | undefined;
 
 function waitForReady(bootProcess: BootProcess, pattern: RegExp, label: string, timeoutMs: number): Promise<void> {
   return bootProcess.waitForStdoutMatch(pattern, timeoutMs).then(
@@ -174,12 +184,44 @@ export async function startStack(): Promise<Stack> {
 }
 
 /**
+ * Starts a real Ubuntu 24.04 sshd Testcontainer (reusing `startSshd` verbatim, never a second
+ * container-lifecycle implementation) and registers it on this module's own `activeSshd` handle —
+ * `stopStack` tears it down as a safety net even if the caller's own `finally` never runs.
+ */
+export async function startCriticalPathSshd(): Promise<SshdFixture> {
+  if (activeSshd !== undefined) {
+    throw new Error('startCriticalPathSshd: an sshd fixture is already running — call stopCriticalPathSshd first');
+  }
+  const fixture = await startSshd({ ubuntu: '24.04' });
+  activeSshd = fixture;
+  return fixture;
+}
+
+/** Idempotent — safe to call more than once (the spec's own `finally` and, if that never runs, a
+ *  later `stopStack` invocation both call this). */
+export async function stopCriticalPathSshd(): Promise<void> {
+  const handle = activeSshd;
+  activeSshd = undefined;
+  if (handle === undefined) return;
+  try {
+    await handle.stop();
+  } catch (err) {
+    console.warn(`stopCriticalPathSshd: sshd fixture did not stop cleanly: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+/**
  * Stops the web app, the worker and the API, then Redis and Postgres — every step individually
  * guarded so one failure can never skip the rest (the same discipline `sse-broadcaster.ts`'s
  * `closeAll` and `worker.ts`'s shutdown handler use) — and finishes by asserting no
  * `noodara.test=true` container survived (noodara-tdd skill §5).
  */
 export async function stopStack(stack: Stack): Promise<void> {
+  // Safety net for the critical-path spec's own sshd fixture — runs first and unconditionally, so
+  // a crash that skips the spec's own `finally` (stopCriticalPathSshd there) still leaves no
+  // stray container behind, whatever state the rest of the stack is in.
+  await stopCriticalPathSshd();
+
   const handle = activeStack;
   activeStack = undefined;
 

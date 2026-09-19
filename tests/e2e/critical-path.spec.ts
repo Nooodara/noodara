@@ -16,6 +16,12 @@
 // (the nightly's own ×20 requirement): every identifier below is derived from `Date.now()` (never
 // a fixed literal), the sshd fixture is started and stopped entirely inside this one test, and the
 // only shared state this test depends on -- the preseeded E2E admin -- is read-only.
+//
+// Note on navigation: `ServerRow`/`ListRow` render a plain `<a>` (apps/web's existing, deliberate
+// choice, unrelated to this plan), so following a servers-list row is a real hard navigation, not
+// an SPA transition -- both discovery runs below stay on one continuously-mounted page instance
+// from "Save and connect"/"Re-run discovery" through settlement (the part that actually needs the
+// live SSE pipeline proven), the only reloads are the plain cross-screen visits in between.
 import { expect, test, type Page } from '@playwright/test';
 import { DISCOVERY_CHECK_IDS } from '@noodara/domain/discovery';
 import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD, startCriticalPathSshd, stopCriticalPathSshd } from './fixtures/stack.js';
@@ -120,38 +126,68 @@ function hasMixedSnapshot(snapshots: readonly SeveritySnapshot[]): boolean {
 }
 
 /**
- * Asserts genuine live per-check progress reached the browser during one discovery run, clearing
- * both instruments first so a second run (the re-run-discovery behaviour below) gets its own,
- * uncontaminated evidence. Prefers the direct DOM mixed-snapshot proof; falls back to the SSE
- * frame-sequence proof (documented, never silently substituting a weaker "it eventually shows six
- * passes" assertion) only when the run settled too fast for any intermediate DOM snapshot to be
- * observable -- logged either way so a human reading the run's own output knows which held.
+ * Waits (via Playwright's own bounded `expect.poll`, never a fixed sleep) until every one of this
+ * run's discovery checks has genuinely arrived over SSE, then asserts genuine live per-check
+ * progress reached the browser during the run -- clearing both instruments first (the caller's own
+ * `resetInstrumentation`) so a second run (the re-run-discovery behaviour below) gets its own,
+ * uncontaminated evidence. Polling on the SSE frame count itself (rather than on the server's
+ * settled status) sidesteps a real race this spec hit while it was being written: reading the
+ * instrumentation exactly once, immediately after the URL changes, can run before the background
+ * connect/discover job has even been dispatched, observing nothing not because delivery wasn't
+ * live but because the run hadn't started yet.
+ *
+ * Prefers the direct DOM mixed-snapshot proof; falls back to the SSE frame-sequence proof
+ * (documented, never silently substituting a weaker "it eventually shows six passes" assertion)
+ * only when the run settled too fast for any intermediate DOM snapshot to be observable -- logged
+ * either way so a human reading the run's own output knows which held.
  */
 async function assertLiveProgress(page: Page, label: string): Promise<void> {
-  const severitySnapshots = await page.evaluate(
-    () => (window as unknown as { __severitySnapshots: SeveritySnapshot[] }).__severitySnapshots,
-  );
-  if (hasMixedSnapshot(severitySnapshots)) {
-    console.log(`[critical-path] ${label}: direct DOM mixed resolved/pending snapshot observed (${String(severitySnapshots.length)} snapshots captured).`);
-    return;
-  }
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () => (window as unknown as { __progressEvents: unknown[] }).__progressEvents.length,
+        ),
+      { timeout: 60_000, message: `${label}: waiting for all ${String(DISCOVERY_CHECK_IDS.length)} discovery_progress frames to arrive` },
+    )
+    .toBeGreaterThanOrEqual(DISCOVERY_CHECK_IDS.length);
 
   const progressEvents = await page.evaluate(
     () => (window as unknown as { __progressEvents: { receivedAt: number; checkId: string }[] }).__progressEvents,
   );
   const distinctArrivals = new Set(progressEvents.map((e) => e.receivedAt)).size;
-  console.log(
-    `[critical-path] ${label}: no mixed DOM snapshot observed (run settled too fast) -- falling back to the SSE ` +
-      `frame-sequence proof: ${String(progressEvents.length)} frames, ${String(distinctArrivals)} distinct arrival times.`,
-  );
   expect(progressEvents.map((e) => e.checkId)).toEqual([...DISCOVERY_CHECK_IDS]);
+
+  const severitySnapshots = await page.evaluate(
+    () => (window as unknown as { __severitySnapshots: SeveritySnapshot[] }).__severitySnapshots,
+  );
+  if (hasMixedSnapshot(severitySnapshots)) {
+    console.log(
+      `[critical-path] ${label}: direct DOM mixed resolved/pending snapshot observed ` +
+        `(${String(severitySnapshots.length)} snapshots captured), plus ${String(progressEvents.length)} distinct SSE frames.`,
+    );
+    return;
+  }
+
+  console.log(
+    `[critical-path] ${label}: no mixed DOM snapshot observed (run settled too fast for React to ever commit an ` +
+      `intermediate render) -- falling back to the SSE frame-sequence proof: ${String(progressEvents.length)} frames, ` +
+      `${String(distinctArrivals)} distinct arrival times.`,
+  );
   expect(distinctArrivals).toBeGreaterThan(1);
 }
 
+/** Clears both arrays *in place* (`.length = 0`), never by reassigning `window.__severitySnapshots`/
+ *  `__progressEvents` to a brand-new array: the `MutationObserver` callback and the
+ *  `InstrumentedEventSource` listener both close over the original array objects from
+ *  `installDiscoveryInstrumentation`'s own scope, not over the `window` properties -- replacing
+ *  the reference here would silently disconnect this function's own future reads from what those
+ *  closures keep pushing onto. */
 async function resetInstrumentation(page: Page): Promise<void> {
   await page.evaluate(() => {
-    (window as unknown as { __severitySnapshots: unknown[] }).__severitySnapshots = [];
-    (window as unknown as { __progressEvents: unknown[] }).__progressEvents = [];
+    const win = window as unknown as { __severitySnapshots: unknown[]; __progressEvents: unknown[] };
+    win.__severitySnapshots.length = 0;
+    win.__progressEvents.length = 0;
   });
 }
 
@@ -187,10 +223,9 @@ test('@critical the whole roadmap SS6.6 flow: login -> Servers -> add server -> 
     // "Private key preselected" precedent) -- no radio click needed.
     await page.getByLabel('Private key').fill(privateKey);
 
-    // 3. Save and connect -- lands on the new server's detail page, the same, already-mounted page
-    // instance stays open from here through both discovery runs below (no reload anywhere in this
-    // test): if the live SSE pipeline were broken, this page would stay stuck on its initial
-    // CONNECTING/pending render forever.
+    // 3. Save and connect -- lands on the new server's detail page. This page instance stays
+    // mounted, with no reload, through the whole first discovery run below: if the live SSE
+    // pipeline were broken, it would stay stuck on its initial CONNECTING/pending render forever.
     await page.getByTestId('server-sheet-save-connect').click();
     await expect(page).toHaveURL(/\/servers\/[0-9a-f-]+$/);
     await expect(page.getByRole('heading', { name: serverName })).toBeVisible();
@@ -199,17 +234,23 @@ test('@critical the whole roadmap SS6.6 flow: login -> Servers -> add server -> 
     // behaviour) -- assert live, per-check progress genuinely reached this page before settlement.
     await assertLiveProgress(page, 'first run');
 
-    // 5. Settle: Connected pill, six steps, the settled one-line summary.
+    // 5. Settle: Connected pill, the settled one-line summary. A run settling auto-collapses the
+    // section (05-18's own D-07 behaviour) -- expand it to see the six steps again.
     await expect(page.getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTED', { timeout: 60_000 });
     await expect(page.getByTestId('discovery-summary')).toBeVisible();
     await expect(page.getByTestId('discovery-summary')).toContainText('Discovered');
+    await page.getByTestId('discovery-summary').click();
     for (const stepId of ['ssh_reachable', 'authenticated', 'os', 'resources', 'docker', 'access']) {
       await expect(page.getByTestId(`discovery-step-${stepId}`)).toBeVisible();
     }
-    // deployer is in the docker group with passwordless sudo -- every SERV-08 check genuinely
-    // passes, proving this run's real, per-server facts (not fabricated ones) reached the browser.
+    // deployer is in the docker group with passwordless sudo -- both SERV-08 access checks
+    // genuinely pass, proving this run's real, per-server facts (not fabricated ones) reached the
+    // browser. The fixture image itself has no Docker daemon installed (`startCriticalPathSshd`
+    // never sets `dockerCli`, matching every other spec's own default) -- `docker_version`
+    // genuinely fails, mapped to `warning` (USABLE_DESPITE_FAILURE_IDS, discovery-progress.ts),
+    // never a hard failure of the run itself.
     await expect(page.getByTestId('discovery-step-access')).toHaveAttribute('data-severity', 'pass');
-    await expect(page.getByTestId('discovery-step-docker')).toHaveAttribute('data-severity', 'pass');
+    await expect(page.getByTestId('discovery-step-docker')).toHaveAttribute('data-severity', 'warning');
 
     // 6. Real discovered facts on the detail page -- a non-placeholder hostname, an OS value, a
     // CPU core count, a RAM value, a disk used-of-total value and an uptime value, each with an
