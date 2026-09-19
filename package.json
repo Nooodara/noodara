@@ -17,6 +17,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:boot": "vitest run --config vitest.integration.config.ts tests/integration/boot/boot-command.test.ts",
     "test:e2e": "playwright test",
+    "test:e2e:repeat": "node scripts/e2e-repeat.mjs",
     "test:e2e:report": "playwright show-report",
     "e2e:install": "playwright install chromium",
     "db:migrate": "pnpm --filter @noodara/control-plane db:migrate",

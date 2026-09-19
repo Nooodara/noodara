@@ -1,0 +1,119 @@
+name: Nightly
+
+# QA-04 (Plan 05-20): repeats the whole real-browser E2E suite ×20, runs the roadmap §6.7
+# 100-consecutive-connection stress suite and runs the security leak canary — each too slow/heavy
+# for every pull request (CLAUDE.md puts this class of check in nightly, not ci.yml).
+#
+# `on: schedule` cannot actually fire yet: this monorepo lives nested under a personal workspace
+# and has never been pushed to any remote (docs/roadmap-v0.1-v0.5.md's own repo state) — GitHub
+# Actions only evaluates a `schedule:` trigger for a workflow file that already exists on the
+# repository's default branch on GitHub, so the cron below stays inert until the repo is pushed.
+# This workflow was validated the only way possible before that: running every job's own command
+# locally and recording the result (command, iteration/failure counts, wall-clock duration) in
+# .planning/phases/05-ui-web/05-20-SUMMARY.md — it has never executed as a real scheduled (or
+# `workflow_dispatch`) GitHub Actions run, and that remains true until the repository has a remote.
+on:
+  schedule:
+    # 03:00 UTC daily — outside any developer's normal working hours on this project.
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+  NOODARA_API_ORIGIN: 'http://localhost:3100'
+
+jobs:
+  # `--repeat-each=20` was considered and rejected: Playwright's own `globalSetup` starts ONE
+  # Postgres/Redis Testcontainers pair for the whole `playwright test` invocation, so every spec's
+  # real-API-seeded servers would accumulate monotonically across all 20 passes in that single
+  # shared database — unsound with the global stack, exactly the case 05-20-PLAN.md's own Task 2
+  # text anticipated. `scripts/e2e-repeat.mjs` instead runs `pnpm test:e2e` as 20 fully independent
+  # process invocations, each with its own fresh Testcontainers pair, failing on (and naming) the
+  # first failing iteration rather than running all 20 and summarizing at the end.
+  e2e-repeat:
+    name: e2e-repeat
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm build
+      - run: pnpm test:e2e:repeat
+      - name: Fail if any noodara.test container survived
+        if: always()
+        run: |
+          stray=$(docker ps -aq --filter "label=noodara.test=true")
+          if [ -n "$stray" ]; then
+            echo "::error::stray containers labelled noodara.test=true survived the e2e-repeat run"
+            docker ps -a --filter "label=noodara.test=true"
+            exit 1
+          fi
+          echo "no stray noodara.test=true containers"
+
+  # Roadmap §6.7 / QA-03: the existing, opt-in 100-consecutive-connection suite
+  # (tests/integration/ssh/stress-connections.test.ts), run here with the exact invocation
+  # documented in that file's own header rather than a second, newly-written suite.
+  stress-connections:
+    name: stress-connections
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: 100 consecutive successful connections (roadmap §6.7, QA-03)
+        run: NOODARA_STRESS=1 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/ssh/stress-connections.test.ts
+      - name: Fail if any noodara.test container survived
+        if: always()
+        run: |
+          stray=$(docker ps -aq --filter "label=noodara.test=true")
+          if [ -n "$stray" ]; then
+            echo "::error::stray containers labelled noodara.test=true survived the stress-connections run"
+            docker ps -a --filter "label=noodara.test=true"
+            exit 1
+          fi
+          echo "no stray noodara.test=true containers"
+
+  # SEC-02/D-22 (mirrors ci.yml's own `security` job body for this one step): the secrets-leak
+  # canary, run nightly in addition to every PR so a leak that only reproduces under nightly's own
+  # accumulated stack state is never silently missed between merges.
+  canary:
+    name: canary
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm security:scan-leaks
+      - name: Fail if any noodara.test container survived
+        if: always()
+        run: |
+          stray=$(docker ps -aq --filter "label=noodara.test=true")
+          if [ -n "$stray" ]; then
+            echo "::error::stray containers labelled noodara.test=true survived the canary run"
+            docker ps -a --filter "label=noodara.test=true"
+            exit 1
+          fi
+          echo "no stray noodara.test=true containers"

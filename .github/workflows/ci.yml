@@ -10,8 +10,11 @@ name: CI
 # a personal workspace and has not been pushed anywhere yet; when it is pushed, this directory
 # becomes the root of its own git repository, matching every path used here.
 #
-# Full E2E (Playwright) intentionally has no job here: it ships in phase 5. A job with nothing
-# to run would always pass and give false confidence, which is worse than no job at all.
+# Full E2E (Playwright, QA-04): the `e2e` job below runs the whole real-browser suite —
+# including tests/e2e/critical-path.spec.ts's real-sshd flow — on every pull request and on
+# main, exactly like every other job here calling the same `pnpm test:e2e` a developer runs
+# locally. The nightly repetition (×20), the 100-consecutive-connection stress suite and the
+# security canary scan live in .github/workflows/nightly.yml instead — too slow for every PR.
 
 on:
   pull_request:
@@ -262,5 +265,47 @@ jobs:
           fi
           echo "no stray noodara.test=true containers"
 
-  # No `e2e` job on purpose: Playwright arrives in phase 5. A job with nothing to run would
-  # always pass and would be worse than no job at all.
+  # QA-04 (Plan 05-20): the real Playwright suite (playwright.config.ts) — its own stack fixture
+  # (tests/e2e/fixtures/stack.ts) boots Postgres, Redis, the built API, the worker and the built
+  # web app together and drives every spec in tests/e2e/**, including critical-path.spec.ts's own
+  # real Ubuntu sshd Testcontainer, against them. `pnpm build` stays its own explicit step for the
+  # same reason `boot-smoke` keeps one above: a build failure must surface as its own red step,
+  # never buried inside the stack fixture's own build call, and this gate must never run against a
+  # stale dist/.next. `playwright install --with-deps chromium` is fine on this disposable runner —
+  # unlike the harness-hygiene rule against `--with-deps`/sudo on a developer's own machine
+  # (05-10-SUMMARY.md's own documented deviation for `e2e:install`), CI owns this whole container.
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm build
+      - run: pnpm test:e2e
+      # Failure-only, short retention: a Playwright HTML report/screenshot can carry a typed (fake,
+      # per the harness-hygiene rule every tests/e2e/**.spec.ts already follows) credential or a
+      # session cookie, so this is never uploaded on a green run.
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+      - name: Fail if any noodara.test container survived
+        if: always()
+        run: |
+          stray=$(docker ps -aq --filter "label=noodara.test=true")
+          if [ -n "$stray" ]; then
+            echo "::error::stray containers labelled noodara.test=true survived the e2e run"
+            docker ps -a --filter "label=noodara.test=true"
+            exit 1
+          fi
+          echo "no stray noodara.test=true containers"
