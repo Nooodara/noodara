@@ -14,3 +14,4 @@ export { Button, type ButtonProps, type ButtonVariant } from './Button.js';
 export { cn } from './cn.js';
 export { discoveryCheckTone, serverStatusTone, STATUS_WORDS } from './tone.js';
 export type { Tone } from './tone.js';
+export { StatusPill, type StatusPillProps } from './StatusPill.js';
