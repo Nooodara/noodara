@@ -255,13 +255,28 @@ describe('canary proof: the HTTP and SSE surfaces this phase adds leak no secret
           setTimeout(resolve, 500);
         });
 
+        // Act 6 (success body, the new DISC-02 read surface this plan adds): the discovery run
+        // above already wrote a snapshot, so this is a genuine 200 with populated checks, not a
+        // vacuous empty-history response.
+        const discoveryReadResponse = await fixture.app.inject({
+          method: 'GET',
+          url: `/api/servers/${serverId}/discovery`,
+          headers: { cookie },
+        });
+        expect(discoveryReadResponse.statusCode).toBe(200);
+
         // Assert: every captured surface is canary-free.
-        for (const body of [...successBodies, ...errorBodies]) {
+        for (const body of [...successBodies, ...errorBodies, discoveryReadResponse.body]) {
           expect(body).not.toContain(passwordCanary);
           expect(body).not.toContain(passphraseCanary);
         }
 
         const framesText = streamChunks.join('');
+        // Non-vacuity for this specific event type (QA-05, D-05 fourth clause): the fake session's
+        // discovery run reports at least one check, so a genuine `server.discovery_progress` frame
+        // reached this stream — the absence assertion below is a real scan of that frame, not a
+        // vacuous check of a type that never arrived.
+        expect(framesText).toContain('server.discovery_progress');
         expect(framesText).not.toContain(passwordCanary);
         expect(framesText).not.toContain(passphraseCanary);
 
