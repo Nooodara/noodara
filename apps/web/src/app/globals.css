@@ -2,6 +2,20 @@
 @import '@noodara/ui/tokens.css';
 @import '@noodara/ui/theme.css';
 
+/* Tailwind v4's automatic source detection only scans downward from this stylesheet's own base
+ * path (apps/web) -- it never reaches a sibling workspace package like packages/ui. Every
+ * @noodara/ui component this app imports and renders is a real, separately-authored .tsx source
+ * file living outside that scan boundary, so any utility class that is unique to a packages/ui
+ * component (an arbitrary value like `w-[480px]`, a state variant like
+ * `data-[state=open]:translate-x-0`, ...) silently never reaches this build's compiled CSS unless
+ * explicitly registered here -- found and fixed while wiring Plan 05-17's ServerSheet, the first
+ * apps/web screen to render Sheet.tsx (a component whose classes had never before appeared, even
+ * incidentally, inside an apps/web source file the default scan already covers). Every future
+ * packages/ui component this app is the first to render is protected by this same directive going
+ * forward, not just Sheet's own classes.
+ */
+@source '../../../../packages/ui/src';
+
 /*
  * Global base element styles only -- everything else in apps/web is a Tailwind utility class bound
  * to a --token (theme.css's @theme block), never a literal colour/size/radius here (skill

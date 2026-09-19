@@ -26,7 +26,13 @@ const PANEL_CLASSES = cn(
 );
 
 const HEADER_CLASSES = 'flex items-center justify-between border-b border-hairline px-8 py-6';
-const BODY_CLASSES = 'flex-1 overflow-y-auto px-8 py-8';
+// `min-h-0` is required alongside `flex-1 overflow-y-auto` here: a flex item's default
+// `min-height: auto` otherwise lets it grow to fit its content instead of being constrained by
+// the panel's own height, so real overflowing content (e.g. a long form) pushes the footer off
+// screen entirely with nothing left to scroll -- a real bug this component's own test suite never
+// exercised (its fixtures never had enough content to overflow), found and fixed while wiring
+// Plan 05-17's add/edit server sheet against a real browser viewport.
+const BODY_CLASSES = 'min-h-0 flex-1 overflow-y-auto px-8 py-8';
 const FOOTER_CLASSES = 'flex items-center justify-end gap-2 border-t border-hairline px-8 py-6';
 
 // Sheet (05-UI-SPEC.md SS2.4, skill SS4.5) -- a 480px right-side panel on Radix Dialog. Radix
