@@ -91,4 +91,10 @@ describe('Button', () => {
     expect(container.querySelector('[class*="animate-spin"]')).toBeNull();
     expect(queryByRole('progressbar')).toBeNull();
   });
+
+  it('forwards a data-testid attribute, matching every other packages/ui component', () => {
+    const { getByTestId } = renderUi(<Button data-testid="login-submit">Sign in</Button>);
+
+    expect(getByTestId('login-submit')).toHaveAttribute('data-testid', 'login-submit');
+  });
 });

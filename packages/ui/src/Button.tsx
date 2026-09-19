@@ -10,6 +10,11 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
   readonly loading?: boolean;
   readonly filled?: boolean;
   readonly children?: ReactNode;
+  // Stable Playwright hook (05-UI-SPEC.md SS9), matching the same `'data-testid'?: string`
+  // pattern every other packages/ui component already declares (Banner, Notice, CopyButton,
+  // SegmentedControl, ...) -- Button was the one component missing it (05-11-PLAN.md Task 2
+  // needed it for `login-submit`, the first SS9 hook to land on a Button call site).
+  readonly 'data-testid'?: string | undefined;
 }
 
 // 32px height (h-8 against this project's 4px spacing base), --r-sm radius, 0 14px padding,
