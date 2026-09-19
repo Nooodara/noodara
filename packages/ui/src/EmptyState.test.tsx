@@ -49,11 +49,11 @@ describe('EmptyState', () => {
   });
 
   it('types the action prop as a single object, never an array (verified by tsc, not just convention)', () => {
-    // @ts-expect-error -- action must be a single EmptyStateAction object, not an array; this line
-    // exists to make D-12's "una sola accion" a real type error, checked by `pnpm typecheck`.
     const invalidProps: EmptyStateProps = {
       title: 'No servers yet',
       body: 'Body.',
+      // @ts-expect-error -- action must be a single EmptyStateAction object, not an array; this
+      // line exists to make D-12's "una sola accion" a real type error, checked by `pnpm typecheck`.
       action: [{ label: 'Add server', onClick: vi.fn() }],
     };
 
