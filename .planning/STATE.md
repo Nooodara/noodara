@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-23-PLAN.md
-last_updated: "2026-09-19T16:55:48.579Z"
+stopped_at: Completed 05-09-PLAN.md
+last_updated: "2026-09-19T17:11:09.946Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 59
+  completed_plans: 60
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 12 of 25
+Plan: 13 of 25
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [████████░░] 81%
+Progress: [████████░░] 82%
 
 ## Performance Metrics
 
@@ -114,6 +114,7 @@ Progress: [████████░░] 81%
 | Phase 05-ui-web P08 | 8min | 3 tasks | 11 files |
 | Phase 05 P10 | 55min | 3 tasks | 10 files |
 | Phase 05 P23 | 15min | 3 tasks | 11 files |
+| Phase 05 P09 | 15min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -274,6 +275,8 @@ Recent decisions affecting current work:
 - [Phase 05-10]: apps/web's unauthenticated-redirect file is proxy.ts, not middleware.ts -- Next.js 16.3.5 deprecates middleware.ts in favor of proxy.ts (export function proxy), confirmed by a real next build warning
 - [Phase 05-23]: lucide-react promoted from packages/ui devDependencies to dependencies -- Sheet.tsx is the first component to import it at runtime (the close-button icon), matching the same fix Plan 05-22 applied for @noodara/domain
 - [Phase 05-23]: DestructiveConfirmDialog.onConfirm(typedValue: string) hands the typed confirmation value back to the caller (not a no-arg signal) since a later plan's delete/trust-fingerprint flow needs it for the API request body CONFIRMATION_MISMATCH validates
+- [Phase 05-09]: Intl.RelativeTimeFormat('en', { numeric: 'always' }) matched the plan's literal expected relative-time strings once thresholds were ordered day>=86400s/hour>=3600s/minute>=60s else 'just now' -- only formatUptime needed hand-rolled pluralization, since Intl has no compound day+hour duration mode
+- [Phase 05-09]: SkeletonRow defaults its own data-testid to 'skeleton-row' (overridable) so Plan 05-13's 5-row list-loading state can render five instances and count them via a single querySelectorAll without threading unique ids through each
 
 ### Pending Todos
 
@@ -303,6 +306,7 @@ None yet.
 - 05-08-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only adds Field/Input/Textarea/SegmentedControl plus the seven Radix primitive installs to packages/ui -- no shell, sidebar, toolbar or screens exist yet. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01/UI-02 itself (05-06, 05-22, 05-07). Re-verify UI-01/UI-02 against whichever later plan actually builds the shell and screens.
 - 05-10-PLAN.md declares requirements: [QA-04] in its frontmatter, but only builds the Playwright harness and proves the unauthenticated-redirect + 401-guard behaviours -- the full critical-path E2E and nightly 20x repetition are Plan 05-20's job. QA-04 stays Pending in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), UI-01/UI-02 (05-06 through 05-08). Re-verify QA-04 against Plan 05-20.
 - 05-23-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only adds isConfirmationMatch/FileButton/Sheet/ConfirmDialog/DestructiveConfirmDialog to packages/ui -- no shell, sidebar, toolbar or screens exist yet. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01/UI-02 itself (05-06, 05-22, 05-07, 05-08). Re-verify UI-01/UI-02 against whichever later plan actually builds the shell and screens.
+- 05-09-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only adds format.ts plus Banner/Notice/EmptyState/Skeleton to packages/ui -- no shell, sidebar, toolbar or screens exist yet. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01/UI-02 itself (05-06, 05-22, 05-07, 05-08, 05-23). Re-verify UI-01/UI-02 against whichever later plan actually builds the shell and screens.
 
 ## Deferred Items
 
@@ -314,6 +318,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T16:55:48.571Z
-Stopped at: Completed 05-23-PLAN.md
+Last session: 2026-09-19T17:11:09.937Z
+Stopped at: Completed 05-09-PLAN.md
 Resume file: None

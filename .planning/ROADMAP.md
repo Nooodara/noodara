@@ -291,7 +291,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6)*
 
-- [ ] 05-09-PLAN.md — Formatters puros y componentes de estado test-first: `Banner`, `Notice`, `EmptyState`, `Skeleton` (UI-02)
+- [x] 05-09-PLAN.md — Formatters puros y componentes de estado test-first: `Banner`, `Notice`, `EmptyState`, `Skeleton` (UI-02)
 
 **Wave 8** *(blocked on Wave 7)*
 
@@ -366,5 +366,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 11/25 | In Progress|  |
+| 5. UI web | 12/25 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |
