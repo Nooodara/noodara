@@ -4,13 +4,13 @@ milestone: v0.1
 milestone_name: milestone
 status: executing
 stopped_at: Completed 05-04-PLAN.md
-last_updated: "2026-09-19T07:55:37.140Z"
+last_updated: "2026-09-19T14:39:25.956Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 51
+  completed_plans: 52
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 4 of 25
+Plan: 5 of 25
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [███████░░░] 70%
+Progress: [███████░░░] 71%
 
 ## Performance Metrics
 
@@ -106,6 +106,7 @@ Progress: [███████░░░] 70%
 | Phase 05 P01 | 22min | 3 tasks | 8 files |
 | Phase 05 P02 | 18min | 3 tasks | 5 files |
 | Phase 05 P04 | 9min | 3 tasks | 7 files |
+| Phase 05 P03 | 6min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -244,6 +245,9 @@ Recent decisions affecting current work:
 - [Phase 05]: The SSE heartbeat's bounded-getSession regression test lives in a new apps/control-plane/src/routes/events.test.ts unit test rather than in the Testcontainers-backed events-sse.test.ts — api-scope.ts hardwires that file's getSession to the real auth.api.getSession with no injection seam, exactly the fallback the plan's own read_first anticipated for the request-guard case
 - [Phase 05-02]: runWorkerShutdown's re-entry guard is a WeakSet keyed by the deps object identity, not a single module-level boolean — worker.ts keeps its own local shuttingDown flag as the primary guard, the helper's own guard is intentionally redundant defense-in-depth
 - [Phase 05-04]: onCheck invocation inlined at each of runDiscovery's four checks.push sites via a local const, not an array read-back with a non-null assertion — the project's ESLint config forbids @typescript-eslint/no-non-null-assertion
+- [Phase 05-03]: Reworded scripts/check-package-provenance.mjs's normaliseRepoUrl docstring to avoid the literal substring 'includes(' since the pre-existing prose tripped this plan's own acceptance-criteria grep even though the actual comparison logic was never touched or relaxed
+- [Phase 05-03]: 04-SECURITY.md's Sign-Off Approval line is worded as evidence-based automated closure per Task 3, explicitly not framed as a human security review or product-owner sign-off, since none was requested or performed
+- [Phase 05-03]: UF-02 (worker.ts main()'s unhandled-rejection gap) left open and unmodified: out of scope for D-17, which names only T-4-02/T-4-10/T-4-32/T-4-38 and UF-01
 
 ### Pending Todos
 
@@ -265,6 +269,7 @@ None yet.
 - 04-10: a combined tests/integration/routes/+services/ run (18 files, extra-broad regression check beyond this plan's scope) showed 137 failing stray-container-count assertions concentrated in register-server.test.ts/trust-fingerprint.test.ts (files this plan did not modify); isolated re-runs of those files (28/28) and the servers-crud/connect/discover files (38/38) passed cleanly, confirming the pre-existing shared-dev-machine Docker resource contention pattern, not a regression.
 - 05-01-PLAN.md declares requirements: [DETL-02, QA-05] in its frontmatter, but only implements the two security-remediation items (UF-01 pendingFingerprint clear, T-4-02 bounded session lookups) -- no UI empty-state work (DETL-02) or CI canary job (QA-05) landed in this plan. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 after Plan 04-01. Re-verify DETL-02/QA-05 against the plans that actually implement them, not this checkbox.
 - 05-02-PLAN.md declares requirements: [QA-05] in its frontmatter but only closes the T-4-10/T-4-38/T-4-32 threat-remediation tasks that make QA-05's canary safe against real err output -- it does not add the nightly CI job (.github/workflows/nightly.yml, still Wave 2+ per 05-PATTERNS.md). CI already runs pnpm security:scan-leaks (Phase 4's ci.yml); QA-05 also needs a nightly job before it can be marked Complete. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01) and DETL-02/QA-05 (05-01).
+- 05-03-PLAN.md declares requirements: [UI-01, QA-05] in its frontmatter, but only extends the package provenance gate and closes 04-SECURITY.md's sign-off -- no design-system shell (UI-01) or nightly canary CI job (QA-05, still pending per 05-02's own note) landed in this plan. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01) and QA-05 (05-02). Re-verify UI-01/QA-05 against the plans that actually implement them.
 
 ## Deferred Items
 
@@ -276,6 +281,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T07:55:37.131Z
+Last session: 2026-09-19T14:39:06.737Z
 Stopped at: Completed 05-04-PLAN.md
 Resume file: None

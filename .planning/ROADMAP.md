@@ -267,7 +267,7 @@ Plans:
 
 **Wave 2** *(parallel, blocked on Wave 1)*
 
-- [ ] 05-03-PLAN.md — Puertas: procedencia de los 22 paquetes nuevos (incluido el stack de test de componentes), addendum ADR-0000 y firma de `04-SECURITY.md` (checkpoint humano)
+- [x] 05-03-PLAN.md — Puertas: procedencia de los 22 paquetes nuevos (incluido el stack de test de componentes), addendum ADR-0000 y firma de `04-SECURITY.md` (checkpoint humano)
 - [x] 05-04-PLAN.md — Callback `onCheck` en `runDiscovery`, evento `server.discovery_progress` y allowlist del broadcaster (D-05)
 
 **Wave 3** *(parallel, blocked on Wave 2)*
@@ -366,5 +366,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 3/25 | In Progress|  |
+| 5. UI web | 4/25 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |
