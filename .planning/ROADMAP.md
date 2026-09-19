@@ -262,7 +262,7 @@ Plans:
 
 **Wave 1** *(parallel — remediación de seguridad de fase 4, bloquea todo lo demás por D-17)*
 
-- [ ] 05-01-PLAN.md — Cierre del bypass TOFU UF-01 en `editServer` y acotado de las dos búsquedas de sesión (T-4-02)
+- [x] 05-01-PLAN.md — Cierre del bypass TOFU UF-01 en `editServer` y acotado de las dos búsquedas de sesión (T-4-02)
 - [ ] 05-02-PLAN.md — Serializador `err` central en pino (T-4-10/T-4-38) y secuencia de apagado del worker endurecida (T-4-32)
 
 **Wave 2** *(parallel, blocked on Wave 1)*
@@ -366,5 +366,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 0/TBD | Not started | - |
+| 5. UI web | 1/25 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |

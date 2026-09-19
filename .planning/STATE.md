@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-09-19T06:46:10.803Z"
-last_activity: 2026-09-19 -- Phase 05 planning complete
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-09-19T07:19:09.994Z"
+last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 48
-  percent: 66
+  completed_plans: 49
+  percent: 67
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente: sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto.
-**Current focus:** Phase 5 — ui web
+**Current focus:** Phase 05 — ui-web
 
 ## Current Position
 
-Phase: 5
-Plan: Not started
+Phase: 05 (ui-web) — EXECUTING
+Plan: 2 of 25
 Status: Ready to execute
-Last activity: 2026-09-19 -- Phase 05 planning complete
+Last activity: 2026-09-19
 
-Progress: [██████████] 100%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -103,6 +103,7 @@ Progress: [██████████] 100%
 | Phase 04 P09 | 100min | 3 tasks | 10 files |
 | Phase 04 P10 | 140min | 3 tasks | 16 files |
 | Phase 04 P11 | 170min | 3 tasks | 9 files |
+| Phase 05 P01 | 22min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -237,6 +238,8 @@ Recent decisions affecting current work:
 - [Phase 04]: Every health check (postgres/redis/worker) is independently wrapped in a Promise.race-against-a-fixed-timer (withTimeout), the same bounded-race shape app.ts's onReady/preClose hooks already use
 - [Phase 04]: BullMQ's add() silently treats a completed job's still-present jobId hash as a duplicate, never re-enqueuing — connect-server-queue.ts now removes a genuinely terminal job before re-adding under the same deterministic jobId, fixing a real DISC-05-breaking bug found by api-e2e.test.ts
 - [Phase 04]: boot-command.test.ts's single-process /health case now expects status:degraded/checks.worker:fail — D-26 is correct here since no worker ever runs in that case; the pre-04-10 stale status:ok literal was the bug
+- [Phase 05]: session-lookup.ts is a new file rather than added to require-session.ts or events.ts, since both call sites need to import the same helper with no circular dependency
+- [Phase 05]: The SSE heartbeat's bounded-getSession regression test lives in a new apps/control-plane/src/routes/events.test.ts unit test rather than in the Testcontainers-backed events-sse.test.ts — api-scope.ts hardwires that file's getSession to the real auth.api.getSession with no injection seam, exactly the fallback the plan's own read_first anticipated for the request-guard case
 
 ### Pending Todos
 
@@ -256,6 +259,7 @@ None yet.
 - REQUIREMENTS.md marks SERV-06 'Complete' after Plan 04-01, but 04-01 only ships infra (deps, env knobs, job-budget function, Redis test fixture) — no worker, routes, or SSE stream yet. SERV-06's actual behavior lands across Plans 04-02..04-11; this checkbox is a plan-frontmatter artifact of 04-01-PLAN.md declaring requirements: [SERV-06] on the first wave-0 plan, not a real completion. Re-verify SERV-06 at phase-4 close, not from this checkbox alone.
 - events-sse.test.ts: 2 of 10 tests (server.updated publish, connect+worker E2E) intermittently fail on this shared dev machine waiting for a real Redis subscription (waitForActiveSubscriber timeout) -- diagnosed as machine-specific Docker/network flakiness (CLIENT LIST showed a public non-Docker IP sharing the container's mapped port during one failure), not a code defect; a standalone non-Vitest reproduction succeeded deterministically every run. Matches this repo's pre-existing 'shared dev machine Docker resource contention' pattern. Re-verify on a clean machine/CI.
 - 04-10: a combined tests/integration/routes/+services/ run (18 files, extra-broad regression check beyond this plan's scope) showed 137 failing stray-container-count assertions concentrated in register-server.test.ts/trust-fingerprint.test.ts (files this plan did not modify); isolated re-runs of those files (28/28) and the servers-crud/connect/discover files (38/38) passed cleanly, confirming the pre-existing shared-dev-machine Docker resource contention pattern, not a regression.
+- 05-01-PLAN.md declares requirements: [DETL-02, QA-05] in its frontmatter, but only implements the two security-remediation items (UF-01 pendingFingerprint clear, T-4-02 bounded session lookups) -- no UI empty-state work (DETL-02) or CI canary job (QA-05) landed in this plan. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 after Plan 04-01. Re-verify DETL-02/QA-05 against the plans that actually implement them, not this checkbox.
 
 ## Deferred Items
 
@@ -267,6 +271,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T04:46:17.461Z
-Stopped at: Phase 5 UI-SPEC approved
-Resume file: .planning/phases/05-ui-web/05-UI-SPEC.md
+Last session: 2026-09-19T07:16:39.444Z
+Stopped at: Completed 05-01-PLAN.md
+Resume file: None
