@@ -146,6 +146,7 @@ export function DiscoverySection({ serverId, serverStatus, sshUser, receivedChec
           <Button
             type="button"
             variant="secondary"
+            data-testid="discovery-rerun-button"
             disabled={serverStatus !== 'CONNECTED' || rerunPending}
             loading={rerunPending}
             onClick={() => void handleRerun()}
