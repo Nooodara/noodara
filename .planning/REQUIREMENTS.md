@@ -61,7 +61,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Activity Log
 
 - [x] **ACT-01**: Se registran eventos tipados para setup, login, logout, login fallido, servidor creado/editado/eliminado, intento de conexión y su resultado, discovery ejecutado.
-- [ ] **ACT-02**: El admin ve el activity log como lista cronológica inversa con actor, entidad, acción y timestamp; los metadatos nunca contienen valores sensibles.
+- [x] **ACT-02**: El admin ve el activity log como lista cronológica inversa con actor, entidad, acción y timestamp; los metadatos nunca contienen valores sensibles.
 
 ### Settings
 
@@ -160,7 +160,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SERV-04 | Phase 5 | Complete |
 | DETL-01 | Phase 5 | Complete |
 | DETL-02 | Phase 5 | Complete |
-| ACT-02 | Phase 5 | Pending |
+| ACT-02 | Phase 5 | Complete |
 | SET-01 | Phase 5 | Pending |
 | UI-01 | Phase 5 | Complete |
 | UI-02 | Phase 5 | Pending |

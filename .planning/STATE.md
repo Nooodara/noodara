@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-14-PLAN.md
-last_updated: "2026-09-19T19:40:59.914Z"
+stopped_at: Completed 05-15-PLAN.md
+last_updated: "2026-09-19T20:02:16.786Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 66
+  completed_plans: 67
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 14 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-12..05-21 remain incomplete)
+Plan: 15 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-12..05-21 remain incomplete)
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [█████████░] 90%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -121,6 +121,7 @@ Progress: [█████████░] 90%
 | Phase 05 P12 | 31min | 3 tasks | 13 files |
 | Phase 05 P13 | 19min | 3 tasks | 11 files |
 | Phase 05-ui-web P14 | 8min | 3 tasks | 9 files |
+| Phase 05 P15 | 10min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -299,6 +300,9 @@ Recent decisions affecting current work:
 - [Phase 05-13]: vitest.config.ts gained a top-level oxc.jsx option and apps/web gained its own vitest-matchers.d.ts + a direct @testing-library/jest-dom devDependency -- apps/web's Next.js-required tsconfig jsx:preserve was silently breaking every .tsx Vitest test under apps/web/src via this project's rolldown-powered oxc transform, latent until this plan's ServerList.test.tsx became the first such file
 - [Phase 05-14]: deriveDetailState excludes lastErrorCode === 'UNSUPPORTED_OS' from the generic-failure branch -- resolves a conflict between the plan's own literal Task 1 text and 05-UI-SPEC.md SS5.1/D-11's 'never an error banner' requirement in the requirement's favor
 - [Phase 05-14]: StatTile gained a backward-compatible dimmed/data-dimmed prop (default false) so DETL-02's attenuated-facts treatment applies to the stat tile row too, matching LabelValue's already-established contract
+- [Phase 05]: Server-name resolution splits an injected live-lookup (ServerLookup) from activity-copy.ts's own three-tier fallback (live link -> metadata.name plain text -> id-prefix mono)
+- [Phase 05]: A page-1 activity refresh merges new items but never moves nextCursor -- only Load older (append mode) advances pagination
+- [Phase 05]: curatedDetailFor(item) reads the whole ActivityItem, not just metadata, since errorCode lives outside metadata per the domain's own comment
 
 ### Pending Todos
 
@@ -346,6 +350,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T19:40:59.906Z
-Stopped at: Completed 05-14-PLAN.md
+Last session: 2026-09-19T20:02:16.779Z
+Stopped at: Completed 05-15-PLAN.md
 Resume file: None
