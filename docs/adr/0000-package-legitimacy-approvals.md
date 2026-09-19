@@ -79,8 +79,9 @@ component-test DOM stack (`jsdom`, `@testing-library/dom`, `@testing-library/rea
 `@testing-library/jest-dom`, `@testing-library/user-event`) — were not covered by that
 research pass and went through `05-03-PLAN.md` Task 1's blocking `checkpoint:human-verify`.
 The user (Pablo Gutierrez) explicitly approved all eight on 2026-09-19, with evidence
-gathered from npm registry metadata (repository link, weekly downloads, publisher) and a
-`slopcheck` status check for each — not a manual per-page inspection.
+gathered from npm registry metadata (repository link, weekly downloads) and a `slopcheck`
+status check for each — not a manual per-page inspection, and the publisher account was
+not checked separately.
 
 The five component-test packages are `devDependencies` of the workspace root only and
 never reach a browser bundle. `@vitejs/plugin-react` was considered and declined: Vite's
@@ -93,9 +94,9 @@ separate React transform plugin is needed for a Vitest test run.
 | react | react/react | `git+https://github.com/react/react.git` | 19.3.0 | `[OK]` | verified | 2026-09-19 |
 | react-dom | react/react | `git+https://github.com/react/react.git` | 19.3.0 | `[OK]` | verified | 2026-09-19 |
 | tailwindcss | tailwindlabs/tailwindcss | `https://github.com/tailwindlabs/tailwindcss.git` | 4.3.3 | `[OK]` | verified | 2026-09-19 |
-| @tailwindcss/postcss | tailwindlabs/tailwindcss | `https://github.com/tailwindlabs/tailwindcss.git` | 4.3.3 | human-verified, registry page | verified | 2026-09-19 |
-| @types/react | DefinitelyTyped/DefinitelyTyped | `https://github.com/DefinitelyTyped/DefinitelyTyped.git` | 19.3.0 | human-verified, registry page | verified | 2026-09-19 |
-| @types/react-dom | DefinitelyTyped/DefinitelyTyped | `https://github.com/DefinitelyTyped/DefinitelyTyped.git` | 19.3.0 | human-verified, registry page | verified | 2026-09-19 |
+| @tailwindcss/postcss | tailwindlabs/tailwindcss | `https://github.com/tailwindlabs/tailwindcss.git` | 4.3.3 | `[OK]`, user-approved at checkpoint | verified | 2026-09-19 |
+| @types/react | DefinitelyTyped/DefinitelyTyped | `https://github.com/DefinitelyTyped/DefinitelyTyped.git` | 19.3.0 | `[OK]`, user-approved at checkpoint | verified | 2026-09-19 |
+| @types/react-dom | DefinitelyTyped/DefinitelyTyped | `https://github.com/DefinitelyTyped/DefinitelyTyped.git` | 19.3.0 | `[OK]`, user-approved at checkpoint | verified | 2026-09-19 |
 | lucide-react | lucide-icons/lucide | `https://github.com/lucide-icons/lucide.git` | 1.47.0 | `[OK]` | verified | 2026-09-19 |
 | playwright | microsoft/playwright | `git+https://github.com/microsoft/playwright.git` | 1.63.0 | `[OK]` | verified | 2026-09-19 |
 | @playwright/test | microsoft/playwright | `git+https://github.com/microsoft/playwright.git` | 1.63.0 | `[OK]` | verified | 2026-09-19 |
@@ -106,11 +107,11 @@ separate React transform plugin is needed for a Vitest test run.
 | @radix-ui/react-scroll-area | radix-ui/primitives | `git+https://github.com/radix-ui/primitives.git` | 1.2.18 | `[OK]` | verified | 2026-09-19 |
 | @radix-ui/react-visually-hidden | radix-ui/primitives | `git+https://github.com/radix-ui/primitives.git` | 1.2.11 | `[OK]` | verified | 2026-09-19 |
 | @radix-ui/react-checkbox | radix-ui/primitives | `git+https://github.com/radix-ui/primitives.git` | 1.3.11 | `[OK]` | verified | 2026-09-19 |
-| jsdom | jsdom/jsdom | `git+https://github.com/jsdom/jsdom.git` | 30.1.0 | human-verified, registry page | verified | 2026-09-19 |
-| @testing-library/dom | testing-library/dom-testing-library | `git+https://github.com/testing-library/dom-testing-library.git` | 10.4.2 | human-verified, registry page | verified | 2026-09-19 |
-| @testing-library/react | testing-library/react-testing-library | `git+https://github.com/testing-library/react-testing-library.git` | 16.3.3 | human-verified, registry page | verified | 2026-09-19 |
-| @testing-library/jest-dom | testing-library/jest-dom | `git+https://github.com/testing-library/jest-dom.git` | 7.0.1 | human-verified, registry page | verified | 2026-09-19 |
-| @testing-library/user-event | testing-library/user-event | `git+https://github.com/testing-library/user-event.git` | 14.6.7 | human-verified, registry page | verified | 2026-09-19 |
+| jsdom | jsdom/jsdom | `git+https://github.com/jsdom/jsdom.git` | 30.1.0 | `[OK]`, user-approved at checkpoint | verified | 2026-09-19 |
+| @testing-library/dom | testing-library/dom-testing-library | `git+https://github.com/testing-library/dom-testing-library.git` | 10.4.2 | `[OK]`, user-approved at checkpoint | verified | 2026-09-19 |
+| @testing-library/react | testing-library/react-testing-library | `git+https://github.com/testing-library/react-testing-library.git` | 16.3.3 | `[OK]`, user-approved at checkpoint | verified | 2026-09-19 |
+| @testing-library/jest-dom | testing-library/jest-dom | `git+https://github.com/testing-library/jest-dom.git` | 7.0.1 | `[OK]`, user-approved at checkpoint | verified | 2026-09-19 |
+| @testing-library/user-event | testing-library/user-event | `git+https://github.com/testing-library/user-event.git` | 14.6.7 | `[OK]`, user-approved at checkpoint | verified | 2026-09-19 |
 
 `react`/`react-dom` legitimately resolve to `react/react`, not `facebook/react`: GitHub
 redirects the renamed `facebook/react` org to `react/react` (confirmed live via
