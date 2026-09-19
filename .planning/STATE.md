@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-07-PLAN.md
-last_updated: "2026-09-19T16:05:30.846Z"
+stopped_at: Completed 05-08-PLAN.md
+last_updated: "2026-09-19T16:17:22.710Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 56
+  completed_plans: 57
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 9 of 25
+Plan: 10 of 25
 Status: Ready to execute
 Last activity: 2026-09-19
 
-Progress: [████████░░] 77%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
@@ -111,6 +111,7 @@ Progress: [████████░░] 77%
 | Phase 05-ui-web P06 | 15min | 3 tasks | 17 files |
 | Phase 05 P22 | 25min | 3 tasks | 11 files |
 | Phase 05-ui-web P07 | 35min | 3 tasks | 19 files |
+| Phase 05-ui-web P08 | 8min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -264,6 +265,8 @@ Recent decisions affecting current work:
 - [Phase 05-07]: No apps/web/turbo.json and no root package.json dev script change -- Turborepo dispatches a task to every package whose package.json declares a matching script name, so apps/web's own 'dev' script automatically joins the existing shared 'dev' task; verified with 'turbo run dev dev:worker --dry-run=json' before relying on it
 - [Phase 05-07]: packages/ui/tokens.css and theme.css had a literal */ substring inside prose doc comments (describing Tailwind's --text-*/--text-*--line-height namespace), prematurely terminating the CSS comment -- this plan's apps/web build is the first real Tailwind pipeline run this phase, surfacing a pre-existing Plan 05-06/05-22 bug; reworded the comments, no functional change
 - [Phase 05-07]: buildValidBootEnv() and CI's workflow env both gained NOODARA_API_ORIGIN -- once apps/web's dev script joined the shared turbo dev task, the real clean-tree pnpm dev boot-smoke test and pnpm test:integration's global build setup both now build/boot apps/web too; same class of gap Plan 04-07 fixed for REDIS_URL
+- [Phase 05-08]: Field's children prop is a render function (children: (controlProps) => ReactNode), not a cloned element -- lets the same component wrap a bare <input> in its own test and Input/Textarea in later screens without cloneElement typing fragility under exactOptionalPropertyTypes
+- [Phase 05-08]: SegmentedControl needed no extra guard against re-firing onValueChange on the already-selected option -- Radix RadioGroup's useControllableState already only calls onChange on an actual value change, confirmed by the RED-then-GREEN cycle rather than assumed
 
 ### Pending Todos
 
@@ -290,6 +293,7 @@ None yet.
 - 05-06-PLAN.md declares requirements: [UI-01] in its frontmatter, but only builds the packages/ui scaffold, component-test harness and tokens.css/theme.css -- no shell, sidebar, toolbar or navigation exists (apps/web itself is not created by this plan). Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03) and DISC-02/QA-05 (05-05). Re-verify UI-01 against whichever later plan actually builds the shell (05-UI-SPEC.md section 1).
 - 05-22-PLAN.md declares requirements: [UI-01] in its frontmatter, but only adds Button/StatusPill/cn/tone to packages/ui -- no shell, sidebar, toolbar or apps/web exists yet. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01 itself (05-06). Re-verify UI-01 against whichever later plan actually builds the shell (05-UI-SPEC.md section 1).
 - 05-07-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only builds apps/web's infrastructure (same-origin proxy, no-flash theme bootstrap, tested fetch client) -- no sidebar, toolbar, navigation, or any of the seven screens 05-UI-SPEC.md describes exist yet (Plan 05-12 adds the authenticated shell route-group layout this plan deliberately leaves for later). Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05), and UI-01 itself (05-06, 05-22). Re-verify UI-01/UI-02 against whichever later plan actually builds the shell and screens.
+- 05-08-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter, but only adds Field/Input/Textarea/SegmentedControl plus the seven Radix primitive installs to packages/ui -- no shell, sidebar, toolbar or screens exist yet. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01), DETL-02/QA-05 (05-01/05-02/05-03), DISC-02/QA-05 (05-05) and UI-01/UI-02 itself (05-06, 05-22, 05-07). Re-verify UI-01/UI-02 against whichever later plan actually builds the shell and screens.
 
 ## Deferred Items
 
@@ -301,6 +305,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T16:05:30.839Z
-Stopped at: Completed 05-07-PLAN.md
+Last session: 2026-09-19T16:17:12.999Z
+Stopped at: Completed 05-08-PLAN.md
 Resume file: None
