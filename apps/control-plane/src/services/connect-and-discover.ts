@@ -322,6 +322,17 @@ export async function connectAndDiscover(
         sshUser: row.sshUser,
         timeouts: { discoveryMs: deps.timeouts.discoveryMs },
         redactor: deps.redactor,
+        // D-05: best-effort, fire-and-forget per-check progress — mirrors publishServerEvent's own
+        // "never let a publish failure affect the run" contract. `void`, never awaited: onCheck is
+        // a synchronous callback per run-discovery.ts's contract, and awaiting a Redis publish here
+        // would serialize SSH work behind it.
+        onCheck: (check) => {
+          void publishServerEvent(deps.events, {
+            type: 'server.discovery_progress',
+            serverId: row.id,
+            check,
+          });
+        },
       });
     } finally {
       // Pitfall 3: this `finally` must exist even though `runDiscovery` itself never throws — a
