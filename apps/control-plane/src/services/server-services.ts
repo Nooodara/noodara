@@ -21,6 +21,7 @@ import {
   type ListActivityEventsInput,
   type ListActivityEventsResult,
 } from './read-activity.js';
+import { readLatestDiscovery, type LatestDiscoveryView } from './read-discovery.js';
 import { getServerView, listServerViews } from './read-servers.js';
 import {
   registerServer,
@@ -45,6 +46,7 @@ export type {
   EditServerResult,
   FailInFlightConnectionInput,
   FailInFlightConnectionResult,
+  LatestDiscoveryView,
   ListActivityEventsInput,
   ListActivityEventsResult,
   RegisterServerInput,
@@ -64,6 +66,7 @@ export interface ServerServices {
   getServer(serverId: string): Promise<ServerView | null>;
   listServers(): Promise<ServerView[]>;
   listActivity(input: ListActivityEventsInput): Promise<ListActivityEventsResult>;
+  readLatestDiscovery(serverId: string): Promise<LatestDiscoveryView>;
 }
 
 /**
@@ -83,5 +86,6 @@ export function createServerServices(deps: ServerServicesDeps): ServerServices {
     getServer: (serverId) => getServerView(deps, serverId),
     listServers: () => listServerViews(deps),
     listActivity: (input) => listActivityEvents(deps, input),
+    readLatestDiscovery: (serverId) => readLatestDiscovery(deps, serverId),
   };
 }
