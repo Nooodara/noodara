@@ -1,0 +1,24 @@
+// This app deliberately overrides the repo-wide `moduleResolution: "nodenext"` convention with
+// `"bundler"`, which Next.js's own webpack/Turbopack build requires. Because of this, relative
+// imports inside apps/web must be written WITHOUT a `.js` extension (e.g. `from '../lib/api-client'`,
+// never `from '../lib/api-client.js'`) -- do not "fix" these toward the repo's nodenext convention
+// used everywhere else in the monorepo; doing so breaks the Next.js build.
+{
+  "extends": "@noodara/config/tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "types": ["node", "react", "react-dom"],
+    "noEmit": true,
+    "allowJs": true,
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "next-env.d.ts", "next.config.ts", "postcss.config.mjs"],
+  "exclude": ["node_modules", ".next"]
+}

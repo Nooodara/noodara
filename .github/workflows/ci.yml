@@ -25,6 +25,12 @@ concurrency:
 env:
   # Vitest 5 requires Node >=22.12; this is the Node 22 LTS line pinned in .nvmrc/engines.
   NODE_VERSION: '22'
+  # apps/web/next.config.ts's rewrites() reads this at `next build` time (fail-fast, no literal
+  # fallback -- docs/adr/0006) and both `pnpm build` (boot-smoke) and `pnpm test:integration`
+  # (its own globalSetup calls the same `buildWorkspace()` helper) invoke a real workspace build.
+  # Not a secret -- CI never actually proxies traffic, this only has to be a non-empty string for
+  # the build step to complete; the dev-convention value keeps it self-documenting.
+  NOODARA_API_ORIGIN: 'http://localhost:3100'
 
 jobs:
   lint:

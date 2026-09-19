@@ -3,7 +3,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "env": ["NOODARA_API_ORIGIN"]
     },
     "lint": {
       "dependsOn": ["^build"]
@@ -22,6 +23,7 @@
         "DATABASE_URL",
         "REDIS_URL",
         "NOODARA_PUBLIC_URL",
+        "NOODARA_API_ORIGIN",
         "NOODARA_ADMIN_EMAIL",
         "NOODARA_ADMIN_PASSWORD",
         "NOODARA_SESSION_SLIDING_SECONDS",

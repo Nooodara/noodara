@@ -47,12 +47,12 @@
   --font-mono: 'SF Mono', ui-monospace, 'JetBrains Mono', 'Geist Mono', Menlo, monospace;
 
   /* Eight semantic type roles (skill SS2.2), decomposed into size/line-height/tracking/weight
-     sub-tokens rather than a single shorthand value, so Tailwind's own --text-*/--text-*--
-     line-height/--tracking-* namespaces (theme.css) can bind directly to them. --font-display
-     is used for the two roles the skill sizes at >=20px (display, title), matching Apple's own
-     SF Pro Display/Text split; every other role uses --font-sans. Weight tokens are 400 or 600
-     only (500 is the sidebar/table-header exception applied at the component level, never 700 --
-     skill SS2.2). */
+     sub-tokens rather than a single shorthand value, so Tailwind's own --text-* (and its paired
+     --text-*--line-height) and --tracking-* namespaces (theme.css) can bind directly to them.
+     --font-display is used for the two roles the skill sizes at >=20px (display, title), matching
+     Apple's own SF Pro Display/Text split; every other role uses --font-sans. Weight tokens are
+     400 or 600 only (500 is the sidebar/table-header exception applied at the component level,
+     never 700 -- skill SS2.2). */
   --text-display-size: 28px;
   --text-display-line-height: 1.14;
   --text-display-tracking: -0.02em;

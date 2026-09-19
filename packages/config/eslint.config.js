@@ -34,7 +34,7 @@ const noDeepDomainImports = {
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/.turbo/**', '**/coverage/**', '**/node_modules/**'],
+    ignores: ['**/dist/**', '**/.next/**', '**/.turbo/**', '**/coverage/**', '**/node_modules/**'],
   },
   {
     files: ['**/*.ts', '**/*.tsx'],

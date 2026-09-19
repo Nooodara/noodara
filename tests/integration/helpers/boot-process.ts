@@ -25,6 +25,12 @@ const CONTROL_PLANE_DIST = path.join(repoRoot, 'apps/control-plane/dist');
  * the worker (`turbo run dev dev:worker`), the worker's own INST-06 fail-fast demands a real,
  * reachable Redis at boot — the previous hardcoded loopback-port placeholder only ever worked
  * because nothing before this plan actually connected to it.
+ *
+ * `NOODARA_API_ORIGIN` (05-07-PLAN.md): once `apps/web/package.json` declares its own `dev`
+ * script, Turborepo's script-name dispatch means the root `pnpm dev` (`turbo run dev dev:worker`)
+ * also starts `next dev`, and `next.config.ts`'s `rewrites()` fail-fasts without this variable
+ * (docs/adr/0006) — same "the previous placeholder only worked because nothing connected to it"
+ * class of gap the `redisUrl` comment above already documents for the worker.
  */
 export function buildValidBootEnv(connectionString: string, redisUrl: string): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {};
@@ -36,6 +42,7 @@ export function buildValidBootEnv(connectionString: string, redisUrl: string): N
   env.DATABASE_URL = connectionString;
   env.REDIS_URL = redisUrl;
   env.NOODARA_PUBLIC_URL = 'http://localhost:3000';
+  env.NOODARA_API_ORIGIN = 'http://localhost:3100';
   // OS-assigned free port so two boot tests can never collide.
   env.PORT = '0';
   env.LOG_LEVEL = 'info';

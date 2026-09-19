@@ -5,10 +5,11 @@
  * (alongside tokens.css) and uses Tailwind utility classes; it never redefines a colour, size or
  * radius locally.
  *
- * Namespace reference (Tailwind v4 docs): --color-* -> bg-*/text-*/border-* utilities,
- * --font-* -> font-* family utilities, --text-*/--text-*--line-height -> text-* size utilities,
- * --tracking-* -> tracking-* utilities, --radius-* -> rounded-* utilities, --spacing -> the
- * single base multiplier every numeric spacing utility (p-4, gap-6, m-8, ...) scales from.
+ * Namespace reference (Tailwind v4 docs): --color-* -> bg-*, text-* and border-* utilities,
+ * --font-* -> font-* family utilities, --text-* (and its paired --text-*--line-height) -> text-*
+ * size utilities, --tracking-* -> tracking-* utilities, --radius-* -> rounded-* utilities,
+ * --spacing -> the single base multiplier every numeric spacing utility (p-4, gap-6, m-8, ...)
+ * scales from.
  */
 @theme {
   /* --- Color --------------------------------------------------------------------------- */

@@ -8,6 +8,11 @@ dist/
 .turbo/
 coverage/
 
+# Next.js (apps/web)
+.next/
+next-env.d.ts
+*.tsbuildinfo
+
 # Env
 .env
 .env.*
