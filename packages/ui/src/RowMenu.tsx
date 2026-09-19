@@ -87,7 +87,7 @@ export function RowMenu({ items, triggerLabel, 'data-testid': testId }: RowMenuP
           aria-haspopup="menu"
         >
           <VisuallyHidden.Root>{triggerLabel}</VisuallyHidden.Root>
-          <span aria-hidden="true">&#8943;</span>
+          <span aria-hidden="true">{'⋯'}</span>
         </DialogPrimitive.Trigger>
         <DialogPrimitive.Content
           ref={contentRef}
