@@ -32,8 +32,10 @@ export {
 export { Input, type InputProps } from './Input.js';
 export { isConfirmationMatch } from './confirm-match.js';
 export { LabelValue, type LabelValueProps } from './LabelValue.js';
+export { ListRow, type ListRowProps } from './ListRow.js';
 export { Notice, type NoticeProps } from './Notice.js';
 export { RelativeTime, type RelativeTimeProps } from './RelativeTime.js';
+export { RowMenu, type RowMenuItem, type RowMenuProps } from './RowMenu.js';
 export { SegmentedControl, type SegmentedControlOption, type SegmentedControlProps } from './SegmentedControl.js';
 export { Sheet, type SheetProps } from './Sheet.js';
 export { Skeleton, type SkeletonProps, SkeletonRow, type SkeletonRowProps, SkeletonText, type SkeletonTextProps } from './Skeleton.js';
