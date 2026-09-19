@@ -11,6 +11,14 @@
 import { expect, test, type Page } from '@playwright/test';
 import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './fixtures/stack.js';
 
+declare global {
+  interface Window {
+    /** Bridged in by `page.exposeFunction` in the `@sse-live` test below -- declared here
+     *  (rather than an `unknown` cast at the call site) so the in-page code stays fully typed. */
+    __notifyStreamOpen?: () => Promise<void>;
+  }
+}
+
 async function login(page: Page): Promise<void> {
   await page.goto('/login');
   await page.getByLabel('Email').fill(E2E_ADMIN_EMAIL);
@@ -23,7 +31,9 @@ function focusedAccessibleName(page: Page): Promise<string | null> {
   return page.evaluate(() => {
     const el = document.activeElement;
     if (el === null) return null;
-    return el.getAttribute('aria-label') ?? el.textContent?.trim() ?? null;
+    const ariaLabel = el.getAttribute('aria-label');
+    if (ariaLabel !== null) return ariaLabel;
+    return el.textContent.trim();
   });
 }
 
@@ -134,4 +144,74 @@ test('@shell signing out returns to /login, and a subsequent direct visit to /se
 
   await page.goto('/servers');
   await expect(page).toHaveURL(/\/login$/);
+});
+
+// Not one of the plan's six documented @shell behaviours -- a deliberately different tag (never
+// containing the substring "@shell", so `--grep @shell` still selects exactly six tests) for
+// permanent regression coverage of a real bug this plan's own security review found:
+// `next.config.ts`'s generic `rewrites()` proxy buffers a long-lived SSE response instead of
+// streaming it (confirmed empirically -- a real event published while the stream was open through
+// the rewrite never reached the browser, even after 8s). `apps/web/src/app/api/events/route.ts`'s
+// dedicated streaming Route Handler fixes this; this test proves a real `server.updated` frame --
+// produced by a real `POST /api/servers` call, not a synthetic one -- actually reaches the browser
+// while the connection stays open.
+test('@sse-live a real SSE frame published mid-connection reaches the browser through the same-origin proxy', async ({
+  page,
+}) => {
+  await login(page);
+
+  // Signals back to this test (via Playwright's exposeFunction bridge) the moment the in-page
+  // fetch has actually received its first bytes -- an observable state to wait on instead of a
+  // fixed sleep, so the mutation below is only ever triggered once the stream is genuinely open.
+  let notifyStreamOpen: () => void = () => undefined;
+  const streamOpened = new Promise<void>((resolve) => {
+    notifyStreamOpen = resolve;
+  });
+  await page.exposeFunction('__notifyStreamOpen', () => {
+    notifyStreamOpen();
+  });
+
+  const evalPromise = page.evaluate(async () => {
+    const chunks: string[] = [];
+    const controller = new AbortController();
+    setTimeout(() => {
+      controller.abort();
+    }, 8000);
+    const response = await fetch('/api/events', { signal: controller.signal });
+    const body = response.body;
+    if (body === null) {
+      throw new Error('response.body is null');
+    }
+    const reader = body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    let notified = false;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      chunks.push(buf);
+      if (!notified && buf.includes('retry: 5000')) {
+        notified = true;
+        await window.__notifyStreamOpen?.();
+      }
+      if (buf.includes('server.updated')) break;
+    }
+    await reader.cancel().catch(() => undefined);
+    return chunks;
+  });
+
+  await streamOpened;
+  const name = `probe-${String(Date.now())}`;
+  await page.request.post('/api/servers', {
+    data: {
+      name,
+      host: `${name}.example.test`,
+      credential: { type: 'ssh_password', password: 'diagnostic-only' },
+    },
+  });
+
+  const chunks = await evalPromise;
+  expect(chunks.some((chunk) => chunk.includes('retry: 5000'))).toBe(true);
+  expect(chunks.some((chunk) => chunk.includes('server.updated'))).toBe(true);
 });
