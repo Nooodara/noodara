@@ -218,8 +218,13 @@ test('@detail a CONNECTED server shows four formatted stat tiles and the three l
   await expect(page.getByText('srv-1.internal')).toBeVisible();
   await expect(page.getByText('Ubuntu 24.04')).toBeVisible();
   await expect(page.getByText('27.3.1')).toBeVisible();
-  await expect(page.getByText('SHA256:abcdef1234567890')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Copy Host fingerprint' })).toBeVisible();
+  // Scoped to the permanent Connection-group row, not a bare page-wide getByText: this fixture's
+  // own hostFingerprintCapturedAt (set by DISCOVERED_FACTS) also satisfies 05-19-PLAN.md's D-02
+  // first-trust notice condition, so the same fingerprint string legitimately appears twice on
+  // this screen once that notice exists (see tests/e2e/host-key.spec.ts for its own coverage).
+  const connectionGroup = page.getByTestId('server-facts-connection');
+  await expect(connectionGroup.getByText('SHA256:abcdef1234567890')).toBeVisible();
+  await expect(connectionGroup.getByRole('button', { name: 'Copy Host fingerprint' })).toBeVisible();
 });
 
 test('@detail a CONNECTING server shows the primary action disabled', async ({ page }) => {
