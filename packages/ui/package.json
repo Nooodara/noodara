@@ -22,6 +22,9 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
+  "dependencies": {
+    "@noodara/domain": "workspace:*"
+  },
   "devDependencies": {
     "@noodara/config": "workspace:*",
     "@testing-library/jest-dom": "7.0.1",
