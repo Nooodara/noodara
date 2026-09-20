@@ -104,6 +104,15 @@ export interface ServerView {
   readonly credentialType: 'ssh_private_key' | 'ssh_password';
 }
 
+// T-5G-28-01 (05-28-PLAN.md): CLAUDE.md SS2.3 requires an explicit timeout on every remote
+// operation, including this one browser->control-plane fetch wrapper. 15000ms is sized for the
+// slowest real call the UI makes -- `GET /api/servers` against a cold control plane the worker
+// hasn't warmed up -- while staying well under any human patience threshold (a hung request past
+// 15s reads as broken regardless of what eventually happens). A single exported constant so every
+// call site (GET and every apiSend method) shares the identical budget, never a magic number
+// repeated per call.
+export const API_REQUEST_TIMEOUT_MS = 15_000;
+
 const API_PATH_PREFIX = '/api/';
 
 function assertRelativeApiPath(path: string): void {
@@ -202,15 +211,31 @@ async function toApiFailure(response: Response): Promise<ApiFailure> {
   };
 }
 
+// A caller-supplied `init.signal` (none exists today, but a future call site might add one) must
+// never be silently discarded once this timeout is added -- `AbortSignal.any` composes both so
+// either one aborting the request still aborts it.
+function composeSignal(callerSignal: AbortSignal | null | undefined): AbortSignal {
+  const timeoutSignal = AbortSignal.timeout(API_REQUEST_TIMEOUT_MS);
+  if (callerSignal === null || callerSignal === undefined) {
+    return timeoutSignal;
+  }
+  return AbortSignal.any([callerSignal, timeoutSignal]);
+}
+
 async function performRequest<T>(path: string, init: RequestInit): Promise<ApiResult<T>> {
   assertRelativeApiPath(path);
 
+  const signal = composeSignal(init.signal);
+
   let response: Response;
   try {
-    response = await fetch(path, { ...init, credentials: 'same-origin' });
+    response = await fetch(path, { ...init, credentials: 'same-origin', signal });
   } catch {
     // Never echo the rejected fetch's own Error.message -- it can carry environment-specific
     // detail (e.g. a resolver's internal hostname) that has no business reaching a rendered UI.
+    // This also catches the AbortError `fetch` throws once `API_REQUEST_TIMEOUT_MS` elapses (or a
+    // caller-supplied signal aborts) -- an abort is just another unreachable-server case from the
+    // caller's point of view, never a distinct code or an echoed "AbortError" string.
     return {
       ok: false,
       code: 'NETWORK_ERROR',
