@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: executing
-stopped_at: Completed 05-20-PLAN.md
-last_updated: "2026-09-20T02:47:34.108Z"
+status: verifying
+stopped_at: Completed 05-21-PLAN.md — phase 05 (ui-web) all 25 plans executed, awaiting phase verification
+last_updated: "2026-09-20T07:14:00.264Z"
 last_activity: 2026-09-20
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 73
-  completed_plans: 72
-  percent: 67
+  completed_plans: 73
+  percent: 83
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 ## Current Position
 
-Phase: 05 (ui-web) — EXECUTING
-Plan: 20 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-18..05-21 remain incomplete)
-Status: Ready to execute
+Phase: 05 (ui-web) — ALL 25 PLANS EXECUTED, AWAITING PHASE VERIFICATION
+Plan: 25 of 25 complete (05-21 was the final wave-15 plan, resolved at its Task 3 checkpoint by the user 2026-09-20 — approved to close, not a design sign-off; see 05-21-SUMMARY.md)
+Status: Phase gate recorded (05-VALIDATION.md); phase not yet run through /gsd:verify-work or marked complete by the orchestrator
 Last activity: 2026-09-20
 
-Progress: [██████████] 99%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -127,6 +127,7 @@ Progress: [██████████] 99%
 | Phase 05-ui-web P18 | 55min | 3 tasks | 9 files |
 | Phase 05 P19 | 50 | 3 tasks | 13 files |
 | Phase 05 P20 | ~3h + debug session (see SUMMARY) | 3 tasks | 27 files |
+| Phase 05 P21 | docs-closure | 1 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -325,6 +326,10 @@ Recent decisions affecting current work:
 - [Phase 05-20]: Two open, unfixed hazards from the sse-lost-event-race debug session carried forward: apps/web/src/app/(shell)/servers/[id]/page.tsx has the same stale-snapshot-overwrites-a-newer-event hazard the servers list had (found by reading, not fixed; activity/page.tsx and DiscoverySection.tsx not audited), and the control-plane heartbeat never inspects its own socket-write result so a half-open peer is only evicted on TCP retransmission giveup
 - [Phase 05-20]: pnpm test:integration is fragile to a single Docker hiccup at start of a long run: one Testcontainers port-bind timeout left 2 stray containers, which then cascaded into 289 misleading assertNoStrayTestContainers failures across unrelated files in one observed run -- not a code regression, but worth knowing before trusting a single red full-integration run
 - [Phase 05-20]: Process lesson: no executor or wave gate ran the full pnpm test:integration suite during phase 05 until this plan's final verification pass, which is how two phase-04 tests (broken by 05-04 adding server.discovery_progress to the shared stream, fixed out-of-band in f9d1341) stayed red for roughly twenty plans undetected -- future phases should run the full integration suite at wave gates, not only the plan-scoped subset
+- [Phase 05-21]: ORCHESTRATOR FINDING: the @canary spec's ~50% hang rate was misdiagnosed by the previous executor as host memory pressure; real cause was response.text() awaited on Playwright's response event never settling for a navigation-abandoned request -- fixed in c41701a (read bodies on requestfinished), verified 12/12. Second time this phase a real defect was written off as 'the machine' (first: the SSE subscription race, 05-20). Process lesson: 'flaky under load' is a hypothesis, not a finding; a bimodal pass/exact-timeout duration points at a hang.
+- [Phase 05-21]: Checkpoint resolution (user, 2026-09-20): light-mode status-pill contrast (fails WCAG AA in light mode for all four statuses, fails narrowly in dark for error/idle), the missing floating-elevation shadow, and RowMenu's missing aria-expanded are NOT accepted as-is -- routed to a follow-up gap-closure plan ('Arreglar en gap-closure'), not a phase hold.
+- [Phase 05-21]: Checkpoint verdict, verbatim (user, 2026-09-20): 'No me gusta la UI pero la vamos a ir mejorando con el tiempo. Por el momento le doy approve.' Approved to close the phase -- explicitly NOT a statement that the visual design is satisfactory. Never paraphrase as 'UI approved' or 'design signed off.'
+- [Phase 05-21]: QA-05 stays Pending: its literal text requires a CI job AND a nightly job to actually run; this repo has no git remote so neither workflow has ever executed on GitHub Actions. Same reasoning/missing-evidence shape as QA-04 (05-20).
 
 ### Pending Todos
 
@@ -362,6 +367,12 @@ None yet.
 - 05-13-PLAN.md declares requirements: [SERV-04, UI-02] in its frontmatter; only SERV-04 is marked Complete here (the servers list screen, proven by 6 passing @servers E2E behaviours). UI-02 stays Pending -- this plan builds the third of the seven screens UI-02 requires (setup, login, servers list now done; sheet, server detail, activity log, settings remain -- Plans 05-14 through 05-21). Matches the same plan-frontmatter-artifact pattern already flagged in STATE.md for every prior UI-01/UI-02 plan this phase.
 - 05-14-PLAN.md declares requirements: [DETL-01, DETL-02, UI-02] in its frontmatter; only DETL-01/DETL-02 are marked Complete here. UI-02 stays Pending -- this plan builds the fourth of the seven screens UI-02 requires (setup, login, servers list, server detail now done; add/edit sheet, activity log, settings remain -- Plans 05-16/05-17/05-21). Matches the same plan-frontmatter-artifact pattern already flagged in STATE.md for every prior UI-01/UI-02 plan this phase.
 - QA-04 (05-20) needs a first real green run of .github/workflows/ci.yml's e2e job and .github/workflows/nightly.yml's e2e-repeat/stress-connections/canary jobs on actual GitHub Actions -- both files are syntax-checked and their job bodies validated locally only, since this repository has no remote yet and no scheduled/workflow_dispatch run has ever executed
+- [05-21, Open at phase close, routed to gap-closure] Light-mode status-pill contrast fails WCAG AA for all four status colors (1.96-2.95:1 vs 4.5:1); dark mode fails narrowly for error/idle (4.21/4.22:1). Not accepted as-is, not fixed -- a locked noodara-ux-apple token decision, user routed it to a follow-up gap-closure plan (2026-09-20, verbatim: 'Arreglar en gap-closure').
+- [05-21, Open at phase close, routed to gap-closure] No floating-elevation shadow (0 8px 30px rgba(...)) implemented anywhere on Sheet/Dialog/RowMenu despite being a documented elevation level in the noodara-ux-apple skill; found by docs/ui-review-05.md, routed to gap-closure alongside the contrast gap.
+- [05-21, Open at phase close, routed to gap-closure] RowMenu's trigger has aria-haspopup=menu but never aria-expanded -- the one missing WAI-ARIA Menu Button attribute in the component inventory; found by docs/ui-review-05.md, routed to gap-closure.
+- [05-21, Open at phase close] Live updates (SSE list insertion, discovery progress) were never seen by a human -- the one real walkthrough went through a Cloudflare Quick Tunnel that buffers SSE; covered by E2E only (@sse-live, @ssh-live, critical-path.spec.ts). docs/ui-review-05.md's Needs-human-review items 1-6 also remain open (real visual quality, shadow gap's visual impact, contrast's real-world legibility, sub-1280px on a real device, prefers-reduced-motion's felt effect, RowMenu's real screen-reader announcement).
+- [05-21, Open at phase close] QA-04 and QA-05 both stay Pending: both require a real green run on GitHub Actions (ci.yml's e2e/security jobs, nightly.yml's jobs including @canary), and this repository has no git remote, so neither has ever executed there. The 20x nightly E2E repeat (20/20) was run before @canary existed as the 73rd spec and was never re-run with it included.
+- [05-21, Open at phase close, carried from prior plans] trust-fingerprint-toctou.md (priority high, .planning/todos/pending/): POST /api/servers/:id/trust-fingerprint takes no body and promotes whatever pendingFingerprint the row holds at request time, with no binding to the fingerprint the admin actually saw -- needs a backend change. setup-token-url-hardening.md: the one-time setup token lingers in the URL/browser history; no Referrer-Policy set. UF-02 (04-SECURITY.md): worker.ts's main() has no top-level try/catch, a boot failure can print DATABASE_URL/REDIS_URL to stderr. servers/[id]/page.tsx has the same stale-snapshot-overwrite hazard the servers list had before its 05-20 fix (found by reading, not fixed); activity/page.tsx and DiscoverySection.tsx not audited for it.
 
 ## Deferred Items
 
@@ -373,6 +384,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-20T02:47:34.100Z
-Stopped at: Completed 05-20-PLAN.md
+Last session: 2026-09-20T07:14:00.253Z
+Stopped at: Completed 05-21-PLAN.md — phase 05 (ui-web) all 25 plans executed, awaiting phase verification
 Resume file: None
