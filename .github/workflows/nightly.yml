@@ -12,6 +12,13 @@ name: Nightly
 # locally and recording the result (command, iteration/failure counts, wall-clock duration) in
 # .planning/phases/05-ui-web/05-20-SUMMARY.md — it has never executed as a real scheduled (or
 # `workflow_dispatch`) GitHub Actions run, and that remains true until the repository has a remote.
+#
+# 05-36 (gap closure, WR-C-12/13): every job now declares its own `permissions:` block (the
+# workflow-level block this file used to carry has been replaced by identical per-job blocks, so
+# every `jobs.*` entry is self-describing on its own) and every third-party `uses:` is pinned to
+# a commit SHA with the tag kept as a trailing comment. The `canary` job below was missing the
+# same `playwright install` step ci.yml's `security` job was missing — `pnpm security:scan-leaks`
+# ends with a Playwright spec here too — so it gets the identical fix.
 on:
   schedule:
     # 03:00 UTC daily — outside any developer's normal working hours on this project.
@@ -21,9 +28,6 @@ on:
 concurrency:
   group: nightly-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
-permissions:
-  contents: read
 
 env:
   NODE_VERSION: '22'
@@ -41,10 +45,12 @@ jobs:
     name: e2e-repeat
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -70,10 +76,12 @@ jobs:
     name: stress-connections
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -102,14 +110,21 @@ jobs:
     name: canary
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # 05-36: `pnpm security:scan-leaks` ends with `playwright test --grep @canary`, which needs
+      # a browser binary — this job had the exact same missing-install defect ci.yml's `security`
+      # job did (05-36-PLAN.md's own text names only the ci.yml instance explicitly, but this
+      # job runs the identical command and would fail identically on its first real run).
+      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm security:scan-leaks
       - name: Fail if any noodara.test container survived
         if: always()
