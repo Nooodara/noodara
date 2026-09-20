@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 05-31-PLAN.md (trust-fingerprint dialog snapshot-on-open, gap 6 UI half closed)"
-last_updated: "2026-09-20T19:47:41.604Z"
-last_activity: 2026-09-20 -- 05-31 (trust-fingerprint dialog snapshot-on-open gap-closure) executed
+stopped_at: "Completed 05-35-PLAN.md (root route WR-B-15, hydration-safe ThemeToggle WR-C-01, revoked-session redirect WR-B-10, gap 8 UI closed)"
+last_updated: "2026-09-20T20:08:09.916Z"
+last_activity: 2026-09-20 -- 05-35 (root route / theme hydration / session-revocation gap-closure) executed
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 85
-  completed_plans: 82
-  percent: 96
+  completed_plans: 83
+  percent: 98
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING gap closure (05-26…05-37, 4 waves)
-Plan: 34 of 37 plans have a SUMMARY (05-31 just executed -- trust-fingerprint dialog now snapshots the fingerprint it displays on open, sends exactly that value, recognises FINGERPRINT_MISMATCH/SERVER_NOT_TRUSTABLE end to end, and a real-backend E2E proves the fix; the trust-fingerprint TOCTOU todo is fully closed and moved to completed/. 05-33 and 05-37 are not autonomous -- colour decision and human verification; 05-35 also pending)
+Plan: 35 of 37 plans have a SUMMARY (05-35 just executed -- a real `/` root route (WR-B-15), ThemeToggle's first render is now hydration-safe for a stored theme preference (WR-C-01), and a tab whose session is revoked server-side now redirects to /login within one SSE heartbeat, no manual reload (WR-B-10); also fixed a shell.spec.ts sidebar-locator regression the wave-1 full E2E gate found. 05-33 and 05-37 remain: 05-33 is not autonomous -- colour decision; 05-37 is the final human-verification/full-suite wave)
 Status: Ready to execute
-Last activity: 2026-09-20 -- 05-31 (trust-fingerprint dialog snapshot-on-open gap-closure) executed
+Last activity: 2026-09-20 -- 05-35 (root route / theme hydration / session-revocation gap-closure) executed
 
-Progress: [██████████] 96%
+Progress: [██████████] 98%
 
 ## Performance Metrics
 
@@ -137,6 +137,7 @@ Progress: [██████████] 96%
 | Phase 05-ui-web P36 | 35min | 3 tasks | 5 files |
 | Phase 05-ui-web P29 | ~30min | 3 tasks | 8 files |
 | Phase 05-ui-web P31 | 40min | 3 tasks | 7 files |
+| Phase 05-ui-web P35 | 55min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -359,6 +360,8 @@ Recent decisions affecting current work:
 - [Phase 05-29]: aggregateLiveStepState's unreceived-earlier-check exclusion is a second boolean parameter, not an eighth CheckState -- CHECK_STATES stays the documented seven words
 - [Phase 05-ui-web]: Derived apps/web's known-service-error-code allowlist from a single satisfies Record<Code, true> exhaustiveness marker instead of two hand-synced lists, closing a real drift bug (a 409 FINGERPRINT_MISMATCH/SERVER_NOT_TRUSTABLE silently degraded to INTERNAL_ERROR) at compile time
 - [Phase 05-ui-web]: TrustFingerprintDialog.tsx snapshots pendingFingerprint (and its seenAt) on the dialog's open transition and sends exactly that value; the client-side re-GET-and-compare is removed since the backend's atomic conditional UPDATE (plan 05-27) strictly supersedes it
+- [Phase 05]: require-session.ts's 5s timeout race removed (superseded by api-client.ts's 15s AbortSignal.timeout, plan 05-28) — a hang now resolves to NETWORK_ERROR (never redirects) instead of forcing a logout, since the function is now also invoked from a background SSE-drop signal, not only once on mount
+- [Phase 05]: post-mount session-revocation trigger reads useServerEvents()'s existing connected boolean inside (shell)/layout.tsx — no changes to use-server-events.ts or shell-context.tsx, no polling interval; the SSE heartbeat closing the stream server-side on a revoked session is one cause of the true->false transition and requireSession() itself fails open on anything but a real 401
 
 ### Pending Todos
 
@@ -415,6 +418,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-20T19:47:41.597Z
-Stopped at: Completed 05-29-PLAN.md (detail-page snapshot/event race + discovery invented-progress gap closure: SC2/DETL-01/DETL-02 frontend half, SC3/DISC-02)
+Last session: 2026-09-20T20:08:09.907Z
+Stopped at: Completed 05-35-PLAN.md (root route WR-B-15, hydration-safe ThemeToggle WR-C-01, revoked-session redirect WR-B-10, gap 8 UI closed)
 Resume file: None
