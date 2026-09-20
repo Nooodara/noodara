@@ -236,6 +236,61 @@ test('@sheet a real-shaped server-rejected VALIDATION_FAILED issue highlights it
   await expect(page.getByTestId('server-sheet-toast')).toHaveCount(0);
 });
 
+test('@sheet a real-shaped server-rejected /sshUser VALIDATION_FAILED issue highlights the SSH user field inline, and the request the sheet actually sent carries the typed sshUser', async ({
+  page,
+}) => {
+  // 260920-ly9 (STATE.md 05-37 finding, 05-GAP-CLOSURE-AUDIT.md gap 5's "latent second bug"):
+  // before this fix, ServerSheet.tsx's SSH user Field had no `error`/`invalid` wiring at all --
+  // unlike the /name case above (already fixed in 05-30), a /sshUser issue produced zero visible
+  // feedback of any kind. Also asserts the request-shape lesson from 05-30's own case in this
+  // file: since this stubs a mutation, the test must assert the actual request the page sent, not
+  // just the UI reaction to the stubbed response.
+  await login(page);
+  await openCreateSheet(page);
+
+  const name = `sshuser-rejected-${String(Date.now())}`;
+  const typedSshUser = 'deployer';
+  await page.getByLabel('Name').fill(name);
+  await page.getByLabel('Host').fill(`${name}.example.test`);
+  await page.getByLabel('SSH user').fill(typedSshUser);
+  await page.getByTestId('server-sheet-credential-type').getByRole('radio', { name: 'Password' }).click();
+  await fillValidPasswordCredential(page);
+
+  const createRequests: Request[] = [];
+  page.on('request', (request) => {
+    if (request.url().includes('/api/servers') && request.method() === 'POST') {
+      createRequests.push(request);
+    }
+  });
+
+  await page.route('**/api/servers', (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    return route.fulfill({
+      status: 400,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        error: 'VALIDATION_FAILED',
+        message: 'Request does not match the schema',
+        issues: [{ path: '/sshUser', message: 'sshUser must not contain whitespace.' }],
+      }),
+    });
+  });
+
+  await page.getByTestId('server-sheet-save-connect').click();
+
+  await expect(page.getByLabel('SSH user')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByText('sshUser must not contain whitespace.')).toBeVisible();
+  await expect(page.getByTestId('server-sheet')).toBeVisible();
+  await expect(page.getByTestId('server-sheet-toast')).toHaveCount(0);
+
+  expect(createRequests).toHaveLength(1);
+  const [createRequest] = createRequests;
+  expect(createRequest?.method()).toBe('POST');
+  expect(createRequest?.url()).toContain('/api/servers');
+  const body = createRequest?.postDataJSON() as { sshUser?: string };
+  expect(body.sshUser).toBe(typedSshUser);
+});
+
 test('@sheet submitting a port of 70000 renders an inline error under the SSH port field and never reaches the server', async ({
   page,
 }) => {

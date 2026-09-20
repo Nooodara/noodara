@@ -74,7 +74,7 @@ export function fieldForErrorCode(code: ServiceErrorCode): ErrorFormField | null
 // rendered -- a future backend field must never surface under a field this UI never built
 // (05-UI-SPEC.md SS10's "never echo raw input" discipline extended to validation issue paths, not
 // just error bodies).
-const KNOWN_FORM_FIELD_PATHS: ReadonlySet<string> = new Set([
+export const KNOWN_FORM_FIELD_PATHS: ReadonlySet<string> = new Set([
   'token',
   'email',
   'password',
