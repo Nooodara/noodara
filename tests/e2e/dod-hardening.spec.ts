@@ -49,31 +49,38 @@ test('@dod-hardening clicking a copy button with navigator.clipboard removed lea
   expect(pageErrors).toEqual([]);
 });
 
-// Deliberately fixme: apps/web/src/app/(shell)/servers/[id]/page.tsx's own `window.localStorage`
-// call site (shouldShowFirstTrustNotice) is NOT changed by 05-28-PLAN.md -- Task 3's own action
-// section names plan 05-29 as the owner of that call-site swap to safeLocalStorage. This case
-// documents the intended behaviour and handover; un-fixme-ing it is an explicit acceptance
-// criterion of 05-29, not something to delete here.
-test.fixme(
-  '@dod-hardening the server detail screen still renders its facts when localStorage access throws (handover: 05-29)',
-  async ({ page }) => {
-    const pageErrors: string[] = [];
-    page.on('pageerror', (err) => {
-      pageErrors.push(err.message);
-    });
+// 05-29-PLAN.md Task 3: closes the 05-28 handover above. servers/[id]/page.tsx's
+// shouldShowFirstTrustNotice/dismissFirstTrustNotice call sites now go through safeLocalStorage()
+// (T-5G-29-05), so a blocked/throwing localStorage accessor degrades to "show the notice" instead
+// of throwing synchronously during render.
+test('@dod-hardening the server detail screen still renders its facts when localStorage access throws', async ({
+  page,
+}) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (err) => {
+    pageErrors.push(err.message);
+  });
 
-    await page.addInitScript(() => {
-      Object.defineProperty(window, 'localStorage', {
-        get() {
-          throw new DOMException('The operation is insecure.', 'SecurityError');
-        },
-      });
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'localStorage', {
+      get() {
+        throw new DOMException('The operation is insecure.', 'SecurityError');
+      },
     });
+  });
 
-    await login(page);
-    // Left unimplemented until 05-29 wires safeLocalStorage into the detail page's call site --
-    // today this would throw synchronously during render (D-02's shouldShowFirstTrustNotice
-    // dereferencing window.localStorage directly), which is exactly the gap 05-29 closes.
-    expect(pageErrors).toEqual([]);
-  },
-);
+  await login(page);
+
+  const name = `storage-blocked-${String(Date.now())}`;
+  const created = await page.request.post('/api/servers', {
+    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+  });
+  expect(created.status()).toBe(201);
+  const { id } = (await created.json()) as { id: string };
+
+  await page.goto(`/servers/${id}`);
+
+  await expect(page.getByText('Not discovered yet.')).toBeVisible();
+  await expect(page.getByTestId('server-detail-primary-action')).toHaveText('Connect');
+  expect(pageErrors).toEqual([]);
+});

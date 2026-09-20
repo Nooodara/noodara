@@ -271,6 +271,147 @@ test('@discovery Re-run discovery issues POST /discover exactly once and never p
   expect(jobRequests).toHaveLength(0);
 });
 
+// 05-VERIFICATION.md gap 3 / SC3, 05-29-PLAN.md Task 3. Pinning a real multi-check discovery run's
+// exact intermediate state through only real sshd timing is impractical to guarantee
+// deterministically (this file's own header comment, already the rationale for every other
+// `@discovery` test's `page.route` stub) -- so these two use the same GET/discovery-read stubs as
+// the rest of the file, plus a subclassed `EventSource` (the same technique the `@ssh-live` test
+// below already uses to *observe* real frames) that additionally exposes a way to *dispatch*
+// byte-shaped `server.discovery_progress`/`server.updated` frames on the real instance the app's
+// own `useServerEvents` hook is listening on -- verified against `parseServerEventFrame`'s exact
+// parsing contract (server-events.ts): `{ type, serverId, check }` / `{ type, server }`, the
+// listener event name matching the payload's own `type` field. This is a stub, not the real
+// backend, and is named as such here rather than left implicit.
+async function installSyntheticServerEvents(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const NativeEventSource = window.EventSource;
+    const instances: EventSource[] = [];
+
+    class InstrumentedEventSource extends NativeEventSource {
+      constructor(url: string | URL, eventSourceInitDict?: EventSourceInit) {
+        super(url, eventSourceInitDict);
+        instances.push(this);
+      }
+    }
+
+    (window as unknown as { __dispatchServerEvent: (type: string, data: unknown) => void }).__dispatchServerEvent = (
+      type,
+      data,
+    ) => {
+      const payload = JSON.stringify(data);
+      for (const instance of instances) {
+        instance.dispatchEvent(new MessageEvent(type, { data: payload }));
+      }
+    };
+
+    window.EventSource = InstrumentedEventSource;
+  });
+}
+
+async function dispatchDiscoveryCheck(page: Page, serverId: string, check: DiscoveryCheck): Promise<void> {
+  await page.evaluate(
+    ({ serverId, check }) => {
+      (window as unknown as { __dispatchServerEvent: (type: string, data: unknown) => void }).__dispatchServerEvent(
+        'server.discovery_progress',
+        { type: 'server.discovery_progress', serverId, check },
+      );
+    },
+    { serverId, check },
+  );
+}
+
+async function dispatchServerUpdated(page: Page, server: ServerViewFixture): Promise<void> {
+  await page.evaluate((server) => {
+    (window as unknown as { __dispatchServerEvent: (type: string, data: unknown) => void }).__dispatchServerEvent(
+      'server.updated',
+      { type: 'server.updated', server },
+    );
+  }, server);
+}
+
+test('@discovery a page that joins mid-run never shows an unreceived earlier check as resolved, and excludes it from its step', async ({
+  page,
+}) => {
+  const fixture = buildServerViewFixture({
+    id: '88888888-8888-4888-8888-888888888887',
+    name: 'mid-run-late-only-srv',
+    status: 'CONNECTING',
+  });
+  await stubServer(page, fixture);
+  await stubDiscoveryRead(page, fixture.id, { collectedAt: null, outcome: null, checks: [], warnings: [] });
+  await installSyntheticServerEvents(page);
+
+  await login(page);
+  await page.goto(`/servers/${fixture.id}`);
+  // The synthetic events below are dispatched on the app's own real EventSource instance -- wait
+  // for the shared stream to actually be open first, or an event fired before it exists is simply
+  // never received (matches the shell's own `connected` semantics, StreamStatus.tsx).
+  await expect(page.getByTestId('shell-stream-status')).toHaveCount(0);
+
+  // Only the two Docker-group checks (late in DISCOVERY_CHECK_IDS order) ever arrive at this
+  // page -- simulating a page that mounted after hostname..docker_version had already resolved
+  // for real and were broadcast to nobody this page's own EventSource was open in time to hear.
+  await dispatchDiscoveryCheck(page, fixture.id, { id: 'docker_version', status: 'pass', detail: 'Docker 27.3.1', durationMs: 12 });
+  await dispatchDiscoveryCheck(page, fixture.id, {
+    id: 'docker_compose_version',
+    status: 'pass',
+    detail: 'v2.29.7',
+    durationMs: 9,
+  });
+
+  // 'os' and 'resources' groups never received any of their checks -- must stay pending, never
+  // running/pass on the strength of the later Docker checks alone.
+  await expect(page.getByTestId('discovery-step-os')).toHaveAttribute('data-severity', 'pending');
+  await expect(page.getByTestId('discovery-step-resources')).toHaveAttribute('data-severity', 'pending');
+  // 'docker' genuinely received both of its own checks -- correctly resolves.
+  await expect(page.getByTestId('discovery-step-docker')).toHaveAttribute('data-severity', 'pass');
+  // 'access' (sudo/docker_group) is next in DISCOVERY_CHECK_IDS order -- sudo (immediately after
+  // the last received id) is the one and only id running; docker_group stays pending.
+  await expect(page.getByTestId('discovery-step-access')).toHaveAttribute('data-severity', 'running');
+
+  await page.getByTestId('discovery-step-os').getByRole('button').click();
+  await expect(page.getByTestId('discovery-check-hostname')).toContainText('Pending');
+  await expect(page.getByTestId('discovery-check-hostname')).not.toContainText('Pass');
+  await expect(page.getByTestId('discovery-check-hostname')).not.toContainText('Running');
+
+  await page.getByTestId('discovery-step-access').getByRole('button').click();
+  await expect(page.getByTestId('discovery-check-sudo')).toContainText('Running');
+  await expect(page.getByTestId('discovery-check-docker_group')).toContainText('Pending');
+});
+
+test('@discovery a finished run leaves no checks behind for the next run to inherit', async ({ page }) => {
+  const fixture = buildServerViewFixture({
+    id: '88888888-8888-4888-8888-888888888888',
+    name: 'run-to-run-clear-srv',
+    status: 'CONNECTING',
+  });
+  await stubServer(page, fixture);
+  await stubDiscoveryRead(page, fixture.id, { collectedAt: null, outcome: null, checks: [], warnings: [] });
+  await installSyntheticServerEvents(page);
+
+  await login(page);
+  await page.goto(`/servers/${fixture.id}`);
+  await expect(page.getByTestId('shell-stream-status')).toHaveCount(0);
+
+  for (const id of DISCOVERY_CHECK_IDS) {
+    await dispatchDiscoveryCheck(page, fixture.id, { id, status: 'pass', detail: `${id} ok`, durationMs: 5 });
+  }
+  await expect(page.getByTestId('discovery-step-access')).toHaveAttribute('data-severity', 'pass');
+
+  // The run settles (CONNECTING -> CONNECTED) and a brand new run starts immediately
+  // (CONNECTED -> CONNECTING again) -- both transitions arrive as real-shaped `server.updated`
+  // events, exactly what a real "Re-run discovery" click produces.
+  await dispatchServerUpdated(page, { ...fixture, status: 'CONNECTED', updatedAt: '2026-01-01T00:00:01.000Z' });
+  await dispatchServerUpdated(page, { ...fixture, status: 'CONNECTING', updatedAt: '2026-01-01T00:00:02.000Z' });
+
+  // The new run has only received one check so far -- the previous run's 11 resolved checks must
+  // be gone, not leaking into this run's live progress.
+  await dispatchDiscoveryCheck(page, fixture.id, { id: 'hostname', status: 'pass', detail: 'hostname ok', durationMs: 5 });
+
+  await expect(page.getByTestId('discovery-step-access')).toHaveAttribute('data-severity', 'pending');
+  await expect(page.getByTestId('discovery-step-os')).toHaveAttribute('data-severity', 'running');
+});
+
 test('@ssh-live a real connect-and-discover run against a real sshd fixture delivers live, time-separated per-check SSE progress into the already-mounted browser page, with no reload', async ({
   page,
 }) => {

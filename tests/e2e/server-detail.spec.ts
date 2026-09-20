@@ -261,6 +261,113 @@ test('@detail a stubbed 404 shows the not-found copy with a working link back to
   await expect(page).toHaveURL(/\/servers$/);
 });
 
+// 05-VERIFICATION.md gap 2 / SC2 (DETL-01/DETL-02), 05-29-PLAN.md Task 3. Both tests below use the
+// exact real-backend timing technique tests/e2e/servers-list.spec.ts's own "midflight" test
+// established (.planning/debug/sse-lost-event-race.md): `route.fetch()` reads the real GET
+// response right now, then holds it behind a promise gate before `route.fulfill`-ing it back to
+// the page -- never a synthetic/stubbed body. Only the *timing* of an already-real response is
+// controlled; the mutation that races it (`page.request.post`/`.delete`, bypassing the page's own
+// `page.route` interception entirely, same as that precedent) is a real call against the real
+// control plane, producing a real `server.updated`/`server.deleted` SSE frame.
+async function gateNextGet(page: Page, id: string): Promise<() => void> {
+  let capturedCount = 0;
+  let releaseGate: () => void = () => undefined;
+  const gateReleased = new Promise<void>((resolve) => {
+    releaseGate = resolve;
+  });
+
+  await page.route(`**/api/servers/${id}`, async (route) => {
+    if (route.request().method() !== 'GET') {
+      await route.continue();
+      return;
+    }
+    capturedCount += 1;
+    if (capturedCount > 1) {
+      // Only the first (mount) GET for this id is gated -- any later one passes straight through.
+      await route.continue();
+      return;
+    }
+    const response = await route.fetch(); // the real snapshot, read right now (still pre-race data)
+    await gateReleased;
+    await route.fulfill({ response });
+  });
+
+  return releaseGate;
+}
+
+test('@detail a GET resolved after a live server.updated event does not roll the screen back to the older state', async ({
+  page,
+}) => {
+  await login(page);
+
+  const name = `late-get-after-event-${String(Date.now())}`;
+  const created = await page.request.post('/api/servers', {
+    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+  });
+  expect(created.status()).toBe(201);
+  const { id } = (await created.json()) as { id: string };
+
+  const releaseGate = await gateNextGet(page, id);
+
+  await page.goto(`/servers/${id}`);
+  // The mount GET is held mid-flight (still `PENDING`, the data it read before the race below).
+  // Wait for the shared SSE stream to be genuinely connected before racing it -- an event
+  // published before the stream opens would never reach this page at all.
+  await expect(page.getByTestId('shell-stream-status')).toHaveCount(0);
+
+  const connectResult = await page.request.post(`/api/servers/${id}/connect`);
+  expect(connectResult.status()).toBe(202);
+
+  // The live `server.updated` event (newer `updatedAt`, status CONNECTING) arrives and applies.
+  await expect(page.getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTING');
+
+  // Now release the held, older (`PENDING`) GET response -- it resolves strictly after the event.
+  const staleGetSettled = page.waitForResponse(
+    (response) => response.url().endsWith(`/api/servers/${id}`) && response.request().method() === 'GET',
+  );
+  releaseGate();
+  await staleGetSettled;
+
+  // The stale GET must never roll the screen back to PENDING -- the live event stays the truth.
+  await expect(page.getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTING');
+  await expect(page.getByTestId('server-detail-not-found')).toHaveCount(0);
+});
+
+test('@detail a server.deleted event followed by a late-resolving GET leaves the not-found state, not a resurrected server', async ({
+  page,
+}) => {
+  await login(page);
+
+  const name = `late-get-after-delete-${String(Date.now())}`;
+  const created = await page.request.post('/api/servers', {
+    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+  });
+  expect(created.status()).toBe(201);
+  const { id } = (await created.json()) as { id: string };
+
+  const releaseGate = await gateNextGet(page, id);
+
+  await page.goto(`/servers/${id}`);
+  await expect(page.getByTestId('shell-stream-status')).toHaveCount(0);
+
+  const deleteResult = await page.request.delete(`/api/servers/${id}`, { data: { confirmName: name } });
+  expect(deleteResult.status()).toBe(200);
+
+  await expect(page.getByText('This server no longer exists.')).toBeVisible();
+
+  // Release the held GET, captured before the delete -- it still describes the (now-deleted)
+  // PENDING server and resolves strictly after the deletion.
+  const staleGetSettled = page.waitForResponse(
+    (response) => response.url().endsWith(`/api/servers/${id}`) && response.request().method() === 'GET',
+  );
+  releaseGate();
+  await staleGetSettled;
+
+  // The stale GET must never resurrect the server -- the deletion stays the truth for this mount.
+  await expect(page.getByText('This server no longer exists.')).toBeVisible();
+  await expect(page.getByTestId('server-detail-toolbar')).toHaveCount(0);
+});
+
 test('@detail a server with an UNSUPPORTED_OS warning shows the amber inline note and stays CONNECTED, with no error banner', async ({
   page,
 }) => {
