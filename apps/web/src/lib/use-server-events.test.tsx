@@ -6,9 +6,10 @@
 // (HTML spec): readyState goes CLOSED, exactly one `error` fires and nothing is ever retried.
 // Observed in real Chromium (debug session sse-lost-event-race, round 2): one request, one 503,
 // and the page still showed "Reconnecting…" 40s after capacity had returned.
-import { act, renderHook } from '@testing-library/react';
+import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useServerEvents } from './use-server-events';
+import { renderUi } from '@noodara/ui/testing';
+import { useServerEvents, type UseServerEventsResult } from './use-server-events';
 
 class FakeEventSource extends EventTarget {
   static readonly CONNECTING = 0;
@@ -48,6 +49,19 @@ class FakeEventSource extends EventTarget {
   }
 }
 
+/** Mounts the hook in a throwaway component (component tests in this app go through
+ *  `@noodara/ui/testing`, never `@testing-library/react` directly). `result.current` always holds
+ *  the latest render's value. */
+function renderHook(): { readonly result: { current: UseServerEventsResult }; readonly unmount: () => void } {
+  const result = {} as { current: UseServerEventsResult };
+  function Probe(): null {
+    result.current = useServerEvents();
+    return null;
+  }
+  const { unmount } = renderUi(<Probe />);
+  return { result, unmount };
+}
+
 function latest(): FakeEventSource {
   const source = FakeEventSource.instances.at(-1);
   if (source === undefined) throw new Error('no EventSource was constructed');
@@ -80,7 +94,7 @@ describe('useServerEvents reconnection', () => {
   });
 
   it('opens a fresh stream 5 seconds after the browser gave up on an HTTP rejection', () => {
-    renderHook(() => useServerEvents());
+    renderHook();
 
     act(() => {
       latest().rejectOverHttp();
@@ -94,7 +108,7 @@ describe('useServerEvents reconnection', () => {
   });
 
   it('reports connected once the fresh stream opens after an HTTP rejection', () => {
-    const { result } = renderHook(() => useServerEvents());
+    const { result } = renderHook();
 
     const fresh = rejectThenTakeFreshStream();
     act(() => {
@@ -106,7 +120,7 @@ describe('useServerEvents reconnection', () => {
 
   it('runs every registered resync when the fresh stream opens', () => {
     const resync = vi.fn();
-    const { result } = renderHook(() => useServerEvents());
+    const { result } = renderHook();
     result.current.registerResync(resync);
 
     const fresh = rejectThenTakeFreshStream();
@@ -118,7 +132,7 @@ describe('useServerEvents reconnection', () => {
   });
 
   it('doubles the wait after each consecutive HTTP rejection, capped at 60 seconds', () => {
-    renderHook(() => useServerEvents());
+    renderHook();
     const waits: number[] = [];
 
     for (let attempt = 0; attempt < 6; attempt += 1) {
@@ -140,7 +154,7 @@ describe('useServerEvents reconnection', () => {
   });
 
   it('starts the wait over at 5 seconds once a stream has opened', () => {
-    renderHook(() => useServerEvents());
+    renderHook();
     act(() => {
       latest().rejectOverHttp();
       vi.advanceTimersByTime(5000);
@@ -163,7 +177,7 @@ describe('useServerEvents reconnection', () => {
   });
 
   it('reconnects itself when an open stream drops and the browser retry is rejected over HTTP', () => {
-    renderHook(() => useServerEvents());
+    renderHook();
     act(() => {
       latest().open();
     });
@@ -177,7 +191,7 @@ describe('useServerEvents reconnection', () => {
   });
 
   it('leaves a network-level drop of an open stream to the browser own retry', () => {
-    renderHook(() => useServerEvents());
+    renderHook();
     act(() => {
       latest().open();
     });
@@ -192,7 +206,7 @@ describe('useServerEvents reconnection', () => {
   });
 
   it('never reconnects after the caller closed the stream', () => {
-    const { result } = renderHook(() => useServerEvents());
+    const { result } = renderHook();
 
     act(() => {
       result.current.close();
@@ -204,7 +218,7 @@ describe('useServerEvents reconnection', () => {
   });
 
   it('never reconnects after unmount', () => {
-    const { unmount } = renderHook(() => useServerEvents());
+    const { unmount } = renderHook();
     act(() => {
       latest().rejectOverHttp();
     });
