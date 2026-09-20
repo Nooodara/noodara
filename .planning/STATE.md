@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Phase 05 (ui-web) gap closure executing — 05-26 complete (CONNECTING wedge recovery, backend half of gap 2 closed), 11 plans remaining (05-27…05-37) across the remaining waves
-last_updated: "2026-09-20T15:50:20.255Z"
-last_activity: 2026-09-20 -- 05-26 (CONNECTING wedge recovery) executed
+stopped_at: Phase 05 (ui-web) gap closure executing — 05-27 complete (trust-fingerprint bound to submitted value, WR-A-02 pendingFingerprint clear widened to all statuses; UI half deferred to 05-31), 10 plans remaining (05-28...05-37) across the remaining waves
+last_updated: "2026-09-20T16:19:17.024Z"
+last_activity: 2026-09-20 -- 05-27 (trust-fingerprint TOCTOU backend fix) executed
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 85
-  completed_plans: 74
-  percent: 87
+  completed_plans: 75
+  percent: 67
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING gap closure (05-26…05-37, 4 waves)
-Plan: 26 of 37 complete (12 gap-closure plans in progress; 05-33 and 05-37 are not autonomous — colour decision and human verification)
-Status: Executing gap closure. Phase NOT complete: 8 verification gaps (05-VERIFICATION.md) — 05-26 closes gap 2's backend half (CONNECTING wedge recovery); code review 0 critical / 37 warning (05-REVIEW.md). QA-04/QA-05 stay Pending until a real CI run is observed.
-Last activity: 2026-09-20 -- 05-26 (CONNECTING wedge recovery) executed
+Plan: 27 of 37 complete (12 gap-closure plans in progress; 05-33 and 05-37 are not autonomous — colour decision and human verification)
+Status: Executing gap closure. Phase NOT complete: 8 verification gaps (05-VERIFICATION.md) — 05-26 closed gap 2's backend half (CONNECTING wedge recovery); 05-27 closes gap 6's backend half (trust-fingerprint TOCTOU, WR-A-02) — UI half deferred to 05-31, trust-fingerprint action is non-functional in the UI until then. QA-04/QA-05 stay Pending until a real CI run is observed.
+Last activity: 2026-09-20 -- 05-27 (trust-fingerprint TOCTOU backend fix) executed
 
-Progress: [█████████░] 87%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
@@ -129,6 +129,7 @@ Progress: [█████████░] 87%
 | Phase 05 P20 | ~3h + debug session (see SUMMARY) | 3 tasks | 27 files |
 | Phase 05 P21 | docs-closure | 1 tasks | 9 files |
 | Phase 05 P26 | 90min | 3 tasks | 5 files |
+| Phase 05 P27 | 50min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -332,6 +333,9 @@ Recent decisions affecting current work:
 - [Phase 05-21]: Checkpoint verdict, verbatim (user, 2026-09-20): 'No me gusta la UI pero la vamos a ir mejorando con el tiempo. Por el momento le doy approve.' Approved to close the phase -- explicitly NOT a statement that the visual design is satisfactory. Never paraphrase as 'UI approved' or 'design signed off.'
 - [Phase 05-21]: QA-05 stays Pending: its literal text requires a CI job AND a nightly job to actually run; this repo has no git remote so neither workflow has ever executed on GitHub Actions. Same reasoning/missing-evidence shape as QA-04 (05-20).
 - [Phase 05-26]: connect-and-discover.ts's post-TX1 region wraps in try/catch calling failInFlightConnection(reason: connect_service_threw) before rethrowing — closes the CONNECTING wedge (05-VERIFICATION.md gap 2, WR-A-01); recovery failure inside the catch is swallowed defensively so the original error is never masked, with the worker's 'failed' listener as a second line of defense (reason: worker_job_failed)
+- [Phase 05-27]: canTrustFingerprint(status) calls transition() itself inside a try/catch rather than re-deriving a second status table, so it can never drift from the real transition rules
+- [Phase 05-27]: identityChanged for the pendingFingerprint clear stays its own local host/sshPort/sshUser comparison rather than reusing classifyServerEdit's 'identity' category, which deliberately excludes sshUser and answers a different question (D-14's CONNECTED transition)
+- [Phase 05-27]: Existing trustFingerprint() call sites in service-level integration tests and canary-full-flow.test.ts updated to pass the now-required fingerprint field (Rule 3 blocking fix, not in this plan's files_modified list)
 
 ### Pending Todos
 
@@ -375,6 +379,8 @@ None yet.
 - [05-21, Open at phase close] Live updates (SSE list insertion, discovery progress) were never seen by a human -- the one real walkthrough went through a Cloudflare Quick Tunnel that buffers SSE; covered by E2E only (@sse-live, @ssh-live, critical-path.spec.ts). docs/ui-review-05.md's Needs-human-review items 1-6 also remain open (real visual quality, shadow gap's visual impact, contrast's real-world legibility, sub-1280px on a real device, prefers-reduced-motion's felt effect, RowMenu's real screen-reader announcement).
 - [05-21, Open at phase close] QA-04 and QA-05 both stay Pending: both require a real green run on GitHub Actions (ci.yml's e2e/security jobs, nightly.yml's jobs including @canary), and this repository has no git remote, so neither has ever executed there. The 20x nightly E2E repeat (20/20) was run before @canary existed as the 73rd spec and was never re-run with it included.
 - [05-21, Open at phase close, carried from prior plans] trust-fingerprint-toctou.md (priority high, .planning/todos/pending/): POST /api/servers/:id/trust-fingerprint takes no body and promotes whatever pendingFingerprint the row holds at request time, with no binding to the fingerprint the admin actually saw -- needs a backend change. setup-token-url-hardening.md: the one-time setup token lingers in the URL/browser history; no Referrer-Policy set. UF-02 (04-SECURITY.md): worker.ts's main() has no top-level try/catch, a boot failure can print DATABASE_URL/REDIS_URL to stderr. servers/[id]/page.tsx has the same stale-snapshot-overwrite hazard the servers list had before its 05-20 fix (found by reading, not fixed); activity/page.tsx and DiscoverySection.tsx not audited for it.
+- 05-27: POST /api/servers/:id/trust-fingerprint now requires { fingerprint } in its body (backend-only fix for gap 6/WR-A-02); apps/web/src/components/TrustFingerprintDialog.tsx still POSTs with no body at all and will get 400 VALIDATION_FAILED on every trust attempt until Plan 05-31 sends { fingerprint } and handles FINGERPRINT_MISMATCH. Trust-fingerprint UI is non-functional end-to-end until then.
+- 05-27-PLAN.md declares requirements: [DETL-02] in its frontmatter, but the plan's actual work is gap 6/WR-A-02 (trust-fingerprint TOCTOU) -- DETL-02 was already Complete before this plan (Plan 05-14). Matches the same plan-frontmatter-artifact pattern flagged repeatedly in this phase (SERV-06 04-01, UI-01/UI-02 05-06 onward, etc.); no action needed since DETL-02 is genuinely already satisfied, just noting the frontmatter/scope mismatch.
 
 ## Deferred Items
 
@@ -386,6 +392,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-20T15:50:20.246Z
-Stopped at: Phase 05 (ui-web) gap closure executing — 05-26 complete (CONNECTING wedge recovery, backend half of gap 2 closed), 11 plans remaining (05-27…05-37) across the remaining waves
+Last session: 2026-09-20T16:18:36.079Z
+Stopped at: Phase 05 (ui-web) gap closure executing — 05-27 complete (trust-fingerprint bound to submitted value, WR-A-02 pendingFingerprint clear widened to all statuses; UI half deferred to 05-31), 10 plans remaining (05-28...05-37) across the remaining waves
 Resume file: None
