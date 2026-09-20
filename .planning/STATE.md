@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 05-35-PLAN.md (root route WR-B-15, hydration-safe ThemeToggle WR-C-01, revoked-session redirect WR-B-10, gap 8 UI closed)"
-last_updated: "2026-09-20T20:08:09.916Z"
-last_activity: 2026-09-20 -- 05-35 (root route / theme hydration / session-revocation gap-closure) executed
+stopped_at: "Completed 05-33-PLAN.md (contrast gap closure continuation: user's D1/D2/D3 hybrid decision applied, accent-fill/status-text tokens, ink darkening; 05-37 remains, the final human-verification/full-suite wave)"
+last_updated: "2026-09-20T20:50:46.739Z"
+last_activity: 2026-09-20
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 85
-  completed_plans: 83
-  percent: 98
+  completed_plans: 84
+  percent: 67
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING gap closure (05-26…05-37, 4 waves)
-Plan: 35 of 37 plans have a SUMMARY (05-35 just executed -- a real `/` root route (WR-B-15), ThemeToggle's first render is now hydration-safe for a stored theme preference (WR-C-01), and a tab whose session is revoked server-side now redirects to /login within one SSE heartbeat, no manual reload (WR-B-10); also fixed a shell.spec.ts sidebar-locator regression the wave-1 full E2E gate found. 05-33 and 05-37 remain: 05-33 is not autonomous -- colour decision; 05-37 is the final human-verification/full-suite wave)
+Plan: 36 of 37 plans have a SUMMARY (05-33 just resumed from its resolved decision checkpoint and executed -- the user's D1/D2/D3 hybrid contrast decision applied: --accent-fill split from --accent, --status-{ok,warn,error,idle}-text pill-word tokens, darkened --ink-secondary/--ink-tertiary, WR-C-08's Banner/Field/RowMenu call sites fixed, all locked behind an exhaustive tokens.css-driven regression gate. Only 05-37 remains: the final human-verification/full-suite wave)
 Status: Ready to execute
-Last activity: 2026-09-20 -- 05-35 (root route / theme hydration / session-revocation gap-closure) executed
+Last activity: 2026-09-20 -- 05-33 (contrast gap closure continuation) executed
 
-Progress: [██████████] 98%
+Progress: [██████████] 99%
 
 ## Performance Metrics
 
@@ -138,6 +138,7 @@ Progress: [██████████] 98%
 | Phase 05-ui-web P29 | ~30min | 3 tasks | 8 files |
 | Phase 05-ui-web P31 | 40min | 3 tasks | 7 files |
 | Phase 05-ui-web P35 | 55min | 3 tasks | 7 files |
+| Phase 05 P33 | 55min | 1 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -362,6 +363,9 @@ Recent decisions affecting current work:
 - [Phase 05-ui-web]: TrustFingerprintDialog.tsx snapshots pendingFingerprint (and its seenAt) on the dialog's open transition and sends exactly that value; the client-side re-GET-and-compare is removed since the backend's atomic conditional UPDATE (plan 05-27) strictly supersedes it
 - [Phase 05]: require-session.ts's 5s timeout race removed (superseded by api-client.ts's 15s AbortSignal.timeout, plan 05-28) — a hang now resolves to NETWORK_ERROR (never redirects) instead of forcing a logout, since the function is now also invoked from a background SSE-drop signal, not only once on mount
 - [Phase 05]: post-mount session-revocation trigger reads useServerEvents()'s existing connected boolean inside (shell)/layout.tsx — no changes to use-server-events.ts or shell-context.tsx, no polling interval; the SSE heartbeat closing the stream server-side on a revoked session is one cause of the true->false transition and requireSession() itself fails open on anything but a real 401
+- [Phase 05-33]: D1/D2/D3 (2026-09-20): status-pill text uses new --status-*-text tokens (base tokens stay vivid); --accent splits into --accent (foreground, unchanged) and --accent-fill (fills carrying on-accent text); --ink-secondary/--ink-tertiary darken, Banner.tsx errorCode moves to --ink-secondary
+- [Phase 05-33]: Executor nudge (2026-09-20): D1/D3 literal hex values failed once measured against their own real render context (Banner.tsx composited bg, StatusPill real canvas/surface-2 bgs) -- darkened/adjusted the minimal step, same latitude D3 granted for ink-tertiary
+- [Phase 05-33]: accent as link text on canvas/surface-3 light (4.31/4.12) stays a documented, unfixed AA gap: D2 locks accent's own value, deferred not silently dropped
 
 ### Pending Todos
 
@@ -418,6 +422,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-20T20:08:09.907Z
-Stopped at: Completed 05-35-PLAN.md (root route WR-B-15, hydration-safe ThemeToggle WR-C-01, revoked-session redirect WR-B-10, gap 8 UI closed)
+Last session: 2026-09-20T20:50:46.732Z
+Stopped at: Completed 05-33-PLAN.md (contrast gap closure continuation: user's D1/D2/D3 hybrid decision applied, accent-fill/status-text tokens, ink darkening; 05-37 remains, the final human-verification/full-suite wave)
 Resume file: None

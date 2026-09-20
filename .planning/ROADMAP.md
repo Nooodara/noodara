@@ -350,7 +350,7 @@ Plans:
 
 **Gap Wave 3** *(blocked on Gap Wave 2; NOT autonomous — decisión del usuario)*
 
-- [ ] 05-33-PLAN.md — Contraste AA: candidatos medidos, el usuario elige los colores, cambio de tokens y gate automático ≥4.5:1 (gap 4, UX FLAG 1, WR-C-08)
+- [x] 05-33-PLAN.md — Contraste AA: candidatos medidos, el usuario elige los colores, cambio de tokens y gate automático ≥4.5:1 (gap 4, UX FLAG 1, WR-C-08)
 
 **Gap Wave 4** *(blocked on Gap Wave 3; NOT autonomous — verificación humana)*
 
@@ -392,5 +392,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 35/37 | In Progress|  |
+| 5. UI web | 36/37 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |
