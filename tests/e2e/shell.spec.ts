@@ -264,3 +264,49 @@ test('@sse-slots abandoned event streams release their control-plane slot instea
     expect(await openThenAbandon()).toBe(200);
   }).toPass({ timeout: 5000 });
 });
+
+// Second half of the same debug session: a real browser never retries an EventSource whose request
+// was answered with a non-200 status (HTML spec -- the connection is failed for good, one `error`,
+// readyState CLOSED). The shared hook only began its own backoff after three `error` events, which
+// therefore never came: one `503 SSE_LIMIT_REACHED` at page load left the shell on "Reconnecting…"
+// with no live updates until a manual reload, long after capacity had returned.
+//
+// Holds every SSE slot, loads the shell into the 503, releases the slots, and asserts the page
+// recovers on its own.
+test('@sse-recover the shell reconnects on its own after its event stream was refused at the connection cap', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await login(page);
+  await page.goto('about:blank');
+  const cookie = (await context.cookies()).map((c) => `${c.name}=${c.value}`).join('; ');
+  const eventsUrl = `${baseURL ?? ''}/api/events`;
+
+  // Responses are kept referenced on purpose: an unreferenced fetch body is cancelled whenever
+  // this process garbage-collects, which would silently release a held slot mid-test.
+  const held: { readonly controller: AbortController; readonly response: Response }[] = [];
+  try {
+    const FAR_ABOVE_DEFAULT_CAP = 64;
+    let capReached = false;
+    for (let i = 0; i < FAR_ABOVE_DEFAULT_CAP && !capReached; i += 1) {
+      const controller = new AbortController();
+      const response = await fetch(eventsUrl, { headers: { cookie }, signal: controller.signal });
+      if (response.status === 200) {
+        held.push({ controller, response });
+      } else {
+        expect(response.status).toBe(503);
+        controller.abort();
+        capReached = true;
+      }
+    }
+    expect(capReached).toBe(true);
+
+    await page.goto('/servers');
+    await expect(page.getByTestId('shell-stream-status')).toBeVisible();
+  } finally {
+    for (const { controller } of held) controller.abort();
+  }
+
+  await expect(page.getByTestId('shell-stream-status')).toBeHidden();
+});
