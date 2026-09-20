@@ -135,6 +135,7 @@ export interface ServerFormErrors {
   readonly name?: string;
   readonly host?: string;
   readonly sshPort?: string;
+  readonly sshUser?: string;
   readonly credential?: string;
 }
 

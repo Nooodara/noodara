@@ -300,13 +300,14 @@ export function ServerSheet({ open, onOpenChange, mode, server, onSaved }: Serve
             />
           )}
         </Field>
-        <Field label="SSH user">
+        <Field label="SSH user" {...(fieldErrors.sshUser === undefined ? {} : { error: fieldErrors.sshUser })}>
           {(controlProps) => (
             <Input
               {...controlProps}
               mono
               placeholder="root"
               disabled={submitting}
+              invalid={fieldErrors.sshUser !== undefined}
               value={formState.sshUser}
               onChange={(event) => {
                 setFormState((prev) => ({ ...prev, sshUser: event.target.value }));
