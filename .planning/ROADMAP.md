@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Adaptador SSH aislado y probado con Testcontainers** - Conexión SSH con TOFU, timeouts, allowlist de comandos y discovery, validado contra un `sshd` real. (completed 2026-09-15)
 - [x] **Phase 3: Servicios de aplicación, activity log y redacción** - Registrar/editar/eliminar servidores, snapshots de discovery y un activity log sin fugas de secrets. (completed 2026-09-16)
 - [x] **Phase 4: HTTP routes, worker BullMQ y SSE** - La API expone connect/discover en background y el estado llega a tiempo real sin polling. (completed 2026-09-18)
-- [ ] **Phase 5: UI web** - El flujo login → Servers → add → connect → discovery → detail funciona en el design system Apple-inspired, dark y light. (25/25 plans executed 2026-09-20; verification gaps_found — gap closure pending)
+- [ ] **Phase 5: UI web** - El flujo login → Servers → add → connect → discovery → detail funciona en el design system Apple-inspired, dark y light. (25/25 plans executed 2026-09-20; verification gaps_found — gap closure planned 2026-09-20: 05-26…05-37, 0/12 executed)
 - [ ] **Phase 6: Instalador y Docker Compose** - Un comando deja Noodara operativo en un VPS Ubuntu limpio, de forma idempotente.
 
 ## Phase Details
@@ -256,7 +256,7 @@ Plans:
   4. El activity log se ve como lista cronológica inversa con actor, entidad, acción y timestamp sin metadatos sensibles; settings muestra la versión y la URL pública de la instancia.
   5. El E2E de Playwright cubre login → Servers → add server → connect → discovery → detail, y el nightly lo repite 20/20 veces; un job de canary secrets confirma en el mismo run que ningún secret aparece en ninguna salida de la UI ni de la API a lo largo de ese flujo completo.
 
-**Plans**: 25 plans in 15 waves
+**Plans**: 37 plans (25 executed in 15 waves + 12 gap-closure plans in 4 waves)
 
 Plans:
 
@@ -330,6 +330,32 @@ Plans:
 
 - [x] 05-21-PLAN.md — Canary de secrets en las superficies del navegador, `check:ui-safety`, suite completa y revisión de design system (QA-05)
 
+**Gap closure** *(planned 2026-09-20 from 05-VERIFICATION.md, 8 gaps; 12 plans in 4 waves, after Wave 15)*
+
+**Gap Wave 1** *(parallel-safe: disjoint files)*
+
+- [ ] 05-26-PLAN.md — CONNECTING wedge: try/catch tras TX1 en `connect-and-discover.ts` y listener `failed` del worker → `failInFlightConnection` (gap 2 backend, WR-A-01)
+- [ ] 05-27-PLAN.md — Trust de host key en backend: body `{ fingerprint }`, promote atómico condicional, 409 `FINGERPRINT_MISMATCH`, limpieza de `pendingFingerprint` en todo edit de identidad (gap 6, WR-A-02)
+- [ ] 05-28-PLAN.md — Hardening de navegador: timeout con `AbortSignal` en `api-client.ts`, guard de clipboard, `safe-storage.ts`, `(shell)/error.tsx` (gap 4)
+- [ ] 05-30-PLAN.md — Errores de campo del servidor se pintan (`normalizeFieldPath`), tres fallos de setup distinguibles, token fuera de la URL y `Referrer-Policy` (gap 5)
+- [ ] 05-32-PLAN.md — Activity log correcto durante el refresh, reproducir antes de arreglar (gap 7, WR-B-04/05/06)
+- [ ] 05-34-PLAN.md — Fuga de slots SSE, serializer de `err` en `server.ts`, `main()` del worker sin try/catch (gap 8: WR-A-03, WR-A-04, UF-02)
+- [ ] 05-36-PLAN.md — CI: `playwright install` en el job `security`, permisos/timeouts por job, actions fijadas por SHA, provenance gate desde el lockfile, `docs/ci-readiness.md` (gap 3 local, WR-C-14)
+
+**Gap Wave 2** *(blocked on Gap Wave 1)*
+
+- [ ] 05-29-PLAN.md — Discovery sin progreso inventado (`lastReceivedIndex`) y guard de orden snapshot-vs-evento en el detalle (`applyServer`) (gap 1, gap 2 frontend)
+- [ ] 05-31-PLAN.md — El diálogo de trust captura el fingerprint al abrir y envía exactamente ese valor; E2E de swap a mitad de revisión (gap 6 frontend, WR-B-12)
+- [ ] 05-35-PLAN.md — Ruta `/`, hydration de ThemeToggle, redirect de sesión revocada (gap 8: WR-B-15, WR-C-01, WR-B-10)
+
+**Gap Wave 3** *(blocked on Gap Wave 2; NOT autonomous — decisión del usuario)*
+
+- [ ] 05-33-PLAN.md — Contraste AA: candidatos medidos, el usuario elige los colores, cambio de tokens y gate automático ≥4.5:1 (gap 4, UX FLAG 1, WR-C-08)
+
+**Gap Wave 4** *(blocked on Gap Wave 3; NOT autonomous — verificación humana)*
+
+- [ ] 05-37-PLAN.md — Gate completo de todas las suites en una corrida, auditoría por gap re-derivada del código y checkpoint de los ítems solo-humanos (QA-04/QA-05 siguen Pending hasta un run real de CI)
+
 **Cross-cutting constraints:**
 
 - D-17 es bloqueante: nada de `packages/ui` ni `apps/web` se toca antes de que las cinco amenazas de fase 4 estén cerradas con evidencia
@@ -366,5 +392,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 25/25 | Gaps found | - |
+| 5. UI web | 25/37 | Gap closure planned | - |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |

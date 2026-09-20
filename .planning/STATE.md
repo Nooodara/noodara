@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: gaps_found
-stopped_at: Phase 05 (ui-web) executed 25/25; verification gaps_found (8 gaps, 05-VERIFICATION.md) — next /gsd-plan-phase 5 --gaps
-last_updated: "2026-09-20T07:14:00.264Z"
-last_activity: 2026-09-20
+status: executing
+stopped_at: Phase 05 (ui-web) gap closure planned — 12 plans 05-26…05-37 in 4 waves, plan-checker passed; next /gsd-execute-phase 5 --gaps-only
+last_updated: "2026-09-20T14:23:11.064Z"
+last_activity: 2026-09-20 -- Phase 05 planning complete
 progress:
   total_phases: 6
-  completed_phases: 5
-  total_plans: 73
+  completed_phases: 4
+  total_plans: 85
   completed_plans: 73
-  percent: 83
+  percent: 67
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 ## Current Position
 
-Phase: 05 (ui-web) — all 25 plans executed; VERIFICATION = gaps_found (2026-09-20)
-Plan: 25 of 25 complete (05-21 was the final wave-15 plan, resolved at its Task 3 checkpoint by the user 2026-09-20 — approved to close, not a design sign-off; see 05-21-SUMMARY.md)
-Status: Phase NOT complete. Code review 0 critical / 37 warning / 23 info (05-REVIEW.md); verifier found 8 gaps (05-VERIFICATION.md). ROADMAP.md was auto-ticked complete by roadmap.update-plan-progress and corrected by the orchestrator. Next: /gsd-plan-phase 5 --gaps
-Last activity: 2026-09-20
+Phase: 05 (ui-web) — 25 plans executed; VERIFICATION = gaps_found (8 gaps); gap closure planned 2026-09-20 (05-26…05-37)
+Plan: 25 of 37 complete (12 gap-closure plans pending; 05-33 and 05-37 are not autonomous — colour decision and human verification)
+Status: Ready to execute gap closure. Phase NOT complete: code review 0 critical / 37 warning (05-REVIEW.md), 8 verification gaps (05-VERIFICATION.md). QA-04/QA-05 stay Pending until a real CI run is observed.
+Last activity: 2026-09-20 -- Phase 05 planning complete
 
 Progress: [██████████] 100%
 
