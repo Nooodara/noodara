@@ -203,13 +203,16 @@ test('@sse-live a real SSE frame published mid-connection reaches the browser th
 
   await streamOpened;
   const name = `probe-${String(Date.now())}`;
-  await page.request.post('/api/servers', {
+  const created = await page.request.post('/api/servers', {
     data: {
       name,
       host: `${name}.example.test`,
       credential: { type: 'ssh_password', password: 'diagnostic-only' },
     },
   });
+  // A refused create must fail here, by name -- never later, disguised as a live event that
+  // was lost.
+  expect(created.status()).toBe(201);
 
   const chunks = await evalPromise;
   expect(chunks.some((chunk) => chunk.includes('retry: 5000'))).toBe(true);

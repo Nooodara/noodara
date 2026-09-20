@@ -120,6 +120,8 @@ test('@detail a PENDING server with no discovery shows the empty state, one Conn
   const created = await page.request.post('/api/servers', {
     data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
   });
+  // A refused create must fail here, by name -- never later as an unrelated missing page.
+  expect(created.status()).toBe(201);
   const { id } = (await created.json()) as { id: string };
 
   await page.goto(`/servers/${id}`);

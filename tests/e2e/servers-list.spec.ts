@@ -192,9 +192,12 @@ test('@servers activating a row with the keyboard navigates to that server\'s de
   await login(page);
 
   const name = `kbnav-${String(Date.now())}`;
-  await page.request.post('/api/servers', {
+  const created = await page.request.post('/api/servers', {
     data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
   });
+  // A refused create must fail here, by name -- never later, disguised as a live event that
+  // was lost.
+  expect(created.status()).toBe(201);
 
   const row = page.getByTestId('servers-row').filter({ hasText: name });
   await expect(row).toBeVisible();
@@ -209,9 +212,12 @@ test('@servers a row\'s actions menu is absent until opened, then exposes Edit a
   await login(page);
 
   const name = `rowmenu-${String(Date.now())}`;
-  await page.request.post('/api/servers', {
+  const created = await page.request.post('/api/servers', {
     data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
   });
+  // A refused create must fail here, by name -- never later, disguised as a live event that
+  // was lost.
+  expect(created.status()).toBe(201);
 
   const row = page.getByTestId('servers-row').filter({ hasText: name });
   await expect(row).toBeVisible();
@@ -288,9 +294,12 @@ test('@servers a server created while the list snapshots are still in flight sti
     });
   }, name);
 
-  await page.request.post('/api/servers', {
+  const created = await page.request.post('/api/servers', {
     data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
   });
+  // A refused create must fail here, by name -- never later, disguised as a live event that
+  // was lost.
+  expect(created.status()).toBe(201);
 
   await page.evaluate(async () => {
     const observer = (window as ObserverWindow).__noodaraObserver;

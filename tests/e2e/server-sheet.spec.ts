@@ -169,9 +169,12 @@ test('@sheet submitting a duplicate name renders the NAME_TAKEN copy under Name 
   await login(page);
 
   const name = `dup-name-${String(Date.now())}`;
-  await page.request.post('/api/servers', {
+  const created = await page.request.post('/api/servers', {
     data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
   });
+  // A refused create must fail here, by name -- never later, disguised as a live event that
+  // was lost.
+  expect(created.status()).toBe(201);
   await page.reload();
 
   await openCreateSheet(page);
@@ -220,13 +223,16 @@ test('@sheet opening Edit shows the credential collapsed to dots plus Replace, w
   await login(page);
 
   const name = `edit-collapse-${String(Date.now())}`;
-  await page.request.post('/api/servers', {
+  const created = await page.request.post('/api/servers', {
     data: {
       name,
       host: `${name}.example.test`,
       credential: { type: 'ssh_private_key', privateKey: FIXTURE_KEY.privateKey },
     },
   });
+  // A refused create must fail here, by name -- never later, disguised as a live event that
+  // was lost.
+  expect(created.status()).toBe(201);
   await page.reload();
 
   const row = page.getByTestId('servers-row').filter({ hasText: name });
@@ -250,9 +256,12 @@ test('@sheet Delete requires the exact name: the confirm button stays disabled u
   await login(page);
 
   const name = `delete-me-${String(Date.now())}`;
-  await page.request.post('/api/servers', {
+  const created = await page.request.post('/api/servers', {
     data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
   });
+  // A refused create must fail here, by name -- never later, disguised as a live event that
+  // was lost.
+  expect(created.status()).toBe(201);
   await page.reload();
 
   const row = page.getByTestId('servers-row').filter({ hasText: name });
