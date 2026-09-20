@@ -190,6 +190,52 @@ test('@sheet submitting a duplicate name renders the NAME_TAKEN copy under Name 
   await expect(page.getByLabel('Name')).toHaveValue(name);
 });
 
+test('@sheet a real-shaped server-rejected VALIDATION_FAILED issue highlights its field inline, with no orphan "Check the highlighted fields" banner', async ({
+  page,
+}) => {
+  // 05-VERIFICATION.md gap 5 / 05-30-PLAN.md Task 1+3: the literal backend issue-path shape
+  // (`instancePath`, leading-slash) confirmed empirically in Task 1 by invoking the real
+  // `@fastify/type-provider-zod` `validatorCompiler` against `CreateServerBodySchema` directly --
+  // `/name` for a top-level field. Before Task 1's `normalizeFieldPath` fix, `fieldErrorsFromIssues`
+  // compared this exact shape against bare `KNOWN_FORM_FIELD_PATHS` names and never matched, so
+  // `ServerSheet.handleApiFailure` fell through to the generic `copyForErrorCode('VALIDATION_FAILED')`
+  // toast ("Check the highlighted fields and try again.") with nothing actually highlighted -- the
+  // literal gap-5 defect. This stub reproduces the real wire shape a genuine 400 sends, never an
+  // invented one.
+  await login(page);
+  await openCreateSheet(page);
+
+  const name = `server-rejected-${String(Date.now())}`;
+  await page.getByLabel('Name').fill(name);
+  await page.getByLabel('Host').fill(`${name}.example.test`);
+  await page.getByTestId('server-sheet-credential-type').getByRole('radio', { name: 'Password' }).click();
+  await fillValidPasswordCredential(page);
+
+  await page.route('**/api/servers', (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    return route.fulfill({
+      status: 400,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        error: 'VALIDATION_FAILED',
+        message: 'Request does not match the schema',
+        issues: [{ path: '/name', message: 'This name is reserved by the server.' }],
+      }),
+    });
+  });
+
+  await page.getByTestId('server-sheet-save-connect').click();
+
+  await expect(page.getByLabel('Name')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByText('This name is reserved by the server.')).toBeVisible();
+  await expect(page.getByTestId('server-sheet')).toBeVisible();
+  // The fix's actual behaviour is stronger than "banner alongside a highlight": once the real
+  // issue maps to a field, ServerSheet renders the field error alone -- no redundant, generic
+  // "Check the highlighted fields" toast at all. Asserting its absence is the strongest available
+  // proof that this is not the gap-5 "banner with nothing highlighted" defect in a new disguise.
+  await expect(page.getByTestId('server-sheet-toast')).toHaveCount(0);
+});
+
 test('@sheet submitting a port of 70000 renders an inline error under the SSH port field and never reaches the server', async ({
   page,
 }) => {

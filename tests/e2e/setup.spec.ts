@@ -14,6 +14,14 @@
 // (T-5G-30-05).
 import { expect, test } from '@playwright/test';
 
+test('@setup every response carries Referrer-Policy: no-referrer (setup-token-url-hardening todo item 2)', async ({
+  page,
+}) => {
+  const response = await page.goto('/setup');
+  expect(response).not.toBeNull();
+  expect(response?.headers()['referrer-policy']).toBe('no-referrer');
+});
+
 const SYNTHETIC_TOKEN = 'e2e-fixture-setup-token-not-a-real-secret';
 const INVALID_TOKEN_MESSAGE = 'This setup link is no longer valid. Ask whoever installed Noodara for a new one.';
 const GENERIC_INTERNAL_ERROR_MESSAGE =

@@ -38,6 +38,13 @@ const nextConfig: NextConfig = {
   // control. X-Frame-Options is the legacy/broad-browser-support header; the CSP frame-ancestors
   // directive is the modern equivalent, kept minimal to this one directive since this app has no
   // other CSP posture defined yet.
+  //
+  // T-5G-30-02: the `no-referrer` policy entry below closes the setup-token-url-hardening todo's
+  // item 2 (.planning/todos/pending/2026-09-19-setup-token-url-hardening.md) -- without it,
+  // navigating away from `/setup?token=...` (before T-5G-30-01's history.replaceState strips the
+  // param, or via any link a future screen might add) could leak the full URL, including the
+  // one-time setup token, in an outbound `Referer` header. `no-referrer` (not `same-origin`) since
+  // this is the strictest option and this app has no legitimate cross-origin analytics use case.
   headers() {
     return [
       {
@@ -45,6 +52,7 @@ const nextConfig: NextConfig = {
         headers: [
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+          { key: 'Referrer-Policy', value: 'no-referrer' },
         ],
       },
     ];
