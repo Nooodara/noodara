@@ -110,4 +110,16 @@ async function main(): Promise<void> {
   process.on('SIGINT', () => void shutdown());
 }
 
-void main();
+// UF-02/04-SECURITY.md: this entrypoint used to invoke `main` with a bare, uncaught `void` call,
+// which let a boot-time rejection (an unreachable Postgres/Redis, `resolveServerServicesDeps`'s
+// master-key decode, `sweepAbandonedConnections`) surface as a raw Node crash dump (stack, own
+// properties, `cause` via `util.inspect`) instead of a structured, redaction-covered pino line --
+// and relied entirely on Node's own default `--unhandled-rejections` mode for the process to exit
+// non-zero at all. `server.ts`'s own entrypoint (D-23's documented sibling shape) has no guard on
+// its own equivalent bottom-level call either, so there is no existing guard to match here; this
+// uses the shape 05-34-PLAN.md's own fallback names, and `server.ts`'s equivalent gap is out of
+// this plan's scope (05-REVIEW.md's own "out-of-scope observation" already flags it separately).
+main().catch((err: unknown) => {
+  logger.error({ err }, 'worker boot failed');
+  process.exit(1);
+});

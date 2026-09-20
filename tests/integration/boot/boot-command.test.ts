@@ -138,6 +138,47 @@ describe('start:worker: real boot against a migrated database and Redis', () => 
   });
 });
 
+// UF-02/04-SECURITY.md (05-34 Task 3): worker.ts's `main()` was invoked as a bare `void main();`,
+// with no `.catch(...)`. `getDb()` is lazy (`pg.Pool` never touches the network until a query
+// runs, `db/client.ts`), so no real Postgres is needed to reproduce this — only a genuinely
+// unreachable Redis, which `main()` fails fast against via `queueConnection.ping()` (bounded by
+// that connection's own `commandTimeout: 2000, maxRetriesPerRequest: 1`, `redis/connections.ts`).
+describe('start:worker: a boot-time rejection never dies silently (UF-02)', () => {
+  it('exits non-zero with a structured pino error line when a required dependency is unreachable, never a bare unhandled rejection', async () => {
+    activeProcess = spawnBootProcess({
+      command: execPath,
+      args: [WORKER_DIST_ENTRY],
+      cwd: CONTROL_PLANE_DIR,
+      env: buildValidBootEnv(
+        'postgresql://boot-test-user:non-placeholder-boot-test-pw@127.0.0.1:1/boot-test-db',
+        'redis://127.0.0.1:1/',
+      ),
+    });
+
+    const exitCode = await activeProcess.waitForExit(30_000);
+
+    expect(exitCode).not.toBe(0);
+    expect(exitCode).not.toBeNull();
+    // pino's default destination is stdout (never stderr) -- the structured error line lands
+    // there, alongside nothing else this entrypoint ever writes to stdout before failing
+    // (`Worker ready` only prints on a successful boot). A structured pino line looks nothing like
+    // Node's default `UnhandledPromiseRejection`/`util.inspect` crash dump (whose first line is
+    // the error's own constructor name, e.g. "MaxRetriesPerRequestError: ...", never `{"level"`).
+    const stdoutLines = activeProcess.stdout.trim().split('\n').filter((line) => line.length > 0);
+    const lastLine = stdoutLines.at(-1) ?? '';
+    expect(lastLine.startsWith('{')).toBe(true);
+    const record = JSON.parse(lastLine) as { level: number; err?: { name: string }; msg: string };
+    expect(record.level).toBeGreaterThanOrEqual(50); // error or fatal
+    expect(record.err?.name).toBeTruthy();
+    expect(record.msg).toBe('worker boot failed');
+    expect(activeProcess.stdout).not.toContain('Worker ready');
+    // The pre-fix crash dump's stack trace never reaches stderr either (Node's own crash report
+    // format, distinct from `[redis] ... connection error: <name>` -- the ioredis `'error'`
+    // listeners in redis/connections.ts, which fire regardless of this fix and are expected here).
+    expect(activeProcess.stderr).not.toMatch(/^\s+at .+\(.+:\d+:\d+\)/m);
+  });
+});
+
 // D-26/T-4-43/T-4-44 (Plan 04-11 Task 3): both real entrypoints, booted together against one
 // Postgres and one Redis, with `/health` proving it can tell a live worker from a dead one — the
 // exact operational signal Phase 6's Compose healthchecks/restart policy will key on. This test
