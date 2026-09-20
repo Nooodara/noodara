@@ -6,31 +6,31 @@
 // exactly what happens when this path is not defended carefully).
 //
 // CONTRACT WITH THE BACKEND (read apps/control-plane/src/routes/servers.ts's own route +
-// apps/control-plane/src/services/trust-fingerprint.ts before changing this file): `POST
-// /api/servers/:id/trust-fingerprint` takes NO request body at all -- no `confirmName`, no
-// fingerprint value. It promotes whatever `pendingFingerprint` is currently on the row, using only
-// `:id`. The confirm dialog is real UX friction (a genuine barrier against a misclick), but
-// display and action are NOT structurally coupled the way `DeleteServerDialog`'s `confirmName`
-// couples them -- the server trusts whatever is pending at the moment this request lands, not
-// whatever fingerprint this dialog happened to render when it opened.
+// apps/control-plane/src/services/trust-fingerprint.ts before changing this file): plan 05-27
+// (gap 6 / T-5G-27, .planning/todos/pending/2026-09-19-trust-fingerprint-toctou.md) changed `POST
+// /api/servers/:id/trust-fingerprint` to REQUIRE a body `{ fingerprint: string }`. The service
+// promotes `pending_fingerprint` into `host_fingerprint` only via an atomic conditional UPDATE
+// scoped to `WHERE pending_fingerprint = <the submitted value>` -- a value that no longer matches
+// the row's live pending fingerprint at commit time is rejected with 409 FINGERPRINT_MISMATCH and
+// nothing is promoted (no status change, no activity event, no published event).
 //
-// RESIDUAL RACE (documented per the executor's own item 4, not hidden): between this dialog
-// opening and the admin clicking "Trust new fingerprint", the pending fingerprint could
-// theoretically change again (a second HOST_KEY_CHANGED connect attempt landing mid-review, or an
-// identity-changing edit clearing it, UF-01's own fix). This component closes as much of that
-// window as the API allows: immediately before sending the real trust request, it re-fetches the
-// server and refuses to proceed (no trust request is sent at all) unless the freshly-fetched
-// `pendingFingerprint` is still byte-for-byte identical to the one this dialog displayed. If it
-// differs (including having become `null`), the dialog reports that plainly and asks the admin to
-// review the (now different) banner again, rather than trusting a value it no longer knows is
-// current. This narrows, but per the API's own no-body contract cannot fully eliminate, the
-// display-versus-promote race -- the server always promotes whatever is pending *at commit time*,
-// which is a few milliseconds after this check, not at click time. A tighter guarantee would need
-// the route to accept and verify the exact fingerprint being trusted, which is a backend change
-// out of this plan's scope (flagged in the plan's own SUMMARY, not silently worked around here).
+// This dialog snapshots `server.pendingFingerprint` (and its `pendingFingerprintSeenAt`) the
+// instant it opens -- the `useEffect` below, keyed on `open` alone -- and renders and sends exactly
+// that snapshot for as long as it stays open. A `server.updated` SSE event silently swapping the
+// live `server` prop mid-review (this dialog's caller, `servers/[id]/page.tsx`, always threads the
+// current prop straight through) can therefore no longer be trusted by accident: display and
+// action are structurally coupled, the same way `DeleteServerDialog`'s `confirmName` couples them.
+// On a FINGERPRINT_MISMATCH response the dialog closes and asks the caller to refetch, rather than
+// silently retrying or accepting the new value -- the admin must review whatever is pending now and
+// re-type the name from scratch.
+//
+// The former client-side re-GET-and-compare (this file's own previous defense, which only narrowed
+// -- never closed -- the display/promote race, since it could only ever compare the live prop to
+// itself) is removed entirely: enforcement now lives solely in the backend's atomic conditional
+// UPDATE, which is strictly stronger than anything a pre-flight client check could offer.
 import { useEffect, useState } from 'react';
 import { DestructiveConfirmDialog, RelativeTime } from '@noodara/ui';
-import { apiGet, apiSend, type ServerView } from '../lib/api-client';
+import { apiSend, type ServerView } from '../lib/api-client';
 import { copyForErrorCode } from '../lib/error-copy';
 import { requireSession } from '../lib/require-session';
 
@@ -50,7 +50,7 @@ export interface TrustFingerprintDialogProps {
   readonly onOpenChange: (open: boolean) => void;
   readonly server: TrustFingerprintServer | null;
   /** Called once this dialog's own round trip settles in a way that should make the caller
-   *  refetch/resync the server: a real success, or the race-detected abort above. Never called on
+   *  refetch/resync the server: a real success, or a FINGERPRINT_MISMATCH abort. Never called on
    *  every keystroke or on a same-value re-render -- the caller owns refetching, this component
    *  never mutates its own copy of `server` in place. */
   readonly onSettled: () => void;
@@ -58,17 +58,31 @@ export interface TrustFingerprintDialogProps {
   readonly now: Date;
 }
 
-const STALE_PENDING_MESSAGE =
-  "The pending fingerprint changed since this dialog opened. Review the new value in the banner before trusting.";
+interface PendingSnapshot {
+  readonly fingerprint: string;
+  readonly seenAt: string | null;
+}
 
 export function TrustFingerprintDialog({ open, onOpenChange, server, onSettled, now }: TrustFingerprintDialogProps) {
   const [error, setError] = useState<string | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
+  // T-5G-31-01: what this dialog displayed the moment it opened -- captured once per `open`
+  // transition (never re-captured while `open` stays true), so a live `server` prop update
+  // mid-review never silently changes what gets displayed or sent. Fingerprint and its "seen at"
+  // timestamp are captured together so the row never shows a value paired with the wrong date.
+  const [snapshot, setSnapshot] = useState<PendingSnapshot | null>(null);
 
   useEffect(() => {
     if (open) {
       setError(undefined);
       setSubmitting(false);
+      // Deliberately depends only on `open`, not `server` -- see the file-level doc comment. A
+      // `server.updated` prop change while the dialog stays open must never retrigger this snapshot.
+      setSnapshot(
+        server?.pendingFingerprint === null || server?.pendingFingerprint === undefined
+          ? null
+          : { fingerprint: server.pendingFingerprint, seenAt: server.pendingFingerprintSeenAt },
+      );
     }
   }, [open]);
 
@@ -82,7 +96,7 @@ export function TrustFingerprintDialog({ open, onOpenChange, server, onSettled, 
     // Defensive -- the banner never renders this dialog's opener when there is nothing pending
     // (05-UI-SPEC.md SS5.4: "the button should not be reachable otherwise"), but a component that
     // sends a real destructive request never trusts its own caller for that alone.
-    if (server.pendingFingerprint === null) {
+    if (snapshot === null) {
       setError(copyForErrorCode('NO_PENDING_FINGERPRINT'));
       return;
     }
@@ -90,29 +104,11 @@ export function TrustFingerprintDialog({ open, onOpenChange, server, onSettled, 
     setSubmitting(true);
     setError(undefined);
 
-    // Narrows (never fully closes -- see the file-level doc comment) the display-versus-promote
-    // race: refuse to send the real trust request at all if what the server currently has pending
-    // no longer matches what this dialog displayed.
-    const latest = await apiGet<ServerView>(`/api/servers/${encodeURIComponent(server.id)}`);
-
-    if (!latest.ok) {
-      setSubmitting(false);
-      if (latest.unauthorized) {
-        void requireSession();
-        return;
-      }
-      setError(latest.code === 'NETWORK_ERROR' ? latest.message : copyForErrorCode(latest.code));
-      return;
-    }
-
-    if (latest.data.pendingFingerprint !== server.pendingFingerprint) {
-      setSubmitting(false);
-      setError(STALE_PENDING_MESSAGE);
-      onSettled();
-      return;
-    }
-
-    const result = await apiSend<ServerView>('POST', `/api/servers/${encodeURIComponent(server.id)}/trust-fingerprint`);
+    const result = await apiSend<ServerView>(
+      'POST',
+      `/api/servers/${encodeURIComponent(server.id)}/trust-fingerprint`,
+      { fingerprint: snapshot.fingerprint },
+    );
     setSubmitting(false);
 
     if (!result.ok) {
@@ -120,14 +116,18 @@ export function TrustFingerprintDialog({ open, onOpenChange, server, onSettled, 
         void requireSession();
         return;
       }
-      if (result.code === 'CONFIRMATION_MISMATCH') {
-        // Structurally unreachable against the real route today (it takes no confirmName), kept
-        // as defensive handling only -- see the file-level doc comment.
-        setError(copyForErrorCode('CONFIRMATION_MISMATCH').replace('{name}', server.name));
+      if (result.code === 'FINGERPRINT_MISMATCH') {
+        // T-5G-31-01/03: the value changed underneath this dialog between open and confirm -- the
+        // backend's atomic conditional UPDATE refused to promote it, and nothing was changed
+        // server-side. Close the confirmation (so DestructiveConfirmDialog resets its typed name on
+        // the next open, T-5G-31-03) and let the caller refetch so the banner re-renders with
+        // whatever is pending now; the admin must review it again and re-type the name from scratch.
+        onOpenChange(false);
+        onSettled();
         return;
       }
-      if (result.code === 'NO_PENDING_FINGERPRINT') {
-        setError(copyForErrorCode('NO_PENDING_FINGERPRINT'));
+      if (result.code === 'NO_PENDING_FINGERPRINT' || result.code === 'SERVER_NOT_TRUSTABLE') {
+        setError(copyForErrorCode(result.code));
         onSettled();
         return;
       }
@@ -167,11 +167,11 @@ export function TrustFingerprintDialog({ open, onOpenChange, server, onSettled, 
           </span>
         )}
         <span data-mono="true" className="break-all text-mono text-ink">
-          {server.pendingFingerprint === null ? 'Observed: not available' : `Observed: ${server.pendingFingerprint}`}
+          {snapshot === null ? 'Observed: not available' : `Observed: ${snapshot.fingerprint}`}
         </span>
-        {server.pendingFingerprintSeenAt === null ? null : (
+        {snapshot?.seenAt === null || snapshot?.seenAt === undefined ? null : (
           <span className="text-caption text-ink-tertiary">
-            seen <RelativeTime value={server.pendingFingerprintSeenAt} now={now} />
+            seen <RelativeTime value={snapshot.seenAt} now={now} />
           </span>
         )}
       </div>
