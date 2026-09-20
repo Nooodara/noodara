@@ -215,3 +215,52 @@ test('@sse-live a real SSE frame published mid-connection reaches the browser th
   expect(chunks.some((chunk) => chunk.includes('retry: 5000'))).toBe(true);
   expect(chunks.some((chunk) => chunk.includes('server.updated'))).toBe(true);
 });
+
+// Permanent regression coverage for a real product bug (debug session sse-lost-event-race, round
+// 2): the streaming proxy never tore down its upstream control-plane stream when the browser went
+// away -- under `next start` it was released only whenever the Next process next happened to
+// garbage-collect the abandoned response. Every closed tab, reload or navigation therefore kept
+// holding one of the control plane's capped SSE slots (D-07, 32 by default), and once they were
+// all held every new page got `503 SSE_LIMIT_REACHED` and no live updates at all.
+//
+// Opens and abandons more streams than the cap allows through the real same-origin proxy, then
+// asserts a fresh stream still opens. Node's own `fetch` (never `page.request`, which buffers a
+// whole body and would never return for a stream) with the real session cookie of a real login.
+test('@sse-slots abandoned event streams release their control-plane slot instead of exhausting the cap', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await login(page);
+  // Leave the shell so this page's own shared EventSource is closed and cannot mask (or be
+  // starved by) what this test measures.
+  await page.goto('about:blank');
+  const cookie = (await context.cookies()).map((c) => `${c.name}=${c.value}`).join('; ');
+  const eventsUrl = `${baseURL ?? ''}/api/events`;
+
+  async function openThenAbandon(): Promise<number> {
+    const controller = new AbortController();
+    try {
+      const response = await fetch(eventsUrl, { headers: { cookie }, signal: controller.signal });
+      if (response.status === 200) {
+        // Only abandon a stream that is genuinely open (its first bytes arrived).
+        await response.body?.getReader().read();
+      }
+      return response.status;
+    } finally {
+      controller.abort();
+    }
+  }
+
+  const ABOVE_DEFAULT_CAP = 40;
+  for (let i = 0; i < ABOVE_DEFAULT_CAP; i += 1) {
+    await openThenAbandon();
+  }
+
+  // Release is asynchronous (browser -> Next -> control plane), so this waits on the observable
+  // outcome with a bound -- never a fixed sleep. Before the fix the slots stayed held for as long
+  // as the Next process did not garbage-collect (observed: 60s+).
+  await expect(async () => {
+    expect(await openThenAbandon()).toBe(200);
+  }).toPass({ timeout: 5000 });
+});
