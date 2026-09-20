@@ -159,6 +159,17 @@ async function eventsFor(fx: ServiceFixture, serverId: string) {
   return fx.db.select().from(activityEvents).where(eq(activityEvents.entityId, serverId));
 }
 
+/** Gap 6 / T-5G-27: `TrustFingerprintInput.fingerprint` is now required — this reads the row's
+ *  real, live `pending_fingerprint` so every call below submits the exact value the atomic
+ *  conditional UPDATE must match, rather than hardcoding FP2's formatted string here. */
+async function pendingFingerprintOf(fx: ServiceFixture, serverId: string): Promise<string> {
+  const row = await rawServerRow(fx, serverId);
+  if (row.pendingFingerprint === null) {
+    throw new Error(`pendingFingerprintOf: server ${serverId} has no pending fingerprint`);
+  }
+  return row.pendingFingerprint;
+}
+
 /**
  * Arranges a real ERROR row with a real pending_fingerprint (D-04): connects once successfully
  * via connectAndDiscover (pinning host_fingerprint to FP1), then runs connectAndDiscover again
@@ -218,6 +229,8 @@ describe('trustFingerprint (D-04)', () => {
     const result = await trustFingerprint(fixture.deps, {
       actor: SYSTEM,
       serverId: randomUUID(),
+      // NOT_FOUND is returned before any fingerprint is read — value is irrelevant.
+      fingerprint: 'unused',
     });
 
     expect(result).toMatchObject({ ok: false, code: 'NOT_FOUND' });
@@ -230,7 +243,12 @@ describe('trustFingerprint (D-04)', () => {
     const before = await rawServerRow(fixture, server.id);
 
     const { trustFingerprint } = await loadTrustFingerprint();
-    const result = await trustFingerprint(fixture.deps, { actor: SYSTEM, serverId: server.id });
+    // SERVER_BUSY is returned before any fingerprint is read — value is irrelevant.
+    const result = await trustFingerprint(fixture.deps, {
+      actor: SYSTEM,
+      serverId: server.id,
+      fingerprint: 'unused',
+    });
 
     expect(result).toMatchObject({ ok: false, code: 'SERVER_BUSY' });
     const after = await rawServerRow(fixture, server.id);
@@ -244,7 +262,12 @@ describe('trustFingerprint (D-04)', () => {
     const beforeEvents = await eventsFor(fixture, server.id);
 
     const { trustFingerprint } = await loadTrustFingerprint();
-    const result = await trustFingerprint(fixture.deps, { actor: SYSTEM, serverId: server.id });
+    // NO_PENDING_FINGERPRINT is returned before any fingerprint comparison — value is irrelevant.
+    const result = await trustFingerprint(fixture.deps, {
+      actor: SYSTEM,
+      serverId: server.id,
+      fingerprint: 'unused',
+    });
 
     expect(result).toMatchObject({ ok: false, code: 'NO_PENDING_FINGERPRINT' });
     const after = await rawServerRow(fixture, server.id);
@@ -261,7 +284,11 @@ describe('trustFingerprint (D-04)', () => {
     expect(pending).not.toBeNull();
 
     const { trustFingerprint } = await loadTrustFingerprint();
-    const result = await trustFingerprint(fixture.deps, { actor: SYSTEM, serverId });
+    const result = await trustFingerprint(fixture.deps, {
+      actor: SYSTEM,
+      serverId,
+      fingerprint: pending ?? 'unused',
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -284,7 +311,11 @@ describe('trustFingerprint (D-04)', () => {
     expect(newFingerprint).not.toBeNull();
 
     const { trustFingerprint } = await loadTrustFingerprint();
-    const result = await trustFingerprint(fixture.deps, { actor: SYSTEM, serverId });
+    const result = await trustFingerprint(fixture.deps, {
+      actor: SYSTEM,
+      serverId,
+      fingerprint: newFingerprint ?? 'unused',
+    });
     expect(result.ok).toBe(true);
 
     const events = await fingerprintTrustedEvents(fixture, serverId);
@@ -300,10 +331,12 @@ describe('trustFingerprint (D-04)', () => {
     const serverId = await arrangeServerWithPendingFingerprint(fixture);
 
     const { trustFingerprint } = await loadTrustFingerprint();
-    const first = await trustFingerprint(fixture.deps, { actor: SYSTEM, serverId });
+    const fingerprint = await pendingFingerprintOf(fixture, serverId);
+    const first = await trustFingerprint(fixture.deps, { actor: SYSTEM, serverId, fingerprint });
     expect(first.ok).toBe(true);
 
-    const second = await trustFingerprint(fixture.deps, { actor: SYSTEM, serverId });
+    // NO_PENDING_FINGERPRINT is returned before any fingerprint comparison — value is irrelevant.
+    const second = await trustFingerprint(fixture.deps, { actor: SYSTEM, serverId, fingerprint });
     expect(second).toMatchObject({ ok: false, code: 'NO_PENDING_FINGERPRINT' });
 
     const events = await fingerprintTrustedEvents(fixture, serverId);
@@ -319,6 +352,7 @@ describe('trustFingerprint (D-04)', () => {
     const result = await trustFingerprint(fixture.deps, {
       actor: { type: 'user', id: userId },
       serverId,
+      fingerprint: await pendingFingerprintOf(fixture, serverId),
     });
     expect(result.ok).toBe(true);
 
@@ -333,7 +367,11 @@ describe('trustFingerprint (D-04)', () => {
     const serverId = await arrangeServerWithPendingFingerprint(fixture);
 
     const { trustFingerprint } = await loadTrustFingerprint();
-    const result = await trustFingerprint(fixture.deps, { actor: SYSTEM, serverId });
+    const result = await trustFingerprint(fixture.deps, {
+      actor: SYSTEM,
+      serverId,
+      fingerprint: await pendingFingerprintOf(fixture, serverId),
+    });
     expect(result.ok).toBe(true);
 
     const events = await fingerprintTrustedEvents(fixture, serverId);
@@ -347,7 +385,11 @@ describe('trustFingerprint (D-04)', () => {
     const serverId = await arrangeServerWithPendingFingerprint(fixture);
 
     const { trustFingerprint } = await loadTrustFingerprint();
-    const result = await trustFingerprint(fixture.deps, { actor: SYSTEM, serverId });
+    const result = await trustFingerprint(fixture.deps, {
+      actor: SYSTEM,
+      serverId,
+      fingerprint: await pendingFingerprintOf(fixture, serverId),
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;

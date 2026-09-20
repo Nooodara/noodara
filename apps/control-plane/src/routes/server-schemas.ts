@@ -71,6 +71,11 @@ export const ServerIdParamSchema = z.object({ id: z.uuid() });
 
 export const DeleteServerBodySchema = z.object({ confirmName: z.string().min(1) }).strict();
 
+// Gap 6 / T-5G-27: binds the trust action to the exact fingerprint the admin saw (never a format
+// regex beyond non-empty — comparison is byte-for-byte equality against the stored pending value,
+// and a second, drift-prone format check would add nothing).
+export const TrustFingerprintBodySchema = z.object({ fingerprint: z.string().min(1) }).strict();
+
 // D-19: the 27 `ServerView` fields, listed explicitly (never derived by reflection) so a field
 // added to `ServerView` without updating this schema fails a unit test rather than being silently
 // dropped from every response. Dates are real `Date` instances (Drizzle's `timestamp` columns),

@@ -18,6 +18,7 @@ import {
   ServerIdParamSchema,
   ServerViewSchema,
   toCredentialInput,
+  TrustFingerprintBodySchema,
   UpdateServerBodySchema,
   type UpdateServerBody,
 } from './server-schemas.js';
@@ -265,8 +266,10 @@ const serversRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
     url: '/api/servers/:id/trust-fingerprint',
     schema: {
       params: ServerIdParamSchema,
+      body: TrustFingerprintBodySchema,
       response: {
         200: ServerViewSchema,
+        400: ErrorBodySchema,
         401: ErrorBodySchema,
         404: ErrorBodySchema,
         409: ErrorBodySchema,
@@ -275,7 +278,11 @@ const serversRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
     handler: async (request, reply) => {
       const actor = requireActor(request.actor);
       const services = await fastify.getServerServices();
-      const result = await services.trustFingerprint({ actor, serverId: request.params.id });
+      const result = await services.trustFingerprint({
+        actor,
+        serverId: request.params.id,
+        fingerprint: request.body.fingerprint,
+      });
       if (!result.ok) {
         await sendServiceError(reply, result.code, result.message);
         return;

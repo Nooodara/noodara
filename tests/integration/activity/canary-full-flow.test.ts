@@ -182,9 +182,17 @@ describe('D-18 full-flow canary: a real register -> connect+discover -> edit -> 
         .from(servers)
         .where(eq(servers.id, serverId));
       expect(rowAfterHostKeyChange?.pendingFingerprint).not.toBeNull();
+      const pendingFingerprintToTrust = rowAfterHostKeyChange?.pendingFingerprint;
+      if (pendingFingerprintToTrust === undefined || pendingFingerprintToTrust === null) {
+        throw new Error('expected a pending fingerprint to trust');
+      }
 
       // Step 5: trust the newly observed fingerprint.
-      const trustResult = await services.trustFingerprint({ actor: SYSTEM, serverId });
+      const trustResult = await services.trustFingerprint({
+        actor: SYSTEM,
+        serverId,
+        fingerprint: pendingFingerprintToTrust,
+      });
       if (!trustResult.ok) {
         throw new Error(
           `trustFingerprint failed unexpectedly: ${trustResult.code} ${trustResult.message}`,

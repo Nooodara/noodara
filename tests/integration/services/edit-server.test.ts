@@ -560,9 +560,12 @@ describe('editServer (SERV-02, ACT-01, D-11, D-13, D-14, D-16)', () => {
       expect(row?.pendingFingerprintSeenAt).toBeNull();
 
       const { trustFingerprint } = await loadTrustFingerprint();
+      // NO_PENDING_FINGERPRINT is returned before any fingerprint comparison — value is
+      // irrelevant (the edit above already cleared pendingFingerprint, per WR-A-02).
       const trustResult = await trustFingerprint(fixture.deps, {
         actor: { type: 'system' },
         serverId: server.id,
+        fingerprint: 'unused',
       });
       expect(trustResult).toMatchObject({ ok: false, code: 'NO_PENDING_FINGERPRINT' });
       const rowAfterTrust = await fetchServerRow(fixture, server.id);
@@ -611,6 +614,7 @@ describe('editServer (SERV-02, ACT-01, D-11, D-13, D-14, D-16)', () => {
       const trustResult = await trustFingerprint(fixture.deps, {
         actor: { type: 'system' },
         serverId: server.id,
+        fingerprint: 'SHA256:stale-pending-fp',
       });
       expect(trustResult).toMatchObject({ ok: true });
     });

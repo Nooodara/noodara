@@ -121,7 +121,9 @@ async function registerFixtureServer(fx: ServiceFixture, name?: string, host?: s
  * host_fingerprint to FP1), then again with a scripted HOST_KEY_CHANGED outcome (FP2) — never a
  * direct column write.
  */
-async function arrangeServerWithPendingFingerprint(fx: ServiceFixture): Promise<string> {
+async function arrangeServerWithPendingFingerprint(
+  fx: ServiceFixture,
+): Promise<{ readonly serverId: string; readonly fingerprint: string }> {
   const server = await registerFixtureServer(fx);
   const { connectAndDiscover } = await loadConnectAndDiscover();
 
@@ -161,7 +163,7 @@ async function arrangeServerWithPendingFingerprint(fx: ServiceFixture): Promise<
   // helper starts from a clean events array.
   fixture!.events.length = 0;
 
-  return server.id;
+  return { serverId: server.id, fingerprint: second.server.pendingFingerprint };
 }
 
 describe('registerServer publication (D-04)', () => {
@@ -311,10 +313,10 @@ describe('deleteServer publication (D-04)', () => {
 describe('trustFingerprint publication (D-04)', () => {
   it('publishes exactly one server.updated with the newly trusted fingerprint and a null pendingFingerprint', async () => {
     fixture = await startServiceFixture();
-    const serverId = await arrangeServerWithPendingFingerprint(fixture);
+    const { serverId, fingerprint } = await arrangeServerWithPendingFingerprint(fixture);
 
     const { trustFingerprint } = await loadTrustFingerprint();
-    const result = await trustFingerprint(fixture.deps, { actor: SYSTEM, serverId });
+    const result = await trustFingerprint(fixture.deps, { actor: SYSTEM, serverId, fingerprint });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -330,7 +332,12 @@ describe('trustFingerprint publication (D-04)', () => {
     fixture.events.length = 0;
 
     const { trustFingerprint } = await loadTrustFingerprint();
-    const result = await trustFingerprint(fixture.deps, { actor: SYSTEM, serverId: server.id });
+    // NO_PENDING_FINGERPRINT is returned before any fingerprint comparison — value is irrelevant.
+    const result = await trustFingerprint(fixture.deps, {
+      actor: SYSTEM,
+      serverId: server.id,
+      fingerprint: 'unused',
+    });
 
     expect(result).toMatchObject({ ok: false, code: 'NO_PENDING_FINGERPRINT' });
     expect(fixture.events).toHaveLength(0);
