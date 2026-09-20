@@ -1,8 +1,8 @@
 ---
-status: awaiting_human_verify
+status: resolved
 trigger: "Investigate and fix the root cause of intermittently LOST live server events (SSE) in Noodara (events-sse.test.ts flake, canary-http SSE assertion flake, E2E servers-list.spec.ts:191 row never appears via live SSE)"
 created: 2026-09-19T23:17:15Z
-updated: 2026-09-20T00:35:00Z (round 2; wall clock -- round 1 stamps were estimates)
+updated: 2026-09-20T00:00:00Z
 ---
 
 ## Current Focus
@@ -283,3 +283,7 @@ files_changed:
   - tests/e2e/server-detail.spec.ts
   - .planning/phases/05-ui-web/deferred-items.md
   - .planning/todos/completed/2026-09-19-sse-route-handler-robustness.md (moved from pending/ -- fully covered)
+
+## Resolution confirmed (orchestrator, 2026-09-20)
+
+Confirmed fixed: `node scripts/e2e-repeat.mjs` 20/20 clean as three invocations (7+7+6), 72/72 each, after rounds 1 and 2; later full `pnpm test:e2e` 73/73 and full `pnpm test:integration` 487/0/1. Still unexplained, carried to `05-20-SUMMARY.md` and `05-VERIFICATION.md`: the original `:208` `row.hover()` 60s timeout, and the first run's iteration-6 `:191` failure (no artifact).
