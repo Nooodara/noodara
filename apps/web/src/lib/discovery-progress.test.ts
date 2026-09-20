@@ -102,6 +102,67 @@ describe('buildChecklist -- live (CONNECTING)', () => {
   });
 });
 
+describe('buildChecklist -- mid-run mount (05-VERIFICATION.md gap 3 / SC3, D-05)', () => {
+  it('renders every unreceived earlier id as pending -- never running, never pass -- when only late ids were received', () => {
+    // A page that joined mid-run and only ever saw the two Docker-group checks (late in
+    // DISCOVERY_CHECK_IDS order): every earlier id (hostname..sudo/docker_group's siblings) must
+    // never be inferred as resolved just because a later one already came in.
+    const receivedChecks = [check('docker_version'), check('docker_compose_version')];
+    const checklist = buildChecklist({ serverStatus: 'CONNECTING', receivedChecks, settled: EMPTY_SETTLED });
+    const byId = Object.fromEntries(checklist.steps.map((s) => [s.id, s]));
+
+    for (const stepId of ['os', 'resources'] as const) {
+      expect(byId[stepId]?.state).toBe('pending');
+      for (const c of byId[stepId]?.checks ?? []) {
+        expect(c.state).toBe('pending');
+      }
+    }
+  });
+
+  it('excludes an unreceived earlier check from its step aggregation, so the step never reports pass on the strength of a later check alone', () => {
+    // 'resources' groups cpu/memory/disk/uptime (D-06). Only uptime (the last of the four) was
+    // received and passed -- cpu/memory/disk were never observed by this page. SS4.2's seven-word
+    // vocabulary has no "pass, but incomplete" word, so the step must report the conservative,
+    // already-defined 'pending' rather than inventing a pass it cannot back up with cpu/memory/disk.
+    const receivedChecks = [check('uptime')];
+    const checklist = buildChecklist({ serverStatus: 'CONNECTING', receivedChecks, settled: EMPTY_SETTLED });
+    const resources = checklist.steps.find((s) => s.id === 'resources');
+
+    expect(resources?.state).toBe('pending');
+    expect(resources?.state).not.toBe('pass');
+    const byCheckId = Object.fromEntries((resources?.checks ?? []).map((c) => [c.id, c.state]));
+    expect(byCheckId.cpu).toBe('pending');
+    expect(byCheckId.memory).toBe('pending');
+    expect(byCheckId.disk).toBe('pending');
+    expect(byCheckId.uptime).toBe('pass');
+  });
+
+  it('marks exactly one id running -- the one immediately after the last received id in DISCOVERY_CHECK_IDS order', () => {
+    const receivedChecks = [check('hostname'), check('os_release')];
+    const checklist = buildChecklist({ serverStatus: 'CONNECTING', receivedChecks, settled: EMPTY_SETTLED });
+
+    const allChecks = checklist.steps.flatMap((s) => s.checks);
+    const running = allChecks.filter((c) => c.state === 'running');
+    expect(running).toHaveLength(1);
+    expect(running[0]?.id).toBe('arch'); // the id right after os_release (the last received one)
+  });
+
+  it('marks no discovery id running before any check has been received', () => {
+    const checklist = buildChecklist({ serverStatus: 'CONNECTING', receivedChecks: [], settled: EMPTY_SETTLED });
+    const allChecks = checklist.steps.flatMap((s) => s.checks);
+    expect(allChecks.some((c) => c.state === 'running')).toBe(false);
+  });
+
+  it('still resolves both connection steps to pass from a received check even when only late ids were received (D-05 derivation, pinned)', () => {
+    const receivedChecks = [check('sudo')];
+    const checklist = buildChecklist({ serverStatus: 'CONNECTING', receivedChecks, settled: EMPTY_SETTLED });
+    const byId = Object.fromEntries(checklist.steps.map((s) => [s.id, s]));
+
+    expect(byId.ssh_reachable?.state).toBe('pass');
+    expect(byId.authenticated?.state).toBe('pass');
+  });
+});
+
 describe('buildChecklist -- settled', () => {
   it('marks every step from a complete settled checklist and marks no step running', () => {
     const checklist = buildChecklist({ serverStatus: 'CONNECTED', receivedChecks: [], settled: fullSettled() });

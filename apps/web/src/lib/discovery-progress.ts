@@ -124,14 +124,23 @@ function aggregateSettledStepState(checks: readonly DiscoveryCheckView[]): Check
 }
 
 /** Live aggregation for a step that may be partially resolved. `DISCOVERY_SEQUENCE`'s fixed order
- *  groups each step's checks contiguously, so at any moment a step is either entirely in the
- *  future (`pending`), currently executing (`running`, unless an earlier check in it already
- *  failed/warned), or entirely resolved (falls through to the settled aggregation above). */
-function aggregateLiveStepState(checks: readonly DiscoveryCheckView[]): CheckState {
+ *  groups each step's checks contiguously *for a run observed from its start* -- but a page that
+ *  mounts mid-run (05-VERIFICATION.md gap 3 / SC3, 05-29-PLAN.md) may have `receivedChecks` with
+ *  gaps: ids earlier in `DISCOVERY_CHECK_IDS` order than the latest one actually received, that
+ *  this page simply never saw (they ran before it connected). `hasUnresolvedEarlierCheck` is true
+ *  exactly when this step contains at least one such gap. A step is `running` while any of its own
+ *  checks is; `pending` while every one of its checks is still pending/never-observed *or* while it
+ *  has an unresolved-earlier gap (an apparent pass/fail from only the later checks it did see is
+ *  not evidence about the step as a whole -- D-05's "never invent progress" rule, applied to step
+ *  aggregation, not just individual checks); otherwise it falls through to the settled
+ *  aggregation, which is only reachable once every one of the step's checks has genuinely been
+ *  received. */
+function aggregateLiveStepState(checks: readonly DiscoveryCheckView[], hasUnresolvedEarlierCheck: boolean): CheckState {
   if (checks.some((c) => c.state === 'fail')) return 'fail';
   if (checks.some((c) => c.state === 'warning')) return 'warning';
   if (checks.some((c) => c.state === 'running')) return 'running';
   if (checks.every((c) => c.state === 'pending')) return 'pending';
+  if (hasUnresolvedEarlierCheck) return 'pending';
   return aggregateSettledStepState(checks);
 }
 
@@ -154,22 +163,34 @@ export function buildChecklist(input: BuildChecklistInput): DiscoveryChecklist {
   if (serverStatus === 'CONNECTING') {
     // D-05 / 05-RESEARCH.md Pitfall 3: `settled` is never read below this point in this branch.
     const resolved = receivedChecks.map((check) => checkView(check, []));
-    const resolvedIds = new Set(receivedChecks.map((check) => check.id));
-    // Discovery checks only start executing once the connection itself has succeeded (SS4.3) --
-    // evidenced by at least one received check. Before that, no check is "next in line" yet, so
-    // none renders `running`; every discovery-group check stays `pending`.
-    const firstUnresolvedIndex =
-      receivedChecks.length > 0 ? DISCOVERY_CHECK_IDS.findIndex((id) => !resolvedIds.has(id)) : -1;
+    // 05-VERIFICATION.md gap 3 / SC3: a page can mount mid-run (the normal "Save and connect"
+    // navigation path, or any SSE reconnect mid-run) and only ever observe checks from some point
+    // onward -- never assume it saw the run from `DISCOVERY_CHECK_IDS[0]`. `lastReceivedIndex` is
+    // the highest index among ids actually received (or `-1` before the first one arrives);
+    // discovery checks only start executing once the connection itself has succeeded (SS4.3), so
+    // before any check is received, none is "next in line" yet and every discovery-group check
+    // stays `pending`. An id below `lastReceivedIndex` that was never received is a genuine gap
+    // (this page missed it, not "not started yet") -- rendered `pending` here, same as any other
+    // unresolved id, but its step is separately marked via `hasUnresolvedEarlierCheck` so
+    // `aggregateLiveStepState` can refuse to report that step resolved on partial evidence.
+    const lastReceivedIndex =
+      receivedChecks.length > 0
+        ? Math.max(...receivedChecks.map((check) => DISCOVERY_CHECK_IDS.indexOf(check.id)))
+        : -1;
     const byStep = groupChecksByStep(resolved);
 
     const discoverySteps: DiscoveryStepView[] = DISCOVERY_GROUP_STEPS.map((stepId) => {
+      let hasUnresolvedEarlierCheck = false;
       const checks: DiscoveryCheckView[] = DISCOVERY_CHECK_IDS.filter((id) => CHECK_TO_STEP[id] === stepId).map((id) => {
         const already = byStep[stepId].find((c) => c.id === id);
         if (already) return already;
         const idx = DISCOVERY_CHECK_IDS.indexOf(id);
-        return pendingCheckView(id, idx === firstUnresolvedIndex ? 'running' : 'pending');
+        if (idx < lastReceivedIndex) {
+          hasUnresolvedEarlierCheck = true;
+        }
+        return pendingCheckView(id, lastReceivedIndex !== -1 && idx === lastReceivedIndex + 1 ? 'running' : 'pending');
       });
-      return { id: stepId, state: aggregateLiveStepState(checks), checks };
+      return { id: stepId, state: aggregateLiveStepState(checks, hasUnresolvedEarlierCheck), checks };
     });
 
     // Discovery only starts after a successful, authenticated connection (SS4.3) -- the first
