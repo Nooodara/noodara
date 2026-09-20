@@ -155,7 +155,6 @@ describe('apiGet/apiSend', () => {
   it('recognises every ApiErrorCode (except NETWORK_ERROR) as a known service error code', async () => {
     for (const code of ALL_KNOWN_SERVICE_ERROR_CODES) {
       fetchMock.mockResolvedValueOnce(jsonResponse(409, { error: code, message: 'x' }));
-      // eslint-disable-next-line no-await-in-loop -- sequential by design, each iteration needs its own mock
       const result = await apiGet('/api/servers/srv_1');
       expect(result.ok).toBe(false);
       if (result.ok) continue;
