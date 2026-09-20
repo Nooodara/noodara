@@ -36,6 +36,15 @@ export default function createEventsRoutes(deps: EventsRoutesDeps): FastifyPlugi
 
   const eventsRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
     fastify.get('/api/events', (request, reply) => {
+      // The guarded scope authorises the request (an async session lookup) before this handler
+      // runs. A peer that disconnected in the meantime has ALREADY emitted `close`, so the
+      // listener registered at the bottom of this handler would never fire and the stream would
+      // hold one of the capped slots below until the process restarts. Nothing between this check
+      // and that listener awaits, so there is no window left between them.
+      if (request.raw.destroyed || request.raw.socket.destroyed) {
+        return;
+      }
+
       // D-07: checked *before* hijacking, so exceeding the limit is an ordinary JSON response,
       // never a half-opened stream.
       if (deps.broadcaster.size >= deps.maxConnections) {
