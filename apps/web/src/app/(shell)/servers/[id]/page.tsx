@@ -35,10 +35,12 @@ import { ServerDetailToolbar } from '../../../../components/ServerDetailToolbar'
 import { ServerFacts } from '../../../../components/ServerFacts';
 import { TrustFingerprintDialog } from '../../../../components/TrustFingerprintDialog';
 import { apiGet, type ApiErrorCode, type ServerView } from '../../../../lib/api-client';
+import { reconcileDetailSnapshot } from '../../../../lib/detail-sync';
 import { deriveDetailState, derivePrimaryAction } from '../../../../lib/detail-state';
 import { copyForErrorCode, copyForServerErrorCode } from '../../../../lib/error-copy';
 import { dismissFirstTrustNotice, shouldShowFirstTrustNotice } from '../../../../lib/first-trust';
 import { requireSession } from '../../../../lib/require-session';
+import { safeLocalStorage } from '../../../../lib/safe-storage';
 import { useShellContext } from '../../../../lib/shell-context';
 
 type PageState =
@@ -90,10 +92,19 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
   // must patch in place, never re-skeletonize an already-visible screen.
   const hasLoadedRef = useRef(false);
   // DISC-02/D-05: this run's `server.discovery_progress` checks, accumulated here (never inside
-  // `DiscoverySection` itself) and cleared the instant a new run starts -- detected below as a
-  // transition into `CONNECTING` for this same server id.
+  // `DiscoverySection` itself) and cleared on every transition into OR out of `CONNECTING` --
+  // detected below in `applyServer`'s shared status-transition handler, whether the transition was
+  // learned from a `GET` snapshot or an SSE event (05-VERIFICATION.md gap 3 finding: only the SSE
+  // branch used to clear it, and only on the into-CONNECTING direction).
   const [liveChecks, setLiveChecks] = useState<readonly DiscoveryCheck[]>([]);
-  const previousStatusRef = useRef<ServerView['status'] | null>(null);
+  // 05-VERIFICATION.md gap 2 / SC2 (DETL-01/DETL-02): the currently displayed server, mirrored
+  // here so `applyServer` always reconciles against the live value, never a stale render closure.
+  // `latestRequestRef` makes only the newest issued GET allowed to publish (a superseded GET whose
+  // response resolves late is dropped outright); `deletedRef` is set once by `server.deleted` and
+  // never unset for this mount, so no later GET -- however it resolves -- can resurrect the row.
+  const heldServerRef = useRef<ServerView | null>(null);
+  const latestRequestRef = useRef(0);
+  const deletedRef = useRef(false);
   // D-02: a dismissal is client-side, cosmetic state read fresh on every render via
   // first-trust.ts's own shouldShowFirstTrustNotice/dismissFirstTrustNotice -- this setter only
   // forces a re-render after a click so the notice disappears immediately; the counter's value
@@ -104,19 +115,67 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
   // whichever detail state is currently rendered underneath it.
   const [trustDialogOpen, setTrustDialogOpen] = useState(false);
 
+  // The one write path onto `state: { kind: 'ready' }` (05-VERIFICATION.md gap 2 / SC2) -- every
+  // writer (`fetchServer`'s success, the resync path it shares, `server.updated`) calls this
+  // instead of `setState` directly. `reconcileDetailSnapshot` is the pure decision;
+  // `latestRequestRef`/`deletedRef`/`heldServerRef` are the only refs it needs, all owned here.
+  const applyServer = useCallback(
+    (next: ServerView, source: 'snapshot' | 'event', requestSequence: number | null): void => {
+      const decision = reconcileDetailSnapshot({
+        held: heldServerRef.current,
+        incoming: next,
+        source,
+        isDeleted: deletedRef.current,
+        requestSequence,
+        latestRequestSequence: latestRequestRef.current,
+      });
+      if (!decision.accept) {
+        return;
+      }
+
+      const previousStatus = heldServerRef.current?.status ?? null;
+      const enteringConnecting = previousStatus !== 'CONNECTING' && next.status === 'CONNECTING';
+      const leavingConnecting = previousStatus === 'CONNECTING' && next.status !== 'CONNECTING';
+      if (enteringConnecting || leavingConnecting) {
+        // A run just started or just ended -- discard whatever live progress belonged to it, from
+        // either direction, so a finished run's checks can never render as the next run's.
+        setLiveChecks([]);
+      }
+
+      heldServerRef.current = next;
+      hasLoadedRef.current = true;
+      setState({ kind: 'ready', server: next });
+    },
+    [],
+  );
+
   const fetchServer = useCallback((): void => {
     if (!hasLoadedRef.current) {
       setState({ kind: 'loading' });
     }
 
+    latestRequestRef.current += 1;
+    const requestSequence = latestRequestRef.current;
+
     void apiGet<ServerView>(`/api/servers/${encodeURIComponent(id)}`).then((result) => {
+      if (!result.ok && result.unauthorized) {
+        // The shell's own session guard owns the redirect -- this screen never navigates to
+        // /login itself (matches (shell)/servers/page.tsx's own precedent).
+        void requireSession();
+        return;
+      }
+      if (requestSequence !== latestRequestRef.current) {
+        // Superseded by a newer GET already issued for this id -- dropped unconditionally,
+        // success or failure, so an older request resolving late can never win a race.
+        return;
+      }
+      if (deletedRef.current) {
+        // Already known deleted (a real `server.deleted` arrived) -- nothing a late-resolving GET
+        // says can move this screen off "This server no longer exists.".
+        return;
+      }
+
       if (!result.ok) {
-        if (result.unauthorized) {
-          // The shell's own session guard owns the redirect -- this screen never navigates to
-          // /login itself (matches (shell)/servers/page.tsx's own precedent).
-          void requireSession();
-          return;
-        }
         if (result.code === 'NOT_FOUND') {
           setState({ kind: 'not-found' });
           return;
@@ -125,15 +184,14 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         return;
       }
 
-      hasLoadedRef.current = true;
-      previousStatusRef.current = result.data.status;
-      setState({ kind: 'ready', server: result.data });
+      applyServer(result.data, 'snapshot', requestSequence);
     });
-  }, [id]);
+  }, [id, applyServer]);
 
   useEffect(() => {
     hasLoadedRef.current = false;
-    previousStatusRef.current = null;
+    heldServerRef.current = null;
+    deletedRef.current = false;
     setLiveChecks([]);
     fetchServer();
   }, [fetchServer]);
@@ -146,22 +204,18 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
     () =>
       subscribe((event) => {
         if (event.type === 'server.updated' && event.server.id === id) {
-          hasLoadedRef.current = true;
-          if (previousStatusRef.current !== 'CONNECTING' && event.server.status === 'CONNECTING') {
-            // A new run just started -- discard whatever the previous run's live progress was.
-            setLiveChecks([]);
-          }
-          previousStatusRef.current = event.server.status;
-          setState({ kind: 'ready', server: event.server });
+          applyServer(event.server, 'event', null);
         }
         if (event.type === 'server.deleted' && event.id === id) {
+          deletedRef.current = true;
+          heldServerRef.current = null;
           setState({ kind: 'not-found' });
         }
         if (event.type === 'server.discovery_progress' && event.serverId === id) {
           setLiveChecks((prev) => (prev.some((check) => check.id === event.check.id) ? prev : [...prev, event.check]));
         }
       }),
-    [subscribe, id],
+    [subscribe, id, applyServer],
   );
 
   if (state.kind === 'loading') {
@@ -210,16 +264,17 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         onActionSettled={fetchServer}
       />
       <div className="mx-auto flex max-w-[1120px] flex-col gap-8 p-8">
-        {/* D-02, 05-UI-SPEC.md SS2.5 layout position 1 -- shown once per server, gated on the
-            real browser localStorage (never reached from a unit test; see first-trust.test.ts
-            for the storage-injected pure logic this reads). Recomputed fresh on every render --
+        {/* D-02, 05-UI-SPEC.md SS2.5 layout position 1 -- shown once per server, gated on
+            `safeLocalStorage()` (T-5G-29-05: a blocked/unavailable storage backend degrades to
+            "show the notice", never throws through render; see first-trust.test.ts for the
+            storage-injected pure logic this reads). Recomputed fresh on every render --
             `setDismissTick` above only exists to trigger the re-render after a click. */}
-        {shouldShowFirstTrustNotice(window.localStorage, server.id, server.hostFingerprintCapturedAt) &&
+        {shouldShowFirstTrustNotice(safeLocalStorage(), server.id, server.hostFingerprintCapturedAt) &&
         server.hostFingerprint !== null ? (
           <FirstTrustNotice
             fingerprint={server.hostFingerprint}
             onDismiss={() => {
-              dismissFirstTrustNotice(window.localStorage, server.id);
+              dismissFirstTrustNotice(safeLocalStorage(), server.id);
               setDismissTick((tick) => tick + 1);
             }}
           />
