@@ -265,6 +265,132 @@ no a un cambio de lenguaje de componente entero como B o una desviación textual
 
 ## 3. Decisión del usuario
 
-**DECISIÓN PENDIENTE.** Responder con `candidate-a`, `candidate-b`, `candidate-c`, o valores propios
-(indicando, para cada token que se aparte de un candidato, el valor exacto y confirmando que pasa
-`contrast.ts` a ≥4.5:1 en el tema correspondiente).
+**Decidido el 2026-09-20.** El usuario no eligió un candidato completo -- eligió un híbrido de los tres,
+tras una re-medición independiente del orquestador que encontró dos defectos en la propia redacción de
+candidatos de la sección 2 (ver "Erratum" más abajo). La decisión literal:
+
+**D1 -- Status pills, "Candidato C":** se añaden tokens `--status-{ok,warn,error,idle}-text` que
+gobiernan únicamente la palabra del pill. Valores -- light: ok `#207b37`, warn `#9e5c00`, error
+`#c22d24`, idle `#69696d`; dark: ok `#30d158` y warn `#ff9f0a` (espejo del token base), error `#ff584e`,
+idle `#959599`. Los tokens `--status-*` base y sus `-soft` NO cambian (dots, bordes y meters siguen a
+saturación completa). `StatusPill.tsx`: la palabra usa el token `-text`; el dot deja de usar `bg-current`
+y pasa a una clase `bg-status-{tone}` explícita. Los nuevos tokens se conectan a Tailwind en
+`packages/ui/theme.css` con el mismo mecanismo `--color-status-X: var(--status-X)` ya existente.
+
+**D2 -- Botón primario en dark, "split token":** el `--accent: #1f73c2` (dark) del Candidato A queda
+RECHAZADO -- el orquestador midió que `--accent` también se usa como FOREGROUND (texto de enlace en
+`ActivityRow.tsx`/`servers/[id]/page.tsx`, y contornos de foco/bordes en 5+2 sitios) y ese valor oscurecido
+medía 2.92-3.69:1 ahí, algo que la auditoría original (solo on-accent/accent) nunca vio. En su lugar: un
+token nuevo `--accent-fill = #0071e3` en AMBOS temas, usado en toda FILL que lleve texto `--on-accent`
+(`Button.tsx` primary, `SegmentedControl.tsx` estado checked, el skip link del shell). `--accent` se
+mantiene sin cambios (`#0071e3` light / `#2997ff` dark) para enlaces, contornos y bordes; `--on-accent`
+se mantiene `#ffffff`.
+
+**D3 -- Ink:** `--ink-secondary` light: `#6e6e73` → `#6c6c71` (como en la sección 2). `--ink-tertiary`:
+light `#6d6d70`, dark `#909094` (NO los `#68686b`/`#919195` de la sección 2, ni la "alternativa"
+`#737375`/`#828287` -- el orquestador midió esos dos últimos en `#4.15` y `3.74` sobre `--surface-3`:
+FALLAN; la sección 2 estaba equivocada ahí -- ver Erratum). El caso `Banner.tsx` `errorCode` (que usaba
+`--ink-tertiary` sobre el tinte compuesto de `--status-error-soft`) se arregla EN EL CALL SITE:
+`Banner.tsx` pasa a `--ink-secondary` ahí. Costo aceptado y explícito: en light, `--ink-tertiary` queda
+prácticamente igual de oscuro que `--ink-secondary` -- la jerarquía de tres pasos ink/ink-secondary/
+ink-tertiary se reduce a ~dos bajo AA estricto; queda registrado como una limitación para el futuro
+rediseño de UI, no resuelto aquí.
+
+### Nudge post-decisión (ejecutor, 2026-09-20, mismo día)
+
+Al aplicar D1/D3 literalmente y auditar CADA superficie realmente renderizada (no solo la superficie
+genérica que la sección 2 había medido), aparecieron dos casos donde los valores exactos de la decisión
+no alcanzaban 4.5:1:
+
+1. **`Banner.tsx` `errorCode`, light**: `--ink-secondary` a `#6c6c71` sobre el tinte compuesto de
+   `--status-error-soft` sobre `--surface-1` (`#ffe4e2`) medía **4.33:1** -- FALLA el propio requisito de
+   D3 ("debe ser ≥4.5"). Este par nunca se había medido en la sección 2 (que solo auditó `--ink-tertiary`
+   ahí, no `--ink-secondary`).
+2. **`StatusPill` sobre `--canvas`**, light: los cuatro tonos `-text` de D1, calculados solo contra
+   `--surface-1`, fallaban contra `--canvas` (ok 4.40, warn 4.36, error 4.35, idle 4.42) -- el fondo real
+   de `ServerRow` (05-UI-SPEC.md D-09: sin card wrapper, la fila vive directamente sobre `--canvas`).
+   `--status-error-text`/`--status-idle-text` en dark también fallaban contra `--surface-2` (el estado
+   hover de la fila): 4.23 y 4.16.
+
+Siguiendo la misma regla que D3 ya autorizaba para `--ink-tertiary` ("si no llega a 4.50, ajustar el
+mínimo paso posible, en 8 bits, y reportar el valor final"), se aplicó el mismo criterio a estos dos casos
+nuevos, en vez de detener la ejecución:
+
+- `--ink-secondary` light se oscureció un paso mínimo adicional más allá de la decisión literal:
+  `#6c6c71` → **`#69696e`** (pasa el peor caso, `Banner.tsx`, a 4.53; las cuatro superficies planas suben
+  de margen, de 4.79-5.22 a 5.01-5.45).
+- Los cuatro `--status-*-text` se oscurecieron (light) / aclararon (dark, solo error e idle) hasta que
+  las TRES superficies reales de StatusPill (`--surface-1`, `--canvas`, `--surface-2`) pasan:
+  - light: ok `#207b37`→`#1e7935`, warn `#9e5c00`→`#9b5900`, error `#c22d24`→`#be2920`,
+    idle `#69696d`→`#67676b`.
+  - dark: ok y warn sin cambio (ya pasaban en las tres superficies); error `#ff584e`→`#ff655b`,
+    idle `#959599`→`#9d9da1`.
+
+Todos los deltas son de 2 a 13 unidades de 8 bits por canal (la mayoría 2-4; el peor caso, error dark,
+13). Cada valor final está re-medido por `packages/ui/src/contrast.test.ts` contra el `tokens.css` real,
+no estimado.
+
+### Erratum (sección 2)
+
+La "alternativa que preserva mejor la jerarquía" de la sección 2 (`--ink-tertiary` `#737375` light /
+`#828287` dark) es **incorrecta**: medida contra `--surface-3`, `#737375` da **4.15:1** y `#828287` da
+**3.74:1** -- ambas por debajo de 4.5:1. La sección 2 las presentó como si pasaran "con margen"; no es
+así. Esta es la razón por la que D3 usa los valores `#6d6d70`/`#909094` en su lugar (los mismos que ya
+estaban en la fila "Verificado con `auditTheme`" de la sección 2 para el Candidato A/B/C, que sí pasan).
+
+### Nueva brecha descubierta, fuera del alcance autorizado de esta decisión
+
+La auditoría exhaustiva de `--accent` como FOREGROUND (no solo como fill) en las cuatro superficies --
+el chequeo cuya ausencia dejó pasar el Candidato A rechazado -- encontró que el valor de `--accent` que
+D2 mantiene sin cambios (`#0071e3` light) **ya fallaba** como texto de enlace en dos superficies reales
+antes de esta decisión y sigue fallando después, porque D2 explícitamente no autoriza tocar `--accent`:
+`--accent` como texto sobre `--canvas` (light) = **4.31:1** y sobre `--surface-3` (light) = **4.12:1**.
+Ambos casos SÍ pasan el umbral de contorno/borde (3.0:1): 4.31 y 4.12. Se confirmó render real en
+`ActivityRow.tsx` (enlace al servidor) y `servers/[id]/page.tsx` (enlace "← Servers" en el estado
+not-found), ambos sin card wrapper, sobre `--canvas`. Queda registrado como deferred item (ver
+`deferred-items.md`), no corregido en este plan -- arreglarlo requeriría oscurecer `--accent`, que D2
+prohíbe explícitamente para preservar el color de enlaces/contornos.
+
+## 4. Medición después (2026-09-20, tokens.css aplicado)
+
+76 pares auditados (34 originales + 42 nuevos de D1/D2: accent-fill, accent-como-foreground con verdicto
+doble texto/contorno, y status-*-text sobre surface-1/canvas/surface-2). 9 fallan, los 9 documentados y
+justificados individualmente en `packages/ui/src/contrast.test.ts`'s `KNOWN_UNRENDERED_OR_DEFERRED_FAILURES`:
+
+| Par | Tema | Ratio | Motivo del fallo |
+|---|---|---|---|
+| `--on-accent` / `--accent` | dark | 3.01 | patrón superado -- ningún call site real empareja ya on-accent con accent (todos migraron a accent-fill) |
+| `--status-{ok,warn,error,idle}` / propio `-soft` sobre `--surface-1` | light (4) + dark (2: error, idle) | 1.96-4.21 | patrón superado -- StatusPill es el único sitio que empareja bg-status-soft con texto, y ahora usa el token `-text` |
+| `--accent` como texto sobre `--canvas` | light | 4.31 | real, pre-existente, fuera del alcance autorizado (D2 no permite tocar `--accent`) -- ver sección 3 |
+| `--accent` como texto sobre `--surface-3` | light | 4.12 | ídem |
+
+Todos los demás pares (67 de 76) PASAN, incluidos los que antes fallaban: el par WR-C-08 original (17 de
+34), el botón primario en dark (ahora vía `--accent-fill`, 4.69), los ocho pares de status pill (ahora
+vía `-text`, 4.53-6.97 en las tres superficies reales), y los cuatro `--ink-tertiary` (ahora 4.53-5.68).
+
+Pares nombrados fuera de la auditoría genérica (call sites específicos, medidos aparte en
+`contrast.test.ts`):
+
+| Par | Sitio | Light | Dark |
+|---|---|---|---|
+| `--ink-secondary` sobre `--status-error-soft` compuesto sobre `--surface-1` | `Banner.tsx` `errorCode` | 4.53 PASS | 5.57 PASS |
+| `--status-error-text` sobre `--surface-1` | `Field.tsx` mensaje de error inline | 5.95 PASS | 5.82 PASS |
+| `--status-error-text` sobre `--surface-3` | `RowMenu.tsx` ítem "Delete" | 5.23 PASS | 4.95 PASS |
+
+Los tres pares WR-C-08 §1.2 que este plan SÍ corrige: Banner (`errorCode`, ambos temas), Field.tsx
+(ambos temas) y RowMenu.tsx (ambos temas) -- los tres antes fallaban, los tres pasan ahora. Ningún par de
+§1.2 queda silenciosamente descartado.
+
+## 5. Fuera de alcance, no corregido en este plan (ver `deferred-items.md`)
+
+- `--accent` como texto de enlace sobre `--canvas`/`--surface-3` en light (4.31/4.12) -- ver sección 3.
+- `Button.tsx`'s `DESTRUCTIVE_FILLED_CLASSES` (`bg-status-error text-on-accent`, el botón de confirmación
+  del diálogo de borrado con `filled`) nunca fue parte del alcance de 17 pares original ni de D1/D2/D3 --
+  medido por curiosidad durante este plan: `#ffffff` sobre `--status-error` da **3.54:1** light / **3.40:1**
+  dark, ambos FALLAN 4.5:1. Es un botón de alto riesgo (confirma un borrado) con texto blanco poco legible
+  sobre el fondo rojo. No corregido aquí -- `Button.tsx` variant destructive+filled no está en
+  `files_modified` de este plan ni fue mencionado por D1/D2/D3.
+- `text-status-error`/`text-status-warn` en `DiscoveryStep.tsx`, `CredentialFields.tsx` y
+  `ActivityRow.tsx` (mono error code) siguen usando el token base `--status-error`/`--status-warn`, no el
+  nuevo `-text`. No fueron auditados por este plan (WR-C-08 solo nombraba Banner/Field/RowMenu) -- un
+  plan futuro debería medirlos y, si fallan, migrarlos al mismo patrón `-text`.

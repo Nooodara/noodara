@@ -292,3 +292,52 @@ memory pressure was real (10GB compressed, 28GB of 29.7GB swap in use) but was n
 - **Process lesson:** "flaky under load" is a hypothesis, not a finding. A bimodal duration
   (fast pass / exact-timeout fail) points at a hang, and a trace names the pending await in
   minutes.
+
+## 05-33 continuation (2026-09-20): contrast gaps found, but out of this plan's authorised scope
+
+Found while extending `contrast.ts`'s audit to cover every surface actually rendered against, per the
+gate_requirements the orchestrator handed this continuation. Measured with `contrast.test.ts` against
+the real, post-fix `tokens.css`. Not fixed here -- see `docs/contrast-decision-05.md` sections 3 and 5
+for the full reasoning.
+
+### `--accent` as link text fails on `--canvas` and `--surface-3` in light mode
+
+- **Measured:** `--accent` (`#0071e3`) as foreground text on `--canvas` = **4.31:1**, on `--surface-3`
+  = **4.12:1** -- both below 4.5:1. The outline/border verdict (3.0:1) passes on both (4.31, 4.12).
+- **Real call sites confirmed:** `apps/web/src/components/ActivityRow.tsx` (`text-accent` server link)
+  and `apps/web/src/app/(shell)/servers/[id]/page.tsx` (`text-accent` "← Servers" link in the
+  not-found state) -- both render with no card wrapper, directly on the shell's `--canvas`
+  (05-UI-SPEC.md D-09's no-card pattern), so this is a real, currently-shipping gap, not a
+  theoretical one.
+- **Why not fixed here:** the user's D2 decision (2026-09-20) is explicit: "`--accent` stays
+  `#0071e3` light / `#2997ff` dark for links, outlines, borders" with no carve-out. Darkening
+  `--accent` to fix this would violate that instruction and risks the exact regression D2's own
+  `--accent-fill` split was designed to avoid (a foreground colour tuned for one use breaking
+  another). `packages/ui/src/contrast.test.ts`'s `KNOWN_UNRENDERED_OR_DEFERRED_FAILURES` names both
+  pairs explicitly so a future fix removes the allowlist entry rather than the check itself.
+- **Suggested follow-up:** a future plan authorised to touch `--accent`'s own value, or to wrap
+  these two call sites in a `--surface-1`/`--surface-2` container, should close this.
+
+### `Button.tsx`'s destructive-filled variant: white text on `--status-error` fails badly
+
+- **Measured:** `--on-accent` (`#ffffff`) on `--status-error` = **3.54:1** light / **3.40:1** dark --
+  both well below 4.5:1. This is the delete-confirmation dialog's own filled destructive button
+  (`variant="destructive" filled`), a high-stakes, low-frequency control.
+- **Why not fixed here:** `Button.tsx`'s `DESTRUCTIVE_FILLED_CLASSES` (`bg-status-error
+  text-on-accent`) was never part of the original 17-pair audit (05-33-PLAN.md Task 1) nor named by
+  any of D1/D2/D3; `Button.tsx` is only in this plan's authorised-deviation set for its `primary`
+  variant's `bg-accent` → `bg-accent-fill` migration (D2), not for this separate pair.
+- **Suggested follow-up:** a future plan should either give `--status-error` a `-fill` sibling
+  (mirroring `--accent-fill`'s pattern) or move this variant to `--status-error-text` on a light
+  background instead of white-on-solid-red.
+
+### Three status-colour call sites outside WR-C-08's named scope, not migrated to `-text`
+
+- `apps/web/src/components/DiscoveryStep.tsx` (the tone-word colour map and the "consequence" text),
+  `apps/web/src/components/CredentialFields.tsx` (inline field error), and
+  `apps/web/src/components/ActivityRow.tsx` (mono error code) all still use the base
+  `text-status-error`/`text-status-warn` tokens directly, not the new `-text` variants D1 introduced.
+- **Why not fixed here:** WR-C-08 (doc §1.2) only named `Banner.tsx`, `Field.tsx` and `RowMenu.tsx`;
+  these three were not measured or named by the user's decision.
+- **Suggested follow-up:** a future plan should measure each against its real background and, if it
+  fails 4.5:1, migrate it to the matching `-text` token the same way `Field.tsx`/`RowMenu.tsx` did.
