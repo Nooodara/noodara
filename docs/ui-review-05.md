@@ -44,19 +44,31 @@ open item (light-mode status-pill contrast), and one accessibility gap in the ha
 
 ## Accessibility findings
 
-### FLAG 1 (already known, explicitly accepted at the phase's own checkpoint) — light-mode status-pill contrast
+### FLAG 1 (already known; NOT accepted — routed to gap closure by the user, 2026-09-20) — status-pill contrast
 
-Computed contrast for full-saturation status text on its own `-soft` background fails WCAG AA in
-light mode for all four semantic colors (`--status-ok` ≈2.0:1, `--status-warn` ≈2.0:1,
-`--status-error` ≈3.1:1, `--status-idle` ≈2.8:1, all against the 4.5:1 small-text threshold),
-while dark mode passes comfortably (≈6.1–6.3:1). Reproduced verbatim in `packages/ui/tokens.css`
+Computed contrast for full-saturation status text on its own `-soft` background (the 14%-alpha
+tint composited over `--surface-1`) against the 4.5:1 WCAG AA small-text threshold. Figures
+recomputed independently by the orchestrator from `packages/ui/tokens.css`; they correct this
+review's first draft, which overstated dark mode as "passes comfortably (≈6.1–6.3:1)" — true for
+two of the four colors only:
+
+| Status | Light | Dark |
+|---|---|---|
+| `--status-ok` | 1.98:1 — fails | 6.42:1 — passes |
+| `--status-warn` | 1.96:1 — fails | 6.30:1 — passes |
+| `--status-error` | 2.95:1 — fails | 4.21:1 — fails narrowly |
+| `--status-idle` | 2.84:1 — fails | 4.22:1 — fails narrowly |
+
+So light mode fails for all four, and dark mode fails narrowly for `error` and `idle`. The
+light-mode values are reproduced verbatim in `packages/ui/tokens.css`
 (the light-mode `-soft` values), with a comment pointing at 05-UI-SPEC.md Open Question 1. This is
 a property of the **locked** `noodara-ux-apple` skill's tokens, not a bug in this phase's own
 implementation — it cannot be fixed by inventing a new token without the skill owner's decision.
 Mitigated in the meantime: the status *word* is always present in the DOM (never color-only),
-asserted for all six statuses. **This is exactly the decision Task 3's checkpoint asks the user to
-make** (patch the skill, accept for v0.1, or hold the phase) — not re-litigated here, only
-re-confirmed present and correctly mitigated.
+asserted for all six statuses — though a legible word is exactly what a failing contrast ratio
+takes away, so this mitigates less than it sounds. **Decision (user, Task 3 checkpoint,
+2026-09-20): fix in gap closure** — not accepted as-is, not a phase hold. The replacement text
+colors are a design decision the user makes in that gap plan.
 
 ### FLAG 2 (new finding this review) — `RowMenu`'s trigger has no `aria-expanded`
 
@@ -186,3 +198,27 @@ source code or a passing DOM assertion, and were **not** checked in this automat
 
 None of the above were rubber-stamped as PASS in this document — every row above that could not be
 verified from code/tests says so explicitly rather than being marked PASS by default.
+
+---
+
+## Human walkthrough (2026-09-20)
+
+Recorded by the orchestrator from the user's own words; this section is the only part of this
+document that reflects a human looking at the rendered UI.
+
+- **Who / how:** the user (Pablo Gutierrez) walked the running app through a temporary public
+  tunnel to a throwaway instance (ephemeral Postgres/Redis, per-session admin credentials, torn
+  down afterwards). Which screens, themes and input methods were actually exercised was not
+  reported, so none of the numbered items above is marked as individually checked.
+- **Known limit of that session:** the tunnel used (a Cloudflare Quick Tunnel) buffers
+  Server-Sent Events, so **live updates could not be observed** — no live list insertion, no
+  check-by-check discovery progress. That behaviour is covered by E2E (`@sse-live`, `@ssh-live`,
+  `critical-path.spec.ts`) but has **not** been seen by a human. Item 7's "watch the discovery
+  checklist fill in" therefore remains open.
+- **Verdict, verbatim:** "No me gusta la UI pero la vamos a ir mejorando con el tiempo. Por el
+  momento le doy approve."
+- **What that means for this document:** the phase is approved to close. It is **not** a
+  statement that the visual design is satisfactory — the user explicitly does not like the UI and
+  intends to improve it iteratively. No specific visual defects were named, so none are recorded
+  here; items 1–6 above stay open as human-review items, and visual-quality work is expected in
+  later iterations. Nothing in the dimension table above should be read as a human PASS.
