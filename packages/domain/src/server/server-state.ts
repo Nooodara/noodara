@@ -85,6 +85,25 @@ export function canTransition(from: ServerStatus, to: ServerStatus): boolean {
 }
 
 /**
+ * T-5G-27-04 (gap 6 / trust-fingerprint TOCTOU): true exactly when
+ * `transition(status, 'PENDING', { reason: 'fingerprint_trusted' })` would not throw. Implemented
+ * by calling `transition` itself rather than re-deriving a second table, so a future edge added to
+ * `TRANSITIONS`/`REASON_REQUIRED` is reflected here automatically — there is no second list to
+ * keep in sync (proven exhaustively for all six statuses in server-state.test.ts). A caller (the
+ * `trustFingerprint` service) uses this to return a typed 409 before ever reaching `transition`,
+ * so `InvalidTransitionError`/`MissingTransitionReasonError` is never reachable from a legitimate
+ * HTTP request on this edge.
+ */
+export function canTrustFingerprint(status: ServerStatus): boolean {
+  try {
+    transition(status, 'PENDING', { reason: 'fingerprint_trusted' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * The only function allowed to produce a new Server status. Throws `InvalidTransitionError` for
  * any pair not in the transition table, and `MissingTransitionReasonError` when a reason-gated
  * edge is attempted without its exact required reason.

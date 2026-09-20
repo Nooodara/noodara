@@ -6,6 +6,7 @@ import {
   type ServerStatus,
   type TransitionReason,
   canTransition,
+  canTrustFingerprint,
   transition,
 } from './server-state.js';
 
@@ -130,6 +131,33 @@ describe('transition (reason-gated edges, D-13/D-14/D-15)', () => {
     expect(() => transition('CONNECTED', 'DISCONNECTED', { reason: 'fingerprint_trusted' })).toThrow(
       MissingTransitionReasonError,
     );
+  });
+});
+
+describe('canTrustFingerprint (gap 6 / T-5G-27-04)', () => {
+  it('is true for ERROR', () => {
+    expect(canTrustFingerprint('ERROR')).toBe(true);
+  });
+
+  it.each<ServerStatus>(['PENDING', 'CONNECTING', 'CONNECTED', 'DISCONNECTED', 'UNREACHABLE'])(
+    'is false for %s',
+    (status) => {
+      expect(canTrustFingerprint(status)).toBe(false);
+    },
+  );
+
+  // Property test (plan 05-27 Task 1): canTrustFingerprint(s) === true iff
+  // transition(s, 'PENDING', { reason: 'fingerprint_trusted' }) does not throw, for every status
+  // — proving the predicate never drifts from transition()'s own table, without hardcoding a
+  // second list here that could silently diverge from it.
+  it.each(SERVER_STATUSES)('agrees with transition(%s, PENDING, fingerprint_trusted) not throwing', (status) => {
+    let transitionThrows = false;
+    try {
+      transition(status, 'PENDING', { reason: 'fingerprint_trusted' });
+    } catch {
+      transitionThrows = true;
+    }
+    expect(canTrustFingerprint(status)).toBe(!transitionThrows);
   });
 });
 
