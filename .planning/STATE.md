@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 05-37-PLAN.md (closing gate: full cross-suite run all green, eight gap verdicts re-derived, user approved the checkpoint but did not confirm any of the six human-only verification items, sshUser field-error bug found and routed to a separate /gsd-quick fix). Phase 05 is NOT complete -- pending: the /gsd-quick sshUser fix, code review, regression gate, and phase verification (expected outcome human_needed or gaps_found, not passed, while QA-04/QA-05 lack a real CI run and the six human items remain unconfirmed)."
+stopped_at: "Completed 05-37-PLAN.md (closing gate: full cross-suite run all green, eight gap verdicts re-derived, user approved the checkpoint but did not confirm any of the six human-only verification items, sshUser field-error bug found and routed to a separate /gsd-quick fix). Quick task 260920-ly9 then FIXED the sshUser bug (6319631 RED, 8d7091a GREEN; unit 1497/1497). Phase 05 is NOT complete -- pending: code review, regression gate, and phase verification (expected outcome human_needed or gaps_found, not passed, while QA-04/QA-05 lack a real CI run and the six human items remain unconfirmed)."
 last_updated: "2026-09-20T21:46:08Z"
 last_activity: 2026-09-20
 progress:
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 Phase: 05 (ui-web) — gap-closure plans complete (37/37 have a SUMMARY); phase itself NOT yet complete
 Plan: 37 of 37 plans have a SUMMARY. 05-37 (the closing gate) executed: all eleven gate commands green on the final tree (unit 1491/1491, integration 505/0/1-skipped, E2E 92/92, boot 7/7, provenance 52/52, leak canaries green); each of the eight 05-VERIFICATION.md gaps re-derived first-hand (4 CLOSED: gaps 1/2/6/7; 1 OPEN by design: gap 3/QA-04/QA-05; 2 PARTIAL: gaps 4/5). At the Task 3 checkpoint the user answered "Approve y haz un gsd quick del sshUser bug" -- the wave is approved to close, but the user did NOT state which of the six human-only verification items (real-display contrast, real CI run, live SSE walkthrough, Sheet/Dialog/RowMenu elevation, screen-reader pass, sub-1280px/reduced-motion feel) they actually checked, so all six are recorded as pendiente -- no confirmado por el usuario in .planning/phases/05-ui-web/05-GAP-CLOSURE-AUDIT.md section 3, not silently marked passed. A new bug (ServerSheet.tsx's SSH user Field has no error prop, silently swallowing a server-side sshUser validation error) was found live during re-derivation and, per the user's instruction, is being fixed via a separate /gsd-quick task run by the orchestrator right after this plan -- not inside this plan.
 Status: NOT ready to declare Phase 05 complete -- pending, in order: (1) the /gsd-quick sshUser fix, (2) code review, (3) the regression gate, (4) phase verification. Expected phase-verification outcome is human_needed or gaps_found, not passed, since QA-04/QA-05 stay Pending (no git remote, no observed CI/nightly run) and the six human-only items are unconfirmed.
-Last activity: 2026-09-20 -- 05-37 (closing gate + gap-closure audit) executed, checkpoint resolved
+Last activity: 2026-09-20 - Completed quick task 260920-ly9: render the server-side sshUser field error in ServerSheet
 
 Progress: [██████████] 100% of planned plans executed (phase 05 not yet verified complete)
 
@@ -414,6 +414,12 @@ None yet.
 - [05-37, found live during the closing gate's gap re-derivation, NOT fixed by this plan] `apps/web/src/components/ServerSheet.tsx`'s SSH user `Field` (around `:303-316`) renders with no `error` prop wired, while `handleApiFailure` (`:111-142`) does map a server-side `/sshUser` VALIDATION_FAILED issue into `fieldErrors` and suppresses the generic toast fallback once that map is non-empty -- so a real `sshUser` rejection from the backend now produces zero visible feedback, silently worse than before gap 5's fix. This was `05-REVIEW.md` WR-B-07's warned "latent second bug", confirmed still present by direct source read. Per the user's explicit instruction (2026-09-20 checkpoint answer), this is fixed via a separate `/gsd-quick` task run immediately by the orchestrator, not inside plan 05-37. See `.planning/phases/05-ui-web/05-GAP-CLOSURE-AUDIT.md` section 2 (Gap 5) and section 3.
 - [05-37, checkpoint answered 2026-09-20] The user approved closing the gap-closure wave ("Approve y haz un gsd quick del sshUser bug") but did not state which, if any, of the six human-only verification items (real-display contrast in both themes; a real CI run for QA-04/QA-05; a live SSE walkthrough not through a buffering tunnel; Sheet/Dialog/RowMenu floating-elevation shadow; a real screen-reader pass on RowMenu; sub-1280px/`prefers-reduced-motion` feel on real hardware) they actually checked. All six remain unconfirmed -- recorded honestly as such in `05-GAP-CLOSURE-AUDIT.md` section 3, not rounded up to "verified". They should surface again as UAT items in Phase 05's verification step.
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260920-ly9 | Render the server-side `sshUser` field error in ServerSheet (was silently swallowed; gap 5 residual from 05-GAP-CLOSURE-AUDIT.md) + guard test over every server-sheet form field | 2026-09-20 | 8d7091a | [260920-ly9-render-server-side-sshuser-field-error-i](./quick/260920-ly9-render-server-side-sshuser-field-error-i/) |
+
 ## Deferred Items
 
 Items acknowledged and carried forward from previous milestone close:
@@ -425,5 +431,5 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-09-20T21:46:08Z
-Stopped at: Completed 05-37-PLAN.md (closing gate: full cross-suite run all green, eight gap verdicts re-derived, user approved via checkpoint without confirming any of the six human-only items; sshUser field-error bug found and routed to a separate /gsd-quick fix run by the orchestrator next). Phase 05 is NOT complete -- pending: the /gsd-quick sshUser fix, code review, regression gate, and phase verification.
+Stopped at: Completed 05-37-PLAN.md (closing gate: full cross-suite run all green, eight gap verdicts re-derived, user approved via checkpoint without confirming any of the six human-only items; sshUser field-error bug found and routed to a separate /gsd-quick fix run by the orchestrator next). Quick task 260920-ly9 then FIXED the sshUser bug (6319631 RED, 8d7091a GREEN; unit 1497/1497). Phase 05 is NOT complete -- pending: code review, regression gate, and phase verification.
 Resume file: None
