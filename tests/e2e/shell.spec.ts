@@ -8,7 +8,7 @@
 // needs the shell's own chrome navigates back to `/servers` first, and a click/Enter on Activity
 // or Settings is only ever asserted by URL, exactly like tests/e2e/smoke.spec.ts's own
 // "the URL updates correctly, no page exists yet" precedent for `/servers` before Plan 05-12.
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './fixtures/stack.js';
 
 declare global {
@@ -39,6 +39,19 @@ function focusedAccessibleName(page: Page): Promise<string | null> {
 
 function focusedTheme(page: Page): Promise<string | null> {
   return page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+}
+
+// Orchestrator-assigned deviation (05-35-PLAN.md wave-1 E2E gate regression): every sidebar nav
+// link in this file must be scoped to `shell-sidebar`, never resolved at the page level. Plan
+// 05-32's activity specs create servers named `activity-refresh-fail-*`/`activity-refresh-gap-*`
+// on the shared E2E stack; their list rows render as links whose accessible name contains
+// "activity" as a case-insensitive substring, which Playwright's default (non-exact) `name`
+// matching for `getByRole('link', { name: 'Activity' })` also matches at the page level --
+// producing a strict-mode violation (3 elements) whenever this spec runs after those servers
+// exist. Scoping to the sidebar's own `data-testid` excludes every server-list row by
+// construction, regardless of what any server happens to be named.
+function sidebarLink(page: Page, name: string): Locator {
+  return page.getByTestId('shell-sidebar').getByRole('link', { name });
 }
 
 test('@shell pressing Tab from page load moves through the skip link, the three sidebar items, the theme toggle, then sign out', async ({
@@ -87,17 +100,17 @@ test('@shell every focused sidebar item shows a visible, non-zero focus outline'
 test('@shell activating a sidebar item by keyboard navigates to its route', async ({ page }) => {
   await login(page);
 
-  await page.getByRole('link', { name: 'Activity' }).focus();
+  await sidebarLink(page, 'Activity').focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/activity$/);
 
   await page.goto('/servers');
-  await page.getByRole('link', { name: 'Settings' }).focus();
+  await sidebarLink(page, 'Settings').focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/settings$/);
 
   await page.goto('/servers');
-  await page.getByRole('link', { name: 'Servers' }).focus();
+  await sidebarLink(page, 'Servers').focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/servers$/);
 });
@@ -121,11 +134,11 @@ test('@shell the sidebar collapses to an icon rail at 1024px and a bottom sheet 
   await login(page);
 
   await page.setViewportSize({ width: 1440, height: 900 });
-  await expect(page.getByRole('link', { name: 'Servers' }).locator('span')).toBeVisible();
+  await expect(sidebarLink(page, 'Servers').locator('span')).toBeVisible();
 
   await page.setViewportSize({ width: 1024, height: 800 });
-  await expect(page.getByRole('link', { name: 'Servers' }).locator('span')).toBeHidden();
-  await page.getByRole('link', { name: 'Servers' }).focus();
+  await expect(sidebarLink(page, 'Servers').locator('span')).toBeHidden();
+  await sidebarLink(page, 'Servers').focus();
   await expect(page.getByRole('tooltip')).toHaveText('Servers');
 
   await page.setViewportSize({ width: 800, height: 800 });
