@@ -26,7 +26,12 @@ async function main(): Promise<void> {
 
   app.listen({ port: env.PORT, host: '0.0.0.0' }, (err) => {
     if (err) {
-      app.log.error(err);
+      // WR-A-04: a bare `Error` as pino's first argument bypasses `logger.ts`'s `err` serializer
+      // for the record's own `msg` field (pino independently copies `err.message` there) even
+      // though the serializer still runs on the `err` key itself -- the merging-object form is
+      // what keeps the raw message out of the log line, matching the precedent already used
+      // correctly elsewhere in this codebase (`queue/connect-server-worker.ts`'s `{ jobId, err }`).
+      app.log.error({ err }, 'listen failed');
       process.exit(1);
     }
   });
