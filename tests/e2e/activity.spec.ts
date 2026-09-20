@@ -160,6 +160,174 @@ test('@activity Load older appends the next page while the previously loaded row
   await expect(page.getByTestId('activity-load-older')).toHaveCount(0);
 });
 
+test('@activity a failed background refresh keeps every already-loaded row on screen (WR-B-04)', async ({ page }) => {
+  await login(page);
+
+  const now = Date.now();
+  const alphaAt = new Date(now - 1_000).toISOString();
+  const betaAt = new Date(now - 2_000).toISOString();
+  const gammaAt = new Date(now - 3_000).toISOString();
+
+  let refreshShouldFail = false;
+  let backgroundRefreshFailureCount = 0;
+
+  await page.route('**/api/activity*', (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.has('cursor')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          items: [
+            buildActivityItemFixture({
+              id: 'evt-refresh-fail-gamma',
+              action: 'server.deleted',
+              occurredAt: gammaAt,
+              metadata: { name: 'refresh-fail-gamma', host: 'gamma.example.test' },
+            }),
+          ],
+          nextCursor: null,
+        } satisfies ActivityResponseFixture),
+      });
+    }
+    if (refreshShouldFail) {
+      backgroundRefreshFailureCount += 1;
+      return route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'INTERNAL_ERROR', message: 'stubbed background refresh failure' }),
+      });
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [
+          buildActivityItemFixture({
+            id: 'evt-refresh-fail-alpha',
+            action: 'server.deleted',
+            occurredAt: alphaAt,
+            metadata: { name: 'refresh-fail-alpha', host: 'alpha.example.test' },
+          }),
+          buildActivityItemFixture({
+            id: 'evt-refresh-fail-beta',
+            action: 'server.deleted',
+            occurredAt: betaAt,
+            metadata: { name: 'refresh-fail-beta', host: 'beta.example.test' },
+          }),
+        ],
+        nextCursor: 'opaque-page-2-cursor',
+      } satisfies ActivityResponseFixture),
+    });
+  });
+
+  await page.goto('/activity');
+  await expect(page.getByTestId('activity-row')).toHaveCount(2);
+
+  await page.getByTestId('activity-load-older').click();
+  await expect(page.getByTestId('activity-row')).toHaveCount(3);
+
+  refreshShouldFail = true;
+
+  // Drive a real `server.updated` SSE event through the real backend/worker/SSE stack -- exactly
+  // the trigger `scheduleRefresh` listens for -- rather than relying on `visibilitychange`, whose
+  // firing is not guaranteed under a headless runner.
+  const name = `activity-refresh-fail-${String(now)}`;
+  const created = await page.request.post('/api/servers', {
+    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+  });
+  expect(created.status()).toBe(201);
+  const createdBody = (await created.json()) as { id: string };
+  const patched = await page.request.patch(`/api/servers/${createdBody.id}`, {
+    data: { name: `${name}-renamed` },
+  });
+  expect(patched.status()).toBe(200);
+
+  await expect.poll(() => backgroundRefreshFailureCount).toBeGreaterThan(0);
+
+  // The previously-loaded list, including the older page, must still be on screen -- no
+  // full-screen error banner ever replaces it for a background refresh failure.
+  await expect(page.getByTestId('activity-error-banner')).toHaveCount(0);
+  await expect(page.getByTestId('activity-row')).toHaveCount(3);
+  await expect(page.getByText('refresh-fail-alpha')).toBeVisible();
+  await expect(page.getByText('refresh-fail-beta')).toBeVisible();
+  await expect(page.getByText('refresh-fail-gamma')).toBeVisible();
+});
+
+test('@activity a background refresh that returns a full page with no overlap resets to the fresh page instead of showing an unmarked gap (WR-B-05)', async ({
+  page,
+}) => {
+  await login(page);
+
+  const oldAt = new Date(Date.now() - 100_000).toISOString();
+  let refreshed = false;
+
+  await page.route('**/api/activity*', (route) => {
+    if (!refreshed) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          items: [
+            buildActivityItemFixture({
+              id: 'evt-gap-old-1',
+              action: 'server.deleted',
+              occurredAt: oldAt,
+              metadata: { name: 'gap-old-1', host: 'gap-old-1.example.test' },
+            }),
+            buildActivityItemFixture({
+              id: 'evt-gap-old-2',
+              action: 'server.deleted',
+              occurredAt: oldAt,
+              metadata: { name: 'gap-old-2', host: 'gap-old-2.example.test' },
+            }),
+          ],
+          nextCursor: null,
+        } satisfies ActivityResponseFixture),
+      });
+    }
+
+    const freshItems = Array.from({ length: 50 }, (_, index) =>
+      buildActivityItemFixture({
+        id: `evt-gap-fresh-${String(index)}`,
+        action: 'auth.login_failed',
+        occurredAt: new Date(Date.now() - index * 1_000).toISOString(),
+        entityType: 'session',
+        outcome: 'failure',
+        errorCode: 'INVALID_CREDENTIALS',
+        metadata: { email: 'unknown@example.test', ip: '10.0.0.1' },
+      }),
+    );
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: freshItems, nextCursor: 'opaque-fresh-cursor' } satisfies ActivityResponseFixture),
+    });
+  });
+
+  await page.goto('/activity');
+  await expect(page.getByTestId('activity-row')).toHaveCount(2);
+
+  refreshed = true;
+
+  const name = `activity-refresh-gap-${String(Date.now())}`;
+  const created = await page.request.post('/api/servers', {
+    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+  });
+  expect(created.status()).toBe(201);
+  const createdBody = (await created.json()) as { id: string };
+  const patched = await page.request.patch(`/api/servers/${createdBody.id}`, {
+    data: { name: `${name}-renamed` },
+  });
+  expect(patched.status()).toBe(200);
+
+  // No gap-detection affordance is defined by 05-UI-SPEC.md -- the fix resets to the fresh page
+  // rather than stitching two non-contiguous runs together silently (see 05-32-SUMMARY.md).
+  await expect(page.getByTestId('activity-row')).toHaveCount(50);
+  await expect(page.getByText('gap-old-1')).toHaveCount(0);
+  await expect(page.getByText('gap-old-2')).toHaveCount(0);
+});
+
 test('@activity expanding a server.created row shows exactly the curated pairs and never an unknown metadata key', async ({
   page,
 }) => {

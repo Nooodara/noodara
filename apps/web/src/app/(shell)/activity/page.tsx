@@ -123,11 +123,19 @@ export default function ActivityPage() {
           void requireSession();
           return;
         }
-        setState({
-          kind: 'error',
-          error: { message: `Couldn't load activity. ${genericFailureMessage(result.code, result.message)}`, code: result.code },
-          onRetry: fetchPage1,
-        });
+        // A background refresh (tab-focus regain, an SSE event) that fails must never wipe an
+        // already-loaded list -- only a FIRST load (previous state not `ready`) shows the
+        // full-screen banner, mirroring `loadOlder`'s own failure-branch precedent above
+        // (WR-B-04).
+        setState((prev) =>
+          prev.kind === 'ready'
+            ? prev
+            : {
+                kind: 'error',
+                error: { message: `Couldn't load activity. ${genericFailureMessage(result.code, result.message)}`, code: result.code },
+                onRetry: fetchPage1,
+              },
+        );
         return;
       }
 
