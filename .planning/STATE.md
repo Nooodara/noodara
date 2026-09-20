@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Phase 05 (ui-web) gap closure executing — 05-27 complete (trust-fingerprint bound to submitted value, WR-A-02 pendingFingerprint clear widened to all statuses; UI half deferred to 05-31), 10 plans remaining (05-28...05-37) across the remaining waves
-last_updated: "2026-09-20T16:19:17.024Z"
-last_activity: 2026-09-20 -- 05-27 (trust-fingerprint TOCTOU backend fix) executed
+stopped_at: "Completed 05-28-PLAN.md (DoD hardening: timeout, clipboard, safe storage, shell error boundary)"
+last_updated: "2026-09-20T16:39:50.228Z"
+last_activity: 2026-09-20 -- 05-28 (DoD hardening: request timeout, clipboard feature detection, safeLocalStorage, shell error boundary) executed
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 85
-  completed_plans: 75
-  percent: 67
+  completed_plans: 76
+  percent: 89
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING gap closure (05-26…05-37, 4 waves)
-Plan: 27 of 37 complete (12 gap-closure plans in progress; 05-33 and 05-37 are not autonomous — colour decision and human verification)
-Status: Executing gap closure. Phase NOT complete: 8 verification gaps (05-VERIFICATION.md) — 05-26 closed gap 2's backend half (CONNECTING wedge recovery); 05-27 closes gap 6's backend half (trust-fingerprint TOCTOU, WR-A-02) — UI half deferred to 05-31, trust-fingerprint action is non-functional in the UI until then. QA-04/QA-05 stay Pending until a real CI run is observed.
-Last activity: 2026-09-20 -- 05-27 (trust-fingerprint TOCTOU backend fix) executed
+Plan: 28 of 37 complete (12 gap-closure plans in progress; 05-33 and 05-37 are not autonomous — colour decision and human verification)
+Status: Executing gap closure. Phase NOT complete: 8 verification gaps (05-VERIFICATION.md) — 05-26 closed gap 2's backend half (CONNECTING wedge recovery); 05-27 closed gap 6's backend half (trust-fingerprint TOCTOU, WR-A-02) — UI half deferred to 05-31; 05-28 closed gap 4's timeout/clipboard/storage/error-boundary halves (api-client.ts request timeout, CopyButton feature detection, safeLocalStorage, (shell)/error.tsx) — the safeLocalStorage call-site swap in servers/[id]/page.tsx is deferred to 05-29, and the dod-hardening.spec.ts localStorage E2E case is test.fixme pending it. QA-04/QA-05 stay Pending until a real CI run is observed.
+Last activity: 2026-09-20 -- 05-28 (DoD hardening: request timeout, clipboard feature detection, safeLocalStorage, shell error boundary) executed
 
-Progress: [█████████░] 88%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
@@ -130,6 +130,7 @@ Progress: [█████████░] 88%
 | Phase 05 P21 | docs-closure | 1 tasks | 9 files |
 | Phase 05 P26 | 90min | 3 tasks | 5 files |
 | Phase 05 P27 | 50min | 3 tasks | 13 files |
+| Phase 05-ui-web P28 | 28min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -336,6 +337,8 @@ Recent decisions affecting current work:
 - [Phase 05-27]: canTrustFingerprint(status) calls transition() itself inside a try/catch rather than re-deriving a second status table, so it can never drift from the real transition rules
 - [Phase 05-27]: identityChanged for the pendingFingerprint clear stays its own local host/sshPort/sshUser comparison rather than reusing classifyServerEdit's 'identity' category, which deliberately excludes sshUser and answers a different question (D-14's CONNECTED transition)
 - [Phase 05-27]: Existing trustFingerprint() call sites in service-level integration tests and canary-full-flow.test.ts updated to pass the now-required fingerprint field (Rule 3 blocking fix, not in this plan's files_modified list)
+- [Phase 05-28]: AbortSignal.timeout does not respect vi.useFakeTimers() on this repo's Node 24/Vitest 5 -- both timeout tests spy on AbortSignal.timeout and drive an AbortController directly instead of advancing fake time
+- [Phase 05-28]: API_REQUEST_TIMEOUT_MS = 15000, composed with any caller signal via AbortSignal.any in the one performRequest choke point
 
 ### Pending Todos
 
@@ -392,6 +395,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-20T16:18:36.079Z
-Stopped at: Phase 05 (ui-web) gap closure executing — 05-27 complete (trust-fingerprint bound to submitted value, WR-A-02 pendingFingerprint clear widened to all statuses; UI half deferred to 05-31), 10 plans remaining (05-28...05-37) across the remaining waves
+Last session: 2026-09-20T16:39:50.220Z
+Stopped at: Completed 05-28-PLAN.md (DoD hardening: timeout, clipboard, safe storage, shell error boundary)
 Resume file: None
