@@ -32,9 +32,15 @@ export interface ActivityListProps {
    *  `RelativeTime` (no platform clock read inside this component or its rows). */
   readonly now: Date;
   readonly lookupServer: ServerLookup;
+  /** The viewer's own time zone for day-header grouping (WR-B-06). Optional so tests can inject a
+   *  fixed zone deterministically; defaults to the platform's own zone at runtime via
+   *  `Intl.DateTimeFormat().resolvedOptions().timeZone` -- the one permitted platform-clock read
+   *  in this screen family, kept here in the component layer and out of the pure
+   *  `activity-groups.ts` module. */
+  readonly timeZone?: string;
 }
 
-export function ActivityList({ state, now, lookupServer }: ActivityListProps) {
+export function ActivityList({ state, now, lookupServer, timeZone }: ActivityListProps) {
   if (state.kind === 'loading') {
     return (
       <div data-testid="activity-loading">
@@ -65,7 +71,8 @@ export function ActivityList({ state, now, lookupServer }: ActivityListProps) {
     return <EmptyState data-testid="activity-empty" title="No activity yet" body="Actions you take will show up here." />;
   }
 
-  const groups = groupByDay(state.items, now);
+  const viewerTimeZone = timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const groups = groupByDay(state.items, now, viewerTimeZone);
 
   return (
     <div data-testid="activity-list">

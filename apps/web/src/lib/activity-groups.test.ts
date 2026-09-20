@@ -82,6 +82,33 @@ describe('groupByDay -- ordering, labels and the injected reference date', () =>
 
     expect(groupByDay(items, now)).toEqual(groupByDay(items, now));
   });
+
+  // WR-B-06: the same instant must group under a different calendar day depending only on the
+  // injected timeZone, with TODAY/YESTERDAY computed in that same zone -- never a mix of a UTC
+  // todayKey and a locally-zoned dayKey. Both assertions below run in the same test file with the
+  // zone injected explicitly, so the result is independent of the runner's own TZ (also verified
+  // by running this suite twice with different `TZ=` env values -- see 05-32-SUMMARY.md).
+  it('groups the same instant into TODAY under UTC and YESTERDAY under a zone 6 hours behind (viewer time zone injected explicitly)', () => {
+    const now = new Date('2026-03-15T12:00:00.000Z');
+    const eventAt = '2026-03-15T02:30:00.000Z';
+
+    const utcGroups = groupByDay([item('evt', eventAt)], now, 'UTC');
+    expect(utcGroups[0]?.label).toBe('TODAY');
+
+    const mexicoCityGroups = groupByDay([item('evt', eventAt)], now, 'America/Mexico_City');
+    expect(mexicoCityGroups[0]?.label).toBe('YESTERDAY');
+  });
+
+  it('groups the same instant under two distinct calendar-day abbreviated labels once "now" has moved far enough that neither zone reports TODAY/YESTERDAY', () => {
+    const eventAt = '2026-03-15T02:30:00.000Z'; // 2026-03-14T20:30 in America/Mexico_City (UTC-6)
+    const muchLaterNow = new Date('2026-03-20T12:00:00.000Z');
+
+    const utcGroups = groupByDay([item('evt', eventAt)], muchLaterNow, 'UTC');
+    const mexicoCityGroups = groupByDay([item('evt', eventAt)], muchLaterNow, 'America/Mexico_City');
+
+    expect(utcGroups[0]?.label).toBe('MAR 15');
+    expect(mexicoCityGroups[0]?.label).toBe('MAR 14');
+  });
 });
 
 describe('mergePage -- append (Load older) mode', () => {
