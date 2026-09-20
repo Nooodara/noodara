@@ -334,7 +334,7 @@ Plans:
 
 **Gap Wave 1** *(parallel-safe: disjoint files)*
 
-- [ ] 05-26-PLAN.md — CONNECTING wedge: try/catch tras TX1 en `connect-and-discover.ts` y listener `failed` del worker → `failInFlightConnection` (gap 2 backend, WR-A-01)
+- [x] 05-26-PLAN.md — CONNECTING wedge: try/catch tras TX1 en `connect-and-discover.ts` y listener `failed` del worker → `failInFlightConnection` (gap 2 backend, WR-A-01)
 - [ ] 05-27-PLAN.md — Trust de host key en backend: body `{ fingerprint }`, promote atómico condicional, 409 `FINGERPRINT_MISMATCH`, limpieza de `pendingFingerprint` en todo edit de identidad (gap 6, WR-A-02)
 - [ ] 05-28-PLAN.md — Hardening de navegador: timeout con `AbortSignal` en `api-client.ts`, guard de clipboard, `safe-storage.ts`, `(shell)/error.tsx` (gap 4)
 - [ ] 05-30-PLAN.md — Errores de campo del servidor se pintan (`normalizeFieldPath`), tres fallos de setup distinguibles, token fuera de la URL y `Referrer-Policy` (gap 5)
@@ -392,5 +392,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 25/37 | Gap closure planned | - |
+| 5. UI web | 26/37 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |

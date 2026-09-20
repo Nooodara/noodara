@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Phase 05 (ui-web) gap closure planned — 12 plans 05-26…05-37 in 4 waves, plan-checker passed; next /gsd-execute-phase 5 --gaps-only
-last_updated: "2026-09-20T14:23:11.064Z"
-last_activity: 2026-09-20 -- Phase 05 planning complete
+stopped_at: Phase 05 (ui-web) gap closure executing — 05-26 complete (CONNECTING wedge recovery, backend half of gap 2 closed), 11 plans remaining (05-27…05-37) across the remaining waves
+last_updated: "2026-09-20T15:50:20.255Z"
+last_activity: 2026-09-20 -- 05-26 (CONNECTING wedge recovery) executed
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 85
-  completed_plans: 73
-  percent: 67
+  completed_plans: 74
+  percent: 87
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 ## Current Position
 
-Phase: 05 (ui-web) — 25 plans executed; VERIFICATION = gaps_found (8 gaps); gap closure planned 2026-09-20 (05-26…05-37)
-Plan: 25 of 37 complete (12 gap-closure plans pending; 05-33 and 05-37 are not autonomous — colour decision and human verification)
-Status: Ready to execute gap closure. Phase NOT complete: code review 0 critical / 37 warning (05-REVIEW.md), 8 verification gaps (05-VERIFICATION.md). QA-04/QA-05 stay Pending until a real CI run is observed.
-Last activity: 2026-09-20 -- Phase 05 planning complete
+Phase: 05 (ui-web) — EXECUTING gap closure (05-26…05-37, 4 waves)
+Plan: 26 of 37 complete (12 gap-closure plans in progress; 05-33 and 05-37 are not autonomous — colour decision and human verification)
+Status: Executing gap closure. Phase NOT complete: 8 verification gaps (05-VERIFICATION.md) — 05-26 closes gap 2's backend half (CONNECTING wedge recovery); code review 0 critical / 37 warning (05-REVIEW.md). QA-04/QA-05 stay Pending until a real CI run is observed.
+Last activity: 2026-09-20 -- 05-26 (CONNECTING wedge recovery) executed
 
-Progress: [██████████] 100%
+Progress: [█████████░] 87%
 
 ## Performance Metrics
 
@@ -128,6 +128,7 @@ Progress: [██████████] 100%
 | Phase 05 P19 | 50 | 3 tasks | 13 files |
 | Phase 05 P20 | ~3h + debug session (see SUMMARY) | 3 tasks | 27 files |
 | Phase 05 P21 | docs-closure | 1 tasks | 9 files |
+| Phase 05 P26 | 90min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -330,6 +331,7 @@ Recent decisions affecting current work:
 - [Phase 05-21]: Checkpoint resolution (user, 2026-09-20): light-mode status-pill contrast (fails WCAG AA in light mode for all four statuses, fails narrowly in dark for error/idle), the missing floating-elevation shadow, and RowMenu's missing aria-expanded are NOT accepted as-is -- routed to a follow-up gap-closure plan ('Arreglar en gap-closure'), not a phase hold.
 - [Phase 05-21]: Checkpoint verdict, verbatim (user, 2026-09-20): 'No me gusta la UI pero la vamos a ir mejorando con el tiempo. Por el momento le doy approve.' Approved to close the phase -- explicitly NOT a statement that the visual design is satisfactory. Never paraphrase as 'UI approved' or 'design signed off.'
 - [Phase 05-21]: QA-05 stays Pending: its literal text requires a CI job AND a nightly job to actually run; this repo has no git remote so neither workflow has ever executed on GitHub Actions. Same reasoning/missing-evidence shape as QA-04 (05-20).
+- [Phase 05-26]: connect-and-discover.ts's post-TX1 region wraps in try/catch calling failInFlightConnection(reason: connect_service_threw) before rethrowing — closes the CONNECTING wedge (05-VERIFICATION.md gap 2, WR-A-01); recovery failure inside the catch is swallowed defensively so the original error is never masked, with the worker's 'failed' listener as a second line of defense (reason: worker_job_failed)
 
 ### Pending Todos
 
@@ -384,6 +386,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-20T07:14:00.253Z
-Stopped at: Completed 05-21-PLAN.md — phase 05 (ui-web) all 25 plans executed, awaiting phase verification
+Last session: 2026-09-20T15:50:20.246Z
+Stopped at: Phase 05 (ui-web) gap closure executing — 05-26 complete (CONNECTING wedge recovery, backend half of gap 2 closed), 11 plans remaining (05-27…05-37) across the remaining waves
 Resume file: None
