@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { Button } from './Button.js';
 
@@ -68,9 +68,34 @@ export interface ThemeToggleProps {
 // even by mistake, and every localStorage access is try/catch-guarded so a browser with storage
 // disabled (private mode, a blocking extension, a full quota) never breaks the toggle.
 export function ThemeToggle({ 'data-testid': testId }: ThemeToggleProps) {
-  const [mode, setMode] = useState<Mode>(() => readStoredTheme() ?? 'system');
+  // WR-C-01: the server never has a `localStorage` to read, so the initial render must never
+  // depend on it -- 'system' is a fixed, environment-independent default, identical on the
+  // server and on the very first client render (no hydration mismatch). The real stored
+  // preference (if any) is adopted a moment later, in the mount effect below.
+  const [mode, setMode] = useState<Mode>('system');
+  // Guards the data-theme-writing effect below against clobbering
+  // `THEME_BOOTSTRAP_SCRIPT`'s (apps/web/src/lib/theme-script.ts) already-correct pre-hydration
+  // value with a wrong system-default one, for the single frame between this component settling
+  // on 'system' at mount and the storage-read effect adopting the real stored value. `false`
+  // only for that one frame; the very first data-theme effect run flips it and returns without
+  // writing, and every run after that (including the one the storage-read effect's `setMode`
+  // triggers) writes normally.
+  const settledRef = useRef(false);
 
   useEffect(() => {
+    const stored = readStoredTheme();
+    if (stored !== null) {
+      setMode(stored);
+    }
+    // No stored value -- 'system' was already correct and THEME_BOOTSTRAP_SCRIPT already applied
+    // the matching data-theme before hydration; nothing else to settle.
+  }, []);
+
+  useEffect(() => {
+    if (!settledRef.current) {
+      settledRef.current = true;
+      return;
+    }
     const resolved: StoredTheme = mode === 'system' ? resolveSystemTheme() : mode;
     document.documentElement.setAttribute('data-theme', resolved);
   }, [mode]);
