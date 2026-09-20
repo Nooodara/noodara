@@ -1,11 +1,16 @@
 // 05-19-PLAN.md Task 3: the TOFU surfaces (D-02 first-trust notice, D-03 HOST_KEY_CHANGED banner
 // + trust-new-fingerprint dialog) verified in a real browser, plus the UI-level counterpart of
-// 05-01-SUMMARY.md's UF-01 regression test (D-17). Five `@hostkey` behaviours use `page.route`
+// 05-01-SUMMARY.md's UF-01 regression test (D-17). Most `@hostkey` behaviours use `page.route`
 // interception (ADR-0005's established pattern, matching tests/e2e/server-detail.spec.ts's own
-// precedent) for the rendering/interaction cases route interception can honestly prove; the sixth
-// (UF-01 itself) drives a real, sequential pair of sshd Testcontainers fixtures on the same fixed
-// host:port -- the whole point of that regression is that the server-side fix holds against a
-// genuine identity edit, not a stubbed one.
+// precedent) for the rendering/interaction cases route interception can honestly prove.
+//
+// 05-31-PLAN.md (gap 6 / T-5G-27, .planning/todos/pending/2026-09-19-trust-fingerprint-toctou.md
+// item 3) adds two more real-backend cases on top of UF-01's own sequential-sshd-fixtures
+// technique -- the whole point of a real fixture is that the server-side fix holds against a
+// genuine identity edit or a genuine trust POST, not a stubbed one -- plus a stubbed mid-review
+// fingerprint-swap regression (installSyntheticServerEvents/dispatchServerUpdated below, the same
+// technique tests/e2e/discovery.spec.ts already uses to dispatch synthetic SSE frames onto the
+// app's own real EventSource instance).
 import { expect, test, type Page, type Request } from '@playwright/test';
 import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './fixtures/stack.js';
 import { startSshd, type SshdFixture } from '../integration/helpers/ssh.js';
@@ -14,6 +19,11 @@ import { startSshd, type SshdFixture } from '../integration/helpers/ssh.js';
 // connection-loss.test.ts's 42_533 -- Playwright's own config pins `workers: 1`/`fullyParallel:
 // false`, so nothing else in this test run can race this port.
 const FIXED_HOST_PORT = 42_544;
+// A second fixed port, distinct from FIXED_HOST_PORT above, for 05-31-PLAN.md's own real-backend
+// trust-flow test -- both tests stop their containers in a `finally` block before the next test
+// starts (workers: 1/fullyParallel: false), but a dedicated port keeps each test's intent legible
+// on its own and avoids any accidental cross-test coupling through a shared constant.
+const REAL_TRUST_FLOW_HOST_PORT = 42_545;
 
 async function login(page: Page): Promise<void> {
   await page.goto('/login');
@@ -100,6 +110,46 @@ async function stubServerGet(page: Page, fixture: ServerViewFixture): Promise<vo
 
 const TRUSTED_FINGERPRINT = 'SHA256:trusted0000000000000000000000000000000000';
 const OBSERVED_FINGERPRINT = 'SHA256:observed00000000000000000000000000000000';
+
+// 05-31-PLAN.md Task 3: the same synthetic-EventSource technique tests/e2e/discovery.spec.ts's own
+// `installSyntheticServerEvents`/`dispatchServerUpdated` already established, duplicated here per
+// this file's own precedent of not sharing helpers across e2e specs (see `buildServerViewFixture`
+// above). Dispatches byte-shaped `server.updated` frames on the real `EventSource` instance the
+// app's own `useServerEvents` hook is listening on -- a stub, not the real backend, named as such.
+async function installSyntheticServerEvents(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const NativeEventSource = window.EventSource;
+    const instances: EventSource[] = [];
+
+    class InstrumentedEventSource extends NativeEventSource {
+      constructor(url: string | URL, eventSourceInitDict?: EventSourceInit) {
+        super(url, eventSourceInitDict);
+        instances.push(this);
+      }
+    }
+
+    (window as unknown as { __dispatchServerEvent: (type: string, data: unknown) => void }).__dispatchServerEvent = (
+      type,
+      data,
+    ) => {
+      const payload = JSON.stringify(data);
+      for (const instance of instances) {
+        instance.dispatchEvent(new MessageEvent(type, { data: payload }));
+      }
+    };
+
+    window.EventSource = InstrumentedEventSource;
+  });
+}
+
+async function dispatchServerUpdated(page: Page, server: ServerViewFixture): Promise<void> {
+  await page.evaluate((server) => {
+    (window as unknown as { __dispatchServerEvent: (type: string, data: unknown) => void }).__dispatchServerEvent(
+      'server.updated',
+      { type: 'server.updated', server },
+    );
+  }, server);
+}
 
 test('@hostkey the first-trust notice shows with the fingerprint and the verification command; dismissing hides it, a reload keeps it hidden, and the permanent fingerprint row survives', async ({
   page,
@@ -227,7 +277,7 @@ test('@hostkey the trust-new-fingerprint dialog keeps its confirm button disable
   await expect(confirmButton).toBeEnabled();
 });
 
-test('@hostkey confirming with the exact name posts to trust-fingerprint exactly once; success reflects PENDING with only Connect, and issues no automatic connect request', async ({
+test('@hostkey confirming with the exact name posts to trust-fingerprint exactly once, carrying the exact fingerprint the dialog displayed; success reflects PENDING with only Connect, and issues no automatic connect request', async ({
   page,
 }) => {
   let current = buildServerViewFixture({
@@ -286,6 +336,94 @@ test('@hostkey confirming with the exact name posts to trust-fingerprint exactly
 
   await expect.poll(() => trustRequests.length).toBe(1);
   expect(connectRequests).toHaveLength(0);
+  // 05-31-PLAN.md hard rule 8a / gap 6: the POST must carry exactly the fingerprint this dialog
+  // displayed -- never no body at all (the pre-05-31 contract) and never a different value.
+  expect(trustRequests[0]?.postDataJSON()).toEqual({ fingerprint: OBSERVED_FINGERPRINT });
+});
+
+// 05-31-PLAN.md Task 2/3 (gap 6 / T-5G-27): the key regression this plan closes. A live
+// `server.updated` SSE event swaps the pending fingerprint while the dialog is open for review --
+// the dialog must keep showing (and sending) the value it displayed at open time, the backend's
+// atomic conditional UPDATE (trust-fingerprint.ts, real behaviour proven by
+// tests/integration/http/trust-fingerprint.test.ts and the real-backend test below, not by this
+// stub) then genuinely refuses the stale value, and the dialog must close and re-render the banner
+// with the new value rather than silently retrying or accepting it.
+test('@hostkey a live server.updated event mid-review swaps the pending fingerprint; the dialog still sends what it displayed, a FINGERPRINT_MISMATCH closes it, and the banner re-renders with the new value', async ({
+  page,
+}) => {
+  const SWAPPED_FINGERPRINT = 'SHA256:swapped0000000000000000000000000000000000';
+
+  let current = buildServerViewFixture({
+    id: '77777777-7777-4777-8777-777777777777',
+    name: 'mid-review-swap-srv',
+    status: 'ERROR',
+    lastErrorCode: 'HOST_KEY_CHANGED',
+    hostFingerprint: TRUSTED_FINGERPRINT,
+    hostFingerprintCapturedAt: '2026-09-01T00:00:00.000Z',
+    pendingFingerprint: OBSERVED_FINGERPRINT,
+    pendingFingerprintSeenAt: '2026-09-19T11:00:00.000Z',
+  });
+
+  await page.route(`**/api/servers/${current.id}`, (route) => {
+    if (route.request().method() !== 'GET') {
+      return route.fallback();
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(current) });
+  });
+
+  const trustRequests: Request[] = [];
+  page.on('request', (request) => {
+    if (request.url().endsWith(`/api/servers/${current.id}/trust-fingerprint`) && request.method() === 'POST') {
+      trustRequests.push(request);
+    }
+  });
+
+  // Stubbed 409 -- the real atomic conditional UPDATE that produces this response for a genuinely
+  // stale value is proven against a real Postgres row by the real-backend test below and by
+  // apps/control-plane's own trust-fingerprint integration coverage, not by this file. This test's
+  // job is the client-side contract: what gets sent, and what the UI does with the response.
+  await page.route(`**/api/servers/${current.id}/trust-fingerprint`, (route) =>
+    route.fulfill({
+      status: 409,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        error: 'FINGERPRINT_MISMATCH',
+        message: 'Submitted fingerprint no longer matches the server’s pending fingerprint',
+      }),
+    }),
+  );
+
+  await installSyntheticServerEvents(page);
+  await login(page);
+  await page.goto(`/servers/${current.id}`);
+  await expect(page.getByTestId('shell-stream-status')).toHaveCount(0);
+
+  await page.getByTestId('host-key-changed-banner').getByRole('button', { name: 'Trust new fingerprint' }).click();
+  const dialog = page.getByTestId('trust-fingerprint-dialog');
+  await expect(dialog).toContainText(`Observed: ${OBSERVED_FINGERPRINT}`);
+
+  // The live swap: a real second HOST_KEY_CHANGED connect attempt landing mid-review would look
+  // exactly like this from the browser's point of view.
+  current = { ...current, pendingFingerprint: SWAPPED_FINGERPRINT, pendingFingerprintSeenAt: '2026-09-19T11:30:00.000Z' };
+  await dispatchServerUpdated(page, current);
+
+  // The dialog must keep showing what it displayed at open time, not the live swap.
+  await expect(dialog).toContainText(`Observed: ${OBSERVED_FINGERPRINT}`);
+  await expect(dialog).not.toContainText(SWAPPED_FINGERPRINT);
+
+  await dialog.getByRole('textbox').fill('mid-review-swap-srv');
+  await dialog.getByRole('button', { name: 'Trust new fingerprint' }).click();
+
+  await expect.poll(() => trustRequests.length).toBe(1);
+  // The POST must carry the snapshotted (stale) value, never the swapped live one.
+  expect(trustRequests[0]?.postDataJSON()).toEqual({ fingerprint: OBSERVED_FINGERPRINT });
+
+  // The dialog closes and the banner re-renders with the swapped value (onSettled's refetch) --
+  // the admin must review the new value and re-type the name from scratch, never a silent retry.
+  await expect(page.getByTestId('trust-fingerprint-dialog')).toHaveCount(0);
+  await expect(page.getByTestId('host-key-changed-banner')).toContainText(`Observed: ${SWAPPED_FINGERPRINT}`);
+  // Nothing was promoted -- the trusted fingerprint the banner shows is unchanged.
+  await expect(page.getByTestId('host-key-changed-banner')).toContainText(`Trusted: ${TRUSTED_FINGERPRINT}`);
 });
 
 test('@hostkey UF-01 regression: editing the host while ERROR/HOST_KEY_CHANGED clears the pending fingerprint, so the trust affordance disappears and the trusted fingerprint stays unchanged', async ({
@@ -365,6 +503,109 @@ test('@hostkey UF-01 regression: editing the host while ERROR/HOST_KEY_CHANGED c
     // promoted against the wrong identity, and it is now gone rather than silently promotable.
     expect(afterEditBody.hostFingerprint).toBe(originalFingerprint);
     expect(afterEditBody.pendingFingerprint).toBeNull();
+  } finally {
+    await sshdA?.stop();
+    await sshdB?.stop();
+  }
+});
+
+// 05-31-PLAN.md Task 3 item (c): the one test in this file that proves the actual production bug
+// this plan fixes is gone -- before this plan, `TrustFingerprintDialog.tsx` posted no body at all,
+// so `POST /api/servers/:id/trust-fingerprint` (which plan 05-27 made require `{ fingerprint }`)
+// rejected EVERY real trust attempt with 400 VALIDATION_FAILED, even though
+// `tests/e2e/host-key.spec.ts`'s own "success" test above stayed green throughout (it stubs the
+// POST and never inspected what the page actually sent). This test drives the whole flow --
+// register, connect, a genuine host-key change, trust -- against the real control plane, worker
+// and a real sshd Testcontainers fixture, with no stub anywhere on the trust-fingerprint route.
+test('@hostkey the real trust-fingerprint POST succeeds end to end against the real backend, carrying the exact fingerprint the dialog displayed', async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+
+  let sshdA: SshdFixture | undefined;
+  let sshdB: SshdFixture | undefined;
+
+  try {
+    sshdA = await startSshd({ ubuntu: '24.04', hostPort: REAL_TRUST_FLOW_HOST_PORT });
+
+    await login(page);
+    await page.getByRole('button', { name: 'Add server' }).click();
+    await expect(page.getByTestId('server-sheet')).toBeVisible();
+
+    const name = `real-trust-flow-${String(Date.now())}`;
+    await page.getByLabel('Name').fill(name);
+    await page.getByLabel('Host').fill(sshdA.host);
+    await page.getByLabel('SSH port').fill(String(sshdA.port));
+    await page.getByLabel('SSH user').fill('pwuser');
+    await page.getByTestId('server-sheet-credential-type').getByRole('radio', { name: 'Password' }).click();
+    await page.getByLabel('Password').fill(sshdA.password);
+
+    await page.getByTestId('server-sheet-save-connect').click();
+    await expect(page).toHaveURL(/\/servers\/[0-9a-f-]+$/);
+    await expect(page.getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTED', { timeout: 45_000 });
+
+    const serverId = page.url().split('/').pop();
+    if (serverId === undefined) throw new Error('could not read server id from the URL');
+
+    const before = await page.request.get(`/api/servers/${serverId}`);
+    const beforeBody = (await before.json()) as { hostFingerprint: string | null };
+    const originalFingerprint = beforeBody.hostFingerprint;
+    expect(originalFingerprint).not.toBeNull();
+
+    // A real host-key change, the same technique the UF-01 test above uses: stop the first
+    // container and start a second, fresh-keyed one on the exact same host:port.
+    await sshdA.stop();
+    sshdA = undefined;
+    sshdB = await startSshd({ ubuntu: '24.04', hostPort: REAL_TRUST_FLOW_HOST_PORT });
+
+    await page.getByTestId('server-detail-primary-action').click();
+    const banner = page.getByTestId('host-key-changed-banner');
+    await expect(banner).toBeVisible({ timeout: 45_000 });
+
+    // Read the real pending fingerprint straight from the API rather than scraping the banner's
+    // rendered text -- a real fingerprint carries an `ssh-ed25519 SHA256:...` algorithm prefix
+    // (unlike this file's other, synthetic `SHA256:...`-only fixtures), and the banner interleaves
+    // it with a "Copy" button and a relative-time label with no reliable text boundary to parse.
+    // This is exactly the same value the dialog itself reads and displays (`server.pendingFingerprint`,
+    // TrustFingerprintDialog.tsx), so asserting against it is equivalent to asserting against what
+    // was shown on screen -- `toContainText` just below proves the banner rendered it too.
+    const midway = await page.request.get(`/api/servers/${serverId}`);
+    const midwayBody = (await midway.json()) as { pendingFingerprint: string | null };
+    const observedFingerprint = midwayBody.pendingFingerprint;
+    if (observedFingerprint === null) throw new Error('server has no pendingFingerprint after the host-key change');
+    expect(observedFingerprint).not.toBe(originalFingerprint);
+    await expect(banner).toContainText(observedFingerprint);
+
+    const trustRequests: Request[] = [];
+    page.on('request', (request) => {
+      if (request.url().endsWith(`/api/servers/${serverId}/trust-fingerprint`) && request.method() === 'POST') {
+        trustRequests.push(request);
+      }
+    });
+
+    await banner.getByRole('button', { name: 'Trust new fingerprint' }).click();
+    const dialog = page.getByTestId('trust-fingerprint-dialog');
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('textbox').fill(name);
+    await dialog.getByRole('button', { name: 'Trust new fingerprint' }).click();
+
+    // No stub anywhere on this route in this test -- a 400/409 here means the real backend
+    // genuinely rejected the request, which fails the assertions below, never a false green.
+    await expect(page.getByTestId('trust-fingerprint-dialog')).toHaveCount(0);
+    await expect(page.getByTestId('status-pill')).toHaveAttribute('data-status', 'PENDING', { timeout: 15_000 });
+
+    expect(trustRequests).toHaveLength(1);
+    expect(trustRequests[0]?.postDataJSON()).toEqual({ fingerprint: observedFingerprint });
+
+    const after = await page.request.get(`/api/servers/${serverId}`);
+    const afterBody = (await after.json()) as {
+      status: string;
+      hostFingerprint: string | null;
+      pendingFingerprint: string | null;
+    };
+    expect(afterBody.status).toBe('PENDING');
+    expect(afterBody.hostFingerprint).toBe(observedFingerprint);
+    expect(afterBody.pendingFingerprint).toBeNull();
   } finally {
     await sshdA?.stop();
     await sshdB?.stop();
