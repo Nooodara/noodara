@@ -48,6 +48,13 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      # Plan 05-21 (QA-05, T-5-99/T-5-100/T-5-103): the repo-wide UI safety gates -- exactly one
+      # reviewed dangerouslySetInnerHTML, zero JSON.stringify into a component/page, zero literal
+      # colours outside the token source of truth, zero outline:none, zero Radix
+      # focus-trap/outside-click overrides, zero full-screen spinners, zero cross-origin
+      # credentials, and the test-only component harness reachable only from *.test.tsx/*.test.ts
+      # -- part of the merge gate, not a one-off local habit.
+      - run: pnpm check:ui-safety
 
   typecheck:
     name: typecheck
