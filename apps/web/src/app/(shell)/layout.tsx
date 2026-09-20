@@ -70,7 +70,9 @@ export default function ShellLayout({ children }: { readonly children: ReactNode
             this app) a visible ring with no per-component override needed. */}
         <a
           href="#shell-main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-sm focus:bg-accent focus:px-4 focus:py-2 focus:text-callout focus:font-medium focus:text-on-accent"
+          // focus:bg-accent-fill, not focus:bg-accent (05-33 continuation D2, 2026-09-20) -- this
+          // fill carries focus:text-on-accent, same rationale as Button.tsx's primary variant.
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-sm focus:bg-accent-fill focus:px-4 focus:py-2 focus:text-callout focus:font-medium focus:text-on-accent"
         >
           Skip to content
         </a>

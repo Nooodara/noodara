@@ -21,7 +21,9 @@ const ITEM_CLASSES = cn(
   'rounded-sm px-3.5 py-1 text-callout font-medium text-ink-secondary',
   'transition-[background-color,color] duration-[var(--duration-micro)] ease-[var(--ease-standard)]',
   'outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-  'data-[state=checked]:bg-accent data-[state=checked]:text-on-accent',
+  // bg-accent-fill, not bg-accent (05-33 continuation D2, 2026-09-20) -- this fill carries
+  // --on-accent text, same rationale as Button.tsx's primary variant.
+  'data-[state=checked]:bg-accent-fill data-[state=checked]:text-on-accent',
   'disabled:pointer-events-none disabled:opacity-50',
 );
 

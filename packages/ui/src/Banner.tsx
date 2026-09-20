@@ -42,7 +42,11 @@ export function Banner({ message, errorCode, action, children, 'data-testid': te
             <span />
           )}
           {errorCode !== undefined ? (
-            <span data-mono="true" className="text-mono text-ink-tertiary">
+            // text-ink-secondary, not text-ink-tertiary (05-33 continuation, D3 call-site fix,
+            // 2026-09-20): --ink-tertiary on this banner's own --status-error-soft-over-
+            // --surface-1 tint measured 1.83:1 light / 2.83:1 dark -- both real AA failures.
+            // --ink-secondary clears 4.5:1 here in both themes (measured, see contrast.test.ts).
+            <span data-mono="true" className="text-mono text-ink-secondary">
               {errorCode}
             </span>
           ) : null}

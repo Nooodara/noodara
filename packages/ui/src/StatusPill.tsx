@@ -6,14 +6,26 @@ export interface StatusPillProps {
   readonly status: ServerStatus;
 }
 
-// One class pair per Tone: `-soft` background, full-saturation text (skill SS2.1 -- "el texto
-// sobre -soft usa el color pleno"). The dot below reads `bg-current` so it inherits this same
-// full-saturation colour from its parent's text colour, with no separate token lookup.
+// One class pair per Tone: `-soft` background, tone-specific `-text` word colour (Plan 05-33
+// continuation, decision D1, 2026-09-20 -- supersedes skill SS2.1's original "el texto sobre
+// -soft usa el color pleno", which failed AA at pill (12px) size in both themes; see
+// docs/contrast-decision-05.md and the SKILL.md exception note this decision added). The dot
+// below no longer reads `bg-current` -- see DOT_CLASSES -- because the word and the dot must be
+// allowed to diverge in colour now that the word is tuned for contrast, not full saturation.
 const TONE_CLASSES: Record<Tone, string> = {
-  ok: 'bg-status-ok-soft text-status-ok',
-  warn: 'bg-status-warn-soft text-status-warn',
-  error: 'bg-status-error-soft text-status-error',
-  idle: 'bg-status-idle-soft text-status-idle',
+  ok: 'bg-status-ok-soft text-status-ok-text',
+  warn: 'bg-status-warn-soft text-status-warn-text',
+  error: 'bg-status-error-soft text-status-error-text',
+  idle: 'bg-status-idle-soft text-status-idle-text',
+};
+
+// The dot stays at full saturation (D1: "dots, borders, meters stay vivid") via an explicit class
+// per tone, independent of whatever colour the word (TONE_CLASSES, above) now uses.
+const DOT_CLASSES: Record<Tone, string> = {
+  ok: 'bg-status-ok',
+  warn: 'bg-status-warn',
+  error: 'bg-status-error',
+  idle: 'bg-status-idle',
 };
 
 // StatusPill (skill SS4.2, 05-UI-SPEC.md SS8): state is never colour-only -- the STATUS_WORDS
@@ -41,7 +53,7 @@ export function StatusPill({ status }: StatusPillProps) {
     >
       <span
         aria-hidden="true"
-        className={cn('h-1.5 w-1.5 rounded-full bg-current', pulsing && 'motion-safe:animate-pulse')}
+        className={cn('h-1.5 w-1.5 rounded-full', DOT_CLASSES[tone], pulsing && 'motion-safe:animate-pulse')}
       />
       {STATUS_WORDS[status]}
     </span>

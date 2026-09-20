@@ -24,16 +24,21 @@
   --color-ink-tertiary: var(--ink-tertiary);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-fill: var(--accent-fill);
   --color-on-accent: var(--on-accent);
 
   --color-status-ok: var(--status-ok);
   --color-status-ok-soft: var(--status-ok-soft);
+  --color-status-ok-text: var(--status-ok-text);
   --color-status-warn: var(--status-warn);
   --color-status-warn-soft: var(--status-warn-soft);
+  --color-status-warn-text: var(--status-warn-text);
   --color-status-error: var(--status-error);
   --color-status-error-soft: var(--status-error-soft);
+  --color-status-error-text: var(--status-error-text);
   --color-status-idle: var(--status-idle);
   --color-status-idle-soft: var(--status-idle-soft);
+  --color-status-idle-text: var(--status-idle-text);
 
   /* --- Font families --------------------------------------------------------------------- */
   --font-sans: var(--font-sans);

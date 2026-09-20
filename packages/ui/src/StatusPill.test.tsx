@@ -33,6 +33,19 @@ describe('StatusPill', () => {
     expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
   });
 
+  // Plan 05-33 continuation, decision D1 (2026-09-20): the dot keeps the full-saturation
+  // `--status-{tone}` colour via its own explicit class -- it no longer reads `bg-current`, since
+  // the pill word now uses the separately-tuned `--status-{tone}-text` colour and the two are no
+  // longer guaranteed to match.
+  it.each(SERVER_STATUSES)('gives the dot an explicit bg-status-{tone} class, not bg-current, for %s', (status) => {
+    const { container } = renderUi(<StatusPill status={status} />);
+    const dot = container.querySelector('[aria-hidden="true"]');
+    const tone = serverStatusTone(status);
+
+    expect(dot?.className).toContain(`bg-status-${tone}`);
+    expect(dot?.className).not.toContain('bg-current');
+  });
+
   it.each(SERVER_STATUSES)('sets data-pulsing correctly for %s', (status) => {
     const { getByTestId } = renderUi(<StatusPill status={status} />);
     const expected = status === 'CONNECTING' ? 'true' : 'false';

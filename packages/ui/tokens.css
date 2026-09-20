@@ -18,28 +18,43 @@
   --hairline: rgba(0, 0, 0, 0.08);
   --hairline-strong: rgba(0, 0, 0, 0.14);
   --ink: #1d1d1f;
-  --ink-secondary: #6e6e73;
-  --ink-tertiary: #aeaeb2;
+  --ink-secondary: #69696e;
+  --ink-tertiary: #6d6d70;
   --accent: #0071e3;
   --accent-soft: rgba(0, 113, 227, 0.1);
   --on-accent: #ffffff;
+  /* Plan 05-33 continuation, decision D2 (2026-09-20): FILLS that carry --on-accent text/icons
+     (primary Button, skip link, checked SegmentedControl segment) bind to this token instead of
+     --accent directly. --accent itself stays link-text/outline/border foreground -- see the
+     RESOLVED note below for why the two had to split. */
+  --accent-fill: #0071e3;
 
   /* Semantic status colors (light). Reserved exclusively for infrastructure state -- never
-     decoration. Each has a -soft variant at 14% alpha for pill backgrounds; text on -soft
-     always uses the full-saturation token, never the -soft one. */
+     decoration. Each has a -soft variant at 14% alpha for pill backgrounds. RESOLVED (see note
+     below): full-saturation text on -soft no longer applies inside StatusPill -- the pill word
+     uses the paired -text token instead; dots, borders and meters keep the vivid values below. */
   --status-ok: #34c759;
   --status-ok-soft: rgba(52, 199, 89, 0.14);
+  --status-ok-text: #1e7935;
   --status-warn: #ff9500;
   --status-warn-soft: rgba(255, 149, 0, 0.14);
+  --status-warn-text: #9b5900;
   --status-error: #ff3b30;
   --status-error-soft: rgba(255, 59, 48, 0.14);
+  --status-error-text: #be2920;
   --status-idle: #8e8e93;
   --status-idle-soft: rgba(142, 142, 147, 0.14);
-  /* OPEN QUESTION (05-UI-SPEC.md SS Accessibility / Open Question 1): full-saturation status
-     text on its own -soft background computes to ~2.0-3.1:1 contrast in light mode -- fails
-     WCAG AA for pill-sized (12px) text. This reproduces the locked skill's tokens as-is; it is
-     not silently patched here with an invented token. Re-raised for the user at Plan 05-21's
-     review checkpoint. */
+  --status-idle-text: #67676b;
+  /* RESOLVED (05-UI-SPEC.md SS Accessibility / Open Question 1, re-raised 05-21, escalated to gap
+     closure by the user 2026-09-20; see docs/contrast-decision-05.md for the full measured
+     record): the user chose a hybrid of the plan's three candidates on 2026-09-20 (D1/D2/D3).
+     D1 adds a --status-*-text token per tone for the pill word only, measured against every
+     background StatusPill actually renders on (not just its own -soft/--surface-1 default).
+     D3 darkens --ink-secondary/--ink-tertiary; the literal D3 hex values were nudged one
+     additional minimal step each after this task's own re-measurement found two compositing
+     cases the decision's own figures had not been checked against (Banner.tsx's errorCode tint,
+     and StatusPill on --canvas/--surface-2) -- see docs/contrast-decision-05.md section 3's
+     erratum and packages/ui/src/contrast.test.ts's gate for the reproducible numbers. */
 
   /* --- Typography (theme-independent) ----------------------------------------------------- */
   --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif;
@@ -135,17 +150,24 @@
   --hairline-strong: rgba(255, 255, 255, 0.14);
   --ink: #f5f5f7;
   --ink-secondary: #a1a1a6;
-  --ink-tertiary: #6e6e73;
+  --ink-tertiary: #909094;
   --accent: #2997ff;
   --accent-soft: rgba(41, 151, 255, 0.16);
   --on-accent: #ffffff;
+  /* Same value in both themes (D2) -- #0071e3 is the one hex that clears >=4.5:1 for white
+     on-accent text while staying inside the single-blue-action-colour family both themes share. */
+  --accent-fill: #0071e3;
 
   --status-ok: #30d158;
   --status-ok-soft: rgba(48, 209, 88, 0.14);
+  --status-ok-text: #30d158;
   --status-warn: #ff9f0a;
   --status-warn-soft: rgba(255, 159, 10, 0.14);
+  --status-warn-text: #ff9f0a;
   --status-error: #ff453a;
   --status-error-soft: rgba(255, 69, 58, 0.14);
+  --status-error-text: #ff655b;
   --status-idle: #8e8e93;
   --status-idle-soft: rgba(142, 142, 147, 0.14);
+  --status-idle-text: #9d9da1;
 }

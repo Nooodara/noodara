@@ -50,7 +50,11 @@ export function Field({ label, help, error, children }: FieldProps) {
         </p>
       ) : null}
       {error ? (
-        <p id={errorId} role="alert" className="text-caption text-status-error">
+        // text-status-error-text, not text-status-error (05-33 continuation, WR-C-08 call-site
+        // fix, 2026-09-20): the base token measured 3.54:1 on --surface-1 in light -- a real AA
+        // failure on real inline error text, fixed by moving this call site to the pill-word
+        // token, which clears 4.5:1 here too (measured, see contrast.test.ts).
+        <p id={errorId} role="alert" className="text-caption text-status-error-text">
           {error}
         </p>
       ) : null}

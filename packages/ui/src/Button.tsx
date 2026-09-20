@@ -32,7 +32,10 @@ const BASE_CLASSES = cn(
 );
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'bg-accent text-on-accent hover:opacity-90',
+  // bg-accent-fill, not bg-accent (Plan 05-33 continuation, decision D2, 2026-09-20): this fill
+  // carries --on-accent text, and --accent itself is reserved for link/outline/border foreground
+  // use, where a fill-tuned value would fail the outline check on some surfaces.
+  primary: 'bg-accent-fill text-on-accent hover:opacity-90',
   secondary: 'border border-hairline bg-surface-2 text-ink hover:bg-surface-3',
   ghost: 'bg-transparent text-ink-secondary hover:bg-surface-2',
   // Ghost by default (skill SS4.1: "nunca relleno rojo salvo en el botón de confirmación").

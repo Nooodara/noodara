@@ -357,7 +357,11 @@ export function auditTheme(tokens: Record<string, string>, theme: 'light' | 'dar
     .sort();
   for (const name of statusTextNames) {
     const match = STATUS_TEXT_TOKEN_RE.exec(name);
-    const tone = assertDefined(match)[1];
+    // `name` was already filtered by `STATUS_TEXT_TOKEN_RE.test(name)` above, so a match always
+    // exists here -- this guard exists only to satisfy `strict`/`noUncheckedIndexedAccess`, not
+    // because a null match is a real, reachable case.
+    if (match === null) continue;
+    const tone = assertDefined(match[1]);
     const softName = `status-${tone}-soft`;
     const foregroundValue = tokens[name];
     const softValue = tokens[softName];

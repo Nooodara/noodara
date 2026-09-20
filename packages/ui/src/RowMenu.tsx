@@ -32,7 +32,11 @@ const ITEM_CLASSES = cn(
   'hover:bg-surface-2 focus-visible:bg-surface-2',
 );
 
-const DESTRUCTIVE_ITEM_CLASSES = 'text-status-error';
+// text-status-error-text, not text-status-error (05-33 continuation, WR-C-08 call-site fix,
+// 2026-09-20): the base token measured 3.11:1 light / 4.20:1 dark on --surface-3 (this menu's own
+// bg-surface-3) -- real AA failures on the "Delete" item's own text. The -text token clears 4.5:1
+// on --surface-3 in both themes (measured, see contrast.test.ts).
+const DESTRUCTIVE_ITEM_CLASSES = 'text-status-error-text';
 
 // RowMenu (skill SS4.4, 05-UI-SPEC.md Component Inventory, D-09) -- the per-row "..." action
 // menu, revealed on hover/focus of its row (never a permanent column) and never itself a bare,
