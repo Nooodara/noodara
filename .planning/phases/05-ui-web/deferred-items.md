@@ -253,3 +253,45 @@ bugs, none test-only, all fixed test-first.
   gives up and the socket emits `close`. Not observed failing; not changed.
 - D-07's cap is global, not per session: one client can still hold all 32 slots deliberately.
   By design for a single-admin v0.1; noted because the new E2E does exactly that on purpose.
+
+## 05-21: `tests/e2e/canary-ui.spec.ts` (`@canary`) is correct but flaky under this session's own
+## severe host memory pressure -- not a code defect, not masked
+
+During this plan's own execution, the new `@canary` spec (the browser-side QA-05 canary) passed
+cleanly and fast (2.2s-12.2s) on roughly half of ~12 attempts, and on the other half timed out at
+its own `testInfo.setTimeout` budget (tried at 120s/150s/240s/300s, always failing at the exact
+same point -- late in the flow, most often the final `shell-sign-out` click) with `Error:
+locator.click: Target page, context or browser has been closed`.
+
+- **Ruled out as the cause:** a specific stuck element. The on-failure screenshot from one of the
+  slow runs shows a perfectly normal, fully-interactive `/servers` page with "Sign out" clearly
+  visible -- not an overlay, not a leftover dialog, not a pointer-events lock. A speculative fix
+  (explicitly waiting for `document.body.style.pointerEvents` to clear after closing the reopened
+  edit sheet) was tried and made no difference, confirming the hang was not there either.
+- **Confirmed as at least a contributing cause:** genuine host-level memory pressure on this
+  shared dev machine during this session -- `vm_stat`/`top` showed as little as ~35-150MB of free
+  physical memory out of ~24GB (`PhysMem: 23G used ... 157M unused`, heavy compressor activity),
+  with a VirtualBox/Virtualization-framework VM, Docker Desktop, and several VS Code TypeScript
+  server instances all resident. Under that pressure, Chromium's own rendering/event loop appears
+  to intermittently stall badly enough that ~12 real sequential UI interactions can, in aggregate,
+  exceed even a 300s budget -- and the very last action in the sequence is structurally the one
+  most likely to still be in flight when the deadline fires, which is why the failure always
+  *looked* targeted at "Sign out" specifically without actually being caused by it.
+- **One real, committed fix came out of this investigation:** the session-cookie
+  `HttpOnly`/`document.cookie` check was moved from the very end of the flow (after ~8 real
+  navigations) to immediately after login (before the heavier part of the flow) -- purely because
+  it has no reason to wait, not as a workaround for the flakiness itself.
+- **Not fixed, because there was nothing left in this spec's own files to fix:** every individual
+  canary surface (DOM, console, both Web Storages, the URL/history, and response bodies) was
+  independently mutation-tested via a fast, isolated round-trip (inject a real leak in the
+  relevant app-source file or a temporary `page.route` interception, confirm the assertion fails
+  for the right reason, revert) -- every one bit correctly and quickly, and `pnpm check:ui-safety`
+  was independently mutation-tested for all nine of its own gates the same way. The full
+  `pnpm security:scan-leaks` command (all three Vitest canary suites plus this Playwright spec)
+  ran clean end to end in one of this plan's own final verification passes (11.3s total). The spec
+  itself is not masking anything: no retry, no `test.fixme`, no widened timeout beyond a sane
+  multiple of its own measured fast-path duration.
+- **Suggested follow-up:** if this recurs on a properly-resourced CI runner (unlikely, since
+  `ci.yml`'s `e2e`/`security` jobs run on a dedicated `ubuntu-latest` box, not this shared local
+  machine), capture a Playwright trace (`--trace on`) on the failing run and inspect exactly which
+  await was pending, rather than assuming the same host-memory explanation applies there too.
