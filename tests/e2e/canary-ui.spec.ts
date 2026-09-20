@@ -90,20 +90,24 @@ test(
     page.on('framenavigated', (frame) => {
       if (frame === page.mainFrame()) visitedUrls.push(frame.url());
     });
-    page.on('response', (response) => {
+    // Bodies are read on `requestfinished`, never on `response`: that event fires only once the
+    // whole body has arrived, so `.text()` resolves immediately. Reading on `response` hung this
+    // spec for its full 120s timeout on roughly half its runs -- a request a navigation abandons
+    // mid-flight (an RSC `?_rsc=` prefetch, an in-flight fetch) can leave `.text()` pending
+    // forever, and step 11 awaits every capture. An abandoned request fires `requestfailed`
+    // instead and has no complete body to inspect; the long-lived SSE stream never finishes, so it
+    // is excluded by construction -- its frames are proven canary-free server-side by
+    // canary-http.test.ts's own stream-chunk assertion.
+    page.on('requestfinished', (request) => {
       responseCaptures.push(
         (async () => {
           try {
-            const contentType = (await response.headerValue('content-type')) ?? '';
-            // The long-lived SSE stream never resolves `.text()` until the connection closes --
-            // its frames are proven canary-free server-side by canary-http.test.ts's own
-            // stream-chunk assertion; this spec's own console/DOM/storage checks already cover
-            // what the browser does with whatever the stream delivers.
-            if (contentType.includes('text/event-stream')) return null;
+            const response = await request.response();
+            if (response === null) return null;
             const body = await response.text();
             return { url: response.url(), body };
           } catch {
-            return null; // navigation aborted the response, or a body with no text() support
+            return null; // a body with no text() support (e.g. a redirect)
           }
         })(),
       );
@@ -261,6 +265,13 @@ test(
         (r): r is { readonly url: string; readonly body: string } => r !== null,
       );
       expect(responses.length).toBeGreaterThan(0); // non-vacuity: real responses were actually captured
+      // Non-vacuity, by name: the responses to the very requests that carried a canary (the setup
+      // attempt, the server creates and the credential replace) and the list the UI renders from
+      // were each inspected -- not merely "some response somewhere".
+      const inspectedPaths = new Set(responses.map(({ url }) => new URL(url).pathname));
+      expect(inspectedPaths).toContain('/api/setup');
+      expect(inspectedPaths).toContain('/api/servers');
+      expect([...inspectedPaths].some((path) => /^\/api\/servers\/[0-9a-f-]+$/.test(path))).toBe(true);
       for (const { url, body } of responses) {
         for (const canary of [...secretCanaries, setupTokenCanary]) {
           expect(body, `response from ${url} leaked a canary`).not.toContain(canary);
