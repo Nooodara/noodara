@@ -107,3 +107,86 @@ design (the script fails fast rather than running all 20 and summarizing). The f
   on implicitly (staying on one long-lived, already-subscribed page) or give this specific test a
   bounded resync (e.g. `registerResync`-driven refetch) rather than depending on exactly one SSE
   frame arriving with no fallback.
+
+## 05-20 (debug session `sse-lost-event-race`): what is now resolved, and what is still open
+
+Full evidence trail: `.planning/debug/sse-lost-event-race.md`. Two independent root causes were
+found; neither is the "machine-specific Docker/network flakiness" or "Redis-subscriber contention"
+the entries above (and STATE.md) attributed these failures to.
+
+### RESOLVED -- the "Redis pub-sub subscriber startup flake" (events-sse.test.ts, canary-http.test.ts)
+
+- **Was a product bug, not a test or machine problem.** `createSseBroadcaster().start()` called
+  `subscriber.subscribe()` without waiting for the ioredis connection to be `ready`. ioredis@5
+  writes a `SUBSCRIBE` issued during `connect` straight to the socket (the command carries Redis's
+  `loading` flag), ahead of its own ready check; that check (`INFO`) then fails on a connection
+  already in subscriber mode, ioredis reconnects, and `autoResubscribe` replays nothing because it
+  only remembers subscriptions of a connection that had reached `ready`. `start()` had already
+  resolved successfully. Whenever `onReady` happened to land in that window, the API process ran
+  with **no live events at all until restarted**.
+- **Evidence:** standalone node+ioredis repro (subscribe on `connect`: `PUBSUB NUMSUB` = 0 in 5/5;
+  on `ready`: 1 in 3/3); `tests/integration/events/sse-broadcaster-subscribe.test.ts` RED 5/5
+  before, GREEN 5/5 after. The three subscription-dependent tests of `events-sse.test.ts`: 8 of 15
+  executions failed before (5/5 runs red), 0 of 30 after (10/10 runs green). The
+  "public non-Docker IP in CLIENT LIST" noted in STATE.md is Docker Desktop's NAT address and shows
+  up on every connection, including the probe's own -- a red herring.
+- **Fix:** `apps/control-plane/src/events/sse-broadcaster.ts` waits for `ready` before `SUBSCRIBE`
+  (D-27's boot bound and every timeout unchanged).
+
+### RESOLVED -- `servers-list.spec.ts:191`, the row that never appears
+
+- **Was a product bug in the servers list, not a delivery race in the SSE pipeline.** The event
+  *was* delivered. `apps/web/src/app/(shell)/servers/page.tsx` dropped every stream event while a
+  `GET /api/servers` was in flight (and it re-enters `loading` on every resync-on-open), and
+  nothing ordered the overlapping mount GET and resync GET. The spec creates its server the instant
+  the URL turns `/servers`, i.e. exactly while both are in flight: when both snapshots had been
+  read before the insert committed, the event was discarded and no snapshot contained the row. Any
+  real user hits the same thing whenever a server changes (worker, second tab, second admin) while
+  the list is loading or resyncing.
+- **Evidence:** deterministic component tests (`page.test.tsx`, RED before / GREEN after) and a new
+  real-browser test in `servers-list.spec.ts` that holds both real snapshots until the event has
+  provably crossed Redis -> SSE -> the Next proxy: fails against the pre-fix page with exactly the
+  `:191` symptom, passes 5/5 with the fix. The orchestrator's "event published before the stream
+  is registered" window does **not** exist server-side: `routes/events.ts` registers the stream in
+  the same tick it writes the headers, so `open` already implies registered, and resync-on-open
+  covers everything published earlier.
+- **Fix:** events are buffered while a snapshot is in flight and folded onto it when it lands
+  (`reconcileSnapshot`, `updatedAt` guards against regressing a row), and only the latest request
+  may publish its snapshot. No polling, no reload fallback, no test-side retry.
+
+### LIKELY EXPLAINED, NOT RE-OBSERVED -- `servers-list.spec.ts:208`, the 60s `row.hover()` timeout
+
+- The same defect produces this symptom's exact shape: with both GETs in flight, the first landing
+  made the list `ready`, the live event inserted the row (so `expect(row).toBeVisible()` passed),
+  and the second snapshot -- read before the insert -- then replaced the list **without** the row,
+  leaving `row.hover()` waiting 60s on an element that no longer existed. A larger list late in a
+  full run means slower GETs and a wider window, which fits "order-dependent". Pinned at component
+  level (`page.test.tsx`, "never removes a row a live event already inserted ..."), RED before /
+  GREEN after.
+- **Honest status:** the original E2E timeout itself was never reproduced (neither by 05-20's two
+  attempts nor in this session), so this is attribution by mechanism, not by a captured trace of
+  the failing run. Treat it as closed only if the 20x repeat stays clean; if a hover timeout
+  recurs, run once with `--trace on` and check whether the row is detached at hover time.
+
+### STILL OPEN -- same family, other screens (found by reading, not observed failing, not fixed)
+
+- `apps/web/src/app/(shell)/servers/[id]/page.tsx` does not drop events while loading, but it has
+  no ordering guard either: a `GET /api/servers/:id` read before a change can land after the newer
+  `server.updated`/`server.deleted` event and overwrite it until the next event arrives. The same
+  "latest request wins + never regress by `updatedAt`" rule applies. `activity/page.tsx` and
+  `DiscoverySection.tsx` were not audited for it.
+- `reconcileSnapshot`'s `updatedAt` comparison assumes the API and the worker agree on the clock
+  (same host through v0.5). A DB-side row version would remove that assumption if the worker ever
+  moves to another machine.
+
+### STILL OPEN -- two integration tests red since 05-04, unrelated to lost events (found during verification)
+
+- `tests/integration/queue/connect-server-worker.test.ts` ("... with two server.updated events":
+  `expected [ ...(13) ] to have a length of 2`) and `tests/integration/routes/api-e2e.test.ts`
+  (`:365`, `Cannot read properties of undefined (reading 'id')`) fail **deterministically** -- 3/3
+  here, and identically with this session's product changes reverted to `4ab07f5`. Both tests date
+  from phase 04 and assume `server.updated` is the only event on the stream; `0b09667`
+  (`feat(05-04)`) started publishing `server.discovery_progress` on the same stream, so 11
+  progress events now sit between CONNECTING and CONNECTED. The product behaves as designed; the
+  tests were never updated. Not touched in this session (outside its scope); the fix is to have
+  both tests select `server.updated` events instead of assuming adjacency.
