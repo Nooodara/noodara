@@ -8,14 +8,18 @@
 // (T-5-50) before any listener ever sees it -- a rejected frame is silently dropped, never
 // thrown, so one bad message can never break the stream for every other subscriber.
 //
-// No custom reconnect loop for an already-open-then-dropped connection: the browser's own
-// `EventSource` reconnection honours the server's `retry: 5000` field
-// (apps/control-plane/src/routes/events.ts) automatically. The one exception is the pre-open
-// `503 SSE_LIMIT_REACHED` case (D-07/T-5-54): that response never reaches the `retry:` field (the
-// server answers plain JSON before ever hijacking the connection), so the browser's own retry
-// falls back to its UA-default interval with no backoff at all -- this file adds a bounded,
-// explicit backoff only for that one repeated-pre-open-failure case, closing the dead connection
-// and scheduling a fresh one itself rather than hammering an already-at-capacity server.
+// Reconnection depends on HOW the browser reports the failure:
+//
+// - A network-level drop leaves the EventSource in CONNECTING -- the browser is already retrying on
+//   its own, honouring the server's `retry: 5000` field (apps/control-plane/src/routes/events.ts).
+//   Nothing is done here for an already-open stream.
+// - An HTTP-level rejection (any non-200 answer: the control plane's pre-open
+//   `503 SSE_LIMIT_REACHED`, D-07/T-5-54, or the proxy's own 503 while the API is unreachable)
+//   makes the browser FAIL the connection for good (HTML spec): readyState CLOSED, exactly one
+//   `error`, never a native retry. This file then owns the retry, with a bounded exponential
+//   backoff so an at-capacity server is never hammered.
+// - A stream that never opened and keeps failing at network level gets the same backoff once it
+//   has failed repeatedly, instead of the UA-default retry interval with no backoff at all.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { KNOWN_EVENT_TYPES, parseServerEventFrame, type ServerEvent } from './server-events';
 
@@ -50,6 +54,7 @@ export function useServerEvents(): UseServerEventsResult {
     closedByCallerRef.current = false;
     let hasEverOpened = false;
     let preOpenFailures = 0;
+    let rejections = 0;
     let backoffTimer: ReturnType<typeof setTimeout> | undefined;
 
     function teardown(source: EventSource): void {
@@ -57,6 +62,16 @@ export function useServerEvents(): UseServerEventsResult {
       if (sourceRef.current === source) {
         sourceRef.current = null;
       }
+    }
+
+    /** Replaces `source` with a fresh connection after `base * 2^step`, capped. */
+    function scheduleReconnect(source: EventSource, step: number): void {
+      teardown(source);
+      const delay = Math.min(PRE_OPEN_BACKOFF_BASE_MS * 2 ** step, PRE_OPEN_BACKOFF_MAX_MS);
+      if (backoffTimer !== undefined) {
+        clearTimeout(backoffTimer);
+      }
+      backoffTimer = setTimeout(connect, delay);
     }
 
     function connect(): void {
@@ -68,6 +83,7 @@ export function useServerEvents(): UseServerEventsResult {
       source.addEventListener('open', () => {
         hasEverOpened = true;
         preOpenFailures = 0;
+        rejections = 0;
         setConnected(true);
         for (const resync of resyncCallbacksRef.current) {
           try {
@@ -80,21 +96,24 @@ export function useServerEvents(): UseServerEventsResult {
 
       source.addEventListener('error', () => {
         setConnected(false);
+        if (closedByCallerRef.current) return;
 
-        // T-5-54: only the never-successfully-opened case gets an explicit backoff here -- an
-        // already-open connection that drops is left entirely to the browser's own native
-        // reconnection (it already honours the server's `retry: 5000`).
-        if (hasEverOpened || closedByCallerRef.current) return;
+        // The browser gave up (HTTP-level rejection): no further `error` will ever come from this
+        // source, so waiting for a threshold here would wait forever.
+        if (source.readyState === EventSource.CLOSED) {
+          rejections += 1;
+          scheduleReconnect(source, rejections - 1);
+          return;
+        }
+
+        // Still CONNECTING: the browser is retrying natively. Only the never-successfully-opened
+        // case gets an explicit backoff -- an already-open connection that drops is left entirely
+        // to the browser's own reconnection.
+        if (hasEverOpened) return;
 
         preOpenFailures += 1;
         if (preOpenFailures < PRE_OPEN_FAILURE_THRESHOLD) return;
-
-        teardown(source);
-        const delay = Math.min(
-          PRE_OPEN_BACKOFF_BASE_MS * 2 ** (preOpenFailures - PRE_OPEN_FAILURE_THRESHOLD),
-          PRE_OPEN_BACKOFF_MAX_MS,
-        );
-        backoffTimer = setTimeout(connect, delay);
+        scheduleReconnect(source, preOpenFailures - PRE_OPEN_FAILURE_THRESHOLD);
       });
 
       for (const type of KNOWN_EVENT_TYPES) {
