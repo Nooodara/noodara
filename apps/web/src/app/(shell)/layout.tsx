@@ -11,7 +11,7 @@
 // every descendant (`Sidebar`, `Toolbar`, `SignOutButton`, `StreamStatus`, and every future
 // screen) reads the shared stream and the mobile-nav toggle from that one context, never a second
 // `useServerEvents()` call of its own.
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { TooltipProvider } from '@noodara/ui';
 import { Sidebar } from '../../components/Sidebar';
 import { requireSession } from '../../lib/require-session';
@@ -27,6 +27,28 @@ export default function ShellLayout({ children }: { readonly children: ReactNode
   useEffect(() => {
     void requireSession();
   }, []);
+
+  // WR-B-10 (05-35-PLAN.md Task 3): the mount-time check above cannot see a session that goes bad
+  // later. The shared SSE stream's own `connected` state is the natural post-mount signal
+  // require-session.ts's own header describes: the heartbeat closes the stream server-side the
+  // moment it finds no session (apps/control-plane/src/routes/events.ts), the browser's own
+  // reconnect attempt then gets a real 401, and `use-server-events.ts` flips `connected` to
+  // `false` for that. Re-running `requireSession()` on every "was open, now isn't" transition
+  // costs one cheap, already-guarded fetch and fails open on anything but a genuine 401 --
+  // `requireSession` itself never redirects on `NETWORK_ERROR`, so an ordinary reconnect blip
+  // (which also flips `connected` to `false`) never signs anyone out. No polling interval is
+  // added: this only ever fires in response to a state change `useServerEvents` already computes.
+  const wasConnectedRef = useRef(false);
+  useEffect(() => {
+    if (serverEvents.connected) {
+      wasConnectedRef.current = true;
+      return;
+    }
+    if (wasConnectedRef.current) {
+      wasConnectedRef.current = false;
+      void requireSession();
+    }
+  }, [serverEvents.connected]);
 
   const contextValue: ShellContextValue = {
     ...serverEvents,

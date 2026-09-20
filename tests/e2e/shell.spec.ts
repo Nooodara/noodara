@@ -161,6 +161,49 @@ test('@shell an unauthenticated visit to the bare origin lands on /login', async
   await expect(page).toHaveURL(/\/login$/);
 });
 
+// WR-B-10 (05-VERIFICATION.md gap 8 / 05-35-PLAN.md Task 3). Revokes the tab's own session
+// against the real backend (DELETE /api/sessions/:id, the same route apps/control-plane's D-06
+// session management exposes -- not a stubbed 401) and proves the still-open tab redirects on its
+// own, with no manual reload. `page.request` shares this browser context's cookies, so deleting
+// "self" here deletes exactly the row this tab's cookie names -- a fresh login's own session,
+// isolated from every other test's context per Playwright's default per-test isolation, so this
+// can never invalidate a session another spec file relies on (hard rule 10).
+//
+// The detection path is the SSE heartbeat (apps/control-plane/src/routes/events.ts, 15s by
+// default): it notices the session is gone and ends the stream, the shared hook's `connected`
+// flips to false, and the shell layout re-runs requireSession() -- see (shell)/layout.tsx and
+// require-session.ts. This test therefore waits up to that heartbeat interval, not a fixed short
+// timeout.
+test('@shell a session revoked server-side redirects the open tab to /login without a manual reload', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await login(page);
+  await expect(page).toHaveURL(/\/servers$/);
+
+  const sessions = await page.request.get('/api/sessions');
+  expect(sessions.ok()).toBe(true);
+  const sessionList = (await sessions.json()) as { id: string; isCurrent: boolean }[];
+  const current = sessionList.find((session) => session.isCurrent);
+  expect(current).toBeDefined();
+
+  const revoked = await page.request.delete(`/api/sessions/${current?.id ?? ''}`);
+  expect(revoked.ok()).toBe(true);
+
+  // No page.reload() anywhere in this test -- the redirect must happen on its own.
+  await expect(page).toHaveURL(/\/login/, { timeout: 30_000 });
+
+  // The redirect target must never leak the previous screen's data -- only an encoded path.
+  const url = new URL(page.url());
+  expect(url.pathname).toBe('/login');
+  const bodyText = await page.locator('body').innerText();
+  expect(bodyText).not.toContain('Connecting');
+
+  // No loop: the tab stays on /login, it does not keep bouncing.
+  await page.waitForTimeout(1000);
+  await expect(page).toHaveURL(/\/login/);
+});
+
 // Not one of the plan's six documented @shell behaviours -- a deliberately different tag (never
 // containing the substring "@shell", so `--grep @shell` still selects exactly six tests) for
 // permanent regression coverage of a real bug this plan's own security review found:
