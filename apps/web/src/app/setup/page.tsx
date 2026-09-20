@@ -2,21 +2,22 @@
 
 import { Banner, Button, Field, Input } from '@noodara/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useState, type SubmitEvent } from 'react';
+import { Suspense, useEffect, useState, type SubmitEvent } from 'react';
 import { AuthCard } from '../../components/AuthCard';
 import { apiSend } from '../../lib/api-client';
-import { fieldErrorsFromIssues } from '../../lib/error-copy';
+import { copyForErrorCode, fieldErrorsFromIssues } from '../../lib/error-copy';
 
-// 05-UI-SPEC.md SS2.1, verbatim -- rendered for every token-related failure (bad, expired, used,
-// or already-consumed token, and the 404 that fires once an admin already exists) with no
-// variation between them. 05-CONTEXT.md's discretion note ("seguir la semántica de la API de fase
-// 1 ... sin revelar si una cuenta existe") is the reason this is one constant, not several: the
-// real POST /api/setup route (apps/control-plane/src/routes/setup.ts) returns a different single
-// `{ error, message }` code per cause (NOT_FOUND for the admin-exists gate; TOKEN_INVALID,
-// ALREADY_USED, EXPIRED for the token itself -- none of them part of api-client.ts's known
-// ServiceErrorCode vocabulary, so they all decode to the same generic ApiFailure here already) --
-// this screen renders the identical banner regardless, so no code path can ever leak which one
-// applied even if that vocabulary changes later.
+// 05-UI-SPEC.md SS2.1 -- the admin-exists door-closing 404 (`NOT_FOUND`) and a `VALIDATION_FAILED`
+// body this screen cannot map to any field both render this one opaque banner (05-CONTEXT.md's
+// discretion note, "seguir la semántica de la API de fase 1 ... sin revelar si una cuenta existe"):
+// neither ever confirms whether an account/token exists. `TOKEN_INVALID`/`ALREADY_USED`/`EXPIRED`
+// (the service's own real stale-token codes, apps/control-plane/src/services/setup-service.ts) are
+// not part of api-client.ts's known `ServiceErrorCode` vocabulary and are out of this plan's scope
+// to add (api-client.ts is owned by a sibling plan this wave) -- they currently decode to the same
+// generic `INTERNAL_ERROR` a genuine server crash does, and render that code's own copy below,
+// never this banner. T-5G-30-04's fix (05-30-PLAN.md) is scoped to the two confirmed
+// mislabelling bugs -- a real 500 and a network failure both wrongly showing this text -- not a
+// full audit of every service-level code this route can return.
 const INVALID_TOKEN_MESSAGE = 'This setup link is no longer valid. Ask whoever installed Noodara for a new one.';
 
 interface SetupSuccess {
@@ -35,6 +36,22 @@ function SetupForm() {
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // T-5G-30-01: the one-time setup token must not survive in the address bar or browser history
+  // once this page has read it -- `useState(prefillToken)` above already captured the value as
+  // this component's initial state, so stripping the query param here cannot blank the field
+  // (proven by tests/e2e/setup.spec.ts). Runs once on mount only, via the raw History API rather
+  // than `router.replace` -- a Next.js router-level navigation would trigger a re-render that
+  // could re-read `searchParams` on a later pass, exactly what "does not re-read and blank the
+  // field" (05-30-PLAN.md) forbids; `history.replaceState` changes the visible URL without
+  // touching React Router state or remounting anything.
+  useEffect(() => {
+    if (window.location.search.includes('token=')) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('token');
+      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+  }, []);
+
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setBannerMessage(null);
@@ -52,23 +69,45 @@ function SetupForm() {
       return;
     }
 
-    // The only failure this screen ever distinguishes from the single opaque banner: a real
-    // VALIDATION_FAILED body carrying `issues[]` (a malformed request shape caught by the route's
-    // own Zod schema, e.g. an empty token bypassing the field's `required` attribute) maps to
-    // inline per-field errors, exactly like every other form in this app. Every other failure --
-    // including a weak password or a malformed email, which the real service reports as its own
-    // flat `{ error, message }` codes with no `issues[]` -- renders the identical opaque banner
-    // below, never a distinct message. Browser-native constraints (`minLength`/`maxLength`/
-    // `type="email"`/`required`) below catch the common cases before a request is ever sent.
-    if (result.code === 'VALIDATION_FAILED' && result.issues !== undefined) {
-      const mapped = fieldErrorsFromIssues(result.issues);
+    // T-5G-30-04: four distinct outcomes, never one blanket fallthrough.
+    //
+    // 1. A real VALIDATION_FAILED body carrying `issues[]` this UI can map (a malformed request
+    //    shape caught by the route's own Zod schema, e.g. an empty token bypassing the field's
+    //    `required` attribute) renders inline per-field errors, exactly like every other form in
+    //    this app -- no banner. Browser-native constraints (`minLength`/`maxLength`/`type="email"`/
+    //    `required`) below catch the common cases before a request is ever sent.
+    if (result.code === 'VALIDATION_FAILED') {
+      const mapped = result.issues !== undefined ? fieldErrorsFromIssues(result.issues) : {};
       if (Object.keys(mapped).length > 0) {
         setFieldErrors(mapped);
         return;
       }
+      // A VALIDATION_FAILED body this UI cannot map to any field -- unchanged legacy behaviour,
+      // the same opaque banner as an invalid token (05-CONTEXT.md's "never reveal which cause
+      // applied" discretion note).
+      setBannerMessage(INVALID_TOKEN_MESSAGE);
+      return;
     }
 
-    setBannerMessage(INVALID_TOKEN_MESSAGE);
+    // 2. NOT_FOUND is the one token-specific code this screen's known vocabulary actually carries
+    //    (the door-closing 404 that fires once an admin already exists) -- deliberately the same
+    //    opaque banner as a bad/expired token, never a distinct message (T-5-45).
+    if (result.code === 'NOT_FOUND') {
+      setBannerMessage(INVALID_TOKEN_MESSAGE);
+      return;
+    }
+
+    // 3. A rejected fetch (offline, DNS failure, the request-timeout gate) -- api-client.ts's own
+    //    safe, non-raw reachability message, never the invalid-link text.
+    if (result.code === 'NETWORK_ERROR') {
+      setBannerMessage(result.message);
+      return;
+    }
+
+    // 4. Every remaining code (INTERNAL_ERROR and anything else) gets its own real copy, never the
+    //    invalid-link message -- the confirmed gap-5 bug (05-VERIFICATION.md) was exactly this
+    //    banner rendering for a genuine 500.
+    setBannerMessage(copyForErrorCode(result.code));
   }
 
   return (
