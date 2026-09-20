@@ -93,7 +93,11 @@ jobs:
 
   # SEC-02/D-22 (mirrors ci.yml's own `security` job body for this one step): the secrets-leak
   # canary, run nightly in addition to every PR so a leak that only reproduces under nightly's own
-  # accumulated stack state is never silently missed between merges.
+  # accumulated stack state is never silently missed between merges. Since Plan 05-21 (QA-05), the
+  # same `pnpm security:scan-leaks` command also runs tests/e2e/canary-ui.spec.ts's `@canary`
+  # Playwright spec -- the browser-side half of the canary (rendered HTML, console, both Web
+  # Storages, the URL/history, every response body) -- so this one job picks up that coverage
+  # automatically, with no separate job needed.
   canary:
     name: canary
     runs-on: ubuntu-latest
