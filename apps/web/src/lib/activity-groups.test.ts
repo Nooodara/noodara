@@ -112,21 +112,51 @@ describe('mergePage -- append (Load older) mode', () => {
 });
 
 describe('mergePage -- refresh (page-1 resync) mode', () => {
-  it('prepends genuinely new items without discarding already-loaded older pages', () => {
+  // Matches apps/web/src/app/(shell)/activity/page.tsx's own PAGE_LIMIT.
+  const PAGE_LIMIT = 50;
+
+  it('prepends genuinely new items without discarding already-loaded older pages, and reports contiguous (overlap present)', () => {
     const existing = [item('b', '2026-09-18T10:00:00.000Z'), item('a-old', '2026-09-10T10:00:00.000Z')];
     const incoming = [item('c-new', '2026-09-19T10:00:00.000Z'), item('b', '2026-09-18T10:00:00.000Z')];
 
-    expect(mergePage(existing, incoming, 'refresh')).toEqual([
+    const result = mergePage(existing, incoming, 'refresh', PAGE_LIMIT);
+
+    expect(result.contiguous).toBe(true);
+    expect(result.items).toEqual([
       item('c-new', '2026-09-19T10:00:00.000Z'),
       item('b', '2026-09-18T10:00:00.000Z'),
       item('a-old', '2026-09-10T10:00:00.000Z'),
     ]);
   });
 
-  it('preserves the existing array reference when the refresh finds nothing new', () => {
+  it('preserves the existing array reference and reports contiguous when the refresh finds nothing new', () => {
     const existing = [item('a', '2026-09-19T10:00:00.000Z')];
     const incoming = [item('a', '2026-09-19T10:00:00.000Z')];
 
-    expect(mergePage(existing, incoming, 'refresh')).toBe(existing);
+    const result = mergePage(existing, incoming, 'refresh', PAGE_LIMIT);
+
+    expect(result.contiguous).toBe(true);
+    expect(result.items).toBe(existing);
+  });
+
+  it('is contiguous when the incoming page is shorter than pageLimit, even with zero overlap (WR-B-05 behaviour spec, non-gap case)', () => {
+    const existing = [item('newest-existing', '2026-09-19T10:00:00.000Z')];
+    const incoming = [item('fresh-1', '2026-09-19T11:00:00.000Z'), item('fresh-2', '2026-09-19T10:30:00.000Z')];
+
+    const result = mergePage(existing, incoming, 'refresh', PAGE_LIMIT);
+
+    expect(result.contiguous).toBe(true);
+    expect(result.items).toEqual([...incoming, ...existing]);
+  });
+
+  it('detects a gap when an exactly-pageLimit-sized incoming refresh page shares no id with existing (WR-B-05 reproduction)', () => {
+    const existing = [item('newest-existing', '2026-09-19T10:00:00.000Z')];
+    const incoming = Array.from({ length: PAGE_LIMIT }, (_, i) =>
+      item(`fresh-${String(i)}`, new Date(Date.parse('2026-09-19T11:00:00.000Z') - i * 1000).toISOString()),
+    );
+
+    const result = mergePage(existing, incoming, 'refresh', PAGE_LIMIT);
+
+    expect(result.contiguous).toBe(false);
   });
 });

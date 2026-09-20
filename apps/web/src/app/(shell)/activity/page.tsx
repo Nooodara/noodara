@@ -144,9 +144,24 @@ export default function ActivityPage() {
           // A page-1 refresh merges in new items without moving `nextCursor` -- that cursor marks
           // the boundary of whatever older page the user already loaded, and this fresh top-50
           // fetch says nothing about that boundary (05-UI-SPEC.md §2.6 Refresh).
+          const merge = mergePage(prev.items, result.data.items, 'refresh', PAGE_LIMIT);
+          if (!merge.contiguous) {
+            // WR-B-05: a full PAGE_LIMIT page sharing no id with what's loaded means an unknown
+            // number of rows may sit in the gap between them. 05-UI-SPEC.md §2.6 defines no
+            // gap-closing affordance, so this resets to the fresh page (dropping the older pages
+            // that were already loaded) rather than silently splicing two non-adjacent runs
+            // together -- see 05-32-SUMMARY.md for the UX cost of this choice.
+            return {
+              kind: 'ready',
+              items: result.data.items,
+              nextCursor: result.data.nextCursor,
+              loadingMore: false,
+              onLoadOlder: loadOlder,
+            };
+          }
           return {
             kind: 'ready',
-            items: mergePage(prev.items, result.data.items, 'refresh'),
+            items: merge.items,
             nextCursor: prev.nextCursor,
             loadingMore: prev.loadingMore,
             onLoadOlder: prev.onLoadOlder,

@@ -103,17 +103,56 @@ interface HasId {
 }
 
 /**
- * Merges an `incoming` page into `existing`, de-duplicating by `id`. `'append'` (Load older) adds
- * genuinely-new items after `existing`; `'refresh'` (a page-1 resync) prepends genuinely-new items
- * before `existing` without discarding whatever older pages were already loaded. Either mode
- * returns `existing` itself, unchanged, when `incoming` adds nothing -- so a caller can skip a
- * re-render on a no-op refresh.
+ * `'refresh'`-mode result (WR-B-05): `mergePage` cannot always tell whether a page-1 resync is
+ * truly contiguous with what is already loaded. When the incoming page is a full `pageLimit` page
+ * and shares no id with `existing`, there could be an unknown number of unseen rows between the
+ * newest already-loaded item and the oldest incoming one -- `contiguous: false` signals exactly
+ * that, so the caller can close the gap instead of silently splicing two non-adjacent runs
+ * together.
  */
-export function mergePage<T extends HasId>(existing: readonly T[], incoming: readonly T[], mode: PageMergeMode): readonly T[] {
+export interface RefreshMergeResult<T> {
+  readonly items: readonly T[];
+  readonly contiguous: boolean;
+}
+
+/**
+ * Merges an `incoming` page into `existing`, de-duplicating by `id`.
+ *
+ * `'append'` (Load older) adds genuinely-new items after `existing` and returns the merged array
+ * directly, exactly as before -- this overload's shape is unchanged so `loadOlder` needs no
+ * changes.
+ *
+ * `'refresh'` (a page-1 resync) prepends genuinely-new items before `existing` without discarding
+ * whatever older pages were already loaded, and additionally reports whether the merge is known
+ * to be contiguous (WR-B-05): an incoming page shorter than `pageLimit`, or one that overlaps
+ * `existing` by at least one id, is contiguous; an incoming page that is a full `pageLimit` items
+ * and shares no id with `existing` is not -- a gap may exist that this refresh never saw. Either
+ * mode preserves the `existing` array reference, unchanged, when `incoming` adds nothing -- so a
+ * caller can skip a re-render on a no-op refresh.
+ */
+export function mergePage<T extends HasId>(existing: readonly T[], incoming: readonly T[], mode: 'append'): readonly T[];
+export function mergePage<T extends HasId>(
+  existing: readonly T[],
+  incoming: readonly T[],
+  mode: 'refresh',
+  pageLimit: number,
+): RefreshMergeResult<T>;
+export function mergePage<T extends HasId>(
+  existing: readonly T[],
+  incoming: readonly T[],
+  mode: PageMergeMode,
+  pageLimit?: number,
+): readonly T[] | RefreshMergeResult<T> {
   const existingIds = new Set(existing.map((entry) => entry.id));
   const newItems = incoming.filter((entry) => !existingIds.has(entry.id));
 
-  if (newItems.length === 0) return existing;
+  if (mode === 'append') {
+    return newItems.length === 0 ? existing : [...existing, ...newItems];
+  }
 
-  return mode === 'append' ? [...existing, ...newItems] : [...newItems, ...existing];
+  const hasOverlap = newItems.length < incoming.length;
+  const isFullPage = pageLimit !== undefined && incoming.length >= pageLimit;
+  const contiguous = existing.length === 0 || hasOverlap || !isFullPage;
+  const items = newItems.length === 0 ? existing : [...newItems, ...existing];
+  return { items, contiguous };
 }
