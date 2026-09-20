@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 05-36-PLAN.md (CI readiness gap closure: SC5/QA-04/QA-05 + WR-C-14 provenance gate)"
-last_updated: "2026-09-20T18:11:03.742Z"
-last_activity: 2026-09-20
+stopped_at: "Completed 05-29-PLAN.md (detail-page snapshot/event race + discovery invented-progress gap closure: SC2/DETL-01/DETL-02 frontend half, SC3/DISC-02)"
+last_updated: "2026-09-20T19:23:34.543Z"
+last_activity: 2026-09-20 -- 05-29 (reconcileDetailSnapshot, applyServer single write path, lastReceivedIndex discovery-progress fix, E2E RED-verified) executed
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 85
-  completed_plans: 80
-  percent: 94
+  completed_plans: 81
+  percent: 95
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING gap closure (05-26…05-37, 4 waves)
-Plan: 32 of 37 plans have a SUMMARY (05-36 just executed, out of numeric sequence -- 05-29 and 05-31 are still pending; 05-33 and 05-37 are not autonomous -- colour decision and human verification; 05-35 also pending)
-Status: Executing gap closure. Phase NOT complete: 05-36 closed gap 3/SC5's CI-readiness defect and gap 8's WR-C-14 finding -- ci.yml's security job (and nightly.yml's canary job, same bug) now installs a Playwright browser before pnpm security:scan-leaks; every job in both workflows is least-privilege, timeout-bounded and SHA-pinned; the full-tree gitleaks download is checksum-verified before extraction; scripts/check-package-provenance.mjs now enumerates all 52 locked direct dependencies at their pinned versions (was 27/52 at dist-tags.latest) -- see docs/ci-readiness.md for the honest residual gap. QA-04/QA-05 remain Pending: no git remote exists, so no real CI/nightly run has ever executed -- that observation is recorded, not simulated. Remaining verification gaps unchanged by this plan: SC2/SC3/DETL-02/DISC-02 (detail-page and discovery races), the CLAUDE.md DoD findings, the trust-fingerprint TOCTOU, and the rest of gap 8's triage batch (WR-B-15, WR-C-01, WR-B-10, setup-token+Referrer-Policy, accessibility items) -- see 05-VERIFICATION.md and 05-37-PLAN.md's own triage batch.
-Last activity: 2026-09-20 -- 05-36 (CI/nightly workflow hardening, provenance gate rewrite, ci-readiness doc) executed
+Plan: 33 of 37 plans have a SUMMARY (05-29 just executed, out of numeric sequence -- 05-31 is still pending; 05-33 and 05-37 are not autonomous -- colour decision and human verification; 05-35 also pending)
+Status: Executing gap closure. Phase NOT complete: 05-29 closed 05-VERIFICATION.md gap 2's frontend half (SC2/DETL-01/DETL-02) and gap 3 (SC3/DISC-02) -- servers/[id]/page.tsx now has exactly one setState({kind:'ready'}) write path (applyServer), guarded by reconcileDetailSnapshot (detail-sync.ts) plus latestRequestRef/deletedRef, so an ordinary GET racing a live server.updated/server.deleted event can no longer show stale data or resurrect a deleted server; liveChecks now clears on every transition into or out of CONNECTING from either a snapshot or an event; discovery-progress.ts's lastReceivedIndex (replacing firstUnresolvedIndex) plus a per-step hasUnresolvedEarlierCheck flag stop a mid-run-mounted page from rendering an unreceived earlier check as running/pass. Both fixes RED-verified honestly at the E2E level (guards temporarily reverted, observed failing, restored) -- see 05-29-SUMMARY.md. Also closes the 05-28 dod-hardening.spec.ts localStorage handover. Remaining verification gaps unchanged by this plan: the CLAUDE.md DoD findings, the trust-fingerprint TOCTOU (05-31), and the rest of gap 8's triage batch -- see 05-VERIFICATION.md and 05-37-PLAN.md's own triage batch.
+Last activity: 2026-09-20 -- 05-29 (detail-page snapshot/event race + discovery invented-progress gap closure) executed
 
-Progress: [█████████░] 94%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -135,6 +135,7 @@ Progress: [█████████░] 94%
 | Phase 05-ui-web P32 | 55min | 3 tasks | 6 files |
 | Phase 05 P34 | 42min | 3 tasks | 7 files |
 | Phase 05-ui-web P36 | 35min | 3 tasks | 5 files |
+| Phase 05-ui-web P29 | ~30min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -352,6 +353,9 @@ Recent decisions affecting current work:
 - [Phase 05-ui-web]: check-package-provenance.mjs enumerates deps+devDeps via pnpm list -r --depth 0 --json instead of a hardcoded list — Matches the review's own 52-dependency denominator exactly, closing WR-C-14's 27/52 coverage gap to 52/52
 - [Phase 05-ui-web]: ioredis expected repository changed from redis/ioredis (dist-tags.latest) to luin/ioredis (pinned 5.11.1's real repository) — Concrete proof the locked-version provenance check changes the result for a real installed dependency
 - [Phase 05-ui-web]: nightly.yml's canary job also got the playwright-install fix beyond the plan's literal ci.yml-only text — Runs the identical security:scan-leaks command with the identical missing-browser defect; nightly.yml was already in files_modified (Rule 1)
+- [Phase 05-29]: reconcileDetailSnapshot rejects on isDeleted regardless of source (event or snapshot), stricter than the plan's literal GET-only bullet -- defense in depth against any path resurrecting a deleted server
+- [Phase 05-29]: detail page's use(params) mount genuinely issues two GETs for the same id (React 19 Suspense re-render, confirmed empirically) -- gateGets holds every GET seen, not just the first, in the gap-2 E2E races
+- [Phase 05-29]: aggregateLiveStepState's unreceived-earlier-check exclusion is a second boolean parameter, not an eighth CheckState -- CHECK_STATES stays the documented seven words
 
 ### Pending Todos
 
@@ -408,6 +412,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-20T18:11:03.735Z
-Stopped at: Completed 05-36-PLAN.md (CI readiness gap closure: SC5/QA-04/QA-05 + WR-C-14 provenance gate)
+Last session: 2026-09-20T19:23:34.543Z
+Stopped at: Completed 05-29-PLAN.md (detail-page snapshot/event race + discovery invented-progress gap closure: SC2/DETL-01/DETL-02 frontend half, SC3/DISC-02)
 Resume file: None
