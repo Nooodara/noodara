@@ -345,7 +345,7 @@ Plans:
 **Gap Wave 2** *(blocked on Gap Wave 1)*
 
 - [x] 05-29-PLAN.md — Discovery sin progreso inventado (`lastReceivedIndex`) y guard de orden snapshot-vs-evento en el detalle (`applyServer`) (gap 1, gap 2 frontend)
-- [ ] 05-31-PLAN.md — El diálogo de trust captura el fingerprint al abrir y envía exactamente ese valor; E2E de swap a mitad de revisión (gap 6 frontend, WR-B-12)
+- [x] 05-31-PLAN.md — El diálogo de trust captura el fingerprint al abrir y envía exactamente ese valor; E2E de swap a mitad de revisión (gap 6 frontend, WR-B-12)
 - [ ] 05-35-PLAN.md — Ruta `/`, hydration de ThemeToggle, redirect de sesión revocada (gap 8: WR-B-15, WR-C-01, WR-B-10)
 
 **Gap Wave 3** *(blocked on Gap Wave 2; NOT autonomous — decisión del usuario)*
@@ -392,5 +392,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 33/37 | In Progress|  |
+| 5. UI web | 34/37 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |

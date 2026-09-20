@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 05-29-PLAN.md (detail-page snapshot/event race + discovery invented-progress gap closure: SC2/DETL-01/DETL-02 frontend half, SC3/DISC-02)"
-last_updated: "2026-09-20T19:23:34.543Z"
-last_activity: 2026-09-20 -- 05-29 (reconcileDetailSnapshot, applyServer single write path, lastReceivedIndex discovery-progress fix, E2E RED-verified) executed
+stopped_at: "Completed 05-31-PLAN.md (trust-fingerprint dialog snapshot-on-open, gap 6 UI half closed)"
+last_updated: "2026-09-20T19:47:41.604Z"
+last_activity: 2026-09-20 -- 05-31 (trust-fingerprint dialog snapshot-on-open gap-closure) executed
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 85
-  completed_plans: 81
-  percent: 95
+  completed_plans: 82
+  percent: 96
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING gap closure (05-26…05-37, 4 waves)
-Plan: 33 of 37 plans have a SUMMARY (05-29 just executed, out of numeric sequence -- 05-31 is still pending; 05-33 and 05-37 are not autonomous -- colour decision and human verification; 05-35 also pending)
-Status: Executing gap closure. Phase NOT complete: 05-29 closed 05-VERIFICATION.md gap 2's frontend half (SC2/DETL-01/DETL-02) and gap 3 (SC3/DISC-02) -- servers/[id]/page.tsx now has exactly one setState({kind:'ready'}) write path (applyServer), guarded by reconcileDetailSnapshot (detail-sync.ts) plus latestRequestRef/deletedRef, so an ordinary GET racing a live server.updated/server.deleted event can no longer show stale data or resurrect a deleted server; liveChecks now clears on every transition into or out of CONNECTING from either a snapshot or an event; discovery-progress.ts's lastReceivedIndex (replacing firstUnresolvedIndex) plus a per-step hasUnresolvedEarlierCheck flag stop a mid-run-mounted page from rendering an unreceived earlier check as running/pass. Both fixes RED-verified honestly at the E2E level (guards temporarily reverted, observed failing, restored) -- see 05-29-SUMMARY.md. Also closes the 05-28 dod-hardening.spec.ts localStorage handover. Remaining verification gaps unchanged by this plan: the CLAUDE.md DoD findings, the trust-fingerprint TOCTOU (05-31), and the rest of gap 8's triage batch -- see 05-VERIFICATION.md and 05-37-PLAN.md's own triage batch.
-Last activity: 2026-09-20 -- 05-29 (detail-page snapshot/event race + discovery invented-progress gap closure) executed
+Plan: 34 of 37 plans have a SUMMARY (05-31 just executed -- trust-fingerprint dialog now snapshots the fingerprint it displays on open, sends exactly that value, recognises FINGERPRINT_MISMATCH/SERVER_NOT_TRUSTABLE end to end, and a real-backend E2E proves the fix; the trust-fingerprint TOCTOU todo is fully closed and moved to completed/. 05-33 and 05-37 are not autonomous -- colour decision and human verification; 05-35 also pending)
+Status: Ready to execute
+Last activity: 2026-09-20 -- 05-31 (trust-fingerprint dialog snapshot-on-open gap-closure) executed
 
-Progress: [██████████] 95%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
@@ -136,6 +136,7 @@ Progress: [██████████] 95%
 | Phase 05 P34 | 42min | 3 tasks | 7 files |
 | Phase 05-ui-web P36 | 35min | 3 tasks | 5 files |
 | Phase 05-ui-web P29 | ~30min | 3 tasks | 8 files |
+| Phase 05-ui-web P31 | 40min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -356,6 +357,8 @@ Recent decisions affecting current work:
 - [Phase 05-29]: reconcileDetailSnapshot rejects on isDeleted regardless of source (event or snapshot), stricter than the plan's literal GET-only bullet -- defense in depth against any path resurrecting a deleted server
 - [Phase 05-29]: detail page's use(params) mount genuinely issues two GETs for the same id (React 19 Suspense re-render, confirmed empirically) -- gateGets holds every GET seen, not just the first, in the gap-2 E2E races
 - [Phase 05-29]: aggregateLiveStepState's unreceived-earlier-check exclusion is a second boolean parameter, not an eighth CheckState -- CHECK_STATES stays the documented seven words
+- [Phase 05-ui-web]: Derived apps/web's known-service-error-code allowlist from a single satisfies Record<Code, true> exhaustiveness marker instead of two hand-synced lists, closing a real drift bug (a 409 FINGERPRINT_MISMATCH/SERVER_NOT_TRUSTABLE silently degraded to INTERNAL_ERROR) at compile time
+- [Phase 05-ui-web]: TrustFingerprintDialog.tsx snapshots pendingFingerprint (and its seenAt) on the dialog's open transition and sends exactly that value; the client-side re-GET-and-compare is removed since the backend's atomic conditional UPDATE (plan 05-27) strictly supersedes it
 
 ### Pending Todos
 
@@ -412,6 +415,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-20T19:23:34.543Z
+Last session: 2026-09-20T19:47:41.597Z
 Stopped at: Completed 05-29-PLAN.md (detail-page snapshot/event race + discovery invented-progress gap closure: SC2/DETL-01/DETL-02 frontend half, SC3/DISC-02)
 Resume file: None
