@@ -25,6 +25,24 @@ export interface EventsRoutesDeps {
 const DEFAULT_HEARTBEAT_MS = 15_000;
 const RETRY_FIELD = 'retry: 5000\n\n';
 
+// T-5G-34-01/WR-A-03: a peer that stops reading (half-open, TCP zero-window, or simply a client
+// that never drains) must not hold one of the D-07 capped slots until Linux's own TCP
+// retransmission gives up (`tcp_retries2`, ~15 minutes by default) or forever. 1 MiB is a
+// deliberately generous per-connection ceiling: a single `ServerView` SSE frame is a few hundred
+// bytes and even a `server.discovery_progress` burst is a handful of frames in quick succession,
+// so no draining-but-briefly-slow client is ever evicted for ordinary jitter -- but a genuinely
+// stuck peer's buffer is now bounded, and the worst case across the whole D-07 connection cap
+// stays a bounded, single-digit number of MiB instead of growing without limit.
+export const SSE_MAX_BUFFERED_BYTES = 1_048_576;
+
+/** The pure decision the backpressure guard makes, exported so it is unit-testable without a real
+ *  socket -- a genuinely half-open/never-reading peer is proven at the integration level in
+ *  `tests/integration/events/sse-backpressure.test.ts` (`app.inject()` cannot reproduce real
+ *  backpressure: its mocked response writes into a null sink that always drains immediately). */
+export function exceedsBackpressureBudget(bufferedBytes: number): boolean {
+  return bufferedBytes > SSE_MAX_BUFFERED_BYTES;
+}
+
 /**
  * Builds the `GET /api/events` plugin. A factory (not a bare plugin) because the route needs the
  * broadcaster, the session resolver, the configured heartbeat interval and the SSE connection
@@ -67,16 +85,6 @@ export default function createEventsRoutes(deps: EventsRoutesDeps): FastifyPlugi
       });
       reply.raw.write(RETRY_FIELD); // D-05 — must be the very first bytes written.
 
-      const stream: SseStream = {
-        write: (chunk) => {
-          reply.raw.write(chunk);
-        },
-        end: () => {
-          reply.raw.end();
-        },
-      };
-      deps.broadcaster.add(stream);
-
       let cleanedUp = false;
       function cleanup(): void {
         if (cleanedUp) return;
@@ -84,6 +92,41 @@ export default function createEventsRoutes(deps: EventsRoutesDeps): FastifyPlugi
         clearInterval(heartbeat);
         deps.broadcaster.remove(stream);
       }
+
+      // T-5G-34-01: the exact same teardown a clean disconnect (`request.raw.on('close', ...)`
+      // below) uses -- a half-open peer, a backpressure-budget breach or a write-time error all
+      // release the slot the same way, never a second, divergent teardown path.
+      function evict(): void {
+        cleanup();
+        if (!reply.raw.destroyed) {
+          reply.raw.destroy();
+        }
+      }
+      reply.raw.on('error', evict);
+
+      function safeWrite(chunk: string): void {
+        if (reply.raw.writableEnded || reply.raw.destroyed) return;
+        if (exceedsBackpressureBudget(reply.raw.writableLength)) {
+          evict();
+          return;
+        }
+        try {
+          reply.raw.write(chunk);
+        } catch {
+          // A write that throws (e.g. `ERR_STREAM_WRITE_AFTER_END`, reachable during shutdown --
+          // WR-A-03 point 4) must never propagate out of the publish path and must not leave this
+          // subscriber registered.
+          evict();
+        }
+      }
+
+      const stream: SseStream = {
+        write: safeWrite,
+        end: () => {
+          reply.raw.end();
+        },
+      };
+      deps.broadcaster.add(stream);
 
       const heartbeat = setInterval(() => {
         void (async (): Promise<void> => {
@@ -107,7 +150,7 @@ export default function createEventsRoutes(deps: EventsRoutesDeps): FastifyPlugi
             reply.raw.end();
             return;
           }
-          reply.raw.write(': keepalive\n\n');
+          safeWrite(': keepalive\n\n');
         })();
       }, heartbeatMs);
       // A live SSE connection's heartbeat timer must never itself keep the Node process alive —

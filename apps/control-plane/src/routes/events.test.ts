@@ -10,7 +10,7 @@ import Fastify from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SessionResolver } from '../auth/require-session.js';
 import type { SseBroadcaster, SseStream } from '../events/sse-broadcaster.js';
-import createEventsRoutes from './events.js';
+import createEventsRoutes, { exceedsBackpressureBudget, SSE_MAX_BUFFERED_BYTES } from './events.js';
 
 function buildFakeBroadcaster(): SseBroadcaster & { readonly streams: Set<SseStream> } {
   const streams = new Set<SseStream>();
@@ -144,6 +144,89 @@ describe('GET /api/events when the client disconnects before the handler runs', 
     await requestArrived;
     client.destroy();
     await handlerEntered;
+
+    expect(streams.size).toBe(0);
+  });
+});
+
+// WR-A-03/T-5G-34-01 (05-34): a half-open or never-draining peer must not hold a capped slot
+// forever. The real "peer stops reading" scenario needs a genuine socket -- `app.inject()`'s
+// mocked response pipes every write into a null sink that always drains immediately (see
+// `node_modules/light-my-request`'s `Response.prototype.write`), so it can never reproduce actual
+// backpressure. That end-to-end proof lives in
+// `tests/integration/events/sse-backpressure.test.ts`. These unit tests cover what a real socket
+// is NOT needed for: the pure budget decision, and a write-time `error` on `reply.raw` releasing
+// the slot the same way a clean disconnect does.
+describe('SSE_MAX_BUFFERED_BYTES / exceedsBackpressureBudget (WR-A-03)', () => {
+  it('does not flag a buffer at or under the budget', () => {
+    expect(exceedsBackpressureBudget(0)).toBe(false);
+    expect(exceedsBackpressureBudget(SSE_MAX_BUFFERED_BYTES)).toBe(false);
+  });
+
+  it('flags a buffer over the budget', () => {
+    expect(exceedsBackpressureBudget(SSE_MAX_BUFFERED_BYTES + 1)).toBe(true);
+  });
+});
+
+describe('GET /api/events keeps RETRY_FIELD as the very first bytes written (D-05 regression guard)', () => {
+  it('writes "retry: 5000" before anything else on a healthy stream', async () => {
+    const getSession: SessionResolver = () => Promise.resolve({ session: { id: 's1' } } as never);
+    const { app } = await buildTestApp(getSession, 60_000);
+    apps.push(app);
+
+    const response = await app.inject({ method: 'GET', url: '/api/events', payloadAsStream: true });
+    expect(response.statusCode).toBe(200);
+    const stream = response.stream();
+
+    const firstChunk = await new Promise<string>((resolve) => {
+      stream.once('data', (chunk: Buffer) => {
+        resolve(chunk.toString('utf8'));
+      });
+    });
+
+    expect(firstChunk.startsWith('retry: 5000\n\n')).toBe(true);
+  });
+});
+
+describe('GET /api/events releases the subscriber slot on a write-time error (WR-A-03)', () => {
+  it('removes the stream and stops the heartbeat when the underlying response emits an error', async () => {
+    const app = Fastify({ logger: false as unknown as FastifyBaseLogger });
+    apps.push(app);
+    const streams = new Set<SseStream>();
+    const broadcaster: SseBroadcaster = {
+      get size() {
+        return streams.size;
+      },
+      add: (stream) => {
+        streams.add(stream);
+      },
+      remove: (stream) => {
+        streams.delete(stream);
+      },
+      start: () => Promise.resolve(),
+      closeAll: () => Promise.resolve(),
+    };
+    await app.register(
+      createEventsRoutes({
+        broadcaster,
+        getSession: () => Promise.resolve({ session: { id: 's1' } } as never),
+        heartbeatMs: 60_000,
+        maxConnections: 10,
+      }),
+    );
+
+    // `payloadAsStream: true` resolves as soon as `writeHead` runs (the handler has already
+    // hijacked and registered the stream by then); `response.raw.res` IS the exact `reply.raw`
+    // object the handler writes to (light-my-request's `Response` inherits `http.ServerResponse`
+    // and is never wrapped) -- destroying it here directly exercises the new `reply.raw.on('error'
+    // , evict)` listener without needing a real socket RST, which risks an unhandled-exception
+    // crash if any layer forgets to attach a listener first.
+    const response = await app.inject({ method: 'GET', url: '/api/events', payloadAsStream: true });
+    expect(response.statusCode).toBe(200);
+    expect(streams.size).toBe(1);
+
+    const rawRes = (response as unknown as { raw: { res: NodeJS.EventEmitter } }).raw.res;
+    rawRes.emit('error', new Error('simulated ECONNRESET'));
 
     expect(streams.size).toBe(0);
   });
