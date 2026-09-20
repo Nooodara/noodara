@@ -5,6 +5,7 @@ import {
   fieldErrorsFromIssues,
   fieldForErrorCode,
   formatRetryAfterDuration,
+  normalizeFieldPath,
 } from './error-copy';
 
 // 05-UI-SPEC.md SS5.4 -- every ServiceErrorCode's copy is asserted verbatim. Entries that carry a
@@ -74,24 +75,83 @@ describe('copyForServerErrorCode', () => {
   });
 });
 
+// Literal backend issue-path format below is empirically confirmed, not guessed: probing
+// `@fastify/type-provider-zod`'s real `validatorCompiler` directly against
+// `CreateServerBodySchema`/`SetupBodySchema` (apps/control-plane/src/routes/server-schemas.ts,
+// setup.ts) produced AJV-shaped `instancePath` values -- a bare top-level field emits a single
+// leading-slash segment ('/name', '/host', '/token'), the nested credential discriminated union
+// emits a two-segment path ('/credential/privateKey', '/credential/passphrase',
+// '/credential/type'), and even the bare object itself failing (e.g. missing entirely) emits just
+// '/credential'. This matches `http-errors.test.ts`'s own fixtures exactly
+// (`{ instancePath: '/name', message: 'Required' }`).
 describe('fieldErrorsFromIssues', () => {
-  it('maps a known field path to its message', () => {
-    expect(fieldErrorsFromIssues([{ path: 'sshPort', message: 'Port must be between 1 and 65535' }])).toEqual({
+  it('maps a top-level instancePath to its bare form key', () => {
+    expect(fieldErrorsFromIssues([{ path: '/sshPort', message: 'Port must be between 1 and 65535' }])).toEqual({
       sshPort: 'Port must be between 1 and 65535',
     });
   });
 
+  it('maps a nested /credential/* instancePath to the single shared "credential" form key', () => {
+    expect(
+      fieldErrorsFromIssues([
+        { path: '/credential/privateKey', message: 'Too small: expected string to have >=1 characters' },
+      ]),
+    ).toEqual({ credential: 'Too small: expected string to have >=1 characters' });
+  });
+
+  it('collapses two different nested credential paths onto the same "credential" key (they share one control)', () => {
+    const mapped = fieldErrorsFromIssues([
+      { path: '/credential/privateKey', message: 'private key message' },
+      { path: '/credential/passphrase', message: 'passphrase message' },
+    ]);
+
+    expect(mapped).toEqual({ credential: 'private key message' });
+  });
+
+  it('never collapses two distinct top-level fields onto the same key', () => {
+    const mapped = fieldErrorsFromIssues([
+      { path: '/name', message: 'name message' },
+      { path: '/host', message: 'host message' },
+    ]);
+
+    expect(mapped).toEqual({ name: 'name message', host: 'host message' });
+  });
+
   it('keeps the first message when a path repeats', () => {
     const mapped = fieldErrorsFromIssues([
-      { path: 'email', message: 'first message' },
-      { path: 'email', message: 'second message' },
+      { path: '/email', message: 'first message' },
+      { path: '/email', message: 'second message' },
     ]);
 
     expect(mapped).toEqual({ email: 'first message' });
   });
 
-  it('ignores an issue whose path is not a known form field', () => {
-    expect(fieldErrorsFromIssues([{ path: 'notARealField', message: 'nope' }])).toEqual({});
+  it('drops an issue whose path is not a known form field, even in the real leading-slash shape', () => {
+    expect(fieldErrorsFromIssues([{ path: '/notARealField', message: 'nope' }])).toEqual({});
+  });
+
+  it('drops the bare "/" root path (e.g. an unrecognized top-level key) -- no UI field renders it', () => {
+    expect(fieldErrorsFromIssues([{ path: '/', message: 'Unrecognized key: "extra"' }])).toEqual({});
+  });
+});
+
+describe('normalizeFieldPath', () => {
+  it('normalizes a bare top-level instancePath to its form key', () => {
+    expect(normalizeFieldPath('/name')).toBe('name');
+    expect(normalizeFieldPath('/host')).toBe('host');
+    expect(normalizeFieldPath('/token')).toBe('token');
+  });
+
+  it('normalizes every nested /credential/* path, and the bare /credential root, to "credential"', () => {
+    expect(normalizeFieldPath('/credential/privateKey')).toBe('credential');
+    expect(normalizeFieldPath('/credential/passphrase')).toBe('credential');
+    expect(normalizeFieldPath('/credential/type')).toBe('credential');
+    expect(normalizeFieldPath('/credential')).toBe('credential');
+  });
+
+  it('returns null for a path no screen in this app rendered a field for', () => {
+    expect(normalizeFieldPath('/notARealField')).toBeNull();
+    expect(normalizeFieldPath('/')).toBeNull();
   });
 });
 

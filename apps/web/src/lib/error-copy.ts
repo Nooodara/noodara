@@ -62,10 +62,12 @@ export function fieldForErrorCode(code: ServiceErrorCode): ErrorFormField | null
   return ERROR_CODE_FIELD[code] ?? null;
 }
 
-// The full set of form-field paths any screen in this phase's forms can submit an issue against.
-// An issue whose `path` is not in this set is dropped rather than rendered -- a future backend
-// field must never surface under a field this UI never built (05-UI-SPEC.md SS10's "never echo
-// raw input" discipline extended to validation issue paths, not just error bodies).
+// The full set of form-field keys any screen in this phase's forms can submit an issue against --
+// `normalizeFieldPath` is the only place that turns a raw backend issue path into one of these
+// keys. An issue that normalizes to a key not in this set (or to `null`) is dropped rather than
+// rendered -- a future backend field must never surface under a field this UI never built
+// (05-UI-SPEC.md SS10's "never echo raw input" discipline extended to validation issue paths, not
+// just error bodies).
 const KNOWN_FORM_FIELD_PATHS: ReadonlySet<string> = new Set([
   'token',
   'email',
@@ -74,21 +76,50 @@ const KNOWN_FORM_FIELD_PATHS: ReadonlySet<string> = new Set([
   'host',
   'sshPort',
   'sshUser',
-  'passphrase',
-  'privateKey',
+  'credential',
 ]);
 
-/** Maps `ApiFailure.issues` (from a `VALIDATION_FAILED` body) to a `{ path: message }` record a
- *  `Field`'s `error` prop can read directly. The first message wins when a path repeats; an issue
- *  whose path is not a known form field is silently dropped, never rendered under a field the
+// The real control plane emits AJV-shaped `instancePath` issue paths (`toValidationErrorBody` in
+// apps/control-plane/src/routes/http-errors.ts), never a bare field name: a top-level field is
+// `/name`, and the nested credential discriminated union is `/credential/privateKey`,
+// `/credential/passphrase`, `/credential/type`, or the bare `/credential` itself when the whole
+// object fails. This is empirically confirmed (not guessed) by invoking the real
+// `@fastify/type-provider-zod` `validatorCompiler` against `CreateServerBodySchema` directly, and
+// matches `http-errors.test.ts`'s own literal fixtures.
+//
+// `CredentialFields.tsx` renders one shared inline error for the whole credential block --
+// `ServerFormErrors` (apps/web/src/lib/server-form.ts) has a single `credential` key, never a
+// separate `privateKey`/`passphrase`/`password` field -- so every backend path under
+// `/credential` (bare, or with any nested segment) collapses onto that one form key.
+const CREDENTIAL_PATH_PREFIX = 'credential';
+
+/** Converts a backend `instancePath`-style issue path into the form field key that would render
+ *  it, or `null` when this UI built no field for that path. Total (never throws) and
+ *  intentionally not injective for the credential block only -- every other path segment maps
+ *  1:1 onto its own form key. */
+export function normalizeFieldPath(path: string): string | null {
+  const segments = path.split('/').filter((segment) => segment.length > 0);
+  const [first] = segments;
+  if (first === undefined) return null;
+
+  const candidate = first === CREDENTIAL_PATH_PREFIX ? CREDENTIAL_PATH_PREFIX : segments.length === 1 ? first : null;
+
+  return candidate !== null && KNOWN_FORM_FIELD_PATHS.has(candidate) ? candidate : null;
+}
+
+/** Maps `ApiFailure.issues` (from a `VALIDATION_FAILED` body) to a `{ formKey: message }` record a
+ *  `Field`'s `error` prop can read directly, routing every raw backend path through
+ *  `normalizeFieldPath` first. The first message wins when two issues normalize to the same form
+ *  key; an issue that normalizes to `null` is silently dropped, never rendered under a field the
  *  caller never built. */
 export function fieldErrorsFromIssues(issues: readonly ApiIssue[]): Record<string, string> {
   const result: Record<string, string> = {};
 
   for (const issue of issues) {
-    if (!KNOWN_FORM_FIELD_PATHS.has(issue.path)) continue;
-    if (issue.path in result) continue;
-    result[issue.path] = issue.message;
+    const field = normalizeFieldPath(issue.path);
+    if (field === null) continue;
+    if (field in result) continue;
+    result[field] = issue.message;
   }
 
   return result;
