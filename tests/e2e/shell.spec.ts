@@ -146,6 +146,21 @@ test('@shell signing out returns to /login, and a subsequent direct visit to /se
   await expect(page).toHaveURL(/\/login$/);
 });
 
+// WR-B-15 (05-VERIFICATION.md gap 8 / 05-35-PLAN.md Task 1): the bare origin must be a working
+// entry point in both directions -- it must never 404 an authenticated visitor, and it must never
+// invent a second, divergent unauthenticated path alongside proxy.ts's existing one.
+test('@shell an authenticated visit to the bare origin lands on /servers', async ({ page }) => {
+  await login(page);
+
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/servers$/);
+});
+
+test('@shell an unauthenticated visit to the bare origin lands on /login', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/login$/);
+});
+
 // Not one of the plan's six documented @shell behaviours -- a deliberately different tag (never
 // containing the substring "@shell", so `--grep @shell` still selects exactly six tests) for
 // permanent regression coverage of a real bug this plan's own security review found:
