@@ -404,6 +404,60 @@ of this session:
 
 ## 3. Human verification
 
-*(To be completed by the continuation agent after the checkpoint below is answered by the user.
-Do not fill in "passed" for any item the user did not actually check — see the checkpoint's
-`how-to-verify` list for the exact six items.)*
+The user's verbatim answer to the Task 3 checkpoint (2026-09-20, in Spanish):
+
+> Approve y haz un gsd quick del sshUser bug
+
+**Recorded honestly, without embellishment:**
+
+- The user **approved** closing the gap-closure wave.
+- The user did **not** state which of the six human-verification items (listed in the checkpoint's
+  `how-to-verify`) they actually checked versus deferred. Therefore **none** of the six may be
+  recorded as "verified by the user". All six are recorded below as **pendiente — no confirmado por
+  el usuario**, so they keep surfacing as UAT items in the orchestrator's own verification step. No
+  item is inferred as checked, and none is softened to "implicitly approved":
+
+  1. The contrast change on a real display, both themes — **pendiente — no confirmado por el usuario**.
+  2. A real CI run (QA-04/QA-05) — **pendiente — no confirmado por el usuario**.
+  3. A live walkthrough with SSE actually visible (not through a buffering tunnel) — **pendiente — no
+     confirmado por el usuario**.
+  4. Sheet/Dialog/RowMenu elevation (flat + hairline + backdrop-blur vs. floating shadow) —
+     **pendiente — no confirmado por el usuario**.
+  5. RowMenu with a real screen reader (VoiceOver/NVDA) — **pendiente — no confirmado por el
+     usuario**.
+  6. Responsive behaviour below 1280px on real touch hardware, and `prefers-reduced-motion`'s felt
+     effect — **pendiente — no confirmado por el usuario**.
+
+- **New bug found live in this session (gap 5, still PARTIAL — see section 2):** `ServerSheet.tsx`
+  passes no `error` prop to the SSH user `Field`, so a server-side `sshUser` validation error is
+  silently swallowed. The user instructed that this be fixed via a **separate `/gsd-quick` task**,
+  run by the orchestrator immediately after this plan closes — **not** by this executor. Disposition:
+  **fix en curso vía `/gsd-quick` (fuera de este plan)**. Gap 5 stays **PARTIAL** in this document;
+  it is not pre-emptively flipped to CLOSED.
+- QA-04 / QA-05 remain `Pending` in `.planning/REQUIREMENTS.md` (no git remote, no observed CI/nightly
+  run). This plan does not change them — see the requirements reconciliation table in section 2.
+
+### Orchestrator findings (post-checkpoint)
+
+**F13 — SSE broadcaster boot-window warning, deterministic, pre-existing, not a leak.** The
+integration log contains **125** occurrences of the `warn` "sse broadcaster failed to start within
+the boot window" (`apps/control-plane/src/app.ts:261`, the D-27 degraded-mode catch when Redis is
+unreachable at boot). The count is **identical (125)** in the orchestrator's own wave-1 integration
+run and in the final gate run recorded in section 1 — confirmed by grepping both raw logs in this
+session — so it is deterministic and pre-existing, not introduced by this gap-closure wave. Only
+`app.log.warn({ err }, ...)`'s object form is logged (confirmed by reading `app.ts:255-263`); no bare
+error and no leak. **Disposition: low priority** — confirm the suites that trigger this intentionally
+boot without Redis reachable, and consider silencing/asserting on it explicitly so that a *real*
+broadcaster startup failure is not lost in 125 lines of expected noise — this exact code path (an
+SSE subscriber not yet ready) hid a genuine product bug once before (see STATE.md's 05-20 SSE
+lost-event-race entry).
+
+**Correction to WR-A-04's wording in section 2 above (Gap 4 / Gap 8).** A direct grep in this session
+— `grep -rn '\.error(err)\|\.error(new Error\|\.warn(err)\|\.fatal(err)' apps/control-plane/src
+--include="*.ts"` (excluding `*.test.ts`) — returns **zero** matches repository-wide today, confirming
+what section 2 already stated: nothing currently bypasses the `err` serializer. The prior wording of
+this residual ("a hole") overstates the present state. Corrected wording: **nothing prevents a future
+call site from bypassing the serializer** (no lint rule, no `hooks.logMethod` interceptor, and no
+regression test asserts the bare-`Error`-as-first-argument shape is caught) — this is an absent
+guardrail against a *future* regression, not a currently-exploitable hole. The verdict for this
+sub-item stays **PARTIAL**, only the wording is corrected here.
