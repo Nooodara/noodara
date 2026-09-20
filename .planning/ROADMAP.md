@@ -324,7 +324,7 @@ Plans:
 
 **Wave 14** *(blocked on Wave 13)*
 
-- [ ] 05-20-PLAN.md — Critical path E2E contra el contenedor sshd real, job de CI y workflow nightly 20/20 (QA-04)
+- [x] 05-20-PLAN.md — Critical path E2E contra el contenedor sshd real, job de CI y workflow nightly 20/20 (QA-04)
 
 **Wave 15** *(blocked on Wave 14)*
 
@@ -366,5 +366,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 23/25 | In Progress|  |
+| 5. UI web | 24/25 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |

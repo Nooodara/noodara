@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-19-PLAN.md
-last_updated: "2026-09-19T22:08:39.400Z"
-last_activity: 2026-09-19
+stopped_at: Completed 05-20-PLAN.md
+last_updated: "2026-09-20T02:47:34.108Z"
+last_activity: 2026-09-20
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 73
-  completed_plans: 71
+  completed_plans: 72
   percent: 67
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING
-Plan: 19 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-18..05-21 remain incomplete)
+Plan: 20 of 25 just completed (wave-based execution, out of strict numeric order -- see 05-22/05-23 precedent; 05-18..05-21 remain incomplete)
 Status: Ready to execute
-Last activity: 2026-09-19
+Last activity: 2026-09-20
 
-Progress: [██████████] 97%
+Progress: [██████████] 99%
 
 ## Performance Metrics
 
@@ -126,6 +126,7 @@ Progress: [██████████] 97%
 | Phase 05 P17 | 55min | 3 tasks | 15 files |
 | Phase 05-ui-web P18 | 55min | 3 tasks | 9 files |
 | Phase 05 P19 | 50 | 3 tasks | 13 files |
+| Phase 05 P20 | ~3h + debug session (see SUMMARY) | 3 tasks | 27 files |
 
 ## Accumulated Context
 
@@ -319,6 +320,11 @@ Recent decisions affecting current work:
 - [Phase 05-19]: The real trust-fingerprint route takes no request body -- TrustFingerprintDialog re-fetches the server immediately before the real request and refuses to send it if pendingFingerprint no longer matches what was displayed, documenting the residual race rather than hiding it
 - [Phase 05-19]: DestructiveConfirmDialog gained an optional, backward-compatible children slot so the trust dialog can repeat both fingerprints in mono above the input per SS5.7
 - [Phase 05-19]: HostKeyChangedBanner/TrustFingerprintDialog hide the Trust new fingerprint action entirely once pendingFingerprint is null (the UF-01 fix's own aftermath), rather than leaving an unreachable-but-visible button
+- [Phase 05-20]: QA-04 stays Pending: the requirement needs the nightly workflow to actually run green on GitHub Actions, and this repo has no remote -- local e2e-repeat.mjs/pnpm test:integration evidence (20/20 across three invocations, 487/0/1) is necessary but not sufficient; first green CI e2e job + first green nightly.yml run are the missing evidence
+- [Phase 05-20]: Root cause of the long-standing events-sse.test.ts/canary-http.test.ts flake found and fixed (6600f37): apps/control-plane's SSE broadcaster issued Redis SUBSCRIBE before the ioredis connection reached ready, silently running with zero live events until process restart -- not machine-specific Docker/network timing as STATE.md previously recorded
+- [Phase 05-20]: Two open, unfixed hazards from the sse-lost-event-race debug session carried forward: apps/web/src/app/(shell)/servers/[id]/page.tsx has the same stale-snapshot-overwrites-a-newer-event hazard the servers list had (found by reading, not fixed; activity/page.tsx and DiscoverySection.tsx not audited), and the control-plane heartbeat never inspects its own socket-write result so a half-open peer is only evicted on TCP retransmission giveup
+- [Phase 05-20]: pnpm test:integration is fragile to a single Docker hiccup at start of a long run: one Testcontainers port-bind timeout left 2 stray containers, which then cascaded into 289 misleading assertNoStrayTestContainers failures across unrelated files in one observed run -- not a code regression, but worth knowing before trusting a single red full-integration run
+- [Phase 05-20]: Process lesson: no executor or wave gate ran the full pnpm test:integration suite during phase 05 until this plan's final verification pass, which is how two phase-04 tests (broken by 05-04 adding server.discovery_progress to the shared stream, fixed out-of-band in f9d1341) stayed red for roughly twenty plans undetected -- future phases should run the full integration suite at wave gates, not only the plan-scoped subset
 
 ### Pending Todos
 
@@ -336,7 +342,7 @@ None yet.
 - 02-10: a cold pnpm test:integration runtime was not measured (only warm, 555.87s) — this shared dev machine's Docker host has 2000+ images from unrelated projects and there is no safe way to selectively evict this phase's four sshd image variants; a local gitleaks detect run also flags the three already-known fake-credential fixtures because this machine's actual git root sits one level above noodara/code, shifting .gitleaks.toml's anchored allowlist paths — not a real leak, a local-layout artifact
 - A full pnpm test:integration run showed a cascading assertNoStrayTestContainers failure (234/311 tests) rooted in tests/integration/ssh/*.test.ts files unrelated to plan 03-10's diff; confirmed pre-existing machine-specific Docker resource contention (isolated re-run of the affected file passed cleanly 16/16). See phases/03-servicios-de-aplicaci-n-activity-log-y-redacci-n/deferred-items.md
 - REQUIREMENTS.md marks SERV-06 'Complete' after Plan 04-01, but 04-01 only ships infra (deps, env knobs, job-budget function, Redis test fixture) — no worker, routes, or SSE stream yet. SERV-06's actual behavior lands across Plans 04-02..04-11; this checkbox is a plan-frontmatter artifact of 04-01-PLAN.md declaring requirements: [SERV-06] on the first wave-0 plan, not a real completion. Re-verify SERV-06 at phase-4 close, not from this checkbox alone.
-- events-sse.test.ts: 2 of 10 tests (server.updated publish, connect+worker E2E) intermittently fail on this shared dev machine waiting for a real Redis subscription (waitForActiveSubscriber timeout) -- diagnosed as machine-specific Docker/network flakiness (CLIENT LIST showed a public non-Docker IP sharing the container's mapped port during one failure), not a code defect; a standalone non-Vitest reproduction succeeded deterministically every run. Matches this repo's pre-existing 'shared dev machine Docker resource contention' pattern. Re-verify on a clean machine/CI.
+- CORRECTED (05-20, see .planning/debug/sse-lost-event-race.md): events-sse.test.ts's 2-of-10 intermittent failures (server.updated publish, connect+worker E2E waiting on waitForActiveSubscriber) were previously diagnosed here as machine-specific Docker/network flakiness (the "public non-Docker IP in CLIENT LIST" was Docker Desktop's own NAT address, present on every connection including the probe -- a red herring). **That diagnosis was wrong.** The real, confirmed root cause is a product bug: apps/control-plane/src/events/sse-broadcaster.ts's `start()` issued Redis `SUBSCRIBE` before the ioredis subscriber connection reached `ready`; ioredis@5 writes a `SUBSCRIBE` sent during `connect` straight to the socket ahead of its own ready check, that check then fails on a connection already in subscriber mode, ioredis reconnects, and `autoResubscribe` replays nothing because it only remembers a connection that had reached `ready` -- `start()` had already resolved successfully, so the API process ran with zero live events until restarted. Confirmed with a standalone node+ioredis repro (subscribe on `connect`: 0/5 delivered; on `ready`: 3/3 delivered) before any product file was touched. Fixed in `6600f37`: `start()` now awaits `ready` before `SUBSCRIBE`. Before: 8 of 15 subscription-dependent test executions failed (5/5 runs red); after: 0 of 30 (10/10 runs green).
 - 04-10: a combined tests/integration/routes/+services/ run (18 files, extra-broad regression check beyond this plan's scope) showed 137 failing stray-container-count assertions concentrated in register-server.test.ts/trust-fingerprint.test.ts (files this plan did not modify); isolated re-runs of those files (28/28) and the servers-crud/connect/discover files (38/38) passed cleanly, confirming the pre-existing shared-dev-machine Docker resource contention pattern, not a regression.
 - 05-01-PLAN.md declares requirements: [DETL-02, QA-05] in its frontmatter, but only implements the two security-remediation items (UF-01 pendingFingerprint clear, T-4-02 bounded session lookups) -- no UI empty-state work (DETL-02) or CI canary job (QA-05) landed in this plan. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 after Plan 04-01. Re-verify DETL-02/QA-05 against the plans that actually implement them, not this checkbox.
 - 05-02-PLAN.md declares requirements: [QA-05] in its frontmatter but only closes the T-4-10/T-4-38/T-4-32 threat-remediation tasks that make QA-05's canary safe against real err output -- it does not add the nightly CI job (.github/workflows/nightly.yml, still Wave 2+ per 05-PATTERNS.md). CI already runs pnpm security:scan-leaks (Phase 4's ci.yml); QA-05 also needs a nightly job before it can be marked Complete. Not marked Complete in REQUIREMENTS.md; matches the same plan-frontmatter-artifact pattern already flagged for SERV-06 (04-01) and DETL-02/QA-05 (05-01).
@@ -355,6 +361,7 @@ None yet.
 - 05-12-PLAN.md declares requirements: [UI-01, UI-02] in its frontmatter; only UI-01 is marked Complete here (the authenticated shell, proven by six passing @shell E2E behaviours). UI-02 stays Pending -- this plan's own /servers page is a minimal placeholder (no list, no empty/loading/error states), not a real screen; UI-02 needs Plans 05-13..05-21's actual servers list, add/edit sheet, server detail, activity log and settings screens. Matches the same plan-frontmatter-artifact pattern already flagged for every prior UI-01/UI-02 plan this phase.
 - 05-13-PLAN.md declares requirements: [SERV-04, UI-02] in its frontmatter; only SERV-04 is marked Complete here (the servers list screen, proven by 6 passing @servers E2E behaviours). UI-02 stays Pending -- this plan builds the third of the seven screens UI-02 requires (setup, login, servers list now done; sheet, server detail, activity log, settings remain -- Plans 05-14 through 05-21). Matches the same plan-frontmatter-artifact pattern already flagged in STATE.md for every prior UI-01/UI-02 plan this phase.
 - 05-14-PLAN.md declares requirements: [DETL-01, DETL-02, UI-02] in its frontmatter; only DETL-01/DETL-02 are marked Complete here. UI-02 stays Pending -- this plan builds the fourth of the seven screens UI-02 requires (setup, login, servers list, server detail now done; add/edit sheet, activity log, settings remain -- Plans 05-16/05-17/05-21). Matches the same plan-frontmatter-artifact pattern already flagged in STATE.md for every prior UI-01/UI-02 plan this phase.
+- QA-04 (05-20) needs a first real green run of .github/workflows/ci.yml's e2e job and .github/workflows/nightly.yml's e2e-repeat/stress-connections/canary jobs on actual GitHub Actions -- both files are syntax-checked and their job bodies validated locally only, since this repository has no remote yet and no scheduled/workflow_dispatch run has ever executed
 
 ## Deferred Items
 
@@ -366,6 +373,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-19T22:08:39.392Z
-Stopped at: Completed 05-19-PLAN.md
+Last session: 2026-09-20T02:47:34.100Z
+Stopped at: Completed 05-20-PLAN.md
 Resume file: None
