@@ -39,3 +39,21 @@ Test-first (RED → GREEN), backend first:
    confirmation, re-renders with the new value and fixed copy (add to `error-copy.ts`), and
    requires the name to be typed again. Drop the client-side re-GET once the backend enforces it.
 4. Activity event for trust should record the fingerprint promoted (public value).
+
+
+## Reopened 2026-09-20 (phase 5 re-verification)
+
+Closed prematurely by plan 05-31. `05-REVIEW.md` GR-01 / GR-02, confirmed first-hand by the orchestrator and
+by the phase verifier (`05-VERIFICATION.md`, status `gaps_found`):
+
+- `apps/control-plane/src/services/trust-fingerprint.ts` never checks `lastErrorCode === 'HOST_KEY_CHANGED'`;
+  the restriction exists only in the UI (`apps/web/src/lib/detail-state.ts`).
+- `packages/domain/src/server/connection-result.ts` `applyConnectionResult` carries `pendingFingerprint`
+  through a later success and through a later non-host-key failure, so a stale parked fingerprint stays
+  promotable through the API.
+- `apps/control-plane/src/services/edit-server.ts` clears `hostFingerprint` on an identity change only inside
+  the `CONNECTED` branch (GR-02).
+- No integration test covers "HOST_KEY_CHANGED parks F -> later AUTH_FAILED -> POST /trust-fingerprint F
+  must be 409".
+
+Next: `/gsd-plan-phase 5 --gaps`.
