@@ -81,6 +81,38 @@ describe('CopyButton', () => {
     }
   });
 
+  // T-5G-28-02 (05-28-PLAN.md): Noodara's own explicitly supported v0.1 deployment mode is plain
+  // HTTP, an insecure context where `navigator.clipboard` is `undefined` -- jsdom's default state
+  // (no stub applied) reproduces exactly that. The pre-fix `handleClick` dereferenced
+  // `navigator.clipboard.writeText` directly, throwing a synchronous TypeError before `.catch`
+  // could ever attach; that throw is this test's RED evidence.
+  it('neither throws nor renders a confirmation nor logs anything when navigator.clipboard is undefined (insecure context / missing API)', async () => {
+    const user = userEvent.setup();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    try {
+      // Force the missing-API condition regardless of whatever jsdom's shared environment may
+      // have already cached on `navigator` from an earlier test in this file/worker.
+      // @ts-expect-error -- test-only removal, see this file's top-of-file comment
+      delete navigator.clipboard;
+      expect(navigator.clipboard).toBeUndefined();
+      renderUi(<CopyButton value="a1:b2:c3:d4" />);
+
+      await expect(user.click(screen.getByRole('button', { name: 'Copy' }))).resolves.not.toThrow();
+
+      expect(screen.queryByText('Copied')).not.toBeInTheDocument();
+      expect(consoleSpy).not.toHaveBeenCalled();
+      expect(consoleWarnSpy).not.toHaveBeenCalled();
+      expect(consoleLogSpy).not.toHaveBeenCalled();
+    } finally {
+      consoleSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
+      consoleLogSpy.mockRestore();
+    }
+  });
+
   it('never renders the value prop in any DOM attribute -- it only ever reaches the clipboard call', async () => {
     const user = userEvent.setup();
     const writeText = vi.fn().mockResolvedValue(undefined);
