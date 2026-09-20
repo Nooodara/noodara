@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-34-PLAN.md (SSE backpressure eviction WR-A-03, pino err-serializer bypass WR-A-04, guarded worker entrypoint UF-02)
-last_updated: "2026-09-20T17:47:18.301Z"
+stopped_at: "Completed 05-36-PLAN.md (CI readiness gap closure: SC5/QA-04/QA-05 + WR-C-14 provenance gate)"
+last_updated: "2026-09-20T18:11:03.742Z"
 last_activity: 2026-09-20
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 85
-  completed_plans: 79
-  percent: 93
+  completed_plans: 80
+  percent: 94
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING gap closure (05-26…05-37, 4 waves)
-Plan: 31 of 37 plans have a SUMMARY (05-34 just executed, out of numeric sequence -- 05-29 and 05-31 are still pending; 05-33 and 05-37 are not autonomous -- colour decision and human verification; 05-35 and 05-36 also pending)
-Status: Executing gap closure. Phase NOT complete: 05-34 closed gap 8's three triaged findings (WR-A-03: SSE writes now backpressure-bounded via SSE_MAX_BUFFERED_BYTES and evicted through the existing teardown path, proven with a real socket since app.inject() cannot reproduce backpressure; WR-A-04: server.ts's app.listen() failure now logs through the { err } merging-object form, closing the pino err-serializer bypass at its one live call site; UF-02: worker.ts's main() is now guarded with main().catch(...), exiting non-zero with a structured line instead of a raw crash dump) -- all three reproduced before fixing (RED evidence recorded in 05-34-SUMMARY.md). Remaining verification gaps unchanged by this plan: SC2/SC3/DETL-02/DISC-02 (detail-page and discovery races), SC5/QA-04/QA-05 (CI readiness), the CLAUDE.md DoD findings, the trust-fingerprint TOCTOU, and the rest of gap 8's triage batch (WR-B-15, WR-C-01, WR-B-10, setup-token+Referrer-Policy, WR-C-14, accessibility items) -- see 05-VERIFICATION.md and 05-37-PLAN.md's own triage batch.
-Last activity: 2026-09-20 -- 05-34 (SSE backpressure eviction, pino err-serializer bypass fix, guarded worker entrypoint) executed
+Plan: 32 of 37 plans have a SUMMARY (05-36 just executed, out of numeric sequence -- 05-29 and 05-31 are still pending; 05-33 and 05-37 are not autonomous -- colour decision and human verification; 05-35 also pending)
+Status: Executing gap closure. Phase NOT complete: 05-36 closed gap 3/SC5's CI-readiness defect and gap 8's WR-C-14 finding -- ci.yml's security job (and nightly.yml's canary job, same bug) now installs a Playwright browser before pnpm security:scan-leaks; every job in both workflows is least-privilege, timeout-bounded and SHA-pinned; the full-tree gitleaks download is checksum-verified before extraction; scripts/check-package-provenance.mjs now enumerates all 52 locked direct dependencies at their pinned versions (was 27/52 at dist-tags.latest) -- see docs/ci-readiness.md for the honest residual gap. QA-04/QA-05 remain Pending: no git remote exists, so no real CI/nightly run has ever executed -- that observation is recorded, not simulated. Remaining verification gaps unchanged by this plan: SC2/SC3/DETL-02/DISC-02 (detail-page and discovery races), the CLAUDE.md DoD findings, the trust-fingerprint TOCTOU, and the rest of gap 8's triage batch (WR-B-15, WR-C-01, WR-B-10, setup-token+Referrer-Policy, accessibility items) -- see 05-VERIFICATION.md and 05-37-PLAN.md's own triage batch.
+Last activity: 2026-09-20 -- 05-36 (CI/nightly workflow hardening, provenance gate rewrite, ci-readiness doc) executed
 
-Progress: [█████████░] 93%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
@@ -134,6 +134,7 @@ Progress: [█████████░] 93%
 | Phase 05-ui-web P30 | 35min | 3 tasks | 6 files |
 | Phase 05-ui-web P32 | 55min | 3 tasks | 6 files |
 | Phase 05 P34 | 42min | 3 tasks | 7 files |
+| Phase 05-ui-web P36 | 35min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -348,6 +349,9 @@ Recent decisions affecting current work:
 - [Phase 05-32]: ActivityList resolves the viewer time zone once via Intl.DateTimeFormat().resolvedOptions().timeZone behind an optional timeZone prop, kept out of the pure activity-groups.ts module — groupByDay was already correct once given a real zone (proven by new two-zone unit cases, stable under TZ=UTC and TZ=Pacific/Kiritimati) -- WR-B-06's defect was confined to the caller's two-argument call
 - [Phase 05]: 05-34: SSE_MAX_BUFFERED_BYTES set to 1 MiB (matching 05-REVIEW.md's suggested fix); a stream is evicted once reply.raw.writableLength crosses it, proven with a real TCP socket since app.inject() cannot reproduce genuine backpressure
 - [Phase 05]: 05-34: worker.ts's entrypoint uses main().catch((err) => { logger.error({ err }, 'worker boot failed'); process.exit(1); }) since server.ts has no guard on its own equivalent call either to mirror -- the plan's own documented fallback
+- [Phase 05-ui-web]: check-package-provenance.mjs enumerates deps+devDeps via pnpm list -r --depth 0 --json instead of a hardcoded list — Matches the review's own 52-dependency denominator exactly, closing WR-C-14's 27/52 coverage gap to 52/52
+- [Phase 05-ui-web]: ioredis expected repository changed from redis/ioredis (dist-tags.latest) to luin/ioredis (pinned 5.11.1's real repository) — Concrete proof the locked-version provenance check changes the result for a real installed dependency
+- [Phase 05-ui-web]: nightly.yml's canary job also got the playwright-install fix beyond the plan's literal ci.yml-only text — Runs the identical security:scan-leaks command with the identical missing-browser defect; nightly.yml was already in files_modified (Rule 1)
 
 ### Pending Todos
 
@@ -404,6 +408,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-20T17:47:18.294Z
-Stopped at: Completed 05-34-PLAN.md (SSE backpressure eviction WR-A-03, pino err-serializer bypass WR-A-04, guarded worker entrypoint UF-02)
+Last session: 2026-09-20T18:11:03.735Z
+Stopped at: Completed 05-36-PLAN.md (CI readiness gap closure: SC5/QA-04/QA-05 + WR-C-14 provenance gate)
 Resume file: None
