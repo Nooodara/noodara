@@ -154,7 +154,18 @@ the entries above (and STATE.md) attributed these failures to.
   (`reconcileSnapshot`, `updatedAt` guards against regressing a row), and only the latest request
   may publish its snapshot. No polling, no reload fallback, no test-side retry.
 
-### LIKELY EXPLAINED, NOT RE-OBSERVED -- `servers-list.spec.ts:208`, the 60s `row.hover()` timeout
+### ATTRIBUTION WITHDRAWN (round 2) -- `servers-list.spec.ts:208`, the 60s `row.hover()` timeout
+
+> **Correction, round 2 of the same debug session.** The text below attributed `:208` to the
+> snapshot race "by mechanism only". When `:208` failed again in iteration 2 of the 20x repeat
+> (with that race already fixed), its Playwright ARIA snapshot showed `status: Reconnecting…`: the
+> page's event stream had never opened. That is a different cause -- see "round 2" at the end of
+> this file. The snapshot-race defect described here was real and is fixed and pinned, but there is
+> no evidence it ever caused a `:208` failure; the original `row.hover()` 60s variant was never
+> captured with a trace, so it remains **unexplained by observation**. Note the two `:208`
+> variants differ: iteration 2 timed out on `expect(row).toBeVisible()` (row never appeared --
+> explained by round 2), whereas the original timed out on `row.hover()`, which needs the row to
+> have been visible first -- something a never-opened stream does not produce by itself.
 
 - The same defect produces this symptom's exact shape: with both GETs in flight, the first landing
   made the list `ready`, the live event inserted the row (so `expect(row).toBeVisible()` passed),
@@ -190,3 +201,55 @@ the entries above (and STATE.md) attributed these failures to.
   progress events now sit between CONNECTING and CONNECTED. The product behaves as designed; the
   tests were never updated. Not touched in this session (outside its scope); the fix is to have
   both tests select `server.updated` events instead of assuming adjacency.
+
+## 05-20 (debug session `sse-lost-event-race`, round 2): the stream that never opens
+
+Full evidence trail: `.planning/debug/sse-lost-event-race.md`, section "Round 2". Three product
+bugs, none test-only, all fixed test-first.
+
+### RESOLVED -- abandoned event streams exhausted the SSE connection cap (D-07)
+
+- **C1, `apps/web/src/app/api/events/route.ts`.** The streaming proxy returned `upstream.body`
+  as-is, with no signal. Under `next start` a browser disconnect left the undici response merely
+  unreferenced: the control-plane stream stayed open until the Next process happened to
+  garbage-collect it. Proven by forcing a GC over the inspector: 21 sockets for 10s, then 1 within
+  500ms. Every closed tab, reload or navigation held one of the 32 slots in the meantime.
+- **C3, `apps/control-plane/src/routes/events.ts`** (no proxy involved). The handler attaches its
+  `close` listener itself, but the guarded scope's async session lookup runs first; a client that
+  disconnects during the lookup has already emitted `close`, so the stream was registered and
+  never removed -- a permanent leak until restart. 20 direct requests aborted ~1ms after being
+  sent: 15 -> 32/32 slots, still 32/32 past a heartbeat.
+- **Observed in real full runs, pre-fix:** peak `broadcaster.size` over 5 full `pnpm test:e2e`
+  runs = 10, 21, 18, **32**, 19 with 1-2 pages actually open; the run that reached 32 got 25x
+  `503 SSE_LIMIT_REACHED` and failed (`shell.spec.ts:158`, 60s). Which test fails is whichever next
+  NEEDS a live stream -- `:208` in the orchestrator's run, `:158` here. **Post-fix:** two
+  consecutive full runs 72/72; size after an add = 1 (152-154x) or 2 (3x) outside the one test
+  that saturates the cap on purpose.
+- **Real-user impact:** a denial of live updates for every admin: ~32 reloads/tab closes between
+  two GCs (C1), or 32 unlucky navigations over an API process's whole life (C3), and every new page
+  is refused until a GC / an API restart.
+
+### RESOLVED -- one refused stream meant no live updates until a manual reload
+
+- **C2, `apps/web/src/lib/use-server-events.ts`.** A non-200 answer makes a browser fail an
+  EventSource for good (one `error`, `readyState` CLOSED, no native retry). The hook waited for
+  three errors before starting its T-5-54 backoff, so the backoff was unreachable in a real
+  browser: real Chromium made exactly one request and still showed "Reconnecting…" 40s after
+  capacity returned. The hook now replaces a CLOSED source after 5s doubling to 60s, reset on open.
+
+### STILL OPEN / NOT EXPLAINED (round 2)
+
+- The original `:208` `row.hover()` 60s timeout (05-19) was never captured with a trace; neither
+  round's cause is proven for that exact variant. If it recurs: `--trace on`, and check the
+  stream-status indicator and whether the row is detached at hover time.
+- `:191` in iteration 6 of the first 20x run has no surviving artifact. It is compatible with both
+  the round-1 snapshot race and the round-2 cap; it cannot be assigned to either after the fact.
+- A tab whose session was revoked now retries `/api/events` (a cheap 401) at the capped backoff,
+  at most once a minute, for as long as it stays on a shell page -- before, its stream just died.
+  EventSource does not expose the status, so telling 401 from 503 needs a separate session probe.
+  Left as is; decide whether the shell should redirect to `/login` instead.
+- The control plane's heartbeat does not inspect its own `write` to the socket. A half-open peer
+  (no FIN/RST, e.g. a dropped network path) is only evicted when the kernel's TCP retransmission
+  gives up and the socket emits `close`. Not observed failing; not changed.
+- D-07's cap is global, not per session: one client can still hold all 32 slots deliberately.
+  By design for a single-admin v0.1; noted because the new E2E does exactly that on purpose.

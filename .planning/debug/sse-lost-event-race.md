@@ -2,16 +2,17 @@
 status: awaiting_human_verify
 trigger: "Investigate and fix the root cause of intermittently LOST live server events (SSE) in Noodara (events-sse.test.ts flake, canary-http SSE assertion flake, E2E servers-list.spec.ts:191 row never appears via live SSE)"
 created: 2026-09-19T23:17:15Z
-updated: 2026-09-20T02:35:00Z
+updated: 2026-09-20T00:35:00Z (round 2; wall clock -- round 1 stamps were estimates)
 ---
 
 ## Current Focus
 <!-- OVERWRITE on each update - reflects NOW -->
 
-hypothesis: both root causes (A: SUBSCRIBE before ioredis `ready`; B: servers list drops/overwrites events around in-flight snapshots) confirmed and fixed.
+round: 2 -- see "Round 2: stream never opens (SSE connection cap)" at the end of this file.
+hypothesis: three product bugs confirmed and fixed -- C1 (Next proxy releases its upstream stream only on GC), C3 (control plane registers a stream for a peer that left during the session lookup and never removes it), C2 (the hook never retries an EventSource the browser failed over HTTP).
 test: orchestrator runs `node scripts/e2e-repeat.mjs 20`.
-expecting: 20/20 clean. A `row never appears` or `row.hover()` timeout recurring would reopen B (run once with --trace on and check whether the row is detached).
-next_action: await human verification; on confirmation run archive_session (move to resolved/, append knowledge-base entry).
+expecting: 20/20. A page stuck on "Reconnecting…" would reopen round 2: log broadcaster.size on add/remove (see Round 2 Evidence 03:20 for the exact temporary instrumentation) and check for 503s.
+next_action: await human verification; on confirmation run archive_session (move to resolved/, append knowledge-base entry covering rounds 1 and 2).
 
 ## Symptoms
 <!-- Written during gathering, then IMMUTABLE -->
@@ -135,3 +136,150 @@ files_changed:
   - apps/web/src/app/(shell)/servers/page.test.tsx
   - tests/e2e/servers-list.spec.ts
   - .planning/phases/05-ui-web/deferred-items.md
+
+---
+
+# Round 2: stream never opens (SSE connection cap)
+
+Round 1 above is left as written. Round 2 reopens the session because the orchestrator's 20x repeat failed in iteration 2 at tests/e2e/servers-list.spec.ts:208 with a symptom round 1 did not explain.
+
+## Round 2 Symptoms
+<!-- IMMUTABLE -->
+
+expected: every shell page opens the shared EventSource within moments of load, for the whole length of a full E2E run.
+actual: iteration 2 of `node scripts/e2e-repeat.mjs 20`, test #50 of 70 (servers-list.spec.ts:208): `expect(row).toBeVisible()` timed out after 15s. The ARIA snapshot at failure shows `status: Reconnecting…` -- the EventSource was NOT open 15s after load. The list rendered 8 rows from the mount GET. No stream => no live event and no resync-on-open => the API-created row can never appear.
+errors: `expect(locator).toBeVisible() failed ... element(s) not found`; StreamStatus "Reconnecting…".
+reproduction: not yet deterministic (1 of 2 full runs).
+started: first attributed (wrongly?) to the snapshot race in round 1.
+
+## Round 2 Eliminated
+<!-- APPEND only -->
+
+- hypothesis: the control plane evicts every stream whose peer goes away (my own 01:03 conclusion)
+  evidence: true only for peers that close an OPEN stream (N=100 direct: all released). False for peers that leave during the session lookup: 20 direct early aborts took the cap 15 -> 32/32 for good (C3).
+  timestamp: 2026-09-20T02:05:00Z
+
+- hypothesis: ESTABLISHED sockets on :3100 measure broadcaster.size
+  evidence: the rewrites proxy's keep-alive sockets look identical; 3 leaked slots hid behind a steady "6". Replaced by an exact oracle (hold direct streams until 503), which itself needed fixing (it let undici GC its own held responses, reading -8 twice).
+  timestamp: 2026-09-20T01:50:00Z
+
+- hypothesis: the refusal at failure time is something other than the SSE cap (session-lookup timeout, Better Auth rate limit, API HTTP connection limits, Chromium 6-per-host)
+  evidence: in the failing pre-fix full run the control plane itself logged 25 REJECT_503 at size 32; no other refusal path was hit.
+  timestamp: 2026-09-20T03:20:00Z
+
+## Round 2 Evidence
+<!-- APPEND only -->
+
+- timestamp: 2026-09-20T00:30:00Z
+  checked: test-results/servers-list--servers-a-ro-8b0b7-…/error-context.md (on disk)
+  found: ARIA snapshot contains `- status: Reconnecting…` under the Servers heading, with 8 rows from earlier specs rendered.
+  implication: confirms the orchestrator's reading -- the failure is "stream not open", not "event dropped". Round 1's by-mechanism attribution of :208 to the snapshot race is not supported by this artifact.
+
+- timestamp: 2026-09-20T00:32:00Z
+  checked: apps/web/src/app/api/events/route.ts, apps/control-plane/src/routes/events.ts, apps/web/src/lib/use-server-events.ts (read)
+  found: (1) route.ts fetches upstream with no `signal`, no timeout, no catch. (2) events.ts removes a stream only on `request.raw.on('close')` or a failed heartbeat SESSION check; the heartbeat `reply.raw.write` result/error is never inspected. (3) use-server-events.ts only starts its own backoff after 3 `error` events, but per the HTML spec a non-200 / non-event-stream response makes EventSource FAIL the connection permanently (readyState CLOSED, one `error` event, no native retry) -- so a single 503 may leave the page on "Reconnecting…" forever. To verify in a real browser.
+  implication: three separate candidate defects; none proven yet.
+
+- timestamp: 2026-09-20T00:45:00Z
+  checked: BASELINE REPRO 1 (unmodified code, real stack via tests/e2e/fixtures/stack.ts, `next start`). Scratchpad script: sign in, then N=40 times { fetch :3000/api/events with the session cookie, read first chunk, AbortController.abort() }, then sample `lsof -iTCP:3100 -sTCP:ESTABLISHED` (server-side sockets) and probe one more open.
+  found: run 1: 40x200, 27 sockets right after the loop, 1 after 20s, probe 200. Run 2 (same script, 1s sampling): 31x200 then 503 from open #32 onwards (9x503); sockets = 34 on EVERY one of 23 one-second samples; probe 503. 60+ seconds later still 34, all between the Next server PID and the API PID, 0 in CLOSE_WAIT. Two 15s heartbeats passed without releasing anything.
+  implication: the client going away does NOT deterministically tear down the Next handler's upstream fetch. The 503 SSE_LIMIT_REACHED is reproduced through the real proxy. Release is non-deterministic (run 1 drained, run 2 did not).
+
+- timestamp: 2026-09-20T00:50:00Z
+  checked: what releases the leaked sockets. With 34 leaked and idle, generated allocation pressure on the Next process only (sequential GET /login, no /api/events traffic), sampling the socket count every 150 requests.
+  found: 34, 34, 34, 34, 34 (after 600 requests), then 2 after 750, 2 after 900.
+  implication: the leaked upstream streams are released all at once by something inside the Next process unrelated to the streams themselves -- consistent with garbage collection finalising the abandoned undici Response bodies (undici registers fetch bodies in a FinalizationRegistry and cancels them on GC). New hypothesis H-GC: teardown of the upstream connection currently happens ONLY via GC, which is why the failure is intermittent and load/order dependent. Next test: force a GC through the inspector and watch the count.
+
+- timestamp: 2026-09-20T01:00:00Z
+  checked: H-GC, decisive test. Second `next start` of the same build on :3011 with `--inspect`; 20x open+abort through it; sampled API-side sockets for 10s; then sent `HeapProfiler.collectGarbage` to that Next process over the inspector.
+  found: sockets = 21 on all 10 one-second samples (baseline 1); within 500ms of the forced GC: 1 1 1 1 1.
+  implication: H-GC CONFIRMED. In `next start` (Next 16.3.5, Node 24.13) a downstream disconnect does not cancel `upstream.body`; the upstream control-plane stream is released only when V8 garbage-collects the abandoned undici Response (undici's FinalizationRegistry cancels the body). Between GCs every closed page/tab/reload holds one of the 32 D-07 slots. Whether a given E2E run hits the cap depends on where major GCs of the Next process fall -- that is the intermittency and the "only late in a full run" order dependence.
+
+- timestamp: 2026-09-20T01:03:00Z
+  checked: control plane in isolation -- same open+abort loop DIRECTLY against :3100, N=100
+  found: 100x200, no 503, API-side sockets 1 1 1 1 immediately after the loop, probe 200.
+  implication: the control plane evicts a stream promptly when its peer closes (`request.raw.on('close')` -> broadcaster.remove). The leak is entirely in apps/web/src/app/api/events/route.ts. No second bug found on the control-plane side for a closed peer.
+
+- timestamp: 2026-09-20T01:10:00Z
+  checked: what a real browser does with the 503. Playwright Chromium, cap saturated by 32 held direct streams, load /servers, log every /api/events response for 25s, then release all 32 and watch 40s more.
+  found: exactly ONE request (`+0.1s /api/events -> 503`), never retried; status "Reconnecting…" at 25s and STILL "Reconnecting…" 40s after capacity returned.
+  implication: SECOND PRODUCT BUG (C2). Per the HTML spec a non-200 response makes EventSource fail the connection for good (readyState CLOSED, one `error`, no native retry). use-server-events.ts only starts its own backoff after PRE_OPEN_FAILURE_THRESHOLD=3 `error` events, which can never happen for an HTTP-level rejection -- the T-5-54 backoff is dead code in a real browser. One 503 at page load = no live updates until a manual reload. This is exactly the failing E2E's signature (one page, "Reconnecting…" for the whole 15s). The existing unit tests must be driving a fake EventSource that emits repeated errors; to check.
+
+- timestamp: 2026-09-20T01:25:00Z
+  checked: RED for C1, pre-fix code. Unit: apps/web/src/app/api/events/route.test.ts. E2E: new `@sse-slots` test in tests/e2e/shell.spec.ts (40 open-then-abandon through the real proxy, then a fresh stream must open 200 within 5s), run 3x against the held pre-fix stack.
+  found: unit 6 failed / 3 passed (the 3 are characterisation of kept behaviour). E2E: failed 2 of 3 with `Expected: 200 Received: 503`; the one pass coincided with a GC of the Next process. Committed as 8d926d1 `test(05-20): reproduce abandoned event streams exhausting the SSE cap`.
+  implication: RED for the right reason. Pre-fix non-determinism is the bug's own nature (GC timing), not test flakiness.
+
+- timestamp: 2026-09-20T01:40:00Z
+  checked: falsification test for the C1 fix (one AbortController aborted by request.signal, by cancellation of a pass-through body, and by a 10s headers timeout). Rebuilt `next start`, same probe, no GC forced.
+  found: N=40: 40x200, API-side sockets 1 on 13/13 samples, probe 200. N=200: 200x200. N=300: 300x200. (Before: 503 from open #32, 34 sockets for 60s+.)
+  implication: the main leak path (client aborts an OPEN stream) is closed.
+
+- timestamp: 2026-09-20T01:50:00Z
+  checked: exact oracle for broadcaster.size -- hold direct :3100 streams until the cap answers 503; used = 32 - held. Then: abort the proxied request 0/1/2/3/5/8 ms after SENDING it (before response headers), 10 per delay.
+  found: WITH the fix, 3 slots were permanently held after three Playwright sessions whose login page was closed right after landing on /servers, and early aborts leak more: used = 3 -> 4 -> 6 -> 12 -> 14 -> 15 -> 15. ESTABLISHED-socket counts had hidden this (keep-alive sockets of the rewrites proxy look the same).
+  implication: the fix is INCOMPLETE. There is a window -- client gone before/around the moment the handler returns its Response -- in which neither request.signal's `abort` nor the body's `cancel()` reaches the handler. Do not commit the fix yet. Next: instrument the handler (labels/counters only, no cookies) to see which callbacks fire for an early abort.
+
+- timestamp: 2026-09-20T02:05:00Z
+  checked: residual leak, instrumented handler (labels only; removed afterwards) on a separate `next start`, client aborting +2ms after sending.
+  found: the Next handler behaves correctly for early aborts -- `request.signal abort event` then `fetch rejected`, every time. Yet slots still leaked. Repeating the early-abort loop DIRECTLY against :3100 (no Next at all): slots used 15 -> 23 -> 32/32 after 20 aborts, and still 32/32 (every new stream 503) 20s later, i.e. past a heartbeat.
+  implication: THIRD PRODUCT BUG (C3), in the control plane, independent of any proxy -- the orchestrator's "check the control-plane side independently" was right, and my 01:03 conclusion ("no second bug on the control-plane side") was wrong: it only covered peers that close an OPEN stream.
+
+- timestamp: 2026-09-20T02:15:00Z
+  checked: C3 mechanism. apps/control-plane/src/routes/events.ts registers `request.raw.on('close', cleanup)` inside the handler, but the guarded scope's async session lookup (onRequest) runs first. Deterministic unit test: an onRequest hook that settles only after the peer's socket closed, real TCP client that disconnects while it waits.
+  found: RED 3/3 -- `expected 1 to be +0`: the handler hijacks, registers the stream and attaches a `close` listener to a request that already emitted `close`; nothing ever removes it (the heartbeat only re-checks the session, which is still valid, and its write to a destroyed socket fails silently).
+  implication: C3 root cause confirmed. Real-user trigger: any navigation/reload/tab close that lands during the few ms of the session lookup -- e.g. a login page closed right after landing on /servers leaked exactly one slot per Playwright session (3 sessions -> 3 slots). Each leaked slot is permanent until the API restarts, so this one accumulates without bound over an API process's life, GC or not.
+
+- timestamp: 2026-09-20T02:30:00Z
+  checked: falsification for C3 + C1 together, rebuilt stack, no instrumentation. (Oracle corrected: it now keeps its own Response objects referenced -- two earlier `-8` readings were the ORACLE's held streams being GC-released by undici in my own script, the same mechanism as C1.)
+  found: direct early aborts 0/1/2/3/5ms x10: slots used 0,0,0,0,0 (before 15->32). Proxied early aborts x6 delays + 3 more rounds at +2ms: 0 every time (before 3->15). Real Chromium, 45 /servers pages opened and closed after one login whose page is closed immediately: slots still used after every 5th page = 0 x9, 0 non-200 /api/events responses, 0 after browser close (before: +1 permanent slot per session from the login page alone).
+  implication: both falsification tests passed. Stream count now tracks the number of actually open pages.
+
+- timestamp: 2026-09-20T02:50:00Z
+  checked: C2 RED/GREEN. Unit: apps/web/src/lib/use-server-events.test.tsx with a spec-faithful fake EventSource (HTTP rejection => CLOSED + one `error`; network drop => CONNECTING). E2E: new `@sse-recover` (hold every slot, load the shell into the 503, release, expect the indicator to disappear).
+  found: pre-fix unit 6 failed / 3 passed (the 3 are guards: network drop left to the browser, no reconnect after close()/unmount); pre-fix E2E failed `toBeHidden ... Received: visible` after 15s. With the fix: unit 9/9, E2E green in both full runs below.
+  implication: C2 confirmed and fixed.
+
+- timestamp: 2026-09-20T03:20:00Z
+  checked: THE REAL THING, pre-fix. Temporary size logging in events.ts (label + broadcaster.size + timestamp only; removed afterwards), product files temporarily restored to 1ddac6e, 5 full `pnpm test:e2e` runs (the two new cap tests excluded).
+  found: peak broadcaster.size per run = 10, 21, 18, 32, 19 with only 1-2 pages ever actually open. Runs 1,2,3,5: 111 streams opened, 0x503, 70/70. Run 4: peak 32, 25x `503 SSE_LIMIT_REACHED`, 69 passed / 1 FAILED -- shell.spec.ts:158 `@sse-live`, 60s timeout (its in-page fetch of /api/events was refused). 1 of 5 runs red.
+  implication: the failure is reproduced in a real full run with its cause on record: abandoned streams pile up until the next GC of the Next process, and when no GC falls in time the cap is hit and whichever test next needs a live stream fails -- :208 in the orchestrator's run, :158 here, plausibly :191 in the first 20x run. Same cause, different victim. Note only tests that NEED the stream fail; the other 24 refused pages passed, which is why this hid so well.
+
+- timestamp: 2026-09-20T03:30:00Z
+  checked: post-fix, same size logging, TWO consecutive full `pnpm test:e2e` runs (all 72 tests, including the two new cap tests).
+  found: run 1: 72 passed, 187 opened / 187 removed. Run 2: 72 passed, 185 opened / 185 removed, 2 requests skipped as already-gone peers (C3's path really occurs in a normal run). size-after-add histogram, both runs: size 1 -> 152-154 times, size 2 -> 3 times, then exactly one add at each size 3..32 and 2x503 -- that ramp is `@sse-recover` deliberately holding every slot. Peak outside that test = 2 (before: 10-32).
+  implication: the stream count now tracks the number of open pages instead of climbing.
+
+## Round 2 Resolution
+<!-- OVERWRITE -->
+
+root_cause: |
+  The orchestrator's lead held for C1 and was incomplete: three independent PRODUCT bugs.
+  (C1) apps/web/src/app/api/events/route.ts returned upstream.body with no signal. Under `next start` a browser disconnect only left the undici response unreferenced; the control-plane stream was released when V8 next garbage-collected it (forced GC: 21 sockets -> 1 in 500ms). Abandoned streams piled up against NOODARA_SSE_MAX_CONNECTIONS=32 between GCs.
+  (C3) apps/control-plane/src/routes/events.ts attached its `close` listener inside the handler, after the guarded scope's async session lookup. A peer that left during the lookup had already emitted `close`: registered, never removed, permanent until restart. No proxy needed.
+  (C2) apps/web/src/lib/use-server-events.ts waited for three `error` events before backing off, but a browser fails an EventSource for good on any non-200 (one `error`, CLOSED). One 503 => "Reconnecting…" until a manual reload. This is what turned a transient cap hit into a 15s test failure.
+  Refuted alternatives: 05-01's bounded session lookup, Better Auth rate limiting, the API's HTTP connection limits and Chromium's 6-per-host limit played no part -- the refused requests were logged as `503 SSE_LIMIT_REACHED` by the control plane itself (25 in the failing pre-fix run).
+fix: |
+  (C1) one AbortController owns the upstream lifetime: aborted by request.signal, by cancel() of a pull-based pass-through body, or by a 10s connect/headers timeout cleared once headers arrive; a rejected upstream fetch answers a fixed 503 (no error details, Retry-After: 5). Status and Retry-After still forwarded.
+  (C3) the handler returns before hijacking when request.raw or its socket is already destroyed; nothing awaits between that check and the listener.
+  (C2) a CLOSED source is replaced after 5s doubling to 60s, reset on open; network-level drops stay with the browser.
+  Not changed: the cap (product default and E2E env), the event allowlist, the heartbeat session re-check, the bounded session lookup. No retries, sleeps, skips or polling.
+verification: |
+  Deterministic repro, N=40 open+abort through the proxy: before 503 from open #32, 34 API-side sockets for 60s+; after 40x200, 200x200, 300x200, slots used 0. Early aborts: before 15->32 direct / 3->15 proxied; after 0 everywhere. Real Chromium, 45 pages opened+closed: 0 slots held at every sample (before: +1 permanent per session).
+  Full runs pre-fix (5): peak size 10, 21, 18, 32, 19; one run red with 25x503. Post-fix (2 instrumented + 2 on final code): 72/72 x4; size after add 1 or 2 outside the test that saturates the cap on purpose.
+  RED->GREEN: route.test.ts 6 red/3 -> 9; events.test.ts 1 red (3/3) -> green; use-server-events.test.tsx 6 red/3 -> 9; E2E @sse-slots red 2 of 3 -> green; @sse-recover red -> green.
+  pnpm test 1381 passed (107 files); typecheck, lint, boundaries, build clean; security:scan-leaks 3/3; events-sse + canary-http + sse-broadcaster-subscribe 12/12; after E2E no noodara.test containers, nothing on 3000/3100.
+  NOT run: the 20x repeat (orchestrator's) and full `pnpm test:integration`.
+files_changed:
+  - apps/web/src/app/api/events/route.ts
+  - apps/web/src/app/api/events/route.test.ts
+  - apps/control-plane/src/routes/events.ts
+  - apps/control-plane/src/routes/events.test.ts
+  - apps/web/src/lib/use-server-events.ts
+  - apps/web/src/lib/use-server-events.test.tsx
+  - tests/e2e/shell.spec.ts
+  - tests/e2e/servers-list.spec.ts
+  - tests/e2e/server-sheet.spec.ts
+  - tests/e2e/server-detail.spec.ts
+  - .planning/phases/05-ui-web/deferred-items.md
+  - .planning/todos/completed/2026-09-19-sse-route-handler-robustness.md (moved from pending/ -- fully covered)
