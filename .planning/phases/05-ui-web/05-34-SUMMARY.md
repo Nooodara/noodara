@@ -155,3 +155,8 @@ None - no external service configuration required.
 ---
 *Phase: 05-ui-web*
 *Completed: 2026-09-20*
+
+## Self-Check: PASSED
+
+All 7 created/modified source/test files confirmed present on disk; all 3 task commits
+(`b4d9d3b`, `318dd8f`, `0276790`) plus this file's own docs commit confirmed in `git log`.
