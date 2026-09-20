@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 05-28-PLAN.md (DoD hardening: timeout, clipboard, safe storage, shell error boundary)"
-last_updated: "2026-09-20T16:39:50.228Z"
-last_activity: 2026-09-20 -- 05-28 (DoD hardening: request timeout, clipboard feature detection, safeLocalStorage, shell error boundary) executed
+stopped_at: "Completed 05-30-PLAN.md (field-error normalization, setup failure distinction, setup-token URL hardening)"
+last_updated: "2026-09-20T16:59:20.002Z"
+last_activity: 2026-09-20 -- 05-30 (normalizeFieldPath for real backend issue paths, setup screen four-way failure branch, token stripped from URL, Referrer-Policy) executed
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 85
-  completed_plans: 76
-  percent: 89
+  completed_plans: 77
+  percent: 91
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 05 (ui-web) — EXECUTING gap closure (05-26…05-37, 4 waves)
-Plan: 28 of 37 complete (12 gap-closure plans in progress; 05-33 and 05-37 are not autonomous — colour decision and human verification)
-Status: Executing gap closure. Phase NOT complete: 8 verification gaps (05-VERIFICATION.md) — 05-26 closed gap 2's backend half (CONNECTING wedge recovery); 05-27 closed gap 6's backend half (trust-fingerprint TOCTOU, WR-A-02) — UI half deferred to 05-31; 05-28 closed gap 4's timeout/clipboard/storage/error-boundary halves (api-client.ts request timeout, CopyButton feature detection, safeLocalStorage, (shell)/error.tsx) — the safeLocalStorage call-site swap in servers/[id]/page.tsx is deferred to 05-29, and the dod-hardening.spec.ts localStorage E2E case is test.fixme pending it. QA-04/QA-05 stay Pending until a real CI run is observed.
-Last activity: 2026-09-20 -- 05-28 (DoD hardening: request timeout, clipboard feature detection, safeLocalStorage, shell error boundary) executed
+Plan: 29 of 37 plans have a SUMMARY (05-30 just executed, out of numeric sequence -- 05-29 is still pending; 05-33 and 05-37 are not autonomous -- colour decision and human verification)
+Status: Executing gap closure. Phase NOT complete: 8 verification gaps (05-VERIFICATION.md) -- 05-26 closed gap 2's backend half (CONNECTING wedge recovery); 05-27 closed gap 6's backend half (trust-fingerprint TOCTOU, WR-A-02) -- UI half deferred to 05-31; 05-28 closed gap 4's timeout/clipboard/storage/error-boundary halves -- the safeLocalStorage call-site swap in servers/[id]/page.tsx is deferred to 05-29 (still pending), and the dod-hardening.spec.ts localStorage E2E case is test.fixme pending it; 05-30 closed gap 5 (SC1/UI-02: server-side field errors never rendered) end to end against the real backend issue-path shape, plus the setup-token-url-hardening todo (all 3 items) -- known limitation: TOKEN_INVALID/ALREADY_USED/EXPIRED still render the generic 500 copy on /setup, not a token-specific one (see 05-30-SUMMARY.md Deviations). QA-04/QA-05 stay Pending until a real CI run is observed.
+Last activity: 2026-09-20 -- 05-30 (normalizeFieldPath for real backend issue paths, setup screen four-way failure branch, token stripped from URL, Referrer-Policy) executed
 
-Progress: [█████████░] 89%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
@@ -131,6 +131,7 @@ Progress: [█████████░] 89%
 | Phase 05 P26 | 90min | 3 tasks | 5 files |
 | Phase 05 P27 | 50min | 3 tasks | 13 files |
 | Phase 05-ui-web P28 | 28min | 3 tasks | 8 files |
+| Phase 05-ui-web P30 | 35min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -339,6 +340,8 @@ Recent decisions affecting current work:
 - [Phase 05-27]: Existing trustFingerprint() call sites in service-level integration tests and canary-full-flow.test.ts updated to pass the now-required fingerprint field (Rule 3 blocking fix, not in this plan's files_modified list)
 - [Phase 05-28]: AbortSignal.timeout does not respect vi.useFakeTimers() on this repo's Node 24/Vitest 5 -- both timeout tests spy on AbortSignal.timeout and drive an AbortController directly instead of advancing fake time
 - [Phase 05-28]: API_REQUEST_TIMEOUT_MS = 15000, composed with any caller signal via AbortSignal.any in the one performRequest choke point
+- [Phase 05-30]: normalizeFieldPath collapses every /credential/* backend issue path onto the single shared 'credential' form key — CredentialFields.tsx/ServerFormErrors render one inline error for the whole credential block, never a per-field one
+- [Phase 05-30]: setup/page.tsx treats only NOT_FOUND as the token-specific known code; TOKEN_INVALID/ALREADY_USED/EXPIRED decode to INTERNAL_ERROR and render its generic copy — api-client.ts's ServiceErrorCode vocabulary and control-plane routes were out of scope this plan (owned by sibling plan 05-28 this wave); documented as a known limitation, not silently accepted
 
 ### Pending Todos
 
@@ -395,6 +398,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-20T16:39:50.220Z
-Stopped at: Completed 05-28-PLAN.md (DoD hardening: timeout, clipboard, safe storage, shell error boundary)
+Last session: 2026-09-20T16:59:19.995Z
+Stopped at: Completed 05-30-PLAN.md (field-error normalization, setup failure distinction, setup-token URL hardening)
 Resume file: None
