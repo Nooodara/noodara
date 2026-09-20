@@ -36,6 +36,7 @@ import { discoverySnapshots } from '../db/schema/discovery-snapshots.js';
 import { servers } from '../db/schema/servers.js';
 import { publishServerEvent } from '../events/server-event-publisher.js';
 import { decodeCredential } from './credential-store.js';
+import { failInFlightConnection } from './fail-in-flight-connection.js';
 import type { ServerServicesDeps, ServiceActor } from './server-service-deps.js';
 import { toServerView, type ServerView } from './server-view.js';
 
@@ -297,166 +298,181 @@ export async function connectAndDiscover(
     server: toServerView(row, credentialRow.type),
   });
 
-  // SSH work happens between the two transactions, in no transaction of its own — see this
-  // file's header note.
-  const credential = decodeCredential(credentialRow, deps.masterKeys);
-  const trustedFingerprint: HostFingerprint | null =
-    row.hostFingerprint === null ? null : parseFingerprint(row.hostFingerprint);
+  let result: Extract<ConnectAndDiscoverResult, { readonly ok: true }>;
+  try {
+    // SSH work happens between the two transactions, in no transaction of its own — see this
+    // file's header note.
+    const credential = decodeCredential(credentialRow, deps.masterKeys);
+    const trustedFingerprint: HostFingerprint | null =
+      row.hostFingerprint === null ? null : parseFingerprint(row.hostFingerprint);
 
-  const startedAt = deps.now();
-  const outcome = await deps.ssh.connect({
-    target: { host: row.host, port: row.sshPort, user: row.sshUser },
-    credential,
-    timeouts: deps.timeouts,
-    trustedFingerprint,
-    redactor: deps.redactor,
-  });
-  const durationMs = deps.now().getTime() - startedAt.getTime();
+    const startedAt = deps.now();
+    const outcome = await deps.ssh.connect({
+      target: { host: row.host, port: row.sshPort, user: row.sshUser },
+      credential,
+      timeouts: deps.timeouts,
+      trustedFingerprint,
+      redactor: deps.redactor,
+    });
+    const durationMs = deps.now().getTime() - startedAt.getTime();
 
-  let snapshot: Awaited<ReturnType<typeof runDiscovery>> | undefined;
-  if (outcome.ok) {
-    try {
-      const discover = input.discover ?? runDiscovery;
-      snapshot = await discover({
-        session: outcome.session,
-        sshUser: row.sshUser,
-        timeouts: { discoveryMs: deps.timeouts.discoveryMs },
-        redactor: deps.redactor,
-        // D-05: best-effort, fire-and-forget per-check progress — mirrors publishServerEvent's own
-        // "never let a publish failure affect the run" contract. `void`, never awaited: onCheck is
-        // a synchronous callback per run-discovery.ts's contract, and awaiting a Redis publish here
-        // would serialize SSH work behind it.
-        onCheck: (check) => {
-          void publishServerEvent(deps.events, {
-            type: 'server.discovery_progress',
-            serverId: row.id,
-            check,
-          });
-        },
-      });
-    } finally {
-      // Pitfall 3: this `finally` must exist even though `runDiscovery` itself never throws — a
-      // bug anywhere above it must not leak the credential's redactor registration for the life
-      // of the process.
-      await outcome.session.close();
+    let snapshot: Awaited<ReturnType<typeof runDiscovery>> | undefined;
+    if (outcome.ok) {
+      try {
+        const discover = input.discover ?? runDiscovery;
+        snapshot = await discover({
+          session: outcome.session,
+          sshUser: row.sshUser,
+          timeouts: { discoveryMs: deps.timeouts.discoveryMs },
+          redactor: deps.redactor,
+          // D-05: best-effort, fire-and-forget per-check progress — mirrors publishServerEvent's
+          // own "never let a publish failure affect the run" contract. `void`, never awaited:
+          // onCheck is a synchronous callback per run-discovery.ts's contract, and awaiting a
+          // Redis publish here would serialize SSH work behind it.
+          onCheck: (check) => {
+            void publishServerEvent(deps.events, {
+              type: 'server.discovery_progress',
+              serverId: row.id,
+              check,
+            });
+          },
+        });
+      } finally {
+        // Pitfall 3: this `finally` must exist even though `runDiscovery` itself never throws — a
+        // bug anywhere above it must not leak the credential's redactor registration for the life
+        // of the process.
+        await outcome.session.close();
+      }
     }
-  }
 
-  const result = await deps.db.transaction(async (tx) => {
-    const currentState: ServerConnectionState = {
-      status: row.status,
-      lastErrorCode: row.lastErrorCode,
-      hostFingerprint: row.hostFingerprint,
-      pendingFingerprint: row.pendingFingerprint,
-      lastSeenAt: row.lastSeenAt,
-    };
-    const nextState = applyConnectionResult(currentState, toConnectionResult(outcome), deps.now());
+    result = await deps.db.transaction(async (tx) => {
+      const currentState: ServerConnectionState = {
+        status: row.status,
+        lastErrorCode: row.lastErrorCode,
+        hostFingerprint: row.hostFingerprint,
+        pendingFingerprint: row.pendingFingerprint,
+        lastSeenAt: row.lastSeenAt,
+      };
+      const nextState = applyConnectionResult(currentState, toConnectionResult(outcome), deps.now());
 
-    // Pitfall 4: these two timestamps are this service's job, never `applyConnectionResult`'s.
-    const hostFingerprintCapturedAt =
-      outcome.ok && outcome.fingerprintCaptured ? deps.now() : row.hostFingerprintCapturedAt;
-    const pendingFingerprintSeenAt =
-      !outcome.ok &&
-      outcome.errorCode === 'HOST_KEY_CHANGED' &&
-      outcome.observedFingerprint !== undefined
-        ? deps.now()
-        : row.pendingFingerprintSeenAt;
+      // Pitfall 4: these two timestamps are this service's job, never `applyConnectionResult`'s.
+      const hostFingerprintCapturedAt =
+        outcome.ok && outcome.fingerprintCaptured ? deps.now() : row.hostFingerprintCapturedAt;
+      const pendingFingerprintSeenAt =
+        !outcome.ok &&
+        outcome.errorCode === 'HOST_KEY_CHANGED' &&
+        outcome.observedFingerprint !== undefined
+          ? deps.now()
+          : row.pendingFingerprintSeenAt;
 
-    if (snapshot === undefined) {
+      if (snapshot === undefined) {
+        const [updatedRow] = await tx
+          .update(servers)
+          .set({
+            status: nextState.status,
+            lastErrorCode: nextState.lastErrorCode,
+            hostFingerprint: nextState.hostFingerprint,
+            pendingFingerprint: nextState.pendingFingerprint,
+            lastSeenAt: nextState.lastSeenAt,
+            hostFingerprintCapturedAt,
+            pendingFingerprintSeenAt,
+            updatedAt: deps.now(),
+          })
+          .where(eq(servers.id, row.id))
+          .returning();
+        if (!updatedRow) {
+          throw new Error('connectAndDiscover: connection-result server update returned no row');
+        }
+
+        await writeConnectionAttemptedEvent(tx, deps, input.actor, row.id, outcome, durationMs);
+
+        return {
+          ok: true as const,
+          server: toServerView(updatedRow, credentialRow.type),
+          connection: buildConnectionReport(outcome, durationMs),
+        };
+      }
+
+      // DISC-03/D-06/D-07: a run that reached discovery writes one append-only snapshot and
+      // denormalizes `servers`, on top of the connection result computed above, all in this same
+      // transaction (D-07's atomicity).
+      const snapshotOutcome = classifySnapshotOutcome(snapshot.checks);
+      const checksFailed = snapshot.checks
+        .filter((check) => check.status === 'fail')
+        .map((check) => check.id);
+      const statusPatch = classifyDiscoveryOutcome(snapshot.warnings, snapshotOutcome);
+      const mergedFacts = mergeDiscoveryFacts(currentFactsOf(row), snapshot.facts);
+
+      const [snapshotRow] = await tx
+        .insert(discoverySnapshots)
+        .values({
+          serverId: row.id,
+          collectedAt: deps.now(),
+          outcome: snapshotOutcome,
+          errorCode: statusPatch.lastErrorCode,
+          payload: snapshot,
+        })
+        .returning();
+      if (!snapshotRow) {
+        throw new Error('connectAndDiscover: discovery snapshot insert returned no row');
+      }
+
       const [updatedRow] = await tx
         .update(servers)
         .set({
-          status: nextState.status,
-          lastErrorCode: nextState.lastErrorCode,
+          status: statusPatch.status,
+          lastErrorCode: statusPatch.lastErrorCode,
           hostFingerprint: nextState.hostFingerprint,
           pendingFingerprint: nextState.pendingFingerprint,
           lastSeenAt: nextState.lastSeenAt,
           hostFingerprintCapturedAt,
           pendingFingerprintSeenAt,
+          ...mergedFacts,
           updatedAt: deps.now(),
         })
         .where(eq(servers.id, row.id))
         .returning();
       if (!updatedRow) {
-        throw new Error('connectAndDiscover: connection-result server update returned no row');
+        throw new Error('connectAndDiscover: post-discovery server update returned no row');
       }
 
       await writeConnectionAttemptedEvent(tx, deps, input.actor, row.id, outcome, durationMs);
+      await writeDiscoveryCompletedEvent(
+        tx,
+        deps,
+        input.actor,
+        row.id,
+        statusPatch,
+        snapshotRow.id,
+        snapshot.warnings,
+        checksFailed,
+      );
 
       return {
         ok: true as const,
         server: toServerView(updatedRow, credentialRow.type),
         connection: buildConnectionReport(outcome, durationMs),
+        discovery: {
+          snapshotId: snapshotRow.id,
+          outcome: snapshotOutcome,
+          warnings: snapshot.warnings,
+          checksFailed,
+        },
       };
-    }
-
-    // DISC-03/D-06/D-07: a run that reached discovery writes one append-only snapshot and
-    // denormalizes `servers`, on top of the connection result computed above, all in this same
-    // transaction (D-07's atomicity).
-    const snapshotOutcome = classifySnapshotOutcome(snapshot.checks);
-    const checksFailed = snapshot.checks
-      .filter((check) => check.status === 'fail')
-      .map((check) => check.id);
-    const statusPatch = classifyDiscoveryOutcome(snapshot.warnings, snapshotOutcome);
-    const mergedFacts = mergeDiscoveryFacts(currentFactsOf(row), snapshot.facts);
-
-    const [snapshotRow] = await tx
-      .insert(discoverySnapshots)
-      .values({
-        serverId: row.id,
-        collectedAt: deps.now(),
-        outcome: snapshotOutcome,
-        errorCode: statusPatch.lastErrorCode,
-        payload: snapshot,
-      })
-      .returning();
-    if (!snapshotRow) {
-      throw new Error('connectAndDiscover: discovery snapshot insert returned no row');
-    }
-
-    const [updatedRow] = await tx
-      .update(servers)
-      .set({
-        status: statusPatch.status,
-        lastErrorCode: statusPatch.lastErrorCode,
-        hostFingerprint: nextState.hostFingerprint,
-        pendingFingerprint: nextState.pendingFingerprint,
-        lastSeenAt: nextState.lastSeenAt,
-        hostFingerprintCapturedAt,
-        pendingFingerprintSeenAt,
-        ...mergedFacts,
-        updatedAt: deps.now(),
-      })
-      .where(eq(servers.id, row.id))
-      .returning();
-    if (!updatedRow) {
-      throw new Error('connectAndDiscover: post-discovery server update returned no row');
-    }
-
-    await writeConnectionAttemptedEvent(tx, deps, input.actor, row.id, outcome, durationMs);
-    await writeDiscoveryCompletedEvent(
-      tx,
-      deps,
-      input.actor,
-      row.id,
-      statusPatch,
-      snapshotRow.id,
-      snapshot.warnings,
-      checksFailed,
-    );
-
-    return {
-      ok: true as const,
-      server: toServerView(updatedRow, credentialRow.type),
-      connection: buildConnectionReport(outcome, durationMs),
-      discovery: {
-        snapshotId: snapshotRow.id,
-        outcome: snapshotOutcome,
-        warnings: snapshot.warnings,
-        checksFailed,
-      },
-    };
-  });
+    });
+  } catch (err) {
+    // T-5G-26-01: a throw anywhere in the block above (credential decode, fingerprint parse, the
+    // SSH phase, session.close(), TX2) must never leave the row wedged in CONNECTING — recover it
+    // before rethrowing so the caller (and BullMQ, whose own 'failed' listener is the second line
+    // of defense) still observes the original failure. The recovery call is deliberately
+    // defensive: if it also throws, the ORIGINAL error is still the one rethrown below.
+    await failInFlightConnection(deps, {
+      actor: input.actor,
+      serverId: row.id,
+      reason: 'connect_service_threw',
+    }).catch(() => undefined);
+    throw err;
+  }
 
   // D-04: publish the outcome only after TX2 has committed — never inside the transaction
   // callback. Both branches above always resolve `{ ok: true }` (this function's only `ok: false`

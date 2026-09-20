@@ -14,7 +14,15 @@ import { toServerView, type ServerView } from './server-view.js';
 export interface FailInFlightConnectionInput {
   readonly actor: ServiceActor;
   readonly serverId: string;
-  readonly reason: 'worker_stalled' | 'worker_startup_sweep';
+  // T-5G-26-01: 'connect_service_threw' (connectAndDiscover's own post-TX1 catch) and
+  // 'worker_job_failed' (the worker's 'failed' listener) close the CONNECTING wedge — a throw
+  // anywhere after TX1 commits CONNECTING (credential decode, fingerprint parse, session close,
+  // TX2) now resolves the row instead of leaving it wedged until a worker restart's sweep.
+  readonly reason:
+    | 'worker_stalled'
+    | 'worker_startup_sweep'
+    | 'connect_service_threw'
+    | 'worker_job_failed';
 }
 
 export type FailInFlightConnectionResult =

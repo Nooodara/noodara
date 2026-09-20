@@ -94,10 +94,42 @@ export function createWorker(
     },
   );
 
-  // D-15/T-4-10: only `jobId` and the (pino-redaction-covered) `err` — never `job.data`, which a
-  // careless `{ job }` here would otherwise capture wholesale.
+  // D-15/T-4-10/T-5G-26-01: only `jobId` and the (pino-redaction-covered) `err` — never
+  // `job.data`, which a careless `{ job }` here would otherwise capture wholesale. Also the
+  // second line of defense against the CONNECTING wedge: `connectAndDiscover`'s own post-TX1
+  // catch already recovers the row before rethrowing in the ordinary case, so this listener's own
+  // `failInFlightConnection` call is normally a no-op (skipped: true) — it only does real work
+  // when that first recovery attempt itself failed. Mirrors the 'stalled' listener's shape: the
+  // whole body is wrapped in try/catch since an unhandled rejection inside a BullMQ event listener
+  // would take the whole process down.
   worker.on('failed', (job, err) => {
     options.logger.error({ jobId: job?.id, err }, 'connect-server job failed');
+
+    void (async (): Promise<void> => {
+      try {
+        if (!job) return;
+
+        const parsed = parseConnectServerJobPayload(job.data);
+        if (!parsed.ok) {
+          options.logger.warn(
+            { jobId: job.id, message: parsed.message },
+            'failed connect-server job has an invalid payload; skipping recovery',
+          );
+          return;
+        }
+
+        await services.failInFlightConnection({
+          serverId: parsed.payload.serverId,
+          actor: parsed.payload.actor,
+          reason: 'worker_job_failed',
+        });
+      } catch (recoveryErr) {
+        options.logger.error(
+          { jobId: job?.id, err: recoveryErr },
+          'connect-server failed-job recovery failed',
+        );
+      }
+    })();
   });
 
   // D-12/T-4-29: recovery never reconnects over SSH. The whole body is wrapped in try/catch — an

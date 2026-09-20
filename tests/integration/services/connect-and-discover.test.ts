@@ -930,11 +930,20 @@ describe('discovery phase (DISC-03, D-02, D-06, D-07)', () => {
     expect(rows).toHaveLength(0);
     const row = await serverRow(fixture, server.id);
     // TX1 (the CONNECTING transition) already committed on its own before SSH work began; TX2's
-    // attempted CONNECTED transition, snapshot and both events must not have survived on top of it.
-    expect(row?.status).toBe('CONNECTING');
+    // attempted CONNECTED transition, snapshot and both events must not have survived on top of
+    // it. Since 05-26-PLAN.md (the CONNECTING-wedge fix), a throw here is no longer left wedged:
+    // connectAndDiscover's own post-TX1 catch calls failInFlightConnection (reason
+    // 'connect_service_threw') before rethrowing, landing the row on ERROR/CONNECTION_LOST in a
+    // separate, later transaction — never the rolled-back CONNECTED/fingerprint state TX2 itself
+    // attempted.
+    expect(row?.status).toBe('ERROR');
+    expect(row?.lastErrorCode).toBe('CONNECTION_LOST');
     expect(row?.hostFingerprint).toBeNull();
     const events = await eventsFor(fixture, server.id);
-    expect(events).toHaveLength(before.length);
+    // `before` plus exactly one recovery-written `server.connection_attempted` failure event —
+    // never a second one (idempotency), and never the `server.discovery_completed` event TX2's
+    // rollback discarded.
+    expect(events).toHaveLength(before.length + 1);
   });
 
   it('attributes both events to a user actor (D-17)', async () => {
