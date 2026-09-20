@@ -254,44 +254,41 @@ bugs, none test-only, all fixed test-first.
 - D-07's cap is global, not per session: one client can still hold all 32 slots deliberately.
   By design for a single-admin v0.1; noted because the new E2E does exactly that on purpose.
 
-## 05-21: `tests/e2e/canary-ui.spec.ts` (`@canary`) is correct but flaky under this session's own
-## severe host memory pressure -- not a code defect, not masked
+## 05-21: `tests/e2e/canary-ui.spec.ts` (`@canary`) hung on ~half its runs -- RESOLVED (`c41701a`)
 
-During this plan's own execution, the new `@canary` spec (the browser-side QA-05 canary) passed
-cleanly and fast (2.2s-12.2s) on roughly half of ~12 attempts, and on the other half timed out at
-its own `testInfo.setTimeout` budget (tried at 120s/150s/240s/300s, always failing at the exact
-same point -- late in the flow, most often the final `shell-sign-out` click) with `Error:
-locator.click: Target page, context or browser has been closed`.
+**Correction of record.** This entry originally blamed "severe host memory pressure ... not a
+code defect". That diagnosis was wrong, and it is the second time in this phase a real defect was
+written off as the machine (the first: the SSE subscription race, see `05-20-SUMMARY.md`). The
+memory pressure was real (10GB compressed, 28GB of 29.7GB swap in use) but was not the cause.
 
-- **Ruled out as the cause:** a specific stuck element. The on-failure screenshot from one of the
-  slow runs shows a perfectly normal, fully-interactive `/servers` page with "Sign out" clearly
-  visible -- not an overlay, not a leftover dialog, not a pointer-events lock. A speculative fix
-  (explicitly waiting for `document.body.style.pointerEvents` to clear after closing the reopened
-  edit sheet) was tried and made no difference, confirming the hang was not there either.
-- **Confirmed as at least a contributing cause:** genuine host-level memory pressure on this
-  shared dev machine during this session -- `vm_stat`/`top` showed as little as ~35-150MB of free
-  physical memory out of ~24GB (`PhysMem: 23G used ... 157M unused`, heavy compressor activity),
-  with a VirtualBox/Virtualization-framework VM, Docker Desktop, and several VS Code TypeScript
-  server instances all resident. Under that pressure, Chromium's own rendering/event loop appears
-  to intermittently stall badly enough that ~12 real sequential UI interactions can, in aggregate,
-  exceed even a 300s budget -- and the very last action in the sequence is structurally the one
-  most likely to still be in flight when the deadline fires, which is why the failure always
-  *looked* targeted at "Sign out" specifically without actually being caused by it.
-- **One real, committed fix came out of this investigation:** the session-cookie
-  `HttpOnly`/`document.cookie` check was moved from the very end of the flow (after ~8 real
-  navigations) to immediately after login (before the heavier part of the flow) -- purely because
-  it has no reason to wait, not as a workaround for the flakiness itself.
-- **Not fixed, because there was nothing left in this spec's own files to fix:** every individual
-  canary surface (DOM, console, both Web Storages, the URL/history, and response bodies) was
-  independently mutation-tested via a fast, isolated round-trip (inject a real leak in the
-  relevant app-source file or a temporary `page.route` interception, confirm the assertion fails
-  for the right reason, revert) -- every one bit correctly and quickly, and `pnpm check:ui-safety`
-  was independently mutation-tested for all nine of its own gates the same way. The full
-  `pnpm security:scan-leaks` command (all three Vitest canary suites plus this Playwright spec)
-  ran clean end to end in one of this plan's own final verification passes (11.3s total). The spec
-  itself is not masking anything: no retry, no `test.fixme`, no widened timeout beyond a sane
-  multiple of its own measured fast-path duration.
-- **Suggested follow-up:** if this recurs on a properly-resourced CI runner (unlikely, since
-  `ci.yml`'s `e2e`/`security` jobs run on a dedicated `ubuntu-latest` box, not this shared local
-  machine), capture a Playwright trace (`--trace on`) on the failing run and inspect exactly which
-  await was pending, rather than assuming the same host-memory explanation applies there too.
+- **Symptom:** bimodal, not slow. Passing runs took ~2s; failing runs took exactly the 120s
+  timeout, reported at the final `shell-sign-out` click with `locator.click: Target page, context
+  or browser has been closed`. Orchestrator reproduction: 2/6, then 4/6 failures.
+- **Ruled out with evidence:** a stuck `pointer-events: none` on `<body>` from the RowMenu ->
+  Edit -> Sheet -> close sequence (a temporary diagnostic ran that sequence 100 times and probed
+  `<body>` and the hit-test target under "Sign out" after each: never stuck). Memory pressure
+  (same machine, same load: 12/12 clean after the fix).
+- **Root cause (from a `--trace retain-on-failure` trace):** the sign-out click never started.
+  The spec hung one step earlier, in `await Promise.all(responseCaptures)`, on three
+  `response.text()` calls that never settled. Bodies were read from the `response` event; a
+  request a navigation abandons mid-flight (an RSC `?_rsc=` prefetch, an in-flight fetch -- the
+  trace's network log shows several with `status=-1`) can leave `.text()` pending forever.
+  Whether a navigation cut a request at the wrong instant decided 2s vs 120s. The reported line
+  was misleading: the click was merely the next statement when the deadline fired.
+- **Classification:** test-only defect. No product bug. No canary surface was ever leaking.
+- **Fix (`c41701a`):** bodies are read on `requestfinished`, which fires only once the whole body
+  has arrived, so `.text()` resolves immediately; abandoned requests fire `requestfailed` and are
+  never awaited; the long-lived SSE stream never finishes and is excluded by construction. No
+  timeout, retry or skip was added. Because abandoned requests are no longer inspected, the
+  non-vacuity check was strengthened to assert BY NAME that `/api/setup`, `/api/servers` and a
+  `/api/servers/:id` response were inspected. The widened `testInfo.setTimeout(120_000)` and its
+  "machine-load flakiness" comment were removed; the flow fits the default 60s budget ~30x over.
+- **Evidence:** before 6/12 failed across two batches; after 12/12 passed at 1.7-2.3s each.
+  Mutation check on the changed surface: a temporary `page.route` that echoed the password canary
+  in `/api/config`'s body failed the spec with `response from .../api/config leaked a canary`;
+  reverted, tree clean.
+- **Residual limitation (accepted):** a response whose request is aborted mid-flight is not
+  inspected -- it has no complete body to inspect. Every response the page actually consumed is.
+- **Process lesson:** "flaky under load" is a hypothesis, not a finding. A bimodal duration
+  (fast pass / exact-timeout fail) points at a hang, and a trace names the pending await in
+  minutes.

@@ -180,4 +180,4 @@ Waves 1–3 act as this phase's Wave 0: nothing in `packages/ui` or `apps/web` m
 - [x] Feedback latency < 60s for the quick run
 - [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** Plan 05-21 Task 2 confirms every row above (2026-09-20) — every automated-verify task row is green except 05-21 T1 itself, which is correct-but-flaky under this session's own severe host memory pressure (see 05-21-SUMMARY.md). Task 3's checkpoint (the design-system review + the light-mode contrast decision) is the one remaining open item; the user's sign-off is still pending.
+**Approval:** Plan 05-21 Task 2 confirms every row above (2026-09-20) — every automated-verify task row is green. 05-21 T1 (`@canary`) initially hung on about half its runs; that was first misattributed to host memory pressure and was in fact a test-only defect (response bodies read from an event that never settles for navigation-abandoned requests), fixed in `c41701a` and verified 12/12 -- see deferred-items.md. Task 3's checkpoint (the design-system review + the light-mode contrast decision) is the one remaining open item; the user's sign-off is still pending.

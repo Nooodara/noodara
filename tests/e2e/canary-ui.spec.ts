@@ -53,14 +53,11 @@ async function readStorageValues(page: Page): Promise<readonly string[]> {
 test(
   '@canary a per-run password canary and a per-run passphrase canary never reach rendered HTML, ' +
     'console, storage, the URL/history, or any response body across the whole UI flow',
-  async ({ page, context }, testInfo) => {
+  async ({ page, context }) => {
     // This spec deliberately walks the entire UI flow (setup attempt, login, two server
     // creates, an edit, four screens, a re-opened sheet, sign-out) in one continuous session so
-    // every surface is checked against the exact same canaries -- comfortably longer than the
-    // config's default 60s budget for an ordinary single-screen spec. On a genuinely idle
-    // machine this whole flow completes in 2-12s; 120s is a generous multiple of that, not an
-    // attempt to paper over the machine-load flakiness documented in this plan's own SUMMARY.
-    testInfo.setTimeout(120_000);
+    // every surface is checked against the exact same canaries. The whole flow completes in
+    // about 2s, well inside the config's default 60s budget.
 
     // ---- canary values -----------------------------------------------------------------------
     const passwordCanary = randomCanary('password');
