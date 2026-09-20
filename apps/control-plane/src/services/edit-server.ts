@@ -152,6 +152,17 @@ export async function editServer(
 
       const credentialReplaced = input.credential !== undefined;
 
+      // WR-A-02 (05-REVIEW.md; 05-VERIFICATION.md gap 6): hoisted out of any single status branch
+      // — the old premise that `pendingFingerprint` is only ever non-null while `ERROR` is false.
+      // `applyConnectionResult` keeps it across a successful connect and every non-
+      // HOST_KEY_CHANGED failure too, so a fingerprint captured against the *old* host/port/user
+      // can survive an identity edit made from CONNECTED, UNREACHABLE or any other non-CONNECTING
+      // status, not only ERROR. This stays its own local comparison rather than reusing
+      // `classifyServerEdit`'s "identity" category below: that category deliberately excludes
+      // `sshUser` (it answers a different question — D-14's CONNECTED->PENDING transition) while a
+      // stale pending fingerprint must be cleared on an `sshUser` change too.
+      const identityChanged = host !== row.host || sshPort !== row.sshPort || sshUser !== row.sshUser;
+
       // D-15/SERV-02: never selects or decodes the existing credential — encodeCredential only
       // ever sees the *new* material the caller supplied.
       let credentialUpdate: EncodedCredential | undefined;
@@ -228,17 +239,15 @@ export async function editServer(
           });
           statusPatch = { status: newStatus };
         }
-      } else if (row.status === 'ERROR' && row.pendingFingerprint !== null) {
-        // UF-01: `pendingFingerprint` is only ever non-null while `ERROR` (parked there by a
-        // HOST_KEY_CHANGED connect failure, see connect-and-discover.ts) — the CONNECTED-only
-        // guard above never covered this status, so an identity-changing edit made here could
-        // leave a fingerprint captured against the *old* host/port/user promotable via
-        // trustFingerprint against the *new* identity. Clear it in the same edit that changes
-        // identity; a non-identity edit (e.g. renaming) leaves it untouched.
-        const identityChanged = host !== row.host || sshPort !== row.sshPort || sshUser !== row.sshUser;
-        if (identityChanged) {
-          statusPatch = { pendingFingerprint: null, pendingFingerprintSeenAt: null };
-        }
+      }
+
+      // WR-A-02: applied after (and composed with, never replacing) the CONNECTED branch above —
+      // status-independent, so an identity-changing edit clears a stale pending fingerprint from
+      // UNREACHABLE, DISCONNECTED, PENDING or ERROR exactly the same way it does from CONNECTED.
+      // A non-identity edit (e.g. renaming, or an `sshUser`-only change while status is not
+      // CONNECTED) leaves both pending columns untouched.
+      if (identityChanged) {
+        statusPatch = { ...statusPatch, pendingFingerprint: null, pendingFingerprintSeenAt: null };
       }
 
       // An empty edit is not an audit event (documented discretionary decision) — nothing is
