@@ -46,14 +46,14 @@ describe('safeLocalStorage', () => {
   });
 
   it('swallows a throwing setItem (quota exceeded) without throwing, while getItem/removeItem still reach the real backend', () => {
-    const writes: Record<string, string> = { existing: 'value' };
+    const writes = new Map<string, string>([['existing', 'value']]);
     const fakeLocalStorage = {
-      getItem: vi.fn((key: string) => (key in writes ? (writes[key] ?? null) : null)),
+      getItem: vi.fn((key: string) => writes.get(key) ?? null),
       setItem: vi.fn(() => {
         throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
       }),
       removeItem: vi.fn((key: string) => {
-        delete writes[key];
+        writes.delete(key);
       }),
     };
     vi.stubGlobal('window', { localStorage: fakeLocalStorage });
@@ -68,7 +68,7 @@ describe('safeLocalStorage', () => {
     expect(() => {
       storage.removeItem('existing');
     }).not.toThrow();
-    expect(writes.existing).toBeUndefined();
+    expect(writes.has('existing')).toBe(false);
   });
 
   it('is structurally assignable to first-trust.ts\'s StorageLike parameter', () => {

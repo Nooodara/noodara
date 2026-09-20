@@ -40,14 +40,19 @@ export function CopyButton({ value, label = 'Copy', 'data-testid': testId }: Cop
   );
 
   const handleClick = () => {
-    const writeText = navigator.clipboard?.writeText;
-    if (typeof writeText !== 'function') {
+    // DOM lib types declare `Navigator.clipboard` as always-present -- inaccurate for an
+    // insecure/plain-HTTP origin, where it is genuinely `undefined` at runtime. Cast to the type
+    // reality demands so the feature-detection below is meaningful to `tsc`/`eslint`, not flagged
+    // as an "unnecessary condition" against a type that (per the lib's optimistic declaration)
+    // can never be missing.
+    const clipboard = navigator.clipboard as Clipboard | undefined;
+    if (typeof clipboard?.writeText !== 'function') {
       // Insecure context or an old/non-standard browser -- see doc comment above.
       return;
     }
 
-    writeText
-      .call(navigator.clipboard, value)
+    clipboard
+      .writeText(value)
       .then(() => {
         if (timeoutRef.current !== undefined) {
           clearTimeout(timeoutRef.current);

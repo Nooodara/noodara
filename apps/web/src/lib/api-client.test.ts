@@ -21,7 +21,14 @@ function jsonResponse(status: number, body: unknown, headers?: Record<string, st
 }
 
 describe('apiGet/apiSend', () => {
-  let fetchMock: ReturnType<typeof vi.fn>;
+  // Explicitly instantiated with `typeof fetch` (rather than the bare `ReturnType<typeof vi.fn>`
+  // this file used before) -- an uninstantiated generic `Mock<Procedure>` resolves `T` to its
+  // full constraint (`Procedure | Constructable`), which makes `mockImplementationOnce`'s
+  // parameter type a union that includes a `void`-returning construct-signature member and trips
+  // `@typescript-eslint/no-misused-promises` on any Promise-returning implementation passed to
+  // it. Binding `T` concretely to `typeof fetch` removes that union and is also strictly more
+  // accurate for every existing `mockResolvedValueOnce`/`mockRejectedValueOnce` call below.
+  let fetchMock: ReturnType<typeof vi.fn<typeof fetch>>;
 
   beforeEach(() => {
     fetchMock = vi.fn();
@@ -153,7 +160,7 @@ describe('apiGet/apiSend', () => {
    *  signal it was called with aborts -- exactly what the real Fetch spec (and Node's undici
    *  implementation) does. A mock that ignored `init.signal` entirely would let a real
    *  implementation gap hang this test forever instead of failing it. */
-  function hungFetchHonoringAbort(_path: string, init?: RequestInit): Promise<Response> {
+  function hungFetchHonoringAbort(_input: string | URL | Request, init?: RequestInit): Promise<Response> {
     return new Promise<Response>((_resolve, reject) => {
       init?.signal?.addEventListener('abort', () => {
         reject(new DOMException('The operation was aborted.', 'AbortError'));
@@ -189,9 +196,9 @@ describe('apiGet/apiSend', () => {
     const timeoutSpy = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(timeoutController.signal);
     try {
       let capturedSignal: AbortSignal | undefined;
-      fetchMock.mockImplementationOnce((path: string, init?: RequestInit) => {
+      fetchMock.mockImplementationOnce((input: string | URL | Request, init?: RequestInit) => {
         capturedSignal = init?.signal ?? undefined;
-        return hungFetchHonoringAbort(path, init);
+        return hungFetchHonoringAbort(input, init);
       });
 
       const resultPromise = apiGet('/api/servers');
