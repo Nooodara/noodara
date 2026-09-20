@@ -32,6 +32,12 @@ const SERVICE_ERROR_COPY = {
   ALREADY_CONNECTING: '',
   SERVER_NOT_CONNECTED: 'Connect the server before running discovery.',
   NO_PENDING_FINGERPRINT: "There's no fingerprint change to trust.",
+  // Gap 6 / T-5G-31-04 (05-31-PLAN.md) -- 05-UI-SPEC.md SS5.4 has no row for either of these two
+  // codes yet (they did not exist until plan 05-27's backend contract). Written in the same calm,
+  // states-what-happened-and-what-to-do voice as the rest of this table; no fingerprint value, host
+  // or "{token}" placeholder -- both render at the dialog/banner level, never inline.
+  FINGERPRINT_MISMATCH: 'The observed fingerprint changed since you opened this dialog. Review the new value before trusting.',
+  SERVER_NOT_TRUSTABLE: "There's nothing to trust in this server's current state.",
   CONFIRMATION_MISMATCH: 'That doesn\'t match. Type "{name}" exactly to continue.',
   QUEUE_UNAVAILABLE: 'The connection queue is temporarily unavailable. Try again in a few seconds.',
   SSE_LIMIT_REACHED: '',

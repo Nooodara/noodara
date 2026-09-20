@@ -31,6 +31,12 @@ describe('copyForErrorCode', () => {
     expect(copyForErrorCode('ALREADY_CONNECTING')).toBe('');
     expect(copyForErrorCode('SERVER_NOT_CONNECTED')).toBe('Connect the server before running discovery.');
     expect(copyForErrorCode('NO_PENDING_FINGERPRINT')).toBe("There's no fingerprint change to trust.");
+    expect(copyForErrorCode('FINGERPRINT_MISMATCH')).toBe(
+      'The observed fingerprint changed since you opened this dialog. Review the new value before trusting.',
+    );
+    expect(copyForErrorCode('SERVER_NOT_TRUSTABLE')).toBe(
+      "There's nothing to trust in this server's current state.",
+    );
     expect(copyForErrorCode('CONFIRMATION_MISMATCH')).toBe('That doesn\'t match. Type "{name}" exactly to continue.');
     expect(copyForErrorCode('QUEUE_UNAVAILABLE')).toBe(
       'The connection queue is temporarily unavailable. Try again in a few seconds.',
@@ -43,6 +49,17 @@ describe('copyForErrorCode', () => {
 
   it('the CONFIRMATION_MISMATCH copy matches SS5.4 verbatim', () => {
     expect(copyForErrorCode('CONFIRMATION_MISMATCH')).toBe('That doesn\'t match. Type "{name}" exactly to continue.');
+  });
+
+  // Gap 6 / T-5G-31-04: neither new code's copy carries a fingerprint value, a host, or a "{token}"
+  // placeholder a caller would need to substitute -- both are banner/dialog-level, not per-value.
+  it('FINGERPRINT_MISMATCH and SERVER_NOT_TRUSTABLE copy carries no interpolation placeholder or leaked value', () => {
+    for (const code of ['FINGERPRINT_MISMATCH', 'SERVER_NOT_TRUSTABLE'] as const) {
+      const copy = copyForErrorCode(code);
+      expect(copy).not.toMatch(/\{.*\}/);
+      expect(copy).not.toMatch(/SHA256:/);
+      expect(copy.length).toBeGreaterThan(0);
+    }
   });
 });
 
@@ -164,6 +181,13 @@ describe('fieldForErrorCode', () => {
 
   it('returns null for a code with no per-field routing', () => {
     expect(fieldForErrorCode('INTERNAL_ERROR')).toBeNull();
+  });
+
+  // Gap 6: FINGERPRINT_MISMATCH/SERVER_NOT_TRUSTABLE are banner/dialog-level failures, never routed
+  // to a specific form field.
+  it('routes FINGERPRINT_MISMATCH and SERVER_NOT_TRUSTABLE to no form field', () => {
+    expect(fieldForErrorCode('FINGERPRINT_MISMATCH')).toBeNull();
+    expect(fieldForErrorCode('SERVER_NOT_TRUSTABLE')).toBeNull();
   });
 });
 

@@ -29,6 +29,8 @@ export type ApiErrorCode =
   | 'ALREADY_CONNECTING'
   | 'SERVER_NOT_CONNECTED'
   | 'NO_PENDING_FINGERPRINT'
+  | 'FINGERPRINT_MISMATCH'
+  | 'SERVER_NOT_TRUSTABLE'
   | 'CONFIRMATION_MISMATCH'
   | 'QUEUE_UNAVAILABLE'
   | 'SSE_LIMIT_REACHED'
@@ -121,23 +123,44 @@ function assertRelativeApiPath(path: string): void {
   }
 }
 
-const KNOWN_SERVICE_ERROR_CODES: ReadonlySet<string> = new Set([
-  'VALIDATION_FAILED',
-  'INVALID_CREDENTIAL',
-  'UNAUTHORIZED',
-  'FORBIDDEN_ORIGIN',
-  'NOT_FOUND',
-  'NAME_TAKEN',
-  'HOST_TAKEN',
-  'SERVER_BUSY',
-  'ALREADY_CONNECTING',
-  'SERVER_NOT_CONNECTED',
-  'NO_PENDING_FINGERPRINT',
-  'CONFIRMATION_MISMATCH',
-  'QUEUE_UNAVAILABLE',
-  'SSE_LIMIT_REACHED',
-  'INTERNAL_ERROR',
-]);
+// T-5G-31-02 (05-31-PLAN.md): previously this was a second, hand-maintained string list next to
+// `ApiErrorCode` above -- exactly the drift a real 409 `FINGERPRINT_MISMATCH`/`SERVER_NOT_TRUSTABLE`
+// silently degrading to `INTERNAL_ERROR` came from (the codes existed in the union but not here).
+// `API_ERROR_CODE_MARKER` closes that class of bug structurally, the same `satisfies Record<...>`
+// exhaustiveness idiom `apps/control-plane/src/routes/http-errors.ts`'s `SERVICE_ERROR_STATUS`
+// already uses: a fresh object literal checked against `Record<Exclude<ApiErrorCode,
+// 'NETWORK_ERROR'>, true>` fails to compile both if a union member is missing as a key AND if an
+// extra key is present that isn't in the union (TypeScript's excess-property check on a literal
+// assigned via `satisfies`). `KNOWN_SERVICE_ERROR_CODES`/`ALL_KNOWN_SERVICE_ERROR_CODES` are both
+// derived from this single source, so there is exactly one list to update when a new code is added.
+const API_ERROR_CODE_MARKER = Object.freeze({
+  VALIDATION_FAILED: true,
+  INVALID_CREDENTIAL: true,
+  UNAUTHORIZED: true,
+  FORBIDDEN_ORIGIN: true,
+  NOT_FOUND: true,
+  NAME_TAKEN: true,
+  HOST_TAKEN: true,
+  SERVER_BUSY: true,
+  ALREADY_CONNECTING: true,
+  SERVER_NOT_CONNECTED: true,
+  NO_PENDING_FINGERPRINT: true,
+  FINGERPRINT_MISMATCH: true,
+  SERVER_NOT_TRUSTABLE: true,
+  CONFIRMATION_MISMATCH: true,
+  QUEUE_UNAVAILABLE: true,
+  SSE_LIMIT_REACHED: true,
+  INTERNAL_ERROR: true,
+} satisfies Record<Exclude<ApiErrorCode, 'NETWORK_ERROR'>, true>);
+
+const KNOWN_SERVICE_ERROR_CODES: ReadonlySet<string> = new Set(Object.keys(API_ERROR_CODE_MARKER));
+
+/** Test-only drift surface: every recognised code, typed back to the exact union it was derived
+ *  from. `Object.keys` itself only returns `string[]` -- the cast is narrowing back to what
+ *  `API_ERROR_CODE_MARKER`'s own `satisfies` clause already proved true of every one of its keys. */
+export const ALL_KNOWN_SERVICE_ERROR_CODES = Object.keys(
+  API_ERROR_CODE_MARKER,
+) as readonly Exclude<ApiErrorCode, 'NETWORK_ERROR'>[];
 
 function isKnownServiceErrorCode(value: unknown): value is Exclude<ApiErrorCode, 'NETWORK_ERROR'> {
   return typeof value === 'string' && KNOWN_SERVICE_ERROR_CODES.has(value);

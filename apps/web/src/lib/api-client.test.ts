@@ -3,7 +3,7 @@
 // `globalThis.fetch` per case (this file runs in Vitest's `apps` project, the default node
 // environment -- no DOM needed for a fetch wrapper).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { API_REQUEST_TIMEOUT_MS, apiGet, apiSend } from './api-client';
+import { ALL_KNOWN_SERVICE_ERROR_CODES, API_REQUEST_TIMEOUT_MS, apiGet, apiSend } from './api-client';
 
 // Captured at module load -- the one genuinely real setTimeout this file uses as a bounded guard
 // against a hanging RED/implementation gap (see the two timeout tests below). Not a fake-timers
@@ -113,6 +113,54 @@ describe('apiGet/apiSend', () => {
     expect(result.code).toBe('INTERNAL_ERROR');
     expect(result.message).not.toContain('html');
     expect(result.message).not.toContain('Bad Gateway');
+  });
+
+  // Gap 6 / T-5G-31-02: before this plan, a real 409 FINGERPRINT_MISMATCH/SERVER_NOT_TRUSTABLE body
+  // parsed to INTERNAL_ERROR -- neither code was in `KNOWN_SERVICE_ERROR_CODES` yet. This is the RED
+  // case that must fail against the pre-Task-1 code and pass after it.
+  it('parses a 409 FINGERPRINT_MISMATCH body to its own code, never degrading to INTERNAL_ERROR', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(409, {
+        error: 'FINGERPRINT_MISMATCH',
+        message: 'Submitted fingerprint no longer matches the server’s pending fingerprint',
+      }),
+    );
+
+    const result = await apiSend('POST', '/api/servers/srv_1/trust-fingerprint', { fingerprint: 'SHA256:abc' });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.code).toBe('FINGERPRINT_MISMATCH');
+  });
+
+  it('parses a 409 SERVER_NOT_TRUSTABLE body to its own code, never degrading to INTERNAL_ERROR', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(409, {
+        error: 'SERVER_NOT_TRUSTABLE',
+        message: 'Server is not in a state that can trust a fingerprint',
+      }),
+    );
+
+    const result = await apiSend('POST', '/api/servers/srv_1/trust-fingerprint', { fingerprint: 'SHA256:abc' });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.code).toBe('SERVER_NOT_TRUSTABLE');
+  });
+
+  // T-5G-31-02: the drift guard. `ALL_KNOWN_SERVICE_ERROR_CODES` is derived from the same
+  // exhaustiveness-checked marker `isKnownServiceErrorCode` reads at runtime (see api-client.ts) --
+  // this proves every member of `ApiErrorCode` (minus NETWORK_ERROR) really is recognised as a known
+  // code end to end, through the public apiGet/apiSend surface, not just by inspecting the list.
+  it('recognises every ApiErrorCode (except NETWORK_ERROR) as a known service error code', async () => {
+    for (const code of ALL_KNOWN_SERVICE_ERROR_CODES) {
+      fetchMock.mockResolvedValueOnce(jsonResponse(409, { error: code, message: 'x' }));
+      // eslint-disable-next-line no-await-in-loop -- sequential by design, each iteration needs its own mock
+      const result = await apiGet('/api/servers/srv_1');
+      expect(result.ok).toBe(false);
+      if (result.ok) continue;
+      expect(result.code).toBe(code);
+    }
   });
 
   it('issues every request with credentials: same-origin and a relative /api/ URL', async () => {
