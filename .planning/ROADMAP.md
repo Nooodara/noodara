@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Adaptador SSH aislado y probado con Testcontainers** - Conexión SSH con TOFU, timeouts, allowlist de comandos y discovery, validado contra un `sshd` real. (completed 2026-09-15)
 - [x] **Phase 3: Servicios de aplicación, activity log y redacción** - Registrar/editar/eliminar servidores, snapshots de discovery y un activity log sin fugas de secrets. (completed 2026-09-16)
 - [x] **Phase 4: HTTP routes, worker BullMQ y SSE** - La API expone connect/discover en background y el estado llega a tiempo real sin polling. (completed 2026-09-18)
-- [ ] **Phase 5: UI web** - El flujo login → Servers → add → connect → discovery → detail funciona en el design system Apple-inspired, dark y light. (25/25 plans executed 2026-09-20; verification gaps_found — gap closure planned 2026-09-20: 05-26…05-37, 0/12 executed)
+- [ ] **Phase 5: UI web** - El flujo login → Servers → add → connect → discovery → detail funciona en el design system Apple-inspired, dark y light. (37/37 plans executed 2026-09-20 — gap closure 05-26…05-37 complete; closing gate all green, eight gaps re-derived: 4 CLOSED, 1 OPEN by design (QA-04/QA-05), 2 PARTIAL; user approved the checkpoint but did not confirm the six human-only verification items — phase NOT yet complete, pending a separate /gsd-quick fix for a found sshUser field-error bug, code review, regression gate and phase verification)
 - [ ] **Phase 6: Instalador y Docker Compose** - Un comando deja Noodara operativo en un VPS Ubuntu limpio, de forma idempotente.
 
 ## Phase Details
@@ -354,7 +354,7 @@ Plans:
 
 **Gap Wave 4** *(blocked on Gap Wave 3; NOT autonomous — verificación humana)*
 
-- [ ] 05-37-PLAN.md — Gate completo de todas las suites en una corrida, auditoría por gap re-derivada del código y checkpoint de los ítems solo-humanos (QA-04/QA-05 siguen Pending hasta un run real de CI)
+- [x] 05-37-PLAN.md — Gate completo de todas las suites en una corrida, auditoría por gap re-derivada del código y checkpoint de los ítems solo-humanos (QA-04/QA-05 siguen Pending hasta un run real de CI)
 
 **Cross-cutting constraints:**
 

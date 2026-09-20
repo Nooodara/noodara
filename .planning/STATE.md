@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 05-33-PLAN.md (contrast gap closure continuation: user's D1/D2/D3 hybrid decision applied, accent-fill/status-text tokens, ink darkening; 05-37 remains, the final human-verification/full-suite wave)"
-last_updated: "2026-09-20T20:50:46.739Z"
+stopped_at: "Completed 05-37-PLAN.md (closing gate: full cross-suite run all green, eight gap verdicts re-derived, user approved the checkpoint but did not confirm any of the six human-only verification items, sshUser field-error bug found and routed to a separate /gsd-quick fix). Phase 05 is NOT complete -- pending: the /gsd-quick sshUser fix, code review, regression gate, and phase verification (expected outcome human_needed or gaps_found, not passed, while QA-04/QA-05 lack a real CI run and the six human items remain unconfirmed)."
+last_updated: "2026-09-20T21:46:08Z"
 last_activity: 2026-09-20
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 85
-  completed_plans: 84
-  percent: 67
+  completed_plans: 85
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 ## Current Position
 
-Phase: 05 (ui-web) — EXECUTING gap closure (05-26…05-37, 4 waves)
-Plan: 36 of 37 plans have a SUMMARY (05-33 just resumed from its resolved decision checkpoint and executed -- the user's D1/D2/D3 hybrid contrast decision applied: --accent-fill split from --accent, --status-{ok,warn,error,idle}-text pill-word tokens, darkened --ink-secondary/--ink-tertiary, WR-C-08's Banner/Field/RowMenu call sites fixed, all locked behind an exhaustive tokens.css-driven regression gate. Only 05-37 remains: the final human-verification/full-suite wave)
-Status: Ready to execute
-Last activity: 2026-09-20 -- 05-33 (contrast gap closure continuation) executed
+Phase: 05 (ui-web) — gap-closure plans complete (37/37 have a SUMMARY); phase itself NOT yet complete
+Plan: 37 of 37 plans have a SUMMARY. 05-37 (the closing gate) executed: all eleven gate commands green on the final tree (unit 1491/1491, integration 505/0/1-skipped, E2E 92/92, boot 7/7, provenance 52/52, leak canaries green); each of the eight 05-VERIFICATION.md gaps re-derived first-hand (4 CLOSED: gaps 1/2/6/7; 1 OPEN by design: gap 3/QA-04/QA-05; 2 PARTIAL: gaps 4/5). At the Task 3 checkpoint the user answered "Approve y haz un gsd quick del sshUser bug" -- the wave is approved to close, but the user did NOT state which of the six human-only verification items (real-display contrast, real CI run, live SSE walkthrough, Sheet/Dialog/RowMenu elevation, screen-reader pass, sub-1280px/reduced-motion feel) they actually checked, so all six are recorded as pendiente -- no confirmado por el usuario in .planning/phases/05-ui-web/05-GAP-CLOSURE-AUDIT.md section 3, not silently marked passed. A new bug (ServerSheet.tsx's SSH user Field has no error prop, silently swallowing a server-side sshUser validation error) was found live during re-derivation and, per the user's instruction, is being fixed via a separate /gsd-quick task run by the orchestrator right after this plan -- not inside this plan.
+Status: NOT ready to declare Phase 05 complete -- pending, in order: (1) the /gsd-quick sshUser fix, (2) code review, (3) the regression gate, (4) phase verification. Expected phase-verification outcome is human_needed or gaps_found, not passed, since QA-04/QA-05 stay Pending (no git remote, no observed CI/nightly run) and the six human-only items are unconfirmed.
+Last activity: 2026-09-20 -- 05-37 (closing gate + gap-closure audit) executed, checkpoint resolved
 
-Progress: [██████████] 99%
+Progress: [██████████] 100% of planned plans executed (phase 05 not yet verified complete)
 
 ## Performance Metrics
 
@@ -411,6 +411,8 @@ None yet.
 - [05-21, Open at phase close, carried from prior plans] trust-fingerprint-toctou.md (priority high, .planning/todos/pending/): POST /api/servers/:id/trust-fingerprint takes no body and promotes whatever pendingFingerprint the row holds at request time, with no binding to the fingerprint the admin actually saw -- needs a backend change. setup-token-url-hardening.md: the one-time setup token lingers in the URL/browser history; no Referrer-Policy set. UF-02 (04-SECURITY.md): worker.ts's main() has no top-level try/catch, a boot failure can print DATABASE_URL/REDIS_URL to stderr. servers/[id]/page.tsx has the same stale-snapshot-overwrite hazard the servers list had before its 05-20 fix (found by reading, not fixed); activity/page.tsx and DiscoverySection.tsx not audited for it.
 - 05-27: POST /api/servers/:id/trust-fingerprint now requires { fingerprint } in its body (backend-only fix for gap 6/WR-A-02); apps/web/src/components/TrustFingerprintDialog.tsx still POSTs with no body at all and will get 400 VALIDATION_FAILED on every trust attempt until Plan 05-31 sends { fingerprint } and handles FINGERPRINT_MISMATCH. Trust-fingerprint UI is non-functional end-to-end until then.
 - 05-27-PLAN.md declares requirements: [DETL-02] in its frontmatter, but the plan's actual work is gap 6/WR-A-02 (trust-fingerprint TOCTOU) -- DETL-02 was already Complete before this plan (Plan 05-14). Matches the same plan-frontmatter-artifact pattern flagged repeatedly in this phase (SERV-06 04-01, UI-01/UI-02 05-06 onward, etc.); no action needed since DETL-02 is genuinely already satisfied, just noting the frontmatter/scope mismatch.
+- [05-37, found live during the closing gate's gap re-derivation, NOT fixed by this plan] `apps/web/src/components/ServerSheet.tsx`'s SSH user `Field` (around `:303-316`) renders with no `error` prop wired, while `handleApiFailure` (`:111-142`) does map a server-side `/sshUser` VALIDATION_FAILED issue into `fieldErrors` and suppresses the generic toast fallback once that map is non-empty -- so a real `sshUser` rejection from the backend now produces zero visible feedback, silently worse than before gap 5's fix. This was `05-REVIEW.md` WR-B-07's warned "latent second bug", confirmed still present by direct source read. Per the user's explicit instruction (2026-09-20 checkpoint answer), this is fixed via a separate `/gsd-quick` task run immediately by the orchestrator, not inside plan 05-37. See `.planning/phases/05-ui-web/05-GAP-CLOSURE-AUDIT.md` section 2 (Gap 5) and section 3.
+- [05-37, checkpoint answered 2026-09-20] The user approved closing the gap-closure wave ("Approve y haz un gsd quick del sshUser bug") but did not state which, if any, of the six human-only verification items (real-display contrast in both themes; a real CI run for QA-04/QA-05; a live SSE walkthrough not through a buffering tunnel; Sheet/Dialog/RowMenu floating-elevation shadow; a real screen-reader pass on RowMenu; sub-1280px/`prefers-reduced-motion` feel on real hardware) they actually checked. All six remain unconfirmed -- recorded honestly as such in `05-GAP-CLOSURE-AUDIT.md` section 3, not rounded up to "verified". They should surface again as UAT items in Phase 05's verification step.
 
 ## Deferred Items
 
@@ -422,6 +424,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-20T20:50:46.732Z
-Stopped at: Completed 05-33-PLAN.md (contrast gap closure continuation: user's D1/D2/D3 hybrid decision applied, accent-fill/status-text tokens, ink darkening; 05-37 remains, the final human-verification/full-suite wave)
+Last session: 2026-09-20T21:46:08Z
+Stopped at: Completed 05-37-PLAN.md (closing gate: full cross-suite run all green, eight gap verdicts re-derived, user approved via checkpoint without confirming any of the six human-only items; sshUser field-error bug found and routed to a separate /gsd-quick fix run by the orchestrator next). Phase 05 is NOT complete -- pending: the /gsd-quick sshUser fix, code review, regression gate, and phase verification.
 Resume file: None
