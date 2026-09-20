@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   auditTheme,
+  auditTokens,
   compositeOver,
   contrastRatio,
   parseColor,
@@ -8,7 +10,19 @@ import {
   relativeLuminance,
   roundDown,
   toHex,
+  type AuditPair,
 } from './contrast.js';
+
+// The real, on-disk stylesheet -- read once per test-file run so every assertion below measures
+// whatever is actually in `tokens.css` at the moment the suite runs, never a hand-copied snapshot
+// (05-33-PLAN.md key_links: "parsing the literal token values out of the stylesheet, not a
+// duplicated copy of them"). A token edit on disk is therefore what a re-run of this suite
+// measures -- exactly the property that makes this an enforceable regression gate, not a one-off
+// audit (T-5G-33-02).
+const TOKENS_CSS_PATH = new URL('../tokens.css', import.meta.url);
+function readRealTokens() {
+  return parseTokensCss(readFileSync(TOKENS_CSS_PATH, 'utf8'));
+}
 
 // Reference-value tests (05-33-PLAN.md Task 1): these pin the WCAG 2.x relative-luminance and
 // contrast-ratio implementation against known, independently-verifiable answers before it is ever
@@ -171,5 +185,120 @@ describe('auditTheme', () => {
     const labels = results.map((r) => r.label);
 
     expect(labels.some((label) => label.startsWith('--status-ok-soft on'))).toBe(false);
+  });
+
+  // D1 (05-33 continuation, 2026-09-20): the `-text` variant is derived the same
+  // derive-don't-hardcode way as the base status token, and audited against every real
+  // StatusPill background, not only --surface-1.
+  it('derives the status-*-text pair list from parsed token names, on every real pill background', () => {
+    const tokens = {
+      canvas: '#f5f5f7',
+      'surface-1': '#ffffff',
+      'surface-2': '#fafafc',
+      'status-newthing': '#ff00ff',
+      'status-newthing-soft': 'rgba(255, 0, 255, 0.14)',
+      'status-newthing-text': '#7a0d5f',
+    };
+
+    const results = auditTheme(tokens, 'light');
+    const labels = results.map((r) => r.label);
+
+    expect(labels).toContain('--status-newthing-text on --status-newthing-soft over --surface-1');
+    expect(labels).toContain('--status-newthing-text on --status-newthing-soft over --canvas');
+    expect(labels).toContain('--status-newthing-text on --status-newthing-soft over --surface-2');
+  });
+
+  it('audits --accent as both text (4.5) and outline/border (3.0) verdicts on the same pair', () => {
+    const tokens = { accent: '#0071e3', canvas: '#f5f5f7', 'surface-1': '#ffffff' };
+
+    const results = auditTheme(tokens, 'light');
+    const textPair = results.find((r) => r.label === '--accent as text on --surface-1');
+    const outlinePair = results.find((r) => r.label === '--accent as outline/border on --surface-1');
+
+    expect(textPair?.threshold).toBe(4.5);
+    expect(outlinePair?.threshold).toBe(3);
+    // Same underlying ratio, two different bars -- a value that clears 3.0 but not 4.5 must fail
+    // the text verdict while passing the outline verdict (this is exactly what let the rejected
+    // Candidate A look safe when only the fill pair was checked).
+    expect(textPair?.ratio).toBe(outlinePair?.ratio);
+  });
+
+  it('audits --on-accent on --accent-fill as its own pair, independent of --accent', () => {
+    const tokens = { 'on-accent': '#ffffff', accent: '#2997ff', 'accent-fill': '#0071e3' };
+
+    const results = auditTheme(tokens, 'dark');
+    const fillPair = results.find((r) => r.label === '--on-accent on --accent-fill');
+    const accentPair = results.find((r) => r.label === '--on-accent on --accent');
+
+    expect(fillPair).toBeDefined();
+    expect(accentPair).toBeDefined();
+    expect(fillPair?.backgroundEffective).toBe('#0071e3');
+    expect(accentPair?.backgroundEffective).toBe('#2997ff');
+  });
+});
+
+// The exhaustive gate (05-33-PLAN.md Task 3, extended by the 2026-09-20 continuation's D1/D2/D3
+// decisions): every pair `auditTokens` derives from the REAL tokens.css must clear its own
+// threshold in BOTH themes. This is what makes a future token edit that regresses contrast fail
+// CI instead of silently shipping (T-5G-33-02) -- proved once by temporarily reverting a token
+// value locally and watching this test go red (05-33-continuation SUMMARY records that run's
+// literal output), never by `git stash`/`git checkout .`.
+describe('the real tokens.css gate', () => {
+  it('every audited pair clears its threshold in both themes', () => {
+    const results = auditTokens(readRealTokens());
+    const failing = results.filter((r) => !r.pass);
+    const describe = (r: AuditPair) => `[${r.theme}] ${r.label}: ${String(r.ratio)} < ${String(r.threshold)}`;
+
+    expect(failing.map(describe)).toEqual([]);
+  });
+
+  // WR-C-08 named call sites (doc §1.2) that are NOT derivable from a generic token-name scan --
+  // each depends on knowledge of which component renders where, so they are asserted explicitly
+  // here rather than folded into `auditTheme`'s derived pairs.
+  it('Banner.tsx errorCode: --ink-secondary on composited --status-error-soft over --surface-1 (both themes)', () => {
+    const { light, dark } = readRealTokens();
+    for (const [theme, tokens] of [['light', light] as const, ['dark', dark] as const]) {
+      const inkSecondary = tokens['ink-secondary'];
+      const errorSoft = tokens['status-error-soft'];
+      const surface1 = tokens['surface-1'];
+      expect(inkSecondary, `${theme}: missing --ink-secondary`).toBeDefined();
+      expect(errorSoft, `${theme}: missing --status-error-soft`).toBeDefined();
+      expect(surface1, `${theme}: missing --surface-1`).toBeDefined();
+      const composited = toHex(compositeOver(errorSoft as string, surface1 as string));
+      const ratio = roundDown(contrastRatio(inkSecondary as string, composited));
+      expect(ratio, `${theme}: --ink-secondary on ${composited} = ${String(ratio)}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('Field.tsx inline error: --status-error-text directly on --surface-1 (both themes)', () => {
+    const { light, dark } = readRealTokens();
+    for (const [theme, tokens] of [['light', light] as const, ['dark', dark] as const]) {
+      const errorText = tokens['status-error-text'];
+      const surface1 = tokens['surface-1'];
+      expect(errorText, `${theme}: missing --status-error-text`).toBeDefined();
+      const ratio = roundDown(contrastRatio(errorText as string, surface1 as string));
+      expect(ratio, `${theme}: --status-error-text on --surface-1 = ${String(ratio)}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('RowMenu.tsx "Delete" item: --status-error-text directly on --surface-3 (both themes)', () => {
+    const { light, dark } = readRealTokens();
+    for (const [theme, tokens] of [['light', light] as const, ['dark', dark] as const]) {
+      const errorText = tokens['status-error-text'];
+      const surface3 = tokens['surface-3'];
+      expect(errorText, `${theme}: missing --status-error-text`).toBeDefined();
+      const ratio = roundDown(contrastRatio(errorText as string, surface3 as string));
+      expect(ratio, `${theme}: --status-error-text on --surface-3 = ${String(ratio)}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('does not silently drop a new --status-* token that lacks a -soft sibling', () => {
+    // A token named `status-foo` with no `status-foo-soft` must not throw or be silently skipped
+    // in a way that hides a real missing-pair authoring mistake -- auditTheme's own `continue`
+    // guard means it is simply omitted from results (not asserted as passing), which this test
+    // pins so a future refactor cannot turn that omission into a false PASS.
+    const tokens = { 'surface-1': '#ffffff', 'status-foo': '#ff0000' };
+    const results = auditTheme(tokens, 'light');
+    expect(results.some((r) => r.label.startsWith('--status-foo'))).toBe(false);
   });
 });
