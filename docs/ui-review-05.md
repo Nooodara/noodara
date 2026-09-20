@@ -70,7 +70,16 @@ takes away, so this mitigates less than it sounds. **Decision (user, Task 3 chec
 2026-09-20): fix in gap closure** — not accepted as-is, not a phase hold. The replacement text
 colors are a design decision the user makes in that gap plan.
 
-### FLAG 2 (new finding this review) — `RowMenu`'s trigger has no `aria-expanded`
+### FLAG 2 — WITHDRAWN (2026-09-20): `RowMenu`'s trigger has no `aria-expanded`
+
+> **Correction.** This finding is false. `RowMenu`'s trigger is a Radix `DialogTrigger`, and
+> `@radix-ui/react-dialog@1.1.23` (`dist/index.js:128-129`) sets both `aria-expanded` and
+> `aria-controls` on it. The automated pass audited `RowMenu.tsx`'s own JSX and did not look at
+> what the primitive adds. Found by the phase code review (`05-REVIEW.md`, WR-C-05) and
+> re-verified by the orchestrator. Do **not** add a second `aria-expanded`. `RowMenu`'s real
+> defects are different and are listed in WR-C-05: selecting an item never closes the menu or
+> returns focus, the trigger is `opacity-0` permanently on touch devices, and `key={item.label}`
+> can collide. The original text is kept below for the record only.
 
 `packages/ui/src/RowMenu.tsx:83-91`: the trigger sets `aria-haspopup="menu"` but never sets
 `aria-expanded` (true when open, false when closed) — a required attribute of the WAI-ARIA
