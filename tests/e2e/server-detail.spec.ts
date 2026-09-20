@@ -269,11 +269,33 @@ test('@detail a stubbed 404 shows the not-found copy with a working link back to
 // controlled; the mutation that races it (`page.request.post`/`.delete`, bypassing the page's own
 // `page.route` interception entirely, same as that precedent) is a real call against the real
 // control plane, producing a real `server.updated`/`server.deleted` SSE frame.
-async function gateNextGet(page: Page, id: string): Promise<() => void> {
-  let capturedCount = 0;
+//
+// This page's mount genuinely issues TWO GETs for the same id (confirmed empirically: React 19's
+// `use(params)` suspends once and re-renders, re-running the mount effect) -- `gateGets` therefore
+// holds every GET it sees, not just the first, so the race is against the *actual* latest request
+// sequence the page tracks, not an artifact of which one happened to be captured.
+interface GetGate {
+  /** Resolves, with the number of GETs captured so far, once at least `minCaptures` have been
+   *  intercepted and their real (pre-race) responses read via `route.fetch()`. The caller MUST
+   *  await this before racing the GETs with a mutation, or the mutation could land before the
+   *  browser's own client-side fetch has even fired (a hydration-timing gap -- `page.goto` only
+   *  waits for the document `load` event, not a post-hydration `useEffect` fetch) and
+   *  `route.fetch()` would then read data no longer stale. */
+  readonly captured: Promise<number>;
+  /** Releases every GET held so far (and any captured later) back to the page with its own real,
+   *  captured-at-the-time response body. */
+  readonly release: () => void;
+}
+
+async function gateGets(page: Page, id: string, minCaptures: number): Promise<GetGate> {
+  let captureCount = 0;
   let releaseGate: () => void = () => undefined;
   const gateReleased = new Promise<void>((resolve) => {
     releaseGate = resolve;
+  });
+  let markCaptured: (count: number) => void = () => undefined;
+  const captured = new Promise<number>((resolve) => {
+    markCaptured = resolve;
   });
 
   await page.route(`**/api/servers/${id}`, async (route) => {
@@ -281,18 +303,25 @@ async function gateNextGet(page: Page, id: string): Promise<() => void> {
       await route.continue();
       return;
     }
-    capturedCount += 1;
-    if (capturedCount > 1) {
-      // Only the first (mount) GET for this id is gated -- any later one passes straight through.
-      await route.continue();
-      return;
-    }
+    captureCount += 1;
     const response = await route.fetch(); // the real snapshot, read right now (still pre-race data)
+    if (captureCount >= minCaptures) {
+      markCaptured(captureCount);
+    }
     await gateReleased;
     await route.fulfill({ response });
   });
 
-  return releaseGate;
+  return { captured, release: releaseGate };
+}
+
+/** Waits for `count` distinct GET responses to this id to actually land in the page, so an
+ *  assertion made right after `gate.release()` observes the *settled* result of every held
+ *  response, not a false pass from an assertion that happened to already hold before release. */
+function waitForGetResponses(page: Page, id: string, count: number): Promise<unknown> {
+  const matcher = (response: import('@playwright/test').Response): boolean =>
+    response.url().endsWith(`/api/servers/${id}`) && response.request().method() === 'GET';
+  return Promise.all(Array.from({ length: count }, () => page.waitForResponse(matcher)));
 }
 
 test('@detail a GET resolved after a live server.updated event does not roll the screen back to the older state', async ({
@@ -307,28 +336,26 @@ test('@detail a GET resolved after a live server.updated event does not roll the
   expect(created.status()).toBe(201);
   const { id } = (await created.json()) as { id: string };
 
-  const releaseGate = await gateNextGet(page, id);
+  const gate = await gateGets(page, id, 2);
 
   await page.goto(`/servers/${id}`);
-  // The mount GET is held mid-flight (still `PENDING`, the data it read before the race below).
-  // Wait for the shared SSE stream to be genuinely connected before racing it -- an event
-  // published before the stream opens would never reach this page at all.
+  const captureCount = await gate.captured;
   await expect(page.getByTestId('shell-stream-status')).toHaveCount(0);
 
   const connectResult = await page.request.post(`/api/servers/${id}/connect`);
   expect(connectResult.status()).toBe(202);
 
-  // The live `server.updated` event (newer `updatedAt`, status CONNECTING) arrives and applies.
+  // The live `server.updated` event (newer `updatedAt`, status CONNECTING) arrives and applies --
+  // while every mount GET is still held, unresolved.
   await expect(page.getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTING');
 
-  // Now release the held, older (`PENDING`) GET response -- it resolves strictly after the event.
-  const staleGetSettled = page.waitForResponse(
-    (response) => response.url().endsWith(`/api/servers/${id}`) && response.request().method() === 'GET',
-  );
-  releaseGate();
-  await staleGetSettled;
+  // Now release every held, older (`PENDING`) GET response -- each resolves strictly after the
+  // event, and wait for all of them to actually land before asserting the settled result.
+  const staleGetsSettled = waitForGetResponses(page, id, captureCount);
+  gate.release();
+  await staleGetsSettled;
 
-  // The stale GET must never roll the screen back to PENDING -- the live event stays the truth.
+  // The stale GET(s) must never roll the screen back to PENDING -- the live event stays the truth.
   await expect(page.getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTING');
   await expect(page.getByTestId('server-detail-not-found')).toHaveCount(0);
 });
@@ -345,9 +372,10 @@ test('@detail a server.deleted event followed by a late-resolving GET leaves the
   expect(created.status()).toBe(201);
   const { id } = (await created.json()) as { id: string };
 
-  const releaseGate = await gateNextGet(page, id);
+  const gate = await gateGets(page, id, 2);
 
   await page.goto(`/servers/${id}`);
+  const captureCount = await gate.captured;
   await expect(page.getByTestId('shell-stream-status')).toHaveCount(0);
 
   const deleteResult = await page.request.delete(`/api/servers/${id}`, { data: { confirmName: name } });
@@ -355,15 +383,13 @@ test('@detail a server.deleted event followed by a late-resolving GET leaves the
 
   await expect(page.getByText('This server no longer exists.')).toBeVisible();
 
-  // Release the held GET, captured before the delete -- it still describes the (now-deleted)
+  // Release every held GET, captured before the delete -- each still describes the (now-deleted)
   // PENDING server and resolves strictly after the deletion.
-  const staleGetSettled = page.waitForResponse(
-    (response) => response.url().endsWith(`/api/servers/${id}`) && response.request().method() === 'GET',
-  );
-  releaseGate();
-  await staleGetSettled;
+  const staleGetsSettled = waitForGetResponses(page, id, captureCount);
+  gate.release();
+  await staleGetsSettled;
 
-  // The stale GET must never resurrect the server -- the deletion stays the truth for this mount.
+  // The stale GET(s) must never resurrect the server -- the deletion stays the truth for this mount.
   await expect(page.getByText('This server no longer exists.')).toBeVisible();
   await expect(page.getByTestId('server-detail-toolbar')).toHaveCount(0);
 });
