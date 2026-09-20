@@ -285,6 +285,23 @@ async function readServerEventFrame(stream: LiveStream): Promise<{ event: string
   }
 }
 
+/** Reads frames until one of `eventType` arrives, returning it together with the event names it
+ *  skipped over. Since plan 05-04 the stream carries one `server.discovery_progress` frame per
+ *  discovery check between CONNECTING and the terminal status, so status frames are selected by
+ *  type rather than assumed adjacent -- and the skipped names let a caller pin exactly what was
+ *  allowed to sit in between. */
+async function readFrameOfType(
+  stream: LiveStream,
+  eventType: string,
+): Promise<{ frame: { event: string; data: Record<string, unknown> }; skipped: string[] }> {
+  const skipped: string[] = [];
+  for (;;) {
+    const frame = await readServerEventFrame(stream);
+    if (frame.event === eventType) return { frame, skipped };
+    skipped.push(frame.event);
+  }
+}
+
 function uniqueServerName(): string {
   return `e2e-${randomUUID().replace(/-/g, '').slice(0, 12)}`;
 }
@@ -360,7 +377,11 @@ describe('Phase 4 end-to-end: real sshd + real Redis + real worker + real SSE so
       expect(connectingServer.id).toBe(serverId);
       expect(connectingServer.status).toBe('CONNECTING');
 
-      const connectedFrame = await readServerEventFrame(stream);
+      // Between the two status frames sits the live per-check discovery progress (plan 05-04) --
+      // a real run against a real sshd emits at least one, and nothing else may interleave.
+      const { frame: connectedFrame, skipped: firstRunProgress } = await readFrameOfType(stream, 'server.updated');
+      expect(firstRunProgress.length).toBeGreaterThan(0);
+      expect(firstRunProgress.every((event) => event === 'server.discovery_progress')).toBe(true);
       const connectedServer = connectedFrame.data.server as { id: string; status: string };
       expect(connectedServer.id).toBe(serverId);
       expect(connectedServer.status).not.toBe('CONNECTING');
@@ -387,7 +408,9 @@ describe('Phase 4 end-to-end: real sshd + real Redis + real worker + real SSE so
 
       const secondConnectingFrame = await readServerEventFrame(stream);
       expect((secondConnectingFrame.data.server as { status: string }).status).toBe('CONNECTING');
-      const secondTerminalFrame = await readServerEventFrame(stream);
+      const { frame: secondTerminalFrame, skipped: secondRunProgress } = await readFrameOfType(stream, 'server.updated');
+      expect(secondRunProgress.length).toBeGreaterThan(0);
+      expect(secondRunProgress.every((event) => event === 'server.discovery_progress')).toBe(true);
       const secondTerminalServer = secondTerminalFrame.data.server as { id: string; status: string };
       expect(secondTerminalServer.id).toBe(serverId);
       expect(secondTerminalServer.status).not.toBe('CONNECTING');

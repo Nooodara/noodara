@@ -184,10 +184,19 @@ describe('connect-server-worker: the job handler (D-10/D-15)', () => {
     const [row] = await fixture.db.select().from(servers).where(eq(servers.id, server.id));
     expect(row?.status).toBe('CONNECTED');
 
+    // Since plan 05-04 the same stream also carries one `server.discovery_progress` event per
+    // check, so the two status events are selected by type rather than assumed adjacent. The
+    // ordering is still pinned: CONNECTING first, CONNECTED last, nothing but progress between.
     const published = fixture.events.slice(eventsBefore);
-    expect(published).toHaveLength(2);
-    expect(published[0]).toMatchObject({ type: 'server.updated', server: { status: 'CONNECTING' } });
-    expect(published[1]).toMatchObject({ type: 'server.updated', server: { status: 'CONNECTED' } });
+    const statusUpdates = published.filter((event) => event.type === 'server.updated');
+    expect(statusUpdates).toHaveLength(2);
+    expect(statusUpdates[0]).toMatchObject({ type: 'server.updated', server: { status: 'CONNECTING' } });
+    expect(statusUpdates[1]).toMatchObject({ type: 'server.updated', server: { status: 'CONNECTED' } });
+
+    expect(published[0]).toBe(statusUpdates[0]);
+    expect(published.at(-1)).toBe(statusUpdates[1]);
+    const between = published.slice(1, -1);
+    expect(between.every((event) => event.type === 'server.discovery_progress')).toBe(true);
   });
 
   it('a NOT_FOUND service result completes the job (never fails it)', async () => {
