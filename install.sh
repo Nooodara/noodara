@@ -228,11 +228,23 @@ noodara_check_resources() {
     noodara_warn "Detected ${ram_mb}MB RAM, below the 2048MB recommended minimum. Continuing, but performance may be degraded."
   fi
 
+  # Post-execution fix (orchestrator audit WR-05): previously stripped exactly one path segment,
+  # which only happened to be correct for the real, fixed default (/opt/noodara, since /opt always
+  # exists on a stock Ubuntu install) -- a genuinely nested, still-nonexistent NOODARA_INSTALL_DIR
+  # (a test override, or any future default) fell through to a `df` call against a path that also
+  # did not exist, silently producing disk_kb="" -> disk_mb=0 -> a confusing insufficient-disk
+  # failure rather than a real measurement. This now walks the real ancestor chain -- one segment
+  # at a time via `${x%/*}` -- until it finds a directory that genuinely exists, with `/` as the
+  # floor, matching both this function's own comment above and docs/install.md's claim.
   disk_target="$NOODARA_INSTALL_DIR"
-  if [ ! -d "$disk_target" ]; then
-    disk_target="${NOODARA_INSTALL_DIR%/*}"
+  while [ ! -d "$disk_target" ]; do
+    if [ "$disk_target" = "/" ] || [ -z "$disk_target" ]; then
+      disk_target="/"
+      break
+    fi
+    disk_target="${disk_target%/*}"
     [ -z "$disk_target" ] && disk_target="/"
-  fi
+  done
   disk_kb=$(df -Pk "$disk_target" 2>/dev/null | awk 'NR==2 { print $4 }')
   disk_mb=$(awk -v kb="${disk_kb:-0}" 'BEGIN { printf "%d\n", kb / 1024 }')
   if [ "$disk_mb" -lt 5120 ]; then
@@ -672,6 +684,50 @@ noodara_env_assert_no_single_quote() {
   esac
 }
 
+# Admin password policy mirror (orchestrator audit WR-04, design decision -- recorded in
+# STATE.md). packages/domain/src/validators/password.ts's `validatePassword` is the single real
+# source of truth, enforced by the control plane at boot (bootstrap-admin.ts's preseedAdmin) --
+# but that enforcement happens only after `docker compose up`, so a policy-violating
+# NOODARA_ADMIN_PASSWORD previously surfaced as an opaque exit 53 only after this installer's full
+# NOODARA_HEALTH_WAIT_ATTEMPTS x NOODARA_HEALTH_WAIT_INTERVAL budget (5 minutes by default)
+# elapsed. install.sh cheaply and stably mirrors only the two parts of that policy that are fixed
+# and simple enough not to drift silently: the minimum length, and the equals-identifier rule.
+# Deliberately NOT mirrored here: the common-password list (packages/domain/src/validators/
+# common-passwords.ts) -- a data file, not a stable constant, that a shell copy would eventually
+# drift from; docs/install.md instead tells the operator that check happens at control-plane boot
+# and surfaces as exit 53 with the real reason in the `api` service's own log tail.
+#
+# tests/unit/installer/admin-password-policy.test.ts's own guard test extracts
+# PASSWORD_MIN_LENGTH's real numeric value out of password.ts's TypeScript source at test time and
+# asserts it equals the constant below, so the two can never silently drift apart.
+readonly NOODARA_ADMIN_PASSWORD_MIN_LENGTH=12
+
+# Fails with reason env-write-failed, naming the violated rule but never echoing
+# `_noodara_vap_password`, when NOODARA_ADMIN_PASSWORD is shorter than
+# NOODARA_ADMIN_PASSWORD_MIN_LENGTH or equals the admin email address (or its local part),
+# case-insensitively -- matching validatePassword's own PASSWORD_TOO_SHORT/
+# PASSWORD_EQUALS_IDENTIFIER checks. `${#value}` counts BYTES under dash/POSIX sh, never Unicode
+# characters: for a password containing multi-byte UTF-8 characters the byte count is always >=
+# the character count, so this check can only ever ACCEPT a password that is genuinely too short
+# in real characters (a false accept), never REJECT one that is genuinely long enough (a false
+# reject) -- the real, character-accurate rejection still happens in the control plane at boot.
+# That is the safe direction for a fast, best-effort shell-side pre-filter to err in.
+noodara_validate_admin_password_policy() {
+  _noodara_vap_email="$1"
+  _noodara_vap_password="$2"
+
+  if [ "${#_noodara_vap_password}" -lt "$NOODARA_ADMIN_PASSWORD_MIN_LENGTH" ]; then
+    noodara_fail env-write-failed "NOODARA_ADMIN_PASSWORD must be at least ${NOODARA_ADMIN_PASSWORD_MIN_LENGTH} characters (the control plane's admin password policy). Choose a longer password and re-run this installer."
+  fi
+
+  _noodara_vap_email_lower=$(printf '%s' "$_noodara_vap_email" | tr 'A-Z' 'a-z')
+  _noodara_vap_password_lower=$(printf '%s' "$_noodara_vap_password" | tr 'A-Z' 'a-z')
+  _noodara_vap_local_part="${_noodara_vap_email_lower%%@*}"
+  if [ "$_noodara_vap_password_lower" = "$_noodara_vap_email_lower" ] || [ "$_noodara_vap_password_lower" = "$_noodara_vap_local_part" ]; then
+    noodara_fail env-write-failed "NOODARA_ADMIN_PASSWORD must not equal the admin email address, or the part of it before the @ (the control plane's admin password policy). Choose a different password and re-run this installer."
+  fi
+}
+
 # Generates a fresh random secret. `base64` decodes to exactly 32 raw bytes -- the only shape
 # apps/control-plane/src/env.ts's NOODARA_MASTER_KEY validator accepts. `hex` is 64 lowercase hex
 # characters and is the shape every other generated secret must use: a base64 secret's '/', '+' or
@@ -755,13 +811,19 @@ noodara_generate_env() {
     noodara_env_assert_single_line NOODARA_ADMIN_PASSWORD "$NOODARA_ADMIN_PASSWORD"
     noodara_env_assert_no_single_quote NOODARA_ADMIN_PASSWORD "$NOODARA_ADMIN_PASSWORD"
   fi
+  # WR-04: mirrors the control plane's own length/equals-identifier admin password policy
+  # up front, before anything is written -- see noodara_validate_admin_password_policy's own
+  # comment for exactly what is (and is deliberately not) mirrored here.
+  if [ -n "${NOODARA_ADMIN_EMAIL:-}" ] && [ -n "${NOODARA_ADMIN_PASSWORD:-}" ]; then
+    noodara_validate_admin_password_policy "$NOODARA_ADMIN_EMAIL" "$NOODARA_ADMIN_PASSWORD"
+  fi
 
   env_dir="${env_path%/*}"
   if [ "$env_dir" = "$env_path" ]; then
     env_dir="."
   fi
   if [ ! -d "$env_dir" ]; then
-    (umask 077 && mkdir -p "$env_dir")
+    (umask 077 && mkdir -p "$env_dir") || noodara_fail env-write-failed "Failed to create $env_dir."
   fi
 
   master_key=$(noodara_generate_secret base64)
@@ -843,6 +905,19 @@ noodara_env_has_key() {
 
 # Appends "<key>=<value>" as a new line only when noodara_env_has_key reports the key absent;
 # returns 0 without writing when it is already present (D-11: an existing value is never touched).
+#
+# Post-execution fix (orchestrator audit WR-01): previously appended directly to the live file via
+# `>> "$path"` -- the one `.env`-mutating writer in this file that did not follow the same
+# temp-file-then-atomic-`mv` pattern every sibling writer uses. Now copies the existing content to
+# a `.tmp.$$` file in the same directory under `umask 077`, appends the new line there, and only
+# `mv`s it over the original once the write is proven to have succeeded -- so a write failure
+# partway through (disk-full, an I/O error) can never leave a truncated/malformed line appended
+# directly to the real, in-use `.env`. `cat "$path"` reproduces every existing byte exactly,
+# including a file with no trailing newline: `tail -c 1` on the ORIGINAL file (read once, before
+# any write) reports whether its own last byte is already a newline, so this function emits its
+# own leading newline only when one is genuinely missing -- the new key always lands on its own
+# line, and no existing byte, including the previous last line's own terminator, is ever altered
+# beyond that.
 noodara_env_append_if_missing() {
   path="$1"
   key="$2"
@@ -856,7 +931,28 @@ noodara_env_append_if_missing() {
   if noodara_env_has_key "$path" "$key"; then
     return 0
   fi
-  printf '%s=%s\n' "$key" "$value" >> "$path"
+
+  dir="${path%/*}"
+  if [ "$dir" = "$path" ]; then
+    dir="."
+  fi
+  tmp_file="${dir}/.noodara-env-append-tmp.$$"
+  _noodara_eaim_last=$(tail -c 1 "$path" 2>/dev/null)
+  if ! (
+    umask 077
+    cat "$path"
+    if [ -n "$_noodara_eaim_last" ]; then
+      printf '\n'
+    fi
+    printf '%s=%s\n' "$key" "$value"
+  ) > "$tmp_file"; then
+    rm -f "$tmp_file"
+    noodara_fail env-write-failed "Failed to append $key to $path."
+  fi
+  if ! mv "$tmp_file" "$path"; then
+    rm -f "$tmp_file"
+    noodara_fail env-write-failed "Failed to append $key to $path."
+  fi
 }
 
 # Copies `path` to `<path>.bak-<YYYYmmddHHMMSS>` and chmods the copy 600 -- written before any
@@ -885,7 +981,12 @@ noodara_set_env_value() {
     dir="."
   fi
   tmp_file="${dir}/.noodara-env-tmp.$$"
-  (
+  # Post-execution fix (orchestrator audit WR-02): the awk write and the final `mv` now each have
+  # their own named `noodara_fail env-write-failed` on failure, and the temp file -- a full copy
+  # of `.env`, mode 600, still containing every secret -- is removed on either failure, matching
+  # noodara_docker_download_gpg_key/noodara_docker_write_sources_list's own precedent. Never
+  # echoes `value` in the failure message, only `key` (a literal this file's own callers control).
+  if ! (
     umask 077
     # `key`/`value` are passed through ENVIRON, never `awk -v` -- `awk -v`'s assignment operand
     # goes through the same backslash-escape processing as a string constant, so a value
@@ -897,8 +998,14 @@ noodara_set_env_value() {
       $0 ~ pattern { print k "=" v; next }
       { print }
     ' "$path" > "$tmp_file"
-  )
-  mv "$tmp_file" "$path"
+  ); then
+    rm -f "$tmp_file"
+    noodara_fail env-write-failed "Failed to write $key to $path."
+  fi
+  if ! mv "$tmp_file" "$path"; then
+    rm -f "$tmp_file"
+    noodara_fail env-write-failed "Failed to write $key to $path."
+  fi
 }
 
 # Additive merge over an existing .env: backs up once before any write, rewrites only the
@@ -2164,6 +2271,19 @@ noodara_main() {
         noodara_write_log "Re-run: already on version ${_noodara_main_version}, .env unchanged (D-09 no-op)"
       else
         _noodara_main_is_repair=1
+        # WR-04: the second path admin credentials can matter on. D-11 means install.sh never
+        # touches or revalidates NOODARA_ADMIN_EMAIL/NOODARA_ADMIN_PASSWORD once .env already has
+        # them (noodara_merge_env's own append-pairs list never includes them) -- so if a prior
+        # attempt wrote .env with a policy-violating admin password, every repair would otherwise
+        # repeat the exact same NOODARA_HEALTH_WAIT_ATTEMPTS x NOODARA_HEALTH_WAIT_INTERVAL stall
+        # and exit 53 for the identical, already-known reason. Read from .env -- never from the
+        # operator's current shell environment, which this run's noodara_merge_env/
+        # noodara_generate_env never consult for these two keys on a re-run either.
+        _noodara_main_repair_admin_email=$(noodara_env_get_value "$_noodara_main_env_path" NOODARA_ADMIN_EMAIL)
+        _noodara_main_repair_admin_password=$(noodara_env_get_value "$_noodara_main_env_path" NOODARA_ADMIN_PASSWORD)
+        if [ -n "$_noodara_main_repair_admin_email" ] && [ -n "$_noodara_main_repair_admin_password" ]; then
+          noodara_validate_admin_password_policy "$_noodara_main_repair_admin_email" "$_noodara_main_repair_admin_password"
+        fi
         noodara_note "The stack is not healthy; starting it."
         noodara_write_log "Re-run: already on version ${_noodara_main_version} but the stack was not healthy -- repairing (D-09/Finding E)"
       fi
