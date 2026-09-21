@@ -8,7 +8,7 @@
 // hardcoded string, echoed in an expect() failure message beyond structural comparison, or
 // compared across test runs -- only shape/length/charset and round-trip equality within the same
 // generation are asserted.
-import { mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -144,6 +144,7 @@ describe.each(posixInterpreters())('install.sh secret generation (%s)', (interpr
 
 const EXPECTED_FRESH_ENV_KEYS = [
   'NOODARA_VERSION',
+  'NOODARA_PREVIOUS_VERSION',
   'NOODARA_IMAGE_PREFIX',
   'NOODARA_PORT',
   'NOODARA_PUBLIC_URL',
@@ -306,6 +307,17 @@ describe.each(posixInterpreters())('install.sh noodara_generate_env (%s)', (inte
       }
     }
   });
+
+  it('initializes NOODARA_PREVIOUS_VERSION to the same value as NOODARA_VERSION on a fresh install', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+    const envPath = join(dir, '.env');
+
+    generateEnv(interpreter, envPath, 'https://noodara.example.com', '3000', '0.1.0', 'ghcr.io/example/noodara');
+    const parsed = parseEnvFile(readFileSync(envPath, 'utf8'));
+
+    expect(parsed.NOODARA_PREVIOUS_VERSION).toBe('0.1.0');
+    expect(parsed.NOODARA_VERSION).toBe('0.1.0');
+  });
 });
 
 describe.each(posixInterpreters())('install.sh noodara_secure_env_file (%s)', (interpreter) => {
@@ -318,5 +330,170 @@ describe.each(posixInterpreters())('install.sh noodara_secure_env_file (%s)', (i
 
     expect(result.status).toBe(0);
     expect(statSync(file).mode & 0o777).toBe(0o600);
+  });
+});
+
+const COMPLETE_ENV_LINES = [
+  'NOODARA_VERSION=0.1.0',
+  'NOODARA_PREVIOUS_VERSION=0.1.0',
+  'NOODARA_IMAGE_PREFIX=ghcr.io/example/noodara',
+  'NOODARA_PORT=3000',
+  'NOODARA_PUBLIC_URL=https://noodara.example.com',
+  'NOODARA_MASTER_KEY=abcdEFGH1234567890abcdEFGH1234567890abcd==',
+  'BETTER_AUTH_SECRET=aValueWithAHash#NotAComment',
+  'POSTGRES_USER=noodara',
+  'POSTGRES_PASSWORD=abc123=def',
+  'POSTGRES_DB=noodara',
+  'REDIS_PASSWORD=redispw123',
+  'DATABASE_URL=postgresql://noodara:abc123=def@postgres:5432/noodara',
+  'REDIS_URL=redis://:redispw123@redis:6379',
+  'PORT=3000',
+  '',
+];
+
+describe.each(posixInterpreters())('install.sh env merge and backup (D-11) (%s)', (interpreter) => {
+  describe('noodara_env_has_key', () => {
+    it('matches only an anchored KEY= line, never a suffix or prefix collision', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const file = join(dir, '.env');
+      writeFileSync(file, 'DATABASE_URL=postgres://x\nDATABASE_URL_EXTRA=y\n');
+
+      const hasIt = runInstallerShell(interpreter, `noodara_env_has_key ${shQuote(file)} DATABASE_URL`);
+      expect(hasIt.status).toBe(0);
+
+      const suffixMiss = runInstallerShell(interpreter, `noodara_env_has_key ${shQuote(file)} ATABASE_URL`);
+      expect(suffixMiss.status).not.toBe(0);
+
+      const prefixMiss = runInstallerShell(
+        interpreter,
+        `noodara_env_has_key ${shQuote(file)} DATABASE_URL_EXTRA_TWO`,
+      );
+      expect(prefixMiss.status).not.toBe(0);
+    });
+  });
+
+  describe('noodara_env_append_if_missing', () => {
+    it('appends a line only when the key is absent', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const file = join(dir, '.env');
+      writeFileSync(file, 'EXISTING_KEY=1\n');
+
+      const result = runInstallerShell(
+        interpreter,
+        `noodara_env_append_if_missing ${shQuote(file)} NEW_KEY newvalue`,
+      );
+
+      expect(result.status).toBe(0);
+      expect(readFileSync(file, 'utf8')).toContain('NEW_KEY=newvalue');
+    });
+
+    it('returns 0 without writing when the key is already present', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const file = join(dir, '.env');
+      writeFileSync(file, 'EXISTING_KEY=original\n');
+
+      const result = runInstallerShell(
+        interpreter,
+        `noodara_env_append_if_missing ${shQuote(file)} EXISTING_KEY replacement`,
+      );
+
+      expect(result.status).toBe(0);
+      expect(readFileSync(file, 'utf8')).toBe('EXISTING_KEY=original\n');
+    });
+  });
+
+  describe('noodara_backup_env', () => {
+    it('copies to <path>.bak-<timestamp> and chmods the copy 600', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const file = join(dir, '.env');
+      writeFileSync(file, 'X=1\n', { mode: 0o600 });
+
+      const result = runInstallerShell(interpreter, `noodara_backup_env ${shQuote(file)}`);
+
+      expect(result.status).toBe(0);
+      const backups = readdirSync(dir).filter((name) => name.startsWith('.env.bak-'));
+      expect(backups).toHaveLength(1);
+      const backupPath = join(dir, backups[0] ?? '');
+      expect(readFileSync(backupPath, 'utf8')).toBe('X=1\n');
+      expect(statSync(backupPath).mode & 0o777).toBe(0o600);
+    });
+  });
+
+  describe('noodara_set_env_value', () => {
+    it('rewrites one line in place, leaving every other line byte-identical', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const file = join(dir, '.env');
+      writeFileSync(file, COMPLETE_ENV_LINES.join('\n'));
+      const before = readFileSync(file, 'utf8');
+
+      const result = runInstallerShell(interpreter, `noodara_set_env_value ${shQuote(file)} NOODARA_VERSION 0.2.0`);
+
+      expect(result.status).toBe(0);
+      const after = readFileSync(file, 'utf8');
+      const beforeLines = before.split('\n');
+      const afterLines = after.split('\n');
+      expect(afterLines).toHaveLength(beforeLines.length);
+      const diffIndexes = beforeLines
+        .map((line, i) => (line !== afterLines[i] ? i : -1))
+        .filter((i) => i !== -1);
+      expect(diffIndexes).toEqual([0]);
+      expect(afterLines[0]).toBe('NOODARA_VERSION=0.2.0');
+    });
+  });
+
+  describe('noodara_merge_env', () => {
+    it('on a file containing every current key, changes exactly one line -- NOODARA_VERSION', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const file = join(dir, '.env');
+      writeFileSync(file, COMPLETE_ENV_LINES.join('\n'));
+      const before = readFileSync(file, 'utf8');
+
+      const result = runInstallerShell(interpreter, `noodara_merge_env ${shQuote(file)} 0.2.0`);
+
+      expect(result.status).toBe(0);
+      const after = readFileSync(file, 'utf8');
+      const beforeLines = before.split('\n');
+      const afterLines = after.split('\n');
+      expect(afterLines).toHaveLength(beforeLines.length);
+      const diffs = beforeLines.filter((line, i) => line !== afterLines[i]);
+      expect(diffs).toHaveLength(1);
+      const parsed = parseEnvFile(after);
+      expect(parsed.NOODARA_VERSION).toBe('0.2.0');
+    });
+
+    it('on a file missing a newly required key, appends that key and leaves pre-existing lines byte-identical', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const file = join(dir, '.env');
+      const linesWithoutOne = COMPLETE_ENV_LINES.filter((line) => !line.startsWith('NOODARA_IMAGE_PREFIX='));
+      writeFileSync(file, linesWithoutOne.join('\n'));
+      const before = readFileSync(file, 'utf8');
+
+      const result = runInstallerShell(
+        interpreter,
+        `noodara_merge_env ${shQuote(file)} 0.1.0 NOODARA_IMAGE_PREFIX ${shQuote('ghcr.io/example/noodara')}`,
+      );
+
+      expect(result.status).toBe(0);
+      const after = readFileSync(file, 'utf8');
+      for (const line of before.split('\n')) {
+        if (line === '') continue;
+        expect(after).toContain(line);
+      }
+      const parsed = parseEnvFile(after);
+      expect(parsed.NOODARA_IMAGE_PREFIX).toBe('ghcr.io/example/noodara');
+    });
+
+    it('backs up the file exactly once before the first write and re-secures it to mode 600 afterward', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const file = join(dir, '.env');
+      writeFileSync(file, COMPLETE_ENV_LINES.join('\n'), { mode: 0o644 });
+
+      const result = runInstallerShell(interpreter, `noodara_merge_env ${shQuote(file)} 0.2.0`);
+
+      expect(result.status).toBe(0);
+      const backups = readdirSync(dir).filter((name) => name.startsWith('.env.bak-'));
+      expect(backups).toHaveLength(1);
+      expect(statSync(file).mode & 0o777).toBe(0o600);
+    });
   });
 });
