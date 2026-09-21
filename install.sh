@@ -1674,6 +1674,16 @@ noodara_stack_healthy_now() {
   [ "$_noodara_shn_api" = "healthy" ] && [ "$_noodara_shn_web" = "healthy" ]
 }
 
+# The live State ("running"/"created"/"exited"/"dead", or empty when no container exists for the
+# service at all) from `docker compose ps -a` (`-a` so a container that was created but never
+# started, or one that already exited, is still reported -- not just running containers). Distinct
+# from noodara_service_health above: State answers "does a running container exist to even
+# health-check in the first place", which noodara_compose_up's own Finding F fix (below) needs to
+# know BEFORE ever deciding whether polling for health makes any sense at all.
+noodara_service_state() {
+  (cd "$NOODARA_INSTALL_DIR" && docker compose ps -a --format json) | noodara_compose_json_field_for_service "$1" State
+}
+
 # The exit code of a (possibly already-exited) service, from `docker compose ps -a` (`-a` so a
 # one-shot like `migrate` that has already exited is still reported, not just running containers).
 noodara_service_exit_code() {
@@ -1729,14 +1739,34 @@ noodara_pull_images() {
 # this installer ever gets a chance to run its own noodara_wait_for_health -- Compose itself
 # refuses to finish `up -d` when a service another service `depends_on: condition: service_healthy`
 # never becomes healthy (this docker-compose.yml's own topology: web on api, api/worker on redis,
-# migrate on postgres). A non-migrate `up -d` failure therefore no longer fails outright here --
-# noodara_main's very next call is noodara_wait_for_health, which judges the containers this `up
-# -d` attempt already created on their OWN real health and produces the full, already-tested D-12
-# diagnostic (service name, redacted log tail, rollback hint) regardless of which code path first
-# noticed the underlying problem. The previous behavior (a generic, un-actionable "Failed to start
-# services" message with no service name and no log tail) violated D-12's own requirement for
-# exactly this failure shape.
+# migrate on postgres). A non-migrate `up -d` failure defers to noodara_wait_for_health, which
+# judges the containers this `up -d` attempt already created on their OWN real health and produces
+# the full, already-tested D-12 diagnostic (service name, redacted log tail, rollback hint)
+# regardless of which code path first noticed the underlying problem -- but ONLY once api/web are
+# genuinely running (see the Finding F fix immediately below); the previous behavior (a generic,
+# un-actionable "Failed to start services" message with no service name and no log tail) violated
+# D-12's own requirement for exactly this failure shape.
+#
+# Post-execution fix (06-12-PLAN.md, orchestrator audit Finding F): the fix above was ITSELF a
+# regression for every `up -d` failure that is NOT a health problem at all -- an unresolvable image
+# reference, an invalid compose file, a port already allocated, a daemon-side error -- none of
+# which ever create a running api/web container. Deferring unconditionally to
+# noodara_wait_for_health in THAT case used to poll for the FULL health budget (up to
+# NOODARA_HEALTH_WAIT_ATTEMPTS x NOODARA_HEALTH_WAIT_INTERVAL, 5 minutes by default) before finally
+# reporting a generic timeout with NOTHING to show as a log tail, while Compose's own real error
+# message had long scrolled off the top of the operator's terminal -- and made exit 51
+# (compose-up-failed) permanently unreachable. A single, immediate read of api/web's own container
+# STATE (never Health -- State answers "does a running container exist to even health-check",
+# noodara_service_state above) classifies the failure BEFORE ever touching noodara_wait_for_health:
+# not-running (absent/created/exited/dead) -> fail now, naming Compose's own error (already on
+# stderr above this function's own output) and a redacted `docker compose ps -a` state table, zero
+# health polling at all; running -> defer to noodara_wait_for_health exactly as the prior fix
+# already proved correct. Accepts an optional `$1` context, `"repair"`, mirroring
+# noodara_wait_for_health's own -- a repair run's .env may still carry an OLD NOODARA_PREVIOUS_VERSION
+# from a real, earlier upgrade, and comparing it against NOODARA_VERSION alone would wrongly treat
+# that as "this run changed the version" (06-09 Finding E's own precedent for the identical trap).
 noodara_compose_up() {
+  _noodara_cu_context="${1:-}"
   noodara_step "Starting services..."
   if ! (cd "$NOODARA_INSTALL_DIR" && docker compose up -d); then
     if noodara_migrate_did_fail; then
@@ -1744,6 +1774,24 @@ noodara_compose_up() {
       printf '%s\n' "$_noodara_cu_tail" >&2
       noodara_fail migrations-failed "Database migrations failed. See the migrate service log tail above. Data and secrets are untouched."
     fi
+
+    _noodara_cu_api_state=$(noodara_service_state api)
+    _noodara_cu_web_state=$(noodara_service_state web)
+    if [ "$_noodara_cu_api_state" != "running" ] || [ "$_noodara_cu_web_state" != "running" ]; then
+      _noodara_cu_ps=$(cd "$NOODARA_INSTALL_DIR" && docker compose ps -a 2>&1 | noodara_redact_diagnostic_text)
+      printf '%s\n' "$_noodara_cu_ps" >&2
+
+      _noodara_cu_message="Failed to start services with docker compose up -d -- see Compose's own error and the service state above. Data and secrets are untouched."
+      if [ "$_noodara_cu_context" != "repair" ]; then
+        _noodara_cu_version=$(noodara_env_get_value "${NOODARA_INSTALL_DIR}/${NOODARA_ENV_FILE}" NOODARA_VERSION)
+        _noodara_cu_previous=$(noodara_env_get_value "${NOODARA_INSTALL_DIR}/${NOODARA_ENV_FILE}" NOODARA_PREVIOUS_VERSION)
+        if [ -n "$_noodara_cu_previous" ] && [ "$_noodara_cu_previous" != "$_noodara_cu_version" ]; then
+          _noodara_cu_message="${_noodara_cu_message} To go back, re-run this installer with NOODARA_VERSION=${_noodara_cu_previous}."
+        fi
+      fi
+      noodara_fail compose-up-failed "$_noodara_cu_message"
+    fi
+
     noodara_note "docker compose up -d reported a failure -- checking service health directly."
   fi
 }
@@ -1786,13 +1834,27 @@ noodara_wait_for_health() {
       noodara_step "All services are healthy."
       return 0
     fi
+    # Post-execution fix (06-12-PLAN.md, orchestrator audit Finding F): "unhealthy" is Docker's own
+    # DEFINITIVE outcome (the container's healthcheck already exhausted its own retries, per
+    # docker-compose.yml's own retries: 10) -- continuing to poll for the rest of the budget only
+    # delays reporting a failure that has already, genuinely happened. "starting"/empty are NOT
+    # definitive (the app may simply be slow, or Compose's own dependency-wait gave up early while
+    # the container itself is still coming up) and keep polling within the bounded budget exactly
+    # as before.
+    if [ "$_noodara_wfh_api" = "unhealthy" ] || [ "$_noodara_wfh_web" = "unhealthy" ]; then
+      break
+    fi
     _noodara_wfh_attempt=$(awk -v n="$_noodara_wfh_attempt" 'BEGIN { print n + 1 }')
     sleep "$NOODARA_HEALTH_WAIT_INTERVAL"
   done
 
   _noodara_wfh_bad=api
-  if [ "$_noodara_wfh_api" = "healthy" ]; then
-    _noodara_wfh_bad=web
+  if [ "$_noodara_wfh_api" != "unhealthy" ]; then
+    if [ "$_noodara_wfh_web" = "unhealthy" ]; then
+      _noodara_wfh_bad=web
+    elif [ "$_noodara_wfh_api" = "healthy" ]; then
+      _noodara_wfh_bad=web
+    fi
   fi
   _noodara_wfh_tail=$(cd "$NOODARA_INSTALL_DIR" && docker compose logs --tail 50 "$_noodara_wfh_bad" 2>&1 | noodara_redact_diagnostic_text)
   printf '%s\n' "$_noodara_wfh_tail" >&2
@@ -2121,11 +2183,16 @@ noodara_main() {
   else
     noodara_pull_images
     noodara_write_log "Images pulled (or skipped via NOODARA_INTERNAL_IMAGE_PREFIX)"
-    noodara_compose_up
+    if [ "$_noodara_main_is_repair" = "1" ]; then
+      # Finding E / Finding F: no version change happened on this path -- neither noodara_compose_up's
+      # own immediate-failure diagnostic nor noodara_wait_for_health's own timeout diagnostic must
+      # claim an upgrade took place.
+      noodara_compose_up repair
+    else
+      noodara_compose_up
+    fi
     noodara_write_log "docker compose up -d completed"
     if [ "$_noodara_main_is_repair" = "1" ]; then
-      # Finding E: no version change happened on this path -- the D-12 rollback hint must not
-      # claim an upgrade took place.
       noodara_wait_for_health repair
     else
       noodara_wait_for_health

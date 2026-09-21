@@ -1121,7 +1121,10 @@ describe.each(posixInterpreters())('install.sh noodara_compose_up (%s)', (interp
     expect(result.stderr).toContain('API CONTAINER LOG TAIL');
     expect(result.stderr).toContain('NOODARA_VERSION=0.9.0');
     const calls = readFileSync(callLog, 'utf8');
-    expect(calls.split('\n').filter((line) => line === 'docker compose ps --format json')).toHaveLength(1);
+    // noodara_service_health issues one `docker compose ps --format json` invocation PER service
+    // (api, then web) -- a single read cycle is genuinely 2 invocations, not 1; proves the
+    // short-circuit stopped after the FIRST loop iteration, never reaching a second.
+    expect(calls.split('\n').filter((line) => line === 'docker compose ps --format json')).toHaveLength(2);
   });
 
   it('up -d fails but api recovers from "starting" to "healthy" (Compose\'s own dependency-wait can time out while the app is merely slow) -- overall success', () => {
@@ -1280,8 +1283,9 @@ describe.each(posixInterpreters())('install.sh noodara_wait_for_health (%s)', (i
       'noodara_wait_for_health',
     ].join('\n');
 
-    // Deliberately generous (10 attempts) -- proves the short-circuit fires on the second read
-    // (as soon as "unhealthy" appears), not merely that a small budget happens to line up with it.
+    // Deliberately generous (10 attempts) -- proves the short-circuit fires on the second loop
+    // iteration (as soon as "unhealthy" appears), not merely that a small budget happens to line
+    // up with it.
     const result = runInstallerShell(interpreter, snippet, {
       env: { NOODARA_INSTALL_DIR: installDir, NOODARA_HEALTH_WAIT_ATTEMPTS: '10', NOODARA_HEALTH_WAIT_INTERVAL: '0' },
     });
@@ -1289,7 +1293,10 @@ describe.each(posixInterpreters())('install.sh noodara_wait_for_health (%s)', (i
     expect(result.status).toBe(53);
     expect(result.stderr).toContain('api');
     expect(result.stderr).toContain('API FLIPPED UNHEALTHY LOG TAIL');
-    expect(readFileSync(pollCountFile, 'utf8').trim().split('\n')).toHaveLength(2);
+    // noodara_service_health issues one `docker compose ps --format json` invocation PER service
+    // (api, then web) -- 2 full loop iterations (4 invocations) is the short-circuit firing on
+    // iteration 2, not exhausting the full 10-attempt budget (which would be 20 invocations).
+    expect(readFileSync(pollCountFile, 'utf8').trim().split('\n')).toHaveLength(4);
   });
 
   it('fails with exit 53 on timeout, naming the unhealthy service and the NOODARA_VERSION=<previous> remedy', () => {
