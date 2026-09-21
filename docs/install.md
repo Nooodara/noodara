@@ -109,10 +109,26 @@ will not reprint it once an admin has been created.
 To skip the token step entirely, set both `NOODARA_ADMIN_EMAIL` and `NOODARA_ADMIN_PASSWORD`
 before running the installer. Both are required together — setting only one makes the installer
 print a warning naming both variables and fall back to the normal token flow, using neither value.
-The password must be at least 12 characters; it may contain any character except a literal single
-quote (`'`), which cannot be written safely into the generated `.env` file and is rejected outright
-before anything is written. Once the admin account exists, you may remove both variables from
-`/opt/noodara/.env` — they are only ever read at install time.
+
+Before anything is written, the installer itself checks `NOODARA_ADMIN_PASSWORD` for: no embedded
+newline or carriage return, no literal single quote (`'`, which cannot be written safely into the
+generated `.env` file), at least 12 characters, and that it does not equal the admin email address
+or the part of it before the `@`. A password failing any of these is rejected immediately, before
+`.env` is touched.
+
+The control plane enforces the rest of its password policy — most importantly, rejecting a
+common or easily guessed password — only later, inside the `api` container, once
+`docker compose up` has already started it. A password that fails that check does not fail
+immediately: the installer waits out its full health-check budget (5 minutes by default) before
+exiting with code 53, with the real reason (for example "Password is too common") in the `api`
+service's own log tail:
+
+```sh
+docker compose -f /opt/noodara/docker-compose.yml logs api
+```
+
+Once the admin account exists, you may remove both variables from `/opt/noodara/.env` — they are
+only ever read at install time.
 
 ## Plain HTTP warning
 
@@ -180,7 +196,7 @@ These are the only variables an operator is expected to set. Every other environ
 | `NOODARA_PORT` | `3000` | The host port the panel is published on. Must be a number between 1 and 65535. |
 | `NOODARA_PUBLIC_URL` | Auto-detected public IP, then local IP, over `http://` | The public origin the panel is reachable at. Must start with `http://` or `https://` followed by a host, and must not contain whitespace, a single quote, a double quote, a backslash, a dollar sign, a backtick or an embedded newline/carriage return. |
 | `NOODARA_ADMIN_EMAIL` | unset | Pre-seeds the admin account's email. Must be set together with `NOODARA_ADMIN_PASSWORD`, or not at all. |
-| `NOODARA_ADMIN_PASSWORD` | unset | Pre-seeds the admin account's password. At least 12 characters, no single quote. Must be set together with `NOODARA_ADMIN_EMAIL`, or not at all. |
+| `NOODARA_ADMIN_PASSWORD` | unset | Pre-seeds the admin account's password. At least 12 characters, no single quote, must not equal the admin email or the part of it before the `@`. The control plane also rejects a common password, checked later at boot (see "First login"). Must be set together with `NOODARA_ADMIN_EMAIL`, or not at all. |
 | `NOODARA_SKIP_RESOURCE_CHECK` | unset | Set to `1` to skip the RAM/disk checks entirely — a deliberate override for a host you already know is fine. |
 
 None of these variables — or any value derived from them — may contain an embedded newline or

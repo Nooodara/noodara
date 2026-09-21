@@ -168,6 +168,34 @@ describe('docs/install.md accuracy against install.sh', () => {
     expect(docs).toContain('docker compose -f /opt/noodara/docker-compose.yml up -d');
     expect(docs.toLowerCase()).toMatch(/re-running the installer does not apply an `?\.env`? edit/);
   });
+
+  // Post-execution fix (orchestrator audit WR-04): the admin-password minimum length install.sh
+  // itself checks up front (NOODARA_ADMIN_PASSWORD_MIN_LENGTH) must be the same number
+  // docs/install.md documents -- extracted from install.sh's own source, never hand-typed twice.
+  it("the documented admin-password minimum length matches install.sh's own NOODARA_ADMIN_PASSWORD_MIN_LENGTH constant", () => {
+    const source = installSh();
+    const match = source.match(/readonly NOODARA_ADMIN_PASSWORD_MIN_LENGTH=(\d+)/);
+    expect(match, 'NOODARA_ADMIN_PASSWORD_MIN_LENGTH constant not found in install.sh').toBeTruthy();
+    const minLength = match?.[1] ?? '';
+
+    const docs = installDocs();
+    expect(docs).toContain(`at least ${minLength} characters`);
+  });
+
+  // Post-execution fix (orchestrator audit WR-04): docs/install.md must plainly say the
+  // common-password check happens later, at control-plane boot, and name the real diagnostic
+  // command -- never imply the full password policy is rejected outright before anything is
+  // written (the finding this fix addresses).
+  it('the First login section explains that a common admin password is rejected later, at boot, surfacing as exit 53 in the api log tail', () => {
+    const docs = installDocs();
+    const firstLoginMatch = docs.match(/## First login\n([\s\S]*?)(\n## |$)/);
+    expect(firstLoginMatch, 'First login section not found in docs/install.md').toBeTruthy();
+    const section = firstLoginMatch?.[1] ?? '';
+
+    expect(section.toLowerCase()).toContain('common');
+    expect(section).toContain('docker compose -f /opt/noodara/docker-compose.yml logs api');
+    expect(section).toContain('53');
+  });
 });
 
 describe('README.md', () => {
