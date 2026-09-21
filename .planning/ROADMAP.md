@@ -411,7 +411,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 06-02-PLAN.md — Preflight: eight injectable predicates, per-cause exit codes, first-failure ordering, nothing written before it passes (INST-03)
+- [x] 06-02-PLAN.md — Preflight: eight injectable predicates, per-cause exit codes, first-failure ordering, nothing written before it passes (INST-03)
 - [ ] 06-03-PLAN.md — Control-plane production image, .dockerignore and proof that all four compiled entrypoints run from dist
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -468,4 +468,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
 | 5. UI web | 46/46 | Complete   | 2026-09-21 |
-| 6. Instalador y Docker Compose | 1/15 | In Progress|  |
+| 6. Instalador y Docker Compose | 2/15 | In Progress|  |

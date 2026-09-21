@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-09-21T09:38:54.355Z"
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-09-21T09:53:19.157Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 109
-  completed_plans: 95
+  completed_plans: 96
   percent: 83
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 06 (instalador-y-docker-compose) — EXECUTING
-Plan: 2 of 15
+Plan: 3 of 15
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [█████████░] 87%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
@@ -141,6 +141,7 @@ Progress: [█████████░] 87%
 | Phase 05-ui-web P35 | 55min | 3 tasks | 7 files |
 | Phase 05 P33 | 55min | 1 tasks | 14 files |
 | Phase 06 P01 | 20min | 3 tasks | 9 files |
+| Phase 06 P02 | 5min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -370,6 +371,8 @@ Recent decisions affecting current work:
 - [Phase 05-33]: accent as link text on canvas/surface-3 light (4.31/4.12) stays a documented, unfixed AA gap: D2 locks accent's own value, deferred not silently dropped
 - [Phase 06]: scanPosixSh's structural rules track brace depth only via function-open/close lines in the exact name() { / } shape (06-01), not a general POSIX-sh parser — Matches the plan's own <action> text and is safe only because install.sh's functions are all written in exactly that shape
 - [Phase 06]: INST-01/INST-03 intentionally left Pending in REQUIREMENTS.md after Plan 06-01 — They describe end-to-end installer behavior spanning all 15 plans of this phase; Plan 06-01 only built the POSIX-sh gate and install.sh skeleton, so marking them complete now would misrepresent phase state
+- [Phase 06]: noodara_check_docker_snap calls snap list docker directly (no command -v snap gate): injectable either way and correct whether snap is absent, present-without-docker, or present-with-docker — 06-02 Task 2: avoids relying on command -v seeing a shadowing shell function under dash
+- [Phase 06]: noodara_total_ram_mb and the disk-size check divide entirely inside awk, never via a $(( )) arithmetic expansion — 06-02: scripts/check-posix-sh.mjs's arith-command rule flags any literal ((, including inside $(( )), as a bashism finding -- a false positive for POSIX arithmetic expansion the scanner cannot distinguish from bash's ((...)) compound command
 
 ### Pending Todos
 
@@ -435,6 +438,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-21T09:38:54.347Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-09-21T09:52:15.335Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None
