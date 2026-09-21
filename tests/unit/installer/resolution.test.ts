@@ -149,7 +149,11 @@ describe.each(posixInterpreters())('install.sh noodara_resolve_version (%s)', (i
       '}',
     ].join('\n');
 
-    const result = resolveVersion(interpreter, stub);
+    // NOODARA_REPO_OWNER/NOODARA_REPO_NAME must match the stubbed redirect's owner/repo path
+    // segments -- post-execution Finding 2 fix requires the redirect target to match the exact
+    // https://github.com/<owner>/<repo>/releases/tag/<tag> shape for the configured repo, not any
+    // github.com releases/tag/ URL.
+    const result = resolveVersion(interpreter, stub, { NOODARA_REPO_OWNER: 'example', NOODARA_REPO_NAME: 'repo' });
 
     expect(result.status).toBe(0);
     expect(result.stdout.trim()).toBe('0.1.0');
@@ -251,7 +255,10 @@ describe.each(posixInterpreters())('install.sh noodara_resolve_version (%s)', (i
       '}',
     ].join('\n');
 
-    const result = resolveVersion(interpreter, stub);
+    // Same NOODARA_REPO_OWNER/NOODARA_REPO_NAME requirement as the test above -- otherwise the
+    // strict prefix match itself would reject the redirect (owner/repo mismatch) and this test
+    // would pass for the wrong reason (never reaching noodara_validate_tag's "latest" rejection).
+    const result = resolveVersion(interpreter, stub, { NOODARA_REPO_OWNER: 'example', NOODARA_REPO_NAME: 'repo' });
 
     expect(result.status).toBe(40);
   });
@@ -478,5 +485,229 @@ describe.each(posixInterpreters())('install.sh noodara_resolve_public_url (%s)',
     const stderrOccurrences = result.stderr.split('203.0.113.9:3000').length - 1;
     expect(stdoutOccurrences).toBe(1);
     expect(stderrOccurrences).toBe(1);
+  });
+});
+
+// Post-execution fix for 06-06-SUMMARY.md (orchestrator audit, all findings confirmed
+// empirically against real curl 8.7.1 and real /bin/dash before these tests were written).
+
+// Finding 1 + Finding 3: noodara_fetch_url's curl argv is pinned by shadowing `curl` itself
+// (never `noodara_fetch_url`) -- the only way to observe what actually reaches the real curl
+// binary. With `-L`, curl follows the redirect itself and `%{redirect_url}` is empty after the
+// final 200 (verified: `curl -fsSL -o /dev/null -w '%{redirect_url}' <url>` -> `[]` for a real
+// release, `curl -fsS -o /dev/null -w '%{redirect_url}' <url>` (no -L) -> the real tag URL). So
+// redirect mode must never pass -L/--location, and body mode (which does follow redirects) must
+// pin --proto-redir '=https' so a followed redirect can never downgrade to plain http.
+describe.each(posixInterpreters())('install.sh noodara_fetch_url curl argv discipline (Findings 1+3, %s)', (interpreter) => {
+  function fetchUrlArgv(mode: 'body' | 'redirect'): string[] {
+    const dir = mkdtempSync(join(tmpdir(), 'noodara-curl-argv-'));
+    const logFile = join(dir, 'argv.log');
+    const stub = [
+      'curl() {',
+      '  for _noodara_test_argv_arg in "$@"; do',
+      '    printf "%s\\n" "$_noodara_test_argv_arg" >> "$NOODARA_TEST_ARGV_LOG"',
+      '  done',
+      '  return 0',
+      '}',
+      `noodara_fetch_url ${mode} https://example.test/x >/dev/null 2>&1`,
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, stub, { env: { NOODARA_TEST_ARGV_LOG: logFile } });
+    expect(result.status).toBe(0);
+
+    return readFileSync(logFile, 'utf8').split('\n').filter((line) => line.length > 0);
+  }
+
+  it('redirect mode never passes -L, --location, or a combined short flag containing L', () => {
+    const argv = fetchUrlArgv('redirect');
+
+    expect(argv).not.toContain('-L');
+    expect(argv).not.toContain('--location');
+    for (const arg of argv) {
+      if (/^-[a-zA-Z]+$/.test(arg)) {
+        expect(arg.includes('L')).toBe(false);
+      }
+    }
+  });
+
+  it('redirect mode still pins --proto =https, --tlsv1.2, --connect-timeout and --max-time', () => {
+    const argv = fetchUrlArgv('redirect');
+
+    const protoIndex = argv.indexOf('--proto');
+    expect(protoIndex).toBeGreaterThan(-1);
+    expect(argv[protoIndex + 1]).toBe('=https');
+    expect(argv).toContain('--tlsv1.2');
+    expect(argv).toContain('--connect-timeout');
+    expect(argv).toContain('--max-time');
+  });
+
+  it('body mode follows redirects (-L present) but pins --proto-redir =https alongside --proto =https', () => {
+    const argv = fetchUrlArgv('body');
+
+    const protoIndex = argv.indexOf('--proto');
+    const protoRedirIndex = argv.indexOf('--proto-redir');
+    expect(protoIndex).toBeGreaterThan(-1);
+    expect(protoRedirIndex).toBeGreaterThan(-1);
+    expect(argv[protoIndex + 1]).toBe('=https');
+    expect(argv[protoRedirIndex + 1]).toBe('=https');
+    expect(argv).toContain('--tlsv1.2');
+    expect(argv).toContain('--connect-timeout');
+    expect(argv).toContain('--max-time');
+  });
+});
+
+// Finding 2: a repository with no published release answers `releases/latest` with a 302 to
+// `.../releases` (no `/tag/<tag>`), which the old `awk -F/ '{print $NF}'` extraction turned into
+// the bogus tag "releases". Only the exact shape
+// https://github.com/<owner>/<repo>/releases/tag/<tag> (no further /, ? or # in <tag>) may ever
+// be accepted as a redirect-resolved tag.
+describe.each(posixInterpreters())('install.sh noodara_resolve_version redirect-tag shape (Finding 2, %s)', (interpreter) => {
+  const repoEnv = { NOODARA_REPO_OWNER: 'acme', NOODARA_REPO_NAME: 'widget' };
+
+  function stubRedirect(target: string): string {
+    return [
+      'noodara_fetch_url() {',
+      '  if [ "$1" = "redirect" ]; then',
+      `    printf '%s' ${shQuote(target)}`,
+      '    return 0',
+      '  fi',
+      '  return 1',
+      '}',
+    ].join('\n');
+  }
+
+  it.each([
+    ['a repo with no published release (redirects to /releases, no /tag/)', 'https://github.com/acme/widget/releases'],
+    ['an extra path segment after the tag', 'https://github.com/acme/widget/releases/tag/0.1.0/extra'],
+    ['a query string appended to the tag', 'https://github.com/acme/widget/releases/tag/0.1.0?x=1'],
+    ['a fragment appended to the tag', 'https://github.com/acme/widget/releases/tag/0.1.0#frag'],
+    ['a GitHub login redirect', 'https://github.com/login?return_to=%2Facme%2Fwidget%2Freleases%2Flatest'],
+    ['a different host entirely', 'https://evil.example/acme/widget/releases/tag/0.1.0'],
+    ['a different repo than the one configured', 'https://github.com/acme/other-repo/releases/tag/0.1.0'],
+    ['a different owner than the one configured', 'https://github.com/someone-else/widget/releases/tag/0.1.0'],
+    ['an empty tag segment (trailing slash, nothing after)', 'https://github.com/acme/widget/releases/tag/'],
+  ])('never prints a tag for %s -- falls through to the (failing) API stub and exits 40', (_label, target) => {
+    const result = resolveVersion(interpreter, stubRedirect(target), repoEnv);
+
+    expect(result.status).toBe(40);
+    expect(result.stdout.trim()).not.toBe('releases');
+  });
+
+  it('the orchestrator\'s exact repro (redirect target ending in /releases, no tag) never prints "releases" and never exits 0', () => {
+    const result = resolveVersion(interpreter, stubRedirect('https://github.com/acme/widget/releases'), repoEnv);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stdout.trim()).not.toBe('releases');
+  });
+
+  it('accepts the exact shape https://github.com/<owner>/<repo>/releases/tag/<tag> and prints the tag', () => {
+    const result = resolveVersion(
+      interpreter,
+      stubRedirect('https://github.com/acme/widget/releases/tag/0.1.0'),
+      repoEnv,
+    );
+
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe('0.1.0');
+  });
+
+  it('falls through to the API fallback when the redirect shape is wrong but the API succeeds', () => {
+    const stub = [
+      'noodara_fetch_url() {',
+      '  case "$1" in',
+      '    redirect) printf "https://github.com/acme/widget/releases"; return 0 ;;',
+      '    body) printf \'%s\' \'{"tag_name": "0.2.0"}\' ;;',
+      '  esac',
+      '}',
+    ].join('\n');
+
+    const result = resolveVersion(interpreter, stub, repoEnv);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe('0.2.0');
+  });
+});
+
+// Finding 4: NOODARA_PUBLIC_URL's operator override was returned verbatim with no validation at
+// all -- ftp://evil, javascript:alert(1) and "not a url" all passed through with exit 0.
+describe.each(posixInterpreters())('install.sh noodara_resolve_public_url override validation (Finding 4, %s)', (interpreter) => {
+  it.each([
+    ['a non-http(s) scheme', 'ftp://evil'],
+    ['a javascript: pseudo-scheme', 'javascript:alert(1)'],
+    ['not a URL at all', 'not a url'],
+    ['http:// with no host', 'http://'],
+    ['https:// with no host', 'https://'],
+    ['an embedded space', 'http://example.com/ page'],
+    ["an embedded single quote", "http://example.com/'"],
+    ['an embedded double quote', 'http://example.com/"'],
+    ['an embedded backslash', 'http://example.com/\\'],
+    ['an embedded dollar sign', 'http://example.com/$evil'],
+    ['an embedded backtick', 'http://example.com/`evil`'],
+  ])('rejects %s with exit 41, naming NOODARA_PUBLIC_URL', (_label, value) => {
+    const result = runInstallerShell(interpreter, 'noodara_resolve_public_url', {
+      env: { NOODARA_PUBLIC_URL: value },
+    });
+
+    expect(result.status).toBe(41);
+    expect(result.stderr).toContain('NOODARA_PUBLIC_URL');
+  });
+
+  it('rejects an embedded-newline injection payload with exit 41 and never echoes it', () => {
+    const result = runInstallerShell(interpreter, 'noodara_resolve_public_url', {
+      env: { NOODARA_PUBLIC_URL: 'http://example.com/\nEVIL=1' },
+    });
+
+    expect(result.status).toBe(41);
+    expect(result.stderr).toContain('NOODARA_PUBLIC_URL');
+    expect(result.stderr).not.toContain('EVIL');
+  });
+
+  it('rejects an embedded-carriage-return injection payload with exit 41 and never echoes it', () => {
+    const result = runInstallerShell(interpreter, 'noodara_resolve_public_url', {
+      env: { NOODARA_PUBLIC_URL: 'http://example.com/\rEVIL=1' },
+    });
+
+    expect(result.status).toBe(41);
+    expect(result.stderr).toContain('NOODARA_PUBLIC_URL');
+    expect(result.stderr).not.toContain('EVIL');
+  });
+
+  it.each([
+    ['an http URL with an explicit port', 'http://203.0.113.7:3000'],
+    ['a plain https hostname', 'https://panel.example.com'],
+    ['an IPv6 literal host with a port', 'http://[2001:db8::1]:3000'],
+  ])('accepts %s byte-identical -- D-05 scheme preserved exactly, no normalisation', (_label, value) => {
+    const result = runInstallerShell(interpreter, 'noodara_resolve_public_url', {
+      env: { NOODARA_PUBLIC_URL: value },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe(value);
+  });
+});
+
+// Optional tightening: noodara_looks_like_ipv4 previously accepted "1.2.3.4.5", "1..2.3" and
+// "9999.9999.9999.9999" (a digits-and-dots-only check, not an injection risk since the value only
+// ever flows into a URL string, but a broken shape check nonetheless). Tightened to exactly four
+// groups of 1-3 digits each, each <= 255.
+describe.each(posixInterpreters())('install.sh noodara_looks_like_ipv4 (optional tightening, %s)', (interpreter) => {
+  it.each([
+    ['a plain address', '203.0.113.9', true],
+    ['all zeros', '0.0.0.0', true],
+    ['the maximum per-octet value', '255.255.255.255', true],
+    ['five dot-separated groups', '1.2.3.4.5', false],
+    ['a doubled separator producing an empty group', '1..2.3', false],
+    ['four-digit out-of-range groups', '9999.9999.9999.9999', false],
+    ['a single out-of-range octet', '1.2.3.256', false],
+    ['an empty string', '', false],
+    ['an HTML captive-portal body', '<html>captive portal</html>', false],
+  ])('%s -> %s', (_label, value, expected) => {
+    const result = runInstallerShell(
+      interpreter,
+      `if noodara_looks_like_ipv4 ${shQuote(value)}; then printf "yes"; else printf "no"; fi`,
+    );
+
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe(expected ? 'yes' : 'no');
   });
 });
