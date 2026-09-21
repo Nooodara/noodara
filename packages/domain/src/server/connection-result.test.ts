@@ -92,12 +92,52 @@ describe('applyConnectionResult (success)', () => {
 
     expect(next.hostFingerprint).toBe('SHA256:trusted');
   });
+
+  // GR-01/gap 6: a fingerprint parked by an earlier HOST_KEY_CHANGED failure must not survive a
+  // later successful connect and be promotable off a stale parked value.
+  it('clears a previously parked pendingFingerprint on a successful reconnect', () => {
+    const state = deepFreeze(
+      buildState({
+        status: 'CONNECTING',
+        hostFingerprint: 'SHA256:trusted',
+        pendingFingerprint: 'SHA256:parked',
+      }),
+    );
+    const result: ConnectionResult = { ok: true, fingerprint: 'SHA256:trusted' };
+
+    const next = applyConnectionResult(state, result, NOW);
+
+    expect(next.pendingFingerprint).toBeNull();
+    expect(next.status).toBe('CONNECTED');
+    expect(next.lastErrorCode).toBeNull();
+    expect(next.hostFingerprint).toBe('SHA256:trusted');
+  });
+
+  it('clears a parked pendingFingerprint on a successful first-capture (TOFU) connect too', () => {
+    const state = deepFreeze(
+      buildState({
+        status: 'CONNECTING',
+        hostFingerprint: null,
+        pendingFingerprint: 'SHA256:parked',
+      }),
+    );
+    const result: ConnectionResult = { ok: true, fingerprint: 'SHA256:observed' };
+
+    const next = applyConnectionResult(state, result, NOW);
+
+    expect(next.hostFingerprint).toBe('SHA256:observed');
+    expect(next.pendingFingerprint).toBeNull();
+  });
 });
 
 describe('applyConnectionResult (failure)', () => {
-  it('HOST_KEY_CHANGED lands in ERROR, parks the observed fingerprint, and leaves hostFingerprint untouched (D-15)', () => {
+  it('HOST_KEY_CHANGED lands in ERROR, parks the observed fingerprint (newest observation wins over an older parked value), and leaves hostFingerprint untouched (D-15)', () => {
     const state = deepFreeze(
-      buildState({ status: 'CONNECTING', hostFingerprint: 'SHA256:trusted' }),
+      buildState({
+        status: 'CONNECTING',
+        hostFingerprint: 'SHA256:trusted',
+        pendingFingerprint: 'SHA256:older',
+      }),
     );
     const result: ConnectionResult = {
       ok: false,
@@ -113,10 +153,26 @@ describe('applyConnectionResult (failure)', () => {
     expect(next.hostFingerprint).toBe('SHA256:trusted');
   });
 
+  // GR-01/gap 6: this is the else-branch of the pendingFingerprint ternary — there is nothing
+  // newer to replace the parked value with, so the older observation from an earlier
+  // HOST_KEY_CHANGED failure is kept, not accidentally cleared.
+  it('HOST_KEY_CHANGED with no observedFingerprint keeps the older parked value', () => {
+    const state = deepFreeze(buildState({ status: 'CONNECTING', pendingFingerprint: 'SHA256:older' }));
+    const result: ConnectionResult = { ok: false, errorCode: 'HOST_KEY_CHANGED' };
+
+    const next = applyConnectionResult(state, result, NOW);
+
+    expect(next.pendingFingerprint).toBe('SHA256:older');
+  });
+
+  // GR-01/gap 6: a fingerprint parked by an earlier HOST_KEY_CHANGED failure must not survive a
+  // later, unrelated failure (e.g. AUTH_FAILED after a credential rotation) either.
   it.each(SERVER_ERROR_CODES.filter((code) => code !== 'HOST_KEY_CHANGED'))(
-    '%s leaves pendingFingerprint unchanged',
+    '%s clears a parked pendingFingerprint (only a HOST_KEY_CHANGED outcome may keep one parked)',
     (code) => {
-      const state = deepFreeze(buildState({ status: 'CONNECTING', pendingFingerprint: null }));
+      const state = deepFreeze(
+        buildState({ status: 'CONNECTING', pendingFingerprint: 'SHA256:parked' }),
+      );
       const result: ConnectionResult = { ok: false, errorCode: code };
 
       const next = applyConnectionResult(state, result, NOW);
