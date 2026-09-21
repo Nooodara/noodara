@@ -116,7 +116,11 @@ const FP_C = 'ssh-ed25519 SHA256:CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC';
 /** Direct row UPDATE, never a service call — arranges a pending-fingerprint state a real
  *  `connectAndDiscover` HOST_KEY_CHANGED outcome would have produced, without paying for a real
  *  SSH round-trip in every test in this file. Defaults to `ERROR` with `pending_fingerprint =
- *  FP_B`, the shape every real HOST_KEY_CHANGED outcome lands on. */
+ *  FP_B` and `last_error_code = 'HOST_KEY_CHANGED'`, the only row shape a real HOST_KEY_CHANGED
+ *  connect can produce (gap 6 / GR-01) — the new `trustFingerprint` guard reads `last_error_code`,
+ *  so a helper that left it `null` would arrange an impossible row and mask the very gate this
+ *  file exists to test. `overrides` spreads last so an individual case can still override it
+ *  (e.g. to simulate a later, unrelated failure superseding the parked value). */
 async function arrangePendingFingerprint(
   db: TestAppFixture['db'],
   serverId: string,
@@ -129,6 +133,7 @@ async function arrangePendingFingerprint(
       pendingFingerprint: FP_B,
       pendingFingerprintSeenAt: new Date(),
       hostFingerprint: null,
+      lastErrorCode: 'HOST_KEY_CHANGED',
       ...overrides,
     })
     .where(eq(servers.id, serverId));
@@ -259,6 +264,117 @@ describe('POST /api/servers/:id/trust-fingerprint binds to the fingerprint the a
     expect(after.hostFingerprint).toBeNull();
     expect(after.pendingFingerprint).toBe(FP_C);
     expect(await fingerprintTrustedEventCount(db, serverId)).toBe(0);
+  });
+
+  it('returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)', async () => {
+    const { app, cookie, db } = await bootAuthenticated();
+    const { id: serverId } = await createServer(app, cookie);
+    // T1: a real HOST_KEY_CHANGED connect parks FP_B while the previously trusted host_fingerprint
+    // is still FP_A.
+    await arrangePendingFingerprint(db, serverId, { pendingFingerprint: FP_B, hostFingerprint: FP_A });
+    // T1.5: a second, unrelated connect failure (AUTH_FAILED) supersedes the parked
+    // HOST_KEY_CHANGED without clearing pending_fingerprint or status — the exact row state
+    // `applyConnectionResult` produced before plan 05-38's fix shipped, and still reachable for
+    // any row written before that fix. This is a deliberate two-step sequence, not a single
+    // arrangement call.
+    await db.update(servers).set({ lastErrorCode: 'AUTH_FAILED' }).where(eq(servers.id, serverId));
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/servers/${serverId}/trust-fingerprint`,
+      headers: { cookie },
+      payload: { fingerprint: FP_B },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toMatchObject({ error: 'SERVER_NOT_TRUSTABLE' });
+    const after = await rawServerRow(db, serverId);
+    expect(after.hostFingerprint).toBe(FP_A);
+    expect(after.pendingFingerprint).toBe(FP_B);
+    expect(after.status).toBe('ERROR');
+    expect(await fingerprintTrustedEventCount(db, serverId)).toBe(0);
+  });
+
+  it('returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)', async () => {
+    const { app, cookie, db } = await bootAuthenticated();
+    const { id: serverId } = await createServer(app, cookie);
+    // T1: same arrangement as case 1.
+    await arrangePendingFingerprint(db, serverId, { pendingFingerprint: FP_B, hostFingerprint: FP_A });
+    // T1.5: a second, unrelated connect failure — this time COMMAND_TIMEOUT, a different
+    // non-host-key ERROR-landing code, proving the gate is not an AUTH_FAILED special case.
+    await db.update(servers).set({ lastErrorCode: 'COMMAND_TIMEOUT' }).where(eq(servers.id, serverId));
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/servers/${serverId}/trust-fingerprint`,
+      headers: { cookie },
+      payload: { fingerprint: FP_B },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toMatchObject({ error: 'SERVER_NOT_TRUSTABLE' });
+    const after = await rawServerRow(db, serverId);
+    expect(after.hostFingerprint).toBe(FP_A);
+    expect(after.pendingFingerprint).toBe(FP_B);
+    expect(after.status).toBe('ERROR');
+    expect(await fingerprintTrustedEventCount(db, serverId)).toBe(0);
+  });
+
+  it('returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)', async () => {
+    const { app, cookie, db } = await bootAuthenticated();
+    const { id: serverId } = await createServer(app, cookie);
+    // T1: the parked state a real HOST_KEY_CHANGED connect produces.
+    await arrangePendingFingerprint(db, serverId, { pendingFingerprint: FP_B });
+    // T1.5: a later successful connect supersedes the parked HOST_KEY_CHANGED — status moves to
+    // CONNECTED and last_error_code clears to null, but pending_fingerprint is left present
+    // (the exact row-consistency gap plan 05-38 closed at the source; this proves the boundary
+    // refuses it independently too). `canTrustFingerprint('CONNECTED')` may already refuse this on
+    // its own — either guard must refuse it, and the promotion must not happen either way.
+    await db.update(servers).set({ status: 'CONNECTED', lastErrorCode: null }).where(eq(servers.id, serverId));
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/servers/${serverId}/trust-fingerprint`,
+      headers: { cookie },
+      payload: { fingerprint: FP_B },
+    });
+
+    expect(response.statusCode).toBe(409);
+    const after = await rawServerRow(db, serverId);
+    expect(after.hostFingerprint).toBeNull();
+    expect(after.pendingFingerprint).toBe(FP_B);
+    expect(after.status).toBe('CONNECTED');
+    expect(await fingerprintTrustedEventCount(db, serverId)).toBe(0);
+  });
+
+  it('the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)', async () => {
+    const { app, cookie, db } = await bootAuthenticated();
+    const { id: serverId } = await createServer(app, cookie);
+    await arrangePendingFingerprint(db, serverId, { pendingFingerprint: FP_B, hostFingerprint: FP_A });
+    await db.update(servers).set({ lastErrorCode: 'AUTH_FAILED' }).where(eq(servers.id, serverId));
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/servers/${serverId}/trust-fingerprint`,
+      headers: { cookie },
+      payload: { fingerprint: FP_B },
+    });
+
+    expect(response.statusCode).toBe(409);
+    const body = response.json() as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(['error', 'message']);
+    expect(String(body.message)).not.toContain(FP_B);
+    const lowerMessage = String(body.message).toLowerCase();
+    expect(lowerMessage).not.toContain('password');
+    expect(lowerMessage).not.toContain('privatekey');
+    expect(lowerMessage).not.toContain('credential');
+    expect([
+      'NOT_FOUND',
+      'SERVER_BUSY',
+      'NO_PENDING_FINGERPRINT',
+      'SERVER_NOT_TRUSTABLE',
+      'FINGERPRINT_MISMATCH',
+    ]).toContain(body.error);
   });
 
   it('returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status', async () => {
