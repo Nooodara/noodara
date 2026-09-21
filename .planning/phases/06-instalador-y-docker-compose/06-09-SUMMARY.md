@@ -222,12 +222,16 @@ otherwise append (`NOODARA_IMAGE_PREFIX`, `NOODARA_PORT`, `NOODARA_PUBLIC_URL`) 
 — and, in that case, skips the backup/merge, skips `docker compose pull`, **and skips
 `docker compose up -d` itself**, going straight to the health check and summary. **Decision** (D-09
 was not actually silent, so this is a literal reading, not a judgment call): `docker compose up -d`
-does **not** run on a true no-op, matching D-09's own "nothing changes" wording exactly — it does
-not attempt to repair a manually-stopped stack in that case, which is D-09's stated behavior for
-v0.1, not an oversight. When a release adds a required key, the additive merge (with its one
-backup) still runs even at the same version. `docker-compose.yml` is still re-placed unconditionally
-(harmless — it is always the same static content install.sh itself embeds, regardless of
-`NOODARA_VERSION`).
+does **not** run on a true no-op, matching D-09's own "nothing changes" wording exactly. When a
+release adds a required key, the additive merge (with its one backup) still runs even at the same
+version. `docker-compose.yml` is still re-placed unconditionally (harmless — it is always the same
+static content install.sh itself embeds, regardless of `NOODARA_VERSION`).
+
+**Correction (see Finding E below):** the statement above — "it does not attempt to repair a
+manually-stopped stack in that case, which is D-09's stated behavior for v0.1, not an oversight" —
+was wrong. A same-version *candidate* whose stack is not actually healthy is a repair, not a true
+no-op; Finding E fixes this without contradicting the "nothing changes" reading above, since the
+distinction is decided by a real health read, not assumed from `.env` alone.
 
 ### Finding D — a stale setup token could be printed after an admin already exists
 
@@ -263,30 +267,80 @@ still, in that narrow case, print a stale token exactly as before this fix — t
 documented, honest limitation of this approach. No `apps/control-plane` change is proposed as a
 follow-up, since the existing route already provides a fully reliable signal in the normal case.
 
+### Finding E — the Finding C no-op introduced a recovery hole
+
+A follow-up orchestrator audit of this very fix found that Finding C's own "true no-op" decision
+was made from `.env` alone (same version + the three merge keys present) — with pull and
+`docker compose up -d` then skipped *unconditionally* and `noodara_wait_for_health` left to poll for
+up to `NOODARA_HEALTH_WAIT_ATTEMPTS x NOODARA_HEALTH_WAIT_INTERVAL` (5 minutes by default) against
+whatever containers happened to exist.
+
+Two real scenarios broke:
+
+1. **A half-finished first install:** `noodara_generate_env` wrote a complete `.env`, then
+   `docker compose pull` or `up -d` failed (a network blip). Re-running hit the same-version no-op
+   candidate (the `.env` it just wrote already has every key), skipped pull/up entirely, and polled
+   for 5 minutes against containers that were never started — exit 53, with no way to recover short
+   of deleting `.env`. This directly broke INST-02's own idempotency promise.
+2. **A stopped stack** (`docker compose stop`/`down`, or a crashed container): re-running the
+   installer is the natural repair action, and it just timed out the same way.
+
+**Fix:** `noodara_stack_healthy_now` takes a single, immediate `api`/`web` health read (one
+`noodara_service_health` call each — no sleep, no loop) to decide what a no-op *candidate* actually
+is:
+
+- **Both healthy** → the original true no-op, unchanged: no backup, no pull, no `up -d`, and now
+  also no second health check — `noodara_wait_for_health`'s own bounded loop is skipped entirely
+  (it would otherwise re-read the exact same health this single check already confirmed), straight
+  to `noodara_write_log`/the summary.
+- **Otherwise** → prints `"The stack is not healthy; starting it."` (a calm note, never framed as an
+  error), then runs the ordinary `noodara_pull_images` → `noodara_compose_up` →
+  `noodara_wait_for_health` sequence exactly as a genuine upgrade would. `.env` is still never
+  touched on this path — same version, every key already present, so there is genuinely nothing to
+  back up or merge.
+
+**Decision, recorded in STATE.md:** this is the reading of D-09's "no cambia nada y solo verifica
+salud" that does not break D-09's own idempotency intent — "verifica salud" ("verifies health") is
+read as a real check with a real consequence, not a label applied unconditionally to whatever the
+`.env` state implies. A no-op candidate that turns out unhealthy is a repair, not "nothing changes."
+
+**D-12 rollback wording fix:** `noodara_wait_for_health` now accepts an optional `"repair"` context.
+On this repair path no version change ever happened (`NOODARA_VERSION`/`NOODARA_PREVIOUS_VERSION`
+are both untouched), so a health-check failure here no longer says *"to go back, re-run this
+installer with NOODARA_VERSION=<previous>"* — that would misleadingly claim an upgrade took place.
+Every other caller (a genuine fresh install or a genuine version-changed upgrade) is unaffected —
+`$1` defaults to empty and keeps the original rollback wording.
+
 ### Also (process)
 
 The full `pnpm test` unit suite is now run after every task by this fix's own process (not just the
 touched test file) — the objective's own prompt named this as the concrete failure mode from the
 original plan execution (two commits shipped with `skeleton.test.ts` red). Verified clean at every
-commit boundary in this follow-up.
+commit boundary in this follow-up, including the Finding E round.
 
 ### Verification
 
-- `pnpm check:posix-sh` — clean (2009 lines).
-- `pnpm test` — 126 files / 2083 tests green. 14 new unique `it()` cases added across
-  `preflight.test.ts` (5, Finding A) and `main-flow.test.ts` (9, Findings B/C/D) — 28 test
-  executions once doubled across `/bin/sh` and real `/bin/dash`; the canary-extension commit added
-  assertions to existing/new test bodies rather than further `it()` blocks.
+- `pnpm check:posix-sh` — clean (2067 lines).
+- `pnpm test` — 126 files / 2089 tests green. 17 new unique `it()` cases total across this whole
+  post-execution fix: `preflight.test.ts` (5, Finding A) and `main-flow.test.ts` (12: 9 for
+  Findings B/C/D, 3 for Finding E) — 34 test executions once doubled across `/bin/sh` and real
+  `/bin/dash`; the two canary-extension passes added assertions to existing/new test bodies rather
+  than further `it()` blocks.
 - `pnpm lint` / `pnpm typecheck` — clean (9/8 cached tasks; neither `install.sh` nor
   `tests/unit/installer/*.test.ts` are part of any package's lint/typecheck project, matching this
   phase's pre-existing convention).
 - Orchestrator's own Finding A repro (install dir with `.env`, `ss` reporting the recorded port
   listening) now passes preflight; a fresh install with a busy port still exits 16.
-- Same-version re-run: `.env` byte-identical (SHA-256 checksum before/after), zero `.env.bak-*`
-  created, no `compose pull`/`compose up -d` in the recorded `docker` argv, health check and
-  summary still ran.
-- Canary/secret-leak coverage extended to the same-version, version-changed-upgrade and
-  half-finished-install re-run paths — all green.
+- Same-version re-run, stack already healthy: `.env` byte-identical (SHA-256 checksum before/after),
+  zero `.env.bak-*` created, no `compose pull`/`compose up -d` in the recorded `docker` argv, exactly
+  one health read per service (no polling), summary still ran.
+- Same-version re-run, stack NOT healthy (half-finished first install): `.env` still byte-identical,
+  zero `.env.bak-*`, `compose pull` and `compose up -d` both recorded strictly after the single
+  health read, setup token printed (admin probe confirms no admin exists yet).
+- Same-version repair that never becomes healthy: exit 53, redacted log tail, and the rollback hint
+  does **not** claim an upgrade happened (no `NOODARA_VERSION=<previous>` remedy text).
+- Canary/secret-leak coverage extended to the same-version-healthy, same-version-repair,
+  version-changed-upgrade and half-finished-install re-run paths — all green.
 
 ### Commits
 
@@ -295,10 +349,13 @@ commit boundary in this follow-up.
 - `5900be7` test(06-09): add failing tests for upgrade URL/port sourcing, same-version no-op and stale setup token (Findings B, C, D)
 - `8dc27a4` fix(06-09): source re-run URL/port from .env, no-op a same-version re-run, and probe admin existence before trusting a stale token (Findings B, C, D)
 - `8d83299` test(06-09): extend secret-leak canary coverage to same-version, upgrade and half-finished re-run paths
+- `d7f5e09` test(06-09): add failing tests for same-version no-op recovery hole (Finding E)
+- `9353203` test(06-09): correct two Finding E test assertions (health-read call count, HTTP warning)
+- `f95d0d0` fix(06-09): repair a same-version re-run whose stack is not actually healthy (Finding E)
 
 ### Not fully implemented
 
-- Nothing from the four findings was deferred — A, B, C and D are all fixed and tested.
+- Nothing from the five findings (A-E) was deferred — all are fixed and tested.
 - Finding D's "unknown" fallback path (log-reading heuristic) retains the same theoretical staleness
   window as before this fix, in the narrow case where the exec-based probe itself cannot run —
   documented above, not silently left out.
