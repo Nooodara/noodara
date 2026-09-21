@@ -262,6 +262,31 @@ noodara_check_docker_snap() {
   fi
 }
 
+# noodara_preflight (06-CONTEXT.md D-17, INST-03): runs every predicate above in exactly this
+# order, stopping at the first failure via that predicate's own noodara_fail call --
+# never a collector that accumulates every applicable cause:
+#
+#   root -> base commands -> OS -> architecture -> resources -> Docker-via-snap -> panel port
+#
+# Cheapest and most fundamental checks run first: an unsupported OS or architecture makes every
+# later check meaningless (there is no point reporting a busy port on a machine Noodara cannot
+# install onto at all), and the privilege/tooling gates (root, base commands) are checked before
+# any system-state probe that depends on them. Wiring this into the real install flow
+# (noodara_main) happens in Plan 06-09, once Docker install, .env generation and compose
+# orchestration all exist -- this function alone is provably safe to call early: no predicate
+# above ever writes a file or invokes a package manager (06-RESEARCH.md Pitfall 6).
+noodara_preflight() {
+  noodara_step "Checking system requirements..."
+  noodara_check_root
+  noodara_check_base_commands
+  noodara_check_os
+  noodara_check_arch
+  noodara_check_resources
+  noodara_check_docker_snap
+  noodara_check_port
+  noodara_step "System requirements satisfied."
+}
+
 # Entry point. For now this only prints the version banner and returns -- the real preflight ->
 # Docker install -> .env -> compose up -> migrate -> health-check flow lands in Plan 06-09, once
 # every piece it orchestrates (Plans 06-02..06-08) exists.
