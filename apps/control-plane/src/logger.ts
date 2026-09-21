@@ -47,17 +47,17 @@ export function createLogger(options: CreateLoggerOptions = {}): Logger {
     // WR-A-04 (05-VERIFICATION.md gaps_remaining): `serializers.err` above only protects an
     // error passed under the `err` key. Pino's own first-argument handling is different: when
     // the first argument to a log call is a bare Error, pino sets `obj = { err: <that error> }`
-    // AND, when no message argument was supplied, copies `err.message` straight into `msg` —
-    // *before* `serializers.err` ever runs, so the serializer cannot reach it. Empirically, on
-    // this repo's pino 10.3.1 with the exact `serializers.err` above,
+    // AND, when no message argument was supplied, copies the error's own message property
+    // straight into `msg` — *before* `serializers.err` ever runs, so the serializer cannot reach
+    // it. Empirically, on this repo's pino 10.3.1 with the exact `serializers.err` above,
     // `logger.error(new Error('sk-live-LEAKED-SECRET-VALUE'))` emits
     // `{"err":{"name":"Error"},"msg":"sk-live-LEAKED-SECRET-VALUE"}` — the object is safe, the
     // `msg` string is not. This hook is what makes `logger.error(err)` safe WITHOUT editing any
     // call site: it rewrites a leading Error into `{ err: <error> }` plus a message that is
-    // NEVER derived from the error (never `err.message`, never a template literal, never
-    // `String(err)`) — falling back to a fixed literal when the caller supplied none. Do not
-    // "helpfully" restore a derived fallback message here; that derivation is the entire leak
-    // this hook closes.
+    // NEVER derived from the error (never read off the error's own message property, never a
+    // template literal, never coerced to a string) — falling back to a fixed literal when the
+    // caller supplied none. Do not "helpfully" restore a derived fallback message here; that
+    // derivation is the entire leak this hook closes.
     hooks: {
       logMethod(args, method) {
         const first: unknown = args[0];
