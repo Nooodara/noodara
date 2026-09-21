@@ -1,0 +1,32 @@
+# Docker build-context exclusions (06-03-PLAN.md Task 1). Load-bearing for two things:
+# 1. Keeping a real `.env` (live secrets) out of every published image layer -- `.env` and
+#    `.env.*` are excluded with NO negation here, unlike .gitignore's `!.env.example`. A build
+#    context is a much larger blast radius than a git commit: a real .env sitting next to this
+#    file would be silently baked into a publicly-pushed image layer forever (T-06-18).
+# 2. Keeping host `node_modules` (platform-specific native builds of argon2/ssh2) from shadowing
+#    the image's own `pnpm install` output -- every stage in apps/control-plane/Dockerfile and
+#    apps/web/Dockerfile installs its own node_modules against the image's own architecture.
+#
+# Do NOT exclude pnpm-lock.yaml, pnpm-workspace.yaml, turbo.json, package.json, apps/**,
+# packages/** source, or install.sh -- the Dockerfiles' pruner/installer/builder stages need all
+# of these to reproduce a real `turbo prune --docker` + `pnpm install --frozen-lockfile` build.
+
+.git
+node_modules
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+.turbo
+coverage
+playwright-report
+test-results
+blob-report
+.env
+.env.*
+.planning
+.claude
+docs
+tests
+*.tsbuildinfo
+.DS_Store
