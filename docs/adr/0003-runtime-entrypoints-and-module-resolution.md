@@ -115,3 +115,25 @@ green.
   proof; `.github/workflows/ci.yml`'s `boot-smoke` job (Plan 01-17) is the
   CI gate that runs `pnpm build` then `pnpm test:boot` on every pull
   request, so a regression in this contract can no longer merge silently.
+
+## Local build env defaults for test harnesses (05-42, F1)
+
+A bare `pnpm build` run from a developer's shell still requires
+`NOODARA_API_ORIGIN` to be exported (see `.env.example`) — `apps/web/next.config.ts`
+fails fast without it (docs/adr/0006), and that production requirement is
+unchanged by this note.
+
+What changed: `tests/integration/helpers/boot-process.ts`'s `buildWorkspace()`
+(the function `tests/integration/global-setup.ts`, `boot-command.test.ts` and
+`tests/e2e/fixtures/stack.ts` all call before spawning `pnpm build`) previously
+passed no `env` to its `spawnSync` call, so the spawned build inherited
+whatever the ambient shell had — nothing on a clean checkout. That made
+`pnpm build`, `pnpm test:boot` and `pnpm test:integration` all fail in about
+two seconds on a machine that had never exported the variable, even though
+CI was unaffected (both workflows set it at their own `env:` block).
+`buildWorkspace()` now spreads `process.env` and backfills
+`NOODARA_API_ORIGIN` with the same `http://localhost:3100` value
+`buildValidBootEnv()` already uses, only when the caller has not already
+set one — so the integration/boot/E2E harnesses supply it themselves for
+the build they spawn, while the app itself keeps failing fast for anyone
+who runs `pnpm build` directly without exporting it.

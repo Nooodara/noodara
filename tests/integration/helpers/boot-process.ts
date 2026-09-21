@@ -181,10 +181,31 @@ export function removeBuildOutputs(): void {
   rmSync(CONTROL_PLANE_DIST, { recursive: true, force: true });
 }
 
-/** Runs the real `pnpm build` from the repo root. Turbo caches `build` outputs, so repeat calls
- *  with nothing changed are near-instant. */
+/**
+ * Runs the real `pnpm build` from the repo root. Turbo caches `build` outputs, so repeat calls
+ * with nothing changed are near-instant.
+ *
+ * `NOODARA_API_ORIGIN` (05-42-PLAN.md, F1): `apps/web/next.config.ts` fail-fasts without this
+ * variable (docs/adr/0006), and this function previously spawned `pnpm build` with no `env` at
+ * all, so the child inherited whatever the developer's ambient shell happened to have — a clean
+ * checkout with nothing exported made `pnpm build`, `pnpm test:boot` and `pnpm test:integration`
+ * all fail in about two seconds (see docs/adr/0003's "Local build env defaults" section). This
+ * default exists ONLY so a `pnpm build` spawned by this test harness can complete on a clean
+ * developer shell; `apps/web/next.config.ts`, `apps/web/src/proxy.ts` and
+ * `apps/web/src/app/api/events/route.ts` still fail fast for the real app (INST-06 is intact,
+ * nothing under `apps/**` gained a default — see `.env.example` for the production-facing
+ * documentation of this variable). The value itself, `http://localhost:3100`, has the same
+ * provenance as `buildValidBootEnv`'s own `NOODARA_API_ORIGIN` line above and both CI workflows'
+ * `env:` blocks — it is not a new placeholder. An origin the caller already exported (CI, or
+ * `tests/e2e/fixtures/stack.ts`'s real stack origin) still wins, since `process.env` is spread
+ * first and only backfilled with `??`.
+ */
 export function buildWorkspace(): void {
-  const result = spawnSync('pnpm', ['build'], { cwd: repoRoot, stdio: 'inherit' });
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    NOODARA_API_ORIGIN: process.env.NOODARA_API_ORIGIN ?? 'http://localhost:3100',
+  };
+  const result = spawnSync('pnpm', ['build'], { cwd: repoRoot, stdio: 'inherit', env });
   if (result.status !== 0) {
     throw new Error(`pnpm build failed with exit code ${String(result.status)}`);
   }
