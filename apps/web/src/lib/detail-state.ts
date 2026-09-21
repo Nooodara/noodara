@@ -47,7 +47,7 @@ export interface PrimaryAction {
   readonly disabled: boolean;
 }
 
-export type PrimaryActionServer = Pick<ServerView, 'status' | 'lastErrorCode'>;
+export type PrimaryActionServer = Pick<ServerView, 'status' | 'lastErrorCode' | 'pendingFingerprint'>;
 
 function connectAction(disabled: boolean): PrimaryAction {
   return { label: 'Connect', endpoint: '/connect', disabled };
@@ -60,9 +60,14 @@ function retryAction(): PrimaryAction {
 /**
  * The single toolbar action for `server`, or `null` when the toolbar carries no action at all.
  *
- * `ERROR` with `lastErrorCode === 'HOST_KEY_CHANGED'` is the one status/code pair with no toolbar
- * action -- that action lives in the dedicated error banner instead (a later plan), since it
- * needs the type-the-name confirm dialog, not a bare click (05-UI-SPEC.md SS2.5's own table).
+ * `ERROR` with `lastErrorCode === 'HOST_KEY_CHANGED'` has no toolbar action only while a pending
+ * fingerprint still exists to review -- that action lives in the dedicated error banner instead,
+ * since it needs the type-the-name confirm dialog, not a bare click (05-UI-SPEC.md SS2.5's own
+ * table). Once `pendingFingerprint` is cleared (an identity-changing host/port edit made while
+ * ERROR/HOST_KEY_CHANGED, CR-01), the row falls back to the normal Retry action: the backend
+ * already allows `ERROR -> CONNECTING`, and with `hostFingerprint` also null the next connect is
+ * a clean TOFU first capture, not a real host-key comparison -- otherwise the screen would have no
+ * control anywhere that can reconnect the server.
  *
  * `DISCONNECTED` is not named in 05-UI-SPEC.md SS2.5's per-status table at all, but this map is
  * declared `satisfies Record<ServerStatus, ...>` so a new/omitted domain status is a compile
@@ -71,7 +76,7 @@ function retryAction(): PrimaryAction {
  * edge `PENDING` has, so it gets `PENDING`'s own un-disabled "Connect" action.
  */
 export function derivePrimaryAction(server: PrimaryActionServer): PrimaryAction | null {
-  const { status, lastErrorCode } = server;
+  const { status, lastErrorCode, pendingFingerprint } = server;
 
   const ACTIONS = {
     PENDING: connectAction(false),
@@ -79,7 +84,7 @@ export function derivePrimaryAction(server: PrimaryActionServer): PrimaryAction 
     CONNECTED: { label: 'Re-run discovery', endpoint: '/discover', disabled: false },
     DISCONNECTED: connectAction(false),
     UNREACHABLE: retryAction(),
-    ERROR: lastErrorCode === 'HOST_KEY_CHANGED' ? null : retryAction(),
+    ERROR: lastErrorCode === 'HOST_KEY_CHANGED' && pendingFingerprint !== null ? null : retryAction(),
   } satisfies Record<ServerStatus, PrimaryAction | null>;
 
   return ACTIONS[status];
