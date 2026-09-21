@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-09-PLAN.md
-last_updated: "2026-09-21T15:23:58.167Z"
+stopped_at: Completed 06-10-PLAN.md
+last_updated: "2026-09-21T16:16:35.827Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 109
-  completed_plans: 103
+  completed_plans: 104
   percent: 83
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 06 (instalador-y-docker-compose) — EXECUTING
-Plan: 10 of 15
+Plan: 11 of 15
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [█████████░] 94%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -149,6 +149,7 @@ Progress: [█████████░] 94%
 | Phase 06 P07 | 50min | 2 tasks | 3 files |
 | Phase 06 P08 | 35min | 2 tasks | 2 files |
 | Phase 06 P09 | 18min | 3 tasks | 3 files |
+| Phase 06 P10 | 25min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -400,6 +401,9 @@ Recent decisions affecting current work:
 - [Phase 06]: noodara_install_docker decomposed into nine named step functions, each funneling apt-get through one _noodara_did_run_apt helper (non-interactive flags, Acquire/lock timeouts, silent-on-success/tail-on-failure output capture)
 - [Phase 06]: docker-compose.yml embedded verbatim into install.sh via a printf-substitution workaround (not the network-fetch fallback) -- avoids check-posix-sh's arith-command false positive on the two catch(()=>...) healthcheck lines without editing the gate
 - [Phase 06]: noodara_write_log is called explicitly from noodara_main, never wired into noodara_step/noodara_warn -- those helpers run before the install directory is guaranteed to exist and would break Plan 06-02's own tested 'preflight writes nothing' invariant
+- [Phase ?]: 06-10: withPrivilegedMode() takes no argument in testcontainers@12.1.0 (confirmed from the real .d.ts before writing code)
+- [Phase ?]: 06-10: a fixture's own /var/lib/docker lives on a dedicated, pre-created, noodara.test=true-labelled Docker volume via withBindMounts, never a host bind mount
+- [Phase ?]: 06-10: entrypoint.sh intentionally excluded from pnpm check:posix-sh (its install.sh-specific structural rules false-positive on ordinary linear scripts); real dash execution proven by dind-harness.test.ts instead
 
 ### Pending Todos
 
@@ -465,6 +469,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-21T15:23:58.159Z
-Stopped at: Completed 06-09-PLAN.md
+Last session: 2026-09-21T16:16:35.819Z
+Stopped at: Completed 06-10-PLAN.md
 Resume file: None

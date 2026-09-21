@@ -434,7 +434,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 06-10-PLAN.md — Docker-in-Docker fixtures for Ubuntu 22.04/24.04, Testcontainers helper, registry-free image loading
+- [x] 06-10-PLAN.md — Docker-in-Docker fixtures for Ubuntu 22.04/24.04, Testcontainers helper, registry-free image loading
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
@@ -468,4 +468,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
 | 5. UI web | 46/46 | Complete   | 2026-09-21 |
-| 6. Instalador y Docker Compose | 9/15 | In Progress|  |
+| 6. Instalador y Docker Compose | 10/15 | In Progress|  |
