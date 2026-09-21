@@ -83,9 +83,11 @@ left in `Error` with the `HOST_KEY_CHANGED` banner still showing, "Trusted: not 
 UI dead end reachable through ordinary product use, not a contrived edge case. The security half
 behaves correctly (both fingerprints clear; nothing is promotable). This is the same CR-01 the code
 review of the round-2 delta found independently in source (`05-REVIEW.md`, `apps/control-plane/src/
-services/edit-server.ts:229-275`, `apps/web/src/lib/detail-state.ts:60-86`). **OPEN** at the time of
-this UAT update. Fix requested by the user at the 05-46 checkpoint, scheduled as a separate
-`/gsd-quick` task, not part of this round.
+services/edit-server.ts:229-275`, `apps/web/src/lib/detail-state.ts:60-86`). **FIXED in code** by quick task
+`260921-13a` (commits 7d8e664..af0361d: `derivePrimaryAction` falls back to Retry when nothing is
+pending; the banner shows calm re-capture copy) — unit 1527, E2E 93/93, re-derived CLOSED by the
+2026-09-21 re-verification. **The fixed behaviour has NOT yet been seen by a human**: re-check by
+repeating the same steps and confirming a Retry button appears and reaches Connected.
 
 ### WR-01 (WARNING, from 05-REVIEW.md) — confirmed in code, not observed live
 
@@ -93,7 +95,9 @@ this UAT update. Fix requested by the user at the 05-46 checkpoint, scheduled as
 can keep rendering after a correct trust until the next connect attempt. The user did not state whether
 they saw this during test 4's manual-trust step (1c in `05-46-GATE.md` Section 4); it is confirmed only
 in code (`apps/control-plane/src/services/trust-fingerprint.ts:134-151`,
-`apps/web/src/lib/detail-state.ts:31-34`). **OPEN**, same follow-up `/gsd-quick` task as CR-01.
+`apps/web/src/lib/detail-state.ts:31-34`). **FIXED in code** by quick task `260921-13a`
+(`lastErrorCode: null` on promote; 05-39's guard and WHERE predicate untouched; trust-path integration
+109/109). **Not yet seen by a human**: after confirming a trust, the red banner should disappear at once.
 
 ### Five of seven items remain unconfirmed
 
