@@ -16,6 +16,31 @@ NOODARA_DIND_MAX_ATTEMPTS=120
 # dockerd to start or wait for -- the fixture is ready to be exec()'d into the moment this script
 # reaches here, matching install.sh's own real "Docker missing" starting condition.
 if command -v dockerd >/dev/null 2>&1; then
+  # Post-execution fix (06-11-PLAN.md, discovered by the first-ever real `docker compose up`
+  # inside this fixture): on a cgroup v2 host (confirmed: this fixture's own
+  # /sys/fs/cgroup/cgroup.controllers reports "cpuset cpu io memory hugetlb pids rdma", one
+  # unified hierarchy) every process in this container -- including this entrypoint's own shell --
+  # starts life directly inside the root cgroup. cgroup v2's "no internal process" constraint
+  # forbids a cgroup from both containing member processes AND enabling "domain" controllers
+  # (cpu/memory/...) for its own children at the same time. The nested dockerd/runc need exactly
+  # that -- a child cgroup per container, with domain controllers enabled -- so without this fix
+  # every `docker compose up`/`docker run` inside this fixture fails with runc's own
+  # "cannot enter cgroupv2 ... with domain controllers -- it is in an invalid state" (reproduced
+  # empirically, not theorized: this exact error surfaced install.sh's own noodara_compose_up
+  # reporting exit 51 against a completely correct docker-compose.yml). This is the standard,
+  # widely-documented Docker-in-Docker cgroup v2 workaround (moby/moby's own hack/dind script):
+  # move every process currently in the root cgroup into a leaf "init" subcgroup (root then has no
+  # member processes), then enable every available controller on the root's own
+  # cgroup.subtree_control so its children (the cgroups dockerd creates per container) can use
+  # them. A fixture-only fix (hard_rule #11c): this is a genuine nested-cgroup limitation of the
+  # privileged-container harness itself, not a defect in install.sh or docker-compose.yml.
+  if [ -f /sys/fs/cgroup/cgroup.controllers ]; then
+    mkdir -p /sys/fs/cgroup/init
+    xargs -rn1 < /sys/fs/cgroup/cgroup.procs > /sys/fs/cgroup/init/cgroup.procs 2>/dev/null || :
+    sed -e 's/ / +/g' -e 's/^/+/' < /sys/fs/cgroup/cgroup.controllers \
+      > /sys/fs/cgroup/cgroup.subtree_control 2>/dev/null || :
+  fi
+
   dockerd >"$NOODARA_DIND_LOG" 2>&1 &
 
   _noodara_dind_attempt=0
