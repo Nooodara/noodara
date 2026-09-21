@@ -29,6 +29,13 @@ curl -fsSL https://raw.githubusercontent.com/REPLACE_WITH_GITHUB_OWNER/noodara/m
 `REPLACE_WITH_GITHUB_OWNER` is filled in with the real GitHub organization or user once the
 repository is published. Run this as root, or with `sudo sh` if you are not root.
 
+To set any of the variables in "Supported variables" below for this command, put the assignment
+on the `sh` side of the pipe, never before `curl`: a `VAR=value` prefix in front of `curl` applies
+only to `curl` itself, not to the `sh` process reading its piped output, so the installer would
+never see it. As root: `curl -fsSL <url> | NOODARA_PORT=8080 sh`. With `sudo`, every variable must
+also go after `sudo` — plain `sudo sh` on its own already drops the caller's environment the same
+way a `VAR=value` placed before `curl` does: `curl -fsSL <url> | sudo NOODARA_PORT=8080 sh`.
+
 ## Install without piping to a shell
 
 Piping a remote script straight into a root shell is a trust decision, and you do not have to make
@@ -120,9 +127,20 @@ HTTPS and automatic certificates arrive in a later release. Until then, if you w
 
 1. Put a reverse proxy (for example Caddy or nginx) in front of the panel, terminating TLS there
    and forwarding to `127.0.0.1:<NOODARA_PORT>`.
-2. Re-run the installer with `NOODARA_PUBLIC_URL` set to the `https://` origin the proxy serves.
-3. Remove the `NOODARA_COOKIE_INSECURE` line from `/opt/noodara/.env` once the proxy is confirmed
-   working — it is only ever meant to exist for an `http://` origin.
+2. Edit `/opt/noodara/.env`: set `NOODARA_PUBLIC_URL` to the `https://` origin the proxy serves,
+   and remove the `NOODARA_COOKIE_INSECURE` line entirely — it is only ever meant to exist for an
+   `http://` origin.
+3. Apply the edit — re-running the installer does **not** do this (see "Supported variables"
+   above); run Compose directly instead:
+
+   ```sh
+   docker compose -f /opt/noodara/docker-compose.yml up -d
+   ```
+
+4. Confirm it took: `docker compose -f /opt/noodara/docker-compose.yml exec api env | grep
+   NOODARA_PUBLIC_URL` should show the new `https://` origin, and logging in through the proxy's
+   `https://` URL should set a session cookie with the `Secure` attribute (visible in the
+   browser's own cookie inspector).
 
 ## Firewall
 
@@ -169,18 +187,31 @@ None of these variables — or any value derived from them — may contain an em
 carriage return; the installer rejects any such value outright, naming the variable but never
 echoing the rejected value, before writing anything to disk.
 
-After install, you may edit a small number of keys directly in `/opt/noodara/.env` and re-run the
-installer to apply them:
+After install, you may edit a small number of keys directly in `/opt/noodara/.env`:
 
-- `NOODARA_PORT` — change the published panel port.
+- `NOODARA_PORT` — change the published panel port. The new port must be free on the host.
 - `NOODARA_PUBLIC_URL` — change the panel's public origin.
 - `NOODARA_COOKIE_INSECURE` — remove this line once a TLS proxy is genuinely in front (see "Plain
   HTTP warning" above).
 
-**On a re-run, `.env` always wins.** If you pass `NOODARA_PORT` or `NOODARA_PUBLIC_URL` as an
-environment variable to a re-run and it disagrees with what `.env` already has recorded, the
-installer prints a single warning naming both values and keeps the one already in `.env`. To
-actually change either value, edit `/opt/noodara/.env` directly and re-run the installer.
+**Re-running the installer does not apply an `.env` edit.** On the same version, with the stack
+already healthy, a re-run is a true no-op (see "Upgrade" below): it never runs `docker compose up`,
+so nothing you changed in `.env` is picked up. To apply an edit, run Compose directly, from the
+install directory:
+
+```sh
+docker compose -f /opt/noodara/docker-compose.yml up -d
+```
+
+Compose reads the current `.env` and recreates only the services whose resolved configuration
+changed — `web` for `NOODARA_PORT`, `api`/`worker` for `NOODARA_PUBLIC_URL` or
+`NOODARA_COOKIE_INSECURE` — leaving the rest untouched.
+
+**`.env` always wins over a re-run's environment.** If you pass `NOODARA_PORT` or
+`NOODARA_PUBLIC_URL` as an environment variable to a re-run and it disagrees with what `.env`
+already has recorded, the installer prints a single warning naming both values and keeps the one
+already in `.env`; it never overwrites your edit. To change either value, edit `/opt/noodara/.env`
+directly and apply it with the `docker compose ... up -d` command above.
 
 ## Upgrade
 
@@ -215,10 +246,16 @@ Before any upgrade write, the installer copies the current `.env` to
 
 There is no automatic rollback in this release. If an upgrade's health check fails, the installer
 exits with a non-zero status, shows the log tail of the service that failed to become healthy, and
-tells you the exact command to go back:
+tells you the exact command to go back. As root:
 
 ```sh
-NOODARA_VERSION=<previous-version> curl -fsSL https://raw.githubusercontent.com/REPLACE_WITH_GITHUB_OWNER/noodara/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/REPLACE_WITH_GITHUB_OWNER/noodara/main/install.sh | NOODARA_VERSION=<previous-version> sh
+```
+
+Or with `sudo` (the variable must go after `sudo`, same as in "Install" above):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/REPLACE_WITH_GITHUB_OWNER/noodara/main/install.sh | sudo NOODARA_VERSION=<previous-version> sh
 ```
 
 The previous version is the one the installer names in that message — it is also recorded in
@@ -262,8 +299,16 @@ docker compose -f /opt/noodara/docker-compose.yml logs <service>
 
 ```sh
 docker compose -f /opt/noodara/docker-compose.yml ps
-curl http://127.0.0.1:<port>/health
+docker compose -f /opt/noodara/docker-compose.yml exec -T api node -e "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" && echo healthy
+curl -I http://127.0.0.1:<port>/login
 ```
+
+The `ps` HEALTH column reflects each service's own Compose `healthcheck:`. The middle command
+re-runs the `api` container's own healthcheck by hand, from inside the container against its
+`/health` route directly (the same call `docker-compose.yml`'s `api` healthcheck itself makes) —
+only `web` publishes a port on the host, and `web` only proxies `/api/*` to `api` (see "What gets
+installed" above), so `/health` is never reachable from outside the container. The last command
+confirms the panel itself is answering on the port you published.
 
 **Running the operator CLI inside the running `api` container:**
 
