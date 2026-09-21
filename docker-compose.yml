@@ -14,11 +14,17 @@ name: noodara
 # "fix" the re-run itself with skip logic; the correctness guarantee lives in migrate() being
 # idempotent, not in Compose running it only once.
 #
-# Memory limits below are derived from a real `docker stats --no-stream` sample taken against this
-# exact file (see docker-compose.yml's own history and .planning/phases/06-instalador-y-docker-compose/06-07-SUMMARY.md
-# for the literal numbers) with at least a 2x headroom multiple applied to each service's measured
-# idle figure -- not guessed (06-RESEARCH.md Assumption A3). These are idle-stack numbers on a
-# development machine, not a load test; they remain subject to real-VPS validation in Plan 06-15.
+# Memory limits below are derived from real `docker stats --no-stream` samples taken against this
+# exact file, across more than one run to absorb normal run-to-run variance (idle RSS observed:
+# postgres 26-38MiB, redis 5-16MiB, api 66-75MiB, worker 50-59MiB, web 41-59MiB) -- see
+# .planning/phases/06-instalador-y-docker-compose/06-07-SUMMARY.md for the literal `docker stats`
+# output. Each limit is at least a 2x headroom multiple over the HIGHEST observed sample for that
+# service (in practice 3.4x-6x here) -- not guessed (06-RESEARCH.md Assumption A3). `migrate` is
+# the one exception: its whole run completes in well under a second, too fast for `docker stats` to
+# reliably sample, so its limit is bounded by analogy to `postgres`'s own measured ceiling instead
+# (same order of magnitude, comfortably above what a Node process doing a handful of DB statements
+# needs). These are idle-stack numbers on a development machine, not a load test; they remain
+# subject to real-VPS validation in Plan 06-15.
 
 services:
   postgres:
@@ -38,7 +44,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M # Task 1 placeholder -- replaced with a measured value in Task 2.
+          memory: 192M # Measured idle RSS 26-38MiB across runs; >=2x headroom over the high end (5.0x).
 
   # T-06-33/Pitfall 4: docker-compose.dev.yml's redis service has no `environment:` block, so its
   # own `$${REDIS_PASSWORD}` healthcheck reference is undefined INSIDE the container's shell when
@@ -63,7 +69,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M # Task 1 placeholder -- replaced with a measured value in Task 2.
+          memory: 96M # Measured idle RSS 5-16MiB across runs; >=2x headroom over the high end (6.0x).
 
   migrate:
     image: ${NOODARA_IMAGE_PREFIX}/noodara-control-plane:${NOODARA_VERSION}
@@ -77,7 +83,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M # Task 1 placeholder -- replaced with a measured value in Task 2.
+          # Not directly measured (see the file-level comment above): bounded by analogy to
+          # postgres's own measured ceiling, same order of magnitude as api/worker's own image.
+          memory: 192M
 
   api:
     image: ${NOODARA_IMAGE_PREFIX}/noodara-control-plane:${NOODARA_VERSION}
@@ -104,7 +112,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M # Task 1 placeholder -- replaced with a measured value in Task 2.
+          memory: 256M # Measured idle RSS 66-75MiB across runs; >=2x headroom over the high end (3.4x).
 
   worker:
     image: ${NOODARA_IMAGE_PREFIX}/noodara-control-plane:${NOODARA_VERSION}
@@ -127,7 +135,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M # Task 1 placeholder -- replaced with a measured value in Task 2.
+          memory: 256M # Measured idle RSS 50-59MiB across runs; >=2x headroom over the high end (4.3x).
 
   web:
     image: ${NOODARA_IMAGE_PREFIX}/noodara-web:${NOODARA_VERSION}
@@ -146,7 +154,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M # Task 1 placeholder -- replaced with a measured value in Task 2.
+          memory: 256M # Measured idle RSS 41-59MiB across runs; >=2x headroom over the high end (4.3x).
 
 volumes:
   noodara_postgres_data:
