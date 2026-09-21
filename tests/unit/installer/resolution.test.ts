@@ -437,6 +437,26 @@ describe.each(posixInterpreters())('install.sh noodara_resolve_public_url (%s)',
     expect(result.stderr).toContain('NOODARA_PUBLIC_URL');
   });
 
+  // Post-execution fix (orchestrator audit Finding 3, 06-14 follow-up): the "how to change it"
+  // note must point at the real apply command (docker compose ... up -d), never "re-run this
+  // installer" -- re-running never applies an edited .env.
+  it('the resolved-URL note points at the docker compose apply command, not a re-run instruction', () => {
+    const stub = [
+      'noodara_fetch_url() {',
+      '  case "$2" in',
+      '    https://ifconfig.io) printf "203.0.113.9"; return 0 ;;',
+      '    *) return 1 ;;',
+      '  esac',
+      '}',
+    ].join('\n');
+
+    const result = resolvePublicUrl(interpreter, stub, { NOODARA_PORT: '4000', NOODARA_INSTALL_DIR: '/opt/noodara' });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).not.toContain('re-run this installer');
+    expect(result.stderr).toContain('docker compose -f /opt/noodara/docker-compose.yml up -d');
+  });
+
   it('falls back to the local route IP and warns when every public-IP service fails', () => {
     const stub = [
       'noodara_fetch_url() { return 1; }',

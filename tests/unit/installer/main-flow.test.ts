@@ -498,6 +498,10 @@ describe.each(posixInterpreters())('install.sh noodara_main upgrade (%s)', (inte
     expect(result.stderr).toContain('operator-override.example.com');
     expect(result.stderr).toContain('198.51.100.7');
     expect(result.stderr.toLowerCase()).toContain('.env');
+    // Post-execution fix (orchestrator audit Finding 3, 06-14 follow-up): re-running the installer
+    // never applies an edited .env -- the mismatch warning must point at the real apply command.
+    expect(result.stderr).not.toContain('re-run this installer');
+    expect(result.stderr).toContain(`docker compose -f ${installDir}/docker-compose.yml up -d`);
   });
 
   it('the ufw advisory and summary both name the port and URL actually recorded in .env, not an operator override', () => {

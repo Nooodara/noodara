@@ -463,6 +463,12 @@ describe.each(posixInterpreters())('install.sh preflight predicates (%s)', (inte
       expect(result.stderr).toContain('4000');
       expect(result.stderr).toContain('3000');
       expect(result.stderr.toLowerCase()).toContain('.env');
+      // Post-execution fix (orchestrator audit Finding 3, 06-14 follow-up): re-running the
+      // installer never applies an edited .env (a same-version healthy-stack re-run is a true
+      // no-op) -- the message must point at the real apply command instead, built from
+      // NOODARA_INSTALL_DIR, never a hard-coded /opt/noodara.
+      expect(result.stderr).not.toContain('re-run this installer');
+      expect(result.stderr).toContain(`docker compose -f ${installDir}/docker-compose.yml up -d`);
     });
 
     it('does not warn when NOODARA_PORT matches the recorded .env port exactly', () => {
