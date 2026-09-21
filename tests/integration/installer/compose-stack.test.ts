@@ -295,7 +295,7 @@ describe('production docker-compose.yml stack (06-07-PLAN.md)', () => {
       // Structural shape (D-04/D-10/Pitfall 2), read directly from the file this beforeAll loaded
       // -- cheap, fast sanity checks alongside the real container-level proofs below.
       expect(yaml).not.toContain(':latest');
-      expect((yaml.match(/^\s{2}ports:/gm) ?? []).length).toBe(1);
+      expect((yaml.match(/^\s{4}ports:/gm) ?? []).length).toBe(1);
       expect(yaml).toContain('service_completed_successfully');
       expect(yaml).toMatch(/restart:\s*"no"/);
 

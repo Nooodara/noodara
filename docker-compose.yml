@@ -1,0 +1,153 @@
+name: noodara
+
+# This is the PRODUCTION topology the installer writes to /opt/noodara/docker-compose.yml
+# (D-10) -- docker-compose.dev.yml is the local-development sibling (Postgres/Redis only, no
+# app containers) and is NOT this file; do not merge the two.
+#
+# The `migrate` one-shot re-runs on every `docker compose up` -- including the installer's own
+# upgrade path -- by Compose's own documented design (github.com/docker/compose/issues/9260):
+# `depends_on: condition: service_completed_successfully` only gates *dependents*, it does not
+# make the one-shot itself skip re-execution once it has already exited 0 once. This is safe here
+# ONLY because Drizzle's `migrate()` (apps/control-plane/src/db/migrate.ts, compiled to
+# dist/db/migrate.js) diffs the migrations-tracking table and no-ops when nothing is pending --
+# proven by tests/integration/installer/compose-stack.test.ts's own second-`up` assertion. Do NOT
+# "fix" the re-run itself with skip logic; the correctness guarantee lives in migrate() being
+# idempotent, not in Compose running it only once.
+#
+# Memory limits below are derived from a real `docker stats --no-stream` sample taken against this
+# exact file (see docker-compose.yml's own history and .planning/phases/06-instalador-y-docker-compose/06-07-SUMMARY.md
+# for the literal numbers) with at least a 2x headroom multiple applied to each service's measured
+# idle figure -- not guessed (06-RESEARCH.md Assumption A3). These are idle-stack numbers on a
+# development machine, not a load test; they remain subject to real-VPS validation in Plan 06-15.
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - noodara_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 128M # Task 1 placeholder -- replaced with a measured value in Task 2.
+
+  # T-06-33/Pitfall 4: docker-compose.dev.yml's redis service has no `environment:` block, so its
+  # own `$${REDIS_PASSWORD}` healthcheck reference is undefined INSIDE the container's shell when
+  # the healthcheck actually runs there -- it reports unhealthy forever despite `redis-cli ping`
+  # working manually. The `environment: REDIS_PASSWORD: ${REDIS_PASSWORD}` entry below is what
+  # makes the identical-looking healthcheck below actually work: it gives the container-side shell
+  # a real value to substitute at `$$REDIS_PASSWORD`. Verify with `docker inspect
+  # --format='{{.State.Health.Status}}'`, never just "container is running".
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--requirepass', '${REDIS_PASSWORD}']
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - noodara_redis_data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 128M # Task 1 placeholder -- replaced with a measured value in Task 2.
+
+  migrate:
+    image: ${NOODARA_IMAGE_PREFIX}/noodara-control-plane:${NOODARA_VERSION}
+    command: ['node', 'dist/db/migrate.js']
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no" # Never "always": a one-shot must not auto-restart on its own exit.
+    deploy:
+      resources:
+        limits:
+          memory: 128M # Task 1 placeholder -- replaced with a measured value in Task 2.
+
+  api:
+    image: ${NOODARA_IMAGE_PREFIX}/noodara-control-plane:${NOODARA_VERSION}
+    command: ['node', 'dist/server.js']
+    env_file:
+      - .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 30s
+    # Node 22's global `fetch`, since node:22-slim has no guaranteed curl/wget. Any 2xx (including
+    # GET /health's 200 "degraded" when only redis/the worker are down) is healthy -- only a 503
+    # (dead Postgres) is unhealthy, matching apps/control-plane/src/routes/health.ts's own
+    # documented intent (D-26): the orchestrator must restart the API for a dead database, but
+    # never merely because Redis or the worker is unavailable.
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 128M # Task 1 placeholder -- replaced with a measured value in Task 2.
+
+  worker:
+    image: ${NOODARA_IMAGE_PREFIX}/noodara-control-plane:${NOODARA_VERSION}
+    command: ['node', 'dist/worker.js']
+    env_file:
+      - .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    # computeJobLockDurationMs (apps/control-plane/src/queue/job-budget.ts) = connectMs*2 + 2000 +
+    # discoveryMs + 30000; with env.ts's own defaults (10000ms connect, 60000ms discovery) that is
+    # 112000ms = 112s, and runWorkerShutdown (phase 4 D-25) is given exactly that as its graceful-
+    # shutdown budget. This grace period must exceed it, not invent a separate number.
+    stop_grace_period: 150s
+    # No healthcheck: the worker's liveness is reported through the api container's own /health
+    # `checks.worker` heartbeat (D-26), not a second, independent probe.
+    deploy:
+      resources:
+        limits:
+          memory: 128M # Task 1 placeholder -- replaced with a measured value in Task 2.
+
+  web:
+    image: ${NOODARA_IMAGE_PREFIX}/noodara-web:${NOODARA_VERSION}
+    ports:
+      - '${NOODARA_PORT}:3000' # The only published port in this whole file.
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 10s
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 128M # Task 1 placeholder -- replaced with a measured value in Task 2.
+
+volumes:
+  noodara_postgres_data:
+  noodara_redis_data:
