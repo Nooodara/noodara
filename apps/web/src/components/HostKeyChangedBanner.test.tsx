@@ -98,6 +98,33 @@ describe('HostKeyChangedBanner', () => {
     expect(screen.getByText('not available', { exact: false })).toBeInTheDocument();
   });
 
+  it('shows calm re-capture copy and hides the Trusted/Observed rows and verify command when both fingerprints are null (CR-01: an identity-changing edit left nothing to compare)', () => {
+    renderUi(
+      <HostKeyChangedBanner
+        host="10.0.0.5"
+        sshPort={22}
+        hostFingerprint={null}
+        hostFingerprintCapturedAt={null}
+        pendingFingerprint={null}
+        pendingFingerprintSeenAt={null}
+        now={NOW}
+        onTrustClick={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "This server's saved host key no longer applies because its host or port changed. Retry the connection to capture the new host key, then verify it on the server itself before continuing.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Trusted:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Observed:/)).not.toBeInTheDocument();
+    expect(screen.queryByText('ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub')).not.toBeInTheDocument();
+    expect(screen.getByText('HOST_KEY_CHANGED', { exact: true })).toBeInTheDocument();
+    expect(screen.getByText('10.0.0.5:22', { exact: false })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Trust new fingerprint' })).not.toBeInTheDocument();
+  });
+
   it('carries a stable data-testid for E2E/page-level assertions', () => {
     renderUi(
       <HostKeyChangedBanner

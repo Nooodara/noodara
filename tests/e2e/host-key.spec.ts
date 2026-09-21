@@ -492,7 +492,14 @@ test('@hostkey UF-01/GR-02 regression: editing the host while ERROR/HOST_KEY_CHA
     // pendingFingerprint, so there is structurally nothing left to trust.
     await expect(page.getByTestId('host-key-changed-banner')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Trust new fingerprint' })).toHaveCount(0);
-    await expect(page.getByTestId('host-key-changed-banner')).toContainText('Observed: not available');
+    // These replace the stale "Observed: not available" text (CR-01): with nothing left to
+    // compare, the banner hides the Trusted/Observed rows entirely instead of showing them empty.
+    // The visible Retry control proves the toolbar is no longer a dead end.
+    await expect(page.getByTestId('host-key-changed-banner')).toContainText('no longer applies');
+    await expect(page.getByTestId('host-key-changed-banner')).not.toContainText('Observed:');
+    await expect(page.getByTestId('host-key-changed-banner')).not.toContainText('Trusted:');
+    await expect(page.getByTestId('server-detail-primary-action')).toBeVisible();
+    await expect(page.getByTestId('server-detail-primary-action')).toHaveText('Retry');
 
     const afterEdit = await page.request.get(`/api/servers/${serverId}`);
     const afterEditBody = (await afterEdit.json()) as {
