@@ -2,6 +2,8 @@ import { Writable } from 'node:stream';
 import pino, { type DestinationStream, type Logger, type LoggerOptions } from 'pino';
 import { env } from './env.js';
 
+const NO_MESSAGE_FALLBACK = 'error logged without a message';
+
 // pino `redact.paths` (STACK.md "Structured Logging & Redaction") plus the credential/master-key
 // wildcards required by noodara-security §3/§8 and RESEARCH threat T-1-05. `req.headers.cookie`,
 // `req.headers.authorization` and `req.body.password` are the pitfall-1-adjacent minimum; the
@@ -41,6 +43,35 @@ export function createLogger(options: CreateLoggerOptions = {}): Logger {
       err: (e: unknown): { name: string } => ({
         name: e instanceof Error ? e.name : 'UnknownError',
       }),
+    },
+    // WR-A-04 (05-VERIFICATION.md gaps_remaining): `serializers.err` above only protects an
+    // error passed under the `err` key. Pino's own first-argument handling is different: when
+    // the first argument to a log call is a bare Error, pino sets `obj = { err: <that error> }`
+    // AND, when no message argument was supplied, copies `err.message` straight into `msg` —
+    // *before* `serializers.err` ever runs, so the serializer cannot reach it. Empirically, on
+    // this repo's pino 10.3.1 with the exact `serializers.err` above,
+    // `logger.error(new Error('sk-live-LEAKED-SECRET-VALUE'))` emits
+    // `{"err":{"name":"Error"},"msg":"sk-live-LEAKED-SECRET-VALUE"}` — the object is safe, the
+    // `msg` string is not. This hook is what makes `logger.error(err)` safe WITHOUT editing any
+    // call site: it rewrites a leading Error into `{ err: <error> }` plus a message that is
+    // NEVER derived from the error (never `err.message`, never a template literal, never
+    // `String(err)`) — falling back to a fixed literal when the caller supplied none. Do not
+    // "helpfully" restore a derived fallback message here; that derivation is the entire leak
+    // this hook closes.
+    hooks: {
+      logMethod(args, method) {
+        const first: unknown = args[0];
+        if (!(first instanceof Error)) {
+          method.apply(this, args);
+          return;
+        }
+
+        const second: unknown = args.length > 1 ? args[1] : undefined;
+        const message: string = typeof second === 'string' ? second : NO_MESSAGE_FALLBACK;
+        const rest: unknown[] = args.length > 2 ? args.slice(2) : [];
+        const rewritten = [{ err: first }, message, ...rest] as Parameters<typeof method>;
+        method.apply(this, rewritten);
+      },
     },
   };
 

@@ -15,18 +15,29 @@
 // standalone reproduction 05-REVIEW.md itself used to confirm WR-A-04. The static acceptance
 // checks (`grep -n "app.log.error(err)"` finds no match; `grep -n "app.log.error({ err"` does) are
 // the direct proof `server.ts` itself was changed to the shape asserted safe here.
+//
+// 05-43 closed the residual WR-A-04 left in 05-VERIFICATION.md's `gaps_remaining`: `logger.ts`
+// now carries a `hooks.logMethod` interceptor that rewrites ANY bare Error first argument into
+// `{ err }` plus a literal fallback message, at every log level, for every call site -- not just
+// the one `server.ts` call site this file was written to pin. The first test below is updated
+// accordingly: a bare Error no longer leaks even without the `{ err }` call-site shape, because
+// the guard is now structural rather than per-call-site.
 import { describe, expect, it } from 'vitest';
 import { createLogger, writableForTests } from './logger.js';
 
 describe('server.ts app.listen() failure logging shape (WR-A-04)', () => {
-  it('a bare Error as the first argument leaks its raw message into msg (the shape server.ts used to use)', () => {
+  it('a bare Error as the first argument no longer leaks its raw message into msg (guarded by 05-43\'s hooks.logMethod)', () => {
     const { stream, records } = writableForTests();
     const logger = createLogger({ level: 'info', destination: stream });
     const secretMessage = 'listen EADDRINUSE CANARY-SECRET-DO-NOT-LEAK :3100';
 
     logger.error(new Error(secretMessage));
 
-    expect(JSON.stringify(records())).toContain(secretMessage);
+    const serialized = JSON.stringify(records());
+    expect(serialized).not.toContain(secretMessage);
+    const [record] = records() as unknown as [{ err: { name: string }; msg: string }];
+    expect(record.err.name).toBe('Error');
+    expect(record.msg).toBe('error logged without a message');
   });
 
   it('the { err } merging-object form keeps the raw message out of the record (the shape server.ts now uses)', () => {

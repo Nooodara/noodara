@@ -151,7 +151,7 @@ describe('createLogger bare-Error-as-first-argument guard (WR-A-04, 05-VERIFICAT
     logger.warn(new Error(CANARY));
     logger.fatal(new Error(CANARY));
 
-    const emitted = records() as unknown as Array<{ msg?: string; err?: { name: string } }>;
+    const emitted = records() as unknown as { msg?: string; err?: { name: string } }[];
     expect(emitted).toHaveLength(2);
     for (const record of emitted) {
       expect(record.err?.name).toBe('Error');
@@ -184,7 +184,7 @@ describe('createLogger bare-Error-as-first-argument guard (WR-A-04, 05-VERIFICAT
     logger.info({ serverId: 'srv-1' }, 'hello');
     logger.info('plain message');
 
-    const emitted = records() as unknown as Array<{ msg?: string; serverId?: string }>;
+    const emitted = records() as unknown as { msg?: string; serverId?: string }[];
     expect(emitted[0]?.msg).toBe('hello');
     expect(emitted[0]?.serverId).toBe('srv-1');
     expect(emitted[1]?.msg).toBe('plain message');
