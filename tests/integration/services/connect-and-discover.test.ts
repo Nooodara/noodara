@@ -436,6 +436,97 @@ describe('connect phase (D-01, D-05, fingerprints)', () => {
     expect(result.server.hostFingerprint).toBe(pinned);
   });
 
+  it('a successful reconnect clears both pending_fingerprint and pending_fingerprint_seen_at after an earlier parked HOST_KEY_CHANGED (GR-01/gap 6)', async () => {
+    fixture = await startServiceFixture();
+    const server = await registerFixtureServer(fixture);
+    const { connectAndDiscover } = await loadConnectAndDiscover();
+
+    // Arrange: park a fingerprint through a real scripted HOST_KEY_CHANGED connect.
+    fixture.setSshPort(
+      buildFakeSshPort({
+        ok: false,
+        errorCode: 'HOST_KEY_CHANGED',
+        message: 'host key changed',
+        attempts: 1,
+        observedFingerprint: FP2,
+      }),
+    );
+    const parked = await connectAndDiscover(fixture.deps, { actor: SYSTEM, serverId: server.id });
+    expect(parked.ok).toBe(true);
+    if (!parked.ok) return;
+    expect(parked.server.pendingFingerprint).toBe(formatFingerprint(FP2));
+    expect(parked.server.pendingFingerprintSeenAt).toEqual(FIXED_NOW);
+
+    // Act: a later successful connect that also runs discovery — this run reaches the
+    // post-discovery `.set(...)` branch (the second write site this task changes).
+    fixture.setSshPort(
+      buildFakeSshPort({
+        ok: true,
+        session: buildFakeSshSession({}),
+        fingerprint: FP1,
+        fingerprintCaptured: true,
+        attempts: 1,
+      }),
+    );
+    const success = await connectAndDiscover(fixture.deps, {
+      actor: SYSTEM,
+      serverId: server.id,
+      discover: () => Promise.resolve(buildSnapshot()),
+    });
+
+    expect(success.ok).toBe(true);
+    if (!success.ok) return;
+    expect(success.server.pendingFingerprint).toBeNull();
+    expect(success.server.pendingFingerprintSeenAt).toBeNull();
+    const row = await serverRow(fixture, server.id);
+    expect(row?.pendingFingerprint).toBeNull();
+    expect(row?.pendingFingerprintSeenAt).toBeNull();
+  });
+
+  it('an AUTH_FAILED failure after a parked HOST_KEY_CHANGED also clears both columns (GR-01/gap 6)', async () => {
+    fixture = await startServiceFixture();
+    const server = await registerFixtureServer(fixture);
+    const { connectAndDiscover } = await loadConnectAndDiscover();
+
+    // Arrange: park a fingerprint through a real scripted HOST_KEY_CHANGED connect.
+    fixture.setSshPort(
+      buildFakeSshPort({
+        ok: false,
+        errorCode: 'HOST_KEY_CHANGED',
+        message: 'host key changed',
+        attempts: 1,
+        observedFingerprint: FP2,
+      }),
+    );
+    const parked = await connectAndDiscover(fixture.deps, { actor: SYSTEM, serverId: server.id });
+    expect(parked.ok).toBe(true);
+    if (!parked.ok) return;
+    expect(parked.server.pendingFingerprint).toBe(formatFingerprint(FP2));
+    expect(parked.server.pendingFingerprintSeenAt).toEqual(FIXED_NOW);
+
+    // Act: a later AUTH_FAILED connect — this run stays in the no-discovery `.set(...)` branch
+    // (the first write site this task changes).
+    fixture.setSshPort(
+      buildFakeSshPort({
+        ok: false,
+        errorCode: 'AUTH_FAILED',
+        message: 'bad credentials',
+        attempts: 1,
+      }),
+    );
+    const result = await connectAndDiscover(fixture.deps, { actor: SYSTEM, serverId: server.id });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.server.status).toBe('ERROR');
+    expect(result.server.lastErrorCode).toBe('AUTH_FAILED');
+    expect(result.server.pendingFingerprint).toBeNull();
+    expect(result.server.pendingFingerprintSeenAt).toBeNull();
+    const row = await serverRow(fixture, server.id);
+    expect(row?.pendingFingerprint).toBeNull();
+    expect(row?.pendingFingerprintSeenAt).toBeNull();
+  });
+
   it('writes exactly one server.connection_attempted event on success with D-16 metadata', async () => {
     fixture = await startServiceFixture();
     const server = await registerFixtureServer(fixture);
