@@ -57,7 +57,9 @@ export function statusForErrorCode(code: ServerErrorCode): ServerStatus {
  * Applies a connection result to the current state. Only accepts results while the server is
  * CONNECTING (results only arrive while a connection attempt is in flight — any other source
  * status throws `InvalidTransitionError`, even for a target status otherwise reachable from it).
- * Returns a new object; never mutates `state`.
+ * Returns a new object; never mutates `state`. Invariant (GR-01/gap 6): a `pendingFingerprint`
+ * only ever survives a `HOST_KEY_CHANGED` outcome — a success or any other failure code always
+ * clears it, so a stale parked value can never be promoted by a later, unrelated result.
  */
 export function applyConnectionResult(
   state: ServerConnectionState,
@@ -78,6 +80,7 @@ export function applyConnectionResult(
       status: nextStatus,
       lastErrorCode: null,
       hostFingerprint: state.hostFingerprint ?? result.fingerprint,
+      pendingFingerprint: null,
       lastSeenAt: now,
     };
   }
@@ -87,8 +90,8 @@ export function applyConnectionResult(
     status: nextStatus,
     lastErrorCode: result.errorCode,
     pendingFingerprint:
-      result.errorCode === 'HOST_KEY_CHANGED' && result.observedFingerprint !== undefined
-        ? result.observedFingerprint
-        : state.pendingFingerprint,
+      result.errorCode === 'HOST_KEY_CHANGED'
+        ? (result.observedFingerprint ?? state.pendingFingerprint)
+        : null,
   };
 }
