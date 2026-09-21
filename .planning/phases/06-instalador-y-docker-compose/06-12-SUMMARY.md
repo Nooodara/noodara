@@ -185,3 +185,137 @@ All 7 created/modified files (`tests/integration/installer/idempotent-rerun.test
 `tests/unit/installer/main-flow.test.ts`) verified present on disk; all 8 task/fix commit hashes
 (`ea4c0cf`, `4c3ba69`, `99210b8`, `43aae61`, `ab80516`, `3e0e3a8`, `5fa8b3a`, `62c6211`) verified
 present in `git log --oneline --all`.
+
+## Post-execution fix — Finding F
+
+An orchestrator audit of this plan found that `ab80516`'s own fix (defer every non-migrate
+`docker compose up -d` failure to `noodara_wait_for_health`) was itself a regression: it is
+correct for the case that fix was built to solve (Compose's own dependency-wait failing because
+`api` is genuinely running but unhealthy), but wrong for every `up -d` failure that is **not** a
+health problem at all -- an unresolvable image reference, an invalid compose file, a port already
+allocated, a daemon-side error. In that case nothing ever creates a running `api`/`web` container,
+so deferring unconditionally polled for the FULL health budget (up to 5 minutes by default), then
+reported a generic timeout with no log tail (nothing to show) while Compose's own real error
+message had already scrolled off the top of the operator's terminal -- and made exit 51
+(`compose-up-failed`) permanently unreachable. Fixed here, TDD RED→GREEN throughout, no new
+`PLAN.md`.
+
+### The fix
+
+`noodara_compose_up` now reads a single, immediate container **State** (never Health -- State
+answers "does a running container exist to even health-check in the first place") for `api`/`web`
+right after a non-migrate `up -d` failure, via a new `noodara_service_state`:
+
+- `api` must be exactly `"running"`. Nothing legitimately blocks `api` from at least reaching
+  `"running"` once `migrate` has already succeeded (checked earlier in the same function, same
+  image reference) -- if `api` is not running, the real cause is genuinely something other than a
+  health problem, and the installer now fails **immediately** with exit 51, naming that Compose's
+  own error is printed above, showing a **redacted** `docker compose ps -a` state table (through
+  `noodara_redact_diagnostic_text`), stating "Data and secrets are untouched", and including the
+  D-12 rollback hint **only** when this run genuinely changed the version (never during a repair,
+  even though `.env` may still carry an old `NOODARA_PREVIOUS_VERSION` from a real prior upgrade --
+  `noodara_compose_up` now accepts the same optional `"repair"` context
+  `noodara_wait_for_health` already had, for the identical 06-09 Finding E reason). **Zero health
+  polling happens on this branch.**
+- `web` accepts `"running"` **or** `"created"` -- `noodara_wait_for_health` was already correct;
+  `noodara_compose_up`'s own first attempt at this fix was not (see the second real bug below).
+  Any other state for `web` (exited/dead/absent) still fails immediately (51), since that IS an
+  independent problem.
+- If both are acceptable, `noodara_compose_up` defers to `noodara_wait_for_health` exactly as
+  `ab80516` already established.
+
+`noodara_wait_for_health` itself now short-circuits as soon as EITHER service reports the
+DEFINITIVE `"unhealthy"` status (the container's own healthcheck already exhausted its retries) --
+`"starting"`/empty are not definitive and keep polling within the bounded budget exactly as before.
+This is what makes install.sh's OWN post-`up-d` health-wait loop fast once it does run; see
+"Real-DinD timing, reported honestly" below for why the end-to-end scenario is not faster overall.
+
+### Two real install.sh bugs plus one test-fixture bug, found across three real-DinD investigation cycles
+
+**1. [Genuine `install.sh` bug, unit-tested] The classification above did not exist at all.**
+Pinned by `43aae61` (RED, 16/16 new/changed cases failed for the expected reason against the
+`ab80516`-only code), fixed by `e8b9952` (GREEN).
+
+**2. [Genuine `install.sh` bug, unit-tested, found by RE-RUNNING the real scenario after fix #1]
+`noodara_compose_up` required BOTH `api` AND `web` to be `"running"` before deferring.** Re-running
+`idempotent-rerun.test.ts`'s run 6 against the real fixture (after fixing the test-fixture bug
+below) showed `web`'s own real State was `"created"`, not `"running"` -- `docker-compose.yml`'s own
+topology (`web depends_on: api: condition: service_healthy`) means Compose genuinely creates
+`web`'s container early but never starts it while `api` has not yet reported healthy. Requiring
+`web` to be strictly `"running"` made exit 51 fire on the ordinary api-is-unhealthy case too, the
+exact scenario fix #1 was built to correctly defer. Pinned by `3ab8bd7` (RED: the new "web created,
+api running" case incorrectly got exit 51), fixed by `530c69e` (GREEN: `web` now also accepts
+`"created"`).
+
+**3. [Test-fixture bug, not `install.sh` -- found by the FIRST real re-run of the affected
+scenario] The broken-upgrade image crash-looped instead of staying up unhealthy.**
+`idempotent-rerun.test.ts`'s own `buildBrokenControlPlaneImage` overwrote `dist/server.js` with
+`require("node:timers").setInterval(...)` -- but `@noodara/control-plane`'s own `package.json`
+declares `"type": "module"`, and `require()` throws `"require is not defined in ES module scope"`
+in that context, crash-looping the container (`Restarting (1)`) instead of staying up-but-unhealthy
+as the fixture intended. Fix #1's own new classification correctly (and for the first time)
+surfaced this as a genuine `"not running"` case (exit 51) instead of the old code masking it behind
+a generic 5-minute timeout that happened to also land on 53. Verified with a minimal
+`node:22-slim` + `"type": "module"` reproduction (`docker run` staying `Up`) before re-running the
+real 06-12 scenario. Fixed by `ace246f`: `setInterval` is a Node.js **global** (works identically
+under CJS and ESM, no import/require needed at all).
+
+### Real-DinD timing, reported honestly
+
+Three full real re-runs of `idempotent-rerun.test.ts` were needed to reach green (each one
+uncovering the next issue in the chain above):
+
+| Re-run | State | run 6 duration | Outcome |
+|---|---|---|---|
+| pre-Finding-F baseline (before any of this fix) | -- | 39.7s | exit 53, but via the masked/generic path this fix removes |
+| 1st (fix #1 landed, fixture bug #3 still present) | crash-looping | 33.9s | **FAILED** -- exit 51 instead of 53 (bug #3 surfaced) |
+| 2nd (fixture fixed, fix #2 not yet landed) | web required `"running"` | 83.9s | **FAILED** -- exit 51 instead of 53 (bug #2 surfaced) |
+| 3rd (fix #2 landed) | web accepts `"created"` | 83.4s | **PASSED** |
+
+The orchestrator asked whether run 6 would be faster after the fix. It is not: the final, correct
+run measured 83.4s vs. the pre-Finding-F baseline's 39.7s. This is not a regression in the fix --
+the pre-Finding-F baseline was artificially fast because of test-fixture bug #3 (a crash-looping
+container fails Compose's own dependency-wait almost immediately, matching the 1st re-run's 33.9s
+too). Once the fixture was fixed to genuinely stay running-but-unhealthy (the scenario this test is
+actually named for and was always meant to exercise), the real, honest bound is dominated by
+`docker-compose.yml`'s **own** healthcheck `interval: 5s` / `retries: 10` (~50s) inside Compose's
+own dependency-wait for `web depends_on: api` -- entirely outside `install.sh`'s and this fix's own
+control (Compose's dependency-wait does not consult `NOODARA_HEALTH_WAIT_INTERVAL`/`_ATTEMPTS` at
+all; those only bound `noodara_wait_for_health`'s own loop, which the short-circuit fix DID make
+fast -- a single read, not the 5-minute budget). The short-circuit fix's own benefit is real and
+verified (proven directly by the unit tests: a single/double health read instead of exhausting the
+attempts budget) -- it is simply dwarfed, in this specific real scenario, by an earlier, unrelated
+bottleneck this plan does not own.
+
+### Verification
+
+- `pnpm exec vitest run --config vitest.installer.config.ts tests/integration/installer/idempotent-rerun.test.ts`
+  (the only file the orchestrator asked to re-run for real), final run: **8/8 green**, 341.6s total
+  file duration (run 6 itself: 83.4s, see the table above for the two earlier real-bug-finding
+  re-runs).
+- Full `pnpm test`: 126 files / **2123 tests green** (2123 = 2103 baseline + 20 net new across the
+  three RED→GREEN cycles).
+- `pnpm check:posix-sh`: clean (2224 lines). `pnpm lint` / `pnpm typecheck`: clean.
+- Zero `noodara.test=true` containers/volumes/images left behind after any run; the user's own
+  `decisionmaker-*`/`nuestracasa-*` containers untouched throughout.
+
+### Commits
+
+- `32ff42b` test(06-12): pin Finding F -- classify up -d failures by container state first
+- `e8b9952` fix(06-12): classify up -d failures by container state before deferring (Finding F)
+- `ace246f` fix(06-12): stop the broken-image test fixture from crash-looping
+- `3ab8bd7` test(06-12): pin a second real Finding F bug -- web legitimately stays created
+- `530c69e` fix(06-12): accept web's legitimate 'created' state before deferring (Finding F cont.)
+
+### Not fully implemented / disclosed honestly
+
+- Run 6's own real duration did NOT improve (see "Real-DinD timing" above) -- disclosed rather than
+  silently omitted, per the orchestrator's own explicit request to report it either way.
+- Per the orchestrator's own explicit scope ("re-run for real ONLY the affected scenario file"),
+  `preflight-scenarios.test.ts` (including its own network-dependent no-Docker case) was
+  deliberately NOT re-run for this fix -- Finding F only touches `noodara_compose_up`'s FAILURE
+  path; every preflight scenario either never reaches `noodara_compose_up` at all (the eight fast
+  cases) or reaches it only on install.sh's SUCCESS path (the no-Docker case), which this fix does
+  not touch.
+- `ROADMAP.md`/`REQUIREMENTS.md` were not touched by this fix, per the orchestrator's own explicit
+  instruction.
