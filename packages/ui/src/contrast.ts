@@ -215,6 +215,16 @@ const STATUS_TOKEN_RE = /^status-(?!.*-soft$)[a-z0-9]+$/;
 // derive-don't-hardcode way as STATUS_TOKEN_RE -- a future `--status-newthing-text` is picked up
 // automatically the moment its `-soft` sibling exists.
 const STATUS_TEXT_TOKEN_RE = /^status-([a-z0-9]+)-text$/;
+// The link-text-only role token (D4, 05-45, 2026-09-20): unlike `--accent`, which doubles as
+// outline/border foreground, `--accent-text` has exactly one role, so it gets its own, simpler
+// derivation rule below (text verdict only, no outline/border verdict).
+const ACCENT_TEXT_TOKEN_RE = /^accent-text$/;
+// Any FILL token that carries `--on-accent` text on top of it (D2's `--accent-fill`, D5's
+// `--status-<tone>-fill`, 05-45, 2026-09-20) -- derived from parsed names, not a hardcoded list,
+// so a future `--status-newthing-fill` is picked up automatically. Deliberately does NOT match a
+// bare `--status-<tone>` (no trailing `-fill`), so a fill token is never itself mistaken for the
+// base status token STATUS_TOKEN_RE derives pairs for.
+const FILL_TOKEN_RE = /^(accent|status-[a-z0-9]+)-fill$/;
 // Any `--ink*` token (ink, ink-secondary, ink-tertiary, and any future ink-* addition) -- same
 // derive-don't-hardcode rationale.
 const INK_TOKEN_RE = /^ink(-.+)?$/;
@@ -233,15 +243,17 @@ const SURFACE_BG_RE = /^(canvas|surface-\d+)$/;
 const STATUS_PILL_BACKGROUNDS = ['surface-1', 'canvas', 'surface-2'];
 
 /** Runs the full measured audit for a single theme's parsed token map: `--on-accent` on
- *  `--accent` and on `--accent-fill`; `--accent` as a foreground (link text AND outline/border,
- *  two separately-thresholded verdicts on the same pair) on every surface; every `--status-*`
- *  token (derived, see `STATUS_TOKEN_RE`) on its own composited `-soft` background over
- *  `--surface-1`; every `--status-*-text` token (derived, see `STATUS_TEXT_TOKEN_RE`) on its own
- *  composited `-soft` background over every real StatusPill background (derived list, see
+ *  `--accent`; `--on-accent` on every FILL token (derived, see `FILL_TOKEN_RE` -- `--accent-fill`
+ *  and any `--status-<tone>-fill`); `--accent` as a foreground (link text AND outline/border,
+ *  two separately-thresholded verdicts on the same pair) on every surface; `--accent-text` as a
+ *  link-text-ONLY foreground (derived, see `ACCENT_TEXT_TOKEN_RE`) on every surface; every
+ *  `--status-*` token (derived, see `STATUS_TOKEN_RE`) on its own composited `-soft` background
+ *  over `--surface-1`; every `--status-*-text` token (derived, see `STATUS_TEXT_TOKEN_RE`) on its
+ *  own composited `-soft` background over every real StatusPill background (derived list, see
  *  `STATUS_PILL_BACKGROUNDS`); and every `--ink*` token (derived) on every `--canvas`/`--surface-*`
  *  background (derived) -- built so that a token this plan does not yet know about is still
  *  covered the moment it is added to tokens.css (05-33-PLAN.md Task 3's exhaustiveness
- *  requirement, extended by the 2026-09-20 continuation's D1/D2 decisions). */
+ *  requirement, extended by the 2026-09-20 continuation's D1/D2 decisions and 05-45's D4/D5). */
 export function auditTheme(tokens: Record<string, string>, theme: 'light' | 'dark'): AuditPair[] {
   const results: AuditPair[] = [];
 
@@ -262,20 +274,28 @@ export function auditTheme(tokens: Record<string, string>, theme: 'light' | 'dar
     });
   }
 
-  // D2 (2026-09-20): the fill every primary-button/skip-link/segmented-control-checked-state
-  // carries `--on-accent` text on top of -- kept as its own token, separate from `--accent`,
-  // because `--accent` also serves as link-text/outline foreground (audited just below) where a
-  // darker fill-only value would itself fail the outline/border check at typical surface tones.
-  const accentFill = tokens['accent-fill'];
-  if (onAccent !== undefined && accentFill !== undefined) {
-    const ratio = contrastRatio(onAccent, accentFill);
+  // D2 (2026-09-20) + D5 (05-45, 2026-09-20): every FILL that carries `--on-accent` text on top
+  // of it -- `--accent-fill` (primary Button, skip link, checked SegmentedControl) and
+  // `--status-error-fill` (the destructive-filled confirm button) -- generalises the previous
+  // single explicit `--on-accent`-on-`--accent-fill` block into a loop derived from parsed token
+  // names (FILL_TOKEN_RE), not a hardcoded list, so a future `--status-newthing-fill` is audited
+  // automatically. Each fill is kept as its own token, separate from the tone's base value,
+  // because the base value also serves a foreground/outline/dot/border role elsewhere where a
+  // fill-tuned value would itself fail a different check.
+  const fillNames = Object.keys(tokens)
+    .filter((name) => FILL_TOKEN_RE.test(name))
+    .sort();
+  for (const fillName of fillNames) {
+    const fillValue = tokens[fillName];
+    if (onAccent === undefined || fillValue === undefined) continue;
+    const ratio = contrastRatio(onAccent, fillValue);
     results.push({
-      label: '--on-accent on --accent-fill',
+      label: `--on-accent on --${fillName}`,
       theme,
       foregroundToken: '--on-accent',
-      backgroundDescription: '--accent-fill',
+      backgroundDescription: `--${fillName}`,
       foregroundValue: onAccent,
-      backgroundEffective: accentFill,
+      backgroundEffective: fillValue,
       ratio: roundDown(ratio),
       threshold: THRESHOLD_NORMAL_TEXT,
       pass: ratio >= THRESHOLD_NORMAL_TEXT,
@@ -321,6 +341,32 @@ export function auditTheme(tokens: Record<string, string>, theme: 'light' | 'dar
         ratio: roundDown(ratio),
         threshold: THRESHOLD_UI_COMPONENT,
         pass: ratio >= THRESHOLD_UI_COMPONENT,
+      });
+    }
+  }
+
+  // D4 (05-45, 2026-09-20): `--accent-text` is link text ONLY -- it has no outline/border role,
+  // so (unlike `--accent` just above) it gets a single verdict per surface, at
+  // THRESHOLD_NORMAL_TEXT, with a label that names the role explicitly ("as link text on") so it
+  // is never confused with `--accent`'s own dual-verdict pairs.
+  const accentTextNames = Object.keys(tokens).filter((name) => ACCENT_TEXT_TOKEN_RE.test(name));
+  for (const name of accentTextNames) {
+    const foregroundValue = tokens[name];
+    if (foregroundValue === undefined) continue;
+    for (const surfaceName of surfaceNames) {
+      const backgroundValue = tokens[surfaceName];
+      if (backgroundValue === undefined) continue;
+      const ratio = contrastRatio(foregroundValue, backgroundValue);
+      results.push({
+        label: `--${name} as link text on --${surfaceName}`,
+        theme,
+        foregroundToken: `--${name}`,
+        backgroundDescription: `--${surfaceName}`,
+        foregroundValue,
+        backgroundEffective: backgroundValue,
+        ratio: roundDown(ratio),
+        threshold: THRESHOLD_NORMAL_TEXT,
+        pass: ratio >= THRESHOLD_NORMAL_TEXT,
       });
     }
   }

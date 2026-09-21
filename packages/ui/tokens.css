@@ -28,6 +28,12 @@
      --accent directly. --accent itself stays link-text/outline/border foreground -- see the
      RESOLVED note below for why the two had to split. */
   --accent-fill: #0071e3;
+  /* Plan 05-45, decision D4 (2026-09-20, docs/contrast-decision-05.md section 6): --accent as
+     LINK TEXT measured 4.31:1 on --canvas / 4.12:1 on --surface-3 in light mode -- both below
+     4.5:1 -- while --accent itself must stay unchanged for outline/border/focus-ring use (D2).
+     --accent-text is the role-specific token real link call sites (ActivityRow.tsx,
+     servers/[id]/page.tsx) bind to instead; minimum ratio 4.89:1 on --surface-3. */
+  --accent-text: #0066cc;
 
   /* Semantic status colors (light). Reserved exclusively for infrastructure state -- never
      decoration. Each has a -soft variant at 14% alpha for pill backgrounds. RESOLVED (see note
@@ -42,6 +48,14 @@
   --status-error: #ff3b30;
   --status-error-soft: rgba(255, 59, 48, 0.14);
   --status-error-text: #be2920;
+  /* Plan 05-45, decision D5 (2026-09-20, docs/contrast-decision-05.md section 6): white
+     (--on-accent) on --status-error measured 3.54:1 light / 3.40:1 dark -- both below 4.5:1.
+     --status-error-fill is the only place a solid red carries --on-accent text (the delete-
+     confirmation button, Button.tsx DESTRUCTIVE_FILLED_CLASSES); --status-error itself stays
+     vivid, unchanged, for the pill dot, borders and meters. Same value in both themes, following
+     --accent-fill's own precedent (D2): #d70015 clears 5.38:1 for white text while staying in
+     Apple's systemRed family. */
+  --status-error-fill: #d70015;
   --status-idle: #8e8e93;
   --status-idle-soft: rgba(142, 142, 147, 0.14);
   --status-idle-text: #67676b;
@@ -157,6 +171,10 @@
   /* Same value in both themes (D2) -- #0071e3 is the one hex that clears >=4.5:1 for white
      on-accent text while staying inside the single-blue-action-colour family both themes share. */
   --accent-fill: #0071e3;
+  /* D4 (05-45): dark --accent (#2997ff) already clears 4.5:1 as text on every dark surface
+     (5.99 canvas / 5.58 surface-1 / 5.07 surface-2 / 4.75 surface-3, measured by contrast.test.ts)
+     -- --accent-text stays the same value as --accent dark, no darkening needed. */
+  --accent-text: #2997ff;
 
   --status-ok: #30d158;
   --status-ok-soft: rgba(48, 209, 88, 0.14);
@@ -167,6 +185,8 @@
   --status-error: #ff453a;
   --status-error-soft: rgba(255, 69, 58, 0.14);
   --status-error-text: #ff655b;
+  /* D5 (05-45): same value as light -- see the light block's comment for the full rationale. */
+  --status-error-fill: #d70015;
   --status-idle: #8e8e93;
   --status-idle-soft: rgba(142, 142, 147, 0.14);
   --status-idle-text: #9d9da1;

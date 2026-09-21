@@ -25,6 +25,7 @@
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-accent-fill: var(--accent-fill);
+  --color-accent-text: var(--accent-text);
   --color-on-accent: var(--on-accent);
 
   --color-status-ok: var(--status-ok);
@@ -36,6 +37,7 @@
   --color-status-error: var(--status-error);
   --color-status-error-soft: var(--status-error-soft);
   --color-status-error-text: var(--status-error-text);
+  --color-status-error-fill: var(--status-error-fill);
   --color-status-idle: var(--status-idle);
   --color-status-idle-soft: var(--status-idle-soft);
   --color-status-idle-text: var(--status-idle-text);
