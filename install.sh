@@ -548,6 +548,35 @@ noodara_ensure_compose_plugin() {
   noodara_docker_apt_install_compose_plugin
 }
 
+# Bounded, short retry (never unbounded) for `docker version` to start succeeding right after
+# `apt-get install docker-ce ...` itself returns (06-12-PLAN.md Task 2, D-14/INST-01). apt's own
+# docker-ce postinst starts docker.service ASYNCHRONOUSLY -- via systemd on a real host, and not at
+# all on a bare privileged container with no init system (exactly the no-Docker installer-DinD
+# fixture this plan's own preflight-scenarios.test.ts exercises, where a background watcher starts
+# dockerd itself once the binary appears). Checking `docker version` in the exact instant apt-get
+# returns can race a daemon that is still starting, on EITHER kind of host -- this applies to every
+# real install, not just the test fixture (hard_rule's own instruction: a general, unit-tested,
+# bounded wait, never a test-only branch). Overridable only for tests, matching this file's other
+# NOODARA_*_WAIT_ATTEMPTS/INTERVAL constants (NOODARA_HEALTH_WAIT_ATTEMPTS/INTERVAL, above).
+readonly NOODARA_DOCKER_READY_WAIT_ATTEMPTS="${NOODARA_DOCKER_READY_WAIT_ATTEMPTS:-10}"
+readonly NOODARA_DOCKER_READY_WAIT_INTERVAL="${NOODARA_DOCKER_READY_WAIT_INTERVAL:-1}"
+
+noodara_wait_for_docker_ready() {
+  _noodara_wfdr_attempt=0
+  _noodara_wfdr_ready=1
+  while [ "$_noodara_wfdr_attempt" -lt "$NOODARA_DOCKER_READY_WAIT_ATTEMPTS" ]; do
+    if noodara_docker_present; then
+      _noodara_wfdr_ready=0
+      break
+    fi
+    _noodara_wfdr_attempt=$(awk -v n="$_noodara_wfdr_attempt" 'BEGIN { print n + 1 }')
+    if [ "$_noodara_wfdr_attempt" -lt "$NOODARA_DOCKER_READY_WAIT_ATTEMPTS" ]; then
+      sleep "$NOODARA_DOCKER_READY_WAIT_INTERVAL"
+    fi
+  done
+  return "$_noodara_wfdr_ready"
+}
+
 # Orchestrator (INST-01, D-14): installs Docker Engine and/or the Compose plugin only when
 # missing. An already-present Docker Engine and Compose plugin are left completely alone -- zero
 # apt/gpg/file-write calls -- so a re-run never reinstalls, upgrades or restarts a running Docker
@@ -582,7 +611,7 @@ noodara_ensure_docker() {
   fi
 
   noodara_install_docker
-  if ! noodara_docker_present; then
+  if ! noodara_wait_for_docker_ready; then
     noodara_fail docker-install-failed "Docker Engine installation completed but 'docker version' still fails. Check the output above and try installing manually."
   fi
   if ! noodara_compose_present; then

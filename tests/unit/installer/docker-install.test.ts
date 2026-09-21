@@ -338,7 +338,13 @@ describe.each(posixInterpreters())('install.sh noodara_ensure_docker (%s)', (int
     const { snippet, env } = buildDockerAbsentEnv({ installsDocker: false });
     const fullSnippet = [snippet, 'noodara_ensure_docker'].join('\n');
 
-    const result = runInstallerShell(interpreter, fullSnippet, { env });
+    // 06-12-PLAN.md Task 2: noodara_ensure_docker now retries noodara_wait_for_docker_ready
+    // (bounded, real sleeps by default) before giving up -- overridden down to zero-wait here so
+    // this genuinely-Docker-never-appears case stays fast, matching every other overridable-
+    // wait-constant test in this file (NOODARA_HEALTH_WAIT_ATTEMPTS/INTERVAL's own precedent).
+    const result = runInstallerShell(interpreter, fullSnippet, {
+      env: { ...env, NOODARA_DOCKER_READY_WAIT_ATTEMPTS: '2', NOODARA_DOCKER_READY_WAIT_INTERVAL: '0' },
+    });
 
     expect(result.status).toBe(20);
   });
