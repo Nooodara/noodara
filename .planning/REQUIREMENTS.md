@@ -11,9 +11,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Installation
 
-- [ ] **INST-01**: El usuario instala Noodara en un VPS Ubuntu 22.04/24.04 limpio con un solo comando `curl | sh` que instala Docker y el plugin Compose si faltan, genera `.env` con secrets aleatorios, levanta api/worker/web/postgres/redis con Docker Compose y aplica migraciones.
-- [ ] **INST-02**: Volver a ejecutar el instalador sobre una instalación existente no destruye datos ni secrets: detecta la instalación y actualiza o no hace nada.
-- [ ] **INST-03**: El instalador hace preflight (OS soportado, puertos en uso, Docker instalado vía snap, arquitectura, RAM mínima) y falla con un mensaje accionable antes de tocar el sistema.
+- [x] **INST-01**: El usuario instala Noodara en un VPS Ubuntu 22.04/24.04 limpio con un solo comando `curl | sh` que instala Docker y el plugin Compose si faltan, genera `.env` con secrets aleatorios, levanta api/worker/web/postgres/redis con Docker Compose y aplica migraciones.
+- [x] **INST-02**: Volver a ejecutar el instalador sobre una instalación existente no destruye datos ni secrets: detecta la instalación y actualiza o no hace nada.
+- [x] **INST-03**: El instalador hace preflight (OS soportado, puertos en uso, Docker instalado vía snap, arquitectura, RAM mínima) y falla con un mensaje accionable antes de tocar el sistema.
 - [x] **INST-04**: Al terminar, el instalador imprime la URL del panel y un setup token de un solo uso para crear el admin.
 - [x] **INST-05**: El instalador acepta variables opcionales (`NOODARA_ADMIN_EMAIL`, `NOODARA_ADMIN_PASSWORD`) para crear el admin sin pasar por el setup interactivo.
 - [x] **INST-06**: El control plane se niega a arrancar si falta o es débil cualquier secret requerido (clave de cifrado, auth secret, password de base de datos); no existen valores por defecto.
@@ -167,9 +167,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISC-02 | Phase 5 | Complete |
 | QA-04 | Phase 5 | Pending |
 | QA-05 | Phase 5 | Pending |
-| INST-01 | Phase 6 | Pending |
-| INST-02 | Phase 6 | Pending |
-| INST-03 | Phase 6 | Pending |
+| INST-01 | Phase 6 | Complete |
+| INST-02 | Phase 6 | Complete |
+| INST-03 | Phase 6 | Complete |
 | INST-04 | Phase 6 | Complete |
 | INST-05 | Phase 6 | Complete |
 
