@@ -262,6 +262,45 @@ noodara_check_docker_snap() {
   fi
 }
 
+# .env generation (06-CONTEXT.md D-10/D-11, INST-01/INST-02/INST-05). Secrets are generated fresh
+# per installation via `openssl rand` -- never a literal or fallback value anywhere in this file
+# (T-06-03, Dokploy CVE-2026-24840 precedent).
+
+# Generates a fresh random secret. `base64` decodes to exactly 32 raw bytes -- the only shape
+# apps/control-plane/src/env.ts's NOODARA_MASTER_KEY validator accepts. `hex` is 64 lowercase hex
+# characters and is the shape every other generated secret must use: a base64 secret's '/', '+' or
+# '=' characters corrupt DATABASE_URL/REDIS_URL when `new URL()` parses them (proven by this
+# plan's own negative-control test in tests/integration/installer/env-contract.test.ts), while hex
+# characters are all URL-unreserved and always round-trip byte-for-byte.
+noodara_generate_secret() {
+  kind="$1"
+  case "$kind" in
+    base64)
+      openssl rand -base64 32
+      ;;
+    hex)
+      openssl rand -hex 32
+      ;;
+    *)
+      printf 'noodara: internal error: unknown secret kind %s\n' "$kind" >&2
+      exit 99
+      ;;
+  esac
+}
+
+# Compose-internal hostname/port/role/database name are hardcoded here deliberately -- these are
+# the production Compose service names (Plan 06-07), never exposed to the host
+# (06-CONTEXT.md D-10/same-origin), so there is nothing here for an operator to override.
+noodara_build_database_url() {
+  password="$1"
+  printf 'postgresql://noodara:%s@postgres:5432/noodara\n' "$password"
+}
+
+noodara_build_redis_url() {
+  password="$1"
+  printf 'redis://:%s@redis:6379\n' "$password"
+}
+
 # noodara_preflight (06-CONTEXT.md D-17, INST-03): runs every predicate above in exactly this
 # order, stopping at the first failure via that predicate's own noodara_fail call --
 # never a collector that accumulates every applicable cause:
