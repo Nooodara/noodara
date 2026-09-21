@@ -390,6 +390,13 @@ noodara_docker_create_keyring_dir() {
 # line is exactly the END marker (a trailing CR is tolerated on either, via `tr -d`, for a
 # CRLF-terminated transport). Anything else fails this same step -- naming it, never echoing the
 # rejected body -- with no keyring file and no temp file ever written.
+#
+# Post-execution fix (orchestrator audit Finding 3): the temp-file write and the final `mv` now
+# each have their own named `_noodara_did_fail_step "write Docker's keyring file"` on failure --
+# previously a failing `printf`/`mv` (e.g. an unwritable keyring directory) aborted through
+# `set -e` with no step name and no mapped exit code at all. Any temp file that exists after a
+# failed write or move is removed (`rm -f`, itself never checked -- there is nothing further to do
+# if cleanup fails too, the step has already failed).
 noodara_docker_download_gpg_key() {
   _noodara_ddgk_file="${NOODARA_DOCKER_KEYRING_DIR}/docker.asc"
   _noodara_ddgk_key=$(noodara_fetch_url body "https://download.docker.com/linux/ubuntu/gpg" 2>/dev/null) || _noodara_ddgk_key=""
@@ -404,8 +411,14 @@ noodara_docker_download_gpg_key() {
   fi
 
   _noodara_ddgk_tmp="${_noodara_ddgk_file}.tmp.$$"
-  printf '%s\n' "$_noodara_ddgk_key" > "$_noodara_ddgk_tmp"
-  mv "$_noodara_ddgk_tmp" "$_noodara_ddgk_file"
+  if ! printf '%s\n' "$_noodara_ddgk_key" > "$_noodara_ddgk_tmp"; then
+    rm -f "$_noodara_ddgk_tmp"
+    _noodara_did_fail_step "write Docker's keyring file"
+  fi
+  if ! mv "$_noodara_ddgk_tmp" "$_noodara_ddgk_file"; then
+    rm -f "$_noodara_ddgk_tmp"
+    _noodara_did_fail_step "write Docker's keyring file"
+  fi
 }
 
 # Step: makes the keyring world-readable -- apt itself reads it as the unprivileged `_apt` user,
@@ -422,6 +435,11 @@ noodara_docker_chmod_gpg_key() {
 # an explicit allow-list before either is ever interpolated into a file this installer goes on to
 # trust -- preflight already restricts noodara_check_os/noodara_check_arch to the same two
 # codenames/two architectures, but this step does not rely on that having already run.
+#
+# Post-execution fix (orchestrator audit Finding 3): the final write is now atomic -- a temp file
+# in the same directory as the real target, then `mv` -- rather than a direct `>` redirect onto
+# NOODARA_DOCKER_SOURCES_FILE. A failure mid-write used to be able to leave a half-written apt
+# source behind; a temp file that never successfully becomes the real target is instead removed.
 noodara_docker_write_sources_list() {
   _noodara_dwsl_arch=$(dpkg --print-architecture) || _noodara_did_fail_step "detect the package architecture"
   case "$_noodara_dwsl_arch" in
@@ -444,8 +462,20 @@ noodara_docker_write_sources_list() {
       _noodara_did_fail_step "write the apt sources list (unsupported codename '$_noodara_dwsl_codename')"
       ;;
   esac
-  printf 'deb [arch=%s signed-by=%s/docker.asc] https://download.docker.com/linux/ubuntu %s stable\n' \
-    "$_noodara_dwsl_arch" "$NOODARA_DOCKER_KEYRING_DIR" "$_noodara_dwsl_codename" > "$NOODARA_DOCKER_SOURCES_FILE"
+  _noodara_dwsl_dir="${NOODARA_DOCKER_SOURCES_FILE%/*}"
+  if [ "$_noodara_dwsl_dir" = "$NOODARA_DOCKER_SOURCES_FILE" ]; then
+    _noodara_dwsl_dir="."
+  fi
+  _noodara_dwsl_tmp="${_noodara_dwsl_dir}/.noodara-docker-sources-tmp.$$"
+  if ! printf 'deb [arch=%s signed-by=%s/docker.asc] https://download.docker.com/linux/ubuntu %s stable\n' \
+    "$_noodara_dwsl_arch" "$NOODARA_DOCKER_KEYRING_DIR" "$_noodara_dwsl_codename" > "$_noodara_dwsl_tmp"; then
+    rm -f "$_noodara_dwsl_tmp"
+    _noodara_did_fail_step "write the apt sources list"
+  fi
+  if ! mv "$_noodara_dwsl_tmp" "$NOODARA_DOCKER_SOURCES_FILE"; then
+    rm -f "$_noodara_dwsl_tmp"
+    _noodara_did_fail_step "write the apt sources list"
+  fi
 }
 
 noodara_docker_apt_install_engine() {
