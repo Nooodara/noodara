@@ -297,8 +297,9 @@ describe('trustFingerprint (D-04)', () => {
     expect(result.server.pendingFingerprint).toBeNull();
     expect(result.server.pendingFingerprintSeenAt).toBeNull();
     expect(result.server.status).toBe('PENDING');
-    // D-04: the trust action does not clear the recorded reason for the prior ERROR.
-    expect(result.server.lastErrorCode).toBe(before.lastErrorCode);
+    // WR-01: the trust action clears the stale HOST_KEY_CHANGED reason since the admin just
+    // resolved it -- otherwise deriveDetailState keeps showing the banner after a correct trust.
+    expect(result.server.lastErrorCode).toBeNull();
   });
 
   it('writes exactly one server.fingerprint_trusted event with the real before/after fingerprints', async () => {

@@ -613,10 +613,15 @@ test('@hostkey the real trust-fingerprint POST succeeds end to end against the r
       status: string;
       hostFingerprint: string | null;
       pendingFingerprint: string | null;
+      lastErrorCode: string | null;
     };
     expect(afterBody.status).toBe('PENDING');
     expect(afterBody.hostFingerprint).toBe(observedFingerprint);
     expect(afterBody.pendingFingerprint).toBeNull();
+    // WR-01: the stale banner does not survive a trust the admin just correctly completed.
+    expect(afterBody.lastErrorCode).toBeNull();
+    await expect(page.getByTestId('host-key-changed-banner')).toHaveCount(0);
+    await expect(page.getByTestId('server-detail-primary-action')).toHaveText('Connect');
   } finally {
     await sshdA?.stop();
     await sshdB?.stop();
