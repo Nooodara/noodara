@@ -1083,6 +1083,53 @@ describe.each(posixInterpreters())('install.sh noodara_compose_up (%s)', (interp
     expect(result.stdout.toLowerCase()).toContain('checking service health directly');
   });
 
+  // Real-DinD discovery (06-12-PLAN.md, orchestrator audit Finding F -- second real bug found
+  // re-running the fix): docker-compose.yml's OWN topology (web depends_on: api: condition:
+  // service_healthy) means Compose genuinely creates `web`'s container EARLY (observed in a real
+  // run: "Container noodara-web-1 Recreated" appears well before api's own dependency-wait even
+  // gives up) but never STARTS it while api has not yet reported healthy -- `web` legitimately
+  // stays in state "created" for as long as api is unhealthy. Requiring BOTH api AND web to be
+  // "running" before deferring to noodara_wait_for_health made exit 51 fire on the ordinary
+  // api-is-unhealthy case too (web is never "running" in that case, DERIVED from api's own
+  // problem, not an independent failure) -- verified against the real fixture, not theorized.
+  it('defers to noodara_wait_for_health when web is merely "created" (blocked on api\'s own health condition) while api itself is genuinely running', () => {
+    const installDir = mkdtempSync(join(tmpdir(), 'noodara-up-install-'));
+    const snippet = [
+      'docker() {',
+      '  case "$*" in',
+      '    "compose up -d") return 1 ;;',
+      '    "compose ps -a --format json") printf "{\\"Service\\":\\"migrate\\",\\"ExitCode\\":0}\\n{\\"Service\\":\\"api\\",\\"State\\":\\"running\\"}\\n{\\"Service\\":\\"web\\",\\"State\\":\\"created\\"}\\n"; return 0 ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_compose_up',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, { env: { NOODARA_INSTALL_DIR: installDir } });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout.toLowerCase()).toContain('checking service health directly');
+  });
+
+  it('still fails with exit 51 when web is neither running nor merely "created" (e.g. "exited"), even though api itself is running', () => {
+    const installDir = mkdtempSync(join(tmpdir(), 'noodara-up-install-'));
+    const snippet = [
+      'docker() {',
+      '  case "$*" in',
+      '    "compose up -d") return 1 ;;',
+      '    "compose ps -a --format json") printf "{\\"Service\\":\\"migrate\\",\\"ExitCode\\":0}\\n{\\"Service\\":\\"api\\",\\"State\\":\\"running\\"}\\n{\\"Service\\":\\"web\\",\\"State\\":\\"exited\\"}\\n"; return 0 ;;',
+      '    "compose ps -a") printf "NAME STATE\\nnoodara-web-1 Exited\\n"; return 0 ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_compose_up',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, { env: { NOODARA_INSTALL_DIR: installDir } });
+
+    expect(result.status).toBe(51);
+  });
+
   it('the combined noodara_compose_up + noodara_wait_for_health pipeline still exits 53, naming the real unhealthy service and the rollback remedy, after a SINGLE health read, when `up -d` itself failed on a dependency wait but api/web are genuinely running', () => {
     const installDir = mkdtempSync(join(tmpdir(), 'noodara-up-install-'));
     const callLog = join(installDir, 'calls.log');
