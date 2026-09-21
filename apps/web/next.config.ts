@@ -1,3 +1,4 @@
+import path from 'node:path';
 import type { NextConfig } from 'next';
 
 // D-29/T-5-26/T-5-30 (05-07-PLAN.md threat register): apps/web reaches the control plane only
@@ -23,6 +24,21 @@ function readApiOrigin(): string {
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+
+  // 06-05-PLAN.md Task 1: `output: 'standalone'` is what lets the production image ship a
+  // self-contained server with no pnpm and no source tree at runtime (D-01) -- `next build`
+  // emits a minimal `.next/standalone` tree with only the node_modules this app actually needs,
+  // instead of requiring `pnpm install` + the full workspace inside the published image.
+  output: 'standalone',
+
+  // `outputFileTracingRoot` is set explicitly, computed from this file's own location (never
+  // `process.cwd()`, matching this repo's file-location-not-cwd resolution convention), because
+  // Next.js's auto-detection walks up looking for a lockfile and this monorepo has one at the
+  // workspace root -- leaving it implicit would make the emitted `.next/standalone` directory
+  // layout depend on which directory `next build` happened to run from (the repo root inside a
+  // `turbo prune`d Docker build context vs. `apps/web` directly) rather than on configuration,
+  // and apps/web/Dockerfile's `COPY`/`CMD` paths depend on that layout being stable.
+  outputFileTracingRoot: path.join(import.meta.dirname, '../../'),
 
   rewrites() {
     const apiOrigin = readApiOrigin();
