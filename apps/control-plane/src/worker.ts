@@ -43,7 +43,10 @@ async function main(): Promise<void> {
   // because this is a real `ServerEventPublisher`, not the noop default.
   const publisherConnection = createPublisherRedisConnection(env.REDIS_URL);
   const eventPublisher = createRedisServerEventPublisher(publisherConnection, logger);
-  const deps = await resolveServerServicesDeps({ db, events: eventPublisher });
+  // GR-03: the worker's own module-level `logger` above — no second logger instance — so a
+  // swallowed `connectAndDiscover` recovery failure surfaces through the same log stream every
+  // other worker log line already goes through.
+  const deps = await resolveServerServicesDeps({ db, events: eventPublisher, logger });
   const services = createServerServices(deps);
   const queue = createConnectServerQueue({ connection: queueConnection });
 

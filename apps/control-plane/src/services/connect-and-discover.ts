@@ -37,6 +37,7 @@ import { servers } from '../db/schema/servers.js';
 import { publishServerEvent } from '../events/server-event-publisher.js';
 import { decodeCredential } from './credential-store.js';
 import { failInFlightConnection } from './fail-in-flight-connection.js';
+import { logRecoveryFailure } from './log-recovery-failure.js';
 import type { ServerServicesDeps, ServiceActor } from './server-service-deps.js';
 import { toServerView, type ServerView } from './server-view.js';
 
@@ -473,12 +474,16 @@ export async function connectAndDiscover(
     // SSH phase, session.close(), TX2) must never leave the row wedged in CONNECTING — recover it
     // before rethrowing so the caller (and BullMQ, whose own 'failed' listener is the second line
     // of defense) still observes the original failure. The recovery call is deliberately
-    // defensive: if it also throws, the ORIGINAL error is still the one rethrown below.
+    // defensive: if it also throws, the ORIGINAL error is still the one rethrown below. GR-03: a
+    // recovery failure is now logged (via `logRecoveryFailure`) instead of discarded silently, but
+    // it still never masks the original error — `err` below remains the value rethrown.
     await failInFlightConnection(deps, {
       actor: input.actor,
       serverId: row.id,
       reason: 'connect_service_threw',
-    }).catch(() => undefined);
+    }).catch((recoveryErr: unknown) => {
+      logRecoveryFailure(deps, row.id, recoveryErr);
+    });
     throw err;
   }
 

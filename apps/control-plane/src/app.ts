@@ -26,7 +26,7 @@ import authRoutes from './routes/auth.js';
 import healthRoutes from './routes/health.js';
 import { toErrorBody, toValidationErrorBody } from './routes/http-errors.js';
 import setupRoutes from './routes/setup.js';
-import { resolveServerServicesDeps } from './services/server-service-deps.js';
+import { resolveServerServicesDeps, type ServiceLogger } from './services/server-service-deps.js';
 import { createServerServices, type ServerServices } from './services/server-services.js';
 
 export interface BuildAppDeps {
@@ -50,6 +50,7 @@ export interface BuildAppDeps {
 function createServerServicesResolver(
   deps: BuildAppDeps,
   eventPublisher: ServerEventPublisher,
+  logger: ServiceLogger,
 ): () => Promise<ServerServices> {
   let cached: Promise<ServerServices> | undefined;
   return () => {
@@ -59,7 +60,11 @@ function createServerServicesResolver(
     // D-04: a `registerServer`/`editServer`/... issued through the API publishes through the same
     // Redis-backed adapter the worker uses — `resolveServerServicesDeps`'s own `events` default
     // (`noopServerEventPublisher`) would otherwise silently swallow every HTTP-triggered event.
-    return (cached ??= resolveServerServicesDeps({ events: eventPublisher }).then(createServerServices));
+    // GR-03: the same Fastify pino instance every request already logs through, so a swallowed
+    // `connectAndDiscover` recovery failure surfaces through the API's own log stream.
+    return (cached ??= resolveServerServicesDeps({ events: eventPublisher, logger }).then(
+      createServerServices,
+    ));
   };
 }
 
@@ -224,7 +229,7 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
 
   // Plan 04-08: `routes/servers.ts` calls `await fastify.getServerServices()` once per request —
   // never at module load, which would open a Postgres pool merely by importing the route file.
-  app.decorate('getServerServices', createServerServicesResolver(deps, eventPublisher));
+  app.decorate('getServerServices', createServerServicesResolver(deps, eventPublisher, app.log));
 
   // Plan 04-08 (Task 3): the connect/discover routes' queue producer. A queue has no open
   // streaming response, so `onClose` (not `preClose`, which Plan 04-09's SSE streams need) is the
