@@ -126,8 +126,25 @@ describe('derivePrimaryAction', () => {
     expect(derivePrimaryAction(server)).toEqual(EXPECTED[status]);
   });
 
-  it('returns null for ERROR with lastErrorCode HOST_KEY_CHANGED -- the action lives in the banner, not the toolbar', () => {
-    const server = buildServer({ id: 'a', name: 'a', status: 'ERROR', lastErrorCode: 'HOST_KEY_CHANGED' });
+  it('returns null for ERROR with lastErrorCode HOST_KEY_CHANGED and a pending fingerprint -- the action lives in the banner, not the toolbar', () => {
+    const server = buildServer({
+      id: 'a',
+      name: 'a',
+      status: 'ERROR',
+      lastErrorCode: 'HOST_KEY_CHANGED',
+      pendingFingerprint: 'SHA256:observed0000000000000000000000000000000000',
+    });
     expect(derivePrimaryAction(server)).toBeNull();
+  });
+
+  it('returns Retry for ERROR/HOST_KEY_CHANGED once pendingFingerprint is null -- nothing left to trust after an identity-changing edit (CR-01)', () => {
+    const server = buildServer({
+      id: 'a',
+      name: 'a',
+      status: 'ERROR',
+      lastErrorCode: 'HOST_KEY_CHANGED',
+      pendingFingerprint: null,
+    });
+    expect(derivePrimaryAction(server)).toEqual({ label: 'Retry', endpoint: '/connect', disabled: false });
   });
 });
