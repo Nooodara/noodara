@@ -45,6 +45,12 @@ readonly NOODARA_REPO_NAME="${NOODARA_REPO_NAME:-noodara}"
 readonly NOODARA_REGISTRY="${NOODARA_REGISTRY:-ghcr.io}"
 readonly NOODARA_FETCH_TIMEOUT="${NOODARA_FETCH_TIMEOUT:-5}"
 
+# Overridable only for tests (hard_rule #8): the apt keyring directory and the sources-list target
+# noodara_install_docker below writes to. The real install always targets Docker's own documented
+# locations (06-CONTEXT.md D-14) -- no test ever writes under a real /etc path.
+readonly NOODARA_DOCKER_KEYRING_DIR="${NOODARA_DOCKER_KEYRING_DIR:-/etc/apt/keyrings}"
+readonly NOODARA_DOCKER_SOURCES_FILE="${NOODARA_DOCKER_SOURCES_FILE:-/etc/apt/sources.list.d/docker.list}"
+
 # Maps a named failure reason to its exit code (06-CONTEXT.md D-17: every preflight/runtime
 # failure cause gets its own numbered exit code, never a generic failure). Prints the code to
 # stdout on success so a caller can do `code=$(noodara_exit_code_for some-reason)`. An unknown
@@ -272,6 +278,88 @@ noodara_check_docker_snap() {
   if snap list docker >/dev/null 2>&1; then
     noodara_fail docker-via-snap "Docker is installed via snap, which Noodara does not support. Remove it (sudo snap remove docker) and re-run this installer."
   fi
+}
+
+# Docker Engine + Compose plugin installation (06-CONTEXT.md D-14, INST-01): a missing Docker
+# Engine or Compose v2 plugin is installed from Docker's own official apt repository -- never a
+# third-party curl-pipe-sh installer, never Ubuntu's own conflicting distro packages -- so a
+# failure can name what broke instead of a generic "installation failed". noodara_check_docker_snap
+# above has already rejected a snap-installed Docker by the time anything below ever runs.
+
+# Returns 0 when `docker version` succeeds, non-zero when the command is absent or fails -- e.g. a
+# `docker` binary present with an unreachable daemon. Keys on the command's exit code, never
+# `command -v`, matching phase-2 ADR 0004's own detection precedent. stdout/stderr are discarded;
+# the operator never sees raw `docker version` output from this probe, only a noodara_step line
+# from a caller.
+noodara_docker_present() {
+  docker version >/dev/null 2>&1
+}
+
+# Checks the `compose` plugin subcommand specifically -- never a standalone, no-longer-supported
+# v1 `docker-compose` binary.
+noodara_compose_present() {
+  docker compose version >/dev/null 2>&1
+}
+
+# Installs Docker Engine from Docker's official apt repository (06-CONTEXT.md D-14): removes
+# conflicting distro packages (best effort -- a package that is simply absent is not a failure),
+# refreshes the apt index, installs the prerequisites, creates the keyring directory, downloads and
+# installs Docker's GPG key through noodara_fetch_url -- the single seam every network call in this
+# file goes through, never a second direct `curl` call site -- writes the apt sources line pinned
+# to that key via `signed-by=`, refreshes the apt index again, then installs the Docker packages.
+noodara_install_docker() {
+  noodara_step "Installing Docker Engine from Docker's official apt repository..."
+  apt-get remove -y docker.io docker-compose docker-compose-v2 docker-doc podman-docker containerd runc >/dev/null 2>&1 || true
+  apt-get update -y >/dev/null 2>&1 || noodara_fail docker-install-failed "Docker installation failed while updating the apt package index."
+  apt-get install -y ca-certificates curl gnupg >/dev/null 2>&1 || noodara_fail docker-install-failed "Docker installation failed while installing ca-certificates, curl and gnupg."
+  install -m 0755 -d "$NOODARA_DOCKER_KEYRING_DIR" || noodara_fail docker-install-failed "Docker installation failed while creating the apt keyring directory."
+  _noodara_iid_key=$(noodara_fetch_url body "https://download.docker.com/linux/ubuntu/gpg" 2>/dev/null) || _noodara_iid_key=""
+  if [ -z "$_noodara_iid_key" ]; then
+    noodara_fail docker-install-failed "Docker installation failed while downloading Docker's GPG key."
+  fi
+  printf '%s\n' "$_noodara_iid_key" > "${NOODARA_DOCKER_KEYRING_DIR}/docker.asc"
+  chmod a+r "${NOODARA_DOCKER_KEYRING_DIR}/docker.asc" || noodara_fail docker-install-failed "Docker installation failed while setting the keyring file's permissions."
+  _noodara_iid_arch=$(dpkg --print-architecture) || noodara_fail docker-install-failed "Docker installation failed while detecting the package architecture."
+  printf 'deb [arch=%s signed-by=%s/docker.asc] https://download.docker.com/linux/ubuntu stable\n' "$_noodara_iid_arch" "$NOODARA_DOCKER_KEYRING_DIR" > "$NOODARA_DOCKER_SOURCES_FILE"
+  apt-get update -y >/dev/null 2>&1 || noodara_fail docker-install-failed "Docker installation failed while updating the apt package index."
+  apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin >/dev/null 2>&1 || noodara_fail docker-install-failed "Docker installation failed while installing the Docker packages."
+}
+
+# Installs only the Compose plugin -- Docker Engine may already be present through a route this
+# installer never controlled, so this deliberately does not repeat the full sequence above.
+noodara_ensure_compose_plugin() {
+  noodara_step "Installing the Docker Compose plugin from Docker's official apt repository..."
+  apt-get install -y docker-compose-plugin >/dev/null 2>&1 || true
+}
+
+# Orchestrator (INST-01, D-14): installs Docker Engine and/or the Compose plugin only when
+# missing. An already-present Docker Engine and Compose plugin are left completely alone -- zero
+# apt/gpg/file-write calls -- so a re-run never reinstalls, upgrades or restarts a running Docker
+# daemon and the stack it is running (T-06-39). Fails with reason compose-plugin-missing (exit 21)
+# when the plugin is still missing after an install was attempted, and docker-install-failed
+# (exit 20) when Docker Engine itself is still absent after the full sequence.
+noodara_ensure_docker() {
+  if noodara_docker_present && noodara_compose_present; then
+    noodara_note "Docker Engine and the Compose plugin are already installed; nothing to do."
+    return 0
+  fi
+
+  if noodara_docker_present; then
+    noodara_ensure_compose_plugin
+    if ! noodara_compose_present; then
+      noodara_fail compose-plugin-missing "Docker Engine is present but the Compose plugin (docker compose) is still missing after installation. Install it manually and re-run this installer."
+    fi
+    return 0
+  fi
+
+  noodara_install_docker
+  if ! noodara_docker_present; then
+    noodara_fail docker-install-failed "Docker Engine installation completed but 'docker version' still fails. Check the output above and try installing manually."
+  fi
+  if ! noodara_compose_present; then
+    noodara_fail compose-plugin-missing "Docker Engine was installed but the Compose plugin (docker compose) is still missing. Install it manually and re-run this installer."
+  fi
+  noodara_step "Docker Engine and the Compose plugin installed successfully."
 }
 
 # .env generation (06-CONTEXT.md D-10/D-11, INST-01/INST-02/INST-05). Secrets are generated fresh
