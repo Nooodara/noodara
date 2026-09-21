@@ -369,12 +369,28 @@ noodara_docker_create_keyring_dir() {
 # file in the same directory, then mv) so a crash or a rejected response never leaves a half-
 # written keyring behind; an empty response fails this step outright rather than writing a bad
 # keyring and letting the sequence continue.
+#
+# Post-execution fix (orchestrator audit Finding 1): an empty check alone let an HTML body served
+# with HTTP 200 (captive portal, proxy error page) or a truncated download through unchecked --
+# apt would only fail later, at `apt-get update`, with a confusing signature error attributed to
+# the wrong step. Before writing anything, the body must genuinely look like an ASCII-armored PGP
+# public key block: its first non-empty line is exactly the BEGIN marker and its last non-empty
+# line is exactly the END marker (a trailing CR is tolerated on either, via `tr -d`, for a
+# CRLF-terminated transport). Anything else fails this same step -- naming it, never echoing the
+# rejected body -- with no keyring file and no temp file ever written.
 noodara_docker_download_gpg_key() {
   _noodara_ddgk_file="${NOODARA_DOCKER_KEYRING_DIR}/docker.asc"
   _noodara_ddgk_key=$(noodara_fetch_url body "https://download.docker.com/linux/ubuntu/gpg" 2>/dev/null) || _noodara_ddgk_key=""
   if [ -z "$_noodara_ddgk_key" ]; then
     _noodara_did_fail_step "download Docker's GPG key"
   fi
+
+  _noodara_ddgk_first=$(printf '%s\n' "$_noodara_ddgk_key" | awk 'NF { print; exit }' | tr -d '\r')
+  _noodara_ddgk_last=$(printf '%s\n' "$_noodara_ddgk_key" | awk 'NF { l = $0 } END { print l }' | tr -d '\r')
+  if [ "$_noodara_ddgk_first" != "-----BEGIN PGP PUBLIC KEY BLOCK-----" ] || [ "$_noodara_ddgk_last" != "-----END PGP PUBLIC KEY BLOCK-----" ]; then
+    _noodara_did_fail_step "download Docker's GPG key"
+  fi
+
   _noodara_ddgk_tmp="${_noodara_ddgk_file}.tmp.$$"
   printf '%s\n' "$_noodara_ddgk_key" > "$_noodara_ddgk_tmp"
   mv "$_noodara_ddgk_tmp" "$_noodara_ddgk_file"
