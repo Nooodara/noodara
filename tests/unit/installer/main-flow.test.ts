@@ -622,6 +622,142 @@ describe.each(posixInterpreters())('install.sh noodara_main upgrade (%s)', (inte
     expect(calls).toMatch(/compose pull\b/);
     expect(calls).toMatch(/compose up -d\b/);
   });
+
+  // Post-execution fix (orchestrator audit Finding E, 06-09 follow-up): a no-op *candidate*
+  // (same version, every merge key present) whose stack is not actually healthy -- a half-finished
+  // first install (pull/up never succeeded) or a manually stopped stack -- must repair itself
+  // (pull + up + the real bounded wait), never poll for up to 5 minutes against containers that
+  // were never started and then give up.
+  it('same version, keys present, healthy on the first read: no pull, no up -d (Finding E test 1)', () => {
+    const { snippet, env, installDir } = buildMainFlowEnv({ NOODARA_VERSION: '1.0.0' });
+    seedExistingInstall(installDir, '1.0.0', { NOODARA_PREVIOUS_VERSION: '0.9.0' });
+    const beforeChecksum = createHash('sha256').update(readFileSync(join(installDir, '.env'))).digest('hex');
+    const callLog = join(installDir, 'docker-calls.log');
+    const fullSnippet = [
+      snippet,
+      'docker() {',
+      '  printf "%s\\n" "docker $*" >> "$NOODARA_TEST_CALL_LOG"',
+      '  case "$*" in',
+      '    "compose ps --format json") printf \'{"Service":"api","Health":"healthy"}\\n{"Service":"web","Health":"healthy"}\\n\' ;;',
+      '    "compose logs api") printf "no bootstrap needed\\n" ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_main',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, fullSnippet, {
+      env: { ...env, NOODARA_TEST_CALL_LOG: callLog },
+    });
+
+    expect(result.status).toBe(0);
+    const afterChecksum = createHash('sha256').update(readFileSync(join(installDir, '.env'))).digest('hex');
+    expect(afterChecksum).toBe(beforeChecksum);
+    expect(readdirSync(installDir).some((name) => name.startsWith('.env.bak-'))).toBe(false);
+    const calls = readFileSync(callLog, 'utf8');
+    expect(calls).not.toMatch(/compose pull\b/);
+    expect(calls).not.toMatch(/compose up -d\b/);
+    // A single health read only -- never a polling loop that calls `docker compose ps` twice.
+    expect(calls.match(/compose ps --format json/g)?.length ?? 0).toBe(1);
+  });
+
+  it('same version, keys present, NOT healthy on the first read (half-finished first install): pulls and starts the stack, .env stays untouched (Finding E test 2)', () => {
+    const { snippet, env, installDir } = buildMainFlowEnv({ NOODARA_VERSION: '1.0.0' });
+    seedExistingInstall(installDir, '1.0.0', { NOODARA_PREVIOUS_VERSION: '1.0.0' });
+    const before = parseEnvFile(join(installDir, '.env'));
+    const beforeChecksum = createHash('sha256').update(readFileSync(join(installDir, '.env'))).digest('hex');
+    const callLog = join(installDir, 'docker-calls.log');
+    const fullSnippet = [
+      snippet,
+      'docker() {',
+      '  printf "%s\\n" "docker $*" >> "$NOODARA_TEST_CALL_LOG"',
+      '  case "$*" in',
+      // No containers at all on the first read (the prior compose up -d never ran/succeeded) --
+      // healthy only after `up -d` has itself been recorded in the call log.
+      '    "compose ps --format json")',
+      '      if grep -q "compose up -d" "$NOODARA_TEST_CALL_LOG" 2>/dev/null; then',
+      '        printf \'{"Service":"api","Health":"healthy"}\\n{"Service":"web","Health":"healthy"}\\n\'',
+      '      fi',
+      '      ;;',
+      `    "compose logs api") printf 'NOODARA_SETUP_TOKEN=${VALID_TOKEN}\\n' ;;`,
+      '    "compose exec -T api node -e"*) printf "missing\\n" ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_main',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, fullSnippet, {
+      env: { ...env, NOODARA_TEST_CALL_LOG: callLog },
+    });
+
+    expect(result.status).toBe(0);
+    const afterChecksum = createHash('sha256').update(readFileSync(join(installDir, '.env'))).digest('hex');
+    expect(afterChecksum).toBe(beforeChecksum);
+    expect(readdirSync(installDir).some((name) => name.startsWith('.env.bak-'))).toBe(false);
+    const calls = readFileSync(callLog, 'utf8');
+    expect(calls).toMatch(/compose pull\b/);
+    expect(calls).toMatch(/compose up -d\b/);
+    // pull and up -d both happened strictly after the single, initial health read.
+    const firstPsIndex = calls.indexOf('compose ps --format json');
+    const pullIndex = calls.indexOf('compose pull');
+    const upIndex = calls.indexOf('compose up -d');
+    expect(firstPsIndex).toBeGreaterThanOrEqual(0);
+    expect(pullIndex).toBeGreaterThan(firstPsIndex);
+    expect(upIndex).toBeGreaterThan(pullIndex);
+    expect(result.stdout).toContain('The stack is not healthy; starting it.');
+    expect(result.stdout).toContain(VALID_TOKEN);
+    expect(result.stdout).not.toContain('WARNING');
+
+    // hard_rule #8 canary extension: no secret leaks on this repair path either.
+    const installLogPath = join(installDir, 'install.log');
+    const logContent = existsSync(installLogPath) ? readFileSync(installLogPath, 'utf8') : '';
+    for (const secret of [before.NOODARA_MASTER_KEY, before.POSTGRES_PASSWORD, before.REDIS_PASSWORD, before.BETTER_AUTH_SECRET]) {
+      expect(calls).not.toContain(secret);
+      expect(logContent).not.toContain(secret);
+      expect(result.stdout).not.toContain(secret);
+      expect(result.stderr).not.toContain(secret);
+    }
+  });
+
+  it('same version, keys present, the stack never becomes healthy: exits 53 with a redacted tail, and never claims an upgrade happened (Finding E test 3)', () => {
+    const { snippet, env, installDir } = buildMainFlowEnv({
+      NOODARA_VERSION: '1.0.0',
+      NOODARA_HEALTH_WAIT_ATTEMPTS: '2',
+      NOODARA_HEALTH_WAIT_INTERVAL: '0',
+    });
+    seedExistingInstall(installDir, '1.0.0', { NOODARA_PREVIOUS_VERSION: '0.9.0' });
+    const callLog = join(installDir, 'docker-calls.log');
+    const fullSnippet = [
+      snippet,
+      'docker() {',
+      '  printf "%s\\n" "docker $*" >> "$NOODARA_TEST_CALL_LOG"',
+      '  case "$*" in',
+      '    "compose ps --format json") printf \'{"Service":"api","Health":"unhealthy"}\\n{"Service":"web","Health":"unhealthy"}\\n\' ;;',
+      '    "compose logs --tail 50 api") printf "api never came up: NOODARA_SETUP_TOKEN=%s postgresql://noodara:leaked@postgres:5432/noodara\\n" "' + VALID_TOKEN + '" ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_main',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, fullSnippet, {
+      env: { ...env, NOODARA_TEST_CALL_LOG: callLog },
+    });
+
+    expect(result.status).toBe(53);
+    expect(result.stderr).toContain('api');
+    expect(result.stderr).toContain('[REDACTED]');
+    expect(result.stderr).not.toContain(VALID_TOKEN);
+    expect(result.stderr).not.toContain('leaked');
+    // Finding E: no version change happened on this repair path -- the rollback hint must not
+    // claim an upgrade took place.
+    expect(result.stderr).not.toContain('NOODARA_VERSION=0.9.0');
+    expect(result.stderr).not.toMatch(/re-run this installer with NOODARA_VERSION=/);
+    const calls = readFileSync(callLog, 'utf8');
+    expect(calls).not.toMatch(/compose (down|rm)\b/);
+    expect(calls).not.toMatch(/volume rm/);
+  });
 });
 
 // 06-09-PLAN.md Task 2: pull, up, health wait, and D-12's failure diagnostics. `docker` is
