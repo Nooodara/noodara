@@ -421,7 +421,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 06-06-PLAN.md — Release version and public URL resolution behind one network seam, tag validation, test-only image prefix override
+- [x] 06-06-PLAN.md — Release version and public URL resolution behind one network seam, tag validation, test-only image prefix override
 - [ ] 06-07-PLAN.md — Production docker-compose.yml: six services, migrate one-shot, fixed redis healthcheck, measured memory limits
 
 **Wave 5** *(blocked on Wave 4 completion)*
@@ -468,4 +468,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
 | 5. UI web | 46/46 | Complete   | 2026-09-21 |
-| 6. Instalador y Docker Compose | 5/15 | In Progress|  |
+| 6. Instalador y Docker Compose | 6/15 | In Progress|  |

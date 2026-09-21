@@ -102,9 +102,11 @@ See `key-decisions` in the frontmatter above. In short: the D-07 operator note m
 - **Verification:** `install.sh noodara_resolve_public_url` test "prints the resolved URL exactly once across combined stdout+stderr note text" asserts the URL appears exactly once in each stream.
 - **Committed in:** `485c6ba` (Task 1/2 GREEN commit)
 
+**3. [hard_rule #12 -- reality over invented results] INST-01 intentionally NOT marked complete.** 06-06-PLAN.md's frontmatter lists `requirements: [INST-01]`, and the standard state-update step calls `requirements.mark-complete` on every listed ID. INST-01 describes end-to-end installer behavior ("...con un solo comando... genera `.env`... levanta api/worker/web/postgres/redis...") reachable only through the real `curl | sh` entrypoint. This plan built and proved the version/public-URL/image-prefix resolution functions in isolation at the shell-unit layer (D-18 layer 1) -- `noodara_main` still only prints its banner and calls none of them yet (Plan 06-09 wires everything together). This mirrors 06-01/06-02/06-04's identical precedent for the same requirement family. `REQUIREMENTS.md`'s INST-01 checkbox remains `[ ]` (Pending); `requirements.mark-complete` was deliberately not run for this plan.
+
 ---
 
-**Total deviations:** 2 auto-fixed (1 missing-critical/security, 1 bug). Both were caught before committing, not as a follow-up fix cycle. No scope creep -- both stay entirely inside this plan's two files.
+**Total deviations:** 2 auto-fixed (1 missing-critical/security, 1 bug), plus 1 requirements-tracking deviation (not a code defect). Both auto-fixes were caught before committing, not as a follow-up fix cycle. No scope creep -- all stay entirely inside this plan's two files.
 
 ## Issues Encountered
 
