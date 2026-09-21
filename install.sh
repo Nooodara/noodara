@@ -282,7 +282,7 @@ noodara_check_port() {
     _noodara_cp_env_path="${NOODARA_INSTALL_DIR}/${NOODARA_ENV_FILE}"
     _noodara_cp_env_port=$(noodara_env_get_value "$_noodara_cp_env_path" NOODARA_PORT)
     if [ -n "${NOODARA_PORT:-}" ] && [ -n "$_noodara_cp_env_port" ] && [ "$NOODARA_PORT" != "$_noodara_cp_env_port" ]; then
-      noodara_warn "NOODARA_PORT='$NOODARA_PORT' was given, but this installation already uses port $_noodara_cp_env_port. The existing .env always wins on a re-run -- to change the port, edit ${_noodara_cp_env_path} (key NOODARA_PORT) and re-run this installer."
+      noodara_warn "NOODARA_PORT='$NOODARA_PORT' was given, but this installation already uses port $_noodara_cp_env_port. The existing .env always wins on a re-run -- to change the port, edit ${_noodara_cp_env_path} (key NOODARA_PORT), then run: docker compose -f ${NOODARA_INSTALL_DIR}/${NOODARA_COMPOSE_FILE} up -d"
     fi
     return 0
   fi
@@ -1272,7 +1272,7 @@ noodara_resolve_public_url() {
     noodara_fail public-url-resolution-failed "Could not resolve a public URL automatically. Set NOODARA_PUBLIC_URL=<url> and re-run this installer."
   fi
 
-  printf 'noodara: Resolved public URL: %s -- to change it, edit %s/%s (key NOODARA_PUBLIC_URL) and re-run this installer.\n' "$_noodara_rpu_url" "$NOODARA_INSTALL_DIR" "$NOODARA_ENV_FILE" >&2
+  printf 'noodara: Resolved public URL: %s -- to change it, edit %s/%s (key NOODARA_PUBLIC_URL), then run: docker compose -f %s/%s up -d\n' "$_noodara_rpu_url" "$NOODARA_INSTALL_DIR" "$NOODARA_ENV_FILE" "$NOODARA_INSTALL_DIR" "$NOODARA_COMPOSE_FILE" >&2
 
   printf '%s\n' "$_noodara_rpu_url"
 }
@@ -1303,7 +1303,7 @@ noodara_resolve_installed_public_url() {
     return 0
   fi
   if [ -n "${NOODARA_PUBLIC_URL:-}" ] && [ "$NOODARA_PUBLIC_URL" != "$_noodara_ripu_env_url" ]; then
-    noodara_warn "NOODARA_PUBLIC_URL='$NOODARA_PUBLIC_URL' was given, but this installation already uses '$_noodara_ripu_env_url'. The existing .env always wins on a re-run -- to change it, edit ${_noodara_ripu_env_path} (key NOODARA_PUBLIC_URL) and re-run this installer."
+    noodara_warn "NOODARA_PUBLIC_URL='$NOODARA_PUBLIC_URL' was given, but this installation already uses '$_noodara_ripu_env_url'. The existing .env always wins on a re-run -- to change it, edit ${_noodara_ripu_env_path} (key NOODARA_PUBLIC_URL), then run: docker compose -f ${NOODARA_INSTALL_DIR}/${NOODARA_COMPOSE_FILE} up -d"
   fi
   noodara_validate_public_url "$_noodara_ripu_env_url"
   printf '%s\n' "$_noodara_ripu_env_url"
