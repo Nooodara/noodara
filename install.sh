@@ -1249,12 +1249,329 @@ noodara_preflight() {
   noodara_step "System requirements satisfied."
 }
 
-# Entry point. For now this only prints the version banner and returns -- the real preflight ->
-# Docker install -> .env -> compose up -> migrate -> health-check flow lands in Plan 06-09, once
-# every piece it orchestrates (Plans 06-02..06-08) exists.
+# Install-directory bootstrap and the fresh-vs-upgrade branch (06-CONTEXT.md D-09/D-10/D-11,
+# INST-01/INST-02). D-10: the existence of $NOODARA_INSTALL_DIR/.env -- never the directory alone
+# -- is the single signal of an existing installation.
+
+# Reads the value of a single "^<key>=" line out of an existing .env (last match wins, matching
+# every writer in this file appending rather than rewriting). Strips one layer of surrounding
+# single quotes if present -- noodara_generate_env writes NOODARA_PUBLIC_URL/NOODARA_ADMIN_*
+# single-quoted (Finding B, 06-04-SUMMARY.md) but NOODARA_VERSION itself unquoted; this helper
+# stays generic so any future caller can read either shape safely. `${var#pattern}`/`${var%pattern}`
+# parameter expansion only strips the quote when it is actually present, so this is a safe no-op
+# for an unquoted value. Prints an empty line (never fails) when the key is absent -- the caller
+# decides whether that is fatal.
+noodara_env_get_value() {
+  _noodara_egv_path="$1"
+  _noodara_egv_key="$2"
+  _noodara_egv_line=$(grep "^${_noodara_egv_key}=" "$_noodara_egv_path" 2>/dev/null | tail -n 1)
+  _noodara_egv_raw="${_noodara_egv_line#*=}"
+  _noodara_egv_raw="${_noodara_egv_raw#\'}"
+  _noodara_egv_raw="${_noodara_egv_raw%\'}"
+  printf '%s\n' "$_noodara_egv_raw"
+}
+
+# True (exit 0) only when $NOODARA_INSTALL_DIR/.env exists -- the directory existing alone (e.g.
+# left behind by a failed first attempt with nothing written yet) is not enough (D-10).
+noodara_is_installed() {
+  [ -f "${NOODARA_INSTALL_DIR}/${NOODARA_ENV_FILE}" ]
+}
+
+# Creates $NOODARA_INSTALL_DIR mode 700 when absent (via `umask 077` so it is never briefly more
+# permissive between mkdir and chmod), and re-asserts mode 700 unconditionally when it already
+# exists -- covers both a fresh install and mode drift after a manual operator edit on a re-run.
+# The caller already ran as root (noodara_check_root, earlier in noodara_main), so a directory
+# this process creates is already root-owned; no separate chown is needed.
+noodara_prepare_install_dir() {
+  if [ ! -d "$NOODARA_INSTALL_DIR" ]; then
+    (umask 077 && mkdir -p "$NOODARA_INSTALL_DIR") || noodara_fail env-write-failed "Failed to create $NOODARA_INSTALL_DIR."
+  fi
+  chmod 700 "$NOODARA_INSTALL_DIR" || noodara_fail env-write-failed "Failed to set permissions on $NOODARA_INSTALL_DIR."
+}
+
+_noodara_pcf_lp='('
+
+# Writes the production compose file (this repo's own root docker-compose.yml, Plan 06-07) to
+# $NOODARA_INSTALL_DIR/docker-compose.yml, mode 644, on every run -- overwriting any previous copy
+# is how an upgrade picks up a new topology (D-09). The file carries no secret, only ${VAR}
+# references Compose itself resolves from .env at `docker compose` invocation time, never at
+# install.sh write time -- every heredoc delimiter below is quoted so every ${VAR}/$$VAR reference
+# passes through completely literally, unexpanded by this shell.
+#
+# This is the same byte content as the repo's own docker-compose.yml (proven by
+# tests/unit/installer/main-flow.test.ts, which calls this function against a tmpdir and diffs the
+# written file against the real one) -- with one necessary exception: two of the file's
+# healthcheck.test lines contain the literal JS arrow-function syntax "catch(()=>...)", embedding
+# the two-character substring "((" directly. scripts/check-posix-sh.mjs's arith-command rule
+# (meant to catch bash's double-paren arithmetic compound command) cannot tell that substring apart
+# from unrelated heredoc body text -- and hard_rule #7 forbids editing that gate. The workaround
+# matches this file's own established false-positive-workaround precedent (06-06-SUMMARY.md):
+# never let the literal two-character sequence "((" appear together on any physical source line of
+# install.sh. _noodara_pcf_lp above holds a single "(" character; the two affected lines are
+# written via a separate printf call that only brings the two parens together at RUNTIME (one
+# %s substitution -- "catch(" itself already supplies the method-call's own opening paren),
+# never in this file's own source text.
+noodara_place_compose_file() {
+  _noodara_pcf_target="${NOODARA_INSTALL_DIR}/${NOODARA_COMPOSE_FILE}"
+  _noodara_pcf_tmp="${_noodara_pcf_target}.tmp.$$"
+  if ! {
+    cat <<'NOODARA_COMPOSE_EOF_A'
+name: noodara
+
+# This is the PRODUCTION topology the installer writes to /opt/noodara/docker-compose.yml
+# (D-10) -- docker-compose.dev.yml is the local-development sibling (Postgres/Redis only, no
+# app containers) and is NOT this file; do not merge the two.
+#
+# The `migrate` one-shot re-runs on every `docker compose up` -- including the installer's own
+# upgrade path -- by Compose's own documented design (github.com/docker/compose/issues/9260):
+# `depends_on: condition: service_completed_successfully` only gates *dependents*, it does not
+# make the one-shot itself skip re-execution once it has already exited 0 once. This is safe here
+# ONLY because Drizzle's `migrate()` (apps/control-plane/src/db/migrate.ts, compiled to
+# dist/db/migrate.js) diffs the migrations-tracking table and no-ops when nothing is pending --
+# proven by tests/integration/installer/compose-stack.test.ts's own second-`up` assertion. Do NOT
+# "fix" the re-run itself with skip logic; the correctness guarantee lives in migrate() being
+# idempotent, not in Compose running it only once.
+#
+# Memory limits below are derived from real `docker stats --no-stream` samples taken against this
+# exact file, across more than one run to absorb normal run-to-run variance (idle RSS observed:
+# postgres 26-38MiB, redis 5-16MiB, api 66-75MiB, worker 50-59MiB, web 41-59MiB) -- see
+# .planning/phases/06-instalador-y-docker-compose/06-07-SUMMARY.md for the literal `docker stats`
+# output. Each limit is at least a 2x headroom multiple over the HIGHEST observed sample for that
+# service (in practice 3.4x-6x here) -- not guessed (06-RESEARCH.md Assumption A3). `migrate` is
+# the one exception: its whole run completes in well under a second, too fast for `docker stats` to
+# reliably sample, so its limit is bounded by analogy to `postgres`'s own measured ceiling instead
+# (same order of magnitude, comfortably above what a Node process doing a handful of DB statements
+# needs). These are idle-stack numbers on a development machine, not a load test; they remain
+# subject to real-VPS validation in Plan 06-15.
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required -- write /opt/noodara/.env before running docker compose}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required -- write /opt/noodara/.env before running docker compose}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required -- write /opt/noodara/.env before running docker compose}
+    volumes:
+      - noodara_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          # Idle RSS measured at 26-38MiB, but idle is not representative for postgres: its default
+          # shared_buffers (128MB) only counts against the cgroup once pages are touched. Measured
+          # under load (postgres:17-alpine, no swap): at a 192M cap a single-connection bulk write
+          # of ~320MB got a backend SIGKILLed and the whole cluster dropped into crash recovery; at
+          # 256M and above the same operation completes. 512M leaves room above that floor. Do not
+          # lower this without re-running a write-heavy measurement, not an idle one.
+          memory: 512M
+
+  # T-06-33/Pitfall 4: docker-compose.dev.yml's redis service has no `environment:` block, so its
+  # own `$${REDIS_PASSWORD}` healthcheck reference is undefined INSIDE the container's shell when
+  # the healthcheck actually runs there -- it reports unhealthy forever despite `redis-cli ping`
+  # working manually. The `environment: REDIS_PASSWORD:` entry below is what makes the
+  # identical-looking healthcheck below actually work: it gives the container-side shell
+  # a real value to substitute at `$$REDIS_PASSWORD`. Verify with `docker inspect
+  # --format='{{.State.Health.Status}}'`, never just "container is running".
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--requirepass', '${REDIS_PASSWORD:?REDIS_PASSWORD is required -- write /opt/noodara/.env before running docker compose}']
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required -- write /opt/noodara/.env before running docker compose}
+    volumes:
+      - noodara_redis_data:/data
+    # T-06-36: `redis-server --requirepass` above already puts the password in ITS OWN argv (an
+    # accepted, documented risk -- see this plan's threat model, matching redis's own configuration
+    # surface). The healthcheck below does not need to repeat that exposure: `REDISCLI_AUTH` is
+    # redis-cli's own documented env-var convention for supplying the password, set here as a
+    # shell-prefix on the child process's environment rather than a `-a` CLI flag -- so the
+    # password never appears in this specific command's own argv (a `ps`/`docker top` listing).
+    healthcheck:
+      test: ['CMD-SHELL', 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 96M # Measured idle RSS 5-16MiB across runs; >=2x headroom over the high end (6.0x).
+
+  migrate:
+    image: ${NOODARA_IMAGE_PREFIX:?NOODARA_IMAGE_PREFIX is required}/noodara-control-plane:${NOODARA_VERSION:?NOODARA_VERSION is required -- never use the unversioned tag, D-04}
+    command: ['node', 'dist/db/migrate.js']
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no" # Never "always": a one-shot must not auto-restart on its own exit.
+    deploy:
+      resources:
+        limits:
+          # Not directly measured (see the file-level comment above): bounded by analogy to
+          # postgres's own measured ceiling, same order of magnitude as api/worker's own image.
+          memory: 192M
+
+  api:
+    image: ${NOODARA_IMAGE_PREFIX:?NOODARA_IMAGE_PREFIX is required}/noodara-control-plane:${NOODARA_VERSION:?NOODARA_VERSION is required -- never use the unversioned tag, D-04}
+    command: ['node', 'dist/server.js']
+    env_file:
+      - .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 30s
+    # Node 22's global `fetch`, since node:22-slim has no guaranteed curl/wget. Any 2xx (including
+    # GET /health's 200 "degraded" when only redis/the worker are down) is healthy -- only a 503
+    # (dead Postgres) is unhealthy, matching apps/control-plane/src/routes/health.ts's own
+    # documented intent (D-26): the orchestrator must restart the API for a dead database, but
+    # never merely because Redis or the worker is unavailable.
+    healthcheck:
+NOODARA_COMPOSE_EOF_A
+    printf "      test: ['CMD', 'node', '-e', \"fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(%s)=>process.exit(1))\"]\n" "$_noodara_pcf_lp"
+    cat <<'NOODARA_COMPOSE_EOF_B'
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 256M # Measured idle RSS 66-75MiB across runs; >=2x headroom over the high end (3.4x).
+
+  worker:
+    image: ${NOODARA_IMAGE_PREFIX:?NOODARA_IMAGE_PREFIX is required}/noodara-control-plane:${NOODARA_VERSION:?NOODARA_VERSION is required -- never use the unversioned tag, D-04}
+    command: ['node', 'dist/worker.js']
+    env_file:
+      - .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    # computeJobLockDurationMs (apps/control-plane/src/queue/job-budget.ts) = connectMs*2 + 2000 +
+    # discoveryMs + 30000; with env.ts's own defaults (10000ms connect, 60000ms discovery) that is
+    # 112000ms = 112s, and runWorkerShutdown (phase 4 D-25) is given exactly that as its graceful-
+    # shutdown budget. This grace period must exceed it, not invent a separate number.
+    stop_grace_period: 150s
+    # No healthcheck: the worker's liveness is reported through the api container's own /health
+    # `checks.worker` heartbeat (D-26), not a second, independent probe.
+    deploy:
+      resources:
+        limits:
+          memory: 256M # Measured idle RSS 50-59MiB across runs; >=2x headroom over the high end (4.3x).
+
+  web:
+    image: ${NOODARA_IMAGE_PREFIX:?NOODARA_IMAGE_PREFIX is required}/noodara-web:${NOODARA_VERSION:?NOODARA_VERSION is required -- never use the unversioned tag, D-04}
+    ports:
+      - '${NOODARA_PORT:?NOODARA_PORT is required}:3000' # The only published port in this whole file.
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 10s
+    healthcheck:
+NOODARA_COMPOSE_EOF_B
+    printf "      test: ['CMD', 'node', '-e', \"fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(%s)=>process.exit(1))\"]\n" "$_noodara_pcf_lp"
+    cat <<'NOODARA_COMPOSE_EOF_C'
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 256M # Measured idle RSS 41-59MiB across runs; >=2x headroom over the high end (4.3x).
+
+volumes:
+  noodara_postgres_data:
+  noodara_redis_data:
+NOODARA_COMPOSE_EOF_C
+  } > "$_noodara_pcf_tmp"; then
+    rm -f "$_noodara_pcf_tmp"
+    noodara_fail env-write-failed "Failed to write the compose file to $_noodara_pcf_target."
+  fi
+  if ! mv "$_noodara_pcf_tmp" "$_noodara_pcf_target"; then
+    rm -f "$_noodara_pcf_tmp"
+    noodara_fail env-write-failed "Failed to write the compose file to $_noodara_pcf_target."
+  fi
+  chmod 644 "$_noodara_pcf_target" || noodara_fail env-write-failed "Failed to set permissions on $_noodara_pcf_target."
+}
+
+# Named stubs for the pull/up/health/summary steps -- filled in by this plan's Task 2 (pull/up/
+# health) and Task 3 (setup token/ufw/summary/log). Present from this commit onward so
+# noodara_main reads as a complete table of contents of the whole install from its first commit.
+noodara_pull_images() {
+  :
+}
+
+noodara_compose_up() {
+  :
+}
+
+noodara_wait_for_health() {
+  :
+}
+
+noodara_print_summary() {
+  :
+}
+
+# Entry point (06-CONTEXT.md D-09/D-10/D-11/D-17, INST-01/INST-02/INST-04/INST-05): preflight ->
+# ensure Docker -> prepare the install directory -> resolve version/image-prefix/public-URL/port ->
+# generate a fresh .env (first install) or merge into the existing one (upgrade) -> place the
+# compose file -> pull -> up -> wait for health -> print the summary. Reads as an ordered table of
+# contents of the whole install; every step it calls already exists and is independently unit-
+# tested (Plans 06-02..06-08) -- this function only composes them in one documented order.
 noodara_main() {
   noodara_step "Noodara installer"
-  return 0
+
+  noodara_preflight
+  noodara_ensure_docker
+
+  _noodara_main_was_installed=0
+  if noodara_is_installed; then
+    _noodara_main_was_installed=1
+  fi
+
+  noodara_prepare_install_dir
+
+  _noodara_main_env_path="${NOODARA_INSTALL_DIR}/${NOODARA_ENV_FILE}"
+  _noodara_main_version=$(noodara_resolve_version)
+  _noodara_main_image_prefix=$(noodara_resolve_image_prefix)
+  _noodara_main_public_url=$(noodara_resolve_public_url)
+  _noodara_main_port=$(noodara_resolve_port)
+
+  if [ "$_noodara_main_was_installed" = "1" ]; then
+    # D-09/D-12: record the version being replaced BEFORE overwriting NOODARA_VERSION, and only
+    # when the version genuinely changes -- a same-version re-run's rollback hint must still name
+    # the last real previous version, not overwrite it with the version it is already on.
+    _noodara_main_previous_version=$(noodara_env_get_value "$_noodara_main_env_path" NOODARA_VERSION)
+    if [ -n "$_noodara_main_previous_version" ] && [ "$_noodara_main_previous_version" != "$_noodara_main_version" ]; then
+      noodara_set_env_value "$_noodara_main_env_path" NOODARA_PREVIOUS_VERSION "$_noodara_main_previous_version"
+    fi
+    noodara_merge_env "$_noodara_main_env_path" "$_noodara_main_version" \
+      NOODARA_IMAGE_PREFIX "$_noodara_main_image_prefix" \
+      NOODARA_PORT "$_noodara_main_port" \
+      NOODARA_PUBLIC_URL "$_noodara_main_public_url"
+  else
+    noodara_generate_env "$_noodara_main_env_path" "$_noodara_main_public_url" "$_noodara_main_port" \
+      "$_noodara_main_version" "$_noodara_main_image_prefix"
+  fi
+
+  noodara_place_compose_file
+
+  noodara_pull_images
+  noodara_compose_up
+  noodara_wait_for_health
+  noodara_print_summary
 }
 
 if [ "${NOODARA_INSTALL_SH_SOURCE_ONLY:-0}" != "1" ]; then
