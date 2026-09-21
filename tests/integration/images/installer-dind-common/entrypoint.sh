@@ -76,19 +76,31 @@ else
   # A real VPS has systemd to start docker.service the moment install.sh's own `apt-get install
   # docker-ce ...` configures the package -- this bare privileged container has no init system of
   # its own to do that, so nothing would ever start the daemon install.sh itself just installed.
-  # This background watcher polls for the `dockerd` binary to appear on disk, then runs the exact
-  # same start-and-wait sequence noodara_dind_start_and_wait already provides for the
-  # WITH_DOCKER=true path above -- entirely independent of, and unsynchronized with, install.sh's
+  # This background watcher polls dpkg's own record of docker-ce's install state (see below), then
+  # runs the exact same start-and-wait sequence noodara_dind_start_and_wait already provides for
+  # the WITH_DOCKER=true path above -- entirely independent of, and unsynchronized with, install.sh's
   # own execution. It never loads any image and never touches /opt/noodara: the no-Docker scenario
   # test itself pre-populates this fixture's own /var/lib/docker volume (via a "donor" fixture
   # sharing the same volume, see tests/integration/installer/preflight-scenarios.test.ts) BEFORE
   # this daemon ever starts, so there is no image-loading race to solve here -- only "start the
-  # daemon once its binary exists" (hard_rule #11c: a genuine fixture limitation, solved entirely
-  # in the fixture -- never a test-only branch inside install.sh itself).
+  # daemon once Docker Engine is genuinely, fully installed" (hard_rule #11c: a genuine fixture
+  # limitation, solved entirely in the fixture -- never a test-only branch inside install.sh itself).
+  #
+  # Real DinD discovery (06-12-PLAN.md Task 2, first real run of this watcher): polling for the
+  # `dockerd` BINARY alone (`command -v dockerd`) is too eager -- `apt-get install docker-ce
+  # docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin` downloads every package
+  # first, then unpacks and configures each one in dependency order; dpkg drops the dockerd binary
+  # onto disk during docker-ce's own UNPACK step, well before docker-ce's postinst script has
+  # finished running. Starting a competing `dockerd` while that postinst script is still executing
+  # raced it in the very first real run of this fixture (`docker version` never became reachable
+  # within install.sh's own bounded retry). Polling `dpkg-query`'s own Status field for docker-ce
+  # specifically -- "install ok installed" is dpkg's own definitive "this package is fully
+  # configured, not merely unpacked" signal -- avoids the race entirely by waiting for exactly the
+  # same condition a real systemd host's own docker.service unit-file trigger would wait for.
   (
     _noodara_watcher_attempt=0
     while [ "$_noodara_watcher_attempt" -lt "$NOODARA_DIND_WATCHER_MAX_ATTEMPTS" ]; do
-      if command -v dockerd >/dev/null 2>&1; then
+      if [ "$(dpkg-query -W -f '${Status}' docker-ce 2>/dev/null)" = "install ok installed" ]; then
         if ! noodara_dind_start_and_wait; then
           echo "noodara-dind: watcher's dockerd start did not become ready" >&2
         fi
@@ -97,7 +109,7 @@ else
       _noodara_watcher_attempt=$((_noodara_watcher_attempt + 1))
       sleep 1
     done
-    echo "noodara-dind: watcher gave up waiting for the dockerd binary after ${NOODARA_DIND_WATCHER_MAX_ATTEMPTS}s" >&2
+    echo "noodara-dind: watcher gave up waiting for docker-ce to be configured after ${NOODARA_DIND_WATCHER_MAX_ATTEMPTS}s" >&2
   ) >"$NOODARA_DIND_WATCHER_LOG" 2>&1 &
 fi
 
