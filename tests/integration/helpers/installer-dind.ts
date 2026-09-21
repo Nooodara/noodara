@@ -36,6 +36,19 @@ export interface StartInstallerDindOptions {
   /** Bounds the whole build+start+dockerd-ready wait -- the first build of a variant installs
    *  Docker Engine from the network, so this is generous by default. */
   readonly startupTimeoutMs?: number;
+  /** When set, bind-mounts this EXISTING, caller-owned Docker volume as /var/lib/docker instead
+   *  of creating a fresh one -- lets a "donor" fixture's own already-populated nested-Docker
+   *  storage (images loaded via loadLocalImages) be reused verbatim by a SECOND, later fixture
+   *  (06-12-PLAN.md's own no-Docker/D-14 scenario: a withDocker:false fixture has no daemon of its
+   *  own to `docker load` into until install.sh's real apt-repo install brings one up moments
+   *  before noodara_ensure_docker itself checks readiness -- far too tight a window to `docker
+   *  save`/copy/`docker load` real production images into it live without racing install.sh's own
+   *  bounded noodara_wait_for_docker_ready. Pre-populating the SAME /var/lib/docker volume from a
+   *  donor fixture that already has Docker installed removes the race entirely: the moment the
+   *  apt-installed daemon starts, `docker images` already shows everything the donor loaded). The
+   *  caller owns creation and removal of this volume -- stop() never removes a volume it did not
+   *  create itself. */
+  readonly reuseDockerVolume?: string;
 }
 
 export interface ExecResultLike {
@@ -124,13 +137,17 @@ export async function startInstallerDind(options: StartInstallerDindOptions): Pr
     withDocker = true,
     withSnapDocker = false,
     startupTimeoutMs = DEFAULT_STARTUP_TIMEOUT_MS,
+    reuseDockerVolume,
   } = options;
 
-  const volumeName = `noodara-dind-${ubuntu.replace('.', '')}-${randomUUID()}`;
-  execFileSync('docker', ['volume', 'create', '--label', 'noodara.test=true', volumeName], {
-    timeout: HOST_CLI_TIMEOUT_MS,
-    stdio: 'ignore',
-  });
+  const ownsVolume = reuseDockerVolume === undefined;
+  const volumeName = reuseDockerVolume ?? `noodara-dind-${ubuntu.replace('.', '')}-${randomUUID()}`;
+  if (ownsVolume) {
+    execFileSync('docker', ['volume', 'create', '--label', 'noodara.test=true', volumeName], {
+      timeout: HOST_CLI_TIMEOUT_MS,
+      stdio: 'ignore',
+    });
+  }
 
   let image;
   try {
@@ -142,7 +159,7 @@ export async function startInstallerDind(options: StartInstallerDindOptions): Pr
       `build installer-dind-ubuntu-${ubuntu}`,
     );
   } catch (error) {
-    removeVolume(volumeName);
+    if (ownsVolume) removeVolume(volumeName);
     throw error;
   }
 
@@ -162,9 +179,10 @@ export async function startInstallerDind(options: StartInstallerDindOptions): Pr
   try {
     started = await container.start();
   } catch (error) {
-    // The container never reached running -- without this, the volume this fixture pre-created
-    // would leak silently (hard_rule #7's own multi-GB leak warning).
-    removeVolume(volumeName);
+    // The container never reached running -- without this, a volume this fixture itself created
+    // would leak silently (hard_rule #7's own multi-GB leak warning). A reused (not owned) volume
+    // is left alone -- its own creator is responsible for removing it.
+    if (ownsVolume) removeVolume(volumeName);
     throw error;
   }
 
@@ -173,7 +191,7 @@ export async function startInstallerDind(options: StartInstallerDindOptions): Pr
     if (stopped) return;
     stopped = true;
     await started.stop();
-    removeVolume(volumeName);
+    if (ownsVolume) removeVolume(volumeName);
   };
 
   const exec = async (command: string[], execOptions: InstallerDindExecOptions = {}): Promise<ExecResultLike> => {
