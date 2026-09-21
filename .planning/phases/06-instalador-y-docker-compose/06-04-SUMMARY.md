@@ -135,3 +135,117 @@ None -- no external service configuration required.
 ## Self-Check: PASSED
 
 All 5 relevant files (`install.sh`, `.env.example`, `tests/unit/installer/env-file.test.ts`, `tests/integration/installer/env-contract.test.ts`, this SUMMARY) verified present on disk; all 6 task commit hashes (`99c709d`, `e098a48`, `e5a79aa`, `8127b46`, `993f21e`, `fd215d0`) plus this plan's own docs commit (`ef6f6d3`) verified present in `git log --oneline --all`.
+
+## Post-execution security fix
+
+An orchestrator audit of this plan's shipped `install.sh` found two defects in the `.env` write
+path after the plan above was marked complete. Both are fixed here as a small RED -> GREEN
+follow-up, scoped `(06-04)`, on top of the original commits.
+
+### Finding A: line injection into `.env` (confirmed)
+
+`noodara_generate_env` wrote every operator-controlled value (`NOODARA_PUBLIC_URL`, `NOODARA_PORT`,
+`NOODARA_VERSION`, `NOODARA_IMAGE_PREFIX`, `NOODARA_ADMIN_EMAIL`, `NOODARA_ADMIN_PASSWORD`) with a
+raw `printf 'KEY=%s\n'` and no validation. A value containing an embedded LF injected an arbitrary
+extra line into `.env`: reproduced with `NOODARA_ADMIN_PASSWORD` set to
+`printf 'pw\nNOODARA_MASTER_KEY=attacker'`, which appended a second, attacker-chosen
+`NOODARA_MASTER_KEY` line that a last-wins `.env` parser would prefer over the genuinely random
+one. `noodara_env_append_if_missing` (key and value) and `noodara_set_env_value` (value, via
+`awk -v`) had the identical gap.
+
+**Fix:** `noodara_env_assert_single_line <name> <value>` rejects any value containing an embedded
+LF or CR (detected via a `case` pattern against a literal newline / a CR from `printf '\r'` --
+never `$'...'`/`[[ ]]`, per this file's strict-POSIX-sh constraint), naming the variable and never
+echoing the value, using the existing `env-write-failed` exit reason (30) -- it already fit
+semantically, so the exit-code table in `install.sh`/`tests/unit/installer/skeleton.test.ts` did
+not need a new entry. Called at every write boundary. In `noodara_generate_env`, every validation
+runs before the parent directory is created and before the temp file is opened, so a rejected
+value leaves neither a partial `.env` nor a stray `.tmp.$$` file behind -- verified directly
+(`readdirSync` on the target directory is empty after a rejected call, including when the parent
+directory did not exist yet). `noodara_set_env_value` also stopped passing `key`/`value` through
+`awk -v` (whose assignment operand undergoes the same backslash-escape processing as a string
+literal) and now passes them via `ENVIRON`, so a value containing a literal two-character
+`\n` sequence survives byte-identical instead of silently becoming a real newline -- a second,
+independent injection path into the exact line the function rewrites.
+
+**A real bug caught by RED-first TDD:** the first implementation of the two guard functions used
+generic parameter names (`name`, `value`). Since `install.sh` is strict POSIX sh with no `local`,
+every "variable" is process-global -- the guard's own `value="$2"` silently clobbered the caller's
+own `value` global the moment the guard ran, corrupting `noodara_env_append_if_missing`'s output
+(`NEW_KEY=NEW_KEY` instead of `NEW_KEY=newvalue`) and `noodara_merge_env`'s appended-key value.
+Caught immediately because the RED tests were run against the pre-fix `install.sh` first, and the
+subsequent GREEN run against the real fix still failed 6 of 78 tests. Fixed by namespacing the
+guards' internal variables (`_noodara_ael_name`/`_noodara_ael_value`,
+`_noodara_aeq_name`/`_noodara_aeq_value`).
+
+### Finding B: unquoted values vs Docker Compose parsing (confirmed, not just suspected)
+
+`NOODARA_PUBLIC_URL`/`NOODARA_ADMIN_EMAIL`/`NOODARA_ADMIN_PASSWORD` were written unquoted. Docker
+Compose's own `.env` parser (used both by `env_file:` on a service and by top-level `${VAR}`
+interpolation into the compose YAML) interpolates `$VAR`/`${VAR}` in an unquoted or
+double-quoted value and treats a trailing ` #...` as an inline comment. Reproduced directly (not
+assumed) with `docker compose config --format json` against a throwaway one-service compose file
+using `env_file: .env`: an admin password of
+`p@ss$word $$literal ${UNDEFINED_VAR} with space #not-a-comment "quoted" back\slash` resolved to
+`p@ss $literal  with space` -- `$word` interpolated to empty, `${UNDEFINED_VAR}` interpolated to
+empty, and everything from ` #not-a-comment` onward silently dropped.
+
+**What `docker compose config --format json` actually showed** (reported as observed, not
+assumed): for an already-resolved (non-interpolated) value, its JSON printer doubles every literal
+`$` character (its own round-trip-safe serialization convention, so the printed config would not
+be mis-interpolated if re-fed to Compose). A real `docker compose run --rm probe sh -c 'printf
+"%s" "$NOODARA_ADMIN_PASSWORD"'` probe against the single-quoted fixture printed the password with
+single, undoubled `$` characters -- byte-identical to the original. The committed regression test
+(`tests/integration/installer/env-compose-roundtrip.test.ts`) uses `config --format json` only (no
+container is created, per the objective's constraint) and undoes that one-directional, lossless
+`$$` -> `$` doubling before asserting byte-for-byte equality, with a comment explaining why.
+
+**Fix:** `NOODARA_PUBLIC_URL`, `NOODARA_ADMIN_EMAIL` and `NOODARA_ADMIN_PASSWORD` are now written
+single-quoted (`NOODARA_ADMIN_PASSWORD='<value>'`) -- Compose's `.env` parser takes a single-quoted
+value fully literally, confirmed via the real `docker compose run` probe above both before and
+after the fix. A value containing a literal single quote cannot be represented inside a
+single-quoted dotenv value at all (unlike POSIX shell, there is no `'\''`-style escape), so
+`noodara_env_assert_no_single_quote` rejects it outright with the same `env-write-failed` reason,
+naming the variable, before any write. `tests/integration/installer/env-contract.test.ts` (the
+real `apps/control-plane/dist/env.js` validator, which reads only `process.env` -- never `.env`
+directly) remains green and required no changes: it is unaffected because it never depended on
+these three values' unquoted shape, and because Compose itself strips the surrounding quote
+characters when populating a container's environment (confirmed by the same `docker compose run`
+probe: the container's `$NOODARA_ADMIN_PASSWORD` had no literal quote characters wrapping it).
+
+`tests/unit/installer/env-file.test.ts`'s `parseEnvFile` test helper was updated to strip one
+layer of surrounding single quotes when present, mirroring what Compose itself does -- the
+existing assertions on `NOODARA_ADMIN_EMAIL`/`NOODARA_ADMIN_PASSWORD` values needed no other
+change.
+
+### Tests
+
+- `tests/unit/installer/env-file.test.ts`: 26 new cases (13 per interpreter x 2 interpreters)
+  under a new `install.sh .env write-boundary injection guard` describe block -- direct guard
+  behavior, the orchestrator's own line-injection reproduction against `noodara_generate_env`,
+  carriage-return rejection, the "no directory/file/temp-file created on a rejected value" proof,
+  single-quote rejection for the three affected fields, the tricky-password round-trip through
+  `parseEnvFile`, injection rejection in `noodara_env_append_if_missing`/`noodara_set_env_value`,
+  and the literal-backslash-n byte-identity proof. Confirmed RED against the pre-fix `install.sh`
+  (26/26 failing for the expected reason, e.g. exit 0 instead of 30, injected content actually
+  written, `awk -v` truncating the literal `\n` sequence) before the fix, then GREEN (78/78,
+  including the 52 pre-existing cases) after.
+- `tests/integration/installer/env-compose-roundtrip.test.ts` (new): the Finding B regression
+  guard described above, run via `pnpm exec vitest run --config vitest.installer.config.ts`.
+  Confirmed RED (assertion failure showing the exact interpolation/comment-truncation described
+  above) against the pre-fix `install.sh`, then GREEN after.
+- `pnpm test`: 123 files / 1719 tests green (1693 + 26 new, up from the original plan's count).
+- `pnpm check:posix-sh`, `pnpm typecheck`, `pnpm lint`: all green.
+- Real repo `.env` checksum verified byte-identical before and after this fix
+  (`a49dbb13d4d714ed9d8c0ffe50a5a5367c335cd4`) -- never touched by any test in this follow-up,
+  every test uses its own `mkdtemp` directory.
+
+### Commits
+
+- `f735be6` -- `test(06-04): add failing tests for .env write-boundary injection guard`
+- `b6c6bd7` -- `fix(06-04): guard every .env write boundary against injection`
+
+### Threat Flags
+
+None -- this follow-up closes gaps in surface this plan's own `<threat_model>` had already named
+(T-06-11, T-06-24) rather than introducing new, un-modeled surface.
