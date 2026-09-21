@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-06-PLAN.md
-last_updated: "2026-09-21T12:47:56.777Z"
+stopped_at: Completed 06-07-PLAN.md
+last_updated: "2026-09-21T13:50:13.283Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 109
-  completed_plans: 100
+  completed_plans: 101
   percent: 83
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 06 (instalador-y-docker-compose) — EXECUTING
-Plan: 7 of 15
+Plan: 8 of 15
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [█████████░] 92%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -146,6 +146,7 @@ Progress: [█████████░] 92%
 | Phase 06 P04 | 15min | 3 tasks | 4 files |
 | Phase 06 P05 | 65min | 3 tasks | 3 files |
 | Phase 06 P06 | 3min | 2 tasks | 2 files |
+| Phase 06 P07 | 50min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -386,6 +387,7 @@ Recent decisions affecting current work:
 - [Phase 06]: Testcontainers Network().start() + .withNetworkAliases('api') gives a container-under-test a literal DNS-resolvable service name (matching production docker-compose.yml), distinct from control-plane-image.test.ts's host.docker.internal/host-gateway pattern which only reaches a host port
 - [Phase 06]: noodara_resolve_public_url prints its D-07 note (chosen URL + remedy) to stderr via a direct printf, not through the stdout-only noodara_note helper — This function's stdout is a strict single-line return contract every downstream caller (noodara_generate_env) depends on; a second stdout line would corrupt the captured public_url with an embedded newline
 - [Phase 06]: curl calls inside noodara_fetch_url add --proto '=https' --tlsv1.2 beyond 06-06-PLAN.md's literal action text — hard_rule #8 requires https-only+TLS1.2 for any curl call influencing what gets installed; this seam resolves both the release tag and the public IP
+- [Phase 06]: docker-compose.yml production topology: every credential/version interpolation uses ${VAR:?message}, redis healthcheck uses REDISCLI_AUTH not -a, memory limits set from measured docker stats with 2x headroom
 
 ### Pending Todos
 
@@ -451,6 +453,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-21T12:47:56.768Z
-Stopped at: Completed 06-06-PLAN.md
+Last session: 2026-09-21T13:50:13.275Z
+Stopped at: Completed 06-07-PLAN.md
 Resume file: None
