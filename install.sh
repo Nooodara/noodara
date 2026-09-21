@@ -301,35 +301,169 @@ noodara_compose_present() {
   docker compose version >/dev/null 2>&1
 }
 
-# Installs Docker Engine from Docker's official apt repository (06-CONTEXT.md D-14): removes
-# conflicting distro packages (best effort -- a package that is simply absent is not a failure),
-# refreshes the apt index, installs the prerequisites, creates the keyring directory, downloads and
-# installs Docker's GPG key through noodara_fetch_url -- the single seam every network call in this
-# file goes through, never a second direct `curl` call site -- writes the apt sources line pinned
-# to that key via `signed-by=`, refreshes the apt index again, then installs the Docker packages.
-noodara_install_docker() {
-  noodara_step "Installing Docker Engine from Docker's official apt repository..."
-  apt-get remove -y docker.io docker-compose docker-compose-v2 docker-doc podman-docker containerd runc >/dev/null 2>&1 || true
-  apt-get update -y >/dev/null 2>&1 || noodara_fail docker-install-failed "Docker installation failed while updating the apt package index."
-  apt-get install -y ca-certificates curl gnupg >/dev/null 2>&1 || noodara_fail docker-install-failed "Docker installation failed while installing ca-certificates, curl and gnupg."
-  install -m 0755 -d "$NOODARA_DOCKER_KEYRING_DIR" || noodara_fail docker-install-failed "Docker installation failed while creating the apt keyring directory."
-  _noodara_iid_key=$(noodara_fetch_url body "https://download.docker.com/linux/ubuntu/gpg" 2>/dev/null) || _noodara_iid_key=""
-  if [ -z "$_noodara_iid_key" ]; then
-    noodara_fail docker-install-failed "Docker installation failed while downloading Docker's GPG key."
+# Every apt-get invocation below goes through this one helper: DEBIAN_FRONTEND is non-interactive,
+# -y answers every prompt, dpkg conffile prompts are pre-answered (--force-confdef/--force-
+# confold), and Acquire/DPkg::Lock timeouts bound how long a concurrent unattended-upgrades run or
+# a slow mirror can block an unattended `curl | sh` (hard_rule #9, T-06-38). Output is captured,
+# never streamed raw to the terminal -- a successful call prints nothing beyond this file's own
+# noodara_step notices, however verbose apt itself is; a failing call prints its own last lines to
+# stderr before returning non-zero, so the caller's own noodara_fail message is followed by enough
+# context to diagnose (hard_rule #9's "tail on failure") without ever writing a persistent log file.
+_noodara_did_run_apt() {
+  if _noodara_did_output=$(DEBIAN_FRONTEND=noninteractive apt-get -y \
+    -o Dpkg::Options::=--force-confdef \
+    -o Dpkg::Options::=--force-confold \
+    -o Acquire::http::Timeout=10 \
+    -o Acquire::Retries=3 \
+    -o DPkg::Lock::Timeout=60 \
+    "$@" 2>&1); then
+    return 0
   fi
-  printf '%s\n' "$_noodara_iid_key" > "${NOODARA_DOCKER_KEYRING_DIR}/docker.asc"
-  chmod a+r "${NOODARA_DOCKER_KEYRING_DIR}/docker.asc" || noodara_fail docker-install-failed "Docker installation failed while setting the keyring file's permissions."
-  _noodara_iid_arch=$(dpkg --print-architecture) || noodara_fail docker-install-failed "Docker installation failed while detecting the package architecture."
-  printf 'deb [arch=%s signed-by=%s/docker.asc] https://download.docker.com/linux/ubuntu stable\n' "$_noodara_iid_arch" "$NOODARA_DOCKER_KEYRING_DIR" > "$NOODARA_DOCKER_SOURCES_FILE"
-  apt-get update -y >/dev/null 2>&1 || noodara_fail docker-install-failed "Docker installation failed while updating the apt package index."
-  apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin >/dev/null 2>&1 || noodara_fail docker-install-failed "Docker installation failed while installing the Docker packages."
+  printf '%s\n' "$_noodara_did_output" | tail -n 40 >&2
+  return 1
 }
 
-# Installs only the Compose plugin -- Docker Engine may already be present through a route this
-# installer never controlled, so this deliberately does not repeat the full sequence above.
+# Fails with reason docker-install-failed (exit 20), naming the given step -- one call site per
+# step below, so a failure always names the exact step that broke rather than a generic message
+# (T-06-40).
+_noodara_did_fail_step() {
+  noodara_fail docker-install-failed "Docker installation failed at step: $1. See the apt output above for details."
+}
+
+# Step: removes conflicting distro packages, Docker's own documented first step. This step's own
+# exit status is deliberately never checked -- a package that is simply absent is not a failure,
+# matching Docker's documented per-package removal loop where each removal is allowed to no-op.
+# Never removes docker-ce/containerd.io themselves (the packages the sequence below installs) and
+# never touches /var/lib/docker (operator data).
+noodara_docker_remove_conflicting_packages() {
+  _noodara_did_run_apt remove docker.io docker-compose docker-compose-v2 docker-doc podman-docker containerd runc || true
+}
+
+# Step: refreshes the apt package index. Called twice by noodara_install_docker/
+# noodara_ensure_compose_plugin below -- once before Docker's repository is trusted, once after,
+# so the newly-written sources file is actually consulted.
+noodara_docker_apt_update() {
+  _noodara_did_run_apt update || _noodara_did_fail_step "apt-get update"
+}
+
+# Step: installs the given package names, failing with the given step label.
+_noodara_did_install_packages() {
+  _noodara_dip_step="$1"
+  shift
+  _noodara_did_run_apt install "$@" || _noodara_did_fail_step "$_noodara_dip_step"
+}
+
+noodara_docker_apt_install_prereqs() {
+  _noodara_did_install_packages "install ca-certificates, curl and gnupg" ca-certificates curl gnupg
+}
+
+# Step: creates the keyring directory Docker's GPG key is written into, mode 0755 (world-readable,
+# root-writable) -- the same `install -m 0755 -d /etc/apt/keyrings` Docker's own docs and this
+# repo's own sshd-ubuntu-22.04/Dockerfile already run successfully in CI.
+noodara_docker_create_keyring_dir() {
+  install -m 0755 -d "$NOODARA_DOCKER_KEYRING_DIR" || _noodara_did_fail_step "create the apt keyring directory"
+}
+
+# Step: downloads Docker's GPG key through noodara_fetch_url -- the single seam every network call
+# in this file goes through; no other function ever calls curl directly. Writes atomically (a temp
+# file in the same directory, then mv) so a crash or a rejected response never leaves a half-
+# written keyring behind; an empty response fails this step outright rather than writing a bad
+# keyring and letting the sequence continue.
+noodara_docker_download_gpg_key() {
+  _noodara_ddgk_file="${NOODARA_DOCKER_KEYRING_DIR}/docker.asc"
+  _noodara_ddgk_key=$(noodara_fetch_url body "https://download.docker.com/linux/ubuntu/gpg" 2>/dev/null) || _noodara_ddgk_key=""
+  if [ -z "$_noodara_ddgk_key" ]; then
+    _noodara_did_fail_step "download Docker's GPG key"
+  fi
+  _noodara_ddgk_tmp="${_noodara_ddgk_file}.tmp.$$"
+  printf '%s\n' "$_noodara_ddgk_key" > "$_noodara_ddgk_tmp"
+  mv "$_noodara_ddgk_tmp" "$_noodara_ddgk_file"
+}
+
+# Step: makes the keyring world-readable -- apt itself reads it as the unprivileged `_apt` user,
+# not root.
+noodara_docker_chmod_gpg_key() {
+  chmod a+r "${NOODARA_DOCKER_KEYRING_DIR}/docker.asc" || _noodara_did_fail_step "set the keyring file's permissions"
+}
+
+# Step: writes the apt sources line, pinned to the exact keyring file above via `signed-by=` --
+# never [trusted=yes], never apt-key. Architecture comes from `dpkg --print-architecture`; the
+# codename comes from NOODARA_OS_RELEASE_FILE's own VERSION_CODENAME (reusing
+# noodara_detect_os_version's own file constant rather than sourcing /etc/os-release a second
+# time), read inside a subshell so it cannot leak into the caller's scope. Both are checked against
+# an explicit allow-list before either is ever interpolated into a file this installer goes on to
+# trust -- preflight already restricts noodara_check_os/noodara_check_arch to the same two
+# codenames/two architectures, but this step does not rely on that having already run.
+noodara_docker_write_sources_list() {
+  _noodara_dwsl_arch=$(dpkg --print-architecture) || _noodara_did_fail_step "detect the package architecture"
+  case "$_noodara_dwsl_arch" in
+    amd64 | arm64)
+      ;;
+    *)
+      _noodara_did_fail_step "write the apt sources list (unsupported architecture '$_noodara_dwsl_arch')"
+      ;;
+  esac
+  _noodara_dwsl_codename=$(
+    if [ -f "$NOODARA_OS_RELEASE_FILE" ]; then
+      . "$NOODARA_OS_RELEASE_FILE"
+      printf '%s\n' "${VERSION_CODENAME:-}"
+    fi
+  )
+  case "$_noodara_dwsl_codename" in
+    jammy | noble)
+      ;;
+    *)
+      _noodara_did_fail_step "write the apt sources list (unsupported codename '$_noodara_dwsl_codename')"
+      ;;
+  esac
+  printf 'deb [arch=%s signed-by=%s/docker.asc] https://download.docker.com/linux/ubuntu %s stable\n' \
+    "$_noodara_dwsl_arch" "$NOODARA_DOCKER_KEYRING_DIR" "$_noodara_dwsl_codename" > "$NOODARA_DOCKER_SOURCES_FILE"
+}
+
+noodara_docker_apt_install_engine() {
+  _noodara_did_install_packages "install docker-ce, docker-ce-cli, containerd.io, docker-buildx-plugin and docker-compose-plugin" \
+    docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+}
+
+noodara_docker_apt_install_compose_plugin() {
+  _noodara_did_install_packages "install docker-compose-plugin" docker-compose-plugin
+}
+
+# Full installation sequence (06-CONTEXT.md D-14), one named step at a time, in exactly this
+# order -- never chained with && inside one function, since set -e plus one command per function
+# is what gives each step its own attributable failure message (T-06-40):
+#   remove conflicting packages -> apt-get update -> install ca-certificates/curl/gnupg ->
+#   create the keyring directory -> download the GPG key -> chmod it -> write the sources list ->
+#   apt-get update -> install docker-ce/docker-ce-cli/containerd.io/docker-buildx-plugin/
+#   docker-compose-plugin. This translates the identical sequence
+#   tests/integration/images/sshd-ubuntu-22.04/Dockerfile already builds successfully in CI
+#   (06-RESEARCH.md Pattern 5) from Dockerfile RUN/if syntax into POSIX sh.
+noodara_install_docker() {
+  noodara_step "Installing Docker Engine from Docker's official apt repository..."
+  noodara_docker_remove_conflicting_packages
+  noodara_docker_apt_update
+  noodara_docker_apt_install_prereqs
+  noodara_docker_create_keyring_dir
+  noodara_docker_download_gpg_key
+  noodara_docker_chmod_gpg_key
+  noodara_docker_write_sources_list
+  noodara_docker_apt_update
+  noodara_docker_apt_install_engine
+}
+
+# Installs only the Compose plugin, reusing the same trusted-repository setup (idempotent: an
+# already-present keyring file or sources line is simply overwritten with identical content)
+# rather than assuming a prior noodara_install_docker run configured it -- Docker Engine may be
+# present through a route this installer never controlled.
 noodara_ensure_compose_plugin() {
   noodara_step "Installing the Docker Compose plugin from Docker's official apt repository..."
-  apt-get install -y docker-compose-plugin >/dev/null 2>&1 || true
+  noodara_docker_apt_update
+  noodara_docker_create_keyring_dir
+  noodara_docker_download_gpg_key
+  noodara_docker_chmod_gpg_key
+  noodara_docker_write_sources_list
+  noodara_docker_apt_update
+  noodara_docker_apt_install_compose_plugin
 }
 
 # Orchestrator (INST-01, D-14): installs Docker Engine and/or the Compose plugin only when
