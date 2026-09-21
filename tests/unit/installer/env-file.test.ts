@@ -8,7 +8,7 @@
 // hardcoded string, echoed in an expect() failure message beyond structural comparison, or
 // compared across test runs -- only shape/length/charset and round-trip equality within the same
 // generation are asserted.
-import { mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -21,7 +21,12 @@ function shQuote(value: string): string {
 
 /** Parses a generated `.env`'s `KEY=VALUE` lines, skipping blank lines and `#` comments. Never
  *  re-quotes or re-interprets a value -- this mirrors install.sh's own additive-merge mechanism
- *  (D-11), which only ever checks presence via an anchored `KEY=` prefix. */
+ *  (D-11), which only ever checks presence via an anchored `KEY=` prefix. The one exception: a
+ *  value wrapped in a single leading and trailing `'` has that one wrapper layer stripped, since
+ *  post-06-04's security fix (Finding B) writes NOODARA_PUBLIC_URL/NOODARA_ADMIN_EMAIL/
+ *  NOODARA_ADMIN_PASSWORD single-quoted so Docker Compose's own `.env` parser takes them
+ *  literally -- this mirrors what Compose itself strips when populating a container's
+ *  environment, proven separately in tests/integration/installer/env-compose-roundtrip.test.ts. */
 function parseEnvFile(content: string): Record<string, string> {
   const values: Record<string, string> = {};
   for (const rawLine of content.split('\n')) {
@@ -29,7 +34,12 @@ function parseEnvFile(content: string): Record<string, string> {
     if (line === '' || line.startsWith('#')) continue;
     const eq = line.indexOf('=');
     if (eq === -1) continue;
-    values[line.slice(0, eq)] = line.slice(eq + 1);
+    const key = line.slice(0, eq);
+    let value = line.slice(eq + 1);
+    if (value.length >= 2 && value.startsWith("'") && value.endsWith("'")) {
+      value = value.slice(1, -1);
+    }
+    values[key] = value;
   }
   return values;
 }
@@ -494,6 +504,234 @@ describe.each(posixInterpreters())('install.sh env merge and backup (D-11) (%s)'
       const backups = readdirSync(dir).filter((name) => name.startsWith('.env.bak-'));
       expect(backups).toHaveLength(1);
       expect(statSync(file).mode & 0o777).toBe(0o600);
+    });
+  });
+});
+
+// Post-06-04 security fix (orchestrator audit): Finding A -- line injection into .env. Every
+// write boundary must reject a value containing an embedded LF/CR before writing a single byte,
+// naming the variable but never echoing the value. Finding B -- Docker Compose's own .env parser
+// interpolates $VAR/${VAR} and treats ' #' as an inline comment in an unquoted or double-quoted
+// value, so NOODARA_PUBLIC_URL/NOODARA_ADMIN_EMAIL/NOODARA_ADMIN_PASSWORD are written
+// single-quoted, which Compose's own parser takes fully literally
+// (tests/integration/installer/env-compose-roundtrip.test.ts proves the round trip against a
+// real `docker compose config`) -- and a value containing a literal single quote is rejected
+// outright, since a single-quoted dotenv value has no escape sequence for one.
+describe.each(posixInterpreters())('install.sh .env write-boundary injection guard (%s)', (interpreter) => {
+  describe('noodara_env_assert_single_line', () => {
+    it('exits 0 and writes nothing to either stream for a value with no LF or CR', () => {
+      const result = runInstallerShell(interpreter, 'noodara_env_assert_single_line TEST_VAR safe-value');
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toBe('');
+    });
+
+    it('fails naming the variable, never the value, for an embedded newline', () => {
+      const result = runInstallerShell(
+        interpreter,
+        `noodara_env_assert_single_line SECRET_VAR ${shQuote('safe\ninjected')}`,
+      );
+
+      expect(result.status).toBe(30);
+      expect(result.stderr).toContain('SECRET_VAR');
+      expect(result.stderr).not.toContain('injected');
+    });
+
+    it('fails for an embedded carriage return', () => {
+      const result = runInstallerShell(
+        interpreter,
+        `noodara_env_assert_single_line SECRET_VAR ${shQuote(`safe${String.fromCharCode(13)}injected`)}`,
+      );
+
+      expect(result.status).toBe(30);
+      expect(result.stderr).toContain('SECRET_VAR');
+    });
+  });
+
+  describe('noodara_generate_env', () => {
+    it('rejects a NOODARA_PUBLIC_URL containing an embedded newline and writes neither .env nor a temp file', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const envPath = join(dir, '.env');
+
+      const result = generateEnv(interpreter, envPath, 'http://x\nPORT=1', '3000', '0.1.0', 'ghcr.io/example/noodara');
+
+      expect(result.status).toBe(30);
+      expect(result.stderr).toContain('NOODARA_PUBLIC_URL');
+      expect(readdirSync(dir)).toEqual([]);
+    });
+
+    // Mirrors the orchestrator's own reproduction verbatim: an admin password carrying an
+    // embedded NOODARA_MASTER_KEY=attacker line must never reach the file, and the attacker's
+    // chosen value must never appear on any output stream either.
+    it('rejects an admin password carrying a line-injection payload, writes nothing, and never echoes the payload', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const envPath = join(dir, '.env');
+      const injectedPassword = 'pw\nNOODARA_MASTER_KEY=attacker';
+
+      const result = generateEnv(
+        interpreter,
+        envPath,
+        'https://noodara.example.com',
+        '3000',
+        '0.1.0',
+        'ghcr.io/example/noodara',
+        { NOODARA_ADMIN_EMAIL: 'a@b.co', NOODARA_ADMIN_PASSWORD: injectedPassword },
+      );
+
+      expect(result.status).toBe(30);
+      expect(result.stderr).toContain('NOODARA_ADMIN_PASSWORD');
+      expect(result.stderr).not.toContain('attacker');
+      expect(result.stderr).not.toContain('NOODARA_MASTER_KEY=attacker');
+      expect(readdirSync(dir)).toEqual([]);
+    });
+
+    it('rejects a value containing a carriage return', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const envPath = join(dir, '.env');
+
+      const result = generateEnv(
+        interpreter,
+        envPath,
+        `http://x${String.fromCharCode(13)}y`,
+        '3000',
+        '0.1.0',
+        'ghcr.io/example/noodara',
+      );
+
+      expect(result.status).toBe(30);
+      expect(readdirSync(dir)).toEqual([]);
+    });
+
+    it('validates before creating even the missing parent directory -- no directory, no file, no temp file survive a rejected value', () => {
+      const base = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const envDir = join(base, 'nested', 'opt-noodara');
+      const envPath = join(envDir, '.env');
+
+      const result = generateEnv(
+        interpreter,
+        envPath,
+        'http://x\nPORT=1',
+        '3000',
+        '0.1.0',
+        'ghcr.io/example/noodara',
+      );
+
+      expect(result.status).toBe(30);
+      expect(existsSync(envDir)).toBe(false);
+      expect(readdirSync(base)).toEqual([]);
+    });
+
+    it('rejects a NOODARA_PUBLIC_URL containing a single quote -- unrepresentable in a single-quoted .env value', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const envPath = join(dir, '.env');
+
+      const result = generateEnv(
+        interpreter,
+        envPath,
+        "http://ex'ample.com",
+        '3000',
+        '0.1.0',
+        'ghcr.io/example/noodara',
+      );
+
+      expect(result.status).toBe(30);
+      expect(result.stderr).toContain('NOODARA_PUBLIC_URL');
+      expect(readdirSync(dir)).toEqual([]);
+    });
+
+    it('rejects an admin email containing a single quote', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const envPath = join(dir, '.env');
+
+      const result = generateEnv(
+        interpreter,
+        envPath,
+        'https://noodara.example.com',
+        '3000',
+        '0.1.0',
+        'ghcr.io/example/noodara',
+        { NOODARA_ADMIN_EMAIL: "a'dmin@example.com", NOODARA_ADMIN_PASSWORD: 'a-fresh-test-password' },
+      );
+
+      expect(result.status).toBe(30);
+      expect(result.stderr).toContain('NOODARA_ADMIN_EMAIL');
+      expect(readdirSync(dir)).toEqual([]);
+    });
+
+    it('single-quotes NOODARA_PUBLIC_URL/ADMIN_EMAIL/ADMIN_PASSWORD so a value with $, spaces and # survives literally in the file', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const envPath = join(dir, '.env');
+      const trickyPassword = 'p@ss$word with space #not-a-comment';
+
+      const result = generateEnv(
+        interpreter,
+        envPath,
+        'https://noodara.example.com',
+        '3000',
+        '0.1.0',
+        'ghcr.io/example/noodara',
+        { NOODARA_ADMIN_EMAIL: 'admin@example.com', NOODARA_ADMIN_PASSWORD: trickyPassword },
+      );
+
+      expect(result.status).toBe(0);
+      const raw = readFileSync(envPath, 'utf8');
+      expect(raw).toContain(`NOODARA_ADMIN_PASSWORD='${trickyPassword}'`);
+      const parsed = parseEnvFile(raw);
+      expect(parsed.NOODARA_ADMIN_PASSWORD).toBe(trickyPassword);
+    });
+  });
+
+  describe('noodara_env_append_if_missing', () => {
+    it('rejects a value containing a newline and leaves the file byte-identical', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const file = join(dir, '.env');
+      writeFileSync(file, 'EXISTING_KEY=1\n');
+      const before = readFileSync(file, 'utf8');
+
+      const result = runInstallerShell(
+        interpreter,
+        `noodara_env_append_if_missing ${shQuote(file)} NEW_KEY ${shQuote('bad\nINJECTED=1')}`,
+      );
+
+      expect(result.status).toBe(30);
+      expect(result.stderr).toContain('NEW_KEY');
+      expect(readFileSync(file, 'utf8')).toBe(before);
+    });
+  });
+
+  describe('noodara_set_env_value', () => {
+    it('rejects a value containing a newline and leaves the file byte-identical', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const file = join(dir, '.env');
+      writeFileSync(file, COMPLETE_ENV_LINES.join('\n'));
+      const before = readFileSync(file, 'utf8');
+
+      const result = runInstallerShell(
+        interpreter,
+        `noodara_set_env_value ${shQuote(file)} NOODARA_VERSION ${shQuote('0.2.0\nINJECTED=1')}`,
+      );
+
+      expect(result.status).toBe(30);
+      expect(result.stderr).toContain('NOODARA_VERSION');
+      expect(readFileSync(file, 'utf8')).toBe(before);
+    });
+
+    it('preserves a literal backslash-n two-character sequence byte-identically -- never converts it to a real newline via awk -v escape processing', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-env-'));
+      const file = join(dir, '.env');
+      writeFileSync(file, COMPLETE_ENV_LINES.join('\n'));
+      const literalBackslashN = 'value-\\n-literal';
+
+      const result = runInstallerShell(
+        interpreter,
+        `noodara_set_env_value ${shQuote(file)} NOODARA_VERSION ${shQuote(literalBackslashN)}`,
+      );
+
+      expect(result.status).toBe(0);
+      const after = readFileSync(file, 'utf8');
+      const afterLines = after.split('\n');
+      expect(afterLines[0]).toBe(`NOODARA_VERSION=${literalBackslashN}`);
     });
   });
 });
