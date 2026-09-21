@@ -799,6 +799,47 @@ describe.each(posixInterpreters())('install.sh noodara_compose_json_field_for_se
     expect(result.status).toBe(0);
     expect(result.stdout.trim()).toBe('healthy');
   });
+
+  // Post-execution fix (06-11-PLAN.md, discovered by the first real `docker compose ps --format
+  // json` run against a genuinely running stack): the real Compose CLI (v5.5.1, confirmed against
+  // a real installer-DinD fixture) emits a non-empty "Publishers" array for EVERY service that
+  // exposes a container port -- including a service that publishes no HOST port at all, whose
+  // single Publishers element still has "PublishedPort":0. That array element is itself a JSON
+  // object, so it contributes its OWN "}" character strictly before the record's own outer "}".
+  // Alphabetically, "Health"/"ExitCode" sort before "Publishers" and "Service" sorts after it --
+  // so the OLD `RS="}"` record splitter cut every such record into two fragments: one containing
+  // the queried field (Health/ExitCode) but not "Service", and one containing "Service" but not
+  // the queried field. Neither fragment matched, so the function silently returned nothing for
+  // EVERY service with an exposed port -- api, postgres, redis, worker, web (every service except
+  // the port-less `migrate` one-shot) -- which is exactly why noodara_wait_for_health polled for
+  // the full timeout against a stack that was, per `docker inspect`, already genuinely healthy.
+  it('parses a record whose own Publishers array element contributes a "}" before the record boundary (real Compose v5.5.1 shape)', () => {
+    const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-json-field-'));
+    const file = join(fixturesDir, 'ps.json');
+    writeFileSync(
+      file,
+      [
+        '{"Command":"\\"docker-entrypoint.s…\\"","CreatedAt":"2026-09-21 16:41:38 +0000 UTC","Engine":"","ExitCode":0,"Health":"healthy","ID":"591f51416dab","Image":"x","Labels":"a=b","LocalVolumes":"0","Mounts":"","Name":"noodara-api-1","Names":"noodara-api-1","Networks":"noodara_default","Ports":"3000/tcp","Project":"noodara","Publishers":[{"URL":"","TargetPort":3000,"PublishedPort":0,"Protocol":"tcp"}],"RunningFor":"43 seconds ago","Service":"api","Size":"0B","State":"running","Status":"Up 36 seconds (healthy)"}',
+        '{"Command":"\\"docker-entrypoint.s…\\"","CreatedAt":"2026-09-21 16:41:38 +0000 UTC","Engine":"","ExitCode":0,"Health":"healthy","ID":"8c25a13666e0","Image":"x","Labels":"a=b","LocalVolumes":"0","Mounts":"","Name":"noodara-web-1","Names":"noodara-web-1","Networks":"noodara_default","Ports":"0.0.0.0:3000->3000/tcp","Project":"noodara","Publishers":[{"URL":"0.0.0.0","TargetPort":3000,"PublishedPort":3000,"Protocol":"tcp"},{"URL":"::","TargetPort":3000,"PublishedPort":3000,"Protocol":"tcp"}],"RunningFor":"43 seconds ago","Service":"web","Size":"0B","State":"running","Status":"Up 31 seconds (healthy)"}',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const apiResult = runInstallerShell(
+      interpreter,
+      `cat "${file}" | noodara_compose_json_field_for_service api Health`,
+    );
+    expect(apiResult.status).toBe(0);
+    expect(apiResult.stdout.trim()).toBe('healthy');
+
+    const webServiceResult = runInstallerShell(
+      interpreter,
+      `cat "${file}" | noodara_compose_json_field_for_service web Service`,
+    );
+    expect(webServiceResult.status).toBe(0);
+    expect(webServiceResult.stdout.trim()).toBe('web');
+  });
 });
 
 describe.each(posixInterpreters())('install.sh noodara_pull_images (%s)', (interpreter) => {
