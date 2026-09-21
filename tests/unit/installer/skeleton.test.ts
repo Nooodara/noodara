@@ -26,6 +26,11 @@ describe.each(posixInterpreters())('install.sh skeleton (%s)', (interpreter) => 
       ['docker-via-snap', 17],
       ['docker-install-failed', 20],
       ['compose-plugin-missing', 21],
+      // Post-execution fix (06-08-PLAN.md orchestrator audit Finding 2): a docker binary present
+      // with an unresponsive daemon gets its own exit code, distinct from docker-install-failed --
+      // the installer never treats "daemon down" as "Docker absent" and must never run apt/gpg/
+      // systemctl to "fix" it.
+      ['docker-daemon-unavailable', 22],
       ['env-write-failed', 30],
       ['version-resolution-failed', 40],
       ['public-url-resolution-failed', 41],

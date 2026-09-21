@@ -121,6 +121,66 @@ function buildInstallEnv(): {
   };
 }
 
+// Post-execution fix (orchestrator audit Finding 2): a genuinely absent `docker` binary must be
+// distinguishable, via noodara_docker_binary_present's plain `command -v docker`, from a binary
+// that is present but whose daemon does not respond -- buildInstallEnv's own `docker() { ... }`
+// shell-function shadow cannot represent "absent", because POSIX `command -v` reports a defined
+// shell function as present regardless of what PATH itself contains (confirmed empirically:
+// `dash -c 'docker() { :; }; command -v docker'` prints `docker`, exit 0). This helper instead leaves
+// `docker` completely undefined and restricts PATH to the stub directory plus the minimal system
+// directories (`/usr/bin`, `/bin`) install.sh's own unshadowed logic still calls directly (awk,
+// tr, mv, cat) -- deliberately never `process.env.PATH`, so a real Docker Desktop/Homebrew
+// install on the machine running these tests can never be found and mistaken for "present".
+// When `installsDocker` is true, the apt-get stub -- once its own recorded argv shows the
+// `docker-ce` package being installed -- writes a real, always-succeeding `docker` executable
+// into the stub directory (already first on PATH), modelling a real `apt-get install` making the
+// command newly available; when false, no such file is ever created and `docker` stays absent
+// for the whole run.
+function buildDockerAbsentEnv(options: { installsDocker: boolean }): {
+  snippet: string;
+  env: Record<string, string>;
+  logFile: string;
+} {
+  const stubDir = mkdtempSync(join(tmpdir(), 'noodara-docker-absent-stub-'));
+  const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-absent-fixtures-'));
+  const keyringDir = mkdtempSync(join(tmpdir(), 'noodara-docker-absent-keyring-'));
+  const sourcesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-absent-sources-'));
+  const logFile = join(fixturesDir, 'calls.log');
+  const osReleaseFile = writeOsReleaseFixture(fixturesDir, 'jammy');
+  const sourcesFile = join(sourcesDir, 'docker.list');
+  const dockerBinaryPath = join(stubDir, 'docker');
+
+  const aptGetLines = ['printf "apt-get %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"'];
+  if (options.installsDocker) {
+    aptGetLines.push(
+      'case "$*" in',
+      `  *install*docker-ce*) printf '#!/bin/sh\\nexit 0\\n' > "${dockerBinaryPath}"; chmod +x "${dockerBinaryPath}" ;;`,
+      'esac',
+    );
+  }
+  aptGetLines.push('exit 0');
+  writeCommandStub(stubDir, 'apt-get', aptGetLines.join('\n'));
+
+  const snippet = [
+    'dpkg() { printf "amd64\\n"; }',
+    'install() { printf "install %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; }',
+    'chmod() { printf "chmod %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; }',
+    VALID_GPG_KEY_FETCH_STUB,
+  ].join('\n');
+
+  return {
+    snippet,
+    env: {
+      PATH: `${stubDir}:/usr/bin:/bin`,
+      NOODARA_TEST_CALL_LOG: logFile,
+      NOODARA_OS_RELEASE_FILE: osReleaseFile,
+      NOODARA_DOCKER_KEYRING_DIR: keyringDir,
+      NOODARA_DOCKER_SOURCES_FILE: sourcesFile,
+    },
+    logFile,
+  };
+}
+
 describe.each(posixInterpreters())('install.sh noodara_docker_present (%s)', (interpreter) => {
   it('returns 0 when `docker version` succeeds', () => {
     const snippet = ['docker() { [ "$1" = "version" ] && return 0; return 1; }', 'noodara_docker_present'].join(
@@ -261,13 +321,13 @@ describe.each(posixInterpreters())('install.sh noodara_ensure_docker (%s)', (int
     expect(result.stderr.toLowerCase()).toContain('compose');
   });
 
+  // Post-execution fix (orchestrator audit Finding 2): rewritten to use buildDockerAbsentEnv
+  // (a genuinely absent docker command, never a shell-function shadow) rather than buildInstallEnv
+  // -- see that helper's own comment for why a shell-function shadow cannot represent "absent"
+  // once noodara_ensure_docker also probes noodara_docker_binary_present.
   it('runs the full installation sequence when Docker is absent, and succeeds once it becomes present', () => {
-    const { snippet, env, sentinel } = buildInstallEnv();
-    const fullSnippet = [
-      snippet,
-      `docker() { if [ -f "${sentinel}" ]; then return 0; fi; return 1; }`,
-      'noodara_ensure_docker',
-    ].join('\n');
+    const { snippet, env } = buildDockerAbsentEnv({ installsDocker: true });
+    const fullSnippet = [snippet, 'noodara_ensure_docker'].join('\n');
 
     const result = runInstallerShell(interpreter, fullSnippet, { env });
 
@@ -275,8 +335,8 @@ describe.each(posixInterpreters())('install.sh noodara_ensure_docker (%s)', (int
   });
 
   it('fails with exit code 20 when Docker is still absent after the full installation sequence', () => {
-    const { snippet, env } = buildInstallEnv();
-    const fullSnippet = [snippet, 'docker() { return 1; }', 'noodara_ensure_docker'].join('\n');
+    const { snippet, env } = buildDockerAbsentEnv({ installsDocker: false });
+    const fullSnippet = [snippet, 'noodara_ensure_docker'].join('\n');
 
     const result = runInstallerShell(interpreter, fullSnippet, { env });
 
@@ -284,12 +344,8 @@ describe.each(posixInterpreters())('install.sh noodara_ensure_docker (%s)', (int
   });
 
   it('never calls apt-get with the standalone docker-compose binary as an install target', () => {
-    const { snippet, env, logFile } = buildInstallEnv();
-    const fullSnippet = [
-      snippet,
-      `docker() { if [ -f "${env.NOODARA_TEST_SENTINEL}" ]; then return 0; fi; return 1; }`,
-      'noodara_ensure_docker',
-    ].join('\n');
+    const { snippet, env, logFile } = buildDockerAbsentEnv({ installsDocker: true });
+    const fullSnippet = [snippet, 'noodara_ensure_docker'].join('\n');
 
     runInstallerShell(interpreter, fullSnippet, { env });
 
@@ -297,6 +353,61 @@ describe.each(posixInterpreters())('install.sh noodara_ensure_docker (%s)', (int
     expect(calls).not.toMatch(/install[^\n]*\bdocker-compose\b(?!-)/);
   });
 });
+
+// Post-execution fix (orchestrator audit Finding 2): noodara_ensure_docker previously keyed only
+// on `docker version`, so a host where Docker IS installed but its daemon is merely stopped was
+// treated identically to "Docker absent" -- the installer would remove the operator's existing
+// docker.io/containerd/etc. packages uninvited, reinstall, and still fail. When a `docker` binary
+// is found on PATH (noodara_docker_binary_present) but `docker version` itself fails, the
+// installer must perform zero apt/gpg/file-write/systemctl operations and fail with a distinct,
+// named reason instead.
+describe.each(posixInterpreters())(
+  'install.sh noodara_ensure_docker docker-daemon-unavailable (Finding 2, %s)',
+  (interpreter) => {
+    it(
+      'fails with the new exit code and performs zero apt/gpg/file-write/systemctl operations ' +
+        'when a docker binary is present but its daemon does not respond',
+      () => {
+        const stubDir = mkdtempSync(join(tmpdir(), 'noodara-docker-daemon-down-stub-'));
+        const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-daemon-down-fixtures-'));
+        const keyringDir = mkdtempSync(join(tmpdir(), 'noodara-docker-daemon-down-keyring-'));
+        const logFile = join(fixturesDir, 'calls.log');
+
+        writeCommandStub(stubDir, 'apt-get', 'printf "apt-get %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"\nexit 0');
+        writeCommandStub(stubDir, 'systemctl', 'printf "systemctl %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"\nexit 0');
+
+        const snippet = [
+          // A docker binary genuinely present (command -v finds this function -- see
+          // buildDockerAbsentEnv's own comment for why that is a faithful "binary present" proxy)
+          // whose daemon never responds, for any subcommand.
+          'docker() { return 1; }',
+          'install() { printf "install %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; }',
+          'chmod() { printf "chmod %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; }',
+          'dpkg() { printf "dpkg %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; printf "amd64\\n"; }',
+          'noodara_ensure_docker',
+        ].join('\n');
+
+        const result = runInstallerShell(interpreter, snippet, {
+          env: withPath(stubDir, { NOODARA_TEST_CALL_LOG: logFile, NOODARA_DOCKER_KEYRING_DIR: keyringDir }),
+        });
+
+        expect(result.status).toBe(22);
+        expect(result.stderr.toLowerCase()).toContain('daemon');
+        expect(existsSync(logFile)).toBe(false);
+        expect(existsSync(join(keyringDir, 'docker.asc'))).toBe(false);
+      },
+    );
+
+    it('contains noodara_docker_binary_present, a command -v-based probe distinct from noodara_docker_present', () => {
+      const source = readFileSync(INSTALL_SH, 'utf8');
+      const fnStart = source.indexOf('noodara_docker_binary_present() {');
+      expect(fnStart).toBeGreaterThan(-1);
+      const fnBody = source.slice(fnStart, source.indexOf('\n}\n', fnStart));
+
+      expect(fnBody).toContain('command -v docker');
+    });
+  },
+);
 
 // 06-08-PLAN.md Task 2: the apt-repo installation sequence, one named step at a time -- exact
 // literal external-command order, sources-list content (arch + codename pinned to
