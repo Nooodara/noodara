@@ -619,4 +619,92 @@ describe('editServer (SERV-02, ACT-01, D-11, D-13, D-14, D-16)', () => {
       expect(trustResult).toMatchObject({ ok: true });
     });
   });
+
+  describe('GR-02 (05-REVIEW.md; 05-VERIFICATION.md gap 6): a host/port change clears the trusted host key from any status; an sshUser change does not', () => {
+    it('ERROR + host change clears hostFingerprint/hostFingerprintCapturedAt and leaves status untouched', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture);
+      await setServerStatus(fixture, server.id, 'ERROR');
+      await setServerFingerprint(fixture, server.id, 'SHA256:old-host');
+
+      const result = await editFixtureServer(fixture, { serverId: server.id, host: uniqueHost() });
+
+      expect(result).toMatchObject({ ok: true });
+      if (!result.ok) return;
+      expect(result.server.status).toBe('ERROR');
+      const row = await fetchServerRow(fixture, server.id);
+      expect(row?.hostFingerprint).toBeNull();
+      expect(row?.hostFingerprintCapturedAt).toBeNull();
+    });
+
+    it('UNREACHABLE + sshPort change clears hostFingerprint/hostFingerprintCapturedAt and leaves status untouched', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture, { sshPort: 22 });
+      await setServerStatus(fixture, server.id, 'UNREACHABLE');
+      await setServerFingerprint(fixture, server.id, 'SHA256:old-host');
+
+      const result = await editFixtureServer(fixture, { serverId: server.id, sshPort: 2222 });
+
+      expect(result).toMatchObject({ ok: true });
+      if (!result.ok) return;
+      expect(result.server.status).toBe('UNREACHABLE');
+      const row = await fetchServerRow(fixture, server.id);
+      expect(row?.hostFingerprint).toBeNull();
+      expect(row?.hostFingerprintCapturedAt).toBeNull();
+    });
+
+    it.each(['DISCONNECTED', 'PENDING'] as const)(
+      '%s + host change clears hostFingerprint/hostFingerprintCapturedAt and leaves status untouched',
+      async (status) => {
+        fixture = await startServiceFixture();
+        const server = await registerFixtureServer(fixture);
+        await setServerStatus(fixture, server.id, status);
+        await setServerFingerprint(fixture, server.id, 'SHA256:old-host');
+
+        const result = await editFixtureServer(fixture, { serverId: server.id, host: uniqueHost() });
+
+        expect(result).toMatchObject({ ok: true });
+        if (!result.ok) return;
+        expect(result.server.status).toBe(status);
+        const row = await fetchServerRow(fixture, server.id);
+        expect(row?.hostFingerprint).toBeNull();
+        expect(row?.hostFingerprintCapturedAt).toBeNull();
+      },
+    );
+
+    it('ERROR + sshUser-only change preserves hostFingerprint/hostFingerprintCapturedAt while still clearing pendingFingerprint (T-5G-40-02)', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture, { sshUser: 'deployer' });
+      await setServerErrorWithPendingFingerprint(fixture, server.id, 'SHA256:stale-pending-fp');
+      await setServerFingerprint(fixture, server.id, 'SHA256:old-host');
+      const rowBefore = await fetchServerRow(fixture, server.id);
+      expect(rowBefore?.hostFingerprint).toBe('SHA256:old-host');
+      expect(rowBefore?.hostFingerprintCapturedAt).not.toBeNull();
+
+      const result = await editFixtureServer(fixture, { serverId: server.id, sshUser: 'operator' });
+
+      expect(result).toMatchObject({ ok: true });
+      const row = await fetchServerRow(fixture, server.id);
+      expect(row?.hostFingerprint).toBe('SHA256:old-host');
+      expect(row?.hostFingerprintCapturedAt).toEqual(rowBefore?.hostFingerprintCapturedAt);
+      // The existing identityChanged behaviour (WR-A-02) is unaffected by this narrower predicate.
+      expect(row?.pendingFingerprint).toBeNull();
+      expect(row?.pendingFingerprintSeenAt).toBeNull();
+    });
+
+    it('a name-only edit from ERROR leaves hostFingerprint/hostFingerprintCapturedAt untouched', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture);
+      await setServerStatus(fixture, server.id, 'ERROR');
+      await setServerFingerprint(fixture, server.id, 'SHA256:old-host');
+      const rowBefore = await fetchServerRow(fixture, server.id);
+
+      const result = await editFixtureServer(fixture, { serverId: server.id, name: uniqueName() });
+
+      expect(result).toMatchObject({ ok: true });
+      const row = await fetchServerRow(fixture, server.id);
+      expect(row?.hostFingerprint).toBe('SHA256:old-host');
+      expect(row?.hostFingerprintCapturedAt).toEqual(rowBefore?.hostFingerprintCapturedAt);
+    });
+  });
 });
