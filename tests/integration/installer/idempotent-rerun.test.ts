@@ -85,7 +85,13 @@ function buildBrokenControlPlaneImage(baseImage: string, brokenImage: string): v
       [
         `FROM ${baseImage}`,
         'USER root',
-        'RUN printf \'require("node:timers").setInterval(function () {}, 60000);\\n\' > dist/server.js',
+        // `setInterval` is a Node.js GLOBAL (no import/require needed) -- deliberate:
+        // @noodara/control-plane's own package.json declares "type": "module", so a `require(...)`
+        // call here would throw "require is not defined in ES module scope" and crash-loop the
+        // container instead of staying up (a real bug this fixture itself had on its first real
+        // DinD run, caught by Finding F's own more precise container-STATE classification -- see
+        // 06-12-SUMMARY.md's own "Post-execution fix -- Finding F" section).
+        'RUN printf \'setInterval(function () {}, 60000);\\n\' > dist/server.js',
         'USER noodara',
         '',
       ].join('\n'),
