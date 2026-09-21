@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Phase 6 planned (15 plans, 12 waves) — next /gsd-execute-phase 6
-last_updated: "2026-09-21T08:53:33.883Z"
-last_activity: 2026-09-21 -- Phase 06 planning complete
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-09-21T09:38:54.355Z"
+last_activity: 2026-09-21
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 109
-  completed_plans: 94
+  completed_plans: 95
   percent: 83
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente: sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto.
-**Current focus:** Phase 6 — instalador y docker compose
+**Current focus:** Phase 06 — instalador-y-docker-compose
 
 ## Current Position
 
-Phase: 6
-Plan: 0 of 15 (not started)
+Phase: 06 (instalador-y-docker-compose) — EXECUTING
+Plan: 2 of 15
 Status: Ready to execute
-Last activity: 2026-09-21 -- Phase 06 planning complete
+Last activity: 2026-09-21
 
-Progress: [████████░░] 5 of 6 phases complete (94/109 plans executed; phase 6 planned: 15 plans in 12 waves, not started)
+Progress: [█████████░] 87%
 
 ## Performance Metrics
 
@@ -140,6 +140,7 @@ Progress: [████████░░] 5 of 6 phases complete (94/109 plans 
 | Phase 05-ui-web P31 | 40min | 3 tasks | 7 files |
 | Phase 05-ui-web P35 | 55min | 3 tasks | 7 files |
 | Phase 05 P33 | 55min | 1 tasks | 14 files |
+| Phase 06 P01 | 20min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -367,6 +368,8 @@ Recent decisions affecting current work:
 - [Phase 05-33]: D1/D2/D3 (2026-09-20): status-pill text uses new --status-*-text tokens (base tokens stay vivid); --accent splits into --accent (foreground, unchanged) and --accent-fill (fills carrying on-accent text); --ink-secondary/--ink-tertiary darken, Banner.tsx errorCode moves to --ink-secondary
 - [Phase 05-33]: Executor nudge (2026-09-20): D1/D3 literal hex values failed once measured against their own real render context (Banner.tsx composited bg, StatusPill real canvas/surface-2 bgs) -- darkened/adjusted the minimal step, same latitude D3 granted for ink-tertiary
 - [Phase 05-33]: accent as link text on canvas/surface-3 light (4.31/4.12) stays a documented, unfixed AA gap: D2 locks accent's own value, deferred not silently dropped
+- [Phase 06]: scanPosixSh's structural rules track brace depth only via function-open/close lines in the exact name() { / } shape (06-01), not a general POSIX-sh parser — Matches the plan's own <action> text and is safe only because install.sh's functions are all written in exactly that shape
+- [Phase 06]: INST-01/INST-03 intentionally left Pending in REQUIREMENTS.md after Plan 06-01 — They describe end-to-end installer behavior spanning all 15 plans of this phase; Plan 06-01 only built the POSIX-sh gate and install.sh skeleton, so marking them complete now would misrepresent phase state
 
 ### Pending Todos
 
@@ -432,6 +435,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-21T07:52:10.386Z
-Stopped at: Phase 6 planned (15 plans, 12 waves) — next /gsd-execute-phase 6
-Resume file: .planning/phases/06-instalador-y-docker-compose/06-01-PLAN.md
+Last session: 2026-09-21T09:38:54.347Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: None

@@ -407,7 +407,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 06-01-PLAN.md — POSIX-sh gate, install.sh skeleton in library mode, real sh/dash test harness, installer test and typecheck wiring
+- [x] 06-01-PLAN.md — POSIX-sh gate, install.sh skeleton in library mode, real sh/dash test harness, installer test and typecheck wiring
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -468,4 +468,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
 | 5. UI web | 46/46 | Complete   | 2026-09-21 |
-| 6. Instalador y Docker Compose | 0/15 | Planned | - |
+| 6. Instalador y Docker Compose | 1/15 | In Progress|  |
