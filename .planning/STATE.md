@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-13-PLAN.md
-last_updated: "2026-09-21T19:36:21.421Z"
+stopped_at: Completed 06-14-PLAN.md
+last_updated: "2026-09-21T19:50:24.692Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 109
-  completed_plans: 107
+  completed_plans: 108
   percent: 83
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 06 (instalador-y-docker-compose) — EXECUTING
-Plan: 14 of 15
+Plan: 15 of 15
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [██████████] 98%
+Progress: [██████████] 99%
 
 ## Performance Metrics
 
@@ -153,6 +153,7 @@ Progress: [██████████] 98%
 | Phase 06 P11 | 90min | 2 tasks | 6 files |
 | Phase 06 P12 | 37min (task commits, ~2h10min total session) | 8 tasks | 9 files |
 | Phase 06 P13 | 125min | 2 tasks | 5 files |
+| Phase 06 P14 | 4min (task commits); docs-only, longer session | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -413,6 +414,7 @@ Recent decisions affecting current work:
 - [Phase 06 P13]: release.yml: provenance/sbom explicitly disabled on every build-push-action step so buildx never wraps a single-arch push in its own image index, keeping the later imagetools create merge a genuine two-platform manifest
 - [Phase 06 P13]: release.yml derives the release version and lower-cases the GHCR owner exactly once in a dedicated prepare job, validated with the same character-class/length rules as install.sh's own noodara_validate_tag, then threaded as job outputs to every downstream job
 - [Phase 06 P13]: ci.yml/nightly.yml: new installer job runs pnpm test:installer at a 60min timeout, sourced from 06-12-SUMMARY.md's measured ~31.5min/51-test local duration; gated to push-on-main only in ci.yml, unconditional in nightly.yml, no existing job's commands/timeouts/triggers changed
+- [Phase 06 P14]: docs/install.md's accuracy is enforced by a test (tests/unit/docs/install-docs-accuracy.test.ts) that extracts the exit-code table, the ufw wording and the install URL directly from install.sh's own source, rather than trusting a hand-copied string -- a future install.sh change that drifts from the docs now fails a test, not silently ages.
 
 ### Pending Todos
 
@@ -478,6 +480,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-21T19:36:21.389Z
-Stopped at: Completed 06-13-PLAN.md
+Last session: 2026-09-21T19:50:24.682Z
+Stopped at: Completed 06-14-PLAN.md
 Resume file: None

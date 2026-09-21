@@ -450,7 +450,7 @@ Plans:
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
-- [ ] 06-14-PLAN.md — docs/install.md, first README.md and ADR 0007 for the production topology and installer
+- [x] 06-14-PLAN.md — docs/install.md, first README.md and ADR 0007 for the production topology and installer
 
 **Wave 12** *(blocked on Wave 11 completion)*
 
@@ -468,4 +468,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
 | 5. UI web | 46/46 | Complete   | 2026-09-21 |
-| 6. Instalador y Docker Compose | 13/15 | In Progress|  |
+| 6. Instalador y Docker Compose | 14/15 | In Progress|  |
