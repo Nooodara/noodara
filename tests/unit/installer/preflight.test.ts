@@ -17,6 +17,23 @@ function writeOsReleaseFixture(dir: string, id: string, versionId: string): stri
   return file;
 }
 
+function writeMeminfoFixture(dir: string, totalKb: number): string {
+  const file = join(dir, 'meminfo');
+  writeFileSync(file, `MemTotal:       ${totalKb} kB\nMemFree:        102400 kB\n`, 'utf8');
+  return file;
+}
+
+// `df -Pk` shape: header line + one data line, Available in column 4 (1024-blocks). Overriding
+// `df` as a shell function is injectable regardless of the real host's disk state (hard_rule #9).
+function dfFunctionSnippet(availableKb: number): string {
+  return [
+    'df() {',
+    "  printf 'Filesystem 1024-blocks Used Available Capacity Mounted\\n'",
+    `  printf '/dev/sda1 100000000 1000000 ${availableKb} 1%% /\\n'`,
+    '}',
+  ].join('\n');
+}
+
 describe.each(posixInterpreters())('install.sh preflight predicates (%s)', (interpreter) => {
   describe('noodara_check_root', () => {
     it('succeeds when id -u prints 0', () => {
@@ -212,6 +229,184 @@ describe.each(posixInterpreters())('install.sh preflight predicates (%s)', (inte
 
       expect(result.status).toBe(13);
       expect(result.stderr).toContain('riscv64');
+    });
+  });
+
+  describe('noodara_total_ram_mb / noodara_check_resources', () => {
+    it('reads MemTotal from NOODARA_MEMINFO_FILE and prints whole megabytes', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-preflight-'));
+      const meminfoFile = writeMeminfoFixture(dir, 2097152);
+
+      const result = runInstallerShell(interpreter, 'noodara_total_ram_mb', {
+        env: { NOODARA_MEMINFO_FILE: meminfoFile },
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe('2048');
+    });
+
+    it('fails with exit code 14 when total RAM is below 1024MB', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-preflight-'));
+      const meminfoFile = writeMeminfoFixture(dir, 524288);
+
+      const result = runInstallerShell(interpreter, 'noodara_check_resources', {
+        env: { NOODARA_MEMINFO_FILE: meminfoFile, NOODARA_INSTALL_DIR: dir },
+      });
+
+      expect(result.status).toBe(14);
+      expect(result.stderr).toContain('512');
+    });
+
+    it('warns to stderr and returns 0 when RAM is between 1024 and 2047MB', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-preflight-'));
+      const meminfoFile = writeMeminfoFixture(dir, 1572864);
+      const snippet = `${dfFunctionSnippet(10485760)}\nnoodara_check_resources`;
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_MEMINFO_FILE: meminfoFile, NOODARA_INSTALL_DIR: dir },
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toContain('warning');
+    });
+
+    it('is silent and returns 0 when RAM is 2048MB or above and disk is sufficient', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-preflight-'));
+      const meminfoFile = writeMeminfoFixture(dir, 4194304);
+      const snippet = `${dfFunctionSnippet(10485760)}\nnoodara_check_resources`;
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_MEMINFO_FILE: meminfoFile, NOODARA_INSTALL_DIR: dir },
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
+    });
+
+    it('fails with exit code 15 when free disk is below 5GB', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-preflight-'));
+      const meminfoFile = writeMeminfoFixture(dir, 4194304);
+      const snippet = `${dfFunctionSnippet(1048576)}\nnoodara_check_resources`;
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_MEMINFO_FILE: meminfoFile, NOODARA_INSTALL_DIR: dir },
+      });
+
+      expect(result.status).toBe(15);
+    });
+
+    it('skips both checks and emits a note when NOODARA_SKIP_RESOURCE_CHECK=1', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-preflight-'));
+      const missingMeminfo = join(dir, 'does-not-exist-meminfo');
+
+      const result = runInstallerShell(interpreter, 'noodara_check_resources', {
+        env: {
+          NOODARA_SKIP_RESOURCE_CHECK: '1',
+          NOODARA_MEMINFO_FILE: missingMeminfo,
+          NOODARA_INSTALL_DIR: dir,
+        },
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('noodara_resolve_port / noodara_check_port', () => {
+    it('resolves to 3000 when NOODARA_PORT is unset', () => {
+      const result = runInstallerShell(interpreter, 'noodara_resolve_port');
+
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe('3000');
+    });
+
+    it('resolves to the override when NOODARA_PORT=8080', () => {
+      const result = runInstallerShell(interpreter, 'noodara_resolve_port', {
+        env: { NOODARA_PORT: '8080' },
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe('8080');
+    });
+
+    it('fails with exit code 16 for a non-numeric NOODARA_PORT', () => {
+      const result = runInstallerShell(interpreter, 'noodara_resolve_port', {
+        env: { NOODARA_PORT: 'abc' },
+      });
+
+      expect(result.status).toBe(16);
+    });
+
+    it('fails with exit code 16 when NOODARA_PORT is 0 (out of range)', () => {
+      const result = runInstallerShell(interpreter, 'noodara_resolve_port', {
+        env: { NOODARA_PORT: '0' },
+      });
+
+      expect(result.status).toBe(16);
+    });
+
+    it('fails with exit code 16 when NOODARA_PORT is 70000 (out of range)', () => {
+      const result = runInstallerShell(interpreter, 'noodara_resolve_port', {
+        env: { NOODARA_PORT: '70000' },
+      });
+
+      expect(result.status).toBe(16);
+    });
+
+    it('fails with exit code 16 naming the port and suggesting NOODARA_PORT when busy', () => {
+      const snippet =
+        "ss() { printf 'LISTEN 0 4096 0.0.0.0:3000 0.0.0.0:*\\n'; }\nnoodara_check_port";
+
+      const result = runInstallerShell(interpreter, snippet);
+
+      expect(result.status).toBe(16);
+      expect(result.stderr).toContain('3000');
+      expect(result.stderr).toContain('NOODARA_PORT');
+    });
+
+    it('returns 0 when the port is free', () => {
+      const snippet =
+        "ss() { printf 'LISTEN 0 4096 0.0.0.0:22 0.0.0.0:*\\n'; }\nnoodara_check_port";
+
+      const result = runInstallerShell(interpreter, snippet);
+
+      expect(result.status).toBe(0);
+    });
+
+    it('does not mistake a busy port 30000 for port 3000 (anchored match)', () => {
+      const snippet =
+        "ss() { printf 'LISTEN 0 4096 0.0.0.0:30000 0.0.0.0:*\\n'; }\nnoodara_check_port";
+
+      const result = runInstallerShell(interpreter, snippet);
+
+      expect(result.status).toBe(0);
+    });
+  });
+
+  describe('noodara_check_docker_snap', () => {
+    it('returns 0 when snap is not installed', () => {
+      const result = runInstallerShell(interpreter, 'noodara_check_docker_snap', {
+        env: { PATH: '/nonexistent-noodara-test-path' },
+      });
+
+      expect(result.status).toBe(0);
+    });
+
+    it('returns 0 when snap exists but docker is not installed via snap', () => {
+      const snippet = 'snap() { return 1; }\nnoodara_check_docker_snap';
+
+      const result = runInstallerShell(interpreter, snippet);
+
+      expect(result.status).toBe(0);
+    });
+
+    it('fails with exit code 17 naming sudo snap remove docker when docker is installed via snap', () => {
+      const snippet = 'snap() { return 0; }\nnoodara_check_docker_snap';
+
+      const result = runInstallerShell(interpreter, snippet);
+
+      expect(result.status).toBe(17);
+      expect(result.stderr).toContain('sudo snap remove docker');
     });
   });
 });
