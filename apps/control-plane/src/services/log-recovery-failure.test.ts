@@ -22,8 +22,8 @@ describe('logRecoveryFailure (05-REVIEW.md GR-03)', () => {
 
     expect(warn).toHaveBeenCalledTimes(1);
     const [metadata, message] = warn.mock.calls[0] as [Record<string, unknown>, string];
-    expect(metadata['err']).toBe(err);
-    expect(metadata['serverId']).toBe('server-id-1');
+    expect(metadata.err).toBe(err);
+    expect(metadata.serverId).toBe('server-id-1');
     expect(typeof message).toBe('string');
   });
 
@@ -36,7 +36,7 @@ describe('logRecoveryFailure (05-REVIEW.md GR-03)', () => {
     const [metadata, message] = warn.mock.calls[0] as [Record<string, unknown>, string];
     expect(message).not.toContain('boom');
     const metadataWithoutErr: Record<string, unknown> = { ...metadata };
-    delete metadataWithoutErr['err'];
+    delete metadataWithoutErr.err;
     expect(JSON.stringify(metadataWithoutErr)).not.toContain('boom');
   });
 
@@ -50,12 +50,14 @@ describe('logRecoveryFailure (05-REVIEW.md GR-03)', () => {
     const [metadata, message] = warn.mock.calls[0] as [Record<string, unknown>, string];
     expect(message).not.toContain('sk-live-SECRET');
     const metadataWithoutErr: Record<string, unknown> = { ...metadata };
-    delete metadataWithoutErr['err'];
+    delete metadataWithoutErr.err;
     expect(JSON.stringify(metadataWithoutErr)).not.toContain('sk-live-SECRET');
   });
 
   it('never throws when logger is absent', () => {
-    expect(() => logRecoveryFailure({}, 'server-id-1', new Error('boom'))).not.toThrow();
+    expect(() => {
+      logRecoveryFailure({}, 'server-id-1', new Error('boom'));
+    }).not.toThrow();
   });
 
   it('never throws when the logger itself throws', () => {
@@ -66,22 +68,26 @@ describe('logRecoveryFailure (05-REVIEW.md GR-03)', () => {
       error: vi.fn(),
     };
 
-    expect(() =>
-      logRecoveryFailure({ logger: throwingLogger }, 'server-id-1', new Error('boom')),
-    ).not.toThrow();
+    expect(() => {
+      logRecoveryFailure({ logger: throwingLogger }, 'server-id-1', new Error('boom'));
+    }).not.toThrow();
   });
 
   it('handles a non-Error rejection value (a string) without throwing', () => {
     const { logger, warn } = buildFakeLogger();
 
-    expect(() => logRecoveryFailure({ logger }, 'id', 'not-an-error')).not.toThrow();
+    expect(() => {
+      logRecoveryFailure({ logger }, 'id', 'not-an-error');
+    }).not.toThrow();
     expect(warn).toHaveBeenCalledTimes(1);
   });
 
   it('handles a non-Error rejection value (undefined) without throwing', () => {
     const { logger, warn } = buildFakeLogger();
 
-    expect(() => logRecoveryFailure({ logger }, 'id', undefined)).not.toThrow();
+    expect(() => {
+      logRecoveryFailure({ logger }, 'id', undefined);
+    }).not.toThrow();
     expect(warn).toHaveBeenCalledTimes(1);
   });
 });

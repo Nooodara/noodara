@@ -30,6 +30,17 @@ export interface MasterKeys {
   readonly previous?: Buffer;
 }
 
+/**
+ * The minimal, structural logging surface a service needs (currently only
+ * `log-recovery-failure.ts`, GR-03). Declared here — not imported from `pino` — so this module
+ * (and anything that only needs the *type*) never depends on pino; a real pino `Logger` already
+ * satisfies this shape structurally, since it has both methods with a compatible signature.
+ */
+export interface ServiceLogger {
+  warn(metadata: object, message: string): void;
+  error(metadata: object, message: string): void;
+}
+
 export interface ServerServicesDeps {
   readonly db: Database;
   readonly ssh: SshPort;
@@ -38,6 +49,13 @@ export interface ServerServicesDeps {
   readonly events: ServerEventPublisher;
   readonly masterKeys: MasterKeys;
   readonly now: () => Date;
+  /**
+   * Optional (GR-03): most services never log, and a test fixture should not be forced to supply
+   * one. No env-derived default exists — absent means "nobody wired a logger", never `undefined`
+   * assigned (`exactOptionalPropertyTypes`, same omit-don't-set precedent as `MasterKeys.previous`
+   * in `defaultMasterKeys` below).
+   */
+  readonly logger?: ServiceLogger;
 }
 
 function defaultMasterKeys(): MasterKeys {
@@ -67,5 +85,14 @@ export async function resolveServerServicesDeps(
   const masterKeys = overrides.masterKeys ?? defaultMasterKeys();
   const now = overrides.now ?? (() => new Date());
 
-  return { db, ssh, timeouts, redactor, events, masterKeys, now };
+  return {
+    db,
+    ssh,
+    timeouts,
+    redactor,
+    events,
+    masterKeys,
+    now,
+    ...(overrides.logger === undefined ? {} : { logger: overrides.logger }),
+  };
 }
