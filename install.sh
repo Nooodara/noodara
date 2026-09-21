@@ -301,6 +301,99 @@ noodara_build_redis_url() {
   printf 'redis://:%s@redis:6379\n' "$password"
 }
 
+# Re-asserts mode 600 and root:root ownership on an existing .env -- called on every run, not
+# only at creation (06-RESEARCH.md Security Domain: mode/ownership drift after a manual operator
+# edit). Tolerates running as a non-root caller (this file's own unit tests, run on a macOS dev
+# machine) by only escalating a chown failure to a fatal error when the caller genuinely is root
+# (the real /opt/noodara target) -- a non-root caller failing to chown is expected and swallowed.
+noodara_secure_env_file() {
+  path="$1"
+  chmod 600 "$path"
+  if chown root:root "$path" 2>/dev/null; then
+    return 0
+  fi
+  if [ "$(id -u)" = "0" ]; then
+    noodara_fail env-write-failed "Failed to set root ownership on $path."
+  fi
+  return 0
+}
+
+# Generates a fresh, complete .env for a new installation (06-CONTEXT.md D-10/D-11, INST-01/
+# INST-02/INST-05). Writes under `umask 077` before the first redirect so the file is never
+# briefly world-readable between creation and chmod, then re-asserts mode/ownership via
+# noodara_secure_env_file. NOODARA_ADMIN_EMAIL/NOODARA_ADMIN_PASSWORD are read from the
+# environment (never as positional args, so they never appear in a process listing of this
+# function's own invocation) and written only when both are present (D-04); when only one is set,
+# a warning names both variable names and never the value (T-06-24).
+noodara_generate_env() {
+  env_path="$1"
+  public_url="$2"
+  port="$3"
+  version="$4"
+  image_prefix="$5"
+
+  env_dir="${env_path%/*}"
+  if [ "$env_dir" = "$env_path" ]; then
+    env_dir="."
+  fi
+  if [ ! -d "$env_dir" ]; then
+    (umask 077 && mkdir -p "$env_dir")
+  fi
+
+  master_key=$(noodara_generate_secret base64)
+  auth_secret=$(noodara_generate_secret hex)
+  pg_password=$(noodara_generate_secret hex)
+  redis_password=$(noodara_generate_secret hex)
+  database_url=$(noodara_build_database_url "$pg_password")
+  redis_url=$(noodara_build_redis_url "$redis_password")
+
+  tmp_file="${env_path}.tmp.$$"
+  (
+    umask 077
+    {
+      printf '# NOODARA_VERSION pins the exact release tag (D-04) -- never :latest, so a restart never\n'
+      printf '# silently changes version.\n'
+      printf 'NOODARA_VERSION=%s\n' "$version"
+      printf 'NOODARA_IMAGE_PREFIX=%s\n' "$image_prefix"
+      printf 'NOODARA_PORT=%s\n' "$port"
+      printf 'NOODARA_PUBLIC_URL=%s\n' "$public_url"
+      printf 'NOODARA_MASTER_KEY=%s\n' "$master_key"
+      printf 'BETTER_AUTH_SECRET=%s\n' "$auth_secret"
+      printf 'POSTGRES_USER=noodara\n'
+      printf 'POSTGRES_PASSWORD=%s\n' "$pg_password"
+      printf 'POSTGRES_DB=noodara\n'
+      printf 'REDIS_PASSWORD=%s\n' "$redis_password"
+      printf 'DATABASE_URL=%s\n' "$database_url"
+      printf 'REDIS_URL=%s\n' "$redis_url"
+      printf '# PORT is the api service'"'"'s internal port, baked into the web image'"'"'s proxy target --\n'
+      printf '# do not change it.\n'
+      printf 'PORT=3000\n'
+      case "$public_url" in
+        http://*)
+          printf '# NOODARA_COOKIE_INSECURE exists only because the panel is served over plain HTTP --\n'
+          printf '# remove it once a TLS proxy is in front (D-05).\n'
+          printf 'NOODARA_COOKIE_INSECURE=true\n'
+          ;;
+      esac
+    } > "$tmp_file"
+  )
+
+  if [ -n "${NOODARA_ADMIN_EMAIL:-}" ] && [ -n "${NOODARA_ADMIN_PASSWORD:-}" ]; then
+    (
+      umask 077
+      {
+        printf 'NOODARA_ADMIN_EMAIL=%s\n' "$NOODARA_ADMIN_EMAIL"
+        printf 'NOODARA_ADMIN_PASSWORD=%s\n' "$NOODARA_ADMIN_PASSWORD"
+      } >> "$tmp_file"
+    )
+  elif [ -n "${NOODARA_ADMIN_EMAIL:-}" ] || [ -n "${NOODARA_ADMIN_PASSWORD:-}" ]; then
+    noodara_warn "NOODARA_ADMIN_EMAIL and NOODARA_ADMIN_PASSWORD must both be set, or neither -- ignoring the one that was provided."
+  fi
+
+  mv "$tmp_file" "$env_path"
+  noodara_secure_env_file "$env_path"
+}
+
 # noodara_preflight (06-CONTEXT.md D-17, INST-03): runs every predicate above in exactly this
 # order, stopping at the first failure via that predicate's own noodara_fail call --
 # never a collector that accumulates every applicable cause:
