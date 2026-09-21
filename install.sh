@@ -266,6 +266,54 @@ noodara_check_docker_snap() {
 # per installation via `openssl rand` -- never a literal or fallback value anywhere in this file
 # (T-06-03, Dokploy CVE-2026-24840 precedent).
 
+# Injection guards, called at every .env write boundary before the first byte of that write
+# (post-06-04 security fix, orchestrator audit Finding A). A value containing an embedded LF or CR
+# would otherwise inject an extra `.env` line past the intended `KEY=` assignment -- e.g. a
+# NOODARA_ADMIN_PASSWORD of `pw\nNOODARA_MASTER_KEY=attacker` silently appending a second,
+# attacker-chosen NOODARA_MASTER_KEY line that a last-wins parser would prefer. Detection uses a
+# `case` pattern against a literal embedded newline / a CR obtained via `printf '\r'` -- never
+# `$'...'` or `[[ ]]` (neither is POSIX, `scripts/check-posix-sh.mjs` rejects both).
+
+# Fails with reason env-write-failed, naming `_noodara_ael_name` but never echoing
+# `_noodara_ael_value` (T-06-24's own precedent: a value here may be a password), when the value
+# contains an embedded LF or CR. Parameter names are deliberately namespaced and unlike every
+# other function in this file (`path`, `key`, `value`, ...): this file has no `local` (strict
+# POSIX sh), so every "variable" is process-global, and this guard is called from inside other
+# functions that already have their own `value`/`key` globals in scope at the call site --
+# generic parameter names here would silently clobber the caller's own variable of the same name
+# the moment this function ran, corrupting the very value the caller goes on to write.
+noodara_env_assert_single_line() {
+  _noodara_ael_name="$1"
+  _noodara_ael_value="$2"
+  _noodara_ael_cr=$(printf '\r')
+  case "$_noodara_ael_value" in
+    *"
+"*)
+      noodara_fail env-write-failed "$_noodara_ael_name must not contain a newline. Refusing to write .env."
+      ;;
+    *"$_noodara_ael_cr"*)
+      noodara_fail env-write-failed "$_noodara_ael_name must not contain a carriage return. Refusing to write .env."
+      ;;
+  esac
+}
+
+# Fails with reason env-write-failed, naming `_noodara_aeq_name` but never echoing
+# `_noodara_aeq_value`, when the value contains a literal single quote. Called only for values
+# this file writes single-quoted into `.env` (Finding B, below): unlike POSIX shell, Docker
+# Compose's own `.env` parser has no escape sequence for a quote embedded inside a single-quoted
+# value, so such a value cannot be written safely at all -- rejecting it outright beats emitting a
+# `.env` that silently truncates it. Namespaced parameter names for the same global-scope reason
+# as noodara_env_assert_single_line above.
+noodara_env_assert_no_single_quote() {
+  _noodara_aeq_name="$1"
+  _noodara_aeq_value="$2"
+  case "$_noodara_aeq_value" in
+    *"'"*)
+      noodara_fail env-write-failed "$_noodara_aeq_name must not contain a single quote character. Choose a value without one and re-run this installer."
+      ;;
+  esac
+}
+
 # Generates a fresh random secret. `base64` decodes to exactly 32 raw bytes -- the only shape
 # apps/control-plane/src/env.ts's NOODARA_MASTER_KEY validator accepts. `hex` is 64 lowercase hex
 # characters and is the shape every other generated secret must use: a base64 secret's '/', '+' or
@@ -332,6 +380,24 @@ noodara_generate_env() {
   version="$4"
   image_prefix="$5"
 
+  # Validate every operator-influenced value before any write -- including before the parent
+  # directory is created -- so a rejected value never leaves a partial .env or a stray temp file
+  # behind (Finding A). NOODARA_PUBLIC_URL/NOODARA_ADMIN_EMAIL/NOODARA_ADMIN_PASSWORD are also
+  # checked for an embedded single quote because they are written single-quoted below (Finding B).
+  noodara_env_assert_single_line NOODARA_PUBLIC_URL "$public_url"
+  noodara_env_assert_no_single_quote NOODARA_PUBLIC_URL "$public_url"
+  noodara_env_assert_single_line NOODARA_PORT "$port"
+  noodara_env_assert_single_line NOODARA_VERSION "$version"
+  noodara_env_assert_single_line NOODARA_IMAGE_PREFIX "$image_prefix"
+  if [ -n "${NOODARA_ADMIN_EMAIL:-}" ]; then
+    noodara_env_assert_single_line NOODARA_ADMIN_EMAIL "$NOODARA_ADMIN_EMAIL"
+    noodara_env_assert_no_single_quote NOODARA_ADMIN_EMAIL "$NOODARA_ADMIN_EMAIL"
+  fi
+  if [ -n "${NOODARA_ADMIN_PASSWORD:-}" ]; then
+    noodara_env_assert_single_line NOODARA_ADMIN_PASSWORD "$NOODARA_ADMIN_PASSWORD"
+    noodara_env_assert_no_single_quote NOODARA_ADMIN_PASSWORD "$NOODARA_ADMIN_PASSWORD"
+  fi
+
   env_dir="${env_path%/*}"
   if [ "$env_dir" = "$env_path" ]; then
     env_dir="."
@@ -359,7 +425,11 @@ noodara_generate_env() {
       printf 'NOODARA_PREVIOUS_VERSION=%s\n' "$version"
       printf 'NOODARA_IMAGE_PREFIX=%s\n' "$image_prefix"
       printf 'NOODARA_PORT=%s\n' "$port"
-      printf 'NOODARA_PUBLIC_URL=%s\n' "$public_url"
+      # Single-quoted (Finding B): Docker Compose's own .env parser interpolates $VAR/${VAR} and
+      # treats an unquoted or double-quoted value's ' #' as an inline comment -- a single-quoted
+      # value is the one shape that parser takes fully literally. noodara_env_assert_no_single_quote
+      # above already ruled out the one case a POSIX single-quoted value cannot represent.
+      printf "NOODARA_PUBLIC_URL='%s'\n" "$public_url"
       printf 'NOODARA_MASTER_KEY=%s\n' "$master_key"
       printf 'BETTER_AUTH_SECRET=%s\n' "$auth_secret"
       printf 'POSTGRES_USER=noodara\n'
@@ -385,8 +455,10 @@ noodara_generate_env() {
     (
       umask 077
       {
-        printf 'NOODARA_ADMIN_EMAIL=%s\n' "$NOODARA_ADMIN_EMAIL"
-        printf 'NOODARA_ADMIN_PASSWORD=%s\n' "$NOODARA_ADMIN_PASSWORD"
+        # Single-quoted for the same reason as NOODARA_PUBLIC_URL above (Finding B) -- an admin
+        # password is exactly the value most likely to contain '$', '#' or a space.
+        printf "NOODARA_ADMIN_EMAIL='%s'\n" "$NOODARA_ADMIN_EMAIL"
+        printf "NOODARA_ADMIN_PASSWORD='%s'\n" "$NOODARA_ADMIN_PASSWORD"
       } >> "$tmp_file"
     )
   elif [ -n "${NOODARA_ADMIN_EMAIL:-}" ] || [ -n "${NOODARA_ADMIN_PASSWORD:-}" ]; then
@@ -417,6 +489,12 @@ noodara_env_append_if_missing() {
   path="$1"
   key="$2"
   value="$3"
+  # Validated before the presence check, so a rejected key or value never reaches the file even
+  # when the key happens to already be present (Finding A). `key` is always a literal this file's
+  # own callers control, never echoed back verbatim in its own failure message; `value` is named
+  # by `key` once `key` itself is proven single-line.
+  noodara_env_assert_single_line "the key argument to noodara_env_append_if_missing" "$key"
+  noodara_env_assert_single_line "$key" "$value"
   if noodara_env_has_key "$path" "$key"; then
     return 0
   fi
@@ -442,6 +520,8 @@ noodara_set_env_value() {
   key="$2"
   value="$3"
 
+  noodara_env_assert_single_line "$key" "$value"
+
   dir="${path%/*}"
   if [ "$dir" = "$path" ]; then
     dir="."
@@ -449,8 +529,13 @@ noodara_set_env_value() {
   tmp_file="${dir}/.noodara-env-tmp.$$"
   (
     umask 077
-    awk -v k="$key" -v v="$value" '
-      BEGIN { pattern = "^" k "=" }
+    # `key`/`value` are passed through ENVIRON, never `awk -v` -- `awk -v`'s assignment operand
+    # goes through the same backslash-escape processing as a string constant, so a value
+    # containing a literal two-character `\n` sequence would silently become a real newline
+    # (a second injection path into the very line this function rewrites). ENVIRON values are not
+    # escape-processed.
+    NOODARA_SET_ENV_KEY="$key" NOODARA_SET_ENV_VALUE="$value" awk '
+      BEGIN { k = ENVIRON["NOODARA_SET_ENV_KEY"]; v = ENVIRON["NOODARA_SET_ENV_VALUE"]; pattern = "^" k "=" }
       $0 ~ pattern { print k "=" v; next }
       { print }
     ' "$path" > "$tmp_file"
