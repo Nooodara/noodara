@@ -402,7 +402,59 @@ Plans:
   3. Volver a ejecutar el instalador sobre una instalación existente la detecta y actualiza o no hace nada, sin destruir datos ni secrets.
   4. Al terminar, el instalador imprime la URL del panel y un setup token de un solo uso; alternativamente, con `NOODARA_ADMIN_EMAIL`/`NOODARA_ADMIN_PASSWORD` definidas crea el admin directamente, sin pasar por el setup interactivo.
 
-**Plans**: TBD
+**Plans**: 15 plans in 12 waves
+
+Plans:
+**Wave 1**
+
+- [ ] 06-01-PLAN.md — POSIX-sh gate, install.sh skeleton in library mode, real sh/dash test harness, installer test and typecheck wiring
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 06-02-PLAN.md — Preflight: eight injectable predicates, per-cause exit codes, first-failure ordering, nothing written before it passes (INST-03)
+- [ ] 06-03-PLAN.md — Control-plane production image, .dockerignore and proof that all four compiled entrypoints run from dist
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 06-04-PLAN.md — .env generation with URL-safe secrets the real env validator accepts, additive merge, mode 600, timestamped backup
+- [ ] 06-05-PLAN.md — Web production image: Next.js standalone output, build-time NOODARA_API_ORIGIN, real same-origin proxy proof
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 06-06-PLAN.md — Release version and public URL resolution behind one network seam, tag validation, test-only image prefix override
+- [ ] 06-07-PLAN.md — Production docker-compose.yml: six services, migrate one-shot, fixed redis healthcheck, measured memory limits
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 06-08-PLAN.md — Docker Engine and Compose plugin from the official apt repository, step by step with per-step errors
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 06-09-PLAN.md — noodara_main: fresh install vs upgrade, pull/up/health, failure diagnostics, setup token, ufw notice, final summary
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 06-10-PLAN.md — Docker-in-Docker fixtures for Ubuntu 22.04/24.04, Testcontainers helper, registry-free image loading
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 06-11-PLAN.md — Layer 2A: real fresh install on both Ubuntu versions, printed setup token, admin pre-seed
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 06-12-PLAN.md — Layer 2B: run-it-twice idempotency, upgrade and version pin-back, real preflight failure matrix
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
+- [ ] 06-13-PLAN.md — release.yml for native multi-arch GHCR images plus CI and nightly wiring for the installer suite
+
+**Wave 11** *(blocked on Wave 10 completion)*
+
+- [ ] 06-14-PLAN.md — docs/install.md, first README.md and ADR 0007 for the production topology and installer
+
+**Wave 12** *(blocked on Wave 11 completion)*
+
+- [ ] 06-15-PLAN.md — Full gate run, human prerequisites (repo, release, real VPS), v0.1 release-gate report — human checkpoint
 
 ## Progress
 
@@ -416,4 +468,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
 | 5. UI web | 46/46 | Complete   | 2026-09-21 |
-| 6. Instalador y Docker Compose | 0/TBD | Not started | - |
+| 6. Instalador y Docker Compose | 0/15 | Planned | - |

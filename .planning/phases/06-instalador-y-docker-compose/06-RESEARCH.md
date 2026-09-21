@@ -581,17 +581,21 @@ This avoids the general "parse arbitrary shell-quoted values with `#`, embedded 
 
 **If this table is empty:** N/A — see entries above.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> Both questions were resolved during planning (2026-09-21); kept here for traceability.
 
 1. **Does `docker buildx imagetools create` cleanly combine two separately-pushed per-arch tags into one multi-arch manifest list referenced by the final release tag, without a race if both arch jobs finish at different times?**
    - What we know: This is buildx's documented mechanism for exactly this two-job pattern.
    - What's unclear: Exact GitHub Actions job-dependency wiring (`needs:`) to guarantee both per-arch pushes complete before the manifest-list step runs — not yet drafted as real YAML.
    - Recommendation: Planner should draft the release workflow with an explicit `needs: [build-amd64, build-arm64]` gate before the `imagetools create` step; verify with a real (non-tagged, manually `workflow_dispatch`-triggered) dry run before the first real version tag.
+   - **RESOLVED:** Plan 06-13 Task 1 gates the manifest-list job with `needs:` on both native per-arch build jobs and adds an arch-verification step; the `workflow_dispatch` dry run is a human prerequisite in Plan 06-15 (D-02: no remote exists yet).
 
 2. **Exact Testcontainers DinD image for the installer's layer-2 harness — build once and reuse, or build per Ubuntu version like the existing sshd fixtures?**
    - What we know: The project already has a precedent (`tests/integration/images/`, `GenericContainer.fromDockerfile`) for Ubuntu 22.04/24.04 variant images built via Testcontainers; the installer harness needs the same duality plus a running `dockerd` inside (install Docker Engine into the image via the same apt-repo steps `install.sh` itself uses, then start `dockerd` as the container's entrypoint before `install.sh` is `exec()`'d into it).
    - What's unclear: Whether to load locally-built `api`/`worker`/`web` images into the nested `dockerd` via `docker save | docker load` (no registry needed, matches D-19) or stand up a throwaway local registry container reachable from the nested `dockerd` — `docker save`/`load` is simpler and avoids a second nested service.
    - Recommendation: `docker save` the three locally-built images to a tar, copy into the DinD container via Testcontainers' `copyFilesToContainer`, `docker load` inside before running `install.sh` with the D-19 test-only registry/tag override pointed at the locally-loaded tags.
+   - **RESOLVED:** Plan 06-10 builds one fixture image per Ubuntu version (22.04/24.04, mirroring the sshd fixtures) and loads the locally-built images via `docker save` → `copyFilesToContainer` → `docker load`; no throwaway registry. The override is `NOODARA_INTERNAL_IMAGE_PREFIX` (Plan 06-06).
 
 ## Environment Availability
 
