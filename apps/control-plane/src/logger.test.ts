@@ -95,3 +95,98 @@ describe('createLogger err serialization (T-4-10, T-4-38)', () => {
     expect(record.req.headers.cookie).toBe('[REDACTED]');
   });
 });
+
+describe('createLogger bare-Error-as-first-argument guard (WR-A-04, 05-VERIFICATION.md gaps_remaining)', () => {
+  const CANARY = 'sk-live-CANARY-SECRET-VALUE';
+
+  it('never puts a bare Error\'s message on the wire when no message argument is supplied', () => {
+    const { stream, records } = writableForTests();
+    const logger = createLogger({ level: 'info', destination: stream });
+
+    logger.error(new Error(CANARY));
+
+    const [record] = records() as unknown as [{ msg?: string; err?: { name: string } }];
+    expect(record.msg).not.toContain(CANARY);
+    expect(record.err?.name).toBe('Error');
+    const serialized = JSON.stringify(records());
+    expect(serialized).not.toContain('stack');
+    expect(serialized).not.toContain(CANARY);
+  });
+
+  it('uses the caller-supplied message when a bare Error is passed with a message argument', () => {
+    const { stream, records } = writableForTests();
+    const logger = createLogger({ level: 'info', destination: stream });
+
+    logger.error(new Error(CANARY), 'ssh connect failed');
+
+    const [record] = records() as unknown as [{ msg?: string; err?: { name: string } }];
+    expect(record.msg).toBe('ssh connect failed');
+    expect(record.err?.name).toBe('Error');
+    const serialized = JSON.stringify(records());
+    expect(serialized).not.toContain(CANARY);
+  });
+
+  it('keeps a custom Error subclass name when passed bare, without the message', () => {
+    class SecretTamperError extends Error {
+      constructor(message: string) {
+        super(message);
+        this.name = 'SecretTamperError';
+      }
+    }
+    const { stream, records } = writableForTests();
+    const logger = createLogger({ level: 'info', destination: stream });
+
+    logger.error(new SecretTamperError(CANARY));
+
+    const [record] = records() as unknown as [{ msg?: string; err?: { name: string } }];
+    expect(record.err?.name).toBe('SecretTamperError');
+    const serialized = JSON.stringify(records());
+    expect(serialized).not.toContain(CANARY);
+  });
+
+  it('applies the same bare-Error guard at warn and fatal levels, not only error', () => {
+    const { stream, records } = writableForTests();
+    const logger = createLogger({ level: 'trace', destination: stream });
+
+    logger.warn(new Error(CANARY));
+    logger.fatal(new Error(CANARY));
+
+    const emitted = records() as unknown as Array<{ msg?: string; err?: { name: string } }>;
+    expect(emitted).toHaveLength(2);
+    for (const record of emitted) {
+      expect(record.err?.name).toBe('Error');
+      expect(record.msg).not.toContain(CANARY);
+    }
+    const serialized = JSON.stringify(records());
+    expect(serialized).not.toContain(CANARY);
+  });
+
+  it('leaves an existing { err, ...metadata } call site untouched', () => {
+    const { stream, records } = writableForTests();
+    const logger = createLogger({ level: 'info', destination: stream });
+
+    logger.error({ err: new Error(CANARY), serverId: 'srv-1' }, 'recovery failed');
+
+    const [record] = records() as unknown as [
+      { msg?: string; serverId?: string; err?: { name: string } },
+    ];
+    expect(record.msg).toBe('recovery failed');
+    expect(record.err?.name).toBe('Error');
+    expect(record.serverId).toBe('srv-1');
+    const serialized = JSON.stringify(records());
+    expect(serialized).not.toContain(CANARY);
+  });
+
+  it('does not rewrite a non-Error first argument', () => {
+    const { stream, records } = writableForTests();
+    const logger = createLogger({ level: 'info', destination: stream });
+
+    logger.info({ serverId: 'srv-1' }, 'hello');
+    logger.info('plain message');
+
+    const emitted = records() as unknown as Array<{ msg?: string; serverId?: string }>;
+    expect(emitted[0]?.msg).toBe('hello');
+    expect(emitted[0]?.serverId).toBe('srv-1');
+    expect(emitted[1]?.msg).toBe('plain message');
+  });
+});
