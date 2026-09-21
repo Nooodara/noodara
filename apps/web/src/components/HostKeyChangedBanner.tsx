@@ -37,6 +37,15 @@ export interface HostKeyChangedBannerProps {
   readonly onTrustClick: () => void;
 }
 
+// CR-01: once an identity-changing host/port edit clears BOTH fingerprints (edit-server.ts's
+// hostIdentityChanged branch), there is nothing left to compare -- the default copy's "verify the
+// fingerprint" instruction, plus the Trusted/Observed "not available" rows and the ssh-keygen
+// command, all point at values that no longer exist. This state is reachable through ordinary
+// product use (CR-01 was reproduced live), not defensive-only, so it gets its own calm copy
+// instead of showing an instruction with nothing to act on.
+const RECAPTURE_MESSAGE =
+  "This server's saved host key no longer applies because its host or port changed. Retry the connection to capture the new host key, then verify it on the server itself before continuing.";
+
 export function HostKeyChangedBanner({
   host,
   sshPort,
@@ -47,48 +56,62 @@ export function HostKeyChangedBanner({
   now,
   onTrustClick,
 }: HostKeyChangedBannerProps) {
+  const hasNothingToCompare = hostFingerprint === null && pendingFingerprint === null;
+
   return (
     <Banner
       data-testid="host-key-changed-banner"
-      message="This server's host key changed since it was last trusted. This can mean the server was reinstalled, or that something is intercepting the connection. Verify the fingerprint on the server itself before continuing:"
+      message={
+        hasNothingToCompare
+          ? RECAPTURE_MESSAGE
+          : "This server's host key changed since it was last trusted. This can mean the server was reinstalled, or that something is intercepting the connection. Verify the fingerprint on the server itself before continuing:"
+      }
       errorCode="HOST_KEY_CHANGED"
       {...(pendingFingerprint === null ? {} : { action: { label: 'Trust new fingerprint', onClick: onTrustClick } })}
     >
       <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <code data-mono="true" className="break-all text-mono text-ink-secondary">
-            {VERIFY_COMMAND}
-          </code>
-          <CopyButton value={VERIFY_COMMAND} label="Copy command" />
-        </div>
+        {hasNothingToCompare ? null : (
+          <div className="flex items-center gap-2">
+            <code data-mono="true" className="break-all text-mono text-ink-secondary">
+              {VERIFY_COMMAND}
+            </code>
+            <CopyButton value={VERIFY_COMMAND} label="Copy command" />
+          </div>
+        )}
 
         <span data-mono="true" className="text-mono text-ink-tertiary">
           {`Host: ${host}:${String(sshPort)}`}
         </span>
 
-        <div className={MONO_ROW_CLASSES}>
-          <span data-mono="true" className={MONO_VALUE_CLASSES}>
-            {hostFingerprint === null ? `Trusted: ${NOT_AVAILABLE}` : `Trusted: ${hostFingerprint}`}
-          </span>
-          {hostFingerprint === null ? null : <CopyButton value={hostFingerprint} label="Copy trusted fingerprint" />}
-          {hostFingerprintCapturedAt === null ? null : (
-            <span className="text-caption text-ink-tertiary">
-              — captured <RelativeTime value={hostFingerprintCapturedAt} now={now} />
+        {hasNothingToCompare ? null : (
+          <div className={MONO_ROW_CLASSES}>
+            <span data-mono="true" className={MONO_VALUE_CLASSES}>
+              {hostFingerprint === null ? `Trusted: ${NOT_AVAILABLE}` : `Trusted: ${hostFingerprint}`}
             </span>
-          )}
-        </div>
+            {hostFingerprint === null ? null : <CopyButton value={hostFingerprint} label="Copy trusted fingerprint" />}
+            {hostFingerprintCapturedAt === null ? null : (
+              <span className="text-caption text-ink-tertiary">
+                — captured <RelativeTime value={hostFingerprintCapturedAt} now={now} />
+              </span>
+            )}
+          </div>
+        )}
 
-        <div className={MONO_ROW_CLASSES}>
-          <span data-mono="true" className={MONO_VALUE_CLASSES}>
-            {pendingFingerprint === null ? `Observed: ${NOT_AVAILABLE}` : `Observed: ${pendingFingerprint}`}
-          </span>
-          {pendingFingerprint === null ? null : <CopyButton value={pendingFingerprint} label="Copy observed fingerprint" />}
-          {pendingFingerprintSeenAt === null ? null : (
-            <span className="text-caption text-ink-tertiary">
-              — seen <RelativeTime value={pendingFingerprintSeenAt} now={now} />
+        {hasNothingToCompare ? null : (
+          <div className={MONO_ROW_CLASSES}>
+            <span data-mono="true" className={MONO_VALUE_CLASSES}>
+              {pendingFingerprint === null ? `Observed: ${NOT_AVAILABLE}` : `Observed: ${pendingFingerprint}`}
             </span>
-          )}
-        </div>
+            {pendingFingerprint === null ? null : (
+              <CopyButton value={pendingFingerprint} label="Copy observed fingerprint" />
+            )}
+            {pendingFingerprintSeenAt === null ? null : (
+              <span className="text-caption text-ink-tertiary">
+                — seen <RelativeTime value={pendingFingerprintSeenAt} now={now} />
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </Banner>
   );
