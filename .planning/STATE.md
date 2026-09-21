@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: "Phase 05 (ui-web) gap closure ROUND 2 EXECUTING: waves 1-2 COMPLETE (05-38, 05-42, 05-43, 05-44, 05-45, 05-39, 05-41; 44/46 SUMMARY), each plan audited by the orchestrator (no trailers, empty stash, no parent-repo drift). Wave 2 gate green on faec0c0 (lint, typecheck, boundaries, unit 1525/1525, E2E 93/93; binding test 11/11 re-run by the orchestrator; full integration deferred to 05-46). The gap-6 BLOCKER fix is merged: trustFingerprint requires lastErrorCode === HOST_KEY_CHANGED in the guard and in the UPDATE predicate (05-39), on top of the domain clearing stale pendingFingerprint (05-38). 05-41 needed a continuation agent after an executor stall (state was RED committed + GREEN staged; nothing lost). 05-45 decision by the user: D4 link-B #0066cc, D5 fill-A #d70015. Next: wave 3 = 05-40 (GR-02, editServer clears fingerprints on host/port change); wave 4 = 05-46 (full gate + human checkpoint). Phase 05 is NOT complete. Resume with /gsd-execute-phase 5 --gaps-only"
-last_updated: "2026-09-21T03:20:00.000Z"
-last_activity: 2026-09-20 -- Phase 05 gap closure round 2, waves 1-2 complete (7/9)
+stopped_at: "Phase 05 (ui-web) gap closure ROUND 2 EXECUTING: waves 1-3 COMPLETE (05-38, 05-42, 05-43, 05-44, 05-45, 05-39, 05-41, 05-40; 45/46 SUMMARY), each plan audited by the orchestrator (no trailers, empty stash, no parent-repo drift). Wave 3 quick gate green on b2d3585 (lint, typecheck, boundaries, unit 1525/1525); wave 2 gate had E2E 93/93. Gap-6 fixes merged: domain clears stale pendingFingerprint (05-38), trustFingerprint bound to lastErrorCode === HOST_KEY_CHANGED in guard + UPDATE predicate (05-39), editServer clears hostFingerprint on any host/port change from any status, sshUser-only edits keep it (05-40); trust-fingerprint TOCTOU todo moved to completed with per-bullet evidence. 05-45 decision by the user: D4 link-B #0066cc, D5 fill-A #d70015. Next: wave 4 = 05-46 (full cross-suite gate incl. ~35 min integration + human checkpoint of the seven items). Phase 05 is NOT complete. Resume with /gsd-execute-phase 5 --gaps-only"
+last_updated: "2026-09-21T04:00:00.000Z"
+last_activity: 2026-09-20 -- Phase 05 gap closure round 2, waves 1-3 complete (8/9)
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 94
-  completed_plans: 92
-  percent: 98
+  completed_plans: 93
+  percent: 99
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 ## Current Position
 
-Phase: 05 (ui-web) — gap closure round 2 EXECUTING (waves 1-2 of 4 complete); phase NOT complete
-Plan: 44 of 46 plans have a SUMMARY; next to execute is 05-40 (round 2, wave 3), then 05-46 (closing gate + human checkpoint).
-Status: Round 2 waves 1-2 complete and gated (unit 1525/1525, E2E 93/93, lint/typecheck/boundaries green on faec0c0). Gap 6 blocker fix merged (05-38 domain + 05-39 boundary); its closure verdict is re-derived from scratch by 05-46 and the verifier, not assumed here. QA-04/QA-05 Pending until a real CI + nightly run is observed. Next: /gsd-execute-phase 5 --gaps-only (resumes at 05-40).
-Last activity: 2026-09-20 -- Phase 05 gap closure round 2, wave 2 complete (05-39, 05-41)
+Phase: 05 (ui-web) — gap closure round 2 EXECUTING (waves 1-3 of 4 complete); phase NOT complete
+Plan: 45 of 46 plans have a SUMMARY; next to execute is 05-46 (closing gate + human checkpoint).
+Status: Round 2 waves 1-3 complete and gated. Gap 6 fixes merged (05-38, 05-39, 05-40); the closure verdict is re-derived from scratch by 05-46 and the verifier, not assumed here. QA-04/QA-05 Pending until a real CI + nightly run is observed. Next: /gsd-execute-phase 5 --gaps-only (resumes at 05-46).
+Last activity: 2026-09-20 -- Phase 05 gap closure round 2, wave 3 complete (05-40)
 
-Progress: [██████████] 98% of planned plans executed (92/94; phase 05 round 2 waves 3-4 pending)
+Progress: [██████████] 99% of planned plans executed (93/94; phase 05 round 2 wave 4 pending)
 
 ## Performance Metrics
 
