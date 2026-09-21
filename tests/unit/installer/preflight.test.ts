@@ -410,6 +410,77 @@ describe.each(posixInterpreters())('install.sh preflight predicates (%s)', (inte
 
       expect(result.status).toBe(0);
     });
+
+    // Post-execution fix (orchestrator audit Finding A): on an existing installation, the panel
+    // port recorded in .env is expected to be busy -- it is this installation's own running web
+    // container -- and must never fail preflight. Orchestrator's own reproduction: an install dir
+    // containing a .env, `ss` reporting the recorded port as listening.
+    it('does not fail when the install directory has an existing .env and its recorded port is busy (orchestrator probe)', () => {
+      const installDir = mkdtempSync(join(tmpdir(), 'noodara-check-port-installed-'));
+      writeFileSync(
+        join(installDir, '.env'),
+        'NOODARA_VERSION=1.0.0\nNOODARA_PORT=3000\n',
+        'utf8',
+      );
+      const snippet = "ss() { printf 'LISTEN 0 4096 0.0.0.0:3000 0.0.0.0:*\\n'; }\nnoodara_check_port";
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_INSTALL_DIR: installDir },
+      });
+
+      expect(result.status).toBe(0);
+    });
+
+    it('still fails with exit code 16 on a genuinely fresh install (no .env) with a busy port', () => {
+      const parent = mkdtempSync(join(tmpdir(), 'noodara-check-port-fresh-'));
+      const installDir = join(parent, 'noodara');
+      const snippet = "ss() { printf 'LISTEN 0 4096 0.0.0.0:3000 0.0.0.0:*\\n'; }\nnoodara_check_port";
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_INSTALL_DIR: installDir },
+      });
+
+      expect(result.status).toBe(16);
+    });
+
+    it('warns naming both values, and never fails, when NOODARA_PORT differs from the recorded .env port on an existing installation', () => {
+      const installDir = mkdtempSync(join(tmpdir(), 'noodara-check-port-installed-'));
+      writeFileSync(
+        join(installDir, '.env'),
+        'NOODARA_VERSION=1.0.0\nNOODARA_PORT=3000\n',
+        'utf8',
+      );
+      // The busy-port stub reports the *recorded* .env port (3000), not the operator's override
+      // (4000) -- proving the check genuinely skips the busy-port test rather than accidentally
+      // passing because the wrong port was probed.
+      const snippet = "ss() { printf 'LISTEN 0 4096 0.0.0.0:3000 0.0.0.0:*\\n'; }\nnoodara_check_port";
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_INSTALL_DIR: installDir, NOODARA_PORT: '4000' },
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toContain('4000');
+      expect(result.stderr).toContain('3000');
+      expect(result.stderr.toLowerCase()).toContain('.env');
+    });
+
+    it('does not warn when NOODARA_PORT matches the recorded .env port exactly', () => {
+      const installDir = mkdtempSync(join(tmpdir(), 'noodara-check-port-installed-'));
+      writeFileSync(
+        join(installDir, '.env'),
+        'NOODARA_VERSION=1.0.0\nNOODARA_PORT=3000\n',
+        'utf8',
+      );
+      const snippet = "ss() { printf 'LISTEN 0 4096 0.0.0.0:3000 0.0.0.0:*\\n'; }\nnoodara_check_port";
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_INSTALL_DIR: installDir, NOODARA_PORT: '3000' },
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
+    });
   });
 
   describe('noodara_check_docker_snap', () => {
@@ -516,6 +587,31 @@ describe.each(posixInterpreters())('install.sh preflight predicates (%s)', (inte
       expect(result.status).toBe(0);
       expect(existsSync(sentinel)).toBe(false);
       expect(readdirSync(installDir)).toEqual([]);
+    });
+
+    // Post-execution fix (orchestrator audit Finding A): the orchestrator's exact reproduction --
+    // an install dir with a .env, the panel port genuinely listening (this installation's own
+    // container) -- passes the full preflight sequence end to end, never just the isolated
+    // noodara_check_port unit above.
+    it('passes end to end on a re-run against an existing installation whose own panel port is busy', () => {
+      const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-preflight-fixtures-'));
+      const installDir = mkdtempSync(join(tmpdir(), 'noodara-preflight-installdir-'));
+      writeFileSync(join(installDir, '.env'), 'NOODARA_VERSION=1.0.0\nNOODARA_PORT=3000\n', 'utf8');
+      const { env } = buildPassingEnv(fixturesDir, installDir);
+      const snippet = [
+        "id() { printf '0\\n'; }",
+        "uname() { printf 'x86_64\\n'; }",
+        'command() { return 0; }',
+        "ss() { printf 'LISTEN 0 4096 0.0.0.0:3000 0.0.0.0:*\\n'; }",
+        dfFunctionSnippet(10485760),
+        'snap() { return 1; }',
+        'noodara_preflight',
+      ].join('\n');
+
+      const result = runInstallerShell(interpreter, snippet, { env });
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).not.toContain('already in use');
     });
   });
 });
