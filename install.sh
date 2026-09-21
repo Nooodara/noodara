@@ -263,7 +263,30 @@ noodara_resolve_port() {
 # NOODARA_PORT=<other>, when `ss -tuln` shows it already listening. The match is anchored on
 # ":<port>" followed by a space so a busy port 30000 is never mistaken for port 3000
 # (06-RESEARCH.md Pattern 4 -- Coolify's own missing port check is the negative example).
+#
+# Post-execution fix (orchestrator audit Finding A, 06-09 follow-up): on an existing installation
+# (D-10's own signal: NOODARA_INSTALL_DIR/.env exists) the panel port is whatever this
+# installation's own .env already recorded -- that port being in use is expected (it is this
+# installation's own currently-running web container), never a preflight failure. Every re-run
+# used to fail here unconditionally the moment the panel was actually up, which made a re-run
+# impossible against a genuinely running installation. A fresh install (no .env yet) keeps the
+# exact original busy-port check. An operator-supplied NOODARA_PORT that disagrees with the
+# recorded value is not silently applied and not silently ignored either: this is the one place
+# that mismatch is surfaced, with a single warning naming both values and the fix (.env always
+# wins on a re-run -- D-11's own "existing values are never touched" already guarantees this at
+# the merge-write level; this warning is what makes that guarantee visible instead of a silent
+# no-op). Reads .env but never writes anything, preserving noodara_preflight's own "writes
+# nothing" invariant.
 noodara_check_port() {
+  if noodara_is_installed; then
+    _noodara_cp_env_path="${NOODARA_INSTALL_DIR}/${NOODARA_ENV_FILE}"
+    _noodara_cp_env_port=$(noodara_env_get_value "$_noodara_cp_env_path" NOODARA_PORT)
+    if [ -n "${NOODARA_PORT:-}" ] && [ -n "$_noodara_cp_env_port" ] && [ "$NOODARA_PORT" != "$_noodara_cp_env_port" ]; then
+      noodara_warn "NOODARA_PORT='$NOODARA_PORT' was given, but this installation already uses port $_noodara_cp_env_port. The existing .env always wins on a re-run -- to change the port, edit ${_noodara_cp_env_path} (key NOODARA_PORT) and re-run this installer."
+    fi
+    return 0
+  fi
+
   port=$(noodara_resolve_port)
   if ss -tuln 2>/dev/null | grep -q ":${port} "; then
     noodara_fail port-in-use "Port $port is already in use. Set NOODARA_PORT=<other> and re-run this installer."
