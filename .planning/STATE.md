@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-04-PLAN.md
-last_updated: "2026-09-21T10:40:16.597Z"
+stopped_at: Completed 06-05-PLAN.md
+last_updated: "2026-09-21T12:22:54.431Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 109
-  completed_plans: 98
+  completed_plans: 99
   percent: 83
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 06 (instalador-y-docker-compose) — EXECUTING
-Plan: 5 of 15
+Plan: 6 of 15
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [█████████░] 90%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
@@ -144,6 +144,7 @@ Progress: [█████████░] 90%
 | Phase 06 P02 | 5min | 3 tasks | 2 files |
 | Phase 06 P03 | 130min | 3 tasks | 3 files |
 | Phase 06 P04 | 15min | 3 tasks | 4 files |
+| Phase 06 P05 | 65min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -380,6 +381,8 @@ Recent decisions affecting current work:
 - [Phase 06]: installer image integration tests reach Testcontainers Postgres/Redis fixtures via --add-host host.docker.internal:host-gateway plus the fixture's own mapped port, since postgres.ts/redis.ts expose no shared Docker network -- reusable pattern for Plan 06-07
 - [Phase 06]: install.sh's noodara_merge_env does not auto-maintain NOODARA_PREVIOUS_VERSION -- written once by noodara_generate_env at fresh-install time; a future upgrade flow (Plan 06-09) records a genuine prior version via the generic noodara_set_env_value before calling noodara_merge_env — keeps the plan's own 'a merge over a complete file changes exactly one line' behavior literally true while still satisfying D-12's rollback-hint requirement through a separate, explicit call site
 - [06-04 post-execution security fix]: noodara_env_assert_single_line/noodara_env_assert_no_single_quote reuse the existing env-write-failed exit reason (30) instead of adding a new one -- it already fit semantically, so the exit-code table in install.sh and tests/unit/installer/skeleton.test.ts needed no change; only NOODARA_PUBLIC_URL/NOODARA_ADMIN_EMAIL/NOODARA_ADMIN_PASSWORD are written single-quoted (Compose .env parsing, Finding B) since those are the three values 06-CONTEXT.md/the audit named as operator-typed and at risk — NOODARA_VERSION/NOODARA_IMAGE_PREFIX/NOODARA_PORT and every generated secret are left unquoted, unchanged from 06-04's original shape
+- [Phase 06]: apps/web/Dockerfile's runner stage re-declares ARG/ENV NOODARA_API_ORIGIN (not just the builder stage) -- proxy.ts and the SSE route handler read process.env at request time, unlike next.config.ts's build-time-only rewrites(); confirmed by web-image.test.ts's own RED run (GET / 500'd without it)
+- [Phase 06]: Testcontainers Network().start() + .withNetworkAliases('api') gives a container-under-test a literal DNS-resolvable service name (matching production docker-compose.yml), distinct from control-plane-image.test.ts's host.docker.internal/host-gateway pattern which only reaches a host port
 
 ### Pending Todos
 
@@ -445,6 +448,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-21T10:40:16.590Z
-Stopped at: Completed 06-04-PLAN.md
+Last session: 2026-09-21T12:22:54.424Z
+Stopped at: Completed 06-05-PLAN.md
 Resume file: None
