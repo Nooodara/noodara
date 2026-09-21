@@ -9,6 +9,11 @@ export default defineConfig({
   resolve: { alias: [...domainSourceAliases, ...sshSourceAliases] },
   test: {
     include: ['tests/integration/**/*.test.ts'],
+    // The installer's Docker-in-Docker suite has its own config (vitest.installer.config.ts,
+    // `pnpm test:installer`) since it builds real production images and runs privileged
+    // Docker-in-Docker -- excluded here so it never inflates this suite's ~32 min PR-gate budget.
+    // Not untested: see vitest.installer.config.ts.
+    exclude: ['tests/integration/installer/**'],
     testTimeout: 120_000,
     hookTimeout: 120_000,
     pool: 'forks',
