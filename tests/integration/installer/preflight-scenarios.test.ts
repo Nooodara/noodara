@@ -24,6 +24,7 @@ import {
   readFixtureFile,
   removeBuiltImages,
   runResultToStreams,
+  type BuiltImages,
 } from './installer-scenario-helpers.js';
 
 const INSTALL_DIR = '/opt/noodara';
@@ -285,16 +286,24 @@ describe('preflight matrix inside real Ubuntu (06-12-PLAN.md Task 2, INST-03)', 
     it(
       'installs Docker Engine and the Compose plugin from the apt repository, then completes the install with a healthy stack',
       async () => {
-        const images = buildInstallerScenarioImages('0612-nodocker');
         const volumeName = `noodara-nodocker-donor-${randomUUID()}`;
-        execFileSync('docker', ['volume', 'create', '--label', 'noodara.test=true', volumeName], {
-          timeout: 60_000,
-          stdio: 'ignore',
-        });
-
+        // Post-execution fix (orchestrator audit WR-06): both the build and the volume create
+        // previously ran BEFORE this try block -- a failure in that two-line window (the volume
+        // create throwing, for example) left the just-built ~1.6GB images never removed. Both now
+        // run inside the try, and each cleanup call in `finally` is guarded so it only runs
+        // against something this run actually created.
+        let images: BuiltImages | undefined;
+        let volumeCreated = false;
         let donor: InstallerDindFixture | undefined;
         let target: InstallerDindFixture | undefined;
         try {
+          images = buildInstallerScenarioImages('0612-nodocker');
+          execFileSync('docker', ['volume', 'create', '--label', 'noodara.test=true', volumeName], {
+            timeout: 60_000,
+            stdio: 'ignore',
+          });
+          volumeCreated = true;
+
           donor = await startInstallerDind({ ubuntu: '22.04', withDocker: true, reuseDockerVolume: volumeName });
           await loadComposeImagesInto(donor, images);
           await donor.stop();
@@ -358,8 +367,12 @@ describe('preflight matrix inside real Ubuntu (06-12-PLAN.md Task 2, INST-03)', 
         } finally {
           await donor?.stop();
           await target?.stop();
-          execFileSync('docker', ['volume', 'rm', '-f', volumeName], { stdio: 'ignore', timeout: 60_000 });
-          removeBuiltImages(images);
+          if (volumeCreated) {
+            execFileSync('docker', ['volume', 'rm', '-f', volumeName], { stdio: 'ignore', timeout: 60_000 });
+          }
+          if (images) {
+            removeBuiltImages(images);
+          }
           await assertNoStrayTestContainers();
         }
       },
