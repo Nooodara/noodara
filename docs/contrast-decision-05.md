@@ -394,3 +394,100 @@ Los tres pares WR-C-08 §1.2 que este plan SÍ corrige: Banner (`errorCode`, amb
   `ActivityRow.tsx` (mono error code) siguen usando el token base `--status-error`/`--status-warn`, no el
   nuevo `-text`. No fueron auditados por este plan (WR-C-08 solo nombraba Banner/Field/RowMenu) -- un
   plan futuro debería medirlos y, si fallan, migrarlos al mismo patrón `-text`.
+
+## 6. Decisión de contraste — Plan 05-45 (gap closure ronda 2)
+
+Cierra los dos fallos de contraste AA que la sección 5 de este documento dejó explícitamente fuera de
+alcance de 05-33: `--accent` como texto de enlace en light (4.31:1 sobre `--canvas`, 4.12:1 sobre
+`--surface-3`) y `Button.tsx`'s `DESTRUCTIVE_FILLED_CLASSES` (blanco sobre `--status-error`, 3.54:1
+light / 3.40:1 dark). Ver `05-45-PLAN.md` para el objetivo completo.
+
+### 6.1 Re-derivación (2026-09-20, antes de presentar las opciones al usuario)
+
+Todas las cifras del plan fueron re-calculadas en esta sesión con las funciones reales de
+`packages/ui/src/contrast.ts` (`contrastRatio`/`parseTokensCss`/`roundDown`) contra los valores reales
+de `packages/ui/tokens.css`, vía un test Vitest desechable (`packages/ui/src/scratch-45-rederive.test.ts`,
+borrado antes de cualquier commit -- `git status --short packages/ui` no muestra el archivo). El comando
+ejecutado fue `pnpm vitest run packages/ui/src/scratch-45-rederive.test.ts --reporter=verbose`.
+
+**Token de texto de enlace (light), ratio sobre canvas / surface-1 / surface-2 / surface-3, mínimo:**
+
+| Candidato | canvas | surface-1 | surface-2 | surface-3 | MIN | Veredicto |
+|---|---|---|---|---|---|---|
+| `#0071e3` (actual) | 4.31 | 4.69 | 4.5 | 4.12 | 4.12 | FAIL |
+| `#0068d6` | 4.88 | 5.31 | 5.09 | 4.66 | 4.66 | PASS |
+| `#0066cc` | 5.11 | 5.56 | 5.33 | 4.89 | 4.89 | PASS |
+| `#0062c4` | 5.44 | 5.92 | 5.68 | 5.2 | 5.2 | PASS |
+
+Dark `--accent` (`#2997ff`) como texto: canvas 5.99, surface-1 5.58, surface-2 5.07, surface-3 4.75 --
+las cuatro PASAN, confirmando que el valor dark del nuevo token de enlace puede quedarse en `#2997ff`
+sin cambio.
+
+Las cuatro cifras coinciden exactamente con la tabla del plan -- cero discrepancia.
+
+**Token de fill destructivo, blanco (`--on-accent` `#ffffff`) sobre el fill:**
+
+| Candidato | Ratio | Veredicto |
+|---|---|---|
+| `#ff3b30` (actual light) | 3.54 | FAIL |
+| `#ff453a` (actual dark) | 3.4 | FAIL |
+| `#d70015` | 5.38 | PASS |
+| `#c9271c` | 5.54 | PASS |
+| `#be2920` | 5.95 | PASS |
+
+Cifras exactas, sin discrepancia con el plan.
+
+**Roles extra medidos por el orquestador (informativos, no forman parte del gate de `contrast.test.ts`
+-- no existe una función `compositeOver`-con-opacidad reutilizable en `contrast.ts` para el estado
+`hover:opacity-90`, así que esta cifra es un cálculo manual de un solo uso, igual que el del
+orquestador):**
+
+| Par | Cifra del orquestador | Mi re-derivación | Veredicto |
+|---|---|---|---|
+| hover (label+fill @ 0.9) blanco-sobre-`#d70015`, light surface-1 | 5.01 | **5.00** | discrepancia ±0.01, ver nota |
+| hover blanco-sobre-`#d70015`, dark surface-1 | 5.08 | 5.08 | exacto |
+| hover blanco-sobre-`#d70015`, dark surface-2 | 5.08 | 5.08 | exacto |
+| edge (borde, no-texto) `#d70015` vs surface, light surface-1 | 5.38 | 5.38 | exacto |
+| edge `#d70015` vs surface, dark surface-1 | 3.12 | 3.12 | exacto |
+| edge `#d70015` vs surface, dark surface-2 | 2.84 | 2.84 | exacto |
+| edge actual `#ff453a` vs dark surface-1 | 4.94 | 4.94 | exacto |
+| edge actual `#ff453a` vs dark surface-2 | 4.49 | 4.49 | exacto |
+
+Nota sobre la única discrepancia (5.01 vs 5.00, light surface-1, estado hover): es la misma clase de
+discrepancia de ±0.01 que la sección 1.3 ya documentó para 05-33 -- convención de redondeo de punto
+flotante, aquí en el cálculo manual de `1 - 0.9` (que en JS no da exactamente `0.1`: `0.09999999999999998`)
+frente a usar el literal `0.1` directamente. El canal verde compuesto del fill cae justo en el límite de
+redondeo (`25.5` exacto con el literal `0.1`, que Math.round sube a 26; `25.499999999999993` con
+`1 - 0.9`, que Math.round baja a 25) -- un paso de 1/255 en un solo canal que mueve el ratio en 0.01. No
+cambia ningún veredicto PASS/FAIL y no afecta ninguna de las dos decisiones (esta cifra es puramente
+informativa: el estado hover no es un requisito de contraste de texto propio, ver más abajo). Esta cifra
+no proviene de `contrast.test.ts` -- no hay gate automático para el estado hover compuesto porque
+`contrast.ts` no expone una función de composición con opacidad; documentado aquí solo como contexto para
+el futuro rediseño de UI.
+
+### 6.2 Decisión del usuario
+
+**Decidido el 2026-09-20**, mediante una pregunta interactiva bloqueante (`checkpoint:decision`) que
+presentó las tablas completas de las secciones 6.1 para ambas decisiones (las seis opciones link-A/B/C y
+fill-A/B/C, con sus pros/cons del plan). Respuesta verbatim del usuario:
+
+**D4 -- Token de texto de enlace (light):** **link-B, `#0066cc` (Recommended)**. Ratio mínimo 4.89:1
+(sobre `--surface-3`). El valor dark del mismo token se queda en `#2997ff` (el `--accent` dark ya
+existente), porque ya pasa 4.5:1 en las cuatro superficies sin cambio (sección 6.1).
+
+**D5 -- Token de fill destructivo (mismo hex en ambos temas):** **fill-A, `#d70015` (Recommended)**.
+Blanco sobre el fill mide 5.38:1. Mismo valor en ambos temas, siguiendo el precedente de `--accent-fill`
+(D2, sección 3).
+
+Ningún archivo de tokens fue modificado antes de que el usuario respondiera -- esta sección (6) es la
+única escritura hecha en `docs/contrast-decision-05.md` antes de que Task 2 toque `tokens.css`; el orden
+de commits del plan (`git log`) respalda esto: el commit de esta sección precede a cualquier commit que
+toque `packages/ui/tokens.css`.
+
+### 6.3 Nombres de los nuevos tokens (adelanto de Task 2, ver `05-45-PLAN.md` Task 2 `<action>`)
+
+- `--accent-text`: light `#0066cc` (D4), dark `#2997ff` (sin cambio respecto a `--accent` dark).
+- `--status-error-fill`: `#d70015` en ambos temas (D5).
+
+La tabla de medición "as-shipped" (cada rol × cada tema × cada superficie, tomada de la salida del gate,
+no recalculada a mano) se añade en la sección 7 al cerrar Task 3.
