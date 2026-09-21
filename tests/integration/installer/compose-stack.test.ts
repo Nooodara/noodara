@@ -117,6 +117,7 @@ function composePs(projectDir: string): ComposePsEntry[] {
 
 interface ComposeConfigService {
   deploy?: { resources?: { limits?: { memory?: string } } };
+  ports?: { published?: string }[];
 }
 
 interface ComposeConfigJson {
@@ -336,13 +337,19 @@ describe('production docker-compose.yml stack (06-07-PLAN.md)', () => {
 
       // T-06-08: only `web` publishes a host port -- postgres/redis/api/worker/migrate must not,
       // even though api/worker legitimately EXPOSE 3000 in their own Dockerfile (an unpublished
-      // "Ports" entry, distinct from an actual host-bound Publisher).
+      // "Ports" entry, distinct from an actual host-bound Publisher). Proven two ways: the real,
+      // running containers (`docker compose ps`) AND the Compose file's own resolved model
+      // (`docker compose config`, hard_rule's own literal wording) -- the two must agree.
+      const config = composeConfig(dir);
       for (const entry of servicesAfterFirstUp) {
         const publishedPorts = entry.Publishers.filter((publisher) => publisher.PublishedPort !== 0);
+        const configPorts = config.services[entry.Service]?.ports ?? [];
         if (entry.Service === 'web') {
           expect(publishedPorts.length, 'web should publish exactly one host port').toBe(1);
+          expect(configPorts.length, 'web should have exactly one resolved ports: entry').toBe(1);
         } else {
           expect(publishedPorts, `${entry.Service} must not publish any host port`).toHaveLength(0);
+          expect(configPorts, `${entry.Service} must have no resolved ports: entry`).toHaveLength(0);
         }
       }
 
@@ -398,14 +405,13 @@ describe('production docker-compose.yml stack (06-07-PLAN.md)', () => {
       expect(volumeExists(postgresVolumeName)).toBe(postgresVolumeBeforeSecondUp);
 
       // Memory: a real `docker stats --no-stream` sample taken while the stack is healthy,
-      // compared against docker-compose.yml's own resolved `deploy.resources.limits.memory` (via
-      // `docker compose config`, never a hand-parsed YAML read) -- Assumption A3 replaced by a
+      // compared against docker-compose.yml's own resolved `deploy.resources.limits.memory` (the
+      // same `config` fetched above, never a hand-parsed YAML read) -- Assumption A3 replaced by a
       // real measurement. `migrate` is deliberately excluded: by the time the stack is healthy it
       // has already exited (0B measured), so a 2x-of-zero comparison would be vacuous -- its own
       // limit is a documented, non-measured bound by analogy to api/worker's own measured
       // footprint from the identical base image (see docker-compose.yml's own comment and the
       // SUMMARY).
-      const config = composeConfig(dir);
       const measuredBytesByService: Record<string, number> = {};
       for (const serviceName of ['postgres', 'redis', 'api', 'worker', 'web']) {
         const containerName = `${PROJECT_NAME}-${serviceName}-1`;
