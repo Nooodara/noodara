@@ -1,0 +1,205 @@
+
+> noodara@ test:e2e /Users/xch4rt/work/myself/noodara/code
+> playwright test
+
+
+> noodara@ build /Users/xch4rt/work/myself/noodara/code
+> turbo run build
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/config, @noodara/control-plane, @noodara/domain, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 6 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs 97649414a5c387f7
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ssh:build: cache hit, replaying logs 2ae39277ee688c17
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ui:build: cache hit, replaying logs 8e8501204650c615
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/control-plane:build: cache hit, replaying logs b05044df84723c9a
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.0.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
+@noodara/web:build: cache hit, replaying logs 2190e6d147cba2f9
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.0.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > next build
+@noodara/web:build: 
+@noodara/web:build: ▲ Next.js 16.3.5 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 55ms
+@noodara/web:build: 
+@noodara/web:build:   Creating an optimized production build ...
+@noodara/web:build: ✓ Compiled successfully in 515ms
+@noodara/web:build:   Running TypeScript ...
+@noodara/web:build:   Finished TypeScript in 1028ms ...
+@noodara/web:build:   Collecting page data using 11 workers ...
+@noodara/web:build:   Generating static pages using 11 workers (0/8) ...
+@noodara/web:build:   Generating static pages using 11 workers (2/8) 
+@noodara/web:build:   Generating static pages using 11 workers (4/8) 
+@noodara/web:build:   Generating static pages using 11 workers (6/8) 
+@noodara/web:build: ✓ Generating static pages using 11 workers (8/8) in 237ms
+@noodara/web:build:   Finalizing page optimization ...
+@noodara/web:build: 
+@noodara/web:build: Route (app)
+@noodara/web:build: ┌ ○ /
+@noodara/web:build: ├ ○ /_not-found
+@noodara/web:build: ├ ○ /activity
+@noodara/web:build: ├ ƒ /api/events
+@noodara/web:build: ├ ○ /login
+@noodara/web:build: ├ ○ /servers
+@noodara/web:build: ├ ƒ /servers/[id]
+@noodara/web:build: ├ ○ /settings
+@noodara/web:build: └ ○ /setup
+@noodara/web:build: 
+@noodara/web:build: 
+@noodara/web:build: ƒ Proxy (Middleware)
+@noodara/web:build: 
+@noodara/web:build: ○  (Static)   prerendered as static content
+@noodara/web:build: ƒ  (Dynamic)  server-rendered on demand
+@noodara/web:build: 
+
+ Tasks:    5 successful, 5 total
+Cached:    5 cached, 5 total
+  Time:    39ms >>> FULL TURBO
+
+
+Running 93 tests using 1 worker
+
+  ✓   1 [chromium] › tests/e2e/activity.spec.ts:66:1 › @activity a stack whose only activity is the admin sign-in shows one TODAY row and no Load older button (934ms)
+  ✓   2 [chromium] › tests/e2e/activity.spec.ts:89:1 › @activity Load older appends the next page while the previously loaded rows remain, in order (406ms)
+  ✓   3 [chromium] › tests/e2e/activity.spec.ts:163:1 › @activity a failed background refresh keeps every already-loaded row on screen (WR-B-04) (1.4s)
+  ✓   4 [chromium] › tests/e2e/activity.spec.ts:257:1 › @activity a background refresh that returns a full page with no overlap resets to the fresh page instead of showing an unmarked gap (WR-B-05) (1.1s)
+  ✓   5 [chromium] › tests/e2e/activity.spec.ts:331:1 › @activity expanding a server.created row shows exactly the curated pairs and never an unknown metadata key (324ms)
+  ✓   6 [chromium] › tests/e2e/activity.spec.ts:367:1 › @activity a failure item renders its errorCode in a mono element and a success item renders none (285ms)
+  ✓   7 [chromium] › tests/e2e/activity.spec.ts:399:1 › @activity an auth.logout item shows no expand chevron (277ms)
+  ✓   8 [chromium] › tests/e2e/activity.spec.ts:420:1 › @activity an item referencing a deleted server renders the name as plain text with no link (273ms)
+  ✓   9 [chromium] › tests/e2e/activity.spec.ts:441:1 › @activity the loading state shows ten skeleton rows and no spinner; the error state shows the exact banner copy with a working Retry (387ms)
+  ✓  10 [chromium] › tests/e2e/activity.spec.ts:479:1 › @activity no rendered text anywhere on the screen contains a raw JSON object signature (382ms)
+  ✓  11 [chromium] › tests/e2e/auth.spec.ts:15:1 › @auth /setup with no token renders an empty token field; /setup?token=... pre-fills it (158ms)
+  ✓  12 [chromium] › tests/e2e/auth.spec.ts:23:1 › @auth submitting /setup on a stack that already has an admin renders the single opaque banner (195ms)
+  ✓  13 [chromium] › tests/e2e/auth.spec.ts:34:1 › @auth a wrong password renders the exact invalid-credentials copy and never echoes the submitted email (247ms)
+  ✓  14 [chromium] › tests/e2e/auth.spec.ts:49:1 › @auth an invalid email on the login form renders an inline field error, not a banner (177ms)
+  ✓  15 [chromium] › tests/e2e/auth.spec.ts:59:1 › @auth both screens render without the authenticated shell's navigation landmark (108ms)
+  ✓  16 [chromium] › tests/e2e/auth.spec.ts:67:1 › @auth both screens render correctly in light and dark themes (121ms)
+  ✓  17 [chromium] › tests/e2e/canary-ui.spec.ts:53:1 › @canary a per-run password canary and a per-run passphrase canary never reach rendered HTML, console, storage, the URL/history, or any response body across the whole UI flow (1.7s)
+[critical-path] first run: direct DOM mixed resolved/pending snapshot observed (7 snapshots captured), plus 11 distinct SSE frames.
+[critical-path] second run (re-run discovery): direct DOM mixed resolved/pending snapshot observed (7 snapshots captured), plus 11 distinct SSE frames.
+  ✓  18 [chromium] › tests/e2e/critical-path.spec.ts:194:1 › @critical the whole roadmap SS6.6 flow: login -> Servers -> add server -> connect -> live discovery -> detail, against a real sshd container (7.4s)
+  ✓  19 [chromium] › tests/e2e/discovery.spec.ts:125:1 › @discovery a settled run renders the one-line summary that expands to six steps (404ms)
+  ✓  20 [chromium] › tests/e2e/discovery.spec.ts:149:1 › @discovery expanding a step reveals its checks with mono detail and durationMs (371ms)
+  ✓  21 [chromium] › tests/e2e/discovery.spec.ts:168:1 › @discovery a mid-run page load shows all discovery steps pending/running, the in-progress caption, and none of the previous run (302ms)
+  ✓  22 [chromium] › tests/e2e/discovery.spec.ts:197:1 › @discovery a run whose Docker check failed renders amber with the SS5.5 consequence copy, Connected stays, no error banner (329ms)
+  ✓  23 [chromium] › tests/e2e/discovery.spec.ts:227:1 › @discovery every step exposes its status word in text (331ms)
+  ✓  24 [chromium] › tests/e2e/discovery.spec.ts:241:1 › @discovery Re-run discovery issues POST /discover exactly once and never polls a job endpoint (333ms)
+  ✓  25 [chromium] › tests/e2e/discovery.spec.ts:332:1 › @discovery a page that joins mid-run never shows an unreceived earlier check as resolved, and excludes it from its step (373ms)
+  ✓  26 [chromium] › tests/e2e/discovery.spec.ts:382:1 › @discovery a finished run leaves no checks behind for the next run to inherit (316ms)
+  ✓  27 [chromium] › tests/e2e/discovery.spec.ts:415:1 › @ssh-live a real connect-and-discover run against a real sshd fixture delivers live, time-separated per-check SSE progress into the already-mounted browser page, with no reload (2.4s)
+  ✓  28 [chromium] › tests/e2e/dod-hardening.spec.ts:18:1 › @dod-hardening clicking a copy button with navigator.clipboard removed leaves the page functional and shows no confirmation (436ms)
+  ✓  29 [chromium] › tests/e2e/dod-hardening.spec.ts:56:1 › @dod-hardening the server detail screen still renders its facts when localStorage access throws (358ms)
+  ✓  30 [chromium] › tests/e2e/host-key.spec.ts:154:1 › @hostkey the first-trust notice shows with the fingerprint and the verification command; dismissing hides it, a reload keeps it hidden, and the permanent fingerprint row survives (359ms)
+  ✓  31 [chromium] › tests/e2e/host-key.spec.ts:186:1 › @hostkey a second server in the same browser still shows its own first-trust notice after the first was dismissed (375ms)
+  ✓  32 [chromium] › tests/e2e/host-key.spec.ts:214:1 › @hostkey the HOST_KEY_CHANGED banner shows both fingerprints labelled Trusted/Observed with dates, the verification command and the mono error code, and the generic banner never appears for it (306ms)
+  ✓  33 [chromium] › tests/e2e/host-key.spec.ts:246:1 › @hostkey the trust-new-fingerprint dialog keeps its confirm button disabled until the exact server name is typed, and a near-miss leaves it disabled (407ms)
+  ✓  34 [chromium] › tests/e2e/host-key.spec.ts:280:1 › @hostkey confirming with the exact name posts to trust-fingerprint exactly once, carrying the exact fingerprint the dialog displayed; success reflects PENDING with only Connect, and issues no automatic connect request (379ms)
+  ✓  35 [chromium] › tests/e2e/host-key.spec.ts:351:1 › @hostkey a live server.updated event mid-review swaps the pending fingerprint; the dialog still sends what it displayed, a FINGERPRINT_MISMATCH closes it, and the banner re-renders with the new value (380ms)
+  ✘  36 [chromium] › tests/e2e/host-key.spec.ts:429:1 › @hostkey UF-01 regression: editing the host while ERROR/HOST_KEY_CHANGED clears the pending fingerprint, so the trust affordance disappears and the trusted fingerprint stays unchanged (5.6s)
+  ✓  37 [chromium] › tests/e2e/host-key.spec.ts:520:1 › @hostkey the real trust-fingerprint POST succeeds end to end against the real backend, carrying the exact fingerprint the dialog displayed (5.5s)
+  ✓  38 [chromium] › tests/e2e/server-detail.spec.ts:114:1 › @detail a PENDING server with no discovery shows the empty state, one Connect action and no error banner (488ms)
+  ✓  39 [chromium] › tests/e2e/server-detail.spec.ts:134:1 › @detail an AUTH_FAILED error with no history shows the SS5.1 copy, the mono code, Retry and the empty state below, with no stat tiles (318ms)
+  ✓  40 [chromium] › tests/e2e/server-detail.spec.ts:157:1 › @detail a CONNECT_TIMEOUT error with a prior discovery shows the banner above stat tiles that stay present and visually dimmed (377ms)
+  ✓  41 [chromium] › tests/e2e/server-detail.spec.ts:201:1 › @detail a CONNECTED server shows four formatted stat tiles and the three label/value groups including the fingerprint copy button (301ms)
+  ✓  42 [chromium] › tests/e2e/server-detail.spec.ts:232:1 › @detail a CONNECTING server shows the primary action disabled (281ms)
+  ✓  43 [chromium] › tests/e2e/server-detail.spec.ts:246:1 › @detail a stubbed 404 shows the not-found copy with a working link back to Servers (335ms)
+  ✓  44 [chromium] › tests/e2e/server-detail.spec.ts:327:1 › @detail a GET resolved after a live server.updated event does not roll the screen back to the older state (336ms)
+  ✓  45 [chromium] › tests/e2e/server-detail.spec.ts:363:1 › @detail a server.deleted event followed by a late-resolving GET leaves the not-found state, not a resurrected server (297ms)
+  ✓  46 [chromium] › tests/e2e/server-detail.spec.ts:397:1 › @detail a server with an UNSUPPORTED_OS warning shows the amber inline note and stays CONNECTED, with no error banner (293ms)
+  ✓  47 [chromium] › tests/e2e/server-sheet.spec.ts:59:1 › @sheet Add server opens the sheet with Name focused, Private key preselected and port/user showing placeholders, not values (305ms)
+  ✓  48 [chromium] › tests/e2e/server-sheet.spec.ts:74:1 › @sheet Choose file fills the private-key textarea from a real file read, and the create request is JSON with the key under credential.privateKey, never multipart (411ms)
+  ✓  49 [chromium] › tests/e2e/server-sheet.spec.ts:119:1 › @sheet Save and connect on a valid form closes the sheet and lands on the server detail page (396ms)
+  ✓  50 [chromium] › tests/e2e/server-sheet.spec.ts:136:1 › @sheet Save without connecting closes the sheet, leaves the new row PENDING and issues no connect request (405ms)
+  ✓  51 [chromium] › tests/e2e/server-sheet.spec.ts:166:1 › @sheet submitting a duplicate name renders the NAME_TAKEN copy under Name and keeps the sheet open with input intact (448ms)
+  ✓  52 [chromium] › tests/e2e/server-sheet.spec.ts:193:1 › @sheet a real-shaped server-rejected VALIDATION_FAILED issue highlights its field inline, with no orphan "Check the highlighted fields" banner (412ms)
+  ✓  53 [chromium] › tests/e2e/server-sheet.spec.ts:239:1 › @sheet a real-shaped server-rejected /sshUser VALIDATION_FAILED issue highlights the SSH user field inline, and the request the sheet actually sent carries the typed sshUser (405ms)
+  ✓  54 [chromium] › tests/e2e/server-sheet.spec.ts:294:1 › @sheet submitting a port of 70000 renders an inline error under the SSH port field and never reaches the server (381ms)
+  ✓  55 [chromium] › tests/e2e/server-sheet.spec.ts:321:1 › @sheet opening Edit shows the credential collapsed to dots plus Replace, with no key text anywhere in the DOM (478ms)
+  ✓  56 [chromium] › tests/e2e/server-sheet.spec.ts:354:1 › @sheet Delete requires the exact name: the confirm button stays disabled until it matches, then deletes the row (494ms)
+  ✓  57 [chromium] › tests/e2e/server-sheet.spec.ts:391:1 › @sheet after the whole create/edit flow, neither storage nor navigation history contains the submitted key or password (491ms)
+  ✓  58 [chromium] › tests/e2e/servers-list.spec.ts:96:1 › @servers on a stack with no servers, the empty state renders its exact title, sentence and exactly one Add server action (244ms)
+  ✓  59 [chromium] › tests/e2e/servers-list.spec.ts:110:1 › @servers a never-resolving /api/servers response renders five skeleton rows and no spinner (241ms)
+  ✓  60 [chromium] › tests/e2e/servers-list.spec.ts:123:1 › @servers a 500 INTERNAL_ERROR renders the banner message and mono code, and Retry re-issues the request (280ms)
+  ✓  61 [chromium] › tests/e2e/servers-list.spec.ts:146:1 › @servers two ServerView rows render name, host:port, a matching status pill and an ISO tooltip on the relative last-seen (1.1s)
+  ✓  62 [chromium] › tests/e2e/servers-list.spec.ts:191:1 › @servers activating a row with the keyboard navigates to that server's detail URL (311ms)
+  ✓  63 [chromium] › tests/e2e/servers-list.spec.ts:211:1 › @servers a row's actions menu is absent until opened, then exposes Edit and Delete (361ms)
+  ✓  64 [chromium] › tests/e2e/servers-list.spec.ts:247:1 › @servers a server created while the list snapshots are still in flight still appears as a row (290ms)
+  ✓  65 [chromium] › tests/e2e/settings.spec.ts:29:1 › @settings the Instance group shows the version and public URL with exactly one copy button, always expanded (280ms)
+  ✓  66 [chromium] › tests/e2e/settings.spec.ts:42:1 › @settings the Advanced group is collapsed on load and expands to exactly five rows, each captioned (312ms)
+  ✓  67 [chromium] › tests/e2e/settings.spec.ts:62:1 › @settings the master key fingerprint renders a short mono digest with no 44-character base64-looking string anywhere (305ms)
+  ✓  68 [chromium] › tests/e2e/settings.spec.ts:81:1 › @settings the SSH timeout rows render seconds, never a raw millisecond count (328ms)
+  ✓  69 [chromium] › tests/e2e/settings.spec.ts:97:1 › @settings the screen has zero form controls anywhere in the main region (305ms)
+  ✓  70 [chromium] › tests/e2e/settings.spec.ts:112:1 › @settings a 500 shows the exact error banner with the code in mono, and Retry re-issues the request (306ms)
+  ✓  71 [chromium] › tests/e2e/settings.spec.ts:135:1 › @settings the loading state shows skeleton rows and no spinner (270ms)
+  ✓  72 [chromium] › tests/e2e/setup.spec.ts:17:1 › @setup every response carries Referrer-Policy: no-referrer (setup-token-url-hardening todo item 2) (106ms)
+  ✓  73 [chromium] › tests/e2e/setup.spec.ts:31:1 › @setup /setup?token=... strips the token from the URL after mount while the field stays pre-filled (192ms)
+  ✓  74 [chromium] › tests/e2e/setup.spec.ts:49:1 › @setup a stubbed 500 from POST /api/setup never renders the invalid-link banner (194ms)
+  ✓  75 [chromium] › tests/e2e/setup.spec.ts:65:1 › @setup a network failure on POST /api/setup renders the reachability message, never the invalid-link banner (195ms)
+  ✓  76 [chromium] › tests/e2e/setup.spec.ts:81:1 › @setup a VALIDATION_FAILED body with a mappable issue renders an inline field error, not a banner (192ms)
+  ✓  77 [chromium] › tests/e2e/shell.spec.ts:57:1 › @shell pressing Tab from page load moves through the skip link, the three sidebar items, the theme toggle, then sign out (289ms)
+  ✓  78 [chromium] › tests/e2e/shell.spec.ts:82:1 › @shell every focused sidebar item shows a visible, non-zero focus outline (255ms)
+  ✓  79 [chromium] › tests/e2e/shell.spec.ts:100:1 › @shell activating a sidebar item by keyboard navigates to its route (378ms)
+  ✓  80 [chromium] › tests/e2e/shell.spec.ts:118:1 › @shell the theme toggle cycles data-theme and the choice survives a reload (306ms)
+  ✓  81 [chromium] › tests/e2e/shell.spec.ts:133:1 › @shell the sidebar collapses to an icon rail at 1024px and a bottom sheet below 900px (300ms)
+  ✓  82 [chromium] › tests/e2e/shell.spec.ts:150:1 › @shell signing out returns to /login, and a subsequent direct visit to /servers redirects to /login again (318ms)
+  ✓  83 [chromium] › tests/e2e/shell.spec.ts:165:1 › @shell an authenticated visit to the bare origin lands on /servers (294ms)
+  ✓  84 [chromium] › tests/e2e/shell.spec.ts:172:1 › @shell an unauthenticated visit to the bare origin lands on /login (104ms)
+  ✓  85 [chromium] › tests/e2e/shell.spec.ts:190:1 › @shell a session revoked server-side redirects the open tab to /login without a manual reload (16.4s)
+  ✓  86 [chromium] › tests/e2e/shell.spec.ts:229:1 › @sse-live a real SSE frame published mid-connection reaches the browser through the same-origin proxy (306ms)
+  ✓  87 [chromium] › tests/e2e/shell.spec.ts:303:1 › @sse-slots abandoned event streams release their control-plane slot instead of exhausting the cap (354ms)
+  ✓  88 [chromium] › tests/e2e/shell.spec.ts:350:1 › @sse-recover the shell reconnects on its own after its event stream was refused at the connection cap (5.8s)
+  ✓  89 [chromium] › tests/e2e/smoke.spec.ts:12:1 › @smoke an unauthenticated visit to /servers ends on /login (110ms)
+  ✓  90 [chromium] › tests/e2e/smoke.spec.ts:17:1 › @smoke an unauthenticated GET /api/servers returns 401 (45ms)
+  ✓  91 [chromium] › tests/e2e/smoke.spec.ts:22:1 › @smoke the login form exposes accessible Email/Password fields and a login-submit control (89ms)
+  ✓  92 [chromium] › tests/e2e/smoke.spec.ts:31:1 › @smoke signing in with the preseeded admin ends on /servers (257ms)
+  ✓  93 [chromium] › tests/e2e/smoke.spec.ts:39:1 › @smoke a wrong password never reveals whether the account exists (179ms)
+
+
+  1) [chromium] › tests/e2e/host-key.spec.ts:429:1 › @hostkey UF-01 regression: editing the host while ERROR/HOST_KEY_CHANGED clears the pending fingerprint, so the trust affordance disappears and the trusted fingerprint stays unchanged 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "ssh-ed25519 SHA256:0YT++OJbqfolUdiU6O1+suTXfkYNzkxDX0Nkb3F8I9U"
+    Received: null
+
+      502 |     // The trusted fingerprint is untouched -- only the *pending* one was ever at risk of being
+      503 |     // promoted against the wrong identity, and it is now gone rather than silently promotable.
+    > 504 |     expect(afterEditBody.hostFingerprint).toBe(originalFingerprint);
+          |                                           ^
+      505 |     expect(afterEditBody.pendingFingerprint).toBeNull();
+      506 |   } finally {
+      507 |     await sshdA?.stop();
+        at /Users/xch4rt/work/myself/noodara/code/tests/e2e/host-key.spec.ts:504:43
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/host-key--hostkey-UF-01-re-7f322-fingerprint-stays-unchanged-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/host-key--hostkey-UF-01-re-7f322-fingerprint-stays-unchanged-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/e2e/host-key.spec.ts:429:1 › @hostkey UF-01 regression: editing the host while ERROR/HOST_KEY_CHANGED clears the pending fingerprint, so the trust affordance disappears and the trusted fingerprint stays unchanged 
+  92 passed (1.4m)
+ ELIFECYCLE  Command failed with exit code 1.
+pnpm test:e2e  53.88s user 12.32s system 77% cpu 1:24.95 total
+EXIT:1

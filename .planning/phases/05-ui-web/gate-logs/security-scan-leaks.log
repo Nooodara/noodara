@@ -1,0 +1,186 @@
+
+> noodara@ security:scan-leaks /Users/xch4rt/work/myself/noodara/code
+> vitest run --config vitest.integration.config.ts tests/integration/activity/canary.test.ts tests/integration/activity/canary-full-flow.test.ts tests/integration/activity/canary-http.test.ts && playwright test --grep @canary
+
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+
+> noodara@ build /Users/xch4rt/work/myself/noodara/code
+> turbo run build
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/config, @noodara/control-plane, @noodara/domain, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 6 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs 97649414a5c387f7
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ssh:build: cache hit, replaying logs 2ae39277ee688c17
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ui:build: cache hit, replaying logs 8e8501204650c615
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/control-plane:build: cache hit, replaying logs b05044df84723c9a
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.0.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
+@noodara/web:build: cache hit, replaying logs 2190e6d147cba2f9
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.0.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > next build
+@noodara/web:build: 
+@noodara/web:build: ▲ Next.js 16.3.5 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 55ms
+@noodara/web:build: 
+@noodara/web:build:   Creating an optimized production build ...
+@noodara/web:build: ✓ Compiled successfully in 515ms
+@noodara/web:build:   Running TypeScript ...
+@noodara/web:build:   Finished TypeScript in 1028ms ...
+@noodara/web:build:   Collecting page data using 11 workers ...
+@noodara/web:build:   Generating static pages using 11 workers (0/8) ...
+@noodara/web:build:   Generating static pages using 11 workers (2/8) 
+@noodara/web:build:   Generating static pages using 11 workers (4/8) 
+@noodara/web:build:   Generating static pages using 11 workers (6/8) 
+@noodara/web:build: ✓ Generating static pages using 11 workers (8/8) in 237ms
+@noodara/web:build:   Finalizing page optimization ...
+@noodara/web:build: 
+@noodara/web:build: Route (app)
+@noodara/web:build: ┌ ○ /
+@noodara/web:build: ├ ○ /_not-found
+@noodara/web:build: ├ ○ /activity
+@noodara/web:build: ├ ƒ /api/events
+@noodara/web:build: ├ ○ /login
+@noodara/web:build: ├ ○ /servers
+@noodara/web:build: ├ ƒ /servers/[id]
+@noodara/web:build: ├ ○ /settings
+@noodara/web:build: └ ○ /setup
+@noodara/web:build: 
+@noodara/web:build: 
+@noodara/web:build: ƒ Proxy (Middleware)
+@noodara/web:build: 
+@noodara/web:build: ○  (Static)   prerendered as static content
+@noodara/web:build: ƒ  (Dynamic)  server-rendered on demand
+@noodara/web:build: 
+
+ Tasks:    5 successful, 5 total
+Cached:    5 cached, 5 total
+  Time:    30ms >>> FULL TURBO
+
+{"level":40,"time":1789966497250,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"e38a7a1b99346506","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+(node:81311) [FSTWRN004] FastifyWarning: It seems that you are overriding an errorHandler in the same scope, which can lead to subtle bugs. To disable this behavior, set 'allowErrorHandlerOverride' to false. For more information, visit: https://fastify.dev/docs/latest/Reference/Server/#allowerrorhandleroverride
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"level":40,"time":1789966497264,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966497317,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966497420,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966497576,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966497780,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966498034,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966498338,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966498693,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966499096,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966499265,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1789966499268,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"GET","url":"/__canary/throw","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966499274,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":500},"responseTime":5.399541000000681,"msg":"request completed"}
+{"level":40,"time":1789966499552,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966500055,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966500609,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966501214,"pid":81311,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+
+ Test Files  3 passed (3)
+      Tests  3 passed (3)
+   Start at  22:54:45
+   Duration  21.97s (tests 93%, import 7%, transform 1%)
+
+
+> noodara@ build /Users/xch4rt/work/myself/noodara/code
+> turbo run build
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/config, @noodara/control-plane, @noodara/domain, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 6 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs 97649414a5c387f7
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ssh:build: cache hit, replaying logs 2ae39277ee688c17
+@noodara/ui:build: cache hit, replaying logs 8e8501204650c615
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/control-plane:build: cache hit, replaying logs b05044df84723c9a
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.0.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
+@noodara/web:build: cache hit, replaying logs 2190e6d147cba2f9
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.0.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > next build
+@noodara/web:build: 
+@noodara/web:build: ▲ Next.js 16.3.5 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 55ms
+@noodara/web:build: 
+@noodara/web:build:   Creating an optimized production build ...
+@noodara/web:build: ✓ Compiled successfully in 515ms
+@noodara/web:build:   Running TypeScript ...
+@noodara/web:build:   Finished TypeScript in 1028ms ...
+@noodara/web:build:   Collecting page data using 11 workers ...
+@noodara/web:build:   Generating static pages using 11 workers (0/8) ...
+@noodara/web:build:   Generating static pages using 11 workers (2/8) 
+@noodara/web:build:   Generating static pages using 11 workers (4/8) 
+@noodara/web:build:   Generating static pages using 11 workers (6/8) 
+@noodara/web:build: ✓ Generating static pages using 11 workers (8/8) in 237ms
+@noodara/web:build:   Finalizing page optimization ...
+@noodara/web:build: 
+@noodara/web:build: Route (app)
+@noodara/web:build: ┌ ○ /
+@noodara/web:build: ├ ○ /_not-found
+@noodara/web:build: ├ ○ /activity
+@noodara/web:build: ├ ƒ /api/events
+@noodara/web:build: ├ ○ /login
+@noodara/web:build: ├ ○ /servers
+@noodara/web:build: ├ ƒ /servers/[id]
+@noodara/web:build: ├ ○ /settings
+@noodara/web:build: └ ○ /setup
+@noodara/web:build: 
+@noodara/web:build: 
+@noodara/web:build: ƒ Proxy (Middleware)
+@noodara/web:build: 
+@noodara/web:build: ○  (Static)   prerendered as static content
+@noodara/web:build: ƒ  (Dynamic)  server-rendered on demand
+@noodara/web:build: 
+
+ Tasks:    5 successful, 5 total
+Cached:    5 cached, 5 total
+  Time:    30ms >>> FULL TURBO
+
+
+Running 1 test using 1 worker
+
+  ✓  1 [chromium] › tests/e2e/canary-ui.spec.ts:53:1 › @canary a per-run password canary and a per-run passphrase canary never reach rendered HTML, console, storage, the URL/history, or any response body across the whole UI flow (2.1s)
+
+  1 passed (9.0s)
+pnpm security:scan-leaks  11.72s user 2.62s system 44% cpu 32.065 total
+EXIT:0

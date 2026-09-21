@@ -1,0 +1,53 @@
+
+> noodara@ build /Users/xch4rt/work/myself/noodara/code
+> turbo run build
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/config, @noodara/control-plane, @noodara/domain, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 6 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs 9cedfd0c12eb1bfa
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ssh:build: cache hit, replaying logs 3d21858996069bc8
+@noodara/ui:build: cache hit, replaying logs 1fdec1e255f5f56d
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/web:build: cache miss, executing 89c0d330ce22a461
+@noodara/control-plane:build: cache miss, executing ed421721cf870682
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.0.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.0.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > next build
+@noodara/web:build: 
+@noodara/web:build: ▲ Next.js 16.3.5 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 86ms
+@noodara/web:build: 
+@noodara/web:build: > Build error occurred
+@noodara/web:build: Error: NOODARA_API_ORIGIN is required (the control plane origin apps/web proxies /api/* to, e.g. http://localhost:3100 in dev) -- set it before running next dev/build.
+@noodara/web:build:     at readApiOrigin (next.config.compiled.js:24:15)
+@noodara/web:build:     at Object.rewrites (next.config.compiled.js:31:27)
+@noodara/web:build:  ELIFECYCLE  Command failed with exit code 1.
+@noodara/control-plane:build:  ELIFECYCLE  Command failed.
+@noodara/web#build:  ERROR  command (/Users/xch4rt/work/myself/noodara/code/apps/web) /opt/homebrew/bin/pnpm run build exited (1)
+
+ Tasks:    3 successful, 5 total
+Cached:    3 cached, 5 total
+  Time:    1.531s 
+Failed:    @noodara/web#build
+
+ ERROR  run failed: command  exited (1)
+ ELIFECYCLE  Command failed with exit code 1.

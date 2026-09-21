@@ -1,0 +1,1215 @@
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+
+> noodara@ build /Users/xch4rt/work/myself/noodara/code
+> turbo run build
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/config, @noodara/control-plane, @noodara/domain, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 6 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs 97649414a5c387f7
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ssh:build: cache hit, replaying logs 2ae39277ee688c17
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ui:build: cache hit, replaying logs 8e8501204650c615
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/control-plane:build: cache hit, replaying logs b05044df84723c9a
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.0.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
+@noodara/web:build: cache hit, replaying logs 2190e6d147cba2f9
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.0.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > next build
+@noodara/web:build: 
+@noodara/web:build: ▲ Next.js 16.3.5 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 55ms
+@noodara/web:build: 
+@noodara/web:build:   Creating an optimized production build ...
+@noodara/web:build: ✓ Compiled successfully in 515ms
+@noodara/web:build:   Running TypeScript ...
+@noodara/web:build:   Finished TypeScript in 1028ms ...
+@noodara/web:build:   Collecting page data using 11 workers ...
+@noodara/web:build:   Generating static pages using 11 workers (0/8) ...
+@noodara/web:build:   Generating static pages using 11 workers (2/8) 
+@noodara/web:build:   Generating static pages using 11 workers (4/8) 
+@noodara/web:build:   Generating static pages using 11 workers (6/8) 
+@noodara/web:build: ✓ Generating static pages using 11 workers (8/8) in 237ms
+@noodara/web:build:   Finalizing page optimization ...
+@noodara/web:build: 
+@noodara/web:build: Route (app)
+@noodara/web:build: ┌ ○ /
+@noodara/web:build: ├ ○ /_not-found
+@noodara/web:build: ├ ○ /activity
+@noodara/web:build: ├ ƒ /api/events
+@noodara/web:build: ├ ○ /login
+@noodara/web:build: ├ ○ /servers
+@noodara/web:build: ├ ƒ /servers/[id]
+@noodara/web:build: ├ ○ /settings
+@noodara/web:build: └ ○ /setup
+@noodara/web:build: 
+@noodara/web:build: 
+@noodara/web:build: ƒ Proxy (Middleware)
+@noodara/web:build: 
+@noodara/web:build: ○  (Static)   prerendered as static content
+@noodara/web:build: ƒ  (Dynamic)  server-rendered on demand
+@noodara/web:build: 
+
+ Tasks:    5 successful, 5 total
+Cached:    5 cached, 5 total
+  Time:    33ms >>> FULL TURBO
+
+{"level":40,"time":1789966266794,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"570f8892be3fdf96","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966266852,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966266956,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966267111,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966267313,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966267565,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966267867,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966268221,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966268624,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966268813,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1789966268816,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966268915,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":98.28820799999994,"msg":"request completed"}
+{"level":30,"time":1789966268915,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966268958,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":42.758834000000206,"msg":"request completed"}
+{"level":30,"time":1789966268959,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1789966269077,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966269078,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1789966269079,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":120.60924999999952,"msg":"request completed"}
+{"level":30,"time":1789966269088,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/servers/01a0c24d-ba25-745a-a295-5a3a833349e2/trust-fingerprint","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966269094,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":409},"responseTime":6.334457999999358,"msg":"request completed"}
+{"level":40,"time":1789966269581,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966270135,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966270740,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending
+[redis] publisher connection error: AggregateError
+
+ ✓ tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 FINGERPRINT_MISMATCH and promotes nothing when the submitted fingerprint does not match pending 8125ms
+{"level":40,"time":1789966273769,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"e35350d2c2208349","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966273825,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966273928,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966274081,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966274285,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966274537,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966274840,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966275192,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966275599,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966275778,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1789966275778,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966275839,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":61.01745799999844,"msg":"request completed"}
+{"level":30,"time":1789966275839,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966275877,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":38.069124999999985,"msg":"request completed"}
+{"level":30,"time":1789966275878,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966276052,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1789966276056,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":178.67291599999953,"msg":"request completed"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966276057,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":30,"time":1789966276060,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/servers/01a0c24d-d52b-7f61-bc67-70ba4dab3c2f/trust-fingerprint","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966276559,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966277108,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1789966277109,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":200},"responseTime":1048.9642920000006,"msg":"request completed"}
+{"level":40,"time":1789966277110,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966277713,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966278369,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966279072,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly
+[redis] publisher connection error: AggregateError
+
+ ✓ tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 200 and promotes host_fingerprint when the submitted fingerprint matches pending exactly 7682ms
+{"level":40,"time":1789966282064,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"5c42d3468258c893","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966282120,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966282222,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966282376,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966282577,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966282830,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966283134,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966283490,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966283894,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966284072,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1789966284073,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966284167,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":94.69154200000048,"msg":"request completed"}
+{"level":30,"time":1789966284168,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966284215,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":47.05387499999779,"msg":"request completed"}
+{"level":30,"time":1789966284215,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1789966284348,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966284348,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1789966284349,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":134.14741700000013,"msg":"request completed"}
+{"level":30,"time":1789966284352,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/servers/01a0c24d-f5c6-7dde-97b3-a2270cb5ba4a/trust-fingerprint","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966284356,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":400},"responseTime":3.7591669999965234,"msg":"request completed"}
+{"level":40,"time":1789966284851,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966285406,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966286010,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint
+[redis] publisher connection error: AggregateError
+
+ ✓ tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing when the body has no fingerprint 7242ms
+{"level":40,"time":1789966288510,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"777b2f1bab92e0d8","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966288563,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966288668,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966288822,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966289025,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966289279,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966289582,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966289936,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966290338,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966290516,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1789966290517,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966290595,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":77.9910830000008,"msg":"request completed"}
+{"level":30,"time":1789966290596,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966290636,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":40.1986250000009,"msg":"request completed"}
+{"level":30,"time":1789966290636,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1789966290792,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966290792,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":30,"time":1789966290793,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":156.94124999999985,"msg":"request completed"}
+{"level":30,"time":1789966290798,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/servers/01a0c24e-0ed1-77de-b9b3-bdb0aa32080b/trust-fingerprint","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966290803,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":400},"responseTime":4.084375000002183,"msg":"request completed"}
+{"level":40,"time":1789966291296,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966291851,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966292454,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+ ✓ tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 400 VALIDATION_FAILED and promotes nothing for an empty-string fingerprint 6418ms
+{"level":40,"time":1789966295272,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"e48ea2fc9dcfc64e","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966295327,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966295432,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966295586,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966295791,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966296044,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966296346,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966296701,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966297104,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966297288,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1789966297288,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966297350,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":61.71716600000218,"msg":"request completed"}
+{"level":30,"time":1789966297350,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966297386,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":36.34754200000316,"msg":"request completed"}
+{"level":30,"time":1789966297387,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1789966297558,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966297559,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1789966297561,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":174.01699999999983,"msg":"request completed"}
+{"level":30,"time":1789966297565,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/servers/01a0c24e-292f-72c1-94c7-d203cb1da469/trust-fingerprint","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966297572,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":409},"responseTime":7.037917000001471,"msg":"request completed"}
+{"level":40,"time":1789966298063,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966298616,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966299225,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966301789,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"1b57b5ed11091f21","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966301842,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966301945,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966302100,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966302305,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966302559,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966302861,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966303217,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966303621,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966303798,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1789966303799,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966303873,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":74.66783399999986,"msg":"request completed"}
+{"level":30,"time":1789966303874,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966303918,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":44.639374999998836,"msg":"request completed"}
+{"level":30,"time":1789966303918,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1789966304074,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966304074,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1789966304075,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":156.5221670000028,"msg":"request completed"}
+{"level":30,"time":1789966304081,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/servers/01a0c24e-42b6-70d3-adaf-ef112d8e6e77/trust-fingerprint","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966304088,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":409},"responseTime":6.329375000001164,"msg":"request completed"}
+ ✓ tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > never promotes a fingerprint that changed after the admin last saw it (TOCTOU, the todo's own scenario) 6931ms
+{"level":40,"time":1789966304577,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966305128,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966305733,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1)
+[redis] subscriber connection error: AggregateError
+
+ ✓ tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later AUTH_FAILED supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 1) 6278ms
+{"level":40,"time":1789966308504,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"a1b5ee8398de8c20","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966308513,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966308566,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966308669,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966308821,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966309025,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966309277,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966309580,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966309935,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966310339,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966310512,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1789966310513,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966310597,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":84.2422910000023,"msg":"request completed"}
+{"level":30,"time":1789966310598,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966310639,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":41.1096250000046,"msg":"request completed"}
+{"level":30,"time":1789966310639,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966310791,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1789966310791,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":152.3242919999975,"msg":"request completed"}
+{"level":40,"time":1789966310792,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] subscriber connection error: AggregateError
+
+{"level":30,"time":1789966310795,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/servers/01a0c24e-5cf3-7f4d-a9b8-dad5ccffc2f4/trust-fingerprint","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966310800,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":409},"responseTime":4.461624999996275,"msg":"request completed"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966311295,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966311847,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966312452,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2)
+[redis] subscriber connection error: AggregateError
+
+ ✓ tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 SERVER_NOT_TRUSTABLE and promotes nothing when a later COMMAND_TIMEOUT supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 2) 6724ms
+{"level":40,"time":1789966314967,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"aeeb3a595fdeedbb","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966315021,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966315125,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966315281,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966315483,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966315736,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966316039,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966316393,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966316796,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966316975,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1789966316976,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966317050,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":73.86845800000447,"msg":"request completed"}
+{"level":30,"time":1789966317050,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966317096,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":45.97529200000281,"msg":"request completed"}
+{"level":30,"time":1789966317096,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966317250,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] subscriber connection error: AggregateError
+
+{"level":30,"time":1789966317251,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":154.2749580000018,"msg":"request completed"}
+{"level":40,"time":1789966317251,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":30,"time":1789966317254,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/servers/01a0c24e-762f-720b-a978-9fcd5f4c7daf/trust-fingerprint","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966317258,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":409},"responseTime":3.634541999999783,"msg":"request completed"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966317755,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966318311,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966318913,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3)
+[redis] subscriber connection error: AggregateError
+
+ ✓ tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 409 and promotes nothing when a later successful reconnect supersedes the parked HOST_KEY_CHANGED (gap 6 / GR-01 bypass, case 3) 6456ms
+{"level":40,"time":1789966321932,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"75f4ad84eb3bf468","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966321987,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966322091,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966322242,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966322447,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966322698,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966323002,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966323355,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966323759,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966323940,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1789966323940,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966324002,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":62.16195799999696,"msg":"request completed"}
+{"level":30,"time":1789966324002,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966324041,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":38.370583000003535,"msg":"request completed"}
+{"level":30,"time":1789966324041,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1789966324214,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966324215,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1789966324216,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":174.9980829999986,"msg":"request completed"}
+{"level":30,"time":1789966324225,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/servers/01a0c24e-914d-7bab-aa69-6c65c040de7f/trust-fingerprint","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966324233,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":409},"responseTime":8.236916999994719,"msg":"request completed"}
+{"level":40,"time":1789966324720,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966325274,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966325879,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5)
+[redis] publisher connection error: AggregateError
+
+ ✓ tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > the refusal body for the superseded-parking bypass leaks nothing (gap 6 / GR-01 bypass, case 5) 7366ms
+{"level":40,"time":1789966329020,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"cc8c85a67d5ecf04","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966329074,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966329176,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966329330,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966329533,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966329787,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966330090,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966330444,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966330847,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966331027,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1789966331028,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966331087,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":59.591207999998005,"msg":"request completed"}
+{"level":30,"time":1789966331088,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966331125,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":37.010083999994094,"msg":"request completed"}
+{"level":30,"time":1789966331125,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1789966331299,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966331299,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1789966331299,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":174.50387499999488,"msg":"request completed"}
+{"level":30,"time":1789966331301,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/servers/01a0c24e-acf9-7da6-8dbb-9a6b6c9ebed5/trust-fingerprint","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966331304,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":409},"responseTime":2.9435000000084983,"msg":"request completed"}
+{"level":40,"time":1789966331803,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966332356,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966332958,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status
+[redis] publisher connection error: AggregateError
+
+ ✓ tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns a typed 409 SERVER_NOT_TRUSTABLE, never a 500, when trusting from a non-ERROR status 6684ms
+{"level":40,"time":1789966335419,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"f354d37f3f2ca85a","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966335425,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966335478,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966335583,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966335737,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966335939,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966336193,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966336495,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966336848,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966337252,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1789966337426,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1789966337427,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/servers/768d7f5e-b69a-4e4a-a767-eba16194fccf/trust-fingerprint","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1789966337428,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":401},"responseTime":1.5543330000073183,"msg":"request completed"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966337706,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1789966338210,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966338763,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1789966339365,"pid":78890,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie
+[redis] subscriber connection error: AggregateError
+
+ ✓ tests/integration/servers/trust-fingerprint-binding.test.ts > POST /api/servers/:id/trust-fingerprint binds to the fingerprint the admin actually saw (gap 6, T-5G-27) > returns 401 with no cookie 6113ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  22:51:02
+   Duration  77.16s (tests 99%, import 1%)
+
+EXIT:0

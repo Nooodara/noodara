@@ -1,0 +1,14 @@
+
+> noodara@ test /Users/xch4rt/work/myself/noodara/code
+> vitest run
+
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+Not implemented: navigation to another Document
+
+ Test Files  119 passed (119)
+      Tests  1525 passed (1525)
+   Start at  21:26:51
+   Duration  7.17s (environment 36%, tests 31%, import 13%, setup 10%, transform 9%, worker 1%)
+

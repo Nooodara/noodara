@@ -1,0 +1,159 @@
+
+> noodara@ test:boot /Users/xch4rt/work/myself/noodara/code
+> vitest run --config vitest.integration.config.ts tests/integration/boot/boot-command.test.ts
+
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+
+> noodara@ build /Users/xch4rt/work/myself/noodara/code
+> turbo run build
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/config, @noodara/control-plane, @noodara/domain, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 6 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs 97649414a5c387f7
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ssh:build: cache hit, replaying logs 2ae39277ee688c17
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/control-plane:build: cache hit, replaying logs b05044df84723c9a
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.0.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
+@noodara/ui:build: cache hit, replaying logs 8e8501204650c615
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/web:build: cache hit, replaying logs 2190e6d147cba2f9
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.0.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > next build
+@noodara/web:build: 
+@noodara/web:build: ▲ Next.js 16.3.5 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 55ms
+@noodara/web:build: 
+@noodara/web:build:   Creating an optimized production build ...
+@noodara/web:build: ✓ Compiled successfully in 515ms
+@noodara/web:build:   Running TypeScript ...
+@noodara/web:build:   Finished TypeScript in 1028ms ...
+@noodara/web:build:   Collecting page data using 11 workers ...
+@noodara/web:build:   Generating static pages using 11 workers (0/8) ...
+@noodara/web:build:   Generating static pages using 11 workers (2/8) 
+@noodara/web:build:   Generating static pages using 11 workers (4/8) 
+@noodara/web:build:   Generating static pages using 11 workers (6/8) 
+@noodara/web:build: ✓ Generating static pages using 11 workers (8/8) in 237ms
+@noodara/web:build:   Finalizing page optimization ...
+@noodara/web:build: 
+@noodara/web:build: Route (app)
+@noodara/web:build: ┌ ○ /
+@noodara/web:build: ├ ○ /_not-found
+@noodara/web:build: ├ ○ /activity
+@noodara/web:build: ├ ƒ /api/events
+@noodara/web:build: ├ ○ /login
+@noodara/web:build: ├ ○ /servers
+@noodara/web:build: ├ ƒ /servers/[id]
+@noodara/web:build: ├ ○ /settings
+@noodara/web:build: └ ○ /setup
+@noodara/web:build: 
+@noodara/web:build: 
+@noodara/web:build: ƒ Proxy (Middleware)
+@noodara/web:build: 
+@noodara/web:build: ○  (Static)   prerendered as static content
+@noodara/web:build: ƒ  (Dynamic)  server-rendered on demand
+@noodara/web:build: 
+
+ Tasks:    5 successful, 5 total
+Cached:    5 cached, 5 total
+  Time:    35ms >>> FULL TURBO
+
+
+> noodara@ build /Users/xch4rt/work/myself/noodara/code
+> turbo run build
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/config, @noodara/control-plane, @noodara/domain, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 6 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs 97649414a5c387f7
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ssh:build: cache hit, replaying logs 2ae39277ee688c17
+@noodara/ui:build: cache hit, replaying logs 8e8501204650c615
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.0.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/web:build: cache hit, replaying logs 2190e6d147cba2f9
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.0.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > next build
+@noodara/web:build: 
+@noodara/web:build: ▲ Next.js 16.3.5 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 55ms
+@noodara/web:build: 
+@noodara/web:build:   Creating an optimized production build ...
+@noodara/web:build: ✓ Compiled successfully in 515ms
+@noodara/web:build:   Running TypeScript ...
+@noodara/web:build:   Finished TypeScript in 1028ms ...
+@noodara/web:build:   Collecting page data using 11 workers ...
+@noodara/web:build:   Generating static pages using 11 workers (0/8) ...
+@noodara/web:build:   Generating static pages using 11 workers (2/8) 
+@noodara/web:build:   Generating static pages using 11 workers (4/8) 
+@noodara/web:build:   Generating static pages using 11 workers (6/8) 
+@noodara/web:build: ✓ Generating static pages using 11 workers (8/8) in 237ms
+@noodara/web:build:   Finalizing page optimization ...
+@noodara/web:build: 
+@noodara/web:build: Route (app)
+@noodara/web:build: ┌ ○ /
+@noodara/web:build: ├ ○ /_not-found
+@noodara/web:build: ├ ○ /activity
+@noodara/web:build: ├ ƒ /api/events
+@noodara/web:build: ├ ○ /login
+@noodara/web:build: ├ ○ /servers
+@noodara/web:build: ├ ƒ /servers/[id]
+@noodara/web:build: ├ ○ /settings
+@noodara/web:build: └ ○ /setup
+@noodara/web:build: 
+@noodara/web:build: 
+@noodara/web:build: ƒ Proxy (Middleware)
+@noodara/web:build: 
+@noodara/web:build: ○  (Static)   prerendered as static content
+@noodara/web:build: ƒ  (Dynamic)  server-rendered on demand
+@noodara/web:build: 
+@noodara/control-plane:build: cache hit, replaying logs b05044df84723c9a
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.0.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
+
+ Tasks:    5 successful, 5 total
+Cached:    5 cached, 5 total
+  Time:    26ms >>> FULL TURBO
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  21:27:10
+   Duration  54.62s (tests 99%, import 1%)
+
