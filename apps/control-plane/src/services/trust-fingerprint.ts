@@ -57,6 +57,11 @@ export type TrustFingerprintResult =
  * Trust affordance on this same condition; that UI check is now a UX convenience layered on an
  * enforced backend rule, not the only control (the restriction CLAUDE.md §2.3 forbids relying on
  * the UI alone for).
+ *
+ * WR-01: the promote also clears `lastErrorCode` alongside the fields it already copies/clears.
+ * `deriveDetailState` (apps/web/src/lib/detail-state.ts) keys the HOST_KEY_CHANGED banner directly
+ * off that column, so leaving it set would show a stale error banner after a trust the admin just
+ * correctly completed, until an unrelated later connect attempt cleared it incidentally.
  */
 export async function trustFingerprint(
   deps: ServerServicesDeps,
@@ -138,6 +143,7 @@ export async function trustFingerprint(
         hostFingerprintCapturedAt: now,
         pendingFingerprint: null,
         pendingFingerprintSeenAt: null,
+        lastErrorCode: null,
         status: nextStatus,
         updatedAt: now,
       })
