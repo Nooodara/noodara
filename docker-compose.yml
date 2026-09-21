@@ -31,9 +31,9 @@ services:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required -- write /opt/noodara/.env before running docker compose}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required -- write /opt/noodara/.env before running docker compose}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required -- write /opt/noodara/.env before running docker compose}
     volumes:
       - noodara_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -49,16 +49,16 @@ services:
   # T-06-33/Pitfall 4: docker-compose.dev.yml's redis service has no `environment:` block, so its
   # own `$${REDIS_PASSWORD}` healthcheck reference is undefined INSIDE the container's shell when
   # the healthcheck actually runs there -- it reports unhealthy forever despite `redis-cli ping`
-  # working manually. The `environment: REDIS_PASSWORD: ${REDIS_PASSWORD}` entry below is what
-  # makes the identical-looking healthcheck below actually work: it gives the container-side shell
+  # working manually. The `environment: REDIS_PASSWORD:` entry below is what makes the
+  # identical-looking healthcheck below actually work: it gives the container-side shell
   # a real value to substitute at `$$REDIS_PASSWORD`. Verify with `docker inspect
   # --format='{{.State.Health.Status}}'`, never just "container is running".
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ['redis-server', '--requirepass', '${REDIS_PASSWORD}']
+    command: ['redis-server', '--requirepass', '${REDIS_PASSWORD:?REDIS_PASSWORD is required -- write /opt/noodara/.env before running docker compose}']
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required -- write /opt/noodara/.env before running docker compose}
     volumes:
       - noodara_redis_data:/data
     healthcheck:
@@ -72,7 +72,7 @@ services:
           memory: 96M # Measured idle RSS 5-16MiB across runs; >=2x headroom over the high end (6.0x).
 
   migrate:
-    image: ${NOODARA_IMAGE_PREFIX}/noodara-control-plane:${NOODARA_VERSION}
+    image: ${NOODARA_IMAGE_PREFIX:?NOODARA_IMAGE_PREFIX is required}/noodara-control-plane:${NOODARA_VERSION:?NOODARA_VERSION is required -- never use the unversioned tag, D-04}
     command: ['node', 'dist/db/migrate.js']
     env_file:
       - .env
@@ -88,7 +88,7 @@ services:
           memory: 192M
 
   api:
-    image: ${NOODARA_IMAGE_PREFIX}/noodara-control-plane:${NOODARA_VERSION}
+    image: ${NOODARA_IMAGE_PREFIX:?NOODARA_IMAGE_PREFIX is required}/noodara-control-plane:${NOODARA_VERSION:?NOODARA_VERSION is required -- never use the unversioned tag, D-04}
     command: ['node', 'dist/server.js']
     env_file:
       - .env
@@ -115,7 +115,7 @@ services:
           memory: 256M # Measured idle RSS 66-75MiB across runs; >=2x headroom over the high end (3.4x).
 
   worker:
-    image: ${NOODARA_IMAGE_PREFIX}/noodara-control-plane:${NOODARA_VERSION}
+    image: ${NOODARA_IMAGE_PREFIX:?NOODARA_IMAGE_PREFIX is required}/noodara-control-plane:${NOODARA_VERSION:?NOODARA_VERSION is required -- never use the unversioned tag, D-04}
     command: ['node', 'dist/worker.js']
     env_file:
       - .env
@@ -138,9 +138,9 @@ services:
           memory: 256M # Measured idle RSS 50-59MiB across runs; >=2x headroom over the high end (4.3x).
 
   web:
-    image: ${NOODARA_IMAGE_PREFIX}/noodara-web:${NOODARA_VERSION}
+    image: ${NOODARA_IMAGE_PREFIX:?NOODARA_IMAGE_PREFIX is required}/noodara-web:${NOODARA_VERSION:?NOODARA_VERSION is required -- never use the unversioned tag, D-04}
     ports:
-      - '${NOODARA_PORT}:3000' # The only published port in this whole file.
+      - '${NOODARA_PORT:?NOODARA_PORT is required}:3000' # The only published port in this whole file.
     depends_on:
       api:
         condition: service_healthy
