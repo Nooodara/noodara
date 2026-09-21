@@ -174,3 +174,131 @@ None — no external service configuration required.
 ## Self-Check: PASSED
 
 All 4 relevant files (`install.sh`, `tests/unit/installer/main-flow.test.ts`, `tests/unit/installer/skeleton.test.ts`, this SUMMARY) verified present on disk; all 7 task/fix commit hashes (`4f2ee24`, `ca8019f`, `344f0ad`, `d62f5c8`, `c759066`, `8cef021`, `37533b1`) verified present in `git log --oneline --all`.
+
+## Post-execution fix
+
+An orchestrator audit of this plan's `noodara_main` found four bugs on the re-run/upgrade path
+(all on files this plan itself touched — INST-02 idempotency, D-09/D-10/D-12/D-13). Fixed here as
+a direct follow-up, TDD RED→GREEN, no new `PLAN.md`.
+
+### Finding A — every re-run failed preflight with "port in use"
+
+`noodara_check_port` failed with exit 16 whenever the panel port was listening — on an existing
+installation that listener is Noodara's own `web` container, so every re-run/upgrade died in
+preflight before doing anything. Fixed: on an existing installation (`noodara_is_installed`, D-10's
+own `.env`-exists signal) the busy-port check is skipped entirely — that port being in use is
+expected. A fresh install keeps the exact original check. An operator-supplied `NOODARA_PORT` that
+disagrees with the port already recorded in `.env` gets a single warning naming both values and
+pointing at editing `.env`; `.env` always wins (the additive merge already never rewrote it — this
+warning makes that guarantee visible instead of a silent no-op). `noodara_preflight`'s documented
+order and its "writes nothing" invariant are both unchanged.
+
+### Finding B — the re-run summary could advertise the wrong panel URL/port; upgrade needlessly depended on public-IP lookups
+
+`noodara_main` re-resolved the public URL and port from scratch on every upgrade (three external
+IP services, then `ip route`) even though `.env` already had the answer, and could print a
+different URL/port than the one actually written to `.env`. A host with no outbound access to
+those services used to fail an upgrade with exit 41 for no real reason. Fixed: a new
+`noodara_resolve_installed_public_url` reads `NOODARA_PUBLIC_URL` straight out of `.env` (via
+`noodara_env_get_value`) and only falls back to network resolution when the key is genuinely
+missing from `.env`; the panel port is read the same way directly in `noodara_main`. The value read
+back from `.env` is still passed through `noodara_validate_public_url` before ever being printed
+(an operator may have hand-edited the file). `noodara_check_ufw` and `noodara_print_summary` now
+take the already-resolved port as an explicit parameter (falling back to the original
+`noodara_resolve_port` when called with none, so every pre-existing direct caller/test is
+unaffected) so the ufw advisory and the summary can never disagree with what is actually in `.env`.
+An explicit `NOODARA_PUBLIC_URL` override that disagrees with the recorded value gets the identical
+single warning pattern as the port above.
+
+### Finding C — a same-version re-run was not the no-op D-09 requires
+
+D-09's own text is explicit, not silent, about this case: *"si ya está en esa versión, no cambia
+nada y solo verifica salud"* ("if already on that version, nothing changes and it only verifies
+health"). The pre-fix code still wrote a fresh `.env.bak-<timestamp>` (a full copy of every secret
+on disk), rewrote `.env`'s `NOODARA_VERSION` line, re-placed the compose file, pulled images and ran
+`docker compose up -d` on every same-version re-run. Fixed: `noodara_main` now detects a true no-op
+— target version equals `.env`'s `NOODARA_VERSION` **and** every key the additive merge would
+otherwise append (`NOODARA_IMAGE_PREFIX`, `NOODARA_PORT`, `NOODARA_PUBLIC_URL`) is already present
+— and, in that case, skips the backup/merge, skips `docker compose pull`, **and skips
+`docker compose up -d` itself**, going straight to the health check and summary. **Decision** (D-09
+was not actually silent, so this is a literal reading, not a judgment call): `docker compose up -d`
+does **not** run on a true no-op, matching D-09's own "nothing changes" wording exactly — it does
+not attempt to repair a manually-stopped stack in that case, which is D-09's stated behavior for
+v0.1, not an oversight. When a release adds a required key, the additive merge (with its one
+backup) still runs even at the same version. `docker-compose.yml` is still re-placed unconditionally
+(harmless — it is always the same static content install.sh itself embeds, regardless of
+`NOODARA_VERSION`).
+
+### Finding D — a stale setup token could be printed after an admin already exists
+
+`noodara_read_setup_token` takes the last `NOODARA_SETUP_TOKEN=` line out of
+`docker compose logs api`'s full log **history**. `bootstrapAdmin` only re-emits that line at boot
+time, so on a re-run where the `api` container was not recreated (Finding C's own no-op path is
+exactly that case), an earlier boot's token line is still sitting in the log even after an admin
+has since been created through the panel — the summary would print a stale, meaningless token,
+contradicting D-13/INST-04.
+
+**Chosen signal:** `noodara_probe_admin_exists` reuses the *existing* `POST /api/setup` route
+(`apps/control-plane/src/routes/setup.ts`) exactly as it already behaves — **no
+`apps/control-plane` change was needed**, contrary to the objective's fallback-heuristic framing.
+Read before choosing this: the route calls `adminExists()` **before** ever looking at the submitted
+token (D-02's "the setup route disappears once an admin exists" rule), so a deliberately-invalid,
+non-secret placeholder token/email/password can never succeed either way, and the response status
+alone reveals which branch was taken — 404 means an admin exists, 400 (`setup-service.ts`'s own
+`TOKEN_INVALID`) means it does not. `redeemSetupToken` looks the token up by its hash **before**
+validating email/password, so the placeholder email/password are never reached, and this failure
+path writes zero activity events. `login-guard.ts`'s progressive lockout (AUTH-04) only hooks Better
+Auth's own `/sign-in/email` path, never this plain Fastify route — confirmed by reading it, per the
+objective's own instruction. The probe runs via `docker compose exec -T api node -e ...` (the same
+"no host port needed" pattern this repo's own compose healthchecks already use for `/health`),
+since `api` publishes no host port (same-origin, D-10).
+
+**Limits, stated honestly:** the probe prints exactly one of `exists`/`missing`/`unknown` and always
+exits 0 — it never fails the whole installer over its own inconclusive result.
+`noodara_print_summary` treats `exists` as authoritative (skips the log read entirely) and falls
+back to the original D-13 log-reading behavior for `missing`/`unknown`. This means: if the exec
+probe itself cannot run for some other reason (an unusual `docker compose exec` failure, a network
+error *inside* the container reaching its own `127.0.0.1:3000`), a same-version no-op re-run could
+still, in that narrow case, print a stale token exactly as before this fix — this is the one
+documented, honest limitation of this approach. No `apps/control-plane` change is proposed as a
+follow-up, since the existing route already provides a fully reliable signal in the normal case.
+
+### Also (process)
+
+The full `pnpm test` unit suite is now run after every task by this fix's own process (not just the
+touched test file) — the objective's own prompt named this as the concrete failure mode from the
+original plan execution (two commits shipped with `skeleton.test.ts` red). Verified clean at every
+commit boundary in this follow-up.
+
+### Verification
+
+- `pnpm check:posix-sh` — clean (2009 lines).
+- `pnpm test` — 126 files / 2083 tests green. 14 new unique `it()` cases added across
+  `preflight.test.ts` (5, Finding A) and `main-flow.test.ts` (9, Findings B/C/D) — 28 test
+  executions once doubled across `/bin/sh` and real `/bin/dash`; the canary-extension commit added
+  assertions to existing/new test bodies rather than further `it()` blocks.
+- `pnpm lint` / `pnpm typecheck` — clean (9/8 cached tasks; neither `install.sh` nor
+  `tests/unit/installer/*.test.ts` are part of any package's lint/typecheck project, matching this
+  phase's pre-existing convention).
+- Orchestrator's own Finding A repro (install dir with `.env`, `ss` reporting the recorded port
+  listening) now passes preflight; a fresh install with a busy port still exits 16.
+- Same-version re-run: `.env` byte-identical (SHA-256 checksum before/after), zero `.env.bak-*`
+  created, no `compose pull`/`compose up -d` in the recorded `docker` argv, health check and
+  summary still ran.
+- Canary/secret-leak coverage extended to the same-version, version-changed-upgrade and
+  half-finished-install re-run paths — all green.
+
+### Commits
+
+- `8dae6bf` test(06-09): add failing tests for re-run preflight port handling (Finding A)
+- `60af6ec` fix(06-09): stop preflight failing an existing installation's own busy panel port (Finding A)
+- `5900be7` test(06-09): add failing tests for upgrade URL/port sourcing, same-version no-op and stale setup token (Findings B, C, D)
+- `8dc27a4` fix(06-09): source re-run URL/port from .env, no-op a same-version re-run, and probe admin existence before trusting a stale token (Findings B, C, D)
+- `8d83299` test(06-09): extend secret-leak canary coverage to same-version, upgrade and half-finished re-run paths
+
+### Not fully implemented
+
+- Nothing from the four findings was deferred — A, B, C and D are all fixed and tested.
+- Finding D's "unknown" fallback path (log-reading heuristic) retains the same theoretical staleness
+  window as before this fix, in the narrow case where the exec-based probe itself cannot run —
+  documented above, not silently left out.
