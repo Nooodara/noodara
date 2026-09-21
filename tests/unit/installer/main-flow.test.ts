@@ -12,7 +12,17 @@
 // noodara_main's several `docker ...` invocations), everything else via shell-function shadowing
 // after sourcing install.sh.
 import { createHash } from 'node:crypto';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -761,6 +771,46 @@ describe.each(posixInterpreters())('install.sh noodara_main upgrade (%s)', (inte
     const calls = readFileSync(callLog, 'utf8');
     expect(calls).not.toMatch(/compose (down|rm)\b/);
     expect(calls).not.toMatch(/volume rm/);
+  });
+
+  // Post-execution fix (orchestrator audit WR-04): the second path admin credentials can matter
+  // on. D-11 means install.sh never touches or revalidates NOODARA_ADMIN_EMAIL/
+  // NOODARA_ADMIN_PASSWORD once .env already has them -- so a .env left over from an earlier
+  // attempt with a policy-violating admin password would otherwise repeat the exact same
+  // NOODARA_HEALTH_WAIT_ATTEMPTS x NOODARA_HEALTH_WAIT_INTERVAL stall and exit 53 on every single
+  // repair retry, for the identical, already-known reason. install.sh now revalidates the
+  // ALREADY-RECORDED .env values up front on this one path, failing fast instead.
+  it('a repair (not healthy on the first read) with a too-short admin password already recorded in .env fails fast, naming the variable but never the value, before any pull or up -d (WR-04)', () => {
+    const { snippet, env, installDir } = buildMainFlowEnv({ NOODARA_VERSION: '1.0.0' });
+    seedExistingInstall(installDir, '1.0.0', { NOODARA_PREVIOUS_VERSION: '1.0.0' });
+    appendFileSync(
+      join(installDir, '.env'),
+      "NOODARA_ADMIN_EMAIL='admin@example.com'\nNOODARA_ADMIN_PASSWORD='too-short'\n",
+    );
+    const callLog = join(installDir, 'docker-calls.log');
+    const fullSnippet = [
+      snippet,
+      'docker() {',
+      '  printf "%s\\n" "docker $*" >> "$NOODARA_TEST_CALL_LOG"',
+      '  case "$*" in',
+      '    "compose ps --format json") printf \'{"Service":"api","Health":"unhealthy"}\\n{"Service":"web","Health":"unhealthy"}\\n\' ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_main',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, fullSnippet, {
+      env: { ...env, NOODARA_TEST_CALL_LOG: callLog },
+    });
+
+    expect(result.status).toBe(30);
+    expect(result.stderr).toContain('NOODARA_ADMIN_PASSWORD');
+    expect(result.stderr).not.toContain('too-short');
+    const calls = readFileSync(callLog, 'utf8');
+    expect(calls.match(/compose ps --format json/g)?.length ?? 0).toBe(2);
+    expect(calls).not.toMatch(/compose pull\b/);
+    expect(calls).not.toMatch(/compose up -d\b/);
   });
 });
 
