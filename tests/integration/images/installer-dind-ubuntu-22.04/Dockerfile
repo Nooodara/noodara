@@ -16,9 +16,10 @@ ARG WITH_DOCKER=true
 ARG WITH_SNAP_DOCKER=false
 
 # install.sh's own base-command preflight (curl, openssl, ss, ip, awk, grep) plus what the fixture
-# itself needs to host a nested daemon.
+# itself needs to host a nested daemon, plus netcat-openbsd (06-12-PLAN.md Task 2: a real listener
+# tests/integration/installer/preflight-scenarios.test.ts binds to occupy the panel port for real).
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl gnupg iproute2 openssl sudo \
+    && apt-get install -y --no-install-recommends ca-certificates curl gnupg iproute2 openssl sudo netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 # Docker Engine + compose plugin from Docker's own apt repository -- the exact same apt-repo
