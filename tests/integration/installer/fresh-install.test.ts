@@ -101,11 +101,20 @@ describe.each(UBUNTU_VERSIONS)('fresh install on Ubuntu %s (06-11-PLAN.md Task 1
       if (migrateEntry === undefined) throw new Error('no docker compose ps entry for "migrate"');
       expect(migrateEntry.ExitCode).toBe(0);
 
-      // Only web publishes a host port (hard_rule #8).
+      // Only web publishes a host port (hard_rule #8). The real Compose CLI (inside this fixture's
+      // own genuine Linux daemon, unlike Docker Desktop's host-side proxy) emits ONE Publishers
+      // entry per bound address family -- "0.0.0.0" and "::" -- for a single `ports:` mapping, so
+      // "exactly one Publishers entry" is not the right invariant; "every published entry targets
+      // the one intended port, and only web has any" is.
       for (const entry of services) {
         const publishedPorts = entry.Publishers.filter((publisher) => publisher.PublishedPort !== 0);
         if (entry.Service === 'web') {
-          expect(publishedPorts.length, 'web should publish exactly one host port').toBe(1);
+          expect(publishedPorts.length, 'web should publish at least one host port').toBeGreaterThanOrEqual(1);
+          for (const publisher of publishedPorts) {
+            expect(publisher.PublishedPort, 'every web Publisher must target the resolved panel port').toBe(
+              FIXTURE_PANEL_PORT,
+            );
+          }
         } else {
           expect(publishedPorts, `${entry.Service} must not publish any host port`).toHaveLength(0);
         }
@@ -125,11 +134,14 @@ describe.each(UBUNTU_VERSIONS)('fresh install on Ubuntu %s (06-11-PLAN.md Task 1
       if (loggedToken === undefined) throw new Error(`no NOODARA_SETUP_TOKEN= line in api logs:\n${apiLogsResult.stdout}`);
       expect(printedToken).toBe(loggedToken);
 
-      // The panel serves the real Next.js app.
+      // The panel serves the real Next.js app. `/` itself 307-redirects an unauthenticated
+      // visitor to `/login` (apps/web/src/proxy.ts's own documented UX redirect, Plan 05-10) --
+      // genuine app behavior, not a proxy failure -- so `/login` (excluded from that redirect's
+      // own matcher) is what proves a real 200 HTML response.
       const rootResult = await fixture.exec([
         '/bin/sh',
         '-c',
-        `curl -s -o /tmp/noodara-root-body -w '%{http_code}' http://127.0.0.1:${String(FIXTURE_PANEL_PORT)}/`,
+        `curl -s -o /tmp/noodara-root-body -w '%{http_code}' http://127.0.0.1:${String(FIXTURE_PANEL_PORT)}/login`,
       ]);
       expect(rootResult.exitCode).toBe(0);
       expect(Number(rootResult.stdout.trim())).toBe(200);
