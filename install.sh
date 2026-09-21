@@ -354,6 +354,9 @@ noodara_generate_env() {
       printf '# NOODARA_VERSION pins the exact release tag (D-04) -- never :latest, so a restart never\n'
       printf '# silently changes version.\n'
       printf 'NOODARA_VERSION=%s\n' "$version"
+      printf '# NOODARA_PREVIOUS_VERSION records the version this installation was upgraded from,\n'
+      printf '# so D-12'"'"'s rollback hint (NOODARA_VERSION=<previous>) has a real number to name.\n'
+      printf 'NOODARA_PREVIOUS_VERSION=%s\n' "$version"
       printf 'NOODARA_IMAGE_PREFIX=%s\n' "$image_prefix"
       printf 'NOODARA_PORT=%s\n' "$port"
       printf 'NOODARA_PUBLIC_URL=%s\n' "$public_url"
@@ -392,6 +395,92 @@ noodara_generate_env() {
 
   mv "$tmp_file" "$env_path"
   noodara_secure_env_file "$env_path"
+}
+
+# Additive merge and timestamped backup for an existing .env (06-CONTEXT.md D-11, INST-02).
+# Presence checks use an anchored `grep -q "^${key}="` against the file; an existing value is
+# never read, re-quoted or rewritten -- this is the entire mechanism that keeps D-11 exact for a
+# value containing '#', quotes, '=' or base64 padding, since its content is never parsed, only its
+# key's presence is checked.
+
+# True (exit 0) only when `path` contains a line beginning with exactly "<key>=" -- anchored so a
+# key that is a suffix or prefix of another key never falsely matches.
+noodara_env_has_key() {
+  path="$1"
+  key="$2"
+  grep -q "^${key}=" "$path" 2>/dev/null
+}
+
+# Appends "<key>=<value>" as a new line only when noodara_env_has_key reports the key absent;
+# returns 0 without writing when it is already present (D-11: an existing value is never touched).
+noodara_env_append_if_missing() {
+  path="$1"
+  key="$2"
+  value="$3"
+  if noodara_env_has_key "$path" "$key"; then
+    return 0
+  fi
+  printf '%s=%s\n' "$key" "$value" >> "$path"
+}
+
+# Copies `path` to `<path>.bak-<YYYYmmddHHMMSS>` and chmods the copy 600 -- written before any
+# mutation of an existing .env (D-11).
+noodara_backup_env() {
+  path="$1"
+  backup_path="${path}.bak-$(date +%Y%m%d%H%M%S)"
+  cp "$path" "$backup_path"
+  chmod 600 "$backup_path"
+  printf '%s\n' "$backup_path"
+}
+
+# Rewrites the single line anchored on "^<key>=" to "<key>=<value>", leaving every other line
+# byte-identical. Used only for NOODARA_VERSION and NOODARA_PREVIOUS_VERSION (D-12's rollback
+# hint). Writes to a temp file in the same directory under `umask 077`, then `mv`s over the
+# original, so a crash mid-write can never leave a truncated .env (T-06-23).
+noodara_set_env_value() {
+  path="$1"
+  key="$2"
+  value="$3"
+
+  dir="${path%/*}"
+  if [ "$dir" = "$path" ]; then
+    dir="."
+  fi
+  tmp_file="${dir}/.noodara-env-tmp.$$"
+  (
+    umask 077
+    awk -v k="$key" -v v="$value" '
+      BEGIN { pattern = "^" k "=" }
+      $0 ~ pattern { print k "=" v; next }
+      { print }
+    ' "$path" > "$tmp_file"
+  )
+  mv "$tmp_file" "$path"
+}
+
+# Additive merge over an existing .env: backs up once before any write, rewrites only the
+# NOODARA_VERSION line via noodara_set_env_value, then appends any given "<key> <value>" pairs
+# only when genuinely missing (D-11's "a release-added required variable is appended without
+# touching existing ones"). Re-secures mode/ownership after the last write. Extra pairs whose key
+# is already present are safe no-ops, so a caller may pass the full current variable set every
+# time without special-casing "what changed".
+noodara_merge_env() {
+  path="$1"
+  version="$2"
+  shift 2
+
+  noodara_backup_env "$path" >/dev/null
+
+  noodara_set_env_value "$path" NOODARA_VERSION "$version"
+
+  while [ "$#" -ge 2 ]; do
+    key="$1"
+    value="$2"
+    noodara_env_append_if_missing "$path" "$key" "$value"
+    shift 2
+  done
+
+  noodara_secure_env_file "$path"
 }
 
 # noodara_preflight (06-CONTEXT.md D-17, INST-03): runs every predicate above in exactly this
