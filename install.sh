@@ -182,6 +182,86 @@ noodara_check_arch() {
   esac
 }
 
+# Prints total system RAM in whole megabytes, read from NOODARA_MEMINFO_FILE's MemTotal line
+# (default /proc/meminfo). Division happens inside awk itself, never via a `$(( ))` arithmetic
+# expansion, since this file's own POSIX-sh gate treats any `((` occurrence as a bashism finding.
+noodara_total_ram_mb() {
+  awk '/^MemTotal:/ { printf "%d\n", $2 / 1024 }' "$NOODARA_MEMINFO_FILE"
+}
+
+# Fails with reason insufficient-ram (exit 14) when total RAM is below 1024MB; warns (stderr,
+# non-fatal) and continues when RAM is between 1024 and 2047MB; is silent at 2048MB and above.
+# Fails with reason insufficient-disk (exit 15) when free disk on NOODARA_INSTALL_DIR's
+# filesystem (or its nearest existing ancestor, when the install dir does not exist yet) is below
+# 5120MB. NOODARA_SKIP_RESOURCE_CHECK=1 skips both checks deliberately and emits one note instead
+# (06-CONTEXT.md D-15).
+noodara_check_resources() {
+  if [ "${NOODARA_SKIP_RESOURCE_CHECK:-0}" = "1" ]; then
+    noodara_note "Resource checks skipped (NOODARA_SKIP_RESOURCE_CHECK=1)."
+    return 0
+  fi
+
+  ram_mb=$(noodara_total_ram_mb)
+  if [ "$ram_mb" -lt 1024 ]; then
+    noodara_fail insufficient-ram "Detected ${ram_mb}MB RAM, below the 1024MB minimum. Noodara requires at least 1GB of RAM (2GB recommended). Set NOODARA_SKIP_RESOURCE_CHECK=1 to override deliberately."
+  elif [ "$ram_mb" -lt 2048 ]; then
+    noodara_warn "Detected ${ram_mb}MB RAM, below the 2048MB recommended minimum. Continuing, but performance may be degraded."
+  fi
+
+  disk_target="$NOODARA_INSTALL_DIR"
+  if [ ! -d "$disk_target" ]; then
+    disk_target="${NOODARA_INSTALL_DIR%/*}"
+    [ -z "$disk_target" ] && disk_target="/"
+  fi
+  disk_kb=$(df -Pk "$disk_target" 2>/dev/null | awk 'NR==2 { print $4 }')
+  disk_mb=$(awk -v kb="${disk_kb:-0}" 'BEGIN { printf "%d\n", kb / 1024 }')
+  if [ "$disk_mb" -lt 5120 ]; then
+    noodara_fail insufficient-disk "Detected ${disk_mb}MB free disk on ${disk_target}'s filesystem, below the 5120MB (5GB) minimum. Free up disk space and re-run this installer. Set NOODARA_SKIP_RESOURCE_CHECK=1 to override deliberately."
+  fi
+
+  return 0
+}
+
+# Resolves the panel port: NOODARA_PORT when set (validated as a digits-only value in 1-65535),
+# otherwise NOODARA_DEFAULT_PORT (3000). Fails with reason port-in-use (exit 16, the same reason
+# noodara_check_port uses) for a non-numeric or out-of-range override, since both are the operator
+# giving this installer an unusable port value (06-CONTEXT.md D-06).
+noodara_resolve_port() {
+  port="${NOODARA_PORT:-$NOODARA_DEFAULT_PORT}"
+  case "$port" in
+    '' | *[!0-9]*)
+      noodara_fail port-in-use "NOODARA_PORT='$port' is not a valid port number. Set NOODARA_PORT to a value between 1 and 65535."
+      ;;
+  esac
+  if [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+    noodara_fail port-in-use "NOODARA_PORT='$port' is out of range. Set NOODARA_PORT to a value between 1 and 65535."
+  fi
+  printf '%s\n' "$port"
+}
+
+# Fails with reason port-in-use (exit 16), naming the resolved panel port and suggesting
+# NOODARA_PORT=<other>, when `ss -tuln` shows it already listening. The match is anchored on
+# ":<port>" followed by a space so a busy port 30000 is never mistaken for port 3000
+# (06-RESEARCH.md Pattern 4 -- Coolify's own missing port check is the negative example).
+noodara_check_port() {
+  port=$(noodara_resolve_port)
+  if ss -tuln 2>/dev/null | grep -q ":${port} "; then
+    noodara_fail port-in-use "Port $port is already in use. Set NOODARA_PORT=<other> and re-run this installer."
+  fi
+}
+
+# Fails with reason docker-via-snap (exit 17), naming the removal command, when `snap list docker`
+# succeeds -- i.e. Docker is installed via snap, which Noodara does not support
+# (06-CONTEXT.md D-14). Calling `snap list docker` directly (rather than gating on `command -v
+# snap` first) is deliberate: it is injectable either way (a test can shadow `snap` with a shell
+# function) and behaves correctly whether `snap` is absent, present-but-without-docker, or
+# present-with-docker, with no separate existence check needed.
+noodara_check_docker_snap() {
+  if snap list docker >/dev/null 2>&1; then
+    noodara_fail docker-via-snap "Docker is installed via snap, which Noodara does not support. Remove it (sudo snap remove docker) and re-run this installer."
+  fi
+}
+
 # Entry point. For now this only prints the version banner and returns -- the real preflight ->
 # Docker install -> .env -> compose up -> migrate -> health-check flow lands in Plan 06-09, once
 # every piece it orchestrates (Plans 06-02..06-08) exists.
