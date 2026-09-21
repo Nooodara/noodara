@@ -94,6 +94,7 @@ function getFreePort(): Promise<number> {
 }
 
 interface ComposePsEntry {
+  ID: string;
   Service: string;
   State: string;
   ExitCode: number;
@@ -380,6 +381,18 @@ describe('production docker-compose.yml stack (06-07-PLAN.md)', () => {
         expect(byServiceAfterSecondUp.get(name)?.Health, `${name} health after second up`).toBe('healthy');
       }
       expect(byServiceAfterSecondUp.get('migrate')?.ExitCode).toBe(0);
+
+      // "Nothing recreated unexpectedly": every long-running service keeps its own container ID
+      // across the second `up` -- an unconfigured second `up` must not tear down and recreate a
+      // container just because it re-ran. `migrate` is deliberately excluded: as a one-shot with
+      // `restart: "no"`, Compose starts the SAME container again in place rather than recreating
+      // it (confirmed empirically before writing this suite; docker/compose#9260), so its ID is
+      // also expected to be unchanged -- included here too for completeness.
+      for (const name of ['postgres', 'redis', 'migrate', 'api', 'worker', 'web']) {
+        expect(byServiceAfterSecondUp.get(name)?.ID, `${name} container ID must not change on a second up`).toBe(
+          byService.get(name)?.ID,
+        );
+      }
 
       // Data survives: same volume, still present, not recreated.
       expect(volumeExists(postgresVolumeName)).toBe(postgresVolumeBeforeSecondUp);
