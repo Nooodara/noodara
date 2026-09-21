@@ -44,6 +44,11 @@ const RUN_ID = randomBytes(4).toString('hex');
 const IMAGE_PREFIX = `noodara-test-0607-${RUN_ID}`;
 const VERSION = `test-0607-${RUN_ID}`;
 const PROJECT_NAME = `noodara-test-0607-${RUN_ID}`;
+// A second, independent project used only by the admin-password-passthrough proof below --
+// deliberately contains PROJECT_NAME as a substring, so afterAll's own `--filter name=` stray
+// checks (both container and volume) also catch anything this second project might leave behind,
+// on top of that test's own inline try/finally teardown.
+const ADMIN_PROOF_PROJECT_NAME = `${PROJECT_NAME}-admin`;
 const CONTROL_PLANE_IMAGE = `${IMAGE_PREFIX}/noodara-control-plane:${VERSION}`;
 const WEB_IMAGE = `${IMAGE_PREFIX}/noodara-web:${VERSION}`;
 
@@ -414,5 +419,110 @@ describe('production docker-compose.yml stack (06-07-PLAN.md)', () => {
       console.log('measured memory (bytes, docker stats --no-stream):', JSON.stringify(measuredBytesByService));
     },
     600_000,
+  );
+
+  it(
+    'a tricky admin password written by the real noodara_generate_env reaches the api container byte-for-byte',
+    () => {
+      // A synthetic fixture value ONLY -- never a real secret. Exercises exactly the character
+      // classes install.sh's Finding B fix (06-04-SUMMARY.md "Post-execution security fix") had to
+      // handle: '$', a space, ' #' (Compose's own inline-comment marker) and a double quote.
+      const trickyPassword = 'p@ss$word #1 "q"';
+      const adminEmail = 'admin@example.com';
+
+      // This admin-proof stack is independent of the main test above (own project, own .env, own
+      // temp dir) because setting NOODARA_ADMIN_EMAIL/PASSWORD makes bootstrap-admin pre-seed the
+      // admin and skip emitting NOODARA_SETUP_TOKEN entirely (fase 1 D-04) -- the two behaviors
+      // (setup-token proof vs. admin-password proof) are mutually exclusive within one `.env`.
+      const projectDirForAdminProof = mkdtempSync(path.join(tmpdir(), 'noodara-compose-stack-admin-'));
+      try {
+        cpSync(COMPOSE_PATH, path.join(projectDirForAdminProof, 'docker-compose.yml'));
+
+        const genResult = runInstallerShell(
+          '/bin/sh',
+          [
+            'noodara_generate_env',
+            shQuote(path.join(projectDirForAdminProof, '.env')),
+            shQuote('http://localhost:65535'),
+            shQuote('127.0.0.1:65535'),
+            shQuote(VERSION),
+            shQuote(IMAGE_PREFIX),
+          ].join(' '),
+          { env: { NOODARA_ADMIN_EMAIL: adminEmail, NOODARA_ADMIN_PASSWORD: trickyPassword } },
+        );
+        if (genResult.status !== 0) {
+          throw new Error(`noodara_generate_env failed (status ${String(genResult.status)}): ${genResult.stderr}`);
+        }
+
+        try {
+          // `up api` alone (no `worker`/`web` targets) still transitively brings up its real
+          // dependencies (`migrate`, which itself depends on `postgres`, and `redis`) -- exactly
+          // the subset this proof needs, without paying for the web image's own startup.
+          const up = spawnSync(
+            'docker',
+            [
+              'compose',
+              '-p',
+              ADMIN_PROOF_PROJECT_NAME,
+              'up',
+              '-d',
+              '--wait',
+              '--wait-timeout',
+              String(WAIT_TIMEOUT_SECONDS),
+              'api',
+            ],
+            { cwd: projectDirForAdminProof, encoding: 'utf8', timeout: UP_TIMEOUT_MS },
+          );
+          if (up.status !== 0) {
+            throw new Error(`docker compose up (admin proof) failed (status ${String(up.status)}):\n${up.stdout}\n${up.stderr}`);
+          }
+
+          // The real proof: reads the value out of the CONTAINER's own process environment (never
+          // .env, never `docker compose config`'s own re-serialization) through a real `docker
+          // compose exec`, exactly as hard_rule requires.
+          const readPassword = execFileSync(
+            'docker',
+            [
+              'compose',
+              '-p',
+              ADMIN_PROOF_PROJECT_NAME,
+              'exec',
+              '-T',
+              'api',
+              'node',
+              '-e',
+              'process.stdout.write(process.env.NOODARA_ADMIN_PASSWORD ?? "")',
+            ],
+            { cwd: projectDirForAdminProof, encoding: 'utf8', timeout: CLI_TIMEOUT_MS },
+          );
+          expect(readPassword).toBe(trickyPassword);
+
+          const readEmail = execFileSync(
+            'docker',
+            [
+              'compose',
+              '-p',
+              ADMIN_PROOF_PROJECT_NAME,
+              'exec',
+              '-T',
+              'api',
+              'node',
+              '-e',
+              'process.stdout.write(process.env.NOODARA_ADMIN_EMAIL ?? "")',
+            ],
+            { cwd: projectDirForAdminProof, encoding: 'utf8', timeout: CLI_TIMEOUT_MS },
+          );
+          expect(readEmail).toBe(adminEmail);
+        } finally {
+          spawnSync('docker', ['compose', '-p', ADMIN_PROOF_PROJECT_NAME, 'down', '--volumes', '--remove-orphans'], {
+            cwd: projectDirForAdminProof,
+            timeout: UP_TIMEOUT_MS,
+          });
+        }
+      } finally {
+        rmSync(projectDirForAdminProof, { recursive: true, force: true });
+      }
+    },
+    300_000,
   );
 });
