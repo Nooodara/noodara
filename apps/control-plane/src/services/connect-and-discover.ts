@@ -358,12 +358,20 @@ export async function connectAndDiscover(
       // Pitfall 4: these two timestamps are this service's job, never `applyConnectionResult`'s.
       const hostFingerprintCapturedAt =
         outcome.ok && outcome.fingerprintCaptured ? deps.now() : row.hostFingerprintCapturedAt;
+      // GR-01/gap 6: the timestamp follows the domain's own decision about the value it
+      // describes — `nextState.pendingFingerprint === null` means `applyConnectionResult` just
+      // cleared a parked value (or there was never one), so the seen-at column must be nulled
+      // with it; a row can never hold a `pending_fingerprint_seen_at` for a fingerprint that no
+      // longer exists. Only this run's own HOST_KEY_CHANGED observation sets a fresh timestamp;
+      // any other case (an untouched still-parked value from an earlier run) keeps the row's own.
       const pendingFingerprintSeenAt =
-        !outcome.ok &&
-        outcome.errorCode === 'HOST_KEY_CHANGED' &&
-        outcome.observedFingerprint !== undefined
-          ? deps.now()
-          : row.pendingFingerprintSeenAt;
+        nextState.pendingFingerprint === null
+          ? null
+          : !outcome.ok &&
+              outcome.errorCode === 'HOST_KEY_CHANGED' &&
+              outcome.observedFingerprint !== undefined
+            ? deps.now()
+            : row.pendingFingerprintSeenAt;
 
       if (snapshot === undefined) {
         const [updatedRow] = await tx
