@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Adaptador SSH aislado y probado con Testcontainers** - Conexión SSH con TOFU, timeouts, allowlist de comandos y discovery, validado contra un `sshd` real. (completed 2026-09-15)
 - [x] **Phase 3: Servicios de aplicación, activity log y redacción** - Registrar/editar/eliminar servidores, snapshots de discovery y un activity log sin fugas de secrets. (completed 2026-09-16)
 - [x] **Phase 4: HTTP routes, worker BullMQ y SSE** - La API expone connect/discover en background y el estado llega a tiempo real sin polling. (completed 2026-09-18)
-- [ ] **Phase 5: UI web** - El flujo login → Servers → add → connect → discovery → detail funciona en el design system Apple-inspired, dark y light. (37/46 plans executed — gap closure round 1 (05-26…05-37) executed; re-verification 2026-09-20 = gaps_found: 7/8 gaps closed, gap 6 (host-key trust not enforced in the backend, GR-01/GR-02) still OPEN as BLOCKER; gap closure round 2 PLANNED: 05-38…05-46, 9 plans in 4 waves; QA-04/QA-05 Pending (no git remote); 7 human items in 05-HUMAN-UAT.md — phase NOT complete)
+- [ ] **Phase 5: UI web** - El flujo login → Servers → add → connect → discovery → detail funciona en el design system Apple-inspired, dark y light. (46/46 plans executed — gap closure round 2 (05-38…05-46) executed and APPROVED by the user 2026-09-21: gap 6 (host-key trust) CLOSED, GR-03 PARTIAL, F1 partial by design; round-2 code review found CR-01 (UI dead end after a host edit in ERROR/HOST_KEY_CHANGED, reproduced by the user) and WR-01 (banner persists after trust) — fix in progress as a quick task; QA-04/QA-05 Pending (no git remote); human items 2/4/5/6/7 not confirmed — phase NOT complete until re-verification passes)
 - [ ] **Phase 6: Instalador y Docker Compose** - Un comando deja Noodara operativo en un VPS Ubuntu limpio, de forma idempotente.
 
 ## Phase Details
@@ -377,7 +377,7 @@ Plans:
 
 **Gap R2 Wave 4** *(blocked on Gap R2 Wave 3)*
 
-- [ ] 05-46-PLAN.md — Gate completo con logs crudos, veredicto del gap 6 re-derivado de primera mano y checkpoint humano de los siete ítems; NO autónomo (QA-04/QA-05 siguen Pending sin remoto)
+- [x] 05-46-PLAN.md — Gate completo con logs crudos, veredicto del gap 6 re-derivado de primera mano y checkpoint humano de los siete ítems; NO autónomo (QA-04/QA-05 siguen Pending sin remoto)
 
 **Cross-cutting constraints:**
 
@@ -415,5 +415,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 45/46 | In Progress|  |
+| 5. UI web | 46/46 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |

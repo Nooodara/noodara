@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: "Phase 05 (ui-web) gap closure ROUND 2 EXECUTING: waves 1-3 COMPLETE (05-38, 05-42, 05-43, 05-44, 05-45, 05-39, 05-41, 05-40; 45/46 SUMMARY), each plan audited by the orchestrator (no trailers, empty stash, no parent-repo drift). Wave 3 quick gate green on b2d3585 (lint, typecheck, boundaries, unit 1525/1525); wave 2 gate had E2E 93/93. Gap-6 fixes merged: domain clears stale pendingFingerprint (05-38), trustFingerprint bound to lastErrorCode === HOST_KEY_CHANGED in guard + UPDATE predicate (05-39), editServer clears hostFingerprint on any host/port change from any status, sshUser-only edits keep it (05-40); trust-fingerprint TOCTOU todo moved to completed with per-bullet evidence. 05-45 decision by the user: D4 link-B #0066cc, D5 fill-A #d70015. Next: wave 4 = 05-46 (full cross-suite gate incl. ~35 min integration + human checkpoint of the seven items). Phase 05 is NOT complete. Resume with /gsd-execute-phase 5 --gaps-only"
-last_updated: "2026-09-21T04:00:00.000Z"
-last_activity: 2026-09-20 -- Phase 05 gap closure round 2, waves 1-3 complete (8/9)
+stopped_at: "Phase 05 (ui-web) gap closure ROUND 2 EXECUTED 9/9 (46/46 SUMMARY) and APPROVED by the user at the 05-46 checkpoint (verbatim: aprueba la ronda, y arregla el CR-01 y WR-01 por favor). Closing gate on the final tree: unit 1525, integration 523/0/1-skip (2nd attempt; 1st was an orphan-container cascade), boot 7/7, provenance 52/52, scan-leaks 4/4, E2E 93/93 after the test-only fix 23d8486. Gap 6 CLOSED; GR-03 PARTIAL (logger optional); F1 partial by design. Round-2 delta review (05-REVIEW.md, ffb41a9): CR-01 (UI dead end after a host/port edit in ERROR/HOST_KEY_CHANGED — reproduced live by the user) and WR-01 (HOST_KEY_CHANGED banner persists after a successful trust) are OPEN and being fixed via a quick task at the user's request. Human items: 1 partially verified with screenshots (positive trust flow + CR-01), 2/4/5/6/7 not confirmed, 3 not done (no remote, QA-04/QA-05 Pending). Phase 05 is NOT complete: next = quick task CR-01+WR-01, then regression gate + gsd-verifier; phase.complete only on passed."
+last_updated: "2026-09-21T16:00:00.000Z"
+last_activity: 2026-09-21 -- Phase 05 gap closure round 2 executed 9/9 and approved; CR-01/WR-01 fix next
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 94
-  completed_plans: 93
-  percent: 99
+  completed_plans: 94
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 ## Current Position
 
-Phase: 05 (ui-web) — gap closure round 2 EXECUTING (waves 1-3 of 4 complete); phase NOT complete
-Plan: 45 of 46 plans have a SUMMARY; next to execute is 05-46 (closing gate + human checkpoint).
-Status: Round 2 waves 1-3 complete and gated. Gap 6 fixes merged (05-38, 05-39, 05-40); the closure verdict is re-derived from scratch by 05-46 and the verifier, not assumed here. QA-04/QA-05 Pending until a real CI + nightly run is observed. Next: /gsd-execute-phase 5 --gaps-only (resumes at 05-46).
-Last activity: 2026-09-20 -- Phase 05 gap closure round 2, wave 3 complete (05-40)
+Phase: 05 (ui-web) — gap closure round 2 EXECUTED and approved by the user; phase NOT complete (CR-01/WR-01 open, re-verification pending)
+Plan: 46 of 46 plans have a SUMMARY. Next: quick task fixing CR-01 + WR-01, then regression gate and gsd-verifier.
+Status: Round 2 closed at its gate (05-46-GATE.md). Gap 6 CLOSED. Open: CR-01, WR-01 (05-REVIEW.md), GR-03 PARTIAL, GR-04 untouched, QA-04/QA-05 Pending (no remote), human items 2/4/5/6/7 not confirmed (05-HUMAN-UAT.md).
+Last activity: 2026-09-21 -- 05-46 closed after the user approved the round; CR-01 reproduced live by the user
 
-Progress: [██████████] 99% of planned plans executed (93/94; phase 05 round 2 wave 4 pending)
+Progress: [██████████] 100% of planned plans executed (94/94); phase 05 awaiting CR-01/WR-01 fix and re-verification
 
 ## Performance Metrics
 
