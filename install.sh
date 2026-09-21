@@ -1720,9 +1720,22 @@ noodara_pull_images() {
 }
 
 # Runs `docker compose up -d`. On failure, checks whether the `migrate` one-shot is the real cause
-# (exit 52, migrations-failed, with its own log tail) before falling back to the generic
-# compose-up-failed (exit 51) -- D-12: nothing here removes a volume, deletes .env, or re-runs
-# `docker compose down`; data and secrets are always left untouched on this path.
+# (exit 52, migrations-failed, with its own log tail) -- D-12: nothing here removes a volume,
+# deletes .env, or re-runs `docker compose down`; data and secrets are always left untouched on
+# this path.
+#
+# Post-execution fix (06-12-PLAN.md, real DinD discovery): a real `docker compose up -d` can fail
+# on its OWN dependency-wait ("dependency failed to start: container ... is unhealthy") before
+# this installer ever gets a chance to run its own noodara_wait_for_health -- Compose itself
+# refuses to finish `up -d` when a service another service `depends_on: condition: service_healthy`
+# never becomes healthy (this docker-compose.yml's own topology: web on api, api/worker on redis,
+# migrate on postgres). A non-migrate `up -d` failure therefore no longer fails outright here --
+# noodara_main's very next call is noodara_wait_for_health, which judges the containers this `up
+# -d` attempt already created on their OWN real health and produces the full, already-tested D-12
+# diagnostic (service name, redacted log tail, rollback hint) regardless of which code path first
+# noticed the underlying problem. The previous behavior (a generic, un-actionable "Failed to start
+# services" message with no service name and no log tail) violated D-12's own requirement for
+# exactly this failure shape.
 noodara_compose_up() {
   noodara_step "Starting services..."
   if ! (cd "$NOODARA_INSTALL_DIR" && docker compose up -d); then
@@ -1731,7 +1744,7 @@ noodara_compose_up() {
       printf '%s\n' "$_noodara_cu_tail" >&2
       noodara_fail migrations-failed "Database migrations failed. See the migrate service log tail above. Data and secrets are untouched."
     fi
-    noodara_fail compose-up-failed "Failed to start services with docker compose up -d. Data and secrets are untouched."
+    noodara_note "docker compose up -d reported a failure -- checking service health directly."
   fi
 }
 
