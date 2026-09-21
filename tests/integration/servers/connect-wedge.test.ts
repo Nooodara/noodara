@@ -66,6 +66,12 @@ async function loadFailInFlightConnection() {
   return import('../../../apps/control-plane/src/services/fail-in-flight-connection.js');
 }
 
+/** Loaded dynamically for the same reason every other module here is (env-before-import,
+ *  INST-06) — used only by the GR-03 recovery-failure-logging suite below. */
+async function loadLogger() {
+  return import('../../../apps/control-plane/src/logger.js');
+}
+
 async function registerFixtureServer(fx: ServiceFixture) {
   const { registerServer } = await loadRegisterServer();
   const result = await registerServer(fx.deps, {
@@ -115,6 +121,37 @@ async function serverRow(fx: ServiceFixture, serverId: string) {
 
 async function connectionAttemptedEvents(fx: ServiceFixture, serverId: string) {
   return fx.db.select().from(activityEvents).where(eq(activityEvents.entityId, serverId));
+}
+
+/**
+ * Wraps a real `ServiceFixture['db']` so its `nth` call to `.transaction(...)` rejects with
+ * `failure` instead of running — every other call is forwarded unchanged to the real database.
+ * Used only by the GR-03 recovery-failure-logging suite below to make `failInFlightConnection`'s
+ * own transaction throw for real (a transient-DB-error stand-in) without corrupting Postgres
+ * state or mocking anything `connectAndDiscover` itself depends on. `lockAndBeginConnecting`
+ * (TX1) is always call 1 in this file's corrupted-credential scenario, so `failInFlightConnection`
+ * (the post-TX1 catch's recovery attempt) is always call 2.
+ */
+function buildNthTransactionFailingDb(
+  realDb: ServiceFixture['db'],
+  nth: number,
+  failure: Error,
+): ServiceFixture['db'] {
+  let callCount = 0;
+  return new Proxy(realDb, {
+    get(target, prop, receiver) {
+      if (prop === 'transaction') {
+        return (...args: Parameters<ServiceFixture['db']['transaction']>) => {
+          callCount += 1;
+          if (callCount === nth) {
+            return Promise.reject(failure);
+          }
+          return Reflect.apply(target.transaction, target, args);
+        };
+      }
+      return Reflect.get(target, prop, receiver);
+    },
+  }) as ServiceFixture['db'];
 }
 
 describe('CONNECTING wedge recovery (05-VERIFICATION.md gap 2, WR-A-01)', () => {
@@ -167,4 +204,60 @@ describe('CONNECTING wedge recovery (05-VERIFICATION.md gap 2, WR-A-01)', () => 
     const rowAfterSecondRecovery = await serverRow(fixture, server.id);
     expect(rowAfterSecondRecovery?.updatedAt).toEqual(rowAfterFirstRecovery?.updatedAt);
   });
+});
+
+describe('recovery-failure logging (05-41-PLAN.md, 05-REVIEW.md GR-03)', () => {
+  it(
+    'a failing recovery attempt is logged through a real pino logger with no error text or ' +
+      'secret leaked, and the ORIGINAL decode error — not the recovery error — is still what ' +
+      'rejects, leaving the row wedged in CONNECTING for the worker\'s second attempt',
+    async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture);
+      await corruptServerCredential(fixture, server.id);
+
+      // A secret-shaped canary on the RECOVERY error (never the original decode error) — proves
+      // this specific failure's text is the one kept out of the log, not just any error text.
+      const canary = 'postgres://user:sk-live-RECOVERY-CANARY@host/db';
+      const flakyDb = buildNthTransactionFailingDb(fixture.db, 2, new Error(canary));
+
+      const { createLogger, writableForTests } = await loadLogger();
+      const { stream, records } = writableForTests();
+      const logger = createLogger({ level: 'info', destination: stream });
+
+      const { connectAndDiscover } = await loadConnectAndDiscover();
+      const patchedDeps = { ...fixture.deps, db: flakyDb, logger };
+
+      let thrown: unknown;
+      try {
+        await connectAndDiscover(patchedDeps, { actor: SYSTEM, serverId: server.id });
+      } catch (caught) {
+        thrown = caught;
+      }
+      expect(thrown).toBeInstanceOf(Error);
+      // The ORIGINAL SecretTamperError, never overwritten by the recovery failure.
+      expect((thrown as Error).message).not.toContain(canary);
+
+      // failInFlightConnection's own transaction rejected, so it never ran — the row is still
+      // exactly where TX1 left it (CONNECTING), not resolved to ERROR the way the sibling suite
+      // above proves for a SUCCESSFUL recovery.
+      const row = await serverRow(fixture, server.id);
+      expect(row?.status).toBe('CONNECTING');
+
+      const logRecords = records();
+      expect(logRecords).toHaveLength(1);
+      const [record] = logRecords as [Record<string, unknown>];
+      expect(record['msg']).toBe(
+        'connect-and-discover post-failure recovery failed; the worker failed-job listener will retry',
+      );
+      expect(record['serverId']).toBe(server.id);
+      // logger.ts's global `serializers.err` reduces the Error to `{ name }` — proven against the
+      // real captured pino output, not against the redact config shape.
+      expect(record['err']).toMatchObject({ name: 'Error' });
+
+      const rawOutput = JSON.stringify(logRecords);
+      expect(rawOutput).not.toContain('sk-live-RECOVERY-CANARY');
+      expect(rawOutput).not.toContain(canary);
+    },
+  );
 });
