@@ -82,6 +82,8 @@ completed: 2026-09-21
    - `939233b` `fix(06-11): track brace depth when parsing docker compose ps JSON` -- GREEN, full `pnpm test` re-verified
 4. **Test-assertion corrections (Rule 1/11 -- the test's own two remaining wrong assumptions, not install.sh):**
    - `486110c` `test(06-11): correct two fresh-install assertions against real behavior`
+5. **hard_rule #8 completeness fix (self-review before closing the plan):**
+   - `1beb982` `test(06-11): assert install dir and install.log file modes` -- `/opt/noodara` (700) and `install.log` (600) were missing alongside the already-present `.env` (600) check; both added and verified against the real fixture
 
 _Every commit's message verified free of attribution trailers via `git log -1 --format=%B` after each commit._
 
