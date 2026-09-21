@@ -1248,6 +1248,38 @@ noodara_resolve_public_url() {
   printf '%s\n' "$_noodara_rpu_url"
 }
 
+# Post-execution fix (orchestrator audit Finding B, 06-09 follow-up): on an existing installation,
+# the public URL used everywhere downstream (the summary, the plain-HTTP warning, the ufw note) is
+# the one this installation's own .env already recorded -- read via noodara_env_get_value, which
+# already strips the single quotes noodara_generate_env wrote it with -- never re-resolved from
+# the network. noodara_resolve_public_url's own external-IP-service/local-IP chain used to run
+# unconditionally on every re-run even though .env already had the answer, which made an upgrade
+# needlessly depend on outbound reachability to services this host may have no route to (an
+# upgrade on such a host used to fail with exit 41 for no real reason) and, worse, could silently
+# advertise a different URL than the one actually written into .env (D-11's own "existing values
+# are never touched" already guarantees .env keeps the original -- this function is what makes the
+# rest of the summary agree with that guarantee instead of contradicting it). An operator-supplied
+# NOODARA_PUBLIC_URL that disagrees with the recorded value gets the exact same single warning as
+# noodara_check_port's own port mismatch above -- .env wins, edit it to change. Falls back to a
+# full noodara_resolve_public_url (network lookups included) only when .env genuinely has no
+# NOODARA_PUBLIC_URL key at all -- a hand-edited or partially-written .env, never the case for a
+# real installation this script itself wrote. The value read back from .env is still passed
+# through noodara_validate_public_url before ever being returned or printed, since an operator may
+# have hand-edited the file to something invalid.
+noodara_resolve_installed_public_url() {
+  _noodara_ripu_env_path="${NOODARA_INSTALL_DIR}/${NOODARA_ENV_FILE}"
+  _noodara_ripu_env_url=$(noodara_env_get_value "$_noodara_ripu_env_path" NOODARA_PUBLIC_URL)
+  if [ -z "$_noodara_ripu_env_url" ]; then
+    noodara_resolve_public_url
+    return 0
+  fi
+  if [ -n "${NOODARA_PUBLIC_URL:-}" ] && [ "$NOODARA_PUBLIC_URL" != "$_noodara_ripu_env_url" ]; then
+    noodara_warn "NOODARA_PUBLIC_URL='$NOODARA_PUBLIC_URL' was given, but this installation already uses '$_noodara_ripu_env_url'. The existing .env always wins on a re-run -- to change it, edit ${_noodara_ripu_env_path} (key NOODARA_PUBLIC_URL) and re-run this installer."
+  fi
+  noodara_validate_public_url "$_noodara_ripu_env_url"
+  printf '%s\n' "$_noodara_ripu_env_url"
+}
+
 # noodara_preflight (06-CONTEXT.md D-17, INST-03): runs every predicate above in exactly this
 # order, stopping at the first failure via that predicate's own noodara_fail call --
 # never a collector that accumulates every applicable cause:
@@ -1705,6 +1737,53 @@ noodara_read_setup_token() {
   printf '%s\n' "$_noodara_rst_token"
 }
 
+# Post-execution fix (orchestrator audit Finding D, 06-09 follow-up): a reliable "does an admin
+# already exist" signal, without touching apps/control-plane. noodara_read_setup_token above only
+# reads whatever token line the api container's log HISTORY happens to contain -- bootstrapAdmin
+# (apps/control-plane/src/boot/bootstrap-admin.ts) only ever runs at boot, so on a re-run where the
+# api container was not recreated (Finding C's own same-version no-op path is exactly that case),
+# an earlier boot's token line is still sitting in the log even after an admin has since been
+# created through the panel, and D-13 would then print a stale, meaningless token.
+#
+# This probe instead reuses the existing POST /api/setup route exactly as
+# apps/control-plane/src/routes/setup.ts already implements it, with a deliberately-invalid,
+# non-secret placeholder token/email/password that can never succeed either way -- read before
+# choosing this probe: the route checks adminExists() BEFORE the submitted body is ever looked at
+# (D-02's own "the setup route disappears once an admin exists" rule), so the response status
+# alone tells this installer which branch was taken: 404 means an admin already exists, 400 (the
+# service's own TOKEN_INVALID) means it does not. setup-service.ts's redeemSetupToken looks the
+# token up by its hash BEFORE ever validating email/password, so the placeholder email/password are
+# never reached, and this failure path writes zero activity events. login-guard.ts (the AUTH-04
+# progressive lockout) only hooks Better Auth's own /sign-in/email path, never this plain Fastify
+# route, so the lockout is never touched either. This is why no apps/control-plane change was
+# needed for this fix.
+#
+# Runs `node -e` inside the `api` container itself (`docker compose exec -T`, the same
+# "no host port needed" pattern this repo's own compose healthchecks already use for /health)
+# since `api` publishes no host port at all (same-origin, D-10) -- there is nothing on the host to
+# curl directly. Prints exactly one of "exists"/"missing"/"unknown" on stdout and always exits 0:
+# a diagnostic probe must never fail the whole installer over its own inconclusive result.
+# noodara_print_summary decides what "unknown" (the exec itself failed, an unexpected response
+# status, a network error inside the container) means -- it falls back to the original D-13
+# log-reading behavior, which is this fix's one documented, honest limitation: on a same-version
+# no-op re-run where this probe cannot run for some other reason, a stale token could still be
+# printed, exactly as before this fix.
+noodara_probe_admin_exists() {
+  _noodara_pae_script='fetch("http://127.0.0.1:3000/api/setup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({token:"noodara-installer-admin-probe-0000000000000000",email:"noodara-installer-probe@example.invalid",password:"Noodara-Installer-Probe-Not-A-Real-Password-000"}),signal:AbortSignal.timeout(5000)}).then(function(r){process.stdout.write(r.status===404?"exists\n":r.status===400?"missing\n":"unknown\n");process.exit(0);}).catch(function(){process.stdout.write("unknown\n");process.exit(0);});'
+  _noodara_pae_out=$(cd "$NOODARA_INSTALL_DIR" && docker compose exec -T api node -e "$_noodara_pae_script" 2>/dev/null) || _noodara_pae_out=""
+  case "$_noodara_pae_out" in
+    *exists*)
+      printf 'exists\n'
+      ;;
+    *missing*)
+      printf 'missing\n'
+      ;;
+    *)
+      printf 'unknown\n'
+      ;;
+  esac
+}
+
 # D-08: read-only ufw advisory. Reports nothing when ufw is absent or inactive. When active,
 # prints the exact wording 06-RESEARCH.md Pitfall 5 requires (the "typically bypass" qualifier is
 # load-bearing -- neither "ufw will block this" nor "ufw protects you" is accurate), the exact
@@ -1712,7 +1791,16 @@ noodara_read_setup_token() {
 # applies. Never invokes a mutating ufw subcommand (`allow`/`enable`/`deny`/...) -- `ufw status` is
 # the only ufw invocation anywhere in this function. This wording is quoted verbatim by
 # docs/install.md (Plan 06-14) so the two copies cannot drift.
+#
+# Post-execution fix (orchestrator audit Finding B, 06-09 follow-up): accepts the already-resolved
+# panel port as `$1` (noodara_print_summary passes the same value it names elsewhere), so this
+# advisory always names the port an existing installation's .env actually recorded rather than
+# silently re-resolving it (and potentially disagreeing with the rest of the summary) via
+# noodara_resolve_port's own NOODARA_PORT/default logic. Falls back to noodara_resolve_port only
+# when called with no argument at all -- preserves every existing direct caller/test of this
+# function unchanged.
 noodara_check_ufw() {
+  _noodara_cfw_port="${1:-}"
   if ! command -v ufw >/dev/null 2>&1; then
     return 0
   fi
@@ -1721,7 +1809,9 @@ noodara_check_ufw() {
     *"Status: active"*) ;;
     *) return 0 ;;
   esac
-  _noodara_cfw_port=$(noodara_resolve_port)
+  if [ -z "$_noodara_cfw_port" ]; then
+    _noodara_cfw_port=$(noodara_resolve_port)
+  fi
   noodara_note ""
   noodara_note "ufw is active on this server. Docker publishes container ports by inserting its own iptables rules, which typically bypass ufw's rules entirely for published ports -- a port Docker publishes may be reachable from the internet even if ufw shows it as denied."
   noodara_note "If you rely on ufw to restrict access to this port, see docs/install.md for the DOCKER-USER-chain configuration needed to make ufw actually govern Docker's published ports."
@@ -1755,10 +1845,16 @@ noodara_write_log() {
 # INST-04/INST-05): the panel URL, the token or the admin-exists/admin-created line, the ufw
 # advisory, the HTTP caveat, and the upgrade rollback hint. A short, calm block -- no ASCII art, no
 # banners, one fact per line, matching "Complex infrastructure. Calm interface."
+#
+# Post-execution fix (orchestrator audit Finding B, 06-09 follow-up): takes the already-resolved
+# panel port as `$4`, so the ufw advisory below names the same port the URL/env path above already
+# refer to (noodara_main passes its own resolved port; every direct caller/test that omits it
+# falls back to noodara_check_ufw's own noodara_resolve_port default, unchanged).
 noodara_print_summary() {
   _noodara_ps_url="$1"
   _noodara_ps_env_path="$2"
   _noodara_ps_version="$3"
+  _noodara_ps_port="${4:-}"
 
   noodara_note ""
   noodara_note "Noodara is running."
@@ -1769,14 +1865,27 @@ noodara_print_summary() {
     # -- bootstrap-admin.ts already created the admin from these two variables directly.
     noodara_note "Admin account created from the supplied NOODARA_ADMIN_EMAIL/NOODARA_ADMIN_PASSWORD."
   else
-    _noodara_ps_token=""
-    if _noodara_ps_token=$(noodara_read_setup_token); then
-      noodara_note "One-time setup token: ${_noodara_ps_token}"
-      noodara_note "Open the panel and enter this token to create the admin account."
-    else
-      # D-13: no token line in the logs means an admin already exists -- never an empty token
-      # field, never a fabricated one.
+    # Post-execution fix (orchestrator audit Finding D, 06-09 follow-up): ask the control plane
+    # itself first, via noodara_probe_admin_exists, before ever trusting a token line out of
+    # `docker compose logs api` -- that log can still contain an earlier boot's token line even
+    # after an admin has since been created through the panel, whenever the api container was not
+    # recreated by this same run (a same-version re-run, Finding C's own no-op path, is exactly
+    # that case). "exists" is authoritative and skips the log read entirely. Anything else
+    # ("missing" or "unknown" -- the probe could not be run/interpreted) falls back to the original
+    # D-13 log-reading behavior unchanged.
+    _noodara_ps_admin_probe=$(noodara_probe_admin_exists)
+    if [ "$_noodara_ps_admin_probe" = "exists" ]; then
       noodara_note "An admin account already exists."
+    else
+      _noodara_ps_token=""
+      if _noodara_ps_token=$(noodara_read_setup_token); then
+        noodara_note "One-time setup token: ${_noodara_ps_token}"
+        noodara_note "Open the panel and enter this token to create the admin account."
+      else
+        # D-13: no token line in the logs means an admin already exists -- never an empty token
+        # field, never a fabricated one.
+        noodara_note "An admin account already exists."
+      fi
     fi
   fi
 
@@ -1787,7 +1896,7 @@ noodara_print_summary() {
       ;;
   esac
 
-  noodara_check_ufw
+  noodara_check_ufw "$_noodara_ps_port"
 
   # D-12's upgrade rollback hint: shown only when this run genuinely changed the version.
   _noodara_ps_previous=$(noodara_env_get_value "$_noodara_ps_env_path" NOODARA_PREVIOUS_VERSION)
@@ -1803,6 +1912,16 @@ noodara_print_summary() {
 # compose file -> pull -> up -> wait for health -> print the summary. Reads as an ordered table of
 # contents of the whole install; every step it calls already exists and is independently unit-
 # tested (Plans 06-02..06-08) -- this function only composes them in one documented order.
+#
+# Post-execution fix (orchestrator audit Findings B/C, 06-09 follow-up): on an existing
+# installation the panel port and public URL are read from .env (Finding B, via
+# noodara_resolve_installed_public_url and a direct noodara_env_get_value read for the port) --
+# never re-resolved from an operator override or the network -- and a same-version re-run with
+# nothing missing from .env skips the backup/merge, the pull and `docker compose up -d` entirely,
+# running only the health check and summary (Finding C, D-09's own literal wording: "si ya está en
+# esa versión, no cambia nada y solo verifica salud"). Both changes only apply once
+# _noodara_main_was_installed is already known to be 1 -- a fresh install's own port/URL
+# resolution and its always-runs pull/up are completely unchanged.
 noodara_main() {
   noodara_step "Noodara installer"
 
@@ -1819,23 +1938,48 @@ noodara_main() {
   _noodara_main_env_path="${NOODARA_INSTALL_DIR}/${NOODARA_ENV_FILE}"
   _noodara_main_version=$(noodara_resolve_version)
   _noodara_main_image_prefix=$(noodara_resolve_image_prefix)
-  _noodara_main_public_url=$(noodara_resolve_public_url)
-  _noodara_main_port=$(noodara_resolve_port)
+  _noodara_main_is_noop=0
 
   if [ "$_noodara_main_was_installed" = "1" ]; then
+    # Finding B: .env always wins on a re-run -- read directly, never re-resolved.
+    _noodara_main_port=$(noodara_env_get_value "$_noodara_main_env_path" NOODARA_PORT)
+    if [ -z "$_noodara_main_port" ]; then
+      _noodara_main_port=$(noodara_resolve_port)
+    fi
+    _noodara_main_public_url=$(noodara_resolve_installed_public_url)
+
     # D-09/D-12: record the version being replaced BEFORE overwriting NOODARA_VERSION, and only
     # when the version genuinely changes -- a same-version re-run's rollback hint must still name
     # the last real previous version, not overwrite it with the version it is already on.
     _noodara_main_previous_version=$(noodara_env_get_value "$_noodara_main_env_path" NOODARA_VERSION)
-    if [ -n "$_noodara_main_previous_version" ] && [ "$_noodara_main_previous_version" != "$_noodara_main_version" ]; then
-      noodara_set_env_value "$_noodara_main_env_path" NOODARA_PREVIOUS_VERSION "$_noodara_main_previous_version"
+
+    # Finding C: a true no-op requires both the version to already match AND every key the merge
+    # below would otherwise append to already be present -- a release that added a new required
+    # .env key still needs its one-time additive merge (and its one backup) even when the version
+    # number itself has not moved.
+    if [ "$_noodara_main_previous_version" = "$_noodara_main_version" ] \
+      && noodara_env_has_key "$_noodara_main_env_path" NOODARA_IMAGE_PREFIX \
+      && noodara_env_has_key "$_noodara_main_env_path" NOODARA_PORT \
+      && noodara_env_has_key "$_noodara_main_env_path" NOODARA_PUBLIC_URL; then
+      _noodara_main_is_noop=1
     fi
-    noodara_merge_env "$_noodara_main_env_path" "$_noodara_main_version" \
-      NOODARA_IMAGE_PREFIX "$_noodara_main_image_prefix" \
-      NOODARA_PORT "$_noodara_main_port" \
-      NOODARA_PUBLIC_URL "$_noodara_main_public_url"
-    noodara_write_log "Upgrade: merged .env, preserved existing secrets (NOODARA_VERSION, NOODARA_IMAGE_PREFIX, NOODARA_PORT, NOODARA_PUBLIC_URL updated)"
+
+    if [ "$_noodara_main_is_noop" = "1" ]; then
+      noodara_note "Already on version ${_noodara_main_version}; verifying health only."
+      noodara_write_log "Re-run: already on version ${_noodara_main_version}, .env unchanged (D-09 no-op)"
+    else
+      if [ -n "$_noodara_main_previous_version" ] && [ "$_noodara_main_previous_version" != "$_noodara_main_version" ]; then
+        noodara_set_env_value "$_noodara_main_env_path" NOODARA_PREVIOUS_VERSION "$_noodara_main_previous_version"
+      fi
+      noodara_merge_env "$_noodara_main_env_path" "$_noodara_main_version" \
+        NOODARA_IMAGE_PREFIX "$_noodara_main_image_prefix" \
+        NOODARA_PORT "$_noodara_main_port" \
+        NOODARA_PUBLIC_URL "$_noodara_main_public_url"
+      noodara_write_log "Upgrade: merged .env, preserved existing secrets (NOODARA_VERSION, NOODARA_IMAGE_PREFIX, NOODARA_PORT, NOODARA_PUBLIC_URL updated)"
+    fi
   else
+    _noodara_main_port=$(noodara_resolve_port)
+    _noodara_main_public_url=$(noodara_resolve_public_url)
     noodara_generate_env "$_noodara_main_env_path" "$_noodara_main_public_url" "$_noodara_main_port" \
       "$_noodara_main_version" "$_noodara_main_image_prefix"
     noodara_write_log "Fresh install: generated .env with fresh secrets"
@@ -1844,14 +1988,20 @@ noodara_main() {
   noodara_place_compose_file
   noodara_write_log "Placed docker-compose.yml"
 
-  noodara_pull_images
-  noodara_write_log "Images pulled (or skipped via NOODARA_INTERNAL_IMAGE_PREFIX)"
-  noodara_compose_up
-  noodara_write_log "docker compose up -d completed"
+  if [ "$_noodara_main_is_noop" = "1" ]; then
+    noodara_note "Skipping image pull and docker compose up -d (already on the target version, D-09)."
+    noodara_write_log "Skipped pull and up -d (D-09 no-op)"
+  else
+    noodara_pull_images
+    noodara_write_log "Images pulled (or skipped via NOODARA_INTERNAL_IMAGE_PREFIX)"
+    noodara_compose_up
+    noodara_write_log "docker compose up -d completed"
+  fi
+
   noodara_wait_for_health
   noodara_write_log "All services healthy"
 
-  noodara_print_summary "$_noodara_main_public_url" "$_noodara_main_env_path" "$_noodara_main_version"
+  noodara_print_summary "$_noodara_main_public_url" "$_noodara_main_env_path" "$_noodara_main_version" "$_noodara_main_port"
 }
 
 if [ "${NOODARA_INSTALL_SH_SOURCE_ONLY:-0}" != "1" ]; then
