@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-10-PLAN.md
-last_updated: "2026-09-21T16:16:35.827Z"
+stopped_at: Completed 06-11-PLAN.md
+last_updated: "2026-09-21T17:05:15.785Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 109
-  completed_plans: 104
+  completed_plans: 105
   percent: 83
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 06 (instalador-y-docker-compose) — EXECUTING
-Plan: 11 of 15
+Plan: 12 of 15
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [██████████] 95%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
@@ -150,6 +150,7 @@ Progress: [██████████] 95%
 | Phase 06 P08 | 35min | 2 tasks | 2 files |
 | Phase 06 P09 | 18min | 3 tasks | 3 files |
 | Phase 06 P10 | 25min | 2 tasks | 5 files |
+| Phase 06 P11 | 90min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -404,6 +405,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 06-10: withPrivilegedMode() takes no argument in testcontainers@12.1.0 (confirmed from the real .d.ts before writing code)
 - [Phase ?]: 06-10: a fixture's own /var/lib/docker lives on a dedicated, pre-created, noodara.test=true-labelled Docker volume via withBindMounts, never a host bind mount
 - [Phase ?]: 06-10: entrypoint.sh intentionally excluded from pnpm check:posix-sh (its install.sh-specific structural rules false-positive on ordinary linear scripts); real dash execution proven by dind-harness.test.ts instead
+- [Phase 06]: Fixed a DinD fixture cgroup v2 nesting gap (entrypoint.sh) and a real install.sh bug: noodara_compose_json_field_for_service silently returned nothing against the real Compose ps JSON's Publishers array — Both were only discoverable by the first genuine, non-stubbed install.sh run against a real daemon (Plan 06-11)
 
 ### Pending Todos
 
@@ -469,6 +471,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-21T16:16:35.819Z
-Stopped at: Completed 06-10-PLAN.md
+Last session: 2026-09-21T17:05:15.777Z
+Stopped at: Completed 06-11-PLAN.md
 Resume file: None

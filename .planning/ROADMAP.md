@@ -438,7 +438,7 @@ Plans:
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 06-11-PLAN.md — Layer 2A: real fresh install on both Ubuntu versions, printed setup token, admin pre-seed
+- [x] 06-11-PLAN.md — Layer 2A: real fresh install on both Ubuntu versions, printed setup token, admin pre-seed
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
@@ -468,4 +468,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
 | 5. UI web | 46/46 | Complete   | 2026-09-21 |
-| 6. Instalador y Docker Compose | 10/15 | In Progress|  |
+| 6. Instalador y Docker Compose | 11/15 | In Progress|  |
