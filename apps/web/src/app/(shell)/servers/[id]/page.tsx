@@ -228,7 +228,9 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         <p data-testid="server-detail-not-found" className="text-body text-ink">
           This server no longer exists.
         </p>
-        <Link href="/servers" className="text-callout text-accent hover:underline">
+        {/* text-accent-text, not text-accent (05-45, decision D4) -- see ActivityRow.tsx's
+            identical comment for the full rationale. */}
+        <Link href="/servers" className="text-callout text-accent-text hover:underline">
           Back to Servers
         </Link>
       </div>

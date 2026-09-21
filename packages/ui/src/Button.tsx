@@ -42,7 +42,10 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   destructive: 'bg-transparent text-status-error hover:bg-surface-2',
 };
 
-const DESTRUCTIVE_FILLED_CLASSES = 'bg-status-error text-on-accent hover:opacity-90';
+// bg-status-error-fill, not bg-status-error (05-45, decision D5): this fill carries --on-accent
+// text, and --status-error itself stays reserved for the pill dot, borders and meters, where the
+// full-saturation value is what those uses need.
+const DESTRUCTIVE_FILLED_CLASSES = 'bg-status-error-fill text-on-accent hover:opacity-90';
 
 // Button (skill SS4.1, 05-UI-SPEC.md Component Inventory). `loading` never renders a spinner --
 // it keeps the label exactly as passed and communicates state through `disabled` + `aria-busy`

@@ -16,8 +16,12 @@ export interface ActivityRowProps {
   readonly lookupServer: ServerLookup;
 }
 
-const SERVER_LINK_CLASSES = 'text-accent hover:underline';
-const SERVER_LINK_MONO_CLASSES = 'font-mono text-mono text-accent hover:underline';
+// text-accent-text, not text-accent (05-45, decision D4): --accent as link text measured below
+// 4.5:1 on --canvas/--surface-3 in light mode; --accent-text is the role-specific token that
+// clears AA on every surface this link renders on, while --accent itself stays unchanged for
+// outline/border/focus-ring use elsewhere.
+const SERVER_LINK_CLASSES = 'text-accent-text hover:underline';
+const SERVER_LINK_MONO_CLASSES = 'font-mono text-mono text-accent-text hover:underline';
 const SERVER_TEXT_CLASSES = 'text-ink';
 const SERVER_TEXT_MONO_CLASSES = 'font-mono text-mono text-ink';
 

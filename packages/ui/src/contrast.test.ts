@@ -315,16 +315,19 @@ const KNOWN_UNRENDERED_OR_DEFERRED_FAILURES = new Set<string>([
   '[light] --status-warn on --status-warn-soft over --surface-1',
   '[dark] --status-error on --status-error-soft over --surface-1',
   '[dark] --status-idle on --status-idle-soft over --surface-1',
-  // Real, currently-rendered, pre-existing gap D2 explicitly did not authorise fixing: --accent as
-  // link text (ActivityRow.tsx's server link, servers/[id]/page.tsx's "Servers" not-found link)
-  // renders on --canvas in light mode (both call sites have no card wrapper, 05-UI-SPEC.md D-09's
-  // no-card pattern) at 4.31:1, and would render on --surface-3 at 4.12:1 if a future call site
-  // used it there -- both below 4.5:1. D2's own text is explicit: "--accent stays #0071e3 light /
-  // #2997ff dark for links, outlines, borders" with no exception carved out for this. Fixing it
-  // would mean darkening --accent's light value, which D2 forbids; deferred, logged in
-  // deferred-items.md and docs/contrast-decision-05.md section 3's erratum, not silently dropped.
-  // (The OUTLINE/BORDER verdict for these same two pairs, at the looser 3.0:1 bar, already
-  // passes -- 4.31 and 4.12 both clear 3.0 -- so focus rings and input borders are unaffected.)
+  // Superseded pattern (05-45, decision D4, 2026-09-20): --accent is no longer rendered as link
+  // text anywhere in the real app -- ActivityRow.tsx's server link and servers/[id]/page.tsx's
+  // "Servers" not-found link both moved to the new --accent-text token (see "the four
+  // --accent-text link-text pairs exist and pass in both themes" below), which clears 4.5:1 on
+  // every surface in both themes. --accent's OWN value is unchanged (D2 still forbids darkening
+  // it, since it remains the outline/border/focus-ring foreground -- both figures below already
+  // clear the looser 3.0:1 UI-component bar, so focus rings and input borders are unaffected) --
+  // these two pairs therefore still genuinely fail and must stay listed (the "no stale entries"
+  // test below would fail otherwise), but they are retained purely because the token names still
+  // exist and `auditTheme` derives pairs from names, not because any call site renders this pair.
+  // Original real, pre-existing gap this superseded: 4.31:1 on --canvas, 4.12:1 on --surface-3
+  // (both light mode, both call sites had no card wrapper, 05-UI-SPEC.md D-09's no-card pattern) --
+  // see docs/contrast-decision-05.md section 3's erratum (05-33) and section 6 (05-45, the fix).
   '[light] --accent as text on --canvas',
   '[light] --accent as text on --surface-3',
 ]);

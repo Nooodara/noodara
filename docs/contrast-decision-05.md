@@ -491,3 +491,57 @@ toque `packages/ui/tokens.css`.
 
 La tabla de medición "as-shipped" (cada rol × cada tema × cada superficie, tomada de la salida del gate,
 no recalculada a mano) se añade en la sección 7 al cerrar Task 3.
+
+## 7. Medición as-shipped (2026-09-20, Task 3, tras re-apuntar los tres call sites)
+
+Tomada directamente de `auditTokens(parseTokensCss(...))` sobre el `tokens.css` real (comando:
+`npx tsx` importando `contrast.ts` y filtrando por `accent-text`/`status-error-fill`), no
+recalculada a mano.
+
+### `--accent-text` (D4) -- rol: TEXTO DE ENLACE únicamente
+
+| Tema | Superficie | Ratio | Veredicto |
+|---|---|---|---|
+| light | `--canvas` | 5.11 | PASS |
+| light | `--surface-1` | 5.56 | PASS |
+| light | `--surface-2` | 5.33 | PASS |
+| light | `--surface-3` | 4.89 | PASS |
+| dark | `--canvas` | 5.99 | PASS |
+| dark | `--surface-1` | 5.58 | PASS |
+| dark | `--surface-2` | 5.07 | PASS |
+| dark | `--surface-3` | 4.75 | PASS |
+
+Rol comprobado y NO aplicable: `--accent-text` nunca es un fill -- ningún call site lo usa como
+`bg-accent-text`, `border-accent-text` ni `outline-accent-text` (verificado por grep de
+`accent-text` en `apps/web/src`/`packages/ui/src`: las únicas coincidencias fuera de comentarios
+son `text-accent-text` en `ActivityRow.tsx` y `servers/[id]/page.tsx`). `--accent` (sin `-text`,
+valor sin cambio) sigue siendo el único token usado para outline/border/focus-ring.
+
+### `--status-error-fill` (D5) -- rol: FILL bajo texto `--on-accent` únicamente
+
+| Tema | Par | Ratio | Veredicto |
+|---|---|---|---|
+| light | `--on-accent` sobre `--status-error-fill` | 5.38 | PASS |
+| dark | `--on-accent` sobre `--status-error-fill` | 5.38 | PASS |
+
+Rol comprobado y NO aplicable: `--status-error-fill` nunca es un foreground/texto ni un
+outline/borde -- el único call site es `bg-status-error-fill` en `Button.tsx`'s
+`DESTRUCTIVE_FILLED_CLASSES` (verificado por grep: ninguna coincidencia de
+`text-status-error-fill`, `border-status-error-fill` ni `outline-status-error-fill` en el repo).
+`--status-error` (sin `-fill`, valor sin cambio) sigue siendo el único token usado para el dot,
+bordes y meters del estado de infraestructura.
+
+### Verdicto del gate completo
+
+`pnpm vitest run packages/ui/src/contrast.test.ts`: 36/36 tests verdes, incluida la aserción
+explícita "the four --accent-text link-text pairs exist and pass in both themes" y "destructive-filled
+confirm button: --on-accent directly on --status-error-fill (both themes)". Las dos entradas
+`'[light] --accent as text on --canvas'` / `'[light] --accent as text on --surface-3'` en
+`KNOWN_UNRENDERED_OR_DEFERRED_FAILURES` siguen presentes (su justificación fue reescrita como
+"superseded pattern" -- `--accent` sigue sin cambio de valor, así que ambos pares siguen fallando
+genuinamente, y el test "no stale entries" lo exige).
+
+`grep -rn "text-accent\b" apps/web/src packages/ui/src` tras Task 3: solo coincidencias dentro de
+comentarios (`text-accent-text, not text-accent (05-45, decision D4)` en dos componentes, y el
+comentario histórico de D2 en `contrast.ts` describiendo el patrón que este plan supersedió) --
+ningún call site real de `text-accent` (sin `-text`) queda en el árbol.
