@@ -31,17 +31,15 @@ Noodara puede conocer, registrar y comunicarse con infraestructura real de forma
 - ✓ Worker BullMQ como segundo proceso (`pnpm start:worker`): `connectAndDiscover` corre fuera del proceso de la API, jobId determinístico `connect-<serverId>`, recuperación de conexiones abandonadas (listener `stalled` + barrido al arrancar vía `failInFlightConnection`), heartbeat y apagado acotado — Fase 4
 - ✓ Estado en tiempo real por SSE (`GET /api/events`) sobre Redis pub/sub, con allowlist de tipos de evento, tope de conexiones y revalidación de sesión en el heartbeat; re-ejecución de discovery bajo demanda (SERV-06, DISC-05) — Fase 4
 - ✓ Activity log paginado por cursor, `/api/config` de solo lectura y `/health` que distingue Postgres, Redis y worker; E2E contra sshd, Redis y worker reales, canary de fuga extendido a HTTP y SSE, boot smoke de dos procesos; 865 unit — Fase 4. Pendiente antes de Fase 5: cuatro amenazas abiertas en `04-SECURITY.md`, un bypass de TOFU en `editServer` y dos sub-tests flaky de `events-sse.test.ts` por verificar en CI
+- ✓ UI web (`apps/web`, Next.js 16 + `packages/ui`) con el flujo login → Servers → add server → connect → discovery → detail en el design system Apple-inspired, dark y light, con estados vacío/carga/error; vista de detalle (hostname, status, OS, CPU, RAM, disk, uptime, Docker, last seen), discovery paso a paso con pass/fail por check y updates por SSE, Activity y Settings de solo lectura; contraste AA medido por token y rol (`contrast.ts`, decisiones D1–D5) — Fase 5
+- ✓ Confianza de host key aplicada en backend, no solo en UI: `trustFingerprint` exige `lastErrorCode === 'HOST_KEY_CHANGED'` (guard + predicado del UPDATE) y limpia el error al promover, el dominio descarta la huella pendiente tras éxito o fallo no host-key, y un cambio de host/puerto borra la huella confiada desde cualquier estado con Retry disponible en la UI — Fase 5 (gap closure ronda 2 + quick 260921-13a)
 
 ### Active
 
 Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.1-v0.5.md](../docs/roadmap-v0.1-v0.5.md), sección 6).
 
 - [ ] Instalación de Noodara en un VPS Ubuntu con un solo comando, al nivel de simplicidad de Coolify y Dokploy.
-- [ ] Vista de detalle del servidor con hostname, status, OS, CPU, RAM, disk, uptime, Docker y last seen.
-- [ ] Configuración global del control plane.
-- [ ] Suite de calidad: unit ≥95% en core-domain, integration con infraestructura temporal (Testcontainers) para los escenarios SSH del roadmap, E2E del flujo connect-server, CI verde.
-- [ ] UI conforme al design system Apple-inspired de Noodara (dark y light), con el flujo login → Servers → add server → connect → discovery → detail.
-- [ ] Discovery mostrado paso a paso con pass/fail por check en la UI.
+- [ ] Suite de calidad: unit ≥95% en core-domain, integration con infraestructura temporal (Testcontainers) para los escenarios SSH del roadmap, E2E del flujo connect-server, CI verde. *(Fase 5: unit 1527, integration 523, E2E 93 en local; sigue activo porque QA-04/QA-05 exigen una corrida real de CI + nightly y el repo aún no tiene remoto.)*
 
 ### Out of Scope
 
@@ -113,4 +111,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-19 after Phase 4 completion*
+*Last updated: 2026-09-21 after Phase 5 completion (closed by user approval with verification debt in 05-HUMAN-UAT.md)*
