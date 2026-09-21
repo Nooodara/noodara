@@ -5,7 +5,7 @@
 // Every probe this file exercises (id, uname, /etc/os-release, /proc/meminfo, ss, df, snap) is
 // injected via env var override or shell-function shadowing, never the host's real state
 // (hard_rule #9) -- this file must pass identically on the macOS dev machine and on real Ubuntu CI.
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -32,6 +32,35 @@ function dfFunctionSnippet(availableKb: number): string {
     `  printf '/dev/sda1 100000000 1000000 ${availableKb} 1%% /\\n'`,
     '}',
   ].join('\n');
+}
+
+// A fully-passing preflight environment (06-02-PLAN.md Task 3): root, all base commands, ubuntu
+// 22.04, x86_64, ample RAM/disk, no snap Docker, a free port. `fixturesDir` holds the os-release
+// and meminfo fixture files; `installDir` is the (normally empty) directory noodara_preflight
+// must never write into -- kept separate so a test can assert installDir stays empty afterwards.
+function buildPassingEnv(
+  fixturesDir: string,
+  installDir: string,
+): { snippet: string; env: Record<string, string> } {
+  const osReleaseFile = writeOsReleaseFixture(fixturesDir, 'ubuntu', '22.04');
+  const meminfoFile = writeMeminfoFixture(fixturesDir, 4194304);
+  const snippet = [
+    "id() { printf '0\\n'; }",
+    "uname() { printf 'x86_64\\n'; }",
+    'command() { return 0; }',
+    "ss() { printf 'LISTEN 0 4096 0.0.0.0:22 0.0.0.0:*\\n'; }",
+    dfFunctionSnippet(10485760),
+    'snap() { return 1; }',
+  ].join('\n');
+
+  return {
+    snippet,
+    env: {
+      NOODARA_OS_RELEASE_FILE: osReleaseFile,
+      NOODARA_MEMINFO_FILE: meminfoFile,
+      NOODARA_INSTALL_DIR: installDir,
+    },
+  };
 }
 
 describe.each(posixInterpreters())('install.sh preflight predicates (%s)', (interpreter) => {
@@ -407,6 +436,86 @@ describe.each(posixInterpreters())('install.sh preflight predicates (%s)', (inte
 
       expect(result.status).toBe(17);
       expect(result.stderr).toContain('sudo snap remove docker');
+    });
+  });
+
+  describe('noodara_preflight', () => {
+    it('runs root first: a non-root user fails at root (10), never a later check', () => {
+      const snippet = "id() { printf '1000\\n'; }\nnoodara_preflight";
+
+      const result = runInstallerShell(interpreter, snippet);
+
+      expect(result.status).toBe(10);
+    });
+
+    it('with Docker-via-snap AND a busy port both present, exits 17 and names snap, never the port', () => {
+      const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-preflight-fixtures-'));
+      const installDir = mkdtempSync(join(tmpdir(), 'noodara-preflight-installdir-'));
+      const { env } = buildPassingEnv(fixturesDir, installDir);
+      const snippet = [
+        "id() { printf '0\\n'; }",
+        "uname() { printf 'x86_64\\n'; }",
+        'command() { return 0; }',
+        "ss() { printf 'LISTEN 0 4096 0.0.0.0:3000 0.0.0.0:*\\n'; }",
+        dfFunctionSnippet(10485760),
+        'snap() { return 0; }',
+        'noodara_preflight',
+      ].join('\n');
+
+      const result = runInstallerShell(interpreter, snippet, { env });
+
+      expect(result.status).toBe(17);
+      expect(result.stderr).toContain('snap');
+      expect(result.stderr).not.toContain('already in use');
+    });
+
+    it('with an unsupported OS AND insufficient RAM both present, exits 12 and names the OS', () => {
+      const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-preflight-fixtures-'));
+      const osReleaseFile = writeOsReleaseFixture(fixturesDir, 'debian', '12');
+      const meminfoFile = writeMeminfoFixture(fixturesDir, 524288);
+      const snippet = [
+        "id() { printf '0\\n'; }",
+        "uname() { printf 'x86_64\\n'; }",
+        'command() { return 0; }',
+        'noodara_preflight',
+      ].join('\n');
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_OS_RELEASE_FILE: osReleaseFile, NOODARA_MEMINFO_FILE: meminfoFile },
+      });
+
+      expect(result.status).toBe(12);
+      expect(result.stderr).toContain('debian');
+    });
+
+    it('returns 0 and writes at least one progressive step line to stdout on a fully passing environment', () => {
+      const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-preflight-fixtures-'));
+      const installDir = mkdtempSync(join(tmpdir(), 'noodara-preflight-installdir-'));
+      const { snippet: fnSnippet, env } = buildPassingEnv(fixturesDir, installDir);
+
+      const result = runInstallerShell(interpreter, `${fnSnippet}\nnoodara_preflight`, { env });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout.length).toBeGreaterThan(0);
+    });
+
+    it('writes nothing under the install directory and invokes no package manager', () => {
+      const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-preflight-fixtures-'));
+      const installDir = mkdtempSync(join(tmpdir(), 'noodara-preflight-installdir-'));
+      const { snippet: fnSnippet, env } = buildPassingEnv(fixturesDir, installDir);
+      const sentinel = join(installDir, 'sentinel-should-not-exist');
+      const snippet = [
+        fnSnippet,
+        `apt_get() { printf 'x' > '${sentinel}'; }`,
+        `docker() { printf 'x' > '${sentinel}'; }`,
+        'noodara_preflight',
+      ].join('\n');
+
+      const result = runInstallerShell(interpreter, snippet, { env });
+
+      expect(result.status).toBe(0);
+      expect(existsSync(sentinel)).toBe(false);
+      expect(readdirSync(installDir)).toEqual([]);
     });
   });
 });
