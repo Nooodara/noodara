@@ -18,8 +18,12 @@ export default defineConfig({
     hookTimeout: 120_000,
     pool: 'forks',
     fileParallelism: false,
-    // No integration tests exist yet in this plan; only this config may set passWithNoTests.
-    passWithNoTests: true,
+    // Post-execution fix (orchestrator audit WR-08): this suite is long populated -- leaving
+    // `passWithNoTests` at its stale, permissive default from before any integration test existed
+    // would let a future `include`/`exclude` glob mistake or an incomplete CI checkout report
+    // success having run zero tests, rather than failing loudly. `pnpm test:integration` gates
+    // every PR.
+    passWithNoTests: false,
     // Builds the workspace once before the whole integration run (see global-setup.ts) so the
     // boot smoke test always exercises current sources, never a stale dist/.
     globalSetup: ['tests/integration/global-setup.ts'],

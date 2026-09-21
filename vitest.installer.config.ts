@@ -18,10 +18,15 @@ export default defineConfig({
     hookTimeout: 900_000,
     pool: 'forks',
     fileParallelism: false,
-    // No installer integration tests exist yet in this plan (Plan 06-10..06-12 add them);
-    // passWithNoTests is deliberate here, matching vitest.integration.config.ts's own precedent
-    // for a not-yet-populated suite.
-    passWithNoTests: true,
+    // Post-execution fix (orchestrator audit WR-08): this suite is long populated
+    // (tests/integration/installer/** now has ten real, release-gating test files) -- leaving
+    // `passWithNoTests` at its stale, permissive default from before Plan 06-10..06-12 added them
+    // would let a future `include` glob typo, directory rename, or CI checkout that omits this
+    // directory report success having run zero tests, rather than failing loudly. `pnpm
+    // test:installer` is gated in CI on push-to-main and nightly (never on every PR); a silent
+    // zero-test pass there is exactly the kind of gap this release-blocking gate exists to
+    // prevent.
+    passWithNoTests: false,
     globalSetup: ['tests/integration/global-setup.ts'],
   },
 });
