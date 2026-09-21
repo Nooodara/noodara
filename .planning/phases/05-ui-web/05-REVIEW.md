@@ -1,244 +1,264 @@
 ---
-status: issues_found
 phase: 05-ui-web
+reviewed: 2026-09-20T00:00:00Z
 depth: standard
-files_reviewed: 47
-diff_base: a8c03c5
-reviewed: 2026-09-20
-scope_note: "gap-closure delta only (git diff a8c03c5..HEAD); initial review archived as 05-REVIEW-initial.md"
+diff_base: 5592107
+scope_note: "gap-closure round 2 delta only (git diff 5592107..HEAD); round 1 delta archived as 05-REVIEW-gap-closure-round1.md"
+files_reviewed: 29
 files_reviewed_list:
-  - .github/workflows/ci.yml
-  - .github/workflows/nightly.yml
-  - apps/control-plane/src/queue/connect-server-worker.ts
-  - apps/control-plane/src/routes/events.ts
-  - apps/control-plane/src/routes/http-errors.ts
-  - apps/control-plane/src/routes/server-schemas.ts
-  - apps/control-plane/src/routes/servers.ts
-  - apps/control-plane/src/server.ts
+  - apps/control-plane/src/app.ts
+  - apps/control-plane/src/logger.ts
+  - apps/control-plane/src/logger.test.ts
+  - apps/control-plane/src/server.test.ts
   - apps/control-plane/src/services/connect-and-discover.ts
   - apps/control-plane/src/services/edit-server.ts
-  - apps/control-plane/src/services/fail-in-flight-connection.ts
+  - apps/control-plane/src/services/log-recovery-failure.ts
+  - apps/control-plane/src/services/log-recovery-failure.test.ts
+  - apps/control-plane/src/services/server-service-deps.ts
   - apps/control-plane/src/services/trust-fingerprint.ts
   - apps/control-plane/src/worker.ts
-  - apps/web/next.config.ts
-  - apps/web/src/app/(shell)/activity/page.tsx
-  - apps/web/src/app/(shell)/error.tsx
-  - apps/web/src/app/(shell)/layout.tsx
   - apps/web/src/app/(shell)/servers/[id]/page.tsx
-  - apps/web/src/app/page.tsx
-  - apps/web/src/app/setup/page.tsx
-  - apps/web/src/components/ActivityList.tsx
-  - apps/web/src/components/ServerSheet.tsx
-  - apps/web/src/components/TrustFingerprintDialog.tsx
-  - apps/web/src/lib/activity-groups.ts
-  - apps/web/src/lib/api-client.ts
-  - apps/web/src/lib/detail-sync.ts
-  - apps/web/src/lib/discovery-progress.ts
-  - apps/web/src/lib/error-copy.ts
-  - apps/web/src/lib/require-session.ts
-  - apps/web/src/lib/safe-storage.ts
-  - apps/web/src/lib/server-form.ts
-  - packages/domain/src/server/server-state.ts
+  - apps/web/src/components/ActivityRow.tsx
   - packages/domain/src/server/connection-result.ts
   - packages/domain/src/server/connection-result.test.ts
-  - packages/ui/src/Banner.tsx
   - packages/ui/src/Button.tsx
-  - packages/ui/src/CopyButton.tsx
-  - packages/ui/src/Field.tsx
-  - packages/ui/src/RowMenu.tsx
-  - packages/ui/src/SegmentedControl.tsx
-  - packages/ui/src/StatusPill.tsx
-  - packages/ui/src/ThemeToggle.tsx
   - packages/ui/src/contrast.ts
   - packages/ui/src/contrast.test.ts
   - packages/ui/theme.css
   - packages/ui/tokens.css
   - scripts/check-package-provenance.mjs
+  - tests/e2e/host-key.spec.ts
+  - tests/integration/helpers/boot-process.ts
+  - tests/integration/routes/validation-issue-contract.test.ts
+  - tests/integration/servers/connect-wedge.test.ts
+  - tests/integration/servers/edit-clears-pending-fingerprint.test.ts
+  - tests/integration/servers/trust-fingerprint-binding.test.ts
+  - tests/integration/services/connect-and-discover.test.ts
+  - tests/integration/services/edit-server.test.ts
+  - tests/unit/integration-helpers/boot-process-build-env.test.ts
+  - tests/unit/scripts/check-package-provenance-timeout.test.ts
 findings:
   critical: 1
-  warning: 4
-  info: 0
+  warning: 3
+  info: 1
   total: 5
+status: issues_found
 ---
 
-# Phase 05: Code Review Report (gap-closure delta)
+# Phase 05: Code Review Report (gap-closure round 2 delta)
 
 **Reviewed:** 2026-09-20
 **Depth:** standard
-**Files Reviewed:** 47
+**Files Reviewed:** 30 (29 listed + `apps/web/src/lib/detail-state.ts` read transitively as load-bearing evidence for CR-01, see below)
 **Status:** issues_found
 
 ## Summary
 
-This review covers only the gap-closure delta (`a8c03c5..HEAD`) against the phase's own gap-closure
-audit (`05-GAP-CLOSURE-AUDIT.md`), which claims most of the 37 triaged warnings are `CLOSED`. Most of
-those claims hold up under direct re-reading: the `CONNECTING` wedge (WR-A-01), the SSE backpressure gap
-(WR-A-03, with one reservation below), the detail-page stale-snapshot/invented-progress races (WR-B-01/02,
-gap 3), the activity-log refresh bugs (WR-B-04/05/06), api-client timeouts (WR-B-11), safe-storage/error
-boundary (WR-B-13), the field-error path normalization and the `sshUser` field wiring (WR-B-07, including
-the residual the audit itself flagged and a later commit closed), setup-token URL/Referrer-Policy, CI
-`permissions`/`timeout-minutes`/SHA-pinning/checksum-verified gitleaks (WR-C-11/12/13), and the provenance
-gate's manifest-derived enumeration (WR-C-14) are all real, and I could not find a case where the fix
-introduced a new *regression* in those areas.
+This is a delta review of phase 05's gap-closure round 2 (`5592107..HEAD`) against round 1's own
+findings (`05-REVIEW-gap-closure-round1.md`, GR-01..GR-05). Four of five hold up as genuinely fixed;
+one (GR-04) was not touched in this round at all. The host-key trust path itself
+(`trust-fingerprint.ts`, `connection-result.ts`, `connect-and-discover.ts`, `edit-server.ts`) is
+now solid on the axis round 1 flagged as CRITICAL: no sequence I could construct promotes a stale or
+wrong-host fingerprint, and every superseded-parking bypass round 1 named is now refused with a typed
+409 and zero side effects, backed by real integration coverage.
 
-One claim does not hold: **gap 6 / WR-A-02's "host-key trust is now bound to what the admin saw" is
-incomplete in a way that reopens exactly the class of bug it was meant to close.** The atomic
-conditional-UPDATE mid-review-swap protection is real and well-built, but the backend never verifies that
-the *current* failure is actually a host-key mismatch before promoting whatever `pendingFingerprint` sits
-on the row — and `applyConnectionResult`'s success/other-failure branches never clear a fingerprint parked
-by an earlier, since-superseded `HOST_KEY_CHANGED` event. This is GR-01 below, classified Critical because
-the gap-closure audit explicitly asserts this exact sub-case is fixed ("All three linked defects are
-fixed... exactly as WR-A-02's fix required, including the sshUser case") when the code does not implement
-the third of the three named steps.
+Two new, real defects surfaced while actively trying to construct inconsistent-row sequences per this
+review's brief, both rooted in the same root cause: `lastErrorCode` is written only by the connect
+flow (`applyConnectionResult`) and is never reconciled by the two *other* code paths that resolve a
+host-key situation without going through a new connect attempt (`editServer`'s identity-change clear,
+`trustFingerprint`'s successful promote). One of the two (CR-01) leaves the admin with **zero** UI
+action to recover the server — a real dead end reachable through the ordinary "edit a server while it
+has an unresolved host-key mismatch" flow, not a contrived edge case, and not covered by the existing
+regression tests for either GR-01 or GR-02.
+
+## Round 1 Gap Tracking (GR-01..GR-05)
+
+| ID | Round-1 severity | Round-2 status | Evidence |
+|---|---|---|---|
+| GR-01 | CRITICAL | **RESOLVED** | `trust-fingerprint.ts:104-110` refuses promotion unless `row.lastErrorCode === 'HOST_KEY_CHANGED'`, repeated as a defence-in-depth `WHERE` predicate at `:144-149`; `connection-result.ts:77-96` now clears `pendingFingerprint` on every success and every non-`HOST_KEY_CHANGED` failure. All three round-1 "bypass" scenarios (later `AUTH_FAILED`, later `COMMAND_TIMEOUT`, later successful reconnect superseding a parked value) are asserted refused in `tests/integration/servers/trust-fingerprint-binding.test.ts:269-348`, and the domain-level fix is asserted in `packages/domain/src/server/connection-result.test.ts:96-184` and `tests/integration/services/connect-and-discover.test.ts` (GR-01 cases added in this delta). |
+| GR-02 | WARNING | **RESOLVED** | `edit-server.ts:264-266`'s `hostIdentityChanged` block unconditionally clears `hostFingerprint`/`hostFingerprintCapturedAt` regardless of status, composed alongside (not replacing) the pre-existing `CONNECTED`-only D-14 clear. Verified for `ERROR`/`UNREACHABLE`/`DISCONNECTED`/`PENDING` in `tests/integration/services/edit-server.test.ts:720-882` and for `UNREACHABLE`/`CONNECTED` over real HTTP in `tests/integration/servers/edit-clears-pending-fingerprint.test.ts:162-225`. |
+| GR-03 | WARNING | **RESOLVED in production wiring**, but see WR-02 below | `log-recovery-failure.ts` logs the swallowed `failInFlightConnection` failure via `deps.logger?.warn`, never derives message text from the error, and never throws. Both real call sites now pass a logger: `apps/control-plane/src/app.ts:65` (`resolveServerServicesDeps({ events: eventPublisher, logger })`, `logger = app.log`) and `apps/control-plane/src/worker.ts:49` (`logger` = the worker's own module-level pino instance). Proven against a real captured pino stream (not just a fake) in `tests/integration/servers/connect-wedge.test.ts:209-263`. |
+| GR-04 | WARNING | **NOT ADDRESSED THIS ROUND** | `apps/control-plane/src/routes/events.ts` has zero diff between `5592107` and `HEAD` (`git diff 5592107..HEAD -- apps/control-plane/src/routes/events.ts` is empty). The SSE idle/staleness bound round 1 asked for is still absent; this item remains open and was simply out of this round's file set, not fixed. |
+| GR-05 | WARNING | **RESOLVED** | Both `execFileSync` calls in `scripts/check-package-provenance.mjs` now pass `timeout: 30_000` (`:254`, `:301`), with fail-closed behaviour on the `pnpm list` call (no fallback, throws an actionable error) and a documented fallback-to-registry-API path on the `npm view` call. Verified with a mocked `child_process` in `tests/unit/scripts/check-package-provenance-timeout.test.ts`. |
 
 ## Narrative Findings (AI reviewer)
 
-### GR-01 (CRITICAL): Trust-fingerprint promotion is not gated on `lastErrorCode`, so a stale/attacker-parked fingerprint from a resolved HOST_KEY_CHANGED event can be promoted later under an unrelated failure
+### CR-01 (CRITICAL): Editing a server's identity while it is ERROR/HOST_KEY_CHANGED leaves an admin with no UI action anywhere on the page to reconnect it
 
 **Files:**
-`apps/control-plane/src/services/trust-fingerprint.ts:50-120`,
-`packages/domain/src/server/connection-result.ts:62-94`
+`apps/control-plane/src/services/edit-server.ts:229-275`,
+`apps/web/src/lib/detail-state.ts:60-86`,
+`apps/web/src/components/HostKeyChangedBanner.tsx:52`,
+`apps/web/src/components/ServerDetailToolbar.tsx:85-94`
 
-**Issue:** `05-REVIEW-initial.md`'s WR-A-02 fix recommendation had three parts: (1) clear
-`pendingFingerprint` on any identity-changing edit regardless of status, (2) clear `pendingFingerprint` in
-`applyConnectionResult`'s success branch, and (3) in `trustFingerprint`, "refuse unless `row.status ===
-'ERROR' && row.lastErrorCode === 'HOST_KEY_CHANGED'`". The gap-closure audit's gap 6 says all three
-"linked defects are fixed" and cites part (1) (edit-server.ts's `identityChanged` clear) as proof. Parts
-(2) and (3) were never implemented:
+**Issue:** Constructing the exact sequence this review's brief asked for — a legitimate edit made
+while a server is parked in `ERROR`/`HOST_KEY_CHANGED` — produces a row the frontend cannot recover
+from through any rendered control:
 
-- `connection-result.ts:75-82` (the `result.ok` branch) returns `{...state, status: nextStatus,
-  lastErrorCode: null, hostFingerprint: ..., lastSeenAt: now}` — no `pendingFingerprint: null`. The failure
-  branch (`:85-93`) only overwrites `pendingFingerprint` when `errorCode === 'HOST_KEY_CHANGED'`; every
-  other error code (`AUTH_FAILED`, `COMMAND_TIMEOUT`, `CONNECT_TIMEOUT`, ...) falls through to
-  `state.pendingFingerprint`, i.e. carries forward whatever was already parked. `connection-result.test.ts`
-  never exercises a non-null `pendingFingerprint` going into the success branch (`buildState`'s default is
-  `null`), so this gap has no regression coverage either.
-- `trust-fingerprint.ts:50-120` gates promotion on `row.status === 'CONNECTING'` (busy),
-  `row.pendingFingerprint === null` (`NO_PENDING_FINGERPRINT`), and `canTrustFingerprint(row.status)`
-  (`SERVER_NOT_TRUSTABLE`, which only lets `ERROR` through per `server-state.ts`'s transition table). It
-  never reads `row.lastErrorCode`. `grep -n "lastErrorCode" apps/control-plane/src/services/trust-fingerprint.ts`
-  returns nothing.
+1. A real `HOST_KEY_CHANGED` connect failure parks the server: `status=ERROR`,
+   `lastErrorCode=HOST_KEY_CHANGED`, `pendingFingerprint=X`.
+2. The admin edits `host`/`sshPort`/`sshUser` on this server (e.g. correcting a typo, or
+   re-pointing the record at a different machine) via the real `PATCH /api/servers/:id` route.
+   `editServer` is not in its `row.status === 'CONNECTED'` branch (`:235`) since the row is `ERROR`,
+   so no `transition()` call happens and **`status` and `lastErrorCode` are left completely
+   untouched** — only `hostIdentityChanged`/`identityChanged` fire (`:264-275`), correctly nulling
+   `hostFingerprint`, `hostFingerprintCapturedAt`, `pendingFingerprint` and
+   `pendingFingerprintSeenAt` (GR-01/GR-02's own fixes, confirmed working).
+3. The resulting row: `status=ERROR`, `lastErrorCode=HOST_KEY_CHANGED`, `hostFingerprint=null`,
+   `pendingFingerprint=null`. This is directly reachable through the real HTTP surface — no direct
+   DB manipulation needed — and is exactly the row shape
+   `tests/integration/services/edit-server.test.ts:721-735` ("ERROR + host change ... leaves status
+   untouched") arranges, combined with the `UF-01` describe block's pending-fingerprint clear
+   (`:644-670`). Neither test checks what happens next on the frontend.
+4. On the detail page, `deriveDetailState` (`detail-state.ts:31-34`) checks `lastErrorCode ===
+   'HOST_KEY_CHANGED'` **unconditionally**, before considering `status` or `pendingFingerprint` at
+   all, so it still returns `'host-key-changed'` and the page renders `HostKeyChangedBanner`.
+5. `HostKeyChangedBanner` (`HostKeyChangedBanner.tsx:52`) correctly (and deliberately, per its own
+   comment) omits its `action` prop when `pendingFingerprint === null` — there is genuinely nothing
+   to trust, so no "Trust new fingerprint" button renders. This half is correct and intentional.
+6. `derivePrimaryAction` (`detail-state.ts:73-86`) has **no such guard**: its `PrimaryActionServer`
+   type only picks `status`/`lastErrorCode` (never `pendingFingerprint`), and its `ERROR` branch is
+   `lastErrorCode === 'HOST_KEY_CHANGED' ? null : retryAction()` — unconditionally `null` for this
+   exact combination, on the stated (and, since GR-01/GR-02, now false) assumption that "the action
+   lives in the dedicated error banner instead" (`:63-65`).
+7. `ServerDetailToolbar` renders its `Button` only `{primaryAction !== null ? ... : null}`
+   (`ServerDetailToolbar.tsx:85`), so with `primaryAction === null` **no button renders in the
+   toolbar either**.
 
-**Concrete failure scenario:** a genuine, no-attacker-required sequence — no MITM needed, just two
-back-to-back connection attempts with different outcomes:
+Net result: the page shows the `HOST_KEY_CHANGED` banner with no "Trust" action and a toolbar with no
+"Connect"/"Retry" action. There is no rendered control anywhere on this screen that issues a
+`/connect` or `/discover` request for this server. The only way to unstick it is to call the API
+directly (curl/script) or delete and re-register the server. This is reachable through ordinary
+product use, not a contrived edge case, and both round-1 fixes (GR-01, GR-02) that made this state
+newly reachable landed without anyone re-checking `derivePrimaryAction`'s stale assumption.
 
-1. Server `CONNECTED`, `hostFingerprint = F0`. An admin reconnects (or a MITM does); the host key presented
-   is `F_new`, so the connect fails `HOST_KEY_CHANGED`. Row becomes `status=ERROR,
-   lastErrorCode=HOST_KEY_CHANGED, pendingFingerprint=F_new`. The UI shows the host-key-changed banner; the
-   admin does not click Trust yet.
-2. The admin (or an automated retry) tries again and this attempt fails for an unrelated reason — wrong
-   password after a credential rotation, a slow host producing `COMMAND_TIMEOUT`, anything that is not
-   `HOST_KEY_CHANGED`. `ERROR_CODE_STATUS` still lands this on `ERROR`, and the failure branch of
-   `applyConnectionResult` carries `pendingFingerprint` forward unchanged (`F_new`), while `lastErrorCode`
-   becomes e.g. `AUTH_FAILED`. The UI now shows the generic `AUTH_FAILED` banner, not the host-key banner
-   (`deriveDetailState` keys off `lastErrorCode === 'HOST_KEY_CHANGED'`), so no admin using only the web UI
-   is ever shown a Trust action here.
-3. `pendingFingerprint` (`F_new`) is not a secret — `GET /api/servers/:id` returns it unconditionally
-   (`ServerViewSchema.pendingFingerprint`). Any authenticated caller — a script, a compromised session, a
-   future non-admin role, or simply a stale browser tab that still has the trust dialog's request shape
-   memorized — can call `POST /api/servers/:id/trust-fingerprint` with `{ fingerprint: "F_new" }` directly.
-   `trust-fingerprint.ts` checks only `status === 'ERROR'` (true, due to the *unrelated* `AUTH_FAILED`) and
-   `pendingFingerprint === input.fingerprint` (true) — it promotes `F_new` into `hostFingerprint`, with no
-   check that the row's current failure has anything to do with a host-key mismatch.
-4. `F_new` is now the trusted key. If step 1's `HOST_KEY_CHANGED` was caused by an actual interception
-   (not a legitimate rotation), the interceptor's key is now permanently trusted, and the next real connect
-   silently succeeds against it — the exact TOFU bypass class CLAUDE.md §2.3 and the noodara-security skill
-   call non-negotiable, and which the backend is required to enforce independently of the UI (the UI's own
-   gating on `lastErrorCode === 'HOST_KEY_CHANGED'` is exactly the "solo por prompt o UI" pattern the
-   project rules forbid relying on alone).
+`tests/e2e/host-key.spec.ts:429-514` ("UF-01/GR-02 regression") drives exactly this sequence against
+a real backend and correctly asserts the Trust button disappears (`:494`) and that
+`hostFingerprint`/`pendingFingerprint` are both null (`:508-509`) — but it never asserts on
+`page.getByTestId('server-detail-primary-action')`, so it does not notice that nothing replaced the
+removed Trust button. This finding has zero regression coverage today.
 
-**Fix:** implement the third step the original recommendation named: in `trustFingerprint`, add
-`if (row.lastErrorCode !== 'HOST_KEY_CHANGED') return { ok: false, code: 'SERVER_NOT_TRUSTABLE', ... }`
-(or a dedicated code) before the conditional UPDATE. Also close the domain-level root cause so a future
-caller of `applyConnectionResult` doesn't reopen this: clear `pendingFingerprint`/`pendingFingerprintSeenAt`
-in the success branch, and consider clearing it on any failure whose code is not `HOST_KEY_CHANGED` once a
-connection genuinely reaches a terminal outcome for a *different* reason. Add an integration test:
-`HOST_KEY_CHANGED` (parks `F_new`) → a second connect that fails `AUTH_FAILED` → `POST
-/trust-fingerprint` with `F_new` must return 409, not 200.
+**Fix:** Give `derivePrimaryAction` the information it needs to fall back to a real action for this
+exact orphaned combination — thread `pendingFingerprint` into `PrimaryActionServer` and change the
+`ERROR` branch to something like
+`lastErrorCode === 'HOST_KEY_CHANGED' && pendingFingerprint !== null ? null : retryAction()`. As a
+defense-in-depth companion (not a substitute — the UI fix alone would still leave a stale/misleading
+`lastErrorCode` on the row), consider having `editServer` also clear `lastErrorCode` in the
+`hostIdentityChanged` branch when it is `HOST_KEY_CHANGED`, since an identity change that clears the
+trust state also invalidates the reason that state was recorded. Add a test asserting
+`server-detail-primary-action` (or an equivalent) is present and enabled after this exact sequence.
 
-### GR-02 (WARNING): edit-server.ts's identity-change fix clears `pendingFingerprint` status-independently but still leaves `hostFingerprint` stale outside `CONNECTED`, guaranteeing a spurious HOST_KEY_CHANGED on the next connect
+### WR-01 (WARNING): `trustFingerprint`'s successful promote never clears `lastErrorCode`, so a server the admin just correctly trusted still displays the HOST_KEY_CHANGED banner until the next connect attempt
 
-**File:** `apps/control-plane/src/services/edit-server.ts:213-251`
+**Files:**
+`apps/control-plane/src/services/trust-fingerprint.ts:134-151`,
+`apps/web/src/lib/detail-state.ts:31-34`
 
-**Issue:** The gap-closure audit states edit-server.ts's fix is "status-independent, exactly as WR-A-02's
-fix required" (gap 6). The original WR-A-02 fix text asked for host/port changes in *any* status to clear
-both `pendingFingerprint` *and* `hostFingerprint`/`hostFingerprintCapturedAt` (item (d) in the original
-finding: "Only the CONNECTED branch resets hostFingerprint on an identity change... the first connect to a
-brand-new host is guaranteed to report a spurious HOST_KEY_CHANGED"). The shipped code only composes the
-`pendingFingerprint` clear unconditionally (`:249-251`); `hostFingerprint`/`hostFingerprintCapturedAt` are
-still only cleared inside the `row.status === 'CONNECTED'` branch (`:222-235`). Editing `host`/`sshPort`
-from `ERROR`, `UNREACHABLE`, `DISCONNECTED` or `PENDING` leaves the old host's trusted fingerprint attached
-to the row under the new host/port.
+**Issue:** The atomic conditional `UPDATE` that promotes `pending_fingerprint` into `host_fingerprint`
+sets `hostFingerprint`, `hostFingerprintCapturedAt`, `pendingFingerprint: null`,
+`pendingFingerprintSeenAt: null`, `status: nextStatus` (`ERROR -> PENDING`) and `updatedAt` — but
+never `lastErrorCode: null`. This line is unchanged by round 2's diff (it sits outside every hunk in
+`git diff 5592107..HEAD -- apps/control-plane/src/services/trust-fingerprint.ts`), so it predates
+this round, but it directly interacts with round 2's own GR-01 gate (which now *requires*
+`lastErrorCode === 'HOST_KEY_CHANGED'` to reach this UPDATE at all) and sits inside the exact file
+this review's brief asked to scrutinize.
 
-**Concrete scenario:** server in `ERROR` (e.g. `CONNECT_TIMEOUT`) with `hostFingerprint = F0` (from a
-previous host). Admin edits `host` to point at a different machine entirely (e.g. correcting a typo, or
-re-pointing the record at a replacement box). `identityChanged` is true, `pendingFingerprint` is cleared,
-but `hostFingerprint` stays `F0`. The next connect attempt passes `trustedFingerprint = F0` to `ssh.connect`
-against the *new* host, whose real key is `F1 != F0` → a guaranteed `HOST_KEY_CHANGED` even though nothing
-about this host's identity actually "changed" (it never had a trust relationship at all). This fails
-closed (no credential leak), but it trains the admin to treat `HOST_KEY_CHANGED` as routine noise on every
-edit, undermining the same TOFU signal GR-01 is about.
+Consequence: immediately after a successful "Trust new fingerprint" action, the row is
+`status=PENDING`, `hostFingerprint=<the newly trusted value>`, `pendingFingerprint=null`, but
+`lastErrorCode` is still `'HOST_KEY_CHANGED'`. `deriveDetailState` (`detail-state.ts:31-34`) checks
+`lastErrorCode === 'HOST_KEY_CHANGED'` first, unconditionally — not gated on `status` at all — so the
+detail page keeps rendering `HostKeyChangedBanner` ("This server's host key changed... Verify the
+fingerprint on the server itself before continuing", now with "Observed: not available" since
+`pendingFingerprint` is null) even though the admin just did exactly the verification the banner asks
+for. This is not a dead end (`derivePrimaryAction`'s `PENDING` branch ignores `lastErrorCode` and
+still offers "Connect", which clears `lastErrorCode` on its next successful `applyConnectionResult`),
+but it is a real, user-visible, self-inconsistent state with no test coverage: neither
+`tests/integration/servers/trust-fingerprint-binding.test.ts:180-199` ("returns 200 and promotes...")
+nor the real-backend e2e test `tests/e2e/host-key.spec.ts:524-617` (`:604-612`) asserts on
+`lastErrorCode` after a successful trust. This is the same class of stale-signal issue round 1's GR-02
+warned about ("trains the admin to treat HOST_KEY_CHANGED as routine noise... undermining the same
+TOFU signal GR-01 is about") — here triggered by the trust action succeeding, not by an edit.
 
-**Fix:** in the `identityChanged` block, also set `hostFingerprint: null, hostFingerprintCapturedAt: null`
-unconditionally (matching the original recommendation), not only inside the `CONNECTED` branch.
+**Fix:** add `lastErrorCode: null` to the `UPDATE`'s `.set({...})` at `trust-fingerprint.ts:134-143`.
+Add a regression test asserting `after.lastErrorCode` is `null` (not just `hostFingerprint`/
+`pendingFingerprint`/`status`) after a successful trust, in both
+`trust-fingerprint-binding.test.ts` and the real-backend e2e test.
 
-### GR-03 (WARNING): The post-TX1 recovery call in `connectAndDiscover`'s catch swallows a `failInFlightConnection` failure with no log line
+### WR-02 (WARNING): `logger.ts`'s bare-Error guard only intercepts `args[0] instanceof Error`; printf-style interpolation or an Error nested under a key other than `err` still bypasses both the hook and the custom `err` serializer
 
-**File:** `apps/control-plane/src/services/connect-and-discover.ts:463-475`
+**File:** `apps/control-plane/src/logger.ts:42-46,61-75`
 
-**Issue:** `await failInFlightConnection(deps, {...}).catch(() => undefined)` deliberately preserves and
-rethrows the *original* error (correct — not masked), but if the recovery call itself throws (e.g. a
-transient Postgres error while trying to un-wedge the row), that failure is discarded with zero log output.
-CLAUDE.md §2.2 requires "logs adecuados" for every infrastructure failure path. The worker's own `'failed'`
-listener (`connect-server-worker.ts:105-133`) does provide a second, logged recovery attempt
-(`services.failInFlightConnection` wrapped in try/catch with `options.logger.error(...)` on failure), so
-this is not a total loss of recovery — but the *first* attempt's failure is invisible to operators, and if
-the second attempt happens to succeed, nobody is ever told the first one failed at all, hiding a real
-signal (e.g. a flaky DB) behind an apparently-clean recovery.
+**Issue:** Traced the two other leak surfaces this review's brief named:
 
-**Fix:** log the recovery failure before swallowing it, e.g.
-`.catch((recoveryErr: unknown) => { deps.logger?.warn({ err: recoveryErr, serverId: row.id }, 'connect-service post-failure recovery failed; the worker "failed" listener will retry'); })`
-(adjust to whatever logger is available on `deps`), so the first attempt's failure is never silent even
-when the second attempt papers over it.
+- **Format-string interpolation.** Pino formats a string first argument with additional positional
+  arguments through `quick-format-unescaped` (confirmed in
+  `node_modules/.pnpm/pino@10.3.1/node_modules/pino/lib/genLog`/`tools.js`). A call shaped like
+  `logger.error('connect failed: %s', err)` has `args[0]` as a string, so `hooks.logMethod`
+  (`:62-64`) takes the `!(first instanceof Error)` branch and passes `args` through unmodified —
+  `err` is never intercepted, and `%s`/`%o` interpolation stringifies the raw `Error` (including its
+  `message`) directly into `msg`, with neither the hook nor `serializers.err` ever seeing it. Verified
+  no such call site exists today (`grep -rn "log\.\(error\|warn\|...\)(" ... | grep "%[sdifjoO]"`
+  returns nothing across `apps/control-plane/src`, `apps/web/src`, `packages`), so this is latent, not
+  exploited — but nothing (no lint rule, no wrapper type) prevents a future call site from
+  reintroducing it.
+- **Error nested under a non-`err` key.** `serializers.err` (`:42-46`) is registered by pino for the
+  literal key `err` only. A call like `logger.warn({ error: someError }, 'msg')` (key `error`, not
+  `err`) bypasses the custom serializer entirely; pino would then serialize the raw `Error` object
+  with no serializer applied. For a bare `Error`, `message`/`stack` are non-enumerable own properties
+  so this specific shape does not leak them by default — but a `cause` set via
+  `new Error(msg, { cause })` *is* a plain enumerable own assignment and would survive default JSON
+  serialization if ever logged un-nested under `err` (the current custom `err` serializer discards
+  `cause` because it returns a brand-new `{ name }` object, so this is safe today *only* because every
+  call site consistently uses the exact key `err` — confirmed by grep across every log call site in
+  `apps/control-plane/src`).
 
-### GR-04 (WARNING): SSE backpressure budget (1 MiB) does not meaningfully bound a half-open, heartbeat-only connection in practice
+Both gaps are consistent with the module's actual guarantee, but the module's own comment
+(`:47-60`, "this hook is what makes `logger.error(err)` safe WITHOUT editing any call site... at
+every log level, for every call site") reads as broader than what is actually enforced (every call
+site that passes a bare Error as literally `args[0]`, or nests it under literally the key `err`).
 
-**File:** `apps/control-plane/src/routes/events.ts:36,107-121,131-158`
+**Fix:** Not urgent given zero current exploitation, but worth closing the gap structurally rather
+than relying on convention: either (a) add an ESLint rule/pattern banning printf-placeholder log
+calls and non-`err`-keyed error objects in this codebase, or (b) extend `hooks.logMethod` to also
+scan the merging object's own top-level values (not just `args[0]`) for an `Error` instance under any
+key and rewrite each to the same `{ name }`-only shape `serializers.err` already produces, so the
+safety net does not depend on every future call site remembering the `err` convention.
 
-**Issue:** WR-A-03's fix (`SSE_MAX_BUFFERED_BYTES = 1_048_576`, checked via `exceedsBackpressureBudget`)
-is a real, correctly-wired improvement over the pre-fix state (no bound at all, `reply.raw.on('error')`
-now registered, `evict()` used consistently for both the heartbeat and stream writes). But the stated goal
-— bounding how long "a peer that stops reading... holds one of the capped 32 slots" — is only loosely met
-for the realistic worst case the comment itself names: a connection that receives *only* the ~20-byte
-`: keepalive\n\n` heartbeat frame every `heartbeatMs` (15s in production) and otherwise never drains
-(zero-window / genuinely stuck peer, never producing a `close`/`error` event on its own). At ~20 bytes per
-write every 15s, reaching the 1 MiB threshold takes roughly 1,048,576 / 20 × 15s ≈ 218 hours (~9 days) —
-worse than the ~15-minute default Linux `tcp_retries2` timeout that would eventually reclaim the same slot
-even *without* this fix. A server with normal `server.updated`/`discovery_progress` traffic would evict
-such a peer sooner, but the module's own comment singles out "alive but not reading... every event is
-buffered... without limit, and the slot is never freed" as the case this fix targets, and for a
-mostly-idle connection that case is now bounded in theory but not in any practically useful timeframe.
+### WR-03 (WARNING): `ServerServicesDeps.logger` is optional with nothing enforcing that a future construction site wires it, silently reintroducing GR-03's original defect
 
-**Fix:** add an idle/staleness bound independent of buffered bytes — e.g. evict a stream whose buffer has
-not drained across N consecutive heartbeat ticks (mentioned in the original WR-A-03 fix text: "evict a
-stream whose buffer has not drained across two consecutive heartbeats"), or call
-`request.raw.socket.setTimeout(...)`/`setKeepAlive` so the OS-level TCP stack surfaces a dead peer well
-before the byte budget would.
+**File:** `apps/control-plane/src/services/server-service-deps.ts:44-59`
 
-### GR-05 (WARNING): `check-package-provenance.mjs`'s `execFileSync` calls still have no per-call timeout, though the original fix recommendation named exactly this
+**Issue:** `logger?: ServiceLogger` is genuinely optional by design (`:52-58`'s own comment: "most
+services never log, and a test fixture should not be forced to supply one"), and
+`logRecoveryFailure` degrades to a silent no-op when absent (`log-recovery-failure.ts:38-42`, by
+design). Both current production call sites (`app.ts:65`, `worker.ts:49`) correctly pass `logger`
+today. But nothing — no required field, no lint rule, no runtime assertion — would catch a future
+third call site (a new CLI entrypoint, a new worker, a maintenance script) that constructs
+`ServerServicesDeps` without a `logger`. That site would compile and run fine, and would silently
+reintroduce exactly the "recovery failure disappears with zero trace" defect GR-03 was written to
+close, with no test or type-checker signal that anything regressed.
 
-**File:** `scripts/check-package-provenance.mjs:244-248,277-281`
+**Fix:** Not urgent while there are only two call sites (both correct), but worth a cheap guardrail
+before a third one is added — e.g. a code comment at the `ServerServicesDeps` interface pointing at
+`app.ts`/`worker.ts` as the two sanctioned call sites, or a lint rule / grep-based CI check (mirroring
+this repo's own `check-package-provenance.mjs` philosophy of "a re-runnable, non-bypassable check
+instead of a one-off human read") asserting every `resolveServerServicesDeps(` call site in
+production code passes `logger`.
 
-**Issue:** WR-C-12's fix text explicitly said "Add `timeout: 30_000` to both `execFileSync` calls." Neither
-`execFileSync('pnpm', ['list', '-r', '--depth', '0', '--json'], { encoding: 'utf8' })` (`:245-247`) nor
-`execFileSync('npm', ['view', spec, 'repository.url'], { encoding: 'utf8', stdio: [...] })` (`:277-281`)
-sets a `timeout`. The `security` job now has a job-level `timeout-minutes: 40` (ci.yml) that would
-eventually kill a hang, but that is a much coarser backstop than the process-level timeout the fix asked
-for, and it burns the whole job's budget (and, for a self-hosted or shared runner, the runner's time)
-rather than failing this one step promptly with an actionable message.
+### IN-01 (INFO): `tests/e2e/host-key.spec.ts`'s fixed host ports rely entirely on manual coordination across files
 
-**Fix:** `execFileSync('pnpm', [...], { encoding: 'utf8', timeout: 30_000 })` and the equivalent for the
-`npm view` call, as originally specified.
+**File:** `tests/e2e/host-key.spec.ts:18-26`
+
+**Issue:** `FIXED_HOST_PORT = 42_544` and `REAL_TRUST_FLOW_HOST_PORT = 42_545` are hardcoded, with a
+comment noting they are "distinct from `tests/integration/ssh/host-key-changed.test.ts`'s 42_522 and
+`connection-loss.test.ts`'s 42_533." This is correctly reasoned about today (Playwright's own
+`workers: 1`/`fullyParallel: false` config serializes this file's own tests against each other), but
+the uniqueness guarantee across the whole test suite is manual and undocumented anywhere central — a
+new spec file reusing one of these ports by accident would not be caught until a flaky CI run, and
+`pnpm test:e2e:repeat`'s nightly loop (mentioned in `CLAUDE.md` §3.2) would be the most likely place
+such a collision would first surface, non-deterministically. Not asking for a fix in this delta
+review; flagging as worth a shared port-registry constant if this pattern grows past two or three
+files.
 
 ---
 
