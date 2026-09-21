@@ -11,6 +11,12 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { posixInterpreters, runInstallerShell } from './sh-harness.js';
 
+/** POSIX single-quote escaping for embedding an arbitrary value into a shell snippet (mirrors
+ *  env-file.test.ts's own shQuote). */
+function shQuote(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
 function writeOsReleaseFixture(dir: string, id: string, versionId: string): string {
   const file = join(dir, 'os-release');
   writeFileSync(file, `ID=${id}\nVERSION_ID="${versionId}"\n`, 'utf8');
@@ -319,6 +325,65 @@ describe.each(posixInterpreters())('install.sh preflight predicates (%s)', (inte
 
       const result = runInstallerShell(interpreter, snippet, {
         env: { NOODARA_MEMINFO_FILE: meminfoFile, NOODARA_INSTALL_DIR: dir },
+      });
+
+      expect(result.status).toBe(15);
+    });
+
+    // Post-execution fix (orchestrator audit WR-05): the disk check's own "nearest existing
+    // ancestor" comment/docs claim previously only held for a real ancestor exactly one path
+    // segment up -- a NOODARA_INSTALL_DIR nested several levels below a still-nonexistent path
+    // queried `df` against a path that ALSO did not exist. This `df` stub only answers for the
+    // one path that genuinely exists (the mkdtemp base) -- any other path fails, mirroring a real
+    // `df` invoked against a directory that is not there. Only a genuine, real ancestor walk
+    // reaches a path this stub recognizes.
+    it('walks up every non-existent ancestor level (not just one) to the real, existing directory (WR-05)', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-preflight-disk-ancestor-'));
+      const meminfoFile = writeMeminfoFixture(dir, 4194304);
+      const nestedInstallDir = join(dir, 'level1', 'level2', 'level3');
+      const snippet = [
+        'df() {',
+        '  case "$2" in',
+        `    ${shQuote(dir)})`,
+        "      printf 'Filesystem 1024-blocks Used Available Capacity Mounted\\n'",
+        "      printf '/dev/sda1 100000000 1000000 10485760 1%% /\\n'",
+        '      ;;',
+        '    *)',
+        '      return 1',
+        '      ;;',
+        '  esac',
+        '}',
+        'noodara_check_resources',
+      ].join('\n');
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_MEMINFO_FILE: meminfoFile, NOODARA_INSTALL_DIR: nestedInstallDir },
+      });
+
+      expect(result.status).toBe(0);
+    });
+
+    it('fails with exit code 15 (not a silent pass) when even the real ancestor df reports insufficient space (WR-05)', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'noodara-preflight-disk-ancestor-'));
+      const meminfoFile = writeMeminfoFixture(dir, 4194304);
+      const nestedInstallDir = join(dir, 'level1', 'level2', 'level3');
+      const snippet = [
+        'df() {',
+        '  case "$2" in',
+        `    ${shQuote(dir)})`,
+        "      printf 'Filesystem 1024-blocks Used Available Capacity Mounted\\n'",
+        "      printf '/dev/sda1 100000000 1000000 1048576 1%% /\\n'",
+        '      ;;',
+        '    *)',
+        '      return 1',
+        '      ;;',
+        '  esac',
+        '}',
+        'noodara_check_resources',
+      ].join('\n');
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_MEMINFO_FILE: meminfoFile, NOODARA_INSTALL_DIR: nestedInstallDir },
       });
 
       expect(result.status).toBe(15);
