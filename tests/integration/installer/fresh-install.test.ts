@@ -83,10 +83,13 @@ describe.each(UBUNTU_VERSIONS)('fresh install on Ubuntu %s (06-11-PLAN.md Task 1
 
       expect(run.exitCode, `install.sh exit ${String(run.exitCode)}, stderr:\n${run.stderr}`).toBe(0);
 
-      // .env and docker-compose.yml both exist, .env is mode 600.
+      // .env and docker-compose.yml both exist, .env is mode 600. hard_rule #8: the install
+      // directory itself is 700 and install.log (checked further below, once it has content to
+      // read for the canary) is 600 -- all root-owned.
       const envRaw = await readFixtureFile(fixture, ENV_PATH);
       const env = parseEnvFile(envRaw);
       expect(await statFixturePath(fixture, ENV_PATH)).toBe('600 root:root');
+      expect(await statFixturePath(fixture, INSTALL_DIR)).toBe('700 root:root');
       await readFixtureFile(fixture, COMPOSE_PATH); // exists, throws otherwise
 
       // Six services, migrate exited 0, api/web/postgres/redis healthy.
@@ -164,6 +167,9 @@ describe.each(UBUNTU_VERSIONS)('fresh install on Ubuntu %s (06-11-PLAN.md Task 1
       });
       expect(signInResult.status, `POST /api/auth/sign-in/email body: ${signInResult.body}`).toBe(200);
       expect(hasHttpOnlyCookie(signInResult.headers), `sign-in response headers:\n${signInResult.headers}`).toBe(true);
+
+      // hard_rule #8: install.log is mode 600, root-owned.
+      expect(await statFixturePath(fixture, INSTALL_LOG_PATH)).toBe('600 root:root');
 
       // T-06-02 canary: no generated secret reaches stdout, stderr or install.log; the setup token
       // occurs exactly once in stdout and never in install.log.
