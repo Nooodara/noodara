@@ -1594,6 +1594,24 @@ noodara_service_health() {
   (cd "$NOODARA_INSTALL_DIR" && docker compose ps --format json) | noodara_compose_json_field_for_service "$1" Health
 }
 
+# Post-execution fix (orchestrator audit Finding E, 06-09 follow-up): a single, immediate health
+# read for both api and web -- no sleep, no polling loop. Used only to decide whether a
+# same-version no-op *candidate* (Finding C: NOODARA_VERSION already matches .env and every merge
+# key is already present) can genuinely skip straight to the summary, or whether the stack needs
+# repairing first. Finding C's own no-op path used to skip `docker compose pull`/`up -d`
+# unconditionally the moment the version/keys matched, then poll for up to
+# NOODARA_HEALTH_WAIT_ATTEMPTS x NOODARA_HEALTH_WAIT_INTERVAL (5 minutes by default) against
+# containers that may never have started at all -- a first install whose `pull`/`up -d` failed
+# (a network blip) or a manually stopped stack could never recover except by deleting `.env`,
+# breaking INST-02's own idempotency promise. This function is never the final health gate itself
+# -- that is always noodara_wait_for_health's own bounded loop, run afterwards whenever this
+# single read reports not-healthy.
+noodara_stack_healthy_now() {
+  _noodara_shn_api=$(noodara_service_health api)
+  _noodara_shn_web=$(noodara_service_health web)
+  [ "$_noodara_shn_api" = "healthy" ] && [ "$_noodara_shn_web" = "healthy" ]
+}
+
 # The exit code of a (possibly already-exited) service, from `docker compose ps -a` (`-a` so a
 # one-shot like `migrate` that has already exited is still reported, not just running containers).
 noodara_service_exit_code() {
@@ -1672,7 +1690,16 @@ readonly NOODARA_HEALTH_WAIT_INTERVAL="${NOODARA_HEALTH_WAIT_INTERVAL:-5}"
 # the D-12 rollback remedy by name (NOODARA_VERSION=<the value of NOODARA_PREVIOUS_VERSION>).
 # Nothing on this path removes a volume, deletes .env, or runs `docker compose down` -- D-12's
 # "fail with diagnostics, never roll back automatically" holds all the way through.
+#
+# Post-execution fix (orchestrator audit Finding E, 06-09 follow-up): accepts an optional `$1`
+# context, `"repair"`, used only by noodara_main's same-version repair path (Finding E: a no-op
+# candidate whose stack turned out not to be healthy). No version change ever happens on that
+# path -- NOODARA_VERSION and NOODARA_PREVIOUS_VERSION both stay exactly what they already were --
+# so naming a "rollback" target there would misleadingly imply an upgrade took place. Every other
+# caller (a genuine fresh install or a genuine version-changed upgrade) omits `$1` and keeps the
+# original rollback-remedy wording unchanged.
 noodara_wait_for_health() {
+  _noodara_wfh_context="${1:-}"
   noodara_step "Waiting for services to report healthy..."
   _noodara_wfh_attempt=0
   _noodara_wfh_api=""
@@ -1694,6 +1721,10 @@ noodara_wait_for_health() {
   fi
   _noodara_wfh_tail=$(cd "$NOODARA_INSTALL_DIR" && docker compose logs --tail 50 "$_noodara_wfh_bad" 2>&1 | noodara_redact_diagnostic_text)
   printf '%s\n' "$_noodara_wfh_tail" >&2
+
+  if [ "$_noodara_wfh_context" = "repair" ]; then
+    noodara_fail health-check-failed "Service '$_noodara_wfh_bad' did not become healthy in time. See its log tail above. Data and secrets are untouched."
+  fi
 
   # The real rollback remedy: NOODARA_PREVIOUS_VERSION is a key written INTO .env by
   # noodara_main (never a real process environment variable during a genuine install) -- prefer an
@@ -1913,15 +1944,21 @@ noodara_print_summary() {
 # contents of the whole install; every step it calls already exists and is independently unit-
 # tested (Plans 06-02..06-08) -- this function only composes them in one documented order.
 #
-# Post-execution fix (orchestrator audit Findings B/C, 06-09 follow-up): on an existing
+# Post-execution fix (orchestrator audit Findings B/C/E, 06-09 follow-up): on an existing
 # installation the panel port and public URL are read from .env (Finding B, via
 # noodara_resolve_installed_public_url and a direct noodara_env_get_value read for the port) --
 # never re-resolved from an operator override or the network -- and a same-version re-run with
-# nothing missing from .env skips the backup/merge, the pull and `docker compose up -d` entirely,
-# running only the health check and summary (Finding C, D-09's own literal wording: "si ya está en
-# esa versión, no cambia nada y solo verifica salud"). Both changes only apply once
-# _noodara_main_was_installed is already known to be 1 -- a fresh install's own port/URL
-# resolution and its always-runs pull/up are completely unchanged.
+# nothing missing from .env is a no-op *candidate* (Finding C, D-09's own literal wording: "si ya
+# está en esa versión, no cambia nada y solo verifica salud"). Finding E: a candidate is only
+# actually treated as a no-op once a single, immediate health read (noodara_stack_healthy_now,
+# no polling) confirms api/web are genuinely already healthy -- skipping the backup/merge, the
+# pull and `docker compose up -d` entirely. When the candidate's stack is NOT healthy (a
+# half-finished first install whose pull/up never succeeded, or a manually stopped stack), this is
+# instead a repair: still no backup/merge (nothing in .env needs to change), but pull and
+# `docker compose up -d` run exactly as a normal re-run would, followed by the real bounded
+# noodara_wait_for_health. Every change here only applies once _noodara_main_was_installed is
+# already known to be 1 -- a fresh install's own port/URL resolution and its always-runs pull/up
+# are completely unchanged.
 noodara_main() {
   noodara_step "Noodara installer"
 
@@ -1939,6 +1976,7 @@ noodara_main() {
   _noodara_main_version=$(noodara_resolve_version)
   _noodara_main_image_prefix=$(noodara_resolve_image_prefix)
   _noodara_main_is_noop=0
+  _noodara_main_is_repair=0
 
   if [ "$_noodara_main_was_installed" = "1" ]; then
     # Finding B: .env always wins on a re-run -- read directly, never re-resolved.
@@ -1953,20 +1991,30 @@ noodara_main() {
     # the last real previous version, not overwrite it with the version it is already on.
     _noodara_main_previous_version=$(noodara_env_get_value "$_noodara_main_env_path" NOODARA_VERSION)
 
-    # Finding C: a true no-op requires both the version to already match AND every key the merge
-    # below would otherwise append to already be present -- a release that added a new required
-    # .env key still needs its one-time additive merge (and its one backup) even when the version
-    # number itself has not moved.
+    # Finding C: a no-op *candidate* requires both the version to already match AND every key the
+    # merge below would otherwise append to already be present -- a release that added a new
+    # required .env key still needs its one-time additive merge (and its one backup) even when the
+    # version number itself has not moved.
+    _noodara_main_noop_candidate=0
     if [ "$_noodara_main_previous_version" = "$_noodara_main_version" ] \
       && noodara_env_has_key "$_noodara_main_env_path" NOODARA_IMAGE_PREFIX \
       && noodara_env_has_key "$_noodara_main_env_path" NOODARA_PORT \
       && noodara_env_has_key "$_noodara_main_env_path" NOODARA_PUBLIC_URL; then
-      _noodara_main_is_noop=1
+      _noodara_main_noop_candidate=1
     fi
 
-    if [ "$_noodara_main_is_noop" = "1" ]; then
-      noodara_note "Already on version ${_noodara_main_version}; verifying health only."
-      noodara_write_log "Re-run: already on version ${_noodara_main_version}, .env unchanged (D-09 no-op)"
+    if [ "$_noodara_main_noop_candidate" = "1" ]; then
+      # Finding E: the candidate is only a genuine no-op once a single, immediate health read
+      # confirms the stack is already healthy -- never assumed from .env's own state alone.
+      if noodara_stack_healthy_now; then
+        _noodara_main_is_noop=1
+        noodara_note "Already on version ${_noodara_main_version}; verifying health only."
+        noodara_write_log "Re-run: already on version ${_noodara_main_version}, .env unchanged (D-09 no-op)"
+      else
+        _noodara_main_is_repair=1
+        noodara_note "The stack is not healthy; starting it."
+        noodara_write_log "Re-run: already on version ${_noodara_main_version} but the stack was not healthy -- repairing (D-09/Finding E)"
+      fi
     else
       if [ -n "$_noodara_main_previous_version" ] && [ "$_noodara_main_previous_version" != "$_noodara_main_version" ]; then
         noodara_set_env_value "$_noodara_main_env_path" NOODARA_PREVIOUS_VERSION "$_noodara_main_previous_version"
@@ -1989,17 +2037,26 @@ noodara_main() {
   noodara_write_log "Placed docker-compose.yml"
 
   if [ "$_noodara_main_is_noop" = "1" ]; then
+    # Finding E: a true no-op already proved the stack is healthy via the single
+    # noodara_stack_healthy_now read above -- no pull, no `docker compose up -d`, and no second
+    # health check (noodara_wait_for_health's own bounded loop) either; straight to the summary.
     noodara_note "Skipping image pull and docker compose up -d (already on the target version, D-09)."
     noodara_write_log "Skipped pull and up -d (D-09 no-op)"
+    noodara_write_log "All services healthy"
   else
     noodara_pull_images
     noodara_write_log "Images pulled (or skipped via NOODARA_INTERNAL_IMAGE_PREFIX)"
     noodara_compose_up
     noodara_write_log "docker compose up -d completed"
+    if [ "$_noodara_main_is_repair" = "1" ]; then
+      # Finding E: no version change happened on this path -- the D-12 rollback hint must not
+      # claim an upgrade took place.
+      noodara_wait_for_health repair
+    else
+      noodara_wait_for_health
+    fi
+    noodara_write_log "All services healthy"
   fi
-
-  noodara_wait_for_health
-  noodara_write_log "All services healthy"
 
   noodara_print_summary "$_noodara_main_public_url" "$_noodara_main_env_path" "$_noodara_main_version" "$_noodara_main_port"
 }
