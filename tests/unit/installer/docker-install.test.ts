@@ -276,3 +276,181 @@ describe.each(posixInterpreters())('install.sh noodara_ensure_docker (%s)', (int
     expect(calls).not.toMatch(/install[^\n]*\bdocker-compose\b(?!-)/);
   });
 });
+
+// 06-08-PLAN.md Task 2: the apt-repo installation sequence, one named step at a time -- exact
+// literal external-command order, sources-list content (arch + codename pinned to
+// signed-by=/etc/apt/keyrings/docker.asc), and per-step failure attribution.
+describe.each(posixInterpreters())('install.sh noodara_install_docker step sequence (%s)', (interpreter) => {
+  it(
+    'runs remove -> update -> install prereqs -> create keyring dir -> download key -> chmod -> ' +
+      'detect architecture -> update -> install engine, in exactly that order',
+    () => {
+      const stubDir = mkdtempSync(join(tmpdir(), 'noodara-docker-order-'));
+      const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-order-fixtures-'));
+      const keyringDir = mkdtempSync(join(tmpdir(), 'noodara-docker-order-keyring-'));
+      const sourcesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-order-sources-'));
+      const logFile = join(fixturesDir, 'calls.log');
+      const osReleaseFile = writeOsReleaseFixture(fixturesDir, 'jammy');
+      const sourcesFile = join(sourcesDir, 'docker.list');
+
+      writeCommandStub(stubDir, 'apt-get', 'printf "apt-get %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"\nexit 0');
+
+      const snippet = [
+        'dpkg() { printf "dpkg %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; printf "amd64\\n"; }',
+        'install() { printf "install %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; }',
+        'chmod() { printf "chmod %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; }',
+        'noodara_fetch_url() { printf "fetch-url %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; printf "FAKE-GPG-KEY-BODY"; return 0; }',
+        'noodara_install_docker',
+      ].join('\n');
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: withPath(stubDir, {
+          NOODARA_TEST_CALL_LOG: logFile,
+          NOODARA_OS_RELEASE_FILE: osReleaseFile,
+          NOODARA_DOCKER_KEYRING_DIR: keyringDir,
+          NOODARA_DOCKER_SOURCES_FILE: sourcesFile,
+        }),
+      });
+
+      expect(result.status).toBe(0);
+      const calls = readFileSync(logFile, 'utf8').trim().split('\n');
+
+      expect(calls).toHaveLength(9);
+      expect(calls[0]).toMatch(/^apt-get .*remove.*docker\.io/);
+      expect(calls[1]).toMatch(/^apt-get .*update/);
+      expect(calls[1]).not.toContain('install');
+      expect(calls[2]).toMatch(/^apt-get .*install.*ca-certificates.*curl.*gnupg/);
+      expect(calls[3]).toMatch(/^install .*-d /);
+      expect(calls[4]).toMatch(/^fetch-url body https:\/\/download\.docker\.com\/linux\/ubuntu\/gpg/);
+      expect(calls[5]).toMatch(/^chmod .*a\+r/);
+      expect(calls[6]).toMatch(/^dpkg .*--print-architecture/);
+      expect(calls[7]).toMatch(/^apt-get .*update/);
+      expect(calls[7]).not.toContain('install');
+      expect(calls[8]).toMatch(
+        /^apt-get .*install.*docker-ce\b.*docker-ce-cli.*containerd\.io.*docker-buildx-plugin.*docker-compose-plugin/,
+      );
+    },
+  );
+
+  it('does not fail the removal step when a conflicting package is simply not installed', () => {
+    const stubDir = mkdtempSync(join(tmpdir(), 'noodara-docker-remove-'));
+    writeCommandStub(stubDir, 'apt-get', 'exit 100');
+
+    const result = runInstallerShell(interpreter, 'noodara_docker_remove_conflicting_packages', {
+      env: withPath(stubDir),
+    });
+
+    expect(result.status).toBe(0);
+  });
+});
+
+describe.each(posixInterpreters())('install.sh noodara_docker_write_sources_list (%s)', (interpreter) => {
+  it('writes a sources line pinned to the real default keyring file, with arch and codename', () => {
+    const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-sources-'));
+    const osReleaseFile = writeOsReleaseFixture(fixturesDir, 'jammy');
+    const sourcesFile = join(fixturesDir, 'docker.list');
+
+    // NOODARA_DOCKER_KEYRING_DIR is deliberately NOT overridden here -- 06-08-PLAN.md Task 2's own
+    // acceptance criterion requires the generated line to contain the real default keyring path
+    // (signed-by=/etc/apt/keyrings/docker.asc), so only the sources-list target itself is
+    // redirected into a tmpdir (the plan's own documented pattern).
+    const snippet = ['dpkg() { printf "amd64\\n"; }', 'noodara_docker_write_sources_list'].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, {
+      env: { NOODARA_OS_RELEASE_FILE: osReleaseFile, NOODARA_DOCKER_SOURCES_FILE: sourcesFile },
+    });
+
+    expect(result.status).toBe(0);
+    const content = readFileSync(sourcesFile, 'utf8');
+    expect(content).toContain('signed-by=/etc/apt/keyrings/docker.asc');
+    expect(content).toContain('https://download.docker.com/linux/ubuntu');
+    expect(content).toContain('arch=amd64');
+    expect(content).toContain(' jammy ');
+  });
+
+  it('fails with exit code 20 when the architecture is not amd64 or arm64', () => {
+    const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-sources-'));
+    const osReleaseFile = writeOsReleaseFixture(fixturesDir, 'jammy');
+    const sourcesFile = join(fixturesDir, 'docker.list');
+    const snippet = ['dpkg() { printf "riscv64\\n"; }', 'noodara_docker_write_sources_list'].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, {
+      env: { NOODARA_OS_RELEASE_FILE: osReleaseFile, NOODARA_DOCKER_SOURCES_FILE: sourcesFile },
+    });
+
+    expect(result.status).toBe(20);
+    expect(existsSync(sourcesFile)).toBe(false);
+  });
+
+  it('fails with exit code 20 when the codename is not jammy or noble', () => {
+    const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-sources-'));
+    const osReleaseFile = writeOsReleaseFixture(fixturesDir, 'focal');
+    const sourcesFile = join(fixturesDir, 'docker.list');
+    const snippet = ['dpkg() { printf "amd64\\n"; }', 'noodara_docker_write_sources_list'].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, {
+      env: { NOODARA_OS_RELEASE_FILE: osReleaseFile, NOODARA_DOCKER_SOURCES_FILE: sourcesFile },
+    });
+
+    expect(result.status).toBe(20);
+    expect(existsSync(sourcesFile)).toBe(false);
+  });
+});
+
+describe.each(posixInterpreters())('install.sh noodara_install_docker per-step failures (%s)', (interpreter) => {
+  it('fails with exit code 20 naming the apt-get update step when it fails', () => {
+    const stubDir = mkdtempSync(join(tmpdir(), 'noodara-docker-step-fail-'));
+    writeCommandStub(stubDir, 'apt-get', 'exit 1');
+
+    const result = runInstallerShell(interpreter, 'noodara_docker_apt_update', { env: withPath(stubDir) });
+
+    expect(result.status).toBe(20);
+    expect(result.stderr.toLowerCase()).toContain('apt-get update');
+  });
+
+  it('fails with exit code 20 naming the prerequisites install step when it fails', () => {
+    const stubDir = mkdtempSync(join(tmpdir(), 'noodara-docker-step-fail-'));
+    writeCommandStub(stubDir, 'apt-get', 'exit 1');
+
+    const result = runInstallerShell(interpreter, 'noodara_docker_apt_install_prereqs', { env: withPath(stubDir) });
+
+    expect(result.status).toBe(20);
+    expect(result.stderr).toContain('ca-certificates');
+  });
+
+  it('fails with exit code 20 naming the GPG key download step when the response is empty', () => {
+    const keyringDir = mkdtempSync(join(tmpdir(), 'noodara-docker-keyring-'));
+    const snippet = ['noodara_fetch_url() { return 1; }', 'noodara_docker_download_gpg_key'].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, { env: { NOODARA_DOCKER_KEYRING_DIR: keyringDir } });
+
+    expect(result.status).toBe(20);
+    expect(result.stderr.toLowerCase()).toContain('gpg key');
+    expect(existsSync(join(keyringDir, 'docker.asc'))).toBe(false);
+  });
+
+  it('fails with exit code 20 naming the engine install step when it fails', () => {
+    const stubDir = mkdtempSync(join(tmpdir(), 'noodara-docker-step-fail-'));
+    writeCommandStub(stubDir, 'apt-get', 'exit 1');
+
+    const result = runInstallerShell(interpreter, 'noodara_docker_apt_install_engine', { env: withPath(stubDir) });
+
+    expect(result.status).toBe(20);
+    expect(result.stderr).toContain('docker-ce');
+  });
+});
+
+describe('install.sh Docker install structural checks (06-08-PLAN.md Task 2)', () => {
+  it('never references a third-party curl-pipe-sh installer domain', () => {
+    const source = readFileSync(INSTALL_SH, 'utf8');
+    const count = (source.match(/get\.docker\.com/g) ?? []).length;
+
+    expect(count).toBe(0);
+  });
+
+  it('every apt-get invocation is non-interactive (DEBIAN_FRONTEND appears)', () => {
+    const source = readFileSync(INSTALL_SH, 'utf8');
+
+    expect(source).toContain('DEBIAN_FRONTEND');
+  });
+});
