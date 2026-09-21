@@ -1505,21 +1505,131 @@ NOODARA_COMPOSE_EOF_C
   chmod 644 "$_noodara_pcf_target" || noodara_fail env-write-failed "Failed to set permissions on $_noodara_pcf_target."
 }
 
-# Named stubs for the pull/up/health/summary steps -- filled in by this plan's Task 2 (pull/up/
-# health) and Task 3 (setup token/ufw/summary/log). Present from this commit onward so
-# noodara_main reads as a complete table of contents of the whole install from its first commit.
+# Image pull, compose up, and health wait (06-CONTEXT.md D-09/D-12, exit reasons image-pull-failed
+# =50/compose-up-failed=51/migrations-failed=52/health-check-failed=53). Every `docker compose`
+# call below runs with the install directory as cwd (docker-compose.yml and .env both live there --
+# Compose's own default project-directory/.env resolution needs nothing more, matching Plan
+# 06-07's own compose-stack.test.ts convention).
+
+# Extracts the value of `field` from the JSON object whose "Service" field equals `svc`, out of
+# `docker compose ps[--format json]`'s stdout on stdin -- without jq (D-18 layer 1 has no such
+# dependency). Splits on "}" record boundaries (`RS = "}"`) rather than assuming one object per
+# line, so both shapes Compose has shipped -- a single JSON array (objects possibly spanning
+# multiple physical lines) and NDJSON (one compact object per line) -- parse identically; asserted
+# by tests/unit/installer/main-flow.test.ts against both fixture shapes.
+noodara_compose_json_field_for_service() {
+  awk -v svc="$1" -v fld="$2" '
+    BEGIN { RS = "}" }
+    $0 ~ ("\"Service\"[ ]*:[ ]*\"" svc "\"") {
+      if (match($0, "\"" fld "\"[ ]*:[ ]*\"?[^\",}]*\"?")) {
+        val = substr($0, RSTART, RLENGTH)
+        sub("\"" fld "\"[ ]*:[ ]*", "", val)
+        gsub(/"/, "", val)
+        print val
+        exit
+      }
+    }
+  '
+}
+
+# The live Health status ("healthy"/"unhealthy"/"starting"/empty) for a running service, from
+# `docker compose ps` (running containers only).
+noodara_service_health() {
+  (cd "$NOODARA_INSTALL_DIR" && docker compose ps --format json) | noodara_compose_json_field_for_service "$1" Health
+}
+
+# The exit code of a (possibly already-exited) service, from `docker compose ps -a` (`-a` so a
+# one-shot like `migrate` that has already exited is still reported, not just running containers).
+noodara_service_exit_code() {
+  (cd "$NOODARA_INSTALL_DIR" && docker compose ps -a --format json) | noodara_compose_json_field_for_service "$1" ExitCode
+}
+
+# True (exit 0) only when the `migrate` one-shot's own recorded exit code is present and non-zero
+# -- distinguishes "migrations genuinely failed" from "some other compose-up failure" so
+# noodara_compose_up below can surface exit 52 (migrations-failed) instead of the generic 51
+# (compose-up-failed) when that is the real cause (Task 2's own behavior spec).
+noodara_migrate_did_fail() {
+  _noodara_mdf_code=$(noodara_service_exit_code migrate)
+  [ -n "$_noodara_mdf_code" ] && [ "$_noodara_mdf_code" != "0" ]
+}
+
+# Pulls every image `docker-compose.yml` references, unless NOODARA_INTERNAL_IMAGE_PREFIX is set
+# (D-19: the layer-2 test suite loads locally built images into the daemon directly and has no
+# registry to pull from at all -- this is the one flag that already implies skipping the pull,
+# reusing Plan 06-06's own documented override rather than a second new one). Fails with reason
+# image-pull-failed (exit 50) on any pull failure.
 noodara_pull_images() {
-  :
+  if [ -n "${NOODARA_INTERNAL_IMAGE_PREFIX:-}" ]; then
+    noodara_note "Skipping image pull (NOODARA_INTERNAL_IMAGE_PREFIX is set -- using locally built images, D-19)."
+    return 0
+  fi
+  noodara_step "Pulling images..."
+  if ! (cd "$NOODARA_INSTALL_DIR" && docker compose pull); then
+    noodara_fail image-pull-failed "Failed to pull images. Check network connectivity and the resolved image tags, then re-run this installer."
+  fi
 }
 
+# Runs `docker compose up -d`. On failure, checks whether the `migrate` one-shot is the real cause
+# (exit 52, migrations-failed, with its own log tail) before falling back to the generic
+# compose-up-failed (exit 51) -- D-12: nothing here removes a volume, deletes .env, or re-runs
+# `docker compose down`; data and secrets are always left untouched on this path.
 noodara_compose_up() {
-  :
+  noodara_step "Starting services..."
+  if ! (cd "$NOODARA_INSTALL_DIR" && docker compose up -d); then
+    if noodara_migrate_did_fail; then
+      _noodara_cu_tail=$(cd "$NOODARA_INSTALL_DIR" && docker compose logs --tail 50 migrate 2>&1)
+      printf '%s\n' "$_noodara_cu_tail" >&2
+      noodara_fail migrations-failed "Database migrations failed. See the migrate service log tail above. Data and secrets are untouched."
+    fi
+    noodara_fail compose-up-failed "Failed to start services with docker compose up -d. Data and secrets are untouched."
+  fi
 }
 
+# Bounded poll loop, never an unbounded infinite `while` (D-12): 06-07-SUMMARY.md measured the real
+# production stack reaching healthy well within its own test run; 60 attempts x 5s = 300s (5
+# minutes) gives generous headroom above that measurement. Both are overridable only for tests
+# (undocumented for real installs, matching this file's other NOODARA_*-overridable-for-tests
+# constants).
+readonly NOODARA_HEALTH_WAIT_ATTEMPTS="${NOODARA_HEALTH_WAIT_ATTEMPTS:-60}"
+readonly NOODARA_HEALTH_WAIT_INTERVAL="${NOODARA_HEALTH_WAIT_INTERVAL:-5}"
+
+# Polls `api`/`web`'s own Health status until both report "healthy" or the bounded loop above
+# elapses -- never returns success on a partially healthy stack. On timeout: exits 53
+# (health-check-failed), naming the still-unhealthy service, showing that service's own last 50
+# log lines via `docker compose logs --tail 50 <service>` (routed to stderr -- the one place raw
+# container output reaches the operator; application logs already pass through the phase-1 pino
+# redactor, and `.env`'s own contents are never read or printed anywhere on this path), and stating
+# the D-12 rollback remedy by name (NOODARA_VERSION=<the value of NOODARA_PREVIOUS_VERSION>).
+# Nothing on this path removes a volume, deletes .env, or runs `docker compose down` -- D-12's
+# "fail with diagnostics, never roll back automatically" holds all the way through.
 noodara_wait_for_health() {
-  :
+  noodara_step "Waiting for services to report healthy..."
+  _noodara_wfh_attempt=0
+  _noodara_wfh_api=""
+  _noodara_wfh_web=""
+  while [ "$_noodara_wfh_attempt" -lt "$NOODARA_HEALTH_WAIT_ATTEMPTS" ]; do
+    _noodara_wfh_api=$(noodara_service_health api)
+    _noodara_wfh_web=$(noodara_service_health web)
+    if [ "$_noodara_wfh_api" = "healthy" ] && [ "$_noodara_wfh_web" = "healthy" ]; then
+      noodara_step "All services are healthy."
+      return 0
+    fi
+    _noodara_wfh_attempt=$(awk -v n="$_noodara_wfh_attempt" 'BEGIN { print n + 1 }')
+    sleep "$NOODARA_HEALTH_WAIT_INTERVAL"
+  done
+
+  _noodara_wfh_bad=api
+  if [ "$_noodara_wfh_api" = "healthy" ]; then
+    _noodara_wfh_bad=web
+  fi
+  _noodara_wfh_tail=$(cd "$NOODARA_INSTALL_DIR" && docker compose logs --tail 50 "$_noodara_wfh_bad" 2>&1)
+  printf '%s\n' "$_noodara_wfh_tail" >&2
+  noodara_fail health-check-failed "Service '$_noodara_wfh_bad' did not become healthy in time. See its log tail above. Data and secrets are untouched -- to go back, re-run this installer with NOODARA_VERSION=${NOODARA_PREVIOUS_VERSION:-<the version you were previously on>}."
 }
 
+# Named stub for the final operator summary -- filled in by this plan's Task 3 (setup token/ufw/
+# HTTP warning/upgrade hint). Present from this commit onward so noodara_main reads as a complete
+# table of contents of the whole install from its first commit.
 noodara_print_summary() {
   :
 }
