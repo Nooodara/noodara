@@ -907,7 +907,18 @@ describe.each(posixInterpreters())('install.sh noodara_compose_up (%s)', (interp
     expect(result.status).toBe(0);
   });
 
-  it('fails with exit 51 (compose-up-failed) when up fails for a non-migrate reason', () => {
+  // Post-execution fix (06-12-PLAN.md, real DinD discovery): a real `docker compose up -d` can
+  // fail on its OWN dependency-wait ("dependency failed to start: container ... is unhealthy")
+  // before this function's caller ever gets a chance to run noodara_wait_for_health -- Compose
+  // itself refuses to finish `up -d` when a service another service `depends_on: condition:
+  // service_healthy` never becomes healthy. This used to fall through to a generic
+  // compose-up-failed (51) with NO service name and NO log tail, violating D-12's own requirement
+  // for exactly this shape of failure. Fixed: a non-migrate `up -d` failure no longer fails
+  // outright here -- it defers to noodara_wait_for_health (called next by noodara_main), which
+  // judges the ALREADY-CREATED containers on their own real health and produces the full,
+  // already-tested D-12 diagnostic (service name, redacted log tail, rollback hint) regardless of
+  // which code path first noticed the underlying problem.
+  it('returns 0 (deferring diagnosis to noodara_wait_for_health) when up fails for a non-migrate reason', () => {
     const installDir = mkdtempSync(join(tmpdir(), 'noodara-up-install-'));
     const snippet = [
       'docker() {',
@@ -922,7 +933,41 @@ describe.each(posixInterpreters())('install.sh noodara_compose_up (%s)', (interp
 
     const result = runInstallerShell(interpreter, snippet, { env: { NOODARA_INSTALL_DIR: installDir } });
 
-    expect(result.status).toBe(51);
+    expect(result.status).toBe(0);
+  });
+
+  it('the combined noodara_compose_up + noodara_wait_for_health pipeline still exits 53, naming the real unhealthy service and the rollback remedy, when `up -d` itself failed on a dependency wait', () => {
+    const installDir = mkdtempSync(join(tmpdir(), 'noodara-up-install-'));
+    const snippet = [
+      'docker() {',
+      '  case "$*" in',
+      '    "compose up -d") return 1 ;;',
+      // migrate genuinely succeeded -- api is the real, unhealthy cause `docker compose up -d`
+      // itself refused to finish waiting for (mirrors the real DinD-observed shape: web depends_on
+      // api: condition: service_healthy).
+      '    "compose ps -a --format json") printf "{\\"Service\\":\\"migrate\\",\\"ExitCode\\":0}\\n"; return 0 ;;',
+      '    "compose ps --format json") printf "{\\"Service\\":\\"api\\",\\"Health\\":\\"unhealthy\\"}\\n{\\"Service\\":\\"web\\",\\"Health\\":\\"\\"}\\n"; return 0 ;;',
+      '    "compose logs --tail 50 api") printf "API CONTAINER LOG TAIL\\n"; return 0 ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_compose_up',
+      'noodara_wait_for_health',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, {
+      env: {
+        NOODARA_INSTALL_DIR: installDir,
+        NOODARA_HEALTH_WAIT_ATTEMPTS: '2',
+        NOODARA_HEALTH_WAIT_INTERVAL: '0',
+        NOODARA_PREVIOUS_VERSION: '0.9.0',
+      },
+    });
+
+    expect(result.status).toBe(53);
+    expect(result.stderr).toContain('api');
+    expect(result.stderr).toContain('API CONTAINER LOG TAIL');
+    expect(result.stderr).toContain('NOODARA_VERSION=0.9.0');
   });
 
   it('fails with exit 52 (migrations-failed) and shows the migrate log tail when migrate is the real cause', () => {
