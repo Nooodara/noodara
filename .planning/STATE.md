@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-03-PLAN.md
-last_updated: "2026-09-21T10:20:12.485Z"
+stopped_at: Completed 06-04-PLAN.md
+last_updated: "2026-09-21T10:40:16.597Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 109
-  completed_plans: 97
+  completed_plans: 98
   percent: 83
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 06 (instalador-y-docker-compose) — EXECUTING
-Plan: 4 of 15
+Plan: 5 of 15
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [█████████░] 89%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -143,6 +143,7 @@ Progress: [█████████░] 89%
 | Phase 06 P01 | 20min | 3 tasks | 9 files |
 | Phase 06 P02 | 5min | 3 tasks | 2 files |
 | Phase 06 P03 | 130min | 3 tasks | 3 files |
+| Phase 06 P04 | 15min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -377,6 +378,7 @@ Recent decisions affecting current work:
 - [Phase 06]: turbo prune --docker (turbo 2.10.12) already includes pnpm-workspace.yaml and pnpm-lock.yaml in out/json/ -- no extra COPY needed in the Dockerfile installer stage
 - [Phase 06]: control-plane Dockerfile runner stage copies the whole pruned+built workspace (not just apps/control-plane/dist), since pnpm's isolated node_modules is a symlink tree rooted at node_modules/.pnpm that would otherwise dangle
 - [Phase 06]: installer image integration tests reach Testcontainers Postgres/Redis fixtures via --add-host host.docker.internal:host-gateway plus the fixture's own mapped port, since postgres.ts/redis.ts expose no shared Docker network -- reusable pattern for Plan 06-07
+- [Phase 06]: install.sh's noodara_merge_env does not auto-maintain NOODARA_PREVIOUS_VERSION -- written once by noodara_generate_env at fresh-install time; a future upgrade flow (Plan 06-09) records a genuine prior version via the generic noodara_set_env_value before calling noodara_merge_env — keeps the plan's own 'a merge over a complete file changes exactly one line' behavior literally true while still satisfying D-12's rollback-hint requirement through a separate, explicit call site
 
 ### Pending Todos
 
@@ -442,6 +444,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-21T10:20:12.477Z
-Stopped at: Completed 06-03-PLAN.md
+Last session: 2026-09-21T10:40:16.590Z
+Stopped at: Completed 06-04-PLAN.md
 Resume file: None

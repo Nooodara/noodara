@@ -131,3 +131,7 @@ None -- no external service configuration required.
 ---
 *Phase: 06-instalador-y-docker-compose*
 *Completed: 2026-09-21*
+
+## Self-Check: PASSED
+
+All 5 relevant files (`install.sh`, `.env.example`, `tests/unit/installer/env-file.test.ts`, `tests/integration/installer/env-contract.test.ts`, this SUMMARY) verified present on disk; all 6 task commit hashes (`99c709d`, `e098a48`, `e5a79aa`, `8127b46`, `993f21e`, `fd215d0`) plus this plan's own docs commit (`ef6f6d3`) verified present in `git log --oneline --all`.
