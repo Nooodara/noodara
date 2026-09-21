@@ -120,6 +120,54 @@ describe('docs/install.md accuracy against install.sh', () => {
     expect(docs).toMatch(/ghcr\.io\/.*\/noodara-control-plane/);
     expect(docs).toMatch(/ghcr\.io\/.*\/noodara-web/);
   });
+
+  // Post-execution fix (orchestrator audit Finding 1, 06-14 follow-up): a `VAR=value cmd1 | cmd2`
+  // shell pipeline applies the assignment to `cmd1` only -- `NOODARA_VERSION=<x> curl ... | sh`
+  // would silently install the LATEST version, never the pinned one. Every documented command must
+  // place a NOODARA_* assignment on the `sh` side of the pipe (after `sudo` when `sudo` is used),
+  // never in front of `curl`.
+  it('never places a NOODARA_*= assignment before curl in a piped-install command', () => {
+    for (const doc of [installDocs(), readme()]) {
+      expect(doc).not.toMatch(/\bNOODARA_[A-Z0-9_]+=\S*\s+curl\b/);
+    }
+  });
+
+  it('the rollback command places NOODARA_VERSION on the sh side of the pipe, both as root and with sudo', () => {
+    const docs = installDocs();
+    expect(docs).toContain(
+      'curl -fsSL https://raw.githubusercontent.com/REPLACE_WITH_GITHUB_OWNER/noodara/main/install.sh | NOODARA_VERSION=<previous-version> sh',
+    );
+    expect(docs).toContain(
+      'curl -fsSL https://raw.githubusercontent.com/REPLACE_WITH_GITHUB_OWNER/noodara/main/install.sh | sudo NOODARA_VERSION=<previous-version> sh',
+    );
+  });
+
+  // Post-execution fix (orchestrator audit Finding 2, 06-14 follow-up): only `web` publishes a
+  // port, and `web` only rewrites `/api/:path*` to the control plane (apps/web/next.config.ts) --
+  // `/health` on the published panel port is answered by Next.js, never the control plane.
+  it('never documents /health (or any non-/api/ route) reachable on the published panel port', () => {
+    const docs = installDocs();
+    const matches = [...docs.matchAll(/127\.0\.0\.1:<port>(\/\S*)?/g)].map((m) => m[1] ?? '');
+    expect(matches.length).toBeGreaterThan(0);
+    for (const path of matches) {
+      const allowed = path === '' || path === '/' || path === '/login' || path.startsWith('/api/');
+      expect(allowed, `unexpected path documented on the published panel port: '${path}'`).toBe(true);
+    }
+    expect(docs).not.toContain('curl http://127.0.0.1:<port>/health');
+  });
+
+  // Post-execution fix (orchestrator audit Finding 3, 06-14 follow-up): a same-version re-run with
+  // an already-healthy stack is a true no-op (D-09) -- it never runs `docker compose up`, so
+  // telling the operator to "edit .env and re-run the installer" to apply a change does nothing.
+  // The only real way to apply an edited `.env` is `docker compose ... up -d` directly.
+  it('never tells the operator to re-run the installer to apply an .env edit, and documents the docker compose apply command', () => {
+    const docs = installDocs();
+    expect(docs).not.toContain('and re-run the installer to apply them');
+    expect(docs).not.toContain('edit /opt/noodara/.env directly and re-run the installer');
+    expect(docs).not.toMatch(/Re-run the installer with `NOODARA_PUBLIC_URL`/);
+    expect(docs).toContain('docker compose -f /opt/noodara/docker-compose.yml up -d');
+    expect(docs.toLowerCase()).toMatch(/re-running the installer does not apply an `?\.env`? edit/);
+  });
 });
 
 describe('README.md', () => {
