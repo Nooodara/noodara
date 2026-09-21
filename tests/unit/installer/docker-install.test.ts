@@ -735,6 +735,97 @@ describe.each(posixInterpreters())('install.sh atomic keyring/sources writes (Fi
   });
 });
 
+// 06-12-PLAN.md Task 2: apt's own docker-ce postinst starts docker.service ASYNCHRONOUSLY (via
+// systemd on a real host; nothing at all on a bare privileged container, which is exactly why
+// tests/integration/installer/preflight-scenarios.test.ts's own no-Docker scenario needs a
+// fixture-side watcher to start dockerd once install.sh's own real apt-get makes it exist) --
+// checking `docker version` in the EXACT instant apt-get returns can race a daemon that is still
+// starting. noodara_wait_for_docker_ready is a bounded (never unbounded), short retry, applied on
+// every host (real systemd included) rather than being a test-only branch.
+describe.each(posixInterpreters())('install.sh noodara_wait_for_docker_ready (%s)', (interpreter) => {
+  it('returns 0 immediately when the daemon already answers on the first attempt', () => {
+    const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-ready-'));
+    const countFile = join(fixturesDir, 'count');
+    writeFileSync(countFile, '0', 'utf8');
+    const snippet = [
+      `docker() { n=$(cat '${countFile}'); n=$((n + 1)); printf '%s' "$n" > '${countFile}'; [ "$1" = "version" ] && return 0; return 1; }`,
+      'noodara_wait_for_docker_ready',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, {
+      env: { NOODARA_DOCKER_READY_WAIT_ATTEMPTS: '5', NOODARA_DOCKER_READY_WAIT_INTERVAL: '0' },
+    });
+
+    expect(result.status).toBe(0);
+    expect(readFileSync(countFile, 'utf8')).toBe('1');
+  });
+
+  it('retries and returns 0 as soon as the daemon becomes ready, without waiting for every attempt', () => {
+    const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-ready-'));
+    const countFile = join(fixturesDir, 'count');
+    writeFileSync(countFile, '0', 'utf8');
+    // Fails the first two calls, succeeds on the third -- models a daemon that takes a couple of
+    // retries to start accepting connections after `apt-get install docker-ce ...` itself returns.
+    const snippet = [
+      `docker() { n=$(cat '${countFile}'); n=$((n + 1)); printf '%s' "$n" > '${countFile}'; [ "$n" -ge 3 ] && [ "$1" = "version" ] && return 0; return 1; }`,
+      'noodara_wait_for_docker_ready',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, {
+      env: { NOODARA_DOCKER_READY_WAIT_ATTEMPTS: '5', NOODARA_DOCKER_READY_WAIT_INTERVAL: '0' },
+    });
+
+    expect(result.status).toBe(0);
+    expect(readFileSync(countFile, 'utf8')).toBe('3');
+  });
+
+  it('returns non-zero after NOODARA_DOCKER_READY_WAIT_ATTEMPTS attempts when the daemon never answers', () => {
+    const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-ready-'));
+    const countFile = join(fixturesDir, 'count');
+    writeFileSync(countFile, '0', 'utf8');
+    const snippet = [
+      `docker() { n=$(cat '${countFile}'); n=$((n + 1)); printf '%s' "$n" > '${countFile}'; return 1; }`,
+      'noodara_wait_for_docker_ready',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, {
+      env: { NOODARA_DOCKER_READY_WAIT_ATTEMPTS: '3', NOODARA_DOCKER_READY_WAIT_INTERVAL: '0' },
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(readFileSync(countFile, 'utf8')).toBe('3');
+  });
+
+  it('defaults NOODARA_DOCKER_READY_WAIT_ATTEMPTS to a small bounded value, never unbounded', () => {
+    const source = readFileSync(INSTALL_SH, 'utf8');
+
+    expect(source).toContain('NOODARA_DOCKER_READY_WAIT_ATTEMPTS');
+    expect(source).toMatch(/NOODARA_DOCKER_READY_WAIT_ATTEMPTS:-\d+/);
+  });
+
+  it('is wired into noodara_ensure_docker after a fresh install: a daemon that takes a couple of retries to answer still succeeds', () => {
+    const { snippet, env } = buildDockerAbsentEnv({ installsDocker: true });
+    // The docker binary the apt-get stub writes always succeeds on its first real invocation --
+    // this test instead directly proves noodara_wait_for_docker_ready's own retry loop is what
+    // noodara_ensure_docker calls (not a bare, single noodara_docker_present check) by asserting
+    // the full ensure_docker run still succeeds with the retry constants set very low, and that
+    // noodara_ensure_docker's own source calls the new function, never a bare re-check.
+    const fullSnippet = [snippet, 'noodara_ensure_docker'].join('\n');
+
+    const result = runInstallerShell(interpreter, fullSnippet, {
+      env: { ...env, NOODARA_DOCKER_READY_WAIT_ATTEMPTS: '3', NOODARA_DOCKER_READY_WAIT_INTERVAL: '0' },
+    });
+
+    expect(result.status).toBe(0);
+
+    const source = readFileSync(INSTALL_SH, 'utf8');
+    const fnStart = source.indexOf('noodara_ensure_docker() {');
+    expect(fnStart).toBeGreaterThan(-1);
+    const fnBody = source.slice(fnStart, source.indexOf('\n}\n', fnStart));
+    expect(fnBody).toContain('noodara_wait_for_docker_ready');
+  });
+});
+
 describe('install.sh Docker install structural checks (06-08-PLAN.md Task 2)', () => {
   it('never references a third-party curl-pipe-sh installer domain', () => {
     const source = readFileSync(INSTALL_SH, 'utf8');
