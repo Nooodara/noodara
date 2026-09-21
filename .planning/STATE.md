@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: ready_to_plan
-stopped_at: "Phase 05 (ui-web) COMPLETE 2026-09-21 (46/46 plans + quick 260921-13a) by explicit user approval (verbatim: Aprovado) after a human_needed re-verification with no code-level gap. Verification debt carried forward (05-HUMAN-UAT.md, 05-VERIFICATION.md): QA-04/QA-05 Pending until a real CI + nightly run exists (no git remote); human items 2/4/5/6/7 and a human look at the CR-01/WR-01 fix never confirmed by the user; the full integration suite was last run before quick 260921-13a (only the 10 trust-path files, 109/109, after it). Backlog: GR-03 partial (logger optional), GR-04 SSE idle-peer budget, lint/typecheck do not cover tests/ and scripts/, local-run onboarding friction, redis healthcheck in docker-compose.dev.yml, UX notes for the UI redesign. Next: /gsd-discuss-phase 6 (instalador y docker compose)"
-last_updated: 2026-09-21T07:23:08.601Z
-last_activity: 2026-09-21 -- Phase 05 re-verified: human_needed (no code gaps)
+status: planning
+stopped_at: Phase 6 context gathered
+last_updated: "2026-09-21T07:52:10.396Z"
+last_activity: 2026-09-21
 progress:
   total_phases: 6
   completed_phases: 5
@@ -432,6 +432,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-20T21:46:08Z
-Stopped at: Completed 05-37-PLAN.md (closing gate: full cross-suite run all green, eight gap verdicts re-derived, user approved via checkpoint without confirming any of the six human-only items; sshUser field-error bug found and routed to a separate /gsd-quick fix run by the orchestrator next). Quick task 260920-ly9 then FIXED the sshUser bug (6319631 RED, 8d7091a GREEN; unit 1497/1497). Phase 05 is NOT complete -- pending: code review, regression gate, and phase verification.
-Resume file: None
+Last session: 2026-09-21T07:52:10.386Z
+Stopped at: Phase 6 context gathered
+Resume file: .planning/phases/06-instalador-y-docker-compose/06-CONTEXT.md
