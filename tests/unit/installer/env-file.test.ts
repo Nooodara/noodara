@@ -8,7 +8,7 @@
 // hardcoded string, echoed in an expect() failure message beyond structural comparison, or
 // compared across test runs -- only shape/length/charset and round-trip equality within the same
 // generation are asserted.
-import { existsSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -733,5 +733,131 @@ describe.each(posixInterpreters())('install.sh .env write-boundary injection gua
       const afterLines = after.split('\n');
       expect(afterLines[0]).toBe(`NOODARA_VERSION=${literalBackslashN}`);
     });
+  });
+});
+
+// Post-execution fix (orchestrator audit WR-01): noodara_env_append_if_missing previously appended
+// directly to the live file via `>> "$path"` -- the one `.env`-mutating writer that did not follow
+// the atomic temp-file-then-mv pattern every sibling writer uses. Now proven: (1) every existing
+// byte survives byte-identically, including tricky values and a file with NO trailing newline, and
+// (2) a write failure is a named, actionable env-write-failed (30), leaving no temp file and no
+// mutation of the original.
+describe.each(posixInterpreters())('install.sh noodara_env_append_if_missing atomic write (WR-01, %s)', (interpreter) => {
+  it('leaves an existing file with #, quotes, = and trailing spaces byte-identical, appending the new key on its own line, when the file already ends in a newline', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'noodara-env-append-atomic-'));
+    const file = join(dir, '.env');
+    const trickyLine = `EXISTING_KEY=a # not a comment "double" 'single' = sign, trailing spaces   `;
+    writeFileSync(file, `${trickyLine}\n`);
+    const before = readFileSync(file, 'utf8');
+
+    const result = runInstallerShell(
+      interpreter,
+      `noodara_env_append_if_missing ${shQuote(file)} NEW_KEY newvalue`,
+    );
+
+    expect(result.status).toBe(0);
+    const after = readFileSync(file, 'utf8');
+    expect(after).toBe(`${before}NEW_KEY=newvalue\n`);
+    expect(readdirSync(dir)).toEqual(['.env']);
+  });
+
+  it('appends onto its own new line -- never merging with the previous last line -- when the file has NO trailing newline', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'noodara-env-append-atomic-'));
+    const file = join(dir, '.env');
+    const trickyLine = `EXISTING_KEY=a # not a comment "double" 'single' = sign, trailing spaces   `;
+    // Deliberately no trailing "\n" -- writeFileSync writes exactly these bytes, nothing more.
+    writeFileSync(file, trickyLine);
+    const before = readFileSync(file, 'utf8');
+    expect(before.endsWith('\n')).toBe(false);
+
+    const result = runInstallerShell(
+      interpreter,
+      `noodara_env_append_if_missing ${shQuote(file)} NEW_KEY newvalue`,
+    );
+
+    expect(result.status).toBe(0);
+    const after = readFileSync(file, 'utf8');
+    // The previous last line's own bytes are untouched other than gaining its own line
+    // terminator; the new key lands strictly after it, on its own line.
+    expect(after).toBe(`${trickyLine}\nNEW_KEY=newvalue\n`);
+    expect(readdirSync(dir)).toEqual(['.env']);
+  });
+
+  it('fails with exit code 30, naming the key but leaving no temp file and no mutation, when the directory is unwritable', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'noodara-env-append-atomic-unwritable-'));
+    const file = join(dir, '.env');
+    writeFileSync(file, 'EXISTING_KEY=1\n');
+    const before = readFileSync(file, 'utf8');
+    chmodSync(dir, 0o555);
+    try {
+      const result = runInstallerShell(
+        interpreter,
+        `noodara_env_append_if_missing ${shQuote(file)} NEW_KEY newvalue`,
+      );
+
+      expect(result.status).toBe(30);
+      expect(result.stderr).toContain('NEW_KEY');
+      expect(readFileSync(file, 'utf8')).toBe(before);
+      expect(readdirSync(dir)).toEqual(['.env']);
+    } finally {
+      chmodSync(dir, 0o755);
+    }
+  });
+});
+
+// Post-execution fix (orchestrator audit WR-02): noodara_set_env_value already wrote through a
+// temp file, but neither the awk write nor the final mv was checked -- a failure aborted with
+// awk's/mv's own raw, unmapped exit code, and a failed write left the temp file (a full secret-
+// bearing copy of .env) behind. Now both are checked, mapped to env-write-failed (30), and the
+// temp file is removed on either failure.
+describe.each(posixInterpreters())('install.sh noodara_set_env_value atomic write checks (WR-02, %s)', (interpreter) => {
+  it('fails with exit code 30, naming the key but never the value, and leaves no temp file when the directory is unwritable', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'noodara-env-set-atomic-unwritable-'));
+    const file = join(dir, '.env');
+    writeFileSync(file, COMPLETE_ENV_LINES.join('\n'));
+    const before = readFileSync(file, 'utf8');
+    chmodSync(dir, 0o555);
+    try {
+      const result = runInstallerShell(
+        interpreter,
+        `noodara_set_env_value ${shQuote(file)} NOODARA_VERSION 9.9.9`,
+      );
+
+      expect(result.status).toBe(30);
+      expect(result.stderr).toContain('NOODARA_VERSION');
+      expect(result.stderr).not.toContain('9.9.9');
+      expect(readFileSync(file, 'utf8')).toBe(before);
+      expect(readdirSync(dir)).toEqual(['.env']);
+    } finally {
+      chmodSync(dir, 0o755);
+    }
+  });
+});
+
+// Post-execution fix (orchestrator audit WR-03): noodara_generate_env's own directory-creation
+// mkdir was the one mkdir in install.sh left unchecked -- a failure aborted with a raw, non-
+// actionable shell error instead of the intended env-write-failed (30).
+describe.each(posixInterpreters())('install.sh noodara_generate_env directory creation failure (WR-03, %s)', (interpreter) => {
+  it('fails with exit code 30 naming the directory that could not be created, when the parent is unwritable', () => {
+    const parent = mkdtempSync(join(tmpdir(), 'noodara-env-mkdir-unwritable-'));
+    const envDir = join(parent, 'nested');
+    const envPath = join(envDir, '.env');
+    chmodSync(parent, 0o555);
+    try {
+      const result = generateEnv(
+        interpreter,
+        envPath,
+        'https://noodara.example.com',
+        '3000',
+        '0.1.0',
+        'ghcr.io/example/noodara',
+      );
+
+      expect(result.status).toBe(30);
+      expect(result.stderr).toContain('Failed to create');
+      expect(existsSync(envDir)).toBe(false);
+    } finally {
+      chmodSync(parent, 0o755);
+    }
   });
 });
