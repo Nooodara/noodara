@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-14-PLAN.md
-last_updated: "2026-09-21T19:50:24.692Z"
-last_activity: 2026-09-21
+stopped_at: "Phase 06 (instalador-y-docker-compose) EXECUTED 15/15 (06-15-SUMMARY.md); NOT verified/complete. Task 3 checkpoint resolved 2026-09-21: user chose Aceptar con deuda (accept with debt). v0.1 release gate (docs/releases/v0.1-gate.md) verdict NOT READY. Ten human prerequisites (repo creation+push, replace REPLACE_WITH_GITHUB_OWNER, tag+release.yml publish, make GHCR packages public, publish a real non-prerelease GitHub Release, confirm the raw install URL, real curl|sh on clean Ubuntu 22.04/24.04/arm64 VPS with ufw active, real-VPS memory behaviour, first real ci.yml/nightly.yml/gitleaks runs) stay [pending] in 06-HUMAN-UAT.md, none performed. QA-04/QA-05 stay Pending. Next: code review + verification of the full 15-plan phase-6 tree before phase.complete."
+last_updated: "2026-09-21T20:45:00.000Z"
+last_activity: 2026-09-21 -- Phase 06 Task 3 checkpoint resolved (accept with debt); phase executed but not yet verified
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 109
-  completed_plans: 108
+  completed_plans: 109
   percent: 83
 ---
 
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 ## Current Position
 
-Phase: 06 (instalador-y-docker-compose) — EXECUTING
+Phase: 06 (instalador-y-docker-compose) — EXECUTED (15/15 plans have a SUMMARY), NOT verified/complete
 Plan: 15 of 15
-Status: Ready to execute
+Status: Task 3 blocking checkpoint resolved (user: "Aceptar con deuda"); awaiting code review + verification before the phase or v0.1 milestone can be marked complete
 Last activity: 2026-09-21
 
-Progress: [██████████] 99%
+Progress: [██████████] 100% of planned plans executed (109/109); phase 06 awaiting code review + verification
 
 ## Performance Metrics
 
@@ -154,6 +154,7 @@ Progress: [██████████] 99%
 | Phase 06 P12 | 37min (task commits, ~2h10min total session) | 8 tasks | 9 files |
 | Phase 06 P13 | 125min | 2 tasks | 5 files |
 | Phase 06 P14 | 4min (task commits); docs-only, longer session | 2 tasks | 4 files |
+| Phase 06 P15 | continuation session (Tasks 1-2 prior session); Task 3 checkpoint resolution this session | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -416,6 +417,9 @@ Recent decisions affecting current work:
 - [Phase 06 P13]: release.yml derives the release version and lower-cases the GHCR owner exactly once in a dedicated prepare job, validated with the same character-class/length rules as install.sh's own noodara_validate_tag, then threaded as job outputs to every downstream job
 - [Phase 06 P13]: ci.yml/nightly.yml: new installer job runs pnpm test:installer at a 60min timeout, sourced from 06-12-SUMMARY.md's measured ~31.5min/51-test local duration; gated to push-on-main only in ci.yml, unconditional in nightly.yml, no existing job's commands/timeouts/triggers changed
 - [Phase 06 P14]: docs/install.md's accuracy is enforced by a test (tests/unit/docs/install-docs-accuracy.test.ts) that extracts the exit-code table, the ufw wording and the install URL directly from install.sh's own source, rather than trusting a hand-copied string -- a future install.sh change that drifts from the docs now fails a test, not silently ages.
+- [Phase 06 P15]: Task 1's eleven-command gate run was executed by the phase orchestrator in a single session against HEAD ad951b5, not by this plan's own executor -- hard_rule #4 of the plan's execution forbade re-running any suite; 06-HUMAN-UAT.md's Gate run section reconstructs every row directly from the committed raw logs (gate-logs/), all eleven green.
+- [Phase 06 P15]: docs/releases/v0.1-gate.md applies a stricter bar than REQUIREMENTS.md for INST-01/INST-02 -- UNVERIFIED pending a real docker pull from GHCR (only locally-built DinD images have ever been exercised), while REQUIREMENTS.md correctly stays Complete as delivered/tested implementation; both documents intentionally disagree, documented as such in the gate report's own Notes section.
+- [Phase 06 P15, Task 3 checkpoint, 2026-09-21]: User's verbatim answer was "Aceptar con deuda (Recomendado)" -- closes Plan 06-15 with the ten human prerequisites (06-HUMAN-UAT.md) carried forward as verification debt; none was individually confirmed or performed by this decision. Same closing pattern phase 5 used at its own 05-46 checkpoint. v0.1 gate verdict stays NOT READY; git remote -v still empty.
 
 ### Pending Todos
 
@@ -463,6 +467,7 @@ None yet.
 - 05-27-PLAN.md declares requirements: [DETL-02] in its frontmatter, but the plan's actual work is gap 6/WR-A-02 (trust-fingerprint TOCTOU) -- DETL-02 was already Complete before this plan (Plan 05-14). Matches the same plan-frontmatter-artifact pattern flagged repeatedly in this phase (SERV-06 04-01, UI-01/UI-02 05-06 onward, etc.); no action needed since DETL-02 is genuinely already satisfied, just noting the frontmatter/scope mismatch.
 - [05-37, found live during the closing gate's gap re-derivation, NOT fixed by this plan] `apps/web/src/components/ServerSheet.tsx`'s SSH user `Field` (around `:303-316`) renders with no `error` prop wired, while `handleApiFailure` (`:111-142`) does map a server-side `/sshUser` VALIDATION_FAILED issue into `fieldErrors` and suppresses the generic toast fallback once that map is non-empty -- so a real `sshUser` rejection from the backend now produces zero visible feedback, silently worse than before gap 5's fix. This was `05-REVIEW.md` WR-B-07's warned "latent second bug", confirmed still present by direct source read. Per the user's explicit instruction (2026-09-20 checkpoint answer), this is fixed via a separate `/gsd-quick` task run immediately by the orchestrator, not inside plan 05-37. See `.planning/phases/05-ui-web/05-GAP-CLOSURE-AUDIT.md` section 2 (Gap 5) and section 3.
 - [05-37, checkpoint answered 2026-09-20] The user approved closing the gap-closure wave ("Approve y haz un gsd quick del sshUser bug") but did not state which, if any, of the six human-only verification items (real-display contrast in both themes; a real CI run for QA-04/QA-05; a live SSE walkthrough not through a buffering tunnel; Sheet/Dialog/RowMenu floating-elevation shadow; a real screen-reader pass on RowMenu; sub-1280px/`prefers-reduced-motion` feel on real hardware) they actually checked. All six remain unconfirmed -- recorded honestly as such in `05-GAP-CLOSURE-AUDIT.md` section 3, not rounded up to "verified". They should surface again as UAT items in Phase 05's verification step.
+- [06-15, Task 3 checkpoint, 2026-09-21] Phase 06 is EXECUTED (15/15 plans, 06-15-SUMMARY.md) but NOT verified/complete: `docs/releases/v0.1-gate.md`'s overall verdict is NOT READY. The user closed Plan 06-15 by choosing "Aceptar con deuda" -- the ten human prerequisites in `06-HUMAN-UAT.md`'s "Human prerequisites" table stay `[pending]`, none individually performed or confirmed: (1) create the GitHub repository and push `main`; (2) replace `REPLACE_WITH_GITHUB_OWNER` in `install.sh`/`docs/install.md`/`README.md`; (3) push a real version tag and let `release.yml` publish both images; (4) make both GHCR packages public; (5) publish a real, non-prerelease GitHub Release; (6) confirm the raw install-script URL resolves; (7) a real `curl | sh` end to end on a clean Ubuntu 22.04 VPS, a clean 24.04 VPS, and once on arm64, with `ufw` active on at least one; (8) watch real memory behaviour on a small production-sized VPS; (9) the first real `ci.yml`/`nightly.yml` runs and a real `gitleaks` pass on the extracted repository (clears QA-04/QA-05); (10) the six still-unconfirmed items carried forward from `05-HUMAN-UAT.md` (real-display contrast, theme-toggle no-flicker, a live SSE walkthrough without a buffering tunnel, revoked-session-second-tab redirect plus a human look at the CR-01/WR-01 fix, Sheet/Dialog/RowMenu elevation, RowMenu screen-reader/touch/reduced-motion). QA-04/QA-05 stay Pending in `REQUIREMENTS.md`, unchanged by this plan. `INST-01`/`INST-02` stay `Complete` in `REQUIREMENTS.md` (delivered/tested implementation) while the gate report keeps them `UNVERIFIED` (real GHCR-pull production path never exercised) -- an intentional, documented disagreement between the two documents, not an error. Next: phase-6 code review + verifier must run against the full 15-plan tree before this phase or the v0.1 milestone can be marked complete.
 
 ### Quick Tasks Completed
 
@@ -481,6 +486,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-21T19:50:24.682Z
-Stopped at: Completed 06-14-PLAN.md
+Last session: 2026-09-21T20:45:00.000Z
+Stopped at: Phase 06 EXECUTED 15/15 (06-15-SUMMARY.md); Task 3 checkpoint resolved (accept with debt); awaiting code review + verification before phase.complete
 Resume file: None

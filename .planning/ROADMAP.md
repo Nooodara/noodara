@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Servicios de aplicación, activity log y redacción** - Registrar/editar/eliminar servidores, snapshots de discovery y un activity log sin fugas de secrets. (completed 2026-09-16)
 - [x] **Phase 4: HTTP routes, worker BullMQ y SSE** - La API expone connect/discover en background y el estado llega a tiempo real sin polling. (completed 2026-09-18)
 - [x] **Phase 5: UI web** - El flujo login → Servers → add → connect → discovery → detail funciona en el design system Apple-inspired, dark y light. (completed 2026-09-21 — 46/46 plans + quick 260921-13a; final re-verification = human_needed with NO code-level gap: gap 6 host-key trust, GR-02, CR-01, WR-01 closed; closed by explicit user approval with verification debt tracked in 05-HUMAN-UAT.md: QA-04/QA-05 still Pending (no git remote, no CI/nightly run ever observed), human items 2/4/5/6/7 and a human look at the CR-01/WR-01 fix not confirmed; backlog: GR-03 partial, GR-04, lint/typecheck coverage of tests/ and scripts/, local-run onboarding)
-- [ ] **Phase 6: Instalador y Docker Compose** - Un comando deja Noodara operativo en un VPS Ubuntu limpio, de forma idempotente.
+- [ ] **Phase 6: Instalador y Docker Compose** - Un comando deja Noodara operativo en un VPS Ubuntu limpio, de forma idempotente. (15/15 plans executed — v0.1 release gate (docs/releases/v0.1-gate.md) produced, verdict NOT READY; at the 06-15 Task 3 checkpoint the user chose "Aceptar con deuda" 2026-09-21: ten human prerequisites in 06-HUMAN-UAT.md (repo creation+push, GHCR publish, real release, real VPS install, real CI/nightly runs) stay [pending], none performed; QA-04/QA-05 still Pending — phase NOT complete until code review + verification pass)
 
 ## Phase Details
 
@@ -454,7 +454,7 @@ Plans:
 
 **Wave 12** *(blocked on Wave 11 completion)*
 
-- [ ] 06-15-PLAN.md — Full gate run, human prerequisites (repo, release, real VPS), v0.1 release-gate report — human checkpoint
+- [x] 06-15-PLAN.md — Full gate run, human prerequisites (repo, release, real VPS), v0.1 release-gate report — human checkpoint
 
 ## Progress
 
@@ -468,4 +468,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
 | 5. UI web | 46/46 | Complete   | 2026-09-21 |
-| 6. Instalador y Docker Compose | 14/15 | In Progress|  |
+| 6. Instalador y Docker Compose | 15/15 | In Progress|  |
