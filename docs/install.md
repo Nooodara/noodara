@@ -23,10 +23,10 @@ it, and the system is left exactly as it was.
 ## Install
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/REPLACE_WITH_GITHUB_OWNER/noodara/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sh
 ```
 
-`REPLACE_WITH_GITHUB_OWNER` is filled in with the real GitHub organization or user once the
+`nooodara` is filled in with the real GitHub organization or user once the
 repository is published. Run this as root, or with `sudo sh` if you are not root.
 
 To set any of the variables in "Supported variables" below for this command, put the assignment
@@ -42,7 +42,7 @@ Piping a remote script straight into a root shell is a trust decision, and you d
 it blindly. Download the script, read it, then run it:
 
 ```sh
-curl -fsSL -o install.sh https://raw.githubusercontent.com/REPLACE_WITH_GITHUB_OWNER/noodara/main/install.sh
+curl -fsSL -o install.sh https://raw.githubusercontent.com/nooodara/noodara/main/install.sh
 less install.sh
 sh install.sh
 ```
@@ -235,7 +235,7 @@ Upgrading is re-running the exact same install command, optionally pinning a spe
 `NOODARA_VERSION`:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/REPLACE_WITH_GITHUB_OWNER/noodara/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sh
 ```
 
 What actually happens depends on what the installer finds:
@@ -265,13 +265,13 @@ exits with a non-zero status, shows the log tail of the service that failed to b
 tells you the exact command to go back. As root:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/REPLACE_WITH_GITHUB_OWNER/noodara/main/install.sh | NOODARA_VERSION=<previous-version> sh
+curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | NOODARA_VERSION=<previous-version> sh
 ```
 
 Or with `sudo` (the variable must go after `sudo`, same as in "Install" above):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/REPLACE_WITH_GITHUB_OWNER/noodara/main/install.sh | sudo NOODARA_VERSION=<previous-version> sh
+curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sudo NOODARA_VERSION=<previous-version> sh
 ```
 
 The previous version is the one the installer names in that message — it is also recorded in

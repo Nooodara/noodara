@@ -38,7 +38,7 @@ readonly NOODARA_MEMINFO_FILE="${NOODARA_MEMINFO_FILE:-/proc/meminfo}"
 # Plan 06-15's human prerequisite creates it (06-CONTEXT.md D-02). These two defaults are
 # placeholders and MUST be replaced with the real owner/repo before v0.1's first real release --
 # flagged here and in this plan's own SUMMARY for Plan 06-15's handoff.
-readonly NOODARA_REPO_OWNER="${NOODARA_REPO_OWNER:-REPLACE_WITH_GITHUB_OWNER}"
+readonly NOODARA_REPO_OWNER="${NOODARA_REPO_OWNER:-nooodara}"
 readonly NOODARA_REPO_NAME="${NOODARA_REPO_NAME:-noodara}"
 
 # The real default registry (06-CONTEXT.md D-01). NOODARA_FETCH_TIMEOUT bounds every curl call

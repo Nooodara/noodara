@@ -14,7 +14,7 @@ releases (v0.2 through v0.5) — they are not part of this release.
 ## Install
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/REPLACE_WITH_GITHUB_OWNER/noodara/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sh
 ```
 
 See [`docs/install.md`](docs/install.md) for requirements, the download-read-run alternative,

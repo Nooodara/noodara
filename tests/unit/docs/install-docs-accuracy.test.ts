@@ -134,12 +134,13 @@ describe('docs/install.md accuracy against install.sh', () => {
 
   it('the rollback command places NOODARA_VERSION on the sh side of the pipe, both as root and with sudo', () => {
     const docs = installDocs();
-    expect(docs).toContain(
-      'curl -fsSL https://raw.githubusercontent.com/REPLACE_WITH_GITHUB_OWNER/noodara/main/install.sh | NOODARA_VERSION=<previous-version> sh',
-    );
-    expect(docs).toContain(
-      'curl -fsSL https://raw.githubusercontent.com/REPLACE_WITH_GITHUB_OWNER/noodara/main/install.sh | sudo NOODARA_VERSION=<previous-version> sh',
-    );
+    // The owner is read from install.sh's own default, never hand-written here, so the docs and the
+    // script can only ever agree on one owner string.
+    const ownerMatch = installSh().match(/NOODARA_REPO_OWNER="\$\{NOODARA_REPO_OWNER:-([A-Za-z0-9_-]+)\}"/);
+    expect(ownerMatch, 'NOODARA_REPO_OWNER default not found in install.sh').toBeTruthy();
+    const url = `https://raw.githubusercontent.com/${ownerMatch?.[1] ?? ''}/noodara/main/install.sh`;
+    expect(docs).toContain(`curl -fsSL ${url} | NOODARA_VERSION=<previous-version> sh`);
+    expect(docs).toContain(`curl -fsSL ${url} | sudo NOODARA_VERSION=<previous-version> sh`);
   });
 
   // Post-execution fix (orchestrator audit Finding 2, 06-14 follow-up): only `web` publishes a
