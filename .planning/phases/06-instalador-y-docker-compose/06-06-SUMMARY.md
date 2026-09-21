@@ -142,3 +142,93 @@ None -- no external service configuration required. Plan 06-15's human prerequis
 
 Both files (`install.sh`, `tests/unit/installer/resolution.test.ts`) verified present on disk;
 both task commit hashes (`adc84d7`, `485c6ba`) verified present in `git log --oneline --all`.
+
+## Post-execution fix
+
+An orchestrator audit of this plan's own output found four issues, all confirmed empirically
+(real curl 8.7.1, real `/bin/dash`) before any test or fix was written. Fixed in a standalone
+RED → GREEN follow-up, scoped entirely to `install.sh` and
+`tests/unit/installer/resolution.test.ts` — no other plan's files touched.
+
+**Finding 1 — the primary version-resolution path was dead code in production.**
+`noodara_fetch_url`'s `redirect` mode ran `curl -fsSL -o /dev/null -w '%{redirect_url}' …`. With
+`-L`, curl follows the redirect itself, so `%{redirect_url}` is empty after the final `200` —
+verified directly: `curl -fsSL -o /dev/null -w '%{redirect_url}' <a real releases/latest URL>`
+printed `[]` (empty); the same call without `-L` printed the real
+`https://github.com/<owner>/<repo>/releases/tag/<tag>` target. Every real install therefore fell
+straight through to the rate-limited `api.github.com` fallback, silently, with no error and no
+signal that the "primary" path had never actually worked. Fixed by dropping `-L` from redirect
+mode (`-fsS`, not `-fsSL`).
+
+**Finding 2 — a repository with no published release installed version "releases".**
+`https://github.com/<owner>/<repo>/releases/latest` for a repo with no releases redirects to
+`.../releases` (no `/tag/<tag>` at all). The old extraction, `awk -F/ '{print $NF}'`, turned that
+into the tag `releases`, which passed `noodara_validate_tag`'s character-class check unmodified —
+reproduced directly with the orchestrator's exact repro, which printed `releases` and exited `0`
+before this fix. Fixed by requiring an exact-shape match:
+`noodara_resolve_version` now only accepts a redirect target that is precisely
+`https://github.com/${NOODARA_REPO_OWNER}/${NOODARA_REPO_NAME}/releases/tag/<tag>` (prefix match on
+the full expected prefix; the remainder is rejected if it contains a further `/`, `?` or `#`).
+Anything else — the no-release case, a login redirect, a different host, a different repo, an
+empty tag segment — now falls through to the API path exactly like a redirect failure would, and
+if that also yields nothing, exits 40 (`version-resolution-failed`) rather than ever printing a
+bogus tag.
+
+**Finding 3 — https→http downgrade on followed redirects.**
+Body mode (which does legitimately follow redirects, for an IP-echo service or a real GitHub API
+response) pinned `--proto '=https'` on the initial request but nothing on a followed redirect.
+Added `--proto-redir '=https'` so a redirect can never downgrade the connection to plain http.
+Covered by the same argv-pinning test as Finding 1.
+
+**Finding 4 — the `NOODARA_PUBLIC_URL` operator override was returned verbatim, unvalidated.**
+06-06-PLAN.md's own `<action>` text never mentioned validating this override, and none was added
+during the original execution — reproduced directly: `ftp://evil`, `javascript:alert(1)` and
+`not a url` were all returned byte-identical with exit `0` before this fix. Added
+`noodara_validate_public_url`, called from `noodara_resolve_public_url` only for the explicit-
+override branch: rejects (reason `public-url-resolution-failed`, exit 41, naming
+`NOODARA_PUBLIC_URL` and the violated rule, never echoing the value itself) anything that does not
+start with `http://` or `https://` followed by at least one host character, or that contains
+whitespace (space or tab), a single quote, a double quote, a backslash, a dollar sign, a backtick,
+a newline or a carriage return. D-05 stays intact: an accepted value is returned byte-identical,
+scheme preserved exactly as given — verified with `http://203.0.113.7:3000`,
+`https://panel.example.com` and the IPv6-literal `http://[2001:db8::1]:3000`, all three still
+returned unchanged.
+
+**Optional — tightened `noodara_looks_like_ipv4`.** The prior check accepted `1.2.3.4.5` (five
+groups), `1..2.3` (an empty group) and `9999.9999.9999.9999` (out-of-range groups) — never an
+injection risk (the value only ever flows into a URL string), just a broken shape check. Tightened
+to exactly four groups of 1–3 digits each, each ≤ 255, using a strict-POSIX `IFS='.'`/`set --`
+field split (no regex interval expressions, which are not universally supported across every awk
+this file might run under) — fully tested, including the three specific broken shapes named above.
+
+### Verification
+
+- `pnpm exec vitest run tests/unit/installer/resolution.test.ts`: RED commit — 50 new/changed
+  cases failing for the expected reason (redirect-mode argv still carrying `-L`, body mode missing
+  `--proto-redir`, the bogus `releases` tag still printing, every public-URL injection probe still
+  passing, the three IPv4 edge cases still accepted) against the pre-fix `install.sh`; GREEN commit
+  — full file 163/163 passing (proportioned across `/bin/sh` + real `/bin/dash`).
+- Orchestrator's exact Finding 2 repro re-run against the fixed `install.sh`: exits 40
+  (`Could not resolve the latest release version automatically…`), never prints `releases`.
+- Finding 4's three probes (`ftp://evil`, `javascript:alert(1)`, `not a url`) re-run against the
+  fixed `install.sh`: all exit 41, naming `NOODARA_PUBLIC_URL`.
+- `pnpm test`: 124 files / 1882 tests green (1802 baseline + 80 net new in this fix).
+- `pnpm lint`, `pnpm typecheck`: green (fully cached — no TypeScript package source touched).
+- `pnpm check:posix-sh` / `node scripts/check-posix-sh.mjs install.sh`: clean, 970 lines (850 → 970).
+
+### Commits
+
+1. **RED:** `test(06-06): add failing tests for orchestrator audit findings 1-4`
+2. **GREEN:** `fix(06-06): harden version and public-URL resolution (Findings 1-4)`
+3. **docs:** this section (`docs(06-06): …`)
+
+### Not fully implemented
+
+None of Findings 1–4 were skipped. The optional IPv4 tightening was implemented (judged trivial:
+a POSIX `IFS`/`set --` field split, no new dependency, no regex interval-expression portability
+risk) rather than left undone.
+
+One residual note, not a skipped finding: this fix does not re-audit or extend
+`noodara_resolve_image_prefix`'s `NOODARA_INTERNAL_IMAGE_PREFIX` validation (D-19) or any other
+part of `install.sh` beyond the four findings and the one optional item named in this task's
+objective — that surface was out of scope for this post-execution fix.
