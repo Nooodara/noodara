@@ -586,20 +586,31 @@ noodara_merge_env() {
 
 # The single seam every network call in this file goes through -- no other function may call
 # `curl` directly (enforced by a grep-count acceptance criterion, 06-06-PLAN.md Task 1; the POSIX
-# gate itself does not enforce this). `mode` is `body` (prints the response body) or `redirect`
-# (prints the final redirect target without following it, via curl's own `-w '%{redirect_url}'`).
-# Every call is bounded by NOODARA_FETCH_TIMEOUT/15s and restricted to TLS 1.2+ https (T-06-31,
-# hard_rule #8) -- this is the one place a hostile or slow remote can influence what gets
-# installed, so it is also the one place those protections need to live.
+# gate itself does not enforce this). `mode` is `body` (prints the response body, following
+# redirects) or `redirect` (prints the final redirect target WITHOUT following it). Every call is
+# bounded by NOODARA_FETCH_TIMEOUT/15s and restricted to TLS 1.2+ https (T-06-31, hard_rule #8) --
+# this is the one place a hostile or slow remote can influence what gets installed, so it is also
+# the one place those protections need to live.
+#
+# Post-execution fix (orchestrator audit Finding 1, empirically verified against real curl 8.7.1):
+# redirect mode must NEVER pass -L/--location. With -L, curl follows the redirect itself, so
+# `%{redirect_url}` is empty after the final 200 -- `curl -fsSL -o /dev/null -w
+# '%{redirect_url}' <releases/latest URL>` printed `[]` (empty), while the same call without -L
+# printed the real `https://github.com/<owner>/<repo>/releases/tag/<tag>` target. The old `-fsSL`
+# in redirect mode made the "primary" resolution path dead code in production: every real install
+# silently fell through to the rate-limited api.github.com path. `body` mode legitimately needs to
+# follow redirects (an IP-echo service or a real API response may itself redirect), so it keeps
+# -L and additionally pins `--proto-redir '=https'` (Finding 3) so a followed redirect can never
+# downgrade the connection to plain http -- `--proto` alone only pins the initial request.
 noodara_fetch_url() {
   _noodara_ffu_mode="$1"
   _noodara_ffu_url="$2"
   case "$_noodara_ffu_mode" in
     body)
-      curl -fsSL --proto '=https' --tlsv1.2 --connect-timeout "$NOODARA_FETCH_TIMEOUT" --max-time 15 "$_noodara_ffu_url"
+      curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout "$NOODARA_FETCH_TIMEOUT" --max-time 15 "$_noodara_ffu_url"
       ;;
     redirect)
-      curl -fsSL -o /dev/null -w '%{redirect_url}' --proto '=https' --tlsv1.2 --connect-timeout "$NOODARA_FETCH_TIMEOUT" --max-time 15 "$_noodara_ffu_url"
+      curl -fsS -o /dev/null -w '%{redirect_url}' --proto '=https' --tlsv1.2 --connect-timeout "$NOODARA_FETCH_TIMEOUT" --max-time 15 "$_noodara_ffu_url"
       ;;
     *)
       printf 'noodara: internal error: unknown fetch mode %s\n' "$_noodara_ffu_mode" >&2
@@ -666,9 +677,32 @@ noodara_resolve_version() {
     return 0
   fi
 
+  # Post-execution fix (orchestrator audit Finding 2): a repository with no published release
+  # answers `releases/latest` with a 302 to `.../releases` (no `/tag/<tag>` at all) --
+  # `awk -F/ '{print $NF}'` on that target used to yield the bogus tag "releases", which passed
+  # noodara_validate_tag's character-class check unmodified (every character in "releases" is
+  # allowed). Only the exact shape
+  # https://github.com/<owner>/<repo>/releases/tag/<tag> for the configured owner/repo may ever be
+  # accepted -- a prefix match on the full expected prefix, with the remainder rejected if it
+  # contains a further `/`, `?` or `#` (an extra path segment, a query string, or a fragment are
+  # never part of a genuine tag). Anything else -- the no-release case, a login redirect, another
+  # host, another repo -- falls through to the API path exactly like a redirect failure would.
   _noodara_rv_redirect=$(noodara_fetch_url redirect "https://github.com/${NOODARA_REPO_OWNER}/${NOODARA_REPO_NAME}/releases/latest" 2>/dev/null) || _noodara_rv_redirect=""
   if [ -n "$_noodara_rv_redirect" ]; then
-    _noodara_rv_raw=$(printf '%s\n' "$_noodara_rv_redirect" | awk -F/ '{print $NF}')
+    _noodara_rv_prefix="https://github.com/${NOODARA_REPO_OWNER}/${NOODARA_REPO_NAME}/releases/tag/"
+    case "$_noodara_rv_redirect" in
+      "$_noodara_rv_prefix"*)
+        _noodara_rv_raw="${_noodara_rv_redirect#"$_noodara_rv_prefix"}"
+        case "$_noodara_rv_raw" in
+          *'/'* | *'?'* | *'#'*)
+            _noodara_rv_raw=""
+            ;;
+        esac
+        ;;
+      *)
+        _noodara_rv_raw=""
+        ;;
+    esac
     if [ -n "$_noodara_rv_raw" ]; then
       _noodara_rv_tag=$(noodara_normalize_tag "$_noodara_rv_raw")
       noodara_validate_tag "$_noodara_rv_tag"
@@ -731,18 +765,37 @@ noodara_resolve_image_prefix() {
 # Loose shape check for a plain IPv4 address (06-CONTEXT.md D-07, T-06-29): rejects an HTML
 # captive-portal body or an empty response from a public-IP service, without attempting full RFC
 # validation -- a `case` pattern over dot-separated digit groups, deliberately not a regex.
+#
+# Post-execution tightening (optional, orchestrator audit): the original digits-and-dots-only
+# check accepted "1.2.3.4.5" (five groups), "1..2.3" (an empty group) and "9999.9999.9999.9999"
+# (out-of-range groups) -- never an injection risk (the value only ever flows into a URL string,
+# already length/character-bounded by callers), just a broken shape check. Tightened to exactly
+# four groups, each 1-3 digits, each <= 255, via a POSIX IFS field split (no regex interval
+# expressions, which are not universally supported by every awk this file might run under).
 noodara_looks_like_ipv4() {
   case "$1" in
-    [0-9]*.[0-9]*.[0-9]*.[0-9]*)
-      case "$1" in
-        *[!0-9.]*) return 1 ;;
-        *) return 0 ;;
-      esac
-      ;;
-    *)
+    *[!0-9.]*)
       return 1
       ;;
   esac
+  _noodara_liv4_oldifs="$IFS"
+  IFS='.'
+  set -- $1
+  IFS="$_noodara_liv4_oldifs"
+  if [ "$#" -ne 4 ]; then
+    return 1
+  fi
+  for _noodara_liv4_octet in "$1" "$2" "$3" "$4"; do
+    case "$_noodara_liv4_octet" in
+      '' | ????*)
+        return 1
+        ;;
+    esac
+    if [ "$_noodara_liv4_octet" -gt 255 ]; then
+      return 1
+    fi
+  done
+  return 0
 }
 
 # Tries https://ifconfig.io, then https://icanhazip.com, then https://ipecho.net/plain, each
@@ -767,6 +820,72 @@ noodara_get_local_ip() {
   ip route get 1.1.1.1 2>/dev/null | awk '{ for (i = 1; i <= NF; i++) if ($i == "src") print $(i + 1) }' | head -n 1
 }
 
+# Post-execution fix (orchestrator audit Finding 4): validates an explicit NOODARA_PUBLIC_URL
+# override before it is ever returned or written to `.env`. Previously the override was returned
+# completely verbatim and unvalidated -- `ftp://evil`, `javascript:alert(1)` and `not a url` all
+# passed through with exit 0. Fails with reason public-url-resolution-failed (the same reason
+# noodara_resolve_public_url already uses for total resolution failure), naming NOODARA_PUBLIC_URL
+# and the violated rule, but never echoing the (possibly injection-laden) value itself -- the same
+# never-echo discipline noodara_validate_tag already applies to version tags. D-05's exact-scheme-
+# preservation guarantee still holds: this only rejects, it never rewrites the accepted value, so a
+# caller who passes `https://...` still gets that exact scheme back.
+noodara_validate_public_url() {
+  _noodara_vpu_url="$1"
+  case "$_noodara_vpu_url" in
+    http://?* | https://?*)
+      ;;
+    *)
+      noodara_fail public-url-resolution-failed "NOODARA_PUBLIC_URL must start with http:// or https:// followed by a host. Set NOODARA_PUBLIC_URL to a valid URL and re-run this installer."
+      ;;
+  esac
+  case "$_noodara_vpu_url" in
+    *' '*)
+      noodara_fail public-url-resolution-failed "NOODARA_PUBLIC_URL must not contain whitespace. Set NOODARA_PUBLIC_URL to a valid URL and re-run this installer."
+      ;;
+  esac
+  _noodara_vpu_tab=$(printf '\t')
+  case "$_noodara_vpu_url" in
+    *"$_noodara_vpu_tab"*)
+      noodara_fail public-url-resolution-failed "NOODARA_PUBLIC_URL must not contain whitespace. Set NOODARA_PUBLIC_URL to a valid URL and re-run this installer."
+      ;;
+  esac
+  case "$_noodara_vpu_url" in
+    *"'"*)
+      noodara_fail public-url-resolution-failed "NOODARA_PUBLIC_URL must not contain a single quote character. Set NOODARA_PUBLIC_URL to a valid URL and re-run this installer."
+      ;;
+  esac
+  case "$_noodara_vpu_url" in
+    *'"'*)
+      noodara_fail public-url-resolution-failed "NOODARA_PUBLIC_URL must not contain a double quote character. Set NOODARA_PUBLIC_URL to a valid URL and re-run this installer."
+      ;;
+  esac
+  case "$_noodara_vpu_url" in
+    *'\'*)
+      noodara_fail public-url-resolution-failed "NOODARA_PUBLIC_URL must not contain a backslash. Set NOODARA_PUBLIC_URL to a valid URL and re-run this installer."
+      ;;
+  esac
+  case "$_noodara_vpu_url" in
+    *"\$"*)
+      noodara_fail public-url-resolution-failed "NOODARA_PUBLIC_URL must not contain a dollar sign. Set NOODARA_PUBLIC_URL to a valid URL and re-run this installer."
+      ;;
+  esac
+  case "$_noodara_vpu_url" in
+    *'`'*)
+      noodara_fail public-url-resolution-failed "NOODARA_PUBLIC_URL must not contain a backtick. Set NOODARA_PUBLIC_URL to a valid URL and re-run this installer."
+      ;;
+  esac
+  _noodara_vpu_cr=$(printf '\r')
+  case "$_noodara_vpu_url" in
+    *"
+"*)
+      noodara_fail public-url-resolution-failed "NOODARA_PUBLIC_URL must not contain a newline. Set NOODARA_PUBLIC_URL to a valid URL and re-run this installer."
+      ;;
+    *"$_noodara_vpu_cr"*)
+      noodara_fail public-url-resolution-failed "NOODARA_PUBLIC_URL must not contain a carriage return. Set NOODARA_PUBLIC_URL to a valid URL and re-run this installer."
+      ;;
+  esac
+}
+
 # Resolves NOODARA_PUBLIC_URL (06-CONTEXT.md D-07): explicit override (returned verbatim, no
 # lookup, no scheme normalisation -- D-05's cookie opt-out keys off the scheme exactly as given) >
 # external public-IP service (noodara_get_public_ip) > local default-route IP
@@ -784,6 +903,7 @@ noodara_get_local_ip() {
 # the same way stdout does, without touching the return channel.
 noodara_resolve_public_url() {
   if [ -n "${NOODARA_PUBLIC_URL:-}" ]; then
+    noodara_validate_public_url "$NOODARA_PUBLIC_URL"
     printf '%s\n' "$NOODARA_PUBLIC_URL"
     return 0
   fi
