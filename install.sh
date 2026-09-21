@@ -27,6 +27,7 @@ readonly NOODARA_INSTALL_DIR="${NOODARA_INSTALL_DIR:-/opt/noodara}"
 readonly NOODARA_DEFAULT_PORT=3000
 readonly NOODARA_COMPOSE_FILE=docker-compose.yml
 readonly NOODARA_ENV_FILE=.env
+readonly NOODARA_INSTALL_LOG_FILE=install.log
 
 # Overridable only for tests -- the real preflight always reads the genuine system files
 # (06-02-PLAN.md Task 1/2).
@@ -1553,6 +1554,20 @@ noodara_migrate_did_fail() {
   [ -n "$_noodara_mdf_code" ] && [ "$_noodara_mdf_code" != "0" ]
 }
 
+# Redacts any NOODARA_SETUP_TOKEN=<value> line and any userinfo-bearing connection-string-shaped
+# URL (scheme://user:pass@host) from a block of text before it is ever shown to the operator or
+# written anywhere. The D-12 diagnostic log tail (below) is the one place raw container output
+# reaches the operator -- application logs already pass through the phase-1 pino redactor, but the
+# setup-token line deliberately bypasses pino (bootstrap-admin.ts writes it straight to stdout),
+# and a stack-trace-shaped error line could still echo a DATABASE_URL/REDIS_URL-style connection
+# string verbatim. Never uses a POSIX `[:space:]` character class -- its own text starts with the
+# literal two-character substring "[[", which check-posix-sh's bracket-test rule flags as a
+# false-positive bashism (06-02-SUMMARY.md's own precedent for the identical class of finding).
+noodara_redact_diagnostic_text() {
+  sed -e 's/NOODARA_SETUP_TOKEN=[^ ]*/NOODARA_SETUP_TOKEN=[REDACTED]/g' \
+    -e 's#://[^:@]*:[^@]*@#://[REDACTED]@#g'
+}
+
 # Pulls every image `docker-compose.yml` references, unless NOODARA_INTERNAL_IMAGE_PREFIX is set
 # (D-19: the layer-2 test suite loads locally built images into the daemon directly and has no
 # registry to pull from at all -- this is the one flag that already implies skipping the pull,
@@ -1577,7 +1592,7 @@ noodara_compose_up() {
   noodara_step "Starting services..."
   if ! (cd "$NOODARA_INSTALL_DIR" && docker compose up -d); then
     if noodara_migrate_did_fail; then
-      _noodara_cu_tail=$(cd "$NOODARA_INSTALL_DIR" && docker compose logs --tail 50 migrate 2>&1)
+      _noodara_cu_tail=$(cd "$NOODARA_INSTALL_DIR" && docker compose logs --tail 50 migrate 2>&1 | noodara_redact_diagnostic_text)
       printf '%s\n' "$_noodara_cu_tail" >&2
       noodara_fail migrations-failed "Database migrations failed. See the migrate service log tail above. Data and secrets are untouched."
     fi
@@ -1622,16 +1637,141 @@ noodara_wait_for_health() {
   if [ "$_noodara_wfh_api" = "healthy" ]; then
     _noodara_wfh_bad=web
   fi
-  _noodara_wfh_tail=$(cd "$NOODARA_INSTALL_DIR" && docker compose logs --tail 50 "$_noodara_wfh_bad" 2>&1)
+  _noodara_wfh_tail=$(cd "$NOODARA_INSTALL_DIR" && docker compose logs --tail 50 "$_noodara_wfh_bad" 2>&1 | noodara_redact_diagnostic_text)
   printf '%s\n' "$_noodara_wfh_tail" >&2
-  noodara_fail health-check-failed "Service '$_noodara_wfh_bad' did not become healthy in time. See its log tail above. Data and secrets are untouched -- to go back, re-run this installer with NOODARA_VERSION=${NOODARA_PREVIOUS_VERSION:-<the version you were previously on>}."
+
+  # The real rollback remedy: NOODARA_PREVIOUS_VERSION is a key written INTO .env by
+  # noodara_main (never a real process environment variable during a genuine install) -- prefer an
+  # env-var override for isolated unit tests of this function, then fall back to reading the value
+  # noodara_main already wrote to .env, then a generic placeholder if truly nothing is known yet.
+  _noodara_wfh_prev="${NOODARA_PREVIOUS_VERSION:-}"
+  if [ -z "$_noodara_wfh_prev" ]; then
+    _noodara_wfh_prev=$(noodara_env_get_value "${NOODARA_INSTALL_DIR}/${NOODARA_ENV_FILE}" NOODARA_PREVIOUS_VERSION)
+  fi
+  if [ -z "$_noodara_wfh_prev" ]; then
+    _noodara_wfh_prev="the version you were previously on"
+  fi
+  noodara_fail health-check-failed "Service '$_noodara_wfh_bad' did not become healthy in time. See its log tail above. Data and secrets are untouched -- to go back, re-run this installer with NOODARA_VERSION=${_noodara_wfh_prev}."
 }
 
-# Named stub for the final operator summary -- filled in by this plan's Task 3 (setup token/ufw/
-# HTTP warning/upgrade hint). Present from this commit onward so noodara_main reads as a complete
-# table of contents of the whole install from its first commit.
+# Setup token, ufw advisory, install.log and the final operator summary (06-CONTEXT.md D-05/D-08/
+# D-13, INST-04/INST-05).
+
+# Reads the one-time setup token from `docker compose logs api` (D-13, T-06-45): extracts the
+# value after the LAST literal "NOODARA_SETUP_TOKEN=" occurrence (bootstrap-admin.ts re-emits it
+# on every boot while no admin exists yet) and validates it looks like the base64url value
+# deriveSetupTokenValue actually produces -- a bounded run of [A-Za-z0-9_-], never empty, never
+# absurdly long -- before ever returning it, so a log line corrupted by a terminal escape sequence
+# or other junk is never echoed raw to the operator's terminal. Returns non-zero (prints nothing at
+# all) when no such line exists: this installer never fabricates, reprints a stale, or prints a
+# placeholder token -- the caller (noodara_print_summary) prints the admin-exists message instead.
+noodara_read_setup_token() {
+  _noodara_rst_logs=$(cd "$NOODARA_INSTALL_DIR" && docker compose logs api 2>&1) || return 1
+  _noodara_rst_token=$(printf '%s\n' "$_noodara_rst_logs" | sed -n 's/.*NOODARA_SETUP_TOKEN=\(.*\)/\1/p' | tail -n 1 | tr -d '\r')
+  if [ -z "$_noodara_rst_token" ]; then
+    return 1
+  fi
+  case "$_noodara_rst_token" in
+    *[!A-Za-z0-9_-]*)
+      return 1
+      ;;
+  esac
+  if [ "${#_noodara_rst_token}" -lt 20 ] || [ "${#_noodara_rst_token}" -gt 128 ]; then
+    return 1
+  fi
+  printf '%s\n' "$_noodara_rst_token"
+}
+
+# D-08: read-only ufw advisory. Reports nothing when ufw is absent or inactive. When active,
+# prints the exact wording 06-RESEARCH.md Pitfall 5 requires (the "typically bypass" qualifier is
+# load-bearing -- neither "ufw will block this" nor "ufw protects you" is accurate), the exact
+# `ufw allow <port>/tcp` command, and a reminder that the cloud provider's own firewall also
+# applies. Never invokes a mutating ufw subcommand (`allow`/`enable`/`deny`/...) -- `ufw status` is
+# the only ufw invocation anywhere in this function. This wording is quoted verbatim by
+# docs/install.md (Plan 06-14) so the two copies cannot drift.
+noodara_check_ufw() {
+  if ! command -v ufw >/dev/null 2>&1; then
+    return 0
+  fi
+  _noodara_cfw_status=$(ufw status 2>/dev/null) || return 0
+  case "$_noodara_cfw_status" in
+    *"Status: active"*) ;;
+    *) return 0 ;;
+  esac
+  _noodara_cfw_port=$(noodara_resolve_port)
+  noodara_note ""
+  noodara_note "ufw is active on this server. Docker publishes container ports by inserting its own iptables rules, which typically bypass ufw's rules entirely for published ports -- a port Docker publishes may be reachable from the internet even if ufw shows it as denied."
+  noodara_note "If you rely on ufw to restrict access to this port, see docs/install.md for the DOCKER-USER-chain configuration needed to make ufw actually govern Docker's published ports."
+  noodara_note "To allow the panel port through ufw anyway: sudo ufw allow ${_noodara_cfw_port}/tcp"
+  noodara_note "Remember your cloud provider's own firewall/security-group rules also apply -- ufw only governs this host."
+}
+
+# Appends one timestamped, non-secret step line to $NOODARA_INSTALL_DIR/install.log, mode 600,
+# created under `umask 077` (06-CONTEXT.md's own discretion note; T-06-09). Records step names and
+# the NAMES of variables generated or preserved -- never a value, and never the setup token
+# (T-06-41): every call site below passes a literal, non-secret message, mirroring
+# noodara_step/noodara_warn's own "no helper here ever interpolates a generated secret" discipline.
+#
+# Deliberately NOT wired into noodara_step/noodara_warn themselves, unlike this plan's own literal
+# <action> text: those two helpers are called from noodara_preflight and other functions BEFORE the
+# install directory is guaranteed to exist (and, for standalone unit tests of those functions, may
+# never exist at all) -- 06-02-PLAN.md's own already-tested invariant ("noodara_preflight writes
+# nothing under NOODARA_INSTALL_DIR") would break the moment either helper attempted a file write.
+# noodara_main instead calls noodara_write_log explicitly, only once the install directory is known
+# to exist (after noodara_prepare_install_dir) -- documented as a deviation in this plan's SUMMARY.
+noodara_write_log() {
+  _noodara_wl_path="${NOODARA_INSTALL_DIR}/${NOODARA_INSTALL_LOG_FILE}"
+  (
+    umask 077
+    printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" >> "$_noodara_wl_path"
+  ) || return 0
+  chmod 600 "$_noodara_wl_path" 2>/dev/null || true
+}
+
+# The single place the headline operator-facing output is produced (06-CONTEXT.md D-05/D-13,
+# INST-04/INST-05): the panel URL, the token or the admin-exists/admin-created line, the ufw
+# advisory, the HTTP caveat, and the upgrade rollback hint. A short, calm block -- no ASCII art, no
+# banners, one fact per line, matching "Complex infrastructure. Calm interface."
 noodara_print_summary() {
-  :
+  _noodara_ps_url="$1"
+  _noodara_ps_env_path="$2"
+  _noodara_ps_version="$3"
+
+  noodara_note ""
+  noodara_note "Noodara is running."
+  noodara_note "Panel: ${_noodara_ps_url}"
+
+  if [ -n "${NOODARA_ADMIN_EMAIL:-}" ] && [ -n "${NOODARA_ADMIN_PASSWORD:-}" ]; then
+    # INST-05: no token is read or printed, and neither the email nor the password is echoed here
+    # -- bootstrap-admin.ts already created the admin from these two variables directly.
+    noodara_note "Admin account created from the supplied NOODARA_ADMIN_EMAIL/NOODARA_ADMIN_PASSWORD."
+  else
+    _noodara_ps_token=""
+    if _noodara_ps_token=$(noodara_read_setup_token); then
+      noodara_note "One-time setup token: ${_noodara_ps_token}"
+      noodara_note "Open the panel and enter this token to create the admin account."
+    else
+      # D-13: no token line in the logs means an admin already exists -- never an empty token
+      # field, never a fabricated one.
+      noodara_note "An admin account already exists."
+    fi
+  fi
+
+  case "$_noodara_ps_url" in
+    http://*)
+      noodara_note ""
+      noodara_note "WARNING: the panel is served over plain HTTP -- traffic, including the session cookie, is unencrypted until v0.4's TLS proxy (or your own) is in front. See docs/install.md."
+      ;;
+  esac
+
+  noodara_check_ufw
+
+  # D-12's upgrade rollback hint: shown only when this run genuinely changed the version.
+  _noodara_ps_previous=$(noodara_env_get_value "$_noodara_ps_env_path" NOODARA_PREVIOUS_VERSION)
+  if [ -n "$_noodara_ps_previous" ] && [ "$_noodara_ps_previous" != "$_noodara_ps_version" ]; then
+    noodara_note ""
+    noodara_note "Upgraded from ${_noodara_ps_previous} to ${_noodara_ps_version}. To go back: re-run this installer with NOODARA_VERSION=${_noodara_ps_previous}."
+  fi
 }
 
 # Entry point (06-CONTEXT.md D-09/D-10/D-11/D-17, INST-01/INST-02/INST-04/INST-05): preflight ->
@@ -1671,17 +1811,24 @@ noodara_main() {
       NOODARA_IMAGE_PREFIX "$_noodara_main_image_prefix" \
       NOODARA_PORT "$_noodara_main_port" \
       NOODARA_PUBLIC_URL "$_noodara_main_public_url"
+    noodara_write_log "Upgrade: merged .env, preserved existing secrets (NOODARA_VERSION, NOODARA_IMAGE_PREFIX, NOODARA_PORT, NOODARA_PUBLIC_URL updated)"
   else
     noodara_generate_env "$_noodara_main_env_path" "$_noodara_main_public_url" "$_noodara_main_port" \
       "$_noodara_main_version" "$_noodara_main_image_prefix"
+    noodara_write_log "Fresh install: generated .env with fresh secrets"
   fi
 
   noodara_place_compose_file
+  noodara_write_log "Placed docker-compose.yml"
 
   noodara_pull_images
+  noodara_write_log "Images pulled (or skipped via NOODARA_INTERNAL_IMAGE_PREFIX)"
   noodara_compose_up
+  noodara_write_log "docker compose up -d completed"
   noodara_wait_for_health
-  noodara_print_summary
+  noodara_write_log "All services healthy"
+
+  noodara_print_summary "$_noodara_main_public_url" "$_noodara_main_env_path" "$_noodara_main_version"
 }
 
 if [ "${NOODARA_INSTALL_SH_SOURCE_ONLY:-0}" != "1" ]; then
