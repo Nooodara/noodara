@@ -129,11 +129,16 @@ describe('release pipeline workflow files (structural, no GitHub Actions run req
 
   it('every job in release.yml declares both permissions: and timeout-minutes:', () => {
     const source = releaseYml();
-    const jobNames = [...source.matchAll(/^ {2}([a-z][a-z0-9_-]*):\s*$/gm)].map((m) => m[1]);
+    // Scope to the `jobs:` top-level block only -- the same "  key:" indentation shape also
+    // appears under `on:`/`concurrency:` above it (e.g. "  push:", "  tags:"), which are not jobs.
+    const jobsSectionMatch = source.match(/\njobs:\n([\s\S]*)$/);
+    expect(jobsSectionMatch, 'jobs: section not found').toBeTruthy();
+    const jobsSection = jobsSectionMatch?.[1] ?? '';
+    const jobNames = [...jobsSection.matchAll(/^ {2}([a-z][a-z0-9_-]*):\s*$/gm)].map((m) => m[1]);
 
     expect(jobNames.length).toBeGreaterThan(0);
     for (const jobName of jobNames) {
-      const jobBlockMatch = source.match(new RegExp(`\\n {2}${jobName}:\\n([\\s\\S]*?)(?=\\n {2}[a-z][a-z0-9_-]*:\\n|$)`));
+      const jobBlockMatch = jobsSection.match(new RegExp(`\\n {2}${jobName}:\\n([\\s\\S]*?)(?=\\n {2}[a-z][a-z0-9_-]*:\\n|$)`));
       expect(jobBlockMatch, `job "${jobName}" block not found`).toBeTruthy();
       const jobBlock = jobBlockMatch?.[1] ?? '';
       expect(jobBlock, `job "${jobName}" missing permissions:`).toMatch(/permissions:/);

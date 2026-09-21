@@ -1,0 +1,287 @@
+name: Release
+
+# Publishes the two images `install.sh` pulls (D-01): ghcr.io/<owner>/noodara-control-plane and
+# ghcr.io/<owner>/noodara-web, at the exact tag the operator's install/upgrade resolves to
+# (install.sh's own noodara_resolve_version / noodara_resolve_image_prefix). D-16: both images are
+# published as a genuine multi-arch manifest covering linux/amd64 and linux/arm64, built on native
+# runners rather than under QEMU emulation, because argon2 and ssh2 carry native addons and
+# emulated install-script execution for native addons has a documented failure history
+# (06-RESEARCH.md Assumption A2).
+#
+# D-02: this workflow CANNOT execute for real until the repository exists on GitHub and a tag is
+# pushed there -- exactly the same limitation nightly.yml's own header comment already documents
+# for its `on: schedule` trigger. A tag-push trigger is only ever evaluated by GitHub Actions for a
+# workflow file that already lives on a real, pushed repository; this file has been validated only
+# statically (YAML structure, actionlint, the scripts/check-workflow-pins.mjs SHA-pin gate, and the
+# structural tests in tests/unit/scripts/check-workflow-pins.test.ts) and has never executed as a
+# real tag-triggered or workflow_dispatch-triggered GitHub Actions run. Its first real execution is
+# a human prerequisite tracked in Plan 06-15, alongside creating the repository itself (D-02) and
+# making the resulting GHCR packages public (a fresh GHCR package is PRIVATE by default, and
+# install.sh pulls anonymously).
+#
+# NOODARA_API_ORIGIN (the web image's proxy target): supplied exactly once, here, as a
+# `--build-arg`. apps/web/Dockerfile then carries that single value TWICE inside the built image --
+# once baked into next.config.ts's rewrites() (Next.js evaluates rewrites() only once, at
+# `next build`) and once again as the runner stage's own runtime ENV (apps/web/src/proxy.ts and
+# apps/web/src/app/api/events/route.ts both read process.env.NOODARA_API_ORIGIN at request time,
+# discovered in Plan 06-05). Both come from the one build-arg set below -- there is no second,
+# independently-settable source, and the production docker-compose.yml (Plan 06-07) must never try
+# to override it with its own `environment:` entry.
+#
+# Every third-party `uses:` below is pinned to a 40-character commit SHA with its human-readable
+# tag as a trailing comment (never a mutable tag) -- verified with `git ls-remote` against the real
+# tag (see 06-13-SUMMARY.md for the exact lookup output per action) and enforced as a named,
+# non-bypassable gate by scripts/check-workflow-pins.mjs (`node scripts/check-workflow-pins.mjs
+# .github/workflows/release.yml`), not just a review convention.
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  # Lets the first run be a manual dry run before any real tag exists (06-RESEARCH.md Open
+  # Question 1's own recommendation) -- still cannot fire without a remote (D-02).
+  workflow_dispatch:
+    inputs:
+      version:
+        description: >-
+          Release version to build (e.g. v0.1.0 or 0.1.0). Normalised and validated identically to
+          a real pushed tag before anything is built.
+        required: true
+        type: string
+
+# Release-specific prefix, otherwise the exact templated group form ci.yml already uses.
+# cancel-in-progress is deliberately false here (ci.yml's own group uses true): cancelling a
+# half-finished publish would leave a partial multi-arch manifest -- a single-arch image silently
+# masquerading as a full release (T-06-57). A second push to the same tag simply queues behind the
+# first instead of tearing it down mid-publish.
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Derives the version string exactly once (from the pushed tag with a leading "v" stripped, or
+  # from the workflow_dispatch input) and validates it with the SAME rules install.sh's own
+  # noodara_normalize_tag/noodara_validate_tag apply (06-CONTEXT.md D-04) -- the tag this workflow
+  # publishes and the tag install.sh resolves and writes to .env must agree exactly, or a real
+  # install would try to pull an image that was never published. Also lower-cases the repository
+  # owner once (GHCR requires a lowercase image path; GitHub org/user login case is not guaranteed
+  # lowercase) so every downstream job reads one already-validated, already-normalised pair of
+  # outputs instead of repeating the logic. Script-injection safety: github.ref_name/
+  # github.event.inputs.* are only ever read through `env:`, never interpolated directly inside a
+  # `run:` script (hard_rule #7).
+  prepare:
+    name: prepare
+    runs-on: ubuntu-latest
+    # A single shell pass over two short strings, no checkout, no network. 5 min is already
+    # generous headroom.
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      owner: ${{ steps.owner.outputs.owner }}
+    steps:
+      - name: Compute and validate the release version (must match install.sh's noodara_resolve_version)
+        id: version
+        env:
+          RAW_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
+        run: |
+          set -euo pipefail
+          # Strip a single leading "v", exactly like install.sh's noodara_normalize_tag.
+          version="${RAW_VERSION#v}"
+          if [ -z "$version" ]; then
+            echo "::error::resolved version is empty"
+            exit 1
+          fi
+          # Never publish the unversioned "latest" tag (D-04) -- a restart must never silently
+          # change which release api/worker/web run.
+          if [ "$version" = "latest" ]; then
+            echo "::error::resolved version must not be 'latest' (D-04) -- use an explicit tag"
+            exit 1
+          fi
+          # Same character-class/length checks as install.sh's noodara_validate_tag: first char
+          # [A-Za-z0-9_], remaining [A-Za-z0-9_.-], 1-128 characters total.
+          case "$version" in
+            [!A-Za-z0-9_]*)
+              echo "::error::version has an invalid first character: $version"
+              exit 1
+              ;;
+          esac
+          case "$version" in
+            *[!A-Za-z0-9_.-]*)
+              echo "::error::version contains a disallowed character: $version"
+              exit 1
+              ;;
+          esac
+          if [ "${#version}" -gt 128 ]; then
+            echo "::error::version is too long (max 128 characters, matching noodara_validate_tag)"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Lower-case the repository owner (GHCR requires a lowercase image path)
+        id: owner
+        env:
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          owner=$(printf '%s' "$REPO_OWNER" | tr '[:upper:]' '[:lower:]')
+          echo "owner=$owner" >> "$GITHUB_OUTPUT"
+
+  # Two native runners per image (no QEMU-based emulated multi-platform build anywhere in this
+  # file): D-16 requires
+  # arm64 support to be genuinely built and genuinely working for argon2/ssh2's native addons, and
+  # 06-RESEARCH.md Assumption A2 records QEMU-emulated native-addon install scripts as a documented
+  # failure class this project chooses not to risk for its very first published image.
+  build:
+    name: build (${{ matrix.image }}, ${{ matrix.arch }})
+    needs: prepare
+    strategy:
+      # One arch's build failing must not hide the other's result.
+      fail-fast: false
+      matrix:
+        include:
+          - app: control-plane
+            image: noodara-control-plane
+            os: ubuntu-latest
+            platform: linux/amd64
+            arch: amd64
+          - app: control-plane
+            image: noodara-control-plane
+            os: ubuntu-24.04-arm
+            platform: linux/arm64
+            arch: arm64
+          - app: web
+            image: noodara-web
+            os: ubuntu-latest
+            platform: linux/amd64
+            arch: amd64
+          - app: web
+            image: noodara-web
+            os: ubuntu-24.04-arm
+            platform: linux/arm64
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    # 06-03-SUMMARY.md measured the control-plane Dockerfile's real local build at ~91s cold /
+    # ~19s cached; apps/web/Dockerfile is the same four-stage shape. A cold GitHub-hosted runner
+    # additionally pays for a fresh base-image pull, `pnpm install`'s network cost and a registry
+    # push -- 30 min keeps generous headroom above the measured local figure for that difference,
+    # never the six-hour default.
+    timeout-minutes: 30
+    # Minimum for a GHCR push with the built-in GITHUB_TOKEN -- no PAT (T-06-55).
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # provenance/SBOM generation is deliberately disabled on both build steps below: buildx's
+      # default provenance attachment wraps even a single-platform push in its own OCI image index,
+      # which would complicate the `manifest` job's own `imagetools create` merge into one
+      # genuinely two-platform manifest list. Neither D-01 nor D-16 nor 06-RESEARCH.md calls for
+      # provenance/SBOM attestation, and disabling both needs no extra secret or permission.
+      - name: Build and push noodara-control-plane (${{ matrix.arch }})
+        if: matrix.app == 'control-plane'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: apps/control-plane/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          provenance: false
+          sbom: false
+          tags: ghcr.io/${{ needs.prepare.outputs.owner }}/${{ matrix.image }}:${{ needs.prepare.outputs.version }}-${{ matrix.arch }}
+          build-args: |
+            NOODARA_IMAGE_VERSION=${{ needs.prepare.outputs.version }}
+      - name: Build and push noodara-web (${{ matrix.arch }})
+        if: matrix.app == 'web'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          provenance: false
+          sbom: false
+          tags: ghcr.io/${{ needs.prepare.outputs.owner }}/${{ matrix.image }}:${{ needs.prepare.outputs.version }}-${{ matrix.arch }}
+          build-args: |
+            NOODARA_IMAGE_VERSION=${{ needs.prepare.outputs.version }}
+            NOODARA_API_ORIGIN=http://api:3000
+
+  # Gated on BOTH native build legs via `needs:` -- this is exactly what closes 06-RESEARCH.md's
+  # Open Question 1 race concern (a manifest assembled before one arch's push lands would silently
+  # publish a single-arch image under a multi-arch-looking tag).
+  manifest:
+    name: manifest (${{ matrix.image }})
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    # docker buildx imagetools create is a registry-metadata-only operation (no image content is
+    # rebuilt or re-uploaded) -- near-instant; 10 min is already generous headroom.
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        image: [noodara-control-plane, noodara-web]
+    steps:
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Combine the two per-arch tags into one multi-arch manifest at the final version tag
+        env:
+          OWNER: ${{ needs.prepare.outputs.owner }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          IMAGE: ${{ matrix.image }}
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create \
+            --tag "ghcr.io/${OWNER}/${IMAGE}:${VERSION}" \
+            "ghcr.io/${OWNER}/${IMAGE}:${VERSION}-amd64" \
+            "ghcr.io/${OWNER}/${IMAGE}:${VERSION}-arm64"
+
+  # Without this step a silently single-arch release (T-06-56) would only ever be discovered by a
+  # real arm64 user's failed install -- D-16 stays a tested guarantee, not an assumed one.
+  verify:
+    name: verify (${{ matrix.image }})
+    needs: [prepare, manifest]
+    runs-on: ubuntu-latest
+    # A registry-metadata read (docker manifest inspect), no build, no push. 10 min is generous.
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      matrix:
+        image: [noodara-control-plane, noodara-web]
+    steps:
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify the published manifest covers both linux/amd64 and linux/arm64
+        env:
+          DOCKER_CLI_EXPERIMENTAL: enabled
+          OWNER: ${{ needs.prepare.outputs.owner }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          IMAGE: ${{ matrix.image }}
+        run: |
+          set -euo pipefail
+          ref="ghcr.io/${OWNER}/${IMAGE}:${VERSION}"
+          output=$(docker manifest inspect "$ref")
+          echo "$output" | grep -q '"architecture": "amd64"' || {
+            echo "::error::manifest for $ref is missing linux/amd64 (D-16)"
+            exit 1
+          }
+          echo "$output" | grep -q '"architecture": "arm64"' || {
+            echo "::error::manifest for $ref is missing linux/arm64 (D-16)"
+            exit 1
+          }
+          echo "verified $ref covers both linux/amd64 and linux/arm64"
