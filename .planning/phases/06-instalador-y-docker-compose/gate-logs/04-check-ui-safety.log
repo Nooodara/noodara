@@ -1,0 +1,15 @@
+
+> noodara@ check:ui-safety /Users/xch4rt/work/myself/noodara/code
+> node scripts/check-ui-safety.mjs
+
+OK   exactly one reviewed dangerouslySetInnerHTML occurrence (T-5-99) (count=1)
+OK   zero JSON.stringify in a component or page file (count=0)
+OK   zero hex colour literals outside packages/ui/tokens.css (count=0)
+OK   zero rgb(/rgba( colour literals outside packages/ui/tokens.css (count=0)
+OK   zero literal `outline: none` CSS declarations, in either a raw CSS/style-tag form or a JS/JSX inline-style object's quoted form (Tailwind's `outline-none` utility class name is a different, unrelated string and is not scanned by this gate) (count=0)
+OK   zero onEscapeKeyDown/onInteractOutside overrides (Radix Dialog/Sheet default behaviour must stay untouched) (count=0)
+OK   zero animate-spin/spinner usage (the skill's full-screen-spinner ban, skeletons only) (count=0)
+OK   zero credentials: 'include' (D-29's same-origin lock, T-5-100) (count=0)
+OK   @noodara/ui/testing imported only from *.test.tsx/*.test.ts files (ADR-0005, T-5-103) (count=0)
+
+check:ui-safety OK -- all repo-wide UI safety gates hold.

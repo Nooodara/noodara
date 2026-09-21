@@ -1,0 +1,5 @@
+
+> noodara@ check:posix-sh /Users/xch4rt/work/myself/noodara/code
+> node scripts/check-posix-sh.mjs install.sh
+
+check-posix-sh: install.sh clean (2224 lines)
