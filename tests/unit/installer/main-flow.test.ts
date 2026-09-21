@@ -11,6 +11,7 @@
 // and, here, a stub the test's own argv-recording call log needs to survive across every one of
 // noodara_main's several `docker ...` invocations), everything else via shell-function shadowing
 // after sourcing install.sh.
+import { createHash } from 'node:crypto';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -39,6 +40,30 @@ function dfFunctionSnippet(availableKb: number): string {
     `  printf '/dev/sda1 100000000 1000000 ${availableKb} 1%% /\\n'`,
     '}',
   ].join('\n');
+}
+
+/** Writes a minimal but complete existing-installation .env -- shared by the "upgrade" and "full
+ *  noodara_main flow" describe blocks below (previously duplicated once per block). */
+function seedExistingInstall(installDir: string, version: string, extra: Record<string, string> = {}): void {
+  mkdirSync(installDir, { recursive: true, mode: 0o700 });
+  const lines = [
+    `NOODARA_VERSION=${version}`,
+    `NOODARA_PREVIOUS_VERSION=${extra.NOODARA_PREVIOUS_VERSION ?? version}`,
+    'NOODARA_IMAGE_PREFIX=ghcr.io/example',
+    'NOODARA_PORT=3000',
+    "NOODARA_PUBLIC_URL='http://198.51.100.7:3000'",
+    'NOODARA_MASTER_KEY=dGVzdC1tYXN0ZXIta2V5LTMyLWJ5dGVzLWV4YWN0bHkhIQ==',
+    'BETTER_AUTH_SECRET=abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567',
+    'POSTGRES_USER=noodara',
+    'POSTGRES_PASSWORD=abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567',
+    'POSTGRES_DB=noodara',
+    'REDIS_PASSWORD=abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567',
+    'DATABASE_URL=postgresql://noodara:x@postgres:5432/noodara',
+    'REDIS_URL=redis://:x@redis:6379',
+    'PORT=3000',
+  ];
+  writeFileSync(join(installDir, '.env'), `${lines.join('\n')}\n`, 'utf8');
+  chmodSync(join(installDir, '.env'), 0o600);
 }
 
 /** Parses a written .env file into a plain key/value map, stripping one layer of surrounding
@@ -322,28 +347,6 @@ describe.each(posixInterpreters())('install.sh noodara_main fresh install (%s)',
 });
 
 describe.each(posixInterpreters())('install.sh noodara_main upgrade (%s)', (interpreter) => {
-  function seedExistingInstall(installDir: string, version: string, extra: Record<string, string> = {}): void {
-    mkdirSync(installDir, { recursive: true, mode: 0o700 });
-    const lines = [
-      `NOODARA_VERSION=${version}`,
-      `NOODARA_PREVIOUS_VERSION=${extra.NOODARA_PREVIOUS_VERSION ?? version}`,
-      'NOODARA_IMAGE_PREFIX=ghcr.io/example',
-      'NOODARA_PORT=3000',
-      "NOODARA_PUBLIC_URL='http://198.51.100.7:3000'",
-      'NOODARA_MASTER_KEY=dGVzdC1tYXN0ZXIta2V5LTMyLWJ5dGVzLWV4YWN0bHkhIQ==',
-      'BETTER_AUTH_SECRET=abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567',
-      'POSTGRES_USER=noodara',
-      'POSTGRES_PASSWORD=abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567',
-      'POSTGRES_DB=noodara',
-      'REDIS_PASSWORD=abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567',
-      'DATABASE_URL=postgresql://noodara:x@postgres:5432/noodara',
-      'REDIS_URL=redis://:x@redis:6379',
-      'PORT=3000',
-    ];
-    writeFileSync(join(installDir, '.env'), `${lines.join('\n')}\n`, 'utf8');
-    chmodSync(join(installDir, '.env'), 0o600);
-  }
-
   it('calls noodara_merge_env and never noodara_generate_env on a re-run', () => {
     const { snippet, env, installDir } = buildMainFlowEnv({ NOODARA_VERSION: '1.1.0' });
     seedExistingInstall(installDir, '1.0.0');
@@ -422,6 +425,182 @@ describe.each(posixInterpreters())('install.sh noodara_main upgrade (%s)', (inte
 
     expect(result.status).toBe(0);
     expect(readFileSync(join(installDir, 'docker-compose.yml'), 'utf8')).toBe(REAL_COMPOSE_FILE);
+  });
+
+  // Post-execution fix (orchestrator audit Finding B): an upgrade must use the public URL/port
+  // already recorded in .env -- never re-resolve from the network -- and must never depend on
+  // outbound reachability to do so.
+  it('uses the public URL recorded in .env on an upgrade, never a network lookup, when the operator supplies no override', () => {
+    const { snippet, env, installDir } = buildMainFlowEnv({ NOODARA_VERSION: '1.1.0' });
+    const { NOODARA_PUBLIC_URL: _drop, ...envWithoutPublicUrl } = env;
+    seedExistingInstall(installDir, '1.0.0', {});
+    // Overwrite the seeded PUBLIC_URL to a distinctive value so a network-resolved value (which
+    // would come from an ifconfig.io-style IP, never this hostname) is unmistakably wrong.
+    writeFileSync(
+      join(installDir, '.env'),
+      readFileSync(join(installDir, '.env'), 'utf8').replace(
+        "NOODARA_PUBLIC_URL='http://198.51.100.7:3000'",
+        "NOODARA_PUBLIC_URL='https://panel.example.com'",
+      ),
+      'utf8',
+    );
+    const fullSnippet = [snippet, 'noodara_main'].join('\n');
+
+    const result = runInstallerShell(interpreter, fullSnippet, { env: envWithoutPublicUrl });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).not.toContain('unexpected network call');
+    const after = parseEnvFile(join(installDir, '.env'));
+    expect(after.NOODARA_PUBLIC_URL).toBe('https://panel.example.com');
+    expect(result.stdout).toContain('https://panel.example.com');
+  });
+
+  it('an upgrade never fails with exit 41 (public-url-resolution-failed) even when the network is fully unreachable, as long as .env already has NOODARA_PUBLIC_URL', () => {
+    const { snippet, env, installDir } = buildMainFlowEnv({ NOODARA_VERSION: '1.1.0' });
+    const { NOODARA_PUBLIC_URL: _drop, ...envWithoutPublicUrl } = env;
+    seedExistingInstall(installDir, '1.0.0');
+    const fullSnippet = [
+      snippet,
+      // ip absent too -- both D-07 network tiers unavailable. Must never be reached.
+      "ip() { printf 'noodara-test: unexpected ip call\\n' >&2; return 1; }",
+      'noodara_main',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, fullSnippet, { env: envWithoutPublicUrl });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).not.toContain('unexpected network call');
+    expect(result.stderr).not.toContain('unexpected ip call');
+  });
+
+  it('warns naming both values, and .env still wins, when an explicit NOODARA_PUBLIC_URL override differs from the recorded one', () => {
+    const { snippet, env, installDir } = buildMainFlowEnv({
+      NOODARA_VERSION: '1.1.0',
+      NOODARA_PUBLIC_URL: 'https://operator-override.example.com',
+    });
+    seedExistingInstall(installDir, '1.0.0');
+    const fullSnippet = [snippet, 'noodara_main'].join('\n');
+
+    const result = runInstallerShell(interpreter, fullSnippet, { env });
+
+    expect(result.status).toBe(0);
+    const after = parseEnvFile(join(installDir, '.env'));
+    expect(after.NOODARA_PUBLIC_URL).toBe('http://198.51.100.7:3000');
+    expect(result.stderr).toContain('operator-override.example.com');
+    expect(result.stderr).toContain('198.51.100.7');
+    expect(result.stderr.toLowerCase()).toContain('.env');
+  });
+
+  it('the ufw advisory and summary both name the port and URL actually recorded in .env, not an operator override', () => {
+    const { snippet, env, installDir } = buildMainFlowEnv({
+      NOODARA_VERSION: '1.1.0',
+      NOODARA_PUBLIC_URL: 'https://operator-override.example.com',
+    });
+    seedExistingInstall(installDir, '1.0.0');
+    const fullSnippet = [
+      snippet,
+      'ufw() { printf "Status: active\\n"; return 0; }',
+      'noodara_main',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, fullSnippet, { env });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('http://198.51.100.7:3000');
+    expect(result.stdout).toContain('sudo ufw allow 3000/tcp');
+    expect(result.stdout).not.toContain('operator-override.example.com');
+  });
+
+  // Post-execution fix (orchestrator audit Finding C): D-09's own wording is explicit, not silent
+  // -- "si ya está en esa versión, no cambia nada y solo verifica salud". A same-version re-run
+  // with nothing missing from .env is a true no-op: no backup, .env byte-identical, no pull, no
+  // `docker compose up -d`.
+  it('a same-version re-run with nothing missing from .env is a true no-op (Finding C)', () => {
+    const { snippet, env, installDir } = buildMainFlowEnv({ NOODARA_VERSION: '1.0.0' });
+    seedExistingInstall(installDir, '1.0.0', { NOODARA_PREVIOUS_VERSION: '0.9.0' });
+    const beforeChecksum = createHash('sha256').update(readFileSync(join(installDir, '.env'))).digest('hex');
+    const callLog = join(installDir, 'docker-calls.log');
+    const fullSnippet = [
+      snippet,
+      'docker() {',
+      '  printf "%s\\n" "docker $*" >> "$NOODARA_TEST_CALL_LOG"',
+      '  case "$*" in',
+      '    "compose ps --format json") printf \'{"Service":"api","Health":"healthy"}\\n{"Service":"web","Health":"healthy"}\\n\' ;;',
+      '    "compose logs api") printf "no bootstrap needed\\n" ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_main',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, fullSnippet, {
+      env: { ...env, NOODARA_TEST_CALL_LOG: callLog },
+    });
+
+    expect(result.status).toBe(0);
+    const afterChecksum = createHash('sha256').update(readFileSync(join(installDir, '.env'))).digest('hex');
+    expect(afterChecksum).toBe(beforeChecksum);
+    const entries: string[] = readdirSync(installDir);
+    expect(entries.some((name) => name.startsWith('.env.bak-'))).toBe(false);
+    const calls = existsSync(callLog) ? readFileSync(callLog, 'utf8') : '';
+    expect(calls).not.toMatch(/compose pull\b/);
+    expect(calls).not.toMatch(/compose up -d\b/);
+    // Health check + summary still ran.
+    expect(calls).toMatch(/compose ps --format json/);
+    expect(result.stdout).toContain('Noodara is running');
+  });
+
+  it('a same-version re-run still merges (one backup, no full no-op) when a required key is missing from .env', () => {
+    const { snippet, env, installDir } = buildMainFlowEnv({ NOODARA_VERSION: '1.0.0' });
+    mkdirSync(installDir, { recursive: true, mode: 0o700 });
+    writeFileSync(
+      join(installDir, '.env'),
+      [
+        'NOODARA_VERSION=1.0.0',
+        'NOODARA_PREVIOUS_VERSION=1.0.0',
+        'NOODARA_IMAGE_PREFIX=ghcr.io/example',
+        'NOODARA_PORT=3000',
+        // NOODARA_PUBLIC_URL deliberately absent -- simulates a release-added required key.
+        'NOODARA_MASTER_KEY=dGVzdC1tYXN0ZXIta2V5LTMyLWJ5dGVzLWV4YWN0bHkhIQ==',
+        'BETTER_AUTH_SECRET=abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567',
+        'POSTGRES_USER=noodara',
+        'POSTGRES_PASSWORD=abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567',
+        'POSTGRES_DB=noodara',
+        'REDIS_PASSWORD=abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567',
+        'DATABASE_URL=postgresql://noodara:x@postgres:5432/noodara',
+        'REDIS_URL=redis://:x@redis:6379',
+        'PORT=3000',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+    chmodSync(join(installDir, '.env'), 0o600);
+    const callLog = join(installDir, 'docker-calls.log');
+    const fullSnippet = [
+      snippet,
+      'docker() {',
+      '  printf "%s\\n" "docker $*" >> "$NOODARA_TEST_CALL_LOG"',
+      '  case "$*" in',
+      '    "compose ps --format json") printf \'{"Service":"api","Health":"healthy"}\\n{"Service":"web","Health":"healthy"}\\n\' ;;',
+      '    "compose logs api") printf "no bootstrap needed\\n" ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_main',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, fullSnippet, {
+      env: { ...env, NOODARA_TEST_CALL_LOG: callLog },
+    });
+
+    expect(result.status).toBe(0);
+    const after = parseEnvFile(join(installDir, '.env'));
+    expect(after.NOODARA_PUBLIC_URL).toBe('http://198.51.100.7:3000');
+    const entries: string[] = readdirSync(installDir);
+    expect(entries.some((name) => name.startsWith('.env.bak-'))).toBe(true);
+    const calls = readFileSync(callLog, 'utf8');
+    expect(calls).toMatch(/compose pull\b/);
+    expect(calls).toMatch(/compose up -d\b/);
   });
 });
 
@@ -1021,31 +1200,7 @@ describe.each(posixInterpreters())('install.sh full noodara_main flow (%s)', (in
 
   it('re-run with an existing admin: prints the URL and an admin-exists line, no token', () => {
     const { snippet, env, installDir } = buildMainFlowEnv({ NOODARA_VERSION: '1.1.0' });
-    // Seed a minimal but complete-enough existing install (mirrors the upgrade describe block's
-    // own seedExistingInstall shape).
-    mkdirSync(installDir, { recursive: true, mode: 0o700 });
-    writeFileSync(
-      join(installDir, '.env'),
-      [
-        'NOODARA_VERSION=1.0.0',
-        'NOODARA_PREVIOUS_VERSION=1.0.0',
-        'NOODARA_IMAGE_PREFIX=ghcr.io/example',
-        'NOODARA_PORT=3000',
-        "NOODARA_PUBLIC_URL='http://198.51.100.7:3000'",
-        'NOODARA_MASTER_KEY=dGVzdC1tYXN0ZXIta2V5LTMyLWJ5dGVzLWV4YWN0bHkhIQ==',
-        'BETTER_AUTH_SECRET=abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567',
-        'POSTGRES_USER=noodara',
-        'POSTGRES_PASSWORD=abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567',
-        'POSTGRES_DB=noodara',
-        'REDIS_PASSWORD=abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567',
-        'DATABASE_URL=postgresql://noodara:x@postgres:5432/noodara',
-        'REDIS_URL=redis://:x@redis:6379',
-        'PORT=3000',
-        '',
-      ].join('\n'),
-      'utf8',
-    );
-    chmodSync(join(installDir, '.env'), 0o600);
+    seedExistingInstall(installDir, '1.0.0');
     const fullSnippet = [
       snippet,
       // No token line in the api logs on this run -- an admin already exists.
@@ -1058,6 +1213,91 @@ describe.each(posixInterpreters())('install.sh full noodara_main flow (%s)', (in
     expect(result.status).toBe(0);
     expect(result.stdout.toLowerCase()).toContain('already exists');
     expect(result.stdout).not.toContain('NOODARA_SETUP_TOKEN');
+  });
+
+  // Post-execution fix (orchestrator audit Finding D): a reliable "does an admin already exist"
+  // signal (the existing POST /api/setup route, probed via `docker compose exec -T api node -e`)
+  // must override a stale NOODARA_SETUP_TOKEN= line still sitting in the api container's own log
+  // history from an earlier boot -- bootstrapAdmin only re-emits that line at boot time, so it
+  // never disappears on its own once an admin is created without the container restarting.
+  it('re-run with an existing admin (probe-confirmed): never prints a stale token line still present in the logs', () => {
+    const { snippet, env, installDir } = buildMainFlowEnv({ NOODARA_VERSION: '1.1.0' });
+    seedExistingInstall(installDir, '1.0.0');
+    const fullSnippet = [
+      snippet,
+      'docker() {',
+      '  case "$*" in',
+      '    "compose ps --format json") printf \'{"Service":"api","Health":"healthy"}\\n{"Service":"web","Health":"healthy"}\\n\' ;;',
+      `    "compose logs api") printf 'NOODARA_SETUP_TOKEN=${VALID_TOKEN}\\n' ;;`,
+      '    "compose exec -T api node -e"*) printf "exists\\n" ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_main',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, fullSnippet, { env });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout.toLowerCase()).toContain('already exists');
+    expect(result.stdout).not.toContain('NOODARA_SETUP_TOKEN');
+    expect(result.stdout).not.toContain(VALID_TOKEN);
+    expect(result.stderr).not.toContain(VALID_TOKEN);
+  });
+
+  it('re-run of a half-finished first install (no admin yet, probe-confirmed missing): still prints the token', () => {
+    const { snippet, env, installDir } = buildMainFlowEnv({ NOODARA_VERSION: '1.1.0' });
+    seedExistingInstall(installDir, '1.0.0');
+    const fullSnippet = [
+      snippet,
+      'docker() {',
+      '  case "$*" in',
+      '    "compose ps --format json") printf \'{"Service":"api","Health":"healthy"}\\n{"Service":"web","Health":"healthy"}\\n\' ;;',
+      `    "compose logs api") printf 'NOODARA_SETUP_TOKEN=${VALID_TOKEN}\\n' ;;`,
+      '    "compose exec -T api node -e"*) printf "missing\\n" ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_main',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, fullSnippet, { env });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(VALID_TOKEN);
+    expect(result.stdout).not.toContain('already exists');
+  });
+
+  it('the admin-exists probe never appears on any docker argv with a secret, and is itself redacted-safe', () => {
+    const { snippet, env, installDir } = buildMainFlowEnv({ NOODARA_VERSION: '1.1.0' });
+    seedExistingInstall(installDir, '1.0.0');
+    const callLog = join(installDir, 'docker-calls.log');
+    const before = parseEnvFile(join(installDir, '.env'));
+    const fullSnippet = [
+      snippet,
+      'docker() {',
+      '  printf "%s\\n" "docker $*" >> "$NOODARA_TEST_CALL_LOG"',
+      '  case "$*" in',
+      '    "compose ps --format json") printf \'{"Service":"api","Health":"healthy"}\\n{"Service":"web","Health":"healthy"}\\n\' ;;',
+      '    "compose logs api") printf "no bootstrap needed\\n" ;;',
+      '    "compose exec -T api node -e"*) printf "exists\\n" ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_main',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, fullSnippet, {
+      env: { ...env, NOODARA_TEST_CALL_LOG: callLog },
+    });
+
+    expect(result.status).toBe(0);
+    const calls = readFileSync(callLog, 'utf8');
+    for (const secret of [before.NOODARA_MASTER_KEY, before.POSTGRES_PASSWORD, before.REDIS_PASSWORD, before.BETTER_AUTH_SECRET]) {
+      expect(calls).not.toContain(secret);
+    }
+    expect(result.stdout).not.toContain(before.NOODARA_MASTER_KEY);
+    expect(result.stderr).not.toContain(before.NOODARA_MASTER_KEY);
   });
 
   it('D-12: a failed health check exits non-zero, names the unhealthy service, shows a redacted log tail, states the rollback remedy, and never runs a destructive command', () => {
