@@ -242,9 +242,26 @@ function normaliseRepoUrl(rawUrl) {
  * fabricated one.
  */
 function enumerateLockedDependencies() {
-  const raw = execFileSync('pnpm', ['list', '-r', '--depth', '0', '--json'], {
-    encoding: 'utf8',
-  });
+  // 05-42 (GR-05): 30s per-call timeout so a hung `pnpm list` fails this one step promptly with
+  // an actionable message instead of burning the CI `security` job's whole 40-minute
+  // `timeout-minutes` backstop. Unlike the `npm view` call below, there is no fallback for this
+  // one — see the catch block.
+  const commandString = 'pnpm list -r --depth 0 --json';
+  let raw;
+  try {
+    raw = execFileSync('pnpm', ['list', '-r', '--depth', '0', '--json'], {
+      encoding: 'utf8',
+      timeout: 30_000,
+    });
+  } catch (err) {
+    // No fallback by design (T-5G-42-03): a gate that cannot enumerate the locked dependency
+    // tree must fail closed, never silently pass with an empty or partial dependency set.
+    throw new Error(
+      `enumerateLockedDependencies: "${commandString}" failed or exceeded its 30s timeout ` +
+        `(${err instanceof Error ? err.message : String(err)}) — the locked-dependency tree ` +
+        'could not be enumerated, so the provenance gate is failing closed.',
+    );
+  }
   const workspaces = JSON.parse(raw);
 
   const byName = new Map();
@@ -274,10 +291,14 @@ async function resolvePackageProvenance(pkgName, lockedVersion) {
   const spec = `${pkgName}@${lockedVersion}`;
 
   try {
+    // 05-42 (GR-05): 30s per-call timeout. A timeout here lands in this catch and takes the
+    // registry-API fallback below by design — one slow or unreachable package must not fail the
+    // whole gate, and the fallback still resolves the exact locked version (never
+    // `dist-tags.latest`).
     const repoUrl = execFileSync(
       'npm',
       ['view', spec, 'repository.url'],
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 30_000 },
     ).trim();
 
     if (repoUrl) {
