@@ -61,8 +61,14 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required -- write /opt/noodara/.env before running docker compose}
     volumes:
       - noodara_redis_data:/data
+    # T-06-36: `redis-server --requirepass` above already puts the password in ITS OWN argv (an
+    # accepted, documented risk -- see this plan's threat model, matching redis's own configuration
+    # surface). The healthcheck below does not need to repeat that exposure: `REDISCLI_AUTH` is
+    # redis-cli's own documented env-var convention for supplying the password, set here as a
+    # shell-prefix on the child process's environment rather than a `-a` CLI flag -- so the
+    # password never appears in this specific command's own argv (a `ps`/`docker top` listing).
     healthcheck:
-      test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG']
+      test: ['CMD-SHELL', 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
       interval: 5s
       timeout: 5s
       retries: 10
