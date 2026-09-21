@@ -375,6 +375,15 @@ describe.each(posixInterpreters())('install.sh noodara_main upgrade (%s)', (inte
     expect(after.POSTGRES_PASSWORD).toBe(before.POSTGRES_PASSWORD);
     expect(after.REDIS_PASSWORD).toBe(before.REDIS_PASSWORD);
     expect(after.BETTER_AUTH_SECRET).toBe(before.BETTER_AUTH_SECRET);
+
+    // hard_rule #8 canary extension: no secret leaks anywhere on the version-changed upgrade path.
+    const installLogPath = join(installDir, 'install.log');
+    const logContent = existsSync(installLogPath) ? readFileSync(installLogPath, 'utf8') : '';
+    for (const secret of [before.NOODARA_MASTER_KEY, before.POSTGRES_PASSWORD, before.REDIS_PASSWORD, before.BETTER_AUTH_SECRET]) {
+      expect(logContent).not.toContain(secret);
+      expect(result.stdout).not.toContain(secret);
+      expect(result.stderr).not.toContain(secret);
+    }
   });
 
   it('records NOODARA_PREVIOUS_VERSION as the prior version when the version actually changes', () => {
@@ -518,6 +527,7 @@ describe.each(posixInterpreters())('install.sh noodara_main upgrade (%s)', (inte
   it('a same-version re-run with nothing missing from .env is a true no-op (Finding C)', () => {
     const { snippet, env, installDir } = buildMainFlowEnv({ NOODARA_VERSION: '1.0.0' });
     seedExistingInstall(installDir, '1.0.0', { NOODARA_PREVIOUS_VERSION: '0.9.0' });
+    const before = parseEnvFile(join(installDir, '.env'));
     const beforeChecksum = createHash('sha256').update(readFileSync(join(installDir, '.env'))).digest('hex');
     const callLog = join(installDir, 'docker-calls.log');
     const fullSnippet = [
@@ -548,6 +558,16 @@ describe.each(posixInterpreters())('install.sh noodara_main upgrade (%s)', (inte
     // Health check + summary still ran.
     expect(calls).toMatch(/compose ps --format json/);
     expect(result.stdout).toContain('Noodara is running');
+
+    // hard_rule #8 canary extension: no secret leaks anywhere on this re-run path either.
+    const installLogPath = join(installDir, 'install.log');
+    const logContent = existsSync(installLogPath) ? readFileSync(installLogPath, 'utf8') : '';
+    for (const secret of [before.NOODARA_MASTER_KEY, before.POSTGRES_PASSWORD, before.REDIS_PASSWORD, before.BETTER_AUTH_SECRET]) {
+      expect(calls).not.toContain(secret);
+      expect(logContent).not.toContain(secret);
+      expect(result.stdout).not.toContain(secret);
+      expect(result.stderr).not.toContain(secret);
+    }
   });
 
   it('a same-version re-run still merges (one backup, no full no-op) when a required key is missing from .env', () => {
@@ -1248,6 +1268,7 @@ describe.each(posixInterpreters())('install.sh full noodara_main flow (%s)', (in
   it('re-run of a half-finished first install (no admin yet, probe-confirmed missing): still prints the token', () => {
     const { snippet, env, installDir } = buildMainFlowEnv({ NOODARA_VERSION: '1.1.0' });
     seedExistingInstall(installDir, '1.0.0');
+    const before = parseEnvFile(join(installDir, '.env'));
     const fullSnippet = [
       snippet,
       'docker() {',
@@ -1266,6 +1287,15 @@ describe.each(posixInterpreters())('install.sh full noodara_main flow (%s)', (in
     expect(result.status).toBe(0);
     expect(result.stdout).toContain(VALID_TOKEN);
     expect(result.stdout).not.toContain('already exists');
+
+    // hard_rule #8 canary extension: the setup token itself is the one deliberate exception
+    // (INST-04's own contract); every generated secret must still never leak on this path.
+    const installLogPath = join(installDir, 'install.log');
+    const logContent = existsSync(installLogPath) ? readFileSync(installLogPath, 'utf8') : '';
+    for (const secret of [before.NOODARA_MASTER_KEY, before.POSTGRES_PASSWORD, before.REDIS_PASSWORD, before.BETTER_AUTH_SECRET]) {
+      expect(logContent).not.toContain(secret);
+      expect(result.stderr).not.toContain(secret);
+    }
   });
 
   it('the admin-exists probe never appears on any docker argv with a secret, and is itself redacted-safe', () => {
