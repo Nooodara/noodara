@@ -36,16 +36,27 @@ export type TrustFingerprintResult =
 
 /**
  * D-04/T-5G-27: locks the row, rejects a server with a connection attempt in flight (T-3-06) or
- * with no pending fingerprint to promote, then — since gap 6's fix — rejects a status the
- * `fingerprint_trusted` edge cannot legally land from (`SERVER_NOT_TRUSTABLE`, via
- * `canTrustFingerprint`, so `transition()` below is only ever reached from a status where it is
- * guaranteed not to throw) before attempting an atomic conditional promote: the `UPDATE` is scoped
- * to `WHERE id = ... AND pending_fingerprint = input.fingerprint`, so a value that changed between
- * whatever the admin last saw and this call is never promoted — it fails closed as
- * `FINGERPRINT_MISMATCH`, with no status change, no activity event and no published event. Only a
- * genuine match copies `pending_fingerprint` into `host_fingerprint`, clears both pending columns
- * and transitions `ERROR -> PENDING` with the `fingerprint_trusted` reason `transition()` requires
- * for that edge (D-15) — never a status literal.
+ * with no pending fingerprint to promote, then rejects a status the `fingerprint_trusted` edge
+ * cannot legally land from (`SERVER_NOT_TRUSTABLE`, via `canTrustFingerprint`, so `transition()`
+ * below is only ever reached from a status where it is guaranteed not to throw) before attempting
+ * an atomic conditional promote: the `UPDATE` is scoped to `WHERE id = ... AND pending_fingerprint
+ * = input.fingerprint`, so a value that changed between whatever the admin last saw and this call
+ * is never promoted — it fails closed as `FINGERPRINT_MISMATCH`, with no status change, no
+ * activity event and no published event. Only a genuine match copies `pending_fingerprint` into
+ * `host_fingerprint`, clears both pending columns and transitions `ERROR -> PENDING` with the
+ * `fingerprint_trusted` reason `transition()` requires for that edge (D-15) — never a status
+ * literal.
+ *
+ * Gap 6 / GR-01 / CLAUDE.md §2.3 (backend-enforced, never UI-only): promotion additionally
+ * requires `row.lastErrorCode === 'HOST_KEY_CHANGED'`. A `pending_fingerprint` value can survive
+ * on the row after the `HOST_KEY_CHANGED` outcome that parked it has been superseded by a later,
+ * unrelated failure (e.g. `AUTH_FAILED`) or even a later success that failed to clear it — without
+ * this guard, that stale value would still be promotable under `canTrustFingerprint`'s `ERROR`-only
+ * status check alone, since status can independently return to `ERROR` for a reason that has
+ * nothing to do with a host-key mismatch. `apps/web/src/lib/detail-state.ts` already gates the
+ * Trust affordance on this same condition; that UI check is now a UX convenience layered on an
+ * enforced backend rule, not the only control (the restriction CLAUDE.md §2.3 forbids relying on
+ * the UI alone for).
  */
 export async function trustFingerprint(
   deps: ServerServicesDeps,
@@ -85,6 +96,18 @@ export async function trustFingerprint(
         message: 'Server is not in a state that can trust a fingerprint',
       };
     }
+    // Gap 6 / GR-01: a pending fingerprint only ever represents an unresolved host-key mismatch.
+    // If the row's current recorded failure is not HOST_KEY_CHANGED (superseded by a later,
+    // unrelated failure, or by a later success that left status back on ERROR for a different
+    // reason), there is nothing legitimate to trust — refuse with the same typed 409 the UI
+    // already anticipates (apps/web/src/lib/detail-state.ts, apps/web/src/lib/error-copy.ts).
+    if (row.lastErrorCode !== 'HOST_KEY_CHANGED') {
+      return {
+        ok: false,
+        code: 'SERVER_NOT_TRUSTABLE',
+        message: 'Server has no unresolved host-key change to trust',
+      };
+    }
 
     const previousFingerprint = row.hostFingerprint;
     const newFingerprint = row.pendingFingerprint;
@@ -98,6 +121,16 @@ export async function trustFingerprint(
     // an atomic "promote iff still what the admin saw" instead of "promote whatever is pending
     // right now". `.returning()` yields no row exactly when `pending_fingerprint` no longer equals
     // `input.fingerprint`.
+    //
+    // Gap 6 / GR-01 (T-5G-39-02): `eq(servers.lastErrorCode, 'HOST_KEY_CHANGED')` is repeated here
+    // as defence in depth, not the primary control — the row above is already `SELECT ... FOR
+    // UPDATE`-locked inside this same transaction, so `lastErrorCode` cannot change between the
+    // guard and this UPDATE while the lock holds, and the guard above is what actually refuses the
+    // request. This predicate exists so the promote can never execute without the condition
+    // holding even if a future refactor moves the guard, splits the transaction, or drops the
+    // lock. If this predicate alone were ever the thing that failed (the lock no longer held), the
+    // returned code would be `FINGERPRINT_MISMATCH` — an unreachable branch today, deliberately
+    // left as the safe (refuse) direction rather than a silent promote.
     const [updatedRow] = await tx
       .update(servers)
       .set({
@@ -108,7 +141,13 @@ export async function trustFingerprint(
         status: nextStatus,
         updatedAt: now,
       })
-      .where(and(eq(servers.id, row.id), eq(servers.pendingFingerprint, input.fingerprint)))
+      .where(
+        and(
+          eq(servers.id, row.id),
+          eq(servers.pendingFingerprint, input.fingerprint),
+          eq(servers.lastErrorCode, 'HOST_KEY_CHANGED'),
+        ),
+      )
       .returning();
     if (!updatedRow) {
       // T-5G-27-06: nothing happened — no activity event, no published event.
