@@ -79,10 +79,18 @@ describe.each(posixInterpreters())('install.sh skeleton (%s)', (interpreter) => 
     expect(result.stdout.trim()).toBe('after');
   });
 
-  it('reaches noodara_main and exits 0 when run directly with no arguments', () => {
+  // Plan 06-09 wired preflight -> Docker -> .env -> compose up -> health-wait -> summary into the
+  // real noodara_main (06-01's own version only printed a banner and returned 0). Running
+  // install.sh directly, unprivileged and with no env overrides, now genuinely reaches and fails
+  // noodara_preflight's first real gate -- not-root (exit 10) -- rather than a crash or a silent
+  // success. This is the correct, actionable behavior D-17 requires, not a regression: the guard
+  // block dispatch still runs to completion (proving the truncation-safe entry point genuinely
+  // reaches noodara_main), it just now does real work once it gets there.
+  it('reaches noodara_main and fails preflight with exit 10 (not-root) when run directly unprivileged', () => {
     const result = spawnSync(interpreter, [INSTALL_SH], { encoding: 'utf8' });
 
-    expect(result.status).toBe(0);
+    expect(result.status).toBe(10);
+    expect(result.stderr).toContain('root');
   });
 });
 
