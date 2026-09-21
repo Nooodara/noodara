@@ -360,11 +360,11 @@ Plans:
 
 **Gap R2 Wave 1** *(parallel-safe: disjoint files)*
 
-- [ ] 05-38-PLAN.md — Dominio: `applyConnectionResult` limpia `pendingFingerprint` en éxito y en todo fallo que no sea `HOST_KEY_CHANGED`; la persistencia anula también `pending_fingerprint_seen_at` (gap 6, GR-01)
-- [ ] 05-42-PLAN.md — Timeouts por llamada en `check-package-provenance.mjs` (GR-05) y default local de `NOODARA_API_ORIGIN` en el harness de build (F1); dos tareas omitibles por separado
-- [ ] 05-43-PLAN.md — Guard `hooks.logMethod` de pino contra `logger.error(err)` pelado + test de regresión (WR-A-04)
-- [ ] 05-44-PLAN.md — Costura de contrato: body `VALIDATION_FAILED` real por HTTP real → `fieldErrorsFromIssues` real, sin stub (residual del gap 5)
-- [ ] 05-45-PLAN.md — Contraste AA: tokens de rol `--accent-text` y `--status-error-fill`, medidos en todos sus roles y ambos temas; NO autónomo, el usuario elige entre candidatos medidos (UI-01)
+- [x] 05-38-PLAN.md — Dominio: `applyConnectionResult` limpia `pendingFingerprint` en éxito y en todo fallo que no sea `HOST_KEY_CHANGED`; la persistencia anula también `pending_fingerprint_seen_at` (gap 6, GR-01)
+- [x] 05-42-PLAN.md — Timeouts por llamada en `check-package-provenance.mjs` (GR-05) y default local de `NOODARA_API_ORIGIN` en el harness de build (F1); dos tareas omitibles por separado
+- [x] 05-43-PLAN.md — Guard `hooks.logMethod` de pino contra `logger.error(err)` pelado + test de regresión (WR-A-04)
+- [x] 05-44-PLAN.md — Costura de contrato: body `VALIDATION_FAILED` real por HTTP real → `fieldErrorsFromIssues` real, sin stub (residual del gap 5)
+- [x] 05-45-PLAN.md — Contraste AA: tokens de rol `--accent-text` y `--status-error-fill`, medidos en todos sus roles y ambos temas; NO autónomo, el usuario elige entre candidatos medidos (UI-01)
 
 **Gap R2 Wave 2** *(blocked on Gap R2 Wave 1)*
 
@@ -415,5 +415,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 36/37 | In Progress|  |
+| 5. UI web | 42/46 | In Progress|  |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |

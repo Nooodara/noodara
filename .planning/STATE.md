@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: "Phase 05 (ui-web) gap closure ROUND 2 PLANNED: 9 plans 05-38…05-46 in 4 waves from the re-verified 05-VERIFICATION.md (1 BLOCKER: gap 6, host-key trust not enforced in the backend, GR-01/GR-02; plus residuals GR-03, GR-05, F1 NOODARA_API_ORIGIN, WR-A-04 guard, VALIDATION_FAILED contract seam, two AA contrast residuals). Plan checker: 1 blocker (05-46 listed 5 of 7 human items) + 1 warning (05-41 wave) fixed by the orchestrator; 10/10 requirements, 17/17 decisions covered; no schema change. Non-autonomous: 05-45 (user picks colours), 05-46 (gate + human checkpoint). QA-04/QA-05 stay Pending (no git remote). Phase 05 is NOT complete. Next: /gsd-execute-phase 5 --gaps-only"
-last_updated: "2026-09-21T00:18:19.693Z"
-last_activity: 2026-09-20 -- Phase 05 gap closure round 2 planned
+stopped_at: "Phase 05 (ui-web) gap closure ROUND 2 EXECUTING: wave 1 COMPLETE (05-38, 05-42, 05-43, 05-44, 05-45; 42/46 SUMMARY), each plan audited by the orchestrator (no trailers, empty stash, no parent-repo drift) and wave gate green on 7c704a7 (lint, typecheck, boundaries, unit 1518/1518, ui-safety 9/9, E2E 93/93; full integration deferred to 05-46). 05-45 decision by the user: D4 link-B #0066cc (--accent-text light), D5 fill-A #d70015 (--status-error-fill, both themes). Next: wave 2 = 05-39 (BLOCKER gap 6: HOST_KEY_CHANGED binding in trustFingerprint) then 05-41; wave 3 = 05-40; wave 4 = 05-46 (full gate + human checkpoint). Phase 05 is NOT complete. Resume with /gsd-execute-phase 5 --gaps-only"
+last_updated: "2026-09-21T02:10:00.000Z"
+last_activity: 2026-09-20 -- Phase 05 gap closure round 2, wave 1 complete (5/9)
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 94
-  completed_plans: 85
-  percent: 90
+  completed_plans: 90
+  percent: 96
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 ## Current Position
 
-Phase: 05 (ui-web) — gap closure round 1 executed (37/37 SUMMARY), round 2 planned (05-38…05-46); phase NOT complete
-Plan: 37 of 46 plans have a SUMMARY; next to execute is 05-38 (round 2, wave 1). History of round 1's closing gate: 05-37 (the closing gate) executed: all eleven gate commands green on the final tree (unit 1491/1491, integration 505/0/1-skipped, E2E 92/92, boot 7/7, provenance 52/52, leak canaries green); each of the eight 05-VERIFICATION.md gaps re-derived first-hand (4 CLOSED: gaps 1/2/6/7; 1 OPEN by design: gap 3/QA-04/QA-05; 2 PARTIAL: gaps 4/5). At the Task 3 checkpoint the user answered "Approve y haz un gsd quick del sshUser bug" -- the wave is approved to close, but the user did NOT state which of the six human-only verification items (real-display contrast, real CI run, live SSE walkthrough, Sheet/Dialog/RowMenu elevation, screen-reader pass, sub-1280px/reduced-motion feel) they actually checked, so all six are recorded as pendiente -- no confirmado por el usuario in .planning/phases/05-ui-web/05-GAP-CLOSURE-AUDIT.md section 3, not silently marked passed. A new bug (ServerSheet.tsx's SSH user Field has no error prop, silently swallowing a server-side sshUser validation error) was found live during re-derivation and, per the user's instruction, is being fixed via a separate /gsd-quick task run by the orchestrator right after this plan -- not inside this plan.
-Status: Gap closure round 2 planned (05-38…05-46, 9 plans, 4 waves) — ready to execute. Open blocker being closed: gap 6, host-key trust not enforced in the backend (GR-01/GR-02). 37 of 46 plans have a SUMMARY. QA-04/QA-05 Pending until a real CI + nightly run is observed. Next: /gsd-execute-phase 5 --gaps-only.
-Last activity: 2026-09-20 -- Phase 05 gap closure round 2 planned (05-38…05-46)
+Phase: 05 (ui-web) — gap closure round 2 EXECUTING (wave 1 of 4 complete); phase NOT complete
+Plan: 42 of 46 plans have a SUMMARY; next to execute is 05-39 (round 2, wave 2, the gap-6 blocker), then 05-41, 05-40, 05-46.
+Status: Round 2 wave 1 complete and gated (unit 1518/1518, E2E 93/93, lint/typecheck/boundaries/ui-safety green on 7c704a7). Open blocker still being closed: gap 6, host-key trust not enforced in the backend (GR-01 boundary check lands in 05-39; the domain root cause landed in 05-38). QA-04/QA-05 Pending until a real CI + nightly run is observed. Next: /gsd-execute-phase 5 --gaps-only (resumes at 05-39).
+Last activity: 2026-09-20 -- Phase 05 gap closure round 2, wave 1 complete (05-38, 05-42, 05-43, 05-44, 05-45)
 
-Progress: [█████████░] 90% of planned plans executed (85/94; phase 05 round 2 pending)
+Progress: [██████████] 96% of planned plans executed (90/94; phase 05 round 2 waves 2-4 pending)
 
 ## Performance Metrics
 
