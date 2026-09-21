@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-12-PLAN.md
-last_updated: "2026-09-21T18:43:34.311Z"
+stopped_at: Completed 06-13-PLAN.md
+last_updated: "2026-09-21T19:36:21.421Z"
 last_activity: 2026-09-21
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 109
-  completed_plans: 106
+  completed_plans: 107
   percent: 83
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 06 (instalador-y-docker-compose) — EXECUTING
-Plan: 13 of 15
+Plan: 14 of 15
 Status: Ready to execute
 Last activity: 2026-09-21
 
-Progress: [██████████] 97%
+Progress: [██████████] 98%
 
 ## Performance Metrics
 
@@ -152,6 +152,7 @@ Progress: [██████████] 97%
 | Phase 06 P10 | 25min | 2 tasks | 5 files |
 | Phase 06 P11 | 90min | 2 tasks | 6 files |
 | Phase 06 P12 | 37min (task commits, ~2h10min total session) | 8 tasks | 9 files |
+| Phase 06 P13 | 125min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -409,6 +410,9 @@ Recent decisions affecting current work:
 - [Phase 06]: Fixed a DinD fixture cgroup v2 nesting gap (entrypoint.sh) and a real install.sh bug: noodara_compose_json_field_for_service silently returned nothing against the real Compose ps JSON's Publishers array — Both were only discoverable by the first genuine, non-stubbed install.sh run against a real daemon (Plan 06-11)
 - [Phase 06]: [Phase 06 P12]: noodara_compose_up defers to noodara_wait_for_health on a non-migrate docker compose up -d failure, since Compose's own dependency-wait (web depends_on api: condition: service_healthy) can fail before install.sh's own health-wait loop ever runs, previously masking D-12's diagnostics behind a generic message
 - [Phase 06]: [Phase 06 P12]: no-Docker DinD fixture watcher polls docker-ce's own dpkg Status field (install ok installed), not just the dockerd binary's presence on disk -- polling the binary alone raced docker-ce's own postinst script (dpkg unpacks files before running postinst)
+- [Phase 06 P13]: release.yml: provenance/sbom explicitly disabled on every build-push-action step so buildx never wraps a single-arch push in its own image index, keeping the later imagetools create merge a genuine two-platform manifest
+- [Phase 06 P13]: release.yml derives the release version and lower-cases the GHCR owner exactly once in a dedicated prepare job, validated with the same character-class/length rules as install.sh's own noodara_validate_tag, then threaded as job outputs to every downstream job
+- [Phase 06 P13]: ci.yml/nightly.yml: new installer job runs pnpm test:installer at a 60min timeout, sourced from 06-12-SUMMARY.md's measured ~31.5min/51-test local duration; gated to push-on-main only in ci.yml, unconditional in nightly.yml, no existing job's commands/timeouts/triggers changed
 
 ### Pending Todos
 
@@ -474,6 +478,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-21T18:43:34.301Z
-Stopped at: Completed 06-12-PLAN.md
+Last session: 2026-09-21T19:36:21.389Z
+Stopped at: Completed 06-13-PLAN.md
 Resume file: None

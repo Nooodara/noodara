@@ -446,7 +446,7 @@ Plans:
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 06-13-PLAN.md — release.yml for native multi-arch GHCR images plus CI and nightly wiring for the installer suite
+- [x] 06-13-PLAN.md — release.yml for native multi-arch GHCR images plus CI and nightly wiring for the installer suite
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
@@ -468,4 +468,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
 | 5. UI web | 46/46 | Complete   | 2026-09-21 |
-| 6. Instalador y Docker Compose | 12/15 | In Progress|  |
+| 6. Instalador y Docker Compose | 13/15 | In Progress|  |
