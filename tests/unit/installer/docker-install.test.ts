@@ -12,7 +12,7 @@
 // portable way to override a hyphenated command name. Every filesystem target these functions
 // write to (the keyring directory, the sources-list file) is redirected into a fresh mkdtemp
 // directory via NOODARA_DOCKER_KEYRING_DIR / NOODARA_DOCKER_SOURCES_FILE, never a real /etc path.
-import { chmodSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -37,6 +37,27 @@ function writeOsReleaseFixture(dir: string, codename: string): string {
 
 function withPath(stubDir: string, extraEnv: Record<string, string> = {}): Record<string, string> {
   return { PATH: `${stubDir}:${process.env.PATH ?? ''}`, ...extraEnv };
+}
+
+// Post-execution fix (orchestrator audit Finding 1): a genuinely-shaped ASCII-armored GPG key
+// body, used everywhere a stub previously returned the unshaped literal "FAKE-GPG-KEY-BODY" --
+// once noodara_docker_download_gpg_key validates the body's shape, an unshaped fixture would fail
+// every fixture that reaches the download step, not just the new shape-validation tests below.
+// Three separate %s arguments (never one hand-built multi-line format string) so this stays safe
+// even though it is test-only, matching this file's own noodara_step precedent of never trusting
+// a literal value as a printf format string.
+const VALID_GPG_KEY_FETCH_STUB =
+  'noodara_fetch_url() { printf \'%s\\n%s\\n%s\\n\' ' +
+  "'-----BEGIN PGP PUBLIC KEY BLOCK-----' 'synthetic-fixture-body-noodara-test-only' " +
+  "'-----END PGP PUBLIC KEY BLOCK-----'; return 0; }";
+
+/** Writes `content` to a fixture file inside `dir` and returns its path -- used so a shadowed
+ *  noodara_fetch_url can `cat` a body rather than embedding multi-line content inline in a shell
+ *  snippet string (avoids single/double-quote nesting hazards for bodies this test constructs). */
+function writeFetchBodyFixture(dir: string, content: string): string {
+  const file = join(dir, 'fetch-body.txt');
+  writeFileSync(file, content, 'utf8');
+  return file;
 }
 
 /** A complete, forward-compatible environment for exercising noodara_ensure_docker's install
@@ -83,7 +104,7 @@ function buildInstallEnv(): {
     'dpkg() { printf "amd64\\n"; }',
     'install() { printf "install %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; }',
     'chmod() { printf "chmod %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; }',
-    'noodara_fetch_url() { printf "FAKE-GPG-KEY-BODY"; return 0; }',
+    VALID_GPG_KEY_FETCH_STUB,
   ].join('\n');
 
   return {
@@ -299,7 +320,9 @@ describe.each(posixInterpreters())('install.sh noodara_install_docker step seque
         'dpkg() { printf "dpkg %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; printf "amd64\\n"; }',
         'install() { printf "install %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; }',
         'chmod() { printf "chmod %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; }',
-        'noodara_fetch_url() { printf "fetch-url %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; printf "FAKE-GPG-KEY-BODY"; return 0; }',
+        'noodara_fetch_url() { printf "fetch-url %s\\n" "$*" >> "$NOODARA_TEST_CALL_LOG"; ' +
+          'printf \'%s\\n%s\\n%s\\n\' \'-----BEGIN PGP PUBLIC KEY BLOCK-----\' ' +
+          "'synthetic-fixture-body-noodara-test-only' '-----END PGP PUBLIC KEY BLOCK-----'; return 0; }",
         'noodara_install_docker',
       ].join('\n');
 
@@ -439,6 +462,122 @@ describe.each(posixInterpreters())('install.sh noodara_install_docker per-step f
     expect(result.stderr).toContain('docker-ce');
   });
 });
+
+// Post-execution fix (orchestrator audit Finding 1): noodara_docker_download_gpg_key previously
+// only rejected an EMPTY response -- an HTML body served with HTTP 200 (captive portal, proxy
+// error page) or a truncated download was written as the trusted keyring `docker.asc` outright,
+// so apt would later fail at `apt-get update` with a confusing signature error attributed to the
+// wrong step. The body must now genuinely look like an ASCII-armored PGP public key block: its
+// first non-empty line is exactly the BEGIN marker and its last non-empty line is exactly the END
+// marker (a trailing CR on either line is tolerated).
+describe.each(posixInterpreters())(
+  'install.sh noodara_docker_download_gpg_key GPG key shape validation (Finding 1, %s)',
+  (interpreter) => {
+    it('accepts a valid ASCII-armored GPG key body and writes it to the keyring file', () => {
+      const keyringDir = mkdtempSync(join(tmpdir(), 'noodara-docker-gpg-shape-'));
+      const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-gpg-shape-fixtures-'));
+      const fixtureFile = writeFetchBodyFixture(
+        fixturesDir,
+        [
+          '-----BEGIN PGP PUBLIC KEY BLOCK-----',
+          '',
+          'mQINBFit2ioBEADhWpZ8wvZ6hUTiXOwQHXMAlaFHcPH9AwrgHCAsIqx8daFAgMZ',
+          'synthetic-fixture-body-noodara-test-only-never-imported-by-gpg',
+          '=abcd',
+          '-----END PGP PUBLIC KEY BLOCK-----',
+        ].join('\n'),
+      );
+      const snippet = [
+        'noodara_fetch_url() { cat "$NOODARA_TEST_GPG_FIXTURE"; return 0; }',
+        'noodara_docker_download_gpg_key',
+      ].join('\n');
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_DOCKER_KEYRING_DIR: keyringDir, NOODARA_TEST_GPG_FIXTURE: fixtureFile },
+      });
+
+      expect(result.status).toBe(0);
+      expect(existsSync(join(keyringDir, 'docker.asc'))).toBe(true);
+    });
+
+    it('rejects an HTML body served with HTTP 200 instead of a real GPG key', () => {
+      const keyringDir = mkdtempSync(join(tmpdir(), 'noodara-docker-gpg-shape-'));
+      const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-gpg-shape-fixtures-'));
+      const fixtureFile = writeFetchBodyFixture(
+        fixturesDir,
+        '<html><head><title>Captive Portal</title></head><body>Please sign in to the network</body></html>',
+      );
+      const snippet = [
+        'noodara_fetch_url() { cat "$NOODARA_TEST_GPG_FIXTURE"; return 0; }',
+        'noodara_docker_download_gpg_key',
+      ].join('\n');
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_DOCKER_KEYRING_DIR: keyringDir, NOODARA_TEST_GPG_FIXTURE: fixtureFile },
+      });
+
+      expect(result.status).toBe(20);
+      expect(result.stderr.toLowerCase()).toContain('gpg key');
+      expect(existsSync(join(keyringDir, 'docker.asc'))).toBe(false);
+      expect(readdirSync(keyringDir)).toHaveLength(0);
+    });
+
+    it('rejects a truncated download that has a BEGIN marker but no END marker', () => {
+      const keyringDir = mkdtempSync(join(tmpdir(), 'noodara-docker-gpg-shape-'));
+      const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-gpg-shape-fixtures-'));
+      const fixtureFile = writeFetchBodyFixture(
+        fixturesDir,
+        ['-----BEGIN PGP PUBLIC KEY BLOCK-----', '', 'mQINBFit2ioBEADhWpZ8wvZ6hUTiXOwQHXMAlaFHcPH'].join('\n'),
+      );
+      const snippet = [
+        'noodara_fetch_url() { cat "$NOODARA_TEST_GPG_FIXTURE"; return 0; }',
+        'noodara_docker_download_gpg_key',
+      ].join('\n');
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_DOCKER_KEYRING_DIR: keyringDir, NOODARA_TEST_GPG_FIXTURE: fixtureFile },
+      });
+
+      expect(result.status).toBe(20);
+      expect(result.stderr.toLowerCase()).toContain('gpg key');
+      expect(existsSync(join(keyringDir, 'docker.asc'))).toBe(false);
+      expect(readdirSync(keyringDir)).toHaveLength(0);
+    });
+
+    it('rejects a body that has an END marker but no BEGIN marker', () => {
+      const keyringDir = mkdtempSync(join(tmpdir(), 'noodara-docker-gpg-shape-'));
+      const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-gpg-shape-fixtures-'));
+      const fixtureFile = writeFetchBodyFixture(
+        fixturesDir,
+        ['mQINBFit2ioBEADhWpZ8wvZ6hUTiXOwQHXMAlaFHcPH', '-----END PGP PUBLIC KEY BLOCK-----'].join('\n'),
+      );
+      const snippet = [
+        'noodara_fetch_url() { cat "$NOODARA_TEST_GPG_FIXTURE"; return 0; }',
+        'noodara_docker_download_gpg_key',
+      ].join('\n');
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_DOCKER_KEYRING_DIR: keyringDir, NOODARA_TEST_GPG_FIXTURE: fixtureFile },
+      });
+
+      expect(result.status).toBe(20);
+      expect(result.stderr.toLowerCase()).toContain('gpg key');
+      expect(existsSync(join(keyringDir, 'docker.asc'))).toBe(false);
+      expect(readdirSync(keyringDir)).toHaveLength(0);
+    });
+
+    it('still rejects an empty response (pre-existing behavior, unchanged)', () => {
+      const keyringDir = mkdtempSync(join(tmpdir(), 'noodara-docker-gpg-shape-'));
+      const snippet = ['noodara_fetch_url() { return 1; }', 'noodara_docker_download_gpg_key'].join('\n');
+
+      const result = runInstallerShell(interpreter, snippet, { env: { NOODARA_DOCKER_KEYRING_DIR: keyringDir } });
+
+      expect(result.status).toBe(20);
+      expect(result.stderr.toLowerCase()).toContain('gpg key');
+      expect(existsSync(join(keyringDir, 'docker.asc'))).toBe(false);
+    });
+  },
+);
 
 describe('install.sh Docker install structural checks (06-08-PLAN.md Task 2)', () => {
   it('never references a third-party curl-pipe-sh installer domain', () => {
