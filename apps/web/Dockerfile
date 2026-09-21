@@ -50,6 +50,18 @@ RUN pnpm exec turbo run build --filter=@noodara/web
 FROM node:22-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0
+# NOODARA_API_ORIGIN must ALSO be a runtime environment variable, not only a builder-stage build
+# arg: unlike next.config.ts's rewrites() (evaluated once at `next build`), apps/web/src/proxy.ts
+# (the Next.js 16 "proxy" middleware convention) and apps/web/src/app/api/events/route.ts both call
+# `process.env.NOODARA_API_ORIGIN` at REQUEST time, inside the running standalone server process --
+# discovered by reading both files before writing this Dockerfile, and confirmed for real by
+# tests/integration/installer/web-image.test.ts's own RED run (an unauthenticated `/` request
+# 500'd before this ARG/ENV pair was added here, because proxy.ts's own fail-fast check has no
+# runtime value to read). The value re-declared here is the identical constant the builder stage
+# already baked into rewrites() -- the same `--build-arg NOODARA_API_ORIGIN=...` flag supplies both
+# stages, so this is not a second, independently-settable source of truth.
+ARG NOODARA_API_ORIGIN
+ENV NOODARA_API_ORIGIN=$NOODARA_API_ORIGIN
 RUN groupadd --system nodejs && useradd --system --gid nodejs --home-dir /app nodejs
 RUN mkdir .next && chown nodejs:nodejs .next
 # apps/web/public/ does not currently exist in this repo (confirmed by directory listing,

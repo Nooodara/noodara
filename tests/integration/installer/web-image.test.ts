@@ -18,10 +18,9 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
-import type { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { GenericContainer, Network, Wait, type StartedNetwork, type StartedTestContainer } from 'testcontainers';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../helpers/redis.js';
 import { assertNoStrayTestContainers } from '../helpers/ssh.js';
@@ -53,17 +52,16 @@ const HOST_GATEWAY_EXTRA_HOST = { host: 'host.docker.internal', ipAddress: 'host
 const WEB_READY_PATTERN = /Ready in \d+ms/;
 const API_READY_PATTERN = /Server listening at/;
 
-function readStream(stream: Readable): Promise<string> {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    stream.on('data', (chunk: Buffer) => {
-      data += chunk.toString('utf8');
-    });
-    stream.on('end', () => {
-      resolve(data);
-    });
-    stream.on('error', reject);
-  });
+/** Narrows a `describe`-scoped fixture variable assigned in `beforeAll` for use inside a
+ *  sibling `it()` closure -- TypeScript cannot see across separate function bodies that
+ *  `beforeAll` always runs (and assigns) before any `it()` does, so the declared type stays a
+ *  union with `undefined`. Mirrors tests/integration/db/migrations.test.ts's own local
+ *  `assertDefined` helper (same repo convention, T-Phase1's cast-helper precedent). */
+function assertDefined<T>(value: T | undefined, what: string): T {
+  if (value === undefined) {
+    throw new Error(`${what} is undefined -- beforeAll must have failed or not run yet`);
+  }
+  return value;
 }
 
 /** Points at the real Postgres fixture through the host-gateway alias, built from the fixture's
@@ -129,10 +127,10 @@ async function findStaticAssetPath(container: StartedTestContainer): Promise<str
 }
 
 describe('web production image (06-05-PLAN.md)', () => {
-  let network: StartedNetwork;
-  let postgres: PostgresFixture;
-  let redis: RedisFixture;
-  let apiContainer: StartedTestContainer;
+  let network: StartedNetwork | undefined;
+  let postgres: PostgresFixture | undefined;
+  let redis: RedisFixture | undefined;
+  let apiContainer: StartedTestContainer | undefined;
 
   beforeAll(async () => {
     await GenericContainer.fromDockerfile(REPO_ROOT, CONTROL_PLANE_DOCKERFILE_NAME).build(CONTROL_PLANE_IMAGE_TAG, {
@@ -174,10 +172,14 @@ describe('web production image (06-05-PLAN.md)', () => {
     removeImage(WEB_IMAGE_TAG);
     removeImage(WRONG_ORIGIN_IMAGE_TAG);
     removeImage(CONTROL_PLANE_IMAGE_TAG);
-  });
-
-  afterEach(async () => {
-    // noodara-tdd skill §5: no container labelled noodara.test=true survives a test.
+    // noodara-tdd skill §5: no container labelled noodara.test=true survives the *run* -- checked
+    // once here, after every fixture (api/postgres/redis/network, all deliberately long-lived
+    // across the three `it()` blocks above) has already been stopped, rather than per-test as
+    // control-plane-image.test.ts does. That file's containers are each started and stopped
+    // inside a single `it()`, so an afterEach check is meaningful there; this suite's api/
+    // postgres/redis fixtures are intentionally shared beforeAll/afterAll across all three tests,
+    // so an afterEach check would (and, discovered during this plan's RED run, did) misreport
+    // those still-running shared fixtures as "stray" mid-suite.
     await assertNoStrayTestContainers();
   });
 
@@ -186,7 +188,7 @@ describe('web production image (06-05-PLAN.md)', () => {
     async () => {
       const web = await new GenericContainer(WEB_IMAGE_TAG)
         .withLabels({ 'noodara.test': 'true' })
-        .withNetwork(network)
+        .withNetwork(assertDefined(network, 'network'))
         .withExposedPorts(WEB_PORT)
         .withWaitStrategy(Wait.forLogMessage(WEB_READY_PATTERN))
         .withStartupTimeout(120_000)
@@ -216,7 +218,7 @@ describe('web production image (06-05-PLAN.md)', () => {
     async () => {
       const web = await new GenericContainer(WEB_IMAGE_TAG)
         .withLabels({ 'noodara.test': 'true' })
-        .withNetwork(network)
+        .withNetwork(assertDefined(network, 'network'))
         .withExposedPorts(WEB_PORT)
         .withWaitStrategy(Wait.forLogMessage(WEB_READY_PATTERN))
         .withStartupTimeout(120_000)
@@ -254,7 +256,7 @@ describe('web production image (06-05-PLAN.md)', () => {
     async () => {
       const web = await new GenericContainer(WRONG_ORIGIN_IMAGE_TAG)
         .withLabels({ 'noodara.test': 'true' })
-        .withNetwork(network)
+        .withNetwork(assertDefined(network, 'network'))
         .withExposedPorts(WEB_PORT)
         .withWaitStrategy(Wait.forLogMessage(WEB_READY_PATTERN))
         .withStartupTimeout(120_000)
