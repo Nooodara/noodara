@@ -33,6 +33,18 @@ readonly NOODARA_ENV_FILE=.env
 readonly NOODARA_OS_RELEASE_FILE="${NOODARA_OS_RELEASE_FILE:-/etc/os-release}"
 readonly NOODARA_MEMINFO_FILE="${NOODARA_MEMINFO_FILE:-/proc/meminfo}"
 
+# Overridable only for tests -- the real installer targets the genuine published GitHub repo once
+# Plan 06-15's human prerequisite creates it (06-CONTEXT.md D-02). These two defaults are
+# placeholders and MUST be replaced with the real owner/repo before v0.1's first real release --
+# flagged here and in this plan's own SUMMARY for Plan 06-15's handoff.
+readonly NOODARA_REPO_OWNER="${NOODARA_REPO_OWNER:-REPLACE_WITH_GITHUB_OWNER}"
+readonly NOODARA_REPO_NAME="${NOODARA_REPO_NAME:-noodara}"
+
+# The real default registry (06-CONTEXT.md D-01). NOODARA_FETCH_TIMEOUT bounds every curl call
+# this file ever makes (T-06-31) -- the single seam is noodara_fetch_url, defined below.
+readonly NOODARA_REGISTRY="${NOODARA_REGISTRY:-ghcr.io}"
+readonly NOODARA_FETCH_TIMEOUT="${NOODARA_FETCH_TIMEOUT:-5}"
+
 # Maps a named failure reason to its exit code (06-CONTEXT.md D-17: every preflight/runtime
 # failure cause gets its own numbered exit code, never a generic failure). Prints the code to
 # stdout on success so a caller can do `code=$(noodara_exit_code_for some-reason)`. An unknown
@@ -566,6 +578,237 @@ noodara_merge_env() {
   done
 
   noodara_secure_env_file "$path"
+}
+
+# Version, public URL and image-prefix resolution (06-CONTEXT.md D-04/D-07/D-19, INST-01): the
+# three values this installer cannot know in advance -- which release to install, what public URL
+# the panel is reachable at, and which image registry/tag prefix to pull from.
+
+# The single seam every network call in this file goes through -- no other function may call
+# `curl` directly (enforced by a grep-count acceptance criterion, 06-06-PLAN.md Task 1; the POSIX
+# gate itself does not enforce this). `mode` is `body` (prints the response body) or `redirect`
+# (prints the final redirect target without following it, via curl's own `-w '%{redirect_url}'`).
+# Every call is bounded by NOODARA_FETCH_TIMEOUT/15s and restricted to TLS 1.2+ https (T-06-31,
+# hard_rule #8) -- this is the one place a hostile or slow remote can influence what gets
+# installed, so it is also the one place those protections need to live.
+noodara_fetch_url() {
+  _noodara_ffu_mode="$1"
+  _noodara_ffu_url="$2"
+  case "$_noodara_ffu_mode" in
+    body)
+      curl -fsSL --proto '=https' --tlsv1.2 --connect-timeout "$NOODARA_FETCH_TIMEOUT" --max-time 15 "$_noodara_ffu_url"
+      ;;
+    redirect)
+      curl -fsSL -o /dev/null -w '%{redirect_url}' --proto '=https' --tlsv1.2 --connect-timeout "$NOODARA_FETCH_TIMEOUT" --max-time 15 "$_noodara_ffu_url"
+      ;;
+    *)
+      printf 'noodara: internal error: unknown fetch mode %s\n' "$_noodara_ffu_mode" >&2
+      exit 99
+      ;;
+  esac
+}
+
+# Strips a single leading "v" from a version tag if present -- normalised exactly once, before
+# validation, so .env's NOODARA_VERSION and the image tag this installer pulls always agree
+# (06-CONTEXT.md D-04).
+noodara_normalize_tag() {
+  case "$1" in
+    v*) printf '%s\n' "${1#v}" ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
+# Fails with reason version-resolution-failed (exit 40), naming the allowed character set but
+# never the rejected value itself, unless the tag is 1-128 characters, its first character is
+# [A-Za-z0-9_], every character is [A-Za-z0-9_.-], and it is not the literal "latest". Applied
+# unconditionally to every source of a version tag -- operator override, redirect tail, API body
+# -- after normalisation (T-06-30): a newline here would otherwise inject an extra line into
+# .env; a `/` or `:` would redirect the image reference `docker pull` resolves.
+noodara_validate_tag() {
+  _noodara_vt_tag="$1"
+  case "$_noodara_vt_tag" in
+    '')
+      noodara_fail version-resolution-failed "Resolved version tag is empty. Set NOODARA_VERSION to a valid release tag (first character [A-Za-z0-9_], remaining characters [A-Za-z0-9_.-], 1-128 characters total)."
+      ;;
+    latest)
+      noodara_fail version-resolution-failed "Resolved version tag must not be 'latest'. Set NOODARA_VERSION to an explicit release tag."
+      ;;
+  esac
+  case "$_noodara_vt_tag" in
+    [!A-Za-z0-9_]*)
+      noodara_fail version-resolution-failed "Resolved version tag has an invalid first character. Allowed: first character [A-Za-z0-9_], remaining characters [A-Za-z0-9_.-], 1-128 characters total."
+      ;;
+  esac
+  case "$_noodara_vt_tag" in
+    *[!A-Za-z0-9_.-]*)
+      noodara_fail version-resolution-failed "Resolved version tag contains a disallowed character. Allowed: first character [A-Za-z0-9_], remaining characters [A-Za-z0-9_.-], 1-128 characters total."
+      ;;
+  esac
+  if [ "${#_noodara_vt_tag}" -gt 128 ]; then
+    noodara_fail version-resolution-failed "Resolved version tag is too long. Allowed: first character [A-Za-z0-9_], remaining characters [A-Za-z0-9_.-], 1-128 characters total."
+  fi
+}
+
+# Resolves the release tag to install (06-CONTEXT.md D-04): NOODARA_VERSION when the operator set
+# it (normalised and validated like any other source, zero network calls); otherwise the
+# `releases/latest` redirect tail (primary -- hits github.com, not api.github.com, so it does not
+# consume the unauthenticated REST API's rate limit, 06-RESEARCH.md Assumption A1); otherwise the
+# GitHub REST API response, sed-parsed line-by-line (never with `jq`, `grep -P` or a hand-rolled
+# JSON parser -- a match requires the whole "tag_name": "..." pair on one physical line, which
+# also means a value straddling a real newline, or a body with no matching line at all -- HTML,
+# empty, truncated -- simply extracts nothing). Fails with reason version-resolution-failed
+# (exit 40) naming NOODARA_VERSION as the manual remedy when every source fails.
+noodara_resolve_version() {
+  if [ -n "${NOODARA_VERSION:-}" ]; then
+    _noodara_rv_tag=$(noodara_normalize_tag "$NOODARA_VERSION")
+    noodara_validate_tag "$_noodara_rv_tag"
+    printf '%s\n' "$_noodara_rv_tag"
+    return 0
+  fi
+
+  _noodara_rv_redirect=$(noodara_fetch_url redirect "https://github.com/${NOODARA_REPO_OWNER}/${NOODARA_REPO_NAME}/releases/latest" 2>/dev/null) || _noodara_rv_redirect=""
+  if [ -n "$_noodara_rv_redirect" ]; then
+    _noodara_rv_raw=$(printf '%s\n' "$_noodara_rv_redirect" | awk -F/ '{print $NF}')
+    if [ -n "$_noodara_rv_raw" ]; then
+      _noodara_rv_tag=$(noodara_normalize_tag "$_noodara_rv_raw")
+      noodara_validate_tag "$_noodara_rv_tag"
+      printf '%s\n' "$_noodara_rv_tag"
+      return 0
+    fi
+  fi
+
+  _noodara_rv_body=$(noodara_fetch_url body "https://api.github.com/repos/${NOODARA_REPO_OWNER}/${NOODARA_REPO_NAME}/releases/latest" 2>/dev/null) || _noodara_rv_body=""
+  if [ -n "$_noodara_rv_body" ]; then
+    _noodara_rv_raw=$(printf '%s\n' "$_noodara_rv_body" | sed -n 's/.*"tag_name"[ 	]*:[ 	]*"\([^"]*\)".*/\1/p' | head -n 1)
+    if [ -n "$_noodara_rv_raw" ]; then
+      _noodara_rv_tag=$(noodara_normalize_tag "$_noodara_rv_raw")
+      noodara_validate_tag "$_noodara_rv_tag"
+      printf '%s\n' "$_noodara_rv_tag"
+      return 0
+    fi
+  fi
+
+  noodara_fail version-resolution-failed "Could not resolve the latest release version automatically. Set NOODARA_VERSION=<tag> and re-run this installer."
+}
+
+# Resolves the GHCR image prefix (06-CONTEXT.md D-01/D-19): NOODARA_REGISTRY/NOODARA_REPO_OWNER by
+# default, or the undocumented, test-only NOODARA_INTERNAL_IMAGE_PREFIX override when set --
+# letting the Docker-in-Docker layer-2 suite (Plan 06-10) point at locally built images with no
+# registry. Setting the override also implies skipping `docker pull` (the flag Plan 06-09 reads);
+# never documented in docs/install.md (T-06-32). The override is still validated even though it is
+# test-only, since it lands in .env and in image references: no whitespace, double quote, single
+# quote, dollar sign, backtick or embedded newline/CR.
+noodara_resolve_image_prefix() {
+  if [ -n "${NOODARA_INTERNAL_IMAGE_PREFIX:-}" ]; then
+    noodara_env_assert_single_line NOODARA_INTERNAL_IMAGE_PREFIX "$NOODARA_INTERNAL_IMAGE_PREFIX"
+    noodara_env_assert_no_single_quote NOODARA_INTERNAL_IMAGE_PREFIX "$NOODARA_INTERNAL_IMAGE_PREFIX"
+    case "$NOODARA_INTERNAL_IMAGE_PREFIX" in
+      *' '*)
+        noodara_fail env-write-failed "NOODARA_INTERNAL_IMAGE_PREFIX must not contain a space."
+        ;;
+    esac
+    case "$NOODARA_INTERNAL_IMAGE_PREFIX" in
+      *'"'*)
+        noodara_fail env-write-failed "NOODARA_INTERNAL_IMAGE_PREFIX must not contain a double quote."
+        ;;
+    esac
+    case "$NOODARA_INTERNAL_IMAGE_PREFIX" in
+      *"\$"*)
+        noodara_fail env-write-failed "NOODARA_INTERNAL_IMAGE_PREFIX must not contain a dollar sign."
+        ;;
+    esac
+    case "$NOODARA_INTERNAL_IMAGE_PREFIX" in
+      *'`'*)
+        noodara_fail env-write-failed "NOODARA_INTERNAL_IMAGE_PREFIX must not contain a backtick."
+        ;;
+    esac
+    printf '%s\n' "$NOODARA_INTERNAL_IMAGE_PREFIX"
+    return 0
+  fi
+  printf '%s\n' "${NOODARA_REGISTRY}/${NOODARA_REPO_OWNER}"
+}
+
+# Loose shape check for a plain IPv4 address (06-CONTEXT.md D-07, T-06-29): rejects an HTML
+# captive-portal body or an empty response from a public-IP service, without attempting full RFC
+# validation -- a `case` pattern over dot-separated digit groups, deliberately not a regex.
+noodara_looks_like_ipv4() {
+  case "$1" in
+    [0-9]*.[0-9]*.[0-9]*.[0-9]*)
+      case "$1" in
+        *[!0-9.]*) return 1 ;;
+        *) return 0 ;;
+      esac
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+# Tries https://ifconfig.io, then https://icanhazip.com, then https://ipecho.net/plain, each
+# through noodara_fetch_url, stopping at the first response that shape-validates as a plain IPv4
+# address (06-CONTEXT.md D-07, T-06-29). A non-IPv4 response (HTML, empty) never stops the chain --
+# it just means the next service is tried. Returns non-zero when all three fail.
+noodara_get_public_ip() {
+  for _noodara_gpi_url in https://ifconfig.io https://icanhazip.com https://ipecho.net/plain; do
+    _noodara_gpi_body=$(noodara_fetch_url body "$_noodara_gpi_url" 2>/dev/null) || _noodara_gpi_body=""
+    if noodara_looks_like_ipv4 "$_noodara_gpi_body"; then
+      printf '%s\n' "$_noodara_gpi_body"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Extracts the "src" address from `ip route get 1.1.1.1` -- the default-route local IP, D-07's
+# third and final tier. Injectable via shell-function shadowing of `ip` (hard_rule #9), same as
+# every other system-state probe in this file.
+noodara_get_local_ip() {
+  ip route get 1.1.1.1 2>/dev/null | awk '{ for (i = 1; i <= NF; i++) if ($i == "src") print $(i + 1) }' | head -n 1
+}
+
+# Resolves NOODARA_PUBLIC_URL (06-CONTEXT.md D-07): explicit override (returned verbatim, no
+# lookup, no scheme normalisation -- D-05's cookie opt-out keys off the scheme exactly as given) >
+# external public-IP service (noodara_get_public_ip) > local default-route IP
+# (noodara_get_local_ip, with a warning that a private address was used). Fails with reason
+# public-url-resolution-failed (exit 41) naming NOODARA_PUBLIC_URL as the manual remedy when every
+# source fails.
+#
+# Never prints the URL twice: the one operator-facing note below (chosen URL + how to change it)
+# goes to stderr, not this function's stdout return channel. This function's stdout is a strict
+# single-line return contract, mirroring noodara_resolve_version/noodara_resolve_port, consumed by
+# callers via `public_url=$(noodara_resolve_public_url)` -- a second stdout line here would
+# silently corrupt that capture with an embedded newline, which noodara_generate_env's own
+# noodara_env_assert_single_line guard exists specifically to catch. D-07 still requires telling
+# the operator both the chosen URL and how to change it; stderr reaches the real terminal exactly
+# the same way stdout does, without touching the return channel.
+noodara_resolve_public_url() {
+  if [ -n "${NOODARA_PUBLIC_URL:-}" ]; then
+    printf '%s\n' "$NOODARA_PUBLIC_URL"
+    return 0
+  fi
+
+  _noodara_rpu_port=$(noodara_resolve_port)
+  _noodara_rpu_url=""
+
+  _noodara_rpu_ip=$(noodara_get_public_ip) || _noodara_rpu_ip=""
+  if [ -n "$_noodara_rpu_ip" ]; then
+    _noodara_rpu_url="http://${_noodara_rpu_ip}:${_noodara_rpu_port}"
+  else
+    _noodara_rpu_ip=$(noodara_get_local_ip) || _noodara_rpu_ip=""
+    if [ -n "$_noodara_rpu_ip" ]; then
+      noodara_warn "Could not reach any public-IP service; falling back to this server's own private-network address instead. If this server is behind NAT, the panel may not be reachable at this address from outside."
+      _noodara_rpu_url="http://${_noodara_rpu_ip}:${_noodara_rpu_port}"
+    fi
+  fi
+
+  if [ -z "$_noodara_rpu_url" ]; then
+    noodara_fail public-url-resolution-failed "Could not resolve a public URL automatically. Set NOODARA_PUBLIC_URL=<url> and re-run this installer."
+  fi
+
+  printf 'noodara: Resolved public URL: %s -- to change it, edit %s/%s (key NOODARA_PUBLIC_URL) and re-run this installer.\n' "$_noodara_rpu_url" "$NOODARA_INSTALL_DIR" "$NOODARA_ENV_FILE" >&2
+
+  printf '%s\n' "$_noodara_rpu_url"
 }
 
 # noodara_preflight (06-CONTEXT.md D-17, INST-03): runs every predicate above in exactly this

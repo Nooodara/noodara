@@ -41,10 +41,18 @@ function resolvePublicUrl(
 // interpreter since it only reads install.sh's own source text.
 describe('install.sh curl call-site discipline (06-06-PLAN.md Task 1)', () => {
   it('every non-comment curl invocation lives inside noodara_fetch_url', () => {
+    // 06-06-PLAN.md's own literal acceptance text (`grep -v '^[[:space:]]*#' install.sh | grep -c
+    // 'curl '`) false-positives against Plan 06-02's pre-existing (out-of-scope)
+    // noodara_check_base_commands, whose `for cmd in curl openssl ss ip awk grep; do` line lists
+    // "curl" as a required base-command *name*, not a curl invocation -- the literal command
+    // returns 3, not 2, on this file today, confirmed by running it directly. Matching on `curl -`
+    // (every genuine invocation in this file passes at least one flag) instead of the bare
+    // substring `curl ` preserves the criterion's actual intent -- "no other function may call
+    // curl directly" -- without being defeated by that pre-existing, unrelated line.
     const source = readFileSync(INSTALL_SH, 'utf8');
     const lines = source.split('\n');
     const nonCommentLines = lines.filter((line) => !line.trim().startsWith('#'));
-    const totalCurlCalls = nonCommentLines.filter((line) => line.includes('curl ')).length;
+    const totalCurlCalls = nonCommentLines.filter((line) => line.includes('curl -')).length;
 
     const startIndex = source.indexOf('noodara_fetch_url() {');
     expect(startIndex).toBeGreaterThan(-1);
@@ -55,7 +63,7 @@ describe('install.sh curl call-site discipline (06-06-PLAN.md Task 1)', () => {
     const curlCallsInFunction = functionBody
       .split('\n')
       .filter((line) => !line.trim().startsWith('#'))
-      .filter((line) => line.includes('curl ')).length;
+      .filter((line) => line.includes('curl -')).length;
 
     expect(totalCurlCalls).toBeGreaterThan(0);
     expect(totalCurlCalls).toBe(curlCallsInFunction);
@@ -351,9 +359,13 @@ describe.each(posixInterpreters())('install.sh noodara_get_public_ip (%s)', (int
   });
 
   it('returns non-zero when all three services fail', () => {
-    const stub = ['noodara_fetch_url() { return 1; }', 'noodara_get_public_ip; printf "STATUS=%s\\n" "$?"'].join(
-      '\n',
-    );
+    // install.sh runs under `set -eu`: a bare `noodara_get_public_ip` failing as a plain top-level
+    // command would abort the whole script before a following `printf` could report its exit
+    // status. Wrapping it in `if`/`else` is the -e-safe way to observe a deliberate failure.
+    const stub = [
+      'noodara_fetch_url() { return 1; }',
+      'if noodara_get_public_ip; then printf "STATUS=0\\n"; else printf "STATUS=1\\n"; fi',
+    ].join('\n');
 
     const result = runInstallerShell(interpreter, stub);
 
