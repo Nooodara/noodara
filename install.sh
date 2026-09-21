@@ -1569,20 +1569,53 @@ NOODARA_COMPOSE_EOF_C
 
 # Extracts the value of `field` from the JSON object whose "Service" field equals `svc`, out of
 # `docker compose ps[--format json]`'s stdout on stdin -- without jq (D-18 layer 1 has no such
-# dependency). Splits on "}" record boundaries (`RS = "}"`) rather than assuming one object per
-# line, so both shapes Compose has shipped -- a single JSON array (objects possibly spanning
-# multiple physical lines) and NDJSON (one compact object per line) -- parse identically; asserted
-# by tests/unit/installer/main-flow.test.ts against both fixture shapes.
+# dependency). Tracks curly-brace DEPTH character-by-character rather than splitting on every "}"
+# (`RS = "}"`) -- a genuine record boundary is only the "}" that returns depth to 0, never one
+# contributed by a nested object. Handles both shapes Compose has shipped -- a single JSON array
+# (objects possibly spanning multiple physical lines) and NDJSON (one compact object per line) --
+# since it operates on the whole byte stream, not per physical line.
+#
+# Post-execution fix (orchestrator audit, 06-11-PLAN.md -- the first real `docker compose ps
+# --format json` run against a genuinely running stack): the real Compose CLI (v5.5.1) emits a
+# non-empty "Publishers" ARRAY OF OBJECTS for every service that exposes a container port -- true
+# for every service in docker-compose.yml except the port-less `migrate` one-shot, including a
+# service that publishes no HOST port at all (its one Publishers element still has
+# "PublishedPort":0). That nested object contributes its OWN "}" strictly before the record's own
+# outer "}". The OLD `RS = "}"` splitter therefore cut every such record in two: alphabetically,
+# "Health"/"ExitCode" sort before "Publishers" (so they land in the FIRST fragment) and "Service"
+# sorts after it (so it lands in the SECOND fragment) -- no single fragment ever matched both the
+# "Service" pattern and the queried field, so this function silently returned nothing for api,
+# postgres, redis, worker and web on every real run. This is exactly why noodara_wait_for_health
+# polled for its full 300s timeout (exit 53) against a stack `docker inspect` already reported
+# genuinely healthy -- reproduced empirically inside a real installer-DinD fixture before writing
+# this fix, and pinned by tests/unit/installer/main-flow.test.ts against the real recorded JSON
+# shape (never a hand-simplified fixture missing the Publishers array).
 noodara_compose_json_field_for_service() {
   awk -v svc="$1" -v fld="$2" '
-    BEGIN { RS = "}" }
-    $0 ~ ("\"Service\"[ ]*:[ ]*\"" svc "\"") {
-      if (match($0, "\"" fld "\"[ ]*:[ ]*\"?[^\",}]*\"?")) {
-        val = substr($0, RSTART, RLENGTH)
-        sub("\"" fld "\"[ ]*:[ ]*", "", val)
-        gsub(/"/, "", val)
-        print val
-        exit
+    BEGIN { depth = 0; record = "" }
+    {
+      line = $0
+      len = length(line)
+      for (i = 1; i <= len; i++) {
+        c = substr(line, i, 1)
+        record = record c
+        if (c == "{") {
+          depth++
+        } else if (c == "}") {
+          depth--
+          if (depth == 0) {
+            if (record ~ ("\"Service\"[ ]*:[ ]*\"" svc "\"")) {
+              if (match(record, "\"" fld "\"[ ]*:[ ]*\"?[^\",}]*\"?")) {
+                val = substr(record, RSTART, RLENGTH)
+                sub("\"" fld "\"[ ]*:[ ]*", "", val)
+                gsub(/"/, "", val)
+                print val
+                exit
+              }
+            }
+            record = ""
+          }
+        }
       }
     }
   '
