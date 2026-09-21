@@ -70,6 +70,7 @@ noodara_exit_code_for() {
     docker-via-snap) printf '%s\n' 17 ;;
     docker-install-failed) printf '%s\n' 20 ;;
     compose-plugin-missing) printf '%s\n' 21 ;;
+    docker-daemon-unavailable) printf '%s\n' 22 ;;
     env-write-failed) printf '%s\n' 30 ;;
     version-resolution-failed) printf '%s\n' 40 ;;
     public-url-resolution-failed) printf '%s\n' 41 ;;
@@ -295,6 +296,17 @@ noodara_docker_present() {
   docker version >/dev/null 2>&1
 }
 
+# Post-execution fix (orchestrator audit Finding 2): a narrower probe than noodara_docker_present
+# above -- true when a `docker` binary is merely found on PATH (`command -v docker`), regardless
+# of whether its daemon responds. noodara_docker_present's own exit-code-based contract is left
+# completely untouched (still the only thing that decides "Docker Engine is usable"); this
+# function exists only so noodara_ensure_docker can distinguish "Docker is genuinely absent" from
+# "Docker is installed but its daemon is not responding" before running any apt/gpg/file-write/
+# systemctl operation.
+noodara_docker_binary_present() {
+  command -v docker >/dev/null 2>&1
+}
+
 # Checks the `compose` plugin subcommand specifically -- never a standalone, no-longer-supported
 # v1 `docker-compose` binary.
 noodara_compose_present() {
@@ -488,10 +500,23 @@ noodara_ensure_compose_plugin() {
 # daemon and the stack it is running (T-06-39). Fails with reason compose-plugin-missing (exit 21)
 # when the plugin is still missing after an install was attempted, and docker-install-failed
 # (exit 20) when Docker Engine itself is still absent after the full sequence.
+#
+# Post-execution fix (orchestrator audit Finding 2): before ever running an apt/gpg/file-write
+# operation, distinguishes "Docker is genuinely absent" from "a docker binary is present but its
+# daemon is not responding" (noodara_docker_binary_present, above). Treating the latter as
+# "absent" used to run the full removal-then-reinstall sequence against an operator's existing
+# Docker installation -- including removing their docker.io/containerd/etc. packages uninvited --
+# and still fail, since nothing in that sequence starts a stopped daemon. Fails outright with
+# reason docker-daemon-unavailable (exit 22), naming the fix (start the daemon, re-run), with zero
+# side effects.
 noodara_ensure_docker() {
   if noodara_docker_present && noodara_compose_present; then
     noodara_note "Docker Engine and the Compose plugin are already installed; nothing to do."
     return 0
+  fi
+
+  if ! noodara_docker_present && noodara_docker_binary_present; then
+    noodara_fail docker-daemon-unavailable "Docker is installed but its daemon is not responding. Start it (sudo systemctl start docker) and re-run this installer."
   fi
 
   if noodara_docker_present; then
