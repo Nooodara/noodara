@@ -12191,7 +12191,7 @@ stderr | tests/integration/boot/bootstrap.test.ts > bootstrapAdmin (D-01/D-04) >
 [redis] subscriber connection error: AggregateError
 
 {"level":40,"time":1789963380024,"pid":51745,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"32143105a5bf602f","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
-NOODARA_SETUP_TOKEN=GXGHNvX0Pmg26O0mztGDBVUSv7RuVcqsInX6jMLKplk
+NOODARA_SETUP_TOKEN=<redacted-ephemeral-test-token>
 {"level":40,"time":1789963380085,"pid":51745,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
 {"level":40,"time":1789963380188,"pid":51745,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
 {"level":40,"time":1789963380341,"pid":51745,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
@@ -12208,7 +12208,7 @@ NOODARA_SETUP_TOKEN=GXGHNvX0Pmg26O0mztGDBVUSv7RuVcqsInX6jMLKplk
 {"level":40,"time":1789963383370,"pid":51745,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
 {"level":40,"time":1789963383972,"pid":51745,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
 {"level":40,"time":1789963386336,"pid":51745,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"3f28db9755fa2c09","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
-NOODARA_SETUP_TOKEN=Gkq4p9can5kpWoGLf3UaYQSdasOInSbJpF9xWmLfwxk
+NOODARA_SETUP_TOKEN=<redacted-ephemeral-test-token>
 {"level":40,"time":1789963386388,"pid":51745,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
 {"level":40,"time":1789963386491,"pid":51745,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
 {"level":40,"time":1789963386644,"pid":51745,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}

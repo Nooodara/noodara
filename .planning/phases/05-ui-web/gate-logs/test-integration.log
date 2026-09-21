@@ -2585,7 +2585,7 @@ Cached:    5 cached, 5 total
 {"level":40,"time":1789965657322,"pid":73331,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"7dd703246e6241d0","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
 {"level":40,"time":1789965661932,"pid":73331,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"c3fbd5450c029275","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
 {"level":40,"time":1789965666189,"pid":73331,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"cb450f18db7c4eb9","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
-NOODARA_SETUP_TOKEN=Qaw1iZTgpXeuWlI12scpDQa-K78jjYdEvdaGeNXlgV0
+NOODARA_SETUP_TOKEN=<redacted-ephemeral-test-token>
 {"level":40,"time":1789965666245,"pid":73331,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
 {"level":40,"time":1789965666345,"pid":73331,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
 {"level":40,"time":1789965666499,"pid":73331,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
@@ -2602,7 +2602,7 @@ NOODARA_SETUP_TOKEN=Qaw1iZTgpXeuWlI12scpDQa-K78jjYdEvdaGeNXlgV0
 {"level":40,"time":1789965669530,"pid":73331,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
 {"level":40,"time":1789965670133,"pid":73331,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
 {"level":40,"time":1789965672454,"pid":73331,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"61c9e9e62473d027","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
-NOODARA_SETUP_TOKEN=9p-tTX89vHDqIebw2NiD7OEqrIeRm6kz6DZdAyAkvAg
+NOODARA_SETUP_TOKEN=<redacted-ephemeral-test-token>
 {"level":40,"time":1789965672508,"pid":73331,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
 {"level":40,"time":1789965672611,"pid":73331,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
 {"level":40,"time":1789965672764,"pid":73331,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
