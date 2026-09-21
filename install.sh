@@ -1775,9 +1775,24 @@ noodara_compose_up() {
       noodara_fail migrations-failed "Database migrations failed. See the migrate service log tail above. Data and secrets are untouched."
     fi
 
+    # Real-DinD discovery (second real Finding F bug, found re-running the first fix against the
+    # real fixture): docker-compose.yml's own topology (web depends_on: api: condition:
+    # service_healthy) means Compose genuinely CREATES web's container early but never STARTS it
+    # while api has not yet reported healthy -- web legitimately stays in state "created" for as
+    # long as api is unhealthy, a state DERIVED from api's own problem, not an independent failure
+    # signal. Requiring web to be strictly "running" here made exit 51 fire on the ordinary
+    # api-is-unhealthy case too (web is never "running" in that case). "created" is therefore
+    # accepted for web specifically; any OTHER non-running state (exited/dead/absent) still means
+    # web itself has its own, genuinely independent problem.
     _noodara_cu_api_state=$(noodara_service_state api)
     _noodara_cu_web_state=$(noodara_service_state web)
-    if [ "$_noodara_cu_api_state" != "running" ] || [ "$_noodara_cu_web_state" != "running" ]; then
+    _noodara_cu_not_ready=0
+    if [ "$_noodara_cu_api_state" != "running" ]; then
+      _noodara_cu_not_ready=1
+    elif [ "$_noodara_cu_web_state" != "running" ] && [ "$_noodara_cu_web_state" != "created" ]; then
+      _noodara_cu_not_ready=1
+    fi
+    if [ "$_noodara_cu_not_ready" = "1" ]; then
       _noodara_cu_ps=$(cd "$NOODARA_INSTALL_DIR" && docker compose ps -a 2>&1 | noodara_redact_diagnostic_text)
       printf '%s\n' "$_noodara_cu_ps" >&2
 
