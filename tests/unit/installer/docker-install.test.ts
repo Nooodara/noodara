@@ -690,6 +690,51 @@ describe.each(posixInterpreters())(
   },
 );
 
+// Post-execution fix (orchestrator audit Finding 3): noodara_docker_write_sources_list previously
+// wrote `$NOODARA_DOCKER_SOURCES_FILE` with a direct `>` redirect (a failure mid-write leaves a
+// half-written apt source), and noodara_docker_download_gpg_key's own printf/mv pair had no named
+// failure at all -- a failing write aborted through `set -e` with a generic, unattributed error.
+// Both now write through a temp file in the same target directory, then `mv`, with their own
+// named `_noodara_did_fail_step` message on any failure, and remove the temp file on failure.
+describe.each(posixInterpreters())('install.sh atomic keyring/sources writes (Finding 3, %s)', (interpreter) => {
+  it('fails with exit code 20 naming the keyring-file write step when the keyring directory is unwritable, and leaves no temp file', () => {
+    const keyringDir = mkdtempSync(join(tmpdir(), 'noodara-docker-keyring-unwritable-'));
+    chmodSync(keyringDir, 0o555);
+    try {
+      const snippet = [VALID_GPG_KEY_FETCH_STUB, 'noodara_docker_download_gpg_key'].join('\n');
+
+      const result = runInstallerShell(interpreter, snippet, { env: { NOODARA_DOCKER_KEYRING_DIR: keyringDir } });
+
+      expect(result.status).toBe(20);
+      expect(result.stderr.toLowerCase()).toContain('keyring');
+      expect(readdirSync(keyringDir)).toHaveLength(0);
+    } finally {
+      chmodSync(keyringDir, 0o755);
+    }
+  });
+
+  it('fails with exit code 20 naming the sources-list write step when the target directory is unwritable, and leaves no temp file', () => {
+    const sourcesParentDir = mkdtempSync(join(tmpdir(), 'noodara-docker-sources-unwritable-'));
+    const fixturesDir = mkdtempSync(join(tmpdir(), 'noodara-docker-sources-unwritable-fixtures-'));
+    const osReleaseFile = writeOsReleaseFixture(fixturesDir, 'jammy');
+    const sourcesFile = join(sourcesParentDir, 'docker.list');
+    chmodSync(sourcesParentDir, 0o555);
+    try {
+      const snippet = ['dpkg() { printf "amd64\\n"; }', 'noodara_docker_write_sources_list'].join('\n');
+
+      const result = runInstallerShell(interpreter, snippet, {
+        env: { NOODARA_OS_RELEASE_FILE: osReleaseFile, NOODARA_DOCKER_SOURCES_FILE: sourcesFile },
+      });
+
+      expect(result.status).toBe(20);
+      expect(result.stderr.toLowerCase()).toContain('sources list');
+      expect(readdirSync(sourcesParentDir)).toHaveLength(0);
+    } finally {
+      chmodSync(sourcesParentDir, 0o755);
+    }
+  });
+});
+
 describe('install.sh Docker install structural checks (06-08-PLAN.md Task 2)', () => {
   it('never references a third-party curl-pipe-sh installer domain', () => {
     const source = readFileSync(INSTALL_SH, 'utf8');
