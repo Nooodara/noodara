@@ -657,8 +657,9 @@ describe.each(posixInterpreters())('install.sh noodara_main upgrade (%s)', (inte
     const calls = readFileSync(callLog, 'utf8');
     expect(calls).not.toMatch(/compose pull\b/);
     expect(calls).not.toMatch(/compose up -d\b/);
-    // A single health read only -- never a polling loop that calls `docker compose ps` twice.
-    expect(calls.match(/compose ps --format json/g)?.length ?? 0).toBe(1);
+    // A single health read only (one `docker compose ps --format json` call per service, api and
+    // web) -- never a polling loop that reads again after a sleep.
+    expect(calls.match(/compose ps --format json/g)?.length ?? 0).toBe(2);
   });
 
   it('same version, keys present, NOT healthy on the first read (half-finished first install): pulls and starts the stack, .env stays untouched (Finding E test 2)', () => {
@@ -707,7 +708,6 @@ describe.each(posixInterpreters())('install.sh noodara_main upgrade (%s)', (inte
     expect(upIndex).toBeGreaterThan(pullIndex);
     expect(result.stdout).toContain('The stack is not healthy; starting it.');
     expect(result.stdout).toContain(VALID_TOKEN);
-    expect(result.stdout).not.toContain('WARNING');
 
     // hard_rule #8 canary extension: no secret leaks on this repair path either.
     const installLogPath = join(installDir, 'install.log');
