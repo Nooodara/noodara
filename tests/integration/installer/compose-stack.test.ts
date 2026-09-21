@@ -275,16 +275,22 @@ describe('production docker-compose.yml stack (06-07-PLAN.md)', () => {
       });
       rmSync(projectDir, { recursive: true, force: true });
     }
-    spawnSync('docker', ['rmi', '-f', CONTROL_PLANE_IMAGE], { stdio: 'ignore' });
-    spawnSync('docker', ['rmi', '-f', WEB_IMAGE], { stdio: 'ignore' });
+    spawnSync('docker', ['rmi', '-f', CONTROL_PLANE_IMAGE], { stdio: 'ignore', timeout: CLI_TIMEOUT_MS });
+    spawnSync('docker', ['rmi', '-f', WEB_IMAGE], { stdio: 'ignore', timeout: CLI_TIMEOUT_MS });
 
     // The primary cleanup proof (hard_rule #7): nothing bearing this run's own project name
     // remains, container or volume.
     expect(
-      execFileSync('docker', ['ps', '-aq', '--filter', `name=${PROJECT_NAME}`], { encoding: 'utf8' }).trim(),
+      execFileSync('docker', ['ps', '-aq', '--filter', `name=${PROJECT_NAME}`], {
+        encoding: 'utf8',
+        timeout: CLI_TIMEOUT_MS,
+      }).trim(),
     ).toBe('');
     expect(
-      execFileSync('docker', ['volume', 'ls', '-q', '--filter', `name=${PROJECT_NAME}`], { encoding: 'utf8' }).trim(),
+      execFileSync('docker', ['volume', 'ls', '-q', '--filter', `name=${PROJECT_NAME}`], {
+        encoding: 'utf8',
+        timeout: CLI_TIMEOUT_MS,
+      }).trim(),
     ).toBe('');
 
     // Defence in depth: this suite never labels a container `noodara.test=true` itself (see the
