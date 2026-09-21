@@ -160,8 +160,21 @@ export async function editServer(
       // status, not only ERROR. This stays its own local comparison rather than reusing
       // `classifyServerEdit`'s "identity" category below: that category deliberately excludes
       // `sshUser` (it answers a different question — D-14's CONNECTED->PENDING transition) while a
-      // stale pending fingerprint must be cleared on an `sshUser` change too.
+      // stale pending fingerprint must be cleared on an `sshUser` change too. `identityChanged`
+      // answers "did the pending-verification target change" (host, port OR user); the narrower
+      // `hostIdentityChanged` below answers "did the machine itself change" (host or port only).
       const identityChanged = host !== row.host || sshPort !== row.sshPort || sshUser !== row.sshUser;
+
+      // GR-02 (05-REVIEW.md; 05-VERIFICATION.md gap 6): deliberately NARROWER than
+      // `identityChanged` above — it excludes `sshUser`, because an SSH-user change does not
+      // change which machine the row points at, and clearing a trusted host key there would
+      // silently reopen TOFU for a host that already has a trust relationship (and would
+      // contradict D-14's `access` classification and its own test, "CONNECTED + ssh user change
+      // only transitions to DISCONNECTED and preserves the fingerprint"). NOTE: 05-REVIEW.md's own
+      // literal GR-02 fix text — "clear hostFingerprint in the identityChanged block" — is
+      // over-broad on this point and is deliberately NOT followed verbatim; `hostIdentityChanged`
+      // matches `classifyServerEdit`'s own `'identity'` semantics (host/sshPort only) instead.
+      const hostIdentityChanged = host !== row.host || sshPort !== row.sshPort;
 
       // D-15/SERV-02: never selects or decodes the existing credential — encodeCredential only
       // ever sees the *new* material the caller supplied.
@@ -239,6 +252,17 @@ export async function editServer(
           });
           statusPatch = { status: newStatus };
         }
+      }
+
+      // GR-02: status-independent, unconditional clear of the trusted host key whenever the host
+      // identity (host/sshPort) changes — from ANY status, not only CONNECTED. Composed after (and
+      // alongside, never replacing) the CONNECTED branch above: that branch's own
+      // hostFingerprint/hostFingerprintCapturedAt clear on an 'identity' classification becomes
+      // redundant here but is left in place untouched, so D-14's CONNECTED transition logic is not
+      // disturbed. An sshUser-only change (or any other non-host-identity edit) never reaches this
+      // branch, so a trusted host key survives it (T-5G-40-02).
+      if (hostIdentityChanged) {
+        statusPatch = { ...statusPatch, hostFingerprint: null, hostFingerprintCapturedAt: null };
       }
 
       // WR-A-02: applied after (and composed with, never replacing) the CONNECTED branch above —
