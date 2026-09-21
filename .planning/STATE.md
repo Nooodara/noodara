@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: executing
-stopped_at: "Phase 05 (ui-web) gap closure ROUND 2 EXECUTED 9/9 (46/46 SUMMARY) and APPROVED by the user at the 05-46 checkpoint (verbatim: aprueba la ronda, y arregla el CR-01 y WR-01 por favor). Closing gate on the final tree: unit 1525, integration 523/0/1-skip (2nd attempt; 1st was an orphan-container cascade), boot 7/7, provenance 52/52, scan-leaks 4/4, E2E 93/93 after the test-only fix 23d8486. Gap 6 CLOSED; GR-03 PARTIAL (logger optional); F1 partial by design. Round-2 delta review (05-REVIEW.md, ffb41a9): CR-01 (UI dead end after a host/port edit in ERROR/HOST_KEY_CHANGED — reproduced live by the user) and WR-01 (HOST_KEY_CHANGED banner persists after a successful trust) were FIXED by quick task 260921-13a (RED/GREEN commits 7d8e664..af0361d, unit 1527, E2E 93/93; audited by the orchestrator). Human items: 1 partially verified with screenshots (positive trust flow + CR-01), 2/4/5/6/7 not confirmed, 3 not done (no remote, QA-04/QA-05 Pending). Phase 05 is NOT complete: RE-VERIFICATION 2026-09-21 (72fa2cd) = human_needed: no code-level gap remains (gap 6, GR-02, CR-01, WR-01 re-derived CLOSED); pending are only human/infra items — QA-04/QA-05 need a real CI + nightly run (no git remote), and human UAT items 2/4/5/6/7 plus a human look at the CR-01/WR-01 fixes (05-HUMAN-UAT.md). Next: the user re-checks the fix in the UI and decides whether to approve closing the phase (phase.complete) with those items tracked as verification debt; phase.complete only on passed."
-last_updated: "2026-09-21T16:00:00.000Z"
+status: ready_to_plan
+stopped_at: "Phase 05 (ui-web) COMPLETE 2026-09-21 (46/46 plans + quick 260921-13a) by explicit user approval (verbatim: Aprovado) after a human_needed re-verification with no code-level gap. Verification debt carried forward (05-HUMAN-UAT.md, 05-VERIFICATION.md): QA-04/QA-05 Pending until a real CI + nightly run exists (no git remote); human items 2/4/5/6/7 and a human look at the CR-01/WR-01 fix never confirmed by the user; the full integration suite was last run before quick 260921-13a (only the 10 trust-path files, 109/109, after it). Backlog: GR-03 partial (logger optional), GR-04 SSE idle-peer budget, lint/typecheck do not cover tests/ and scripts/, local-run onboarding friction, redis healthcheck in docker-compose.dev.yml, UX notes for the UI redesign. Next: /gsd-discuss-phase 6 (instalador y docker compose)"
+last_updated: 2026-09-21T07:23:08.601Z
 last_activity: 2026-09-21 -- Phase 05 re-verified: human_needed (no code gaps)
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 94
   completed_plans: 94
-  percent: 100
+  percent: 83
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente: sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto.
-**Current focus:** Phase 05 — ui-web
+**Current focus:** Phase 6 — instalador y docker compose
 
 ## Current Position
 
-Phase: 05 (ui-web) — gap closure round 2 EXECUTED and approved by the user; phase NOT complete (CR-01/WR-01 open, re-verification pending)
-Plan: 46 of 46 plans have a SUMMARY; quick task 260921-13a done; re-verification = human_needed. Next: user decision on closing the phase.
-Status: Round 2 closed at its gate (05-46-GATE.md). Gap 6 CLOSED. CR-01 and WR-01 FIXED (quick 260921-13a). Open: GR-03 PARTIAL, GR-04 untouched, QA-04/QA-05 Pending (no remote), human items 2/4/5/6/7 not confirmed (05-HUMAN-UAT.md).
-Last activity: 2026-09-21 -- Phase 05 re-verified: human_needed (no code gaps)
+Phase: 6
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-21
 
 Progress: [██████████] 100% of planned plans executed (94/94); phase 05 awaiting CR-01/WR-01 fix and re-verification
 
@@ -36,7 +36,7 @@ Progress: [██████████] 100% of planned plans executed (94/94
 
 **Velocity:**
 
-- Total plans completed: 48
+- Total plans completed: 94
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -48,6 +48,7 @@ Progress: [██████████] 100% of planned plans executed (94/94
 | 2 | 10 | - | - |
 | 03 | 10 | - | - |
 | 04 | 11 | - | - |
+| 05 | 46 | - | - |
 
 **Recent Trend:**
 

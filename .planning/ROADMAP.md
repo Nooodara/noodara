@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Adaptador SSH aislado y probado con Testcontainers** - Conexión SSH con TOFU, timeouts, allowlist de comandos y discovery, validado contra un `sshd` real. (completed 2026-09-15)
 - [x] **Phase 3: Servicios de aplicación, activity log y redacción** - Registrar/editar/eliminar servidores, snapshots de discovery y un activity log sin fugas de secrets. (completed 2026-09-16)
 - [x] **Phase 4: HTTP routes, worker BullMQ y SSE** - La API expone connect/discover en background y el estado llega a tiempo real sin polling. (completed 2026-09-18)
-- [ ] **Phase 5: UI web** - El flujo login → Servers → add → connect → discovery → detail funciona en el design system Apple-inspired, dark y light. (46/46 plans executed — gap closure round 2 (05-38…05-46) executed and APPROVED by the user 2026-09-21: gap 6 (host-key trust) CLOSED, GR-03 PARTIAL, F1 partial by design; round-2 code review found CR-01 (UI dead end after a host edit in ERROR/HOST_KEY_CHANGED, reproduced by the user) and WR-01 (banner persists after trust) — fix in progress as a quick task; QA-04/QA-05 Pending (no git remote); human items 2/4/5/6/7 not confirmed — phase NOT complete until re-verification passes)
+- [x] **Phase 5: UI web** - El flujo login → Servers → add → connect → discovery → detail funciona en el design system Apple-inspired, dark y light. (completed 2026-09-21 — 46/46 plans + quick 260921-13a; final re-verification = human_needed with NO code-level gap: gap 6 host-key trust, GR-02, CR-01, WR-01 closed; closed by explicit user approval with verification debt tracked in 05-HUMAN-UAT.md: QA-04/QA-05 still Pending (no git remote, no CI/nightly run ever observed), human items 2/4/5/6/7 and a human look at the CR-01/WR-01 fix not confirmed; backlog: GR-03 partial, GR-04, lint/typecheck coverage of tests/ and scripts/, local-run onboarding)
 - [ ] **Phase 6: Instalador y Docker Compose** - Un comando deja Noodara operativo en un VPS Ubuntu limpio, de forma idempotente.
 
 ## Phase Details
@@ -415,5 +415,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Adaptador SSH aislado y probado con Testcontainers | 10/10 | Complete    | 2026-09-15 |
 | 3. Servicios de aplicación, activity log y redacción | 10/10 | Complete   | 2026-09-16 |
 | 4. HTTP routes, worker BullMQ y SSE | 11/11 | Complete   | 2026-09-18 |
-| 5. UI web | 46/46 | In Progress|  |
+| 5. UI web | 46/46 | Complete   | 2026-09-21 |
 | 6. Instalador y Docker Compose | 0/TBD | Not started | - |
