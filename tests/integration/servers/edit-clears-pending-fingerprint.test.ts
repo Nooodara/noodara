@@ -121,11 +121,18 @@ async function createServer(
 }
 
 const STALE_FP = 'ssh-ed25519 SHA256:STALEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE';
+// Test C (05-40-PLAN.md, GR-02): a trusted host fingerprint for the server's *old* host/port,
+// arranged alongside the pending fingerprint so this file can also assert the new
+// hostIdentityChanged clear (apps/control-plane/src/services/edit-server.ts), not only the
+// pre-existing pendingFingerprint clear WR-A-02 already covers.
+const OLD_HOST_FP = 'ssh-ed25519 SHA256:OLDHOSTOLDHOSTOLDHOSTOLDHOSTOLDHOSTOLDHOST';
 
-/** Direct row UPDATE arranging a server that is (a) in some status other than CONNECTING, and (b)
+/** Direct row UPDATE arranging a server that is (a) in some status other than CONNECTING, (b)
  *  already carrying a pending fingerprint — exactly the pre-condition WR-A-02 says the old
- *  ERROR-only guard could not clear. Never a service call: this is data already sitting in
- *  Postgres, standing in for whatever real connect/discover history put it there. */
+ *  ERROR-only guard could not clear — and (c) already carrying a trusted host fingerprint for its
+ *  old host, so a case can also assert GR-02's hostIdentityChanged clear. Never a service call:
+ *  this is data already sitting in Postgres, standing in for whatever real connect/discover
+ *  history put it there. */
 async function arrangeServerWithStatusAndPendingFingerprint(
   db: TestAppFixture['db'],
   serverId: string,
@@ -133,7 +140,13 @@ async function arrangeServerWithStatusAndPendingFingerprint(
 ): Promise<void> {
   await db
     .update(servers)
-    .set({ status, pendingFingerprint: STALE_FP, pendingFingerprintSeenAt: new Date() })
+    .set({
+      status,
+      pendingFingerprint: STALE_FP,
+      pendingFingerprintSeenAt: new Date(),
+      hostFingerprint: OLD_HOST_FP,
+      hostFingerprintCapturedAt: new Date(),
+    })
     .where(eq(servers.id, serverId));
 }
 
@@ -162,6 +175,9 @@ describe('PATCH /api/servers/:id clears pendingFingerprint on every identity-cha
     const after = await rawServerRow(db, created.id);
     expect(after.pendingFingerprint).toBeNull();
     expect(after.pendingFingerprintSeenAt).toBeNull();
+    // GR-02: the host identity itself changed, so the old host's trusted key must go too.
+    expect(after.hostFingerprint).toBeNull();
+    expect(after.hostFingerprintCapturedAt).toBeNull();
   });
 
   it('clears pendingFingerprint/pendingFingerprintSeenAt on an sshPort change from UNREACHABLE', async () => {
@@ -180,6 +196,9 @@ describe('PATCH /api/servers/:id clears pendingFingerprint on every identity-cha
     const after = await rawServerRow(db, created.id);
     expect(after.pendingFingerprint).toBeNull();
     expect(after.pendingFingerprintSeenAt).toBeNull();
+    // GR-02: sshPort is a host-identity field too (matches classifyServerEdit's 'identity').
+    expect(after.hostFingerprint).toBeNull();
+    expect(after.hostFingerprintCapturedAt).toBeNull();
   });
 
   it('clears pendingFingerprint/pendingFingerprintSeenAt on a host change from CONNECTED, alongside the existing D-14 identity_changed transition', async () => {
@@ -201,6 +220,8 @@ describe('PATCH /api/servers/:id clears pendingFingerprint on every identity-cha
     const after = await rawServerRow(db, created.id);
     expect(after.pendingFingerprint).toBeNull();
     expect(after.pendingFingerprintSeenAt).toBeNull();
+    expect(after.hostFingerprint).toBeNull();
+    expect(after.hostFingerprintCapturedAt).toBeNull();
   });
 
   it('leaves pendingFingerprint untouched on a non-identity (name-only) edit from UNREACHABLE', async () => {
@@ -219,6 +240,9 @@ describe('PATCH /api/servers/:id clears pendingFingerprint on every identity-cha
     const after = await rawServerRow(db, created.id);
     expect(after.pendingFingerprint).toBe(STALE_FP);
     expect(after.pendingFingerprintSeenAt).not.toBeNull();
+    // GR-02: a name-only edit is not a host-identity change — the trusted host key survives it.
+    expect(after.hostFingerprint).toBe(OLD_HOST_FP);
+    expect(after.hostFingerprintCapturedAt).not.toBeNull();
   });
 
   it('still returns 409 SERVER_BUSY on CONNECTING, unaffected by this fix', async () => {

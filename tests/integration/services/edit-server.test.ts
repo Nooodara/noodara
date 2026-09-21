@@ -8,13 +8,26 @@
 import { generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
+import type { ConnectInput, ConnectOutcome, HostFingerprint } from '@noodara/ssh';
+import type {
+  DiscoveryCheck,
+  DiscoveryCheckId,
+  DiscoveryFacts,
+  DiscoverySnapshot,
+} from '@noodara/domain/discovery';
 import {
   activityEvents,
   credentials,
   servers,
 } from '../../../apps/control-plane/src/db/schema/index.js';
 import { assertNoStrayTestContainers } from '../helpers/ssh.js';
-import { FIXED_NOW, startServiceFixture, type ServiceFixture } from './helpers/service-fixture.js';
+import {
+  buildFakeSshPort,
+  buildFakeSshSession,
+  FIXED_NOW,
+  startServiceFixture,
+  type ServiceFixture,
+} from './helpers/service-fixture.js';
 
 let fixture: ServiceFixture | undefined;
 
@@ -86,6 +99,90 @@ async function loadEditServer() {
 async function loadTrustFingerprint() {
   return import('../../../apps/control-plane/src/services/trust-fingerprint.js');
 }
+
+/** Loaded dynamically on every call — same discipline as `loadEditServer`/`loadTrustFingerprint`.
+ *  Task 2 (05-40-PLAN.md): the real-HTTP harness (`tests/integration/servers/
+ *  edit-clears-pending-fingerprint.test.ts`) cannot script an SSH outcome — its `/connect` route
+ *  enqueues through BullMQ — so the "next connect after a re-point" behaviour is proven here
+ *  instead, driving `connectAndDiscover` directly against the service fixture's fake SSH port,
+ *  exactly like `trust-fingerprint.test.ts`'s own `arrangeServerWithPendingFingerprint`. */
+async function loadConnectAndDiscover() {
+  return import('../../../apps/control-plane/src/services/connect-and-discover.js');
+}
+
+function buildDiscoveryFacts(overrides: Partial<DiscoveryFacts> = {}): DiscoveryFacts {
+  return {
+    hostname: null,
+    osDistribution: null,
+    osVersion: null,
+    arch: null,
+    cpuCores: null,
+    ramMb: null,
+    diskTotalMb: null,
+    diskUsedMb: null,
+    uptimeSeconds: null,
+    dockerInstalled: null,
+    dockerVersion: null,
+    dockerComposeVersion: null,
+    ...overrides,
+  };
+}
+
+function buildDiscoveryCheck(id: DiscoveryCheckId = 'hostname'): DiscoveryCheck {
+  return { id, status: 'pass', detail: `${id}: pass`, durationMs: 5 };
+}
+
+function buildDiscoverySnapshot(): DiscoverySnapshot {
+  return { facts: buildDiscoveryFacts(), checks: [buildDiscoveryCheck()], warnings: [] };
+}
+
+/**
+ * A fake `SshPort` whose `connect` result depends on `input.trustedFingerprint`, mirroring the
+ * real `packages/ssh` adapter's own TOFU-vs-mismatch contract (`ssh-port.ts` lines ~83-100):
+ * `trustedFingerprint === null` is always a first capture (never a mismatch); a non-null value
+ * that differs from `presented` is a `HOST_KEY_CHANGED`; a non-null value that matches is a plain
+ * reconnect. Task 2 (05-40-PLAN.md) needs this — not a fixed scripted outcome — because the
+ * behaviour under test is exactly "does the row's `trustedFingerprint` change what the next
+ * connect does", which a fixed outcome could not distinguish.
+ */
+function buildTofuAwareSshPort(presented: HostFingerprint) {
+  return buildFakeSshPort((input: ConnectInput): ConnectOutcome => {
+    if (input.trustedFingerprint === null) {
+      return {
+        ok: true,
+        session: buildFakeSshSession({}),
+        fingerprint: presented,
+        fingerprintCaptured: true,
+        attempts: 1,
+      };
+    }
+    if (input.trustedFingerprint.fingerprint === presented.fingerprint) {
+      return {
+        ok: true,
+        session: buildFakeSshSession({}),
+        fingerprint: presented,
+        fingerprintCaptured: false,
+        attempts: 1,
+      };
+    }
+    return {
+      ok: false,
+      errorCode: 'HOST_KEY_CHANGED',
+      message: 'host key changed',
+      attempts: 1,
+      observedFingerprint: presented,
+    };
+  });
+}
+
+const FP_OLD_HOST: HostFingerprint = {
+  keyType: 'ssh-ed25519',
+  fingerprint: 'SHA256:OLDOLDOLDOLDOLDOLDOLDOLDOLDOLDOLDOLDOLDOLDOLD',
+};
+const FP_NEW_HOST: HostFingerprint = {
+  keyType: 'ssh-ed25519',
+  fingerprint: 'SHA256:NEWNEWNEWNEWNEWNEWNEWNEWNEWNEWNEWNEWNEWNEWNEW',
+};
 
 async function registerFixtureServer(
   fx: ServiceFixture,
@@ -705,6 +802,82 @@ describe('editServer (SERV-02, ACT-01, D-11, D-13, D-14, D-16)', () => {
       const row = await fetchServerRow(fixture, server.id);
       expect(row?.hostFingerprint).toBe('SHA256:old-host');
       expect(row?.hostFingerprintCapturedAt).toEqual(rowBefore?.hostFingerprintCapturedAt);
+    });
+
+    it('Test A: after a host re-point, a connect presenting a different key is a clean TOFU first capture, not HOST_KEY_CHANGED', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture);
+      const { connectAndDiscover } = await loadConnectAndDiscover();
+
+      fixture.setSshPort(buildTofuAwareSshPort(FP_OLD_HOST));
+      const first = await connectAndDiscover(fixture.deps, {
+        actor: { type: 'system' },
+        serverId: server.id,
+        discover: () => Promise.resolve(buildDiscoverySnapshot()),
+      });
+      if (!first.ok) throw new Error('arrangement: first connect failed unexpectedly');
+      expect(first.server.status).toBe('CONNECTED');
+      expect(first.server.hostFingerprint).toBe(`${FP_OLD_HOST.keyType} ${FP_OLD_HOST.fingerprint}`);
+
+      // Moved off CONNECTED before the edit — deliberately, so this test isolates GR-02's new
+      // status-independent `hostIdentityChanged` clear from D-14's pre-existing CONNECTED-branch
+      // clear (which would otherwise also clear the fingerprint here and mask a regression).
+      await setServerStatus(fixture, server.id, 'UNREACHABLE');
+      const edited = await editFixtureServer(fixture, { serverId: server.id, host: uniqueHost() });
+      expect(edited).toMatchObject({ ok: true });
+      const rowAfterEdit = await fetchServerRow(fixture, server.id);
+      expect(rowAfterEdit?.status).toBe('UNREACHABLE');
+      expect(rowAfterEdit?.hostFingerprint).toBeNull();
+
+      // Before the Task 1 fix, this second connect would present a key that differs from the
+      // still-attached *old* host's trusted fingerprint and would spuriously fail HOST_KEY_CHANGED
+      // even though the row now points at a different machine entirely.
+      fixture.setSshPort(buildTofuAwareSshPort(FP_NEW_HOST));
+      const second = await connectAndDiscover(fixture.deps, {
+        actor: { type: 'system' },
+        serverId: server.id,
+        discover: () => Promise.resolve(buildDiscoverySnapshot()),
+      });
+
+      if (!second.ok) throw new Error('second connect failed unexpectedly');
+      expect(second.connection.ok).toBe(true);
+      expect(second.server.status).toBe('CONNECTED');
+      expect(second.server.lastErrorCode).not.toBe('HOST_KEY_CHANGED');
+      expect(second.server.hostFingerprint).toBe(`${FP_NEW_HOST.keyType} ${FP_NEW_HOST.fingerprint}`);
+    });
+
+    it('Test B (control): the same sequence WITHOUT the edit still produces HOST_KEY_CHANGED with the observed value parked', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture);
+      const { connectAndDiscover } = await loadConnectAndDiscover();
+
+      fixture.setSshPort(buildTofuAwareSshPort(FP_OLD_HOST));
+      const first = await connectAndDiscover(fixture.deps, {
+        actor: { type: 'system' },
+        serverId: server.id,
+        discover: () => Promise.resolve(buildDiscoverySnapshot()),
+      });
+      if (!first.ok) throw new Error('arrangement: first connect failed unexpectedly');
+      expect(first.server.hostFingerprint).toBe(`${FP_OLD_HOST.keyType} ${FP_OLD_HOST.fingerprint}`);
+
+      // Same status move as Test A, but NO edit — proves Test A's pass is caused by the edit
+      // clearing the fingerprint, not by the mismatch detection itself being broken, and not by
+      // the status change alone.
+      await setServerStatus(fixture, server.id, 'UNREACHABLE');
+      fixture.setSshPort(buildTofuAwareSshPort(FP_NEW_HOST));
+      const second = await connectAndDiscover(fixture.deps, {
+        actor: { type: 'system' },
+        serverId: server.id,
+      });
+
+      if (!second.ok) throw new Error('second connect failed unexpectedly');
+      expect(second.connection.ok).toBe(false);
+      expect(second.server.status).toBe('ERROR');
+      expect(second.server.lastErrorCode).toBe('HOST_KEY_CHANGED');
+      expect(second.server.pendingFingerprint).toBe(`${FP_NEW_HOST.keyType} ${FP_NEW_HOST.fingerprint}`);
+      // The old host's trusted fingerprint is untouched — this is the pre-existing mismatch path,
+      // not this plan's fix.
+      expect(second.server.hostFingerprint).toBe(`${FP_OLD_HOST.keyType} ${FP_OLD_HOST.fingerprint}`);
     });
   });
 });
