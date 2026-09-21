@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Adaptador SSH aislado y probado con Testcontainers** - Conexión SSH con TOFU, timeouts, allowlist de comandos y discovery, validado contra un `sshd` real. (completed 2026-09-15)
 - [x] **Phase 3: Servicios de aplicación, activity log y redacción** - Registrar/editar/eliminar servidores, snapshots de discovery y un activity log sin fugas de secrets. (completed 2026-09-16)
 - [x] **Phase 4: HTTP routes, worker BullMQ y SSE** - La API expone connect/discover en background y el estado llega a tiempo real sin polling. (completed 2026-09-18)
-- [ ] **Phase 5: UI web** - El flujo login → Servers → add → connect → discovery → detail funciona en el design system Apple-inspired, dark y light. (37/37 plans executed 2026-09-20 — gap closure 05-26…05-37 complete; closing gate all green, eight gaps re-derived: 4 CLOSED, 1 OPEN by design (QA-04/QA-05), 2 PARTIAL; user approved the checkpoint but did not confirm the six human-only verification items — phase NOT yet complete, pending a separate /gsd-quick fix for a found sshUser field-error bug, code review, regression gate and phase verification)
+- [ ] **Phase 5: UI web** - El flujo login → Servers → add → connect → discovery → detail funciona en el design system Apple-inspired, dark y light. (37/46 plans executed — gap closure round 1 (05-26…05-37) executed; re-verification 2026-09-20 = gaps_found: 7/8 gaps closed, gap 6 (host-key trust not enforced in the backend, GR-01/GR-02) still OPEN as BLOCKER; gap closure round 2 PLANNED: 05-38…05-46, 9 plans in 4 waves; QA-04/QA-05 Pending (no git remote); 7 human items in 05-HUMAN-UAT.md — phase NOT complete)
 - [ ] **Phase 6: Instalador y Docker Compose** - Un comando deja Noodara operativo en un VPS Ubuntu limpio, de forma idempotente.
 
 ## Phase Details
@@ -256,7 +256,7 @@ Plans:
   4. El activity log se ve como lista cronológica inversa con actor, entidad, acción y timestamp sin metadatos sensibles; settings muestra la versión y la URL pública de la instancia.
   5. El E2E de Playwright cubre login → Servers → add server → connect → discovery → detail, y el nightly lo repite 20/20 veces; un job de canary secrets confirma en el mismo run que ningún secret aparece en ninguna salida de la UI ni de la API a lo largo de ese flujo completo.
 
-**Plans**: 37 plans (25 executed in 15 waves + 12 gap-closure plans in 4 waves)
+**Plans**: 46 plans (25 executed in 15 waves + 12 gap-closure plans in 4 waves, executed + 9 gap-closure round 2 plans in 4 waves, planned)
 
 Plans:
 
@@ -355,6 +355,29 @@ Plans:
 **Gap Wave 4** *(blocked on Gap Wave 3; NOT autonomous — verificación humana)*
 
 - [x] 05-37-PLAN.md — Gate completo de todas las suites en una corrida, auditoría por gap re-derivada del código y checkpoint de los ítems solo-humanos (QA-04/QA-05 siguen Pending hasta un run real de CI)
+
+**Gap closure round 2** *(planned 2026-09-20 from the re-verified 05-VERIFICATION.md: 1 BLOCKER — gap 6, host-key trust not enforced in the backend (GR-01/GR-02) — plus named residuals; 9 plans in 4 waves, after Gap Wave 4)*
+
+**Gap R2 Wave 1** *(parallel-safe: disjoint files)*
+
+- [ ] 05-38-PLAN.md — Dominio: `applyConnectionResult` limpia `pendingFingerprint` en éxito y en todo fallo que no sea `HOST_KEY_CHANGED`; la persistencia anula también `pending_fingerprint_seen_at` (gap 6, GR-01)
+- [ ] 05-42-PLAN.md — Timeouts por llamada en `check-package-provenance.mjs` (GR-05) y default local de `NOODARA_API_ORIGIN` en el harness de build (F1); dos tareas omitibles por separado
+- [ ] 05-43-PLAN.md — Guard `hooks.logMethod` de pino contra `logger.error(err)` pelado + test de regresión (WR-A-04)
+- [ ] 05-44-PLAN.md — Costura de contrato: body `VALIDATION_FAILED` real por HTTP real → `fieldErrorsFromIssues` real, sin stub (residual del gap 5)
+- [ ] 05-45-PLAN.md — Contraste AA: tokens de rol `--accent-text` y `--status-error-fill`, medidos en todos sus roles y ambos temas; NO autónomo, el usuario elige entre candidatos medidos (UI-01)
+
+**Gap R2 Wave 2** *(blocked on Gap R2 Wave 1)*
+
+- [ ] 05-39-PLAN.md — BLOCKER: `trustFingerprint` exige `lastErrorCode === 'HOST_KEY_CHANGED'` en el guard y en el predicado del UPDATE condicional; tests de regresión por HTTP real del bypass (gap 6, GR-01, SERV-04)
+- [ ] 05-41-PLAN.md — `logger` opcional en `ServerServicesDeps` + `logRecoveryFailure` en el catch que tragaba el fallo de `failInFlightConnection` (GR-03)
+
+**Gap R2 Wave 3** *(blocked on Gap R2 Wave 2)*
+
+- [ ] 05-40-PLAN.md — Un cambio de host/puerto limpia `hostFingerprint` desde cualquier estado (no en cambios solo de `sshUser`), prueba de primera captura TOFU y cierre del todo TOCTOU con evidencia (GR-02)
+
+**Gap R2 Wave 4** *(blocked on Gap R2 Wave 3)*
+
+- [ ] 05-46-PLAN.md — Gate completo con logs crudos, veredicto del gap 6 re-derivado de primera mano y checkpoint humano de los siete ítems; NO autónomo (QA-04/QA-05 siguen Pending sin remoto)
 
 **Cross-cutting constraints:**
 

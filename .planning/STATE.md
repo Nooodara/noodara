@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: "Phase 05 (ui-web) gap closure EXECUTED (12/12 plans, 37/37 summaries) + quick task 260920-ly9 (sshUser field error). Re-verification = gaps_found: 7 of the 8 previous gaps closed; gap 6 (host-key trust) was wrongly marked CLOSED by 05-GAP-CLOSURE-AUDIT.md and is still OPEN as a blocker (05-REVIEW.md GR-01/GR-02: trust-fingerprint.ts never checks lastErrorCode; applyConnectionResult never clears pendingFingerprint; edit-server clears hostFingerprint only while CONNECTED). QA-04/QA-05 stay Pending (no git remote). 7 human items pending in 05-HUMAN-UAT.md. Phase 05 is NOT complete. Next: /gsd-plan-phase 5 --gaps"
-last_updated: "2026-09-20T21:46:08Z"
-last_activity: 2026-09-20
+stopped_at: "Phase 05 (ui-web) gap closure ROUND 2 PLANNED: 9 plans 05-38…05-46 in 4 waves from the re-verified 05-VERIFICATION.md (1 BLOCKER: gap 6, host-key trust not enforced in the backend, GR-01/GR-02; plus residuals GR-03, GR-05, F1 NOODARA_API_ORIGIN, WR-A-04 guard, VALIDATION_FAILED contract seam, two AA contrast residuals). Plan checker: 1 blocker (05-46 listed 5 of 7 human items) + 1 warning (05-41 wave) fixed by the orchestrator; 10/10 requirements, 17/17 decisions covered; no schema change. Non-autonomous: 05-45 (user picks colours), 05-46 (gate + human checkpoint). QA-04/QA-05 stay Pending (no git remote). Phase 05 is NOT complete. Next: /gsd-execute-phase 5 --gaps-only"
+last_updated: "2026-09-21T00:18:19.693Z"
+last_activity: 2026-09-20 -- Phase 05 gap closure round 2 planned
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 85
+  total_plans: 94
   completed_plans: 85
-  percent: 100
+  percent: 90
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 ## Current Position
 
-Phase: 05 (ui-web) — gap-closure plans complete (37/37 have a SUMMARY); phase itself NOT yet complete
-Plan: 37 of 37 plans have a SUMMARY. 05-37 (the closing gate) executed: all eleven gate commands green on the final tree (unit 1491/1491, integration 505/0/1-skipped, E2E 92/92, boot 7/7, provenance 52/52, leak canaries green); each of the eight 05-VERIFICATION.md gaps re-derived first-hand (4 CLOSED: gaps 1/2/6/7; 1 OPEN by design: gap 3/QA-04/QA-05; 2 PARTIAL: gaps 4/5). At the Task 3 checkpoint the user answered "Approve y haz un gsd quick del sshUser bug" -- the wave is approved to close, but the user did NOT state which of the six human-only verification items (real-display contrast, real CI run, live SSE walkthrough, Sheet/Dialog/RowMenu elevation, screen-reader pass, sub-1280px/reduced-motion feel) they actually checked, so all six are recorded as pendiente -- no confirmado por el usuario in .planning/phases/05-ui-web/05-GAP-CLOSURE-AUDIT.md section 3, not silently marked passed. A new bug (ServerSheet.tsx's SSH user Field has no error prop, silently swallowing a server-side sshUser validation error) was found live during re-derivation and, per the user's instruction, is being fixed via a separate /gsd-quick task run by the orchestrator right after this plan -- not inside this plan.
-Status: Gap closure executed and re-verified = gaps_found (1 blocker: host-key trust not enforced in the backend, GR-01/GR-02). Phase NOT complete. Final-tree evidence: unit 1497/1497, E2E 93/93, integration 505 passed / 0 failed / 1 skipped (at 3546a6d, no backend change since), boot 7/7, leak canaries green. QA-04/QA-05 Pending until a real CI + nightly run is observed. Next: /gsd-plan-phase 5 --gaps.
-Last activity: 2026-09-20 -- Phase 05 re-verified (gaps_found) after gap closure + quick task 260920-ly9
+Phase: 05 (ui-web) — gap closure round 1 executed (37/37 SUMMARY), round 2 planned (05-38…05-46); phase NOT complete
+Plan: 37 of 46 plans have a SUMMARY; next to execute is 05-38 (round 2, wave 1). History of round 1's closing gate: 05-37 (the closing gate) executed: all eleven gate commands green on the final tree (unit 1491/1491, integration 505/0/1-skipped, E2E 92/92, boot 7/7, provenance 52/52, leak canaries green); each of the eight 05-VERIFICATION.md gaps re-derived first-hand (4 CLOSED: gaps 1/2/6/7; 1 OPEN by design: gap 3/QA-04/QA-05; 2 PARTIAL: gaps 4/5). At the Task 3 checkpoint the user answered "Approve y haz un gsd quick del sshUser bug" -- the wave is approved to close, but the user did NOT state which of the six human-only verification items (real-display contrast, real CI run, live SSE walkthrough, Sheet/Dialog/RowMenu elevation, screen-reader pass, sub-1280px/reduced-motion feel) they actually checked, so all six are recorded as pendiente -- no confirmado por el usuario in .planning/phases/05-ui-web/05-GAP-CLOSURE-AUDIT.md section 3, not silently marked passed. A new bug (ServerSheet.tsx's SSH user Field has no error prop, silently swallowing a server-side sshUser validation error) was found live during re-derivation and, per the user's instruction, is being fixed via a separate /gsd-quick task run by the orchestrator right after this plan -- not inside this plan.
+Status: Gap closure round 2 planned (05-38…05-46, 9 plans, 4 waves) — ready to execute. Open blocker being closed: gap 6, host-key trust not enforced in the backend (GR-01/GR-02). 37 of 46 plans have a SUMMARY. QA-04/QA-05 Pending until a real CI + nightly run is observed. Next: /gsd-execute-phase 5 --gaps-only.
+Last activity: 2026-09-20 -- Phase 05 gap closure round 2 planned (05-38…05-46)
 
-Progress: [██████████] 100% of planned plans executed (phase 05 not yet verified complete)
+Progress: [█████████░] 90% of planned plans executed (85/94; phase 05 round 2 pending)
 
 ## Performance Metrics
 
