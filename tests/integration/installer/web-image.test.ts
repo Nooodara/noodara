@@ -103,7 +103,9 @@ function apiEnv(overrides: Record<string, string> = {}): Record<string, string> 
 /** Best-effort local image cleanup (hard_rules #8) -- never fails the suite if the image was
  *  never built (e.g. an earlier `beforeAll`/`it` failure). */
 function removeImage(tag: string): void {
-  spawnSync('docker', ['rmi', '-f', tag], { stdio: 'ignore' });
+  // Post-execution fix (orchestrator audit WR-07): explicit timeout, matching this project's own
+  // "every exec/build/load has an explicit timeout" convention.
+  spawnSync('docker', ['rmi', '-f', tag], { stdio: 'ignore', timeout: 30_000 });
 }
 
 /** Finds one real static-asset file inside the running web container's own `.next/static`

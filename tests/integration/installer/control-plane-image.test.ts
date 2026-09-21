@@ -156,7 +156,9 @@ async function startLongRunning(
 /** Best-effort local image cleanup (hard_rules #8) -- never fails the suite if the image was
  *  never built (e.g. an earlier `beforeAll`/`it` failure). */
 function removeImage(tag: string): void {
-  spawnSync('docker', ['rmi', '-f', tag], { stdio: 'ignore' });
+  // Post-execution fix (orchestrator audit WR-07): explicit timeout, matching this project's own
+  // "every exec/build/load has an explicit timeout" convention.
+  spawnSync('docker', ['rmi', '-f', tag], { stdio: 'ignore', timeout: 30_000 });
 }
 
 describe('control-plane production image (06-03-PLAN.md)', () => {
@@ -230,7 +232,12 @@ describe('control-plane production image (06-03-PLAN.md)', () => {
 
         const host = handle.container.getHost();
         const port = handle.container.getMappedPort(3000);
-        const response = await fetch(`http://${host}:${String(port)}/health`);
+        // Post-execution fix (orchestrator audit WR-07): explicit AbortSignal timeout, matching
+        // web-image.test.ts's own /api/config and / fetch() precedent -- a hung container-side
+        // HTTP server at exactly this point must fail after a bounded time, never hang forever.
+        const response = await fetch(`http://${host}:${String(port)}/health`, {
+          signal: AbortSignal.timeout(10_000),
+        });
         expect(response.status).toBe(200);
         const body = (await response.json()) as { status: string; checks: { postgres: string } };
         expect(body.checks.postgres).toBe('pass');
@@ -304,7 +311,12 @@ describe('control-plane production image (06-03-PLAN.md)', () => {
 
         const host = handle.container.getHost();
         const port = handle.container.getMappedPort(3000);
-        const response = await fetch(`http://${host}:${String(port)}/health`);
+        // Post-execution fix (orchestrator audit WR-07): explicit AbortSignal timeout, matching
+        // web-image.test.ts's own /api/config and / fetch() precedent -- a hung container-side
+        // HTTP server at exactly this point must fail after a bounded time, never hang forever.
+        const response = await fetch(`http://${host}:${String(port)}/health`, {
+          signal: AbortSignal.timeout(10_000),
+        });
         const body = (await response.json()) as { version: string };
         expect(body.version).toBe(VERSIONED_TAG_VALUE);
       } finally {

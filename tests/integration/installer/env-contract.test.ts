@@ -65,12 +65,15 @@ function generateSecrets(): GeneratedSecrets {
  *  writes one `NOODARA_CONFIG_ERROR <VAR>: ...` line per issue to stderr and calls
  *  `process.exit(1)` (rejected). */
 function loadCompiledEnv(vars: Record<string, string>): { status: number | null; stderr: string } {
+  // Post-execution fix (orchestrator audit WR-07): explicit timeout -- a hung child process
+  // importing env.js must fail after a bounded time, never block this suite forever.
   const result = spawnSync(
     process.execPath,
     ['--input-type=module', '-e', `await import(${JSON.stringify(ENV_JS_URL)});`],
     {
       encoding: 'utf8',
       env: { PATH: process.env.PATH ?? '', ...vars },
+      timeout: 30_000,
     },
   );
   return { status: result.status, stderr: result.stderr };
