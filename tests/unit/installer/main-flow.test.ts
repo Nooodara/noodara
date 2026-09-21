@@ -907,24 +907,170 @@ describe.each(posixInterpreters())('install.sh noodara_compose_up (%s)', (interp
     expect(result.status).toBe(0);
   });
 
-  // Post-execution fix (06-12-PLAN.md, real DinD discovery): a real `docker compose up -d` can
-  // fail on its OWN dependency-wait ("dependency failed to start: container ... is unhealthy")
-  // before this function's caller ever gets a chance to run noodara_wait_for_health -- Compose
-  // itself refuses to finish `up -d` when a service another service `depends_on: condition:
-  // service_healthy` never becomes healthy. This used to fall through to a generic
-  // compose-up-failed (51) with NO service name and NO log tail, violating D-12's own requirement
-  // for exactly this shape of failure. Fixed: a non-migrate `up -d` failure no longer fails
-  // outright here -- it defers to noodara_wait_for_health (called next by noodara_main), which
-  // judges the ALREADY-CREATED containers on their own real health and produces the full,
-  // already-tested D-12 diagnostic (service name, redacted log tail, rollback hint) regardless of
-  // which code path first noticed the underlying problem.
-  it('returns 0 (deferring diagnosis to noodara_wait_for_health) when up fails for a non-migrate reason', () => {
+  // Post-execution fix (06-12-PLAN.md, orchestrator audit Finding F): the 06-12-PLAN.md-own
+  // real-DinD-discovered fix above (defer a non-migrate `up -d` failure to noodara_wait_for_health)
+  // was ITSELF a regression for every `up -d` failure that is NOT a health problem: an unresolvable
+  // image reference, an invalid compose file, a port already allocated, a daemon-side error --
+  // none of these ever create a running api/web container, so deferring to noodara_wait_for_health
+  // used to poll for the FULL health budget (up to 5 minutes by default) before finally reporting
+  // "did not become healthy in time" with no log tail (nothing to show) and Compose's own real
+  // error message long scrolled off the top of the terminal -- exit 51 (compose-up-failed) had
+  // become UNREACHABLE. Fixed: a single, immediate read of api/web's own container STATE (never
+  // Health -- State answers "does a running container exist to even health-check") classifies the
+  // failure BEFORE ever touching noodara_wait_for_health: not-running -> fail now (51), naming
+  // Compose's own error and a redacted `docker compose ps -a` state table, zero polling at all;
+  // running -> defer to noodara_wait_for_health exactly as the prior fix already proved correct.
+  it('fails with exit 51 immediately, with ZERO health-check polling, when up fails and a service has no container row at all', () => {
+    const installDir = mkdtempSync(join(tmpdir(), 'noodara-up-install-'));
+    const callLog = join(installDir, 'calls.log');
+    const snippet = [
+      'docker() {',
+      '  printf "%s\\n" "docker $*" >> "$NOODARA_TEST_CALL_LOG"',
+      '  case "$*" in',
+      '    "compose up -d") return 1 ;;',
+      // migrate succeeded; NO row at all for api/web -- noodara_service_state must read this as
+      // "not running", never as "healthy enough to poll".
+      '    "compose ps -a --format json") printf "{\\"Service\\":\\"migrate\\",\\"ExitCode\\":0}\\n"; return 0 ;;',
+      '    "compose ps -a") printf "NAME STATE\\nnoodara-migrate-1 Exited\\n"; return 0 ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_compose_up',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, {
+      env: { NOODARA_INSTALL_DIR: installDir, NOODARA_TEST_CALL_LOG: callLog },
+    });
+
+    expect(result.status).toBe(51);
+    const calls = readFileSync(callLog, 'utf8');
+    // The health-check-specific `compose ps --format json` (no `-a`) must never be invoked on this
+    // branch -- proves no health polling happened at all, not merely that it happened quickly.
+    expect(calls.split('\n').filter((line) => line === 'docker compose ps --format json')).toHaveLength(0);
+  });
+
+  it('fails with exit 51 immediately when a service exists but is not running (state "created")', () => {
     const installDir = mkdtempSync(join(tmpdir(), 'noodara-up-install-'));
     const snippet = [
       'docker() {',
       '  case "$*" in',
       '    "compose up -d") return 1 ;;',
+      '    "compose ps -a --format json") printf "{\\"Service\\":\\"migrate\\",\\"ExitCode\\":0}\\n{\\"Service\\":\\"api\\",\\"State\\":\\"created\\"}\\n{\\"Service\\":\\"web\\",\\"State\\":\\"created\\"}\\n"; return 0 ;;',
+      '    "compose ps -a") printf "NAME STATE\\nnoodara-api-1 Created\\nnoodara-web-1 Created\\n"; return 0 ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_compose_up',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, { env: { NOODARA_INSTALL_DIR: installDir } });
+
+    expect(result.status).toBe(51);
+  });
+
+  it('the exit-51 message points at Compose\'s own error, shows the redacted service-state table, states "Data and secrets are untouched", and omits the rollback hint when the version has not changed', () => {
+    const installDir = mkdtempSync(join(tmpdir(), 'noodara-up-install-'));
+    writeFileSync(join(installDir, '.env'), 'NOODARA_VERSION=1.0.0\nNOODARA_PREVIOUS_VERSION=1.0.0\n', 'utf8');
+    const snippet = [
+      'docker() {',
+      '  case "$*" in',
+      '    "compose up -d") printf "manifest for noodara-web:9.9.9 not found\\n" >&2; return 1 ;;',
       '    "compose ps -a --format json") printf "{\\"Service\\":\\"migrate\\",\\"ExitCode\\":0}\\n"; return 0 ;;',
+      '    "compose ps -a") printf "NAME STATE\\nnoodara-migrate-1 Exited\\n"; return 0 ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_compose_up',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, { env: { NOODARA_INSTALL_DIR: installDir } });
+
+    expect(result.status).toBe(51);
+    expect(result.stderr).toContain('NAME STATE');
+    expect(result.stderr).toContain('noodara-migrate-1 Exited');
+    expect(result.stderr).toContain('Data and secrets are untouched');
+    expect(result.stderr).not.toMatch(/NOODARA_VERSION=1\.0\.0\.?$/m);
+    expect(result.stderr).not.toContain('re-run this installer with NOODARA_VERSION');
+  });
+
+  it('includes the rollback hint on the exit-51 path when this run genuinely changed the version', () => {
+    const installDir = mkdtempSync(join(tmpdir(), 'noodara-up-install-'));
+    writeFileSync(join(installDir, '.env'), 'NOODARA_VERSION=2.0.0\nNOODARA_PREVIOUS_VERSION=1.0.0\n', 'utf8');
+    const snippet = [
+      'docker() {',
+      '  case "$*" in',
+      '    "compose up -d") return 1 ;;',
+      '    "compose ps -a --format json") printf "{\\"Service\\":\\"migrate\\",\\"ExitCode\\":0}\\n"; return 0 ;;',
+      '    "compose ps -a") printf "NAME STATE\\nnoodara-migrate-1 Exited\\n"; return 0 ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_compose_up',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, { env: { NOODARA_INSTALL_DIR: installDir } });
+
+    expect(result.status).toBe(51);
+    expect(result.stderr).toContain('re-run this installer with NOODARA_VERSION=1.0.0');
+  });
+
+  // The repair path leaves an OLD NOODARA_PREVIOUS_VERSION sitting in .env from a real, earlier
+  // upgrade -- comparing NOODARA_PREVIOUS_VERSION against NOODARA_VERSION alone would wrongly
+  // treat that as "this run changed the version" (06-09 Finding E's own precedent for the same
+  // trap). The explicit "repair" context (mirroring noodara_wait_for_health's own) is what
+  // actually decides this, not the value comparison alone.
+  it('omits the rollback hint on the exit-51 path during a repair, even though .env still carries an old NOODARA_PREVIOUS_VERSION from a real prior upgrade', () => {
+    const installDir = mkdtempSync(join(tmpdir(), 'noodara-up-install-'));
+    writeFileSync(join(installDir, '.env'), 'NOODARA_VERSION=2.0.0\nNOODARA_PREVIOUS_VERSION=1.0.0\n', 'utf8');
+    const snippet = [
+      'docker() {',
+      '  case "$*" in',
+      '    "compose up -d") return 1 ;;',
+      '    "compose ps -a --format json") printf "{\\"Service\\":\\"migrate\\",\\"ExitCode\\":0}\\n"; return 0 ;;',
+      '    "compose ps -a") printf "NAME STATE\\nnoodara-migrate-1 Exited\\n"; return 0 ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_compose_up repair',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, { env: { NOODARA_INSTALL_DIR: installDir } });
+
+    expect(result.status).toBe(51);
+    expect(result.stderr).not.toContain('re-run this installer with NOODARA_VERSION');
+  });
+
+  it('redacts a setup-token line and a connection-string userinfo from the exit-51 diagnostic (T-06-02 canary)', () => {
+    const installDir = mkdtempSync(join(tmpdir(), 'noodara-up-install-'));
+    const secretToken = 'noodara-canary-token-9f3c1a7b2e';
+    const snippet = [
+      'docker() {',
+      '  case "$*" in',
+      '    "compose up -d") return 1 ;;',
+      '    "compose ps -a --format json") printf "{\\"Service\\":\\"migrate\\",\\"ExitCode\\":0}\\n"; return 0 ;;',
+      `    "compose ps -a") printf 'NAME STATE\\nNOODARA_SETUP_TOKEN=${secretToken}\\npostgresql://noodara:s3cr3t@postgres:5432/noodara\\n'; return 0 ;;`,
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_compose_up',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, { env: { NOODARA_INSTALL_DIR: installDir } });
+
+    expect(result.status).toBe(51);
+    expect(result.stderr).not.toContain(secretToken);
+    expect(result.stderr).not.toContain('s3cr3t');
+    expect(result.stderr).toContain('NOODARA_SETUP_TOKEN=[REDACTED]');
+    expect(result.stderr).toContain('postgresql://[REDACTED]@postgres:5432/noodara');
+  });
+
+  it('returns 0 (deferring to noodara_wait_for_health) when up fails but api/web are both genuinely running', () => {
+    const installDir = mkdtempSync(join(tmpdir(), 'noodara-up-install-'));
+    const snippet = [
+      'docker() {',
+      '  case "$*" in',
+      '    "compose up -d") return 1 ;;',
+      '    "compose ps -a --format json") printf "{\\"Service\\":\\"migrate\\",\\"ExitCode\\":0}\\n{\\"Service\\":\\"api\\",\\"State\\":\\"running\\"}\\n{\\"Service\\":\\"web\\",\\"State\\":\\"running\\"}\\n"; return 0 ;;',
       '  esac',
       '  return 0',
       '}',
@@ -934,18 +1080,21 @@ describe.each(posixInterpreters())('install.sh noodara_compose_up (%s)', (interp
     const result = runInstallerShell(interpreter, snippet, { env: { NOODARA_INSTALL_DIR: installDir } });
 
     expect(result.status).toBe(0);
+    expect(result.stdout.toLowerCase()).toContain('checking service health directly');
   });
 
-  it('the combined noodara_compose_up + noodara_wait_for_health pipeline still exits 53, naming the real unhealthy service and the rollback remedy, when `up -d` itself failed on a dependency wait', () => {
+  it('the combined noodara_compose_up + noodara_wait_for_health pipeline still exits 53, naming the real unhealthy service and the rollback remedy, after a SINGLE health read, when `up -d` itself failed on a dependency wait but api/web are genuinely running', () => {
     const installDir = mkdtempSync(join(tmpdir(), 'noodara-up-install-'));
+    const callLog = join(installDir, 'calls.log');
     const snippet = [
       'docker() {',
+      '  printf "%s\\n" "docker $*" >> "$NOODARA_TEST_CALL_LOG"',
       '  case "$*" in',
       '    "compose up -d") return 1 ;;',
-      // migrate genuinely succeeded -- api is the real, unhealthy cause `docker compose up -d`
-      // itself refused to finish waiting for (mirrors the real DinD-observed shape: web depends_on
-      // api: condition: service_healthy).
-      '    "compose ps -a --format json") printf "{\\"Service\\":\\"migrate\\",\\"ExitCode\\":0}\\n"; return 0 ;;',
+      // migrate genuinely succeeded, api/web are genuinely running (Compose already created and
+      // started them before its own dependency-wait gave up) -- api is the real, unhealthy cause
+      // (mirrors the real DinD-observed shape: web depends_on api: condition: service_healthy).
+      '    "compose ps -a --format json") printf "{\\"Service\\":\\"migrate\\",\\"ExitCode\\":0}\\n{\\"Service\\":\\"api\\",\\"State\\":\\"running\\"}\\n{\\"Service\\":\\"web\\",\\"State\\":\\"running\\"}\\n"; return 0 ;;',
       '    "compose ps --format json") printf "{\\"Service\\":\\"api\\",\\"Health\\":\\"unhealthy\\"}\\n{\\"Service\\":\\"web\\",\\"Health\\":\\"\\"}\\n"; return 0 ;;',
       '    "compose logs --tail 50 api") printf "API CONTAINER LOG TAIL\\n"; return 0 ;;',
       '  esac',
@@ -958,7 +1107,10 @@ describe.each(posixInterpreters())('install.sh noodara_compose_up (%s)', (interp
     const result = runInstallerShell(interpreter, snippet, {
       env: {
         NOODARA_INSTALL_DIR: installDir,
-        NOODARA_HEALTH_WAIT_ATTEMPTS: '2',
+        NOODARA_TEST_CALL_LOG: callLog,
+        // Deliberately generous -- proves the short-circuit fires well before the budget, not
+        // merely that a SMALL budget happens to line up with it.
+        NOODARA_HEALTH_WAIT_ATTEMPTS: '10',
         NOODARA_HEALTH_WAIT_INTERVAL: '0',
         NOODARA_PREVIOUS_VERSION: '0.9.0',
       },
@@ -968,6 +1120,41 @@ describe.each(posixInterpreters())('install.sh noodara_compose_up (%s)', (interp
     expect(result.stderr).toContain('api');
     expect(result.stderr).toContain('API CONTAINER LOG TAIL');
     expect(result.stderr).toContain('NOODARA_VERSION=0.9.0');
+    const calls = readFileSync(callLog, 'utf8');
+    expect(calls.split('\n').filter((line) => line === 'docker compose ps --format json')).toHaveLength(1);
+  });
+
+  it('up -d fails but api recovers from "starting" to "healthy" (Compose\'s own dependency-wait can time out while the app is merely slow) -- overall success', () => {
+    const installDir = mkdtempSync(join(tmpdir(), 'noodara-up-install-'));
+    const pollCountFile = join(installDir, 'poll-count');
+    writeFileSync(pollCountFile, '', 'utf8');
+    const snippet = [
+      'docker() {',
+      '  case "$*" in',
+      '    "compose up -d") return 1 ;;',
+      '    "compose ps -a --format json") printf "{\\"Service\\":\\"migrate\\",\\"ExitCode\\":0}\\n{\\"Service\\":\\"api\\",\\"State\\":\\"running\\"}\\n{\\"Service\\":\\"web\\",\\"State\\":\\"running\\"}\\n"; return 0 ;;',
+      '    "compose ps --format json")',
+      `      printf '.\\n' >> "${pollCountFile}"`,
+      `      _n=$(wc -l < "${pollCountFile}" | tr -d ' ')`,
+      '      if [ "$_n" -ge 2 ]; then',
+      '        printf "{\\"Service\\":\\"api\\",\\"Health\\":\\"healthy\\"}\\n{\\"Service\\":\\"web\\",\\"Health\\":\\"healthy\\"}\\n"',
+      '      else',
+      '        printf "{\\"Service\\":\\"api\\",\\"Health\\":\\"starting\\"}\\n{\\"Service\\":\\"web\\",\\"Health\\":\\"healthy\\"}\\n"',
+      '      fi',
+      '      return 0 ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_compose_up',
+      'noodara_wait_for_health',
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, {
+      env: { NOODARA_INSTALL_DIR: installDir, NOODARA_HEALTH_WAIT_ATTEMPTS: '5', NOODARA_HEALTH_WAIT_INTERVAL: '0' },
+    });
+
+    expect(result.status).toBe(0);
+    expect(readFileSync(pollCountFile, 'utf8').trim().split('\n').length).toBeGreaterThanOrEqual(2);
   });
 
   it('fails with exit 52 (migrations-failed) and shows the migrate log tail when migrate is the real cause', () => {
@@ -1063,6 +1250,46 @@ describe.each(posixInterpreters())('install.sh noodara_wait_for_health (%s)', (i
 
     expect(result.status).toBe(0);
     expect(readFileSync(pollCountFile, 'utf8').trim().split('\n').length).toBeGreaterThanOrEqual(2);
+  });
+
+  // Post-execution fix (06-12-PLAN.md, orchestrator audit Finding F): "unhealthy" is Docker's own
+  // DEFINITIVE outcome (the container's healthcheck already exhausted its own retries) -- once a
+  // service reports it, continuing to poll for the rest of the budget only delays reporting a
+  // failure that has already, genuinely happened. `up -d` itself succeeded in this scenario (the
+  // stack simply degrades to unhealthy WHILE the installer is already polling it).
+  it('short-circuits and exits 53 on the very first read that reports a service "unhealthy", without exhausting the attempts budget', () => {
+    const installDir = mkdtempSync(join(tmpdir(), 'noodara-health-install-'));
+    const pollCountFile = join(installDir, 'poll-count');
+    writeFileSync(pollCountFile, '', 'utf8');
+    const snippet = [
+      'docker() {',
+      '  case "$*" in',
+      '    "compose ps --format json")',
+      `      printf '.\\n' >> "${pollCountFile}"`,
+      `      _n=$(wc -l < "${pollCountFile}" | tr -d ' ')`,
+      '      if [ "$_n" -ge 2 ]; then',
+      '        printf "{\\"Service\\":\\"api\\",\\"Health\\":\\"unhealthy\\"}\\n{\\"Service\\":\\"web\\",\\"Health\\":\\"healthy\\"}\\n"',
+      '      else',
+      '        printf "{\\"Service\\":\\"api\\",\\"Health\\":\\"starting\\"}\\n{\\"Service\\":\\"web\\",\\"Health\\":\\"healthy\\"}\\n"',
+      '      fi',
+      '      return 0 ;;',
+      '    "compose logs --tail 50 api") printf "API FLIPPED UNHEALTHY LOG TAIL\\n"; return 0 ;;',
+      '  esac',
+      '  return 0',
+      '}',
+      'noodara_wait_for_health',
+    ].join('\n');
+
+    // Deliberately generous (10 attempts) -- proves the short-circuit fires on the second read
+    // (as soon as "unhealthy" appears), not merely that a small budget happens to line up with it.
+    const result = runInstallerShell(interpreter, snippet, {
+      env: { NOODARA_INSTALL_DIR: installDir, NOODARA_HEALTH_WAIT_ATTEMPTS: '10', NOODARA_HEALTH_WAIT_INTERVAL: '0' },
+    });
+
+    expect(result.status).toBe(53);
+    expect(result.stderr).toContain('api');
+    expect(result.stderr).toContain('API FLIPPED UNHEALTHY LOG TAIL');
+    expect(readFileSync(pollCountFile, 'utf8').trim().split('\n')).toHaveLength(2);
   });
 
   it('fails with exit 53 on timeout, naming the unhealthy service and the NOODARA_VERSION=<previous> remedy', () => {
