@@ -136,3 +136,36 @@ jobs:
             exit 1
           fi
           echo "no stray noodara.test=true containers"
+
+  # Plan 06-13: the same `pnpm test:installer` suite ci.yml's own `installer` job runs on
+  # push-to-main, here run unconditionally every night regardless of whether main changed --
+  # nightly has no pull-request latency budget to protect (unlike ci.yml), so this is where a
+  # regression that only reproduces against a genuinely fresh Docker-in-Docker environment (not
+  # merely "the last push to main happened to also touch install.sh") surfaces within a day.
+  installer:
+    name: installer
+    runs-on: ubuntu-latest
+    # Same sizing source as ci.yml's own installer job: 06-12-SUMMARY.md measured ~31.5min
+    # (1888.95s, 51/51 tests) locally; 60min keeps real headroom for a slower/shared runner.
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:installer
+      - name: Fail if any noodara.test container survived
+        if: always()
+        run: |
+          stray=$(docker ps -aq --filter "label=noodara.test=true")
+          if [ -n "$stray" ]; then
+            echo "::error::stray containers labelled noodara.test=true survived the installer run"
+            docker ps -a --filter "label=noodara.test=true"
+            exit 1
+          fi
+          echo "no stray noodara.test=true containers"

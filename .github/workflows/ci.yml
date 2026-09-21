@@ -70,6 +70,11 @@ jobs:
       # credentials, and the test-only component harness reachable only from *.test.tsx/*.test.ts
       # -- part of the merge gate, not a one-off local habit.
       - run: pnpm check:ui-safety
+      # Plan 06-13 (Pitfall 1): install.sh is published as `curl -fsSL ... | sh`, which on Ubuntu
+      # always runs under dash regardless of any shebang -- a bashism written and eyeballed on
+      # this repo's own macOS dev machines can look correct and still break a real user's VPS.
+      # Cheap, static, no build/Docker/network cost -- belongs on every PR, not just nightly.
+      - run: pnpm check:posix-sh
 
   typecheck:
     name: typecheck
@@ -393,6 +398,50 @@ jobs:
           stray=$(docker ps -aq --filter "label=noodara.test=true")
           if [ -n "$stray" ]; then
             echo "::error::stray containers labelled noodara.test=true survived the e2e run"
+            docker ps -a --filter "label=noodara.test=true"
+            exit 1
+          fi
+          echo "no stray noodara.test=true containers"
+
+  # Plan 06-13: `pnpm test:installer` builds BOTH real production images (apps/control-plane,
+  # apps/web) and runs privileged Docker-in-Docker against two Ubuntu fixture versions to exercise
+  # the real `install.sh` end to end. 06-12-SUMMARY.md measured this suite's full local wall-clock
+  # duration at ~1888.95s (~31.5min) on a 14-core development machine, 51/51 tests green -- adding
+  # that on top of `integration`'s own already-45-minute budget on every pull request would push
+  # this workflow's merge gate well past an hour for no benefit most PRs need. Gated to push-on-main
+  # only (never `pull_request`) so a slower/shared CI runner's real cost is paid once per merge, not
+  # once per review iteration; nightly.yml runs the identical command unconditionally so a
+  # regression still surfaces within a day.
+  installer:
+    name: installer
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # Sized from 06-12-SUMMARY.md's measured local figure (~31.5min, 51/51 tests) with real
+    # headroom for a slower/shared GitHub-hosted runner -- never a guess, never the six-hour
+    # default.
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # ubuntu-latest ships a working, privileged-capable Docker daemon -- this suite's own
+      # Docker-in-Docker fixtures (tests/integration/helpers/installer-dind.ts) build the real
+      # production Dockerfiles and run install.sh inside a nested, privileged Ubuntu container,
+      # exactly like the `integration` job's sshd fixtures already run real Testcontainers-built
+      # images -- no static `services:` block is declared here either, for the same reason.
+      - run: pnpm test:installer
+      - name: Fail if any noodara.test container survived
+        if: always()
+        run: |
+          stray=$(docker ps -aq --filter "label=noodara.test=true")
+          if [ -n "$stray" ]; then
+            echo "::error::stray containers labelled noodara.test=true survived the installer run"
             docker ps -a --filter "label=noodara.test=true"
             exit 1
           fi
