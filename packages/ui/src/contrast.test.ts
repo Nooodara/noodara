@@ -235,6 +235,59 @@ describe('auditTheme', () => {
     expect(fillPair?.backgroundEffective).toBe('#0071e3');
     expect(accentPair?.backgroundEffective).toBe('#2997ff');
   });
+
+  // D4 (05-45, 2026-09-20): `--accent-text` is link text ONLY -- unlike `--accent`, which doubles
+  // as outline/border foreground (the dual-verdict case above), this token has no second role.
+  it('audits --accent-text as a text-only pair on every surface, with no outline/border verdict', () => {
+    const tokens = {
+      'accent-text': '#0066cc',
+      canvas: '#f5f5f7',
+      'surface-1': '#ffffff',
+      'surface-2': '#fafafc',
+      'surface-3': '#f0f0f2',
+    };
+
+    const results = auditTheme(tokens, 'light');
+    const textPairs = results.filter((r) => r.label.startsWith('--accent-text as link text on'));
+
+    expect(textPairs).toHaveLength(4);
+    for (const pair of textPairs) {
+      expect(pair.threshold).toBe(4.5);
+    }
+    expect(results.some((r) => r.label.includes('accent-text') && r.label.includes('outline'))).toBe(false);
+  });
+
+  // D5 (05-45, 2026-09-20): any `status-<tone>-fill` token is audited the same way `accent-fill`
+  // already is -- `--on-accent` on top of it, derived from parsed names, not hardcoded to `error`.
+  it('derives an --on-accent on --status-<tone>-fill pair from a made-up fill token name', () => {
+    const tokens = { 'on-accent': '#ffffff', 'status-newthing-fill': '#d70015' };
+
+    const results = auditTheme(tokens, 'light');
+    const pair = results.find((r) => r.label === '--on-accent on --status-newthing-fill');
+
+    expect(pair).toBeDefined();
+    expect(pair?.threshold).toBe(4.5);
+    expect(pair?.backgroundEffective).toBe('#d70015');
+  });
+
+  it('never treats a -fill token as a base --status-* foreground (STATUS_TOKEN_RE exclusion)', () => {
+    const tokens = {
+      'on-accent': '#ffffff',
+      'surface-1': '#ffffff',
+      'status-newthing-fill': '#d70015',
+      // A fictitious -soft sibling for the fill token itself -- if STATUS_TOKEN_RE mistakenly
+      // matched `status-newthing-fill` as a base status token, this would produce a spurious
+      // "--status-newthing-fill on --status-newthing-fill-soft over --surface-1" pair.
+      'status-newthing-fill-soft': 'rgba(215, 0, 21, 0.14)',
+    };
+
+    const results = auditTheme(tokens, 'light');
+
+    expect(results.some((r) => r.label.startsWith('--status-newthing-fill on --status-newthing-fill-soft'))).toBe(
+      false,
+    );
+    expect(results.some((r) => r.label === '--on-accent on --status-newthing-fill')).toBe(true);
+  });
 });
 
 // `auditTheme` derives pairs purely from token NAMES, not from which component actually renders
@@ -346,6 +399,40 @@ describe('the real tokens.css gate', () => {
       }
       const ratio = roundDown(contrastRatio(errorText, surface3));
       expect(ratio, `${theme}: --status-error-text on --surface-3 = ${String(ratio)}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  // D4 (05-45, 2026-09-20): the four --accent-text link-text pairs must exist and pass in both
+  // themes -- this is what closes the two real, deferred failures named in
+  // KNOWN_UNRENDERED_OR_DEFERRED_FAILURES above (those stay listed because --accent's OWN value
+  // is unchanged; the fix moved the real call sites to this new token instead).
+  it('the four --accent-text link-text pairs exist and pass in both themes', () => {
+    const results = auditTokens(readRealTokens());
+    const surfaces = ['canvas', 'surface-1', 'surface-2', 'surface-3'];
+    for (const theme of ['light', 'dark'] as const) {
+      for (const surface of surfaces) {
+        const label = `--accent-text as link text on --${surface}`;
+        const pair = results.find((r) => r.theme === theme && r.label === label);
+        expect(pair, `${theme}: missing pair ${label}`).toBeDefined();
+        expect(pair?.pass, `${theme}: ${label} = ${String(pair?.ratio)}`).toBe(true);
+      }
+    }
+  });
+
+  // D5 (05-45, 2026-09-20): the destructive-filled confirm button (Dialog.tsx's `filled` variant,
+  // Button.tsx's `DESTRUCTIVE_FILLED_CLASSES`) -- `--on-accent` directly on the new fill token,
+  // asserted by name so the intent survives a future edit, in the style of the Field.tsx/
+  // RowMenu.tsx named assertions below.
+  it('destructive-filled confirm button: --on-accent directly on --status-error-fill (both themes)', () => {
+    const { light, dark } = readRealTokens();
+    for (const [theme, tokens] of [['light', light] as const, ['dark', dark] as const]) {
+      const onAccent = tokens['on-accent'];
+      const fill = tokens['status-error-fill'];
+      if (onAccent === undefined || fill === undefined) {
+        throw new Error(`${theme}: tokens.css is missing --on-accent/--status-error-fill`);
+      }
+      const ratio = roundDown(contrastRatio(onAccent, fill));
+      expect(ratio, `${theme}: --on-accent on --status-error-fill = ${String(ratio)}`).toBeGreaterThanOrEqual(4.5);
     }
   });
 
