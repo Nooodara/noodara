@@ -426,7 +426,7 @@ test('@hostkey a live server.updated event mid-review swaps the pending fingerpr
   await expect(page.getByTestId('host-key-changed-banner')).toContainText(`Trusted: ${TRUSTED_FINGERPRINT}`);
 });
 
-test('@hostkey UF-01 regression: editing the host while ERROR/HOST_KEY_CHANGED clears the pending fingerprint, so the trust affordance disappears and the trusted fingerprint stays unchanged', async ({
+test('@hostkey UF-01/GR-02 regression: editing the host while ERROR/HOST_KEY_CHANGED clears the pending fingerprint AND the old host\'s trusted fingerprint, so the trust affordance disappears and nothing stale is left to promote', async ({
   page,
 }) => {
   test.setTimeout(180_000);
@@ -499,9 +499,13 @@ test('@hostkey UF-01 regression: editing the host while ERROR/HOST_KEY_CHANGED c
       hostFingerprint: string | null;
       pendingFingerprint: string | null;
     };
-    // The trusted fingerprint is untouched -- only the *pending* one was ever at risk of being
-    // promoted against the wrong identity, and it is now gone rather than silently promotable.
-    expect(afterEditBody.hostFingerprint).toBe(originalFingerprint);
+    // The pending fingerprint is gone rather than silently promotable (UF-01), and -- since
+    // 05-40's GR-02 fix -- so is the trusted one: it was captured from the OLD host, and the row
+    // now points at a different host identity, so keeping it would make the next connect a
+    // spurious HOST_KEY_CHANGED instead of a clean TOFU first capture. This test used to pin
+    // `hostFingerprint` as unchanged; edit-server.ts's `hostIdentityChanged` clear is the
+    // deliberate replacement (tests/integration/services/edit-server.test.ts pins both halves).
+    expect(afterEditBody.hostFingerprint).toBeNull();
     expect(afterEditBody.pendingFingerprint).toBeNull();
   } finally {
     await sshdA?.stop();
