@@ -75,6 +75,9 @@ importers:
       jsdom:
         specifier: 30.1.0
         version: 30.1.0(@noble/hashes@2.4.0)
+      png-to-ico:
+        specifier: 3.0.2
+        version: 3.0.2
       prettier:
         specifier: ^3.9.6
         version: 3.9.6
@@ -87,6 +90,9 @@ importers:
       set-cookie-parser:
         specifier: 3.1.2
         version: 3.1.2
+      sharp:
+        specifier: 0.35.4
+        version: 0.35.4(@types/node@22.20.2)
       testcontainers:
         specifier: 12.1.0
         version: 12.1.0

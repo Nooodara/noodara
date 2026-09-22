@@ -17,7 +17,7 @@ const REPO_ROOT = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '..
 // no `fill-rule="evenodd"` anywhere in the SVG this test builds, and none may ever be added (an
 // evenodd ring built from geometry.ts's overlapping parts would punch spurious holes at every
 // overlap in the real monogram/wordmark, not just at the ring's own counter).
-import { ring } from '../../../packages/ui/src/brand/geometry.js';
+import { circle, ring } from '../../../packages/ui/src/brand/geometry.js';
 import { pngMetadata, pngsToIco, RASTER_BACKEND, svgToPng } from '../../../scripts/brand/raster.js';
 import { changedFiles, resetChangedFiles, writeIfChanged } from '../../../scripts/brand/write-if-changed.js';
 
@@ -35,11 +35,12 @@ function nonzeroRingSvg(): string {
  *  never sets `fill-rule`), so this probe's result never gates `RASTER_BACKEND` -- see the
  *  gating fidelity test below, which uses `nonzeroRingSvg()` exclusively. */
 function evenoddRingSvg(): string {
-  return (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill-rule="evenodd">' +
-    '<path d="M32 8 A24 24 0 1 1 31.99 8 Z M32 18 A14 14 0 1 0 32.01 18 Z" fill="black"/>' +
-    '</svg>'
-  );
+  // Two full, independently-closed circles (evenodd cares only about crossing count, never
+  // winding direction, so both use the same `sweep` -- unlike `ring()`'s nonzero construction,
+  // which depends on winding the inner circle *against* the outer one).
+  const outer = circle(32, 32, 24, 1);
+  const inner = circle(32, 32, 14, 1);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill-rule="evenodd"><path d="${outer} ${inner}" fill="black"/></svg>`;
 }
 
 async function readRgbaPixel(png: Buffer, x: number, y: number): Promise<{ readonly alpha: number }> {
@@ -101,7 +102,9 @@ describe('scripts/brand/raster.ts', () => {
     // RASTER_BACKEND -- only the fidelity probe above gates that decision.
     const png = await svgToPng(evenoddRingSvg(), { width: 64, height: 64 });
     const centre = await readRgbaPixel(png, 32, 32);
-    const band = await readRgbaPixel(png, 32, 18);
+    // viewBox is 64 units at 64px (scale 1:1); radius 19 sits strictly between rInner=14 and
+    // rOuter=24, on the vertical axis above centre: (32, 32-19) = (32, 13).
+    const band = await readRgbaPixel(png, 32, 13);
 
     expect(centre.alpha).toBe(0);
     expect(band.alpha).toBeGreaterThan(200);
@@ -130,17 +133,24 @@ describe('scripts/brand/raster.ts', () => {
 
     const firstWrite = writeIfChanged(filePath, 'hello');
     const secondWrite = writeIfChanged(filePath, 'hello');
-    const thirdWrite = writeIfChanged(filePath, 'goodbye');
 
     expect(firstWrite).toBe(true);
     expect(secondWrite).toBe(false);
-    expect(thirdWrite).toBe(true);
-    expect(readFileSync(filePath, 'utf8')).toBe('goodbye');
+    expect(readFileSync(filePath, 'utf8')).toBe('hello');
     // changedFiles records repo-relative paths (matching scripts/capture-discovery-fixtures.mjs's
     // own ledger convention) -- a tmpdir path outside the repo still resolves to a valid (if
-    // parent-relative) relative path via `path.relative`, which is exactly what this asserts.
+    // parent-relative) relative path via `path.relative`, which is exactly what this asserts. Only
+    // the first (actually-changing) write pushes a ledger entry; the second, unchanged write does
+    // not push a second one.
     const expectedRelative = path.relative(REPO_ROOT, filePath);
     expect(changedFiles.filter((f) => f === expectedRelative)).toHaveLength(1);
+
+    // A genuinely different write after that DOES push a second, separate ledger entry -- the
+    // ledger is a per-write-event log, not deduplicated by path.
+    const thirdWrite = writeIfChanged(filePath, 'goodbye');
+    expect(thirdWrite).toBe(true);
+    expect(readFileSync(filePath, 'utf8')).toBe('goodbye');
+    expect(changedFiles.filter((f) => f === expectedRelative)).toHaveLength(2);
   });
 
   it('writeIfChanged handles a Buffer the same way, via Buffer.equals', () => {
