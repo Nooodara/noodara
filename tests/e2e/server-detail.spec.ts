@@ -330,8 +330,17 @@ test('@detail a GET resolved after a live server.updated event does not roll the
   await login(page);
 
   const name = `late-get-after-event-${String(Date.now())}`;
+  // The host must keep the server in CONNECTING for the whole test, so the assertions below observe
+  // the live event's state and not the connection's terminal state. A `.example.test` name did that
+  // on a developer machine only by accident (its resolver takes a while to fail); on GitHub's
+  // runners the name fails instantly, the worker flips the server to UNREACHABLE within the first
+  // second and the test raced it. An RFC 5737 TEST-NET-1 address is never routed, so the SSH
+  // connect sits in its 10 s timeout (NOODARA_SSH_CONNECT_TIMEOUT_MS) -- deterministically longer
+  // than this test -- without depending on any resolver. The last octet keeps hosts unique across
+  // runs (servers carry a unique host+port index).
+  const host = `192.0.2.${String(1 + (Date.now() % 250))}`;
   const created = await page.request.post('/api/servers', {
-    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+    data: { name, host, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
   });
   expect(created.status()).toBe(201);
   const { id } = (await created.json()) as { id: string };
