@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
-status: planning
-last_updated: "2026-09-22T18:33:08.244Z"
+status: roadmap_created
+last_updated: "2026-09-22T20:00:00.000Z"
 last_activity: 2026-09-22
 progress:
-  total_phases: 0
+  total_phases: 8
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -19,15 +19,17 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-09-10)
 
-**Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente: sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto.
-**Current focus:** v0.1 shipped (2026-09-22). Next: `/gsd-new-milestone` for v0.2 Projects & Services, with a UI redesign phase first (user decision pending formalisation).
+**Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
+**Current focus:** v0.2 Projects & Services — roadmap created (Phases 7-14). Next: `/gsd-discuss-phase 7` or `/gsd-plan-phase 7` (Identidad y brand kit).
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 7 (Identidad y brand kit) — not started — roadmap created
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-22 — Milestone v0.2 started
+Status: Roadmap created (8 phases, 60/60 requirements mapped); Phase 7 not yet planned
+Last activity: 2026-09-22 — v0.2 roadmap created (ROADMAP.md Phases 7-14, REQUIREMENTS.md traceability 60/60)
+
+Progress: [░░░░░░░░░░] 0% (0/8 phases of v0.2)
 
 ## Performance Metrics
 
@@ -161,6 +163,9 @@ Last activity: 2026-09-22 — Milestone v0.2 started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [Roadmap v0.2]: Ocho fases (7-14). Orden de cierre de features fijado por el usuario: identidad → rediseño → settings → docs/landing → motor (fundamentos → runtime → UI+E2E) → hardening/gate. Las fases 11 y 12 (motor, backend-only) son disjuntas en archivos de 8-10 y pueden ejecutarse intercaladas sin cambiar el orden de cierre.
+- [Roadmap v0.2]: Fase 11 es la única con research real: los cuatro spikes de QA-10 (G1 transferencia de secretos, G2 kill remoto, G3 BuildKit, G4 JSON de `docker ps`) se registran como ADR antes de escribir los planes de la Fase 12. Las decisiones D1-D27 del research (D2 GitHub Pages, D3 poll en servidor, D4 siete estados, D6/D7 git+registry privados, D10 puerto opcional, D13 sin env vars/build args, D14 clone superficial, D19 motion solo en Sheet, D20 settings en servidor, D24/D25 semántica destructiva) quedan fijadas en ROADMAP.md "Decisions carried from research"; los planners no las reabren.
+- [Roadmap v0.2]: Los requisitos de usuario de PROJ/SVC/DEP/LOG se mapean a la Fase 12 (primera que los entrega de forma observable, por API) y se cierran en la UI en la Fase 13, donde QA-09 los verifica end-to-end; QA-07 (fixtures) va en la Fase 11 porque TDD exige el fixture antes del primer test de integración del motor.
 - [Roadmap]: v0.1 Foundation se ejecuta en capas horizontales (dominio → SSH → servicios de aplicación → HTTP/worker/SSE → UI → instalador), siguiendo el build order de research/ARCHITECTURE.md para de-riesgar el adaptador SSH temprano.
 - [Roadmap]: El instalador (INST-01..05) se planifica último a propósito, para reflejar env vars/healthchecks/entrypoints reales en vez de una suposición.
 - [Phase 1]: vitest, commander y @fastify/type-provider-zod verificados via scripts/check-package-provenance.mjs: repository.url normaliza al owner/repo esperado, confirmando los falsos positivos de slopcheck y la asuncion A1 de 01-RESEARCH.md
@@ -494,10 +499,12 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-21T20:45:00.000Z
-Stopped at: Phase 06 EXECUTED 15/15 (06-15-SUMMARY.md); Task 3 checkpoint resolved (accept with debt); awaiting code review + verification before phase.complete
+Last session: 2026-09-22T20:00:00.000Z
+Stopped at: v0.2 roadmap created — ROADMAP.md (Phases 7-14), REQUIREMENTS.md traceability (60/60), STATE.md position updated; Phase 7 not started
 Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Review `.planning/ROADMAP.md` (Phases 7-14) and approve or request revisions
+- Then `/gsd-discuss-phase 7` (or `/gsd-plan-phase 7`) — Identidad y brand kit
+- Phases 11-12 (engine backend) may be planned in parallel with 8-10 if wall-clock matters

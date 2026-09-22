@@ -146,17 +146,78 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
+Which phases cover which requirements. Updated during roadmap creation (2026-09-22).
+
+Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de forma observable. Los requisitos de PROJ/SVC/DEP/LOG que describen comportamiento de usuario se entregan por API en la Fase 12 y se cierran en la UI en la Fase 13, donde QA-09 los verifica end-to-end.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (se completa al crear el roadmap) | | |
+| BRAND-01 | Phase 7 | Pending |
+| BRAND-02 | Phase 7 | Pending |
+| BRAND-03 | Phase 7 | Pending |
+| UI-03 | Phase 8 | Pending |
+| UI-04 | Phase 8 | Pending |
+| UI-05 | Phase 8 | Pending |
+| UI-06 | Phase 8 | Pending |
+| UI-07 | Phase 8 | Pending |
+| UI-08 | Phase 8 | Pending |
+| UI-09 | Phase 8 | Pending |
+| UI-10 | Phase 8 | Pending |
+| UI-11 | Phase 8 | Pending |
+| UI-12 | Phase 8 | Pending |
+| SET-02 | Phase 9 | Pending |
+| SET-03 | Phase 9 | Pending |
+| SET-04 | Phase 9 | Pending |
+| SET-05 | Phase 9 | Pending |
+| SET-06 | Phase 9 | Pending |
+| DOCS-01 | Phase 10 | Pending |
+| DOCS-02 | Phase 10 | Pending |
+| SITE-01 | Phase 10 | Pending |
+| SITE-02 | Phase 10 | Pending |
+| SITE-03 | Phase 10 | Pending |
+| DEP-01 | Phase 11 | Pending |
+| DEP-08 | Phase 11 | Pending |
+| SVC-08 | Phase 11 | Pending |
+| PROJ-04 | Phase 11 | Pending |
+| QA-07 | Phase 11 | Pending |
+| QA-10 | Phase 11 | Pending |
+| PROJ-01 | Phase 12 | Pending |
+| PROJ-02 | Phase 12 | Pending |
+| PROJ-03 | Phase 12 | Pending |
+| PROJ-05 | Phase 12 | Pending |
+| SVC-01 | Phase 12 | Pending |
+| SVC-02 | Phase 12 | Pending |
+| SVC-03 | Phase 12 | Pending |
+| SVC-04 | Phase 12 | Pending |
+| SVC-05 | Phase 12 | Pending |
+| SVC-06 | Phase 12 | Pending |
+| SVC-07 | Phase 12 | Pending |
+| DEP-02 | Phase 12 | Pending |
+| DEP-03 | Phase 12 | Pending |
+| DEP-04 | Phase 12 | Pending |
+| DEP-05 | Phase 12 | Pending |
+| DEP-06 | Phase 12 | Pending |
+| DEP-07 | Phase 12 | Pending |
+| DEP-09 | Phase 12 | Pending |
+| LOG-01 | Phase 12 | Pending |
+| LOG-02 | Phase 12 | Pending |
+| LOG-03 | Phase 12 | Pending |
+| REC-01 | Phase 12 | Pending |
+| REC-03 | Phase 12 | Pending |
+| QA-08 | Phase 12 | Pending |
+| LOG-04 | Phase 13 | Pending |
+| REC-02 | Phase 13 | Pending |
+| QA-09 | Phase 13 | Pending |
+| OPS-01 | Phase 14 | Pending |
+| OPS-02 | Phase 14 | Pending |
+| OPS-03 | Phase 14 | Pending |
+| OPS-04 | Phase 14 | Pending |
 
 **Coverage:**
 - v1 requirements: 60 total
-- Mapped to phases: 0
-- Unmapped: 60 ⚠️
+- Mapped to phases: 60 (Phase 7: 3 · Phase 8: 10 · Phase 9: 5 · Phase 10: 5 · Phase 11: 6 · Phase 12: 24 · Phase 13: 3 · Phase 14: 4)
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-22*
-*Last updated: 2026-09-22 after research synthesis and user scoping*
+*Last updated: 2026-09-22 after roadmap creation (traceability mapped to Phases 7-14)*
