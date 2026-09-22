@@ -158,6 +158,24 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The first real run of this job (2026-09-22) died with "no space left on device" while
+      # docker-saving the images into a nested daemon: ubuntu-latest leaves ~14 GB free and this
+      # suite needs more (image build cache, a 1.6 GB `docker save` tar per scenario file and a
+      # full nested /var/lib/docker per fixture). The runner image ships 25-30 GB of toolchains
+      # this job never uses; removing them is the documented, widely used remedy
+      # (actions/runner-images#2840) and costs a few seconds. `df` before and after keeps the
+      # headroom measurable in the log instead of guessed.
+      - name: Reclaim runner disk for the Docker-in-Docker suite
+        run: |
+          set -euo pipefail
+          df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift /usr/local/julia* \
+            /opt/microsoft /opt/google /usr/lib/jvm /usr/share/miniconda /usr/local/share/powershell \
+            /usr/local/lib/heroku /usr/local/aws-cli /usr/local/aws-sam-cli
+          sudo docker image prune -af >/dev/null
+          sudo apt-get clean
+          df -h / | tail -1
       - run: pnpm test:installer
       - name: Fail if any noodara.test container survived
         if: always()
