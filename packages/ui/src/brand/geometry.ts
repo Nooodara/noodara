@@ -39,6 +39,9 @@
 import { parts as conceptAParts } from './concepts/a.js';
 import { parts as conceptBParts } from './concepts/b.js';
 import { parts as conceptCParts } from './concepts/c.js';
+// Same cycle, same rule: glyphs.ts reads the constants below, only from inside its own function
+// bodies.
+import { WORDMARK_GLYPHS } from './glyphs.js';
 
 // --- Grid ------------------------------------------------------------------------------------
 
@@ -234,6 +237,43 @@ export function monogramPath(concept: ConceptId): string {
     .join(' ');
 }
 
+// --- Wordmark --------------------------------------------------------------------------------
+
+/** Lays "noodara" out left to right from x = 0, advancing by each glyph's own advance plus one
+ *  LETTER_GAP, and measures the result. One function so the parts and the width can never
+ *  disagree. */
+function layoutWordmark(): { readonly parts: readonly PathPart[]; readonly width: number } {
+  const parts: PathPart[] = [];
+  let x = 0;
+  for (const build of WORDMARK_GLYPHS) {
+    const glyph = build(x);
+    parts.push({ part: glyph.part, d: glyph.d });
+    x += glyph.advance + LETTER_GAP;
+  }
+  // The last advance carries no gap after it: the word ends at its last letter (D-07).
+  return { parts, width: x - LETTER_GAP };
+}
+
+// The wordmark is the same for all three concepts: D-05 ties it to the shared constants (stroke,
+// aperture radius, grid), not to any one concept's construction. The parameter is kept because
+// 07-05's approved concept may introduce a per-concept terminal on the "n", and every downstream
+// caller already passes the concept it is rendering.
+
+export function wordmarkParts(_concept: ConceptId): readonly PathPart[] {
+  return layoutWordmark().parts;
+}
+
+export function wordmarkPath(concept: ConceptId): string {
+  return wordmarkParts(concept)
+    .map((part) => part.d)
+    .join(' ');
+}
+
+/** The width of the word in grid units, measured to the last letter's ink. */
+export function wordmarkWidth(_concept: ConceptId): number {
+  return layoutWordmark().width;
+}
+
 // --- Lockup ----------------------------------------------------------------------------------
 
 export interface LockupLayout {
@@ -245,11 +285,10 @@ export interface LockupLayout {
 }
 
 /** Where the two elements of the horizontal lockup sit, in grid units (D-04). */
-export function lockupLayout(_concept: ConceptId): LockupLayout {
+export function lockupLayout(concept: ConceptId): LockupLayout {
   const wordmarkX = GRID + LOCKUP_GAP;
   return {
-    // TODO(07-01 Task 3): + wordmarkWidth(concept) once glyphs.ts exists.
-    width: wordmarkX,
+    width: wordmarkX + wordmarkWidth(concept),
     height: GRID,
     monogramX: 0,
     wordmarkX,
@@ -265,5 +304,5 @@ export function lockupParts(concept: ConceptId): {
   readonly monogram: readonly PathPart[];
   readonly wordmark: readonly PathPart[];
 } {
-  return { monogram: monogramParts(concept), wordmark: [] };
+  return { monogram: monogramParts(concept), wordmark: wordmarkParts(concept) };
 }
