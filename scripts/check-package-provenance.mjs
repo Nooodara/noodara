@@ -190,6 +190,16 @@ const EXPECTED_PACKAGES = [
     expectedOwnerRepo: 'typescript-eslint/typescript-eslint',
   },
   { name: 'uuidv7', expectedOwnerRepo: 'LiosK/uuidv7' },
+
+  // 07-02-PLAN.md Task 2: the raster pipeline for brand asset generation (SVG -> PNG -> ICO).
+  // Both verified via `npm view <pkg>@<locked-version> repository.url` on 2026-09-22, and both
+  // confirmed to declare no `preinstall`/`install`/`postinstall` lifecycle script (`npm view
+  // <pkg>@<locked-version> scripts --json` — sharp's own `scripts.build` key, `node
+  // install/build.js`, is a manually-invoked maintainer script keyed on a directory name, not a
+  // lifecycle hook; the check is against the scripts object's KEYS, never a substring match on
+  // its values). Human-approved at 07-02 Task 1's blocking checkpoint.
+  { name: 'sharp', expectedOwnerRepo: 'lovell/sharp' },
+  { name: 'png-to-ico', expectedOwnerRepo: 'steambap/png-to-ico' },
 ];
 
 const EXPECTED_BY_NAME = new Map(
