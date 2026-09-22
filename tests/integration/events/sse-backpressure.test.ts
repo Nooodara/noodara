@@ -228,10 +228,14 @@ describe('GET /api/events backpressure budget (WR-A-03, T-5G-34-01)', () => {
       // Bounded by data volume, never by a fixed sleep (hard_rules #8): publish in batches and
       // re-probe after each one, up to a generous ceiling that comfortably exceeds both the 1 MiB
       // application-level budget and the shrunk-but-nonzero socket buffers on top of it. Measured
-      // against this fix: ~124 buffered bytes land per published event, so >8500 events are needed
-      // to cross the 1 MiB budget -- 24000 gives a wide margin without publishing for minutes.
+      // on macOS: ~124 buffered bytes land per published event, so >8500 events cross the 1 MiB
+      // budget and 24000 was a wide margin there. The first real CI run (Linux, ubuntu-latest)
+      // did NOT converge within 24000 events: Linux's kernel buffers absorb more before Node's own
+      // writableLength grows (SO_SNDBUF/SO_RCVBUF are doubled and floored by the kernel, and the
+      // caps above are best-effort). The ceiling is therefore raised to 120000 events (~14 MiB
+      // per peer); 80 batches took ~5 s on that runner, so 400 stay well inside the 60 s timeout.
       const BATCH_SIZE = 300;
-      const MAX_BATCHES = 80; // up to 24000 events, ~124 buffered bytes each => ~2.9 MiB
+      const MAX_BATCHES = 400; // up to 120000 events, ~124 buffered bytes each => ~14 MiB
       let recovered = false;
       for (let batch = 0; batch < MAX_BATCHES && !recovered; batch += 1) {
         await publishBatch(publisher, BATCH_SIZE);
