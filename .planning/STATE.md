@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: executing
-stopped_at: "Phase 06 (instalador-y-docker-compose) EXECUTED 15/15 (06-15-SUMMARY.md); NOT verified/complete. Task 3 checkpoint resolved 2026-09-21: user chose Aceptar con deuda (accept with debt). v0.1 release gate (docs/releases/v0.1-gate.md) verdict NOT READY. Ten human prerequisites (repo creation+push, replace REPLACE_WITH_GITHUB_OWNER, tag+release.yml publish, make GHCR packages public, publish a real non-prerelease GitHub Release, confirm the raw install URL, real curl|sh on clean Ubuntu 22.04/24.04/arm64 VPS with ufw active, real-VPS memory behaviour, first real ci.yml/nightly.yml/gitleaks runs) stay [pending] in 06-HUMAN-UAT.md, none performed. QA-04/QA-05 stay Pending. Next: code review + verification of the full 15-plan phase-6 tree before phase.complete."
-last_updated: "2026-09-21T20:45:00.000Z"
+status: milestone_complete
+stopped_at: Milestone complete (Phase 06 was final phase)
+last_updated: 2026-09-22T17:33:29.512Z
 last_activity: 2026-09-21 -- Phase 06 Task 3 checkpoint resolved (accept with debt); phase executed but not yet verified
 progress:
   total_phases: 6
@@ -21,22 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente: sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto.
-**Current focus:** Phase 06 — instalador-y-docker-compose
+**Current focus:** Milestone complete
 
 ## Current Position
 
-Phase: 06 (instalador-y-docker-compose) — EXECUTED (15/15 plans have a SUMMARY), NOT verified/complete
+Phase: 06 (instalador-y-docker-compose) — COMPLETE 2026-09-22
 Plan: 15 of 15
-Status: Task 3 blocking checkpoint resolved (user: "Aceptar con deuda"); awaiting code review + verification before the phase or v0.1 milestone can be marked complete
-Last activity: 2026-09-21
+Status: Milestone complete
+Last activity: 2026-09-22
 
-Progress: [██████████] 100% of planned plans executed (109/109); phase 06 awaiting code review + verification
+Progress: [██████████] 6 of 6 phases complete (109/109 plans). v0.1 gate: 15/17 READY; criteria 3-4 wait for the first real nightly.yml run (QA-04/QA-05).
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 94
+- Total plans completed: 109
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -49,6 +49,7 @@ Progress: [██████████] 100% of planned plans executed (109/1
 | 03 | 10 | - | - |
 | 04 | 11 | - | - |
 | 05 | 46 | - | - |
+| 06 | 15 | - | - |
 
 **Recent Trend:**
 
@@ -469,6 +470,8 @@ None yet.
 - [05-37, found live during the closing gate's gap re-derivation, NOT fixed by this plan] `apps/web/src/components/ServerSheet.tsx`'s SSH user `Field` (around `:303-316`) renders with no `error` prop wired, while `handleApiFailure` (`:111-142`) does map a server-side `/sshUser` VALIDATION_FAILED issue into `fieldErrors` and suppresses the generic toast fallback once that map is non-empty -- so a real `sshUser` rejection from the backend now produces zero visible feedback, silently worse than before gap 5's fix. This was `05-REVIEW.md` WR-B-07's warned "latent second bug", confirmed still present by direct source read. Per the user's explicit instruction (2026-09-20 checkpoint answer), this is fixed via a separate `/gsd-quick` task run immediately by the orchestrator, not inside plan 05-37. See `.planning/phases/05-ui-web/05-GAP-CLOSURE-AUDIT.md` section 2 (Gap 5) and section 3.
 - [05-37, checkpoint answered 2026-09-20] The user approved closing the gap-closure wave ("Approve y haz un gsd quick del sshUser bug") but did not state which, if any, of the six human-only verification items (real-display contrast in both themes; a real CI run for QA-04/QA-05; a live SSE walkthrough not through a buffering tunnel; Sheet/Dialog/RowMenu floating-elevation shadow; a real screen-reader pass on RowMenu; sub-1280px/`prefers-reduced-motion` feel on real hardware) they actually checked. All six remain unconfirmed -- recorded honestly as such in `05-GAP-CLOSURE-AUDIT.md` section 3, not rounded up to "verified". They should surface again as UAT items in Phase 05's verification step.
 - [06-15, Task 3 checkpoint, 2026-09-21] Phase 06 is EXECUTED (15/15 plans, 06-15-SUMMARY.md) but NOT verified/complete: `docs/releases/v0.1-gate.md`'s overall verdict is NOT READY. The user closed Plan 06-15 by choosing "Aceptar con deuda" -- the ten human prerequisites in `06-HUMAN-UAT.md`'s "Human prerequisites" table stay `[pending]`, none individually performed or confirmed: (1) create the GitHub repository and push `main`; (2) replace `REPLACE_WITH_GITHUB_OWNER` in `install.sh`/`docs/install.md`/`README.md`; (3) push a real version tag and let `release.yml` publish both images; (4) make both GHCR packages public; (5) publish a real, non-prerelease GitHub Release; (6) confirm the raw install-script URL resolves; (7) a real `curl | sh` end to end on a clean Ubuntu 22.04 VPS, a clean 24.04 VPS, and once on arm64, with `ufw` active on at least one; (8) watch real memory behaviour on a small production-sized VPS; (9) the first real `ci.yml`/`nightly.yml` runs and a real `gitleaks` pass on the extracted repository (clears QA-04/QA-05); (10) the six still-unconfirmed items carried forward from `05-HUMAN-UAT.md` (real-display contrast, theme-toggle no-flicker, a live SSE walkthrough without a buffering tunnel, revoked-session-second-tab redirect plus a human look at the CR-01/WR-01 fix, Sheet/Dialog/RowMenu elevation, RowMenu screen-reader/touch/reduced-motion). QA-04/QA-05 stay Pending in `REQUIREMENTS.md`, unchanged by this plan. `INST-01`/`INST-02` stay `Complete` in `REQUIREMENTS.md` (delivered/tested implementation) while the gate report keeps them `UNVERIFIED` (real GHCR-pull production path never exercised) -- an intentional, documented disagreement between the two documents, not an error. Next: phase-6 code review + verifier must run against the full 15-plan tree before this phase or the v0.1 milestone can be marked complete.
+
+- [Phase 06 closure, 2026-09-22] Phase 06 marked COMPLETE after the user performed the decisive human prerequisites: the repository was extracted and pushed (`Nooodara/noodara`, public), `ci.yml` is 9/9 green on a real run (35679687131), tag `v0.1.0` published both multi-arch images (public in GHCR, anonymous pull verified), the GitHub Release `v0.1.0` exists, and the published `curl | sh` succeeded on a clean real Ubuntu 24.04 VPS with a no-op re-run. Verifier status was `human_needed` (17/17 code-provable must-haves); closing with the remaining debt recorded in `06-HUMAN-UAT.md`: first real `nightly.yml` run (QA-04/QA-05, gate criteria 3-4), 22.04/arm64/ufw/real-upgrade installs, memory on a small VPS, and the six phase-5 visual items. `docs/releases/v0.1-gate.md`: 15/17 READY, verdict NOT READY until the nightly run is green.
 
 ### Quick Tasks Completed
 
