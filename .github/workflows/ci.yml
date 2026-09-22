@@ -267,11 +267,39 @@ jobs:
       # a path-scoped allowlist only (.gitleaks.toml) — never a broad regex that could hide a
       # real key. GITLEAKS_LICENSE is only required for private organization-owned repos; it is
       # a no-op for a public or personal-account repo and safe to leave unset.
+      # Both gitleaks steps run the pinned, checksum-verified release binary directly. The
+      # gitleaks-action wrapper was dropped after the first real CI run of this repository: on an
+      # organization-owned repository it refuses to run without a GITLEAKS_LICENSE secret, and a
+      # secret scan that depends on a third-party licence key is one more thing that can silently
+      # stop scanning. The binary needs no key and runs the identical detection engine.
+      - name: Install gitleaks (pinned release, checksum-verified)
+        run: |
+          set -euo pipefail
+          GITLEAKS_VERSION=8.30.1
+          ARCHIVE="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          BASE_URL="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          curl -sSfL -o "$ARCHIVE" "${BASE_URL}/${ARCHIVE}"
+          curl -sSfL -o checksums.txt "${BASE_URL}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          grep " ${ARCHIVE}\$" checksums.txt | sha256sum -c -
+          tar -xzf "$ARCHIVE" -C /usr/local/bin gitleaks
+          rm -f "$ARCHIVE" checksums.txt
+          gitleaks version
+      # Scans exactly the commits this event brought in: the PR's commits on a pull_request, the
+      # pushed range on a push. The range endpoints come in through `env`, never interpolated into
+      # the script (see release.yml's own script-injection rule). A first push, a force-push whose
+      # `before` is unknown, or a fresh branch fall back to the full-tree scan below.
       - name: gitleaks (diff / pushed commits)
-        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            echo "no usable base commit for a range scan; the full-tree scan below covers this push"
+            gitleaks detect --source . --config .gitleaks.toml --redact
+            exit 0
+          fi
+          gitleaks detect --source . --config .gitleaks.toml --redact --log-opts "${BASE_SHA}..${HEAD_SHA}"
       # A wider, whole-tree scan is only affordable on push-to-main (no PR-diff time pressure)
       # and exists specifically so a narrow, path-scoped allowlist can't quietly widen over time
       # without anyone noticing a real secret slipping through elsewhere in the tree.
@@ -286,14 +314,6 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           set -euo pipefail
-          GITLEAKS_VERSION=8.30.1
-          ARCHIVE="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-          BASE_URL="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
-          curl -sSfL -o "$ARCHIVE" "${BASE_URL}/${ARCHIVE}"
-          curl -sSfL -o checksums.txt "${BASE_URL}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
-          grep " ${ARCHIVE}\$" checksums.txt | sha256sum -c -
-          tar -xzf "$ARCHIVE" -C /usr/local/bin gitleaks
-          rm -f "$ARCHIVE" checksums.txt
           gitleaks detect --source . --config .gitleaks.toml --redact
 
   # boot-smoke is its own job (not folded into `integration`) because it gates the one defect
