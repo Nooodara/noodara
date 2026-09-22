@@ -121,6 +121,35 @@ redirects the renamed `facebook/react` org to `react/react` (confirmed live via
 pin stays at `5.11.1` per the Phase 4 RESP3 decision above; this script only verifies
 repository provenance, not version pins.
 
+### Phase 7 additions
+
+`07-RESEARCH.md`'s Package Legitimacy Audit tagged `sharp` and `png-to-ico` (the
+raster pipeline for generating favicon/apple-icon/PWA/OG assets from the brand
+geometry module) as `[ASSUMED]`: both names came from training/WebSearch
+rather than a Context7 or official-docs lookup that session, even though
+`slopcheck scan --pkg npm <name> --json` returned `"status": "OK"` with zero
+flags for both. Per the Package Legitimacy Gate protocol, an `[ASSUMED]`
+package may not be installed without a human confirming the registry page —
+`07-02-PLAN.md` Task 1 staged that checkpoint before any install.
+
+The user (Pablo Gutierrez) replied "approved (Recommended)" — both packages
+approved for install at their exact pinned versions — on 2026-09-22, after
+the orchestrator's `npm view` evidence below was presented (gathered before
+either package was installed).
+
+| Package | Expected repository | Observed repository | Resolved version | slopcheck verdict | Automated verdict | Date |
+|---|---|---|---|---|---|---|
+| sharp | lovell/sharp | `git+https://github.com/lovell/sharp.git` | 0.35.4 | `[OK]`, `[ASSUMED]` provenance tag, user-approved at checkpoint | verified | 2026-09-22 |
+| png-to-ico | steambap/png-to-ico | `git+https://github.com/steambap/png-to-ico.git` | 3.0.2 | `[OK]`, `[ASSUMED]` provenance tag, user-approved at checkpoint | verified | 2026-09-22 |
+
+Neither package's `scripts` object declares a `preinstall`/`install`/
+`postinstall` lifecycle hook. `sharp@0.35.4`'s `scripts` object does contain a
+`build` key (`node install/build.js`) — a manually-invoked maintainer script
+whose target lives in a directory literally named `install/`; this is not a
+lifecycle hook (npm only ever auto-runs `preinstall`/`install`/`postinstall`/
+`prepare` by name) and must not be treated as one. `png-to-ico@3.0.2`'s
+`scripts` object contains only `test` and `lint`.
+
 ## Re-running this check
 
 This check must be re-run whenever one of these pins changes, or before
