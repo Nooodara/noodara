@@ -38,13 +38,14 @@ Noodara puede conocer, registrar y comunicarse con infraestructura real de forma
 
 ### Active
 
-v0.1 Foundation está entregado. El siguiente milestone es **v0.2 Projects & Services** (roadmap §7); sus requisitos se definen en `/gsd-new-milestone`. Candidatos ya identificados:
+Alcance de **v0.2 Projects & Services** (ver "Current Milestone" arriba; requisitos con REQ-ID en `REQUIREMENTS.md`).
 
-- [ ] Rediseño de la UI: el usuario juzga la UI actual demasiado plana; Noodara debe ser estéticamente atractiva, no solo potente (logotipo, docs, settings, perfil y apariencia editables). Referencias entregadas por el usuario: taste-skill, impeccable, emilkowalski/skills (apple-design).
-- [ ] Projects → Environments → Services y el primer deploy real con Docker (Dockerfile e imagen), fixtures oficiales, build/runtime logs, cero contenedores huérfanos (roadmap §7.8).
-- [ ] Hardening operativo heredado de v0.1 (`docs/releases/v0.1-gate.md`, "Known debt"): rotación de logs en Compose, poda de `.env.bak-*`, imagen de control-plane de 1.2 GB, `check-posix-sh` sintácticamente consciente.
-- [ ] Deuda de verificación humana de v0.1 (`06-HUMAN-UAT.md`): instalación real en 22.04/arm64/con ufw, upgrade real entre dos releases, memoria en un VPS de 1–2 GB, los seis ítems visuales de la fase 5.
-
+- [ ] Identidad visual: logotipo y brand kit en ambos temas.
+- [ ] Rediseño de la app conforme a `docs/ui-build-prompt.md`, con revisión visual humana.
+- [ ] Settings editables: perfil del admin, tema y preferencias visuales.
+- [ ] Landing page y sitio de documentación públicos con la identidad.
+- [ ] Projects → Environments → Services con deploy real desde Git, Dockerfile e imagen (roadmap §7).
+- [ ] Hardening operativo heredado de v0.1 y cierre de la deuda de verificación humana.
 
 ### Out of Scope
 
@@ -56,6 +57,22 @@ v0.1 Foundation está entregado. El siguiente milestone es **v0.2 Projects & Ser
 - Debian, CentOS, Alpine, Windows, macOS como servidores objetivo — solo Ubuntu LTS hasta que v0.1 esté validada.
 - Multiusuario, roles, equipos, SSO — un único admin local basta para indie devs en v0.1.
 - Kubernetes, provisioning cloud, CI/CD genérico, monitoring avanzado, DB HA, multi-node, AI con escritura, billing, multi-tenancy cloud — fuera hasta después de v0.5 por definición del roadmap.
+
+## Current Milestone: v0.2 Projects & Services
+
+**Goal:** Que Noodara enamore al verla y que una persona cree un proyecto, un environment y un servicio (repo Git, Dockerfile o imagen) y lo despliegue en su servidor con logs de build y runtime, estado real del contenedor y cero recursos huérfanos.
+
+**Target features (en este orden):**
+1. Identidad: logotipo + brand kit en ambos temas (monograma, wordmark, favicon; aplicación en app, README y docs).
+2. Rediseño de la app según `docs/ui-build-prompt.md`: elevación flotante, materiales y vibrancy, movimiento con propósito, momentos autorados (discovery, TOFU), superficies del navegador, `RowMenu`, fallbacks de reduced-motion/transparency/contrast, primera revisión visual humana con screenshots; deja previstos el tercer panel, la navegación jerárquica y el menú de cuenta, sin placeholders.
+3. Settings editables: perfil del admin (nombre, email, password), tema auto/claro/oscuro con override persistente, preferencias visuales.
+4. Landing page pública (Persuade) y sitio de docs público (Read) con la misma identidad; hosting y dominio se deciden en requisitos.
+5. Projects → Environments → Services: CRUD, servicio desde Git/Dockerfile/imagen, operaciones Docker y Git, fixtures oficiales (`node-api`, `static-app`, `failing-build`), build/runtime logs, estado real del contenedor, cancelación y limpieza, 20 deploys consecutivos, ownership por proyecto, E2E crítico de deploy (roadmap §7.8).
+6. Hardening heredado de v0.1 que afecta a operadores (rotación de logs, poda de `.env.bak-*`, imagen de 1.2 GB) y cierre de la deuda humana (22.04/arm64/ufw, upgrade real, memoria en VPS pequeño).
+
+**Fuera de v0.2:** multiusuario/RBAC/SSO (se diseña para ello, no se construye); deployment engine avanzado — webhooks, healthchecks, rollback (v0.3); dominios, TLS, Traefik (v0.4).
+
+**Key context:** TDD obligatorio y DoD de UI del brief §10 (nada visual se cierra sin que un humano vea la pantalla renderizada); design system lockeado con las resoluciones de §5.3 del brief; research antes de requisitos (decisión del usuario, 2026-09-22).
 
 ## Current State
 
@@ -124,4 +141,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-22 after v0.1 milestone*
+*Last updated: 2026-09-22 — milestone v0.2 Projects & Services started*

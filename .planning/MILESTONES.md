@@ -8,7 +8,7 @@
 
 **Stats:** 810 commits, 897 files, ~24k lines of product code and ~47k of tests; 2214 unit / 523 integration / 93 E2E / 51 installer tests; 2026-09-10 → 2026-09-22.
 
-Known deferred items at close: 8 (see STATE.md Deferred Items) — human verification debt (22.04/arm64/ufw installs, real upgrade, memory on a small VPS, six phase-5 visual items) and the 12 technical follow-ups listed in the release gate.
+Phase directories archived under `.planning/milestones/v0.1-phases/` (plans, summaries, verifications, UAT files and raw gate logs). Known deferred items at close: 8 (see STATE.md Deferred Items) — human verification debt (22.04/arm64/ufw installs, real upgrade, memory on a small VPS, six phase-5 visual items) and the 12 technical follow-ups listed in the release gate.
 
 **Key accomplishments:**
 
