@@ -27,15 +27,25 @@ const UBUNTU_VERSIONS: InstallerDindUbuntu[] = ['22.04', '24.04'];
 const FIXTURE_TIMEOUT_MS = 300_000;
 const CLI_TIMEOUT_MS = 30_000;
 
-/** Host-side `alpine:3.21` (already pulled by tests/integration/helpers/ssh.ts's own blackhole
- *  listener elsewhere in this repo's test suites) re-tagged under a test-only name for the
- *  `loadLocalImages` proof -- deliberately not the full apps/control-plane (1.22GB) / apps/web
- *  (402MB) production images: this file proves the save/copy/load MECHANISM, not a production
- *  image's own content, and building those here would duplicate Plans 06-11/06-12's own real
- *  end-to-end use of this exact mechanism against the real images. */
+const LOAD_TEST_BASE_IMAGE = 'alpine:3.21';
+const PULL_TIMEOUT_MS = 120_000;
+
+/** Host-side `alpine:3.21` re-tagged under a test-only name for the `loadLocalImages` proof --
+ *  deliberately not the full apps/control-plane (1.22GB) / apps/web (402MB) production images:
+ *  this file proves the save/copy/load MECHANISM, not a production image's own content, and
+ *  building those here would duplicate Plans 06-11/06-12's own real end-to-end use of this exact
+ *  mechanism against the real images. The base image is pulled when the host daemon does not
+ *  already hold it: on a developer machine another suite usually has, but a CI runner whose
+ *  preloaded images were pruned (ci.yml's disk-reclaim step) starts empty -- the first real run
+ *  failed exactly there, on `docker tag` of an image that was never present. */
 function tagLoadTestImage(ubuntu: InstallerDindUbuntu): string {
   const tag = `noodara-dind-loadtest:${ubuntu}-${randomUUID()}`;
-  execFileSync('docker', ['tag', 'alpine:3.21', tag], { timeout: CLI_TIMEOUT_MS });
+  try {
+    execFileSync('docker', ['image', 'inspect', LOAD_TEST_BASE_IMAGE], { stdio: 'ignore', timeout: CLI_TIMEOUT_MS });
+  } catch {
+    execFileSync('docker', ['pull', LOAD_TEST_BASE_IMAGE], { stdio: 'ignore', timeout: PULL_TIMEOUT_MS });
+  }
+  execFileSync('docker', ['tag', LOAD_TEST_BASE_IMAGE, tag], { timeout: CLI_TIMEOUT_MS });
   return tag;
 }
 
