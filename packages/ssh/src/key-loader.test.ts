@@ -84,7 +84,7 @@ describe('loadPrivateKey', () => {
         // at all and the loader reports the generic parse failure. Both are the same product
         // outcome -- a validation error, never an auth error, never a stack trace.
         const namesAcceptedTypes = /ed25519/i.test(result.message) && /ecdsa/i.test(result.message) && /rsa/i.test(result.message);
-        const parseRefused = /unable to parse private key/.test(result.message);
+        const parseRefused = result.message.includes('unable to parse private key');
         expect(namesAcceptedTypes || parseRefused, `unexpected DSA rejection message: ${result.message}`).toBe(true);
       }
     });
