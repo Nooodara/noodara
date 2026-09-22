@@ -293,8 +293,10 @@ describe('diagonalBar', () => {
       expect(point.y).toBeGreaterThanOrEqual(-3);
       expect(point.y).toBeLessThanOrEqual(27);
     }
-    expect(distance(pointAt(d, 0), pointAt(d, 3))).toBeCloseTo(4, 6);
-    expect(distance(pointAt(d, 1), pointAt(d, 2))).toBeCloseTo(4, 6);
+    // Tolerance is 3 decimals because that is exactly what `fmt` keeps -- a measured width can
+    // never be closer to its nominal value than the coordinate quantisation allows.
+    expect(distance(pointAt(d, 0), pointAt(d, 3))).toBeCloseTo(4, 2);
+    expect(distance(pointAt(d, 1), pointAt(d, 2))).toBeCloseTo(4, 2);
   });
 
   it('refuses a zero-length segment rather than emitting NaN coordinates', () => {
