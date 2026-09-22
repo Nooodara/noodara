@@ -77,7 +77,19 @@ Decisiones de `research/SUMMARY.md` (D1-D27) ya aceptadas en `REQUIREMENTS.md`. 
   3. El logotipo aparece en el sidebar/rail, `/login`, `/setup`, favicon y `apple-touch-icon` en ambos temas y en el README; el gate de tokens sigue verde (cero literales de color fuera de `tokens.css`) y los 93 E2E existentes siguen verdes.
   4. Los assets de marca (SVGs, favicon set, imagen OG) quedan exportados desde `packages/ui` para que la Fase 10 los consuma sin copiar archivos.
 
-**Plans**: TBD
+**Plans:** 10 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Geometry module on the 24 grid: constants, primitives, three monogram concepts, lowercase wordmark (TDD)
+- [ ] 07-02-PLAN.md — Raster pipeline: provenance-gated sharp/png-to-ico install, svgToPng/pngsToIco helpers proven on a placeholder SVG
+- [ ] 07-03-PLAN.md — Logo/Wordmark/Lockup components (currentColor, data-part hooks) + static-svg/tile renderers + barrel exports
+- [ ] 07-04-PLAN.md — Brand boards per concept/theme + in-app Playwright capture via DOM injection (rail, sidebar, /login, /setup)
+- [ ] 07-05-PLAN.md — Human approval gate: pick one of three, up to two adjustment rounds, APPROVAL.md + approved captures + DEFAULT_CONCEPT
+- [ ] 07-06-PLAN.md — Generate packages/ui/brand/* (SVG light/dark, favicon SVG/ICO, apple-touch, PWA 192/512, OG, colours JSON), exports, exactness tests
+- [ ] 07-07-PLAN.md — Mount the mark in Sidebar rail/expanded and AuthCard (/login, /setup), component + E2E tests, ux-review report
+- [ ] 07-08-PLAN.md — docs/brand/BRAND.md brand kit + generated construction sheet, structure/accuracy tests
+- [ ] 07-09-PLAN.md — apps/web icon sync script (allowlist), manifest.ts without hex literals, layout OG metadata, served-URL E2E
+- [ ] 07-10-PLAN.md — README <picture> lockup, CI brand:check drift gate, full regression (93 E2E, ui-safety, lint, typecheck, boundaries)
 **UI hint**: yes
 
 ### Phase 8: Rediseño de la app
