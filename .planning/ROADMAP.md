@@ -80,16 +80,37 @@ Decisiones de `research/SUMMARY.md` (D1-D27) ya aceptadas en `REQUIREMENTS.md`. 
 **Plans:** 10 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 07-01-PLAN.md — Geometry module on the 24 grid: constants, primitives, three monogram concepts, lowercase wordmark (TDD)
 - [ ] 07-02-PLAN.md — Raster pipeline: provenance-gated sharp/png-to-ico install, svgToPng/pngsToIco helpers proven on a placeholder SVG
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 07-03-PLAN.md — Logo/Wordmark/Lockup components (currentColor, data-part hooks) + static-svg/tile renderers + barrel exports
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 07-04-PLAN.md — Brand boards per concept/theme + in-app Playwright capture via DOM injection (rail, sidebar, /login, /setup)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 07-05-PLAN.md — Human approval gate: pick one of three, up to two adjustment rounds, APPROVAL.md + approved captures + DEFAULT_CONCEPT
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 07-06-PLAN.md — Generate packages/ui/brand/* (SVG light/dark, favicon SVG/ICO, apple-touch, PWA 192/512, OG, colours JSON), exports, exactness tests
 - [ ] 07-07-PLAN.md — Mount the mark in Sidebar rail/expanded and AuthCard (/login, /setup), component + E2E tests, ux-review report
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 07-08-PLAN.md — docs/brand/BRAND.md brand kit + generated construction sheet, structure/accuracy tests
 - [ ] 07-09-PLAN.md — apps/web icon sync script (allowlist), manifest.ts without hex literals, layout OG metadata, served-URL E2E
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [ ] 07-10-PLAN.md — README <picture> lockup, CI brand:check drift gate, full regression (93 E2E, ui-safety, lint, typecheck, boundaries)
+
 **UI hint**: yes
 
 ### Phase 8: Rediseño de la app

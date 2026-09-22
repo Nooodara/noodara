@@ -438,7 +438,13 @@ for (const [dest, src] of Object.entries(FILES)) {
 
 **If this table is empty:** N/A — see rows above.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+Resolution recorded at planning time (2026-09-22) — each question is closed by a concrete, testable plan mechanism rather than by further research:
+
+- Q1 (librsvg fidelity) → closed by **07-02 Task 3**: fidelity probe renders an evenodd ring through `sharp` and compares against expectations; on mismatch the task takes the documented Playwright-rasterization branch.
+- Q2 (`svgo`) → closed by **07-06 Task 2**: static SVGs are emitted from the geometry module with fixed-precision numbers; `svgo` is not added unless the exactness test surfaces float noise.
+- Q3 (`manifest.ts` hex vs. gate) → closed by **07-09 Task 2**: `manifest.ts` reads colours from generated `brand-colors.json` (derived from `tokens.css`), so no hex literal enters a `.ts` file and no gate allowlist edit is permitted; the task runs `pnpm check:ui-safety` immediately after creating the file.
 
 1. **Does `sharp`'s SVG rasterization (via librsvg) faithfully render the specific arc/fill-rule constructs the three monogram concepts will use?**
    - What we know: `sharp` is a mature, widely-used SVG→raster path; librsvg is spec-compliant for standard SVG path/arc/fill-rule syntax.
