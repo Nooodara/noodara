@@ -3,6 +3,7 @@
 // 'true' })`, readiness gated by a real wait strategy (never a fixed sleep), and an idempotent
 // `stop()`. No test file under tests/integration/ssh/**.test.ts imports `testcontainers` directly
 // after this lands — everything a scenario needs goes through this module.
+import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +14,7 @@ import {
   type StartedTestContainer,
 } from 'testcontainers';
 import { expect } from 'vitest';
+import { startWithPortBindingRetry } from './port-binding-retry.js';
 
 // Resolved from this file's own location, matching how tests/integration/helpers/migrations.ts
 // resolves the migrations folder — never process.cwd(), so this module works regardless of which
@@ -65,13 +67,39 @@ export async function startSshd(options: StartSshdOptions): Promise<SshdFixture>
     .withBuildArgs({ WITH_DOCKER_CLI: String(dockerCli), WITH_SLOW_DF: String(slowDf) })
     .build();
 
+  // A name of our own so a container Docker CREATED but could not START (a host-port binding race,
+  // see port-binding-retry.ts) can be removed by name -- testcontainers hands back no handle for a
+  // container whose start() threw, and a never-started `noodara.test=true` container is exactly
+  // what the nightly's stray-container guard reports.
+  const containerName = `noodara-sshd-${ubuntu}-${randomUUID()}`;
   const container = image
+    .withName(containerName)
     .withLabels({ 'noodara.test': 'true' })
     .withEnvironment({ SSH_TEST_PASSWORD: password, SSH_TEST_KEY_PASSPHRASE: keyPassphrase })
     .withExposedPorts(hostPort === undefined ? 22 : { container: 22, host: hostPort })
     .withWaitStrategy(Wait.forLogMessage(/Server listening on .* port 22/));
 
-  const started = await container.start();
+  const removeCreatedContainer = (): void => {
+    try {
+      execFileSync('docker', ['rm', '-f', containerName], { stdio: 'ignore', timeout: 30_000 });
+    } catch {
+      // Nothing to remove -- Docker never got as far as creating it.
+    }
+  };
+
+  let started: StartedTestContainer;
+  try {
+    // Only a FIXED host port can race a just-stopped container's mapping; a random port never
+    // collides, so it gets exactly one attempt like before.
+    started = await startWithPortBindingRetry(() => container.start(), {
+      attempts: hostPort === undefined ? 1 : 5,
+      delayMs: 1000,
+      onFailedAttempt: removeCreatedContainer,
+    });
+  } catch (error: unknown) {
+    removeCreatedContainer();
+    throw error;
+  }
 
   let stopped = false;
   const stop = async (): Promise<void> => {
