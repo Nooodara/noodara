@@ -18,3 +18,33 @@ paths = [
   '''^tests/integration/cli/admin-reset\.test\.ts$''',
   '''^packages/domain/src/security/redactor\.test\.ts$''',
 ]
+
+# Added after the first real full-tree scan on GitHub Actions (phase 6). Every entry was checked
+# by hand against the finding it silences; none of them is a value any real environment used.
+[[allowlists]]
+description = "Leak-canary and redaction test fixtures: fixed synthetic values a test plants on purpose to prove they never reach a log, an HTTP body or install.log. Listed file by file so a new test cannot inherit the exemption by accident."
+condition = "OR"
+paths = [
+  '''^tests/unit/installer/main-flow\.test\.ts$''',
+  '''^tests/unit/installer/env-file\.test\.ts$''',
+  '''^packages/ui/src/Input\.test\.tsx$''',
+  '''^apps/web/src/components/SettingsGroups\.test\.tsx$''',
+  '''^apps/web/src/lib/settings-rows\.test\.ts$''',
+]
+
+[[allowlists]]
+description = "Private-key HEADER lines quoted in comments and assertions of key-handling tests; the key material itself is generated per run with node:crypto / ssh-keygen and is never committed."
+condition = "AND"
+paths = [
+  '''^apps/control-plane/src/services/credential-store\.test\.ts$''',
+  '''^tests/e2e/server-sheet\.spec\.ts$''',
+]
+regexes = ['''-----BEGIN [A-Z ]*PRIVATE KEY-----''']
+
+[[allowlists]]
+description = "Committed raw gate logs of phase runs: SSH host-key fingerprints of throwaway test containers (public values) and, in older commits, one-time setup tokens of test databases destroyed at the end of the same run (masked in the current tree)."
+paths = ['''^\.planning/phases/[^/]+/gate-logs/''']
+
+[[allowlists]]
+description = "An illustrative NOODARA_MASTER_KEY example inside an internal planning document, never a value any environment used."
+paths = ['''^\.planning/phases/03-servicios-de-aplicaci-n-activity-log-y-redacci-n/03-03-PLAN\.md$''']
