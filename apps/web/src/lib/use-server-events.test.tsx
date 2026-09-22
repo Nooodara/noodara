@@ -217,6 +217,31 @@ describe('useServerEvents reconnection', () => {
     expect(FakeEventSource.instances).toHaveLength(1);
   });
 
+  // A drop the caller asked for (SignOutButton closing the stream before it posts sign-out) must be
+  // distinguishable from a drop the server caused: the shell layout re-runs the session guard on
+  // the latter only. On a slow machine the guard's own 401 redirect (`/login?redirect=/servers`)
+  // otherwise overtakes the sign-out's `router.push('/login')` -- observed on GitHub's runners.
+  it('reports a caller-initiated close as intentional, and a server-side drop as not', () => {
+    const { result } = renderHook();
+    act(() => {
+      latest().open();
+    });
+    expect(result.current.connected).toBe(true);
+    expect(result.current.closedByCaller).toBe(false);
+
+    act(() => {
+      latest().dropAtNetworkLevel();
+    });
+    expect(result.current.connected).toBe(false);
+    expect(result.current.closedByCaller).toBe(false);
+
+    act(() => {
+      result.current.close();
+    });
+    expect(result.current.connected).toBe(false);
+    expect(result.current.closedByCaller).toBe(true);
+  });
+
   it('never reconnects after unmount', () => {
     const { unmount } = renderHook();
     act(() => {
