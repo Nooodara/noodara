@@ -523,19 +523,23 @@ describe("concept c -- 'Viewfinder'", () => {
     expect(partNames('c')).toEqual(['frame', 'diagonal', 'aperture']);
   });
 
-  it('closes the frame with an inward return at the top-left and the bottom-right corner', () => {
+  // The returns sit on the two corners the diagonal does NOT touch. Put them on the diagonal's
+  // own corners instead and the return plus the diagonal read as an arrowhead at each end -- the
+  // mark stops being an N and becomes a double-headed arrow (checked by rasterising both at
+  // 16/24/32px, 07-01 SUMMARY).
+  it('closes the frame with an inward return at the top-right and the bottom-left corner', () => {
     const segments = subpathsOf(partFor('c', 'frame').d);
     expect(segments).toHaveLength(4);
     const boxes = segments.map((segment) => pathBounds(segment));
     expect(boxes).toContainEqual({
-      minX: MARGIN,
-      maxX: MARGIN + returnLength,
+      minX: GRID - MARGIN - returnLength,
+      maxX: GRID - MARGIN,
       minY: MARGIN,
       maxY: MARGIN + STROKE,
     });
     expect(boxes).toContainEqual({
-      minX: GRID - MARGIN - returnLength,
-      maxX: GRID - MARGIN,
+      minX: MARGIN,
+      maxX: MARGIN + returnLength,
       minY: GRID - MARGIN - STROKE,
       maxY: GRID - MARGIN,
     });
