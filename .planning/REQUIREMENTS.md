@@ -78,7 +78,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **QA-02**: `packages/domain` mantiene ≥95% statement y ≥95% branch en validadores y state machines, verificado por umbral en CI.
 - [x] **QA-03**: La suite de integración usa Testcontainers con sshd para Ubuntu 22.04 y 24.04 y cubre conexión exitosa, credenciales inválidas, host inválido, timeout de red, timeout de comando, pérdida de conexión, reconexión y ejecución segura de comandos, limpiando sus recursos.
 - [ ] **QA-04**: El E2E de Playwright cubre login → Servers → add server → connect → discovery → detail; nightly lo repite 20 veces y ejecuta 100 conexiones consecutivas.
-- [ ] **QA-05**: Un job de CI y nightly siembra secrets canary y verifica que no aparecen en ninguna salida.
+- [x] **QA-05**: Un job de CI y nightly siembra secrets canary y verifica que no aparecen en ninguna salida.
 - [x] **QA-06**: Las migraciones se prueban desde cero y desde el snapshot de la versión anterior.
 
 ## v2 Requirements
@@ -166,7 +166,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UI-02 | Phase 5 | Complete |
 | DISC-02 | Phase 5 | Complete |
 | QA-04 | Phase 5 | Pending |
-| QA-05 | Phase 5 | Pending |
+| QA-05 | Phase 5 | Complete |
 | INST-01 | Phase 6 | Complete |
 | INST-02 | Phase 6 | Complete |
 | INST-03 | Phase 6 | Complete |
