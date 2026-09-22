@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: milestone_complete
-stopped_at: Milestone complete (Phase 06 was final phase)
-last_updated: 2026-09-22T17:33:29.512Z
-last_activity: 2026-09-21 -- Phase 06 Task 3 checkpoint resolved (accept with debt); phase executed but not yet verified
+status: Awaiting next milestone
+stopped_at: Phase 06 EXECUTED 15/15 (06-15-SUMMARY.md); Task 3 checkpoint resolved (accept with debt); awaiting code review + verification before phase.complete
+last_updated: "2026-09-22T18:23:25.393Z"
+last_activity: 2026-09-22 — Milestone v0.1 completed and archived
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 109
   completed_plans: 109
-  percent: 83
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente: sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto.
-**Current focus:** Milestone complete
+**Current focus:** v0.1 shipped (2026-09-22). Next: `/gsd-new-milestone` for v0.2 Projects & Services, with a UI redesign phase first (user decision pending formalisation).
 
 ## Current Position
 
-Phase: 06 (instalador-y-docker-compose) — COMPLETE 2026-09-22
-Plan: 15 of 15
-Status: Milestone complete
-Last activity: 2026-09-22
-
-Progress: [██████████] 6 of 6 phases complete (109/109 plans). v0.1 gate: 15/17 READY; criteria 3-4 wait for the first real nightly.yml run (QA-04/QA-05).
+Phase: Milestone v0.1 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-22 — Milestone v0.1 completed and archived
 
 ## Performance Metrics
 
@@ -482,14 +480,25 @@ None yet.
 
 ## Deferred Items
 
-Items acknowledged and carried forward from previous milestone close:
+Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user decision: close acknowledging the debt):
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| *(none — primer milestone)* | | | |
+| uat_gaps | 01-HUMAN-UAT.md — 2 open scenarios (first real GitHub Actions run and gitleaks on the own repo: both now done for real; file not re-scored) | partial | 2026-09-22 |
+| uat_gaps | 04-HUMAN-UAT.md — 1 open scenario | partial | 2026-09-22 |
+| uat_gaps | 05-HUMAN-UAT.md — 5 open scenarios: the visual/human items (real-display contrast, theme-toggle persistence, live SSE without a tunnel, revoked session in a second tab, Sheet/Dialog/RowMenu elevation and accessibility) | partial | 2026-09-22 |
+| uat_gaps | 06-HUMAN-UAT.md — prerequisites 7 (22.04 / arm64 / ufw / real upgrade / TLS procedure), 8 (memory on a 1–2 GB VPS) and 10 (the phase-5 visual items) | partial | 2026-09-22 |
+| verification_gaps | 01/04/05/06-VERIFICATION.md — status `human_needed`; every automated must-have verified, the human items are the UAT rows above | human_needed | 2026-09-22 |
+| quick_task | 260920-ly9-render-server-side-sshuser-field-error-i — done and shipped; status file missing | missing | 2026-09-22 |
+| quick_task | 260921-13a-fix-host-key-dead-end-and-stale-banner — done and shipped; status file missing | missing | 2026-09-22 |
+| tech_debt | docs/releases/v0.1-gate.md "Known debt / follow-ups" (12 items: check-posix-sh false positives, tests outside lint scope, 1.2 GB control-plane image, no logging rotation, redis password in argv, .env.bak accumulation, manual `docker compose up -d` after editing .env, …) | open | 2026-09-22 |
 
 ## Session Continuity
 
 Last session: 2026-09-21T20:45:00.000Z
 Stopped at: Phase 06 EXECUTED 15/15 (06-15-SUMMARY.md); Task 3 checkpoint resolved (accept with debt); awaiting code review + verification before phase.complete
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

@@ -34,12 +34,17 @@ Noodara puede conocer, registrar y comunicarse con infraestructura real de forma
 - ✓ UI web (`apps/web`, Next.js 16 + `packages/ui`) con el flujo login → Servers → add server → connect → discovery → detail en el design system Apple-inspired, dark y light, con estados vacío/carga/error; vista de detalle (hostname, status, OS, CPU, RAM, disk, uptime, Docker, last seen), discovery paso a paso con pass/fail por check y updates por SSE, Activity y Settings de solo lectura; contraste AA medido por token y rol (`contrast.ts`, decisiones D1–D5) — Fase 5
 - ✓ Confianza de host key aplicada en backend, no solo en UI: `trustFingerprint` exige `lastErrorCode === 'HOST_KEY_CHANGED'` (guard + predicado del UPDATE) y limpia el error al promover, el dominio descarta la huella pendiente tras éxito o fallo no host-key, y un cambio de host/puerto borra la huella confiada desde cualquier estado con Retry disponible en la UI — Fase 5 (gap closure ronda 2 + quick 260921-13a)
 - ✓ Instalador `install.sh` (POSIX sh, un solo comando `curl | sh`): preflight con exit codes por causa, Docker Engine desde el repositorio apt de Docker si falta, `.env` con secrets aleatorios (modo 600, escritura atómica, valores del operador entre comillas y validados), stack de seis servicios con Docker Compose y migraciones, token de setup impreso una vez o admin pre-sembrado; re-ejecución idempotente (no-op / reparación / upgrade con backup y hint de rollback, nunca destructiva). Probado contra Ubuntu 22.04/24.04 reales en Docker-in-Docker (51 tests) en local y en GitHub Actions, y por primera vez con el comando publicado en un VPS Ubuntu 24.04 real (instalación limpia + re-run no-op). Release `v0.1.0` con imágenes multi-arch públicas en GHCR. Validado en Fase 6 (2026-09-22).
+- ✓ Suite de calidad: unit ≥95% en `packages/domain`, integración con Testcontainers para los escenarios SSH del roadmap, E2E del flujo connect-server, 100 conexiones consecutivas y 20/20 E2E en `nightly.yml` real, canary de fugas en CI y nightly reales, CI 9/9 verde en GitHub Actions — v0.1 (2026-09-22).
 
 ### Active
 
-Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.1-v0.5.md](../docs/roadmap-v0.1-v0.5.md), sección 6).
+v0.1 Foundation está entregado. El siguiente milestone es **v0.2 Projects & Services** (roadmap §7); sus requisitos se definen en `/gsd-new-milestone`. Candidatos ya identificados:
 
-- [ ] Suite de calidad: unit ≥95% en core-domain, integration con infraestructura temporal (Testcontainers) para los escenarios SSH del roadmap, E2E del flujo connect-server, CI verde. *(Fase 5: unit 1527, integration 523, E2E 93 en local; sigue activo porque QA-04/QA-05 exigen una corrida real de CI + nightly y el repo aún no tiene remoto.)*
+- [ ] Rediseño de la UI: el usuario juzga la UI actual demasiado plana; Noodara debe ser estéticamente atractiva, no solo potente (logotipo, docs, settings, perfil y apariencia editables). Referencias entregadas por el usuario: taste-skill, impeccable, emilkowalski/skills (apple-design).
+- [ ] Projects → Environments → Services y el primer deploy real con Docker (Dockerfile e imagen), fixtures oficiales, build/runtime logs, cero contenedores huérfanos (roadmap §7.8).
+- [ ] Hardening operativo heredado de v0.1 (`docs/releases/v0.1-gate.md`, "Known debt"): rotación de logs en Compose, poda de `.env.bak-*`, imagen de control-plane de 1.2 GB, `check-posix-sh` sintácticamente consciente.
+- [ ] Deuda de verificación humana de v0.1 (`06-HUMAN-UAT.md`): instalación real en 22.04/arm64/con ufw, upgrade real entre dos releases, memoria en un VPS de 1–2 GB, los seis ítems visuales de la fase 5.
+
 
 ### Out of Scope
 
@@ -52,11 +57,19 @@ Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.
 - Multiusuario, roles, equipos, SSO — un único admin local basta para indie devs en v0.1.
 - Kubernetes, provisioning cloud, CI/CD genérico, monitoring avanzado, DB HA, multi-node, AI con escritura, billing, multi-tenancy cloud — fuera hasta después de v0.5 por definición del roadmap.
 
+## Current State
+
+**Shipped: v0.1.0 — Foundation (2026-09-22).** Repositorio público `Nooodara/noodara`; Release `v0.1.0` con imágenes multi-arch públicas en GHCR (`ghcr.io/nooodara/noodara-control-plane:0.1.0`, `ghcr.io/nooodara/noodara-web:0.1.0`); instalación con `curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sh` verificada por el usuario en un VPS Ubuntu 24.04 real (instalación limpia y re-run no-op). Gate de release `docs/releases/v0.1-gate.md`: 17/17 READY. Código: ~24k líneas de producto (TS/TSX/sh) y ~47k de tests; 2214 unit, 523 integración, 93 E2E, 51 instalador (DinD), 810 commits en 12 días. Deuda conocida y humana pendiente: `.planning/STATE.md` "Deferred Items" y `06-HUMAN-UAT.md`.
+
+## Next Milestone Goals
+
+v0.2 Projects & Services (roadmap §7): que una persona cree un proyecto, un environment y un servicio desde un repo Git, un Dockerfile o una imagen, y lo despliegue en el servidor conectado en v0.1 con logs de build y runtime, estado real del contenedor en la UI y sin dejar recursos huérfanos. Decisión del usuario pendiente de formalizar en `/gsd-new-milestone`: hacer primero una fase de rediseño de la UI para que las pantallas nuevas nazcan con la estética definitiva.
+
 ## Context
 
 - **Origen:** el usuario (Pablo Gutiérrez) define el producto a partir de un roadmap técnico detallado v0.1–v0.5 que ya fija principios de ingeniería (TDD obligatorio, Definition of Done, pirámide de tests), principios de diseño y criterios de aceptación por versión. Ese documento es la fuente de verdad del alcance.
 - **Referencias de producto:** Coolify y Dokploy. Noodara debe igualar su facilidad de instalación y despliegue desde el inicio; su diferencial es entender la infraestructura, no solo administrarla.
-- **Repositorio:** repo público en GitHub. Por ahora solo se hacen commits locales, siempre con la autoría del usuario y sin atribución a asistentes de IA. Los archivos `CLAUDE.md` y `.claude/` están fuera de versión (gitignore). El repo git raíz es `~/work/myself`; este proyecto vive en `noodara/code/` como subdirectorio anidado.
+- **Repositorio:** `github.com/Nooodara/noodara`, público desde 2026-09-22 (extraído del monorepo personal con `git subtree split`; el monorepo local sigue siendo donde se trabaja y cada push es un split + fast-forward). Commits siempre con la autoría del usuario y sin atribución a asistentes de IA. Los archivos `CLAUDE.md` y `.claude/` están fuera de versión (gitignore). El repo git raíz es `~/work/myself`; este proyecto vive en `noodara/code/` como subdirectorio anidado.
 - **Guía operativa del repo:** `CLAUDE.md` (local) y siete skills de proyecto en `.claude/skills/` (`noodara-tdd`, `noodara-security`, `noodara-domain-model`, `noodara-ux-apple`, `noodara-ux-review`, `noodara-ai-readonly`, `noodara-release-gate`) que codifican TDD, seguridad, modelo de dominio y design system.
 - **Design system:** inspirado en Apple (HIG y apple.com): un solo color de acción, hairlines y escalones de superficie en lugar de sombras, tipografía del sistema, dark-first con light obligatorio, progressive disclosure. Biblioteca de referencias locales en `~/.claude/design-references/design-md/` (apple, linear.app, vercel, raycast).
 - **Idioma:** código, commits, copy de UI y errores de producto en inglés; documentación de planificación en español.
@@ -75,12 +88,12 @@ Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Primer milestone = solo v0.1 Foundation | Un milestone por versión del roadmap permite revisar arquitectura y producto antes de crecer | — Pending |
+| Primer milestone = solo v0.1 Foundation | Un milestone por versión del roadmap permite revisar arquitectura y producto antes de crecer | ✓ Good (v0.1 entregado en 12 días con gate 17/17; la revisión de producto tras el cierre sacó a la luz el rediseño de UI antes de v0.2) |
 | Público objetivo inicial: devs indie / solo con un VPS | Mismo público que Coolify/Dokploy; exige instalación de un comando y onboarding cuidado desde v0.1 | — Pending |
 | v0.1 opera por SSH desde el control plane, sin agent | Reduce superficie y complejidad; el roadmap no exige agent para conectar y descubrir | ✓ Good (Fase 2) |
 | `UNSUPPORTED_OS` y Docker ausente son advertencias con el servidor en CONNECTED (D-11/D-12 fase 2), revirtiendo el mapeo a ERROR de la fase 1 | El admin ve su servidor y sus datos; v0.2 bloqueará el deploy sobre él | ✓ Good (Fase 2) |
 | Tests de integración nunca dependen del resolver DNS de la máquina (ADR 0004 row 4 resultó variable) | Un spike midió `client-timeout` y otra máquina dio `client-socket`; se aserta la unión de formas | ✓ Good (Fase 2) |
-| Stack abierto lo decide research | Evita fijar librerías con datos desactualizados; el usuario aprueba en la revisión de requisitos | — Pending |
+| Stack abierto lo decide research | Evita fijar librerías con datos desactualizados; el usuario aprueba en la revisión de requisitos | ✓ Good (ningún cambio de stack en seis fases) |
 | Licencia Apache-2.0 | Alineada con Coolify/Dokploy, incluye grant de patentes, protege contribuidores | — Pending (LICENSE commiteado; MIT sigue siendo opción) |
 | Stack v0.1: pnpm + Turborepo, Fastify 5, Drizzle, BullMQ, ssh2, pino, Zod 4, TypeScript 6.0, Node 22 LTS | Research 2026-09-10: TS 7 bloqueado por typescript-eslint; Redis ya fijado hace a BullMQ la opción natural; Drizzle es el precedente de Dokploy | ✓ Good (Fase 1) |
 | Runtime: `packages/domain` compilado a `dist` con exports a `dist`, tests con alias a `src`, `tsx` para dev y CLI, node puro para `start` (ADR 0003) | Gap de la fase 1: Node no remapea `.js`→`.ts` y el paquete exportaba fuentes | ✓ Good (Fase 1) |
@@ -90,8 +103,8 @@ Alcance del primer milestone: **v0.1 Foundation** del roadmap ([docs/roadmap-v0.
 | Adiciones a v0.1: setup token, sudo no-root, narrativa de discovery, pre-seed de admin | Recomendadas por research (features + pitfalls); bajo costo, alto valor de confianza. Aprobadas por el usuario | — Pending |
 | Topología: Docker Compose con api y worker separados, SSE para estado en tiempo real, DiscoverySnapshot append-only, key-version en filas cifradas | Research de arquitectura: evita refactors forzados en v0.3 y v0.5 | ✓ Good (Fase 4: api y worker separados + SSE; Compose llega en Fase 6) |
 | JobId de BullMQ `connect-<serverId>` con guion, y borrado del job terminal retenido antes de re-encolar | BullMQ 6.x rechaza `:` en ids custom; un job `completed` retenido hacía que todo re-discover posterior fuera un no-op silencioso (hallado por el E2E de 04-11) | ✓ Good (Fase 4) |
-| TDD obligatorio y DoD estricto desde v0.1 | Definido en el roadmap; el valor central es confiabilidad, no velocidad | — Pending |
-| Design system Apple-inspired dark-first | Principios de diseño del roadmap + preferencia explícita del usuario por UX de Apple | — Pending |
+| TDD obligatorio y DoD estricto desde v0.1 | Definido en el roadmap; el valor central es confiabilidad, no velocidad | ✓ Good (los tests RED-first cazaron bugs reales en cada fase; las pocas excepciones quedaron documentadas como desviaciones) |
+| Design system Apple-inspired dark-first | Principios de diseño del roadmap + preferencia explícita del usuario por UX de Apple | ⚠️ Revisit (v0.1: el usuario lo ve "muy plano"; lo sencillo sí, lo plano no — rediseño planteado para v0.2 con referencias externas de diseño) |
 
 ## Evolution
 
@@ -111,4 +124,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-22 after Phase 6 completion (repository public, CI green, v0.1.0 released; remaining verification debt in 06-HUMAN-UAT.md and docs/releases/v0.1-gate.md)*
+*Last updated: 2026-09-22 after v0.1 milestone*
