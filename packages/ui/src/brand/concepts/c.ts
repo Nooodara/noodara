@@ -8,7 +8,9 @@
 // runs between them and breaks open at the centre, where a small ring marks the point of focus.
 //
 //   frame      two full-height bars (STROKE wide) plus two returns, each STROKE + APERTURE_RADIUS
-//              long and STROKE thick, at the top-left and bottom-right corners
+//              long and STROKE thick, at the top-right and bottom-left corners -- the two the
+//              diagonal does not touch, so the returns read as framing marks instead of turning
+//              the diagonal into a double-headed arrow
 //   diagonal   two diagonalBar segments leaving a gap of APERTURE_RADIUS centred on the grid
 //   aperture   ring, outer APERTURE_RADIUS / 2 (so it exactly fills that gap), counter half a
 //              stroke inside it
@@ -45,8 +47,8 @@ export function parts(): readonly PathPart[] {
       d: [
         bar(MARGIN, MARGIN, STROKE, span),
         bar(GRID - MARGIN - STROKE, MARGIN, STROKE, span),
-        bar(MARGIN, MARGIN, returnLength, STROKE),
-        bar(GRID - MARGIN - returnLength, GRID - MARGIN - STROKE, returnLength, STROKE),
+        bar(GRID - MARGIN - returnLength, MARGIN, returnLength, STROKE),
+        bar(MARGIN, GRID - MARGIN - STROKE, returnLength, STROKE),
       ].join(' '),
     },
     {
