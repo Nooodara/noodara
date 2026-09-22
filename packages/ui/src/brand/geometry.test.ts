@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { ConceptId, PathPart } from './geometry.js';
 import {
   APERTURE_RADIUS,
   BASELINE,
@@ -175,6 +176,49 @@ function sweepFlagsOf(d: string): number[] {
 
 function distance(a: Point, b: Point): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function midpoint(a: Point, b: Point): Point {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
+/** The closed subpaths of `d` -- one per `M`. */
+function subpathsOf(d: string): string[] {
+  return d
+    .split(/(?=M)/)
+    .map((segment) => segment.trim())
+    .filter((segment) => segment.length > 0);
+}
+
+/** The radius of every `A` command, in order. */
+function arcRadiiOf(d: string): number[] {
+  const tokens = tokensOf(d);
+  const radii: number[] = [];
+  for (let i = 0; i < tokens.length; i += 1) {
+    if (tokens[i] === 'A') radii.push(Number(tokens[i + 1]));
+  }
+  return radii;
+}
+
+function partFor(concept: ConceptId, name: string): PathPart {
+  const found = monogramParts(concept).find((part) => part.part === name);
+  if (found === undefined) throw new Error(`concept ${concept} has no part "${name}"`);
+  return found;
+}
+
+function partNames(concept: ConceptId): string[] {
+  return monogramParts(concept).map((part) => part.part);
+}
+
+const CENTRE: Point = { x: GRID / 2, y: GRID / 2 };
+
+/** The mid-point of the two vertices of `segment` closest to `CENTRE` -- i.e. where that segment
+ *  of a split diagonal stops. */
+function innerEnd(segment: string): Point {
+  const sorted = [...pathPoints(segment)].sort((a, b) => distance(a, CENTRE) - distance(b, CENTRE));
+  const [first, second] = sorted;
+  if (first === undefined || second === undefined) throw new Error(`"${segment}" has fewer than two points`);
+  return midpoint(first, second);
 }
 
 function pointAt(d: string, index: number): Point {
@@ -355,6 +399,158 @@ describe('monogram contract (every concept)', () => {
           .join(' '),
       );
     }
+  });
+});
+
+describe('monogram part order and bounds (every concept)', () => {
+  it.each(CONCEPT_IDS)('concept %s draws the stems or frame first, then the diagonal, then the aperture', (concept) => {
+    const names = partNames(concept);
+    expect(names[names.length - 1]).toBe('aperture');
+    const diagonalIndex = names.indexOf('diagonal');
+    expect(diagonalIndex).toBeGreaterThan(0);
+    expect(diagonalIndex).toBe(names.length - 2);
+    for (const name of names.slice(0, diagonalIndex)) {
+      expect(['stem-left', 'stem-right', 'frame']).toContain(name);
+    }
+  });
+
+  it.each(CONCEPT_IDS)('concept %s keeps every part inside the margin -- nothing touches the box edge', (concept) => {
+    for (const part of monogramParts(concept)) {
+      const bounds = pathBounds(part.d);
+      expect(bounds.minX, `${concept}/${part.part} minX`).toBeGreaterThanOrEqual(MARGIN - 1e-9);
+      expect(bounds.minY, `${concept}/${part.part} minY`).toBeGreaterThanOrEqual(MARGIN - 1e-9);
+      expect(bounds.maxX, `${concept}/${part.part} maxX`).toBeLessThanOrEqual(GRID - MARGIN + 1e-9);
+      expect(bounds.maxY, `${concept}/${part.part} maxY`).toBeLessThanOrEqual(GRID - MARGIN + 1e-9);
+    }
+  });
+
+  it.each(CONCEPT_IDS)('concept %s keeps the stems full height so the mark still reads as an N', (concept) => {
+    const skeleton = monogramParts(concept).filter((part) => part.part !== 'aperture' && part.part !== 'diagonal');
+    const bounds = skeleton.map((part) => pathBounds(part.d));
+    expect(Math.min(...bounds.map((b) => b.minY))).toBeCloseTo(MARGIN, 6);
+    expect(Math.min(...bounds.map((b) => b.minX))).toBeCloseTo(MARGIN, 6);
+    expect(Math.max(...bounds.map((b) => b.maxX))).toBeCloseTo(GRID - MARGIN, 6);
+  });
+});
+
+describe("concept a -- 'Aperture'", () => {
+  it('is two stems, an interrupted diagonal and the aperture ring', () => {
+    expect(partNames('a')).toEqual(['stem-left', 'stem-right', 'diagonal', 'aperture']);
+  });
+
+  it('opens the diagonal at the ring: two segments that stop APERTURE_RADIUS from the centre', () => {
+    const segments = subpathsOf(partFor('a', 'diagonal').d);
+    expect(segments).toHaveLength(2);
+    for (const segment of segments) {
+      expect(pathPoints(segment)).toHaveLength(4);
+      expect(distance(innerEnd(segment), CENTRE)).toBeCloseTo(APERTURE_RADIUS, 2);
+    }
+  });
+
+  it('centres the aperture on the diagonal with the counter one stroke inside it', () => {
+    const aperture = partFor('a', 'aperture');
+    expect(pathBounds(aperture.d)).toEqual({
+      minX: CENTRE.x - APERTURE_RADIUS,
+      maxX: CENTRE.x + APERTURE_RADIUS,
+      minY: CENTRE.y - APERTURE_RADIUS,
+      maxY: CENTRE.y + APERTURE_RADIUS,
+    });
+    expect(arcRadiiOf(aperture.d)).toEqual([
+      APERTURE_RADIUS,
+      APERTURE_RADIUS,
+      APERTURE_RADIUS - STROKE,
+      APERTURE_RADIUS - STROKE,
+    ]);
+  });
+});
+
+describe("concept b -- 'Focus'", () => {
+  const focal = GRID - MARGIN - STROKE / 2;
+
+  it('is two stems, a converging diagonal and the focal disc', () => {
+    expect(partNames('b')).toEqual(['stem-left', 'stem-right', 'diagonal', 'aperture']);
+  });
+
+  it('tapers the diagonal from a full stroke down to the focal point', () => {
+    const segments = subpathsOf(partFor('b', 'diagonal').d);
+    expect(segments).toHaveLength(1);
+    const points = pathPoints(partFor('b', 'diagonal').d);
+    expect(points).toHaveLength(4);
+    const widthAtStart = distance(pointAt(partFor('b', 'diagonal').d, 0), pointAt(partFor('b', 'diagonal').d, 3));
+    const widthAtEnd = distance(pointAt(partFor('b', 'diagonal').d, 1), pointAt(partFor('b', 'diagonal').d, 2));
+    expect(widthAtStart).toBeCloseTo(STROKE, 2);
+    expect(widthAtEnd).toBeLessThanOrEqual(TERMINAL_RADIUS * 2);
+    expect(widthAtEnd).toBeLessThan(widthAtStart);
+  });
+
+  it('caps the convergence with a filled disc, not a ring', () => {
+    const aperture = partFor('b', 'aperture');
+    expect(commandsOf(aperture.d).filter((c) => c === 'A')).toHaveLength(2);
+    expect(commandsOf(aperture.d).filter((c) => c === 'Z')).toHaveLength(1);
+    expect(arcRadiiOf(aperture.d)).toEqual([TERMINAL_RADIUS, TERMINAL_RADIUS]);
+    expect(pathBounds(aperture.d)).toEqual({
+      minX: focal - TERMINAL_RADIUS,
+      maxX: focal + TERMINAL_RADIUS,
+      minY: focal - TERMINAL_RADIUS,
+      maxY: focal + TERMINAL_RADIUS,
+    });
+  });
+
+  it('runs the right stem down to the focal point, where the beam lands', () => {
+    const bounds = pathBounds(partFor('b', 'stem-right').d);
+    expect(bounds.maxY).toBeCloseTo(focal, 6);
+    expect(bounds.minY).toBeCloseTo(MARGIN, 6);
+  });
+});
+
+describe("concept c -- 'Viewfinder'", () => {
+  const apertureRadius = APERTURE_RADIUS / 2;
+  const returnLength = STROKE + APERTURE_RADIUS;
+
+  it('is a bracket frame, a split diagonal and the centre ring', () => {
+    expect(partNames('c')).toEqual(['frame', 'diagonal', 'aperture']);
+  });
+
+  it('closes the frame with an inward return at the top-left and the bottom-right corner', () => {
+    const segments = subpathsOf(partFor('c', 'frame').d);
+    expect(segments).toHaveLength(4);
+    const boxes = segments.map((segment) => pathBounds(segment));
+    expect(boxes).toContainEqual({
+      minX: MARGIN,
+      maxX: MARGIN + returnLength,
+      minY: MARGIN,
+      maxY: MARGIN + STROKE,
+    });
+    expect(boxes).toContainEqual({
+      minX: GRID - MARGIN - returnLength,
+      maxX: GRID - MARGIN,
+      minY: GRID - MARGIN - STROKE,
+      maxY: GRID - MARGIN,
+    });
+  });
+
+  it('splits the diagonal around a gap of APERTURE_RADIUS at the centre', () => {
+    const segments = subpathsOf(partFor('c', 'diagonal').d);
+    expect(segments).toHaveLength(2);
+    for (const segment of segments) {
+      expect(distance(innerEnd(segment), CENTRE)).toBeCloseTo(APERTURE_RADIUS / 2, 2);
+    }
+  });
+
+  it('sits a small ring in that gap', () => {
+    const aperture = partFor('c', 'aperture');
+    expect(arcRadiiOf(aperture.d)).toEqual([
+      apertureRadius,
+      apertureRadius,
+      apertureRadius - STROKE / 2,
+      apertureRadius - STROKE / 2,
+    ]);
+    expect(pathBounds(aperture.d)).toEqual({
+      minX: CENTRE.x - apertureRadius,
+      maxX: CENTRE.x + apertureRadius,
+      minY: CENTRE.y - apertureRadius,
+      maxY: CENTRE.y + apertureRadius,
+    });
   });
 });
 
