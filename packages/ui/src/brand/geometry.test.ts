@@ -2,15 +2,18 @@ import { describe, expect, it } from 'vitest';
 import type { ConceptId, PathPart } from './geometry.js';
 import {
   APERTURE_RADIUS,
+  ASCENDER,
   BASELINE,
   CONCEPT_IDS,
   CONCEPT_META,
   DEFAULT_CONCEPT,
   GRID,
+  LETTER_GAP,
   LOCKUP_GAP,
   MARGIN,
   STROKE,
   TERMINAL_RADIUS,
+  X_HEIGHT,
   bar,
   circle,
   diagonalBar,
@@ -20,6 +23,9 @@ import {
   monogramParts,
   monogramPath,
   ring,
+  wordmarkParts,
+  wordmarkPath,
+  wordmarkWidth,
 } from './geometry.js';
 import { meta as metaA, parts as partsA } from './concepts/a.js';
 import { meta as metaB, parts as partsB } from './concepts/b.js';
@@ -203,6 +209,12 @@ function arcRadiiOf(d: string): number[] {
 function partFor(concept: ConceptId, name: string): PathPart {
   const found = monogramParts(concept).find((part) => part.part === name);
   if (found === undefined) throw new Error(`concept ${concept} has no part "${name}"`);
+  return found;
+}
+
+function glyphFor(name: string): PathPart {
+  const found = wordmarkParts(DEFAULT_CONCEPT).find((part) => part.part === name);
+  if (found === undefined) throw new Error(`the wordmark has no part "${name}"`);
   return found;
 }
 
@@ -583,10 +595,115 @@ describe('concept metadata', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
+// Wordmark
+// ---------------------------------------------------------------------------------------------
+
+describe('wordmark "noodara"', () => {
+  it('spells the word in lowercase, one part per letter (D-06)', () => {
+    expect(wordmarkParts(DEFAULT_CONCEPT).map((part) => part.part)).toEqual([
+      'glyph-n',
+      'glyph-o',
+      'glyph-o',
+      'glyph-d',
+      'glyph-a',
+      'glyph-r',
+      'glyph-a',
+    ]);
+  });
+
+  it('draws both "o" with the monogram\'s own aperture ring -- same radius, same stroke (D-08)', () => {
+    const rounds = wordmarkParts('a').filter((part) => part.part === 'glyph-o');
+    expect(rounds).toHaveLength(2);
+    for (const round of rounds) {
+      expect(commandsOf(round.d).filter((c) => c === 'A')).toHaveLength(4);
+      expect(arcRadiiOf(round.d)).toEqual([
+        APERTURE_RADIUS,
+        APERTURE_RADIUS,
+        APERTURE_RADIUS - STROKE,
+        APERTURE_RADIUS - STROKE,
+      ]);
+      // The literal link to the symbol: the "o" is the aperture, drawn at the same size.
+      expect(arcRadiiOf(round.d)).toEqual(arcRadiiOf(partFor('a', 'aperture').d));
+    }
+  });
+
+  it("draws the n's stem at the monogram's stroke weight (D-05)", () => {
+    const stem = subpathsOf(glyphFor('glyph-n').d)[0];
+    if (stem === undefined) throw new Error('the n has no first subpath');
+    const bounds = pathBounds(stem);
+    expect(bounds.maxX - bounds.minX).toBeCloseTo(STROKE, 6);
+    const monogramStem = pathBounds(partFor('a', 'stem-left').d);
+    expect(bounds.maxX - bounds.minX).toBeCloseTo(monogramStem.maxX - monogramStem.minX, 6);
+  });
+
+  it('sets every letter on the baseline, at the x-height, with only the "d" ascending', () => {
+    for (const part of wordmarkParts(DEFAULT_CONCEPT)) {
+      const bounds = pathBounds(part.d);
+      const top = part.part === 'glyph-d' ? BASELINE - ASCENDER : BASELINE - X_HEIGHT;
+      expect(bounds.maxY, `${part.part} sits on the baseline`).toBeCloseTo(BASELINE, 6);
+      expect(bounds.minY, `${part.part} reaches its own top line`).toBeCloseTo(top, 6);
+    }
+  });
+
+  it('tracks the letters tight -- one LETTER_GAP between the round letters (D-07)', () => {
+    const boxes = wordmarkParts(DEFAULT_CONCEPT).map((part) => pathBounds(part.d));
+    for (let i = 1; i < boxes.length; i += 1) {
+      const previous = boxes[i - 1];
+      const current = boxes[i];
+      if (previous === undefined || current === undefined) throw new Error('missing glyph box');
+      expect(current.minX - previous.maxX).toBeGreaterThanOrEqual(LETTER_GAP - 1e-9);
+    }
+    // The two "o" are the same shape, so their gap is the tracking itself, with no bearing of
+    // the glyph's own mixed in.
+    const [, firstO, secondO] = boxes;
+    if (firstO === undefined || secondO === undefined) throw new Error('missing the "oo"');
+    expect(secondO.minX - firstO.maxX).toBeCloseTo(LETTER_GAP, 6);
+  });
+
+  it('measures its width to the last letter, with no trailing bearing', () => {
+    for (const concept of CONCEPT_IDS) {
+      const boxes = wordmarkParts(concept).map((part) => pathBounds(part.d));
+      expect(wordmarkWidth(concept)).toBeCloseTo(Math.max(...boxes.map((box) => box.maxX)), 6);
+      expect(wordmarkWidth(concept)).toBeGreaterThan(6 * (2 * APERTURE_RADIUS));
+      expect(wordmarkWidth(concept)).toBeLessThan(7 * GRID);
+    }
+  });
+
+  it.each(CONCEPT_IDS)('concept %s: the wordmark is lines and arcs only, inside its own box', (concept) => {
+    const d = wordmarkPath(concept);
+    expect(d).not.toMatch(/[CQSTcqst]/);
+    expect(d).toMatch(/^[MLHVAZmlhvaz0-9.\s-]+$/);
+    const bounds = pathBounds(d);
+    expect(bounds.minX).toBeGreaterThanOrEqual(-1e-9);
+    expect(bounds.maxX).toBeLessThanOrEqual(wordmarkWidth(concept) + 1e-9);
+    expect(bounds.minY).toBeGreaterThanOrEqual(-1e-9);
+    expect(bounds.maxY).toBeLessThanOrEqual(GRID + 1e-9);
+  });
+
+  it('is built from the shared constants, so every concept spells it identically', () => {
+    const tail = (concept: ConceptId): string =>
+      wordmarkParts(concept)
+        .slice(1)
+        .map((part) => part.d)
+        .join(' ');
+    expect(tail('a')).toBe(tail('b'));
+    expect(tail('a')).toBe(tail('c'));
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
 // Lockup
 // ---------------------------------------------------------------------------------------------
 
 describe('lockup', () => {
+  it.each(CONCEPT_IDS)('concept %s: the lockup carries the wordmark as built (D-05)', (concept) => {
+    expect(lockupParts(concept).wordmark).toEqual(wordmarkParts(concept));
+  });
+
+  it.each(CONCEPT_IDS)('concept %s: the lockup is as wide as the monogram, the gap and the word', (concept) => {
+    expect(lockupLayout(concept).width).toBeCloseTo(GRID + LOCKUP_GAP + wordmarkWidth(concept), 6);
+  });
+
   it.each(CONCEPT_IDS)("concept %s: the lockup's N is the monogram itself (D-05)", (concept) => {
     expect(lockupParts(concept).monogram).toEqual(monogramParts(concept));
   });
