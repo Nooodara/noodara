@@ -245,7 +245,7 @@ export interface LockupLayout {
 }
 
 /** Where the two elements of the horizontal lockup sit, in grid units (D-04). */
-export function lockupLayout(concept: ConceptId): LockupLayout {
+export function lockupLayout(_concept: ConceptId): LockupLayout {
   const wordmarkX = GRID + LOCKUP_GAP;
   return {
     // TODO(07-01 Task 3): + wordmarkWidth(concept) once glyphs.ts exists.
