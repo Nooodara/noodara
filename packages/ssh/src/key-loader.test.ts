@@ -71,15 +71,21 @@ describe('loadPrivateKey', () => {
       }
     });
 
-    it('rejects a DSA key with a validation error naming the accepted types', () => {
+    it('rejects a DSA key as a validation failure, whichever layer refuses it', () => {
       const result = loadPrivateKey(privateKeyCredential(keys.dsa), createRedactor());
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.kind).toBe('validation');
-        expect(result.message).toMatch(/ed25519/i);
-        expect(result.message).toMatch(/ecdsa/i);
-        expect(result.message).toMatch(/rsa/i);
+        // Two layers can refuse DSA and which one fires depends on the runtime: where OpenSSL still
+        // parses DSA (Node 22 on OpenSSL 3.0, e.g. macOS/Homebrew), ssh2 parses the key and the
+        // loader's own allow-list rejects it naming the accepted types; where OpenSSL has dropped
+        // DSA entirely (OpenSSL 3.5+, e.g. GitHub's ubuntu-latest runners), ssh2 cannot parse it
+        // at all and the loader reports the generic parse failure. Both are the same product
+        // outcome -- a validation error, never an auth error, never a stack trace.
+        const namesAcceptedTypes = /ed25519/i.test(result.message) && /ecdsa/i.test(result.message) && /rsa/i.test(result.message);
+        const parseRefused = /unable to parse private key/.test(result.message);
+        expect(namesAcceptedTypes || parseRefused, `unexpected DSA rejection message: ${result.message}`).toBe(true);
       }
     });
 

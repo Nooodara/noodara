@@ -12,7 +12,7 @@
 // portable way to override a hyphenated command name. Every filesystem target these functions
 // write to (the keyring directory, the sources-list file) is redirected into a fresh mkdtemp
 // directory via NOODARA_DOCKER_KEYRING_DIR / NOODARA_DOCKER_SOURCES_FILE, never a real /etc path.
-import { chmodSync, existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdtempSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -127,15 +127,38 @@ function buildInstallEnv(): {
 // shell-function shadow cannot represent "absent", because POSIX `command -v` reports a defined
 // shell function as present regardless of what PATH itself contains (confirmed empirically:
 // `dash -c 'docker() { :; }; command -v docker'` prints `docker`, exit 0). This helper instead leaves
-// `docker` completely undefined and restricts PATH to the stub directory plus the minimal system
-// directories (`/usr/bin`, `/bin`) install.sh's own unshadowed logic still calls directly (awk,
-// tr, mv, cat) -- deliberately never `process.env.PATH`, so a real Docker Desktop/Homebrew
-// install on the machine running these tests can never be found and mistaken for "present".
+// `docker` completely undefined and restricts PATH to the stub directory plus a SANITISED copy of
+// the minimal system directories (`/usr/bin`, `/bin`) install.sh's own unshadowed logic still
+// calls directly (awk, tr, mv, cat): every executable there is symlinked into a private directory
+// EXCEPT anything named `docker*`. Restricting PATH to the real `/usr/bin:/bin` was not enough --
+// GitHub's `ubuntu-latest` runners ship `/usr/bin/docker`, so on CI `command -v docker` found it
+// and noodara_ensure_docker legitimately reported "binary present, daemon unresponsive" (exit
+// 22) instead of the "absent" path these tests exercise. Deliberately never `process.env.PATH`
+// either, so a real Docker Desktop/Homebrew install on a developer machine can never be found.
 // When `installsDocker` is true, the apt-get stub -- once its own recorded argv shows the
 // `docker-ce` package being installed -- writes a real, always-succeeding `docker` executable
 // into the stub directory (already first on PATH), modelling a real `apt-get install` making the
 // command newly available; when false, no such file is ever created and `docker` stays absent
 // for the whole run.
+/** A private directory holding symlinks to every executable of `/usr/bin` and `/bin` except
+ *  anything named `docker*`, so a PATH built from it genuinely has no `docker` command no matter
+ *  what the host machine (a developer laptop, a GitHub runner) has installed system-wide. */
+function systemBinWithoutDocker(): string {
+  const dir = mkdtempSync(join(tmpdir(), 'noodara-sysbin-no-docker-'));
+  for (const source of ['/usr/bin', '/bin']) {
+    if (!existsSync(source)) continue;
+    for (const name of readdirSync(source)) {
+      if (name.startsWith('docker') || existsSync(join(dir, name))) continue;
+      try {
+        symlinkSync(join(source, name), join(dir, name));
+      } catch {
+        // A name that cannot be linked (permissions, dangling entry) is simply left out.
+      }
+    }
+  }
+  return dir;
+}
+
 function buildDockerAbsentEnv(options: { installsDocker: boolean }): {
   snippet: string;
   env: Record<string, string>;
@@ -171,7 +194,7 @@ function buildDockerAbsentEnv(options: { installsDocker: boolean }): {
   return {
     snippet,
     env: {
-      PATH: `${stubDir}:/usr/bin:/bin`,
+      PATH: `${stubDir}:${systemBinWithoutDocker()}`,
       NOODARA_TEST_CALL_LOG: logFile,
       NOODARA_OS_RELEASE_FILE: osReleaseFile,
       NOODARA_DOCKER_KEYRING_DIR: keyringDir,
