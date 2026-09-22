@@ -38,6 +38,12 @@ export default function ShellLayout({ children }: { readonly children: ReactNode
   // `requireSession` itself never redirects on `NETWORK_ERROR`, so an ordinary reconnect blip
   // (which also flips `connected` to `false`) never signs anyone out. No polling interval is
   // added: this only ever fires in response to a state change `useServerEvents` already computes.
+  //
+  // A drop this tab asked for is not a signal: `SignOutButton` closes the stream itself right
+  // before posting `/api/auth/sign-out`, and re-running the guard on that drop races its own
+  // `router.push('/login')` against the guard's `/login?redirect=/servers` full navigation --
+  // on a slow machine (GitHub's runners) the guard won and sign-out landed on the wrong URL.
+  // `closedByCaller` is exactly that distinction, computed by the hook that did the closing.
   const wasConnectedRef = useRef(false);
   useEffect(() => {
     if (serverEvents.connected) {
@@ -46,9 +52,11 @@ export default function ShellLayout({ children }: { readonly children: ReactNode
     }
     if (wasConnectedRef.current) {
       wasConnectedRef.current = false;
-      void requireSession();
+      if (!serverEvents.closedByCaller) {
+        void requireSession();
+      }
     }
-  }, [serverEvents.connected]);
+  }, [serverEvents.connected, serverEvents.closedByCaller]);
 
   const contextValue: ShellContextValue = {
     ...serverEvents,

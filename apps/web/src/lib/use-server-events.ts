@@ -40,11 +40,16 @@ export interface UseServerEventsResult {
   /** Closes the shared stream immediately -- `SignOutButton` calls this before posting
    *  `/api/auth/sign-out`, rather than waiting for the server's own heartbeat to notice. */
   readonly close: () => void;
+  /** `true` once `close()` was called on the current stream: a drop this tab asked for. The shell
+   *  layout re-runs its session guard only on a drop the server caused -- re-running it here
+   *  would race the sign-out's own navigation with the guard's `/login?redirect=...` redirect. */
+  readonly closedByCaller: boolean;
 }
 
 /** The single EventSource hook for the authenticated shell. */
 export function useServerEvents(): UseServerEventsResult {
   const [connected, setConnected] = useState(false);
+  const [closedByCaller, setClosedByCaller] = useState(false);
   const resyncCallbacksRef = useRef<Set<() => void>>(new Set());
   const listenersRef = useRef<Set<(event: ServerEvent) => void>>(new Set());
   const sourceRef = useRef<EventSource | null>(null);
@@ -52,6 +57,7 @@ export function useServerEvents(): UseServerEventsResult {
 
   useEffect(() => {
     closedByCallerRef.current = false;
+    setClosedByCaller(false);
     let hasEverOpened = false;
     let preOpenFailures = 0;
     let rejections = 0;
@@ -159,8 +165,9 @@ export function useServerEvents(): UseServerEventsResult {
     closedByCallerRef.current = true;
     sourceRef.current?.close();
     sourceRef.current = null;
+    setClosedByCaller(true);
     setConnected(false);
   }, []);
 
-  return { connected, subscribe, registerResync, close };
+  return { connected, subscribe, registerResync, close, closedByCaller };
 }

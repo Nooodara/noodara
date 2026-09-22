@@ -87,6 +87,7 @@ function renderPage(): Harness {
       return () => resyncs.delete(fn);
     },
     close: () => undefined,
+    closedByCaller: false,
     mobileNavOpen: false,
     toggleMobileNav: () => undefined,
     closeMobileNav: () => undefined,
