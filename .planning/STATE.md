@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 07-04-PLAN.md
-last_updated: "2026-09-23T01:06:49.109Z"
-last_activity: 2026-09-23 -- Phase 07 Plan 04 complete (6 brand boards + 36 in-app captures, gitignored, ready for the 07-05 approval gate)
+stopped_at: Completed 07-05-PLAN.md (brand approval — concept c) — wave 4 done
+last_updated: "2026-09-23T01:33:43.000Z"
+last_activity: 2026-09-23 -- Phase 07 Plan 05 complete (concept c "Viewfinder" approved after 1 adjustment round; APPROVAL.md + 10 committed captures + DEFAULT_CONCEPT='c'; BRAND-03 satisfied)
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 10
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 07 (identidad-y-brand-kit) — EXECUTING
-Plan: 5 of 10
-Status: Executing Phase 07 — waves 1-3 complete (07-01..07-04); next wave 4 = 07-05 (human approval gate, D-17)
-Last activity: 2026-09-23 -- Phase 07 Plan 04 complete (6 brand boards + 36 in-app captures, gitignored, ready for the 07-05 approval gate)
+Plan: 6 of 10
+Status: Executing Phase 07 — waves 1-4 complete; next wave 5 = 07-06 (assets) + 07-07 (mount)
+Last activity: 2026-09-23 -- Phase 07 Plan 05 complete (concept c "Viewfinder" approved after 1 adjustment round; APPROVAL.md + 10 committed captures + DEFAULT_CONCEPT='c'; BRAND-03 satisfied)
 
-Progress: [████░░░░░░] 40%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -160,6 +160,7 @@ Progress: [████░░░░░░] 40%
 | Phase 07 P02 | 18min | 3 tasks | 9 files |
 | Phase 07 P03 | 8min | 3 tasks | 9 files |
 | Phase 07 P04 | 35min | 2 tasks | 9 files |
+| Phase 07 P05 | ~15min | 6 tasks (2 skipped) | 16 files |
 
 ## Accumulated Context
 
@@ -437,6 +438,7 @@ Recent decisions affecting current work:
 - [Phase 07 P03]: brand SVG parts carry data-part, never id -- the Sidebar mounts Logo and Lockup simultaneously (one CSS-hidden per breakpoint) so duplicate ids would be invalid HTML, and Phase 8 animates by selecting [data-part=aperture] across any number of instances; the mount site supplies brand-monogram/brand-lockup test ids, never the component
 - [Phase ?]: 07-04: brand review uses DOM injection at capture time (insertAdjacentHTML of renderStaticSvg output), never a production flag — apps/web and packages/ui stay untouched
 - [Phase ?]: 07-04: scripts rendering packages/ui .tsx must run as 'tsx --tsconfig packages/ui/tsconfig.json' — tsx applies a tsconfig's jsx setting only to files that tsconfig covers
+- [Phase 07 P05]: approved concept c (Viewfinder), 1 adjustment round (r→a kern), DEFAULT_CONCEPT='c'; BRAND-03 gate satisfied — 07-06..07-10 may now touch BRAND-02 surfaces
 
 ### Pending Todos
 
@@ -512,12 +514,12 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-23T01:06:25.902Z
-Stopped at: Completed 07-04-PLAN.md
+Last session: 2026-09-23T01:33:43.000Z
+Stopped at: Completed 07-05-PLAN.md (brand approval — concept c) — wave 4 done
 Resume file: None
 
 ## Operator Next Steps
 
-- Review `.planning/ROADMAP.md` (Phases 7-14) and approve or request revisions
-- Then `/gsd-discuss-phase 7` (or `/gsd-plan-phase 7`) — Identidad y brand kit
+- Phase 07 wave 5 next: `/gsd-execute-phase 7` continues with 07-06 (asset exports) + 07-07 (mount on the real surfaces), both unblocked by the BRAND-03 approval record
+- The favicon at 16 px in a real browser tab is still a human-only check; it becomes a real verification item in 07-09
 - Phases 11-12 (engine backend) may be planned in parallel with 8-10 if wall-clock matters
