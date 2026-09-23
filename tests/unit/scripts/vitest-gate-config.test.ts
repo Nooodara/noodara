@@ -22,3 +22,23 @@ describe.each(CONFIG_FILES)('%s does not set passWithNoTests: true', (file) => {
     expect(source).toMatch(/passWithNoTests:\s*false/);
   });
 });
+
+// Plan 07-10 (T-07-30): packages/ui/brand/* is generated, committed source -- `pnpm brand:check`
+// is the only gate that can catch a hand-edited or stale asset before it merges. This is a static,
+// structural read of the real .github/workflows/ci.yml (no workflow execution), mirroring
+// tests/unit/scripts/check-workflow-pins.test.ts's own job-block-regex pattern for the same file.
+describe('.github/workflows/ci.yml runs the brand drift gate in the lint job', () => {
+  it('the lint job runs pnpm brand:check immediately after pnpm check:ui-safety', () => {
+    const source = readFileSync('.github/workflows/ci.yml', 'utf8');
+    const jobBlockMatch = source.match(/\n {2}lint:\n([\s\S]*?)(?=\n {2}[a-z][a-z0-9_-]*:\n|$)/);
+    expect(jobBlockMatch, 'lint job not found in ci.yml').toBeTruthy();
+    const jobBlock = jobBlockMatch?.[1] ?? '';
+
+    expect(jobBlock).toContain('run: pnpm brand:check');
+
+    const uiSafetyIndex = jobBlock.indexOf('run: pnpm check:ui-safety');
+    const brandCheckIndex = jobBlock.indexOf('run: pnpm brand:check');
+    expect(uiSafetyIndex).toBeGreaterThanOrEqual(0);
+    expect(brandCheckIndex).toBeGreaterThan(uiSafetyIndex);
+  });
+});
