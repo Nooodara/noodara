@@ -17,7 +17,9 @@
 // Playwright's own auto-waiting assertion on an observable state (noodara-tdd skill SS6). (The
 // banned API is named descriptively rather than literally so this plan's own "zero fixed sleeps"
 // grep stays exact, following 07-03's precedent.)
-import { expect, test, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { expect, test, type Page, type APIRequestContext } from '@playwright/test';
 import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './fixtures/stack.js';
 
 /** The three reference viewports the shell's own E2E already uses -- never a new breakpoint
@@ -135,4 +137,129 @@ test('@brand the below-900px bottom sheet carries no mark, closed or open', asyn
   await expect(page.getByTestId('shell-sidebar').getByRole('link')).toHaveCount(3);
   await expect(page.getByTestId('brand-monogram')).toBeHidden();
   await expect(page.getByTestId('brand-lockup')).toBeHidden();
+});
+
+// 07-09-PLAN.md Task 3 (BRAND-02, D-11/D-12): proves every icon/manifest URL Next.js actually
+// emits in the served `<head>` is really served, from the built app -- not just that the file
+// convention wired something up. The expected `theme_color` is read from the real committed
+// `packages/ui/brand/brand-colors.json` rather than typed as a literal, so this spec cannot drift
+// from the single source of truth 07-06's generator owns.
+const BRAND_COLORS_PATH = fileURLToPath(new URL('../../packages/ui/brand/brand-colors.json', import.meta.url));
+const BRAND_COLORS = JSON.parse(readFileSync(BRAND_COLORS_PATH, 'utf8')) as {
+  themeColor: string;
+  backgroundColor: string;
+};
+
+/** Reads a PNG's declared pixel width straight out of its IHDR chunk (bytes 16-19, big-endian) --
+ *  the same decode-by-shape discipline `scripts/brand/raster.ts`'s own `pngMetadata` uses,
+ *  reimplemented here with zero dependency since this file runs under Playwright's own test
+ *  runner, not Vitest. */
+function pngWidthFromIhdr(png: Buffer): number {
+  return png.readUInt32BE(16);
+}
+
+async function fetchOk(request: APIRequestContext, url: string): Promise<Buffer> {
+  const response = await request.get(url);
+  expect(response.status(), `GET ${url}`).toBe(200);
+  return Buffer.from(await response.body());
+}
+
+test.describe('brand icons', () => {
+  test('@brand /login serves the favicon, apple-touch-icon, manifest and OG head tags', async ({ page }) => {
+    await page.goto('/login');
+
+    const iconHref = await page.locator('link[rel="icon"]').first().getAttribute('href');
+    expect(iconHref).not.toBeNull();
+    expect(iconHref).toMatch(/\.(svg|ico)(\?.*)?$/);
+
+    await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveCount(1);
+    await expect(page.locator('link[rel="manifest"]')).toHaveCount(1);
+    await expect(page.locator('meta[property="og:image"]')).toHaveCount(1);
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', 'Noodara');
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+      'content',
+      'Your infrastructure, understood.',
+    );
+  });
+
+  test('@brand every icon, apple-touch-icon, manifest href and og:image are served with 200', async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/login');
+
+    // Every assertion below checks BOTH status 200 AND a real image/manifest content-type --
+    // status alone is not enough evidence: an unauthenticated request that gets redirected to
+    // /login still resolves 200, just as `text/html` (the exact bug 07-09 Task 3's own RED run
+    // caught in apps/web/src/proxy.ts's matcher, fixed in this same commit).
+    const iconHrefs = await page.locator('link[rel="icon"]').evaluateAll((els) =>
+      els.map((el) => el.getAttribute('href')).filter((href): href is string => href !== null),
+    );
+    expect(iconHrefs.length).toBeGreaterThan(0);
+    for (const href of iconHrefs) {
+      const response = await request.get(href);
+      expect(response.status(), `GET ${href}`).toBe(200);
+      expect(response.headers()['content-type'], `GET ${href}`).toMatch(/^image\//);
+      expect((await response.body()).length).toBeGreaterThan(0);
+    }
+
+    const appleTouchHref = await page.locator('link[rel="apple-touch-icon"]').getAttribute('href');
+    expect(appleTouchHref).not.toBeNull();
+    if (appleTouchHref !== null) {
+      const response = await request.get(appleTouchHref);
+      expect(response.status()).toBe(200);
+      expect(response.headers()['content-type']).toMatch(/^image\//);
+    }
+
+    const manifestHref = await page.locator('link[rel="manifest"]').getAttribute('href');
+    expect(manifestHref).not.toBeNull();
+    if (manifestHref !== null) {
+      const response = await request.get(manifestHref);
+      expect(response.status()).toBe(200);
+      expect(response.headers()['content-type']).toMatch(/^application\/manifest\+json|^application\/json/);
+    }
+
+    const ogImageContent = await page.locator('meta[property="og:image"]').getAttribute('content');
+    expect(ogImageContent).not.toBeNull();
+    if (ogImageContent !== null) {
+      const response = await request.get(ogImageContent);
+      expect(response.status()).toBe(200);
+      expect(response.headers()['content-type']).toMatch(/^image\//);
+    }
+  });
+
+  test('@brand GET /favicon.ico is served with an ico content-type', async ({ request }) => {
+    const response = await request.get('/favicon.ico');
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toMatch(/^image\/(x-icon|vnd\.microsoft\.icon)$/);
+  });
+
+  test('@brand the manifest JSON parses, carries the real theme colour and every icon src resolves to a correctly-sized PNG', async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/login');
+    const manifestHref = await page.locator('link[rel="manifest"]').getAttribute('href');
+    expect(manifestHref).not.toBeNull();
+    if (manifestHref === null) return;
+
+    const manifestResponse = await request.get(manifestHref);
+    expect(manifestResponse.status()).toBe(200);
+    const manifest = (await manifestResponse.json()) as {
+      theme_color: string;
+      background_color: string;
+      icons: ReadonlyArray<{ src: string; sizes: string; type: string }>;
+    };
+
+    expect(manifest.theme_color).toBe(BRAND_COLORS.themeColor);
+    expect(manifest.background_color).toBe(BRAND_COLORS.backgroundColor);
+    expect(manifest.icons.length).toBeGreaterThanOrEqual(2);
+
+    for (const icon of manifest.icons) {
+      expect(icon.type).toBe('image/png');
+      const declaredWidth = Number(icon.sizes.split('x')[0]);
+      const png = await fetchOk(request, icon.src);
+      expect(pngWidthFromIhdr(png)).toBe(declaredWidth);
+    }
+  });
 });
