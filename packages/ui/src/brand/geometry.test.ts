@@ -27,6 +27,7 @@ import {
   wordmarkPath,
   wordmarkWidth,
 } from './geometry.js';
+import { glyphR } from './glyphs.js';
 import { meta as metaA, parts as partsA } from './concepts/a.js';
 import { meta as metaB, parts as partsB } from './concepts/b.js';
 import { meta as metaC, parts as partsC } from './concepts/c.js';
@@ -80,33 +81,52 @@ function commandsOf(d: string): string[] {
   return d.match(COMMAND_RE) ?? [];
 }
 
-/** The axis extremes (and the endpoint) of a circular arc, derived from SVG's own endpoint-to-
- *  centre parameterisation. Only circular arcs (rx === ry, zero x-axis rotation) are handled --
- *  the brand geometry never emits any other kind. */
-function arcPoints(from: Point, to: Point, radius: number, largeArc: boolean, sweep: boolean): Point[] {
-  const points: Point[] = [to];
+interface Arc {
+  readonly centre: Point;
+  readonly r: number;
+  readonly startAngle: number;
+  /** Signed sweep in radians -- positive when the SVG sweep flag is 1. */
+  readonly delta: number;
+}
+
+/** SVG's own endpoint-to-centre parameterisation. Only circular arcs (rx === ry, zero x-axis
+ *  rotation) are handled -- the brand geometry never emits any other kind. */
+function arcGeometry(from: Point, to: Point, radius: number, largeArc: boolean, sweep: boolean): Arc | undefined {
   const hx = (from.x - to.x) / 2;
   const hy = (from.y - to.y) / 2;
   const chordHalf = Math.hypot(hx, hy);
-  if (chordHalf === 0) return points;
+  if (chordHalf === 0) return undefined;
   const r = chordHalf > radius ? chordHalf : radius;
   const factor = Math.sqrt(Math.max(0, r * r - chordHalf * chordHalf) / (chordHalf * chordHalf));
   const sign = largeArc === sweep ? -1 : 1;
-  const cx = sign * factor * hy + (from.x + to.x) / 2;
-  const cy = sign * factor * -hx + (from.y + to.y) / 2;
-
-  const startAngle = Math.atan2(from.y - cy, from.x - cx);
-  const endAngle = Math.atan2(to.y - cy, to.x - cx);
+  const centre = {
+    x: sign * factor * hy + (from.x + to.x) / 2,
+    y: sign * factor * -hx + (from.y + to.y) / 2,
+  };
+  const startAngle = Math.atan2(from.y - centre.y, from.x - centre.x);
+  const endAngle = Math.atan2(to.y - centre.y, to.x - centre.x);
   let delta = endAngle - startAngle;
   if (sweep && delta < 0) delta += 2 * Math.PI;
   if (!sweep && delta > 0) delta -= 2 * Math.PI;
+  return { centre, r, startAngle, delta };
+}
 
+/** Whether `angle` lies on the swept portion of `arc`. */
+function arcCovers(arc: Arc, angle: number): boolean {
+  const raw = arc.delta >= 0 ? angle - arc.startAngle : arc.startAngle - angle;
+  const travelled = ((raw % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  return travelled <= Math.abs(arc.delta) + 1e-9;
+}
+
+/** The axis extremes (and the endpoint) of a circular arc. */
+function arcPoints(from: Point, to: Point, radius: number, largeArc: boolean, sweep: boolean): Point[] {
+  const points: Point[] = [to];
+  const arc = arcGeometry(from, to, radius, largeArc, sweep);
+  if (arc === undefined) return points;
   for (const quadrant of [0, 1, 2, 3]) {
     const angle = (quadrant * Math.PI) / 2;
-    const raw = sweep ? angle - startAngle : startAngle - angle;
-    const travelled = ((raw % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-    if (travelled <= Math.abs(delta) + 1e-9) {
-      points.push({ x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) });
+    if (arcCovers(arc, angle)) {
+      points.push({ x: arc.centre.x + arc.r * Math.cos(angle), y: arc.centre.y + arc.r * Math.sin(angle) });
     }
   }
   return points;
@@ -167,6 +187,119 @@ function pathBounds(d: string): Bounds {
   const xs = points.map((p) => p.x);
   const ys = points.map((p) => p.y);
   return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Scanline measurement: how much white actually stands between two letters
+//
+// A bounding box cannot answer that question for a letter whose ink reaches its widest at one
+// height only -- the "r", whose shoulder terminal is its rightmost ink and sits in the top third,
+// while below it the letter falls back to its stem. Two letters can therefore have a correct
+// bounding-box gap and a visibly wrong gap on the page. What the eye reads is the narrowest run
+// of white between the two inks, measured horizontally, and that is what `narrowestChannel`
+// returns: for every scanline that meets both glyphs, the leftmost ink of the right glyph minus
+// the rightmost ink of the left one.
+//
+// `edgesOf` walks the same command list as `pathPoints` but keeps the outline instead of the
+// points. The two walks stay separate on purpose: several assertions index into `pathPoints`'
+// exact output (`pointAt`, the four-vertex polygon checks), so its result may not grow.
+// ---------------------------------------------------------------------------------------------
+
+type Edge = { readonly kind: 'line'; readonly a: Point; readonly b: Point } | { readonly kind: 'arc'; readonly arc: Arc };
+
+function edgesOf(d: string): Edge[] {
+  const tokens = tokensOf(d);
+  const edges: Edge[] = [];
+  let index = 0;
+  const next = (): number => Number(tokens[index++]);
+  let current: Point = { x: 0, y: 0 };
+  let subpathStart: Point = current;
+  const lineTo = (point: Point): void => {
+    edges.push({ kind: 'line', a: current, b: point });
+    current = point;
+  };
+
+  while (index < tokens.length) {
+    const command = tokens[index++];
+    switch (command) {
+      case 'M':
+        current = { x: next(), y: next() };
+        subpathStart = current;
+        break;
+      case 'L':
+        lineTo({ x: next(), y: next() });
+        break;
+      case 'H':
+        lineTo({ x: next(), y: current.y });
+        break;
+      case 'V':
+        lineTo({ x: current.x, y: next() });
+        break;
+      case 'A': {
+        const radius = next();
+        next(); // ry
+        next(); // x-axis rotation
+        const largeArc = next() === 1;
+        const sweep = next() === 1;
+        const endpoint = { x: next(), y: next() };
+        const arc = arcGeometry(current, endpoint, radius, largeArc, sweep);
+        if (arc !== undefined) edges.push({ kind: 'arc', arc });
+        current = endpoint;
+        break;
+      }
+      case 'Z':
+        lineTo(subpathStart);
+        break;
+      default:
+        throw new Error(`unexpected path command "${String(command)}" in "${d}"`);
+    }
+  }
+  return edges;
+}
+
+/** Every x at which the outline crosses the horizontal line `y`. A segment lying along the line
+ *  contributes nothing -- its own endpoints are crossings of the edges that meet it. */
+function crossingsAt(edges: readonly Edge[], y: number): number[] {
+  const xs: number[] = [];
+  for (const edge of edges) {
+    if (edge.kind === 'line') {
+      const { a, b } = edge;
+      if (a.y === b.y) continue;
+      const t = (y - a.y) / (b.y - a.y);
+      if (t < 0 || t > 1) continue;
+      xs.push(a.x + t * (b.x - a.x));
+      continue;
+    }
+    const { centre, r } = edge.arc;
+    const dy = y - centre.y;
+    if (Math.abs(dy) > r) continue;
+    const dx = Math.sqrt(r * r - dy * dy);
+    for (const x of [centre.x - dx, centre.x + dx]) {
+      if (arcCovers(edge.arc, Math.atan2(y - centre.y, x - centre.x))) xs.push(x);
+    }
+  }
+  return xs;
+}
+
+/** The scanlines to measure on: a uniform ladder across the box plus every height at which either
+ *  outline turns, so a corner (the r's terminal) is measured exactly and not merely near-missed. */
+function scanlinesFor(left: string, right: string): number[] {
+  const ladder = Array.from({ length: 241 }, (_, step) => (step * GRID) / 240);
+  return [...ladder, ...pathPoints(left).map((point) => point.y), ...pathPoints(right).map((point) => point.y)];
+}
+
+function narrowestChannel(left: string, right: string): number {
+  const leftEdges = edgesOf(left);
+  const rightEdges = edgesOf(right);
+  let narrowest = Number.POSITIVE_INFINITY;
+  for (const y of scanlinesFor(left, right)) {
+    const before = crossingsAt(leftEdges, y);
+    const after = crossingsAt(rightEdges, y);
+    if (before.length === 0 || after.length === 0) continue;
+    narrowest = Math.min(narrowest, Math.min(...after) - Math.max(...before));
+  }
+  if (!Number.isFinite(narrowest)) throw new Error('the two glyphs share no scanline');
+  return narrowest;
 }
 
 /** The sweep flag of every `A` command, in order -- the mechanism that makes a ring's hole a hole
@@ -692,6 +825,35 @@ describe('wordmark "noodara"', () => {
         .join(' ');
     expect(tail('a')).toBe(tail('b'));
     expect(tail('a')).toBe(tail('c'));
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Wordmark spacing -- measured as white, not as boxes
+// ---------------------------------------------------------------------------------------------
+
+describe('wordmark optical spacing (D-07)', () => {
+  it('leaves the same narrowest run of white between every pair of letters', () => {
+    const parts = wordmarkParts(DEFAULT_CONCEPT);
+    for (let i = 1; i < parts.length; i += 1) {
+      const previous = parts[i - 1];
+      const current = parts[i];
+      if (previous === undefined || current === undefined) throw new Error('missing glyph');
+      // Tolerance is the coordinate quantisation `fmt` keeps (three decimals), not a slack.
+      expect(narrowestChannel(previous.d, current.d), `${previous.part} -> ${current.part}`).toBeCloseTo(LETTER_GAP, 2);
+    }
+  });
+
+  it('kerns the "r" into the following bowl instead of spacing it by its bounding box', () => {
+    const r = glyphR(0);
+    // The r's ink reaches APERTURE_RADIUS -- the shoulder's terminal on the x-height line, and
+    // only there. An advance below that puts the next letter's origin inside the r's own box: a
+    // real negative kern, which is what this pair needs because the "a" is round on that side and
+    // the r is open under its shoulder.
+    expect(pathBounds(r.d).maxX).toBeCloseTo(APERTURE_RADIUS, 6);
+    expect(r.advance).toBeLessThan(APERTURE_RADIUS);
+    // ...and never so tight that the two inks meet: the kern cannot eat more than the counter.
+    expect(r.advance).toBeGreaterThan(APERTURE_RADIUS - STROKE);
   });
 });
 
