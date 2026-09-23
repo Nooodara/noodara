@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 07-06-PLAN.md (static brand asset generation + package export) — wave 5 in progress (07-06 done, 07-07 next)
-last_updated: "2026-09-23T01:49:36.824Z"
-last_activity: 2026-09-23 -- Phase 07 Plan 06 complete (13 brand assets generated via scripts/brand/{asset-manifest,generate-brand-assets}.ts, committed under packages/ui/brand/, exported as @noodara/ui/brand/*, locked by exactness + export-resolution tests)
+stopped_at: Completed 07-07-PLAN.md (brand mounted in app) — wave 5 done
+last_updated: "2026-09-23T02:03:28.834Z"
+last_activity: 2026-09-23 -- Phase 07 Plan 07 complete (the approved mark mounted in apps/web: Logo in the 64px rail, Lockup in the expanded sidebar and above the h1 on /login and /setup; 17 jsdom + 7 @brand E2E tests; docs/ui-review-07-brand.md PASS; docs/brand/approved/ re-shot from the real components)
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 10
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 07 (identidad-y-brand-kit) — EXECUTING
-Plan: 7 of 10
-Status: Executing Phase 07 — wave 5: 07-06 done, 07-07 next
-Last activity: 2026-09-23 -- Phase 07 Plan 06 complete (13 brand assets generated via scripts/brand/{asset-manifest,generate-brand-assets}.ts, committed under packages/ui/brand/, exported as @noodara/ui/brand/*, locked by exactness + export-resolution tests)
+Plan: 8 of 10
+Status: Executing Phase 07 — waves 1-5 complete; next wave 6 = 07-08 (brand kit doc) + 07-09 (web icons)
+Last activity: 2026-09-23 -- Phase 07 Plan 07 complete (the approved mark mounted in apps/web: Logo in the 64px rail, Lockup in the expanded sidebar and above the h1 on /login and /setup; 17 jsdom + 7 @brand E2E tests; docs/ui-review-07-brand.md PASS; docs/brand/approved/ re-shot from the real components)
 
-Progress: [██████░░░░] 60%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
@@ -162,6 +162,7 @@ Progress: [██████░░░░] 60%
 | Phase 07 P04 | 35min | 2 tasks | 9 files |
 | Phase 07 P05 | ~15min | 6 tasks (2 skipped) | 16 files |
 | Phase 07 P06 | 25min | 3 tasks | 17 files |
+| Phase 07 P07 | 15min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -441,6 +442,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 07-04: scripts rendering packages/ui .tsx must run as 'tsx --tsconfig packages/ui/tsconfig.json' — tsx applies a tsconfig's jsx setting only to files that tsconfig covers
 - [Phase 07 P05]: approved concept c (Viewfinder), 1 adjustment round (r→a kern), DEFAULT_CONCEPT='c'; BRAND-03 gate satisfied — 07-06..07-10 may now touch BRAND-02 surfaces
 - [Phase 07]: [Phase 07 P06]: RasterSpec gained an optional packInto field beyond the plan's own interfaces block (additive only) so the three favicon tile sizes (16/32/48) can be marked 'pack into favicon.ico, never write directly' -- matching 07-03/07-04's own precedent for additive fields
+- [Phase 07 P07]: El brand slot del sidebar son dos wrappers siempre montados, uno oculto por CSS en cada breakpoint (nunca un check de ancho en JS ni un render condicional) -- exactamente uno esta en el arbol de accesibilidad a cualquier ancho, que es la razon por la que 07-03 eligio data-part en lugar de id. La marca no es link ni control (dos divs planos, sin tabindex), asi que el orden de foco queda intacto; si pasa a ser enlace a home lo decide la Fase 8. El bottom sheet (<900px) no lleva marca: es un overlay de navegacion temporal, no el chrome del producto.
 
 ### Pending Todos
 
@@ -516,8 +518,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-23T01:49:36.816Z
-Stopped at: Completed 07-06-PLAN.md (static brand asset generation + package export) — wave 5 in progress (07-06 done, 07-07 next)
+Last session: 2026-09-23T02:03:24.087Z
+Stopped at: Completed 07-07-PLAN.md (brand mounted in app) — wave 5 done
 Resume file: None
 
 ## Operator Next Steps
