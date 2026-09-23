@@ -11,9 +11,9 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Identidad (BRAND)
 
-- [ ] **BRAND-01**: Noodara tiene un logotipo (monograma + wordmark) con significado documentado, entregado como SVG en variantes para tema claro y oscuro, y una hoja de brand kit (construcción, área de protección, usos prohibidos, paleta y tipografía) en `docs/brand/`.
-- [ ] **BRAND-02**: El logotipo se aplica en la app (sidebar/rail, `/login`, `/setup`, favicon y `apple-touch-icon`), en el README y en el sitio público, en ambos temas, sin literales de color fuera de los tokens.
-- [ ] **BRAND-03**: El usuario revisa el logotipo renderizado (screenshots en ambos temas, en la app y en el README) y lo aprueba antes de que se aplique en todas las superficies.
+- [x] **BRAND-01**: Noodara tiene un logotipo (monograma + wordmark) con significado documentado, entregado como SVG en variantes para tema claro y oscuro, y una hoja de brand kit (construcción, área de protección, usos prohibidos, paleta y tipografía) en `docs/brand/`.
+- [x] **BRAND-02**: El logotipo se aplica en la app (sidebar/rail, `/login`, `/setup`, favicon y `apple-touch-icon`), en el README y en el sitio público, en ambos temas, sin literales de color fuera de los tokens. (Sitio público: assets exportados vía `@noodara/ui/brand/*`; la aplicación en `apps/site` la hace la Fase 10.)
+- [x] **BRAND-03**: El usuario revisa el logotipo renderizado (screenshots en ambos temas, en la app y en el README) y lo aprueba antes de que se aplique en todas las superficies.
 
 ### Rediseño de la app (UI)
 
@@ -152,9 +152,9 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BRAND-01 | Phase 7 | Pending |
-| BRAND-02 | Phase 7 | Pending |
-| BRAND-03 | Phase 7 | Pending |
+| BRAND-01 | Phase 7 | Complete |
+| BRAND-02 | Phase 7 | Complete |
+| BRAND-03 | Phase 7 | Complete |
 | UI-03 | Phase 8 | Pending |
 | UI-04 | Phase 8 | Pending |
 | UI-05 | Phase 8 | Pending |

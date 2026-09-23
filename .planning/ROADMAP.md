@@ -29,7 +29,7 @@ Full phase details, plans and success criteria: [milestones/v0.1-ROADMAP.md](mil
 - Integer phases (7, 8, 9…): Planned milestone work; la numeración continúa desde v0.1
 - Decimal phases (8.1, 8.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 7: Identidad y brand kit** - Logotipo (monograma + wordmark), favicon y hoja de marca en ambos temas, aplicados en app y README tras aprobación humana. (10/10 plans executed; awaiting code review, regression gate and verifier before close)
+- [x] **Phase 7: Identidad y brand kit** - Logotipo (monograma + wordmark), favicon y hoja de marca en ambos temas, aplicados en app y README tras aprobación humana. (completed 2026-09-23 — 10/10 plans, verifier 15/15, human_needed only for the favicon-in-real-tab check tracked in 07-HUMAN-UAT.md)
 - [ ] **Phase 8: Rediseño de la app** - Elevación flotante, movimiento con propósito, momentos autorados, fallbacks de accesibilidad y el shell preparado para inspector, jerarquía y menú de cuenta; primera revisión visual humana.
 - [ ] **Phase 9: Settings editables** - Perfil del admin (nombre, email, password), tema y preferencias visuales persistidas en el servidor sin parpadeo.
 - [ ] **Phase 10: Sitio de docs y landing pública** - `apps/site` estático con Fumadocs, landing honesta con la identidad, publicado a GitHub Pages desde CI con test de exactitud.
@@ -249,7 +249,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Identidad y brand kit | 10/10 | In Progress (verification pending) | - |
+| 7. Identidad y brand kit | 10/10 | Complete | 2026-09-23 |
 | 8. Rediseño de la app | 0/TBD | Not started | - |
 | 9. Settings editables | 0/TBD | Not started | - |
 | 10. Sitio de docs y landing pública | 0/TBD | Not started | - |

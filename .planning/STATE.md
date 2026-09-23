@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
-status: verifying
-stopped_at: Completed 07-10-PLAN.md — all 10 plans executed; phase verification pending
-last_updated: "2026-09-23T02:50:05.944Z"
+status: ready_to_plan
+stopped_at: Phase 07 complete (10/10) — ready to discuss Phase 8
+last_updated: 2026-09-23T04:09:31.563Z
 last_activity: 2026-09-23 -- Phase 07 Plan 10 complete (README <picture> lockup in both colour schemes, pnpm brand:check wired into CI's lint job right after check:ui-safety, deliberate-drift proof recorded, and a full real regression across every phase-7 gate -- 151 files / 2547 unit tests 0 skipped, 104/104 E2E 0 failed/skipped/flaky, lint/typecheck/boundaries/check:ui-safety/brand:check/provenance/build all green; 07-VALIDATION.md closed with real plan/task ids)
 progress:
   total_phases: 8
-  completed_phases: 0
-  total_plans: 10
+  completed_phases: 1
+  total_plans: 109
   completed_plans: 10
   percent: 13
 ---
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** Phase 07 — identidad-y-brand-kit
+**Current focus:** Phase 8 — rediseño de la app
 
 ## Current Position
 
-Phase: 07 (identidad-y-brand-kit) — EXECUTING
-Plan: 10 of 10 complete
-Status: Phase 07 execution complete — awaiting code review, regression gate and verifier
-Last activity: 2026-09-23 -- Phase 07 Plan 10 complete (README <picture> lockup in both colour schemes, pnpm brand:check wired into CI's lint job right after check:ui-safety, deliberate-drift proof recorded, and a full real regression across every phase-7 gate -- 151 files / 2547 unit tests 0 skipped, 104/104 E2E 0 failed/skipped/flaky, lint/typecheck/boundaries/check:ui-safety/brand:check/provenance/build all green; 07-VALIDATION.md closed with real plan/task ids)
+Phase: 8
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-23
 
 Progress: [██████████] 100%
 
@@ -36,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 109
+- Total plans completed: 119
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -50,6 +50,7 @@ Progress: [██████████] 100%
 | 04 | 11 | - | - |
 | 05 | 46 | - | - |
 | 06 | 15 | - | - |
+| 07 | 10 | - | - |
 
 **Recent Trend:**
 
