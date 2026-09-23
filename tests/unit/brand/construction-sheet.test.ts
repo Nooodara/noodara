@@ -198,9 +198,10 @@ describe('constructionSheetOptions', () => {
   });
 
   it('throws by name when the tokens file declares no such token', () => {
-    expect(() => constructionSheetOptions(':root {\n  --ink: sentinel;\n}\n', DEFAULT_CONCEPT)).toThrow(
-      /hairline-strong/,
-    );
+    // `parseTokensCss` needs both blocks to exist at all; the point here is the missing TOKEN, so
+    // the fixture is a well-formed stylesheet that simply declares one of the four.
+    const incomplete = ':root {\n  --ink: sentinel;\n}\n[data-theme="dark"] {\n  --ink: sentinel;\n}\n';
+    expect(() => constructionSheetOptions(incomplete, DEFAULT_CONCEPT)).toThrow(/hairline-strong/);
   });
 });
 
