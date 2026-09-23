@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 07-03-PLAN.md (brand components) — wave 2 done
-last_updated: "2026-09-23T00:46:00.966Z"
-last_activity: 2026-09-22 -- Phase 07 Plan 03 complete (Logo/Wordmark/Lockup + static-svg + barrel exports)
+stopped_at: Completed 07-04-PLAN.md
+last_updated: "2026-09-23T01:06:49.109Z"
+last_activity: 2026-09-23 -- Phase 07 Plan 04 complete (6 brand boards + 36 in-app captures, gitignored, ready for the 07-05 approval gate)
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 10
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 07 (identidad-y-brand-kit) — EXECUTING
-Plan: 4 of 10
-Status: Executing Phase 07 — waves 1-2 complete (07-01, 07-02, 07-03); next wave 3 = 07-04 (brand boards)
-Last activity: 2026-09-22 -- Phase 07 Plan 03 complete (Logo/Wordmark/Lockup + static-svg + barrel exports)
+Plan: 5 of 10
+Status: Executing Phase 07 — waves 1-3 complete (07-01..07-04); next wave 4 = 07-05 (human approval gate, D-17)
+Last activity: 2026-09-23 -- Phase 07 Plan 04 complete (6 brand boards + 36 in-app captures, gitignored, ready for the 07-05 approval gate)
 
-Progress: [███░░░░░░░] 30%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -159,6 +159,7 @@ Progress: [███░░░░░░░] 30%
 | Phase 07 P01 | 70min | 3 tasks | 6 files |
 | Phase 07 P02 | 18min | 3 tasks | 9 files |
 | Phase 07 P03 | 8min | 3 tasks | 9 files |
+| Phase 07 P04 | 35min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -434,6 +435,8 @@ Recent decisions affecting current work:
 - [Phase 07 P03]: the brand components emit NO fill-rule and NO stroke -- the plan's evenodd instruction was overridden by 07-01's construction (parts overlap on purpose; ring counters are cut by opposite winding under the SVG default nonzero rule), and all four brand test files assert the attribute's ABSENCE so a future edit cannot quietly reintroduce it
 - [Phase 07 P03]: one render path for the app and for every exported file -- renderStaticSvg/tileSvg render the very Logo/Wordmark/Lockup components apps/web mounts, with the ink injected through the color prop; static-svg.ts holds no colour literal (no hex, no rgb, not even currentColor), so 07-06 reads --ink/--canvas/--accent-fill/--on-accent from tokens.css via parseTokensCss and passes them in
 - [Phase 07 P03]: brand SVG parts carry data-part, never id -- the Sidebar mounts Logo and Lockup simultaneously (one CSS-hidden per breakpoint) so duplicate ids would be invalid HTML, and Phase 8 animates by selecting [data-part=aperture] across any number of instances; the mount site supplies brand-monogram/brand-lockup test ids, never the component
+- [Phase ?]: 07-04: brand review uses DOM injection at capture time (insertAdjacentHTML of renderStaticSvg output), never a production flag — apps/web and packages/ui stay untouched
+- [Phase ?]: 07-04: scripts rendering packages/ui .tsx must run as 'tsx --tsconfig packages/ui/tsconfig.json' — tsx applies a tsconfig's jsx setting only to files that tsconfig covers
 
 ### Pending Todos
 
@@ -509,8 +512,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-23T00:45:21.653Z
-Stopped at: Completed 07-03-PLAN.md (brand components) — wave 2 done
+Last session: 2026-09-23T01:06:25.902Z
+Stopped at: Completed 07-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
