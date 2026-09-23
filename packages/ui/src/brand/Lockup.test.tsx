@@ -16,7 +16,22 @@ import { renderUi, screen } from '../testing/render.js';
 
 const REACT_RAW_HTML_PROP = ['dangerously', 'SetInnerHTML'].join('');
 
-const LOCKUP_SOURCE = readFileSync(new URL('./Lockup.tsx', import.meta.url), 'utf8');
+// Repo-root-relative and comment-stripped -- see Logo.test.tsx's notes on both.
+// Reads a source file with its comment LINES stripped, exactly as scripts/check-ui-safety.mjs's
+// own gate does before counting a match. The component headers deliberately NAME the banned raw
+// HTML prop (PATTERNS.md requires the invariant to be stated where a reviewer reads it), and a
+// comment describing a rule must never count as a violation of it.
+function codeOf(relPath: string): string {
+  return readFileSync(relPath, 'utf8')
+    .split('\n')
+    .filter((line) => {
+      const trimmed = line.trim();
+      return !trimmed.startsWith('//') && !trimmed.startsWith('/*') && !trimmed.startsWith('*');
+    })
+    .join('\n');
+}
+
+const LOCKUP_SOURCE = codeOf('packages/ui/src/brand/Lockup.tsx');
 
 const FORBIDDEN_MARKUP: readonly RegExp[] = [
   /<script/i,

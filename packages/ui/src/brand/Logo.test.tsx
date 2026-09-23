@@ -22,7 +22,25 @@ import { renderUi, screen } from '../testing/render.js';
 // absence must not itself become the second occurrence.
 const REACT_RAW_HTML_PROP = ['dangerously', 'SetInnerHTML'].join('');
 
-const LOGO_SOURCE = readFileSync(new URL('./Logo.tsx', import.meta.url), 'utf8');
+// Read by its repo-root-relative path, not via `new URL(..., import.meta.url)`: in the jsdom
+// project a test module's `import.meta.url` is an http:// URL (Vite serves it), and readFileSync
+// only accepts file: URLs. Every other real-file test in this repo (tests/unit/docs/
+// install-docs-accuracy.test.ts) reads its subject the same plain relative way.
+// Reads a source file with its comment LINES stripped, exactly as scripts/check-ui-safety.mjs's
+// own gate does before counting a match. The component headers deliberately NAME the banned raw
+// HTML prop (PATTERNS.md requires the invariant to be stated where a reviewer reads it), and a
+// comment describing a rule must never count as a violation of it.
+function codeOf(relPath: string): string {
+  return readFileSync(relPath, 'utf8')
+    .split('\n')
+    .filter((line) => {
+      const trimmed = line.trim();
+      return !trimmed.startsWith('//') && !trimmed.startsWith('/*') && !trimmed.startsWith('*');
+    })
+    .join('\n');
+}
+
+const LOGO_SOURCE = codeOf('packages/ui/src/brand/Logo.tsx');
 
 // Everything that must never appear in rendered brand markup (T-07-06): script/foreign content,
 // any URL reference, any event handler, any inline style, and any `#` (a colour literal or a
