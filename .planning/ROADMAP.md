@@ -77,7 +77,7 @@ Decisiones de `research/SUMMARY.md` (D1-D27) ya aceptadas en `REQUIREMENTS.md`. 
   3. El logotipo aparece en el sidebar/rail, `/login`, `/setup`, favicon y `apple-touch-icon` en ambos temas y en el README; el gate de tokens sigue verde (cero literales de color fuera de `tokens.css`) y los 93 E2E existentes siguen verdes.
   4. Los assets de marca (SVGs, favicon set, imagen OG) quedan exportados desde `packages/ui` para que la Fase 10 los consuma sin copiar archivos.
 
-**Plans:** 7/10 plans executed
+**Plans:** 8/10 plans executed
 
 Plans:
 **Wave 1**
@@ -104,7 +104,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 07-08-PLAN.md — docs/brand/BRAND.md brand kit + generated construction sheet, structure/accuracy tests
+- [x] 07-08-PLAN.md — docs/brand/BRAND.md brand kit + generated construction sheet, structure/accuracy tests
 - [ ] 07-09-PLAN.md — apps/web icon sync script (allowlist), manifest.ts without hex literals, layout OG metadata, served-URL E2E
 
 **Wave 7** *(blocked on Wave 6 completion)*
@@ -249,7 +249,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Identidad y brand kit | 7/10 | In Progress|  |
+| 7. Identidad y brand kit | 8/10 | In Progress|  |
 | 8. Rediseño de la app | 0/TBD | Not started | - |
 | 9. Settings editables | 0/TBD | Not started | - |
 | 10. Sitio de docs y landing pública | 0/TBD | Not started | - |
