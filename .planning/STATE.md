@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
-status: ready_to_plan
-stopped_at: Phase 07 complete (10/10) — ready to discuss Phase 8
-last_updated: 2026-09-23T04:09:31.563Z
-last_activity: 2026-09-23 -- Phase 07 Plan 10 complete (README <picture> lockup in both colour schemes, pnpm brand:check wired into CI's lint job right after check:ui-safety, deliberate-drift proof recorded, and a full real regression across every phase-7 gate -- 151 files / 2547 unit tests 0 skipped, 104/104 E2E 0 failed/skipped/flaky, lint/typecheck/boundaries/check:ui-safety/brand:check/provenance/build all green; 07-VALIDATION.md closed with real plan/task ids)
+status: planning
+stopped_at: Phase 8 context gathered
+last_updated: "2026-09-23T22:25:53.951Z"
+last_activity: 2026-09-23
 progress:
   total_phases: 8
   completed_phases: 1
-  total_plans: 109
+  total_plans: 10
   completed_plans: 10
   percent: 13
 ---
@@ -527,9 +527,9 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-23T02:36:54.531Z
-Stopped at: Completed 07-09-PLAN.md (web icons, manifest, OG) -- wave 6 done
-Resume file: None
+Last session: 2026-09-23T22:25:53.932Z
+Stopped at: Phase 8 context gathered
+Resume file: .planning/phases/08-redise-o-de-la-app/08-CONTEXT.md
 
 ## Operator Next Steps
 
