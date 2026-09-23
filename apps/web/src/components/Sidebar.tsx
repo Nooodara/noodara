@@ -11,7 +11,7 @@ import { History, Server, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn, Tooltip } from '@noodara/ui';
-import { ThemeToggle } from '@noodara/ui';
+import { Lockup, Logo, ThemeToggle } from '@noodara/ui';
 import { SignOutButton } from './SignOutButton';
 
 export interface SidebarProps {
@@ -24,6 +24,18 @@ const ITEM_CLASSES =
 const ACTIVE_ITEM_CLASSES = 'bg-accent-soft text-ink';
 const LABEL_CLASSES = 'hidden min-[1280px]:inline';
 const ICON_PROPS = { 'aria-hidden': true, size: 20, strokeWidth: 1.5 } as const;
+// The brand slot (BRAND-02, D-04): the monogram alone in the 64px rail, the horizontal lockup in
+// the expanded sidebar, and NO mark at all in the below-900px bottom sheet -- the sheet is a
+// temporary navigation overlay, not the product's chrome. Both marks are always in the DOM and one
+// is hidden per breakpoint, riding the same two thresholds the nav items already use
+// (`min-[900px]` for the rail, `min-[1280px]` for the expanded state, inverted here exactly as
+// LABEL_CLASSES inverts them). Height 44px (`h-11`) and `px-3` line the mark up with the nav items
+// above the 8px grid; `text-ink` is what the mark's own `currentColor` inherits -- never the
+// accent utility class, since the single action colour is reserved for actions and states (D-09).
+// (Named descriptively rather than literally, following 07-03's own precedent, so this plan's
+// "no second brand colour anywhere in this file" grep stays exact.)
+const BRAND_RAIL_CLASSES = 'mb-3 hidden h-11 items-center px-3 text-ink min-[900px]:flex min-[1280px]:hidden';
+const BRAND_EXPANDED_CLASSES = 'mb-3 hidden h-11 items-center px-3 text-ink min-[1280px]:flex';
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
@@ -51,6 +63,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           open ? 'flex' : 'hidden min-[900px]:flex',
         )}
       >
+        <div className={BRAND_RAIL_CLASSES}>
+          <Logo title="Noodara" size={24} data-testid="brand-monogram" />
+        </div>
+        <div className={BRAND_EXPANDED_CLASSES}>
+          <Lockup title="Noodara" height={20} data-testid="brand-lockup" />
+        </div>
         <ul className="flex flex-col gap-1">
           <li>
             <Tooltip content="Servers">
