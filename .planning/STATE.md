@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 07-02-PLAN.md (raster pipeline) — wave 1 done
-last_updated: "2026-09-22T23:20:00.000Z"
-last_activity: 2026-09-22 -- Phase 07 Plan 02 complete (raster pipeline, RASTER_BACKEND=sharp)
+stopped_at: Completed 07-03-PLAN.md (brand components) — wave 2 done
+last_updated: "2026-09-23T00:46:00.966Z"
+last_activity: 2026-09-22 -- Phase 07 Plan 03 complete (Logo/Wordmark/Lockup + static-svg + barrel exports)
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 10
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 07 (identidad-y-brand-kit) — EXECUTING
-Plan: 3 of 10
-Status: Executing Phase 07 — wave 1 complete (07-01, 07-02); next wave 2 = 07-03 (brand components)
-Last activity: 2026-09-22 -- Phase 07 Plan 02 complete (raster pipeline, RASTER_BACKEND=sharp)
+Plan: 4 of 10
+Status: Executing Phase 07 — waves 1-2 complete (07-01, 07-02, 07-03); next wave 3 = 07-04 (brand boards)
+Last activity: 2026-09-22 -- Phase 07 Plan 03 complete (Logo/Wordmark/Lockup + static-svg + barrel exports)
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
@@ -158,6 +158,7 @@ Progress: [██░░░░░░░░] 20%
 | Phase 06 P15 | continuation session (Tasks 1-2 prior session); Task 3 checkpoint resolution this session | 3 tasks | 2 files |
 | Phase 07 P01 | 70min | 3 tasks | 6 files |
 | Phase 07 P02 | 18min | 3 tasks | 9 files |
+| Phase 07 P03 | 8min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -430,6 +431,9 @@ Recent decisions affecting current work:
 - [Phase 07 P01]: brand geometry pins STROKE=3 and APERTURE_RADIUS=6 (plan starting values were 4/5) so X_HEIGHT = 2*APERTURE_RADIUS = 12 holds exactly -- the ring counter stays visible at 16px and every round letter fills the x-height band and sits on the baseline; a D-16 round retunes these two numbers and nothing else
 - [Phase 07 P01]: brand paths assume the SVG default (nonzero) fill rule, never evenodd -- parts overlap by design and a ring counter is cut by winding the inner circle against the outer one; 07-03/07-06 must not set fill-rule or any stroke
 - [Phase 07 P02]: RASTER_BACKEND = 'sharp', decided by an executed fidelity probe on the real nonzero-winding ring() from geometry.ts (hole open, band painted, corner transparent); sharp@0.35.4 and png-to-ico@3.0.2 approved by the user at the package-legitimacy gate, provenance registered before install, pinned at both packages/ui and the repo root (scripts/brand resolves from the root)
+- [Phase 07 P03]: the brand components emit NO fill-rule and NO stroke -- the plan's evenodd instruction was overridden by 07-01's construction (parts overlap on purpose; ring counters are cut by opposite winding under the SVG default nonzero rule), and all four brand test files assert the attribute's ABSENCE so a future edit cannot quietly reintroduce it
+- [Phase 07 P03]: one render path for the app and for every exported file -- renderStaticSvg/tileSvg render the very Logo/Wordmark/Lockup components apps/web mounts, with the ink injected through the color prop; static-svg.ts holds no colour literal (no hex, no rgb, not even currentColor), so 07-06 reads --ink/--canvas/--accent-fill/--on-accent from tokens.css via parseTokensCss and passes them in
+- [Phase 07 P03]: brand SVG parts carry data-part, never id -- the Sidebar mounts Logo and Lockup simultaneously (one CSS-hidden per breakpoint) so duplicate ids would be invalid HTML, and Phase 8 animates by selecting [data-part=aperture] across any number of instances; the mount site supplies brand-monogram/brand-lockup test ids, never the component
 
 ### Pending Todos
 
@@ -505,8 +509,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-22T22:56:08.851Z
-Stopped at: Phase 7 context gathered
+Last session: 2026-09-23T00:45:21.653Z
+Stopped at: Completed 07-03-PLAN.md (brand components) — wave 2 done
 Resume file: None
 
 ## Operator Next Steps
