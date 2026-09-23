@@ -70,6 +70,12 @@ jobs:
       # credentials, and the test-only component harness reachable only from *.test.tsx/*.test.ts
       # -- part of the merge gate, not a one-off local habit.
       - run: pnpm check:ui-safety
+      # Plan 07-10 (T-07-30): packages/ui/brand/* is generated, committed source -- this is the
+      # single gate that fails the merge if any of the thirteen exports drifts from what
+      # asset-manifest.ts would produce today (byte-exact for the .svg/.json text assets, decoded
+      # shape for the PNG/ICO rasters). `sharp` ships prebuilt for linux-x64, so the
+      # `--frozen-lockfile` install above is all this step needs.
+      - run: pnpm brand:check
       # Plan 06-13 (Pitfall 1): install.sh is published as `curl -fsSL ... | sh`, which on Ubuntu
       # always runs under dash regardless of any shebang -- a bashism written and eyeballed on
       # this repo's own macOS dev machines can look correct and still break a real user's VPS.
