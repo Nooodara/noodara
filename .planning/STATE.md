@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 07-01-PLAN.md (brand geometry module)
-last_updated: "2026-09-22T22:56:25.544Z"
-last_activity: 2026-09-22 -- Phase 07 Plan 01 complete (brand geometry module)
+stopped_at: Completed 07-02-PLAN.md (raster pipeline) — wave 1 done
+last_updated: "2026-09-22T23:20:00.000Z"
+last_activity: 2026-09-22 -- Phase 07 Plan 02 complete (raster pipeline, RASTER_BACKEND=sharp)
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 10
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 07 (identidad-y-brand-kit) — EXECUTING
-Plan: 2 of 10
-Status: Executing Phase 07 — 07-01 complete, wave 1 continues with 07-02
-Last activity: 2026-09-22 -- Phase 07 Plan 01 complete (brand geometry module)
+Plan: 3 of 10
+Status: Executing Phase 07 — wave 1 complete (07-01, 07-02); next wave 2 = 07-03 (brand components)
+Last activity: 2026-09-22 -- Phase 07 Plan 02 complete (raster pipeline, RASTER_BACKEND=sharp)
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
@@ -157,6 +157,7 @@ Progress: [█░░░░░░░░░] 10%
 | Phase 06 P14 | 4min (task commits); docs-only, longer session | 2 tasks | 4 files |
 | Phase 06 P15 | continuation session (Tasks 1-2 prior session); Task 3 checkpoint resolution this session | 3 tasks | 2 files |
 | Phase 07 P01 | 70min | 3 tasks | 6 files |
+| Phase 07 P02 | 18min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -428,6 +429,7 @@ Recent decisions affecting current work:
 - [Phase 06 P15, Task 3 checkpoint, 2026-09-21]: User's verbatim answer was "Aceptar con deuda (Recomendado)" -- closes Plan 06-15 with the ten human prerequisites (06-HUMAN-UAT.md) carried forward as verification debt; none was individually confirmed or performed by this decision. Same closing pattern phase 5 used at its own 05-46 checkpoint. v0.1 gate verdict stays NOT READY; git remote -v still empty.
 - [Phase 07 P01]: brand geometry pins STROKE=3 and APERTURE_RADIUS=6 (plan starting values were 4/5) so X_HEIGHT = 2*APERTURE_RADIUS = 12 holds exactly -- the ring counter stays visible at 16px and every round letter fills the x-height band and sits on the baseline; a D-16 round retunes these two numbers and nothing else
 - [Phase 07 P01]: brand paths assume the SVG default (nonzero) fill rule, never evenodd -- parts overlap by design and a ring counter is cut by winding the inner circle against the outer one; 07-03/07-06 must not set fill-rule or any stroke
+- [Phase 07 P02]: RASTER_BACKEND = 'sharp', decided by an executed fidelity probe on the real nonzero-winding ring() from geometry.ts (hole open, band painted, corner transparent); sharp@0.35.4 and png-to-ico@3.0.2 approved by the user at the package-legitimacy gate, provenance registered before install, pinned at both packages/ui and the repo root (scripts/brand resolves from the root)
 
 ### Pending Todos
 
