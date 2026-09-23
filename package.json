@@ -21,6 +21,8 @@
     "test:e2e:repeat": "node scripts/e2e-repeat.mjs",
     "test:e2e:report": "playwright show-report",
     "e2e:install": "playwright install chromium",
+    "brand:boards": "tsx --tsconfig packages/ui/tsconfig.json scripts/brand/render-boards.ts",
+    "brand:review": "tsx --tsconfig packages/ui/tsconfig.json scripts/brand/capture-brand-review.ts",
     "db:migrate": "pnpm --filter @noodara/control-plane db:migrate",
     "boundaries": "turbo boundaries",
     "check:ui-safety": "node scripts/check-ui-safety.mjs",

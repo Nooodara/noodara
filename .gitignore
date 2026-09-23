@@ -23,5 +23,11 @@ blob-report/
 .env.*
 !.env.example
 
+# Brand review captures (07-04)
+# Regenerated on demand by `pnpm brand:boards` / `pnpm brand:review`; only the approved concept's
+# files are ever committed, and the approval plan copies those into docs/brand/approved/.
+docs/brand/review/*
+!docs/brand/review/README.md
+
 # OS
 .DS_Store
