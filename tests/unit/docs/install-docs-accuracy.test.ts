@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 // Plan 06-14: docs/install.md and README.md are operator-facing documentation for a script
@@ -223,6 +223,43 @@ describe('README.md', () => {
     for (const cmd of commands) {
       expect(pkg.scripts, `pnpm ${cmd} is documented but not a real script in package.json`).toHaveProperty(cmd);
     }
+  });
+});
+
+// Plan 07-10 (BRAND-02, D-10, T-07-29): the README's own <picture> header is the last surface the
+// brand mark had to reach. The sources must be the two repo-relative SVG paths this phase already
+// generated and byte-locked (07-06) -- never a remote URL, which is exactly the tampering surface
+// T-07-29 names -- and the existing Install/Status/Development/no-planning-id assertions above must
+// keep passing against the new markup.
+describe('README.md brand header', () => {
+  it('opens with a <picture> lockup: a dark <source> and a light <img> fallback, both repo-relative', () => {
+    const rm = readme();
+    expect(rm).toContain(
+      '<source media="(prefers-color-scheme: dark)" srcset="packages/ui/brand/lockup-dark.svg">',
+    );
+    expect(rm).toContain('<img alt="Noodara" src="packages/ui/brand/lockup-light.svg" width="240">');
+  });
+
+  it('the <picture> block never references a remote URL, only the two repo-relative lockup SVGs', () => {
+    const rm = readme();
+    const pictureMatch = rm.match(/<picture>[\s\S]*?<\/picture>/);
+    expect(pictureMatch, '<picture> block not found in README.md').toBeTruthy();
+    expect(pictureMatch?.[0]).not.toMatch(/https?:\/\//);
+  });
+
+  it('both lockup sources the <picture> block points at exist on disk', () => {
+    expect(existsSync('packages/ui/brand/lockup-dark.svg')).toBe(true);
+    expect(existsSync('packages/ui/brand/lockup-light.svg')).toBe(true);
+  });
+
+  it('the <picture> block appears before the first ## heading, and the H1 + tagline remain', () => {
+    const rm = readme();
+    const pictureIndex = rm.indexOf('<picture>');
+    const firstHeadingIndex = rm.indexOf('\n## ');
+    expect(pictureIndex).toBeGreaterThanOrEqual(0);
+    expect(firstHeadingIndex).toBeGreaterThan(pictureIndex);
+    expect(rm).toMatch(/^# Noodara$/m);
+    expect(rm).toContain('> Your infrastructure, understood.');
   });
 });
 
