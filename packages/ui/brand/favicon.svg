@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<rect width="512" height="512" rx="116" ry="116" fill="#0071e3"/>
+<g transform="translate(97.28 97.28) scale(13.227)" fill="#ffffff">
+<g data-part="monogram"><path data-part="frame" d="M1 1 H4 V23 H1 Z M20 1 H23 V23 H20 Z M14 1 H23 V4 H14 Z M1 20 H10 V23 H1 Z"></path><path data-part="diagonal" d="M3.561 1.439 L10.939 8.818 L8.818 10.939 L1.439 3.561 Z M15.182 13.061 L22.561 20.439 L20.439 22.561 L13.061 15.182 Z"></path><path data-part="aperture" d="M9 12 A3 3 0 1 1 15 12 A3 3 0 1 1 9 12 Z M10.5 12 A1.5 1.5 0 1 0 13.5 12 A1.5 1.5 0 1 0 10.5 12 Z"></path></g>
+</g>
+</svg>
