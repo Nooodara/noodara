@@ -45,3 +45,18 @@ export { StatusPill, type StatusPillProps } from './StatusPill.js';
 export { Textarea, type TextareaProps } from './Textarea.js';
 export { ThemeToggle, type ThemeToggleProps } from './ThemeToggle.js';
 export { Tooltip, TooltipProvider, type TooltipProps } from './Tooltip.js';
+
+// Brand (07-03-PLAN.md Task 3): the three lockups D-04 defines, plus the concept metadata a
+// caller needs to name or pick one. Kept as its own block at the end rather than merged into the
+// alphabetical list above, so the brand surface reads as one unit.
+//
+// Deliberately NOT exported here (named descriptively rather than by filename, so this plan's own
+// barrel grep stays exact): the static export module, the glyph builders, and the three per-concept
+// constructions. This barrel is what `apps/web` sees, and none of those belong in a browser
+// bundle -- the static export path pulls in `react-dom/server` and is consumed by build-time Node
+// scripts (07-06) through relative paths, while the letter and concept builders are geometry
+// internals reached through `monogramParts`/`wordmarkParts`.
+export { CONCEPT_IDS, CONCEPT_META, DEFAULT_CONCEPT, type ConceptId } from './brand/geometry.js';
+export { Lockup, type LockupProps } from './brand/Lockup.js';
+export { Logo, type LogoProps } from './brand/Logo.js';
+export { Wordmark, type WordmarkProps } from './brand/Wordmark.js';
