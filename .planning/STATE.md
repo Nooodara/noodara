@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
-status: executing
-stopped_at: Completed 07-09-PLAN.md (web icons, manifest, OG) -- wave 6 done
-last_updated: "2026-09-23T02:36:54.540Z"
-last_activity: 2026-09-22 -- Phase 07 Plan 09 complete (apps/web now serves the full brand icon family -- favicon, apple-touch-icon, PWA icons, OG image, manifest.ts with zero colour literal, layout.tsx Open Graph metadata -- via an allowlisted sync script; a real pre-existing bug in proxy.ts's session-redirect matcher, which blocked every public brand route for an unauthenticated visitor, was found and fixed by the plan's own E2E test; 22 new unit + 4 new E2E tests, full suite 151 files / 2542 tests green)
+status: verifying
+stopped_at: Completed 07-10-PLAN.md — all 10 plans executed; phase verification pending
+last_updated: "2026-09-23T02:50:05.944Z"
+last_activity: 2026-09-23 -- Phase 07 Plan 10 complete (README <picture> lockup in both colour schemes, pnpm brand:check wired into CI's lint job right after check:ui-safety, deliberate-drift proof recorded, and a full real regression across every phase-7 gate -- 151 files / 2547 unit tests 0 skipped, 104/104 E2E 0 failed/skipped/flaky, lint/typecheck/boundaries/check:ui-safety/brand:check/provenance/build all green; 07-VALIDATION.md closed with real plan/task ids)
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 10
-  completed_plans: 9
-  percent: 0
+  completed_plans: 10
+  percent: 13
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 07 (identidad-y-brand-kit) — EXECUTING
-Plan: 10 of 10
-Status: Executing Phase 07 — waves 1-6 complete; next wave 7 = 07-10 (README + CI drift gate + full regression)
-Last activity: 2026-09-22 -- Phase 07 Plan 09 complete (apps/web now serves the full brand icon family -- favicon, apple-touch-icon, PWA icons, OG image, manifest.ts with zero colour literal, layout.tsx Open Graph metadata -- via an allowlisted sync script; a real pre-existing bug in proxy.ts's session-redirect matcher, which blocked every public brand route for an unauthenticated visitor, was found and fixed by the plan's own E2E test; 22 new unit + 4 new E2E tests, full suite 151 files / 2542 tests green)
+Plan: 10 of 10 complete
+Status: Phase 07 execution complete — awaiting code review, regression gate and verifier
+Last activity: 2026-09-23 -- Phase 07 Plan 10 complete (README <picture> lockup in both colour schemes, pnpm brand:check wired into CI's lint job right after check:ui-safety, deliberate-drift proof recorded, and a full real regression across every phase-7 gate -- 151 files / 2547 unit tests 0 skipped, 104/104 E2E 0 failed/skipped/flaky, lint/typecheck/boundaries/check:ui-safety/brand:check/provenance/build all green; 07-VALIDATION.md closed with real plan/task ids)
 
-Progress: [█████████░] 90%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -165,6 +165,7 @@ Progress: [█████████░] 90%
 | Phase 07 P07 | 15min | 3 tasks | 14 files |
 | Phase 07 P08 | ~12min | 2 tasks | 7 files |
 | Phase 07 P09 | 55min | 3 tasks | 14 files |
+| Phase 07 P10 | ~35min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -172,6 +173,8 @@ Progress: [█████████░] 90%
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+- [Phase 07 P10]: The README's `<picture>` fallback ships at `width="240"` (the plan's own pinned acceptance-criteria string), not the `width="220"` shown in `docs/brand/BRAND.md`'s own Assets-section worked example -- both are valid markup, only the display width differs, and reconciling the two is left to phase 8 or a follow-up rather than decided unilaterally mid-regression. `pnpm brand:check` now runs inside CI's `lint` job right after `check:ui-safety` (no new action, no new pin); the deliberate-drift proof (`monogram-light.svg` corrupted with a trailing space) printed the drift line, exited 1, and the file was restored via the single sanctioned `git checkout -- <path>`. BRAND-01 and BRAND-02 are both now fully satisfied; phase 7 itself stays unmarked complete in ROADMAP.md pending code review, the regression gate and the verifier.
 
 - [Phase 07 P08]: The brand board no longer draws its own construction ruler -- `scripts/brand/construction-sheet.ts` owns the single `constructionSvg` builder and both the committed `docs/brand/construction.svg` and the board call it, with the four colours supplied by the caller (token values for the file, `var(--token)` references for the board). `docs/brand/BRAND.md` states the minimum monogram size as both 16 px (the reviewed browser tab) and 24 px (inside the product, against the 20 px icon set), since stating only one would contradict what ships; the kit refers to decisions in prose and never by id, enforced by the same three planning-id regexes `install-docs-accuracy.test.ts` uses. BRAND-01 is satisfied as of this plan (REQUIREMENTS.md still shows Pending -- ticking it was outside this executor's commit scope).
 

@@ -29,7 +29,7 @@ Full phase details, plans and success criteria: [milestones/v0.1-ROADMAP.md](mil
 - Integer phases (7, 8, 9…): Planned milestone work; la numeración continúa desde v0.1
 - Decimal phases (8.1, 8.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 7: Identidad y brand kit** - Logotipo (monograma + wordmark), favicon y hoja de marca en ambos temas, aplicados en app y README tras aprobación humana.
+- [ ] **Phase 7: Identidad y brand kit** - Logotipo (monograma + wordmark), favicon y hoja de marca en ambos temas, aplicados en app y README tras aprobación humana. (10/10 plans executed; awaiting code review, regression gate and verifier before close)
 - [ ] **Phase 8: Rediseño de la app** - Elevación flotante, movimiento con propósito, momentos autorados, fallbacks de accesibilidad y el shell preparado para inspector, jerarquía y menú de cuenta; primera revisión visual humana.
 - [ ] **Phase 9: Settings editables** - Perfil del admin (nombre, email, password), tema y preferencias visuales persistidas en el servidor sin parpadeo.
 - [ ] **Phase 10: Sitio de docs y landing pública** - `apps/site` estático con Fumadocs, landing honesta con la identidad, publicado a GitHub Pages desde CI con test de exactitud.
@@ -77,7 +77,7 @@ Decisiones de `research/SUMMARY.md` (D1-D27) ya aceptadas en `REQUIREMENTS.md`. 
   3. El logotipo aparece en el sidebar/rail, `/login`, `/setup`, favicon y `apple-touch-icon` en ambos temas y en el README; el gate de tokens sigue verde (cero literales de color fuera de `tokens.css`) y los 93 E2E existentes siguen verdes.
   4. Los assets de marca (SVGs, favicon set, imagen OG) quedan exportados desde `packages/ui` para que la Fase 10 los consuma sin copiar archivos.
 
-**Plans:** 9/10 plans executed
+**Plans:** 10/10 plans complete
 
 Plans:
 **Wave 1**
@@ -109,7 +109,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 07-10-PLAN.md — README <picture> lockup, CI brand:check drift gate, full regression (93 E2E, ui-safety, lint, typecheck, boundaries)
+- [x] 07-10-PLAN.md — README <picture> lockup, CI brand:check drift gate, full regression (93 E2E, ui-safety, lint, typecheck, boundaries)
 
 **UI hint**: yes
 
@@ -249,7 +249,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Identidad y brand kit | 9/10 | In Progress|  |
+| 7. Identidad y brand kit | 10/10 | In Progress (verification pending) | - |
 | 8. Rediseño de la app | 0/TBD | Not started | - |
 | 9. Settings editables | 0/TBD | Not started | - |
 | 10. Sitio de docs y landing pública | 0/TBD | Not started | - |
