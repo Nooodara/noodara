@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 07-05-PLAN.md (brand approval — concept c) — wave 4 done
-last_updated: "2026-09-23T01:33:43.000Z"
-last_activity: 2026-09-23 -- Phase 07 Plan 05 complete (concept c "Viewfinder" approved after 1 adjustment round; APPROVAL.md + 10 committed captures + DEFAULT_CONCEPT='c'; BRAND-03 satisfied)
+stopped_at: Completed 07-06-PLAN.md (static brand asset generation + package export) — wave 5 in progress (07-06 done, 07-07 next)
+last_updated: "2026-09-23T01:49:36.824Z"
+last_activity: 2026-09-23 -- Phase 07 Plan 06 complete (13 brand assets generated via scripts/brand/{asset-manifest,generate-brand-assets}.ts, committed under packages/ui/brand/, exported as @noodara/ui/brand/*, locked by exactness + export-resolution tests)
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 10
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 07 (identidad-y-brand-kit) — EXECUTING
-Plan: 6 of 10
-Status: Executing Phase 07 — waves 1-4 complete; next wave 5 = 07-06 (assets) + 07-07 (mount)
-Last activity: 2026-09-23 -- Phase 07 Plan 05 complete (concept c "Viewfinder" approved after 1 adjustment round; APPROVAL.md + 10 committed captures + DEFAULT_CONCEPT='c'; BRAND-03 satisfied)
+Plan: 7 of 10
+Status: Executing Phase 07 — wave 5: 07-06 done, 07-07 next
+Last activity: 2026-09-23 -- Phase 07 Plan 06 complete (13 brand assets generated via scripts/brand/{asset-manifest,generate-brand-assets}.ts, committed under packages/ui/brand/, exported as @noodara/ui/brand/*, locked by exactness + export-resolution tests)
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
@@ -161,6 +161,7 @@ Progress: [█████░░░░░] 50%
 | Phase 07 P03 | 8min | 3 tasks | 9 files |
 | Phase 07 P04 | 35min | 2 tasks | 9 files |
 | Phase 07 P05 | ~15min | 6 tasks (2 skipped) | 16 files |
+| Phase 07 P06 | 25min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -439,6 +440,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 07-04: brand review uses DOM injection at capture time (insertAdjacentHTML of renderStaticSvg output), never a production flag — apps/web and packages/ui stay untouched
 - [Phase ?]: 07-04: scripts rendering packages/ui .tsx must run as 'tsx --tsconfig packages/ui/tsconfig.json' — tsx applies a tsconfig's jsx setting only to files that tsconfig covers
 - [Phase 07 P05]: approved concept c (Viewfinder), 1 adjustment round (r→a kern), DEFAULT_CONCEPT='c'; BRAND-03 gate satisfied — 07-06..07-10 may now touch BRAND-02 surfaces
+- [Phase 07]: [Phase 07 P06]: RasterSpec gained an optional packInto field beyond the plan's own interfaces block (additive only) so the three favicon tile sizes (16/32/48) can be marked 'pack into favicon.ico, never write directly' -- matching 07-03/07-04's own precedent for additive fields
 
 ### Pending Todos
 
@@ -514,8 +516,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-23T01:33:43.000Z
-Stopped at: Completed 07-05-PLAN.md (brand approval — concept c) — wave 4 done
+Last session: 2026-09-23T01:49:36.816Z
+Stopped at: Completed 07-06-PLAN.md (static brand asset generation + package export) — wave 5 in progress (07-06 done, 07-07 next)
 Resume file: None
 
 ## Operator Next Steps
