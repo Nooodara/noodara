@@ -57,5 +57,15 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|login|setup).*)'],
+  // 07-09-PLAN.md Task 3 (BRAND-02, D-11/D-12): the favicon/apple-touch-icon/PWA-icon/OG-image/
+  // manifest routes must stay reachable by an unauthenticated visitor -- a browser requests the
+  // tab favicon and a manifest fetches its icons before any session exists, and the OG image is
+  // fetched by link-preview crawlers that never carry a session cookie at all. Discovered as a
+  // real bug by 07-09 Task 3's own E2E RED run: without these five exclusions, every one of those
+  // routes 302-redirected to /login (200 text/html once a request client follows the redirect),
+  // so the "favicon in the tab" review (D-14, Pitfall 2) would have shown Chrome's default globe
+  // icon on every unauthenticated page.
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico|icon.svg|icon1.png|icon2.png|apple-icon.png|opengraph-image.png|manifest.webmanifest|login|setup).*)',
+  ],
 };
