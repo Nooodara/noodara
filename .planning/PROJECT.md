@@ -63,7 +63,7 @@ Alcance de **v0.2 Projects & Services** (ver "Current Milestone" arriba; requisi
 **Goal:** Que Noodara enamore al verla y que una persona cree un proyecto, un environment y un servicio (repo Git, Dockerfile o imagen) y lo despliegue en su servidor con logs de build y runtime, estado real del contenedor y cero recursos huérfanos.
 
 **Target features (en este orden):**
-1. Identidad: logotipo + brand kit en ambos temas (monograma, wordmark, favicon; aplicación en app, README y docs).
+1. ✅ Identidad: logotipo + brand kit en ambos temas (monograma, wordmark, favicon; aplicación en app, README y docs). — Validated in Phase 7: Identidad y brand kit (2026-09-23): concepto C "Viewfinder" aprobado por el usuario tras 1 ronda; `packages/ui/brand/*` generado desde `geometry.ts` y bloqueado por tests + `pnpm brand:check` en CI; `docs/brand/BRAND.md`.
 2. Rediseño de la app según `docs/ui-build-prompt.md`: elevación flotante, materiales y vibrancy, movimiento con propósito, momentos autorados (discovery, TOFU), superficies del navegador, `RowMenu`, fallbacks de reduced-motion/transparency/contrast, primera revisión visual humana con screenshots; deja previstos el tercer panel, la navegación jerárquica y el menú de cuenta, sin placeholders.
 3. Settings editables: perfil del admin (nombre, email, password), tema auto/claro/oscuro con override persistente, preferencias visuales.
 4. Landing page pública (Persuade) y sitio de docs público (Read) con la misma identidad; hosting y dominio se deciden en requisitos.
@@ -77,6 +77,8 @@ Alcance de **v0.2 Projects & Services** (ver "Current Milestone" arriba; requisi
 ## Current State
 
 **Shipped: v0.1.0 — Foundation (2026-09-22).** Repositorio público `Nooodara/noodara`; Release `v0.1.0` con imágenes multi-arch públicas en GHCR (`ghcr.io/nooodara/noodara-control-plane:0.1.0`, `ghcr.io/nooodara/noodara-web:0.1.0`); instalación con `curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sh` verificada por el usuario en un VPS Ubuntu 24.04 real (instalación limpia y re-run no-op). Gate de release `docs/releases/v0.1-gate.md`: 17/17 READY. Código: ~24k líneas de producto (TS/TSX/sh) y ~47k de tests; 2214 unit, 523 integración, 93 E2E, 51 instalador (DinD), 810 commits en 12 días. Deuda conocida y humana pendiente: `.planning/STATE.md` "Deferred Items" y `06-HUMAN-UAT.md`.
+
+**Phase 7 complete — Identidad y brand kit (2026-09-23).** Marca propia "Viewfinder" (N con brackets y anillo central = ver con claridad) construida por código sobre retícula de 24 u (`packages/ui/src/brand/geometry.ts`, fuente única), componentes `Logo`/`Wordmark`/`Lockup` en `currentColor`, 13 assets generados en `packages/ui/brand/` (SVG claro/oscuro, favicon SVG+ICO, apple-touch-icon, PWA 192/512, OG 1200×630) exportados como `@noodara/ui/brand/*`, montados en rail/sidebar/`/login`/`/setup`, favicon + manifest + OG en `apps/web`, lockup en el README, brand kit en `docs/brand/BRAND.md`, aprobación registrada en `docs/brand/APPROVAL.md`. Regresión completa verde (2547 unit, 104 E2E). Pendiente humano: favicon en pestaña real (`07-HUMAN-UAT.md`); code review con 3 warnings (`07-REVIEW.md`).
 
 ## Next Milestone Goals
 
