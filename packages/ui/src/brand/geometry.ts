@@ -87,8 +87,9 @@ export const BASELINE = GRID - MARGIN;
 export const CONCEPT_IDS = ['a', 'b', 'c'] as const;
 export type ConceptId = (typeof CONCEPT_IDS)[number];
 
-/** Placeholder until docs/brand/APPROVAL.md records the chosen concept (07-05). */
-export const DEFAULT_CONCEPT: ConceptId = 'a';
+/** The concept the user approved on 2026-09-23 after one adjustment round -- see
+ *  docs/brand/APPROVAL.md, which tests/unit/brand/approval-record.test.ts holds this line to. */
+export const DEFAULT_CONCEPT: ConceptId = 'c';
 
 export type MonogramPartName = 'stem-left' | 'diagonal' | 'stem-right' | 'aperture' | 'frame';
 

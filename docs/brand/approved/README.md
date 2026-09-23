@@ -1,0 +1,3 @@
+The captures the brand approval was given against — concept c, "Viewfinder" — kept as the evidence behind [`../APPROVAL.md`](../APPROVAL.md): the brand board plus the four in-app surfaces (expanded sidebar, collapsed rail, `/login`, `/setup`), each in the light and the dark theme. Everything under `../review/` is regenerated scratch and gitignored; these ten files are the ones that survive in git.
+
+Regenerate with `pnpm brand:boards --concept c && pnpm brand:review --mounted --concept c` (the `--mounted` matrix captures the real mounted components once 07-07 lands; drop the flag to go back to review-time DOM injection), then copy the same ten filenames from `../review/c/` back into this folder.
