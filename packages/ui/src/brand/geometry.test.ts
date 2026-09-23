@@ -783,11 +783,20 @@ describe('wordmark "noodara"', () => {
   });
 
   it('tracks the letters tight -- one LETTER_GAP between the round letters (D-07)', () => {
-    const boxes = wordmarkParts(DEFAULT_CONCEPT).map((part) => pathBounds(part.d));
+    const parts = wordmarkParts(DEFAULT_CONCEPT);
+    const boxes = parts.map((part) => pathBounds(part.d));
     for (let i = 1; i < boxes.length; i += 1) {
       const previous = boxes[i - 1];
       const current = boxes[i];
       if (previous === undefined || current === undefined) throw new Error('missing glyph box');
+      if (parts[i - 1]?.part === 'glyph-r') {
+        // The one kerned pair: the "r" advances by its ink, not by its box, so the following
+        // bowl legitimately starts inside that box -- closer than LETTER_GAP, never touching.
+        // What the box cannot measure is asserted by "wordmark optical spacing" below.
+        expect(current.minX - previous.maxX).toBeGreaterThan(0);
+        expect(current.minX - previous.maxX).toBeLessThan(LETTER_GAP);
+        continue;
+      }
       expect(current.minX - previous.maxX).toBeGreaterThanOrEqual(LETTER_GAP - 1e-9);
     }
     // The two "o" are the same shape, so their gap is the tracking itself, with no bearing of
@@ -800,7 +809,10 @@ describe('wordmark "noodara"', () => {
   it('measures its width to the last letter, with no trailing bearing', () => {
     for (const concept of CONCEPT_IDS) {
       const boxes = wordmarkParts(concept).map((part) => pathBounds(part.d));
-      expect(wordmarkWidth(concept)).toBeCloseTo(Math.max(...boxes.map((box) => box.maxX)), 6);
+      // Three decimals, because the measured side is read back off coordinates `fmt` has already
+      // quantised to three, while the width is the sum of exact advances -- one of which (the
+      // r's optical kern) is irrational.
+      expect(wordmarkWidth(concept)).toBeCloseTo(Math.max(...boxes.map((box) => box.maxX)), 3);
       expect(wordmarkWidth(concept)).toBeGreaterThan(6 * (2 * APERTURE_RADIUS));
       expect(wordmarkWidth(concept)).toBeLessThan(7 * GRID);
     }

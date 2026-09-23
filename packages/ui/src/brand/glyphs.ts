@@ -15,6 +15,10 @@
 // where the curve's own outline takes over -- and not at the x-height line. A stem drawn to the
 // x-height there would cover the arch with a flat-topped rectangle and leave a visible step in
 // the outline instead of a shoulder.
+//
+// An advance is a measure of INK, not of bounding box (see `advanceBeforeBowl`). Six of the seven
+// letters are as wide at every height as they are at their widest, so for them the two measures
+// agree; the "r" is not, and it carries an optical kern for that reason.
 
 import {
   APERTURE_RADIUS,
@@ -104,6 +108,38 @@ export function glyphA(x: number): Glyph {
   };
 }
 
+/** How far the next round letter's origin may stand from the "r"'s origin.
+ *
+ *  The "r" is the only letter here whose ink reaches its widest at a single height -- the
+ *  shoulder's terminal, on the x-height line. Below that the letter falls back to its stem, so the
+ *  pair "r" + "a" opens a wedge of white no other pair in the word has, and at every size the word
+ *  reads "noodar a" (visible on all six 07-04 boards and in every in-app capture).
+ *
+ *  A bounding box cannot see that: it records the widest point as if the letter were that wide at
+ *  every height. What the eye reads is the narrowest run of white between two inks, and for every
+ *  other pair in "noodara" that run IS one LETTER_GAP -- two round flanks, or two straight stems,
+ *  at their closest approach. So the "r" is spaced by the same measure instead of by its box, and
+ *  this function returns the advance that leaves the pair exactly one LETTER_GAP of white where it
+ *  comes closest (the wordmark assembly adds that LETTER_GAP itself).
+ *
+ *  Closed form, with the "r" at x = 0 and h measured up from the springline: the shoulder's right
+ *  edge stands at `APERTURE_RADIUS - sqrt(counter^2 - h^2)` while it follows the counter, and at
+ *  `APERTURE_RADIUS` above that; the following bowl's left flank stands
+ *  `APERTURE_RADIUS - sqrt(APERTURE_RADIUS^2 - h^2)` right of its own origin. Their difference,
+ *  `sqrt(APERTURE_RADIUS^2 - h^2) - sqrt(counter^2 - h^2)`, is largest exactly where the counter
+ *  ends -- the terminal's inner corner, h = counter -- and there it is the aperture circle's own
+ *  half-chord at that height. Equalising the white AREA between the pairs instead gives the same
+ *  number to two decimals, so the two ways of reading the gap agree.
+ *
+ *  The result (5.196 units against the bounding box's 7.5 at the current constants) is a real
+ *  negative kern: the "a" begins inside the "r"'s box, tucked under the shoulder, which is where
+ *  this pair is set in geometric sans faces. That is what D-07's tight tracking means for the one
+ *  pair whose boxes misreport its spacing. */
+function advanceBeforeBowl(): number {
+  const counter = counterRadius();
+  return Math.sqrt(APERTURE_RADIUS * APERTURE_RADIUS - counter * counter);
+}
+
 export function glyphR(x: number): Glyph {
   const cy = springline();
   const inner = counterRadius();
@@ -119,9 +155,9 @@ export function glyphR(x: number): Glyph {
   return {
     part: 'glyph-r',
     d: [bar(x, cy, STROKE, BASELINE - cy), shoulder].join(' '),
-    // The shoulder's ink stops at the terminal; the extra half stroke is this letter's own
-    // trailing bearing, so the next letter does not sit under the overhang.
-    advance: APERTURE_RADIUS + STROKE / 2,
+    // In "noodara" the "r" is always followed by the final "a", so it is always followed by a
+    // bowl. Were a flat-sided letter ever to follow it, this pair would need its own measure.
+    advance: advanceBeforeBowl(),
   };
 }
 
