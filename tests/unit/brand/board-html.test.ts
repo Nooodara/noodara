@@ -182,8 +182,8 @@ describe('buildBoardHtml simulated tab strips (Pitfall 2)', () => {
     // Two bars x two sizes, each one a real `tileSvg` render carrying the caller's tile colours.
     expect(count(strips, `fill="${TILE.background}"`)).toBe(4);
     expect(count(strips, `fill="${TILE.ink}"`)).toBe(4);
-    expect(count(strips, 'width="16" height="16"')).toBe(2);
-    expect(count(strips, 'width="32" height="32"')).toBe(2);
+    expect(count(strips, 'viewBox="0 0 16 16"')).toBe(2);
+    expect(count(strips, 'viewBox="0 0 32 32"')).toBe(2);
   });
 
   it('says in words that this is a simulation, on every bar', () => {
