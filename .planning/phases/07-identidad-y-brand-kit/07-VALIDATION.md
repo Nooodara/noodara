@@ -1,10 +1,11 @@
 ---
 phase: 07
 slug: identidad-y-brand-kit
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-09-22
+closed: 2026-09-23
 ---
 
 # Phase 07 — Validation Strategy
@@ -38,32 +39,32 @@ created: 2026-09-22
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 07-W0-01 | TBD | 0 | BRAND-01 | — | N/A | unit | `pnpm test -- packages/ui/src/brand/geometry.test.ts` | ❌ W0 | ⬜ pending |
-| 07-W0-02 | TBD | 0 | BRAND-01 | — | N/A | unit | `pnpm test -- tests/unit/brand/brand-assets-accuracy.test.ts` | ❌ W0 | ⬜ pending |
-| 07-W0-03 | TBD | 0 | BRAND-01 | — | N/A | unit | `pnpm test -- tests/unit/docs/brand-kit-structure.test.ts` | ❌ W0 | ⬜ pending |
-| 07-W0-04 | TBD | 0 | BRAND-02 | — | Zero hex/rgb literals outside `tokens.css`; favicon blue only in generated `.svg`/`.png`/`.ico` | static gate | `pnpm check:ui-safety` | ✅ | ⬜ pending |
-| 07-W0-05 | TBD | 0 | BRAND-02 | — | N/A | component | `pnpm test -- apps/web/src/components/Sidebar.test.tsx` (`brand-lockup` / `brand-monogram` per breakpoint) | ❌ W0 | ⬜ pending |
-| 07-W0-06 | TBD | 0 | BRAND-02 | — | N/A | component + E2E | `pnpm test -- apps/web/src/components/AuthCard.test.tsx`; `pnpm test:e2e -- auth setup` | ❌ W0 / ✅ specs to extend | ⬜ pending |
-| 07-W0-07 | TBD | 0 | BRAND-02 | — | N/A | unit | `pnpm test -- tests/unit/brand/favicon-files-present.test.ts` | ❌ W0 | ⬜ pending |
-| 07-W0-08 | TBD | 0 | BRAND-02 | — | N/A | E2E (full) | `pnpm test:e2e` (93 existing stay green) | ✅ | ⬜ pending |
-| 07-W0-09 | TBD | 0 | BRAND-02 | — | N/A | unit | `pnpm test -- tests/unit/brand/package-exports-resolvable.test.ts` | ❌ W0 | ⬜ pending |
-| 07-W0-10 | TBD | 0 | BRAND-03 | — | N/A | manual | `checkpoint:human-verify` — screenshots (rail, sidebar, `/login`, `/setup`) both themes + browser-tab favicon check; approval recorded in `docs/brand/APPROVAL.md` | N/A | ⬜ pending |
-| 07-W0-11 | TBD | 0 | supply chain | T-07-01 | New deps (`sharp`, `png-to-ico`) registered in `scripts/check-package-provenance.mjs` before install; no `postinstall` scripts | static gate | `pnpm check:package-provenance` (verify exact script name in `package.json`) | ✅ | ⬜ pending |
+| 07-01 | 07-01 | 1 | BRAND-01 | — | N/A | unit | `pnpm exec vitest run packages/ui/src/brand/geometry.test.ts` | ✅ | ✅ green |
+| 07-06 T3 | 07-06 | 5 | BRAND-01 | — | N/A | unit | `pnpm exec vitest run tests/unit/brand/brand-assets-accuracy.test.ts` | ✅ | ✅ green |
+| 07-08 T2 | 07-08 | 6 | BRAND-01 | — | N/A | unit | `pnpm exec vitest run tests/unit/docs/brand-kit-structure.test.ts` | ✅ | ✅ green |
+| 07-03 / 07-09 | 07-03, 07-09 | 2, 6 | BRAND-02 | — | Zero hex/rgb literals outside `tokens.css`; favicon blue only in generated `.svg`/`.png`/`.ico` | static gate | `pnpm check:ui-safety` | ✅ | ✅ green |
+| 07-07 | 07-07 | 3 | BRAND-02 | — | N/A | component | `pnpm exec vitest run apps/web/src/components/Sidebar.test.tsx` (`brand-lockup` / `brand-monogram` per breakpoint) | ✅ | ✅ green |
+| 07-07 | 07-07 | 3 | BRAND-02 | — | N/A | component + E2E | `pnpm exec vitest run apps/web/src/components/AuthCard.test.tsx`; `pnpm test:e2e tests/e2e/brand.spec.ts` | ✅ | ✅ green |
+| 07-09 T2 | 07-09 | 6 | BRAND-02 | — | N/A | unit | `pnpm exec vitest run tests/unit/brand/favicon-files-present.test.ts` | ✅ | ✅ green |
+| 07-10 T3 | 07-10 | 7 | BRAND-02 | — | N/A | E2E (full) | `pnpm test:e2e` (93 existing + 11 brand stay green) | ✅ | ✅ green |
+| 07-06 T3 | 07-06 | 5 | BRAND-02 | — | N/A | unit | `pnpm exec vitest run tests/unit/brand/package-exports-resolvable.test.ts` | ✅ | ✅ green |
+| 07-05 | 07-05 | 4 | BRAND-03 | — | N/A | manual | Human approval gate — screenshots (rail, sidebar, `/login`, `/setup`) both themes + browser-tab favicon check; approval recorded in `docs/brand/APPROVAL.md` | ✅ | ✅ green |
+| 07-02 T2 | 07-02 | 1 | supply chain | T-07-01 | New deps (`sharp`, `png-to-ico`) registered in `scripts/check-package-provenance.mjs` before install; no `postinstall` scripts | static gate | `node scripts/check-package-provenance.mjs` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
-*Task IDs are provisional (`07-W0-NN`); the planner rewrites them to real `07-PP-TT` ids once plans exist.*
+*Closed 07-10: every provisional `07-W0-NN` id above has been rewritten to the real plan/task id that delivered it (see 07-10-SUMMARY.md's full command/exit-code table for the run this table reports).*
 
 ---
 
 ## Wave 0 Requirements
 
-- [ ] `packages/ui/src/brand/geometry.test.ts` — path-builder correctness for BRAND-01
-- [ ] `tests/unit/brand/brand-assets-accuracy.test.ts` — committed `packages/ui/brand/*.svg` match `renderToStaticMarkup` of the live components (BRAND-01)
-- [ ] `tests/unit/docs/brand-kit-structure.test.ts` — `docs/brand/BRAND.md` section presence (BRAND-01)
-- [ ] `apps/web/src/components/Sidebar.test.tsx`, `AuthCard.test.tsx` — mount-point presence, both themes (BRAND-02)
-- [ ] `tests/unit/brand/favicon-files-present.test.ts` — Next.js file-convention icons present and non-empty (BRAND-02)
-- [ ] `tests/unit/brand/package-exports-resolvable.test.ts` — `@noodara/ui/brand/*` resolvable from outside the package (BRAND-02)
-- [ ] No new test framework install — Vitest/Playwright already configured
+- [x] `packages/ui/src/brand/geometry.test.ts` — path-builder correctness for BRAND-01 (07-01)
+- [x] `tests/unit/brand/brand-assets-accuracy.test.ts` — committed `packages/ui/brand/*.svg` match `renderToStaticMarkup` of the live components (BRAND-01) (07-06)
+- [x] `tests/unit/docs/brand-kit-structure.test.ts` — `docs/brand/BRAND.md` section presence (BRAND-01) (07-08)
+- [x] `apps/web/src/components/Sidebar.test.tsx`, `AuthCard.test.tsx` — mount-point presence, both themes (BRAND-02) (07-07)
+- [x] `tests/unit/brand/favicon-files-present.test.ts` — Next.js file-convention icons present and non-empty (BRAND-02) (07-09)
+- [x] `tests/unit/brand/package-exports-resolvable.test.ts` — `@noodara/ui/brand/*` resolvable from outside the package (BRAND-02) (07-06)
+- [x] No new test framework install — Vitest/Playwright already configured
 
 ---
 
@@ -79,11 +80,12 @@ created: 2026-09-22
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 30s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 30s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** closed 2026-09-23 (07-10) — every command in the Per-Task Verification Map re-run green
+against the finished phase; full command/exit-code table in 07-10-SUMMARY.md.
