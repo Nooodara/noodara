@@ -125,9 +125,9 @@ Plans:
   2. El `Sheet` se cierra arrastrando con la secuencia completa del brief §7.4 (pointer capture, offset de agarre, tracking 1:1, rubber-banding, signo de velocidad, proyección de momentum, handoff, interrumpible) con `motion` acotado a ese componente; todo control presionable da feedback `scale(0.97)`; las curvas y duraciones de §6 sustituyen a los easings built-in; el toolbar usa scroll edge effect; `RowMenu`/`Tooltip` escalan desde el trigger y `Dialog` desde el centro; `Disclosure` anima con `grid-template-rows`; checks de discovery y filas entran con stagger de 40 ms; ninguna acción iniciada por teclado se anima.
   3. La narración del discovery y el bloque de fingerprint/TOFU pasan el test de intercambio de marca como momentos autorados (uno por pantalla); el craft de superficie está presente (numerales tabulares, `text-wrap`, medida 65-75, `::selection`/`caret-color`/scrollbars/`text-underline-offset` tematizados, puente de blur skeleton → contenido, `@starting-style`, medidor de disco con `clip-path`).
   4. `prefers-reduced-motion`, `prefers-reduced-transparency` y `prefers-contrast: more` tienen alternativas intencionales en toolbar, sheet, dialog y menú; el hover se gatea con `(hover: hover) and (pointer: fine)`; nunca hay más de tres `backdrop-filter` simultáneos (contado en el peor caso: toolbar + Sheet + RowMenu + Tooltip).
-  5. El shell tiene el slot del inspector, la navegación jerárquica y el menú de cuenta previstos sin placeholders visibles (hoy poblados con Servers/Activity/Settings); cada pantalla rediseñada tiene contraste medido (≥4.5:1 cuerpo, ≥3:1 texto grande y bordes únicos), se probó a 375/900/1280/1920 px con contenido real, y el usuario aprobó screenshots en ambos temas; los 93 E2E existentes siguen verdes y el nightly 20x también.
+  5. El shell tiene el slot del inspector, la navegación jerárquica y el menú de cuenta previstos sin placeholders visibles (hoy poblados con Servers/Activity/Settings); cada pantalla rediseñada tiene contraste medido (≥4.5:1 cuerpo, ≥3:1 texto grande y bordes únicos), se probó a 375/900/1280/1920 px con contenido real, y el usuario aprobó screenshots en ambos temas; los 104 E2E existentes siguen verdes y el nightly 20x también.
 
-**Plans:** 0/19 plans complete
+**Plans:** 0/20 plans complete
 
 Plans:
 **Wave 1**
@@ -141,7 +141,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [ ] 08-03-PLAN.md — Elevation/easing/surface-elevated tokens, generalized contrast audit, shadow-allowlist and backdrop-filter gates
-- [ ] 08-04-PLAN.md — RowMenu fix (close-on-select, aria-expanded, stable keys, touch-visible) on a shared use-floating-menu hook with close-source tracking
+- [ ] 08-04-PLAN.md — Standalone use-close-source primitive + shared use-floating-menu hook, and the RowMenu fix (close-on-select, aria-expanded, stable keys, touch-visible)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -168,20 +168,24 @@ Plans:
 **Wave 9** *(blocked on Wave 8 completion)*
 
 - [ ] 08-12-PLAN.md — motion@13.4.1 provenance + Sheet drag-to-dismiss with the full brief 7.4 sequence
-- [ ] 08-13-PLAN.md — Press feedback from one definition and no-animation-on-keyboard across every overlay
+- [ ] 08-13-PLAN.md — One press definition (press.ts) composed into the five pressable primitives
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 08-14-PLAN.md — Motion contract: trigger-anchored origins, centred dialog, Disclosure on grid-template-rows, easing sweep
 - [ ] 08-15-PLAN.md — Surface craft: browser surfaces, tabular numerals, wrap and measure, blur bridge, @starting-style, clip-path disk meter
+- [ ] 08-20-PLAN.md — Press on menu/nav items + no-animation-on-keyboard in Dialog/RowMenu/AccountMenu, measured across all four overlays
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
-- [ ] 08-16-PLAN.md — Servers-list 40ms first-load stagger and activity arrival entries with scroll preserved
-- [ ] 08-17-PLAN.md — Fingerprint component in blocks of four with the ink-only old/new diff, on all three TOFU surfaces
+- [ ] 08-14-PLAN.md — Motion contract: trigger-anchored origins, centred dialog, Disclosure on grid-template-rows, easing sweep
 - [ ] 08-18-PLAN.md — Discovery timeline thread with real durations and the Viewfinder aperture focusing with the run; one-shot focus on /login and /setup
 
 **Wave 12** *(blocked on Wave 11 completion)*
+
+- [ ] 08-16-PLAN.md — Servers-list 40ms first-load stagger and activity arrival entries with scroll preserved
+- [ ] 08-17-PLAN.md — Fingerprint component in blocks of four with the ink-only old/new diff, on all three TOFU surfaces
+
+**Wave 13** *(blocked on Wave 12 completion)*
 
 - [ ] 08-19-PLAN.md — G3 human gate: live motion review, brand-swap test, 20x nightly, approved captures committed
 
