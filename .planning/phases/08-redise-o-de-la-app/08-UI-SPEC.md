@@ -254,6 +254,7 @@ apps/web/src/app/(shell)/
 - Rail (`900–1279px`, 64px): avatar only, 32px circle, centered in the same 44px-tall footer row the expanded trigger occupies.
 - Below `900px` (bottom-sheet nav): same as expanded trigger, inside the sheet.
 - Trigger row height: 44px (touch target, matches `NavTree` leaf height).
+- **Accessible name (all breakpoints):** the trigger is a `<button>` with `aria-label="Account menu"` (added to `data-testid="shell-account-menu-trigger"`); in rail mode the avatar is icon-only, so the label is the *only* accessible name — the initials are `aria-hidden`. Announced as "Account menu, button, collapsed/expanded" via `aria-haspopup="menu"` + `aria-expanded`. Same pattern as `NavTree`'s rail icons (tooltip-based accessible name), verified with VoiceOver at G2.
 
 ### 4.2 Menu content
 
