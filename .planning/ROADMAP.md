@@ -127,7 +127,64 @@ Plans:
   4. `prefers-reduced-motion`, `prefers-reduced-transparency` y `prefers-contrast: more` tienen alternativas intencionales en toolbar, sheet, dialog y menú; el hover se gatea con `(hover: hover) and (pointer: fine)`; nunca hay más de tres `backdrop-filter` simultáneos (contado en el peor caso: toolbar + Sheet + RowMenu + Tooltip).
   5. El shell tiene el slot del inspector, la navegación jerárquica y el menú de cuenta previstos sin placeholders visibles (hoy poblados con Servers/Activity/Settings); cada pantalla rediseñada tiene contraste medido (≥4.5:1 cuerpo, ≥3:1 texto grande y bordes únicos), se probó a 375/900/1280/1920 px con contenido real, y el usuario aprobó screenshots en ambos temas; los 93 E2E existentes siguen verdes y el nightly 20x también.
 
-**Plans**: TBD
+**Plans:** 0/19 plans complete
+
+Plans:
+**Wave 1**
+
+- [ ] 08-01-PLAN.md — UI review capture pipeline (6 screens x 2 themes x 4 widths + overlays) and the docs/ui approval scaffold with its pin test
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 08-02-PLAN.md — G1 human gate: baseline captures of today's app reviewed before any CSS, notes recorded
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 08-03-PLAN.md — Elevation/easing/surface-elevated tokens, generalized contrast audit, shadow-allowlist and backdrop-filter gates
+- [ ] 08-04-PLAN.md — RowMenu fix (close-on-select, aria-expanded, stable keys, touch-visible) on a shared use-floating-menu hook with close-source tracking
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 08-05-PLAN.md — InsetGroup component applied to server detail, Settings and the servers list
+- [ ] 08-06-PLAN.md — Floating elevation on Sheet/Dialog/RowMenu plus reduced-motion / reduced-transparency / contrast-more fallbacks and hover gating
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 08-07-PLAN.md — Generic NavTree component; sidebar composes it and fuses with the canvas
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 08-08-PLAN.md — AccountMenu with monochrome avatar replacing the theme/sign-out cluster, plus the three E2E specs it rewrites
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 08-09-PLAN.md — @inspector parallel-route slot and the three-column conditional shell, empty and zero-width
+- [ ] 08-10-PLAN.md — Toolbar scroll-edge effect replacing the permanent border, plus its accessibility alternatives
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 08-11-PLAN.md — G2 human gate: direction approved, real screen-reader verification, live review
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 08-12-PLAN.md — motion@13.4.1 provenance + Sheet drag-to-dismiss with the full brief 7.4 sequence
+- [ ] 08-13-PLAN.md — Press feedback from one definition and no-animation-on-keyboard across every overlay
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
+- [ ] 08-14-PLAN.md — Motion contract: trigger-anchored origins, centred dialog, Disclosure on grid-template-rows, easing sweep
+- [ ] 08-15-PLAN.md — Surface craft: browser surfaces, tabular numerals, wrap and measure, blur bridge, @starting-style, clip-path disk meter
+
+**Wave 11** *(blocked on Wave 10 completion)*
+
+- [ ] 08-16-PLAN.md — Servers-list 40ms first-load stagger and activity arrival entries with scroll preserved
+- [ ] 08-17-PLAN.md — Fingerprint component in blocks of four with the ink-only old/new diff, on all three TOFU surfaces
+- [ ] 08-18-PLAN.md — Discovery timeline thread with real durations and the Viewfinder aperture focusing with the run; one-shot focus on /login and /setup
+
+**Wave 12** *(blocked on Wave 11 completion)*
+
+- [ ] 08-19-PLAN.md — G3 human gate: live motion review, brand-swap test, 20x nightly, approved captures committed
+
 **UI hint**: yes
 
 ### Phase 9: Settings editables
