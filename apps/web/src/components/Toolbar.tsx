@@ -15,7 +15,8 @@
 // slot instead, per that same spec section.
 import { Menu } from 'lucide-react';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { cn } from '@noodara/ui';
 import { StreamStatus } from './StreamStatus';
 import { useShellContext } from '../lib/shell-context';
 
@@ -31,13 +32,46 @@ export interface ToolbarProps {
   readonly secondaryActions?: ReactNode;
 }
 
+// 08-10-PLAN.md Task 1 (UI-07/D-03, 08-UI-SPEC.md SS2.2): the permanent `border-b border-hairline`
+// this root used to carry unconditionally is now a scroll-position-driven toggle -- transparent at
+// the very top of the page, the real hairline the instant content has scrolled under this sticky
+// chrome. A plain passive `scroll` listener on `window` (this app's own scroll container: `main`
+// in `(shell)/layout.tsx` carries no `overflow-y-auto` of its own, so the window/document is what
+// actually scrolls here), read once synchronously on mount to cover the back-forward-cache case
+// (a page can mount already scrolled), cleaned up on unmount (T-08-29: no leaked listener, no
+// per-frame layout read -- `window.scrollY` is a cached layout value, not a forced reflow). This
+// scroll state is this component's own local concern: it is never threaded into `ShellContext`,
+// which stays exactly the shape 08-01 gave it.
+function useScrolled(): boolean {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    function handleScroll(): void {
+      setScrolled(window.scrollY > 0);
+    }
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  return scrolled;
+}
+
+const BASE_CLASSES = cn(
+  'sticky top-0 z-30 flex h-[52px] items-center gap-3 border-b bg-surface-1/90 px-4 backdrop-blur',
+  'motion-safe:transition-colors motion-safe:duration-[var(--duration-panel)] motion-safe:ease-[var(--ease-out)]',
+);
+
 export function Toolbar({ title, backLink, primaryAction, secondaryActions }: ToolbarProps) {
   const { connected, toggleMobileNav } = useShellContext();
+  const scrolled = useScrolled();
 
   return (
     <div
       data-testid="shell-toolbar"
-      className="sticky top-0 z-30 flex h-[52px] items-center gap-3 border-b border-hairline bg-surface-1/90 px-4 backdrop-blur"
+      className={cn(BASE_CLASSES, scrolled ? 'border-hairline' : 'border-transparent')}
     >
       {backLink ? (
         <Link href={backLink.href} className="text-callout text-ink-secondary hover:text-ink">

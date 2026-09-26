@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderUi, screen } from '@noodara/ui/testing';
+import { fireEvent, renderUi, screen } from '@noodara/ui/testing';
 import { ShellContext, type ShellContextValue } from '../lib/shell-context';
 import { Toolbar } from './Toolbar';
 
@@ -40,7 +40,7 @@ function setScrollY(value: number): void {
 }
 
 function fireWindowScroll(): void {
-  window.dispatchEvent(new Event('scroll'));
+  fireEvent.scroll(window);
 }
 
 beforeEach(() => {
