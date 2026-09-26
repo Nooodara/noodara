@@ -29,5 +29,11 @@ blob-report/
 docs/brand/review/*
 !docs/brand/review/README.md
 
+# UI review captures (08-01)
+# Regenerated on demand by `pnpm ui:review`; only the 1280px set approved at each gate (G1/G2/G3)
+# is ever committed, into docs/ui/approved/ (D-15).
+docs/ui/review/*
+!docs/ui/review/README.md
+
 # OS
 .DS_Store
