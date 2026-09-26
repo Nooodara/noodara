@@ -112,20 +112,19 @@ test('@shell activating a sidebar item by keyboard navigates to its route', asyn
   await expect(page).toHaveURL(/\/servers$/);
 });
 
-// 08-08 (D-05): the theme control now lives inside the account menu -- open the trigger first,
-// click the ThemeToggle it wraps twice, and the same data-theme/reload-survival contract still
-// holds. Clicking it never closes the menu (08-UI-SPEC.md SS4.2), so both clicks land on the same
-// still-open trigger without reopening it.
-test('@shell the theme toggle inside the account menu cycles data-theme and the choice survives a reload', async ({
+// 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 5, D-05 change): the theme control moved out
+// of the account menu into an Appearance InsetGroup on /settings, per the user's own G3 review --
+// same data-theme/reload-survival contract, just reached through Settings instead of the trigger.
+test('@shell the theme toggle in the Settings Appearance group cycles data-theme and the choice survives a reload', async ({
   page,
 }) => {
   await login(page);
 
-  await page.getByTestId('shell-account-menu-trigger').click();
-  await page.getByTestId('shell-account-menu-theme-toggle').click();
+  await page.goto('/settings');
+  await page.getByTestId('settings-appearance-theme-toggle').click();
   const afterFirstClick = await focusedTheme(page);
 
-  await page.getByTestId('shell-account-menu-theme-toggle').click();
+  await page.getByTestId('settings-appearance-theme-toggle').click();
   const afterSecondClick = await focusedTheme(page);
 
   expect(afterSecondClick).not.toBe(afterFirstClick);
