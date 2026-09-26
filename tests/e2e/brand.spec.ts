@@ -94,6 +94,9 @@ test('@brand the expanded sidebar shows the lockup and hides the monogram at 144
 
   await expect(page.getByTestId('brand-lockup')).toBeVisible();
   await expect(page.getByTestId('brand-monogram')).toBeHidden();
+  // 08-08 (D-05): the account menu trigger replaces the old theme-toggle/sign-out cluster at the
+  // sidebar's foot and stays visible at every breakpoint, alongside whichever brand mark is shown.
+  await expect(page.getByTestId('shell-account-menu-trigger')).toBeVisible();
 });
 
 test('@brand the 64px rail shows the monogram and hides the lockup at 1024px', async ({ page }) => {
@@ -103,6 +106,7 @@ test('@brand the 64px rail shows the monogram and hides the lockup at 1024px', a
 
   await expect(page.getByTestId('brand-monogram')).toBeVisible();
   await expect(page.getByTestId('brand-lockup')).toBeHidden();
+  await expect(page.getByTestId('shell-account-menu-trigger')).toBeVisible();
 
   const box = await page.getByTestId('shell-sidebar').boundingBox();
   expect(box).not.toBeNull();
@@ -137,6 +141,9 @@ test('@brand the below-900px bottom sheet carries no mark, closed or open', asyn
   await expect(page.getByTestId('shell-sidebar').getByRole('link')).toHaveCount(3);
   await expect(page.getByTestId('brand-monogram')).toBeHidden();
   await expect(page.getByTestId('brand-lockup')).toBeHidden();
+  // 08-08 (D-05): the account menu trigger is still the shell's one identity affordance inside
+  // the mobile sheet, not just at the two wider breakpoints above.
+  await expect(page.getByTestId('shell-account-menu-trigger')).toBeVisible();
 });
 
 // 07-09-PLAN.md Task 3 (BRAND-02, D-11/D-12): proves every icon/manifest URL Next.js actually

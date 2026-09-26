@@ -52,7 +52,10 @@ function sidebarLink(page: Page, name: string): Locator {
   return page.getByTestId(`nav-tree-item-${name.toLowerCase()}`);
 }
 
-test('@shell pressing Tab from page load moves through the skip link, the three sidebar items, the theme toggle, then sign out', async ({
+// 08-08 (D-05): the old two-stop tail (theme toggle, then sign out) is now a single account-menu
+// trigger -- ThemeToggle and Sign out only enter the accessibility tree once that trigger is
+// activated (see the roving-focus case inside the menu, below).
+test('@shell pressing Tab from page load moves through the skip link, the three sidebar items, then the account menu trigger', async ({
   page,
 }) => {
   await login(page);
@@ -70,11 +73,7 @@ test('@shell pressing Tab from page load moves through the skip link, the three 
   expect(await focusedAccessibleName(page)).toBe('Settings');
 
   await page.keyboard.press('Tab');
-  const themeToggleName = await focusedAccessibleName(page);
-  expect(themeToggleName).toMatch(/^Theme:/);
-
-  await page.keyboard.press('Tab');
-  expect(await focusedAccessibleName(page)).toBe('Sign out');
+  expect(await focusedAccessibleName(page)).toBe('Account menu');
 });
 
 test('@shell every focused sidebar item shows a visible, non-zero focus outline', async ({ page }) => {
@@ -113,13 +112,20 @@ test('@shell activating a sidebar item by keyboard navigates to its route', asyn
   await expect(page).toHaveURL(/\/servers$/);
 });
 
-test('@shell the theme toggle cycles data-theme and the choice survives a reload', async ({ page }) => {
+// 08-08 (D-05): the theme control now lives inside the account menu -- open the trigger first,
+// click the ThemeToggle it wraps twice, and the same data-theme/reload-survival contract still
+// holds. Clicking it never closes the menu (08-UI-SPEC.md SS4.2), so both clicks land on the same
+// still-open trigger without reopening it.
+test('@shell the theme toggle inside the account menu cycles data-theme and the choice survives a reload', async ({
+  page,
+}) => {
   await login(page);
 
-  await page.getByTestId('shell-theme-toggle').click();
+  await page.getByTestId('shell-account-menu-trigger').click();
+  await page.getByTestId('shell-account-menu-theme-toggle').click();
   const afterFirstClick = await focusedTheme(page);
 
-  await page.getByTestId('shell-theme-toggle').click();
+  await page.getByTestId('shell-account-menu-theme-toggle').click();
   const afterSecondClick = await focusedTheme(page);
 
   expect(afterSecondClick).not.toBe(afterFirstClick);
@@ -172,16 +178,30 @@ test('@shell a keyboard-focused leaf at 1024px still shows its tooltip with the 
   await expect(page.getByRole('tooltip')).toHaveText('Activity');
 });
 
-test('@shell signing out returns to /login, and a subsequent direct visit to /servers redirects to /login again', async ({
+test('@shell signing out through the account menu returns to /login, and a subsequent direct visit to /servers redirects to /login again', async ({
   page,
 }) => {
   await login(page);
 
-  await page.getByTestId('shell-sign-out').click();
+  await page.getByTestId('shell-account-menu-trigger').click();
+  await page.getByTestId('shell-account-menu-sign-out').click();
   await expect(page).toHaveURL(/\/login$/);
 
   await page.goto('/servers');
   await expect(page).toHaveURL(/\/login$/);
+});
+
+// 08-08 (D-05, the account-menu counterpart of tests/e2e/servers-list.spec.ts's own `@rowmenu`
+// keyboard case): selecting "Settings" closes the menu and hands off to the real /settings route,
+// exactly like RowMenu's own close-on-select contract (UI-04).
+test('@shell selecting Settings in the account menu closes it and navigates to /settings', async ({ page }) => {
+  await login(page);
+
+  await page.getByTestId('shell-account-menu-trigger').click();
+  await page.getByTestId('shell-account-menu-settings-link').click();
+
+  await expect(page).toHaveURL(/\/settings$/);
+  await expect(page.getByRole('menuitem')).toHaveCount(0);
 });
 
 // WR-B-15 (05-VERIFICATION.md gap 8 / 05-35-PLAN.md Task 1): the bare origin must be a working

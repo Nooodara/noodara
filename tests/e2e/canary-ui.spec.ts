@@ -276,7 +276,9 @@ test(
       }
 
       // ---- 12. Sign out -- no credential surfaces during or after -------------------------------
-      await page.getByTestId('shell-sign-out').click();
+      // 08-08 (D-05): sign-out now lives inside the account menu -- open the trigger first.
+      await page.getByTestId('shell-account-menu-trigger').click();
+      await page.getByTestId('shell-account-menu-sign-out').click();
       await expect(page).toHaveURL(/\/login$/);
       const htmlAfterSignOut = await page.content();
       for (const canary of secretCanaries) {
