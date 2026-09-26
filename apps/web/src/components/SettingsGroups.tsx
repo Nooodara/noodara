@@ -10,7 +10,7 @@
 // beside it) rather than through `LabelValue`'s own built-in `copyable` prop, so this file visibly
 // owns the one copy affordance this screen has -- `settings-rows.ts`'s `copyable` flag decides
 // which row gets it, never more than the public URL.
-import { CopyButton, Disclosure, InsetGroup, LabelValue } from '@noodara/ui';
+import { CopyButton, Disclosure, InsetGroup, LabelValue, ThemeToggle } from '@noodara/ui';
 import { advancedRows, instanceRows, type ConfigResponse, type SettingsRow } from '../lib/settings-rows';
 
 export interface SettingsGroupsProps {
@@ -67,6 +67,19 @@ export function SettingsGroups({ config }: SettingsGroupsProps) {
         {instance.map((row) => (
           <SettingsRowView key={row.label} row={row} />
         ))}
+      </InsetGroup>
+
+      {/* 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 5, D-05 change): the theme control
+          moves here from the account menu -- an Appearance InsetGroup consistent with Instance,
+          the "Appearance" label as a plain row (no `settings-rows.ts` entry backs it, this screen
+          has no other manual row) and `ThemeToggle` itself, never a second write path onto its
+          own `STORAGE_KEY`. UI-level only, per D-05: no server-side persistence is added here --
+          Phase 9 owns that. */}
+      <InsetGroup title="Appearance" data-testid="settings-appearance-group">
+        <div className="flex items-center justify-between gap-4 px-4 py-2">
+          <span className="text-caption text-ink-secondary">Appearance</span>
+          <ThemeToggle data-testid="settings-appearance-theme-toggle" />
+        </div>
       </InsetGroup>
 
       <Disclosure title="Advanced" data-testid="settings-advanced-disclosure">
