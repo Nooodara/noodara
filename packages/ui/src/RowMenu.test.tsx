@@ -101,4 +101,60 @@ describe('RowMenu', () => {
     await user.keyboard('{ArrowUp}');
     expect(screen.getByRole('menuitem', { name: 'Edit' })).toHaveFocus();
   });
+
+  it('closes and returns focus to the trigger after selecting an item (UI-04, the select path -- not the Esc path above, which already passed)', async () => {
+    const user = userEvent.setup();
+    const onEdit = vi.fn();
+    renderUi(<RowMenu items={buildItems(onEdit, vi.fn())} triggerLabel="Actions for Alpha" />);
+    const trigger = screen.getByRole('button', { name: 'Actions for Alpha' });
+
+    await user.click(trigger);
+    await user.click(screen.getByRole('menuitem', { name: 'Edit' }));
+
+    expect(onEdit).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('menuitem')).toBeNull();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('aria-expanded reflects open state', async () => {
+    const user = userEvent.setup();
+    renderUi(<RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="Actions for Alpha" />);
+    const trigger = screen.getByRole('button', { name: 'Actions for Alpha' });
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('renders two items with an identical label and each still fires only its own handler, keyed by id rather than label', async () => {
+    const user = userEvent.setup();
+    const onFirst = vi.fn();
+    const onSecond = vi.fn();
+    renderUi(
+      <RowMenu
+        items={[
+          { id: 'restart-1', label: 'Restart', onSelect: onFirst },
+          { id: 'restart-2', label: 'Restart', onSelect: onSecond },
+        ]}
+        triggerLabel="Actions for Alpha"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Actions for Alpha' }));
+    const restartItems = screen.getAllByRole('menuitem', { name: 'Restart' });
+    expect(restartItems).toHaveLength(2);
+
+    const secondRestartItem = restartItems[1];
+    if (secondRestartItem === undefined) {
+      throw new Error('expected a second "Restart" menuitem');
+    }
+    await user.click(secondRestartItem);
+
+    expect(onSecond).toHaveBeenCalledTimes(1);
+    expect(onFirst).not.toHaveBeenCalled();
+  });
 });
