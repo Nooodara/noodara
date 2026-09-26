@@ -1,6 +1,20 @@
-import { describe, expect, it } from 'vitest';
-import { Tooltip } from './Tooltip.js';
+import * as TooltipPrimitive from '@radix-ui/react-tooltip';
+import { describe, expect, it, vi } from 'vitest';
+import { Tooltip, TooltipProvider } from './Tooltip.js';
 import { renderUi, screen, userEvent, waitFor } from './testing/render.js';
+
+// 08-14-PLAN.md Task 2 (UI-07, 08-UI-SPEC.md §7.2 Tooltip row): spies only on the real
+// `@radix-ui/react-tooltip` Provider's own received props -- every other export (Root, Trigger,
+// Portal, Content) stays the genuine primitive, never reimplemented here. This is the one thing
+// jsdom can genuinely, synchronously observe about the "second hover in a session opens instantly"
+// mechanism: `skipDelayDuration` is Radix's own internal timer field, with no DOM effect this
+// environment can otherwise assert on directly (mirrors RowMenu/AccountMenu/Dialog.test.tsx's own
+// closeSource-mock precedent, 08-20, for the identical "assert what the real primitive receives"
+// reason).
+vi.mock('@radix-ui/react-tooltip', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@radix-ui/react-tooltip')>();
+  return { ...actual, Provider: vi.fn(actual.Provider) };
+});
 
 describe('Tooltip', () => {
   it('renders its trigger child', () => {
@@ -76,5 +90,35 @@ describe('Tooltip', () => {
     expect(content).toContain('motion-safe:duration-[125ms]');
     expect(content).toContain('motion-safe:ease-[var(--ease-out)]');
     expect(content).not.toContain('scale-[0]');
+  });
+
+  // 08-14-PLAN.md Task 2 (UI-07, 08-UI-SPEC.md §7.2): a second hover within the skip-delay window
+  // must not re-wait the full delayDuration -- Radix's own Provider carries this as
+  // `skipDelayDuration`, which this component now sets a documented, explicit default for
+  // (rather than leaving the caller to rely on an unstated library default).
+  it('defaults skipDelayDuration on the provider so a repeat hover within one session opens instantly', () => {
+    renderUi(
+      <Tooltip content="Full detail">
+        <button type="button">Trigger</button>
+      </Tooltip>,
+    );
+
+    const providerMock = vi.mocked(TooltipPrimitive.Provider);
+    const lastCallProps = providerMock.mock.calls.at(-1)?.[0];
+    expect(lastCallProps?.skipDelayDuration).toEqual(expect.any(Number));
+  });
+
+  it('lets a caller override the default skipDelayDuration explicitly', () => {
+    renderUi(
+      <TooltipProvider skipDelayDuration={0}>
+        <Tooltip content="Full detail">
+          <button type="button">Trigger</button>
+        </Tooltip>
+      </TooltipProvider>,
+    );
+
+    const providerMock = vi.mocked(TooltipPrimitive.Provider);
+    const lastCallProps = providerMock.mock.calls.at(-1)?.[0];
+    expect(lastCallProps?.skipDelayDuration).toBe(0);
   });
 });
