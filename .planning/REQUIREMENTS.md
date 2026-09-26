@@ -24,9 +24,9 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **UI-07**: El toolbar usa scroll edge effect en lugar del borde permanente; `RowMenu` y `Tooltip` escalan desde el origen del trigger; `Dialog` desde el centro; `Disclosure` anima con `grid-template-rows`; los checks de discovery y las filas de la lista entran con stagger de 40 ms sin bloquear la interacción.
 - [ ] **UI-08**: Los momentos de firma del producto — la narración del discovery y el bloque de fingerprint/confianza (TOFU) — están tratados como momentos autorados (uno por pantalla), distinguibles de cualquier otro producto (test de intercambio de marca).
 - [ ] **UI-09**: Craft de superficie: numerales tabulares en todo dato numérico, `text-wrap: balance/pretty`, medida de 65–75 caracteres en copy, `::selection`/`caret-color`/scrollbars/`text-underline-offset` tematizados, puente de blur en el crossfade skeleton → contenido, `@starting-style` en las entradas, medidor de disco revelado con `clip-path`.
-- [ ] **UI-10**: `prefers-reduced-motion`, `prefers-reduced-transparency` y `prefers-contrast: more` tienen alternativas intencionales en toolbar, sheet, dialog y menú; el hover se gatea con `(hover: hover) and (pointer: fine)`; nunca más de tres `backdrop-filter` simultáneos.
+- [x] **UI-10**: `prefers-reduced-motion`, `prefers-reduced-transparency` y `prefers-contrast: more` tienen alternativas intencionales en toolbar, sheet, dialog y menú; el hover se gatea con `(hover: hover) and (pointer: fine)`; nunca más de tres `backdrop-filter` simultáneos.
 - [ ] **UI-11**: El shell deja previstos, sin placeholders visibles, el tercer panel (inspector), la navegación jerárquica Project → Environment → Service y el menú de cuenta (avatar/nombre, perfil, apariencia, cerrar sesión), de forma que v0.2–v0.5 no exigen reescribirlo.
-- [ ] **UI-12**: Cada pantalla rediseñada se verifica con contraste medido (≥4.5:1 cuerpo, ≥3:1 texto grande y bordes únicos), a 375/900/1280/1920 px con contenido real, y con screenshots en ambos temas revisados por un humano antes de cerrarse; los 93 E2E existentes siguen verdes.
+- [x] **UI-12**: Cada pantalla rediseñada se verifica con contraste medido (≥4.5:1 cuerpo, ≥3:1 texto grande y bordes únicos), a 375/900/1280/1920 px con contenido real, y con screenshots en ambos temas revisados por un humano antes de cerrarse; los 93 E2E existentes siguen verdes.
 
 ### Settings editables (SET)
 
@@ -162,9 +162,9 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | UI-07 | Phase 8 | Pending |
 | UI-08 | Phase 8 | Pending |
 | UI-09 | Phase 8 | Pending |
-| UI-10 | Phase 8 | Pending |
+| UI-10 | Phase 8 | Complete |
 | UI-11 | Phase 8 | Pending |
-| UI-12 | Phase 8 | Pending |
+| UI-12 | Phase 8 | Complete |
 | SET-02 | Phase 9 | Pending |
 | SET-03 | Phase 9 | Pending |
 | SET-04 | Phase 9 | Pending |
