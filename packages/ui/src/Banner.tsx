@@ -30,7 +30,10 @@ export function Banner({ message, errorCode, action, children, 'data-testid': te
 
   return (
     <div data-testid={testId} role="alert" className={ROOT_CLASSES}>
-      <p className="text-body text-ink">{message}</p>
+      {/* UI-09 (08-15-PLAN.md Task 1): a 70ch measure cap plus normal-nums -- this is prose, not
+          a value that must line up in a column, so it opts out of the page-wide tabular-nums
+          default declared in apps/web/src/app/globals.css. */}
+      <p className="max-w-[70ch] text-body text-ink normal-nums">{message}</p>
       {children}
       {hasFooter ? (
         <div className="flex items-center justify-between gap-4">

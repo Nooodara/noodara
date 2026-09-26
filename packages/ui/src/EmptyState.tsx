@@ -22,7 +22,9 @@ export function EmptyState({ title, body, action, 'data-testid': testId }: Empty
   return (
     <div data-testid={testId} className="flex flex-col items-center gap-2 py-12 text-center">
       <h2 className="text-title font-semibold text-ink">{title}</h2>
-      <p className="text-body text-ink-secondary">{body}</p>
+      {/* UI-09 (08-15-PLAN.md Task 1): a 70ch measure cap so a long body sentence stays a
+          comfortable line, matching Banner/Notice/dialog body copy's own cap. */}
+      <p className="max-w-[70ch] text-body text-ink-secondary">{body}</p>
       {action ? (
         <div className="pt-2">
           <Button type="button" variant="primary" onClick={action.onClick}>

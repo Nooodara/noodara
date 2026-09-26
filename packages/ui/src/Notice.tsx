@@ -22,7 +22,10 @@ const ROOT_CLASSES = cn('flex flex-col gap-3 rounded-md border border-hairline b
 export function Notice({ message, onDismiss, children, 'data-testid': testId }: NoticeProps) {
   return (
     <div data-testid={testId} className={ROOT_CLASSES}>
-      <p className="text-body text-ink">{message}</p>
+      {/* UI-09 (08-15-PLAN.md Task 1): a 70ch measure cap plus normal-nums -- this is prose, not
+          a value that must line up in a column, so it opts out of the page-wide tabular-nums
+          default declared in apps/web/src/app/globals.css. */}
+      <p className="max-w-[70ch] text-body text-ink normal-nums">{message}</p>
       {children}
       {onDismiss ? (
         <div className="flex justify-end">

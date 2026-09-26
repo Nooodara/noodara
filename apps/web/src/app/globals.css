@@ -35,3 +35,79 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/*
+ * Surface Craft (UI-09, 08-UI-SPEC.md SS9, 08-15-PLAN.md Task 1) -- the browser's own chrome
+ * (selection, caret, scrollbars, link underlines) belongs to the design system too. Every value
+ * below is a `var(--token)` reference into tokens.css, same discipline as the base rules above:
+ * zero literal colours here, enforced repo-wide by `check:ui-safety`'s hex/rgb gates.
+ */
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+:root,
+[data-theme='dark'] {
+  caret-color: var(--accent);
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--hairline-strong);
+  border-radius: var(--r-pill);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+* {
+  scrollbar-color: var(--hairline-strong) transparent;
+}
+
+a {
+  text-underline-offset: 2px;
+}
+
+/*
+ * Tabular numerals as the page-wide default (08-UI-SPEC.md SS9): a fingerprint hex block, a
+ * StatTile value, a duration, a port or a timestamp all want digits that line up in a fixed
+ * width. The one place this default actively hurts readability is a free-text sentence -- the
+ * activity log's own row prose -- so it opts back out here rather than at every call site;
+ * `Banner`/`Notice`'s own message copy opts out on the component itself (EmptyState.tsx,
+ * Banner.tsx, Notice.tsx) since those files are this same plan's to touch.
+ */
+* {
+  font-variant-numeric: tabular-nums;
+}
+
+[data-testid='activity-row'] p {
+  font-variant-numeric: normal;
+}
+
+/*
+ * Typographic measure (08-UI-SPEC.md SS9): headings resist an orphaned short last line, body
+ * copy resists a ragged one, and `[role="dialog"] p` caps prose width without this plan touching
+ * `Dialog.tsx` (plan 08-14 owns that file in this same wave). `max-width: 70ch` is the single
+ * implementation value for the spec's 65-75ch range -- EmptyState/Banner/Notice apply the same
+ * cap on their own message element (a class, not this selector, since not every `<p>` in those
+ * components is a message paragraph).
+ */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+[role='dialog'] p {
+  max-width: 70ch;
+}
