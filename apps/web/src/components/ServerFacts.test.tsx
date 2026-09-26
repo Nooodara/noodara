@@ -253,6 +253,36 @@ describe('ServerFacts', () => {
   // full container instead of half of it; `sm:grid-cols-4` (the four-across desktop layout)
   // already existed and is untouched. Asserted as class presence -- jsdom has no real layout
   // engine to measure whether "176.3 GB of 910.7 GB" actually wraps.
+  // 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 1): the System/Docker/Connection rows sat
+  // flush against the InsetGroup block's own hairline border -- no horizontal inset at all,
+  // unlike ServerList's rows (ListRow's own `px-4`). Every row inside these three groups, and the
+  // amber warning line under OS/Engine version, now carries the same `px-4` inset.
+  it('gives every row inside System/Docker/Connection a px-4 horizontal inset, matching the amber warning lines', () => {
+    const server = buildDiscoveredServer({
+      id: 's1',
+      name: 'srv-1',
+      lastErrorCode: 'UNSUPPORTED_OS',
+      dockerInstalled: false,
+    });
+    renderUi(<ServerFacts server={server} now={NOW} warnings={['UNSUPPORTED_OS']} />);
+
+    const hostnameLabelValueRow = screen.getByText('Hostname').closest('[class*="justify-between"]');
+    expect(hostnameLabelValueRow?.parentElement?.className).toMatch(/\bpx-4\b/);
+
+    const hostLabelValueRow = screen.getByText('Host').closest('[class*="justify-between"]');
+    expect(hostLabelValueRow?.parentElement?.className).toMatch(/\bpx-4\b/);
+
+    const unsupportedOsWarning = screen.getByTestId('server-fact-warning-unsupported-os');
+    expect(unsupportedOsWarning.className).toMatch(/\bpx-4\b/);
+
+    const dockerAbsentWarning = screen.getByTestId('server-fact-warning-docker-absent');
+    expect(dockerAbsentWarning.className).toMatch(/\bpx-4\b/);
+
+    const fingerprintLabel = screen.getByText('Host fingerprint');
+    const fingerprintRow = fingerprintLabel.parentElement;
+    expect(fingerprintRow?.className).toMatch(/\bpx-4\b/);
+  });
+
   it('stacks the stat tiles to a single column below 480px, two from 480px, four from sm', () => {
     const server = buildDiscoveredServer();
     renderUi(<ServerFacts server={server} now={NOW} />);
