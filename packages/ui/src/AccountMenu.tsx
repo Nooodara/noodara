@@ -85,6 +85,20 @@ function Avatar({ initials, className }: { readonly initials: string; readonly c
 // leaves the trigger stuck highlighted. The focus ring is `--ink`, deliberately not the app's one
 // blue action colour: D-06 keeps this whole component monochrome, and a focus indicator is not a
 // call to action.
+// 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 4): the trigger is `w-full` at every
+// breakpoint so its hover/pressed surface spans the whole sidebar row, but the content inside it
+// (avatar, plus name once visible) was always left-aligned via `px-3` -- fine once the name is
+// showing, but in the 900-1279px icon rail (where `NAME_CLASSES` hides the name) that pinned the
+// avatar to the row's left edge while the hover rectangle kept the full row's width, reading as a
+// highlight offset up-left of the circle. `justify-center` only for that one rail breakpoint
+// (mirroring `NAME_CLASSES`'s own three-breakpoint shape) re-centres the lone avatar in the
+// rectangle without disturbing the left-aligned avatar+name row at the sheet width or expanded
+// sidebar, where a centred layout would look wrong next to `NavTree`'s own left-aligned items.
+const TRIGGER_JUSTIFY_CLASSES = 'justify-start min-[900px]:justify-center min-[1280px]:justify-start';
+// `railOnly` forces the avatar-only rendering unconditionally (no responsive name to react to),
+// so its own trigger is centred at every width rather than riding the three-breakpoint shape
+// above.
+const TRIGGER_JUSTIFY_RAIL_ONLY_CLASSES = 'justify-center';
 const TRIGGER_CLASSES = cn(
   'flex h-11 w-full items-center gap-3 rounded-sm px-3 text-ink outline-none',
   '[@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-2',
@@ -165,7 +179,7 @@ export function AccountMenu({
     <DialogPrimitive.Root open={open} onOpenChange={setOpen} modal={false}>
       <div className="relative w-full">
         <DialogPrimitive.Trigger
-          className={TRIGGER_CLASSES}
+          className={cn(TRIGGER_CLASSES, railOnly ? TRIGGER_JUSTIFY_RAIL_ONLY_CLASSES : TRIGGER_JUSTIFY_CLASSES)}
           data-testid={testId ?? DEFAULT_TRIGGER_TESTID}
           aria-label="Account menu"
           aria-haspopup="menu"
