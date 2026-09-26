@@ -22,6 +22,20 @@ describe('Skeleton', () => {
 
     expect(screen.getByTestId('my-skeleton').className).not.toMatch(/animate-spin/);
   });
+
+  // UI-09 (08-15-PLAN.md Task 2): the skeleton-to-content crossfade's blur bridge -- a
+  // motion-safe-gated opacity+filter transition at --duration-panel, plus the data-entering
+  // attribute that keys the @starting-style entrance rule in globals.css. Never a
+  // backdrop-filter -- that budget belongs to Toolbar/Sheet, not this component.
+  it('carries the motion-safe blur-bridge transition and the data-entering attribute, never a backdrop-filter', () => {
+    renderUi(<Skeleton width={120} height={16} data-testid="my-skeleton" />);
+
+    const el = screen.getByTestId('my-skeleton');
+    expect(el).toHaveAttribute('data-entering', 'true');
+    expect(el.className).toMatch(/motion-safe:transition-\[opacity,filter\]/);
+    expect(el.className).toMatch(/duration-\[var\(--duration-panel\)\]/);
+    expect(el.className).not.toMatch(/backdrop/);
+  });
 });
 
 describe('SkeletonRow', () => {
@@ -44,6 +58,14 @@ describe('SkeletonRow', () => {
     const { container } = renderUi(<SkeletonRow />);
 
     expect(container.innerHTML).not.toMatch(/animate-spin/);
+  });
+
+  // UI-09 (08-15-PLAN.md Task 2): same blur-bridge/entrance contract as the block Skeleton above.
+  it('carries the data-entering attribute for the blur-bridge entrance', () => {
+    const { container } = renderUi(<SkeletonRow />);
+
+    const row = container.querySelector('[data-testid="skeleton-row"]');
+    expect(row).toHaveAttribute('data-entering', 'true');
   });
 
   it('renders exactly five row elements when five SkeletonRows are rendered, matching a 5-row list load', () => {
@@ -72,5 +94,12 @@ describe('SkeletonText', () => {
     const { container } = renderUi(<SkeletonText data-testid="my-skeleton-text" />);
 
     expect(container.innerHTML).not.toMatch(/animate-spin/);
+  });
+
+  // UI-09 (08-15-PLAN.md Task 2): same blur-bridge/entrance contract as the block Skeleton above.
+  it('carries the data-entering attribute for the blur-bridge entrance', () => {
+    const { container } = renderUi(<SkeletonText data-testid="my-skeleton-text" />);
+
+    expect(container.querySelector('[data-testid="my-skeleton-text"]')).toHaveAttribute('data-entering', 'true');
   });
 });
