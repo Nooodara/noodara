@@ -14,8 +14,25 @@
 import { Check, Clock, Minus, TriangleAlert, X, type LucideIcon } from 'lucide-react';
 import type { DiscoveryCheckId } from '@noodara/domain/discovery';
 import { cn, Disclosure, type Tone } from '@noodara/ui';
-import type { CheckState, DiscoveryCheckView } from '../lib/discovery-progress';
+import { formatDuration, type CheckState, type DiscoveryCheckView } from '../lib/discovery-progress';
 import type { DiscoveryStepName } from '../lib/discovery-steps';
+
+// UI-07 (08-UI-SPEC.md §7.4, §9 #11): raw checks arrive staggered 40ms per index in DOM order,
+// never blocking interaction while the stagger plays. Capped at four checks' worth (the largest
+// group -- Resources: cpu/memory/disk/uptime, D-06) so no step's own disclosure could ever produce
+// a longer stagger than this file's own worst case, matching 08-16-PLAN.md's own "state the cap
+// and the reasoning" convention for the identical technique on the servers list.
+const CHECK_STAGGER_STEP_MS = 40;
+const CHECK_STAGGER_MAX_DELAY_MS = 4 * CHECK_STAGGER_STEP_MS;
+
+function checkStaggerDelayMs(index: number): number {
+  return Math.min(index * CHECK_STAGGER_STEP_MS, CHECK_STAGGER_MAX_DELAY_MS);
+}
+
+// UI-08/D-09 (08-UI-SPEC.md §8.1): a step already resolved by `buildChecklist` (never merely
+// `pending`/`running`) is exactly the set `DiscoverySection`'s own `completedFraction` counts --
+// the same distinction, expressed per row instead of aggregated, never a second computation.
+const UNRESOLVED_STATES: ReadonlySet<CheckState> = new Set(['pending', 'running']);
 
 // SS4.2's exact seven words -- driven by a lookup, never invented ad hoc at a render site.
 const STATE_WORDS = {
@@ -78,7 +95,7 @@ function consequenceLineFor(check: DiscoveryCheckView, sshUser: string): string 
 
 function formatCheckDetail(check: DiscoveryCheckView): string {
   if (check.detail === null) return '—';
-  return check.durationMs === null ? check.detail : `${check.detail} · ${String(check.durationMs)}ms`;
+  return check.durationMs === null ? check.detail : `${check.detail} · ${formatDuration(check.durationMs)}`;
 }
 
 export interface DiscoveryStepProps {
@@ -90,12 +107,22 @@ export interface DiscoveryStepProps {
   readonly checks: readonly DiscoveryCheckView[];
   /** Substituted into the docker_group consequence line's `{sshUser}` placeholder (SS5.5). */
   readonly sshUser: string;
+  /** The step's own aggregate duration (D-09, `discovery-progress.ts`'s `stepDurationMs`) --
+   *  `null` renders no duration at all rather than a guess (a step still mid-run, or one of the
+   *  two connection-derived steps that carries no checks to sum). Optional/defaulted to `null` so
+   *  every call site written before this plan keeps compiling unchanged. */
+  readonly durationMs?: number | null;
 }
 
-export function DiscoveryStep({ stepId, label, state, checks, sshUser }: DiscoveryStepProps) {
+export function DiscoveryStep({ stepId, label, state, checks, sshUser, durationMs = null }: DiscoveryStepProps) {
   const tone = STATE_TONE[state];
   const Icon = STATE_ICON[state];
   const word = STATE_WORDS[state];
+  // UI-08/D-09: this row's own thread segment inks in (`scale-y-100`) once `buildChecklist` has
+  // already resolved it -- never a height animation (§9 #11), never a second progress
+  // computation (the same resolved/unresolved split `DiscoverySection`'s `completedFraction`
+  // sums, only expressed per row here).
+  const threadFilled = !UNRESOLVED_STATES.has(state);
   const consequenceLines = checks
     .filter((check) => check.state === 'warning')
     .map((check) => consequenceLineFor(check, sshUser))
@@ -105,8 +132,20 @@ export function DiscoveryStep({ stepId, label, state, checks, sshUser }: Discove
     <div
       data-testid={`discovery-step-${stepId}`}
       data-severity={state}
-      className="flex flex-col gap-1.5 border-b border-hairline py-3 last:border-b-0"
+      className="relative flex flex-col gap-1.5 border-b border-hairline py-3 last:border-b-0"
     >
+      {/* Timeline thread (UI-08 D-09, 08-UI-SPEC.md §8.1): a 1px hairline track behind this row's
+          own marker, with an overlaid ink line that fills via `scale-y-*` (transform, never
+          `height`/`top`/`margin`, §9 #11) the instant this step resolves. */}
+      <div aria-hidden="true" className="absolute inset-y-0 left-2 w-px bg-hairline">
+        <div
+          className={cn(
+            'h-full w-full origin-top bg-ink motion-safe:transition-transform motion-safe:duration-[var(--duration-panel)] motion-safe:ease-[var(--ease-out)]',
+            threadFilled ? 'scale-y-100' : 'scale-y-0',
+          )}
+        />
+      </div>
+
       <div className="flex items-center gap-2">
         <Icon
           aria-label={word}
@@ -115,6 +154,14 @@ export function DiscoveryStep({ stepId, label, state, checks, sshUser }: Discove
           className={cn('shrink-0', TONE_TEXT_CLASSES[tone], state === 'running' && 'motion-safe:animate-pulse')}
         />
         <span className="flex-1 text-headline font-semibold text-ink">{label}</span>
+        {durationMs === null ? null : (
+          <span
+            data-testid="step-duration"
+            className="font-mono text-mono tabular-nums text-ink-tertiary"
+          >
+            {formatDuration(durationMs)}
+          </span>
+        )}
         <span className={cn('text-caption', TONE_TEXT_CLASSES[tone])}>{word}</span>
       </div>
 
@@ -128,10 +175,18 @@ export function DiscoveryStep({ stepId, label, state, checks, sshUser }: Discove
         <div className="pl-6">
           <Disclosure title={`${String(checks.length)} check${checks.length === 1 ? '' : 's'}`}>
             <div className="flex flex-col gap-2 pt-2">
-              {checks.map((check) => {
+              {checks.map((check, index) => {
                 const checkTone = STATE_TONE[check.state];
                 return (
-                  <div key={check.id} data-testid={`discovery-check-${check.id}`} className="flex flex-col gap-0.5">
+                  <div
+                    key={check.id}
+                    data-testid={`discovery-check-${check.id}`}
+                    data-entering="true"
+                    className="flex flex-col gap-0.5 motion-safe:transition-[opacity,transform] motion-safe:duration-[var(--duration-panel)] motion-safe:ease-[var(--ease-out)] motion-safe:starting:translate-y-1 motion-safe:starting:opacity-0"
+                    style={{ transitionDelay: `${String(checkStaggerDelayMs(index))}ms` }}
+                  >
+                    {/* UI-07/§9: staggered but never blocking -- no CSS rule that blocks pointer input, above or
+                        anywhere in this row while its own entrance transition plays. */}
                     <div className="flex items-center gap-2 text-caption">
                       <span data-mono="true" className="text-mono text-ink-secondary">
                         {check.id}

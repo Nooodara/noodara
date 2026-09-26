@@ -55,7 +55,7 @@ describe('DiscoveryStep', () => {
   it('renders its own duration in tabular numerals when provided', () => {
     renderUi(<DiscoveryStep stepId="os" label="OS" state="pass" checks={[]} sshUser="root" durationMs={2100} />);
     const row = screen.getByTestId('discovery-step-os');
-    const duration = within(row).getByTestId('discovery-step-duration');
+    const duration = within(row).getByTestId('step-duration');
     expect(duration).toHaveTextContent('2.1s');
     expect(duration.className).toContain('tabular-nums');
   });
@@ -63,7 +63,7 @@ describe('DiscoveryStep', () => {
   it('renders no duration element at all when durationMs is null -- never a guess', () => {
     renderUi(<DiscoveryStep stepId="os" label="OS" state="pending" checks={[]} sshUser="root" durationMs={null} />);
     const row = screen.getByTestId('discovery-step-os');
-    expect(within(row).queryByTestId('discovery-step-duration')).not.toBeInTheDocument();
+    expect(within(row).queryByTestId('step-duration')).not.toBeInTheDocument();
   });
 
   it.each(CHECK_STATES)('gives the severity icon an aria-label repeating the same word for state=%s', (state) => {

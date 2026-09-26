@@ -62,6 +62,35 @@ export interface DiscoveryStepView {
   /** Empty for `ssh_reachable`/`authenticated` -- both are connection-derived, never backed by a
    *  `DiscoveryCheckId` (D-06). */
   readonly checks: readonly DiscoveryCheckView[];
+  /** The step's own aggregate duration (D-09) -- the sum of every one of its checks' own
+   *  `durationMs`, or `null` when there are no checks (the two connection-derived steps) or when
+   *  even one check has not yet reported its own duration (still `pending`/`running`). Never a
+   *  guess: a step mid-run renders no duration at all rather than a partial or estimated one. */
+  readonly durationMs: number | null;
+}
+
+/** D-09/`stepDurationMs`'s own rule: sum every check's `durationMs`, or `null` the instant there
+ *  are no checks to sum or any one of them has not reported a duration yet -- never an invented
+ *  partial total. */
+function stepDurationMs(checks: readonly DiscoveryCheckView[]): number | null {
+  if (checks.length === 0) return null;
+  let total = 0;
+  for (const check of checks) {
+    if (check.durationMs === null) return null;
+    total += check.durationMs;
+  }
+  return total;
+}
+
+/**
+ * D-09/§Copywriting Contract's exact duration format, verbatim: `{ms}ms` under 1000ms (an integer
+ * millisecond count), `{s.s}s` at or above it (one decimal place). The one function every
+ * millisecond value in the Discovery narration -- a single check's own detail line and a step's
+ * own aggregate -- is rendered through, so the format itself has exactly one test.
+ */
+export function formatDuration(durationMs: number): string {
+  if (durationMs < 1000) return `${String(durationMs)}ms`;
+  return `${(durationMs / 1000).toFixed(1)}s`;
 }
 
 export interface DiscoveryChecklist {
@@ -190,7 +219,12 @@ export function buildChecklist(input: BuildChecklistInput): DiscoveryChecklist {
         }
         return pendingCheckView(id, lastReceivedIndex !== -1 && idx === lastReceivedIndex + 1 ? 'running' : 'pending');
       });
-      return { id: stepId, state: aggregateLiveStepState(checks, hasUnresolvedEarlierCheck), checks };
+      return {
+        id: stepId,
+        state: aggregateLiveStepState(checks, hasUnresolvedEarlierCheck),
+        checks,
+        durationMs: stepDurationMs(checks),
+      };
     });
 
     // Discovery only starts after a successful, authenticated connection (SS4.3) -- the first
@@ -200,6 +234,8 @@ export function buildChecklist(input: BuildChecklistInput): DiscoveryChecklist {
       id,
       state: connectionState,
       checks: [],
+      // Connection-derived steps carry no `DiscoveryCheckId` to sum a duration from (D-06).
+      durationMs: null,
     }));
 
     return { steps: [...connectionSteps, ...discoverySteps] };
@@ -208,17 +244,22 @@ export function buildChecklist(input: BuildChecklistInput): DiscoveryChecklist {
   const settledChecks = settled.checks.map((check) => checkView(check, settled.warnings));
   const byStep = groupChecksByStep(settledChecks);
 
-  const discoverySteps: DiscoveryStepView[] = DISCOVERY_GROUP_STEPS.map((stepId) => ({
-    id: stepId,
-    state: aggregateSettledStepState(discoveryGroupChecksFor(stepId, byStep)),
-    checks: discoveryGroupChecksFor(stepId, byStep),
-  }));
+  const discoverySteps: DiscoveryStepView[] = DISCOVERY_GROUP_STEPS.map((stepId) => {
+    const checks = discoveryGroupChecksFor(stepId, byStep);
+    return {
+      id: stepId,
+      state: aggregateSettledStepState(checks),
+      checks,
+      durationMs: stepDurationMs(checks),
+    };
+  });
 
   const connectionState: CheckState = settledChecks.length > 0 ? 'pass' : 'pending';
   const connectionSteps: DiscoveryStepView[] = CONNECTION_STEP_NAMES.map((id) => ({
     id,
     state: connectionState,
     checks: [],
+    durationMs: null,
   }));
 
   return { steps: [...connectionSteps, ...discoverySteps] };
