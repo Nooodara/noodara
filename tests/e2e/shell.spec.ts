@@ -168,6 +168,32 @@ test('@shell the sidebar has no right-edge border at 1440px', async ({ page }) =
   expect(borderRightWidth).toBe('0px');
 });
 
+// 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 2): the sidebar was `position: static` at
+// >=900px, so on any page taller than the viewport it scrolled away with the content instead of
+// staying put -- unlike a real macOS/iOS-style sidebar. `main { min-height }` forces a real
+// document-level scroll here regardless of how tall any given route's fixture data happens to be,
+// so this proves the CSS positioning itself rather than depending on the server detail screen's
+// real content height.
+test('@shell the sidebar stays pinned to the viewport while the page scrolls, on the server detail screen', async ({
+  page,
+}) => {
+  await login(page);
+  await page.setViewportSize({ width: 1440, height: 700 });
+  await page.goto('/servers');
+  await page.addStyleTag({ content: 'main { min-height: 3000px; }' });
+
+  const sidebar = page.getByTestId('shell-sidebar');
+  const before = await sidebar.boundingBox();
+  expect(before).not.toBeNull();
+
+  await page.evaluate(() => window.scrollBy(0, 2000));
+
+  const after = await sidebar.boundingBox();
+  expect(after).not.toBeNull();
+  expect(after?.y).toBe(before?.y);
+  expect(after?.height).toBe(before?.height);
+});
+
 // 08-09 (D-08): the `@inspector` parallel-route slot exists on every shell route today
 // (`default.tsx` returns `null`), but must cost nothing while empty -- no reserved width, no
 // border, at any viewport this app supports. Phase 13 is the one that ever populates it; this
