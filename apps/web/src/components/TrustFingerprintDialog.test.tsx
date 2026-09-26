@@ -3,6 +3,13 @@
 // the LIVE `server` prop against itself, so a `server.updated` event swapping `pendingFingerprint`
 // mid-review was never caught. This file's key case (below) proves the fix: the dialog must send
 // exactly the fingerprint it displayed when it opened, never whatever is current at click time.
+//
+// 08-17-PLAN.md Task 3 (D-10, §9 #14/#18): the two mono `Trusted: …`/`Observed: …` spans are
+// replaced by two `Fingerprint` instances in block-aligned diff mode, labelled "Trusted"/"New"
+// (never "old"/"Observed") -- the assertions below that used to match a single
+// `Observed: <full string>` text node now assert the "New" caption plus a distinguishing block
+// from the fingerprint's own body instead. `handleConfirm`, the `FINGERPRINT_MISMATCH` branch and
+// the typed-name gate are untouched by this plan and stay covered by the unmodified cases below.
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, renderUi, screen, userEvent } from '@noodara/ui/testing';
@@ -80,7 +87,7 @@ beforeEach(() => {
 });
 
 describe('TrustFingerprintDialog', () => {
-  it('renders the pendingFingerprint displayed at open time in the Observed row', () => {
+  it('renders the pendingFingerprint displayed at open time through the "New" Fingerprint block', () => {
     renderUi(
       <TrustFingerprintDialog
         open
@@ -91,7 +98,72 @@ describe('TrustFingerprintDialog', () => {
       />,
     );
 
-    expect(screen.getByText(`Observed: ${FP_A}`)).toBeInTheDocument();
+    expect(screen.getByText('New')).toBeInTheDocument();
+    expect(screen.getByText('aaaa')).toBeInTheDocument();
+  });
+
+  it('labels the two fingerprints "Trusted"/"New" -- never "old" or "Observed" -- and never marks a difference by colour', () => {
+    const { container } = renderUi(
+      <TrustFingerprintDialog
+        open
+        server={buildServer({ pendingFingerprint: FP_A })}
+        onOpenChange={vi.fn()}
+        onSettled={vi.fn()}
+        now={NOW}
+      />,
+    );
+
+    expect(screen.getByText('Trusted')).toBeInTheDocument();
+    expect(screen.getByText('New')).toBeInTheDocument();
+    expect(screen.queryByText(/\bold\b/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Observed/)).not.toBeInTheDocument();
+    expect(container.innerHTML).not.toMatch(/text-status|bg-status|text-accent|bg-accent|text-red|text-green/);
+  });
+
+  it('marks at least one differing block at font-semibold full ink and at least one matching block at font-normal secondary ink', () => {
+    renderUi(
+      <TrustFingerprintDialog
+        open
+        server={buildServer({ pendingFingerprint: FP_A })}
+        onOpenChange={vi.fn()}
+        onSettled={vi.fn()}
+        now={NOW}
+      />,
+    );
+
+    // FP_A's first block ("aaaa") differs from the trusted fixture's own first block ("trus");
+    // both fingerprints share the same all-zero tail, so at least one later block matches too.
+    const differingBlock = screen.getByText('aaaa');
+    expect(differingBlock.className).toMatch(/font-semibold/);
+    expect(differingBlock.className).toMatch(/text-ink\b/);
+
+    const matchingBlock = screen.getAllByText('0000')[0];
+    expect(matchingBlock).toBeDefined();
+    expect(matchingBlock?.className).toMatch(/font-normal/);
+    expect(matchingBlock?.className).toMatch(/text-ink-secondary/);
+  });
+
+  it('regression: the confirm button stays disabled until the exact server name is typed, even with the diff rendered', async () => {
+    renderUi(
+      <TrustFingerprintDialog
+        open
+        server={buildServer({ pendingFingerprint: FP_A })}
+        onOpenChange={vi.fn()}
+        onSettled={vi.fn()}
+        now={NOW}
+      />,
+    );
+
+    const confirmButton = screen.getByRole('button', { name: 'Trust new fingerprint' });
+    expect(confirmButton).toBeDisabled();
+
+    const user = userEvent.setup();
+    await user.type(screen.getByRole('textbox'), 'not-quite-right');
+    expect(confirmButton).toBeDisabled();
+
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), 'trust-target');
+    expect(confirmButton).toBeEnabled();
   });
 
   // The key RED case (05-31-PLAN.md Task 2): open with pending = FP_A, then a live `server.updated`
@@ -106,7 +178,7 @@ describe('TrustFingerprintDialog', () => {
       <Harness initialServer={buildServer({ pendingFingerprint: FP_A })} onOpenChange={onOpenChange} onSettled={onSettled} />,
     );
 
-    expect(screen.getByText(`Observed: ${FP_A}`)).toBeInTheDocument();
+    expect(screen.getByText('aaaa')).toBeInTheDocument();
 
     // The Radix Dialog marks every sibling outside its own Portal aria-hidden while open (a real
     // accessibility feature -- assistive tech should never reach background content behind a modal)
@@ -114,9 +186,10 @@ describe('TrustFingerprintDialog', () => {
     // `userEvent`) is what actually lets the click land despite the page's real pointer-events lock.
     fireEvent.click(screen.getByRole('button', { name: 'simulate-swap', hidden: true }));
 
-    // The displayed value must not have silently followed the live prop.
-    expect(screen.getByText(`Observed: ${FP_A}`)).toBeInTheDocument();
-    expect(screen.queryByText(`Observed: ${FP_B}`)).not.toBeInTheDocument();
+    // The displayed value must not have silently followed the live prop -- FP_A's own first block
+    // ("aaaa") is still shown, FP_B's ("bbbb") never appears.
+    expect(screen.getByText('aaaa')).toBeInTheDocument();
+    expect(screen.queryByText('bbbb')).not.toBeInTheDocument();
 
     await typeAndConfirm('trust-target');
 
