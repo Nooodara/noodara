@@ -303,8 +303,12 @@ test('@host-key the trust-new-fingerprint dialog renders the Trusted/New fingerp
 
   const dialog = page.getByTestId('trust-fingerprint-dialog');
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByText('Trusted')).toBeVisible();
-  await expect(dialog.getByText('New')).toBeVisible();
+  // `exact: true` throughout -- Playwright's `getByText` substring-matches case-insensitively by
+  // default, and the fingerprint-blocks container's own concatenated text ("trusted0000...")
+  // would otherwise ambiguously satisfy a loose "Trusted"/"New" (or the negative "old"/"Observed")
+  // query too.
+  await expect(dialog.getByText('Trusted', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('New', { exact: true })).toBeVisible();
   await expect(dialog.getByText('old', { exact: true })).toHaveCount(0);
   await expect(dialog.getByText('Observed', { exact: true })).toHaveCount(0);
 
@@ -448,7 +452,12 @@ test('@hostkey a live server.updated event mid-review swaps the pending fingerpr
 
   await page.getByTestId('host-key-changed-banner').getByRole('button', { name: 'Trust new fingerprint' }).click();
   const dialog = page.getByTestId('trust-fingerprint-dialog');
-  await expect(dialog).toContainText(`Observed: ${OBSERVED_FINGERPRINT}`);
+  // 08-17-PLAN.md Task 3 (D-10): the dialog's own "New" `Fingerprint` renders the value as a
+  // dimmed `SHA256:` prefix plus space-separated 4-char blocks with no other characters between
+  // them, so its `textContent` still reconstructs the exact original string -- `toContainText`
+  // keeps working unchanged, only the removed "Observed: " label prefix is dropped here.
+  await expect(dialog).toContainText('New');
+  await expect(dialog).toContainText(OBSERVED_FINGERPRINT);
 
   // The live swap: a real second HOST_KEY_CHANGED connect attempt landing mid-review would look
   // exactly like this from the browser's point of view.
@@ -456,7 +465,7 @@ test('@hostkey a live server.updated event mid-review swaps the pending fingerpr
   await dispatchServerUpdated(page, current);
 
   // The dialog must keep showing what it displayed at open time, not the live swap.
-  await expect(dialog).toContainText(`Observed: ${OBSERVED_FINGERPRINT}`);
+  await expect(dialog).toContainText(OBSERVED_FINGERPRINT);
   await expect(dialog).not.toContainText(SWAPPED_FINGERPRINT);
 
   await dialog.getByRole('textbox').fill('mid-review-swap-srv');
