@@ -24,6 +24,48 @@ describe('DiscoveryStep', () => {
     expect(within(row).getByText(STATE_WORDS[state])).toBeInTheDocument();
   });
 
+  // RED-first for Task 2 (08-18-PLAN.md, D-09): the timeline thread fills (scaleY, never height)
+  // once buildChecklist already counts this step as resolved -- the exact same resolved/not
+  // distinction DiscoverySection's completedFraction sums, never a second computation.
+  it.each(['pass', 'warning', 'fail', 'not_applicable', 'skipped'] as const)(
+    'fills its own thread segment to scale-y-100 once resolved (state=%s)',
+    (state) => {
+      renderUi(<DiscoveryStep stepId="os" label="OS" state={state} checks={[]} sshUser="root" />);
+      const row = screen.getByTestId('discovery-step-os');
+      expect(row.querySelector('.scale-y-100')).not.toBeNull();
+      expect(row.querySelector('.scale-y-0')).toBeNull();
+    },
+  );
+
+  it.each(['pending', 'running'] as const)('leaves its own thread segment at scale-y-0 while unresolved (state=%s)', (state) => {
+    renderUi(<DiscoveryStep stepId="os" label="OS" state={state} checks={[]} sshUser="root" />);
+    const row = screen.getByTestId('discovery-step-os');
+    expect(row.querySelector('.scale-y-0')).not.toBeNull();
+    expect(row.querySelector('.scale-y-100')).toBeNull();
+  });
+
+  it('renders no height/top/margin animation anywhere in the thread', () => {
+    renderUi(<DiscoveryStep stepId="os" label="OS" state="pass" checks={[]} sshUser="root" />);
+    const row = screen.getByTestId('discovery-step-os');
+    expect(row.innerHTML).not.toMatch(/transition-\[height\]|animate-height|top-\[calc/);
+  });
+
+  // RED-first for Task 2 (D-09, §Copywriting Contract): the step's own aggregate duration, always
+  // tabular-nums, formatted by the one shared function -- never a component-local guess.
+  it('renders its own duration in tabular numerals when provided', () => {
+    renderUi(<DiscoveryStep stepId="os" label="OS" state="pass" checks={[]} sshUser="root" durationMs={2100} />);
+    const row = screen.getByTestId('discovery-step-os');
+    const duration = within(row).getByTestId('discovery-step-duration');
+    expect(duration).toHaveTextContent('2.1s');
+    expect(duration.className).toContain('tabular-nums');
+  });
+
+  it('renders no duration element at all when durationMs is null -- never a guess', () => {
+    renderUi(<DiscoveryStep stepId="os" label="OS" state="pending" checks={[]} sshUser="root" durationMs={null} />);
+    const row = screen.getByTestId('discovery-step-os');
+    expect(within(row).queryByTestId('discovery-step-duration')).not.toBeInTheDocument();
+  });
+
   it.each(CHECK_STATES)('gives the severity icon an aria-label repeating the same word for state=%s', (state) => {
     renderUi(<DiscoveryStep stepId="os" label="OS" state={state} checks={[]} sshUser="root" />);
     expect(screen.getByLabelText(STATE_WORDS[state])).toBeInTheDocument();
@@ -66,6 +108,42 @@ describe('DiscoveryStep', () => {
     expect(
       screen.getByText('This user is not a member of the docker group. Run `usermod -aG docker deployer` on the server to fix this.'),
     ).toBeInTheDocument();
+  });
+
+  it('formats a check duration of 1000ms or more in seconds, matching the shared duration format', async () => {
+    const checks: DiscoveryCheckView[] = [{ id: 'hostname', state: 'pass', detail: 'Hostname: srv-1', durationMs: 2100 }];
+    renderUi(<DiscoveryStep stepId="os" label="OS" state="pass" checks={checks} sshUser="root" />);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /1 check/ }));
+
+    const checkRow = screen.getByTestId('discovery-check-hostname');
+    expect(within(checkRow).getByText('Hostname: srv-1 · 2.1s')).toBeInTheDocument();
+  });
+
+  // RED-first for Task 2 (UI-07, 08-UI-SPEC.md §7.4): checks inside the disclosure enter staggered
+  // 40ms per index in DOM order, and must never block interaction while the stagger plays.
+  it('staggers each check\'s entrance by 40ms per index, in DOM order, without blocking pointer interaction', async () => {
+    const checks: DiscoveryCheckView[] = [
+      { id: 'hostname', state: 'pass', detail: 'a', durationMs: 1 },
+      { id: 'os_release', state: 'pass', detail: 'b', durationMs: 1 },
+      { id: 'arch', state: 'pass', detail: 'c', durationMs: 1 },
+    ];
+    renderUi(<DiscoveryStep stepId="os" label="OS" state="pass" checks={checks} sshUser="root" />);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /3 checks/ }));
+
+    const rows = [
+      screen.getByTestId('discovery-check-hostname'),
+      screen.getByTestId('discovery-check-os_release'),
+      screen.getByTestId('discovery-check-arch'),
+    ];
+    rows.forEach((row, index) => {
+      expect(row).toHaveAttribute('data-entering', 'true');
+      expect(row.getAttribute('style') ?? '').toContain(`${String(index * 40)}ms`);
+      expect(row.className).not.toMatch(/pointer-events-none/);
+    });
   });
 
   it('renders no consequence line for a pass check', () => {

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { DISCOVERY_CHECK_IDS, type DiscoveryCheck } from '@noodara/domain/discovery';
 import {
   buildChecklist,
+  formatDuration,
   severityFor,
   summarize,
   type DiscoverySettledSnapshot,
@@ -198,6 +199,53 @@ describe('buildChecklist -- settled', () => {
     const checklist = buildChecklist({ serverStatus: 'CONNECTED', receivedChecks: [], settled });
     const access = checklist.steps.find((s) => s.id === 'access');
     expect(access?.state).toBe('not_applicable');
+  });
+});
+
+// RED-first for Task 2 (08-18-PLAN.md, D-09, §Copywriting Contract): a per-step duration is
+// `{ms}ms` below 1000ms and `{s.s}s` at or above it -- the same threshold DiscoveryStep.tsx must
+// use for both a single check's own detail line and each step's own aggregate duration, so the
+// format has exactly one test and one implementation.
+describe('formatDuration', () => {
+  it('formats a duration under 1000ms as an integer millisecond count', () => {
+    expect(formatDuration(0)).toBe('0ms');
+    expect(formatDuration(340)).toBe('340ms');
+    expect(formatDuration(999)).toBe('999ms');
+  });
+
+  it('formats a duration at or above 1000ms as seconds to one decimal place', () => {
+    expect(formatDuration(1000)).toBe('1.0s');
+    expect(formatDuration(2100)).toBe('2.1s');
+    expect(formatDuration(12345)).toBe('12.3s');
+  });
+});
+
+// RED-first for Task 2: a step's own duration is derived from the data the snapshot already
+// carries (D-05's "never invent progress", applied to timing) -- never a guess when a check has
+// not reported its own duration yet.
+describe('buildChecklist -- per-step durationMs', () => {
+  it('sums a settled step\'s own check durations when every one of them reported a duration', () => {
+    const settled = fullSettled({
+      hostname: check('hostname', { durationMs: 10 }),
+      os_release: check('os_release', { durationMs: 20 }),
+      arch: check('arch', { durationMs: 30 }),
+    });
+    const checklist = buildChecklist({ serverStatus: 'CONNECTED', receivedChecks: [], settled });
+    const os = checklist.steps.find((s) => s.id === 'os');
+    expect(os?.durationMs).toBe(60);
+  });
+
+  it('renders null rather than a guess for a live step with any check still pending/running', () => {
+    const receivedChecks = [check('hostname', { durationMs: 10 })];
+    const checklist = buildChecklist({ serverStatus: 'CONNECTING', receivedChecks, settled: EMPTY_SETTLED });
+    const os = checklist.steps.find((s) => s.id === 'os');
+    expect(os?.durationMs).toBeNull();
+  });
+
+  it('renders null for a connection-derived step, which carries no checks to sum', () => {
+    const checklist = buildChecklist({ serverStatus: 'CONNECTED', receivedChecks: [], settled: fullSettled() });
+    const sshReachable = checklist.steps.find((s) => s.id === 'ssh_reachable');
+    expect(sshReachable?.durationMs).toBeNull();
   });
 });
 

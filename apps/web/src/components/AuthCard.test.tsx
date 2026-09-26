@@ -66,6 +66,26 @@ describe('AuthCard brand slot', () => {
     expect(precedes(heading, children)).toBe(true);
   });
 
+  // RED-first for Task 1 (08-18-PLAN.md, D-09/D-11): the lockup's wrapper drives the aperture's
+  // one-shot focus declaratively -- `--aperture-progress` rests at 1 (closed/sharp), and
+  // `data-entering`/`data-aperture-focus` key into aperture.css's own `@starting-style` rule for
+  // the value it held before mount (0, open/blurred). No mount effect, no interval, no loop.
+  it('sets the aperture wrapper to focus once on mount via a declarative one-shot style, never a looping animation', () => {
+    renderUi(
+      <AuthCard title="Sign in">
+        <p>form</p>
+      </AuthCard>,
+    );
+
+    const lockup = screen.getByTestId('brand-lockup');
+    const wrapper = lockup.parentElement;
+    expect(wrapper).not.toBeNull();
+    expect(wrapper).toHaveAttribute('data-entering', 'true');
+    expect(wrapper).toHaveAttribute('data-aperture-focus', 'true');
+    expect(wrapper?.getAttribute('style') ?? '').toContain('--aperture-progress: 1');
+    expect(wrapper?.className ?? '').not.toMatch(/animate-|infinite/);
+  });
+
   it('never paints the mark in a colour of its own', () => {
     renderUi(
       <AuthCard title="Sign in">
