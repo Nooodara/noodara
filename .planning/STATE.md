@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 08-09-PLAN.md
-last_updated: "2026-09-26T05:08:18.600Z"
+stopped_at: Completed 08-10-PLAN.md
+last_updated: "2026-09-26T05:28:02.343Z"
 last_activity: 2026-09-26
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 30
-  completed_plans: 19
+  completed_plans: 20
   percent: 13
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 08 (redise-o-de-la-app) — EXECUTING
-Plan: 10 of 20
+Plan: 11 of 20
 Status: Ready to execute
 Last activity: 2026-09-26
 
-Progress: [██████░░░░] 63%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -176,6 +176,7 @@ Progress: [██████░░░░] 63%
 | Phase 08 P07 | ~50min | 3 tasks | 6 files |
 | Phase 08 P08 | 35min | 3 tasks | 11 files |
 | Phase 08-redise-o-de-la-app P09 | 40min | 2 tasks | 3 files |
+| Phase 08 P10 | 50min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -480,6 +481,7 @@ Recent decisions affecting current work:
 - [Phase 08]: AccountMenu breakpoints (rail/expanded/sheet) are pure CSS, no railOnly boolean wired from Sidebar — avoids a JS-computed matchMedia hydration-mismatch risk, same class of bug ThemeToggle's own SSR guard prevents
 - [Phase 08-09]: UI-11 stays Pending: this plan only closes the inspector-slot piece; hierarchical nav is deferred to Phase 13, account menu already shipped in 08-08
 - [Phase 08-09]: Inspector content-presence is detected via the has-[>*] CSS variant, not a JS prop-identity check, since Next's parallel-route slot prop is never strictly-equal to null
+- [Phase 08-10]: UI-07 and UI-10 stay Pending: bundled requirements, only the toolbar scroll-edge sub-clause is done here — UI-07 also needs RowMenu/Tooltip/Dialog motion and stagger (08-14/08-16); UI-10 also needs Toolbar hover-gating and ServerDetailToolbar fallbacks, both flagged as gaps for 08-11 G2
 
 ### Pending Todos
 
@@ -555,8 +557,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-26T05:08:18.591Z
-Stopped at: Completed 08-09-PLAN.md
+Last session: 2026-09-26T05:28:02.336Z
+Stopped at: Completed 08-10-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
