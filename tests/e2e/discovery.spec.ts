@@ -146,6 +146,33 @@ test('@discovery a settled run renders the one-line summary that expands to six 
   }
 });
 
+// 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 3): the Discovery section used to sit at the
+// bottom of the content column, under the stat tiles and the three fact groups -- moved to the
+// top (directly under the toolbar/first-trust notice) so the discovery narration is the first
+// thing on screen, per the user's own G3 review. Only the section's position changes; its own
+// internals stay 08-18's.
+test('@discovery the Discovery section renders above the stat tiles', async ({ page }) => {
+  const fixture = buildServerViewFixture({ id: '88888888-8888-4888-8888-888888888885', name: 'discovery-position-srv' });
+  await stubServer(page, fixture);
+  await stubDiscoveryRead(page, fixture.id, SETTLED_DISCOVERY);
+
+  await login(page);
+  await page.goto(`/servers/${fixture.id}`);
+
+  const discoveryHeading = page.getByRole('heading', { name: 'Discovery' });
+  const statTiles = page.getByTestId('server-facts-tiles');
+  await expect(discoveryHeading).toBeVisible();
+  await expect(statTiles).toBeVisible();
+
+  const position = await discoveryHeading.evaluate((heading, tilesTestId) => {
+    const tiles = document.querySelector(`[data-testid="${tilesTestId}"]`);
+    if (tiles === null) return null;
+    return heading.compareDocumentPosition(tiles) & Node.DOCUMENT_POSITION_FOLLOWING;
+  }, 'server-facts-tiles');
+
+  expect(position).not.toBe(0);
+});
+
 test('@discovery expanding a step reveals its checks with mono detail and durationMs', async ({ page }) => {
   const fixture = buildServerViewFixture({ id: '88888888-8888-4888-8888-888888888882', name: 'expand-step-srv' });
   await stubServer(page, fixture);
