@@ -3,7 +3,7 @@
 // the D-13 ghost "Load older" button. `apps/web/src/app/(shell)/activity/page.tsx` owns the actual
 // `GET /api/activity` fetch, pagination and the shared SSE resync registration -- this component
 // only renders whatever state it is handed, mirroring `ServerList.tsx`'s own split.
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { Banner, Button, EmptyState, SkeletonRow } from '@noodara/ui';
 import { ActivityRow } from './ActivityRow';
 import { groupByDay } from '../lib/activity-groups';
@@ -71,21 +71,33 @@ export interface ActivityListProps {
 }
 
 export function ActivityList({ state, now, lookupServer, timeZone }: ActivityListProps) {
-  // Diffed against the previous render's own items (never re-keyed, never remounted -- the merge-
-  // not-reset contract this screen already guarantees). `previousItemsRef` flips in an effect
-  // (after commit) so this render's own diff still sees the prior value; on the very first ready
-  // render there is nothing to diff against, so nothing enters (the initial load is not an
-  // arrival).
+  // Diffed against the previous *distinct* items array (never re-keyed, never remounted -- the
+  // merge-not-reset contract this screen already guarantees); on the very first ready render
+  // there is nothing to diff against, so nothing enters (the initial load is not an arrival).
+  //
+  // 08-19 iteration-15 nightly flake (activity.spec.ts @activity-entry reduced-motion,
+  // ActivityList.test.tsx "keeps the entering row entering across an unrelated re-render"): the
+  // original version advanced `previousItemsRef` in a deps-less `useEffect` that ran after EVERY
+  // commit, not only when `state.items` actually changed. `ActivityPage`'s own `lookupServer`
+  // identity (recreated whenever its `/api/servers` fetch resolves) and `now` prop cascade into a
+  // re-render of this component that carries the exact same `items` array reference as the
+  // arrival render right before it -- but by the time that re-render's own diff ran, the ref had
+  // already been advanced to `items` by the *first* render's effect, so `computeEnteringIds` saw
+  // `firstKnownIndex === 0` and reported no arrival at all, clearing `data-entering` a render or
+  // two after it should still read "true". Recomputing (and advancing the ref) only when
+  // `state.items` is a genuinely new reference -- directly during render, the React-sanctioned
+  // "adjusting state while rendering" pattern -- makes the entering set stable across any number
+  // of re-renders of the same items array, and only ever re-derived when a real fetch lands new
+  // data.
   const previousItemsRef = useRef<readonly ActivityItem[] | null>(null);
-  const enteringIds =
-    state.kind === 'ready' && previousItemsRef.current !== null
-      ? computeEnteringIds(state.items, previousItemsRef.current)
-      : NO_ENTERING_IDS;
-  useEffect(() => {
-    if (state.kind === 'ready') {
-      previousItemsRef.current = state.items;
-    }
-  });
+  const lastSeenItemsRef = useRef<readonly ActivityItem[] | null>(null);
+  const enteringIdsRef = useRef<ReadonlySet<string>>(NO_ENTERING_IDS);
+  if (state.kind === 'ready' && state.items !== lastSeenItemsRef.current) {
+    enteringIdsRef.current = previousItemsRef.current === null ? NO_ENTERING_IDS : computeEnteringIds(state.items, previousItemsRef.current);
+    previousItemsRef.current = state.items;
+    lastSeenItemsRef.current = state.items;
+  }
+  const enteringIds = state.kind === 'ready' ? enteringIdsRef.current : NO_ENTERING_IDS;
 
   if (state.kind === 'loading') {
     return (
