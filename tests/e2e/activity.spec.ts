@@ -516,3 +516,147 @@ test('@activity no rendered text anywhere on the screen contains a raw JSON obje
   const pageText = await page.locator('body').innerText();
   expect(pageText).not.toMatch(/\{"/);
 });
+
+// 08-16-PLAN.md Task 3 (UI-07/D-11): the one thing ActivityList.test.tsx cannot honestly prove --
+// a real SSE-driven arrival marking only the genuinely new row entering, with the browser's own
+// scroll offset (not merely a preserved DOM node) unchanged across it. Drives a real
+// `server.updated` event through the real backend/worker/SSE stack (the exact trigger
+// `scheduleRefresh` listens for), matching the WR-B-04 test's own established precedent above
+// rather than `visibilitychange`, whose firing is not guaranteed under a headless runner.
+test('@activity-entry a real SSE-driven arrival marks only the new row entering, and the scroll offset is unchanged', async ({
+  page,
+}) => {
+  await login(page);
+
+  const now = Date.now();
+  const alphaAt = new Date(now - 1_000).toISOString();
+  const betaAt = new Date(now - 2_000).toISOString();
+
+  let arrived = false;
+  await page.route('**/api/activity*', (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.has('cursor')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ items: [], nextCursor: null } satisfies ActivityResponseFixture),
+      });
+    }
+    const items = [
+      ...(arrived
+        ? [
+            buildActivityItemFixture({
+              id: 'evt-entry-arrival',
+              action: 'server.deleted',
+              occurredAt: new Date(now).toISOString(),
+              metadata: { name: 'entry-arrival', host: 'arrival.example.test' },
+            }),
+          ]
+        : []),
+      buildActivityItemFixture({
+        id: 'evt-entry-alpha',
+        action: 'server.deleted',
+        occurredAt: alphaAt,
+        metadata: { name: 'entry-alpha', host: 'alpha.example.test' },
+      }),
+      buildActivityItemFixture({
+        id: 'evt-entry-beta',
+        action: 'server.deleted',
+        occurredAt: betaAt,
+        metadata: { name: 'entry-beta', host: 'beta.example.test' },
+      }),
+    ];
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items, nextCursor: 'opaque-page-2-cursor' } satisfies ActivityResponseFixture),
+    });
+  });
+
+  await page.goto('/activity');
+  await expect(page.getByTestId('activity-row')).toHaveCount(2);
+
+  const scrollBefore = await page.evaluate(() => window.scrollY);
+
+  arrived = true;
+  const name = `activity-entry-${String(now)}`;
+  const created = await page.request.post('/api/servers', {
+    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+  });
+  expect(created.status()).toBe(201);
+  const createdBody = (await created.json()) as { id: string };
+  const patched = await page.request.patch(`/api/servers/${createdBody.id}`, { data: { name: `${name}-renamed` } });
+  expect(patched.status()).toBe(200);
+
+  await expect(page.getByTestId('activity-row')).toHaveCount(3);
+
+  const rows = page.getByTestId('activity-row');
+  await expect(rows.nth(0)).toHaveAttribute('data-entering', 'true');
+  await expect(rows.nth(1)).not.toHaveAttribute('data-entering');
+  await expect(rows.nth(2)).not.toHaveAttribute('data-entering');
+
+  const scrollAfter = await page.evaluate(() => window.scrollY);
+  expect(scrollAfter).toBe(scrollBefore);
+});
+
+test('@activity-entry under emulated reduced motion, an arrival applies no visible transition', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await login(page);
+
+  const now = Date.now();
+
+  let arrived = false;
+  await page.route('**/api/activity*', (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.has('cursor')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ items: [], nextCursor: null } satisfies ActivityResponseFixture),
+      });
+    }
+    const items = [
+      ...(arrived
+        ? [
+            buildActivityItemFixture({
+              id: 'evt-entry-reduced-arrival',
+              action: 'server.deleted',
+              occurredAt: new Date(now).toISOString(),
+              metadata: { name: 'entry-reduced-arrival', host: 'arrival.example.test' },
+            }),
+          ]
+        : []),
+      buildActivityItemFixture({
+        id: 'evt-entry-reduced-alpha',
+        action: 'server.deleted',
+        occurredAt: new Date(now - 1_000).toISOString(),
+        metadata: { name: 'entry-reduced-alpha', host: 'alpha.example.test' },
+      }),
+    ];
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items, nextCursor: null } satisfies ActivityResponseFixture),
+    });
+  });
+
+  await page.goto('/activity');
+  await expect(page.getByTestId('activity-row')).toHaveCount(1);
+
+  arrived = true;
+  const name = `activity-entry-reduced-${String(now)}`;
+  const created = await page.request.post('/api/servers', {
+    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+  });
+  expect(created.status()).toBe(201);
+  const createdBody = (await created.json()) as { id: string };
+  const patched = await page.request.patch(`/api/servers/${createdBody.id}`, { data: { name: `${name}-renamed` } });
+  expect(patched.status()).toBe(200);
+
+  await expect(page.getByTestId('activity-row')).toHaveCount(2);
+
+  const enteringRow = page.getByTestId('activity-row').first();
+  await expect(enteringRow).toHaveAttribute('data-entering', 'true');
+  const transitionDuration = await enteringRow.evaluate((el) => getComputedStyle(el).transitionDuration);
+  expect(transitionDuration).toBe('0s');
+});

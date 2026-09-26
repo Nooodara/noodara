@@ -472,3 +472,105 @@ test('@scroll-edge the toolbar border-bottom is transparent at scroll-top, visib
   await page.mouse.wheel(0, -600);
   await expect.poll(borderBottomAlpha).toBe(0);
 });
+
+// 08-16-PLAN.md Task 3 (UI-07/D-11): the one thing ServerList.test.tsx/ServerRow.test.tsx cannot
+// honestly prove -- the rendered `transitionDelay` and `transitionDuration` in a real browser.
+// Asserted on rendered values, not wall-clock timing, so this stays stable under the nightly's own
+// 20x repeat (test:e2e:repeat).
+//
+// `/api/events` (the shell's shared SSE stream) is deliberately left hanging -- ServersPage's own
+// `registerResync` fires a second, superseding `GET /api/servers` the instant that stream's own
+// `open` event fires (use-server-events.ts), which would replace this first-load `ready` state
+// with a fresh one milliseconds later, correctly clearing `entering` per this same plan's own "not
+// on a later re-render" contract -- exactly what a real resync must do, but not what this test
+// wants to observe. Never opening the stream keeps this render the only one, without changing the
+// production entrance code at all.
+test('@stagger the first-load rows carry a 40ms-per-row transitionDelay in DOM order, and stay clickable throughout', async ({
+  page,
+}) => {
+  const items = Array.from({ length: 3 }, (_, index) =>
+    buildServerViewFixture({
+      id: `66666666-6666-4666-8666-${String(index).padStart(12, '0')}`,
+      name: `Stagger server ${String(index)}`,
+      host: `stagger-${String(index)}.example.test`,
+    }),
+  );
+
+  await page.route('**/api/servers', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items }) }),
+  );
+  await page.route('**/api/events', () => undefined);
+
+  await login(page);
+
+  const rows = page.getByTestId('servers-row');
+  await expect(rows).toHaveCount(3);
+
+  for (let index = 0; index < 3; index += 1) {
+    const delay = await rows.nth(index).evaluate((el) => (el as HTMLElement).style.transitionDelay);
+    expect(delay).toBe(`${String(index * 40)}ms`);
+  }
+
+  // Every row is a real link, activatable immediately -- never blocked by the still-playing
+  // stagger (§9's "never block interaction during a transition").
+  await expect(rows.nth(2).getByRole('link')).toBeEnabled();
+});
+
+test('@stagger under emulated reduced motion, the first-load rows apply no visible transition', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+
+  const items = Array.from({ length: 2 }, (_, index) =>
+    buildServerViewFixture({
+      id: `77777777-7777-4777-8777-${String(index).padStart(12, '0')}`,
+      name: `Reduced motion server ${String(index)}`,
+      host: `reduced-${String(index)}.example.test`,
+    }),
+  );
+
+  await page.route('**/api/servers', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items }) }),
+  );
+  await page.route('**/api/events', () => undefined);
+
+  await login(page);
+
+  const rows = page.getByTestId('servers-row');
+  await expect(rows).toHaveCount(2);
+
+  for (const row of await rows.all()) {
+    // `motion-safe:` compiles to `@media (prefers-reduced-motion: no-preference)` -- under
+    // `reduce`, none of the entrance's transition utilities apply, so the computed transition
+    // duration is the browser default (0s) regardless of the still-present `transitionDelay`
+    // inline style, which has nothing to delay without a matching `transition` property.
+    const transitionDuration = await row.evaluate((el) => getComputedStyle(el).transitionDuration);
+    expect(transitionDuration).toBe('0s');
+  }
+});
+
+test('@stagger a long first-load list caps its stagger delay so the last row never waits far longer than an 8-row list would', async ({
+  page,
+}) => {
+  const items = Array.from({ length: 12 }, (_, index) =>
+    buildServerViewFixture({
+      id: `88888888-8888-4888-8888-${String(index).padStart(12, '0')}`,
+      name: `Capped server ${String(index)}`,
+      host: `capped-${String(index)}.example.test`,
+    }),
+  );
+
+  await page.route('**/api/servers', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items }) }),
+  );
+  await page.route('**/api/events', () => undefined);
+
+  await login(page);
+
+  const rows = page.getByTestId('servers-row');
+  await expect(rows).toHaveCount(12);
+
+  const lastDelay = await rows.nth(11).evaluate((el) => (el as HTMLElement).style.transitionDelay);
+  const secondToLastDelay = await rows.nth(10).evaluate((el) => (el as HTMLElement).style.transitionDelay);
+  expect(lastDelay).not.toBe('');
+  expect(lastDelay).toBe(secondToLastDelay);
+  expect(lastDelay).not.toBe(`${String(11 * 40)}ms`);
+});
