@@ -152,3 +152,11 @@ None - no external service configuration required.
 ---
 *Phase: 08-redise-o-de-la-app*
 *Completed: 2026-09-26*
+
+## Self-Check: PASSED
+
+All 7 claimed files verified present on disk (`packages/ui/tokens.css`, `packages/ui/theme.css`,
+`packages/ui/src/contrast.ts`, `packages/ui/src/contrast.test.ts`, `scripts/check-ui-safety.mjs`,
+`tests/unit/scripts/check-ui-safety.test.ts`, this SUMMARY.md). All 5 commit hashes (`866dc71`,
+`733e0b8`, `9cc7671`, `7b895ee`, `1b81960`) verified present in `git log --oneline --all`. No
+missing items.
