@@ -99,9 +99,17 @@ export function ServerFacts({ server, now, dimmed = false, warnings = [] }: Serv
         />
       </div>
 
+      {/* 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 1): InsetGroup's own row wrapper
+          (packages/ui/src/InsetGroup.tsx) carries only the hairline separator, never a horizontal
+          inset -- ServerList's rows get theirs from ListRow's own `px-4`, which these plain
+          label/value rows never had. Every row here (and its warning line) now wraps in an
+          explicit `px-4` div rather than changing `LabelValue` itself, which stays the shared
+          primitive `ActivityRow`'s own (differently-inset) disclosure rows also render through. */}
       <InsetGroup title="System" data-testid="server-facts-system">
-        <LabelValue label="Hostname" value={server.hostname} mono dimmed={dimmed} caption={asOfCaption} />
-        <div className="flex flex-col">
+        <div className="px-4">
+          <LabelValue label="Hostname" value={server.hostname} mono dimmed={dimmed} caption={asOfCaption} />
+        </div>
+        <div className="flex flex-col px-4">
           <LabelValue label="OS" value={osLine(server.osDistribution, server.osVersion)} dimmed={dimmed} caption={asOfCaption} />
           {hasUnsupportedOsWarning ? (
             <p data-testid="server-fact-warning-unsupported-os" className="text-caption text-status-warn">
@@ -109,11 +117,13 @@ export function ServerFacts({ server, now, dimmed = false, warnings = [] }: Serv
             </p>
           ) : null}
         </div>
-        <LabelValue label="Architecture" value={server.arch} mono dimmed={dimmed} caption={asOfCaption} />
+        <div className="px-4">
+          <LabelValue label="Architecture" value={server.arch} mono dimmed={dimmed} caption={asOfCaption} />
+        </div>
       </InsetGroup>
 
       <InsetGroup title="Docker" data-testid="server-facts-docker">
-        <div className="flex flex-col">
+        <div className="flex flex-col px-4">
           <LabelValue label="Engine version" value={server.dockerVersion} mono dimmed={dimmed} caption={asOfCaption} />
           {hasDockerAbsentWarning ? (
             <p data-testid="server-fact-warning-docker-absent" className="text-caption text-status-warn">
@@ -121,14 +131,24 @@ export function ServerFacts({ server, now, dimmed = false, warnings = [] }: Serv
             </p>
           ) : null}
         </div>
-        <LabelValue label="Compose version" value={server.dockerComposeVersion} mono dimmed={dimmed} caption={asOfCaption} />
+        <div className="px-4">
+          <LabelValue label="Compose version" value={server.dockerComposeVersion} mono dimmed={dimmed} caption={asOfCaption} />
+        </div>
       </InsetGroup>
 
       <InsetGroup title="Connection" data-testid="server-facts-connection">
-        <LabelValue label="Host" value={server.host} mono dimmed={dimmed} caption={asOfCaption} />
-        <LabelValue label="Port" value={String(server.sshPort)} mono dimmed={dimmed} caption={asOfCaption} />
-        <LabelValue label="SSH user" value={server.sshUser} mono dimmed={dimmed} caption={asOfCaption} />
-        <LabelValue label="Credential" value={CREDENTIAL_TYPE_LABEL[server.credentialType]} dimmed={dimmed} caption={asOfCaption} />
+        <div className="px-4">
+          <LabelValue label="Host" value={server.host} mono dimmed={dimmed} caption={asOfCaption} />
+        </div>
+        <div className="px-4">
+          <LabelValue label="Port" value={String(server.sshPort)} mono dimmed={dimmed} caption={asOfCaption} />
+        </div>
+        <div className="px-4">
+          <LabelValue label="SSH user" value={server.sshUser} mono dimmed={dimmed} caption={asOfCaption} />
+        </div>
+        <div className="px-4">
+          <LabelValue label="Credential" value={CREDENTIAL_TYPE_LABEL[server.credentialType]} dimmed={dimmed} caption={asOfCaption} />
+        </div>
         {/* 08-17-PLAN.md Task 2 (D-10): the "Host fingerprint" row swaps `LabelValue mono copyable`
             for the shared `Fingerprint` component -- only this row, every other row above/below
             keeps `LabelValue` unchanged. Reproduces `LabelValue`'s own row layout (label at
@@ -138,7 +158,7 @@ export function ServerFacts({ server, now, dimmed = false, warnings = [] }: Serv
             reads (Fingerprint's own single-mode blocks render `text-ink`) -- CSS custom
             properties inherit down the DOM tree, so this affects only Fingerprint's block spans,
             never the label/caption (`text-ink-secondary`/`text-ink-tertiary`, untouched). */}
-        <div data-dimmed={dimmed ? 'true' : 'false'} className="flex items-center justify-between gap-4 py-2">
+        <div data-dimmed={dimmed ? 'true' : 'false'} className="flex items-center justify-between gap-4 px-4 py-2">
           <span className="text-caption text-ink-secondary">Host fingerprint</span>
           <div className="flex items-center gap-2">
             {fingerprintCaption !== undefined ? <span className="text-caption text-ink-tertiary">{fingerprintCaption}</span> : null}
@@ -153,7 +173,9 @@ export function ServerFacts({ server, now, dimmed = false, warnings = [] }: Serv
             )}
           </div>
         </div>
-        <LabelValue label="Last seen" value={formatRelativeTime(server.lastSeenAt, now)} dimmed={dimmed} caption={asOfCaption} />
+        <div className="px-4">
+          <LabelValue label="Last seen" value={formatRelativeTime(server.lastSeenAt, now)} dimmed={dimmed} caption={asOfCaption} />
+        </div>
       </InsetGroup>
     </div>
   );

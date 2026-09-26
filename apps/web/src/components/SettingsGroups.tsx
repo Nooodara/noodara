@@ -30,9 +30,12 @@ function rowSlug(label: string): string {
 function SettingsRowView({ row }: { readonly row: SettingsRow }) {
   const testId = `settings-row-${rowSlug(row.label)}`;
 
+  // 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 1): same InsetGroup-row inset fix as
+  // ServerFacts.tsx -- InsetGroup's own row wrapper carries no horizontal padding, so both the
+  // copyable and the plain row shapes here now wrap in an explicit `px-4` themselves.
   if (row.copyable) {
     return (
-      <div data-testid={testId} className="flex items-center gap-2">
+      <div data-testid={testId} className="flex items-center gap-2 px-4">
         <div className="flex-1">
           <LabelValue label={row.label} value={row.value} mono />
         </div>
@@ -42,13 +45,15 @@ function SettingsRowView({ row }: { readonly row: SettingsRow }) {
   }
 
   return (
-    <LabelValue
-      data-testid={testId}
-      label={row.label}
-      value={row.value}
-      mono
-      {...(row.caption !== undefined ? { caption: row.caption } : {})}
-    />
+    <div className="px-4">
+      <LabelValue
+        data-testid={testId}
+        label={row.label}
+        value={row.value}
+        mono
+        {...(row.caption !== undefined ? { caption: row.caption } : {})}
+      />
+    </div>
   );
 }
 

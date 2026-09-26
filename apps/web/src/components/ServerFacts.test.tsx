@@ -273,10 +273,10 @@ describe('ServerFacts', () => {
     expect(hostLabelValueRow?.parentElement?.className).toMatch(/\bpx-4\b/);
 
     const unsupportedOsWarning = screen.getByTestId('server-fact-warning-unsupported-os');
-    expect(unsupportedOsWarning.className).toMatch(/\bpx-4\b/);
+    expect(unsupportedOsWarning.parentElement?.className).toMatch(/\bpx-4\b/);
 
     const dockerAbsentWarning = screen.getByTestId('server-fact-warning-docker-absent');
-    expect(dockerAbsentWarning.className).toMatch(/\bpx-4\b/);
+    expect(dockerAbsentWarning.parentElement?.className).toMatch(/\bpx-4\b/);
 
     const fingerprintLabel = screen.getByText('Host fingerprint');
     const fingerprintRow = fingerprintLabel.parentElement;
