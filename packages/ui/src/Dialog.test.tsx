@@ -22,6 +22,29 @@ describe('ConfirmDialog', () => {
     expect(screen.getByRole('button', { name: 'Cancel' })).toHaveAttribute('data-variant', 'ghost');
   });
 
+  // 08-06-PLAN.md Task 1 (UI-03, 08-UI-SPEC.md SS5.1/5.2): the shared DialogShell panel carries
+  // the one allowlisted shadow and the solid (no /72) surface-elevated alias -- both
+  // ConfirmDialog and DestructiveConfirmDialog inherit this from the same shell, so proving it
+  // once here covers both variants.
+  it('carries the floating shadow and solid bg-surface-elevated on the panel element', () => {
+    renderUi(
+      <ConfirmDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Re-run discovery?"
+        body="Body text."
+        confirmLabel="Re-run discovery"
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    const panel = screen.getByRole('dialog');
+    expect(panel.className).toContain('shadow-[var(--shadow-floating)]');
+    expect(panel.className).toContain('bg-surface-elevated');
+    expect(panel.className).not.toContain('bg-surface-elevated/');
+    expect(panel.className).not.toContain('bg-surface-1');
+  });
+
   it('invokes onConfirm exactly once when the confirm button is clicked', async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();

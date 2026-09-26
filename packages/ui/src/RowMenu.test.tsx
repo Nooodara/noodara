@@ -157,4 +157,18 @@ describe('RowMenu', () => {
     expect(onSecond).toHaveBeenCalledTimes(1);
     expect(onFirst).not.toHaveBeenCalled();
   });
+
+  // 08-06-PLAN.md Task 1 (UI-03, 08-UI-SPEC.md SS5.1/5.2): the content carries the one
+  // allowlisted shadow and keeps bg-surface-3 exactly as-is -- already the lightest surface tier
+  // in both themes, so it needs no new elevated-surface token.
+  it('carries the floating shadow on the content element and keeps bg-surface-3 unchanged', async () => {
+    const user = userEvent.setup();
+    renderUi(<RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="Actions for Alpha" />);
+
+    await user.click(screen.getByRole('button', { name: 'Actions for Alpha' }));
+
+    const content = screen.getByRole('menu');
+    expect(content.className).toContain('shadow-[var(--shadow-floating)]');
+    expect(content.className).toContain('bg-surface-3');
+  });
 });

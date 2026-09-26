@@ -65,4 +65,20 @@ describe('Sheet', () => {
 
     expect(screen.getByTestId('add-server-sheet')).toBe(screen.getByRole('dialog'));
   });
+
+  // 08-06-PLAN.md Task 1 (UI-03, 08-UI-SPEC.md SS5.1/5.2): the panel carries the one allowlisted
+  // shadow and the surface-elevated alias -- light is byte-identical to before (surface-elevated
+  // resolves to surface-1 in light), dark resolves one step lighter (surface-2).
+  it('carries the floating shadow and bg-surface-elevated/72 on the panel element', () => {
+    renderUi(
+      <Sheet open onOpenChange={vi.fn()} title="Add server">
+        <p>Sheet body content</p>
+      </Sheet>,
+    );
+
+    const panel = screen.getByRole('dialog');
+    expect(panel.className).toContain('shadow-[var(--shadow-floating)]');
+    expect(panel.className).toContain('bg-surface-elevated/72');
+    expect(panel.className).not.toContain('bg-surface-1/72');
+  });
 });
