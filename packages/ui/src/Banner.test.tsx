@@ -59,4 +59,14 @@ describe('Banner', () => {
 
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  // UI-09 (08-15-PLAN.md Task 1): a 70ch measure cap plus an explicit opt-out from the page-wide
+  // tabular-nums default -- this is prose, not a value that must line up in a column.
+  it('caps its message at a 70ch measure and opts out of tabular numerals', () => {
+    renderUi(<Banner message="Couldn't load servers." />);
+
+    const messageEl = screen.getByText("Couldn't load servers.");
+    expect(messageEl.className).toMatch(/max-w-\[70ch\]/);
+    expect(messageEl.className).toMatch(/normal-nums/);
+  });
 });

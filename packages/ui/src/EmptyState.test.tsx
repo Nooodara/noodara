@@ -48,6 +48,14 @@ describe('EmptyState', () => {
     expect(container.querySelector('svg')).toBeNull();
   });
 
+  // UI-09 (08-15-PLAN.md Task 1): the body sentence caps at a 70ch measure so a long body string
+  // never reads wider than a comfortable line, matching Banner/Notice/dialog body copy's own cap.
+  it('caps its body copy at a 70ch measure', () => {
+    renderUi(<EmptyState title="No servers yet" body="Body." />);
+
+    expect(screen.getByText('Body.').className).toMatch(/max-w-\[70ch\]/);
+  });
+
   it('types the action prop as a single object, never an array (verified by tsc, not just convention)', () => {
     const invalidProps: EmptyStateProps = {
       title: 'No servers yet',
