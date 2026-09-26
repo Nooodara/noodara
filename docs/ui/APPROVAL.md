@@ -26,15 +26,15 @@ green as the gate plans (08-02, 08-11, 08-19) fill each block in.
 | Field | Value |
 | --- | --- |
 | Gate | G1 — Baseline |
-| Date | pending |
-| Rounds used | pending |
-| Approver | pending |
-| Evidence | docs/ui/approved/ — the six screens plus overlays, both themes, at 1280px |
+| Date | 2026-09-25 |
+| Rounds used | 0 |
+| Approver | Pablo Gutierrez |
+| Evidence | docs/ui/approved/ — the six screens, both themes, at 1280px, copied from the 54-capture review round (48 screens + 6 overlays, all four widths, both themes) in `docs/ui/review/` |
 
 ### Adjustment log
 
-- **Round 1: none yet.**
-- **Round 2: none yet.**
+- **Round 1: none — approved on the first pass.**
+- **Round 2: none.**
 
 ## G2 — Direction
 
