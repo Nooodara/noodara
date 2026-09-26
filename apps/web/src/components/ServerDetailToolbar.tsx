@@ -79,8 +79,13 @@ export function ServerDetailToolbar({ serverId, serverName, status, primaryActio
         <Link href="/servers" className="shrink-0 text-callout text-ink-secondary hover:text-ink">
           ← Servers
         </Link>
-        <div className="flex flex-1 items-center gap-3 truncate">
-          <h1 className="truncate text-display font-semibold text-ink">{serverName}</h1>
+        {/* 08-11-PLAN.md Task 3 round 1 (deferred-items.md): `min-w-0` is required for a flex item
+            to shrink below its own intrinsic content width -- without it this wrapper's width
+            calculation loses to the back-link/StatusPill/primary-action siblings before
+            `truncate`'s `overflow:hidden` ever gets a chance to act, starving a real server name
+            down to a couple of characters at 375px. */}
+        <div className="flex min-w-0 flex-1 items-center gap-3 truncate">
+          <h1 className="min-w-0 truncate text-display font-semibold text-ink">{serverName}</h1>
           <StatusPill status={status} />
         </div>
         <StreamStatus connected={connected} />

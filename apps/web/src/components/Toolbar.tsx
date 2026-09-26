@@ -74,7 +74,14 @@ function useScrolled(): boolean {
 // permanent line to strengthen at the very top of the page.
 const BASE_CLASSES = cn(
   'sticky top-0 z-30 flex h-[52px] items-center gap-3 border-b bg-surface-1/90 px-4 backdrop-blur',
-  'motion-safe:transition-colors motion-safe:duration-[var(--duration-panel)] motion-safe:ease-[var(--ease-out)]',
+  // 08-11-PLAN.md Task 3 round 1 (deferred-items.md, P17 theme flicker): the whole `transition-colors`
+  // form bundles background-color into the animation, so a theme switch fades this toolbar's own
+  // background in over `--duration-panel` while every other surface on the page snaps instantly --
+  // a stray grey/near-white band across the toolbar, visible in the dark-theme review captures.
+  // Only the scroll-edge hairline is meant to animate here; `transition-[border-color]` (the same
+  // single-property arbitrary form Input.tsx/Textarea.tsx already use) scopes the animation to
+  // exactly that.
+  'motion-safe:transition-[border-color] motion-safe:duration-[var(--duration-panel)] motion-safe:ease-[var(--ease-out)]',
   '[@media(prefers-reduced-transparency:reduce)]:bg-surface-1',
   '[@media(prefers-reduced-transparency:reduce)]:[backdrop-filter:none]',
   'contrast-more:bg-surface-1',

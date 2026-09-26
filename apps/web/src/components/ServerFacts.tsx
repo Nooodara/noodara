@@ -56,7 +56,13 @@ export function ServerFacts({ server, now, dimmed = false, warnings = [] }: Serv
 
   return (
     <div className="flex flex-col gap-6">
-      <div data-testid="server-facts-tiles" className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      {/* 08-11-PLAN.md Task 3 round 1 (deferred-items.md, server-detail-light-375.png): a fixed
+          two-column grid left each tile too narrow at 375px for the widest mono value ("176.3 GB
+          of 910.7 GB" for Disk), wrapping it across three lines. Below 480px the tiles stack to a
+          single column so each one gets the full container width; `min-[480px]:grid-cols-2` keeps
+          the two-column layout on the wider small-phone/tablet range, and `sm:grid-cols-4` (the
+          desktop four-across layout) is unchanged. */}
+      <div data-testid="server-facts-tiles" className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 sm:grid-cols-4">
         <StatTile data-testid="server-fact-cpu-cores" label="CPU cores" value={server.cpuCores} caption={asOfCaption} dimmed={dimmed} />
         <StatTile
           data-testid="server-fact-ram"

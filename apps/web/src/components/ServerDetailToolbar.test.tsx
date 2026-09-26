@@ -47,9 +47,10 @@ describe('ServerDetailToolbar title truncation (deferred-items.md 08-11 round 1)
     expect(wrapper?.className).toContain('truncate');
   });
 
-  it('still keeps the h1 itself truncating', () => {
+  it('gives the h1 itself min-w-0 too, since it is its own nested flex item next to StatusPill', () => {
     renderToolbar();
     const title = screen.getByRole('heading', { level: 1, name: 'ui-review-connected' });
+    expect(title.className).toContain('min-w-0');
     expect(title.className).toContain('truncate');
   });
 });
