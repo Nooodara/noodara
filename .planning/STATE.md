@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 08-16-PLAN.md
-last_updated: "2026-09-26T13:35:10.534Z"
+stopped_at: Completed 08-17-PLAN.md
+last_updated: "2026-09-26T14:07:39.711Z"
 last_activity: 2026-09-26
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 30
-  completed_plans: 28
+  completed_plans: 29
   percent: 13
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 08 (redise-o-de-la-app) — EXECUTING
-Plan: 19 of 20
+Plan: 20 of 20
 Status: Ready to execute
 Last activity: 2026-09-26
 
-Progress: [█████████░] 93%
+Progress: [██████████] 97%
 
 ## Performance Metrics
 
@@ -185,6 +185,7 @@ Progress: [█████████░] 93%
 | Phase 08 P14 | 70 | 3 tasks | 16 files |
 | Phase 08 P18 | 33min | 3 tasks | 10 files |
 | Phase 08 P16 | 45min | 3 tasks | 8 files |
+| Phase 08 P17 | 55min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -505,6 +506,9 @@ Recent decisions affecting current work:
 - [Phase 08]: 08-18: isStepResolved is the single exported predicate feeding both DiscoveryStep's per-row thread fill and DiscoverySection's completedFraction
 - [Phase 08]: 08-16: stagger math owned by ServerList.tsx, ServerRow renders pre-computed delayMs
 - [Phase 08]: 08-16: ActivityList's computeEnteringIds locates the previous render's first-known id to distinguish a refresh prepend from a Load older append
+- [Phase ?]: userEvent.setup() must precede any manual navigator.clipboard stub in a test — Reversed order lets userEvent's own internal clipboard-stub install silently clobber a manually-defined stub, reliably breaking the click-to-copy assertion
+- [Phase ?]: ServerFacts' dimmed Host fingerprint row overrides --color-ink on a wrapper instead of adding a dimmed prop to Fingerprint — Keeps FingerprintProps fixed to value/compareTo/label/copyLabel/data-testid per 08-17-PLAN.md Task 1; Tailwind's text-ink utility resolves through var(--color-ink), which cascades to descendants
+- [Phase ?]: UI-08 stays Pending after 08-17 — Both authored moments (discovery narration 08-18, Fingerprint/TOFU 08-17) are technically complete, but the brand-swap distinguishability clause is the human's judgement call at G3
 
 ### Pending Todos
 
@@ -580,8 +584,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-26T13:35:10.526Z
-Stopped at: Completed 08-16-PLAN.md
+Last session: 2026-09-26T14:07:39.702Z
+Stopped at: Completed 08-17-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
