@@ -114,6 +114,38 @@ describe('ActivityList arrival entry (UI-07/D-11, 08-16-PLAN.md Task 2)', () => 
     });
   });
 
+  it('keeps the entering row entering across an unrelated re-render (e.g. lookupServer resolving late) with the same items array -- 08-19 iteration-15 nightly flake (activity.spec.ts @activity-entry reduced-motion)', () => {
+    const alpha = buildItem({ id: 'evt-alpha', action: 'auth.logout' });
+    const gamma = buildItem({ id: 'evt-gamma', action: 'auth.logout' });
+
+    const result = renderUi(<ActivityList state={readyStateItems([alpha])} now={NOW} lookupServer={notFoundLookup} timeZone="UTC" />);
+
+    // Same array reference reused across both re-renders below -- the real page.tsx equivalent is
+    // one `setState` call landing the arrival, whose resulting `items` array is stable until the
+    // next fetch actually resolves.
+    const arrivedItems = [gamma, alpha];
+    result.rerender(
+      <TooltipProvider delayDuration={0}>
+        <ActivityList state={readyStateItems(arrivedItems)} now={NOW} lookupServer={notFoundLookup} timeZone="UTC" />
+      </TooltipProvider>,
+    );
+
+    expect(screen.getAllByTestId('activity-row')[0]).toHaveAttribute('data-entering', 'true');
+
+    // A parent re-render unrelated to activity data (ActivityPage's own `/api/servers` fetch
+    // resolving after the arrival, or any other state change) passes ActivityList a brand-new
+    // `lookupServer` identity but the *same* `items` array reference -- this must not clear the
+    // entering flag, since nothing about the arrival itself has changed.
+    const laterLookup: ServerLookup = () => null;
+    result.rerender(
+      <TooltipProvider delayDuration={0}>
+        <ActivityList state={readyStateItems(arrivedItems)} now={NOW} lookupServer={laterLookup} timeZone="UTC" />
+      </TooltipProvider>,
+    );
+
+    expect(screen.getAllByTestId('activity-row')[0]).toHaveAttribute('data-entering', 'true');
+  });
+
   it('never staggers the arrival entrance -- no per-item transitionDelay on the newly entering row', () => {
     const alpha = buildItem({ id: 'evt-alpha', action: 'auth.logout' });
 
