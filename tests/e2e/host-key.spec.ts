@@ -277,6 +277,54 @@ test('@hostkey the trust-new-fingerprint dialog keeps its confirm button disable
   await expect(confirmButton).toBeEnabled();
 });
 
+// 08-17-PLAN.md Task 3 (D-10, §9 #14/#18): the shared `Fingerprint` component's block-aligned
+// diff, live in the running app -- the blocks render, at least one carries the differing (weight
+// 600, full ink) treatment while another stays at the matching (weight 400, secondary ink)
+// treatment, and the typed-name gate still blocks confirmation until the exact name is entered.
+test('@host-key the trust-new-fingerprint dialog renders the Trusted/New fingerprints in block-aligned diff mode, marks a difference by weight only, and still gates confirmation on the exact typed name', async ({
+  page,
+}) => {
+  const fixture = buildServerViewFixture({
+    id: '77777777-7777-4777-8777-777777777777',
+    name: 'diff-mode-srv',
+    status: 'ERROR',
+    lastErrorCode: 'HOST_KEY_CHANGED',
+    hostFingerprint: TRUSTED_FINGERPRINT,
+    hostFingerprintCapturedAt: '2026-09-01T00:00:00.000Z',
+    pendingFingerprint: OBSERVED_FINGERPRINT,
+    pendingFingerprintSeenAt: '2026-09-19T11:00:00.000Z',
+  });
+  await stubServerGet(page, fixture);
+
+  await login(page);
+  await page.goto(`/servers/${fixture.id}`);
+
+  await page.getByTestId('host-key-changed-banner').getByRole('button', { name: 'Trust new fingerprint' }).click();
+
+  const dialog = page.getByTestId('trust-fingerprint-dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('Trusted')).toBeVisible();
+  await expect(dialog.getByText('New')).toBeVisible();
+  await expect(dialog.getByText('old', { exact: true })).toHaveCount(0);
+  await expect(dialog.getByText('Observed', { exact: true })).toHaveCount(0);
+
+  // TRUSTED_FINGERPRINT's own first block ("trus") differs from OBSERVED_FINGERPRINT's ("obse"),
+  // and both fixtures share a long all-zero tail, so at least one later block matches too.
+  const differingBlock = dialog.getByText('trus', { exact: true }).first();
+  await expect(differingBlock).toBeVisible();
+  await expect(differingBlock).toHaveClass(/font-semibold/);
+  const matchingBlocks = dialog.getByText('0000', { exact: true });
+  await expect(matchingBlocks.first()).toHaveClass(/font-normal/);
+
+  const confirmButton = dialog.getByRole('button', { name: 'Trust new fingerprint' });
+  const input = dialog.getByRole('textbox');
+  await expect(confirmButton).toBeDisabled();
+  await input.fill('diff-mode-sr'); // a near-miss: one character short
+  await expect(confirmButton).toBeDisabled();
+  await input.fill('diff-mode-srv');
+  await expect(confirmButton).toBeEnabled();
+});
+
 test('@hostkey confirming with the exact name posts to trust-fingerprint exactly once, carrying the exact fingerprint the dialog displayed; success reflects PENDING with only Connect, and issues no automatic connect request', async ({
   page,
 }) => {

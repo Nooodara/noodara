@@ -29,7 +29,7 @@
 // itself) is removed entirely: enforcement now lives solely in the backend's atomic conditional
 // UPDATE, which is strictly stronger than anything a pre-flight client check could offer.
 import { useEffect, useState } from 'react';
-import { DestructiveConfirmDialog, RelativeTime } from '@noodara/ui';
+import { DestructiveConfirmDialog, Fingerprint, RelativeTime } from '@noodara/ui';
 import { apiSend, type ServerView } from '../lib/api-client';
 import { copyForErrorCode } from '../lib/error-copy';
 import { requireSession } from '../lib/require-session';
@@ -158,17 +158,41 @@ export function TrustFingerprintDialog({ open, onOpenChange, server, onSettled, 
         <span data-mono="true" className="break-all text-mono text-ink-tertiary">
           {`Host: ${server.host}:${String(server.sshPort)}`}
         </span>
-        <span data-mono="true" className="break-all text-mono text-ink">
-          {server.hostFingerprint === null ? 'Trusted: not available' : `Trusted: ${server.hostFingerprint}`}
-        </span>
+        {/* 08-17-PLAN.md Task 3 (D-10, §9 #14/#18): the two former plain mono spans are replaced
+            by two `Fingerprint` instances in block-aligned diff mode, labelled "Trusted"/"New" --
+            never a stale/ambiguous synonym for either -- each comparing against the other's
+            value, so BOTH sides mark their own differing blocks. A null trusted fingerprint keeps
+            its existing "not available" wording rather than an empty diff; everything below
+            (`handleConfirm`, the typed-name gate, `FINGERPRINT_MISMATCH`) is untouched. */}
+        {server.hostFingerprint === null ? (
+          <span data-mono="true" className="break-all text-mono text-ink">
+            Trusted: not available
+          </span>
+        ) : (
+          <Fingerprint
+            value={server.hostFingerprint}
+            {...(snapshot === null ? {} : { compareTo: snapshot.fingerprint })}
+            label="Trusted"
+            copyLabel="Copy trusted fingerprint"
+          />
+        )}
         {server.hostFingerprintCapturedAt === null ? null : (
           <span className="text-caption text-ink-tertiary">
             captured <RelativeTime value={server.hostFingerprintCapturedAt} now={now} />
           </span>
         )}
-        <span data-mono="true" className="break-all text-mono text-ink">
-          {snapshot === null ? 'Observed: not available' : `Observed: ${snapshot.fingerprint}`}
-        </span>
+        {snapshot === null ? (
+          <span data-mono="true" className="break-all text-mono text-ink">
+            New: not available
+          </span>
+        ) : (
+          <Fingerprint
+            value={snapshot.fingerprint}
+            {...(server.hostFingerprint === null ? {} : { compareTo: server.hostFingerprint })}
+            label="New"
+            copyLabel="Copy new fingerprint"
+          />
+        )}
         {snapshot?.seenAt === null || snapshot?.seenAt === undefined ? null : (
           <span className="text-caption text-ink-tertiary">
             seen <RelativeTime value={snapshot.seenAt} now={now} />
