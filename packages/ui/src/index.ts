@@ -31,6 +31,7 @@ export {
   type DiskUsage,
 } from './format.js';
 export { Input, type InputProps } from './Input.js';
+export { InsetGroup, type InsetGroupProps } from './InsetGroup.js';
 export { isConfirmationMatch } from './confirm-match.js';
 export { LabelValue, type LabelValueProps } from './LabelValue.js';
 export { ListRow, type ListRowProps } from './ListRow.js';
