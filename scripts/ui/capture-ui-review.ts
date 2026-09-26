@@ -34,6 +34,7 @@
 
 import { chromium, type Browser, type Page } from '@playwright/test';
 import { changedFiles, writeIfChanged } from '../brand/write-if-changed.js';
+import { alternateHostForSameEndpoint } from './fixture-host.js';
 import { OVERLAYS, reviewPngPath, SCREENS, THEMES, WIDTHS, type Theme, type Width } from './review-paths.js';
 
 /** Full-page screenshots ignore viewport height once `fullPage: true` is set, but a real height
@@ -282,9 +283,12 @@ async function seedServerFixtures(page: Page): Promise<Fixtures> {
       throw new Error(`capture-ui-review: expected the connected fixture to settle CONNECTED, got ${connectedStatus}`);
     }
 
+    // Same real container as `connected` above, addressed through the OS-equivalent alias
+    // (`alternateHostForSameEndpoint`) so this row does not collide with the connected fixture's
+    // own (host, port) under `servers_host_port_unique_idx` — see scripts/ui/fixture-host.ts.
     const errored = await createServer(page, {
       name: 'ui-review-error',
-      host: sshd.host,
+      host: alternateHostForSameEndpoint(sshd.host),
       sshPort: sshd.port,
       sshUser: FIXTURE_SSH_USER,
       credential: { type: 'ssh_password', password: FIXTURE_WRONG_PASSWORD },
