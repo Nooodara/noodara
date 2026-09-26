@@ -12,15 +12,54 @@
 // screen) reads the shared stream and the mobile-nav toggle from that one context, never a second
 // `useServerEvents()` call of its own.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { TooltipProvider } from '@noodara/ui';
+import { cn, Sheet, TooltipProvider } from '@noodara/ui';
 import { Sidebar } from '../../components/Sidebar';
 import { requireSession } from '../../lib/require-session';
 import { ShellContext, type ShellContextValue } from '../../lib/shell-context';
 import { useServerEvents } from '../../lib/use-server-events';
 
-export default function ShellLayout({ children }: { readonly children: ReactNode }) {
+// 08-09-PLAN.md Task 1 (D-08): the `@inspector` slot's column-vs-Sheet choice is a client-side
+// breakpoint read -- the parallel route itself resolves server-side per request and knows nothing
+// about the viewport. `false` is the SSR-safe/first-client-render default (matches
+// ThemeToggle.tsx's own "environment-independent default, adopted a moment later" pattern): the
+// only visible effect of a wrong-for-one-frame default here is which presentation a *populated*
+// slot uses, and `default.tsx` returning `null` means the empty slot this phase actually ships is
+// unaffected by this value either way.
+const INSPECTOR_COLUMN_QUERY = '(min-width: 1280px)';
+
+function useIsDesktopInspector(): boolean {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mediaQueryList = window.matchMedia(INSPECTOR_COLUMN_QUERY);
+    setIsDesktop(mediaQueryList.matches);
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsDesktop(event.matches);
+    };
+    mediaQueryList.addEventListener('change', handleChange);
+    return () => {
+      mediaQueryList.removeEventListener('change', handleChange);
+    };
+  }, []);
+
+  return isDesktop;
+}
+
+export default function ShellLayout({
+  children,
+  inspector,
+}: {
+  readonly children: ReactNode;
+  readonly inspector: ReactNode;
+}) {
   const serverEvents = useServerEvents();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const isDesktopInspector = useIsDesktopInspector();
+  // `default.tsx` returns `null` -- this is `false` for every route until Phase 13 nests a real
+  // `@inspector` route under `(shell)`. Kept as its own named boolean (rather than inlining
+  // `inspector !== null` at each call site) so the "is there content" question and the "which
+  // breakpoint" question stay independently readable.
+  const hasInspectorContent = inspector !== null;
 
   // T-5-53: the shell's own session guard, run once on mount -- see require-session.ts for why
   // this is UX only and never the real authorization boundary.
@@ -94,7 +133,36 @@ export default function ShellLayout({ children }: { readonly children: ReactNode
           <main id="shell-main" tabIndex={-1} className="min-w-0 flex-1">
             {children}
           </main>
+          {/* 08-09-PLAN.md Task 1 (D-08): the third shell panel, empty until Phase 13 nests a real
+              `@inspector` route. `w-0 border-0` unconditionally is what makes the empty slot cost
+              nothing at every viewport (§9 #19) -- the `min-[1280px]:w-[384px]` column width is
+              only ever added to the class list once there is real content to show, so a future
+              regression that always reserves the 384px column (even while empty) fails the
+              zero-width E2E assertion below instead of shipping unnoticed. No border, no shadow,
+              no background of its own, and no blocking overlay of any kind (§7.7). */}
+          <aside
+            data-testid="shell-inspector-slot"
+            className={cn('w-0 border-0', hasInspectorContent ? 'min-[1280px]:w-[384px]' : null)}
+          >
+            {hasInspectorContent && isDesktopInspector ? inspector : null}
+          </aside>
         </div>
+        {/* Below 1280px a populated slot presents as a lateral Sheet instead of a column (D-08).
+            Radix's `Dialog.Portal` renders nothing at all while `open` is `false`, so this branch
+            is inert -- no title, no DOM, no artifact -- for every route in this phase, since
+            `hasInspectorContent` is always `false` until Phase 13 populates the slot. Phase 13
+            owns the real `onOpenChange` dismissal behaviour for its own content; this plan ships
+            only the presentation choice (column vs. Sheet), never any stand-in copy of its own. */}
+        {hasInspectorContent && !isDesktopInspector ? (
+          <Sheet
+            open={hasInspectorContent}
+            onOpenChange={() => undefined}
+            title="Inspector"
+            data-testid="shell-inspector-sheet"
+          >
+            {inspector}
+          </Sheet>
+        ) : null}
       </TooltipProvider>
     </ShellContext.Provider>
   );
