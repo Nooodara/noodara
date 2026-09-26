@@ -2,6 +2,7 @@ import { type ComponentType, type ReactNode } from 'react';
 import * as CollapsiblePrimitive from '@radix-ui/react-collapsible';
 import { ChevronRight } from 'lucide-react';
 import { cn } from './cn.js';
+import { PRESS_CLASSES } from './press.js';
 import { Tooltip } from './Tooltip.js';
 
 /** Props every icon this tree renders must accept -- the same shape `lucide-react`'s icon
@@ -47,9 +48,14 @@ export interface NavTreeProps {
 
 // Reproduces Sidebar.tsx's existing leaf markup byte-for-byte (D-07: "se ve idéntico a la lista
 // plana actual") -- moved here so Sidebar.tsx no longer owns its own copy once it composes this
-// component instead.
-const ITEM_CLASSES =
-  'flex h-11 items-center gap-3 rounded-sm px-3 text-callout font-medium text-ink-secondary hover:bg-surface-2';
+// component instead. PRESS_CLASSES (UI-05, 08-20-PLAN.md Task 1) is the one shared press-feedback
+// definition (press.ts, owned by 08-13) -- composed in, never redeclared. Only the press itself
+// (:active) gets a transition; navigation activation and aria-current changes stay unanimated
+// (D-07).
+const ITEM_CLASSES = cn(
+  'flex h-11 items-center gap-3 rounded-sm px-3 text-callout font-medium text-ink-secondary hover:bg-surface-2',
+  PRESS_CLASSES,
+);
 const ACTIVE_ITEM_CLASSES = 'bg-accent-soft text-ink';
 const LABEL_CLASSES = 'hidden min-[1280px]:inline';
 const ICON_PROPS = { 'aria-hidden': true, size: 20, strokeWidth: 1.5 } as const;

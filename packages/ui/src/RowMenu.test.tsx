@@ -211,7 +211,7 @@ describe('RowMenu', () => {
   });
 
   // 08-20-PLAN.md Task 1 (UI-05): every menu item, destructive or not, gets its press feedback
-  // from the one shared PRESS_CLASSES definition -- never a second, local active:scale-* literal.
+  // from the one shared PRESS_CLASSES definition -- never a second, local press-scale literal.
   it('gets its press feedback from the one shared PRESS_CLASSES definition (UI-05)', async () => {
     const user = userEvent.setup();
     renderUi(<RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="Actions for Alpha" />);

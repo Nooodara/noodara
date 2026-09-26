@@ -213,7 +213,7 @@ describe('AccountMenu', () => {
   });
 
   // 08-20-PLAN.md Task 1 (UI-05): the Settings item row gets its press feedback from the one
-  // shared PRESS_CLASSES definition -- never a second, local active:scale-* literal.
+  // shared PRESS_CLASSES definition -- never a second, local press-scale literal.
   it('gets its press feedback on the Settings item row from the one shared PRESS_CLASSES definition (UI-05)', async () => {
     const user = userEvent.setup();
     renderUi(<AccountMenu {...buildProps()} />);

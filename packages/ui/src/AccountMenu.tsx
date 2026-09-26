@@ -1,6 +1,7 @@
 import { type ComponentType, type ReactNode } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cn } from './cn.js';
+import { PRESS_CLASSES } from './press.js';
 import { ThemeToggle } from './ThemeToggle.js';
 import { useFloatingMenu } from './use-floating-menu.js';
 
@@ -107,9 +108,12 @@ const CONTENT_CLASSES = cn(
 
 const HEADER_CLASSES = 'flex items-center gap-3 p-4';
 const DIVIDER_CLASSES = 'border-t border-hairline';
+// PRESS_CLASSES (UI-05, 08-20-PLAN.md Task 1) is the one shared press-feedback definition
+// (press.ts, owned by 08-13) -- composed in, never redeclared.
 const ITEM_CLASSES = cn(
   'flex h-11 w-full items-center px-4 text-left text-body text-ink outline-none',
   '[@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-2 focus-visible:bg-surface-2',
+  PRESS_CLASSES,
 );
 const APPEARANCE_ROW_CLASSES = 'flex h-11 w-full items-center justify-between px-4 text-body text-ink';
 const SIGN_OUT_ROW_CLASSES = 'px-2 py-1';

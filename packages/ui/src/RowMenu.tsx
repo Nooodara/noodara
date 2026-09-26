@@ -1,6 +1,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { cn } from './cn.js';
+import { PRESS_CLASSES } from './press.js';
 import { useFloatingMenu } from './use-floating-menu.js';
 
 export interface RowMenuItem {
@@ -56,10 +57,12 @@ const CONTENT_CLASSES = cn(
 );
 
 // Same hover-gating rationale as TRIGGER_CLASSES above (UI-10) -- a tap must never leave an item
-// stuck in its hover-highlighted state.
+// stuck in its hover-highlighted state. PRESS_CLASSES (UI-05, 08-20-PLAN.md Task 1) is the one
+// shared press-feedback definition (press.ts, owned by 08-13) -- composed in, never redeclared.
 const ITEM_CLASSES = cn(
   'flex h-9 w-full items-center px-3 text-left text-callout text-ink outline-none',
   '[@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-2 focus-visible:bg-surface-2',
+  PRESS_CLASSES,
 );
 
 // text-status-error-text, not text-status-error (05-33 continuation, WR-C-08 call-site fix,
