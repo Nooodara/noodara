@@ -14,9 +14,15 @@ const OVERLAY_CLASSES = 'fixed inset-0 z-40 bg-canvas/72';
 // The new surface-elevated alias (solid, no translucency -- Dialog is a modal, scrim-backed)
 // replaces the old surface-1 background so dark mode sits one step lighter (surface-2); light
 // stays byte-identical.
+//
+// UI-10 (08-06-PLAN.md Task 2, 08-UI-SPEC.md SS10): Dialog gets `contrast-more:` (Tailwind's
+// built-in variant for `prefers-contrast: more`) swapping the hairline for the strong token --
+// the one real boundary a low-contrast border could otherwise erase (T-08-19). No
+// reduced-transparency override: Dialog is already solid, so there is nothing to drop.
 const PANEL_CLASSES = cn(
   'fixed left-1/2 top-1/2 z-50 flex w-[420px] -translate-x-1/2 -translate-y-1/2 flex-col gap-4',
   'rounded-lg border border-hairline bg-surface-elevated p-8 shadow-[var(--shadow-floating)]',
+  'contrast-more:border-hairline-strong',
 );
 
 const ACTIONS_CLASSES = 'flex items-center justify-end gap-2';

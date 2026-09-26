@@ -33,7 +33,10 @@ const TRIGGER_CLASSES = cn(
   '[@media(hover:hover)_and_(pointer:fine)]:opacity-0',
   '[@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100',
   '[@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100',
-  'hover:bg-surface-2',
+  // UI-10 (08-06-PLAN.md Task 2): the hover reveal itself is gated the same way as the opacity
+  // reveal above -- a tap on touch (which can never trigger `:hover`) must never leave this
+  // trigger stuck highlighted.
+  '[@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-2',
   'focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
 );
 
@@ -42,14 +45,21 @@ const TRIGGER_CLASSES = cn(
 // SHADOW_ALLOWLIST is the machine-checked gate that proves no other component ever gets one).
 // `bg-surface-3` stays exactly as-is -- already the lightest surface tier in both themes, so no
 // new elevated-surface token is needed here (unlike Sheet/Dialog).
+//
+// UI-10 (08-06-PLAN.md Task 2, 08-UI-SPEC.md SS10): `contrast-more:` (Tailwind's built-in variant
+// for `prefers-contrast: more`) swaps the hairline for the strong token (T-08-19). No
+// reduced-transparency override: RowMenu is already solid, nothing to drop.
 const CONTENT_CLASSES = cn(
   'absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-md border border-hairline bg-surface-3 py-1',
   'shadow-[var(--shadow-floating)]',
+  'contrast-more:border-hairline-strong',
 );
 
+// Same hover-gating rationale as TRIGGER_CLASSES above (UI-10) -- a tap must never leave an item
+// stuck in its hover-highlighted state.
 const ITEM_CLASSES = cn(
   'flex h-9 w-full items-center px-3 text-left text-callout text-ink outline-none',
-  'hover:bg-surface-2 focus-visible:bg-surface-2',
+  '[@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-2 focus-visible:bg-surface-2',
 );
 
 // text-status-error-text, not text-status-error (05-33 continuation, WR-C-08 call-site fix,

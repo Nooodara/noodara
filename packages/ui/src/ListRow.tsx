@@ -17,7 +17,12 @@ export type ListRowProps = ListRowActivation & {
 
 const ROW_HEIGHT_PX = 44;
 
-const ROW_CLASSES = cn('group flex items-center border-b border-hairline hover:bg-surface-2');
+// UI-10 (08-06-PLAN.md Task 2, 08-UI-SPEC.md SS10): the row hover reveal is gated behind
+// `(hover: hover) and (pointer: fine)` -- a tap on touch (which can never trigger `:hover`) must
+// never leave a row stuck in its hover-highlighted state.
+const ROW_CLASSES = cn(
+  'group flex items-center border-b border-hairline [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-2',
+);
 
 const ACTIVATION_CLASSES = cn(
   'flex min-w-0 flex-1 items-center gap-4 px-4 text-left outline-none',

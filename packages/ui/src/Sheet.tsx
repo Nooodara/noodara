@@ -23,10 +23,23 @@ const OVERLAY_CLASSES = 'fixed inset-0 z-40 bg-canvas/72';
 // SHADOW_ALLOWLIST is the machine-checked gate that proves no other component ever gets one).
 // The new surface-elevated alias replaces the old surface-1 background so dark mode sits one step
 // lighter (surface-2); light stays byte-identical (the alias resolves to surface-1 there).
+//
+// UI-10 (08-06-PLAN.md Task 2, 08-UI-SPEC.md SS10) -- two intentional fallbacks, both expressed as
+// Tailwind arbitrary variants on this same class constant (no second stylesheet, no literal
+// colour): under `prefers-reduced-transparency: reduce` the panel drops to a fully opaque
+// surface-elevated background with `backdrop-filter: none` (the arbitrary-property form, since
+// Tailwind composes backdrop-blur/backdrop-saturate into one shorthand and only setting the blur
+// half to `none` would leave the saturate half still applying a filter); under
+// `prefers-contrast: more` (Tailwind's built-in `contrast-more:` variant) the hairline swaps to
+// the strong token and the background is pushed toward fully opaque too, both real boundaries a
+// low-contrast border/translucent panel could otherwise erase (T-08-18/T-08-19).
 const PANEL_CLASSES = cn(
   'fixed inset-y-0 right-0 z-50 flex h-full w-[480px] flex-col',
   'rounded-l-lg border-l border-hairline bg-surface-elevated/72 backdrop-blur-xl backdrop-saturate-[1.8]',
   'shadow-[var(--shadow-floating)]',
+  '[@media(prefers-reduced-transparency:reduce)]:bg-surface-elevated',
+  '[@media(prefers-reduced-transparency:reduce)]:[backdrop-filter:none]',
+  'contrast-more:border-hairline-strong contrast-more:bg-surface-elevated',
   'motion-safe:transition-transform motion-safe:duration-[var(--duration-sheet)] motion-safe:ease-[var(--ease-standard)]',
   'data-[state=open]:translate-x-0 data-[state=closed]:translate-x-full',
 );
