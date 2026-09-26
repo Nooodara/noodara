@@ -1,9 +1,9 @@
 ---
-status: pending
+status: in-progress
 phase: 08-redise-o-de-la-app
 source: [08-CONTEXT.md D-14]
-started: pending
-updated: pending
+started: 2026-09-26
+updated: 2026-09-26
 ---
 
 # Phase 8 live-review checklist (D-14)
@@ -31,29 +31,53 @@ container rotates its host key, useful for exercising `HOST_KEY_CHANGED`.
 
 ## G2 — Direction (after P0, InsetGroup, shell)
 
+G2 was resolved by delegated approval (docs/ui/APPROVAL.md, 2026-09-26): the user reviewed the
+three-defect adjustment recommendation and replied "bueno cualquier cosa continua" rather than
+walking this checklist item-by-item live. Each item below is ticked only where automation or a
+capture actually verified it; anything that genuinely requires a human at the keyboard/VoiceOver
+stays open, with a note, for G3.
+
 - [ ] **Screen reader on `RowMenu`**: with VoiceOver running, open a server row's actions menu at
       `/servers` both from the keyboard (Tab to the row, Tab to `Actions for <name>`, `Enter`) and
       from the pointer (click the trigger). Confirm VoiceOver announces the menu opening
       (`aria-expanded`/expanded state) and reads each item ("Edit", "Delete") as a menu item.
+      **Not performed by the user at G2** (delegated approval) — remains open for G3.
 - [ ] **Screen reader on `AccountMenu`**: same pass on `shell-account-menu-trigger` at the foot of
       the sidebar — keyboard open, pointer open, announced items (Settings, Appearance, Sign out).
+      **Not performed by the user at G2** (delegated approval) — remains open for G3.
 - [ ] **`prefers-reduced-motion`**: in Chrome DevTools → Rendering → "Emulate CSS media feature
       `prefers-reduced-motion`" → `reduce`, reload `/servers`, open the add-server `Sheet`
       (`servers-add-button`), a `RowMenu` and the `AccountMenu`. Each must show its own intentional
       static alternative (no slide/translate), never just a slower version of the same motion.
+      **Partially automated**: `tests/e2e/a11y-fallbacks.spec.ts` proves this live, via
+      `page.emulateMedia({ reducedMotion: 'reduce' })`, for `Sheet` (opacity-only, no horizontal
+      translation), `Dialog` (no scale) and `RowMenu` (no scale) — all three green in the 118/118
+      E2E run at this gate. `AccountMenu`'s own reduced-motion behaviour has no automated live
+      check yet and was **not performed by the user at G2** — remains open for G3.
 - [ ] **`prefers-reduced-transparency`**: DevTools → Rendering → "Emulate CSS media feature
       `prefers-reduced-transparency`" → `reduce`. Reopen the `Sheet`, `RowMenu` and toolbar scroll
       state; each translucent surface must fall back to a solid material, not a see-through one.
+      **Not performed by the user at G2** (delegated approval) — component tests assert the
+      fallback classes exist (`Toolbar.test.tsx`) but no live DevTools toggle was run; remains
+      open for G3.
 - [ ] **`prefers-contrast: more`**: DevTools → Rendering → "Emulate CSS media feature
       `prefers-contrast`" → `more`. Confirm hairlines and focus rings visibly strengthen on the
       toolbar, the `Sheet`, the `Dialog` and the `RowMenu`.
-- [ ] **Inset groups at every width**: resize the browser (or DevTools device toolbar) to
+      **Not performed by the user at G2** (delegated approval) — component tests assert the
+      `contrast-more:` classes exist but no live DevTools toggle was run; remains open for G3.
+- [x] **Inset groups at every width**: resize the browser (or DevTools device toolbar) to
       375 / 900 / 1280 / 1920px on `/servers/:id` (System/Docker/Connection groups) and `/settings`
       (Instance/Advanced groups). Judge the grouped-list read (surface-1 blocks on canvas, hairline
       rows, no nested cards, no shadow) at each width.
-- [ ] **Fused sidebar**: at 900px and 1280px, confirm the sidebar has no `border-r` and no
+      **Verified via `pnpm ui:review` captures** at all four widths, both themes
+      (`docs/ui/review/server-detail-*.png`, `settings-*.png`): surface-1 blocks on canvas,
+      hairline rows, no nested cards, no shadow, at every width.
+- [x] **Fused sidebar**: at 900px and 1280px, confirm the sidebar has no `border-r` and no
       `surface-1` background of its own — separation should read as spacing plus the inset groups'
       own hairlines, not a sidebar edge.
+      **Verified via captures** (`docs/ui/review/servers-*-900.png`, `*-1280.png`) plus
+      `tests/e2e/shell.spec.ts`'s automated "the sidebar has no right-edge border at 1440px" and
+      the icon-rail/bottom-sheet responsive assertions, both green in the 118/118 E2E run.
 
 ## G3 — Final (after P1/P2, authored moments)
 

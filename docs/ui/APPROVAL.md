@@ -41,15 +41,36 @@ green as the gate plans (08-02, 08-11, 08-19) fill each block in.
 | Field | Value |
 | --- | --- |
 | Gate | G2 — Direction |
-| Date | pending |
-| Rounds used | pending |
-| Approver | pending |
-| Evidence | docs/ui/approved/ — the six screens plus overlays, both themes, at 1280px |
+| Date | 2026-09-26 |
+| Rounds used | 1 |
+| Approver | Pablo Gutierrez |
+| Evidence | docs/ui/approved/ — the six screens, both themes, at 1280px, copied from the post-round-1 review round (56-capture round in `docs/ui/review/`); 118/118 E2E and 2686/2686 unit tests green at approval time |
 
 ### Adjustment log
 
-- **Round 1: none yet.**
-- **Round 2: none yet.**
+- **Round 1: three display defects found during the pre-gate pixel audit, fixed and re-verified.**
+  1. `Toolbar.tsx` scoped its motion-safe transition to `border-color` only (was
+     `transition-colors`, which bundled `background-color` into the theme-switch fade — a stray
+     grey/near-white band across the toolbar in dark-theme captures, P17). RED `f4c06fc`, GREEN
+     `b5c26f6`.
+  2. `ServerDetailToolbar.tsx`'s title wrapper and its `h1` gained `min-w-0` so the flex item
+     participates correctly in the shrink calculation next to `StatusPill`/the primary action
+     button. RED `f4c06fc`, GREEN `b5c26f6`. Re-capture confirms the same truncation depth
+     persists at 375px for this fixture's 19-character name — the real constraint is the space
+     already claimed by the back link, `StatusPill` and the primary action button at that width,
+     not a min-width computation bug; see `deferred-items.md` for the residual note and follow-up.
+  3. `ServerFacts.tsx`'s stat tile grid stacks to a single column below 480px
+     (`min-[480px]:grid-cols-2 sm:grid-cols-4`, was a fixed `grid-cols-2`), so the widest mono
+     value ("176.3 GB of 910.7 GB") fits on one line at 375px instead of wrapping across three.
+     RED `f4c06fc`, GREEN `b5c26f6`.
+- **Round 2: none.**
+
+### Screen reader
+
+Not performed by the user at this gate — the delegated "G2 adjust, then approved" resolution
+covered the recommended visual-defect round only. UI-04's screen-reader pass on `RowMenu` and
+`AccountMenu` remains open and is deferred to G3 (see `08-HUMAN-UAT.md` §G2 and
+`.planning/phases/08-redise-o-de-la-app/deferred-items.md`).
 
 ## G3 — Final
 
