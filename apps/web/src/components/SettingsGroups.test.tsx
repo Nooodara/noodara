@@ -1,7 +1,36 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderUi, screen, userEvent } from '@noodara/ui/testing';
 import { SettingsGroups } from './SettingsGroups';
 import type { ConfigResponse } from '../lib/settings-rows';
+
+// jsdom implements localStorage but not matchMedia -- same stub ThemeToggle.test.tsx's own header
+// comment documents, needed here now that SettingsGroups mounts a real ThemeToggle (08-19-PLAN.md
+// Task 3, item 5).
+function stubMatchMedia(prefersDark: boolean): void {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockImplementation((query: string) => ({
+      matches: prefersDark,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
+}
+
+beforeEach(() => {
+  localStorage.clear();
+  document.documentElement.removeAttribute('data-theme');
+  stubMatchMedia(false);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 function buildConfig(overrides: Partial<ConfigResponse> = {}): ConfigResponse {
   return {
@@ -117,6 +146,23 @@ describe('SettingsGroups', () => {
 
     const masterKeyRow = screen.getByText('Master key fingerprint').closest('[class*="justify-between"]');
     expect(masterKeyRow?.parentElement?.className).toMatch(/\bpx-4\b/);
+  });
+
+  // 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 5): D-05 moves -- the theme control leaves
+  // the account menu (AccountMenu.test.tsx's own updated coverage) and lands here instead, as an
+  // Appearance InsetGroup consistent with Instance, still the one ThemeToggle instance (its own
+  // single-writer STORAGE_KEY, never a second theme control).
+  it('renders an Appearance InsetGroup with the one ThemeToggle control', () => {
+    renderUi(<SettingsGroups config={buildConfig()} />);
+
+    const appearanceGroup = screen.getByTestId('settings-appearance-group');
+    expect(appearanceGroup).toHaveAttribute('data-inset-group', 'true');
+
+    const heading = screen.getByRole('heading', { level: 3, name: 'Appearance' });
+    expect(appearanceGroup.contains(heading)).toBe(false);
+
+    const themeToggle = screen.getByTestId('settings-appearance-theme-toggle');
+    expect(appearanceGroup.contains(themeToggle)).toBe(true);
   });
 
   it('renders second-suffixed timeout values, never a raw millisecond count', async () => {
