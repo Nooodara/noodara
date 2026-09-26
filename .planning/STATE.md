@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Phase 8 UI-SPEC approved
-last_updated: "2026-09-24T03:14:50.686Z"
-last_activity: 2026-09-24 -- Phase 8 planning complete
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-09-26T01:10:08.895Z"
+last_activity: 2026-09-26
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 30
-  completed_plans: 10
+  completed_plans: 11
   percent: 13
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** Phase 8 — rediseño de la app
+**Current focus:** Phase 08 — redise-o-de-la-app
 
 ## Current Position
 
-Phase: 8
-Plan: Not started
+Phase: 08 (redise-o-de-la-app) — EXECUTING
+Plan: 2 of 20
 Status: Ready to execute
-Last activity: 2026-09-24 -- Phase 8 planning complete
+Last activity: 2026-09-26
 
-Progress: [██████████] 100%
+Progress: [████░░░░░░] 37%
 
 ## Performance Metrics
 
@@ -167,6 +167,7 @@ Progress: [██████████] 100%
 | Phase 07 P08 | ~12min | 2 tasks | 7 files |
 | Phase 07 P09 | 55min | 3 tasks | 14 files |
 | Phase 07 P10 | ~35min | 3 tasks | 5 files |
+| Phase 08 P01 | 35min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -452,6 +453,9 @@ Recent decisions affecting current work:
 - [Phase 07]: [Phase 07 P06]: RasterSpec gained an optional packInto field beyond the plan's own interfaces block (additive only) so the three favicon tile sizes (16/32/48) can be marked 'pack into favicon.ico, never write directly' -- matching 07-03/07-04's own precedent for additive fields
 - [Phase 07 P07]: El brand slot del sidebar son dos wrappers siempre montados, uno oculto por CSS en cada breakpoint (nunca un check de ancho en JS ni un render condicional) -- exactamente uno esta en el arbol de accesibilidad a cualquier ancho, que es la razon por la que 07-03 eligio data-part en lugar de id. La marca no es link ni control (dos divs planos, sin tabindex), asi que el orden de foco queda intacto; si pasa a ser enlace a home lo decide la Fase 8. El bottom sheet (<900px) no lleva marca: es un overlay de navegacion temporal, no el chrome del producto.
 - [Phase 07 P09]: apps/web/src/proxy.ts's session-redirect matcher was missing 5 public brand routes (icon.svg, icon1.png, icon2.png, apple-icon.png, opengraph-image.png, manifest.webmanifest) -- an unauthenticated visitor was silently redirected to /login for every one of them (200 text/html), found by the plan's own E2E test and fixed by widening the matcher's exclusion list; the E2E icon-hrefs check was also strengthened to assert content-type, not just status. manifest.ts's colours come from a synced brand-colors.json import (import-attribute JSON import worked directly, no tsconfig change) rather than a hex literal, keeping check-ui-safety.mjs's gate green with no allowlist edit.
+- [Phase 08 P01]: The error-state fixture server reuses the same single sshd Testcontainer as the connected server, with a deliberately wrong password -- a genuine AUTH_FAILED against real infrastructure, never a stub, without paying for a second container.
+- [Phase 08 P01]: The 80-character-name fixture attempts the literal D-12 length first; packages/domain's SERVER_NAME_PATTERN caps names at 63 chars (pre-existing, out of this plan's scope), so the script falls back to the longest valid name and logs why.
+- [Phase 08 P01]: docs/ui/approved/'s pin test asserts every present file is a member of the valid SCREENS x THEMES + README set, not that all 12 are present -- no gate has been approved yet in this plan, so the directory legitimately holds only README.md until 08-02 (G1) fills it in.
 
 ### Pending Todos
 
@@ -527,9 +531,9 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-24T02:06:10.395Z
-Stopped at: Phase 8 UI-SPEC approved
-Resume file: .planning/phases/08-redise-o-de-la-app/08-UI-SPEC.md
+Last session: 2026-09-26T01:10:08.888Z
+Stopped at: Completed 08-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
