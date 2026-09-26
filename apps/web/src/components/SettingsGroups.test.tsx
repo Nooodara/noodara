@@ -101,6 +101,24 @@ describe('SettingsGroups', () => {
     expect(screen.getByText('Master key fingerprint')).toBeInTheDocument();
   });
 
+  // 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 1): Instance/Advanced rows sat flush
+  // against the InsetGroup block's own hairline border, same bug as ServerFacts -- both the
+  // plain and the copyable rows now carry the same px-4 inset ServerList's rows already have.
+  it('gives every Instance/Advanced row a px-4 horizontal inset', async () => {
+    const user = userEvent.setup();
+    renderUi(<SettingsGroups config={buildConfig()} />);
+    await user.click(screen.getByRole('button', { name: 'Advanced' }));
+
+    const versionRow = screen.getByText('Version').closest('[class*="justify-between"]');
+    expect(versionRow?.parentElement?.className).toMatch(/\bpx-4\b/);
+
+    const publicUrlRow = screen.getByTestId('settings-row-public-url');
+    expect(publicUrlRow.className).toMatch(/\bpx-4\b/);
+
+    const masterKeyRow = screen.getByText('Master key fingerprint').closest('[class*="justify-between"]');
+    expect(masterKeyRow?.parentElement?.className).toMatch(/\bpx-4\b/);
+  });
+
   it('renders second-suffixed timeout values, never a raw millisecond count', async () => {
     const user = userEvent.setup();
     renderUi(
