@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 08-04-PLAN.md
-last_updated: "2026-09-26T03:01:08.120Z"
+stopped_at: Completed 08-05-PLAN.md
+last_updated: "2026-09-26T03:18:13.809Z"
 last_activity: 2026-09-26
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 30
-  completed_plans: 14
+  completed_plans: 15
   percent: 13
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 08 (redise-o-de-la-app) — EXECUTING
-Plan: 5 of 20
+Plan: 6 of 20
 Status: Ready to execute
 Last activity: 2026-09-26
 
-Progress: [█████░░░░░] 47%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -171,6 +171,7 @@ Progress: [█████░░░░░] 47%
 | Phase 08 P02 | ~20min | 3 tasks | 14 files |
 | Phase 08 P03 | ~55min | 3 tasks | 6 files |
 | Phase 08 P04 | ~40min | 3 tasks | 7 files |
+| Phase 08 P05 | ~35min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -464,6 +465,9 @@ Recent decisions affecting current work:
 - [Phase 08 P04]: The E2E keyboard RowMenu test does not assert focus returns to the trigger after activating a real item (Edit/Delete) -- both open a follow-up modal overlay in the same commit as the RowMenu close, and Radix applies aria-hidden to the rest of the page while that overlay is open, making the trigger unreachable by role/name. The close+focus-return contract with no follow-up action is already proven at the component level (RowMenu.test.tsx, mock onSelect); the E2E test instead proves the full real-browser chain ends with the RowMenu closed and the real edit sheet visible, and a separate aria-expanded test proves real focus returns to the trigger after Escape, the one close path with nowhere else for focus to go.
 - [Phase 08 P04]: use-floating-menu.ts's preventDefault/stopPropagation count is 2, not the 1 the plan's acceptance criteria stated -- handleOpenAutoFocus must call preventDefault to deterministically override Radix's default autofocus target and land on the first menu item, and there is no way to drop it without either weakening that guarantee or gaming the grep with an obfuscated helper name, which was rejected. Every other Task 1 acceptance criterion is satisfied exactly.
 - [Phase 08 P04]: UI-04 and UI-05 are not marked complete in REQUIREMENTS.md after 08-04: UI-04's screen-reader-announces-open/closed clause is a G2 human-verification item per 08-UI-SPEC.md SS6.3, not yet performed; UI-05's press-feedback/easing-table/no-keyboard-animation clauses belong to a later motion-contract plan -- 08-04 only delivers the keyboard-vs-pointer close-source primitive P14 needs as groundwork.
+- [Phase 08 P05]: SettingsGroups.tsx's outer gap changed from gap-12 (48px) to gap-6 (24px), matching 08-UI-SPEC.md Section 1's explicit rule (24px between InsetGroup blocks, D-04) and Task 2's own top-level behaviour bullet, even though the plan's per-component action text only named the gap-6 change for ServerFacts.tsx explicitly.
+- [Phase 08 P05]: InsetGroup's no-nesting invariant (brief Section 9 #5) has no runtime guard by design -- the plan's own instruction frames it as a documented invariant, not a runtime throw; InsetGroup.test.tsx proves the shape is technically renderable so the prohibition stays a reviewable, test-visible discipline.
+- [Phase 08 P05]: UI-11 and UI-12 are NOT marked complete in REQUIREMENTS.md, following 08-01/08-03/08-04's precedent -- this plan only delivers the InsetGroup piece of D-01/D-02, not the shell (D-03/D-05/D-07/D-08) or the G2/G3 human-reviewed screenshots UI-11/UI-12 require in full.
 
 ### Pending Todos
 
@@ -539,8 +543,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-26T03:01:08.112Z
-Stopped at: Completed 08-04-PLAN.md
+Last session: 2026-09-26T03:18:13.802Z
+Stopped at: Completed 08-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
