@@ -412,6 +412,87 @@ test('@discovery a finished run leaves no checks behind for the next run to inhe
   await expect(page.getByTestId('discovery-step-os')).toHaveAttribute('data-severity', 'running');
 });
 
+// RED-first for 08-18-PLAN.md Task 3 (D-09, UI-08): the Viewfinder ring's own progress is the exact
+// same `checklist.steps` completion count the step list already renders -- never a second
+// computation, never a decorative easing toward 1, and never a spinner while the run is still in
+// flight. These three `@discovery-ring` cases are what a partial run at G3 proves: the ring stops
+// exactly where the run stopped, it never invents progress.
+test('@discovery-ring a fully successful settled run focuses the ring to its closed/sharp reading', async ({ page }) => {
+  const fixture = buildServerViewFixture({ id: '88888888-8888-4888-8888-888888888891', name: 'ring-complete-srv' });
+  await stubServer(page, fixture);
+  await stubDiscoveryRead(page, fixture.id, SETTLED_DISCOVERY);
+
+  await login(page);
+  await page.goto(`/servers/${fixture.id}`);
+
+  const ring = page.getByTestId('discovery-viewfinder');
+  await expect(ring).toHaveAttribute('data-aperture-focused', 'true');
+  await expect(ring).toHaveAttribute('style', /--aperture-progress:\s*1\b/);
+});
+
+test('@discovery-ring a run that only ever resolves its first three of six steps leaves the ring at three sixths, never complete', async ({
+  page,
+}) => {
+  const fixture = buildServerViewFixture({
+    id: '88888888-8888-4888-8888-888888888892',
+    name: 'ring-partial-srv',
+    status: 'CONNECTING',
+  });
+  await stubServer(page, fixture);
+  await stubDiscoveryRead(page, fixture.id, { collectedAt: null, outcome: null, checks: [], warnings: [] });
+  await installSyntheticServerEvents(page);
+
+  await login(page);
+  await page.goto(`/servers/${fixture.id}`);
+  await expect(page.getByTestId('shell-stream-status')).toHaveCount(0);
+
+  // Only the OS group's three checks ever arrive -- the run genuinely stops there (a dropped
+  // connection, a crashed agent process, anything that never sends the remaining eight checks).
+  // ssh_reachable/authenticated resolve implicitly from the first received check (SS4.3), plus the
+  // 'os' step itself -- three of six steps, never more.
+  for (const id of ['hostname', 'os_release', 'arch'] as const) {
+    await dispatchDiscoveryCheck(page, fixture.id, { id, status: 'pass', detail: `${id} ok`, durationMs: 5 });
+  }
+  await expect(page.getByTestId('discovery-step-os')).toHaveAttribute('data-severity', 'pass');
+
+  const ring = page.getByTestId('discovery-viewfinder');
+  await expect(ring).toHaveAttribute('style', /--aperture-progress:\s*0\.5\b/);
+  await expect(ring).not.toHaveAttribute('data-aperture-focused', 'true');
+
+  // No decorative easing toward completion, no spinner standing in for the eight steps that never
+  // arrived -- the ring's own markup carries no looping animation class.
+  const ringHtml = await ring.innerHTML();
+  expect(ringHtml).not.toMatch(/animate-spin|infinite/);
+});
+
+test('@discovery-ring a page that joins mid-run shows an intermediate, non-looping ring value while the run is still in flight', async ({
+  page,
+}) => {
+  const fixture = buildServerViewFixture({
+    id: '88888888-8888-4888-8888-888888888893',
+    name: 'ring-in-progress-srv',
+    status: 'CONNECTING',
+  });
+  await stubServer(page, fixture);
+  await stubDiscoveryRead(page, fixture.id, { collectedAt: null, outcome: null, checks: [], warnings: [] });
+  await installSyntheticServerEvents(page);
+
+  await login(page);
+  await page.goto(`/servers/${fixture.id}`);
+  await expect(page.getByTestId('shell-stream-status')).toHaveCount(0);
+
+  const ring = page.getByTestId('discovery-viewfinder');
+  // Before any check arrives, ssh_reachable/authenticated are still `running` (SS4.3) -- zero of
+  // six steps resolved yet.
+  await expect(ring).toHaveAttribute('style', /--aperture-progress:\s*0\b/);
+
+  for (const id of DISCOVERY_CHECK_IDS) {
+    await dispatchDiscoveryCheck(page, fixture.id, { id, status: 'pass', detail: `${id} ok`, durationMs: 5 });
+  }
+  await expect(page.getByTestId('discovery-step-access')).toHaveAttribute('data-severity', 'pass');
+  await expect(ring).toHaveAttribute('data-aperture-focused', 'true');
+});
+
 test('@ssh-live a real connect-and-discover run against a real sshd fixture delivers live, time-separated per-check SSE progress into the already-mounted browser page, with no reload', async ({
   page,
 }) => {
