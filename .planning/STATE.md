@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-09-26T01:10:08.895Z"
+stopped_at: Completed 08-02-PLAN.md
+last_updated: "2026-09-26T02:13:56.617Z"
 last_activity: 2026-09-26
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 30
-  completed_plans: 11
+  completed_plans: 12
   percent: 13
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 08 (redise-o-de-la-app) — EXECUTING
-Plan: 2 of 20
+Plan: 3 of 20
 Status: Ready to execute
 Last activity: 2026-09-26
 
-Progress: [████░░░░░░] 37%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -168,6 +168,7 @@ Progress: [████░░░░░░] 37%
 | Phase 07 P09 | 55min | 3 tasks | 14 files |
 | Phase 07 P10 | ~35min | 3 tasks | 5 files |
 | Phase 08 P01 | 35min | 3 tasks | 11 files |
+| Phase 08 P02 | ~20min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -456,6 +457,7 @@ Recent decisions affecting current work:
 - [Phase 08 P01]: The error-state fixture server reuses the same single sshd Testcontainer as the connected server, with a deliberately wrong password -- a genuine AUTH_FAILED against real infrastructure, never a stub, without paying for a second container.
 - [Phase 08 P01]: The 80-character-name fixture attempts the literal D-12 length first; packages/domain's SERVER_NAME_PATTERN caps names at 63 chars (pre-existing, out of this plan's scope), so the script falls back to the longest valid name and logs why.
 - [Phase 08 P01]: docs/ui/approved/'s pin test asserts every present file is a member of the valid SCREENS x THEMES + README set, not that all 12 are present -- no gate has been approved yet in this plan, so the directory legitimately holds only README.md until 08-02 (G1) fills it in.
+- [Phase 08 P02]: G1 (baseline) approved on the first pass, 0 adjustment rounds, approver Pablo Gutierrez. docs/ui/APPROVAL.md's G1 Evidence row was filled to point at docs/ui/approved/ (per approval-record.test.ts's actual assertion) rather than docs/ui/review/ (the plan's own Task 3 prose); the 12 pinned 1280px screen captures were copied into docs/ui/approved/, matching 08-01-SUMMARY.md's own stated intent for this plan. The user approved globally with one verbatim sentence and no per-screen notes; 08-BASELINE-NOTES.md records that honestly rather than inventing notes, so the surface plans (08-05, 08-07, 08-08) work from D-01..D-11 and the brief alone.
 
 ### Pending Todos
 
@@ -531,8 +533,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-26T01:10:08.888Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-09-26T02:13:56.609Z
+Stopped at: Completed 08-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
