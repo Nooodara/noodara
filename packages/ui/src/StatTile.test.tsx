@@ -38,6 +38,18 @@ describe('StatTile', () => {
     expect(meter).toHaveAttribute('data-fraction', '0.45');
   });
 
+  // UI-09 (08-15-PLAN.md Task 3): the meter is revealed with clip-path, not resized -- the fill
+  // renders at full width and the fraction drives the inset instead. docs/ui-build-prompt.md
+  // §7.5's `inset(0 100% 0 0)` -> `inset(0 0 0 0)` reveal, hardware-accelerated.
+  it('reveals its fill with a clip-path inset derived from the fraction, at full width, never an animated width', () => {
+    const { container } = renderUi(<StatTile label="Disk" value="18 GB of 40 GB" meterFraction={0.45} />);
+
+    const meter = container.querySelector('[data-fraction]') as HTMLElement;
+    const fill = meter.firstElementChild as HTMLElement;
+    expect(fill.style.width).toBe('');
+    expect(fill.style.clipPath).toBe('inset(0 55% 0 0)');
+  });
+
   it('renders no meter element when meterFraction is null', () => {
     const { container } = renderUi(<StatTile label="Disk" value={PLACEHOLDER} meterFraction={null} />);
 
