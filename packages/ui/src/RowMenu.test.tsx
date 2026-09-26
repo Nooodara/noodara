@@ -284,4 +284,22 @@ describe('RowMenu', () => {
 
     expect(screen.getByRole('menu').className).not.toContain('!duration-0');
   });
+
+  // 08-14-PLAN.md Task 1 (UI-07, 08-UI-SPEC.md §7.2/§7.4): the content grows from the trigger's
+  // own corner (never a hardcoded `origin-top-right` guess) at the §7.2-table values (150ms
+  // --ease-out, scale(0.97)+opacity).
+  it('opens from scale(0.97)+opacity at 150ms --ease-out, origin anchored to the trigger', async () => {
+    const user = userEvent.setup();
+    renderUi(<RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="Actions for Alpha" />);
+
+    await user.click(screen.getByRole('button', { name: 'Actions for Alpha' }));
+
+    const content = screen.getByRole('menu');
+    expect(content.className).toContain('origin-[var(--transform-origin)]');
+    expect(content).toHaveStyle({ '--transform-origin': 'top right' });
+    expect(content.className).toContain('motion-safe:duration-[150ms]');
+    expect(content.className).toContain('motion-safe:ease-[var(--ease-out)]');
+    expect(content.className).toContain('scale-[0.97]');
+    expect(content.className).not.toContain('scale-[0]');
+  });
 });

@@ -59,6 +59,30 @@ describe('DialogShell keyboard-no-animation branch (UI-05, §9 #10, P14)', () =>
 
     expect(screen.getByRole('dialog').className).not.toContain('!duration-0');
   });
+
+  // 08-14-PLAN.md Task 1 (UI-07, 08-UI-SPEC.md §7.2/§7.4): the Dialog is the stated exception --
+  // it always grows from the centre, never a trigger, at the §7.2-table values (200ms --ease-out,
+  // scale(0.95)+opacity 0 -> scale(1)+opacity 1).
+  it('opens from scale(0.95)+opacity at 200ms --ease-out, origin centre', () => {
+    renderUi(
+      <ConfirmDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Re-run discovery?"
+        body="Body text."
+        confirmLabel="Re-run discovery"
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    const panel = screen.getByRole('dialog').className;
+    expect(panel).toContain('origin-center');
+    expect(panel).toContain('motion-safe:duration-[200ms]');
+    expect(panel).toContain('motion-safe:ease-[var(--ease-out)]');
+    expect(panel).toContain('scale-[0.95]');
+    expect(panel).not.toContain('scale-[0]');
+  });
+
   it('still dismisses ConfirmDialog via Escape once useCloseSource is wired into DialogShell', async () => {
     const user = userEvent.setup();
     const onOpenChange = vi.fn();
