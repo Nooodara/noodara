@@ -2,6 +2,7 @@ import { type ComponentType, type ReactNode } from 'react';
 import * as CollapsiblePrimitive from '@radix-ui/react-collapsible';
 import { ChevronRight } from 'lucide-react';
 import { cn } from './cn.js';
+import { DISCLOSURE_CONTENT_CLASSES, DISCLOSURE_INNER_CLASSES } from './Disclosure.js';
 import { PRESS_CLASSES } from './press.js';
 import { Tooltip } from './Tooltip.js';
 
@@ -69,7 +70,10 @@ const CHEVRON_CLASSES = cn(
   'h-4 w-4 shrink-0 text-ink-secondary motion-safe:transition-transform motion-safe:duration-[var(--duration-micro)]',
   'group-data-[state=open]:rotate-90',
 );
-const CONTENT_CLASSES = cn('motion-safe:transition-[grid-template-rows] motion-safe:duration-[var(--duration-panel)]');
+// 08-14-PLAN.md Task 2: reuses Disclosure.tsx's own exported grid-template-rows class constant
+// rather than keeping a near-copy -- both expand/collapse disclosures now share exactly one
+// expression for this technique.
+const CONTENT_CLASSES = DISCLOSURE_CONTENT_CLASSES;
 
 /** Narrows `T | undefined` to `T` once the caller has already guaranteed the value is present --
  *  same precedent as `packages/ui/src/contrast.ts`'s own `assertDefined`. Needed once, below, for
@@ -99,7 +103,12 @@ interface RenderItemsArgs {
   readonly linkComponent: ComponentType<NavTreeLinkProps>;
 }
 
-function renderItems({ items, activeHref, onNavigate, linkComponent: LinkComponent }: RenderItemsArgs): ReactNode {
+function renderItems({
+  items,
+  activeHref,
+  onNavigate,
+  linkComponent: LinkComponent,
+}: RenderItemsArgs): ReactNode {
   return items.filter(hasDestination).map((item) => {
     const Icon = item.icon;
 
@@ -153,12 +162,22 @@ function renderItems({ items, activeHref, onNavigate, linkComponent: LinkCompone
                 <Icon {...ICON_PROPS} />
                 <span className={LABEL_CLASSES}>{item.label}</span>
               </span>
-              <ChevronRight aria-hidden="true" size={16} strokeWidth={1.5} className={CHEVRON_CLASSES} />
+              <ChevronRight
+                aria-hidden="true"
+                size={16}
+                strokeWidth={1.5}
+                className={CHEVRON_CLASSES}
+              />
             </CollapsiblePrimitive.Trigger>
           </Tooltip>
           <CollapsiblePrimitive.Content className={CONTENT_CLASSES}>
-            <ul className="flex flex-col gap-1 pl-6">
-              {renderItems({ items: children, activeHref, onNavigate, linkComponent: LinkComponent })}
+            <ul className={cn(DISCLOSURE_INNER_CLASSES, 'flex flex-col gap-1 pl-6')}>
+              {renderItems({
+                items: children,
+                activeHref,
+                onNavigate,
+                linkComponent: LinkComponent,
+              })}
             </ul>
           </CollapsiblePrimitive.Content>
         </CollapsiblePrimitive.Root>
@@ -173,5 +192,14 @@ function renderItems({ items, activeHref, onNavigate, linkComponent: LinkCompone
 // changing this file. No section labels, no inactive/greyed-out items (§9 #8/#19).
 export function NavTree({ items, activeHref, onNavigate, linkComponent }: NavTreeProps) {
   const handleNavigate = onNavigate ?? ((): void => undefined);
-  return <ul className="flex flex-col gap-1">{renderItems({ items, activeHref, onNavigate: handleNavigate, linkComponent })}</ul>;
+  return (
+    <ul className="flex flex-col gap-1">
+      {renderItems({
+        items,
+        activeHref,
+        onNavigate: handleNavigate,
+        linkComponent,
+      })}
+    </ul>
+  );
 }

@@ -24,7 +24,20 @@ const CHEVRON_CLASSES = cn(
   'group-data-[state=open]:rotate-90',
 );
 
-const CONTENT_CLASSES = cn('motion-safe:transition-[grid-template-rows] motion-safe:duration-[var(--duration-panel)]');
+// UI-07 (08-14-PLAN.md Task 2, 08-UI-SPEC.md §7.2/§7.4, §9 #11): interpolates a CSS Grid track
+// (`grid-template-rows: 0fr -> 1fr`) instead of an animated `height`/`max-height` -- the browser
+// can interpolate the fractional unit without the three-pass layout/paint/composite cost of
+// animating `height` directly, and content of unknown height expands correctly with no JS
+// measurement of its own. Exported so `NavTree.tsx`'s identical parent-item disclosure reuses
+// this one constant rather than keeping a near-copy (its own comment names this file as the
+// reason). `INNER_CLASSES` (below) is the `min-h-0 overflow-hidden` wrapper that actually clips
+// the fractional row -- without it, a 0fr track alone does not hide overflowing content in every
+// browser's box model.
+export const DISCLOSURE_CONTENT_CLASSES = cn(
+  'grid motion-safe:data-[state=closed]:grid-rows-[0fr] motion-safe:data-[state=open]:grid-rows-[1fr]',
+  'motion-safe:transition-[grid-template-rows] motion-safe:duration-[var(--duration-panel)] motion-safe:ease-[var(--ease-out)]',
+);
+export const DISCLOSURE_INNER_CLASSES = 'min-h-0 overflow-hidden';
 
 // Disclosure (skill SS2.4/SS4, 05-UI-SPEC.md Component Inventory, D-16) -- a thin styling wrapper
 // over `@radix-ui/react-collapsible`. Collapsed-by-default content is genuinely absent from the
@@ -33,14 +46,21 @@ const CONTENT_CLASSES = cn('motion-safe:transition-[grid-template-rows] motion-s
 // canary scan (T-5-46) both hold. `aria-expanded` and the open/close toggle come entirely from
 // the primitive -- this file adds no custom keydown handler and no custom animation handler of
 // its own; the only motion is a CSS transition gated by `prefers-reduced-motion` above.
-export function Disclosure({ title, children, defaultOpen = false, 'data-testid': testId }: DisclosureProps) {
+export function Disclosure({
+  title,
+  children,
+  defaultOpen = false,
+  'data-testid': testId,
+}: DisclosureProps) {
   return (
     <CollapsiblePrimitive.Root defaultOpen={defaultOpen} data-testid={testId} className="group">
       <CollapsiblePrimitive.Trigger className={TRIGGER_CLASSES}>
         <ChevronRight aria-hidden="true" size={16} strokeWidth={1.5} className={CHEVRON_CLASSES} />
         {title}
       </CollapsiblePrimitive.Trigger>
-      <CollapsiblePrimitive.Content className={CONTENT_CLASSES}>{children}</CollapsiblePrimitive.Content>
+      <CollapsiblePrimitive.Content className={DISCLOSURE_CONTENT_CLASSES}>
+        <div className={DISCLOSURE_INNER_CLASSES}>{children}</div>
+      </CollapsiblePrimitive.Content>
     </CollapsiblePrimitive.Root>
   );
 }

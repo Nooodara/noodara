@@ -1,11 +1,29 @@
-import type { ReactElement, ReactNode } from 'react';
+import type { ComponentProps, ReactElement, ReactNode } from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { cn } from './cn.js';
 
-// Re-exported so every screen that needs a tooltip-bearing component mounts exactly one
-// provider ancestor -- `packages/ui/src/testing/render.tsx`'s `renderUi` mounts this for every
-// component test, and `apps/web`'s root layout mounts the same provider for the real app.
-export const TooltipProvider = TooltipPrimitive.Provider;
+// Radix's own built-in default (verified against @radix-ui/react-tooltip's source) -- made an
+// explicit, named, documented constant here rather than left as an unstated library default, so
+// the "a second hover within one session opens instantly" contract (08-UI-SPEC.md §7.2's Tooltip
+// row) is a decision this codebase owns and can tune, not an implicit inherited value. A caller
+// (or a test) may still override the provider's own repeat-hover skip-delay prop.
+const DEFAULT_SKIP_DELAY_DURATION_MS = 300;
+
+export type TooltipProviderProps = ComponentProps<typeof TooltipPrimitive.Provider>;
+
+// Every screen that needs a tooltip-bearing component mounts exactly one provider ancestor --
+// `packages/ui/src/testing/render.tsx`'s `renderUi` mounts this for every component test, and
+// `apps/web`'s root layout mounts the same provider for the real app. A thin wrapper (not a bare
+// re-export, unlike before 08-14) so the repeat-hover skip-delay prop below gets the explicit
+// default above whenever a caller does not supply its own.
+export function TooltipProvider(props: TooltipProviderProps) {
+  return (
+    <TooltipPrimitive.Provider
+      {...props}
+      skipDelayDuration={props.skipDelayDuration ?? DEFAULT_SKIP_DELAY_DURATION_MS}
+    />
+  );
+}
 
 export interface TooltipProps {
   readonly content: ReactNode;
