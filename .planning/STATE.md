@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 08-03-PLAN.md
-last_updated: "2026-09-26T02:28:48.063Z"
+stopped_at: Completed 08-04-PLAN.md
+last_updated: "2026-09-26T03:01:08.120Z"
 last_activity: 2026-09-26
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 30
-  completed_plans: 13
+  completed_plans: 14
   percent: 13
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 08 (redise-o-de-la-app) — EXECUTING
-Plan: 4 of 20
+Plan: 5 of 20
 Status: Ready to execute
 Last activity: 2026-09-26
 
-Progress: [████░░░░░░] 43%
+Progress: [█████░░░░░] 47%
 
 ## Performance Metrics
 
@@ -170,6 +170,7 @@ Progress: [████░░░░░░] 43%
 | Phase 08 P01 | 35min | 3 tasks | 11 files |
 | Phase 08 P02 | ~20min | 3 tasks | 14 files |
 | Phase 08 P03 | ~55min | 3 tasks | 6 files |
+| Phase 08 P04 | ~40min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -460,6 +461,9 @@ Recent decisions affecting current work:
 - [Phase 08 P01]: docs/ui/approved/'s pin test asserts every present file is a member of the valid SCREENS x THEMES + README set, not that all 12 are present -- no gate has been approved yet in this plan, so the directory legitimately holds only README.md until 08-02 (G1) fills it in.
 - [Phase 08 P02]: G1 (baseline) approved on the first pass, 0 adjustment rounds, approver Pablo Gutierrez. docs/ui/APPROVAL.md's G1 Evidence row was filled to point at docs/ui/approved/ (per approval-record.test.ts's actual assertion) rather than docs/ui/review/ (the plan's own Task 3 prose); the 12 pinned 1280px screen captures were copied into docs/ui/approved/, matching 08-01-SUMMARY.md's own stated intent for this plan. The user approved globally with one verbatim sentence and no per-screen notes; 08-BASELINE-NOTES.md records that honestly rather than inventing notes, so the surface plans (08-05, 08-07, 08-08) work from D-01..D-11 and the brief alone.
 - [Phase 08 P03]: 08-UI-SPEC.md's backdrop-filter worst-case narrative (toolbar+Sheet=2) undercounts the real codebase by one file — apps/web/src/components/ServerDetailToolbar.tsx also declares backdrop-blur and was not named anywhere in 08-CONTEXT.md/08-UI-SPEC.md/08-RESEARCH.md/08-PATTERNS.md. The UI-10 budget gate (expected:3, distinct-file count) is implemented exactly as specified and is genuinely green today at the real count of 3, already at the ceiling with zero remaining headroom for a new translucent surface without either removing an existing backdrop-filter declaration or revisiting the threshold with the user.
+- [Phase 08 P04]: The E2E keyboard RowMenu test does not assert focus returns to the trigger after activating a real item (Edit/Delete) -- both open a follow-up modal overlay in the same commit as the RowMenu close, and Radix applies aria-hidden to the rest of the page while that overlay is open, making the trigger unreachable by role/name. The close+focus-return contract with no follow-up action is already proven at the component level (RowMenu.test.tsx, mock onSelect); the E2E test instead proves the full real-browser chain ends with the RowMenu closed and the real edit sheet visible, and a separate aria-expanded test proves real focus returns to the trigger after Escape, the one close path with nowhere else for focus to go.
+- [Phase 08 P04]: use-floating-menu.ts's preventDefault/stopPropagation count is 2, not the 1 the plan's acceptance criteria stated -- handleOpenAutoFocus must call preventDefault to deterministically override Radix's default autofocus target and land on the first menu item, and there is no way to drop it without either weakening that guarantee or gaming the grep with an obfuscated helper name, which was rejected. Every other Task 1 acceptance criterion is satisfied exactly.
+- [Phase 08 P04]: UI-04 and UI-05 are not marked complete in REQUIREMENTS.md after 08-04: UI-04's screen-reader-announces-open/closed clause is a G2 human-verification item per 08-UI-SPEC.md SS6.3, not yet performed; UI-05's press-feedback/easing-table/no-keyboard-animation clauses belong to a later motion-contract plan -- 08-04 only delivers the keyboard-vs-pointer close-source primitive P14 needs as groundwork.
 
 ### Pending Todos
 
@@ -535,8 +539,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-26T02:28:48.056Z
-Stopped at: Completed 08-03-PLAN.md
+Last session: 2026-09-26T03:01:08.112Z
+Stopped at: Completed 08-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
