@@ -222,4 +222,23 @@ describe('ServerFacts', () => {
     expect(screen.queryByText(/BEGIN.*PRIVATE KEY/i)).not.toBeInTheDocument();
     expect(screen.getAllByText('Password')).toHaveLength(1);
   });
+
+  // 08-11-PLAN.md Task 3 round 1 (deferred-items.md, pixel audit of server-detail-light-375.png):
+  // at 375px the row was a fixed two-column grid (`grid-cols-2`), narrow enough that the widest
+  // mono value ("176.3 GB of 910.7 GB" for Disk) wraps across three lines instead of sitting on
+  // one. Below 480px the tiles stack to a single column so each tile's own width comes from the
+  // full container instead of half of it; `sm:grid-cols-4` (the four-across desktop layout)
+  // already existed and is untouched. Asserted as class presence -- jsdom has no real layout
+  // engine to measure whether "176.3 GB of 910.7 GB" actually wraps.
+  it('stacks the stat tiles to a single column below 480px, two from 480px, four from sm', () => {
+    const server = buildDiscoveredServer();
+    renderUi(<ServerFacts server={server} now={NOW} />);
+
+    const grid = screen.getByTestId('server-facts-tiles');
+    const classes = grid.className.split(/\s+/);
+    expect(classes).toContain('grid-cols-1');
+    expect(classes).toContain('min-[480px]:grid-cols-2');
+    expect(classes).toContain('sm:grid-cols-4');
+    expect(classes).not.toContain('grid-cols-2');
+  });
 });

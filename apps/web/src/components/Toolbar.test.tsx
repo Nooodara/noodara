@@ -111,7 +111,7 @@ describe('Toolbar scroll edge (UI-07/D-03: line only where content actually pass
 
   it('gates the border-color transition behind motion-safe', () => {
     renderToolbar();
-    expect(screen.getByTestId('shell-toolbar').className).toContain('motion-safe:transition-colors');
+    expect(screen.getByTestId('shell-toolbar').className).toContain('motion-safe:transition-[border-color]');
   });
 
   it('never uses transition-all/transition: all', () => {
@@ -119,6 +119,18 @@ describe('Toolbar scroll edge (UI-07/D-03: line only where content actually pass
     const className = screen.getByTestId('shell-toolbar').className;
     expect(className).not.toContain('transition-all');
     expect(className).not.toMatch(/transition:\s*all/);
+  });
+
+  // deferred-items.md 08-11 round 1 (P17 theme flicker): the whole-`transition-colors` form
+  // animates every color-family property Tailwind bundles under it, background-color included --
+  // on a theme switch that fades the toolbar's own background in over `--duration-panel` while
+  // every other surface on the page snaps instantly, a stray grey/near-white band visible in the
+  // dark-theme review captures. Only the scroll-edge hairline (border-color) is meant to animate.
+  it('never bundles background-color into its own transition (only the scroll-edge border-color animates)', () => {
+    renderToolbar();
+    const className = screen.getByTestId('shell-toolbar').className;
+    expect(className).not.toContain('transition-colors');
+    expect(className).not.toMatch(/transition-\[[^\]]*background-color[^\]]*\]/);
   });
 });
 
