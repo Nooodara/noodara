@@ -59,9 +59,25 @@ function useScrolled(): boolean {
   return scrolled;
 }
 
+// 08-10-PLAN.md Task 2 (UI-10, 08-UI-SPEC.md SS10): the same three arbitrary-variant forms
+// `packages/ui/src/Sheet.tsx` established (08-06) -- one consistent expression across the repo,
+// not a second style. `prefers-reduced-transparency: reduce` drops the toolbar's translucent
+// `bg-surface-1/90 backdrop-blur` to a fully solid `bg-surface-1` with `backdrop-filter: none`
+// (the arbitrary-property form: Tailwind composes backdrop-blur into a shorthand, so setting only
+// the blur utility to `none` would not by itself clear the underlying `backdrop-filter` property).
+// This is the toolbar's own budget note: it stays the page's one permanent `backdrop-filter`
+// (D-03) -- dropping it here under reduced transparency is what keeps the worst case at three
+// simultaneous translucent surfaces (Toolbar + ServerDetailToolbar + Sheet) rather than four, per
+// `scripts/check-ui-safety.mjs`'s existing "at most three" gate. `prefers-contrast: more` pushes
+// the background fully opaque too and, once scrolled, swaps the hairline for the strong token --
+// the unscrolled state stays transparent even under contrast-more, since there is deliberately no
+// permanent line to strengthen at the very top of the page.
 const BASE_CLASSES = cn(
   'sticky top-0 z-30 flex h-[52px] items-center gap-3 border-b bg-surface-1/90 px-4 backdrop-blur',
   'motion-safe:transition-colors motion-safe:duration-[var(--duration-panel)] motion-safe:ease-[var(--ease-out)]',
+  '[@media(prefers-reduced-transparency:reduce)]:bg-surface-1',
+  '[@media(prefers-reduced-transparency:reduce)]:[backdrop-filter:none]',
+  'contrast-more:bg-surface-1',
 );
 
 export function Toolbar({ title, backLink, primaryAction, secondaryActions }: ToolbarProps) {
@@ -71,7 +87,10 @@ export function Toolbar({ title, backLink, primaryAction, secondaryActions }: To
   return (
     <div
       data-testid="shell-toolbar"
-      className={cn(BASE_CLASSES, scrolled ? 'border-hairline' : 'border-transparent')}
+      className={cn(
+        BASE_CLASSES,
+        scrolled ? 'border-hairline contrast-more:border-hairline-strong' : 'border-transparent',
+      )}
     >
       {backLink ? (
         <Link href={backLink.href} className="text-callout text-ink-secondary hover:text-ink">
