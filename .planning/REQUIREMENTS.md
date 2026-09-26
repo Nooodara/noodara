@@ -19,8 +19,8 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 - [x] **UI-03**: `Sheet`, `Dialog` y `RowMenu` tienen el nivel de elevación flotante (`--shadow-floating`, con escalón de superficie más claro en oscuro); ningún otro componente recibe sombra (gate automatizado).
 - [ ] **UI-04**: `RowMenu` cierra al seleccionar, devuelve el foco al trigger, es visible en dispositivos táctiles y anuncia su estado abierto/cerrado a lectores de pantalla.
-- [ ] **UI-05**: Todo control presionable da feedback en el press (`scale(0.97)`, 160 ms, `--ease-out`); las curvas de easing custom y la tabla de duraciones del brief §6 sustituyen a los easings built-in en todo el inventario; ninguna acción iniciada por teclado se anima.
-- [ ] **UI-06**: El `Sheet` se cierra arrastrando con la secuencia completa del brief §7.4 (pointer capture, offset de agarre, tracking 1:1, rubber-banding, decisión por signo de velocidad, proyección de momentum, handoff de velocidad, interrumpible), con `motion` acotado a ese componente.
+- [x] **UI-05**: Todo control presionable da feedback en el press (`scale(0.97)`, 160 ms, `--ease-out`); las curvas de easing custom y la tabla de duraciones del brief §6 sustituyen a los easings built-in en todo el inventario; ninguna acción iniciada por teclado se anima.
+- [x] **UI-06**: El `Sheet` se cierra arrastrando con la secuencia completa del brief §7.4 (pointer capture, offset de agarre, tracking 1:1, rubber-banding, decisión por signo de velocidad, proyección de momentum, handoff de velocidad, interrumpible), con `motion` acotado a ese componente.
 - [ ] **UI-07**: El toolbar usa scroll edge effect en lugar del borde permanente; `RowMenu` y `Tooltip` escalan desde el origen del trigger; `Dialog` desde el centro; `Disclosure` anima con `grid-template-rows`; los checks de discovery y las filas de la lista entran con stagger de 40 ms sin bloquear la interacción.
 - [ ] **UI-08**: Los momentos de firma del producto — la narración del discovery y el bloque de fingerprint/confianza (TOFU) — están tratados como momentos autorados (uno por pantalla), distinguibles de cualquier otro producto (test de intercambio de marca).
 - [ ] **UI-09**: Craft de superficie: numerales tabulares en todo dato numérico, `text-wrap: balance/pretty`, medida de 65–75 caracteres en copy, `::selection`/`caret-color`/scrollbars/`text-underline-offset` tematizados, puente de blur en el crossfade skeleton → contenido, `@starting-style` en las entradas, medidor de disco revelado con `clip-path`.
@@ -157,8 +157,8 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | BRAND-03 | Phase 7 | Complete |
 | UI-03 | Phase 8 | Complete |
 | UI-04 | Phase 8 | Pending |
-| UI-05 | Phase 8 | Pending |
-| UI-06 | Phase 8 | Pending |
+| UI-05 | Phase 8 | Complete |
+| UI-06 | Phase 8 | Complete |
 | UI-07 | Phase 8 | Pending |
 | UI-08 | Phase 8 | Pending |
 | UI-09 | Phase 8 | Pending |
