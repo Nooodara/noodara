@@ -172,4 +172,27 @@ describe('Sidebar existing contract (unchanged by the brand slot)', () => {
     expect(nav.getByRole('link', { name: 'Servers' })).toHaveAttribute('aria-current', 'page');
     expect(nav.getByRole('link', { name: 'Activity' })).not.toHaveAttribute('aria-current');
   });
+
+  it('still renders each nav link through NavTree with its own nav-tree-item-{id} testid', () => {
+    renderSidebar();
+
+    expect(screen.getByTestId('nav-tree-item-servers')).toHaveAttribute('href', '/servers');
+    expect(screen.getByTestId('nav-tree-item-activity')).toHaveAttribute('href', '/activity');
+    expect(screen.getByTestId('nav-tree-item-settings')).toHaveAttribute('href', '/settings');
+  });
+});
+
+// 08-07 (D-03): the sidebar's chrome retreats -- it fuses with the page's own canvas at >=900px
+// and loses its own right-edge border entirely; the below-900px bottom sheet is a temporary
+// overlay and keeps its own surface + top border so it still reads as a sheet over the content.
+describe('Sidebar chrome (D-03: fuses with canvas at >=900px)', () => {
+  it('carries bg-canvas and no border-r on the nav element, while still keeping the mobile sheet surface/border-t', () => {
+    renderSidebar();
+
+    const nav = screen.getByTestId('shell-sidebar');
+    expect(nav.className).toContain('bg-canvas');
+    expect(nav.className).not.toContain('border-r');
+    expect(nav.className).toContain('bg-surface-1');
+    expect(nav.className).toContain('border-t');
+  });
 });
