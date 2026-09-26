@@ -168,6 +168,56 @@ test('@shell the sidebar has no right-edge border at 1440px', async ({ page }) =
   expect(borderRightWidth).toBe('0px');
 });
 
+// 08-09 (D-08): the `@inspector` parallel-route slot exists on every shell route today
+// (`default.tsx` returns `null`), but must cost nothing while empty -- no reserved width, no
+// border, at any viewport this app supports. Phase 13 is the one that ever populates it; this
+// spec only proves the empty case, per the plan's own explicit "no stub inspector route" rule.
+const INSPECTOR_EMPTY_WIDTHS = [1920, 1280, 1024, 375] as const;
+
+test('@shell the empty inspector slot resolves once and reserves zero width and no border at every width', async ({
+  page,
+}) => {
+  await login(page);
+
+  for (const width of INSPECTOR_EMPTY_WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+
+    const inspector = page.getByTestId('shell-inspector-slot');
+    await expect(inspector).toHaveCount(1);
+
+    const box = await inspector.boundingBox();
+    expect(box?.width ?? -1).toBe(0);
+
+    const borders = await inspector.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { left: style.borderLeftWidth, right: style.borderRightWidth };
+    });
+    expect(borders.left).toBe('0px');
+    expect(borders.right).toBe('0px');
+  }
+});
+
+test('@shell the empty inspector slot does not narrow the content column at 1920px', async ({ page }) => {
+  await login(page);
+  await page.setViewportSize({ width: 1920, height: 900 });
+
+  const sidebarWidth = await page.getByTestId('shell-sidebar').evaluate((el) => el.getBoundingClientRect().width);
+  const mainWidth = await page.locator('#shell-main').evaluate((el) => el.getBoundingClientRect().width);
+  const viewportWidth = await page.evaluate(() => window.innerWidth);
+
+  expect(mainWidth).toBe(viewportWidth - sidebarWidth);
+});
+
+test('@shell the empty inspector slot never renders a Sheet or any full-viewport overlay', async ({ page }) => {
+  await login(page);
+  await page.setViewportSize({ width: 1024, height: 900 });
+
+  await expect(page.getByTestId('shell-inspector-sheet')).toHaveCount(0);
+  // `shell-sidebar-scrim` only exists while the mobile nav sheet is open (untouched by this
+  // plan) -- it must stay absent here, where the mobile nav was never opened.
+  await expect(page.getByTestId('shell-sidebar-scrim')).toHaveCount(0);
+});
+
 // 08-07 (D-07): the rail's tooltip-per-leaf behaviour keeps working once the leaf is rendered by
 // NavTree instead of Sidebar's own hand-written markup.
 test('@shell a keyboard-focused leaf at 1024px still shows its tooltip with the leaf label', async ({ page }) => {
