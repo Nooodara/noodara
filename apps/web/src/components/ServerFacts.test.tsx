@@ -3,9 +3,13 @@
 // test's own division of labour per docs/adr/0005-ui-package-and-component-testing.md: field
 // coverage/captions/the dimmed attribute here, the real computed opacity difference and full
 // navigation flow in tests/e2e/server-detail.spec.ts).
+//
+// 08-17-PLAN.md Task 2 (D-10): the "Host fingerprint" row's `LabelValue mono copyable` is
+// replaced by the shared `Fingerprint` component -- the cases below assert the SHA256: prefix and
+// 4-char blocks instead of a single mono text node, and the null-fingerprint placeholder case.
 import { describe, expect, it } from 'vitest';
 import { formatDiskUsage, formatMb, formatRelativeTime, formatUptime } from '@noodara/ui';
-import { renderUi, screen } from '@noodara/ui/testing';
+import { renderUi, screen, within } from '@noodara/ui/testing';
 import { ServerFacts } from './ServerFacts';
 import type { ServerView } from '../lib/api-client';
 
@@ -116,6 +120,25 @@ describe('ServerFacts', () => {
     ]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
+  });
+
+  it('renders the Host fingerprint value through Fingerprint -- the SHA256: prefix and its 4-character blocks', () => {
+    const server = buildDiscoveredServer({ hostFingerprint: 'SHA256:abcdef1234567890' });
+    renderUi(<ServerFacts server={server} now={NOW} />);
+
+    const connectionGroup = screen.getByTestId('server-facts-connection');
+    expect(within(connectionGroup).getByText('SHA256:')).toBeInTheDocument();
+    expect(within(connectionGroup).getByText('abcd')).toBeInTheDocument();
+    expect(within(connectionGroup).getByRole('button', { name: 'Copy Host fingerprint' })).toBeInTheDocument();
+  });
+
+  it('renders the shared PLACEHOLDER (never an empty block grid) for a null Host fingerprint', () => {
+    const server = buildDiscoveredServer({ hostFingerprint: null, hostFingerprintCapturedAt: null });
+    renderUi(<ServerFacts server={server} now={NOW} />);
+
+    const connectionGroup = screen.getByTestId('server-facts-connection');
+    expect(within(connectionGroup).queryByText('SHA256:')).not.toBeInTheDocument();
+    expect(within(connectionGroup).getByText('—')).toBeInTheDocument();
   });
 
   it('carries an "as of" caption with the relative time for lastSeenAt on every tile and group value', () => {
