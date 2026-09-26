@@ -45,6 +45,26 @@ describe('ConfirmDialog', () => {
     expect(panel.className).not.toContain('bg-surface-1');
   });
 
+  // 08-06-PLAN.md Task 2 (UI-10, 08-UI-SPEC.md SS10): Dialog swaps to border-hairline-strong under
+  // prefers-contrast: more, and declares no reduced-transparency override since it is already
+  // solid (no translucency to drop).
+  it('swaps to border-hairline-strong under prefers-contrast: more and declares no reduced-transparency override', () => {
+    renderUi(
+      <ConfirmDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Re-run discovery?"
+        body="Body text."
+        confirmLabel="Re-run discovery"
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    const panel = screen.getByRole('dialog');
+    expect(panel.className).toContain('contrast-more:border-hairline-strong');
+    expect(panel.className).not.toContain('prefers-reduced-transparency');
+  });
+
   it('invokes onConfirm exactly once when the confirm button is clicked', async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();

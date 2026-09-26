@@ -81,4 +81,32 @@ describe('Sheet', () => {
     expect(panel.className).toContain('bg-surface-elevated/72');
     expect(panel.className).not.toContain('bg-surface-1/72');
   });
+
+  // 08-06-PLAN.md Task 2 (UI-10, 08-UI-SPEC.md SS10): prefers-reduced-transparency drops the
+  // Sheet's translucency and blur entirely -- fully opaque background, no backdrop-filter.
+  it('drops to a solid bg-surface-elevated and disables backdrop-filter under prefers-reduced-transparency', () => {
+    renderUi(
+      <Sheet open onOpenChange={vi.fn()} title="Add server">
+        <p>Sheet body content</p>
+      </Sheet>,
+    );
+
+    const panel = screen.getByRole('dialog');
+    expect(panel.className).toContain('[@media(prefers-reduced-transparency:reduce)]:bg-surface-elevated');
+    expect(panel.className).toContain('[@media(prefers-reduced-transparency:reduce)]:[backdrop-filter:none]');
+  });
+
+  // 08-06-PLAN.md Task 2 (UI-10, 08-UI-SPEC.md SS10): prefers-contrast: more swaps the hairline
+  // for the strong variant and pushes the translucent background toward fully opaque.
+  it('swaps to border-hairline-strong and a fully opaque background under prefers-contrast: more', () => {
+    renderUi(
+      <Sheet open onOpenChange={vi.fn()} title="Add server">
+        <p>Sheet body content</p>
+      </Sheet>,
+    );
+
+    const panel = screen.getByRole('dialog');
+    expect(panel.className).toContain('contrast-more:border-hairline-strong');
+    expect(panel.className).toContain('contrast-more:bg-surface-elevated');
+  });
 });

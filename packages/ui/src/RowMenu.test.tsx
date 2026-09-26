@@ -171,4 +171,41 @@ describe('RowMenu', () => {
     expect(content.className).toContain('shadow-[var(--shadow-floating)]');
     expect(content.className).toContain('bg-surface-3');
   });
+
+  // 08-06-PLAN.md Task 2 (UI-10, 08-UI-SPEC.md SS10): RowMenu swaps to border-hairline-strong
+  // under prefers-contrast: more, and declares no reduced-transparency override since it is
+  // already solid.
+  it('swaps to border-hairline-strong under prefers-contrast: more', async () => {
+    const user = userEvent.setup();
+    renderUi(<RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="Actions for Alpha" />);
+
+    await user.click(screen.getByRole('button', { name: 'Actions for Alpha' }));
+
+    const content = screen.getByRole('menu');
+    expect(content.className).toContain('contrast-more:border-hairline-strong');
+    expect(content.className).not.toContain('prefers-reduced-transparency');
+  });
+
+  // 08-06-PLAN.md Task 2 (UI-10, 08-UI-SPEC.md SS10): every hover: utility on the trigger and on
+  // each item must sit inside a (hover: hover) and (pointer: fine) variant, so a tap on touch
+  // never leaves a stuck hover state. focus-visible: styles stay ungated (not pointer-dependent).
+  it('gates every hover: utility on the trigger and items behind (hover: hover) and (pointer: fine)', async () => {
+    const user = userEvent.setup();
+    renderUi(<RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="Actions for Alpha" data-testid="trigger" />);
+
+    function assertNoUngatedHover(className: string): void {
+      for (const token of className.split(/\s+/)) {
+        if (token.includes('hover:') && !token.startsWith('[@media(hover:hover)_and_(pointer:fine)]:')) {
+          throw new Error(`ungated hover utility found: ${token}`);
+        }
+      }
+    }
+
+    assertNoUngatedHover(screen.getByTestId('trigger').className);
+
+    await user.click(screen.getByTestId('trigger'));
+    for (const item of screen.getAllByRole('menuitem')) {
+      assertNoUngatedHover(item.className);
+    }
+  });
 });
