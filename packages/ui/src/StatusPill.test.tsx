@@ -62,9 +62,9 @@ describe('StatusPill', () => {
   });
 
   // 08-14-PLAN.md Task 3 (UI-05, 08-UI-SPEC.md §7.2's StatusPill row): a status change transitions
-  // colour and background over 150ms --ease-out, naming both properties explicitly -- never
+  // colour and background over 150ms via var(--ease-out), naming both properties explicitly -- never
   // transition-all (§9 #9).
-  it('transitions color and background-color explicitly at 150ms --ease-out, never transition-all', () => {
+  it('transitions color and background-color explicitly at 150ms via var(--ease-out), never transition-all', () => {
     const { getByTestId } = renderUi(<StatusPill status="CONNECTED" />);
     const pill = getByTestId('status-pill');
 

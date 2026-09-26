@@ -48,6 +48,12 @@ export function StatusPill({ status }: StatusPillProps) {
       className={cn(
         'inline-flex items-center gap-1.5 rounded-pill px-2 py-0.5',
         'text-caption font-medium',
+        // UI-05 (08-14-PLAN.md Task 3, 08-UI-SPEC.md §7.2's StatusPill row): a status change
+        // transitions colour and background over 150ms via var(--ease-out), naming both
+        // properties explicitly -- never a catch-all transition (§9 #9). T-08-35: names the two
+        // properties this frequently-re-rendered element actually changes, never a blanket
+        // transition.
+        'transition-[color,background-color] duration-[150ms] ease-[var(--ease-out)]',
         TONE_CLASSES[tone],
       )}
     >
