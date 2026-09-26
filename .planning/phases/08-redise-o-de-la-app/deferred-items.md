@@ -127,3 +127,15 @@ round-1 fix rather than deferred). RED `f4c06fc`, GREEN `b5c26f6`.
   call site before `onOpenChange(true)`) and restore it in an effect on close, or confirm Radix's
   own `document.activeElement` fallback and find why it isn't restoring focus in this app's real
   DOM shape.
+
+### Login fails silently when the request origin is rejected (`INVALID_ORIGIN`, 403)
+- **Found during:** the G3 live review (2026-09-26), reaching the dev stack through a public tunnel
+  whose origin did not match `NOODARA_PUBLIC_URL`.
+- **Symptom:** `POST /api/auth/sign-in/email` returns `403 {"code":"INVALID_ORIGIN"}` (Better
+  Auth's CSRF origin check, `baseURL` = `NOODARA_PUBLIC_URL`), and `/login` shows no banner at
+  all — the user reads it as "wrong credentials" and resets their password for nothing. Wrong
+  credentials do show the banner (401 path verified), so the gap is only the non-401/429 branch.
+- **Suggested follow-up:** `apps/web/src/app/login/page.tsx`'s generic-failure branch must always
+  render a banner (fall back to a safe generic message when `copyForErrorCode` has no copy for the
+  code), and the operator docs should say that `NOODARA_PUBLIC_URL` must be the exact origin the
+  browser uses. Candidate for the G3 adjustment round or Phase 9's auth work.
