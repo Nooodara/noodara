@@ -1,7 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AccountMenu, type AccountMenuLinkProps, type AccountMenuProps } from './AccountMenu.js';
 import { PRESS_CLASSES } from './press.js';
 import { renderUi, screen, userEvent } from './testing/render.js';
+import { useFloatingMenu } from './use-floating-menu.js';
+
+// Mocks only the returned `closeSource` reading -- see RowMenu.test.tsx's identical mock for why
+// this is the one thing jsdom can genuinely, synchronously observe about the keyboard-no-animation
+// branch, and why the real proof is tests/e2e/keyboard-motion.spec.ts (Task 3).
+vi.mock('./use-floating-menu.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./use-floating-menu.js')>();
+  return { ...actual, useFloatingMenu: vi.fn(actual.useFloatingMenu) };
+});
 
 // The minimal link test double every AccountMenu test below renders through -- packages/ui has no
 // router of its own (same reason NavTree.test.tsx never imports next/link), so a plain anchor
@@ -224,5 +233,51 @@ describe('AccountMenu', () => {
     for (const token of PRESS_CLASSES.split(/\s+/).filter(Boolean)) {
       expect(settingsLink.className).toContain(token);
     }
+  });
+
+  // 08-20-PLAN.md Task 2 (UI-05/§9 #10, pitfall P14): once the shared closeSource (read through
+  // useFloatingMenu, never a second useCloseSource call of its own) is wired in, an Escape-close
+  // must still dismiss the menu and return focus to the trigger correctly -- the same regression
+  // coverage RowMenu.test.tsx gets for the identical mechanism (see its own header comment for
+  // why jsdom cannot verify a *rendered* transition's absence here; the real proof is
+  // tests/e2e/keyboard-motion.spec.ts, Task 3).
+  it('still dismisses via Escape, with focus returning to the trigger, once closeSource is wired in', async () => {
+    const user = userEvent.setup();
+    renderUi(<AccountMenu {...buildProps()} />);
+    const trigger = screen.getByTestId('shell-account-menu-trigger');
+
+    await user.click(trigger);
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('applies the zero-duration override to the content while the recorded close source reads keyboard', async () => {
+    const user = userEvent.setup();
+    const mockedHook = vi.mocked(useFloatingMenu);
+    const defaultImpl = mockedHook.getMockImplementation();
+    mockedHook.mockImplementation(() => {
+      const real = defaultImpl!();
+      return { ...real, closeSource: () => 'keyboard' as const };
+    });
+
+    try {
+      renderUi(<AccountMenu {...buildProps()} />);
+      await user.click(screen.getByTestId('shell-account-menu-trigger'));
+
+      expect(screen.getByRole('menu').className).toContain('!duration-0');
+    } finally {
+      mockedHook.mockImplementation(defaultImpl!);
+    }
+  });
+
+  it('does not apply the override to the content while the recorded close source is the default, programmatic reading', async () => {
+    const user = userEvent.setup();
+    renderUi(<AccountMenu {...buildProps()} />);
+
+    await user.click(screen.getByTestId('shell-account-menu-trigger'));
+
+    expect(screen.getByRole('menu').className).not.toContain('!duration-0');
   });
 });

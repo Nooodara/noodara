@@ -2,6 +2,17 @@ import { describe, expect, it, vi } from 'vitest';
 import { PRESS_CLASSES } from './press.js';
 import { RowMenu } from './RowMenu.js';
 import { renderUi, screen, userEvent } from './testing/render.js';
+import { useFloatingMenu } from './use-floating-menu.js';
+
+// Mocks only the returned `closeSource` reading -- every other field (open state, roving focus,
+// close-on-select) still comes from the real hook underneath, never reimplemented here. See
+// Dialog.test.tsx's identical mock for why this is the one thing jsdom can genuinely,
+// synchronously observe about the keyboard-no-animation branch, and why the real proof is
+// tests/e2e/keyboard-motion.spec.ts (Task 3).
+vi.mock('./use-floating-menu.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./use-floating-menu.js')>();
+  return { ...actual, useFloatingMenu: vi.fn(actual.useFloatingMenu) };
+});
 
 function buildItems(onEdit: () => void, onDelete: () => void) {
   return [
@@ -223,5 +234,54 @@ describe('RowMenu', () => {
         expect(item.className).toContain(token);
       }
     }
+  });
+
+  // 08-20-PLAN.md Task 2 (UI-05/§9 #10, pitfall P14): once the shared closeSource (read through
+  // useFloatingMenu, never a second useCloseSource call of its own) is wired in, an Escape-close
+  // must still dismiss the menu and return focus to the trigger correctly -- jsdom cannot verify
+  // a *rendered* transition's absence (no compiled stylesheet is loaded in this test environment
+  // for Radix's own Presence component to detect, so it always unmounts synchronously here
+  // regardless of which class is applied -- the exact same honest limitation Sheet.test.tsx's own
+  // "adds a zero-duration override..." test already documents for the identical mechanism). The
+  // real, only-honest proof that no animation actually plays is
+  // tests/e2e/keyboard-motion.spec.ts's real-browser measurement (Task 3).
+  it('still dismisses via Escape, with focus returning to the trigger, once closeSource is wired in', async () => {
+    const user = userEvent.setup();
+    renderUi(<RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="Actions for Alpha" />);
+    const trigger = screen.getByRole('button', { name: 'Actions for Alpha' });
+
+    await user.click(trigger);
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('menuitem')).toBeNull();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('applies the zero-duration override to the content while the recorded close source reads keyboard', async () => {
+    const user = userEvent.setup();
+    const mockedHook = vi.mocked(useFloatingMenu);
+    const defaultImpl = mockedHook.getMockImplementation();
+    mockedHook.mockImplementation(() => {
+      const real = defaultImpl!();
+      return { ...real, closeSource: () => 'keyboard' as const };
+    });
+
+    try {
+      renderUi(<RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="Actions for Alpha" />);
+      await user.click(screen.getByRole('button', { name: 'Actions for Alpha' }));
+
+      expect(screen.getByRole('menu').className).toContain('!duration-0');
+    } finally {
+      mockedHook.mockImplementation(defaultImpl!);
+    }
+  });
+
+  it('does not apply the override to the content while the recorded close source is the default, programmatic reading', async () => {
+    const user = userEvent.setup();
+    renderUi(<RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="Actions for Alpha" />);
+
+    await user.click(screen.getByRole('button', { name: 'Actions for Alpha' }));
+
+    expect(screen.getByRole('menu').className).not.toContain('!duration-0');
   });
 });
