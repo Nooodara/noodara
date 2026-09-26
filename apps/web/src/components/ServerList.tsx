@@ -4,7 +4,7 @@
 // count of one). `apps/web/src/app/(shell)/servers/page.tsx` owns the actual `GET /api/servers`
 // fetch, the shared SSE resync registration and the toolbar's own "Add server" action -- this
 // component only renders whatever state it is handed.
-import { Banner, EmptyState, SkeletonRow } from '@noodara/ui';
+import { Banner, EmptyState, InsetGroup, SkeletonRow } from '@noodara/ui';
 import type { ServerView } from '../lib/api-client';
 import { ServerRow } from './ServerRow';
 
@@ -57,22 +57,20 @@ export function ServerList({ state, now, onAddServer, onEditServer, onDeleteServ
     );
   }
 
-  if (state.servers.length === 0) {
-    return (
-      <EmptyState
-        data-testid="servers-empty"
-        title="No servers yet"
-        body="Connect your first Ubuntu server to let Noodara discover it."
-        action={{ label: 'Add server', onClick: onAddServer }}
-      />
-    );
-  }
-
   return (
-    <div data-testid="servers-list">
-      {state.servers.map((server) => (
-        <ServerRow key={server.id} server={server} now={now} onEdit={onEditServer} onDelete={onDeleteServer} />
-      ))}
-    </div>
+    <InsetGroup data-testid="servers-list">
+      {state.servers.length === 0 ? (
+        <EmptyState
+          data-testid="servers-empty"
+          title="No servers yet"
+          body="Connect your first Ubuntu server to let Noodara discover it."
+          action={{ label: 'Add server', onClick: onAddServer }}
+        />
+      ) : (
+        state.servers.map((server) => (
+          <ServerRow key={server.id} server={server} now={now} onEdit={onEditServer} onDelete={onDeleteServer} />
+        ))
+      )}
+    </InsetGroup>
   );
 }
