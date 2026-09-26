@@ -6,6 +6,13 @@
 // would leave the stream visibly "connected" for up to the heartbeat interval after the user has
 // already signed out; closing it here is the client-side complement to that server-side
 // revalidation (apps/control-plane/src/routes/events.ts's heartbeat).
+//
+// 08-08-PLAN.md Task 2 (T-08-24): now rendered as the last row inside `AccountMenu`, never a
+// second implementation of this sequence -- `AccountMenu` receives this component as an opaque
+// `signOutSlot` and cannot substitute a different endpoint. `role="menuitem"` makes this the
+// second (and last) node `use-floating-menu.ts`'s `[role="menuitem"]` arrow-key query finds inside
+// the menu, alongside AccountMenu's own "Settings" row -- unchanged from any other menuitem in
+// this codebase, the click-driven sign-out sequence below is exactly what fires on Enter/Space.
 import { Button } from '@noodara/ui';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -28,7 +35,8 @@ export function SignOutButton() {
     <Button
       variant="ghost"
       loading={signingOut}
-      data-testid="shell-sign-out"
+      role="menuitem"
+      data-testid="shell-account-menu-sign-out"
       onClick={() => {
         void handleSignOut();
       }}

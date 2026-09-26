@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
-import { renderUi, screen, within } from '@noodara/ui/testing';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderUi, screen, waitFor, within } from '@noodara/ui/testing';
+import type { ApiResult } from '../lib/api-client';
 import { ShellContext, type ShellContextValue } from '../lib/shell-context';
 import { Sidebar } from './Sidebar';
 
@@ -13,13 +14,18 @@ import { Sidebar } from './Sidebar';
 //
 // The second job of this file is a regression fence: the mark is ADDED to the sidebar, so every
 // test id the 93 E2E specs already depend on (`shell-sidebar`, `shell-sidebar-scrim`,
-// `shell-theme-toggle`) and the three nav links' own accessible names must still be here
+// `shell-account-menu-trigger`) and the three nav links' own accessible names must still be here
 // afterwards (.planning/research/PITFALLS.md, stable test ids).
 //
 // `next/navigation` is mocked because `usePathname` (Sidebar) and `useRouter` (SignOutButton) both
 // require a real Next.js router context that does not exist in jsdom; the shell context is
 // supplied for real rather than mocked, since it is a plain React context with a small, fully
 // typed value.
+//
+// 08-08-PLAN.md Task 2: `../lib/api-client`'s `apiGet` is mocked because `Sidebar` now mounts
+// `AccountMenu`, which reads the admin's identity through `useSessionUser()` -- a real fetch would
+// otherwise throw in jsdom (no server, no `/api/auth/get-session`) on every single test in this
+// file, not just the ones that care about identity.
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/servers',
@@ -32,6 +38,26 @@ vi.mock('next/navigation', () => ({
     prefetch: vi.fn(),
   }),
 }));
+
+const apiGetMock = vi.fn<(path: string) => Promise<ApiResult<unknown>>>();
+
+vi.mock('../lib/api-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/api-client')>()),
+  apiGet: (path: string) => apiGetMock(path),
+}));
+
+function sessionUserSuccess(): ApiResult<unknown> {
+  return { ok: true, data: { session: { id: 'sess_1' }, user: { name: 'Ada Lovelace', email: 'ada@noodara.test' } } };
+}
+
+beforeEach(() => {
+  apiGetMock.mockReset();
+  apiGetMock.mockResolvedValue(sessionUserSuccess());
+});
+
+afterEach(() => {
+  vi.clearAllMocks();
+});
 
 const SHELL_CONTEXT: ShellContextValue = {
   connected: true,
@@ -140,11 +166,11 @@ describe('Sidebar brand slot', () => {
 });
 
 describe('Sidebar existing contract (unchanged by the brand slot)', () => {
-  it('still renders the sidebar nav and the theme toggle test ids', () => {
+  it('still renders the sidebar nav and the account menu trigger test id', () => {
     renderSidebar();
 
     expect(screen.getByTestId('shell-sidebar')).toBeInTheDocument();
-    expect(screen.getByTestId('shell-theme-toggle')).toBeInTheDocument();
+    expect(screen.getByTestId('shell-account-menu-trigger')).toBeInTheDocument();
   });
 
   it('still renders the scrim only when open', () => {
@@ -194,5 +220,66 @@ describe('Sidebar chrome (D-03: fuses with canvas at >=900px)', () => {
     expect(nav.className).not.toContain('border-r');
     expect(nav.className).toContain('bg-surface-1');
     expect(nav.className).toContain('border-t');
+  });
+});
+
+// 08-08-PLAN.md Task 2 (UI-11, D-05, T-08-25): the old ThemeToggle+SignOutButton cluster is gone --
+// AccountMenu is the shell's one identity affordance, fed by useSessionUser()'s one-shot fetch.
+describe('Sidebar account menu (D-05: single trigger, fed by useSessionUser)', () => {
+  it('shows the admin name inside the trigger once the session fetch resolves', async () => {
+    renderSidebar();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('shell-account-menu-trigger')).toHaveTextContent('Ada Lovelace');
+    });
+  });
+
+  it('degrades to a nameless trigger, never a broken sidebar, when the session fetch rejects', async () => {
+    apiGetMock.mockReset();
+    apiGetMock.mockRejectedValue(new Error('network down'));
+
+    renderSidebar();
+
+    // The sidebar and its account trigger render immediately regardless of the outcome -- a
+    // rejected fetch must never blank the sidebar or throw during render.
+    expect(screen.getByTestId('shell-sidebar')).toBeInTheDocument();
+    const trigger = screen.getByTestId('shell-account-menu-trigger');
+    expect(trigger).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(apiGetMock).toHaveBeenCalledWith('/api/auth/get-session');
+    });
+    expect(trigger).not.toHaveTextContent('Ada Lovelace');
+  });
+
+  it('degrades to a nameless trigger when the session fetch answers a non-ok result', async () => {
+    apiGetMock.mockReset();
+    apiGetMock.mockResolvedValue({ ok: false, code: 'UNAUTHORIZED', message: 'nope', unauthorized: true });
+
+    renderSidebar();
+
+    expect(screen.getByTestId('shell-account-menu-trigger')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(apiGetMock).toHaveBeenCalledWith('/api/auth/get-session');
+    });
+    expect(screen.getByTestId('shell-account-menu-trigger')).not.toHaveTextContent('Ada Lovelace');
+  });
+
+  it('mounts exactly one ThemeToggle, reached only through AccountMenu -- no direct ThemeToggle mount left in this file', async () => {
+    const user = await import('@testing-library/user-event').then((m) => m.userEvent.setup());
+    renderSidebar();
+
+    await user.click(screen.getByTestId('shell-account-menu-trigger'));
+
+    expect(screen.getByTestId('shell-account-menu-theme-toggle')).toBeInTheDocument();
+  });
+
+  it('mounts the sign-out control inside the menu under its new testid', async () => {
+    const user = await import('@testing-library/user-event').then((m) => m.userEvent.setup());
+    renderSidebar();
+
+    await user.click(screen.getByTestId('shell-account-menu-trigger'));
+
+    expect(screen.getByTestId('shell-account-menu-sign-out')).toBeInTheDocument();
   });
 });

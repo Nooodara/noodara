@@ -1,18 +1,23 @@
 'use client';
 
 // The shell's sidebar (UI-01, 05-UI-SPEC.md SS1) -- exactly three entity items, no v0.2+
-// placeholder of any kind (CLAUDE.md SS8), plus a bottom cluster (theme toggle, then sign out)
-// available from every authenticated screen (AUTH-03). Three fixed breakpoints: >=1280px shows
-// labels, 900-1279px collapses to a 64px icon rail with tooltip labels on hover/focus, and below
-// 900px this renders as a bottom sheet controlled by the toolbar's own menu button
-// (`toggleMobileNav`, apps/web/src/lib/shell-context.tsx) rather than any state this component
-// owns itself.
+// placeholder of any kind (CLAUDE.md SS8), plus a single account menu (D-05) available from every
+// authenticated screen (AUTH-03). Three fixed breakpoints: >=1280px shows labels, 900-1279px
+// collapses to a 64px icon rail with tooltip labels on hover/focus, and below 900px this renders
+// as a bottom sheet controlled by the toolbar's own menu button (`toggleMobileNav`,
+// apps/web/src/lib/shell-context.tsx) rather than any state this component owns itself.
+//
+// 08-08-PLAN.md Task 2 (UI-11, D-05): the old two-control cluster (`ThemeToggle` +
+// `SignOutButton`, rendered side by side) is gone -- `AccountMenu` is the one identity affordance
+// left, absorbing both behind a single trigger. `ThemeToggle` is no longer imported or mounted
+// directly by this file at all; its only remaining mount is inside `AccountMenu` itself.
 import { History, Server, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn, NavTree, type NavTreeItem } from '@noodara/ui';
-import { Lockup, Logo, ThemeToggle } from '@noodara/ui';
+import { AccountMenu, cn, NavTree, type NavTreeItem } from '@noodara/ui';
+import { Lockup, Logo } from '@noodara/ui';
 import { SignOutButton } from './SignOutButton';
+import { useSessionUser } from '../lib/session-user';
 
 export interface SidebarProps {
   readonly open: boolean;
@@ -42,6 +47,7 @@ const BRAND_EXPANDED_CLASSES = 'mb-3 hidden h-11 items-center px-3 text-ink min-
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const sessionUser = useSessionUser();
 
   return (
     <>
@@ -78,9 +84,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           <Lockup title="Noodara" height={20} data-testid="brand-lockup" />
         </div>
         <NavTree items={NAV_ITEMS} activeHref={pathname} onNavigate={onClose} linkComponent={Link} />
-        <div className="mt-auto flex flex-col gap-1 border-t border-hairline pt-3">
-          <ThemeToggle data-testid="shell-theme-toggle" />
-          <SignOutButton />
+        <div className="mt-auto border-t border-hairline pt-1">
+          <AccountMenu
+            name={sessionUser?.name ?? ''}
+            email={sessionUser?.email ?? ''}
+            settingsHref="/settings"
+            linkComponent={Link}
+            signOutSlot={<SignOutButton />}
+          />
         </div>
       </nav>
     </>
