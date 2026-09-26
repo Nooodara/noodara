@@ -284,6 +284,27 @@ describe('AccountMenu', () => {
   // 08-14-PLAN.md Task 1 (UI-07, 08-UI-SPEC.md §7.2/§7.4): same origin-anchoring/timing contract
   // as RowMenu.test.tsx's identical assertion -- this menu opens above-left of its trigger
   // (`bottom-full left-0`), so its own corner is bottom-left, not RowMenu's top-right.
+  // 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 4): the trigger stretches `w-full` at every
+  // breakpoint so its hover/pressed surface can span the whole sidebar row -- but in the
+  // 900-1279px icon rail (where the name span is hidden) that left the avatar hugging the left
+  // edge, offset up-left from a hover rectangle that kept the full row's width. The rail-width
+  // trigger now centres its content instead, matching the avatar itself.
+  it('centres the trigger content in the 900-1279px icon rail, where the name is hidden, instead of hugging the left edge', () => {
+    renderUi(<AccountMenu {...buildProps()} />);
+
+    const trigger = screen.getByTestId('shell-account-menu-trigger');
+    expect(trigger.className).toContain('min-[900px]:justify-center');
+    expect(trigger.className).toContain('min-[1280px]:justify-start');
+  });
+
+  it('always centres the trigger content when railOnly forces the avatar-only rendering unconditionally', () => {
+    renderUi(<AccountMenu {...buildProps({ railOnly: true })} />);
+
+    const trigger = screen.getByTestId('shell-account-menu-trigger');
+    expect(trigger.className).toContain('justify-center');
+    expect(trigger.className).not.toContain('justify-start');
+  });
+
   it('opens from scale(0.97)+opacity at 150ms via var(--ease-out), origin anchored to the trigger', async () => {
     const user = userEvent.setup();
     renderUi(<AccountMenu {...buildProps()} />);
