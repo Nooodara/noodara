@@ -15,6 +15,11 @@
   --surface-1: #ffffff;
   --surface-2: #fafafc;
   --surface-3: #f0f0f2;
+  /* UI-03 (08-UI-SPEC.md SS5.2 "Surface step lighter in dark"): alias for the Sheet/Dialog panel
+     background only -- light stays identical to --surface-1 (today's unchanged Sheet/Dialog bg),
+     dark resolves one step lighter to --surface-2 below. RowMenu/AccountMenu stay on --surface-3
+     (already the lightest tier in both themes) and need no new token. */
+  --surface-elevated: var(--surface-1);
   --hairline: rgba(0, 0, 0, 0.08);
   --hairline-strong: rgba(0, 0, 0, 0.14);
   --ink: #1d1d1f;
@@ -147,11 +152,22 @@
   --r-lg: 16px;
   --r-pill: 9999px;
 
+  /* --- Floating elevation (UI-03) -- Sheet, Dialog, RowMenu, AccountMenu only. Never applied to
+     cards, buttons or rows -- elevation there comes from a surface step + hairline, never a
+     shadow (redesign brief SS9 #2). */
+  --shadow-floating: 0 8px 30px rgba(0, 0, 0, 0.12);
+
   /* --- Motion (skill SS2.4) -------------------------------------------------------------- */
   --duration-micro: 120ms;
   --duration-panel: 200ms;
   --duration-sheet: 320ms;
-  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  /* Custom easings (UI-05/06/07, 08-UI-SPEC.md SS5.2/SS7.2) -- replace CSS built-in easings
+     everywhere in the redesign. --ease-standard stays a plain alias of --ease-out so no existing
+     call site changes meaning -- only the underlying curve shape changes. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-standard: var(--ease-out); /* alias, unchanged call sites keep working */
 }
 
 [data-theme="dark"] {
@@ -160,6 +176,8 @@
   --surface-1: #1d1d1f;
   --surface-2: #252527;
   --surface-3: #2a2a2c;
+  /* One step lighter than --surface-1 in dark only (UI-03) -- see the light block's comment. */
+  --surface-elevated: var(--surface-2);
   --hairline: rgba(255, 255, 255, 0.08);
   --hairline-strong: rgba(255, 255, 255, 0.14);
   --ink: #f5f5f7;
@@ -190,4 +208,7 @@
   --status-idle: #8e8e93;
   --status-idle-soft: rgba(142, 142, 147, 0.14);
   --status-idle-text: #9d9da1;
+
+  /* --- Floating elevation (UI-03) -- dark value only; see the light block's comment above. */
+  --shadow-floating: 0 12px 40px rgba(0, 0, 0, 0.50);
 }

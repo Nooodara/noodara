@@ -165,6 +165,39 @@ function parseDeclarationBlock(block: string): Record<string, string> {
   return tokens;
 }
 
+// Matches a declaration value that is nothing but a single `var(--other-token)` indirection --
+// tokens.css's `--surface-elevated` (Phase 8, UI-03) is declared exactly this way in both theme
+// blocks (`var(--surface-1)` light, `var(--surface-2)` dark) rather than a literal colour, so this
+// module's colour-parsing/audit code -- which only understands hex/rgb(a) strings -- must resolve
+// the indirection to the real, resolved colour before it ever reaches `parseColor`.
+const VAR_REF_RE = /^var\(\s*--([a-z0-9-]+)\s*\)$/i;
+
+/** Resolves every `var(--other-token)` value in a single theme's parsed declaration map to the
+ *  value of the token it references, in place on a copy -- never the literal `var(...)` string a
+ *  naive caller would otherwise hand to `parseColor` and crash on. Iterates to a fixed point (a
+ *  handful of passes, generously bounded) so a chain of indirections resolves fully; a reference
+ *  to a token that does not exist in this same block is left as-is (parseColor will then throw
+ *  with a clear message naming the unresolved value, rather than this function silently guessing). */
+function resolveVarReferences(tokens: Record<string, string>): Record<string, string> {
+  const resolved: Record<string, string> = { ...tokens };
+  const MAX_PASSES = 10;
+  for (let pass = 0; pass < MAX_PASSES; pass++) {
+    let changed = false;
+    for (const [name, value] of Object.entries(resolved)) {
+      const match = VAR_REF_RE.exec(value);
+      if (match === null) continue;
+      const refName = assertDefined(match[1]);
+      const refValue = resolved[refName];
+      if (refValue !== undefined && refValue !== value) {
+        resolved[name] = refValue;
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+  return resolved;
+}
+
 /** Parses the literal `--token: value;` declarations out of a tokens.css-shaped string's
  *  `:root` (light theme) and `[data-theme="dark"]` (dark theme) blocks -- the single source of
  *  truth every audit in this module reads from, so a token edit on disk is what a re-run
@@ -178,8 +211,8 @@ export function parseTokensCss(css: string): ThemeTokens {
     throw new Error('contrast.ts: could not find a [data-theme="dark"] block in the given CSS');
   }
   return {
-    light: parseDeclarationBlock(assertDefined(rootMatch[1])),
-    dark: parseDeclarationBlock(assertDefined(darkMatch[2])),
+    light: resolveVarReferences(parseDeclarationBlock(assertDefined(rootMatch[1]))),
+    dark: resolveVarReferences(parseDeclarationBlock(assertDefined(darkMatch[2]))),
   };
 }
 
@@ -228,9 +261,13 @@ const FILL_TOKEN_RE = /^(accent|status-[a-z0-9]+)-fill$/;
 // Any `--ink*` token (ink, ink-secondary, ink-tertiary, and any future ink-* addition) -- same
 // derive-don't-hardcode rationale.
 const INK_TOKEN_RE = /^ink(-.+)?$/;
-// The four background surfaces content text is audited against (canvas, surface-1/2/3) -- also
-// derived from the parsed names rather than a literal ['canvas','surface-1',...] array.
-const SURFACE_BG_RE = /^(canvas|surface-\d+)$/;
+// The background surfaces content text is audited against (canvas, surface-1/2/3, and Phase 8's
+// --surface-elevated alias -- UI-03, 08-UI-SPEC.md SS5.2) -- also derived from the parsed names
+// rather than a literal ['canvas','surface-1',...] array. --surface-elevated resolves to
+// --surface-1 (light) / --surface-2 (dark) via parseTokensCss's var() resolution below, so this
+// widened regex is what makes the existing ink-on-surface loop measure it automatically, with no
+// hand-written pair appended anywhere.
+const SURFACE_BG_RE = /^(canvas|surface-\d+|surface-elevated)$/;
 // The real backgrounds StatusPill actually renders on today (05-33 continuation investigation,
 // 2026-09-20): `--surface-1` (ServerDetailToolbar's `bg-surface-1/90` sticky header -- treated as
 // opaque surface-1 for this audit; the 10% translucency over canvas only ever makes the effective
