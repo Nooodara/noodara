@@ -151,6 +151,27 @@ describe('parseTokensCss', () => {
   it('throws when no [data-theme="dark"] block is present', () => {
     expect(() => parseTokensCss(':root { --accent: #fff; }')).toThrow('dark');
   });
+
+  // Phase 8 (UI-03, 08-UI-SPEC.md SS5.2): --surface-elevated is declared as `var(--surface-1)` /
+  // `var(--surface-2)`, never a literal colour -- the audit must measure the real resolved colour
+  // the browser paints, not the literal `var(...)` string (which parseColor would reject outright).
+  it('resolves a var(--other-token) indirection to the referenced token value', () => {
+    const fixtureWithVar = `
+      :root {
+        --surface-1: #ffffff;
+        --surface-2: #fafafc;
+        --surface-elevated: var(--surface-1);
+      }
+      [data-theme="dark"] {
+        --surface-1: #1d1d1f;
+        --surface-2: #252527;
+        --surface-elevated: var(--surface-2);
+      }
+    `;
+    const tokens = parseTokensCss(fixtureWithVar);
+    expect(tokens.light['surface-elevated']).toBe('#ffffff');
+    expect(tokens.dark['surface-elevated']).toBe('#252527');
+  });
 });
 
 describe('auditTheme', () => {
@@ -447,5 +468,42 @@ describe('the real tokens.css gate', () => {
     const tokens = { 'surface-1': '#ffffff', 'status-foo': '#ff0000' };
     const results = auditTheme(tokens, 'light');
     expect(results.some((r) => r.label.startsWith('--status-foo'))).toBe(false);
+  });
+});
+
+// Phase 8 (UI-03, 08-UI-SPEC.md SS5.2 "Surface step lighter in dark"): --surface-elevated is the
+// Sheet/Dialog panel background alias -- must be picked up by the SAME derived ink-on-surface loop
+// as canvas/surface-1/2/3, never a hand-written pair appended to a literal array (this module's
+// own design principle). Provisional numbers were already on record in docs/contrast-decision-05.md
+// SS1.1 (--ink/--surface-2 dark = 14.05:1, --ink-secondary/--surface-2 dark = 5.94:1); these tests
+// re-verify against the real --surface-elevated alias itself, not the provisional figures.
+describe('surface-elevated (Phase 8, UI-03)', () => {
+  it('parseTokensCss resolves --surface-elevated to #ffffff in light and to the --surface-2 dark value in dark', () => {
+    const { light, dark } = readRealTokens();
+    expect(light['surface-elevated']).toBe('#ffffff');
+    expect(light['surface-elevated']).toBe(light['surface-1']);
+    expect(dark['surface-elevated']).toBe(dark['surface-2']);
+  });
+
+  it('auditTokens derives an --ink on --surface-elevated pair in both themes, at >=4.5:1', () => {
+    const results = auditTokens(readRealTokens());
+    for (const theme of ['light', 'dark'] as const) {
+      const pair = results.find((r) => r.theme === theme && r.label === '--ink on --surface-elevated');
+      expect(pair, `${theme}: missing --ink on --surface-elevated pair`).toBeDefined();
+      expect(pair?.pass, `${theme}: ratio ${String(pair?.ratio)}`).toBe(true);
+      expect(pair?.ratio).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('auditTokens derives an --ink-secondary on --surface-elevated pair in both themes, at >=4.5:1', () => {
+    const results = auditTokens(readRealTokens());
+    for (const theme of ['light', 'dark'] as const) {
+      const pair = results.find(
+        (r) => r.theme === theme && r.label === '--ink-secondary on --surface-elevated',
+      );
+      expect(pair, `${theme}: missing --ink-secondary on --surface-elevated pair`).toBeDefined();
+      expect(pair?.pass, `${theme}: ratio ${String(pair?.ratio)}`).toBe(true);
+      expect(pair?.ratio).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });
