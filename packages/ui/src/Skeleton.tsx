@@ -12,6 +12,20 @@ export interface SkeletonProps {
   readonly 'data-testid'?: string;
 }
 
+// The skeleton-to-content blur bridge (UI-09, 08-15-PLAN.md Task 2, docs/ui-build-prompt.md
+// §7.6): a crossfade between two distinct DOM nodes (this skeleton, the content that replaces
+// it) reads as one continuous transformation, not two objects swapping, when both sides move
+// through the same blur+opacity bridge over the same duration. `data-entering="true"` keys the
+// `@starting-style` entrance rule declared once in apps/web/src/app/globals.css -- native to the
+// element, no `mounted`-state `useEffect` anywhere in this file. The transition itself is a
+// plain CSS `filter: blur()` bridge, motion-safe-gated, never the translucent-material pattern
+// Toolbar/Sheet use for their own separately-budgeted surfaces, so a caller keeps swapping
+// skeleton/content exactly as it always has; no call site needs to change for the bridge to
+// apply.
+const ENTERING_ATTRS = { 'data-entering': 'true' } as const;
+const BRIDGE_CLASSES =
+  'motion-safe:transition-[opacity,filter] motion-safe:duration-[var(--duration-panel)] motion-safe:ease-[var(--ease-out)]';
+
 // Skeleton (skill SS5 "Carga", 05-UI-SPEC.md Component Inventory) -- a solid `--surface-2` block,
 // never a shimmer sweep. The only motion allowed is Tailwind's `motion-safe:` variant, which
 // compiles to `@media (prefers-reduced-motion: no-preference)` -- every animated skeleton in this
@@ -25,8 +39,9 @@ export function Skeleton({ width, height, 'data-testid': testId }: SkeletonProps
     <div
       data-testid={testId}
       aria-hidden="true"
+      {...ENTERING_ATTRS}
       style={{ width: toDimension(width), height: toDimension(height) }}
-      className={cn('rounded-sm bg-surface-2 motion-safe:animate-pulse')}
+      className={cn('rounded-sm bg-surface-2 motion-safe:animate-pulse', BRIDGE_CLASSES)}
     />
   );
 }
@@ -51,8 +66,9 @@ export function SkeletonRow({ 'data-testid': testId = 'skeleton-row' }: Skeleton
       data-testid={testId}
       data-height={ROW_HEIGHT_PX}
       aria-hidden="true"
+      {...ENTERING_ATTRS}
       style={{ height: toDimension(ROW_HEIGHT_PX) }}
-      className="flex items-center gap-4 border-b border-hairline px-4"
+      className={cn('flex items-center gap-4 border-b border-hairline px-4', BRIDGE_CLASSES)}
     >
       <div className={cn(ROW_BLOCK_CLASSES, 'w-32')} />
       <div className={cn(ROW_BLOCK_CLASSES, 'w-24')} />
@@ -73,8 +89,9 @@ export function SkeletonText({ width = '100%', 'data-testid': testId }: Skeleton
     <div
       data-testid={testId}
       aria-hidden="true"
+      {...ENTERING_ATTRS}
       style={{ width: toDimension(width), height: '1em' }}
-      className="rounded-sm bg-surface-2 motion-safe:animate-pulse"
+      className={cn('rounded-sm bg-surface-2 motion-safe:animate-pulse', BRIDGE_CLASSES)}
     />
   );
 }

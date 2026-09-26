@@ -111,3 +111,22 @@ p {
 [role='dialog'] p {
   max-width: 70ch;
 }
+
+/*
+ * @starting-style entrance (UI-09, 08-UI-SPEC.md SS9, 08-15-PLAN.md Task 2): an element marked
+ * `data-entering="true"` declares its own initial state natively -- a single documented
+ * attribute, not a `mounted` boolean threaded through a `useEffect`. Skeleton/SkeletonRow/
+ * SkeletonText (packages/ui/src/Skeleton.tsx) carry this attribute for the skeleton-to-content
+ * blur bridge (docs/ui-build-prompt.md §7.6): the skeleton mounts through the same blur+opacity
+ * bridge the content it will be replaced by also mounts through, so the swap reads as one
+ * continuous transformation across the two DOM nodes rather than two objects trading places.
+ * `prefers-reduced-motion` needs no separate override here -- Skeleton's own transition classes
+ * are `motion-safe:`-gated, so without a matching `transition` property `@starting-style` never
+ * has anything to animate from and the final state paints immediately.
+ */
+[data-entering='true'] {
+  @starting-style {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
