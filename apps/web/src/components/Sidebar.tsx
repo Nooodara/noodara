@@ -8,9 +8,11 @@
 // apps/web/src/lib/shell-context.tsx) rather than any state this component owns itself.
 //
 // 08-08-PLAN.md Task 2 (UI-11, D-05): the old two-control cluster (`ThemeToggle` +
-// `SignOutButton`, rendered side by side) is gone -- `AccountMenu` is the one identity affordance
-// left, absorbing both behind a single trigger. `ThemeToggle` is no longer imported or mounted
-// directly by this file at all; its only remaining mount is inside `AccountMenu` itself.
+// `SignOutButton`, rendered side by side) is gone -- `AccountMenu` absorbs sign out, and settings
+// navigation. `ThemeToggle` is not imported or mounted by this file at all: 08-19-PLAN.md Task 3
+// (G3 adjustment round 1, item 5, D-05 change) moved it out of `AccountMenu` too, into an
+// Appearance `InsetGroup` on `/settings` (`apps/web/src/components/SettingsGroups.tsx`) -- its
+// only mount left in the app.
 import { History, Server, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';

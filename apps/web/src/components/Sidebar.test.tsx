@@ -265,13 +265,18 @@ describe('Sidebar account menu (D-05: single trigger, fed by useSessionUser)', (
     expect(screen.getByTestId('shell-account-menu-trigger')).not.toHaveTextContent('Ada Lovelace');
   });
 
-  it('mounts exactly one ThemeToggle, reached only through AccountMenu -- no direct ThemeToggle mount left in this file', async () => {
+  // 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 5, D-05 change): ThemeToggle moved out of
+  // the account menu into an Appearance InsetGroup on /settings
+  // (apps/web/src/components/SettingsGroups.test.tsx's own new coverage) -- the sidebar mounts no
+  // ThemeToggle at all anymore, direct or through AccountMenu.
+  it('mounts no ThemeToggle at all -- it now lives in the Appearance group on /settings, not the account menu', async () => {
     const user = await import('@testing-library/user-event').then((m) => m.userEvent.setup());
     renderSidebar();
 
     await user.click(screen.getByTestId('shell-account-menu-trigger'));
 
-    expect(screen.getByTestId('shell-account-menu-theme-toggle')).toBeInTheDocument();
+    expect(screen.queryByTestId('shell-account-menu-theme-toggle')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Theme:/)).not.toBeInTheDocument();
   });
 
   it('mounts the sign-out control inside the menu under its new testid', async () => {

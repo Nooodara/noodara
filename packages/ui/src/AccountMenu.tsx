@@ -2,7 +2,6 @@ import { type ComponentType, type CSSProperties, type ReactNode } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cn } from './cn.js';
 import { PRESS_CLASSES } from './press.js';
-import { ThemeToggle } from './ThemeToggle.js';
 import { useFloatingMenu } from './use-floating-menu.js';
 
 /** The minimal prop surface `AccountMenu` needs from whatever link primitive the caller's router
@@ -20,11 +19,16 @@ export interface AccountMenuLinkProps {
 }
 
 // The shell's single account affordance (UI-11, D-05/D-06). Deliberately no `items` array and no
-// caller-supplied extra rows -- the fixed three-row shape (Settings / Appearance / Sign out) is
-// enforced by this prop type itself, the same discipline `ToolbarProps.primaryAction` already
-// applies elsewhere in this package. A future caller (Phase 9: profile editing, preferences) adds
-// fields to this same interface; it never gains a generic slot a caller could use to reshape the
-// menu.
+// caller-supplied extra rows -- the fixed two-row shape (Settings / Sign out) is enforced by this
+// prop type itself, the same discipline `ToolbarProps.primaryAction` already applies elsewhere in
+// this package. A future caller (Phase 9: profile editing, preferences) adds fields to this same
+// interface; it never gains a generic slot a caller could use to reshape the menu.
+//
+// 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 5, D-05 change): Appearance's inline
+// `ThemeToggle` used to be this menu's middle row -- moved into an Appearance `InsetGroup` on
+// `/settings` instead (`apps/web/src/components/SettingsGroups.tsx`), per the user's own G3
+// review ("Creo que es mejor que la apariencia esté en settings y no como sección aparte").
+// `ThemeToggle`'s own `STORAGE_KEY` still has exactly one writer; only its mount point moved.
 export interface AccountMenuProps {
   readonly name: string;
   readonly email: string;
@@ -146,22 +150,14 @@ const ITEM_CLASSES = cn(
   '[@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-2 focus-visible:bg-surface-2',
   PRESS_CLASSES,
 );
-const APPEARANCE_ROW_CLASSES = 'flex h-11 w-full items-center justify-between px-4 text-body text-ink';
 const SIGN_OUT_ROW_CLASSES = 'px-2 py-1';
 
 // AccountMenu (UI-11, D-05/D-06, 08-UI-SPEC.md SS4) -- the shell's single account affordance,
 // replacing the old ThemeToggle + SignOutButton cluster. Built on the same shared floating-menu
 // hook (imported below, SS4.4's explicit ask) `RowMenu` builds on: open state, arrow-key roving
 // focus, close-on-select and keyboard-vs-pointer close-source tracking all come from that one
-// hook -- this file owns only its own unique content (header row, the Appearance row's inline
-// ThemeToggle control), never a second hand-rolled dismiss/focus implementation.
-//
-// The theme control inside "Appearance" is ThemeToggle itself, not a reimplementation of its
-// storage read/write (pitfall P17) -- the theme's storage key has exactly one writer in this
-// codebase (ThemeToggle.tsx, see its own STORAGE_KEY export), unchanged by this file. Clicking it
-// never closes the menu: it is rendered with no role attribute of its own, so it never joins the
-// `[role="menuitem"]` set `handleContentKeyDown`/`handleOpenAutoFocus` operate over, and its own
-// onClick is never wrapped in `selectItem`.
+// hook -- this file owns only its own unique content (the header row), never a second hand-rolled
+// dismiss/focus implementation.
 export function AccountMenu({
   name,
   email,
@@ -214,10 +210,6 @@ export function AccountMenu({
           >
             Settings
           </LinkComponent>
-          <div className={APPEARANCE_ROW_CLASSES}>
-            <span>Appearance</span>
-            <ThemeToggle data-testid="shell-account-menu-theme-toggle" />
-          </div>
           <div className={DIVIDER_CLASSES} />
           <div className={SIGN_OUT_ROW_CLASSES}>{signOutSlot}</div>
         </DialogPrimitive.Content>
