@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { renderUi, screen, userEvent } from './testing/render.js';
+import { fireEvent, renderUi, screen, userEvent } from './testing/render.js';
 import { useCloseSource, type CloseSource } from './use-close-source.js';
 
 // Shared inner harness: identical markup and behaviour regardless of whether `open` lives in this
@@ -9,6 +9,13 @@ import { useCloseSource, type CloseSource } from './use-close-source.js';
 // itself never decides how or when `open` actually flips -- that stays this harness's own job
 // (mirroring how Radix's real dismiss handling, not this primitive, performs the actual close),
 // exactly like the primitive's own header comment describes.
+//
+// Every test below reads the current value through the "Read" button using plain `fireEvent.click`
+// (a synthetic `click` only), never `userEvent.click`. The "Read" button lives outside the content
+// element by design (it must stay reachable after the content unmounts on close), so a *real*
+// pointer gesture on it -- which `userEvent.click` would dispatch as a genuine `pointerdown` --
+// would be indistinguishable from an outside-pointer dismissal and corrupt the very reading each
+// assertion is trying to observe.
 function OverlayBody({
   open,
   onOpenChange,
@@ -94,6 +101,11 @@ function ControlledHost() {
   return <ControlledOverlay open={open} onOpenChange={setOpen} />;
 }
 
+function readCloseSource(): CloseSource | 'none' {
+  fireEvent.click(screen.getByRole('button', { name: 'Read' }));
+  return screen.getByTestId('reading').textContent as CloseSource | 'none';
+}
+
 describe.each([
   ['an uncontrolled consumer (its own state)', UncontrolledOverlay],
   ['a controlled consumer (open supplied as a prop)', ControlledHost],
@@ -104,9 +116,8 @@ describe.each([
 
     await user.click(screen.getByRole('button', { name: 'Open' }));
     await user.keyboard('{Escape}');
-    await user.click(screen.getByRole('button', { name: 'Read' }));
 
-    expect(screen.getByTestId('reading')).toHaveTextContent('keyboard');
+    expect(readCloseSource()).toBe('keyboard');
   });
 
   it('reads "pointer" after a close initiated by a pointer press outside the content element', async () => {
@@ -115,9 +126,8 @@ describe.each([
 
     await user.click(screen.getByRole('button', { name: 'Open' }));
     await user.click(screen.getByRole('button', { name: 'Outside' }));
-    await user.click(screen.getByRole('button', { name: 'Read' }));
 
-    expect(screen.getByTestId('reading')).toHaveTextContent('pointer');
+    expect(readCloseSource()).toBe('pointer');
   });
 
   it('reads "programmatic" after noteProgrammaticClose is called', async () => {
@@ -126,9 +136,8 @@ describe.each([
 
     await user.click(screen.getByRole('button', { name: 'Open' }));
     await user.click(screen.getByRole('button', { name: 'Select' }));
-    await user.click(screen.getByRole('button', { name: 'Read' }));
 
-    expect(screen.getByTestId('reading')).toHaveTextContent('programmatic');
+    expect(readCloseSource()).toBe('programmatic');
   });
 
   it('resets the reading to "programmatic" on every re-open, so a stale source never leaks', async () => {
@@ -137,13 +146,11 @@ describe.each([
 
     await user.click(screen.getByRole('button', { name: 'Open' }));
     await user.keyboard('{Escape}');
-    await user.click(screen.getByRole('button', { name: 'Read' }));
-    expect(screen.getByTestId('reading')).toHaveTextContent('keyboard');
+    expect(readCloseSource()).toBe('keyboard');
 
     await user.click(screen.getByRole('button', { name: 'Open' }));
-    await user.click(screen.getByRole('button', { name: 'Read' }));
 
-    expect(screen.getByTestId('reading')).toHaveTextContent('programmatic');
+    expect(readCloseSource()).toBe('programmatic');
   });
 });
 
