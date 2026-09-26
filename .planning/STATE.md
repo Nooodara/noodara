@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 08-20-PLAN.md
-last_updated: "2026-09-26T12:10:28.761Z"
+stopped_at: Completed 08-14-PLAN.md
+last_updated: "2026-09-26T12:38:51.576Z"
 last_activity: 2026-09-26
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 30
-  completed_plans: 25
+  completed_plans: 26
   percent: 13
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 08 (redise-o-de-la-app) — EXECUTING
-Plan: 16 of 20
+Plan: 17 of 20
 Status: Ready to execute
 Last activity: 2026-09-26
 
-Progress: [████████░░] 83%
+Progress: [█████████░] 87%
 
 ## Performance Metrics
 
@@ -182,6 +182,7 @@ Progress: [████████░░] 83%
 | Phase 08 P13 | 45min | 2 tasks | 9 files |
 | Phase 08 P15 | 55min | 3 tasks | 11 files |
 | Phase 08 P20 | 27min | 3 tasks | 8 files |
+| Phase 08 P14 | 70 | 3 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -496,6 +497,8 @@ Recent decisions affecting current work:
 - [Phase 08]: The @starting-style entrance is keyed on a single data-entering="true" attribute; a repo-wide grep found no mounted-state entrance effect to migrate beyond ThemeToggle's excluded settledRef
 - [Phase 08]: 08-20: UI-05 kept Pending -- brief §6 easing/duration table repo-wide replacement is 08-14's scope
 - [Phase 08]: 08-20: closeSource() read directly at render time in Dialog/RowMenu/AccountMenu to avoid an effect-ordering race with Radix Presence
+- [Phase ?]: UI-05 marked complete: press feedback, the §7.2 duration/easing token table, and the no-keyboard-animation rule all now hold repo-wide (machine-enforced by a new check:ui-safety gate)
+- [Phase ?]: UI-07 stays Pending: its 40ms discovery/list-row stagger clause belongs to 08-16/08-18, not this plan
 
 ### Pending Todos
 
@@ -571,8 +574,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-26T12:10:28.754Z
-Stopped at: Completed 08-20-PLAN.md
+Last session: 2026-09-26T12:38:51.569Z
+Stopped at: Completed 08-14-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
