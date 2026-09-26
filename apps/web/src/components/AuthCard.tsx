@@ -18,12 +18,15 @@ export interface AuthCardProps {
 //
 // D-09/D-11 (08-18-PLAN.md Task 1): the lockup's aperture focuses once on load, the same
 // `[data-part="aperture"]` technique the Discovery Viewfinder ring uses (packages/ui/aperture.css).
-// This is entirely declarative -- no mount effect, no interval, no loop: `--aperture-progress`
-// rests at `1` (closed/sharp) always, and `data-entering`/`data-aperture-focus` key into
-// aperture.css's own `@starting-style` rule for the value the property held before this element
-// existed (`0`, open/blurred). The browser plays that one transition exactly once, on first paint,
-// with no JS involved -- a mount effect would only be needed to *re-trigger* the animation, which
-// D-11 explicitly forbids ("no loop").
+// This is entirely declarative -- no mount effect, no interval, no loop: the custom property
+// aperture.css reads rests at `1` (closed/sharp) always, and `data-entering`/`data-aperture-focus`
+// key into aperture.css's own `@starting-style` rule for the value that property held before this
+// element existed (`0`, open/blurred). The browser plays that one transition exactly once, on
+// first paint, with no JS involved -- a mount effect would only be needed to *re-trigger* the
+// animation, which D-11 explicitly forbids ("no loop"). `data-aperture-focused` is the binary the
+// same stylesheet's `prefers-reduced-motion` branch reads instead of the continuous number, so a
+// reduced-motion user still lands on the sharp/closed reading immediately, never the forced
+// open/blurred default that branch otherwise renders.
 const APERTURE_FOCUS_STYLE = { '--aperture-progress': 1 } as CSSProperties;
 
 export function AuthCard({ title, children }: AuthCardProps) {
@@ -34,6 +37,7 @@ export function AuthCard({ title, children }: AuthCardProps) {
           className="flex items-center text-ink"
           data-entering="true"
           data-aperture-focus="true"
+          data-aperture-focused="true"
           style={APERTURE_FOCUS_STYLE}
         >
           <Lockup title="Noodara" height={22} data-testid="brand-lockup" />

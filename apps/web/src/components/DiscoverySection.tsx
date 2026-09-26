@@ -7,12 +7,12 @@
 // `buildChecklist` -- the fetched settled snapshot is never rendered directly, only ever through
 // that one pure reducer, so D-05's "never invent progress" rule holds structurally rather than by
 // convention alone.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { DiscoveryCheck } from '@noodara/domain/discovery';
 import type { ServerErrorCode, ServerStatus } from '@noodara/domain/server';
-import { Button, formatRelativeTime } from '@noodara/ui';
+import { Button, formatRelativeTime, Logo } from '@noodara/ui';
 import { apiGet, apiSend, type ApiErrorCode } from '../lib/api-client';
-import { buildChecklist, summarize, type DiscoverySettledSnapshot } from '../lib/discovery-progress';
+import { buildChecklist, isStepResolved, summarize, type DiscoverySettledSnapshot } from '../lib/discovery-progress';
 import { STEP_LABELS } from '../lib/discovery-steps';
 import { copyForErrorCode, type ServiceErrorCode } from '../lib/error-copy';
 import { useShellContext } from '../lib/shell-context';
@@ -132,6 +132,13 @@ export function DiscoverySection({ serverId, serverStatus, sshUser, receivedChec
       ? `Discovered ${formatRelativeTime(settled.collectedAt, now)}, ${summarize(checklist)}`
       : null;
 
+  // UI-08/D-09 (08-UI-SPEC.md §8.1): the Viewfinder ring's own progress is this one number, derived
+  // from the exact same `checklist.steps` array the list below already maps -- never a second
+  // progress calculation, and never invented from anything the run has not actually reported.
+  // `isStepResolved` is the same function `DiscoveryStep.tsx`'s own per-row thread fill imports.
+  const completedFraction = checklist.steps.filter((step) => isStepResolved(step.state)).length / checklist.steps.length;
+  const ringStyle = { '--aperture-progress': completedFraction } as CSSProperties;
+
   return (
     <section aria-labelledby="discovery-section-title" className="flex flex-col gap-4">
       <div aria-live="polite" className="sr-only">
@@ -139,9 +146,25 @@ export function DiscoverySection({ serverId, serverStatus, sshUser, receivedChec
       </div>
 
       <div className="flex items-center justify-between gap-4">
-        <h2 id="discovery-section-title" className="text-title font-semibold text-ink">
-          Discovery
-        </h2>
+        <div className="flex items-center gap-2">
+          {/* The Viewfinder ring (UI-08, D-09): monochrome, `text-ink` only -- never the accent
+              (Phase 7 D-09) -- so it inherits through `currentColor` exactly like the sidebar's own
+              mark. `data-aperture-focused` is the binary aperture.css's `prefers-reduced-motion`
+              branch reads instead of the continuous fraction, set only once every step has
+              genuinely resolved -- never a guess, never a decorative nudge toward 1. */}
+          <span
+            aria-hidden="true"
+            data-testid="discovery-viewfinder"
+            data-aperture-focused={completedFraction >= 1 ? 'true' : undefined}
+            className="text-ink"
+            style={ringStyle}
+          >
+            <Logo size={20} />
+          </span>
+          <h2 id="discovery-section-title" className="text-title font-semibold text-ink">
+            Discovery
+          </h2>
+        </div>
         {serverStatus !== 'CONNECTING' ? (
           <Button
             type="button"

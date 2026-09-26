@@ -20,6 +20,18 @@ export const CHECK_STATES = ['pass', 'warning', 'fail', 'not_applicable', 'skipp
 
 export type CheckState = (typeof CHECK_STATES)[number];
 
+/** `pending`/`running` are the only two states `buildChecklist` has not yet settled on -- every
+ *  other state is a resolved outcome, however severe. Exported so a step's own resolved/not
+ *  distinction (the Discovery timeline's per-row thread fill, `DiscoveryStep.tsx`) and the section
+ *  header's aggregate `completedFraction` (`DiscoverySection.tsx`) read the exact same boolean off
+ *  the exact same `buildChecklist` output -- D-09's "one progress computation feeding both",
+ *  structural rather than by convention. */
+const UNRESOLVED_STATES: ReadonlySet<CheckState> = new Set(['pending', 'running']);
+
+export function isStepResolved(state: CheckState): boolean {
+  return !UNRESOLVED_STATES.has(state);
+}
+
 // SS4.2's four ids whose `fail` still leaves the server usable -- a named constant list (not a
 // chain of conditionals) so the "usable despite failure" set is reviewable in one place, per this
 // plan's own action text. A `fail` on any other id ended the run and renders red.

@@ -14,7 +14,7 @@
 import { Check, Clock, Minus, TriangleAlert, X, type LucideIcon } from 'lucide-react';
 import type { DiscoveryCheckId } from '@noodara/domain/discovery';
 import { cn, Disclosure, type Tone } from '@noodara/ui';
-import { formatDuration, type CheckState, type DiscoveryCheckView } from '../lib/discovery-progress';
+import { formatDuration, isStepResolved, type CheckState, type DiscoveryCheckView } from '../lib/discovery-progress';
 import type { DiscoveryStepName } from '../lib/discovery-steps';
 
 // UI-07 (08-UI-SPEC.md §7.4, §9 #11): raw checks arrive staggered 40ms per index in DOM order,
@@ -28,11 +28,6 @@ const CHECK_STAGGER_MAX_DELAY_MS = 4 * CHECK_STAGGER_STEP_MS;
 function checkStaggerDelayMs(index: number): number {
   return Math.min(index * CHECK_STAGGER_STEP_MS, CHECK_STAGGER_MAX_DELAY_MS);
 }
-
-// UI-08/D-09 (08-UI-SPEC.md §8.1): a step already resolved by `buildChecklist` (never merely
-// `pending`/`running`) is exactly the set `DiscoverySection`'s own `completedFraction` counts --
-// the same distinction, expressed per row instead of aggregated, never a second computation.
-const UNRESOLVED_STATES: ReadonlySet<CheckState> = new Set(['pending', 'running']);
 
 // SS4.2's exact seven words -- driven by a lookup, never invented ad hoc at a render site.
 const STATE_WORDS = {
@@ -120,9 +115,9 @@ export function DiscoveryStep({ stepId, label, state, checks, sshUser, durationM
   const word = STATE_WORDS[state];
   // UI-08/D-09: this row's own thread segment inks in (`scale-y-100`) once `buildChecklist` has
   // already resolved it -- never a height animation (§9 #11), never a second progress
-  // computation (the same resolved/unresolved split `DiscoverySection`'s `completedFraction`
-  // sums, only expressed per row here).
-  const threadFilled = !UNRESOLVED_STATES.has(state);
+  // computation. `isStepResolved` is the exact same function `DiscoverySection`'s own
+  // `completedFraction` sums over, imported rather than re-derived here.
+  const threadFilled = isStepResolved(state);
   const consequenceLines = checks
     .filter((check) => check.state === 'warning')
     .map((check) => consequenceLineFor(check, sshUser))
