@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { AccountMenu, type AccountMenuLinkProps, type AccountMenuProps } from './AccountMenu.js';
 import { renderUi, screen, userEvent } from './testing/render.js';
 
