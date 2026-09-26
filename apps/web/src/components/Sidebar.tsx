@@ -10,7 +10,7 @@
 import { History, Server, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn, Tooltip } from '@noodara/ui';
+import { cn, NavTree, type NavTreeItem } from '@noodara/ui';
 import { Lockup, Logo, ThemeToggle } from '@noodara/ui';
 import { SignOutButton } from './SignOutButton';
 
@@ -19,11 +19,14 @@ export interface SidebarProps {
   readonly onClose: () => void;
 }
 
-const ITEM_CLASSES =
-  'flex h-11 items-center gap-3 rounded-sm px-3 text-callout font-medium text-ink-secondary hover:bg-surface-2';
-const ACTIVE_ITEM_CLASSES = 'bg-accent-soft text-ink';
-const LABEL_CLASSES = 'hidden min-[1280px]:inline';
-const ICON_PROPS = { 'aria-hidden': true, size: 20, strokeWidth: 1.5 } as const;
+// The three flat leaves NavTree renders today (D-07) -- unchanged labels/hrefs/icons from the
+// hand-written list this replaces. A future caller fills the same NavTree with real hierarchical
+// data purely by changing this array's shape, never by touching NavTree.tsx itself.
+const NAV_ITEMS: readonly NavTreeItem[] = [
+  { id: 'servers', label: 'Servers', href: '/servers', icon: Server },
+  { id: 'activity', label: 'Activity', href: '/activity', icon: History },
+  { id: 'settings', label: 'Settings', href: '/settings', icon: Settings },
+];
 // The brand slot (BRAND-02, D-04): the monogram alone in the 64px rail, the horizontal lockup in
 // the expanded sidebar, and NO mark at all in the below-900px bottom sheet -- the sheet is a
 // temporary navigation overlay, not the product's chrome. Both marks are always in the DOM and one
@@ -39,7 +42,6 @@ const BRAND_EXPANDED_CLASSES = 'mb-3 hidden h-11 items-center px-3 text-ink min-
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const isActive = (href: string): boolean => pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <>
@@ -57,8 +59,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         aria-label="Primary"
         data-testid="shell-sidebar"
         className={cn(
+          // Below 900px this is a temporary bottom-sheet overlay, not permanent chrome -- it
+          // keeps its own opaque surface and top border so it still reads as a sheet over the
+          // content behind it (D-03).
           'fixed inset-x-0 bottom-0 z-50 flex-col gap-1 border-t border-hairline bg-surface-1 p-4',
-          'min-[900px]:static min-[900px]:inset-auto min-[900px]:z-auto min-[900px]:h-screen min-[900px]:w-16 min-[900px]:shrink-0 min-[900px]:border-r min-[900px]:border-t-0 min-[900px]:p-3',
+          // >=900px: the chrome retreats and fuses with the page's own canvas (D-03) -- no right
+          // edge border of its own; separation comes from spacing and the InsetGroup blocks' own
+          // hairline borders in the content column.
+          'min-[900px]:static min-[900px]:inset-auto min-[900px]:z-auto min-[900px]:h-screen min-[900px]:w-16 min-[900px]:shrink-0 min-[900px]:border-t-0 min-[900px]:bg-canvas min-[900px]:p-3',
           'min-[1280px]:w-60',
           open ? 'flex' : 'hidden min-[900px]:flex',
         )}
@@ -69,50 +77,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <div className={BRAND_EXPANDED_CLASSES}>
           <Lockup title="Noodara" height={20} data-testid="brand-lockup" />
         </div>
-        <ul className="flex flex-col gap-1">
-          <li>
-            <Tooltip content="Servers">
-              <Link
-                href="/servers"
-                aria-label="Servers"
-                aria-current={isActive('/servers') ? 'page' : undefined}
-                onClick={onClose}
-                className={cn(ITEM_CLASSES, isActive('/servers') ? ACTIVE_ITEM_CLASSES : '')}
-              >
-                <Server {...ICON_PROPS} />
-                <span className={LABEL_CLASSES}>Servers</span>
-              </Link>
-            </Tooltip>
-          </li>
-          <li>
-            <Tooltip content="Activity">
-              <Link
-                href="/activity"
-                aria-label="Activity"
-                aria-current={isActive('/activity') ? 'page' : undefined}
-                onClick={onClose}
-                className={cn(ITEM_CLASSES, isActive('/activity') ? ACTIVE_ITEM_CLASSES : '')}
-              >
-                <History {...ICON_PROPS} />
-                <span className={LABEL_CLASSES}>Activity</span>
-              </Link>
-            </Tooltip>
-          </li>
-          <li>
-            <Tooltip content="Settings">
-              <Link
-                href="/settings"
-                aria-label="Settings"
-                aria-current={isActive('/settings') ? 'page' : undefined}
-                onClick={onClose}
-                className={cn(ITEM_CLASSES, isActive('/settings') ? ACTIVE_ITEM_CLASSES : '')}
-              >
-                <Settings {...ICON_PROPS} />
-                <span className={LABEL_CLASSES}>Settings</span>
-              </Link>
-            </Tooltip>
-          </li>
-        </ul>
+        <NavTree items={NAV_ITEMS} activeHref={pathname} onNavigate={onClose} linkComponent={Link} />
         <div className="mt-auto flex flex-col gap-1 border-t border-hairline pt-3">
           <ThemeToggle data-testid="shell-theme-toggle" />
           <SignOutButton />
