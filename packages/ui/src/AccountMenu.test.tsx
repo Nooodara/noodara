@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AccountMenu, type AccountMenuLinkProps, type AccountMenuProps } from './AccountMenu.js';
+import { PRESS_CLASSES } from './press.js';
 import { renderUi, screen, userEvent } from './testing/render.js';
 
 // The minimal link test double every AccountMenu test below renders through -- packages/ui has no
@@ -209,5 +210,19 @@ describe('AccountMenu', () => {
     // @ts-expect-error -- `items` is intentionally not part of AccountMenuProps.
     const invalid: AccountMenuProps = { ...buildProps(), items: [] };
     expect(invalid).toBeTruthy();
+  });
+
+  // 08-20-PLAN.md Task 1 (UI-05): the Settings item row gets its press feedback from the one
+  // shared PRESS_CLASSES definition -- never a second, local active:scale-* literal.
+  it('gets its press feedback on the Settings item row from the one shared PRESS_CLASSES definition (UI-05)', async () => {
+    const user = userEvent.setup();
+    renderUi(<AccountMenu {...buildProps()} />);
+
+    await user.click(screen.getByTestId('shell-account-menu-trigger'));
+    const settingsLink = screen.getByTestId('shell-account-menu-settings-link');
+
+    for (const token of PRESS_CLASSES.split(/\s+/).filter(Boolean)) {
+      expect(settingsLink.className).toContain(token);
+    }
   });
 });

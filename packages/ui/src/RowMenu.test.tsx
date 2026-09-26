@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { PRESS_CLASSES } from './press.js';
 import { RowMenu } from './RowMenu.js';
 import { renderUi, screen, userEvent } from './testing/render.js';
 
@@ -206,6 +207,21 @@ describe('RowMenu', () => {
     await user.click(screen.getByTestId('trigger'));
     for (const item of screen.getAllByRole('menuitem')) {
       assertNoUngatedHover(item.className);
+    }
+  });
+
+  // 08-20-PLAN.md Task 1 (UI-05): every menu item, destructive or not, gets its press feedback
+  // from the one shared PRESS_CLASSES definition -- never a second, local active:scale-* literal.
+  it('gets its press feedback from the one shared PRESS_CLASSES definition (UI-05)', async () => {
+    const user = userEvent.setup();
+    renderUi(<RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="Actions for Alpha" />);
+
+    await user.click(screen.getByRole('button', { name: 'Actions for Alpha' }));
+
+    for (const item of screen.getAllByRole('menuitem')) {
+      for (const token of PRESS_CLASSES.split(/\s+/).filter(Boolean)) {
+        expect(item.className).toContain(token);
+      }
     }
   });
 });
