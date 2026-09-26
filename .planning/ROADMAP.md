@@ -127,7 +127,7 @@ Plans:
   4. `prefers-reduced-motion`, `prefers-reduced-transparency` y `prefers-contrast: more` tienen alternativas intencionales en toolbar, sheet, dialog y menú; el hover se gatea con `(hover: hover) and (pointer: fine)`; nunca hay más de tres `backdrop-filter` simultáneos (contado en el peor caso: toolbar + Sheet + RowMenu + Tooltip).
   5. El shell tiene el slot del inspector, la navegación jerárquica y el menú de cuenta previstos sin placeholders visibles (hoy poblados con Servers/Activity/Settings); cada pantalla rediseñada tiene contraste medido (≥4.5:1 cuerpo, ≥3:1 texto grande y bordes únicos), se probó a 375/900/1280/1920 px con contenido real, y el usuario aprobó screenshots en ambos temas; los 104 E2E existentes siguen verdes y el nightly 20x también.
 
-**Plans:** 6/20 plans executed
+**Plans:** 7/20 plans executed
 
 Plans:
 **Wave 1**
@@ -150,7 +150,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 08-07-PLAN.md — Generic NavTree component; sidebar composes it and fuses with the canvas
+- [x] 08-07-PLAN.md — Generic NavTree component; sidebar composes it and fuses with the canvas
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
@@ -311,7 +311,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 7. Identidad y brand kit | 10/10 | Complete | 2026-09-23 |
-| 8. Rediseño de la app | 6/20 | In Progress|  |
+| 8. Rediseño de la app | 7/20 | In Progress|  |
 | 9. Settings editables | 0/TBD | Not started | - |
 | 10. Sitio de docs y landing pública | 0/TBD | Not started | - |
 | 11. Motor de deploy — fundamentos | 0/TBD | Not started | - |

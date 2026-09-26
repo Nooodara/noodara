@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 08-06-PLAN.md
-last_updated: "2026-09-26T03:55:31.304Z"
+stopped_at: Completed 08-07-PLAN.md
+last_updated: "2026-09-26T04:14:02.545Z"
 last_activity: 2026-09-26
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 30
-  completed_plans: 16
+  completed_plans: 17
   percent: 13
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 08 (redise-o-de-la-app) — EXECUTING
-Plan: 7 of 20
+Plan: 8 of 20
 Status: Ready to execute
 Last activity: 2026-09-26
 
-Progress: [█████░░░░░] 53%
+Progress: [██████░░░░] 57%
 
 ## Performance Metrics
 
@@ -173,6 +173,7 @@ Progress: [█████░░░░░] 53%
 | Phase 08 P04 | ~40min | 3 tasks | 7 files |
 | Phase 08 P05 | ~35min | 3 tasks | 8 files |
 | Phase 08 P06 | 35min | 3 tasks | 9 files |
+| Phase 08 P07 | ~50min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -472,6 +473,7 @@ Recent decisions affecting current work:
 - [Phase 08]: UI-03 marked complete (Sheet/Dialog/RowMenu shadow+surface-elevated, gate green); UI-10 left pending since the toolbar still has no reduced-motion/transparency/contrast fallbacks
 - [Phase 08]: ListRow.tsx hover gating added beyond the plan's files_modified list, per Task 2's own explicit action text (Rule 2, UI-10 touch-accessibility gap)
 - [Phase 08]: Sheet reduced-motion proven via getComputedStyle transitionProperty, not a caught animation frame -- Radix mounts/unmounts the panel without a Presence exit delay today, a real gap plan 08-14's motion-contract sweep owns, not this plan
+- [Phase 08]: 08-07: D-03 folded into Task 2 (NavTree composition and the sidebar canvas-fusion land in the same Sidebar.tsx diff); NavTreeLinkProps stays plain-optional (no explicit | undefined) so a real router link component satisfies ComponentType<NavTreeLinkProps> -- call sites build attribute objects via conditional spread instead
 
 ### Pending Todos
 
@@ -547,8 +549,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-26T03:55:31.295Z
-Stopped at: Completed 08-06-PLAN.md
+Last session: 2026-09-26T04:14:02.537Z
+Stopped at: Completed 08-07-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
