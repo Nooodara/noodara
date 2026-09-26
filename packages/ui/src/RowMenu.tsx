@@ -71,6 +71,14 @@ const ITEM_CLASSES = cn(
 // on --surface-3 in both themes (measured, see contrast.test.ts).
 const DESTRUCTIVE_ITEM_CLASSES = 'text-status-error-text';
 
+// 08-20-PLAN.md Task 2 (UI-05/§9 #10, pitfall P14): mirrors Dialog.tsx's/Sheet.tsx's identical
+// override -- appended to `CONTENT_CLASSES` only while the in-flight close is keyboard-initiated,
+// read from `useFloatingMenu`'s own `closeSource` (delegated to the shared close-source primitive
+// owned by 08-04; this file never calls that primitive directly). `!duration-0` wins the
+// specificity fight against any un-flagged transition-duration utility a later plan (08-14,
+// UI-07) composes into `CONTENT_CLASSES`.
+const INSTANT_CLOSE_CLASS = '!duration-0';
+
 // RowMenu (skill SS4.4, 05-UI-SPEC.md Component Inventory, D-09; 08-UI-SPEC.md SS6, 08-04-PLAN.md
 // Task 2) -- the per-row "..." action menu, revealed on hover/focus of its row (never a permanent
 // column) and never itself a bare, unlabelled icon. No approved Radix primitive (dialog, tooltip,
@@ -87,7 +95,8 @@ const DESTRUCTIVE_ITEM_CLASSES = 'text-status-error-text';
 // `useFloatingMenu` -- the same hook `AccountMenu` (08-08) builds on, so this file owns only its
 // own markup and item rendering, never a second copy of the shared floating-menu behaviour.
 export function RowMenu({ items, triggerLabel, 'data-testid': testId }: RowMenuProps) {
-  const { open, setOpen, contentRef, handleContentKeyDown, handleOpenAutoFocus, selectItem } = useFloatingMenu();
+  const { open, setOpen, contentRef, handleContentKeyDown, handleOpenAutoFocus, selectItem, closeSource } =
+    useFloatingMenu();
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={setOpen} modal={false}>
@@ -106,7 +115,7 @@ export function RowMenu({ items, triggerLabel, 'data-testid': testId }: RowMenuP
           ref={contentRef}
           role="menu"
           aria-label={triggerLabel}
-          className={CONTENT_CLASSES}
+          className={cn(CONTENT_CLASSES, closeSource() === 'keyboard' && INSTANT_CLOSE_CLASS)}
           onKeyDown={handleContentKeyDown}
           onOpenAutoFocus={handleOpenAutoFocus}
         >

@@ -1,10 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Button } from './Button.js';
 import { cn } from './cn.js';
 import { Field } from './Field.js';
 import { Input } from './Input.js';
 import { isConfirmationMatch } from './confirm-match.js';
+import { useCloseSource } from './use-close-source.js';
 
 const OVERLAY_CLASSES = 'fixed inset-0 z-40 bg-canvas/72';
 
@@ -27,6 +28,16 @@ const PANEL_CLASSES = cn(
 
 const ACTIONS_CLASSES = 'flex items-center justify-end gap-2';
 
+// 08-20-PLAN.md Task 2 (UI-05/§9 #10, pitfall P14): appended to `PANEL_CLASSES` only while the
+// in-flight close is keyboard-initiated (`useCloseSource`, owned by 08-04, imported read-only
+// here). `!duration-0` mirrors Sheet.tsx's own identical override (08-12) -- Tailwind's `!`
+// important-modifier wins the specificity fight against any un-flagged transition-duration
+// utility a later plan (08-14, UI-07) composes into `PANEL_CLASSES`, so Radix's own
+// CSS-transition-duration-based exit deferral sees a zero duration and unmounts the panel
+// immediately for a keyboard close -- no `onEscapeKeyDown` override, no second keydown listener,
+// the existing `check:ui-safety` gate for both stays green.
+const INSTANT_CLOSE_CLASS = '!duration-0';
+
 interface DialogShellProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
@@ -39,12 +50,29 @@ interface DialogShellProps {
 // Shared panel/overlay/Title/Description scaffold both dialog variants below sit on. Used for
 // delete AND trust-new-fingerprint confirmation (D-03), so it owns no delete-specific copy of
 // its own -- every string is a caller-supplied prop.
+//
+// 08-20-PLAN.md Task 2 (UI-05/§9 #10, pitfall P14): `useCloseSource` is called here, once, with
+// this shell's own `open` prop and content ref -- the same externally-controlled-overlay shape
+// `Sheet.tsx` (08-12) uses. Read directly at render time (not behind an effect+state pair): by
+// the time Radix's own Escape handling calls `onOpenChange(false)` and this component re-renders
+// with the new `open` value, the primitive's own capture-phase keydown listener has already run
+// for that same event (fires before React's batched state update is ever applied -- see
+// `use-close-source.ts`'s own header comment), so `closeSource()` already reports 'keyboard'
+// during that very render -- no extra render pass needed to catch up. `ConfirmDialog` and
+// `DestructiveConfirmDialog` both inherit this from this one place; neither declares its own.
 function DialogShell({ open, onOpenChange, title, body, 'data-testid': testId, children }: DialogShellProps) {
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const { closeSource } = useCloseSource(open, contentRef);
+
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className={OVERLAY_CLASSES} />
-        <DialogPrimitive.Content className={PANEL_CLASSES} data-testid={testId}>
+        <DialogPrimitive.Content
+          ref={contentRef}
+          className={cn(PANEL_CLASSES, closeSource() === 'keyboard' && INSTANT_CLOSE_CLASS)}
+          data-testid={testId}
+        >
           <DialogPrimitive.Title className="text-title font-semibold text-ink">{title}</DialogPrimitive.Title>
           <DialogPrimitive.Description className="text-body text-ink-secondary">{body}</DialogPrimitive.Description>
           {children}

@@ -259,10 +259,10 @@ describe('RowMenu', () => {
 
   it('applies the zero-duration override to the content while the recorded close source reads keyboard', async () => {
     const user = userEvent.setup();
+    const actual = await vi.importActual<typeof import('./use-floating-menu.js')>('./use-floating-menu.js');
     const mockedHook = vi.mocked(useFloatingMenu);
-    const defaultImpl = mockedHook.getMockImplementation();
     mockedHook.mockImplementation(() => {
-      const real = defaultImpl!();
+      const real = actual.useFloatingMenu();
       return { ...real, closeSource: () => 'keyboard' as const };
     });
 
@@ -272,7 +272,7 @@ describe('RowMenu', () => {
 
       expect(screen.getByRole('menu').className).toContain('!duration-0');
     } finally {
-      mockedHook.mockImplementation(defaultImpl!);
+      mockedHook.mockImplementation(actual.useFloatingMenu);
     }
   });
 

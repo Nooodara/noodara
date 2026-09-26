@@ -108,6 +108,12 @@ const CONTENT_CLASSES = cn(
 
 const HEADER_CLASSES = 'flex items-center gap-3 p-4';
 const DIVIDER_CLASSES = 'border-t border-hairline';
+
+// 08-20-PLAN.md Task 2 (UI-05/§9 #10, pitfall P14): mirrors RowMenu.tsx's/Dialog.tsx's identical
+// override -- appended to `CONTENT_CLASSES` only while the in-flight close is keyboard-initiated,
+// read from `useFloatingMenu`'s own `closeSource` (delegated to the shared close-source primitive
+// owned by 08-04; this file never calls that primitive directly).
+const INSTANT_CLOSE_CLASS = '!duration-0';
 // PRESS_CLASSES (UI-05, 08-20-PLAN.md Task 1) is the one shared press-feedback definition
 // (press.ts, owned by 08-13) -- composed in, never redeclared.
 const ITEM_CLASSES = cn(
@@ -140,7 +146,8 @@ export function AccountMenu({
   railOnly = false,
   'data-testid': testId,
 }: AccountMenuProps) {
-  const { open, setOpen, contentRef, handleContentKeyDown, handleOpenAutoFocus, selectItem } = useFloatingMenu();
+  const { open, setOpen, contentRef, handleContentKeyDown, handleOpenAutoFocus, selectItem, closeSource } =
+    useFloatingMenu();
   const initials = getInitials(name);
 
   return (
@@ -160,7 +167,7 @@ export function AccountMenu({
           ref={contentRef}
           role="menu"
           aria-label="Account menu"
-          className={CONTENT_CLASSES}
+          className={cn(CONTENT_CLASSES, closeSource() === 'keyboard' && INSTANT_CLOSE_CLASS)}
           onKeyDown={handleContentKeyDown}
           onOpenAutoFocus={handleOpenAutoFocus}
         >

@@ -19,11 +19,11 @@ vi.mock('./use-close-source.js', async (importOriginal) => {
 });
 
 describe('DialogShell keyboard-no-animation branch (UI-05, §9 #10, P14)', () => {
-  it('applies the zero-duration override to the panel while the recorded close source reads keyboard', () => {
+  it('applies the zero-duration override to the panel while the recorded close source reads keyboard', async () => {
+    const actual = await vi.importActual<typeof import('./use-close-source.js')>('./use-close-source.js');
     const mockedHook = vi.mocked(useCloseSource);
-    const defaultImpl = mockedHook.getMockImplementation();
     mockedHook.mockImplementation((open, contentRef) => {
-      const real = defaultImpl!(open, contentRef);
+      const real = actual.useCloseSource(open, contentRef);
       return { ...real, closeSource: () => 'keyboard' as const };
     });
 
@@ -41,7 +41,7 @@ describe('DialogShell keyboard-no-animation branch (UI-05, §9 #10, P14)', () =>
 
       expect(screen.getByRole('dialog').className).toContain('!duration-0');
     } finally {
-      mockedHook.mockImplementation(defaultImpl!);
+      mockedHook.mockImplementation(actual.useCloseSource);
     }
   });
 
