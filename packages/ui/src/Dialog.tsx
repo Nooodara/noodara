@@ -8,9 +8,15 @@ import { isConfirmationMatch } from './confirm-match.js';
 
 const OVERLAY_CLASSES = 'fixed inset-0 z-40 bg-canvas/72';
 
+// UI-03 (08-06-PLAN.md Task 1, 08-UI-SPEC.md SS5.1/5.2): `--shadow-floating` applies to exactly
+// four components -- Sheet, Dialog, RowMenu, AccountMenu (scripts/check-ui-safety.mjs's
+// SHADOW_ALLOWLIST is the machine-checked gate that proves no other component ever gets one).
+// The new surface-elevated alias (solid, no translucency -- Dialog is a modal, scrim-backed)
+// replaces the old surface-1 background so dark mode sits one step lighter (surface-2); light
+// stays byte-identical.
 const PANEL_CLASSES = cn(
   'fixed left-1/2 top-1/2 z-50 flex w-[420px] -translate-x-1/2 -translate-y-1/2 flex-col gap-4',
-  'rounded-lg border border-hairline bg-surface-1 p-8',
+  'rounded-lg border border-hairline bg-surface-elevated p-8 shadow-[var(--shadow-floating)]',
 );
 
 const ACTIONS_CLASSES = 'flex items-center justify-end gap-2';

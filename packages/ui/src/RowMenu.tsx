@@ -37,8 +37,14 @@ const TRIGGER_CLASSES = cn(
   'focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
 );
 
+// UI-03 (08-06-PLAN.md Task 1, 08-UI-SPEC.md SS5.1/5.2): `--shadow-floating` applies to exactly
+// four components -- Sheet, Dialog, RowMenu, AccountMenu (scripts/check-ui-safety.mjs's
+// SHADOW_ALLOWLIST is the machine-checked gate that proves no other component ever gets one).
+// `bg-surface-3` stays exactly as-is -- already the lightest surface tier in both themes, so no
+// new elevated-surface token is needed here (unlike Sheet/Dialog).
 const CONTENT_CLASSES = cn(
   'absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-md border border-hairline bg-surface-3 py-1',
+  'shadow-[var(--shadow-floating)]',
 );
 
 const ITEM_CLASSES = cn(

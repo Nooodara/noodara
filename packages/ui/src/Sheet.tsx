@@ -18,9 +18,15 @@ export interface SheetProps {
 // surfaces already use.
 const OVERLAY_CLASSES = 'fixed inset-0 z-40 bg-canvas/72';
 
+// UI-03 (08-06-PLAN.md Task 1, 08-UI-SPEC.md SS5.1/5.2): `--shadow-floating` applies to exactly
+// four components -- Sheet, Dialog, RowMenu, AccountMenu (scripts/check-ui-safety.mjs's
+// SHADOW_ALLOWLIST is the machine-checked gate that proves no other component ever gets one).
+// The new surface-elevated alias replaces the old surface-1 background so dark mode sits one step
+// lighter (surface-2); light stays byte-identical (the alias resolves to surface-1 there).
 const PANEL_CLASSES = cn(
   'fixed inset-y-0 right-0 z-50 flex h-full w-[480px] flex-col',
-  'rounded-l-lg border-l border-hairline bg-surface-1/72 backdrop-blur-xl backdrop-saturate-[1.8]',
+  'rounded-l-lg border-l border-hairline bg-surface-elevated/72 backdrop-blur-xl backdrop-saturate-[1.8]',
+  'shadow-[var(--shadow-floating)]',
   'motion-safe:transition-transform motion-safe:duration-[var(--duration-sheet)] motion-safe:ease-[var(--ease-standard)]',
   'data-[state=open]:translate-x-0 data-[state=closed]:translate-x-full',
 );
