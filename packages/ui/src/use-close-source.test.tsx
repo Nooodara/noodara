@@ -56,7 +56,12 @@ function OverlayBody({
 
   return (
     <div>
-      <button type="button" onClick={() => onOpenChange(true)}>
+      <button
+        type="button"
+        onClick={() => {
+          onOpenChange(true);
+        }}
+      >
         Open
       </button>
       {open && (
@@ -72,7 +77,12 @@ function OverlayBody({
           </button>
         </div>
       )}
-      <button type="button" onClick={() => setReading(closeSource())}>
+      <button
+        type="button"
+        onClick={() => {
+          setReading(closeSource());
+        }}
+      >
         Read
       </button>
       <div data-testid="reading">{reading}</div>

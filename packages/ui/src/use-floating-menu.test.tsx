@@ -47,7 +47,12 @@ function TestMenu({ onEdit, onDelete }: { readonly onEdit: () => void; readonly 
 
   return (
     <div onKeyDown={handleContentKeyDown}>
-      <button type="button" onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
         Trigger
       </button>
       {open && (
@@ -63,7 +68,12 @@ function TestMenu({ onEdit, onDelete }: { readonly onEdit: () => void; readonly 
           </button>
         </div>
       )}
-      <button type="button" onClick={() => setReading(closeSource())}>
+      <button
+        type="button"
+        onClick={() => {
+          setReading(closeSource());
+        }}
+      >
         Read
       </button>
       <div data-testid="reading">{reading}</div>
