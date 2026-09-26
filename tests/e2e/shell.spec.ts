@@ -41,17 +41,15 @@ function focusedTheme(page: Page): Promise<string | null> {
   return page.evaluate(() => document.documentElement.getAttribute('data-theme'));
 }
 
-// Orchestrator-assigned deviation (05-35-PLAN.md wave-1 E2E gate regression): every sidebar nav
-// link in this file must be scoped to `shell-sidebar`, never resolved at the page level. Plan
-// 05-32's activity specs create servers named `activity-refresh-fail-*`/`activity-refresh-gap-*`
-// on the shared E2E stack; their list rows render as links whose accessible name contains
-// "activity" as a case-insensitive substring, which Playwright's default (non-exact) `name`
-// matching for `getByRole('link', { name: 'Activity' })` also matches at the page level --
-// producing a strict-mode violation (3 elements) whenever this spec runs after those servers
-// exist. Scoping to the sidebar's own `data-testid` excludes every server-list row by
-// construction, regardless of what any server happens to be named.
+// 08-07: resolved through NavTree's own `nav-tree-item-{id}` testid contract (08-UI-SPEC.md
+// SS11.3) rather than DOM structure or a page-scoped accessible-name role query -- this is also
+// what the 05-35-PLAN.md wave-1 deviation below used to work around (a page-level `Activity`
+// server row's accessible name colliding with the sidebar's own "Activity" link): the testid is
+// unique by construction regardless of what any server happens to be named, so that workaround is
+// now subsumed by the stronger contract rather than needed as a separate scoping trick. Every
+// item id in this app today is exactly its label lower-cased (`servers`/`activity`/`settings`).
 function sidebarLink(page: Page, name: string): Locator {
-  return page.getByTestId('shell-sidebar').getByRole('link', { name });
+  return page.getByTestId(`nav-tree-item-${name.toLowerCase()}`);
 }
 
 test('@shell pressing Tab from page load moves through the skip link, the three sidebar items, the theme toggle, then sign out', async ({
@@ -145,6 +143,33 @@ test('@shell the sidebar collapses to an icon rail at 1024px and a bottom sheet 
   await expect(page.getByTestId('shell-sidebar')).toBeHidden();
   await page.getByTestId('shell-menu-button').click();
   await expect(page.getByTestId('shell-sidebar')).toBeVisible();
+});
+
+// 08-07 (D-03): the sidebar's chrome fuses with the page's own canvas at >=900px -- it has no
+// right-edge border of its own, only the content column's own InsetGroup hairlines separate it
+// visually.
+test('@shell the sidebar has no right-edge border at 1440px', async ({ page }) => {
+  await login(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  await expect(page.getByTestId('nav-tree-item-servers')).toBeVisible();
+  await expect(page.getByTestId('nav-tree-item-activity')).toBeVisible();
+  await expect(page.getByTestId('nav-tree-item-settings')).toBeVisible();
+
+  const borderRightWidth = await page
+    .getByTestId('shell-sidebar')
+    .evaluate((el) => getComputedStyle(el).borderRightWidth);
+  expect(borderRightWidth).toBe('0px');
+});
+
+// 08-07 (D-07): the rail's tooltip-per-leaf behaviour keeps working once the leaf is rendered by
+// NavTree instead of Sidebar's own hand-written markup.
+test('@shell a keyboard-focused leaf at 1024px still shows its tooltip with the leaf label', async ({ page }) => {
+  await login(page);
+  await page.setViewportSize({ width: 1024, height: 800 });
+
+  await sidebarLink(page, 'Activity').focus();
+  await expect(page.getByRole('tooltip')).toHaveText('Activity');
 });
 
 test('@shell signing out returns to /login, and a subsequent direct visit to /servers redirects to /login again', async ({
