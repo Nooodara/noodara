@@ -18,8 +18,19 @@
 // discovery read endpoint Plan 05-18's Discovery section owns. Rendering them here would mean
 // inventing data this component was never given, which D-05's "never invent progress" rule
 // (05-CONTEXT.md) forbids in spirit even outside the Discovery section itself.
+import type { CSSProperties } from 'react';
 import type { ServerErrorCode } from '@noodara/domain/server';
-import { InsetGroup, LabelValue, StatTile, formatDiskUsage, formatMb, formatRelativeTime, formatUptime } from '@noodara/ui';
+import {
+  Fingerprint,
+  InsetGroup,
+  LabelValue,
+  PLACEHOLDER,
+  StatTile,
+  formatDiskUsage,
+  formatMb,
+  formatRelativeTime,
+  formatUptime,
+} from '@noodara/ui';
 import type { ServerView } from '../lib/api-client';
 
 const CREDENTIAL_TYPE_LABEL: Record<ServerView['credentialType'], string> = {
@@ -118,14 +129,30 @@ export function ServerFacts({ server, now, dimmed = false, warnings = [] }: Serv
         <LabelValue label="Port" value={String(server.sshPort)} mono dimmed={dimmed} caption={asOfCaption} />
         <LabelValue label="SSH user" value={server.sshUser} mono dimmed={dimmed} caption={asOfCaption} />
         <LabelValue label="Credential" value={CREDENTIAL_TYPE_LABEL[server.credentialType]} dimmed={dimmed} caption={asOfCaption} />
-        <LabelValue
-          label="Host fingerprint"
-          value={server.hostFingerprint}
-          mono
-          copyable
-          dimmed={dimmed}
-          {...(fingerprintCaption !== undefined ? { caption: fingerprintCaption } : {})}
-        />
+        {/* 08-17-PLAN.md Task 2 (D-10): the "Host fingerprint" row swaps `LabelValue mono copyable`
+            for the shared `Fingerprint` component -- only this row, every other row above/below
+            keeps `LabelValue` unchanged. Reproduces `LabelValue`'s own row layout (label at
+            `text-caption text-ink-secondary`, caption + value on the trailing side) since
+            `LabelValue` itself has no slot for a custom value renderer. `dimmed` is applied by
+            locally overriding the `--color-ink` custom property Tailwind's `text-ink` utility
+            reads (Fingerprint's own single-mode blocks render `text-ink`) -- CSS custom
+            properties inherit down the DOM tree, so this affects only Fingerprint's block spans,
+            never the label/caption (`text-ink-secondary`/`text-ink-tertiary`, untouched). */}
+        <div data-dimmed={dimmed ? 'true' : 'false'} className="flex items-center justify-between gap-4 py-2">
+          <span className="text-caption text-ink-secondary">Host fingerprint</span>
+          <div className="flex items-center gap-2">
+            {fingerprintCaption !== undefined ? <span className="text-caption text-ink-tertiary">{fingerprintCaption}</span> : null}
+            {server.hostFingerprint === null ? (
+              <span data-mono="true" className="text-callout text-ink-tertiary">
+                {PLACEHOLDER}
+              </span>
+            ) : (
+              <div style={dimmed ? ({ '--color-ink': 'var(--ink-tertiary)' } as CSSProperties) : undefined}>
+                <Fingerprint value={server.hostFingerprint} copyLabel="Copy Host fingerprint" />
+              </div>
+            )}
+          </div>
+        </div>
         <LabelValue label="Last seen" value={formatRelativeTime(server.lastSeenAt, now)} dimmed={dimmed} caption={asOfCaption} />
       </InsetGroup>
     </div>

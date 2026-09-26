@@ -26,7 +26,7 @@ describe('FirstTrustNotice', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub')).toBeInTheDocument();
     expect(screen.getByText('SHA256:')).toBeInTheDocument();
-    expect(screen.getByText('AbCd')).toBeInTheDocument();
+    expect(screen.getAllByText('AbCd').length).toBeGreaterThan(0);
   });
 
   it('renders the verify command with its own copy control and the fingerprint through one Fingerprint copy control -- two distinct copy affordances', () => {

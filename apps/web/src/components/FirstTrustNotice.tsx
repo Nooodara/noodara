@@ -8,7 +8,11 @@
 //
 // The permanent fingerprint row in the Connection group (ServerFacts.tsx) is a separate, always-
 // visible surface -- dismissing this notice never affects it.
-import { CopyButton, Notice } from '@noodara/ui';
+//
+// 08-17-PLAN.md Task 2 (D-10): the fingerprint span + its own CopyButton pair is replaced by the
+// shared `Fingerprint` component (08-UI-SPEC.md §8.2's three call sites) -- the verify-command
+// block above stays exactly as it was (a command, not a hash, keeps its own CopyButton).
+import { CopyButton, Fingerprint, Notice } from '@noodara/ui';
 
 const VERIFY_COMMAND = 'ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub';
 
@@ -31,12 +35,7 @@ export function FirstTrustNotice({ fingerprint, onDismiss }: FirstTrustNoticePro
           </code>
           <CopyButton value={VERIFY_COMMAND} label="Copy command" />
         </div>
-        <div className="flex items-center gap-2">
-          <span data-mono="true" className="break-all text-mono text-ink">
-            {fingerprint}
-          </span>
-          <CopyButton value={fingerprint} label="Copy fingerprint" />
-        </div>
+        <Fingerprint value={fingerprint} />
       </div>
     </Notice>
   );

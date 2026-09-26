@@ -123,7 +123,7 @@ describe('ServerFacts', () => {
   });
 
   it('renders the Host fingerprint value through Fingerprint -- the SHA256: prefix and its 4-character blocks', () => {
-    const server = buildDiscoveredServer({ hostFingerprint: 'SHA256:abcdef1234567890' });
+    const server = buildDiscoveredServer({ id: 's1', name: 'srv-1', hostFingerprint: 'SHA256:abcdef1234567890' });
     renderUi(<ServerFacts server={server} now={NOW} />);
 
     const connectionGroup = screen.getByTestId('server-facts-connection');
@@ -133,7 +133,7 @@ describe('ServerFacts', () => {
   });
 
   it('renders the shared PLACEHOLDER (never an empty block grid) for a null Host fingerprint', () => {
-    const server = buildDiscoveredServer({ hostFingerprint: null, hostFingerprintCapturedAt: null });
+    const server = buildDiscoveredServer({ id: 's1', name: 'srv-1', hostFingerprint: null, hostFingerprintCapturedAt: null });
     renderUi(<ServerFacts server={server} now={NOW} />);
 
     const connectionGroup = screen.getByTestId('server-facts-connection');
