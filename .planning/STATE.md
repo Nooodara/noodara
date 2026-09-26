@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 08-12-PLAN.md
-last_updated: "2026-09-26T11:21:59.544Z"
+stopped_at: Completed 08-15-PLAN.md
+last_updated: "2026-09-26T11:39:13.421Z"
 last_activity: 2026-09-26
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 30
-  completed_plans: 23
+  completed_plans: 24
   percent: 13
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 08 (redise-o-de-la-app) — EXECUTING
-Plan: 14 of 20
+Plan: 15 of 20
 Status: Ready to execute
 Last activity: 2026-09-26
 
-Progress: [████████░░] 77%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -180,6 +180,7 @@ Progress: [████████░░] 77%
 | Phase 08 P11 | 55min | 1 tasks | 13 files |
 | Phase 08 P12 | 50min | 3 tasks | 11 files |
 | Phase 08 P13 | 45min | 2 tasks | 9 files |
+| Phase 08 P15 | 55min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -490,6 +491,8 @@ Recent decisions affecting current work:
 - [Phase 08]: Drag-to-dismiss layered as an additive inner transform on top of the outer Content's unchanged CSS-transition entry/close, avoiding a doubled transform
 - [Phase 08]: Added toMotionSpring() to convert UI-SPEC's SwiftUI-style damping/response SPRING tokens into Motion's real stiffness/damping/mass API
 - [Phase 08 P13]: Button.tsx's pre-existing active:[transform:scale(0.97)] literal was replaced with the new shared PRESS_CLASSES rather than left in place, since a second literal would defeat UI-05's one-definition requirement; CopyButton/FileButton get real press feedback transitively through the Button they wrap (ButtonProps omits className) and carry only a doc comment naming PRESS_CLASSES to satisfy the plan's grep gate.
+- [Phase 08]: UI-09's tabular-nums opt-out for ActivityRow prose uses a global [data-testid='activity-row'] p selector rather than editing the out-of-scope ActivityRow.tsx
+- [Phase 08]: The @starting-style entrance is keyed on a single data-entering="true" attribute; a repo-wide grep found no mounted-state entrance effect to migrate beyond ThemeToggle's excluded settledRef
 
 ### Pending Todos
 
@@ -565,8 +568,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-26T11:19:48.928Z
-Stopped at: Completed 08-12-PLAN.md
+Last session: 2026-09-26T11:39:13.413Z
+Stopped at: Completed 08-15-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
