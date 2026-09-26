@@ -310,6 +310,19 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
           />
         ) : null}
 
+        {/* 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 3): moved from the bottom of this
+            column to directly under the toolbar/notices/error banner and above the stat tiles --
+            the user's own G3 review asked for the discovery narration to be the first thing on
+            screen rather than the last. Only the position moved; the section's own internals
+            (08-18) are untouched. */}
+        <DiscoverySection
+          serverId={server.id}
+          serverStatus={server.status}
+          sshUser={server.sshUser}
+          receivedChecks={liveChecks}
+          now={now}
+        />
+
         {detailState === 'never-discovered' || detailState === 'failed-no-history' ? (
           <EmptyState data-testid="server-detail-empty" title="Not discovered yet." body="" />
         ) : null}
@@ -325,14 +338,6 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
             <EmptyState data-testid="server-detail-empty" title="Not discovered yet." body="" />
           )
         ) : null}
-
-        <DiscoverySection
-          serverId={server.id}
-          serverStatus={server.status}
-          sshUser={server.sshUser}
-          receivedChecks={liveChecks}
-          now={now}
-        />
       </div>
       <TrustFingerprintDialog
         open={trustDialogOpen}
