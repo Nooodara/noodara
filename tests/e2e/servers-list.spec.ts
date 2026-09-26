@@ -232,6 +232,125 @@ test('@servers a row\'s actions menu is absent until opened, then exposes Edit a
   await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
 });
 
+// 08-04-PLAN.md Task 3 (UI-04/UI-05, P14): the three RowMenu behaviours jsdom cannot honestly
+// verify -- real focus movement/return, a real `(hover: hover) and (pointer: fine)` media query
+// resolving against a real touch-emulated context, and `aria-expanded` toggling in a real DOM.
+// `packages/ui/src/RowMenu.test.tsx` already covers the component-level contract (close-on-select,
+// roving focus, keyed items); these three only add what only a real browser can prove.
+test('@rowmenu opening the row menu by keyboard, moving with ArrowDown/ArrowUp and activating Edit with Enter, closes the menu and hands off to the real edit sheet', async ({
+  page,
+}) => {
+  await login(page);
+
+  const name = `rowmenu-kb-${String(Date.now())}`;
+  const created = await page.request.post('/api/servers', {
+    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+  });
+  // A refused create must fail here, by name -- never later, disguised as a live event that
+  // was lost.
+  expect(created.status()).toBe(201);
+
+  const row = page.getByTestId('servers-row').filter({ hasText: name });
+  await expect(row).toBeVisible();
+
+  const trigger = page.getByRole('button', { name: `Actions for ${name}` });
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+
+  // Radix's own autofocus lands on the first item ("Edit") the instant the menu opens
+  // (`RowMenu.test.tsx` proves this at the component level too) -- ArrowDown then ArrowUp is a
+  // real-browser round trip through the roving-focus wiring, landing back on "Edit"
+  // deterministically. Activating "Delete" instead would open the separate, real, destructive
+  // typed-name confirmation dialog (already covered by `server-sheet.spec.ts`) -- out of scope
+  // here, and it applies `aria-hidden` to the rest of the page while open, which would make this
+  // very trigger unreachable by role/name for the rest of the test.
+  await expect(page.getByRole('menuitem', { name: 'Edit' })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await expect(page.getByRole('menuitem', { name: 'Edit' })).toBeFocused();
+
+  await page.keyboard.press('Enter');
+
+  // "Edit" closes RowMenu and opens the real edit sheet in the same commit (ServerRow wires
+  // `onSelect` straight to `openEditSheet`) -- the sheet taking focus, not the now-hidden trigger,
+  // is the real, correct end state here (`server-sheet.spec.ts` already proves the sheet itself
+  // opens correctly); `RowMenu.test.tsx`'s own "closes and returns focus to the trigger after
+  // selecting an item" case already proves the close+focus-return contract in isolation, where
+  // selecting an item genuinely has nowhere else to send focus.
+  await expect(page.getByRole('menuitem')).toHaveCount(0);
+  await expect(page.getByTestId('server-sheet')).toBeVisible();
+});
+
+test('@rowmenu the trigger reports aria-expanded="true" while the menu is open and "false" once closed', async ({
+  page,
+}) => {
+  await login(page);
+
+  const name = `rowmenu-aria-${String(Date.now())}`;
+  const created = await page.request.post('/api/servers', {
+    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+  });
+  // A refused create must fail here, by name -- never later, disguised as a live event that
+  // was lost.
+  expect(created.status()).toBe(201);
+
+  const row = page.getByTestId('servers-row').filter({ hasText: name });
+  await expect(row).toBeVisible();
+
+  const trigger = page.getByRole('button', { name: `Actions for ${name}` });
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+  await row.hover();
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+  await page.keyboard.press('Escape');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  // Unlike selecting an item (which hands off to a follow-up sheet/dialog -- see the keyboard
+  // test above), Escape has nowhere else to send focus: the trigger genuinely regaining it is the
+  // real production end state here, proven in a real browser.
+  await expect(trigger).toBeFocused();
+});
+
+test('@rowmenu with touch emulation, the row-menu trigger is visible without any hover', async ({ browser }) => {
+  // A dedicated context, not the shared `page` fixture: `hasTouch`/`isMobile` are context-creation
+  // options that cannot be toggled on an already-open page, and this is the one test in this file
+  // that needs them. `toHaveCSS('opacity', ...)` -- not `toBeVisible()` -- is the assertion that
+  // actually exercises the bug this test guards against: Playwright's own actionability model
+  // considers an `opacity: 0` element visible (it has a non-empty bounding box and no
+  // `visibility: hidden`), so `toBeVisible()` would pass even on the old, permanently-transparent
+  // trigger and never catch a touch-visibility regression.
+  const context = await browser.newContext({
+    viewport: { width: 375, height: 667 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+
+  try {
+    await login(page);
+
+    const name = `rowmenu-touch-${String(Date.now())}`;
+    const created = await page.request.post('/api/servers', {
+      data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+    });
+    // A refused create must fail here, by name -- never later, disguised as a live event that
+    // was lost.
+    expect(created.status()).toBe(201);
+
+    const row = page.getByTestId('servers-row').filter({ hasText: name });
+    await expect(row).toBeVisible();
+
+    // No `.hover()` call anywhere in this test -- a touch device can never trigger `:hover` in the
+    // first place, which is exactly the case `(hover: hover) and (pointer: fine)` gates out.
+    const trigger = page.getByRole('button', { name: `Actions for ${name}` });
+    await expect(trigger).toHaveCSS('opacity', '1');
+  } finally {
+    await context.close();
+  }
+});
+
 // .planning/debug/sse-lost-event-race.md: the real-browser form of the snapshot/stream race. The
 // two tests above create their server the instant the URL turns `/servers` -- i.e. while the
 // list's mount GET and its resync-on-open GET are both still in flight -- and rely on the live
