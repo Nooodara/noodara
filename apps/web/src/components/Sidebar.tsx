@@ -72,7 +72,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           // >=900px: the chrome retreats and fuses with the page's own canvas (D-03) -- no right
           // edge border of its own; separation comes from spacing and the InsetGroup blocks' own
           // hairline borders in the content column.
-          'min-[900px]:static min-[900px]:inset-auto min-[900px]:z-auto min-[900px]:h-screen min-[900px]:w-16 min-[900px]:shrink-0 min-[900px]:border-t-0 min-[900px]:bg-canvas min-[900px]:p-3',
+          //
+          // 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 2): `static` (the shell's flex row
+          // stretches this element to `h-screen` only as an *initial* height) let the sidebar
+          // scroll away with the page the moment `main`'s own content grew taller than the
+          // viewport -- `sticky top-0` pins it to the viewport instead, `h-screen` now bounding
+          // its own permanently-visible height rather than a one-time layout measurement.
+          'min-[900px]:sticky min-[900px]:top-0 min-[900px]:inset-auto min-[900px]:z-auto min-[900px]:h-screen min-[900px]:w-16 min-[900px]:shrink-0 min-[900px]:border-t-0 min-[900px]:bg-canvas min-[900px]:p-3',
           'min-[1280px]:w-60',
           open ? 'flex' : 'hidden min-[900px]:flex',
         )}
