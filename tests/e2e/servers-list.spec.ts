@@ -431,3 +431,44 @@ test('@servers a server created while the list snapshots are still in flight sti
 
   await expect(page.getByTestId('servers-row').filter({ hasText: name })).toBeVisible();
 });
+
+// 08-10-PLAN.md Task 3 (UI-07/D-03, 08-UI-SPEC.md SS2.2): the one thing jsdom cannot honestly
+// prove -- the toolbar's own rendered `border-bottom-color`, not merely its class name. A shrunk
+// viewport (rather than inventing new fixture data) guarantees the 20 seeded rows overflow it
+// regardless of exact row/toolbar heights, using the same route-interception fixture pattern the
+// populated-rows test above already established.
+test('@scroll-edge the toolbar border-bottom is transparent at scroll-top, visible once scrolled, transparent again back at the top', async ({
+  page,
+}) => {
+  const items = Array.from({ length: 20 }, (_, index) =>
+    buildServerViewFixture({
+      id: `33333333-3333-4333-8333-${String(index).padStart(12, '0')}`,
+      name: `Scroll edge server ${String(index)}`,
+      host: `scroll-edge-${String(index)}.example.test`,
+    }),
+  );
+
+  await page.route('**/api/servers', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items }) }),
+  );
+
+  await page.setViewportSize({ width: 1024, height: 400 });
+  await login(page);
+
+  const toolbar = page.getByTestId('shell-toolbar');
+  await expect(toolbar).toBeVisible();
+
+  async function borderBottomAlpha(): Promise<number> {
+    const color = await toolbar.evaluate((el) => getComputedStyle(el).borderBottomColor);
+    const match = /rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*(?:,\s*([\d.]+)\s*)?\)/.exec(color);
+    return match?.[1] === undefined ? 1 : Number(match[1]);
+  }
+
+  expect(await borderBottomAlpha()).toBe(0);
+
+  await page.mouse.wheel(0, 600);
+  await expect.poll(borderBottomAlpha).toBeGreaterThan(0);
+
+  await page.mouse.wheel(0, -600);
+  await expect.poll(borderBottomAlpha).toBe(0);
+});
