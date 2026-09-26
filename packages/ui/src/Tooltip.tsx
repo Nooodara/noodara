@@ -20,6 +20,17 @@ export interface TooltipProps {
 const CONTENT_CLASSES = cn(
   'z-50 max-w-xs rounded-sm border border-hairline bg-surface-3 px-2 py-1',
   'text-caption text-ink',
+  // UI-07 (08-14-PLAN.md Task 1, 08-UI-SPEC.md §7.2/§7.4): Tooltip sits on
+  // @radix-ui/react-popper underneath (unlike RowMenu/AccountMenu's hand-rolled Dialog
+  // positioning), so its own Content wrapper already computes and exposes
+  // `--radix-tooltip-content-transform-origin` (aliased from Popper's own
+  // `--radix-popper-transform-origin`) -- this reads that variable directly rather than guessing
+  // a static corner.
+  'origin-[var(--radix-tooltip-content-transform-origin)]',
+  'motion-safe:transition-[opacity] motion-safe:duration-[125ms] motion-safe:ease-[var(--ease-out)]',
+  'motion-safe:data-[state=closed]:opacity-0',
+  'motion-safe:data-[state=delayed-open]:opacity-100',
+  'motion-safe:data-[state=instant-open]:opacity-100',
 );
 
 // Tooltip (skill SS4.6, 05-UI-SPEC.md Component Inventory) -- a thin styling wrapper over

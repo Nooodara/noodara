@@ -1,4 +1,4 @@
-import { type ComponentType, type ReactNode } from 'react';
+import { type ComponentType, type CSSProperties, type ReactNode } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cn } from './cn.js';
 import { PRESS_CLASSES } from './press.js';
@@ -104,7 +104,18 @@ const CONTENT_CLASSES = cn(
   'absolute bottom-full left-0 z-50 mb-1 w-[288px] rounded-md border border-hairline bg-surface-3',
   'shadow-[var(--shadow-floating)]',
   'contrast-more:border-hairline-strong',
+  // UI-07 (08-14-PLAN.md Task 1, 08-UI-SPEC.md §7.2/§7.4): same origin-anchoring treatment as
+  // RowMenu.tsx's identical comment -- this menu is also built on the non-modal Dialog primitive
+  // (no Popper var available), but its own `bottom-full left-0` positioning always anchors its
+  // bottom-left corner to the trigger's top-left corner instead, so the inline custom property
+  // (CONTENT_TRANSFORM_ORIGIN_STYLE below) carries the opposite value from RowMenu's.
+  'origin-[var(--transform-origin)]',
+  'motion-safe:transition-[transform,opacity] motion-safe:duration-[150ms] motion-safe:ease-[var(--ease-out)]',
+  'motion-safe:data-[state=closed]:scale-[0.97] motion-safe:data-[state=closed]:opacity-0',
+  'motion-safe:data-[state=open]:scale-100 motion-safe:data-[state=open]:opacity-100',
 );
+
+const CONTENT_TRANSFORM_ORIGIN_STYLE = { '--transform-origin': 'bottom left' } as CSSProperties;
 
 const HEADER_CLASSES = 'flex items-center gap-3 p-4';
 const DIVIDER_CLASSES = 'border-t border-hairline';
@@ -168,6 +179,7 @@ export function AccountMenu({
           role="menu"
           aria-label="Account menu"
           className={cn(CONTENT_CLASSES, closeSource() === 'keyboard' && INSTANT_CLOSE_CLASS)}
+          style={CONTENT_TRANSFORM_ORIGIN_STYLE}
           onKeyDown={handleContentKeyDown}
           onOpenAutoFocus={handleOpenAutoFocus}
         >

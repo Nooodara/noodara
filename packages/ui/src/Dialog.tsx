@@ -24,6 +24,16 @@ const PANEL_CLASSES = cn(
   'fixed left-1/2 top-1/2 z-50 flex w-[420px] -translate-x-1/2 -translate-y-1/2 flex-col gap-4',
   'rounded-lg border border-hairline bg-surface-elevated p-8 shadow-[var(--shadow-floating)]',
   'contrast-more:border-hairline-strong',
+  // UI-07 (08-14-PLAN.md Task 1, 08-UI-SPEC.md §7.2/§7.4): the Dialog is the stated exception --
+  // it always grows from the centre, never a trigger, since a confirm/destructive dialog can be
+  // summoned from more than one call site and has no single trigger element to anchor to. The
+  // `-translate-x-1/2 -translate-y-1/2` pair above is layout (centering), not motion, and stays
+  // outside the `motion-safe:` gate below; Tailwind composes both into the one `transform`
+  // property regardless of which utility declared which component.
+  'origin-center',
+  'motion-safe:transition-[transform,opacity] motion-safe:duration-[200ms] motion-safe:ease-[var(--ease-out)]',
+  'motion-safe:data-[state=closed]:scale-[0.95] motion-safe:data-[state=closed]:opacity-0',
+  'motion-safe:data-[state=open]:scale-100 motion-safe:data-[state=open]:opacity-100',
 );
 
 const ACTIONS_CLASSES = 'flex items-center justify-end gap-2';

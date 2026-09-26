@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { cn } from './cn.js';
@@ -54,7 +55,21 @@ const CONTENT_CLASSES = cn(
   'absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-md border border-hairline bg-surface-3 py-1',
   'shadow-[var(--shadow-floating)]',
   'contrast-more:border-hairline-strong',
+  // UI-07 (08-14-PLAN.md Task 1, 08-UI-SPEC.md §7.2/§7.4): grows from the trigger's own corner,
+  // never a hardcoded `origin-top-right` guess. This menu is built on the non-modal Dialog
+  // primitive (D-05's own explicit ask), not Popper, so there is no `--radix-popper-transform-
+  // origin` var here (unlike Tooltip.tsx, which has one) -- `right-0 top-full` on this element is
+  // a fixed structural fact of its own positioning (its top-right corner always touches the
+  // trigger's bottom-right corner), so the origin is set as a `--transform-origin` custom
+  // property inline on this element itself (CONTENT_TRANSFORM_ORIGIN_STYLE below), from inside
+  // this component, never from a call site.
+  'origin-[var(--transform-origin)]',
+  'motion-safe:transition-[transform,opacity] motion-safe:duration-[150ms] motion-safe:ease-[var(--ease-out)]',
+  'motion-safe:data-[state=closed]:scale-[0.97] motion-safe:data-[state=closed]:opacity-0',
+  'motion-safe:data-[state=open]:scale-100 motion-safe:data-[state=open]:opacity-100',
 );
+
+const CONTENT_TRANSFORM_ORIGIN_STYLE = { '--transform-origin': 'top right' } as CSSProperties;
 
 // Same hover-gating rationale as TRIGGER_CLASSES above (UI-10) -- a tap must never leave an item
 // stuck in its hover-highlighted state. PRESS_CLASSES (UI-05, 08-20-PLAN.md Task 1) is the one
@@ -116,6 +131,7 @@ export function RowMenu({ items, triggerLabel, 'data-testid': testId }: RowMenuP
           role="menu"
           aria-label={triggerLabel}
           className={cn(CONTENT_CLASSES, closeSource() === 'keyboard' && INSTANT_CLOSE_CLASS)}
+          style={CONTENT_TRANSFORM_ORIGIN_STYLE}
           onKeyDown={handleContentKeyDown}
           onOpenAutoFocus={handleOpenAutoFocus}
         >
