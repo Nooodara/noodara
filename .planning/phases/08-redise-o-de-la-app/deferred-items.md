@@ -139,3 +139,20 @@ round-1 fix rather than deferred). RED `f4c06fc`, GREEN `b5c26f6`.
   render a banner (fall back to a safe generic message when `copyForErrorCode` has no copy for the
   code), and the operator docs should say that `NOODARA_PUBLIC_URL` must be the exact origin the
   browser uses. Candidate for the G3 adjustment round or Phase 9's auth work.
+
+## Decisions changed at G3
+
+### D-05: Appearance leaves the account menu, moves into Settings
+
+- **Found during:** the G3 live review (2026-09-26), "G3 adjust" round 1, item 5.
+- **The user's words:** "Creo que es mejor que la apariencia esté en settings y no como sección
+  aparte."
+- **What changed:** 08-CONTEXT.md's D-05 originally put the theme control inline inside the
+  account menu's "Appearance" row (`packages/ui/src/AccountMenu.tsx`). That row (and its inline
+  `ThemeToggle`) is removed; the theme control now lives in a new Appearance `InsetGroup` on
+  `/settings` (`apps/web/src/components/SettingsGroups.tsx`), consistent with the existing
+  Instance group. `ThemeToggle` itself is unchanged -- its `STORAGE_KEY` still has exactly one
+  writer, only its mount point moved. This is UI-level only: no server-side theme persistence was
+  added (Phase 9's own SET-02..06/D20-D21 own that), matching D-05's original scope note.
+- **Why not deferred:** small enough (one component's row moves to another) to apply directly as
+  a G3 adjustment round rather than push to a future phase.
