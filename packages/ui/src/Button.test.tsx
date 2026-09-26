@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Button, type ButtonVariant } from './Button.js';
+import { PRESS_CLASSES } from './press.js';
 import { renderUi, userEvent } from './testing/render.js';
 
 const VARIANTS: readonly ButtonVariant[] = ['primary', 'secondary', 'ghost', 'destructive'];
@@ -96,5 +97,14 @@ describe('Button', () => {
     const { getByTestId } = renderUi(<Button data-testid="login-submit">Sign in</Button>);
 
     expect(getByTestId('login-submit')).toHaveAttribute('data-testid', 'login-submit');
+  });
+
+  it('gets its press feedback from the one shared PRESS_CLASSES definition (UI-05)', () => {
+    const { getByRole } = renderUi(<Button>Go</Button>);
+    const button = getByRole('button', { name: 'Go' });
+
+    for (const token of PRESS_CLASSES.split(/\s+/).filter(Boolean)) {
+      expect(button.className).toContain(token);
+    }
   });
 });

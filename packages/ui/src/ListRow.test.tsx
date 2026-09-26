@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ListRow } from './ListRow.js';
+import { PRESS_CLASSES } from './press.js';
 import { renderUi, screen, userEvent } from './testing/render.js';
 
 describe('ListRow', () => {
@@ -109,6 +110,15 @@ describe('ListRow', () => {
       if (token.includes('hover:') && !token.startsWith('[@media(hover:hover)_and_(pointer:fine)]:')) {
         throw new Error(`ungated hover utility found: ${token}`);
       }
+    }
+  });
+
+  it('gets its press feedback from the one shared PRESS_CLASSES definition (UI-05)', () => {
+    renderUi(<ListRow onActivate={vi.fn()} primaryText="Row" />);
+    const button = screen.getByRole('button', { name: 'Row' });
+
+    for (const token of PRESS_CLASSES.split(/\s+/).filter(Boolean)) {
+      expect(button.className).toContain(token);
     }
   });
 });
