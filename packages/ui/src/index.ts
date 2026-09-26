@@ -35,6 +35,7 @@ export { InsetGroup, type InsetGroupProps } from './InsetGroup.js';
 export { isConfirmationMatch } from './confirm-match.js';
 export { LabelValue, type LabelValueProps } from './LabelValue.js';
 export { ListRow, type ListRowProps } from './ListRow.js';
+export { NavTree, type NavTreeItem, type NavTreeProps } from './NavTree.js';
 export { Notice, type NoticeProps } from './Notice.js';
 export { RelativeTime, type RelativeTimeProps } from './RelativeTime.js';
 export { RowMenu, type RowMenuItem, type RowMenuProps } from './RowMenu.js';
