@@ -19,7 +19,7 @@
 // inventing data this component was never given, which D-05's "never invent progress" rule
 // (05-CONTEXT.md) forbids in spirit even outside the Discovery section itself.
 import type { ServerErrorCode } from '@noodara/domain/server';
-import { LabelValue, StatTile, formatDiskUsage, formatMb, formatRelativeTime, formatUptime } from '@noodara/ui';
+import { InsetGroup, LabelValue, StatTile, formatDiskUsage, formatMb, formatRelativeTime, formatUptime } from '@noodara/ui';
 import type { ServerView } from '../lib/api-client';
 
 const CREDENTIAL_TYPE_LABEL: Record<ServerView['credentialType'], string> = {
@@ -55,7 +55,7 @@ export function ServerFacts({ server, now, dimmed = false, warnings = [] }: Serv
   const hasDockerAbsentWarning = server.dockerInstalled === false;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <div data-testid="server-facts-tiles" className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatTile data-testid="server-fact-cpu-cores" label="CPU cores" value={server.cpuCores} caption={asOfCaption} dimmed={dimmed} />
         <StatTile
@@ -82,8 +82,7 @@ export function ServerFacts({ server, now, dimmed = false, warnings = [] }: Serv
         />
       </div>
 
-      <div data-testid="server-facts-system" className="flex flex-col gap-1">
-        <h3 className="text-label uppercase text-ink-secondary">System</h3>
+      <InsetGroup title="System" data-testid="server-facts-system">
         <LabelValue label="Hostname" value={server.hostname} mono dimmed={dimmed} caption={asOfCaption} />
         <div className="flex flex-col">
           <LabelValue label="OS" value={osLine(server.osDistribution, server.osVersion)} dimmed={dimmed} caption={asOfCaption} />
@@ -94,10 +93,9 @@ export function ServerFacts({ server, now, dimmed = false, warnings = [] }: Serv
           ) : null}
         </div>
         <LabelValue label="Architecture" value={server.arch} mono dimmed={dimmed} caption={asOfCaption} />
-      </div>
+      </InsetGroup>
 
-      <div data-testid="server-facts-docker" className="flex flex-col gap-1">
-        <h3 className="text-label uppercase text-ink-secondary">Docker</h3>
+      <InsetGroup title="Docker" data-testid="server-facts-docker">
         <div className="flex flex-col">
           <LabelValue label="Engine version" value={server.dockerVersion} mono dimmed={dimmed} caption={asOfCaption} />
           {hasDockerAbsentWarning ? (
@@ -107,10 +105,9 @@ export function ServerFacts({ server, now, dimmed = false, warnings = [] }: Serv
           ) : null}
         </div>
         <LabelValue label="Compose version" value={server.dockerComposeVersion} mono dimmed={dimmed} caption={asOfCaption} />
-      </div>
+      </InsetGroup>
 
-      <div data-testid="server-facts-connection" className="flex flex-col gap-1">
-        <h3 className="text-label uppercase text-ink-secondary">Connection</h3>
+      <InsetGroup title="Connection" data-testid="server-facts-connection">
         <LabelValue label="Host" value={server.host} mono dimmed={dimmed} caption={asOfCaption} />
         <LabelValue label="Port" value={String(server.sshPort)} mono dimmed={dimmed} caption={asOfCaption} />
         <LabelValue label="SSH user" value={server.sshUser} mono dimmed={dimmed} caption={asOfCaption} />
@@ -124,7 +121,7 @@ export function ServerFacts({ server, now, dimmed = false, warnings = [] }: Serv
           {...(fingerprintCaption !== undefined ? { caption: fingerprintCaption } : {})}
         />
         <LabelValue label="Last seen" value={formatRelativeTime(server.lastSeenAt, now)} dimmed={dimmed} caption={asOfCaption} />
-      </div>
+      </InsetGroup>
     </div>
   );
 }

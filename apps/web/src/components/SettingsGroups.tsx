@@ -10,7 +10,7 @@
 // beside it) rather than through `LabelValue`'s own built-in `copyable` prop, so this file visibly
 // owns the one copy affordance this screen has -- `settings-rows.ts`'s `copyable` flag decides
 // which row gets it, never more than the public URL.
-import { CopyButton, Disclosure, LabelValue } from '@noodara/ui';
+import { CopyButton, Disclosure, InsetGroup, LabelValue } from '@noodara/ui';
 import { advancedRows, instanceRows, type ConfigResponse, type SettingsRow } from '../lib/settings-rows';
 
 export interface SettingsGroupsProps {
@@ -57,22 +57,19 @@ export function SettingsGroups({ config }: SettingsGroupsProps) {
   const advanced = advancedRows(config);
 
   return (
-    <div className="flex flex-col gap-12">
-      <section data-testid="settings-instance-group">
-        <h2 className="mb-2 text-label uppercase text-ink-secondary">Instance</h2>
-        <div className="flex flex-col">
-          {instance.map((row) => (
-            <SettingsRowView key={row.label} row={row} />
-          ))}
-        </div>
-      </section>
+    <div className="flex flex-col gap-6">
+      <InsetGroup title="Instance" data-testid="settings-instance-group">
+        {instance.map((row) => (
+          <SettingsRowView key={row.label} row={row} />
+        ))}
+      </InsetGroup>
 
       <Disclosure title="Advanced" data-testid="settings-advanced-disclosure">
-        <div className="flex flex-col">
+        <InsetGroup>
           {advanced.map((row) => (
             <SettingsRowView key={row.label} row={row} />
           ))}
-        </div>
+        </InsetGroup>
       </Disclosure>
     </div>
   );
