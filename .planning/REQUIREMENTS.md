@@ -17,7 +17,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Rediseño de la app (UI)
 
-- [ ] **UI-03**: `Sheet`, `Dialog` y `RowMenu` tienen el nivel de elevación flotante (`--shadow-floating`, con escalón de superficie más claro en oscuro); ningún otro componente recibe sombra (gate automatizado).
+- [x] **UI-03**: `Sheet`, `Dialog` y `RowMenu` tienen el nivel de elevación flotante (`--shadow-floating`, con escalón de superficie más claro en oscuro); ningún otro componente recibe sombra (gate automatizado).
 - [ ] **UI-04**: `RowMenu` cierra al seleccionar, devuelve el foco al trigger, es visible en dispositivos táctiles y anuncia su estado abierto/cerrado a lectores de pantalla.
 - [ ] **UI-05**: Todo control presionable da feedback en el press (`scale(0.97)`, 160 ms, `--ease-out`); las curvas de easing custom y la tabla de duraciones del brief §6 sustituyen a los easings built-in en todo el inventario; ninguna acción iniciada por teclado se anima.
 - [ ] **UI-06**: El `Sheet` se cierra arrastrando con la secuencia completa del brief §7.4 (pointer capture, offset de agarre, tracking 1:1, rubber-banding, decisión por signo de velocidad, proyección de momentum, handoff de velocidad, interrumpible), con `motion` acotado a ese componente.
@@ -155,7 +155,7 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | BRAND-01 | Phase 7 | Complete |
 | BRAND-02 | Phase 7 | Complete |
 | BRAND-03 | Phase 7 | Complete |
-| UI-03 | Phase 8 | Pending |
+| UI-03 | Phase 8 | Complete |
 | UI-04 | Phase 8 | Pending |
 | UI-05 | Phase 8 | Pending |
 | UI-06 | Phase 8 | Pending |

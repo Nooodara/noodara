@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 08-05-PLAN.md
-last_updated: "2026-09-26T03:18:13.809Z"
+stopped_at: Completed 08-06-PLAN.md
+last_updated: "2026-09-26T03:55:31.304Z"
 last_activity: 2026-09-26
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 30
-  completed_plans: 15
+  completed_plans: 16
   percent: 13
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 08 (redise-o-de-la-app) — EXECUTING
-Plan: 6 of 20
+Plan: 7 of 20
 Status: Ready to execute
 Last activity: 2026-09-26
 
-Progress: [█████░░░░░] 50%
+Progress: [█████░░░░░] 53%
 
 ## Performance Metrics
 
@@ -172,6 +172,7 @@ Progress: [█████░░░░░] 50%
 | Phase 08 P03 | ~55min | 3 tasks | 6 files |
 | Phase 08 P04 | ~40min | 3 tasks | 7 files |
 | Phase 08 P05 | ~35min | 3 tasks | 8 files |
+| Phase 08 P06 | 35min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -468,6 +469,9 @@ Recent decisions affecting current work:
 - [Phase 08 P05]: SettingsGroups.tsx's outer gap changed from gap-12 (48px) to gap-6 (24px), matching 08-UI-SPEC.md Section 1's explicit rule (24px between InsetGroup blocks, D-04) and Task 2's own top-level behaviour bullet, even though the plan's per-component action text only named the gap-6 change for ServerFacts.tsx explicitly.
 - [Phase 08 P05]: InsetGroup's no-nesting invariant (brief Section 9 #5) has no runtime guard by design -- the plan's own instruction frames it as a documented invariant, not a runtime throw; InsetGroup.test.tsx proves the shape is technically renderable so the prohibition stays a reviewable, test-visible discipline.
 - [Phase 08 P05]: UI-11 and UI-12 are NOT marked complete in REQUIREMENTS.md, following 08-01/08-03/08-04's precedent -- this plan only delivers the InsetGroup piece of D-01/D-02, not the shell (D-03/D-05/D-07/D-08) or the G2/G3 human-reviewed screenshots UI-11/UI-12 require in full.
+- [Phase 08]: UI-03 marked complete (Sheet/Dialog/RowMenu shadow+surface-elevated, gate green); UI-10 left pending since the toolbar still has no reduced-motion/transparency/contrast fallbacks
+- [Phase 08]: ListRow.tsx hover gating added beyond the plan's files_modified list, per Task 2's own explicit action text (Rule 2, UI-10 touch-accessibility gap)
+- [Phase 08]: Sheet reduced-motion proven via getComputedStyle transitionProperty, not a caught animation frame -- Radix mounts/unmounts the panel without a Presence exit delay today, a real gap plan 08-14's motion-contract sweep owns, not this plan
 
 ### Pending Todos
 
@@ -543,8 +547,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-26T03:18:13.802Z
-Stopped at: Completed 08-05-PLAN.md
+Last session: 2026-09-26T03:55:31.295Z
+Stopped at: Completed 08-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
