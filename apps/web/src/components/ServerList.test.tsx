@@ -57,6 +57,16 @@ describe('ServerList empty state', () => {
     expect(screen.getAllByRole('button')).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Add server' })).toBeInTheDocument();
   });
+
+  // 08-05-PLAN.md Task 3 (D-02): the whole servers list -- empty or full -- is one InsetGroup
+  // block; the empty state renders inside it rather than replacing it.
+  it('renders servers-empty inside the same servers-list InsetGroup block, not in place of it', () => {
+    renderUi(<ServerList state={{ kind: 'ready', servers: [] }} now={NOW} onAddServer={vi.fn()} onEditServer={vi.fn()} onDeleteServer={vi.fn()} />);
+
+    const listBlock = screen.getByTestId('servers-list');
+    expect(listBlock).toHaveAttribute('data-inset-group', 'true');
+    expect(within(listBlock).getByTestId('servers-empty')).toBeInTheDocument();
+  });
 });
 
 describe('ServerList loading state', () => {
@@ -131,6 +141,19 @@ describe('ServerList populated state', () => {
     const betaRow = assertDefined(rows.find((row) => within(row).queryByText('Beta') !== null));
     expect(within(betaRow).getByText('beta.example.test:2222')).toBeInTheDocument();
     expect(within(betaRow).getByTestId('status-pill')).toHaveAttribute('data-status', 'ERROR');
+  });
+
+  // 08-05-PLAN.md Task 3 (D-02): servers-list resolves to the InsetGroup block, with every row
+  // inside it.
+  it('resolves servers-list to the InsetGroup block, with every servers-row inside it', () => {
+    const alpha = buildServer({ id: 'a', name: 'Alpha' });
+    const beta = buildServer({ id: 'b', name: 'Beta' });
+
+    renderUi(<ServerList state={{ kind: 'ready', servers: [alpha, beta] }} now={NOW} onAddServer={vi.fn()} onEditServer={vi.fn()} onDeleteServer={vi.fn()} />);
+
+    const listBlock = screen.getByTestId('servers-list');
+    expect(listBlock).toHaveAttribute('data-inset-group', 'true');
+    expect(within(listBlock).getAllByTestId('servers-row')).toHaveLength(2);
   });
 
   it('renders one servers-row and no alternate container for a single server (D-09, no cards)', () => {
