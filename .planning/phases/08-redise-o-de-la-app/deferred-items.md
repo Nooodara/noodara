@@ -104,3 +104,26 @@ round-1 fix rather than deferred). RED `f4c06fc`, GREEN `b5c26f6`.
   gate).
 - **Suggested follow-up:** 08-14's motion-contract sweep builds the real exit animation; G3's live
   review (Sheet drag-to-dismiss checklist items) is where this becomes observable and testable.
+
+### An Esc-close of `Sheet` never returns focus to the "Add server" trigger button
+
+- **Found during:** 08-12's own Task 3 E2E work, while writing the drag-to-dismiss Playwright
+  suite. Reproduced against the pristine, pre-08-12 `Sheet.tsx` (checked out from the tip of
+  08-11) with the identical assertion, confirming this is not a regression introduced by 08-12's
+  drag changes: `Sheet` never renders a `DialogPrimitive.Trigger` (it is opened via an
+  externally-controlled `open`/`onOpenChange` prop pair, per its own header comment on why --
+  `Sheet`/`Dialog` need to be externally controlled, unlike `RowMenu`'s stateful trigger), so
+  Radix's `FocusScope` has no `Trigger` element of its own to remember and restore focus to on
+  unmount, and this codebase's own `document.activeElement`-based fallback restoration either
+  isn't wired or doesn't fire reliably for this externally-controlled shape.
+- **Why not fixed here:** out of 08-12's scope -- caused by a pre-existing architectural choice
+  (Task 3's own SCOPE BOUNDARY rule: only auto-fix issues directly caused by the current task's
+  changes). 08-12's own Esc-related acceptance criteria only require that Esc still dismisses the
+  Sheet with no animation, which still holds; the trigger-focus-return test in
+  `tests/e2e/server-sheet.spec.ts`'s `@sheet-drag` suite was narrowed to assert only what this
+  plan actually owns.
+- **Suggested follow-up:** whichever future plan next revisits `Sheet`'s open/close plumbing
+  should either capture the triggering element explicitly (a `lastFocusedElement` ref set at the
+  call site before `onOpenChange(true)`) and restore it in an effect on close, or confirm Radix's
+  own `document.activeElement` fallback and find why it isn't restoring focus in this app's real
+  DOM shape.

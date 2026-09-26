@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { LazyMotion, m, useReducedMotion, type PanInfo } from 'motion/react';
+import { LazyMotion, animate as animateMotionValue, m, useMotionValue, useReducedMotion, type PanInfo } from 'motion/react';
 import { X } from 'lucide-react';
 import { Button } from './Button.js';
 import { cn } from './cn.js';
-import { SPRING } from './motion-tokens.js';
+import { SPRING, toMotionSpring } from './motion-tokens.js';
 import { useCloseSource } from './use-close-source.js';
 
 // D19/UI-06 (08-12-PLAN.md Task 2): the one place in this codebase `motion` may be imported.
@@ -22,10 +22,23 @@ const loadFeatures = () => import('./motion-features.js').then((res) => res.defa
 // G2/G3 live review (D-14) -- never scatter the number elsewhere in this file.
 const DRAG_CLOSE_VELOCITY_PX_PER_S = 110;
 
+// A ceiling on the velocity handed off to the closing spring (see `handleDragEnd`) -- Motion's own
+// `useVelocity` docs use a [-3000, 3000] px/s example range; this is a generous multiple of that,
+// wide enough to never visibly cap a real flick, narrow enough to guard against the
+// effectively-infinite value a near-zero elapsed time between the last two pointer samples can
+// otherwise produce.
+const MAX_HANDOFF_VELOCITY_PX_PER_S = 8000;
+
 // The panel's own `w-[480px]` (PANEL_CLASSES below) as a plain number -- the distance a drag must
 // cross before "position" alone (rather than velocity) decides to close, per brief §7.4 step 6's
 // fallback and UI-06's midpoint-snap acceptance criterion.
 const PANEL_WIDTH_PX = 480;
+
+// A deliberately small settle-in offset for the drag surface's own entry flourish (see the
+// `useEffect` in `Sheet` that consumes this) -- large enough to be perceptible, small enough to
+// never look like a second, competing slide-in against the outer CSS transition already carrying
+// the actual 480px distance.
+const ENTRY_SETTLE_OFFSET_PX = 8;
 
 export interface SheetProps {
   readonly open: boolean;
@@ -123,6 +136,13 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
   const contentRef = useRef<HTMLDivElement | null>(null);
   const { closeSource } = useCloseSource(open, contentRef);
   const prefersReducedMotion = useReducedMotion();
+  // Backed by a `MotionValue`, not the declarative `animate` prop: brief §7.4 step 8's velocity
+  // handoff ("entregá la velocidad de release como velocidad inicial del spring, para que no haya
+  // costura entre arrastrar y animar") needs the CLOSING animation to start from the release
+  // point carrying the release velocity -- a declarative `animate={{ x: 0 }}` target has no way to
+  // conditionally continue in the release direction instead of snapping back, so `handleDragEnd`
+  // below drives this value with the standalone `animate()` function instead.
+  const x = useMotionValue(0);
   // Latched, not derived inline: by the time this Sheet re-renders with `open === false`,
   // `useCloseSource`'s own capture-phase keydown listener (08-04) has already run for the same
   // event, so `closeSource()` already reports 'keyboard' -- this effect just carries that one
@@ -136,9 +156,50 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
     }
   }, [open, closeSource]);
 
+  // 08-UI-SPEC.md §7.2's durations table: "Sheet entry: translateX + spring: SPRING.drawer". The
+  // outer `DialogPrimitive.Content`'s own unchanged CSS transition is what visibly slides the
+  // panel in (this stays untouched to avoid a doubled transform across the two nested elements);
+  // this small settle-in on the drag surface itself is a second, subtle layer riding on top of
+  // that CSS slide, so SPRING.drawer genuinely governs part of what's on screen during entry, not
+  // just a token named in a comment. Imperative (`animate()` in an effect), not the declarative
+  // `animate` prop -- a persistent declarative target on `x` is exactly what fought the
+  // momentum-handoff animation in `handleDragEnd` (see the comment on `x` above).
+  useEffect(() => {
+    if (open) {
+      x.set(ENTRY_SETTLE_OFFSET_PX);
+      void animateMotionValue(x, 0, toMotionSpring(SPRING.drawer));
+    }
+  }, [open, x]);
+
   function handleDragEnd(_event: PointerEvent | MouseEvent | TouchEvent, info: PanInfo): void {
     if (decidesToClose(info)) {
-      onOpenChange(false);
+      // Brief §7.4 steps 7-8: project momentum forward and hand its velocity off as the closing
+      // spring's own initial velocity -- SPRING.momentum (UI-SPEC's own "only when the gesture
+      // itself carried momentum" comment) is the one case that constant exists for. The DOM
+      // node's own CSS-transition-based exit (owned by the outer `DialogPrimitive.Content`,
+      // untouched) still governs when Radix actually removes it; `onOpenChange(false)` is only
+      // called once this handoff animation finishes, not before, so the two never race.
+      //
+      // `info.velocity.x` is clamped to a finite, sane range before being handed to the spring: a
+      // near-zero elapsed time between the last two pointer samples (an extremely fast, short
+      // flick -- exactly the case this branch exists for) can otherwise produce an effectively
+      // infinite/non-finite velocity, which breaks the spring's own settle-detection math and
+      // leaves the returned promise never resolving (found empirically, via this task's own
+      // Playwright flick test hanging instead of closing).
+      const handoffVelocity = Number.isFinite(info.velocity.x)
+        ? Math.sign(info.velocity.x) * Math.min(Math.abs(info.velocity.x), MAX_HANDOFF_VELOCITY_PX_PER_S)
+        : DRAG_CLOSE_VELOCITY_PX_PER_S;
+      void animateMotionValue(x, PANEL_WIDTH_PX, toMotionSpring(SPRING.momentum, { velocity: handoffVelocity })).then(
+        () => {
+          onOpenChange(false);
+        },
+      );
+    } else {
+      // Released without crossing the close threshold -- spring back to rest. Critically damped,
+      // no overshoot (SPRING.default's own comment): this is deliberately not SPRING.momentum,
+      // per UI-SPEC's token table reserving that spring for a release that actually carries the
+      // gesture through to a close.
+      void animateMotionValue(x, 0, toMotionSpring(SPRING.default));
     }
   }
 
@@ -160,13 +221,26 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
           <LazyMotion features={loadFeatures} strict>
             <m.div
               className={DRAG_SURFACE_CLASSES}
+              // Task 3 (08-12-PLAN.md, UI-06 §7.4): the only DOM node whose `transform` actually
+              // moves during a drag -- the outer `DialogPrimitive.Content` above owns the
+              // open/closed CSS-transition position, this inner surface owns the live gesture
+              // offset on top of it. A dedicated testid (not reusing `data-testid`, which stays
+              // on the semantic dialog element per every existing test/consumer) is how the E2E
+              // suite locates exactly this node without depending on Motion's own DOM shape.
+              data-testid={testId !== undefined ? `${testId}-drag-surface` : undefined}
+              // `x` is an externally-owned `MotionValue` (`style={{ x }}`, not the declarative
+              // `animate` prop): a persistent `animate={{ x: ... }}` target would re-assert
+              // itself the instant `onDragEnd` finishes, fighting the momentum-handoff animation
+              // `handleDragEnd` starts below (found empirically -- this is exactly the failure
+              // mode Task 3's own "handoff" Playwright test caught). The drag gesture and this
+              // component's own two explicit `animate()` calls (close-with-momentum / snap-back)
+              // are the only things that ever move this value.
+              style={{ x }}
               drag={prefersReducedMotion === true ? false : 'x'}
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.15}
               dragMomentum
               onDragEnd={handleDragEnd}
-              animate={{ x: 0 }}
-              transition={SPRING.drawer}
             >
               <div className={HEADER_CLASSES}>
                 <DialogPrimitive.Title className="text-title font-semibold text-ink">{title}</DialogPrimitive.Title>
