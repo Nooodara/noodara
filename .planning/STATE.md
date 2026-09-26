@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 08-18-PLAN.md
-last_updated: "2026-09-26T13:03:24.120Z"
+stopped_at: Completed 08-16-PLAN.md
+last_updated: "2026-09-26T13:35:10.534Z"
 last_activity: 2026-09-26
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 30
-  completed_plans: 27
+  completed_plans: 28
   percent: 13
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 08 (redise-o-de-la-app) — EXECUTING
-Plan: 18 of 20
+Plan: 19 of 20
 Status: Ready to execute
 Last activity: 2026-09-26
 
-Progress: [█████████░] 90%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -184,6 +184,7 @@ Progress: [█████████░] 90%
 | Phase 08 P20 | 27min | 3 tasks | 8 files |
 | Phase 08 P14 | 70 | 3 tasks | 16 files |
 | Phase 08 P18 | 33min | 3 tasks | 10 files |
+| Phase 08 P16 | 45min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -502,6 +503,8 @@ Recent decisions affecting current work:
 - [Phase ?]: UI-07 stays Pending: its 40ms discovery/list-row stagger clause belongs to 08-16/08-18, not this plan
 - [Phase 08]: 08-18: aperture's closed reading is scale(1), the path's own true size; AuthCard's one-shot focus is pure declarative CSS via @starting-style, no mount effect
 - [Phase 08]: 08-18: isStepResolved is the single exported predicate feeding both DiscoveryStep's per-row thread fill and DiscoverySection's completedFraction
+- [Phase 08]: 08-16: stagger math owned by ServerList.tsx, ServerRow renders pre-computed delayMs
+- [Phase 08]: 08-16: ActivityList's computeEnteringIds locates the previous render's first-known id to distinguish a refresh prepend from a Load older append
 
 ### Pending Todos
 
@@ -577,8 +580,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-26T13:03:24.114Z
-Stopped at: Completed 08-18-PLAN.md
+Last session: 2026-09-26T13:35:10.526Z
+Stopped at: Completed 08-16-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
