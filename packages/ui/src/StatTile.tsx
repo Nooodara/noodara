@@ -55,7 +55,18 @@ export function StatTile({
       {caption !== undefined ? <span className={CAPTION_CLASSES}>{caption}</span> : null}
       {hasMeter ? (
         <div data-fraction={meterFraction} role="presentation" className={METER_TRACK_CLASSES}>
-          <div className="h-full bg-accent" style={{ width: `${(clampFraction(meterFraction) * 100).toString(10)}%` }} />
+          {/* docs/ui-build-prompt.md §7.5: the fill is revealed with clip-path, not resized --
+              it renders at full width and the fraction drives the right inset instead
+              (`inset(0 100% 0 0)` fully hidden -> `inset(0 0 0 0)` fully revealed).
+              clip-path is hardware-accelerated and adds no DOM, unlike animating `width`.
+              clampFraction stays the guard against an out-of-range fraction producing an
+              invalid inset. */}
+          <div
+            className="motion-safe:transition-[clip-path] motion-safe:duration-[var(--duration-panel)] motion-safe:ease-[var(--ease-out)] h-full bg-accent"
+            style={{
+              clipPath: `inset(0 ${(Math.round((1 - clampFraction(meterFraction)) * 10000) / 100).toString(10)}% 0 0)`,
+            }}
+          />
         </div>
       ) : null}
     </div>

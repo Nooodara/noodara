@@ -44,10 +44,9 @@ describe('StatTile', () => {
   it('reveals its fill with a clip-path inset derived from the fraction, at full width, never an animated width', () => {
     const { container } = renderUi(<StatTile label="Disk" value="18 GB of 40 GB" meterFraction={0.45} />);
 
-    const meter = container.querySelector('[data-fraction]') as HTMLElement;
-    const fill = meter.firstElementChild as HTMLElement;
-    expect(fill.style.width).toBe('');
-    expect(fill.style.clipPath).toBe('inset(0 55% 0 0)');
+    const fill = container.querySelector('[data-fraction] > div');
+    expect(fill).toHaveStyle({ clipPath: 'inset(0 55% 0 0)' });
+    expect(fill?.getAttribute('style')).not.toMatch(/width:/);
   });
 
   it('renders no meter element when meterFraction is null', () => {
