@@ -1,8 +1,31 @@
 import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { LazyMotion, m, useReducedMotion, type PanInfo } from 'motion/react';
 import { X } from 'lucide-react';
 import { Button } from './Button.js';
 import { cn } from './cn.js';
+import { SPRING } from './motion-tokens.js';
+import { useCloseSource } from './use-close-source.js';
+
+// D19/UI-06 (08-12-PLAN.md Task 2): the one place in this codebase `motion` may be imported.
+// `LazyMotion`'s `features` prop takes this lazy-import form so the `domMax` bundle (drag/pan
+// support, +25kb -- see motion-features.js's own header for why this exact bundle, not the
+// smaller one, is required) is never in the initial page payload, only fetched once a Sheet is
+// about to render (T-08-33).
+const loadFeatures = () => import('./motion-features.js').then((res) => res.default);
+
+// Brief §7.4 step 6: "velocidad > 0.11 px/ms cierra sin importar la distancia recorrida" -- this
+// converts to 110 px/s on the assumption that Motion's `info.velocity` is px/s (Motion's own
+// `useVelocity` docs use a [-3000, 3000] example range, consistent with px/s; research Pitfall 3,
+// Assumption A3). Calibrated empirically, not derived: tune this single named constant during the
+// G2/G3 live review (D-14) -- never scatter the number elsewhere in this file.
+const DRAG_CLOSE_VELOCITY_PX_PER_S = 110;
+
+// The panel's own `w-[480px]` (PANEL_CLASSES below) as a plain number -- the distance a drag must
+// cross before "position" alone (rather than velocity) decides to close, per brief §7.4 step 6's
+// fallback and UI-06's midpoint-snap acceptance criterion.
+const PANEL_WIDTH_PX = 480;
 
 export interface SheetProps {
   readonly open: boolean;
@@ -56,6 +79,17 @@ const PANEL_CLASSES = cn(
   'motion-reduce:transition-opacity motion-reduce:duration-[var(--duration-panel)] motion-reduce:data-[state=closed]:opacity-0',
 );
 
+// 08-12-PLAN.md Task 2 (brief §9 #10, 08-UI-SPEC.md §7.3): appended to `PANEL_CLASSES` only while
+// the in-flight close is keyboard-initiated (`useCloseSource`, owned by 08-04). `!duration-0`
+// overrides the `motion-safe:duration-[var(--duration-sheet)]`/`motion-reduce:duration-[var(--
+// duration-panel)]` pair above (Tailwind's `!` important-modifier wins the specificity fight
+// against those un-flagged utilities), so Radix's own CSS-transition-duration-based exit
+// deferral sees a zero duration and unmounts the panel immediately -- no `onEscapeKeyDown`
+// override, no second keydown listener, the existing `check:ui-safety` gate for both stays green.
+const INSTANT_CLOSE_CLASS = '!duration-0';
+
+const DRAG_SURFACE_CLASSES = 'flex h-full w-full flex-col';
+
 const HEADER_CLASSES = 'flex items-center justify-between border-b border-hairline px-8 py-6';
 // `min-h-0` is required alongside `flex-1 overflow-y-auto` here: a flex item's default
 // `min-height: auto` otherwise lets it grow to fit its content instead of being constrained by
@@ -76,22 +110,76 @@ const FOOTER_CLASSES = 'flex items-center justify-end gap-2 border-t border-hair
 // of its "missing Description" dev warning when a sheet genuinely has no separate description
 // beyond its title and body content (the body is exactly the caller's own composed content, not
 // a fixed sentence this component could sensibly duplicate into a Description).
+// 08-12-PLAN.md Task 2 (UI-06, D19): the panel's drag-to-dismiss surface. Kept as a plain
+// function (not inlined into `Sheet`) so `handleDragEnd`'s only reason to change is the release
+// decision itself -- brief §7.4 step 6, "decisión en el release por el signo de la velocidad, no
+// por la posición", with the panel's own half-width as the position-based fallback UI-06 also
+// names ("midpoint-snap").
+function decidesToClose(info: PanInfo): boolean {
+  return info.velocity.x > DRAG_CLOSE_VELOCITY_PX_PER_S || info.offset.x > PANEL_WIDTH_PX / 2;
+}
+
 export function Sheet({ open, onOpenChange, title, children, footer, 'data-testid': testId }: SheetProps) {
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const { closeSource } = useCloseSource(open, contentRef);
+  const prefersReducedMotion = useReducedMotion();
+  // Latched, not derived inline: by the time this Sheet re-renders with `open === false`,
+  // `useCloseSource`'s own capture-phase keydown listener (08-04) has already run for the same
+  // event, so `closeSource()` already reports 'keyboard' -- this effect just carries that one
+  // read into a piece of render state the className below can react to for the rest of this
+  // close's CSS-transition lifetime (see INSTANT_CLOSE_CLASS above).
+  const [instantClose, setInstantClose] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setInstantClose(closeSource() === 'keyboard');
+    }
+  }, [open, closeSource]);
+
+  function handleDragEnd(_event: PointerEvent | MouseEvent | TouchEvent, info: PanInfo): void {
+    if (decidesToClose(info)) {
+      onOpenChange(false);
+    }
+  }
+
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className={OVERLAY_CLASSES} />
-        <DialogPrimitive.Content className={PANEL_CLASSES} data-testid={testId} aria-describedby={undefined}>
-          <div className={HEADER_CLASSES}>
-            <DialogPrimitive.Title className="text-title font-semibold text-ink">{title}</DialogPrimitive.Title>
-            <DialogPrimitive.Close asChild>
-              <Button type="button" variant="ghost" aria-label="Close">
-                <X aria-hidden="true" size={16} strokeWidth={1.5} />
-              </Button>
-            </DialogPrimitive.Close>
-          </div>
-          <div className={BODY_CLASSES}>{children}</div>
-          {footer ? <div className={FOOTER_CLASSES}>{footer}</div> : null}
+        <DialogPrimitive.Content
+          ref={contentRef}
+          className={cn(PANEL_CLASSES, instantClose && INSTANT_CLOSE_CLASS)}
+          data-testid={testId}
+          aria-describedby={undefined}
+        >
+          {/* D19: `LazyMotion` scoped to exactly this subtree -- `strict` makes any `motion.*`
+              usage anywhere else in the tree throw at runtime instead of silently working. The
+              drag surface is a child of `DialogPrimitive.Content`, not a replacement for it:
+              Content itself (the element above, carrying `role="dialog"`, the focus trap, Esc
+              and outside-click) is completely untouched by this change (T-08-34). */}
+          <LazyMotion features={loadFeatures} strict>
+            <m.div
+              className={DRAG_SURFACE_CLASSES}
+              drag={prefersReducedMotion === true ? false : 'x'}
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.15}
+              dragMomentum
+              onDragEnd={handleDragEnd}
+              animate={{ x: 0 }}
+              transition={SPRING.drawer}
+            >
+              <div className={HEADER_CLASSES}>
+                <DialogPrimitive.Title className="text-title font-semibold text-ink">{title}</DialogPrimitive.Title>
+                <DialogPrimitive.Close asChild>
+                  <Button type="button" variant="ghost" aria-label="Close">
+                    <X aria-hidden="true" size={16} strokeWidth={1.5} />
+                  </Button>
+                </DialogPrimitive.Close>
+              </div>
+              <div className={BODY_CLASSES}>{children}</div>
+              {footer ? <div className={FOOTER_CLASSES}>{footer}</div> : null}
+            </m.div>
+          </LazyMotion>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

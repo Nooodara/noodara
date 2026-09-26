@@ -5,7 +5,12 @@
     "rootDir": "src",
     "jsx": "react-jsx",
     "lib": ["es2023", "dom", "dom.iterable"],
-    "types": ["node", "react", "react-dom"]
+    "types": ["node", "react", "react-dom"],
+    // 08-12-PLAN.md Task 2: `motion-features.js` (D19's deliberate plain-JS re-export, see its own
+    // header comment) needs `allowJs` so both `tsc --noEmit` (this file) and
+    // `tsconfig.build.json`'s real emit treat it as a first-class TypeScript-checked input,
+    // consistent between typecheck and build rather than relying on a separate ambient `.d.ts`.
+    "allowJs": true
   },
   "include": ["src"]
 }
