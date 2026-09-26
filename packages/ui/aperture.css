@@ -1,0 +1,68 @@
+/* packages/ui/aperture.css -- the one CSS rule that focuses the monogram's aperture (UI-08, D-09,
+ * 08-UI-SPEC.md SS8.1). Selects `[data-part="aperture"]`, the animation hook geometry.ts's own
+ * module header reserves specifically for this (packages/ui/src/brand/geometry.ts, "PART NAMES
+ * ARE ANIMATION HOOKS"). Two call sites: the Discovery timeline's Viewfinder ring
+ * (DiscoverySection.tsx, driven by the real run's own completedFraction, 08-18-PLAN.md Task 3)
+ * and the one-shot focus on /login and /setup's AuthCard lockup (08-18-PLAN.md Task 1).
+ *
+ * `--aperture-progress` is a plain, unregistered custom property, 0 (open/blurred) to 1
+ * (closed/sharp) -- it is never itself animated. The two REAL CSS properties below (`transform`,
+ * `filter`) are the ones carrying a `transition`, so the interpolation happens on their own
+ * resolved values at the moment `--aperture-progress` changes -- the same mechanism
+ * apps/web/src/app/globals.css's `[data-entering="true"]` `@starting-style` rule already relies
+ * on elsewhere in this repo (a real, transitionable property picks up the difference between its
+ * `@starting-style` value and its normal value; the custom property driving that difference never
+ * needs `@property` registration to be animatable itself).
+ *
+ * GEOMETRY (packages/ui/src/brand/geometry.ts's own "no coordinate outside the named constants"
+ * discipline): the "closed" reading is the aperture path's own true drawn scale -- `scale(1)`,
+ * zero invented coordinate. The "open" reading's oversize amount is derived from two of that
+ * file's existing named constants, never a new one: STROKE / APERTURE_RADIUS / 2 = 3 / 6 / 2 =
+ * 0.25, so the ring reads 25% larger than its true size while fully open, easing down to its true
+ * size as it focuses. The aperture is a filled `<path>` (07-01's arcs-only construction), not an
+ * SVG `<circle>`, so a CSS `r` step (this file's own module header once considered) has no effect
+ * here -- `transform: scale(...)`, applied to that one path element alone via its own
+ * `transform-origin: center`, is this repo's actual "closed" reading.
+ */
+[data-part="aperture"] {
+  transform-origin: center;
+  transition:
+    transform 200ms var(--ease-out),
+    filter 200ms var(--ease-out);
+  transform: scale(calc(1 + (1 - var(--aperture-progress, 1)) * 0.25));
+  filter: blur(calc((1 - var(--aperture-progress, 1)) * 3px));
+}
+
+/*
+ * `AuthCard`'s lockup reuses apps/web/src/app/globals.css's shared `data-entering="true"`
+ * `@starting-style` entrance (opacity/blur fade-in) for the whole lockup, but that shared rule
+ * has no idea `--aperture-progress` exists -- it is scoped to exactly the two properties
+ * Skeleton's own blur bridge needs (08-15-PLAN.md Task 2). Rather than teaching the shared,
+ * repo-wide rule about a property only this file's own selector uses, this second attribute
+ * (`data-aperture-focus="true"`) scopes a dedicated `@starting-style` rule to just the aperture
+ * focus wrapper -- one additional rule, not a second unrelated entrance mechanism.
+ */
+[data-entering='true'][data-aperture-focus='true'] {
+  @starting-style {
+    --aperture-progress: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* D-09: no trajectory under reduced motion -- the interpolated transform/filter transition is
+     replaced by an instant, non-animated swap between the two end readings. `--aperture-progress`
+     alone cannot express a hard "not yet 100%" vs "100%" split as a CSS selector (it is a plain
+     numeric custom property, not a boolean), so the caller also sets a `data-aperture-focused`
+     boolean attribute the instant `--aperture-progress` reaches 1 -- this rule reads only that
+     attribute, never the continuous number, so there is no interpolated middle reading to see. */
+  [data-part="aperture"] {
+    transition: none;
+    transform: scale(1.25);
+    filter: blur(3px);
+  }
+
+  [data-aperture-focused='true'] [data-part="aperture"] {
+    transform: none;
+    filter: none;
+  }
+}

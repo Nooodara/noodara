@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import '@noodara/ui/tokens.css';
 @import '@noodara/ui/theme.css';
+@import '@noodara/ui/aperture.css';
 
 /* Tailwind v4's automatic source detection only scans downward from this stylesheet's own base
  * path (apps/web) -- it never reaches a sibling workspace package like packages/ui. Every
