@@ -84,7 +84,10 @@ describe('AccountMenu', () => {
     expect(screen.getByTestId('shell-account-menu-trigger')).toBeInTheDocument();
   });
 
-  it('opens the menu with header (name, email), Settings, Appearance+ThemeToggle, Sign out, in that order', async () => {
+  // 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 5, D-05 change): Appearance/ThemeToggle
+  // moved out of this menu into Settings (SettingsGroups.test.tsx's own new coverage) -- the menu
+  // is now exactly header, Settings, Sign out, in that order.
+  it('opens the menu with header (name, email), Settings, Sign out, in that order, and no Appearance row', async () => {
     const user = userEvent.setup();
     renderUi(<AccountMenu {...buildProps()} />);
 
@@ -95,21 +98,14 @@ describe('AccountMenu', () => {
     expect(menu).toHaveTextContent('ada@noodara.test');
 
     const settingsLink = screen.getByTestId('shell-account-menu-settings-link');
-    const themeToggle = screen.getByTestId('shell-account-menu-theme-toggle');
     const signOut = screen.getByTestId('test-sign-out');
 
     expect(menu).toHaveTextContent('Settings');
-    expect(menu).toHaveTextContent('Appearance');
+    expect(menu).not.toHaveTextContent('Appearance');
+    expect(screen.queryByTestId('shell-account-menu-theme-toggle')).toBeNull();
 
-    // Document order: header text precedes Settings, which precedes Appearance/ThemeToggle,
-    // which precedes Sign out.
-    const order = [settingsLink, themeToggle, signOut];
-    for (let i = 0; i < order.length - 1; i += 1) {
-      const current = order[i];
-      const next = order[i + 1];
-      if (current === undefined || next === undefined) throw new Error('expected both nodes');
-      expect(current.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
-    }
+    // Document order: header text precedes Settings, which precedes Sign out.
+    expect(settingsLink.compareDocumentPosition(signOut) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
   });
 
   it('the header renders no interactive element of its own', async () => {
@@ -134,17 +130,7 @@ describe('AccountMenu', () => {
     expect(screen.queryByRole('menuitem')).toBeNull();
   });
 
-  it('clicking the theme control inside Appearance does not close the menu', async () => {
-    const user = userEvent.setup();
-    renderUi(<AccountMenu {...buildProps()} />);
-
-    await user.click(screen.getByTestId('shell-account-menu-trigger'));
-    await user.click(screen.getByTestId('shell-account-menu-theme-toggle'));
-
-    expect(screen.getByRole('menu')).toBeInTheDocument();
-  });
-
-  it('moves focus between Settings and Sign out with ArrowDown/ArrowUp/Home/End, never onto the header or the Appearance row', async () => {
+  it('moves focus between Settings and Sign out with ArrowDown/ArrowUp/Home/End, never onto the header', async () => {
     const user = userEvent.setup();
     renderUi(<AccountMenu {...buildProps()} />);
 
