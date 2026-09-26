@@ -22,6 +22,7 @@ export type { Tone } from './tone.js';
 export { EmptyState, type EmptyStateAction, type EmptyStateProps } from './EmptyState.js';
 export { Field, type FieldControlProps, type FieldProps } from './Field.js';
 export { FileButton, type FileButtonProps } from './FileButton.js';
+export { Fingerprint, type FingerprintProps } from './Fingerprint.js';
 export {
   formatDiskUsage,
   formatIso,

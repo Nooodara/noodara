@@ -46,8 +46,11 @@ describe('Fingerprint', () => {
   });
 
   it('copies the full unblocked original string, prefix included', async () => {
-    const writeText = stubClipboard();
+    // Order matters (CopyButton.test.tsx's own established pattern): `userEvent.setup()` installs
+    // its own clipboard stub, so it must run BEFORE the manual `Object.defineProperty` below --
+    // reversing the order lets userEvent's setup silently clobber the manual stub.
     const user = userEvent.setup();
+    const writeText = stubClipboard();
     renderUi(<Fingerprint value={VALUE} />);
 
     await user.click(screen.getByRole('button', { name: 'Copy fingerprint' }));
