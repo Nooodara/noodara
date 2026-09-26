@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 08-15-PLAN.md
-last_updated: "2026-09-26T11:39:13.421Z"
+stopped_at: Completed 08-20-PLAN.md
+last_updated: "2026-09-26T12:10:28.761Z"
 last_activity: 2026-09-26
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 30
-  completed_plans: 24
+  completed_plans: 25
   percent: 13
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 08 (redise-o-de-la-app) — EXECUTING
-Plan: 15 of 20
+Plan: 16 of 20
 Status: Ready to execute
 Last activity: 2026-09-26
 
-Progress: [████████░░] 80%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
@@ -181,6 +181,7 @@ Progress: [████████░░] 80%
 | Phase 08 P12 | 50min | 3 tasks | 11 files |
 | Phase 08 P13 | 45min | 2 tasks | 9 files |
 | Phase 08 P15 | 55min | 3 tasks | 11 files |
+| Phase 08 P20 | 27min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -493,6 +494,8 @@ Recent decisions affecting current work:
 - [Phase 08 P13]: Button.tsx's pre-existing active:[transform:scale(0.97)] literal was replaced with the new shared PRESS_CLASSES rather than left in place, since a second literal would defeat UI-05's one-definition requirement; CopyButton/FileButton get real press feedback transitively through the Button they wrap (ButtonProps omits className) and carry only a doc comment naming PRESS_CLASSES to satisfy the plan's grep gate.
 - [Phase 08]: UI-09's tabular-nums opt-out for ActivityRow prose uses a global [data-testid='activity-row'] p selector rather than editing the out-of-scope ActivityRow.tsx
 - [Phase 08]: The @starting-style entrance is keyed on a single data-entering="true" attribute; a repo-wide grep found no mounted-state entrance effect to migrate beyond ThemeToggle's excluded settledRef
+- [Phase 08]: 08-20: UI-05 kept Pending -- brief §6 easing/duration table repo-wide replacement is 08-14's scope
+- [Phase 08]: 08-20: closeSource() read directly at render time in Dialog/RowMenu/AccountMenu to avoid an effect-ordering race with Radix Presence
 
 ### Pending Todos
 
@@ -568,8 +571,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-26T11:39:13.413Z
-Stopped at: Completed 08-15-PLAN.md
+Last session: 2026-09-26T12:10:28.754Z
+Stopped at: Completed 08-20-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
