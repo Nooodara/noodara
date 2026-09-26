@@ -31,9 +31,9 @@ export interface NavTreeItem {
 export interface NavTreeLinkProps {
   readonly href: string;
   readonly 'aria-label': string;
-  readonly 'aria-current'?: 'page' | undefined;
+  readonly 'aria-current'?: 'page';
   readonly 'data-testid': string;
-  readonly onClick?: (() => void) | undefined;
+  readonly onClick?: () => void;
   readonly className: string;
   readonly children: ReactNode;
 }
@@ -85,7 +85,11 @@ function hasDestination(item: NavTreeItem): boolean {
 interface RenderItemsArgs {
   readonly items: readonly NavTreeItem[];
   readonly activeHref: string;
-  readonly onNavigate: (() => void) | undefined;
+  /** Always a real function by the time it reaches here -- `NavTree` itself defaults an absent
+   *  `onNavigate` to a no-op, so this never carries an explicit `undefined` down into a JSX prop
+   *  the link component declares as merely optional (exactOptionalPropertyTypes: an optional
+   *  prop's declared type and a required-but-possibly-undefined value are not interchangeable). */
+  readonly onNavigate: () => void;
   readonly linkComponent: ComponentType<NavTreeLinkProps>;
 }
 
@@ -98,13 +102,18 @@ function renderItems({ items, activeHref, onNavigate, linkComponent: LinkCompone
       // navigation itself carries no transition (D-07/§6.1); only a parent's own disclosure
       // (below) ever animates.
       const href = assertDefined(item.href);
+      // Built as a spread rather than an inline `aria-current={... ? 'page' : undefined}` so the
+      // attribute key is omitted entirely on an inactive leaf, never present-but-`undefined` --
+      // `NavTreeLinkProps['aria-current']` is optional, not a union with `undefined`
+      // (exactOptionalPropertyTypes distinguishes the two).
+      const currentAttrs = isActive(activeHref, href) ? ({ 'aria-current': 'page' } as const) : {};
       return (
         <li key={item.id}>
           <Tooltip content={item.label}>
             <LinkComponent
               href={href}
               aria-label={item.label}
-              aria-current={isActive(activeHref, href) ? 'page' : undefined}
+              {...currentAttrs}
               data-testid={`nav-tree-item-${item.id}`}
               onClick={onNavigate}
               className={cn(ITEM_CLASSES, isActive(activeHref, href) ? ACTIVE_ITEM_CLASSES : '')}
@@ -157,5 +166,6 @@ function renderItems({ items, activeHref, onNavigate, linkComponent: LinkCompone
 // later caller fills the same component with real nested data purely by passing `items`, never by
 // changing this file. No section labels, no inactive/greyed-out items (§9 #8/#19).
 export function NavTree({ items, activeHref, onNavigate, linkComponent }: NavTreeProps) {
-  return <ul className="flex flex-col gap-1">{renderItems({ items, activeHref, onNavigate, linkComponent })}</ul>;
+  const handleNavigate = onNavigate ?? ((): void => undefined);
+  return <ul className="flex flex-col gap-1">{renderItems({ items, activeHref, onNavigate: handleNavigate, linkComponent })}</ul>;
 }
