@@ -200,6 +200,15 @@ const EXPECTED_PACKAGES = [
   // its values). Human-approved at 07-02 Task 1's blocking checkpoint.
   { name: 'sharp', expectedOwnerRepo: 'lovell/sharp' },
   { name: 'png-to-ico', expectedOwnerRepo: 'steambap/png-to-ico' },
+
+  // 08-12-PLAN.md Task 1 (D19, UI-06): the one JS animation library this codebase allows, scoped
+  // to packages/ui's own dependency list and, at the source level, to Sheet.tsx alone (LazyMotion
+  // strict mode enforces the latter at runtime). Verified via `npm view motion@13.4.1
+  // repository.url` -> motiondivision/motion, matching 08-RESEARCH.md's Package Legitimacy Audit
+  // (`[VERIFIED: Context7 + npm registry]`). `@radix-ui/react-dropdown-menu` was evaluated in the
+  // same research pass and deliberately NOT installed (see ADR-0000's "Phase 8 additions" section)
+  // -- it has no entry here on purpose.
+  { name: 'motion', expectedOwnerRepo: 'motiondivision/motion' },
 ];
 
 const EXPECTED_BY_NAME = new Map(

@@ -150,6 +150,35 @@ lifecycle hook (npm only ever auto-runs `preinstall`/`install`/`postinstall`/
 `prepare` by name) and must not be treated as one. `png-to-ico@3.0.2`'s
 `scripts` object contains only `test` and `lint`.
 
+### Phase 8 additions
+
+`08-RESEARCH.md`'s Package Legitimacy Audit evaluated two new packages for the redesign's
+motion/menu work. Only one was installed.
+
+`motion` (D19's locked choice, `research/SUMMARY.md`) is the single JS animation library this
+codebase allows, and only for `Sheet.tsx`'s drag-to-dismiss gesture (`08-12-PLAN.md`) — `LazyMotion`
+`strict` mode makes any accidental `motion.*` import elsewhere in the tree throw at runtime, and
+this ADR entry plus `scripts/check-package-provenance.mjs`'s `EXPECTED_PACKAGES` entry were added
+*before* install, per the Package Legitimacy Gate protocol.
+
+| Package | Expected repository | Observed repository | Resolved version | slopcheck verdict | Automated verdict | Date |
+|---|---|---|---|---|---|---|
+| motion | motiondivision/motion | `git+https://github.com/motiondivision/motion.git` | 13.4.1 | `[OK]` (`slopcheck scan --pkg npm motion --json` -> `status: OK`, no flags), `[VERIFIED: Context7 + npm registry]` | verified | 2026-09-26 |
+
+`npm view motion@13.4.1 scripts --json` declares `dev`, `test`, `build`, `clean`, `prepack` and
+`postpublish` — no `preinstall`/`install`/`postinstall` lifecycle hook, confirmed empty before
+install. `motion` is a `dependencies` entry of `packages/ui` only — not of the workspace root, not
+of `apps/web` — pinned exactly at `13.4.1` (no caret), matching this repo's exact-pin convention.
+
+`@radix-ui/react-dropdown-menu@2.1.24` (`radix-ui/primitives`, the same trusted org as every other
+Radix package above) was evaluated in the same research pass as an alternative foundation for the
+`RowMenu`/`AccountMenu` migration path. It was **deliberately not installed**: its provenance tag
+is `[ASSUMED]` (Assumption A1 in `08-RESEARCH.md` — general reputation, not a Context7-backed
+lookup this session), and `08-11-PLAN.md`'s in-place fix to the existing hand-rolled `RowMenu`
+(close-on-select, `aria-expanded`, stable item keys) made the migration unnecessary. This decision
+is recorded here so a future reader does not re-litigate installing it without first re-running the
+`[ASSUMED]`-package human checkpoint the Package Legitimacy Gate protocol requires.
+
 ## Re-running this check
 
 This check must be re-run whenever one of these pins changes, or before

@@ -40,7 +40,8 @@
     "@radix-ui/react-scroll-area": "1.2.18",
     "@radix-ui/react-tooltip": "1.2.16",
     "@radix-ui/react-visually-hidden": "1.2.11",
-    "lucide-react": "1.47.0"
+    "lucide-react": "1.47.0",
+    "motion": "13.4.1"
   },
   "devDependencies": {
     "@noodara/config": "workspace:*",
