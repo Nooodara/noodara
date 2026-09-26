@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { cn } from './cn.js';
+import { PRESS_CLASSES } from './press.js';
 
 // The four variants skill SS4.1 defines. `destructive` is ghost-styled everywhere except inside
 // a confirm dialog, where `filled` switches it to a solid `--status-error` fill.
@@ -19,16 +20,17 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
 
 // 32px height (h-8 against this project's 4px spacing base), --r-sm radius, 0 14px padding,
 // --text-callout at weight 500 -- skill SS4.1's literal button spec. The focus ring
-// (2px solid var(--accent), 2px offset) and the scale(0.97) press are CSS-only effects jsdom
-// cannot compute; Playwright and Plan 05-21's noodara-ux-review audit verify them, not a
-// component test (05-22-PLAN.md Task 2's own executor note).
+// (2px solid var(--accent), 2px offset) is a CSS-only effect jsdom cannot compute; Playwright and
+// Plan 05-21's noodara-ux-review audit verify it, not a component test (05-22-PLAN.md Task 2's
+// own executor note). The press feedback itself comes from the one shared `PRESS_CLASSES`
+// definition (08-13-PLAN.md, UI-05) -- see packages/ui/src/press.ts.
 const BASE_CLASSES = cn(
   'inline-flex h-8 items-center justify-center gap-1.5 rounded-sm px-3.5',
   'text-callout font-medium',
   'outline-none transition-[opacity] duration-[var(--duration-micro)] ease-[var(--ease-standard)]',
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
   'disabled:pointer-events-none disabled:opacity-50',
-  'active:[transform:scale(0.97)]',
+  PRESS_CLASSES,
 );
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {

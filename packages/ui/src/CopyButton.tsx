@@ -12,6 +12,10 @@ export interface CopyButtonProps {
 const CONFIRMATION_MS = 1500;
 const ICON_PROPS = { 'aria-hidden': true, size: 16, strokeWidth: 1.5 } as const;
 
+// Press feedback (UI-05, 08-13-PLAN.md) comes for free through the underlying `Button` root
+// element below, which already composes the one shared `PRESS_CLASSES` (packages/ui/src/press.ts)
+// into its own class list -- this file declares no press class of its own.
+//
 // CopyButton (05-UI-SPEC.md Component Inventory, T-5-37) -- an icon ghost Button that writes
 // exactly the given `value` string to the OS clipboard via the Clipboard API's `writeText` method
 // and no other channel. This must never be used for credential material -- its only intended callers

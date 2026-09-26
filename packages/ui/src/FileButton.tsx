@@ -21,6 +21,10 @@ const READ_ERROR_MESSAGE = 'Could not read the selected file. Try again, or past
 const MAX_FILE_BYTES = 64 * 1024;
 const FILE_TOO_LARGE_MESSAGE = 'This file is too large. Choose a smaller key file, or paste the value instead.';
 
+// Press feedback (UI-05, 08-13-PLAN.md) comes for free through the underlying `Button` root
+// element below, which already composes the one shared `PRESS_CLASSES` (packages/ui/src/press.ts)
+// into its own class list -- this file declares no press class of its own.
+//
 // FileButton (D-04, 05-UI-SPEC.md SS2.4 "Choose file") -- a ghost Button that triggers a
 // visually-hidden native file input and reads the chosen file entirely client-side with
 // FileReader.readAsText. The resulting text is handed to the caller's onText callback and

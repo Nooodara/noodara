@@ -1,5 +1,6 @@
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group';
 import { cn } from './cn.js';
+import { PRESS_CLASSES } from './press.js';
 
 export interface SegmentedControlOption<T extends string> {
   readonly value: T;
@@ -17,6 +18,8 @@ const GROUP_CLASSES = cn(
   'inline-flex items-center gap-0.5 rounded-sm border border-hairline bg-surface-2 p-0.5',
 );
 
+// The press feedback itself comes from the one shared `PRESS_CLASSES` definition (08-13-PLAN.md,
+// UI-05) -- see packages/ui/src/press.ts.
 const ITEM_CLASSES = cn(
   'rounded-sm px-3.5 py-1 text-callout font-medium text-ink-secondary',
   'transition-[background-color,color] duration-[var(--duration-micro)] ease-[var(--ease-standard)]',
@@ -25,6 +28,7 @@ const ITEM_CLASSES = cn(
   // --on-accent text, same rationale as Button.tsx's primary variant.
   'data-[state=checked]:bg-accent-fill data-[state=checked]:text-on-accent',
   'disabled:pointer-events-none disabled:opacity-50',
+  PRESS_CLASSES,
 );
 
 // SegmentedControl (skill SS4.1's accent-indicator selected segment, 05-UI-SPEC.md Component

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from './cn.js';
+import { PRESS_CLASSES } from './press.js';
 
 // Exactly one of href/onActivate must be given -- a discriminated union rather than two loose
 // optional props, so `<ListRow />` with neither (or both) fails to type-check instead of
@@ -24,9 +25,12 @@ const ROW_CLASSES = cn(
   'group flex items-center border-b border-hairline [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-2',
 );
 
+// The press feedback itself comes from the one shared `PRESS_CLASSES` definition (08-13-PLAN.md,
+// UI-05) -- see packages/ui/src/press.ts.
 const ACTIVATION_CLASSES = cn(
   'flex min-w-0 flex-1 items-center gap-4 px-4 text-left outline-none',
   'focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent',
+  PRESS_CLASSES,
 );
 
 const PRIMARY_TEXT_CLASSES = 'truncate text-headline font-semibold text-ink';

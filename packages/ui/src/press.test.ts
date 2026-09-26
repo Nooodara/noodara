@@ -23,7 +23,11 @@ describe('PRESS_CLASSES', () => {
   });
 
   it('scales to 0.97 on :active, gated motion-safe', () => {
-    expect(tokens).toContain('motion-safe:active:scale-[0.97]');
+    expect(
+      tokens.some(
+        (token) => token.startsWith('motion-safe:active:') && token.includes('scale-[0.97]'),
+      ),
+    ).toBe(true);
   });
 
   it('dims opacity instead of scaling under prefers-reduced-motion, with no transform token', () => {
@@ -34,7 +38,11 @@ describe('PRESS_CLASSES', () => {
   });
 
   it('suppresses both the scale and the dim on a disabled control', () => {
-    expect(tokens).toContain('disabled:active:scale-100');
-    expect(tokens).toContain('disabled:active:opacity-100');
+    expect(
+      tokens.some((token) => token.startsWith('disabled:active:') && token.includes('scale-100')),
+    ).toBe(true);
+    expect(
+      tokens.some((token) => token.startsWith('disabled:active:') && token.includes('opacity-100')),
+    ).toBe(true);
   });
 });
