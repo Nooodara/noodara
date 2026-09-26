@@ -120,9 +120,53 @@ async function shootPage(page: Page, file: string): Promise<void> {
   writeIfChanged(file, await page.screenshot({ fullPage: true, type: 'png' }));
 }
 
-async function goto(page: Page, path: string, width: Width, theme: Theme): Promise<void> {
+/** `<screen>-loading` is each authenticated screen's own convention (ServerList.tsx,
+ *  ActivityList.tsx, settings/page.tsx) for "the client-side fetch this SPA route needs hasn't
+ *  resolved yet". `page.goto(..., { waitUntil: 'load' })` only waits for the JS bundle itself to
+ *  finish loading -- well before that fetch's own promise settles -- so a screenshot taken right
+ *  after `goto` can (deterministically, not just occasionally: 08-19's own two back-to-back
+ *  `pnpm ui:review` runs reproduced it identically) still show the ten-skeleton loading state
+ *  instead of the real fixture rows. Bounded and best-effort (a genuinely stuck fetch still lets
+ *  the capture proceed and prints a warning) rather than another fixed sleep standing in for a
+ *  real settle, matching `waitForServerSettled`'s own polling discipline above. */
+async function waitForScreenSettled(page: Page, loadingTestId: string): Promise<void> {
+  try {
+    await page.getByTestId(loadingTestId).waitFor({ state: 'detached', timeout: SETTLE_TIMEOUT_MS });
+  } catch {
+    console.warn(`capture-ui-review: [data-testid="${loadingTestId}"] never detached within ${String(SETTLE_TIMEOUT_MS)}ms`);
+  }
+}
+
+/** `/servers`' own first-load stagger (08-17-PLAN.md, D-11: `translateY+opacity` over
+ *  `--duration-panel`, delayed 40ms per row up to an 8-row cap) means a row can still be mid
+ *  `@starting-style` transition -- opacity part-way to 1, sometimes still exactly 0 for a row deep
+ *  enough in the delay schedule -- in the very same instant `servers-loading` has just detached,
+ *  since that only confirms the fetch resolved and the rows mounted, not that their entrance
+ *  transition has finished painting. Reproduced directly: after fixing the `servers-loading` race
+ *  above, the first row (0ms delay) rendered correctly but the second and third (40ms/80ms delay)
+ *  still captured blank. Polls each row's own rendered `opacity`, matching this codebase's motion
+ *  tests own discipline (rendered values, not a wall-clock sleep standing in for one). */
+async function waitForServersRowsSettled(page: Page): Promise<void> {
+  try {
+    await page.waitForFunction(
+      () =>
+        Array.from(document.querySelectorAll('[data-testid="servers-row"]')).every(
+          (row) => getComputedStyle(row).opacity === '1',
+        ),
+      undefined,
+      { timeout: SETTLE_TIMEOUT_MS },
+    );
+  } catch {
+    console.warn('capture-ui-review: at least one servers-row never reached opacity 1 (first-load stagger) within the timeout');
+  }
+}
+
+async function goto(page: Page, path: string, width: Width, theme: Theme, loadingTestId?: string): Promise<void> {
   await page.setViewportSize({ width, height: VIEWPORT_HEIGHT[width] });
   await page.goto(path, { waitUntil: 'load' });
+  if (loadingTestId !== undefined) {
+    await waitForScreenSettled(page, loadingTestId);
+  }
   await setTheme(page, theme);
 }
 
@@ -153,7 +197,9 @@ async function captureUnauthenticated(page: Page): Promise<void> {
 async function captureEmptyServersList(page: Page): Promise<void> {
   for (const width of WIDTHS) {
     for (const theme of THEMES) {
-      await goto(page, '/servers', width, theme);
+      await goto(page, '/servers', width, theme, 'servers-loading');
+      // No rows exist yet in this fixture state -- nothing to stagger -- so
+      // waitForServersRowsSettled is intentionally skipped here.
       await shootPage(page, reviewPngPath('servers', theme, width));
     }
   }
@@ -320,11 +366,22 @@ async function captureAuthenticatedScreens(page: Page, fixtures: Fixtures): Prom
     activity: '/activity',
     settings: '/settings',
   };
+  // `server-detail` has no single wrapping `-loading` testid (its skeleton is split across
+  // `server-detail-skeleton-tiles`/`server-detail-skeleton-rows`) but settles fast enough in
+  // practice that this hasn't reproduced for it the way `servers`/`activity`/`settings` did.
+  const loadingTestId: Partial<Record<'servers' | 'server-detail' | 'activity' | 'settings', string>> = {
+    servers: 'servers-loading',
+    activity: 'activity-loading',
+    settings: 'settings-loading',
+  };
 
   for (const screen of ['servers', 'server-detail', 'activity', 'settings'] as const) {
     for (const width of WIDTHS) {
       for (const theme of THEMES) {
-        await goto(page, paths[screen], width, theme);
+        await goto(page, paths[screen], width, theme, loadingTestId[screen]);
+        if (screen === 'servers') {
+          await waitForServersRowsSettled(page);
+        }
         await shootPage(page, reviewPngPath(screen, theme, width));
       }
     }
