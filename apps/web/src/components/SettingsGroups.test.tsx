@@ -74,6 +74,33 @@ describe('SettingsGroups', () => {
     expect(container.textContent).not.toMatch(/[A-Za-z0-9+/]{44}/);
   });
 
+  // 08-05-PLAN.md Task 2 (D-01/D-04): Instance becomes an InsetGroup block -- its testid moves
+  // onto the InsetGroup's own block element, and its heading is InsetGroup's own <h3> (the
+  // literal <h2> this component used to render is deleted, not duplicated).
+  it('wraps Instance in an InsetGroup block exposing the same testid and heading, and keeps the Advanced disclosure trigger intact', async () => {
+    const user = userEvent.setup();
+    renderUi(<SettingsGroups config={buildConfig()} />);
+
+    const instanceBlock = screen.getByTestId('settings-instance-group');
+    expect(instanceBlock).toHaveAttribute('data-inset-group', 'true');
+
+    const heading = screen.getByRole('heading', { level: 3, name: 'Instance' });
+    expect(heading.className).toMatch(/text-label/);
+    expect(heading.className).toMatch(/uppercase/);
+    expect(heading.className).toMatch(/text-ink-secondary/);
+    expect(instanceBlock.contains(heading)).toBe(false);
+
+    // The Advanced Disclosure trigger is unchanged -- the InsetGroup wraps only the disclosed
+    // content, it does not replace or swallow the trigger (08-UI-SPEC.md §1 item 2).
+    const disclosureTrigger = screen.getByRole('button', { name: 'Advanced' });
+    expect(disclosureTrigger).toBeInTheDocument();
+    expect(screen.queryByText('Master key fingerprint')).not.toBeInTheDocument();
+
+    await user.click(disclosureTrigger);
+
+    expect(screen.getByText('Master key fingerprint')).toBeInTheDocument();
+  });
+
   it('renders second-suffixed timeout values, never a raw millisecond count', async () => {
     const user = userEvent.setup();
     renderUi(

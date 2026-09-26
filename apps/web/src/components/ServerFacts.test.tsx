@@ -177,6 +177,38 @@ describe('ServerFacts', () => {
     expect(document.querySelector('[data-tone="error"]')).toBeNull();
   });
 
+  // 08-05-PLAN.md Task 2 (D-01/D-04): the three fact groups become InsetGroup blocks -- the
+  // testid moves onto the InsetGroup's own block element (data-inset-group="true"), and the
+  // group heading is InsetGroup's own <h3>, not a literal element this component still renders.
+  it('wraps System, Docker and Connection each in an InsetGroup block, exposing the same testids and headings', () => {
+    const server = buildDiscoveredServer();
+    renderUi(<ServerFacts server={server} now={NOW} />);
+
+    for (const [testId, heading] of [
+      ['server-facts-system', 'System'],
+      ['server-facts-docker', 'Docker'],
+      ['server-facts-connection', 'Connection'],
+    ] as const) {
+      const block = screen.getByTestId(testId);
+      expect(block).toHaveAttribute('data-inset-group', 'true');
+
+      const headingEl = screen.getByRole('heading', { level: 3, name: heading });
+      expect(headingEl.className).toMatch(/text-label/);
+      expect(headingEl.className).toMatch(/uppercase/);
+      expect(headingEl.className).toMatch(/text-ink-secondary/);
+      expect(block.contains(headingEl)).toBe(false);
+    }
+  });
+
+  // 08-05-PLAN.md Task 2 (D-04): "separación entre grupos" is --space-6 (24px) on the outer
+  // container -- asserted via the outer wrapper's own class, since jsdom does not compute layout.
+  it("separates the tiles row and each InsetGroup block by the D-04 24px gap (gap-6)", () => {
+    const server = buildDiscoveredServer();
+    const { container } = renderUi(<ServerFacts server={server} now={NOW} />);
+
+    expect(container.firstElementChild).toHaveClass('gap-6');
+  });
+
   it('renders no privateKey/passphrase label or a raw credential value anywhere -- only the human credentialType label', () => {
     const server = buildDiscoveredServer();
     renderUi(<ServerFacts server={server} now={NOW} />);
