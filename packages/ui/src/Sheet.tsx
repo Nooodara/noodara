@@ -33,6 +33,17 @@ const OVERLAY_CLASSES = 'fixed inset-0 z-40 bg-canvas/72';
 // `prefers-contrast: more` (Tailwind's built-in `contrast-more:` variant) the hairline swaps to
 // the strong token and the background is pushed toward fully opaque too, both real boundaries a
 // low-contrast border/translucent panel could otherwise erase (T-08-18/T-08-19).
+//
+// UI-10 (08-06-PLAN.md Task 3, 08-UI-SPEC.md SS10) -- the reduced-motion alternative: the whole
+// `data-[state=*]:translate-x-*` pair now sits inside `motion-safe:` alongside the transition
+// itself, so under `prefers-reduced-motion: reduce` the panel never translates at all, at any
+// point; `motion-reduce:transition-opacity`/`motion-reduce:duration-[var(--duration-panel)]`
+// (paired with `motion-reduce:data-[state=closed]:opacity-0`, open needing no explicit class since
+// full opacity is the element's own default) replace the slide with a short opacity crossfade --
+// no translate, no scale, no spring, matching every other transition in the redesign's motion
+// table (08-UI-SPEC.md SS10's own worked comment block). Verified end to end (real browser,
+// `page.emulateMedia`) by `tests/e2e/a11y-fallbacks.spec.ts`'s `@a11y-fallbacks` tests -- jsdom
+// cannot resolve `prefers-reduced-motion` at all.
 const PANEL_CLASSES = cn(
   'fixed inset-y-0 right-0 z-50 flex h-full w-[480px] flex-col',
   'rounded-l-lg border-l border-hairline bg-surface-elevated/72 backdrop-blur-xl backdrop-saturate-[1.8]',
@@ -41,7 +52,8 @@ const PANEL_CLASSES = cn(
   '[@media(prefers-reduced-transparency:reduce)]:[backdrop-filter:none]',
   'contrast-more:border-hairline-strong contrast-more:bg-surface-elevated',
   'motion-safe:transition-transform motion-safe:duration-[var(--duration-sheet)] motion-safe:ease-[var(--ease-standard)]',
-  'data-[state=open]:translate-x-0 data-[state=closed]:translate-x-full',
+  'motion-safe:data-[state=open]:translate-x-0 motion-safe:data-[state=closed]:translate-x-full',
+  'motion-reduce:transition-opacity motion-reduce:duration-[var(--duration-panel)] motion-reduce:data-[state=closed]:opacity-0',
 );
 
 const HEADER_CLASSES = 'flex items-center justify-between border-b border-hairline px-8 py-6';
