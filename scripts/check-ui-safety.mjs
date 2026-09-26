@@ -98,6 +98,36 @@ export function scanShadowUsage(fileContents) {
   return { total, perFile };
 }
 
+// 08-14-PLAN.md Task 3 (UI-05, 08-UI-SPEC.md §7.2, brief §9 #9): the redesign's own duration/
+// easing table replaces every CSS built-in easing keyword in the inventory -- `ease-in` has no
+// replacement at all (forbidden outright, §9 #9), `ease-out`/`ease-in-out`/`linear` must always
+// resolve through a `var(--ease-*)` token reference, never a bare Tailwind easing utility or raw
+// CSS keyword. `tokens.css` is excluded by exact path -- it is the one legitimate place the token
+// definitions themselves (`--ease-out: cubic-bezier(...)`, etc.) are declared.
+const TOKENS_CSS_PATH = path.join('packages', 'ui', 'tokens.css');
+const VAR_EASE_TOKEN_PATTERN = /var\(--ease-[a-z-]+\)/g;
+const BUILTIN_EASING_PATTERN = /\bease-(in-out|in|out|linear)\b/g;
+
+/** Scans a `{ relPath: content }` map (comment lines stripped first, `tokens.css` excluded by
+ *  exact path) for a CSS built-in easing keyword that is NOT already routed through a
+ *  `var(--ease-*)` token reference -- `var(--ease-out)`/`var(--ease-standard)` text is stripped
+ *  out of each file's code before matching, so a legitimate token reference can never itself
+ *  trip this gate. Exported disk-free for the same testability reason as `scanShadowUsage`/
+ *  `scanBackdropFilterUsage` above. */
+export function scanBuiltinEasingUsage(fileContents) {
+  const perFile = [];
+  let total = 0;
+  for (const [relPath, content] of Object.entries(fileContents)) {
+    if (relPath === TOKENS_CSS_PATH) continue;
+    const code = stripCommentLines(content).replace(VAR_EASE_TOKEN_PATTERN, '');
+    const matches = code.match(BUILTIN_EASING_PATTERN);
+    const count = matches === null ? 0 : matches.length;
+    if (count > 0) perFile.push({ relPath, count });
+    total += count;
+  }
+  return { total, perFile };
+}
+
 // 08-03-PLAN.md Task 3 (UI-10): the repo-wide ceiling on simultaneously-declared backdrop-filter
 // surfaces (08-UI-SPEC.md SS5.3's worked worst case: toolbar (1, permanent) + Sheet (1,
 // conditional, only while open) = 2, safely under the "never more than three" budget). Counted by
@@ -174,6 +204,21 @@ function runBackdropFilterBudgetGate() {
   return { name: BACKDROP_FILTER_GATE_NAME, total, expected: 3, ok: total <= 3, perFile };
 }
 
+const BUILTIN_EASING_GATE_NAME =
+  'zero CSS built-in easing keywords outside var(--ease-*) token references (UI-05, brief §9 #9)';
+
+// Scoped to packages/ui specifically (UI-05's own stated scope: "no built-in easing keyword
+// survives in packages/ui"), not the wider ALL_SOURCE_FILES/apps/web scope every other gate above
+// uses -- test files ARE included (unlike NON_TEST_SOURCE_FILES), since a test file's own prose
+// (an `it(...)` description, a comment) can just as easily reintroduce a bare keyword as a real
+// component file can.
+const UI_PACKAGE_SOURCE_FILES = ALL_SOURCE_FILES.filter((f) => f.startsWith(path.join('packages', 'ui')));
+
+function runBuiltinEasingGate() {
+  const { total, perFile } = scanBuiltinEasingUsage(readFileContents(UI_PACKAGE_SOURCE_FILES));
+  return { name: BUILTIN_EASING_GATE_NAME, total, expected: 0, ok: total === 0, perFile };
+}
+
 const gates = [
   runCountGate({
     name: 'exactly one reviewed dangerouslySetInnerHTML occurrence (T-5-99)',
@@ -242,6 +287,7 @@ const gates = [
   }),
   runShadowAllowlistGate(),
   runBackdropFilterBudgetGate(),
+  runBuiltinEasingGate(),
 ];
 
 let failed = false;

@@ -12,7 +12,7 @@ describe('PRESS_CLASSES', () => {
     expect(tokens.some((token) => token.includes('transition-all'))).toBe(false);
   });
 
-  it('names transform explicitly in its transition, at 160ms with --ease-out, gated motion-safe', () => {
+  it('names transform explicitly in its transition, at 160ms with var(--ease-out), gated motion-safe', () => {
     expect(tokens).toContain('motion-safe:transition-[transform]');
     expect(tokens.some((token) => token.startsWith('motion-safe:') && token.includes('duration-[160ms]'))).toBe(
       true,

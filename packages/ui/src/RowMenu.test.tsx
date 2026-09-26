@@ -287,8 +287,8 @@ describe('RowMenu', () => {
 
   // 08-14-PLAN.md Task 1 (UI-07, 08-UI-SPEC.md §7.2/§7.4): the content grows from the trigger's
   // own corner (never a hardcoded `origin-top-right` guess) at the §7.2-table values (150ms
-  // --ease-out, scale(0.97)+opacity).
-  it('opens from scale(0.97)+opacity at 150ms --ease-out, origin anchored to the trigger', async () => {
+  // via var(--ease-out), scale(0.97)+opacity).
+  it('opens from scale(0.97)+opacity at 150ms via var(--ease-out), origin anchored to the trigger', async () => {
     const user = userEvent.setup();
     renderUi(<RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="Actions for Alpha" />);
 

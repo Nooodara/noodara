@@ -78,7 +78,7 @@ describe('Tooltip', () => {
   // reading Radix's own Popper-provided transform-origin variable rather than a hardcoded corner
   // -- RowMenu/AccountMenu do not have this variable available (no Popper underneath), Tooltip
   // does.
-  it('anchors its transform-origin to the trigger via the Popper-provided variable, at 125ms --ease-out', () => {
+  it('anchors its transform-origin to the trigger via the Popper-provided variable, at 125ms via var(--ease-out)', () => {
     renderUi(
       <Tooltip content="Full detail" open>
         <button type="button">Trigger</button>

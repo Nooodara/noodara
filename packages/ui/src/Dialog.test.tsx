@@ -61,9 +61,9 @@ describe('DialogShell keyboard-no-animation branch (UI-05, §9 #10, P14)', () =>
   });
 
   // 08-14-PLAN.md Task 1 (UI-07, 08-UI-SPEC.md §7.2/§7.4): the Dialog is the stated exception --
-  // it always grows from the centre, never a trigger, at the §7.2-table values (200ms --ease-out,
+  // it always grows from the centre, never a trigger, at the §7.2-table values (200ms via var(--ease-out),
   // scale(0.95)+opacity 0 -> scale(1)+opacity 1).
-  it('opens from scale(0.95)+opacity at 200ms --ease-out, origin centre', () => {
+  it('opens from scale(0.95)+opacity at 200ms via var(--ease-out), origin centre', () => {
     renderUi(
       <ConfirmDialog
         open

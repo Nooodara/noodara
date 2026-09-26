@@ -284,7 +284,7 @@ describe('AccountMenu', () => {
   // 08-14-PLAN.md Task 1 (UI-07, 08-UI-SPEC.md §7.2/§7.4): same origin-anchoring/timing contract
   // as RowMenu.test.tsx's identical assertion -- this menu opens above-left of its trigger
   // (`bottom-full left-0`), so its own corner is bottom-left, not RowMenu's top-right.
-  it('opens from scale(0.97)+opacity at 150ms --ease-out, origin anchored to the trigger', async () => {
+  it('opens from scale(0.97)+opacity at 150ms via var(--ease-out), origin anchored to the trigger', async () => {
     const user = userEvent.setup();
     renderUi(<AccountMenu {...buildProps()} />);
 
