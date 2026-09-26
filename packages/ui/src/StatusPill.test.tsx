@@ -60,4 +60,23 @@ describe('StatusPill', () => {
     expect(pill).not.toHaveAttribute('role');
     expect(pill.getAttribute('aria-live')).toBeNull();
   });
+
+  // 08-14-PLAN.md Task 3 (UI-05, 08-UI-SPEC.md §7.2's StatusPill row): a status change transitions
+  // colour and background over 150ms --ease-out, naming both properties explicitly -- never
+  // transition-all (§9 #9).
+  it('transitions color and background-color explicitly at 150ms --ease-out, never transition-all', () => {
+    const { getByTestId } = renderUi(<StatusPill status="CONNECTED" />);
+    const pill = getByTestId('status-pill');
+
+    expect(pill.className).toContain('transition-[color,background-color]');
+    expect(pill.className).toContain('duration-[150ms]');
+    expect(pill.className).toContain('ease-[var(--ease-out)]');
+    expect(pill.className).not.toContain('transition-all');
+  });
+
+  it('keeps the STATUS_WORDS text in the DOM regardless of the new colour transition (T-08-37)', () => {
+    const { getByTestId } = renderUi(<StatusPill status="ERROR" />);
+
+    expect(getByTestId('status-pill')).toHaveTextContent(STATUS_WORDS.ERROR);
+  });
 });

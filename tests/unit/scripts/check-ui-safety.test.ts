@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 // the `.mjs` file and assert on its return value directly, no real file I/O or spawning the whole
 // script needed. Each scan function takes a plain `{ relPath: content }` map so a fixture can
 // exercise the allowlist/comment-stripping/counting behaviour without ever touching disk.
-import { scanBackdropFilterUsage, scanShadowUsage } from '../../../scripts/check-ui-safety.mjs';
+import { scanBackdropFilterUsage, scanBuiltinEasingUsage, scanShadowUsage } from '../../../scripts/check-ui-safety.mjs';
 
 describe('scanShadowUsage (UI-03: zero shadows outside Sheet/Dialog/RowMenu/AccountMenu)', () => {
   it('passes on the repo as it stands today (nothing has a shadow)', () => {
@@ -111,6 +111,64 @@ describe('scanBackdropFilterUsage (UI-10: at most three simultaneous backdrop-fi
   it('ignores a backdrop-filter mention inside a comment line', () => {
     const { total } = scanBackdropFilterUsage({
       'packages/ui/src/Button.tsx': '// do not add backdrop-blur here\nexport function Button() {}',
+    });
+
+    expect(total).toBe(0);
+  });
+});
+
+// 08-14-PLAN.md Task 3 (UI-05, 08-UI-SPEC.md §7.2, brief §9 #9): the redesign's own duration/
+// easing table replaces every CSS built-in easing keyword in the inventory -- `ease-in` has no
+// replacement at all (forbidden outright), `ease-out`/`ease-in-out`/`linear` must always resolve
+// through a `var(--ease-*)` token reference, never a bare Tailwind easing utility.
+describe('scanBuiltinEasingUsage (UI-05: no CSS built-in easing keyword survives in packages/ui)', () => {
+  it('passes when every easing reference goes through a var(--ease-*) token', () => {
+    const { total, perFile } = scanBuiltinEasingUsage({
+      'packages/ui/src/Button.tsx': 'motion-safe:ease-[var(--ease-out)] motion-safe:ease-[var(--ease-standard)]',
+    });
+
+    expect(total).toBe(0);
+    expect(perFile).toEqual([]);
+  });
+
+  it('fails on a bare Tailwind ease-out utility (no var(--ease- token)', () => {
+    const { total, perFile } = scanBuiltinEasingUsage({
+      'packages/ui/src/Button.tsx': 'className="transition-transform ease-out duration-150"',
+    });
+
+    expect(total).toBe(1);
+    expect(perFile).toEqual([{ relPath: 'packages/ui/src/Button.tsx', count: 1 }]);
+  });
+
+  it('fails on ease-in outright -- it has no token replacement, it is simply forbidden', () => {
+    const { total } = scanBuiltinEasingUsage({
+      'packages/ui/src/Button.tsx': 'className="ease-in"',
+    });
+
+    expect(total).toBe(1);
+  });
+
+  it('fails on bare linear, and on ease-in-out written without the var(--ease- form', () => {
+    const { total, perFile } = scanBuiltinEasingUsage({
+      'packages/ui/src/StatTile.tsx': 'ease-linear',
+      'packages/ui/src/Skeleton.tsx': 'ease-in-out',
+    });
+
+    expect(total).toBe(2);
+    expect(perFile.map((f) => f.relPath).sort()).toEqual(['packages/ui/src/Skeleton.tsx', 'packages/ui/src/StatTile.tsx']);
+  });
+
+  it('ignores a mention inside a comment line', () => {
+    const { total } = scanBuiltinEasingUsage({
+      'packages/ui/src/Button.tsx': '// never use ease-in here\nexport function Button() {}',
+    });
+
+    expect(total).toBe(0);
+  });
+
+  it('excludes packages/ui/tokens.css -- the one legitimate place the token definitions themselves live', () => {
+    const { total } = scanBuiltinEasingUsage({
+      'packages/ui/tokens.css': '--ease-out: cubic-bezier(0.23, 1, 0.32, 1);\n--ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);',
     });
 
     expect(total).toBe(0);
