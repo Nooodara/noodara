@@ -63,6 +63,65 @@ function codeOf(relPath) {
   return stripCommentLines(content);
 }
 
+// 08-03-PLAN.md Task 2 (UI-03): the four floating components -- and only these -- may declare a
+// shadow (`--shadow-floating`, SS5.1). Everything else stays elevation-by-surface-step, never a
+// shadow. Exact-path exclusion, not a directory prefix, so a future Sheet-adjacent helper file
+// does not accidentally inherit the allowance. `AccountMenu.tsx` does not exist until plan 08-08 --
+// a missing path is simply never matched by the exclusion check below, so it needs no special case.
+const SHADOW_ALLOWLIST = new Set([
+  path.join('packages', 'ui', 'src', 'Sheet.tsx'),
+  path.join('packages', 'ui', 'src', 'Dialog.tsx'),
+  path.join('packages', 'ui', 'src', 'RowMenu.tsx'),
+  path.join('packages', 'ui', 'src', 'AccountMenu.tsx'),
+]);
+const SHADOW_PATTERN = /box-shadow|shadow-\[|drop-shadow/g;
+
+/** Scans a `{ relPath: content }` map (comment lines stripped per-file before matching, so a
+ *  comment describing or banning `box-shadow` -- this file's own header included -- can never
+ *  satisfy or defeat the gate) for shadow usage outside `SHADOW_ALLOWLIST`. Exported as a plain,
+ *  disk-free function -- following `scripts/check-posix-sh.mjs`'s `scanPosixSh` precedent -- so a
+ *  unit test can exercise the allowlist/comment-stripping/counting behaviour with an in-memory
+ *  fixture, without spawning the whole script or touching the real filesystem. Cannot be a plain
+ *  `runCountGate` call: it asserts absence OUTSIDE an allowlist, not a fixed total across every
+ *  file. */
+export function scanShadowUsage(fileContents) {
+  const perFile = [];
+  let total = 0;
+  for (const [relPath, content] of Object.entries(fileContents)) {
+    if (SHADOW_ALLOWLIST.has(relPath)) continue;
+    const code = stripCommentLines(content);
+    const matches = code.match(SHADOW_PATTERN);
+    const count = matches === null ? 0 : matches.length;
+    if (count > 0) perFile.push({ relPath, count });
+    total += count;
+  }
+  return { total, perFile };
+}
+
+// 08-03-PLAN.md Task 3 (UI-10): the repo-wide ceiling on simultaneously-declared backdrop-filter
+// surfaces (08-UI-SPEC.md SS5.3's worked worst case: toolbar (1, permanent) + Sheet (1,
+// conditional, only while open) = 2, safely under the "never more than three" budget). Counted by
+// DISTINCT FILE, not total pattern occurrences -- a single surface legitimately combines
+// `backdrop-blur-xl` and `backdrop-saturate-[1.8]` in one declaration (Sheet.tsx does this today)
+// and must count as one surface, not two. Dialog, RowMenu, Tooltip and AccountMenu are already
+// solid by design (no blur class) and must never be given a translucent material just to "use up"
+// the remaining budget -- see 08-UI-SPEC.md SS5.3.
+const BACKDROP_FILTER_PATTERN = /backdrop-filter|backdrop-blur|backdrop-saturate/g;
+
+/** Scans a `{ relPath: content }` map (comment-stripped first) and returns the count of DISTINCT
+ *  files declaring any backdrop-filter utility, plus the per-file match counts for reporting.
+ *  Exported disk-free for the same testability reason as `scanShadowUsage` above. */
+export function scanBackdropFilterUsage(fileContents) {
+  const perFile = [];
+  for (const [relPath, content] of Object.entries(fileContents)) {
+    const code = stripCommentLines(content);
+    const matches = code.match(BACKDROP_FILTER_PATTERN);
+    const count = matches === null ? 0 : matches.length;
+    if (count > 0) perFile.push({ relPath, count });
+  }
+  return { total: perFile.length, perFile };
+}
+
 /** One gate = one named, independently reportable check. `countMatcher` runs against each file's
  *  comment-stripped code; `files` is already scoped/filtered by the caller. */
 function runCountGate({ name, files, pattern, expected, comparator }) {
@@ -88,6 +147,32 @@ const NON_TEST_TSX_FILES = NON_TEST_SOURCE_FILES.filter((f) => f.endsWith('.tsx'
 // gates by name; everything else (theme.css, every component/page file) must reference a
 // `--token` instead of a literal colour value.
 const HEX_RGB_SCAN_FILES = NON_TEST_SOURCE_FILES.filter((f) => f !== path.join('packages', 'ui', 'tokens.css'));
+
+/** Reads every file in `relPaths` off disk into a `{ relPath: content }` map -- the bridge between
+ *  the disk-free `scanShadowUsage`/`scanBackdropFilterUsage` functions above (unit-testable with an
+ *  in-memory fixture) and this script's real, repo-wide gate run. */
+function readFileContents(relPaths) {
+  const fileContents = {};
+  for (const relPath of relPaths) {
+    fileContents[relPath] = readFileSync(path.join(REPO_ROOT, relPath), 'utf8');
+  }
+  return fileContents;
+}
+
+const SHADOW_GATE_NAME = 'zero shadows outside Sheet/Dialog/RowMenu/AccountMenu (UI-03, brief SS9 #2)';
+
+function runShadowAllowlistGate() {
+  const { total, perFile } = scanShadowUsage(readFileContents(NON_TEST_SOURCE_FILES));
+  return { name: SHADOW_GATE_NAME, total, expected: 0, ok: total === 0, perFile };
+}
+
+const BACKDROP_FILTER_GATE_NAME =
+  'at most three simultaneous backdrop-filter surfaces (UI-10, worst case toolbar + Sheet + one overlay)';
+
+function runBackdropFilterBudgetGate() {
+  const { total, perFile } = scanBackdropFilterUsage(readFileContents(NON_TEST_SOURCE_FILES));
+  return { name: BACKDROP_FILTER_GATE_NAME, total, expected: 3, ok: total <= 3, perFile };
+}
 
 const gates = [
   runCountGate({
@@ -155,6 +240,8 @@ const gates = [
     expected: 0,
     comparator: (total, expected) => total === expected,
   }),
+  runShadowAllowlistGate(),
+  runBackdropFilterBudgetGate(),
 ];
 
 let failed = false;
