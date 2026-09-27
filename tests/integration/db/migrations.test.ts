@@ -166,6 +166,7 @@ describe('migrations applied from scratch (QA-06)', () => {
       '0001_silky_lethal_legion',
       '0002_phase2_fingerprint_timestamps',
       '0003_phase3_discovery_snapshots',
+      '0004_phase9_user_preferences',
     ]);
   });
 
@@ -369,6 +370,48 @@ describe('phase-3 schema objects (D-06, D-09, D-10)', () => {
   });
 });
 
+describe('phase-9 schema objects (D-16)', () => {
+  it('users.preferences exists as jsonb NOT NULL DEFAULT \'{}\'::jsonb', async () => {
+    fixture = await startPostgres();
+
+    const result = await fixture.db.execute<{
+      data_type: string;
+      is_nullable: string;
+      column_default: string | null;
+    }>(sql`
+      select data_type, is_nullable, column_default from information_schema.columns
+      where table_name = 'users' and column_name = 'preferences'
+    `);
+
+    expect(result.rows[0]?.data_type).toBe('jsonb');
+    expect(result.rows[0]?.is_nullable).toBe('NO');
+    expect(result.rows[0]?.column_default).toContain("'{}'::jsonb");
+  });
+
+  it('a users row inserted without preferences reads back {}', async () => {
+    fixture = await startPostgres();
+
+    const [inserted] = await fixture.db
+      .insert(schema.users)
+      .values({ name: 'No Prefs', email: 'no-prefs@example.com' })
+      .returning();
+
+    expect(inserted?.preferences).toEqual({});
+  });
+
+  it('round-trips a preferences jsonb object unchanged', async () => {
+    fixture = await startPostgres();
+
+    const value = { theme: 'dark', reduceMotion: 'on', density: 'compact' };
+    const [inserted] = await fixture.db
+      .insert(schema.users)
+      .values({ name: 'Prefs User', email: 'prefs-user@example.com', preferences: value })
+      .returning();
+
+    expect(inserted?.preferences).toEqual(value);
+  });
+});
+
 describe('migrations applied from the previous snapshot (QA-06, PITFALLS.md #10)', () => {
   it('preserves representative data across an upgrade from the previous snapshot to the latest migration', async () => {
     fixture = await startPostgres({ migrate: false });
@@ -449,5 +492,13 @@ describe('migrations applied from the previous snapshot (QA-06, PITFALLS.md #10)
     const storedValue = roundTripResult.rows[0]?.pending_fingerprint_seen_at;
     expect(storedValue).toBeDefined();
     expect(new Date(storedValue as string).getTime()).toBe(knownInstant.getTime());
+
+    // Migration 0004 adds `preferences` (D-16) to `users`, a table that already has a row
+    // (seeded before this migration ran). The column is NOT NULL with a jsonb default, so the
+    // ADD COLUMN backfill must produce {}, not NULL.
+    const preferencesResult = await fixture.db.execute<{ preferences: unknown }>(
+      sql`select preferences from users where id = ${ids.userId}`,
+    );
+    expect(preferencesResult.rows[0]?.preferences).toEqual({});
   });
 });
