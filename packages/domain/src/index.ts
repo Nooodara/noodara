@@ -3,3 +3,4 @@ export * from './security/index.js';
 export * from './validators/index.js';
 export * from './activity/index.js';
 export * from './discovery/index.js';
+export * from './preferences/index.js';

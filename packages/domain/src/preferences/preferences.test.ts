@@ -94,6 +94,14 @@ describe('resolveStoredPreferences', () => {
   it('returns DEFAULT_PREFERENCES for an array', () => {
     expect(resolveStoredPreferences([])).toEqual(DEFAULT_PREFERENCES);
   });
+
+  it('defaults an invalid reduceMotion field while keeping valid fields', () => {
+    expect(resolveStoredPreferences({ theme: 'dark', reduceMotion: 'bogus', density: 'compact' })).toEqual({
+      theme: 'dark',
+      reduceMotion: 'system',
+      density: 'compact',
+    });
+  });
 });
 
 describe('mergePreferences', () => {
@@ -143,6 +151,22 @@ describe('parsePreferencesCookieValue', () => {
 
   it('returns DEFAULT_PREFERENCES for a value longer than 64 chars', () => {
     expect(parsePreferencesCookieValue('a'.repeat(65))).toEqual(DEFAULT_PREFERENCES);
+  });
+
+  it('defaults an invalid theme segment while keeping the other valid segments', () => {
+    expect(parsePreferencesCookieValue('bogus.on.compact')).toEqual({
+      theme: 'auto',
+      reduceMotion: 'on',
+      density: 'compact',
+    });
+  });
+
+  it('defaults an invalid density segment while keeping the other valid segments', () => {
+    expect(parsePreferencesCookieValue('dark.on.bogus')).toEqual({
+      theme: 'dark',
+      reduceMotion: 'on',
+      density: 'comfortable',
+    });
   });
 });
 
