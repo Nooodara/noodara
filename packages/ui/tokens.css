@@ -168,6 +168,22 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-standard: var(--ease-out); /* alias, unchanged call sites keep working */
+
+  /* --- Density (SET-05, D-14) ------------------------------------------------------------- */
+  /* The single source every row-bearing component (ListRow, SkeletonRow, NavTree items,
+     LabelValue rows inside an InsetGroup) reads its geometry from. :root values below are
+     "comfortable" (today's unchanged 44px row / 8px vertical padding); the compact remap block
+     further down is the ONLY other selector in this repo allowed to key off the density
+     attribute (one writer, D-14) -- it lives outside any [data-theme] block so it applies
+     identically in both themes. Nothing else -- typography, inter-group gap, page padding,
+     control sizing (Button, SegmentedControl) -- ever changes with density. */
+  --row-height: 44px;
+  --row-height-padding-y: 8px;
+}
+
+html[data-density="compact"] {
+  --row-height: 36px;
+  --row-height-padding-y: 4px;
 }
 
 [data-theme="dark"] {

@@ -14,7 +14,10 @@ export interface LabelValueProps {
   readonly 'data-testid'?: string;
 }
 
-const ROOT_CLASSES = 'flex items-center justify-between gap-4 py-2';
+// Vertical padding comes from the single --row-height-padding-y token (D-14: 8px comfortable /
+// 4px compact), not a hardcoded py-2 -- 8px is the same value comfortable renders today, so this
+// is a no-op visually until a caller switches to compact density.
+const ROOT_CLASSES = 'flex items-center justify-between gap-4 py-[var(--row-height-padding-y)]';
 const LABEL_CLASSES = 'text-caption text-ink-secondary';
 const CAPTION_CLASSES = 'text-caption text-ink-tertiary';
 

@@ -53,8 +53,10 @@ export interface NavTreeProps {
 // definition (press.ts, owned by 08-13) -- composed in, never redeclared. Only the press itself
 // (:active) gets a transition; navigation activation and aria-current changes stay unanimated
 // (D-07).
+// Item height comes from the single --row-height token (D-14: 44px comfortable / 36px compact),
+// not a fixed 44px utility.
 const ITEM_CLASSES = cn(
-  'flex h-11 items-center gap-3 rounded-sm px-3 text-callout font-medium text-ink-secondary hover:bg-surface-2',
+  'flex h-[var(--row-height)] items-center gap-3 rounded-sm px-3 text-callout font-medium text-ink-secondary hover:bg-surface-2',
   PRESS_CLASSES,
 );
 const ACTIVE_ITEM_CLASSES = 'bg-accent-soft text-ink';

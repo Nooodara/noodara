@@ -12,7 +12,10 @@ const ROW_CLASSES = 'border-b border-hairline last:border-b-0';
 
 // InsetGroup (D-01/D-02, 08-UI-SPEC.md §1) -- the macOS System Settings / iOS grouped-list
 // surface: an optional title outside the block, and inside the block each row separated from the
-// next by a hairline, the last carrying none. This is an elevation step (surface-1 on canvas,
+// next by a hairline, the last carrying none. Rows inside own their vertical rhythm through the
+// two density tokens (--row-height, --row-height-padding-y -- D-14); this wrapper itself carries
+// no min-height so it never overrides a LabelValue row's own comfortable-height byte-identity.
+// This is an elevation step (surface-1 on canvas,
 // hairline border, radius lg) rather than a floating surface -- it must never carry a shadow
 // (§9 #2; scripts/check-ui-safety.mjs's shadow-outside-allowlist gate enforces this repo-wide)
 // and must never nest inside another InsetGroup (§9 #5). There is no runtime guard against

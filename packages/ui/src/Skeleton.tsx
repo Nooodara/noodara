@@ -46,29 +46,26 @@ export function Skeleton({ width, height, 'data-testid': testId }: SkeletonProps
   );
 }
 
-const ROW_HEIGHT_PX = 44;
-
 export interface SkeletonRowProps {
   readonly 'data-testid'?: string;
 }
 
 const ROW_BLOCK_CLASSES = 'h-4 rounded-sm bg-surface-2 motion-safe:animate-pulse';
 
-// SkeletonRow -- 44px tall, matching `ListRow`'s own fixed row height (05-UI-SPEC.md's spacing
-// table: "Desktop table/list rows: 44px height"). The height is exposed as a `data-height`
-// attribute (not only inline style) so a test can assert the contract from an attribute rather
-// than a computed style jsdom never lays out. Defaults its own `data-testid` to `skeleton-row` so
-// a caller rendering several of these (Plan 05-13's 5-row list-loading state) can count them
-// without threading a unique id through every instance.
+// SkeletonRow -- matches `ListRow`'s own row height, both driven by the single --row-height token
+// (D-14: 44px comfortable / 36px compact). `data-row="true"` is the test hook (not only the
+// className) so a test can assert the contract from an attribute rather than a computed style
+// jsdom never lays out. Defaults its own `data-testid` to `skeleton-row` so a caller rendering
+// several of these (Plan 05-13's 5-row list-loading state) can count them without threading a
+// unique id through every instance.
 export function SkeletonRow({ 'data-testid': testId = 'skeleton-row' }: SkeletonRowProps = {}) {
   return (
     <div
       data-testid={testId}
-      data-height={ROW_HEIGHT_PX}
+      data-row="true"
       aria-hidden="true"
       {...ENTERING_ATTRS}
-      style={{ height: toDimension(ROW_HEIGHT_PX) }}
-      className={cn('flex items-center gap-4 border-b border-hairline px-4', BRIDGE_CLASSES)}
+      className={cn('flex h-[var(--row-height)] items-center gap-4 border-b border-hairline px-4', BRIDGE_CLASSES)}
     >
       <div className={cn(ROW_BLOCK_CLASSES, 'w-32')} />
       <div className={cn(ROW_BLOCK_CLASSES, 'w-24')} />

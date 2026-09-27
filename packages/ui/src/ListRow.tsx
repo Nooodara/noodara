@@ -16,13 +16,13 @@ export type ListRowProps = ListRowActivation & {
   readonly 'data-testid'?: string;
 };
 
-const ROW_HEIGHT_PX = 44;
-
 // UI-10 (08-06-PLAN.md Task 2, 08-UI-SPEC.md SS10): the row hover reveal is gated behind
 // `(hover: hover) and (pointer: fine)` -- a tap on touch (which can never trigger `:hover`) must
 // never leave a row stuck in its hover-highlighted state.
+// D-14: row height comes from the single --row-height token (44px comfortable / 36px in compact
+// density) rather than a hardcoded pixel value.
 const ROW_CLASSES = cn(
-  'group flex items-center border-b border-hairline [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-2',
+  'group flex h-[var(--row-height)] items-center border-b border-hairline [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-2',
 );
 
 // The press feedback itself comes from the one shared `PRESS_CLASSES` definition (08-13-PLAN.md,
@@ -37,8 +37,9 @@ const PRIMARY_TEXT_CLASSES = 'truncate text-headline font-semibold text-ink';
 const SECONDARY_CLASSES = 'truncate text-callout text-ink-secondary';
 const TRAILING_CLASSES = 'flex shrink-0 items-center pr-4';
 
-// ListRow (skill SS4.4, 05-UI-SPEC.md Component Inventory, D-09) -- the 44px hairline row every
-// list this phase needs (servers, activity) is built from. Whole-row activation is a real <a>
+// ListRow (skill SS4.4, 05-UI-SPEC.md Component Inventory, D-09) -- the hairline row (height from
+// the --row-height token, D-14) every list this phase needs (servers, activity) is built from.
+// Whole-row activation is a real <a>
 // (href given) or <button> (onActivate given), never a <div> with a click handler -- Enter/Space
 // keyboard activation is therefore entirely native browser behaviour and this file adds no
 // onKeyDown of its own. The trailing slot (T-5-45's mitigation -- RowMenu, Plan 05-25's own other
@@ -62,8 +63,7 @@ export function ListRow({
   return (
     <div
       data-testid={testId}
-      data-height={ROW_HEIGHT_PX}
-      style={{ height: `${ROW_HEIGHT_PX.toString(10)}px` }}
+      data-row="true"
       className={ROW_CLASSES}
     >
       {href === undefined ? (
