@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 09-11-PLAN.md
-last_updated: "2026-09-27T10:22:15.681Z"
+stopped_at: Completed 09-12-PLAN.md
+last_updated: "2026-09-27T10:48:38.773Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 44
-  completed_plans: 41
+  completed_plans: 42
   percent: 25
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 09 (settings-editables) — EXECUTING
-Plan: 12 of 14
+Plan: 13 of 14
 Status: Ready to execute
 Last activity: 2026-09-27
 
-Progress: [█████████░] 93%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -199,6 +199,7 @@ Progress: [█████████░] 93%
 | Phase 09 P10 | 10min | 3 tasks | 8 files |
 | Phase 09 P09 | 90min | 3 tasks | 10 files |
 | Phase 09 P11 | 35min | 2 tasks | 6 files |
+| Phase 09 P12 | 20min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -545,6 +546,9 @@ Recent decisions affecting current work:
 - [Phase ?]: session-user.ts's shared store re-triggers a load on every 0->1 listener transition rather than caching forever, keeping Sidebar.test.tsx passing unmodified
 - [Phase 09]: sessionsRevoked is computed by pre-change SELECT of other sessions (Better Auth's changePassword returns no count)
 - [Phase 09]: Session revocation markers reuse Better Auth's own verifications table (sha256 token hash, no new migration)
+- [Phase 09]: SET-06/D-17 type separation: editable rows live in account-rows.ts's own type, proven non-editable via @ts-expect-error
+- [Phase 09]: Appearance controller: optimistic apply+setStored before PATCH, revert both on failure, re-sync from server response on success
+- [Phase 09]: Account row trigger capture via event.currentTarget instead of a forwarded React ref, since Button has no ref prop
 
 ### Pending Todos
 
@@ -620,8 +624,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-27T10:22:15.667Z
-Stopped at: Completed 09-11-PLAN.md
+Last session: 2026-09-27T10:48:38.765Z
+Stopped at: Completed 09-12-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
