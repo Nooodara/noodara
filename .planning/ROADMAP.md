@@ -223,7 +223,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 09-08-PLAN.md — GET/PATCH /api/account/preferences with server-set mirror cookie
+- [x] 09-08-PLAN.md — GET/PATCH /api/account/preferences with server-set mirror cookie
 - [ ] 09-10-PLAN.md — Web: shared session store (D-04/D-10), reason redirect, /login notice + banner fix
 
 **Wave 4** *(blocked on Wave 3 completion)*
@@ -349,7 +349,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 |-------|----------------|--------|-----------|
 | 7. Identidad y brand kit | 10/10 | Complete | 2026-09-23 |
 | 8. Rediseño de la app | 20/20 | Complete   | 2026-09-27 |
-| 9. Settings editables | 7/14 | In Progress|  |
+| 9. Settings editables | 8/14 | In Progress|  |
 | 10. Sitio de docs y landing pública | 0/TBD | Not started | - |
 | 11. Motor de deploy — fundamentos | 0/TBD | Not started | - |
 | 12. Motor de deploy — runtime | 0/TBD | Not started | - |
