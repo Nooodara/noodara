@@ -135,13 +135,13 @@ Unchanged 60/30/10 split. This phase adds **zero new hues and zero new tokens fo
 |------|-------|-------|
 | Dominant (60%) | `--canvas` | unchanged page background |
 | Secondary (30%) | `--surface-1` (`Account`/`Appearance` `InsetGroup` blocks, unchanged), `--surface-elevated` (edit Sheets, unchanged from Phase 8) | |
-| Accent (10%) | `--accent` (focus rings only), `--accent-fill` (selected `SegmentedControl` segment, `Save` primary button — both unchanged existing usages, not new) | See reserved-for list below — **no new accent usage this phase** |
+| Accent (10%) | `--accent` (focus rings only), `--accent-fill` (selected `SegmentedControl` segment, per-field `Save …` primary button — both unchanged existing usages, not new) | See reserved-for list below — **no new accent usage this phase** |
 | Destructive | not used | This phase introduces no destructive action requiring `--status-error`/`--status-error-fill` — password change is reversible (the user still knows their own new password) and revoking other sessions is not itself styled as destructive (D-06: neutral `Notice`, not a `Banner`/error tone) |
 | Error (field-level only) | `--status-error-text` | `Field`'s existing error-text role (unchanged component), used for "Current password is incorrect." and the other inline errors in §Copywriting |
 
 **Accent remains reserved for exactly the same list `08-UI-SPEC.md` already fixed.** This phase
 adds zero new accent usages: the `Edit` button is `ghost` variant (`--ink-secondary`, unchanged
-`Button` component, no new variant), never `primary`/`accent`-filled — only the Sheet's own `Save`
+`Button` component, no new variant), never `primary`/`accent`-filled — only the Sheet's own per-field `Save …`
 button (already accent-filled everywhere in the product) carries accent, exactly like every other
 Sheet's primary action.
 
