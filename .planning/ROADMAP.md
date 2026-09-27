@@ -205,7 +205,24 @@ Plans:
   4. Reducir movimiento y densidad compacta/cómoda se persisten del mismo modo y se respetan en toda la app (el `Sheet` cae al fallback sin gesto, las filas cambian de altura).
   5. Las filas de Settings que provienen de variables de entorno siguen siendo de solo lectura y lo dicen; el tipo de `SettingsRow` impide añadirles un handler de edición (test de tipo `@ts-expect-error`).
 
-**Plans**: TBD
+**Plans**: 14 plans
+
+Plans:
+- [ ] 09-01-PLAN.md — Domain: Preferences schema + noodara-prefs codec, validateName/validateAccountEmail, account.* actions with metadata allowlist
+- [ ] 09-02-PLAN.md — [BLOCKING] users.preferences jsonb via migration 0004, applied with pnpm db:migrate
+- [ ] 09-03-PLAN.md — Density token --row-height (44/36) consumed by ListRow, SkeletonRow, NavTree, LabelValue
+- [ ] 09-04-PLAN.md — data-motion override for motion-safe/motion-reduce and the Sheet gesture
+- [ ] 09-05-PLAN.md — DnsChecker (MX/A, 3 s timeout, injected resolver) and ReauthGuard (progressive lockout)
+- [ ] 09-06-PLAN.md — PATCH /api/account/profile with current password, DNS check, activity; new error codes
+- [ ] 09-07-PLAN.md — applyPreferences as the single write path + async root layout reading noodara-prefs (no flash)
+- [ ] 09-08-PLAN.md — GET/PATCH /api/account/preferences with server-set mirror cookie
+- [ ] 09-09-PLAN.md — POST /api/account/password (Better Auth revokeOtherSessions), reason-bearing 401, leak canary
+- [ ] 09-10-PLAN.md — Web: shared session store (D-04/D-10), reason redirect, /login notice + banner fix
+- [ ] 09-11-PLAN.md — Account sheets: Name, Email, Password
+- [ ] 09-12-PLAN.md — /settings composition: Account + Appearance + SET-06 type test; retire the cyclic ThemeToggle
+- [ ] 09-13-PLAN.md — E2E for the 5 success criteria through /settings
+- [ ] 09-14-PLAN.md — UX review, full gate and human visual approval
+
 **UI hint**: yes
 
 ### Phase 10: Sitio de docs y landing pública
