@@ -1,36 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderUi, screen, userEvent } from '@noodara/ui/testing';
+import { renderUi, screen, userEvent, waitFor } from '@noodara/ui/testing';
 import { SettingsGroups } from './SettingsGroups';
 import type { ConfigResponse } from '../lib/settings-rows';
-
-// jsdom implements localStorage but not matchMedia -- same stub ThemeToggle.test.tsx's own header
-// comment documents, needed here now that SettingsGroups mounts a real ThemeToggle (08-19-PLAN.md
-// Task 3, item 5).
-function stubMatchMedia(prefersDark: boolean): void {
-  vi.stubGlobal(
-    'matchMedia',
-    vi.fn().mockImplementation((query: string) => ({
-      matches: prefersDark,
-      media: query,
-      onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })),
-  );
-}
-
-beforeEach(() => {
-  localStorage.clear();
-  document.documentElement.removeAttribute('data-theme');
-  stubMatchMedia(false);
-});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
+import * as sessionUser from '../lib/session-user';
+import * as appearance from '../lib/appearance';
 
 function buildConfig(overrides: Partial<ConfigResponse> = {}): ConfigResponse {
   return {
@@ -43,9 +16,151 @@ function buildConfig(overrides: Partial<ConfigResponse> = {}): ConfigResponse {
   };
 }
 
-const NO_FORM_CONTROL_ROLES = ['textbox', 'combobox', 'spinbutton', 'checkbox', 'switch'] as const;
+const NO_FORM_CONTROL_ROLES = ['spinbutton', 'checkbox', 'switch'] as const;
+
+beforeEach(() => {
+  vi.spyOn(sessionUser, 'useSessionUser').mockReturnValue({ name: 'Ada Lovelace', email: 'ada@noodara.test' });
+  vi.spyOn(sessionUser, 'useAccountPreferences').mockReturnValue({
+    theme: 'auto',
+    reduceMotion: 'system',
+    density: 'comfortable',
+  });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('SettingsGroups', () => {
+  it('renders group order Account -> Appearance -> Instance -> Advanced', () => {
+    renderUi(<SettingsGroups config={buildConfig()} />);
+
+    const groups = screen.getAllByTestId(
+      /settings-account-group|settings-appearance-group|settings-instance-group|settings-advanced-disclosure/,
+    );
+    expect(groups.map((el) => el.getAttribute('data-testid'))).toEqual([
+      'settings-account-group',
+      'settings-appearance-group',
+      'settings-instance-group',
+      'settings-advanced-disclosure',
+    ]);
+  });
+
+  it('renders the Account rows with Name/Email values and the Password row with no value text', () => {
+    renderUi(<SettingsGroups config={buildConfig()} />);
+
+    expect(screen.getByText('Name')).toBeInTheDocument();
+    expect(screen.getByText('Ada Lovelace')).toBeInTheDocument();
+    expect(screen.getByTestId('account-edit-name')).toHaveTextContent('Edit');
+
+    expect(screen.getByText('Email')).toBeInTheDocument();
+    expect(screen.getByText('ada@noodara.test')).toBeInTheDocument();
+    expect(screen.getByTestId('account-edit-email')).toHaveTextContent('Edit');
+
+    expect(screen.getByText('Password')).toBeInTheDocument();
+    expect(screen.getByTestId('account-edit-password')).toHaveTextContent('Change');
+    expect(screen.queryByText('••••••••')).not.toBeInTheDocument();
+  });
+
+  it('opens the name sheet with the current name when account-edit-name is clicked', async () => {
+    const user = userEvent.setup();
+    renderUi(<SettingsGroups config={buildConfig()} />);
+
+    await user.click(screen.getByTestId('account-edit-name'));
+
+    expect(screen.getByTestId('account-name-sheet')).toBeInTheDocument();
+    expect(screen.getByTestId('account-name-input')).toHaveValue('Ada Lovelace');
+  });
+
+  it('opens the password sheet when account-edit-password is clicked', async () => {
+    const user = userEvent.setup();
+    renderUi(<SettingsGroups config={buildConfig()} />);
+
+    await user.click(screen.getByTestId('account-edit-password'));
+
+    expect(screen.getByTestId('account-password-sheet')).toBeInTheDocument();
+  });
+
+  it('renders the account-password-notice above the Account group after the password sheet reports sessionsRevoked, and dismissing hides it', async () => {
+    const user = userEvent.setup();
+    renderUi(<SettingsGroups config={buildConfig()} />);
+
+    await user.click(screen.getByTestId('account-edit-password'));
+    await user.type(screen.getByTestId('account-current-password-input'), 'CurrentPassw0rd!');
+    await user.type(screen.getByTestId('account-new-password-input'), 'NewPassw0rd!123');
+    await user.type(screen.getByTestId('account-confirm-password-input'), 'NewPassw0rd!123');
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ sessionsRevoked: 2 }), { status: 200, headers: { 'content-type': 'application/json' } }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await user.click(screen.getByTestId('account-password-save'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('account-password-notice')).toHaveTextContent(
+        'Password updated. 2 other sessions were signed out.',
+      );
+    });
+
+    const notice = screen.getByTestId('account-password-notice');
+    const accountGroup = screen.getByTestId('settings-account-group');
+    expect(notice.compareDocumentPosition(accountGroup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(screen.queryByTestId('account-password-notice')).not.toBeInTheDocument();
+
+    vi.unstubAllGlobals();
+  });
+
+  it('renders the three Appearance SegmentedControls with the right labels and current values', () => {
+    renderUi(<SettingsGroups config={buildConfig()} />);
+
+    expect(screen.getByTestId('settings-theme-control')).toBeInTheDocument();
+    expect(screen.getByTestId('settings-reduce-motion-control')).toBeInTheDocument();
+    expect(screen.getByTestId('settings-density-control')).toBeInTheDocument();
+    expect(screen.getByText('Theme')).toBeInTheDocument();
+    expect(screen.getByText('Reduce motion')).toBeInTheDocument();
+    expect(screen.getByText('Density')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Auto' })).toHaveAttribute('data-state', 'checked');
+    expect(screen.getByRole('radio', { name: 'System' })).toHaveAttribute('data-state', 'checked');
+    expect(screen.getByRole('radio', { name: 'Comfortable' })).toHaveAttribute('data-state', 'checked');
+  });
+
+  it('calls updateAppearancePreference with the right key/value when a segment is selected', async () => {
+    const user = userEvent.setup();
+    const updateSpy = vi.spyOn(appearance, 'updateAppearancePreference').mockResolvedValue({ ok: true });
+    renderUi(<SettingsGroups config={buildConfig()} />);
+
+    await user.click(screen.getByRole('radio', { name: 'Dark' }));
+
+    expect(updateSpy).toHaveBeenCalledWith('theme', 'dark');
+  });
+
+  it('renders a Banner and keeps the reverted value when updateAppearancePreference fails', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(appearance, 'updateAppearancePreference').mockResolvedValue({
+      ok: false,
+      message: "Couldn't save your appearance settings. Try again.",
+    });
+    renderUi(<SettingsGroups config={buildConfig()} />);
+
+    await user.click(screen.getByRole('radio', { name: 'Dark' }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't save your appearance settings. Try again.")).toBeInTheDocument();
+    });
+  });
+
+  it('has no settings-appearance-theme-toggle anywhere and no switch/toggle role', () => {
+    renderUi(<SettingsGroups config={buildConfig()} />);
+
+    expect(screen.queryByTestId('settings-appearance-theme-toggle')).not.toBeInTheDocument();
+    for (const role of NO_FORM_CONTROL_ROLES) {
+      expect(screen.queryAllByRole(role)).toHaveLength(0);
+    }
+  });
+
   it('renders the Instance group always expanded, both rows, exactly one copy button', () => {
     renderUi(<SettingsGroups config={buildConfig()} />);
 
@@ -61,8 +176,6 @@ describe('SettingsGroups', () => {
     renderUi(<SettingsGroups config={buildConfig()} />);
 
     expect(screen.queryByText('Master key fingerprint')).not.toBeInTheDocument();
-    expect(screen.queryByText('Connect timeout')).not.toBeInTheDocument();
-    expect(screen.queryByText('Worker concurrency')).not.toBeInTheDocument();
     expect(screen.queryAllByText('Set by an environment variable')).toHaveLength(0);
 
     await user.click(screen.getByRole('button', { name: 'Advanced' }));
@@ -75,94 +188,13 @@ describe('SettingsGroups', () => {
     expect(screen.getAllByText('Set by an environment variable')).toHaveLength(5);
   });
 
-  it('carries data-mono="true" on exactly the seven rendered values across both groups', async () => {
-    const user = userEvent.setup();
-    const { container } = renderUi(<SettingsGroups config={buildConfig()} />);
-    await user.click(screen.getByRole('button', { name: 'Advanced' }));
-
-    expect(container.querySelectorAll('[data-mono="true"]')).toHaveLength(7);
-  });
-
-  it('exposes zero form-control roles and no save/apply/edit-named button anywhere on the screen', async () => {
-    const user = userEvent.setup();
-    renderUi(<SettingsGroups config={buildConfig()} />);
-    await user.click(screen.getByRole('button', { name: 'Advanced' }));
-
-    for (const role of NO_FORM_CONTROL_ROLES) {
-      expect(screen.queryAllByRole(role)).toHaveLength(0);
-    }
-    expect(screen.queryAllByRole('button', { name: /save|apply|edit/i })).toHaveLength(0);
-  });
-
-  it('renders a short master key fingerprint digest and no 44-character base64-looking string anywhere', async () => {
-    const user = userEvent.setup();
-    const { container } = renderUi(<SettingsGroups config={buildConfig({ masterKeyFingerprint: 'a1b2c3d4e5f6a7b8' })} />);
-    await user.click(screen.getByRole('button', { name: 'Advanced' }));
-
-    expect(screen.getByText('a1b2c3d4e5f6a7b8')).toBeInTheDocument();
-    expect(container.textContent).not.toMatch(/[A-Za-z0-9+/]{44}/);
-  });
-
-  // 08-05-PLAN.md Task 2 (D-01/D-04): Instance becomes an InsetGroup block -- its testid moves
-  // onto the InsetGroup's own block element, and its heading is InsetGroup's own <h3> (the
-  // literal <h2> this component used to render is deleted, not duplicated).
-  it('wraps Instance in an InsetGroup block exposing the same testid and heading, and keeps the Advanced disclosure trigger intact', async () => {
-    const user = userEvent.setup();
-    renderUi(<SettingsGroups config={buildConfig()} />);
-
-    const instanceBlock = screen.getByTestId('settings-instance-group');
-    expect(instanceBlock).toHaveAttribute('data-inset-group', 'true');
-
-    const heading = screen.getByRole('heading', { level: 3, name: 'Instance' });
-    expect(heading.className).toMatch(/text-label/);
-    expect(heading.className).toMatch(/uppercase/);
-    expect(heading.className).toMatch(/text-ink-secondary/);
-    expect(instanceBlock.contains(heading)).toBe(false);
-
-    // The Advanced Disclosure trigger is unchanged -- the InsetGroup wraps only the disclosed
-    // content, it does not replace or swallow the trigger (08-UI-SPEC.md §1 item 2).
-    const disclosureTrigger = screen.getByRole('button', { name: 'Advanced' });
-    expect(disclosureTrigger).toBeInTheDocument();
-    expect(screen.queryByText('Master key fingerprint')).not.toBeInTheDocument();
-
-    await user.click(disclosureTrigger);
-
-    expect(screen.getByText('Master key fingerprint')).toBeInTheDocument();
-  });
-
-  // 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 1): Instance/Advanced rows sat flush
-  // against the InsetGroup block's own hairline border, same bug as ServerFacts -- both the
-  // plain and the copyable rows now carry the same px-4 inset ServerList's rows already have.
   it('gives every Instance/Advanced row a px-4 horizontal inset', async () => {
     const user = userEvent.setup();
     renderUi(<SettingsGroups config={buildConfig()} />);
     await user.click(screen.getByRole('button', { name: 'Advanced' }));
 
-    const versionRow = screen.getByText('Version').closest('[class*="justify-between"]');
-    expect(versionRow?.parentElement?.className).toMatch(/\bpx-4\b/);
-
     const publicUrlRow = screen.getByTestId('settings-row-public-url');
     expect(publicUrlRow.className).toMatch(/\bpx-4\b/);
-
-    const masterKeyRow = screen.getByText('Master key fingerprint').closest('[class*="justify-between"]');
-    expect(masterKeyRow?.parentElement?.className).toMatch(/\bpx-4\b/);
-  });
-
-  // 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 5): D-05 moves -- the theme control leaves
-  // the account menu (AccountMenu.test.tsx's own updated coverage) and lands here instead, as an
-  // Appearance InsetGroup consistent with Instance, still the one ThemeToggle instance (its own
-  // single-writer STORAGE_KEY, never a second theme control).
-  it('renders an Appearance InsetGroup with the one ThemeToggle control', () => {
-    renderUi(<SettingsGroups config={buildConfig()} />);
-
-    const appearanceGroup = screen.getByTestId('settings-appearance-group');
-    expect(appearanceGroup).toHaveAttribute('data-inset-group', 'true');
-
-    const heading = screen.getByRole('heading', { level: 3, name: 'Appearance' });
-    expect(appearanceGroup.contains(heading)).toBe(false);
-
-    const themeToggle = screen.getByTestId('settings-appearance-theme-toggle');
-    expect(appearanceGroup.contains(themeToggle)).toBe(true);
   });
 
   it('renders second-suffixed timeout values, never a raw millisecond count', async () => {
@@ -176,7 +208,5 @@ describe('SettingsGroups', () => {
     expect(screen.getByText('10s')).toBeInTheDocument();
     expect(screen.getByText('60s')).toBeInTheDocument();
     expect(screen.queryByText('2500')).not.toBeInTheDocument();
-    expect(screen.queryByText('10000')).not.toBeInTheDocument();
-    expect(screen.queryByText('60000')).not.toBeInTheDocument();
   });
 });

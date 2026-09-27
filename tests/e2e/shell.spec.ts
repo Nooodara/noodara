@@ -112,25 +112,22 @@ test('@shell activating a sidebar item by keyboard navigates to its route', asyn
   await expect(page).toHaveURL(/\/servers$/);
 });
 
-// 08-19-PLAN.md Task 3 (G3 adjustment round 1, item 5, D-05 change): the theme control moved out
-// of the account menu into an Appearance InsetGroup on /settings, per the user's own G3 review --
-// same data-theme/reload-survival contract, just reached through Settings instead of the trigger.
-test('@shell the theme toggle in the Settings Appearance group cycles data-theme and the choice survives a reload', async ({
-  page,
-}) => {
+// 09-12-PLAN.md Task 3 (D-12, UI-SPEC.md §6.2): the cyclic ThemeToggle icon button is gone --
+// Settings' Appearance group now exposes an explicit Auto/Light/Dark `SegmentedControl`, same
+// data-theme/reload-survival contract as before, reached by selecting a specific segment rather
+// than cycling.
+test('@shell the Theme control in Settings sets data-theme and the choice survives a reload', async ({ page }) => {
   await login(page);
 
   await page.goto('/settings');
-  await page.getByTestId('settings-appearance-theme-toggle').click();
-  const afterFirstClick = await focusedTheme(page);
+  await page.getByTestId('settings-theme-control').getByRole('radio', { name: 'Dark' }).click();
+  await expect.poll(() => focusedTheme(page)).toBe('dark');
 
-  await page.getByTestId('settings-appearance-theme-toggle').click();
-  const afterSecondClick = await focusedTheme(page);
-
-  expect(afterSecondClick).not.toBe(afterFirstClick);
+  await page.getByTestId('settings-theme-control').getByRole('radio', { name: 'Light' }).click();
+  await expect.poll(() => focusedTheme(page)).toBe('light');
 
   await page.reload();
-  await expect.poll(() => focusedTheme(page)).toBe(afterSecondClick);
+  await expect.poll(() => focusedTheme(page)).toBe('light');
 });
 
 test('@shell the sidebar collapses to an icon rail at 1024px and a bottom sheet below 900px', async ({ page }) => {
