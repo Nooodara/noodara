@@ -31,7 +31,7 @@
     "boundaries": "turbo boundaries",
     "check:ui-safety": "node scripts/check-ui-safety.mjs",
     "check:posix-sh": "node scripts/check-posix-sh.mjs install.sh",
-    "security:scan-leaks": "vitest run --config vitest.integration.config.ts tests/integration/activity/canary.test.ts tests/integration/activity/canary-full-flow.test.ts tests/integration/activity/canary-http.test.ts && playwright test --grep @canary"
+    "security:scan-leaks": "vitest run --config vitest.integration.config.ts tests/integration/activity/canary.test.ts tests/integration/activity/canary-full-flow.test.ts tests/integration/activity/canary-http.test.ts tests/integration/activity/canary-account.test.ts && playwright test --grep @canary"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
