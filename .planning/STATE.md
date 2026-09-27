@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 09-01-PLAN.md
-last_updated: "2026-09-27T06:52:25.876Z"
+stopped_at: Completed 09-02-PLAN.md
+last_updated: "2026-09-27T07:02:11.606Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 44
-  completed_plans: 31
+  completed_plans: 32
   percent: 25
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 09 (settings-editables) — EXECUTING
-Plan: 2 of 14
+Plan: 3 of 14
 Status: Ready to execute
 Last activity: 2026-09-27
 
-Progress: [███████░░░] 70%
+Progress: [███████░░░] 73%
 
 ## Performance Metrics
 
@@ -189,6 +189,7 @@ Progress: [███████░░░] 70%
 | Phase 08 P17 | 55min | 3 tasks | 10 files |
 | Phase 08 P19 | 480min | 3 tasks | 16 files |
 | Phase 09 P01 | 40min | 2 tasks | 11 files |
+| Phase 09 P02 | 20min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -515,6 +516,8 @@ Recent decisions affecting current work:
 - [Phase 08]: G3 (final) approved 2026-09-26 by Pablo Gutierrez after one adjustment round; brand-swap verdict and drag-feel judgement were never given in words and are recorded as delegated approval, not fabricated
 - [Phase 08]: UI-08 marked complete on delegated brand-swap approval; UI-11 stays Pending (NavTree still generic per D-07); UI-04 stays Pending (screen-reader pass never performed)
 - [Phase 09]: Plan 01: mergePreferences merges field-by-field (patch.field ?? current.field) instead of object-spreading the patch, avoiding a TS build error where an optional patch key's undefined could type-check as overwriting a required Preferences field.
+- [Phase 09]: schema.test.ts left unchanged for D-16 (no users column enumeration existed to update)
+- [Phase 09]: seedRepresentativeData and fetchSeededSnapshot switched to raw SQL restricted to pre-0004 columns for the users upgrade test, following the login_attempts/servers precedent
 
 ### Pending Todos
 
@@ -590,8 +593,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-27T06:52:25.868Z
-Stopped at: Completed 09-01-PLAN.md
+Last session: 2026-09-27T07:02:11.598Z
+Stopped at: Completed 09-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
