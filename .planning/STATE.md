@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 09-04-PLAN.md
-last_updated: "2026-09-27T07:47:08.825Z"
+stopped_at: Completed 09-05-PLAN.md
+last_updated: "2026-09-27T07:57:12.010Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 44
-  completed_plans: 34
+  completed_plans: 35
   percent: 25
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 09 (settings-editables) — EXECUTING
-Plan: 5 of 14
+Plan: 6 of 14
 Status: Ready to execute
 Last activity: 2026-09-27
 
-Progress: [████████░░] 77%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -192,6 +192,7 @@ Progress: [████████░░] 77%
 | Phase 09 P02 | 20min | 2 tasks | 6 files |
 | Phase 09 P03 | 35min | 2 tasks | 14 files |
 | Phase 09 P04 | 55min | 2 tasks | 7 files |
+| Phase 09 P05 | 55min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -525,6 +526,8 @@ Recent decisions affecting current work:
 - [Phase 09]: D-13: kept the two-@slot-rule @custom-variant block form (theme.css) after confirming Tailwind 4.3.3 accepts it
 - [Phase 09]: D-13: aperture.css override uses two independent rule pairs rather than one combined selector
 - [Phase 09]: D-13: Sheet.test.tsx mocks only motion/react's m.div to mirror the real drag prop onto data-drag for jsdom assertions
+- [Phase 09-05]: ReauthGuard.db typed as Database (db/client.ts), not ActivityWriteHandle, to satisfy the ACT-01 boundary test
+- [Phase 09-05]: ReauthGuard defaults to DEFAULT_LOGIN_BACKOFF_CONFIG since login-guard.ts's env-derived backoffConfig() is unexported
 
 ### Pending Todos
 
@@ -600,8 +603,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-27T07:47:08.817Z
-Stopped at: Completed 09-04-PLAN.md
+Last session: 2026-09-27T07:57:12.002Z
+Stopped at: Completed 09-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
