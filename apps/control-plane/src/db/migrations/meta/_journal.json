@@ -29,6 +29,13 @@
       "when": 1789523055890,
       "tag": "0003_phase3_discovery_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790492146476,
+      "tag": "0004_phase9_user_preferences",
+      "breakpoints": true
     }
   ]
 }

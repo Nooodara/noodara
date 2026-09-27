@@ -41,11 +41,17 @@ function assertDefined<T>(value: T | undefined, what: string): T {
  * step rather than by scanning the table.
  */
 export async function seedRepresentativeData(db: Database): Promise<RepresentativeDataIds> {
-  const insertedUsers = await db
-    .insert(schema.users)
-    .values({ name: 'Ada Lovelace', email: 'ada@example.com' })
-    .returning();
-  const user = assertDefined(insertedUsers[0], 'user');
+  // Raw SQL restricted to the columns present in the *previous* migration snapshot (0003) —
+  // this plan's migration 0004 adds `preferences`, which does not exist yet in the database at
+  // the point this fixture seeds data for the from-snapshot upgrade test (the same pattern
+  // login_attempts/lockout_count and servers/host_fingerprint_captured_at already established).
+  const userId = uuidv7();
+  const insertedUsers = await db.execute<{ id: string; name: string; email: string }>(sql`
+    insert into users (id, name, email)
+    values (${userId}, 'Ada Lovelace', 'ada@example.com')
+    returning id, name, email
+  `);
+  const user = assertDefined(insertedUsers.rows[0], 'user');
 
   const insertedAccounts = await db
     .insert(schema.accounts)

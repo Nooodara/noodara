@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { boolean, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { uuidv7 } from 'uuidv7';
 
 // Better Auth's Drizzle adapter (wired in Plan 01-10) expects these four core tables. Column
@@ -21,6 +21,12 @@ export const users = pgTable(
     email: text('email').notNull(),
     emailVerified: boolean('email_verified').notNull().default(false),
     image: text('image'),
+    // D-16 (phase 9): theme/reduceMotion/density, raw jsonb. Never trusted directly by callers —
+    // readers must go through `resolveStoredPreferences` from `@noodara/domain/preferences`.
+    preferences: jsonb('preferences')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

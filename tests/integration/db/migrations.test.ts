@@ -64,7 +64,22 @@ async function countBookkeepingRows(db: Database): Promise<number> {
  * without hardcoding the fixture's own field values in the test itself.
  */
 async function fetchSeededSnapshot(db: Database, ids: RepresentativeDataIds) {
-  const [user] = await db.select().from(schema.users).where(eq(schema.users.id, ids.userId));
+  // Raw SQL restricted to the columns present in the *previous* migration snapshot (0003): this
+  // plan's migration 0004 adds `preferences`, which does not exist yet when this function is
+  // called for the "before" snapshot (same pattern as the login_attempts/servers cases below).
+  const userResult = await db.execute<{
+    id: string;
+    name: string;
+    email: string;
+    email_verified: boolean;
+    image: string | null;
+    created_at: string;
+    updated_at: string;
+  }>(sql`
+    select id, name, email, email_verified, image, created_at, updated_at
+    from users where id = ${ids.userId}
+  `);
+  const user = userResult.rows[0];
   const [account] = await db
     .select()
     .from(schema.accounts)
