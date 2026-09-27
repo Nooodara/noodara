@@ -7,7 +7,10 @@
 // repeatedly, but must never be able to lock the real admin out of *signing in* by exhausting the
 // same counter. This module never sees a password; callers decide what counts as a failure.
 import { DEFAULT_LOGIN_BACKOFF_CONFIG, evaluateFailure, isLockedOut, type LockoutStatus, type LoginBackoffConfig } from '@noodara/domain/security';
-import type { ActivityWriteHandle } from '../activity/write-activity-event.js';
+// ACT-01: `ActivityWriteHandle` (activity/write-activity-event.ts) is reserved for writers of
+// activity events, which this module is not — `Database` (db/client.ts) is the identical
+// `NodePgDatabase<typeof schema>` shape `loadAttempt`/`recordFailure`/`clearAttempts` accept.
+import type { Database } from '../db/client.js';
 import { clearAttempts, loadAttempt, recordFailure } from '../services/login-attempt-repository.js';
 
 /** Prefixes the `login_attempts.scope_key` so a reauth counter can never collide with the
@@ -21,7 +24,7 @@ export interface ReauthGuard {
 }
 
 export interface ReauthGuardDeps {
-  readonly db: ActivityWriteHandle;
+  readonly db: Database;
   readonly now?: () => Date;
   /** Defaults to `DEFAULT_LOGIN_BACKOFF_CONFIG` — login-guard.ts's own `backoffConfig()` builder
    *  (env-derived) is a private, unexported function in that module, so there is nothing to reuse
