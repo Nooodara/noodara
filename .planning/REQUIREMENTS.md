@@ -30,11 +30,11 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Settings editables (SET)
 
-- [ ] **SET-02**: El admin puede editar su nombre y su email desde Settings, con validación del dominio y confirmación por contraseña actual.
-- [ ] **SET-03**: El admin puede cambiar su contraseña (política de v0.1: 12–128 caracteres, lista de comunes) y el cambio revoca todas las demás sesiones activas.
-- [ ] **SET-04**: El admin elige el tema (auto/claro/oscuro) y la preferencia se persiste en el servidor con espejo local para el primer pintado, sin parpadeo al recargar; el override manual siempre gana sobre el SO.
-- [ ] **SET-05**: El admin ajusta preferencias visuales (reducir movimiento, densidad compacta/cómoda) que se persisten como la anterior y se respetan en toda la app.
-- [ ] **SET-06**: Las filas de Settings que provienen de variables de entorno siguen siendo de solo lectura y lo dicen; el tipo de `SettingsRow` impide añadirles un handler de edición.
+- [x] **SET-02**: El admin puede editar su nombre y su email desde Settings, con validación del dominio y confirmación por contraseña actual.
+- [x] **SET-03**: El admin puede cambiar su contraseña (política de v0.1: 12–128 caracteres, lista de comunes) y el cambio revoca todas las demás sesiones activas.
+- [x] **SET-04**: El admin elige el tema (auto/claro/oscuro) y la preferencia se persiste en el servidor con espejo local para el primer pintado, sin parpadeo al recargar; el override manual siempre gana sobre el SO.
+- [x] **SET-05**: El admin ajusta preferencias visuales (reducir movimiento, densidad compacta/cómoda) que se persisten como la anterior y se respetan en toda la app.
+- [x] **SET-06**: Las filas de Settings que provienen de variables de entorno siguen siendo de solo lectura y lo dicen; el tipo de `SettingsRow` impide añadirles un handler de edición.
 
 ### Proyectos y environments (PROJ)
 
@@ -165,11 +165,11 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | UI-10 | Phase 8 | Complete |
 | UI-11 | Phase 8 | Pending |
 | UI-12 | Phase 8 | Complete |
-| SET-02 | Phase 9 | Pending |
-| SET-03 | Phase 9 | Pending |
-| SET-04 | Phase 9 | Pending |
-| SET-05 | Phase 9 | Pending |
-| SET-06 | Phase 9 | Pending |
+| SET-02 | Phase 9 | Complete |
+| SET-03 | Phase 9 | Complete |
+| SET-04 | Phase 9 | Complete |
+| SET-05 | Phase 9 | Complete |
+| SET-06 | Phase 9 | Complete |
 | DOCS-01 | Phase 10 | Pending |
 | DOCS-02 | Phase 10 | Pending |
 | SITE-01 | Phase 10 | Pending |
