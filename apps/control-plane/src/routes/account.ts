@@ -7,14 +7,24 @@
 import type { ZodTypeProvider } from '@fastify/type-provider-zod';
 import type { FastifyPluginCallback, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { auth } from '../auth/auth.js';
 import type { DnsChecker } from '../auth/dns-checker.js';
 import { createReauthGuard } from '../auth/reauth-guard.js';
+import { toFetchHeaders } from '../auth/fetch-headers.js';
 import { getDb } from '../db/client.js';
 import { env } from '../env.js';
 import { readAccountPreferences, updateAccountPreferences } from '../services/account-preferences.js';
+import { changeAccountPassword, type ChangePasswordDelegate } from '../services/change-account-password.js';
 import { updateAccountProfile } from '../services/update-account-profile.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
-import { AccountProfileResponseSchema, PreferencesResponseSchema, UpdatePreferencesBodySchema, UpdateProfileBodySchema } from './account-schemas.js';
+import {
+  AccountProfileResponseSchema,
+  ChangePasswordBodySchema,
+  ChangePasswordResponseSchema,
+  PreferencesResponseSchema,
+  UpdatePreferencesBodySchema,
+  UpdateProfileBodySchema,
+} from './account-schemas.js';
 import {
   ErrorBodySchema,
   FieldErrorBodySchema,
@@ -38,6 +48,24 @@ function requireActor(actor: ServiceActor | null): ServiceActor {
   }
   return actor;
 }
+
+/** `POST /api/account/password` is registered inside the same `requireSession` scope, so
+ *  `request.sessionId` is always non-null here — same wiring-bug assertion as `requireActor`. */
+function requireSessionId(sessionId: string | null): string {
+  if (sessionId === null) {
+    throw new Error('account password route reached with no sessionId — requireSession guard is not registered');
+  }
+  return sessionId;
+}
+
+/** The route's real `ChangePasswordDelegate` — calls the actual Better Auth endpoint and
+ *  immediately drops everything except the rotated session's headers (D-05/T-09-05): the
+ *  service itself never even receives Better Auth's own response body (new session credential
+ *  plus `user`). */
+const realChangePassword: ChangePasswordDelegate = async (args) => {
+  const result = await auth.api.changePassword(args);
+  return { headers: result.headers };
+};
 
 /** Preferences never accept a `system` actor (there is no `/api/account/preferences` caller other
  *  than an authenticated admin session) — `require-session.ts` only ever sets `request.actor` to
@@ -79,6 +107,11 @@ const AccountProfileErrorSchema = z.union([FieldErrorBodySchema, ErrorBodySchema
 // `ErrorBodySchema`, matching `servers.ts`'s own `CreateOrEditErrorSchema` precedent.
 const PreferencesPatchErrorSchema = ValidationErrorBodySchema;
 
+// SET-03/D-16: `POST /api/account/password`'s only field-tagged 400s are `INVALID_CREDENTIAL`
+// (currentPassword) and `VALIDATION_FAILED` (newPassword) — `REAUTH_LOCKED` (429) carries no
+// field, same split as the profile route's own error schema above.
+const ChangePasswordErrorSchema = z.union([FieldErrorBodySchema, ErrorBodySchema]);
+
 const accountRoutes: FastifyPluginCallback<AccountRoutesOptions> = (fastify, opts, done) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
 
@@ -117,6 +150,65 @@ const accountRoutes: FastifyPluginCallback<AccountRoutesOptions> = (fastify, opt
 
       if (result.ok) {
         await reply.send(result.value);
+        return;
+      }
+
+      if (result.code === 'REAUTH_LOCKED') {
+        if (result.retryAfterSeconds !== undefined) {
+          void reply.header('Retry-After', String(result.retryAfterSeconds));
+        }
+        await sendServiceError(reply, result.code, result.message);
+        return;
+      }
+
+      if (result.field !== undefined) {
+        await sendFieldError(reply, result.code, result.field, result.message);
+        return;
+      }
+
+      await sendServiceError(reply, result.code, result.message);
+    },
+  });
+
+  // SET-03/D-05/D-06/D-07/D-08: the only `/api/account/*` route that mutates the session set
+  // itself — a real Better Auth `Set-Cookie` must reach the browser (D-05), so this handler
+  // forwards each header individually via `reply.header('set-cookie', ...)` rather than relying
+  // on Fastify's response schema, which never sees credential headers.
+  app.route({
+    method: 'POST',
+    url: '/api/account/password',
+    schema: {
+      body: ChangePasswordBodySchema,
+      response: {
+        200: ChangePasswordResponseSchema,
+        400: ChangePasswordErrorSchema,
+        401: ErrorBodySchema,
+        403: ErrorBodySchema,
+        429: ErrorBodySchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const sessionId = requireSessionId(request.sessionId);
+      const db = await getDb();
+      const reauthGuard = createReauthGuard({ db });
+
+      const result = await changeAccountPassword(
+        { db, reauthGuard, changePassword: realChangePassword, now: () => new Date() },
+        {
+          actor,
+          sessionId,
+          headers: toFetchHeaders(request.headers),
+          currentPassword: request.body.currentPassword,
+          newPassword: request.body.newPassword,
+        },
+      );
+
+      if (result.ok) {
+        for (const setCookie of result.value.setCookies) {
+          void reply.header('set-cookie', setCookie);
+        }
+        await reply.send({ sessionsRevoked: result.value.sessionsRevoked });
         return;
       }
 
