@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 09-02-PLAN.md
-last_updated: "2026-09-27T07:02:11.606Z"
+stopped_at: Completed 09-03-PLAN.md
+last_updated: "2026-09-27T07:20:05.137Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 44
-  completed_plans: 32
+  completed_plans: 33
   percent: 25
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 09 (settings-editables) — EXECUTING
-Plan: 3 of 14
+Plan: 4 of 14
 Status: Ready to execute
 Last activity: 2026-09-27
 
-Progress: [███████░░░] 73%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -190,6 +190,7 @@ Progress: [███████░░░] 73%
 | Phase 08 P19 | 480min | 3 tasks | 16 files |
 | Phase 09 P01 | 40min | 2 tasks | 11 files |
 | Phase 09 P02 | 20min | 2 tasks | 6 files |
+| Phase 09 P03 | 35min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -518,6 +519,8 @@ Recent decisions affecting current work:
 - [Phase 09]: Plan 01: mergePreferences merges field-by-field (patch.field ?? current.field) instead of object-spreading the patch, avoiding a TS build error where an optional patch key's undefined could type-check as overwriting a required Preferences field.
 - [Phase 09]: schema.test.ts left unchanged for D-16 (no users column enumeration existed to update)
 - [Phase 09]: seedRepresentativeData and fetchSeededSnapshot switched to raw SQL restricted to pre-0004 columns for the users upgrade test, following the login_attempts/servers precedent
+- [Phase 09]: D-14 density tokens (--row-height/--row-height-padding-y) added at :root, remapped only under html[data-density=compact]
+- [Phase 09]: data-row=true replaces data-height=44 as the single row test hook across unit and E2E suites
 
 ### Pending Todos
 
@@ -593,8 +596,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-27T07:02:11.598Z
-Stopped at: Completed 09-02-PLAN.md
+Last session: 2026-09-27T07:20:05.127Z
+Stopped at: Completed 09-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
