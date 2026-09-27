@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { LazyMotion, animate as animateMotionValue, m, useMotionValue, useReducedMotion, type PanInfo } from 'motion/react';
+import { LazyMotion, animate as animateMotionValue, m, useMotionValue, type PanInfo } from 'motion/react';
 import { X } from 'lucide-react';
 import { Button } from './Button.js';
 import { cn } from './cn.js';
 import { SPRING, toMotionSpring } from './motion-tokens.js';
 import { useCloseSource } from './use-close-source.js';
+import { useReducedMotionPreference } from './use-reduced-motion-preference.js';
 
 // D19/UI-06 (08-12-PLAN.md Task 2): the one place in this codebase `motion` may be imported.
 // `LazyMotion`'s `features` prop takes this lazy-import form so the `domMax` bundle (drag/pan
@@ -135,7 +136,12 @@ function decidesToClose(info: PanInfo): boolean {
 export function Sheet({ open, onOpenChange, title, children, footer, 'data-testid': testId }: SheetProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const { closeSource } = useCloseSource(open, contentRef);
-  const prefersReducedMotion = useReducedMotion();
+  // D-13 (09-04-PLAN.md Task 2): `useReducedMotionPreference` (not motion/react's own
+  // `useReducedMotion`) is the effective preference here -- a forced `html[data-motion]`
+  // attribute wins over the OS media query, exactly as the CSS `motion-safe`/`motion-reduce`
+  // variants (packages/ui/theme.css) already do. Motion's own reduced-motion handling stays
+  // library-internal and unrelated to this read (D19: `motion` stays confined to this file).
+  const prefersReducedMotion = useReducedMotionPreference();
   // Backed by a `MotionValue`, not the declarative `animate` prop: brief §7.4 step 8's velocity
   // handoff ("entregá la velocidad de release como velocidad inicial del spring, para que no haya
   // costura entre arrastrar y animar") needs the CLOSING animation to start from the release
@@ -236,7 +242,7 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
               // component's own two explicit `animate()` calls (close-with-momentum / snap-back)
               // are the only things that ever move this value.
               style={{ x }}
-              drag={prefersReducedMotion === true ? false : 'x'}
+              drag={prefersReducedMotion ? false : 'x'}
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.15}
               dragMomentum

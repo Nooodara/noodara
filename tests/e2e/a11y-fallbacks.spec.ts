@@ -242,6 +242,14 @@ test('@a11y-fallbacks forced reduce motion preference: Sheet drag surface does n
   await expect(page.getByTestId('server-sheet')).toBeVisible();
 
   const dragSurface = page.getByTestId('server-sheet-drag-surface');
+
+  // The drag surface's own entry-settle spring (Sheet.tsx's `ENTRY_SETTLE_OFFSET_PX` effect,
+  // unrelated to reduced motion -- it runs on every open) must finish before the gesture starts,
+  // or its own tail end could be mistaken for drag movement.
+  await expect
+    .poll(async () => decomposeTransform(await dragSurface.evaluate((el) => getComputedStyle(el).transform)).translateX)
+    .toBe(0);
+
   const box = await dragSurface.boundingBox();
   if (box === null) {
     throw new Error('server-sheet-drag-surface has no bounding box');

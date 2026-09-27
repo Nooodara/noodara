@@ -1,24 +1,25 @@
-import { createElement, useState } from 'react';
+import { createElement, useState, type ComponentProps, type ElementType } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { m as motionM } from 'motion/react';
 
 // D-13 (09-04-PLAN.md Task 2): `m.div`'s own `drag` prop is the one thing this jsdom suite cannot
 // observe honestly through rendered DOM (jsdom has no pointer/gesture layer, and Motion sets no
 // static style/attribute difference between `drag={false}` and `drag='x'`) -- confirmed empirically
-// via a throwaway spike before writing this mock. The wrapper below re-exports every real
-// `motion/react` export unchanged except `m.div`, which forwards its own real `drag` prop onward
-// (so the actual gesture behaviour this file's own `renders the draggable surface...` test below
-// still exercises real Motion) while also mirroring it onto a `data-drag` attribute purely for
-// this test file's own assertions. The real, end-to-end proof that dragging is actually
-// disabled/enabled lives in `tests/e2e/a11y-fallbacks.spec.ts` (Playwright, a real browser).
+// via a throwaway spike before writing this mock. Sheet.tsx only ever reads `m.div` (never another
+// `m.*` tag), so only that one export needs replacing -- the real one is cast to a plain
+// `ElementType` and re-rendered with its own real `drag` prop forwarded onward (so the actual
+// gesture behaviour this file's own `renders the draggable surface...` test below still exercises
+// real Motion) plus a `data-drag` mirror attribute purely for this test file's own assertions. The
+// real, end-to-end proof that dragging is actually disabled/enabled lives in
+// `tests/e2e/a11y-fallbacks.spec.ts` (Playwright, a real browser).
 vi.mock('motion/react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('motion/react')>();
+  const RealMotionDiv = actual.m.div as ElementType;
+  const MockedDiv = (props: ComponentProps<typeof motionM.div>) =>
+    createElement(RealMotionDiv, { ...props, 'data-drag': String(props.drag) });
   return {
     ...actual,
-    m: {
-      ...actual.m,
-      div: (props: Record<string, unknown>) =>
-        createElement(actual.m.div, { ...props, 'data-drag': String(props.drag) }),
-    },
+    m: { div: MockedDiv },
   };
 });
 
