@@ -154,3 +154,152 @@ test('@settings the loading state shows skeleton rows and no spinner', async ({ 
   await expect(page.getByRole('progressbar')).toHaveCount(0);
   await expect(page.locator('[class*="animate-spin"]')).toHaveCount(0);
 });
+
+// 09-13-PLAN.md: goal-backward E2E proof of the phase's five ROADMAP success criteria, through the
+// real /settings UI built by 09-06..09-12. The E2E admin's bootstrap name is literally "Admin"
+// (apps/control-plane/src/boot/bootstrap-admin.ts) -- every mutating test below restores it (and
+// the password, and every Appearance control) in a `finally` block so later spec files in this
+// same worker (workers: 1, fullyParallel: false) see the account back at its original state.
+
+const ADMIN_ORIGINAL_NAME = 'Admin';
+const RENAMED_ADMIN_NAME = 'E2E Admin Renamed';
+// A deliberately fake, obviously-fixture temporary password (T-5-42) -- never reused by any other
+// spec, only ever the account's real password for the brief window inside one try/finally.
+const TEMP_ADMIN_PASSWORD = 'Noodara-E2E-Temp-Password-2026!';
+const PASSWORD_NOTICE_PATTERN = /Password updated\. \d+ other sessions? (was|were) signed out\./;
+
+test('@settings profile edit updates the account menu without reload', async ({ page }) => {
+  await login(page);
+  await page.goto('/settings');
+
+  // A window-scoped marker only a real full-page navigation would ever clear -- proves D-04's
+  // "no reload" contract is genuine, not just an unasserted implementation detail.
+  await page.evaluate(() => {
+    (window as unknown as { __noReloadMarker?: boolean }).__noReloadMarker = true;
+  });
+
+  try {
+    await page.getByTestId('account-edit-name').click();
+    await expect(page.getByTestId('account-name-sheet')).toBeVisible();
+    await page.getByTestId('account-name-input').fill(RENAMED_ADMIN_NAME);
+    await page.getByTestId('account-current-password-input').fill(E2E_ADMIN_PASSWORD);
+    await page.getByTestId('account-name-save').click();
+
+    await expect(page.getByTestId('account-name-sheet')).toBeHidden();
+    await expect(page.getByTestId('shell-account-menu-trigger')).toContainText(RENAMED_ADMIN_NAME);
+
+    await expect(page).toHaveURL(/\/settings$/);
+    expect(await page.evaluate(() => (window as unknown as { __noReloadMarker?: boolean }).__noReloadMarker)).toBe(
+      true,
+    );
+
+    await page.goto('/activity');
+    await expect(
+      page.getByTestId('activity-row').filter({ hasText: 'Admin changed their name' }).first(),
+    ).toBeVisible();
+  } finally {
+    await page.goto('/settings');
+    await page.getByTestId('account-edit-name').click();
+    await expect(page.getByTestId('account-name-sheet')).toBeVisible();
+    await page.getByTestId('account-name-input').fill(ADMIN_ORIGINAL_NAME);
+    await page.getByTestId('account-current-password-input').fill(E2E_ADMIN_PASSWORD);
+    await page.getByTestId('account-name-save').click();
+    await expect(page.getByTestId('account-name-sheet')).toBeHidden();
+    await expect(page.getByTestId('shell-account-menu-trigger')).toContainText(ADMIN_ORIGINAL_NAME);
+  }
+});
+
+test('@settings wrong current password shows the field error', async ({ page }) => {
+  await login(page);
+  await page.goto('/settings');
+
+  await expect(page.getByTestId('settings-account-group')).toContainText(E2E_ADMIN_EMAIL);
+
+  await page.getByTestId('account-edit-email').click();
+  await expect(page.getByTestId('account-email-sheet')).toBeVisible();
+  await page.getByTestId('account-current-password-input').fill('definitely-the-wrong-password');
+  await page.getByTestId('account-email-save').click();
+
+  await expect(page.getByText('Current password is incorrect.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByTestId('account-email-sheet')).toBeHidden();
+  await expect(page.getByTestId('settings-account-group')).toContainText(E2E_ADMIN_EMAIL);
+});
+
+test('@settings password change revokes other sessions and keeps this one', async ({ page, browser }) => {
+  test.setTimeout(120_000);
+  await login(page);
+  await page.goto('/settings');
+
+  const contextB = await browser.newContext();
+  const pageB = await contextB.newPage();
+
+  try {
+    // Another browser context, `pageB` -- signed in with the same admin, before the password
+    // change, so it holds a session the change below must revoke.
+    await login(pageB);
+    await expect(pageB).toHaveURL(/\/servers$/);
+
+    await page.getByTestId('account-edit-password').click();
+    await expect(page.getByTestId('account-password-sheet')).toBeVisible();
+    await page.getByTestId('account-current-password-input').fill(E2E_ADMIN_PASSWORD);
+    await page.getByTestId('account-new-password-input').fill(TEMP_ADMIN_PASSWORD);
+    await page.getByTestId('account-confirm-password-input').fill(TEMP_ADMIN_PASSWORD);
+    await page.getByTestId('account-password-save').click();
+
+    await expect(page.getByTestId('account-password-sheet')).toBeHidden();
+    const notice = page.getByTestId('account-password-notice');
+    await expect(notice).toBeVisible();
+    const noticeText = (await notice.textContent()) ?? '';
+    expect(noticeText).toMatch(PASSWORD_NOTICE_PATTERN);
+
+    // The current tab (A) stays signed in -- it can keep navigating the app.
+    await page.goto('/servers');
+    await expect(page).toHaveURL(/\/servers$/);
+
+    // No page.reload() on pageB anywhere here -- the redirect must happen on its own, once the
+    // heartbeat notices the revoked session (require-session.ts's reason-aware redirect).
+    await expect(pageB).toHaveURL(/\/login\?.*reason=password-changed/, { timeout: 60_000 });
+    await expect(pageB.getByTestId('login-password-changed-notice')).toBeVisible();
+  } finally {
+    await page.goto('/settings');
+    await page.getByTestId('account-edit-password').click();
+    await expect(page.getByTestId('account-password-sheet')).toBeVisible();
+    await page.getByTestId('account-current-password-input').fill(TEMP_ADMIN_PASSWORD);
+    await page.getByTestId('account-new-password-input').fill(E2E_ADMIN_PASSWORD);
+    await page.getByTestId('account-confirm-password-input').fill(E2E_ADMIN_PASSWORD);
+    await page.getByTestId('account-password-save').click();
+    await expect(page.getByTestId('account-password-sheet')).toBeHidden();
+    await expect(page.getByTestId('account-password-notice')).toBeVisible();
+
+    await contextB.close();
+  }
+});
+
+test('@settings Instance and Advanced stay read-only', async ({ page }) => {
+  await login(page);
+  await page.goto('/settings');
+
+  const instance = page.getByTestId('settings-instance-group');
+  const advanced = page.getByTestId('settings-advanced-disclosure');
+  await page.getByRole('main').getByRole('button', { name: 'Advanced' }).click();
+
+  for (const tag of ['input', 'select', 'textarea']) {
+    await expect(instance.locator(tag)).toHaveCount(0);
+    await expect(advanced.locator(tag)).toHaveCount(0);
+  }
+
+  // Instance's only button is the Public URL row's CopyButton; Advanced's only button is its own
+  // Disclosure trigger (the "Advanced" toggle itself lives inside this testid, D-16) -- neither
+  // group ever gets a second, form-shaped button.
+  const instanceButtons = instance.getByRole('button');
+  await expect(instanceButtons).toHaveCount(1);
+  await expect(instanceButtons.first()).toHaveAccessibleName(/copy/i);
+
+  const advancedButtons = advanced.getByRole('button');
+  await expect(advancedButtons).toHaveCount(1);
+  await expect(advancedButtons.first()).toHaveAccessibleName('Advanced');
+
+  await expect(advanced.getByText('Set by an environment variable')).toHaveCount(5);
+});
