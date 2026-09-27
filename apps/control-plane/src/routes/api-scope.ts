@@ -12,10 +12,13 @@
 // (`auth.api.getSession`), keeping `require-session.ts` itself free of any import from
 // `auth/auth.ts`.
 import type { FastifyPluginCallback } from 'fastify';
+import { getSessionCookie } from 'better-auth/cookies';
 import { auth } from '../auth/auth.js';
 import type { DnsChecker } from '../auth/dns-checker.js';
 import { createOriginGuard } from '../auth/origin-guard.js';
 import { createRequireSession } from '../auth/require-session.js';
+import { findRevocationReason } from '../auth/session-revocation-markers.js';
+import { getDb } from '../db/client.js';
 import { env } from '../env.js';
 import type { SseBroadcaster } from '../events/sse-broadcaster.js';
 import accountRoutes from './account.js';
@@ -41,6 +44,18 @@ const apiScope: FastifyPluginCallback<ApiScopeOptions> = (fastify, opts, done) =
 
   const requireSession = createRequireSession({
     getSession: (headers) => auth.api.getSession({ headers }),
+    // D-07: `getSessionCookie` extracts the raw cookie value (`token.signature`, Better Auth's
+    // own signed-cookie format) — the part before the first '.' is exactly what `sessions.token`
+    // stores (confirmed by password.test.ts's own contract describe and by
+    // tests/integration/auth/session-management.test.ts's own `sessionTokenFromCookie` helper).
+    resolveRevocationReason: async (headers) => {
+      const cookieValue = getSessionCookie(headers);
+      if (!cookieValue) return null;
+      const token = cookieValue.split('.')[0];
+      if (!token) return null;
+      const db = await getDb();
+      return findRevocationReason(db, token, new Date());
+    },
   });
 
   requireSession(fastify, {}, () => {
