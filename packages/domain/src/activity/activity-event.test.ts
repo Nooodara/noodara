@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { secretValue } from '../security/secret-value.js';
 import {
+  ACCOUNT_ACTIONS,
   AUTH_ACTIONS,
   InvalidActivityActionError,
   SERVER_ACTIONS,
@@ -322,5 +323,128 @@ describe('server actions (ACT-01, D-16)', () => {
       previousFingerprint: 'SHA256:old',
       newFingerprint: 'SHA256:new',
     });
+  });
+});
+
+describe('account actions (SET-02/SET-03, D-08)', () => {
+  it('ACCOUNT_ACTIONS has length 3 and equals the exact ordered tuple', () => {
+    expect(ACCOUNT_ACTIONS.length).toBe(3);
+    expect([...ACCOUNT_ACTIONS]).toEqual([
+      'account.name_changed',
+      'account.email_changed',
+      'account.password_changed',
+    ]);
+  });
+
+  it('builds an account.name_changed event with a name metadata key', () => {
+    const event = buildActivityEvent(
+      {
+        actorType: 'user',
+        entityType: 'user',
+        entityId: 'admin-1',
+        action: 'account.name_changed',
+        outcome: 'success',
+        metadata: { name: 'Ada' },
+      },
+      NOW,
+    );
+
+    expect(event.metadata).toEqual({ name: 'Ada' });
+  });
+
+  it('builds an account.email_changed event with an email metadata key', () => {
+    const event = buildActivityEvent(
+      {
+        actorType: 'user',
+        entityType: 'user',
+        entityId: 'admin-1',
+        action: 'account.email_changed',
+        outcome: 'success',
+        metadata: { email: 'a@b.co' },
+      },
+      NOW,
+    );
+
+    expect(event.metadata).toEqual({ email: 'a@b.co' });
+  });
+
+  it('builds an account.password_changed event with a sessions_revoked metadata key', () => {
+    const event = buildActivityEvent(
+      {
+        actorType: 'user',
+        entityType: 'user',
+        entityId: 'admin-1',
+        action: 'account.password_changed',
+        outcome: 'success',
+        metadata: { sessions_revoked: 2 },
+      },
+      NOW,
+    );
+
+    expect(event.metadata).toEqual({ sessions_revoked: 2 });
+  });
+
+  it('throws SensitiveMetadataError for account.email_changed carrying previousEmail', () => {
+    expect(() =>
+      buildActivityEvent(
+        {
+          actorType: 'user',
+          entityType: 'user',
+          entityId: 'admin-1',
+          action: 'account.email_changed',
+          outcome: 'success',
+          metadata: { email: 'a@b.co', previousEmail: 'x@y.co' },
+        },
+        NOW,
+      ),
+    ).toThrow(SensitiveMetadataError);
+  });
+
+  it('throws SensitiveMetadataError for account.password_changed carrying an ip key', () => {
+    expect(() =>
+      buildActivityEvent(
+        {
+          actorType: 'user',
+          entityType: 'user',
+          entityId: 'admin-1',
+          action: 'account.password_changed',
+          outcome: 'success',
+          metadata: { sessions_revoked: 1, ip: '1.2.3.4' },
+        },
+        NOW,
+      ),
+    ).toThrow(SensitiveMetadataError);
+  });
+
+  it('throws SensitiveMetadataError for an account.* event carrying a password key', () => {
+    expect(() =>
+      buildActivityEvent(
+        {
+          actorType: 'user',
+          entityType: 'user',
+          entityId: 'admin-1',
+          action: 'account.password_changed',
+          outcome: 'success',
+          metadata: { sessions_revoked: 1, password: 'x' },
+        },
+        NOW,
+      ),
+    ).toThrow(SensitiveMetadataError);
+  });
+
+  it('throws SensitiveMetadataError for account.name_changed carrying a token key', () => {
+    expect(() =>
+      buildActivityEvent(
+        {
+          actorType: 'user',
+          entityType: 'user',
+          entityId: 'admin-1',
+          action: 'account.name_changed',
+          outcome: 'success',
+          metadata: { name: 'Ada', token: 'x' },
+        },
+        NOW,
+      ),
+    ).toThrow(SensitiveMetadataError);
   });
 });

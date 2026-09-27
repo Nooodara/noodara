@@ -195,3 +195,40 @@ describe('curatedDetailFor -- mono flags match §5.6', () => {
     ]);
   });
 });
+
+describe('account.* actions (SET-02/SET-03, D-08)', () => {
+  it('renders account.name_changed with a Name detail', () => {
+    const item = buildItem({ action: 'account.name_changed', metadata: { name: 'Ada Lovelace' } });
+
+    expect(fullText(sentenceFor(item, notFoundLookup))).toBe('Admin changed their name');
+    expect(curatedDetailFor(item)).toEqual([{ label: 'Name', value: 'Ada Lovelace', mono: false }]);
+  });
+
+  it('renders account.email_changed with an Email detail', () => {
+    const item = buildItem({ action: 'account.email_changed', metadata: { email: 'ada@example.test' } });
+
+    expect(fullText(sentenceFor(item, notFoundLookup))).toBe('Admin changed their email');
+    expect(curatedDetailFor(item)).toEqual([{ label: 'Email', value: 'ada@example.test', mono: false }]);
+  });
+
+  it('renders account.password_changed with an "Other sessions signed out" detail showing the count', () => {
+    const item = buildItem({ action: 'account.password_changed', metadata: { sessions_revoked: 2 } });
+
+    expect(fullText(sentenceFor(item, notFoundLookup))).toBe('Admin changed their password');
+    expect(curatedDetailFor(item)).toEqual([
+      { label: 'Other sessions signed out', value: '2', mono: false },
+    ]);
+  });
+
+  it('omits the sessions detail for account.password_changed when the count is missing', () => {
+    const item = buildItem({ action: 'account.password_changed', metadata: {} });
+
+    expect(curatedDetailFor(item)).toEqual([]);
+  });
+
+  it('never renders another metadata key for account.name_changed', () => {
+    const item = buildItem({ action: 'account.name_changed', metadata: { name: 'Ada', email: 'leak@example.test' } });
+
+    expect(curatedDetailFor(item)).toEqual([{ label: 'Name', value: 'Ada', mono: false }]);
+  });
+});

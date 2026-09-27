@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateEmail, validateServerName, validateSshUser } from './identity.js';
+import { validateAccountEmail, validateEmail, validateName, validateServerName, validateSshUser } from './identity.js';
 
 describe('validateServerName', () => {
   it.each(['my-server', 'srv01', 'a', 'a1b2c3'])('accepts slug %s', (name) => {
@@ -130,6 +130,72 @@ describe('validateEmail', () => {
   it('rejects an address over 254 characters', () => {
     const longLocalPart = 'a'.repeat(250);
     const result = validateEmail(`${longLocalPart}@example.com`);
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.code).toBe('EMAIL_INVALID');
+  });
+});
+
+describe('validateName', () => {
+  it('trims surrounding whitespace', () => {
+    const result = validateName('  Ada Lovelace  ');
+    expect(result).toEqual({ ok: true, value: 'Ada Lovelace' });
+  });
+
+  it('rejects an empty string', () => {
+    const result = validateName('');
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.code).toBe('NAME_INVALID');
+  });
+
+  it('rejects a whitespace-only string', () => {
+    const result = validateName('   ');
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.code).toBe('NAME_INVALID');
+  });
+
+  it('accepts an 80-character name', () => {
+    const result = validateName('a'.repeat(80));
+    expect(result).toEqual({ ok: true, value: 'a'.repeat(80) });
+  });
+
+  it('rejects an 81-character name', () => {
+    const result = validateName('a'.repeat(81));
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.code).toBe('NAME_INVALID');
+  });
+
+  it('rejects a control character (bell)', () => {
+    const result = validateName('Ada\u0007');
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.code).toBe('NAME_INVALID');
+  });
+
+  it('rejects a control character (newline)', () => {
+    const result = validateName('Ada\nX');
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.code).toBe('NAME_INVALID');
+  });
+
+  it('counts length by code points, not UTF-16 code units (80 emoji passes)', () => {
+    const result = validateName('😀'.repeat(80));
+    expect(result.ok).toBe(true);
+  });
+
+  it('rejects 81 code points of emoji', () => {
+    const result = validateName('😀'.repeat(81));
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.code).toBe('NAME_INVALID');
+  });
+});
+
+describe('validateAccountEmail', () => {
+  it('trims and lowercases a valid address', () => {
+    const result = validateAccountEmail('  Admin@Example.COM ');
+    expect(result).toEqual({ ok: true, value: 'admin@example.com' });
+  });
+
+  it('rejects an invalid address', () => {
+    const result = validateAccountEmail('not-an-email');
     expect(result.ok).toBe(false);
     expect(!result.ok && result.code).toBe('EMAIL_INVALID');
   });
