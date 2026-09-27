@@ -141,7 +141,7 @@ test('@settings the loading state shows skeleton rows and no spinner', async ({ 
   await page.route('**/api/config', () => undefined);
   await page.goto('/settings');
 
-  await expect(page.locator('[data-height="44"]').first()).toBeVisible();
+  await expect(page.locator('[data-row="true"]').first()).toBeVisible();
   await expect(page.getByRole('progressbar')).toHaveCount(0);
   await expect(page.locator('[class*="animate-spin"]')).toHaveCount(0);
 });

@@ -115,9 +115,45 @@ test('@servers a never-resolving /api/servers response renders five skeleton row
 
   await login(page);
 
-  await expect(page.locator('[data-height="44"]')).toHaveCount(5);
+  await expect(page.locator('[data-row="true"]')).toHaveCount(5);
   await expect(page.getByRole('progressbar')).toHaveCount(0);
   await expect(page.locator('[class*="animate-spin"]')).toHaveCount(0);
+});
+
+// D-14/SET-05: proves the density token pair actually drives real rendered geometry in a browser
+// (jsdom never lays anything out, so this cannot be proven with a unit test). The Settings
+// control that flips this attribute arrives in plan 09-12 -- this test sets it directly via
+// page.evaluate, exactly like a future SegmentedControl write would.
+test('@density comfortable rows measure 44px and compact rows 36px with unchanged typography', async ({ page }) => {
+  await login(page);
+
+  const name = `density-${String(Date.now())}`;
+  const created = await page.request.post('/api/servers', {
+    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+  });
+  // A refused create must fail here, by name -- never later, disguised as a live event that
+  // was lost.
+  expect(created.status()).toBe(201);
+  await page.reload();
+
+  const row = page.getByTestId('servers-row').filter({ hasText: name }).locator('[data-row="true"]');
+  await expect(row).toBeVisible();
+  const titleText = row.getByText(name, { exact: true });
+
+  const comfortableBox = await row.boundingBox();
+  expect(comfortableBox).not.toBeNull();
+  expect(comfortableBox?.height).toBeCloseTo(44, 0);
+  const titleFontSizeBefore = await titleText.evaluate((el) => getComputedStyle(el).fontSize);
+
+  await page.evaluate(() => {
+    document.documentElement.setAttribute('data-density', 'compact');
+  });
+
+  const compactBox = await row.boundingBox();
+  expect(compactBox).not.toBeNull();
+  expect(compactBox?.height).toBeCloseTo(36, 0);
+  const titleFontSizeAfter = await titleText.evaluate((el) => getComputedStyle(el).fontSize);
+  expect(titleFontSizeAfter).toBe(titleFontSizeBefore);
 });
 
 test('@servers a 500 INTERNAL_ERROR renders the banner message and mono code, and Retry re-issues the request', async ({

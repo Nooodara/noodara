@@ -74,7 +74,7 @@ describe('ServerList loading state', () => {
   it('renders exactly five 44px row skeletons and zero spinner/progressbar/status elements', () => {
     const { container } = renderUi(<ServerList state={{ kind: 'loading' }} now={NOW} onAddServer={vi.fn()} onEditServer={vi.fn()} onDeleteServer={vi.fn()} />);
 
-    const skeletons = container.querySelectorAll('[data-height="44"]');
+    const skeletons = container.querySelectorAll('[data-row="true"]');
     expect(skeletons).toHaveLength(5);
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();

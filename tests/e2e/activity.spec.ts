@@ -449,7 +449,7 @@ test('@activity the loading state shows ten skeleton rows and no spinner; the er
   await page.route('**/api/activity*', () => undefined);
   await page.goto('/activity');
 
-  await expect(page.locator('[data-height="44"]')).toHaveCount(10);
+  await expect(page.locator('[data-row="true"]')).toHaveCount(10);
   await expect(page.getByRole('progressbar')).toHaveCount(0);
   await expect(page.locator('[class*="animate-spin"]')).toHaveCount(0);
 
