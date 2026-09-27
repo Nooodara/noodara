@@ -28,8 +28,7 @@
   task's own changes). Fix: add `@testing-library/react` to `apps/web/package.json`'s
   `devDependencies` (it is already installed transitively, per pnpm's lockfile, but not declared).
 
-## Logged during 09-12 — pre-existing, NOT caused by this plan (confirmed via a clean `9a25fdc`
-   worktree, fresh e2e stack, 3/3 deterministic failures on the unmodified baseline)
+## Logged during 09-12 — RESOLVED by the orchestrator in wave 5 (in-phase regression from 09-10, not pre-existing: the spec now drives the account's stored preference through a real `PATCH /api/account/preferences` before the /servers no-flash assertion and restores the defaults afterwards; theme-first-paint + settings + shell 34/34)
 
 - **`tests/e2e/theme-first-paint.spec.ts`'s `@theme-first-paint no theme flash on reload for dark
   and light, on /login and on /servers after login` fails deterministically (`mutations: 1`,

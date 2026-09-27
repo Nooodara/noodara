@@ -192,13 +192,33 @@ test('@theme-first-paint no theme flash on reload for dark and light, on /login 
   expect(loginResult.frames[0]).toBe(DARK_CANVAS_RGB);
 
   await login(page);
-  // /login -> /servers is a client-side `router.push` (no real navigation) -- reload to force a
-  // genuine SSR-driven paint of /servers too, re-arming the sampler via addInitScript.
-  await page.reload();
-  const serversResult = await waitForFrameSample(page);
-  expect(serversResult.mutations).toBe(0);
-  expect(new Set(serversResult.frames).size).toBe(1);
-  expect(serversResult.frames[0]).toBe(DARK_CANVAS_RGB);
+  // D-10 (09-10): once signed in, the shared session store reconciles the browser mirror with the
+  // server's stored preferences and the SERVER wins. A cookie manufactured by this test is exactly
+  // the divergence that reconciliation exists to correct (it would legitimately repaint /servers
+  // back to the account's true value), so the account's stored preference must genuinely be
+  // `dark.on.compact` before the no-flash assertion on /servers -- the same real PATCH the
+  // Settings screen issues. The response also re-issues the mirror cookie server-side (D-09).
+  const patched = await page.request.patch('/api/account/preferences', {
+    headers: { origin: 'http://localhost:3000' },
+    data: { theme: 'dark', reduceMotion: 'on', density: 'compact' },
+  });
+  expect(patched.ok()).toBe(true);
+  try {
+    // /login -> /servers is a client-side `router.push` (no real navigation) -- reload to force a
+    // genuine SSR-driven paint of /servers too, re-arming the sampler via addInitScript.
+    await page.reload();
+    const serversResult = await waitForFrameSample(page);
+    expect(serversResult.mutations).toBe(0);
+    expect(new Set(serversResult.frames).size).toBe(1);
+    expect(serversResult.frames[0]).toBe(DARK_CANVAS_RGB);
+  } finally {
+    // Restore the shared E2E admin's stored preferences so later specs start from the defaults.
+    const restored = await page.request.patch('/api/account/preferences', {
+      headers: { origin: 'http://localhost:3000' },
+      data: { theme: 'auto', reduceMotion: 'system', density: 'comfortable' },
+    });
+    expect(restored.ok()).toBe(true);
+  }
 });
 
 test('@theme-first-paint no theme flash for a light preference on /login', async ({ page, context }) => {
