@@ -4,13 +4,13 @@ milestone: v0.2
 milestone_name: Projects & Services
 status: executing
 stopped_at: Completed 09-06-PLAN.md
-last_updated: "2026-09-27T08:22:36.324Z"
+last_updated: "2026-09-27T08:52:41.346Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 44
-  completed_plans: 36
+  completed_plans: 37
   percent: 25
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 09 (settings-editables) — EXECUTING
-Plan: 7 of 14
+Plan: 8 of 14
 Status: Ready to execute
 Last activity: 2026-09-27
 
-Progress: [████████░░] 82%
+Progress: [████████░░] 84%
 
 ## Performance Metrics
 
@@ -194,6 +194,7 @@ Progress: [████████░░] 82%
 | Phase 09 P04 | 55min | 2 tasks | 7 files |
 | Phase 09 P05 | 55min | 2 tasks | 5 files |
 | Phase 09 P06 | ~80min | 2 tasks | 10 files |
+| Phase 09 P07 | 90min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -532,6 +533,8 @@ Recent decisions affecting current work:
 - [Phase 09]: toValidationErrorBody gained an optional code parameter and FieldErrorBodySchema was added, instead of a new body shape, so field-tagged service failures (INVALID_CREDENTIAL, EMAIL_DOMAIN_UNRESOLVABLE) keep their own error code and issues array on the wire
 - [Phase 09]: fetchCredentialHash filters providerId='credential' in the WHERE clause and folds a missing row/null password into one undefined outcome, closing a timing/branching side-channel (T-09-09)
 - [Phase 09]: The DNS domain check and current-email comparison run before the transaction opens; the update itself re-selects users FOR UPDATE inside the transaction, so a 3s-bounded DNS lookup never holds a row lock (T-09-02)
+- [Phase ?]: applyPreferences is the single browser write path for theme/motion/density (P17); ThemeToggle's mount-settle effect and click handler both route through it
+- [Phase ?]: Root layout is now async and reads noodara-prefs via await cookies(), making /login and /setup dynamic routes (RESEARCH Pitfall 3, accepted)
 
 ### Pending Todos
 
@@ -607,7 +610,7 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-27T08:22:36.312Z
+Last session: 2026-09-27T08:52:38.235Z
 Stopped at: Completed 09-06-PLAN.md
 Resume file: None
 

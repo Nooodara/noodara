@@ -219,7 +219,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 09-06-PLAN.md — PATCH /api/account/profile with current password, DNS check, activity; new error codes
-- [ ] 09-07-PLAN.md — applyPreferences as the single write path + async root layout reading noodara-prefs (no flash)
+- [x] 09-07-PLAN.md — applyPreferences as the single write path + async root layout reading noodara-prefs (no flash)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -349,7 +349,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 |-------|----------------|--------|-----------|
 | 7. Identidad y brand kit | 10/10 | Complete | 2026-09-23 |
 | 8. Rediseño de la app | 20/20 | Complete   | 2026-09-27 |
-| 9. Settings editables | 6/14 | In Progress|  |
+| 9. Settings editables | 7/14 | In Progress|  |
 | 10. Sitio de docs y landing pública | 0/TBD | Not started | - |
 | 11. Motor de deploy — fundamentos | 0/TBD | Not started | - |
 | 12. Motor de deploy — runtime | 0/TBD | Not started | - |
