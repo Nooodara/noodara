@@ -22,7 +22,9 @@ vi.mock('./api-client', async (importOriginal) => ({
 }));
 
 vi.mock('@noodara/ui', () => ({
-  applyPreferences: (preferences: Preferences) => applyPreferencesMock(preferences),
+  applyPreferences: (preferences: Preferences) => {
+    applyPreferencesMock(preferences);
+  },
   readPreferencesMirror: () => readPreferencesMirrorMock(),
 }));
 
