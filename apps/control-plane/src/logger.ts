@@ -15,6 +15,12 @@ const REDACT_PATHS = [
   'req.body.password',
   'req.body.sshPassword',
   'req.body.sshPrivateKey',
+  // 09-09 (T-09-03): defense-in-depth for the two new `/api/account/*` body fields — Fastify's
+  // default request serializer never logs `req.body` at all today, so this line is not what
+  // actually keeps these values out of the logs (the plan's own canary proves that), but a future
+  // serializer change must not silently start leaking them.
+  'req.body.currentPassword',
+  'req.body.newPassword',
   '*.credential',
   '*.encryptedCredential',
   '*.masterKey',
