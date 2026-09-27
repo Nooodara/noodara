@@ -1,7 +1,58 @@
-import { useState } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { createElement, useState } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// D-13 (09-04-PLAN.md Task 2): `m.div`'s own `drag` prop is the one thing this jsdom suite cannot
+// observe honestly through rendered DOM (jsdom has no pointer/gesture layer, and Motion sets no
+// static style/attribute difference between `drag={false}` and `drag='x'`) -- confirmed empirically
+// via a throwaway spike before writing this mock. The wrapper below re-exports every real
+// `motion/react` export unchanged except `m.div`, which forwards its own real `drag` prop onward
+// (so the actual gesture behaviour this file's own `renders the draggable surface...` test below
+// still exercises real Motion) while also mirroring it onto a `data-drag` attribute purely for
+// this test file's own assertions. The real, end-to-end proof that dragging is actually
+// disabled/enabled lives in `tests/e2e/a11y-fallbacks.spec.ts` (Playwright, a real browser).
+vi.mock('motion/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('motion/react')>();
+  return {
+    ...actual,
+    m: {
+      ...actual.m,
+      div: (props: Record<string, unknown>) =>
+        createElement(actual.m.div, { ...props, 'data-drag': String(props.drag) }),
+    },
+  };
+});
+
 import { Sheet } from './Sheet.js';
 import { renderUi, screen, userEvent } from './testing/render.js';
+
+// D-13 (09-04-PLAN.md Task 2): Sheet's drag gesture must follow the same attribute-aware
+// preference as everything else -- jsdom has no matchMedia, so every test that renders Sheet
+// stubs it, mirroring ThemeToggle.test.tsx's own stubMatchMedia helper.
+function stubMatchMedia(matches: boolean): void {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockImplementation((query: string) => ({
+      matches,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
+}
+
+beforeEach(() => {
+  stubMatchMedia(false);
+  document.documentElement.removeAttribute('data-motion');
+});
+
+afterEach(() => {
+  document.documentElement.removeAttribute('data-motion');
+  vi.unstubAllGlobals();
+});
 
 // Real focus trapping, Esc-to-close and outside-click dismissal are Radix Dialog's own built-in
 // behaviour (05-UI-SPEC.md SS8, "Radix traps focus and closes on Esc -- do not override it") and
@@ -168,6 +219,49 @@ describe('Sheet', () => {
 
     await vi.waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  // D-13 (09-04-PLAN.md Task 2): the drag surface's `drag` prop must follow
+  // `useReducedMotionPreference`, not motion/react's own `useReducedMotion` -- disabled entirely
+  // when the effective preference is reduced, restricted to the x axis otherwise.
+  it('renders its drag surface with drag disabled when the reduced-motion preference is true', async () => {
+    stubMatchMedia(true);
+    renderUi(
+      <Sheet open onOpenChange={vi.fn()} title="Add server">
+        <p>Sheet body content</p>
+      </Sheet>,
+    );
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-drag]')).toHaveAttribute('data-drag', 'false');
+    });
+  });
+
+  it('renders its drag surface with drag enabled on the x axis when the reduced-motion preference is false', async () => {
+    stubMatchMedia(false);
+    renderUi(
+      <Sheet open onOpenChange={vi.fn()} title="Add server">
+        <p>Sheet body content</p>
+      </Sheet>,
+    );
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-drag]')).toHaveAttribute('data-drag', 'x');
+    });
+  });
+
+  it('reacts to a forced data-motion="reduce" attribute the same way as an OS-level reduced preference', async () => {
+    stubMatchMedia(false);
+    document.documentElement.setAttribute('data-motion', 'reduce');
+    renderUi(
+      <Sheet open onOpenChange={vi.fn()} title="Add server">
+        <p>Sheet body content</p>
+      </Sheet>,
+    );
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-drag]')).toHaveAttribute('data-drag', 'false');
     });
   });
 });

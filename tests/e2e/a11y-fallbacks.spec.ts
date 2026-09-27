@@ -229,3 +229,31 @@ test('@a11y-fallbacks allow motion preference overrides OS reduce: Sheet declare
   const transitionDuration = await panel.evaluate((el) => getComputedStyle(el).transitionDuration);
   expect(transitionDuration).not.toBe('0s');
 });
+
+// D-13 (09-04-PLAN.md Task 2): the Sheet's JS gesture check (not just the CSS fallback) must
+// respect a forced preference -- no OS emulation here, only the attribute.
+test('@a11y-fallbacks forced reduce motion preference: Sheet drag surface does not move', async ({ page }) => {
+  await login(page);
+  await page.evaluate(() => {
+    document.documentElement.setAttribute('data-motion', 'reduce');
+  });
+
+  await page.getByRole('button', { name: 'Add server' }).click();
+  await expect(page.getByTestId('server-sheet')).toBeVisible();
+
+  const dragSurface = page.getByTestId('server-sheet-drag-surface');
+  const box = await dragSurface.boundingBox();
+  if (box === null) {
+    throw new Error('server-sheet-drag-surface has no bounding box');
+  }
+
+  const startX = box.x + box.width / 2;
+  const startY = box.y + 20;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX - 200, startY, { steps: 10 });
+  await page.mouse.up();
+
+  const transform = await dragSurface.evaluate((el) => getComputedStyle(el).transform);
+  expect(decomposeTransform(transform).translateX).toBe(0);
+});
