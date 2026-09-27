@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 09-03-PLAN.md
-last_updated: "2026-09-27T07:20:05.137Z"
+stopped_at: Completed 09-04-PLAN.md
+last_updated: "2026-09-27T07:47:08.825Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 44
-  completed_plans: 33
+  completed_plans: 34
   percent: 25
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 09 (settings-editables) — EXECUTING
-Plan: 4 of 14
+Plan: 5 of 14
 Status: Ready to execute
 Last activity: 2026-09-27
 
-Progress: [████████░░] 75%
+Progress: [████████░░] 77%
 
 ## Performance Metrics
 
@@ -191,6 +191,7 @@ Progress: [████████░░] 75%
 | Phase 09 P01 | 40min | 2 tasks | 11 files |
 | Phase 09 P02 | 20min | 2 tasks | 6 files |
 | Phase 09 P03 | 35min | 2 tasks | 14 files |
+| Phase 09 P04 | 55min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -521,6 +522,9 @@ Recent decisions affecting current work:
 - [Phase 09]: seedRepresentativeData and fetchSeededSnapshot switched to raw SQL restricted to pre-0004 columns for the users upgrade test, following the login_attempts/servers precedent
 - [Phase 09]: D-14 density tokens (--row-height/--row-height-padding-y) added at :root, remapped only under html[data-density=compact]
 - [Phase 09]: data-row=true replaces data-height=44 as the single row test hook across unit and E2E suites
+- [Phase 09]: D-13: kept the two-@slot-rule @custom-variant block form (theme.css) after confirming Tailwind 4.3.3 accepts it
+- [Phase 09]: D-13: aperture.css override uses two independent rule pairs rather than one combined selector
+- [Phase 09]: D-13: Sheet.test.tsx mocks only motion/react's m.div to mirror the real drag prop onto data-drag for jsdom assertions
 
 ### Pending Todos
 
@@ -596,8 +600,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-27T07:20:05.127Z
-Stopped at: Completed 09-03-PLAN.md
+Last session: 2026-09-27T07:47:08.817Z
+Stopped at: Completed 09-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
