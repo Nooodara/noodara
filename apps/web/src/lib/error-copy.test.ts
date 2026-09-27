@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import type { ApiFailure } from './api-client';
 import {
+  ACCOUNT_GENERIC_ERROR,
+  accountFieldErrors,
   copyForErrorCode,
   copyForServerErrorCode,
   fieldErrorsFromIssues,
@@ -45,6 +48,19 @@ describe('copyForErrorCode', () => {
     expect(copyForErrorCode('INTERNAL_ERROR')).toBe(
       'Something went wrong on our end. Try again, and check the server logs if it continues.',
     );
+  });
+
+  // 09-10-PLAN.md Task 1 / 09-UI-SPEC.md Copywriting Contract -- the four new account/session
+  // codes (09-06/09-08/09-09's backend), asserted verbatim.
+  it('returns the exact 09-UI-SPEC.md copy for the four new account/session codes', () => {
+    expect(copyForErrorCode('EMAIL_DOMAIN_UNRESOLVABLE')).toBe(
+      "We couldn't find a mail server for this domain. Check the address and try again.",
+    );
+    expect(copyForErrorCode('EMAIL_DOMAIN_CHECK_UNAVAILABLE')).toBe(
+      "We couldn't check this domain right now. Try again in a moment.",
+    );
+    expect(copyForErrorCode('REAUTH_LOCKED')).toBe('Too many attempts. Try again later.');
+    expect(copyForErrorCode('SESSION_REVOKED_PASSWORD_CHANGED')).toBe('Signed out because your password changed.');
   });
 
   it('the CONFIRMATION_MISMATCH copy matches SS5.4 verbatim', () => {
@@ -207,5 +223,92 @@ describe('formatRetryAfterDuration', () => {
     expect(formatRetryAfterDuration(0)).toBe('in a moment');
     expect(formatRetryAfterDuration(-5)).toBe('in a moment');
     expect(formatRetryAfterDuration(Number.NaN)).toBe('in a moment');
+  });
+});
+
+// 09-10-PLAN.md Task 1 -- the account Sheets' (09-11/09-12) one field-error router, per
+// 09-UI-SPEC.md's Copywriting Contract. Fixed copy only, routed by code first (the two domain
+// codes always go to 'email'), then by issue path -- never `failure.message`, and never a code/path
+// combination this table doesn't recognise.
+describe('accountFieldErrors', () => {
+  function failure(overrides: Partial<ApiFailure>): ApiFailure {
+    return {
+      ok: false,
+      code: 'VALIDATION_FAILED',
+      message: 'raw-server-message-must-never-be-rendered',
+      unauthorized: false,
+      ...overrides,
+    };
+  }
+
+  it('maps a currentPassword issue with INVALID_CREDENTIAL to the fixed wrong-password copy', () => {
+    const result = accountFieldErrors(
+      failure({
+        code: 'INVALID_CREDENTIAL',
+        issues: [{ path: 'currentPassword', message: 'raw-server-message-must-never-be-rendered' }],
+      }),
+    );
+
+    expect(result).toEqual({ currentPassword: 'Current password is incorrect.' });
+  });
+
+  it('maps a name issue to the fixed name-length copy', () => {
+    const result = accountFieldErrors(
+      failure({ issues: [{ path: 'name', message: 'raw-server-message-must-never-be-rendered' }] }),
+    );
+
+    expect(result).toEqual({ name: 'Name must be 1–80 characters.' });
+  });
+
+  it('maps an email issue with VALIDATION_FAILED to the fixed email-format copy', () => {
+    const result = accountFieldErrors(
+      failure({ issues: [{ path: 'email', message: 'raw-server-message-must-never-be-rendered' }] }),
+    );
+
+    expect(result).toEqual({ email: 'Enter a valid email address.' });
+  });
+
+  it('routes EMAIL_DOMAIN_UNRESOLVABLE to the email field with the domain-not-found copy', () => {
+    const result = accountFieldErrors(failure({ code: 'EMAIL_DOMAIN_UNRESOLVABLE' }));
+
+    expect(result).toEqual({
+      email: "We couldn't find a mail server for this domain. Check the address and try again.",
+    });
+  });
+
+  it('routes EMAIL_DOMAIN_CHECK_UNAVAILABLE to the email field with the check-unavailable copy', () => {
+    const result = accountFieldErrors(failure({ code: 'EMAIL_DOMAIN_CHECK_UNAVAILABLE' }));
+
+    expect(result).toEqual({ email: "We couldn't check this domain right now. Try again in a moment." });
+  });
+
+  it('maps a newPassword issue to the fixed weak-password copy', () => {
+    const result = accountFieldErrors(
+      failure({ issues: [{ path: 'newPassword', message: 'raw-server-message-must-never-be-rendered' }] }),
+    );
+
+    expect(result).toEqual({
+      newPassword: 'Password must be 12–128 characters and not be a commonly used password.',
+    });
+  });
+
+  it('returns an empty object for a failure with no matching field or issues -- caller shows the generic banner', () => {
+    expect(accountFieldErrors(failure({}))).toEqual({});
+    expect(accountFieldErrors(failure({ issues: [{ path: 'notARealField', message: 'x' }] }))).toEqual({});
+  });
+
+  it('never renders failure.message anywhere in its output', () => {
+    const result = accountFieldErrors(
+      failure({
+        code: 'INVALID_CREDENTIAL',
+        issues: [{ path: 'currentPassword', message: 'raw-server-message-must-never-be-rendered' }],
+      }),
+    );
+
+    expect(Object.values(result).join(' ')).not.toContain('raw-server-message-must-never-be-rendered');
+  });
+
+  it('exposes the fixed generic account error string', () => {
+    expect(ACCOUNT_GENERIC_ERROR).toBe('Something went wrong. Try again.');
   });
 });

@@ -90,6 +90,28 @@ describe('requireSession', () => {
     expect(assign).toHaveBeenCalledTimes(1);
   });
 
+  // 09-10-PLAN.md Task 1 (D-07): a revoked-by-password-change tab must carry a distinguishable
+  // reason so /login can show the dedicated Notice -- a plain 401 keeps today's redirect
+  // unchanged (the two "does not redirect"/"redirects at most once" cases above already cover
+  // that path).
+  it('redirects to /login?reason=password-changed&redirect=... when GET /api/config answers 401 SESSION_REVOKED_PASSWORD_CHANGED', async () => {
+    const { assign } = stubWindow('/servers', '?tab=facts');
+    apiGetMock.mockResolvedValueOnce({
+      ok: false,
+      code: 'SESSION_REVOKED_PASSWORD_CHANGED',
+      message: 'Signed out because the password changed',
+      unauthorized: true,
+    });
+
+    const { requireSession } = await import('./require-session');
+    await requireSession();
+
+    expect(assign).toHaveBeenCalledTimes(1);
+    expect(assign).toHaveBeenCalledWith(
+      `/login?reason=password-changed&redirect=${encodeURIComponent('/servers?tab=facts')}`,
+    );
+  });
+
   it('is a no-op when window is undefined (SSR-safe)', async () => {
     expect(typeof window).toBe('undefined');
     apiGetMock.mockResolvedValueOnce(unauthorizedFailure());

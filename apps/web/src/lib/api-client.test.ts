@@ -162,6 +162,26 @@ describe('apiGet/apiSend', () => {
     }
   });
 
+  // 09-10-PLAN.md Task 1: the four new account/session codes (09-06/09-08/09-09's backend) must
+  // parse to their own code, never degrading to INTERNAL_ERROR -- the same drift class Gap 6 fixed
+  // for FINGERPRINT_MISMATCH/SERVER_NOT_TRUSTABLE above.
+  it('parses the four new account/session error codes to their own code, never degrading to INTERNAL_ERROR', async () => {
+    const cases: readonly [code: string, status: number][] = [
+      ['EMAIL_DOMAIN_UNRESOLVABLE', 400],
+      ['EMAIL_DOMAIN_CHECK_UNAVAILABLE', 503],
+      ['REAUTH_LOCKED', 429],
+      ['SESSION_REVOKED_PASSWORD_CHANGED', 401],
+    ];
+
+    for (const [code, status] of cases) {
+      fetchMock.mockResolvedValueOnce(jsonResponse(status, { error: code, message: 'x' }));
+      const result = await apiGet('/api/account/profile');
+      expect(result.ok).toBe(false);
+      if (result.ok) continue;
+      expect(result.code).toBe(code);
+    }
+  });
+
   it('issues every request with credentials: same-origin and a relative /api/ URL', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { ok: true }));
 
