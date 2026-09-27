@@ -3,7 +3,9 @@
 // field that could ever express a writable-control affordance -- D-16's "no edit affordance
 // anywhere" rule made structural (a future change would have to touch this type, not quietly add
 // a prop to a component) rather than a styling convention this module could accidentally drift
-// away from.
+// away from. SET-06/D-17 (09-12-PLAN.md Task 1) keeps that guarantee: `SettingsRow` is still never
+// extended with a handler -- editable rows (Account's Name/Email/Password) are a distinct type,
+// `EditableAccountRow`, in the sibling module apps/web/src/lib/account-rows.ts.
 import { PLACEHOLDER } from '@noodara/ui';
 
 /** Hand-copied from `apps/control-plane/src/routes/config.ts`'s `ConfigResponseSchema` -- apps/web
