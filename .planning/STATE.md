@@ -8,8 +8,8 @@ last_updated: 2026-09-27T22:13:06.052Z
 last_activity: 2026-09-27
 progress:
   total_phases: 8
-  completed_phases: 1
-  total_plans: 109
+  completed_phases: 3
+  total_plans: 44
   completed_plans: 44
   percent: 13
 ---
