@@ -46,6 +46,23 @@ test('@setup /setup?token=... strips the token from the URL after mount while th
   await expect.poll(() => page.url()).not.toContain('token=');
 });
 
+test('@setup the server-rendered /setup?token=... document never echoes the token into HTML', async ({
+  page,
+}) => {
+  // 09-07 made the root layout read `cookies()`, so every route (including /setup) is now rendered
+  // per request. The token may only ever live in the initial URL and in the browser-side field --
+  // the HTML document the server sends back must not carry it (it is the one response body
+  // `tests/e2e/canary-ui.spec.ts` step 11 inspects for the setup-token canary).
+  const response = await page.goto(`/setup?token=${SYNTHETIC_TOKEN}`);
+  expect(response).not.toBeNull();
+  const html = await response!.text();
+  expect(html).not.toContain(SYNTHETIC_TOKEN);
+
+  // ...while the field is still pre-filled once the client has mounted.
+  await expect(page.getByLabel('Token')).toHaveValue(SYNTHETIC_TOKEN);
+  await expect.poll(() => page.url()).not.toContain('token=');
+});
+
 test('@setup a stubbed 500 from POST /api/setup never renders the invalid-link banner', async ({ page }) => {
   await page.route('**/api/setup', (route) =>
     route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'INTERNAL_ERROR', message: 'Internal error' }) }),
