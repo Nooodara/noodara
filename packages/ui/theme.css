@@ -92,3 +92,33 @@
   --radius-lg: var(--r-lg);
   --radius-pill: var(--r-pill);
 }
+
+/* --- Motion variants (D-13, 09-04-PLAN.md Task 1) ---------------------------------------------
+ * Redefines Tailwind's built-in `motion-safe:`/`motion-reduce:` variants so a forced
+ * `data-motion="reduce"|"allow"` attribute on `<html>` wins over `prefers-reduced-motion`, while
+ * an absent attribute still follows the OS media query exactly as before. Every existing
+ * `motion-safe:`/`motion-reduce:` call site (press.ts, Sheet.tsx, Disclosure.tsx, RowMenu.tsx,
+ * Dialog.tsx -- ~15 utility occurrences) needs zero changes: the class names are untouched, only
+ * what they compile to changes.
+ */
+@custom-variant motion-reduce {
+  &:where([data-motion='reduce'], [data-motion='reduce'] *) {
+    @slot;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:where(:not([data-motion='allow'], [data-motion='allow'] *)) {
+      @slot;
+    }
+  }
+}
+
+@custom-variant motion-safe {
+  &:where([data-motion='allow'], [data-motion='allow'] *) {
+    @slot;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    &:where(:not([data-motion='reduce'], [data-motion='reduce'] *)) {
+      @slot;
+    }
+  }
+}

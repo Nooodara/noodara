@@ -48,6 +48,18 @@
   }
 }
 
+/*
+ * D-13 (09-04-PLAN.md Task 1): this file's one raw `@media (prefers-reduced-motion: reduce)`
+ * block honors the same `data-motion` override the `motion-safe`/`motion-reduce` Tailwind
+ * variants use (packages/ui/theme.css) -- a forced `html[data-motion="allow"]` must suppress the
+ * OS-driven reduced reading here too, and a forced `html[data-motion="reduce"]` must apply the
+ * reduced reading even when the OS itself asks for full motion. Each of the two OS/attribute
+ * pairings below (media query gated by `:not([data-motion="allow"])`, and the standalone
+ * `[data-motion="reduce"]` ancestor selector) declares the identical instant-swap rule, so
+ * exactly one of the two ever matches for a given combination -- there is no third, combined
+ * selector to keep in sync, matching this file's own "no coordinate outside a named constant"
+ * discipline applied to selectors instead of geometry.
+ */
 @media (prefers-reduced-motion: reduce) {
   /* D-09: no trajectory under reduced motion -- the interpolated transform/filter transition is
      replaced by an instant, non-animated swap between the two end readings. `--aperture-progress`
@@ -55,14 +67,27 @@
      numeric custom property, not a boolean), so the caller also sets a `data-aperture-focused`
      boolean attribute the instant `--aperture-progress` reaches 1 -- this rule reads only that
      attribute, never the continuous number, so there is no interpolated middle reading to see. */
-  [data-part="aperture"] {
+  html:not([data-motion='allow']) [data-part="aperture"] {
     transition: none;
     transform: scale(1.25);
     filter: blur(3px);
   }
 
-  [data-aperture-focused='true'] [data-part="aperture"] {
+  html:not([data-motion='allow']) [data-aperture-focused='true'] [data-part="aperture"] {
     transform: none;
     filter: none;
   }
+}
+
+/* Forced reduce, independent of the OS media query -- identical instant-swap rule as above,
+ * applying even when `prefers-reduced-motion: no-preference` is what the OS itself reports. */
+html[data-motion='reduce'] [data-part="aperture"] {
+  transition: none;
+  transform: scale(1.25);
+  filter: blur(3px);
+}
+
+html[data-motion='reduce'] [data-aperture-focused='true'] [data-part="aperture"] {
+  transform: none;
+  filter: none;
 }
