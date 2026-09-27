@@ -1,8 +1,10 @@
-// ActivityEvent domain shape (AUTH-04, noodara-domain-model skill §7, ARCHITECTURE.md §6). This
-// phase provides only the type, the auth action union and the construction guard that makes it
-// structurally impossible to build an event carrying a raw secret — the writer service that
-// actually persists rows into `activity_events` and the non-auth action union members (server.*,
-// project.* etc.) land in phase 3 (01-CONTEXT.md: "el servicio completo llega en fase 3").
+// ActivityEvent domain shape (AUTH-04, noodara-domain-model skill §7, ARCHITECTURE.md §6). Phase 1
+// provided the type, the auth action union and the construction guard that makes it structurally
+// impossible to build an event carrying a raw secret; phase 3 added `server.*`; phase 9 (SET-02/
+// SET-03, D-08) adds `account.*`, whose metadata is further restricted to a per-action allowlist
+// (`ACCOUNT_ACTION_METADATA_KEYS`) enforced before the general forbidden-key walk below, since
+// "no secrets" is not enough for these three actions — D-08 also requires "no previous value,
+// nothing else at all".
 
 import { SecretValue } from '../security/secret-value.js';
 
@@ -48,10 +50,33 @@ export const SERVER_ACTIONS = [
 
 export type ServerAction = (typeof SERVER_ACTIONS)[number];
 
-/** The combined set of actions `buildActivityEvent` accepts (auth phase 1 + server phase 3). */
-export type ActivityAction = AuthAction | ServerAction;
+/**
+ * The three `account.*` activity actions added in phase 9 (SET-02/SET-03, D-08). Metadata shape
+ * per action is a closed allowlist (`ACCOUNT_ACTION_METADATA_KEYS` below), never the previous
+ * value, never a password, hash, token or IP:
+ * - `account.name_changed` — `{ name }` (new name only)
+ * - `account.email_changed` — `{ email }` (new email only, never `previousEmail`)
+ * - `account.password_changed` — `{ sessions_revoked }` (count of other sessions revoked)
+ */
+export const ACCOUNT_ACTIONS = ['account.name_changed', 'account.email_changed', 'account.password_changed'] as const;
 
-const ACTIVITY_ACTIONS: readonly string[] = [...AUTH_ACTIONS, ...SERVER_ACTIONS];
+export type AccountAction = (typeof ACCOUNT_ACTIONS)[number];
+
+/** The combined set of actions `buildActivityEvent` accepts (auth phase 1 + server phase 3 +
+ *  account phase 9). */
+export type ActivityAction = AuthAction | ServerAction | AccountAction;
+
+const ACTIVITY_ACTIONS: readonly string[] = [...AUTH_ACTIONS, ...SERVER_ACTIONS, ...ACCOUNT_ACTIONS];
+
+const ACCOUNT_ACTION_SET: ReadonlySet<string> = new Set(ACCOUNT_ACTIONS);
+
+/** The structural enforcement of D-08: an `account.*` event's metadata may only ever carry the
+ *  keys listed here for its action — never a previous value, never anything else. */
+const ACCOUNT_ACTION_METADATA_KEYS: Readonly<Record<AccountAction, readonly string[]>> = Object.freeze({
+  'account.name_changed': ['name'],
+  'account.email_changed': ['email'],
+  'account.password_changed': ['sessions_revoked'],
+});
 
 export type ActivityActorType = 'user' | 'system';
 export type ActivityOutcome = 'success' | 'failure';
@@ -151,6 +176,16 @@ export function buildActivityEvent(input: BuildActivityEventInput, now: Date): A
   }
 
   const metadata = input.metadata ?? {};
+
+  if (ACCOUNT_ACTION_SET.has(input.action)) {
+    const allowedKeys = ACCOUNT_ACTION_METADATA_KEYS[input.action as AccountAction];
+    for (const key of Object.keys(metadata)) {
+      if (!allowedKeys.includes(key)) {
+        throw new SensitiveMetadataError(key);
+      }
+    }
+  }
+
   assertNoSensitiveMetadata(metadata);
 
   return {

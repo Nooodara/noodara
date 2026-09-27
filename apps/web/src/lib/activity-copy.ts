@@ -10,7 +10,7 @@
 // which is what makes "an unrecognised key never reaches any part of the output" structural
 // rather than a convention: a key this file never names by name can never appear in
 // `sentenceFor`'s or `curatedDetailFor`'s output, full stop.
-import { AUTH_ACTIONS, SERVER_ACTIONS, type ActivityAction } from '@noodara/domain/activity';
+import { ACCOUNT_ACTIONS, AUTH_ACTIONS, SERVER_ACTIONS, type ActivityAction } from '@noodara/domain/activity';
 
 /** The wire shape `GET /api/activity` returns (05-15-PLAN.md's `<interfaces>` block), hand-copied
  *  rather than imported across the apps/web/apps/control-plane boundary -- the same discipline
@@ -235,6 +235,20 @@ function newFingerprintEntry(item: ActivityItem): CuratedDetailEntry | undefined
   return fingerprint === undefined ? undefined : { label: 'New', value: fingerprint, mono: true };
 }
 
+function nameEntry(item: ActivityItem): CuratedDetailEntry | undefined {
+  const name = stringField(item.metadata, 'name');
+  return name === undefined ? undefined : { label: 'Name', value: name, mono: false };
+}
+
+/** Only a finite non-negative integer counts -- anything else (missing, negative, fractional,
+ *  non-numeric) is dropped rather than rendering a nonsensical count (§5.6 discipline: an
+ *  unexpected shape is dropped, never stringified, never passed through). */
+function sessionsRevokedEntry(item: ActivityItem): CuratedDetailEntry | undefined {
+  const count = numberField(item.metadata, 'sessions_revoked');
+  if (count === undefined || count < 0 || !Number.isInteger(count)) return undefined;
+  return { label: 'Other sessions signed out', value: String(count), mono: false };
+}
+
 // --- the frozen, exhaustive table -----------------------------------------------------------
 
 interface ActivityCopyEntry {
@@ -314,9 +328,21 @@ const ACTIVITY_COPY = {
       serverSentence(`${actorLabel(item)} trusted a new host key for `, '', item, lookupServer),
     curatedDetail: (item) => compact([previousFingerprintEntry(item), newFingerprintEntry(item)]),
   },
+  'account.name_changed': {
+    sentence: (item) => textSentence(`${actorLabel(item)} changed their name`),
+    curatedDetail: (item) => compact([nameEntry(item)]),
+  },
+  'account.email_changed': {
+    sentence: (item) => textSentence(`${actorLabel(item)} changed their email`),
+    curatedDetail: (item) => compact([emailEntry(item)]),
+  },
+  'account.password_changed': {
+    sentence: (item) => textSentence(`${actorLabel(item)} changed their password`),
+    curatedDetail: (item) => compact([sessionsRevokedEntry(item)]),
+  },
 } satisfies Record<ActivityAction, ActivityCopyEntry>;
 
-const KNOWN_ACTIONS: ReadonlySet<string> = new Set<string>([...AUTH_ACTIONS, ...SERVER_ACTIONS]);
+const KNOWN_ACTIONS: ReadonlySet<string> = new Set<string>([...AUTH_ACTIONS, ...SERVER_ACTIONS, ...ACCOUNT_ACTIONS]);
 
 function isKnownAction(action: string): action is ActivityAction {
   return KNOWN_ACTIONS.has(action);

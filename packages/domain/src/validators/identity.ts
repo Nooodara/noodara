@@ -18,6 +18,13 @@ const SSH_USER_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_-]{0,31}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_EMAIL_LENGTH = 254;
 
+// SET-02 discretion (09-CONTEXT.md): the admin's display name, 1-80 characters after trim, no
+// control characters. C0 (\u0000-\u001F, \u007F) and C1 (\u0080-\u009F) control ranges are both
+// rejected, matching the same control-character posture as `SecretValue` redaction elsewhere.
+const MAX_NAME_LENGTH = 80;
+// eslint-disable-next-line no-control-regex -- deliberately matching C0/C1 control characters
+const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F-\u009F]/;
+
 /**
  * Validates an entity slug (`Server.name` and later `Environment`/`Service` names) against the
  * skill's `[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?` pattern. The success value is the input unchanged
@@ -56,4 +63,25 @@ export function validateEmail(input: string): ValidationResult<string> {
     );
   }
   return ok(input.toLowerCase());
+}
+
+/**
+ * Validates the admin's display name (SET-02). Trims surrounding whitespace, counts length by
+ * Unicode code points (`[...trimmed].length`, not UTF-16 code units) so an 80-emoji name is not
+ * rejected on a technicality, and rejects any control character.
+ */
+export function validateName(input: string): ValidationResult<string> {
+  const trimmed = input.trim();
+  const length = Array.from(trimmed).length;
+
+  if (length < 1 || length > MAX_NAME_LENGTH || CONTROL_CHARACTERS.test(trimmed)) {
+    return fail('NAME_INVALID', 'Name must be 1–80 characters.');
+  }
+
+  return ok(trimmed);
+}
+
+/** Validates an account email edit (SET-02 discretion): trim then the existing `validateEmail`. */
+export function validateAccountEmail(input: string): ValidationResult<string> {
+  return validateEmail(input.trim());
 }
