@@ -81,30 +81,39 @@ stays open, with a note, for G3.
 
 ## G3 — Final (after P1/P2, authored moments)
 
-- [ ] **Sheet drag at real speed**: on `/servers`, open the add-server `Sheet` and drag its panel
-      by touch or pointer. Confirm 1:1 tracking with the pointer, progressive resistance once
-      dragged past its resting edge, a short fast flick closes it outright, and re-grabbing the
-      panel mid-close resumes the drag from wherever it currently sits on screen (never snapping
-      back to the fully-open position first).
-- [ ] **Sheet drag in slow motion**: Chrome DevTools → More tools → Animations → set playback
-      speed to 5% (or the slowest available), repeat the same drag/flick sequence, and confirm the
-      spring settles smoothly with no visible stutter or overshoot past the panel's edge.
-- [ ] **Sheet drag on real touch hardware**: if an iPad or phone is available on the LAN, open the
-      dev server's LAN URL on that device and repeat the drag-to-dismiss gesture with an actual
-      finger, not a mouse — confirm the same tracking/resistance/flick/resume behavior holds.
-- [ ] **Viewfinder ring against a real discovery run**: connect a real server (via the disposable
-      sshd above) and watch the monogram's central ring go from open/unfocused to sharp/closed as
-      the six discovery steps complete on `/servers/:id`. Then force a partial/failed run (wrong
-      credential, or stop the sshd container mid-run) and confirm the ring stops exactly where the
-      run stopped — it must never complete by itself once the run has failed.
-- [ ] **Brand-swap test on the discovery narration**: with a completed discovery run visible,
-      mentally (or literally, via DevTools) swap the Viewfinder mark for a generic icon and confirm
-      the discovery timeline and its copy still read clearly as *the product's own* narration, not
-      generic loading text — the mark should be additive, not load-bearing for comprehension.
-- [ ] **Brand-swap test on the TOFU block**: same swap test on `FirstTrustNotice`'s `Fingerprint`
-      block (`/servers/:id` on first connect) — the fingerprint's own layout (blocks of 4, mono,
-      copy button) must read clearly as a trust decision on its own, independent of the mark.
-- [ ] **Full motion table spot-check**: walk `/login`, `/setup`, `/servers`, `/activity` and
-      `/settings` once each and confirm each screen's "one discrete moment" (08-CONTEXT.md D-11) is
-      the only entrance animation on that screen — never the same animation repeated across
-      sections.
+G3 closed 2026-09-26: the user reviewed the production build over a live tunnel session, replied
+"G3 adjust" with five specific layout/shell items (applied as round 1, `docs/ui/APPROVAL.md`), then
+replied verbatim "G3 approved" after the round was re-verified. As with G2, this is a delegated
+resolution, not an item-by-item narrated walkthrough — each row below is ticked only where
+automation, a capture, or a specific, attributable observation from the user's round-1 feedback
+demonstrably covers it; anything never reported in the user's own words stays open, honestly.
+
+- [x] **Sheet drag at real speed**: **not narrated hand-by-hand by the user.** Tracking, progressive
+      resistance, the flick-close threshold and mid-close re-grab are all exercised live (real
+      timestamped `pointermove` samples, not simulated) and green in `tests/e2e/server-sheet.spec.ts`'s
+      `@sheet-drag` suite (143/143 E2E at this gate, and 20/20 in `pnpm test:e2e:repeat`). The user's
+      approval followed a live session of the running app with this `Sheet` on screen, but no specific
+      drag-feel verdict was given in words — ticked on the strength of the automated mechanics plus
+      delegated approval, not a first-person report.
+- [ ] **Sheet drag in slow motion**: not performed by the user at G3 (no DevTools Animations
+      playback-speed report was given) — approved by delegation. Remains open.
+- [ ] **Sheet drag on real touch hardware**: not reported by the user at G3 (no LAN/touch-device
+      session was mentioned) — approved by delegation. Remains open.
+- [x] **Viewfinder ring against a real discovery run**: the ring's open→closed focus on a full
+      settle and its stop-in-place behavior on a partial/failed run are both covered by
+      `tests/e2e/discovery.spec.ts`'s `@discovery-ring` suite (a fully successful run focuses to
+      closed/sharp, a three-of-six partial run stops at three sixths, a mid-run join shows a
+      non-looping intermediate value) — green in the same 143/143 and 20/20 runs. Not independently
+      narrated by the user; ticked on automation plus the general live-session approval.
+- [ ] **Brand-swap test on the discovery narration**: **not supplied in words.** The user did not
+      give an explicit brand-swap verdict for the discovery narration — approved by delegation
+      after a live session with the narration on screen. Remains open; see `docs/ui/APPROVAL.md`'s
+      "Brand-swap verdict" line and `deferred-items.md`.
+- [ ] **Brand-swap test on the TOFU block**: **not supplied in words.** Same as above for
+      `FirstTrustNotice`'s `Fingerprint` block — no explicit verdict was given. Remains open.
+- [x] **Full motion table spot-check**: covered by the per-screen E2E motion suites (`brand.spec.ts`,
+      `servers-list.spec.ts` `@stagger`, `activity.spec.ts` `@activity-entry`, `discovery.spec.ts`,
+      `server-sheet.spec.ts` `@sheet-drag`) plus the reviewed before/after capture pairs for all six
+      screens — each screen's one discrete entrance moment is distinct and non-repeated across
+      sections. Not independently narrated screen-by-screen by the user; ticked on capture + automated
+      evidence plus the general live-session approval.

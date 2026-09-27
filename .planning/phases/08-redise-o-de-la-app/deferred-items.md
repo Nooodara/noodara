@@ -156,3 +156,41 @@ round-1 fix rather than deferred). RED `f4c06fc`, GREEN `b5c26f6`.
   added (Phase 9's own SET-02..06/D20-D21 own that), matching D-05's original scope note.
 - **Why not deferred:** small enough (one component's row moves to another) to apply directly as
   a G3 adjustment round rather than push to a future phase.
+
+## Status at G3 close (2026-09-26)
+
+G3 was approved (`docs/ui/APPROVAL.md`) after one adjustment round. The items below remain open
+past the phase's own final gate and are handed to whichever plan next touches their files —
+none of them blocked G3 itself, per the delegated-approval resolution recorded above and in
+`08-HUMAN-UAT.md` §G3.
+
+- **`ServerDetailToolbar`'s title truncates to almost nothing at 375px.** Root cause investigated
+  and documented above (min-w-0 was already a no-op given existing `overflow:hidden`; the real
+  constraint is the back link/`StatusPill`/primary action button already claiming the row's width
+  at that breakpoint). Suggested follow-up unchanged: decide whether the back link collapses to
+  icon-only below ~480px, or accept a long name truncating as a trade-off.
+- **`ServerDetailToolbar` still has no scroll-edge effect or the three accessibility fallbacks**
+  (`prefers-reduced-transparency`, `contrast-more`, reduced-motion) that `Toolbar.tsx` already has.
+  Real parity work, out of every G-gate plan's own file scope so far.
+- **Ungated hover utilities**: no fresh repo-wide grep for un-gated `hover:` classes was run as
+  part of this plan's own scope (round 1's five fixes did not touch hover-bearing utilities); the
+  last confirmed sweep is 08-06's. `check:ui-safety` has no dedicated hover-gate rule, so this is a
+  manual grep, not a CI gate — recommend adding one before any future plan lands new hover styles.
+- **An Esc-close of `Sheet` never returns focus to the "Add server" trigger button.** Unchanged
+  since 08-12; architectural (Sheet has no `DialogPrimitive.Trigger` of its own, being externally
+  controlled). Candidate for whichever plan next revisits `Sheet`'s open/close plumbing.
+- **Login fails silently when the request origin is rejected (`INVALID_ORIGIN`, 403).** Found
+  during the G3 live review over a public tunnel; the generic-failure branch on `/login` renders no
+  banner for this specific 403 code. Candidate for Phase 9's auth work.
+- **UI-04's screen-reader pass (`RowMenu`, `AccountMenu`) was never performed by the user**, at
+  either G2 or G3. Both remain explicitly open in `08-HUMAN-UAT.md`. **UI-04 is NOT marked complete
+  in REQUIREMENTS.md.** Whichever plan next does a live accessibility pass over these two
+  components should close this out with an actual VoiceOver session, not a delegated approval.
+- **The Sheet drag-feel (slow motion, real touch hardware) and both brand-swap verdicts
+  (discovery narration, TOFU/Fingerprint block) were never confirmed in the user's own words at
+  G3.** The mechanics are covered by automated E2E (`@sheet-drag`, `@discovery-ring` suites,
+  143/143 green) and the user did approve after a live session with these surfaces on screen, but
+  no first-person drag-feel or brand-swap verdict was ever given. `docs/ui/APPROVAL.md`'s G3 block
+  and `08-HUMAN-UAT.md` §G3 record this honestly rather than fabricate a verdict. These are not
+  reopened as blockers — G3 is closed by the user's explicit "G3 approved" — but they are real,
+  named gaps in the record for anyone auditing this phase's closure later.

@@ -76,16 +76,41 @@ covered the recommended visual-defect round only. UI-04's screen-reader pass on 
 
 | Field | Value |
 | --- | --- |
-| Gate | G3 — Final |
-| Date | pending |
-| Rounds used | pending |
-| Approver | pending |
-| Evidence | docs/ui/approved/ — the six screens plus overlays, both themes, at 1280px |
+| Gate | G3 — final |
+| Date | 2026-09-26 |
+| Rounds used | 1 |
+| Approver | Pablo Gutierrez |
+| Evidence | docs/ui/approved/ — the six screens, both themes, at 1280px, copied from the post-round-1 review round in `docs/ui/review/`; 143/143 E2E and `pnpm test:e2e:repeat` 20/20 green at approval time |
+
+**Brand-swap verdict**: not supplied in words; the user approved after a live session of the
+production build (discovery narration and Fingerprint block both on screen, reached through a
+public tunnel per `08-HUMAN-UAT.md`'s local-stack recipe). No explicit per-moment verdict was
+recorded — see `08-HUMAN-UAT.md` §G3 and `deferred-items.md` for the honest accounting.
+
+**Drag calibration**: `DRAG_CLOSE_VELOCITY_PX_PER_S = 110` (px/s) and `dragElastic={0.15}`
+(`packages/ui/src/Sheet.tsx`) — the final, unchanged values from before this gate. These are
+measured, not derived: `tests/e2e/server-sheet.spec.ts`'s `@sheet-drag` suite exercises the real
+spring/rubber-band behaviour against genuine timestamped `pointermove` samples (progressive
+resistance, a short fast flick closing below the half-width threshold, a slow short drag snapping
+back, and mid-flight re-grab resuming from the panel's current position) — all green in the
+143/143 E2E run at this gate. No retune was requested or applied in the G3 adjustment round.
 
 ### Adjustment log
 
-- **Round 1: none yet.**
-- **Round 2: none yet.**
+- **Round 1: five layout/shell items from the user's live "G3 adjust" reply, applied and
+  re-verified (commits `9666793`…`94f141a`):**
+  1. `ServerFacts.tsx`/`SettingsGroups.tsx` rows gained a `px-4` inset to match `InsetGroup`'s own
+     convention on server detail and settings. RED `9666793`/`9c43137`, GREEN `afbb79f`.
+  2. The sidebar gained `sticky` positioning instead of scrolling away with the page. RED
+     `f0144e2`, GREEN `ad64e23`.
+  3. The `DiscoverySection` moved above the stat tiles on `/servers/:id` so the discovery
+     narration is the first thing on screen. RED `f0464e5`, GREEN `5dc5b32`.
+  4. The account-menu trigger's hover state was re-centred on the avatar in the icon rail. RED
+     `077d4bd`, GREEN `82391b0`.
+  5. D-05 changed: Appearance moved out of `AccountMenu` into a new Appearance `InsetGroup` on
+     `/settings` (see "Decisions changed at G3" in `deferred-items.md`). RED `db18531`/`0ad9d98`,
+     GREEN `efe90da`/`9b7f447`/`040e4b7`, recorded `94f141a`.
+- **Round 2: none.**
 
 ## What this record gates
 
