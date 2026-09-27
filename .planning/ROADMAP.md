@@ -208,19 +208,39 @@ Plans:
 **Plans**: 14 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 09-01-PLAN.md — Domain: Preferences schema + noodara-prefs codec, validateName/validateAccountEmail, account.* actions with metadata allowlist
 - [ ] 09-02-PLAN.md — [BLOCKING] users.preferences jsonb via migration 0004, applied with pnpm db:migrate
 - [ ] 09-03-PLAN.md — Density token --row-height (44/36) consumed by ListRow, SkeletonRow, NavTree, LabelValue
 - [ ] 09-04-PLAN.md — data-motion override for motion-safe/motion-reduce and the Sheet gesture
 - [ ] 09-05-PLAN.md — DnsChecker (MX/A, 3 s timeout, injected resolver) and ReauthGuard (progressive lockout)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 09-06-PLAN.md — PATCH /api/account/profile with current password, DNS check, activity; new error codes
 - [ ] 09-07-PLAN.md — applyPreferences as the single write path + async root layout reading noodara-prefs (no flash)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 09-08-PLAN.md — GET/PATCH /api/account/preferences with server-set mirror cookie
-- [ ] 09-09-PLAN.md — POST /api/account/password (Better Auth revokeOtherSessions), reason-bearing 401, leak canary
 - [ ] 09-10-PLAN.md — Web: shared session store (D-04/D-10), reason redirect, /login notice + banner fix
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 09-09-PLAN.md — POST /api/account/password (Better Auth revokeOtherSessions), reason-bearing 401, leak canary
 - [ ] 09-11-PLAN.md — Account sheets: Name, Email, Password
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 09-12-PLAN.md — /settings composition: Account + Appearance + SET-06 type test; retire the cyclic ThemeToggle
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 09-13-PLAN.md — E2E for the 5 success criteria through /settings
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [ ] 09-14-PLAN.md — UX review, full gate and human visual approval
 
 **UI hint**: yes

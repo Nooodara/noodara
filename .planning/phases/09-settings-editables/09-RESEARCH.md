@@ -471,7 +471,12 @@ export default async function Page() {
 | A4 | `theme-script.ts` becomes at least partially obsolete once SSR cookie reading lands | State of the Art | If a no-cookie-yet client path is still needed as a fallback (first-ever visit), deleting the bootstrap script entirely could reintroduce a flash for that one edge case — needs explicit design decision, not silent removal |
 | A5 | `ListRow.tsx`'s `data-height={ROW_HEIGHT_PX}` test attribute is safe to keep as a prop-driven value (not derived from the CSS variable) for unit-test purposes | Common Pitfalls #4 | If any downstream code reads `data-height` expecting it to reflect the *actual rendered* height (not just the intended token value), a compact-density regression could go undetected by that specific test |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> Resolved during planning (2026-09-27). Each question is owned by a plan task that verifies it empirically; if reality differs the executor records the deviation in that plan's SUMMARY.
+> OQ1, OQ2 → plan 09-09 Task 1 (Better Auth `changePassword` contract test; revoked count computed from DB before the call, token never exposed).
+> OQ3 → plan 09-07 Task 2 (SSR cookie read sets `data-theme`, `data-motion`, `data-density` in one pass).
+> OQ4 → plan 09-04 Task 1 (Tailwind `@custom-variant` spike with fallback).
 
 1. **Does Better Auth 1.7.4's `changePassword` response body include a revoked-session count?**
    - What we know: The endpoint accepts `revokeOtherSessions: boolean` and documentedly revokes all other sessions when true (verified via Context7 across three independent doc/source snippets).
