@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 09-05-PLAN.md
-last_updated: "2026-09-27T07:57:12.010Z"
+stopped_at: Completed 09-06-PLAN.md
+last_updated: "2026-09-27T08:22:36.324Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 44
-  completed_plans: 35
+  completed_plans: 36
   percent: 25
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 09 (settings-editables) — EXECUTING
-Plan: 6 of 14
+Plan: 7 of 14
 Status: Ready to execute
 Last activity: 2026-09-27
 
-Progress: [████████░░] 80%
+Progress: [████████░░] 82%
 
 ## Performance Metrics
 
@@ -193,6 +193,7 @@ Progress: [████████░░] 80%
 | Phase 09 P03 | 35min | 2 tasks | 14 files |
 | Phase 09 P04 | 55min | 2 tasks | 7 files |
 | Phase 09 P05 | 55min | 2 tasks | 5 files |
+| Phase 09 P06 | ~80min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -528,6 +529,9 @@ Recent decisions affecting current work:
 - [Phase 09]: D-13: Sheet.test.tsx mocks only motion/react's m.div to mirror the real drag prop onto data-drag for jsdom assertions
 - [Phase 09-05]: ReauthGuard.db typed as Database (db/client.ts), not ActivityWriteHandle, to satisfy the ACT-01 boundary test
 - [Phase 09-05]: ReauthGuard defaults to DEFAULT_LOGIN_BACKOFF_CONFIG since login-guard.ts's env-derived backoffConfig() is unexported
+- [Phase 09]: toValidationErrorBody gained an optional code parameter and FieldErrorBodySchema was added, instead of a new body shape, so field-tagged service failures (INVALID_CREDENTIAL, EMAIL_DOMAIN_UNRESOLVABLE) keep their own error code and issues array on the wire
+- [Phase 09]: fetchCredentialHash filters providerId='credential' in the WHERE clause and folds a missing row/null password into one undefined outcome, closing a timing/branching side-channel (T-09-09)
+- [Phase 09]: The DNS domain check and current-email comparison run before the transaction opens; the update itself re-selects users FOR UPDATE inside the transaction, so a 3s-bounded DNS lookup never holds a row lock (T-09-02)
 
 ### Pending Todos
 
@@ -603,8 +607,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-27T07:57:12.002Z
-Stopped at: Completed 09-05-PLAN.md
+Last session: 2026-09-27T08:22:36.312Z
+Stopped at: Completed 09-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
