@@ -105,11 +105,21 @@ function getServerSnapshot(): AccountSnapshot {
 function ensureLoaded(): void {
   if (loadPromise !== null) return;
 
+  // T-09-13 (Rule 1 fix, found by 09-13's cross-browser theme-sync E2E): the mirror must be read
+  // *before* the `GET /api/account/preferences` request below, not after it resolves.
+  // `buildPreferencesSetCookie` (apps/control-plane/src/routes/account.ts) re-issues the
+  // `noodara-prefs` Set-Cookie header on every GET, not just PATCH -- browsers apply a fetch
+  // response's Set-Cookie header before the response promise settles, so reading the mirror after
+  // `loadAccountPreferences()` resolves always sees the value this very request just wrote,
+  // making it trivially equal to `preferences` and silently skipping `applyPreferences` even on a
+  // brand-new session that has never actually painted the account's real theme (e.g. logging in
+  // as a second browser after the account's theme changed elsewhere).
+  const mirrorBeforeLoad = readPreferencesMirror();
+
   loadPromise = Promise.all([loadSessionUser(), loadAccountPreferences()])
     .then(([user, preferences]) => {
       if (preferences !== null) {
-        const mirror = readPreferencesMirror();
-        if (mirror === null || !preferencesEqual(mirror, preferences)) {
+        if (mirrorBeforeLoad === null || !preferencesEqual(mirrorBeforeLoad, preferences)) {
           applyPreferences(preferences);
         }
       }
