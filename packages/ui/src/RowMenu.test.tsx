@@ -285,6 +285,43 @@ describe('RowMenu', () => {
     expect(screen.getByRole('menu').className).not.toContain('!duration-0');
   });
 
+  // Mobile round 1 adjustment (09-14 checkpoint): the human found that at 440px, opening the menu
+  // inside the servers list (an InsetGroup, whose card carries `overflow-hidden`) clipped the
+  // menu instead of showing it below the row. `absolute` positioning inside the row's own DOM
+  // position is clipped by any `overflow-hidden` ancestor between it and the viewport (InsetGroup
+  // here); a Portal genuinely re-parents the content elsewhere in the DOM (document.body via
+  // Radix's own Portal, the same mechanism Sheet.tsx already relies on), so no ancestor -- however
+  // deeply nested -- can ever clip it again.
+  it('renders its open content through a portal, escaping an overflow-hidden ancestor instead of being clipped by it', async () => {
+    const user = userEvent.setup();
+    renderUi(
+      <div data-testid="clipping-ancestor" style={{ overflow: 'hidden' }}>
+        <RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="Actions for Alpha" />
+      </div>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Actions for Alpha' }));
+
+    const ancestor = screen.getByTestId('clipping-ancestor');
+    expect(ancestor.querySelector('[role="menu"]')).toBeNull();
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+  });
+
+  // Mobile round 1 adjustment (09-14 checkpoint): once portal-rendered, the content can no longer
+  // rely on an `absolute`-positioned parent to place it -- it is positioned with `position: fixed`
+  // instead, measured from the trigger's own bounding rect (RowMenu's own internal
+  // `useLayoutEffect`), never left at the CSS default static position a bare Portal would give it.
+  it('positions its content with a fixed, viewport-relative position rather than an absolute child of the row', async () => {
+    const user = userEvent.setup();
+    renderUi(<RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="Actions for Alpha" />);
+
+    await user.click(screen.getByRole('button', { name: 'Actions for Alpha' }));
+
+    const content = screen.getByRole('menu');
+    expect(content.className).toMatch(/\bfixed\b/);
+    expect(content.className).not.toMatch(/\babsolute\b/);
+  });
+
   // 08-14-PLAN.md Task 1 (UI-07, 08-UI-SPEC.md §7.2/§7.4): the content grows from the trigger's
   // own corner (never a hardcoded `origin-top-right` guess) at the §7.2-table values (150ms
   // via var(--ease-out), scale(0.97)+opacity).
