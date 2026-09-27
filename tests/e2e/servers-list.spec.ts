@@ -268,6 +268,53 @@ test('@servers a row\'s actions menu is absent until opened, then exposes Edit a
   await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
 });
 
+// Mobile round 1 adjustment (09-14 checkpoint): the human reviewer found that at a real iPhone 16
+// Pro Max viewport (440x956, DPR 3) the servers list's InsetGroup card (`overflow-hidden`) clipped
+// the row menu instead of showing it below the row, and the row's own content (name, host:port,
+// status pill, time) disappeared while it was open. NOT YET RUN -- port conflict with the running
+// dev stack (see 09-14 checkpoint return); jsdom's own `RowMenu.test.tsx` already proves the
+// portal/fixed-position structural fix, this is the real-browser, real-viewport proof.
+test('@rowmenu at a 440x956 mobile viewport, opening the row menu never clips it and never hides the row\'s own content', async ({
+  page,
+}) => {
+  await login(page);
+  await page.setViewportSize({ width: 440, height: 956 });
+
+  const name = `rowmenu-mobile-${String(Date.now())}`;
+  const created = await page.request.post('/api/servers', {
+    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+  });
+  expect(created.status()).toBe(201);
+
+  const row = page.getByTestId('servers-row').filter({ hasText: name });
+  await expect(row).toBeVisible();
+  const rowBoxBeforeOpen = await row.boundingBox();
+  expect(rowBoxBeforeOpen).not.toBeNull();
+
+  await page.getByRole('button', { name: `Actions for ${name}` }).click();
+
+  // The row's own primary text must still be visible and unchanged while the menu is open --
+  // the reported bug replaced it with nothing.
+  await expect(row.getByText(name)).toBeVisible();
+  const rowBoxWhileOpen = await row.boundingBox();
+  expect(rowBoxWhileOpen).toEqual(rowBoxBeforeOpen);
+
+  // The open menu itself must be fully visible (not clipped to zero/negative size by an
+  // overflow-hidden ancestor) and fully inside the 440px-wide viewport.
+  const menu = page.getByRole('menu');
+  await expect(menu).toBeVisible();
+  const menuBox = await menu.boundingBox();
+  expect(menuBox).not.toBeNull();
+  expect(menuBox!.width).toBeGreaterThan(0);
+  expect(menuBox!.height).toBeGreaterThan(0);
+  expect(menuBox!.x).toBeGreaterThanOrEqual(0);
+  expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(440);
+  expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(956);
+
+  await expect(page.getByRole('menuitem', { name: 'Edit' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
+});
+
 // 08-04-PLAN.md Task 3 (UI-04/UI-05, P14): the three RowMenu behaviours jsdom cannot honestly
 // verify -- real focus movement/return, a real `(hover: hover) and (pointer: fine)` media query
 // resolving against a real touch-emulated context, and `aria-expanded` toggling in a real DOM.

@@ -160,6 +160,29 @@ test('@shell the sidebar collapses to an icon rail at 1024px and a bottom sheet 
   await expect(page.getByTestId('shell-sidebar')).toBeHidden();
   await page.getByTestId('shell-menu-button').click();
   await expect(page.getByTestId('shell-sidebar')).toBeVisible();
+  // Mobile round 1 adjustment (09-14 checkpoint): the <900px bottom-sheet drawer shows the
+  // label alongside the icon -- only the 900-1279px icon rail (asserted above) hides it.
+  await expect(sidebarLink(page, 'Servers').locator('span')).toBeVisible();
+});
+
+// Mobile round 1 adjustment (09-14 checkpoint): the human reviewer found the drawer at a real
+// iPhone 16 Pro Max viewport (440x956, DPR 3) showed only icons -- NOT YET RUN, port conflict
+// with the running dev stack (see 09-14 checkpoint return). Reproduces the exact reported width.
+test('@shell at a 440x956 mobile viewport, the bottom-sheet drawer shows "Servers"/"Activity"/"Settings" labels next to their icons', async ({
+  page,
+}) => {
+  await login(page);
+  await page.setViewportSize({ width: 440, height: 956 });
+
+  await page.getByTestId('shell-menu-button').click();
+  await expect(page.getByTestId('shell-sidebar')).toBeVisible();
+
+  await expect(sidebarLink(page, 'Servers')).toContainText('Servers');
+  await expect(sidebarLink(page, 'Activity')).toContainText('Activity');
+  await expect(sidebarLink(page, 'Settings')).toContainText('Settings');
+  await expect(sidebarLink(page, 'Servers').locator('span')).toBeVisible();
+  await expect(sidebarLink(page, 'Activity').locator('span')).toBeVisible();
+  await expect(sidebarLink(page, 'Settings').locator('span')).toBeVisible();
 });
 
 // 08-07 (D-03): the sidebar's chrome fuses with the page's own canvas at >=900px -- it has no

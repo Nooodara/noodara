@@ -633,3 +633,51 @@ test.describe('@sheet-drag drag-to-dismiss (UI-06, brief §7.4)', () => {
     await expect(page.getByTestId('server-sheet')).toHaveCount(0);
   });
 });
+
+// Mobile round 1 adjustment (09-14 checkpoint): the human reviewer found that at a real iPhone 16
+// Pro Max viewport (440x956, DPR 3) the sheet's fixed 480px width overflowed the 440px viewport,
+// cutting off labels on the left ("lame", "lost", "SH port" -- truncated "Name"/"Host"/"SSH port")
+// and pushing the close button near the right edge. NOT YET RUN -- port conflict with the running
+// dev stack (see 09-14 checkpoint return); `Sheet.test.tsx` already proves the className-level fix
+// in jsdom, this is the real-browser, real-viewport proof that the rendered panel never exceeds
+// the viewport and every label/control is fully visible.
+test('@sheet at a 440x956 mobile viewport, the panel is full width (never overflowing) with every label and the close button fully visible', async ({
+  page,
+}) => {
+  await login(page);
+  await page.setViewportSize({ width: 440, height: 956 });
+  await openCreateSheet(page);
+
+  const sheet = page.getByTestId('server-sheet');
+  const sheetBox = await sheet.boundingBox();
+  expect(sheetBox).not.toBeNull();
+  expect(sheetBox!.x).toBeGreaterThanOrEqual(0);
+  expect(sheetBox!.x + sheetBox!.width).toBeLessThanOrEqual(440);
+  expect(sheetBox!.width).toBeLessThanOrEqual(480);
+
+  for (const label of ['Name', 'Host', 'SSH port', 'SSH user']) {
+    const labelBox = await page.getByText(label, { exact: true }).boundingBox();
+    expect(labelBox).not.toBeNull();
+    expect(labelBox!.x).toBeGreaterThanOrEqual(sheetBox!.x);
+    expect(labelBox!.x + labelBox!.width).toBeLessThanOrEqual(sheetBox!.x + sheetBox!.width);
+  }
+
+  const closeButton = page.getByRole('button', { name: 'Close' });
+  const closeBox = await closeButton.boundingBox();
+  expect(closeBox).not.toBeNull();
+  expect(closeBox!.x + closeBox!.width).toBeLessThanOrEqual(440);
+});
+
+// Mobile round 1 adjustment (09-14 checkpoint): at wider viewports the panel must still cap at
+// exactly 480px, never grow past it -- the regression this adjustment must not introduce.
+test('@sheet at 1280px, the panel stays capped at exactly 480px, never growing to fill the viewport', async ({
+  page,
+}) => {
+  await login(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openCreateSheet(page);
+
+  const sheetBox = await page.getByTestId('server-sheet').boundingBox();
+  expect(sheetBox).not.toBeNull();
+  expect(sheetBox!.width).toBe(480);
+});
