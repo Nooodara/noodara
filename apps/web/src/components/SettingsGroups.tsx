@@ -97,9 +97,9 @@ function AccountGroup() {
 
       <InsetGroup title="Account" data-testid="settings-account-group">
         <div className={ACCOUNT_ROW_CLASSES} style={{ height: 'var(--row-height)' }}>
-          <span className="text-callout font-medium text-ink-secondary truncate">Name</span>
-          <div className="flex items-center gap-3">
-            <span className="text-body text-ink">{nameRow?.value ?? ''}</span>
+          <span className="shrink-0 text-callout font-medium text-ink-secondary">Name</span>
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+            <span className="min-w-0 flex-1 truncate text-right text-body text-ink">{nameRow?.value ?? ''}</span>
             <Button
               variant="ghost"
               data-testid="account-edit-name"
@@ -113,9 +113,9 @@ function AccountGroup() {
           </div>
         </div>
         <div className={ACCOUNT_ROW_CLASSES} style={{ height: 'var(--row-height)' }}>
-          <span className="text-callout font-medium text-ink-secondary truncate">Email</span>
-          <div className="flex items-center gap-3">
-            <span className="text-body text-ink">{emailRow?.value ?? ''}</span>
+          <span className="shrink-0 text-callout font-medium text-ink-secondary">Email</span>
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+            <span className="min-w-0 flex-1 truncate text-right text-body text-ink">{emailRow?.value ?? ''}</span>
             <Button
               variant="ghost"
               data-testid="account-edit-email"
@@ -129,7 +129,7 @@ function AccountGroup() {
           </div>
         </div>
         <div className={ACCOUNT_ROW_CLASSES} style={{ height: 'var(--row-height)' }}>
-          <span className="text-callout font-medium text-ink-secondary truncate">Password</span>
+          <span className="shrink-0 text-callout font-medium text-ink-secondary">Password</span>
           <Button
             variant="ghost"
             data-testid="account-edit-password"
