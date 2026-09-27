@@ -28,7 +28,11 @@ export type ServiceErrorCode =
   | 'CONFIRMATION_MISMATCH'
   | 'QUEUE_UNAVAILABLE'
   | 'SSE_LIMIT_REACHED'
-  | 'INTERNAL_ERROR';
+  | 'INTERNAL_ERROR'
+  | 'EMAIL_DOMAIN_UNRESOLVABLE'
+  | 'EMAIL_DOMAIN_CHECK_UNAVAILABLE'
+  | 'REAUTH_LOCKED'
+  | 'SESSION_REVOKED_PASSWORD_CHANGED';
 
 export const SERVICE_ERROR_STATUS = Object.freeze({
   VALIDATION_FAILED: 400,
@@ -48,6 +52,12 @@ export const SERVICE_ERROR_STATUS = Object.freeze({
   QUEUE_UNAVAILABLE: 503,
   SSE_LIMIT_REACHED: 503,
   INTERNAL_ERROR: 500,
+  // D-02/D-03 (phase 9, 09-06): the profile-edit vocabulary this plan owns — every later phase 9
+  // plan (09-09, 09-10) consumes these same four codes and must not add new ones of its own.
+  EMAIL_DOMAIN_UNRESOLVABLE: 400,
+  EMAIL_DOMAIN_CHECK_UNAVAILABLE: 503,
+  REAUTH_LOCKED: 429,
+  SESSION_REVOKED_PASSWORD_CHANGED: 401,
 } satisfies Record<ServiceErrorCode, number>);
 
 const UNKNOWN_CODE_STATUS = 500;
@@ -83,14 +93,23 @@ function normalizeIssuePath(issue: RawValidationIssue): string {
  *  `instancePath` + `message`, plus whatever else Zod's own issue carries) to D-16's shape.
  *  Copies only `path` and `message` from each issue — a raw Zod issue can carry `received`/
  *  `expected` values that echo submitted input (T-4-04), and this body is returned to the
- *  client, so nothing else may pass through. */
-export function toValidationErrorBody(issues: readonly RawValidationIssue[]): {
-  error: 'VALIDATION_FAILED';
+ *  client, so nothing else may pass through.
+ *
+ *  `code` (09-06) lets a field-tagged service failure (`INVALID_CREDENTIAL`,
+ *  `EMAIL_DOMAIN_UNRESOLVABLE`, ...) reuse this exact shape while keeping `error` equal to its
+ *  own service code instead of the fixed `'VALIDATION_FAILED'` literal — every existing caller
+ *  (the global schema-validation handler, `activity.ts`'s cursor check) omits it and keeps the
+ *  original behaviour unchanged. */
+export function toValidationErrorBody<Code extends string = 'VALIDATION_FAILED'>(
+  issues: readonly RawValidationIssue[],
+  code: Code = 'VALIDATION_FAILED' as Code,
+): {
+  error: Code;
   message: string;
   issues: { path: string; message: string }[];
 } {
   return {
-    error: 'VALIDATION_FAILED',
+    error: code,
     message: VALIDATION_ERROR_MESSAGE,
     issues: issues.map((issue) => ({
       path: normalizeIssuePath(issue),
@@ -108,6 +127,18 @@ export const ErrorBodySchema = z.object({
 
 export const ValidationErrorBodySchema = z.object({
   error: z.literal('VALIDATION_FAILED'),
+  message: z.string(),
+  issues: z.array(z.object({ path: z.string(), message: z.string() })),
+});
+
+/** Same wire shape as `ValidationErrorBodySchema` but with a non-literal `error` — for a
+ *  field-tagged *service* failure (09-06's `INVALID_CREDENTIAL`/`EMAIL_DOMAIN_UNRESOLVABLE`,
+ *  never a Zod schema-validation failure) whose `error` must equal its own service code, not the
+ *  fixed `'VALIDATION_FAILED'` literal. Declaring `error` as `z.string()` here (not `.strict()`
+ *  either) also keeps a plain `ErrorBodySchema` failure — same route, no `issues` — validating
+ *  fine against a `z.union([FieldErrorBodySchema, ErrorBodySchema])` response entry. */
+export const FieldErrorBodySchema = z.object({
+  error: z.string(),
   message: z.string(),
   issues: z.array(z.object({ path: z.string(), message: z.string() })),
 });

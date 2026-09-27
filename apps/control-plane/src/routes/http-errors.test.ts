@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
+  FieldErrorBodySchema,
   mapServiceCodeToStatus,
   SERVICE_ERROR_STATUS,
   toErrorBody,
@@ -67,6 +68,10 @@ describe('SERVICE_ERROR_STATUS / mapServiceCodeToStatus (D-16)', () => {
     ['QUEUE_UNAVAILABLE', 503],
     ['SSE_LIMIT_REACHED', 503],
     ['INTERNAL_ERROR', 500],
+    ['EMAIL_DOMAIN_UNRESOLVABLE', 400],
+    ['EMAIL_DOMAIN_CHECK_UNAVAILABLE', 503],
+    ['REAUTH_LOCKED', 429],
+    ['SESSION_REVOKED_PASSWORD_CHANGED', 401],
   ] satisfies [ServiceErrorCode, number][])('maps %s to %d', (code, status) => {
     expect(mapServiceCodeToStatus(code)).toBe(status);
   });
@@ -117,6 +122,34 @@ describe('toValidationErrorBody (D-16 Zod/Fastify validation normalization)', ()
     ]);
     expect(body.issues[0]).toStrictEqual({ path: '/password', message: 'Too short' });
     expect(JSON.stringify(body)).not.toContain('super-secret-value');
+  });
+
+  it('accepts an explicit code (09-06), keeping error equal to the service code, not VALIDATION_FAILED', () => {
+    const body = toValidationErrorBody(
+      [{ instancePath: '/currentPassword', message: 'Current password is incorrect.' }],
+      'INVALID_CREDENTIAL',
+    );
+    expect(body).toStrictEqual({
+      error: 'INVALID_CREDENTIAL',
+      message: 'Request does not match the schema',
+      issues: [{ path: '/currentPassword', message: 'Current password is incorrect.' }],
+    });
+  });
+
+  it('defaults to VALIDATION_FAILED when no code is supplied (existing callers unaffected)', () => {
+    const body = toValidationErrorBody([{ instancePath: '/name', message: 'Required' }]);
+    expect(body.error).toBe('VALIDATION_FAILED');
+  });
+});
+
+describe('FieldErrorBodySchema (09-06)', () => {
+  it('validates a field-tagged service error body carrying a non-VALIDATION_FAILED error code', () => {
+    const parsed = FieldErrorBodySchema.parse({
+      error: 'EMAIL_DOMAIN_UNRESOLVABLE',
+      message: "We couldn't find a mail server for this domain. Check the address and try again.",
+      issues: [{ path: 'email', message: "We couldn't find a mail server for this domain. Check the address and try again." }],
+    });
+    expect(parsed.error).toBe('EMAIL_DOMAIN_UNRESOLVABLE');
   });
 });
 
