@@ -210,7 +210,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 09-01-PLAN.md — Domain: Preferences schema + noodara-prefs codec, validateName/validateAccountEmail, account.* actions with metadata allowlist
+- [x] 09-01-PLAN.md — Domain: Preferences schema + noodara-prefs codec, validateName/validateAccountEmail, account.* actions with metadata allowlist
 - [ ] 09-02-PLAN.md — [BLOCKING] users.preferences jsonb via migration 0004, applied with pnpm db:migrate
 - [ ] 09-03-PLAN.md — Density token --row-height (44/36) consumed by ListRow, SkeletonRow, NavTree, LabelValue
 - [ ] 09-04-PLAN.md — data-motion override for motion-safe/motion-reduce and the Sheet gesture
@@ -349,7 +349,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 |-------|----------------|--------|-----------|
 | 7. Identidad y brand kit | 10/10 | Complete | 2026-09-23 |
 | 8. Rediseño de la app | 20/20 | Complete   | 2026-09-27 |
-| 9. Settings editables | 0/TBD | Not started | - |
+| 9. Settings editables | 1/14 | In Progress|  |
 | 10. Sitio de docs y landing pública | 0/TBD | Not started | - |
 | 11. Motor de deploy — fundamentos | 0/TBD | Not started | - |
 | 12. Motor de deploy — runtime | 0/TBD | Not started | - |

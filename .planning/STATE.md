@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Phase 9 UI-SPEC approved
-last_updated: "2026-09-27T06:29:40.448Z"
-last_activity: 2026-09-27 -- Phase 9 planning complete
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-09-27T06:52:25.876Z"
+last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 44
-  completed_plans: 30
+  completed_plans: 31
   percent: 25
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** Phase 9 — settings editables
+**Current focus:** Phase 09 — settings-editables
 
 ## Current Position
 
-Phase: 9
-Plan: Not started
+Phase: 09 (settings-editables) — EXECUTING
+Plan: 2 of 14
 Status: Ready to execute
-Last activity: 2026-09-27 -- Phase 9 planning complete
+Last activity: 2026-09-27
 
-Progress: [██████████] 100%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
@@ -188,6 +188,7 @@ Progress: [██████████] 100%
 | Phase 08 P16 | 45min | 3 tasks | 8 files |
 | Phase 08 P17 | 55min | 3 tasks | 10 files |
 | Phase 08 P19 | 480min | 3 tasks | 16 files |
+| Phase 09 P01 | 40min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -513,6 +514,7 @@ Recent decisions affecting current work:
 - [Phase ?]: UI-08 stays Pending after 08-17 — Both authored moments (discovery narration 08-18, Fingerprint/TOFU 08-17) are technically complete, but the brand-swap distinguishability clause is the human's judgement call at G3
 - [Phase 08]: G3 (final) approved 2026-09-26 by Pablo Gutierrez after one adjustment round; brand-swap verdict and drag-feel judgement were never given in words and are recorded as delegated approval, not fabricated
 - [Phase 08]: UI-08 marked complete on delegated brand-swap approval; UI-11 stays Pending (NavTree still generic per D-07); UI-04 stays Pending (screen-reader pass never performed)
+- [Phase 09]: Plan 01: mergePreferences merges field-by-field (patch.field ?? current.field) instead of object-spreading the patch, avoiding a TS build error where an optional patch key's undefined could type-check as overwriting a required Preferences field.
 
 ### Pending Todos
 
@@ -588,9 +590,9 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-27T05:54:45.570Z
-Stopped at: Phase 9 UI-SPEC approved
-Resume file: .planning/phases/09-settings-editables/09-UI-SPEC.md
+Last session: 2026-09-27T06:52:25.868Z
+Stopped at: Completed 09-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
