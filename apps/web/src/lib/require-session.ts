@@ -30,12 +30,16 @@ import { apiGet, type ApiResult } from './api-client';
 // redirect loop or multiple navigations stacking up behind it.
 let hasRedirected = false;
 
-function redirectToLogin(): void {
+// D-07 (09-CONTEXT.md): a session revoked by a password change carries a `reason` so /login can
+// show the dedicated "Signed out because your password changed." Notice instead of the plain
+// sign-in form -- a plain 401 (session simply expired) keeps today's redirect unchanged.
+function redirectToLogin(reason?: 'password-changed'): void {
   if (typeof window === 'undefined') return;
   if (hasRedirected) return;
   hasRedirected = true;
   const redirectTo = `${window.location.pathname}${window.location.search}`;
-  window.location.assign(`/login?redirect=${encodeURIComponent(redirectTo)}`);
+  const reasonQuery = reason === 'password-changed' ? 'reason=password-changed&' : '';
+  window.location.assign(`/login?${reasonQuery}redirect=${encodeURIComponent(redirectTo)}`);
 }
 
 /**
@@ -49,7 +53,7 @@ export async function requireSession(): Promise<ApiResult<unknown>> {
   const result = await apiGet('/api/config');
 
   if (!result.ok && result.unauthorized) {
-    redirectToLogin();
+    redirectToLogin(result.code === 'SESSION_REVOKED_PASSWORD_CHANGED' ? 'password-changed' : undefined);
   }
 
   return result;

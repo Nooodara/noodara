@@ -35,6 +35,12 @@ export type ApiErrorCode =
   | 'QUEUE_UNAVAILABLE'
   | 'SSE_LIMIT_REACHED'
   | 'INTERNAL_ERROR'
+  // 09-10-PLAN.md Task 1 -- hand-copied from apps/control-plane/src/routes/http-errors.ts
+  // (09-06/09-08/09-09's backend contracts), same drift discipline as every other code above.
+  | 'EMAIL_DOMAIN_UNRESOLVABLE'
+  | 'EMAIL_DOMAIN_CHECK_UNAVAILABLE'
+  | 'REAUTH_LOCKED'
+  | 'SESSION_REVOKED_PASSWORD_CHANGED'
   | 'NETWORK_ERROR';
 
 export interface ApiIssue {
@@ -151,6 +157,10 @@ const API_ERROR_CODE_MARKER = Object.freeze({
   QUEUE_UNAVAILABLE: true,
   SSE_LIMIT_REACHED: true,
   INTERNAL_ERROR: true,
+  EMAIL_DOMAIN_UNRESOLVABLE: true,
+  EMAIL_DOMAIN_CHECK_UNAVAILABLE: true,
+  REAUTH_LOCKED: true,
+  SESSION_REVOKED_PASSWORD_CHANGED: true,
 } satisfies Record<Exclude<ApiErrorCode, 'NETWORK_ERROR'>, true>);
 
 const KNOWN_SERVICE_ERROR_CODES: ReadonlySet<string> = new Set(Object.keys(API_ERROR_CODE_MARKER));

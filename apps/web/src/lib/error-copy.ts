@@ -9,7 +9,7 @@
 // `@noodara/domain/server` (pure, already an apps/web dependency), matching the precedent
 // packages/ui/src/tone.ts already set for importing domain unions instead of re-typing them.
 import type { ServerErrorCode } from '@noodara/domain/server';
-import type { ApiErrorCode, ApiIssue } from './api-client';
+import type { ApiErrorCode, ApiFailure, ApiIssue } from './api-client';
 
 export type ServiceErrorCode = Exclude<ApiErrorCode, 'NETWORK_ERROR'>;
 
@@ -42,6 +42,12 @@ const SERVICE_ERROR_COPY = {
   QUEUE_UNAVAILABLE: 'The connection queue is temporarily unavailable. Try again in a few seconds.',
   SSE_LIMIT_REACHED: '',
   INTERNAL_ERROR: 'Something went wrong on our end. Try again, and check the server logs if it continues.',
+  // 09-10-PLAN.md Task 1 / 09-UI-SPEC.md Copywriting Contract -- the four new account/session
+  // codes (09-06/09-08/09-09's backend), verbatim.
+  EMAIL_DOMAIN_UNRESOLVABLE: "We couldn't find a mail server for this domain. Check the address and try again.",
+  EMAIL_DOMAIN_CHECK_UNAVAILABLE: "We couldn't check this domain right now. Try again in a moment.",
+  REAUTH_LOCKED: 'Too many attempts. Try again later.',
+  SESSION_REVOKED_PASSWORD_CHANGED: 'Signed out because your password changed.',
 } as const satisfies Record<ServiceErrorCode, string>;
 
 /** The exact SS5.4 copy for `code` -- a table lookup only, never a switch with a `default` that
@@ -83,6 +89,9 @@ export const KNOWN_FORM_FIELD_PATHS: ReadonlySet<string> = new Set([
   'sshPort',
   'sshUser',
   'credential',
+  // 09-10-PLAN.md Task 1 -- the account Sheets' (09-11) currentPassword/newPassword fields.
+  'currentPassword',
+  'newPassword',
 ]);
 
 // The real control plane emits AJV-shaped `instancePath` issue paths (`toValidationErrorBody` in
@@ -196,4 +205,61 @@ export function formatRetryAfterDuration(seconds: number): string {
   }
 
   return RETRY_AFTER_FORMATTER.format(whole, 'second');
+}
+
+// 09-10-PLAN.md Task 1 (09-UI-SPEC.md Copywriting Contract SS "Field error" rows) -- the account
+// Sheets' (Name/Email/Password, 09-11) one field-error router. Every string below is fixed,
+// product-voice copy; `accountFieldErrors` never reads the failure's own `message` field (05-UI-SPEC.md SS10 /
+// 09-CONTEXT.md D-discretion: a raw server string never reaches a rendered field).
+export type AccountFormField = 'name' | 'email' | 'currentPassword' | 'newPassword';
+
+const ACCOUNT_FIELD_PATHS: ReadonlySet<AccountFormField> = new Set([
+  'name',
+  'email',
+  'currentPassword',
+  'newPassword',
+]);
+
+const ACCOUNT_FIELD_COPY: Record<AccountFormField, string> = {
+  name: 'Name must be 1–80 characters.',
+  email: 'Enter a valid email address.',
+  currentPassword: 'Current password is incorrect.',
+  newPassword: 'Password must be 12–128 characters and not be a commonly used password.',
+};
+
+/** The one caller-facing generic fallback string for the account Sheets and `/login` (09-UI-SPEC.md
+ *  SS4.2) -- any failure with no more specific copy renders this, never a raw server message. */
+export const ACCOUNT_GENERIC_ERROR = 'Something went wrong. Try again.';
+
+/** Mirrors `normalizeFieldPath`'s leading-slash-agnostic parsing (same AJV `instancePath` shape,
+ *  see that function's own comment) but against the four account-form fields only. */
+function normalizeAccountFieldPath(path: string): AccountFormField | null {
+  const segments = path.split('/').filter((segment) => segment.length > 0);
+  const candidate = segments.length === 1 ? segments[0] : undefined;
+  return candidate !== undefined && ACCOUNT_FIELD_PATHS.has(candidate as AccountFormField)
+    ? (candidate as AccountFormField)
+    : null;
+}
+
+/** Maps an `ApiFailure` from `PATCH /api/account/profile` or `POST /api/account/password` to the
+ *  `{ formField: message }` record the Name/Email/Password Sheets render inline, per
+ *  09-UI-SPEC.md's Copywriting Contract. Code-based routing (the two email-domain codes) takes
+ *  priority over the generic issue-path routing, matching D-03's "the domain codes always mean the
+ *  Email field" rule; a failure that matches neither returns `{}`, and the caller shows the
+ *  Sheet-level `Banner` with `ACCOUNT_GENERIC_ERROR` instead. */
+export function accountFieldErrors(failure: ApiFailure): Partial<Record<AccountFormField, string>> {
+  if (failure.code === 'EMAIL_DOMAIN_UNRESOLVABLE' || failure.code === 'EMAIL_DOMAIN_CHECK_UNAVAILABLE') {
+    return { email: SERVICE_ERROR_COPY[failure.code] };
+  }
+
+  const result: Partial<Record<AccountFormField, string>> = {};
+
+  for (const issue of failure.issues ?? []) {
+    const field = normalizeAccountFieldPath(issue.path);
+    if (field === null) continue;
+    if (field in result) continue;
+    result[field] = ACCOUNT_FIELD_COPY[field];
+  }
+
+  return result;
 }
