@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
+import type { DnsChecker } from '../../../apps/control-plane/src/auth/dns-checker.js';
 import { startPostgres, type PostgresFixture } from './postgres.js';
 
 export interface TestAppFixture {
@@ -28,6 +29,10 @@ export interface StartTestAppOptions {
    * the queue at all.
    */
   redisUrl?: string;
+  /** 09-06: a fake `DnsChecker` for `PATCH /api/account/profile` tests — never a real resolver in
+   *  a test process (ADR 0004). Defaults to `buildApp`'s own `createDnsChecker()` default when
+   *  omitted, for every earlier test in this phase that never touches the route. */
+  dnsChecker?: DnsChecker;
 }
 
 /**
@@ -58,7 +63,7 @@ export async function startTestApp(options: StartTestAppOptions = {}): Promise<T
   const logger = options.buildLogger ? await options.buildLogger() : undefined;
 
   const { buildApp } = await import('../../../apps/control-plane/src/app.js');
-  const app = buildApp({ logger });
+  const app = buildApp({ logger, ...(options.dnsChecker !== undefined ? { dnsChecker: options.dnsChecker } : {}) });
 
   let stopped = false;
   const stop = async (): Promise<void> => {
