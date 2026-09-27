@@ -13,10 +13,12 @@
 // `auth/auth.ts`.
 import type { FastifyPluginCallback } from 'fastify';
 import { auth } from '../auth/auth.js';
+import type { DnsChecker } from '../auth/dns-checker.js';
 import { createOriginGuard } from '../auth/origin-guard.js';
 import { createRequireSession } from '../auth/require-session.js';
 import { env } from '../env.js';
 import type { SseBroadcaster } from '../events/sse-broadcaster.js';
+import accountRoutes from './account.js';
 import activityRoutes from './activity.js';
 import configRoutes from './config.js';
 import createEventsRoutes from './events.js';
@@ -26,6 +28,9 @@ import sessionsRoutes from './sessions.js';
 export interface ApiScopeOptions {
   readonly broadcaster: SseBroadcaster;
   readonly sseHeartbeatMs?: number;
+  /** 09-06: injected into `accountRoutes` for `PATCH /api/account/profile`'s email-domain check
+   *  (D-03) — never a route-owned singleton, so a test app can substitute a fake resolver. */
+  readonly dnsChecker: DnsChecker;
 }
 
 const apiScope: FastifyPluginCallback<ApiScopeOptions> = (fastify, opts, done) => {
@@ -52,6 +57,7 @@ const apiScope: FastifyPluginCallback<ApiScopeOptions> = (fastify, opts, done) =
 
     fastify.register(activityRoutes);
     fastify.register(configRoutes);
+    fastify.register(accountRoutes, { dnsChecker: opts.dnsChecker });
 
     done();
   });

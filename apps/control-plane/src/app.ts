@@ -8,6 +8,7 @@ import {
 import Fastify from 'fastify';
 import type { Redis } from 'ioredis';
 import { appRedactor } from './activity/redaction.js';
+import { createDnsChecker, type DnsChecker } from './auth/dns-checker.js';
 import { decodeMasterKey, logMasterKeyWarning } from './boot/master-key.js';
 import { env } from './env.js';
 import { createRedisServerEventPublisher } from './events/redis-server-event-publisher.js';
@@ -37,6 +38,10 @@ export interface BuildAppDeps {
   eventPublisher?: ServerEventPublisher;
   healthRedis?: Redis;
   sseHeartbeatMs?: number;
+  /** 09-06: `PATCH /api/account/profile`'s email-domain checker — defaults to a real
+   *  `createDnsChecker()` (a bounded, real `node:dns/promises` lookup); a test substitutes a
+   *  hand-built fake (ADR 0004). */
+  dnsChecker?: DnsChecker;
 }
 
 /**
@@ -293,6 +298,7 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   app.register(setupRoutes);
   app.register(apiScope, {
     broadcaster,
+    dnsChecker: deps.dnsChecker ?? createDnsChecker(),
     ...(deps.sseHeartbeatMs !== undefined ? { sseHeartbeatMs: deps.sseHeartbeatMs } : {}),
   });
 
