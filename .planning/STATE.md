@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 09-12-PLAN.md
-last_updated: "2026-09-27T10:48:38.773Z"
+stopped_at: Completed 09-13-PLAN.md
+last_updated: "2026-09-27T11:13:09.501Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 44
-  completed_plans: 42
+  completed_plans: 43
   percent: 25
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 09 (settings-editables) — EXECUTING
-Plan: 13 of 14
+Plan: 14 of 14
 Status: Ready to execute
 Last activity: 2026-09-27
 
-Progress: [██████████] 95%
+Progress: [██████████] 98%
 
 ## Performance Metrics
 
@@ -200,6 +200,7 @@ Progress: [██████████] 95%
 | Phase 09 P09 | 90min | 3 tasks | 10 files |
 | Phase 09 P11 | 35min | 2 tasks | 6 files |
 | Phase 09 P12 | 20min | 3 tasks | 14 files |
+| Phase 09 P13 | 75min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -549,6 +550,7 @@ Recent decisions affecting current work:
 - [Phase 09]: SET-06/D-17 type separation: editable rows live in account-rows.ts's own type, proven non-editable via @ts-expect-error
 - [Phase 09]: Appearance controller: optimistic apply+setStored before PATCH, revert both on failure, re-sync from server response on success
 - [Phase 09]: Account row trigger capture via event.currentTarget instead of a forwarded React ref, since Button has no ref prop
+- [Phase 09]: session-user.ts's D-10 reconciliation now snapshots the preferences mirror before GET /api/account/preferences fires, since that GET re-sets the same cookie — 09-13's cross-browser theme-sync E2E exposed a real bug: the mirror read happened after the fetch, and the fetch's own Set-Cookie made the post-fetch comparison always agree, silently skipping applyPreferences on a fresh session
 
 ### Pending Todos
 
@@ -624,8 +626,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-27T10:48:38.765Z
-Stopped at: Completed 09-12-PLAN.md
+Last session: 2026-09-27T11:13:09.493Z
+Stopped at: Completed 09-13-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

@@ -237,7 +237,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 09-13-PLAN.md — E2E for the 5 success criteria through /settings
+- [x] 09-13-PLAN.md — E2E for the 5 success criteria through /settings
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
@@ -349,7 +349,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 |-------|----------------|--------|-----------|
 | 7. Identidad y brand kit | 10/10 | Complete | 2026-09-23 |
 | 8. Rediseño de la app | 20/20 | Complete   | 2026-09-27 |
-| 9. Settings editables | 12/14 | In Progress|  |
+| 9. Settings editables | 13/14 | In Progress|  |
 | 10. Sitio de docs y landing pública | 0/TBD | Not started | - |
 | 11. Motor de deploy — fundamentos | 0/TBD | Not started | - |
 | 12. Motor de deploy — runtime | 0/TBD | Not started | - |
