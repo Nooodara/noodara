@@ -112,6 +112,27 @@ back, and mid-flight re-grab resuming from the panel's current position) — all
      GREEN `efe90da`/`9b7f447`/`040e4b7`, recorded `94f141a`.
 - **Round 2: none.**
 
+## Phase 9 — Settings editables
+
+| Field | Value |
+| --- | --- |
+| Gate | Phase 9 — Settings editables |
+| Date | 2026-09-27 |
+| Rounds used | 1 |
+| Approver | Pablo Gutierrez |
+| Evidence | `docs/ui/review/` — settings and login captures in both themes at 375/900/1280/1920px, plus sheet-open (Name/Email/Password) and account-menu-open captures; `docs/ui-reviews/settings-editables-2026-09.md` (nine-dimension PASS verdict, one FLAG found and fixed pre-approval) |
+
+### Adjustment log
+
+- **Round 1: three mobile-only defects found by the reviewer on a real iPhone 16 Pro Max (440x956) after the initial approval request, fixed and re-verified (commits `48e2d35`..`5faf1b2`, `3cbb884`, `461245d`):**
+  1. `RowMenu.tsx`'s open content was clipped by `InsetGroup`'s `overflow-hidden` ancestor at 440px, appearing to hide the row. Fixed by rendering the menu content through a `DialogPrimitive.Portal` at a `position: fixed`, viewport-aware coordinate measured from the trigger. RED `451be64`, GREEN `a186e66`.
+  2. `Sheet.tsx`'s panel was a fixed `w-[480px]`, overflowing a 440px viewport and cutting off labels. Fixed to `w-full max-w-[480px]`, with the drag-dismiss threshold reading the panel's real measured width instead of the hardcoded constant. RED `93ef31b`, GREEN `1c339bb`.
+  3. `NavTree.tsx` hid labels below 1280px, including the <900px hamburger drawer, when the hidden range was only meant to cover the 900-1279px icon rail. Fixed to show the label by default, hidden only in the 900-1279px rail. RED `48e2d35`, GREEN `6f522c8`.
+  - Three new/updated E2E specs (`5faf1b2`) were written for the three fixes and confirmed passing in the full `pnpm test:e2e` run; the report's adjustment-round section was updated (`3cbb884`), and one spec's row-menu assertion was corrected to match the row's exact primary text (`461245d`).
+  - Reviewer's final reply: "Listo, todo bien ahora. De lujo" (approved).
+- **Open, deferred (not a defect of this phase, no action taken):** at 440px the server row truncates the name to "t…" and the status pill to "Unreac" — a Phase 8 row-layout constraint, not introduced by this plan.
+- **Round 2: none.**
+
 ## What this record gates
 
 D-13: no gate's own wave of work is considered complete until its block above is filled in with a
