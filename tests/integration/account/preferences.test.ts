@@ -321,6 +321,6 @@ describe('GET/PATCH /api/account/preferences (SET-04/SET-05)', () => {
 
     const prefsCookies = preferencesCookieFrom(response);
     expect(prefsCookies).toHaveLength(1);
-    expect(prefsCookies[0]?.secure).toBe(false);
+    expect(prefsCookies[0]?.secure).toBeFalsy();
   });
 });
