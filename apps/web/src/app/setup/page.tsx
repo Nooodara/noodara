@@ -1,8 +1,8 @@
 'use client';
 
 import { Banner, Button, Field, Input } from '@noodara/ui';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState, type SubmitEvent } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState, type SubmitEvent } from 'react';
 import { AuthCard } from '../../components/AuthCard';
 import { apiSend } from '../../lib/api-client';
 import { copyForErrorCode, fieldErrorsFromIssues } from '../../lib/error-copy';
@@ -26,10 +26,13 @@ interface SetupSuccess {
 
 function SetupForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const prefillToken = searchParams.get('token') ?? '';
 
-  const [token, setToken] = useState(prefillToken);
+  // The token is read from the URL on the client only, never during server rendering: since the
+  // root layout reads `cookies()` (09-07, D-09) every route renders per request, so a server-side
+  // `useSearchParams()` would echo the one-time token into the HTML document body -- the exact
+  // response surface tests/e2e/canary-ui.spec.ts step 11 forbids. Starting empty keeps the
+  // server HTML token-free; the mount effect below fills the field before anyone can type.
+  const [token, setToken] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -37,19 +40,20 @@ function SetupForm() {
   const [submitting, setSubmitting] = useState(false);
 
   // T-5G-30-01: the one-time setup token must not survive in the address bar or browser history
-  // once this page has read it -- `useState(prefillToken)` above already captured the value as
-  // this component's initial state, so stripping the query param here cannot blank the field
-  // (proven by tests/e2e/setup.spec.ts). Runs once on mount only, via the raw History API rather
-  // than `router.replace` -- a Next.js router-level navigation would trigger a re-render that
-  // could re-read `searchParams` on a later pass, exactly what "does not re-read and blank the
-  // field" (05-30-PLAN.md) forbids; `history.replaceState` changes the visible URL without
-  // touching React Router state or remounting anything.
+  // once this page has read it. The same mount effect captures the value into component state
+  // and then strips the query param, so stripping cannot blank the field (proven by
+  // tests/e2e/setup.spec.ts). Runs once on mount only, via the raw History API rather than
+  // `router.replace` -- a Next.js router-level navigation would trigger a re-render that could
+  // re-read the URL on a later pass, exactly what "does not re-read and blank the field"
+  // (05-30-PLAN.md) forbids; `history.replaceState` changes the visible URL without touching
+  // React Router state or remounting anything.
   useEffect(() => {
-    if (window.location.search.includes('token=')) {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('token');
-      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
-    }
+    const url = new URL(window.location.href);
+    const prefillToken = url.searchParams.get('token');
+    if (prefillToken === null) return;
+    setToken(prefillToken);
+    url.searchParams.delete('token');
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
   }, []);
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>): Promise<void> {
@@ -172,14 +176,8 @@ function SetupForm() {
   );
 }
 
-// Client Components calling `useSearchParams` must be wrapped in a `<Suspense>` boundary or a
-// production build fails (Next.js 16's own "Missing Suspense boundary" rule) -- the fallback
-// renders the same card shell with an empty form area rather than nothing, since this route has no
-// other loading state (05-UI-SPEC.md SS2.1: "effectively instant", no pre-check API call).
+// No `<Suspense>` boundary is needed any more: the form no longer calls `useSearchParams`
+// (the token is read in a mount effect, see SetupForm), so nothing here suspends.
 export default function SetupPage() {
-  return (
-    <Suspense fallback={<AuthCard title="Create admin account">{null}</AuthCard>}>
-      <SetupForm />
-    </Suspense>
-  );
+  return <SetupForm />;
 }
