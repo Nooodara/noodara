@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState, type SubmitEvent } from 'react';
 import { AuthCard } from '../../components/AuthCard';
 import { apiSend, type ApiErrorCode } from '../../lib/api-client';
-import { copyForErrorCode, formatRetryAfterDuration } from '../../lib/error-copy';
+import { ACCOUNT_GENERIC_ERROR, formatRetryAfterDuration } from '../../lib/error-copy';
 
 // 05-UI-SPEC.md SS2.2, verbatim -- rendered for every 401 cause (wrong password, unknown email)
 // with no variation between them (T-5-45: AUTH-04's "sin revelar si una cuenta existe"). Better
@@ -19,18 +19,27 @@ const INVALID_CREDENTIALS_MESSAGE = "That email or password isn't right.";
 const EMAIL_FIELD_ERROR = 'Enter a valid email address.';
 const SETUP_SUCCESS_MESSAGE = 'Admin account created. Sign in to continue.';
 
+// 09-UI-SPEC.md SS4.2 (09-10-PLAN.md Task 3, fixing deferred-items.md's "Login fails silently when
+// the request origin is rejected"): every failure this screen's 401/429 branches did not already
+// handle renders the one fixed generic banner, never a per-code copy and never the raw server
+// text -- root cause was that this fallback used to render `copyForErrorCode`'s own INTERNAL_ERROR
+// string ("Something went wrong on our end...") instead of the UI-SPEC's exact generic copy, which
+// this screen never actually left unset (the banner was never silent), just worded differently
+// than the design contract requires. NETWORK_ERROR is the one exception: api-client.ts already
+// crafted a safe, non-raw message for a rejected `fetch`, so it renders straight from
+// `ApiFailure.message` rather than the fixed string.
 function genericFailureMessage(code: ApiErrorCode, message: string): string {
-  // NETWORK_ERROR has no ServiceErrorCode counterpart (a rejected `fetch`, not a server response)
-  // -- api-client.ts already crafted a safe, non-raw message for it, so it is the one code this
-  // screen renders straight from `ApiFailure.message` rather than through `copyForErrorCode`.
   if (code === 'NETWORK_ERROR') return message;
-  return copyForErrorCode(code);
+  return ACCOUNT_GENERIC_ERROR;
 }
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setupSucceeded = searchParams.get('setup') === 'success';
+  // D-07: require-session.ts's heartbeat sends a revoked tab here with this reason after a
+  // password change -- same Notice component/placement as the setup-success one above.
+  const passwordChanged = searchParams.get('reason') === 'password-changed';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -79,6 +88,9 @@ function LoginForm() {
   return (
     <AuthCard title="Sign in">
       {setupSucceeded ? <Notice message={SETUP_SUCCESS_MESSAGE} data-testid="login-setup-notice" /> : null}
+      {passwordChanged ? (
+        <Notice message="Signed out because your password changed." data-testid="login-password-changed-notice" />
+      ) : null}
       {bannerMessage !== null ? <Banner message={bannerMessage} data-testid="login-banner" /> : null}
       <form
         className="flex flex-col gap-5"

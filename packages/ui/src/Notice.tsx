@@ -21,7 +21,11 @@ const ROOT_CLASSES = cn('flex flex-col gap-3 rounded-md border border-hairline b
 // as the verification command and the fingerprint itself.
 export function Notice({ message, onDismiss, children, 'data-testid': testId }: NoticeProps) {
   return (
-    <div data-testid={testId} className={ROOT_CLASSES}>
+    // 09-UI-SPEC.md SS5.3 (09-10-PLAN.md Task 3): role="status" is an implicit polite live
+    // region -- a screen reader announces this content the moment it mounts, with no focus move
+    // required. Every existing caller of Notice gets this for free, not just the password-change
+    // ones that first depended on it.
+    <div data-testid={testId} className={ROOT_CLASSES} role="status">
       {/* UI-09 (08-15-PLAN.md Task 1): a 70ch measure cap plus normal-nums -- this is prose, not
           a value that must line up in a column, so it opts out of the page-wide tabular-nums
           default declared in apps/web/src/app/globals.css. */}
