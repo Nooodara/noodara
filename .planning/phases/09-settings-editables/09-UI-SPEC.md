@@ -61,11 +61,13 @@ Every color/typography/spacing/radius/elevation/easing token from the skill and 
    byte-identical to today's unlabeled 44px row height -- no visual change until a user opts into
    compact. */
 --row-height: 44px;                          /* :root default = "comfortable" */
---row-height-padding-y: 8px;                 /* proportional vertical padding paired with the row height above */
+--row-height-padding-y: 8px;                 /* vertical padding paired with the row height above, on the 4px grid */
 
 html[data-density="compact"] {
-  --row-height: 36px;                        /* 44px * 0.818, D-14's exact stated value */
-  --row-height-padding-y: 6px;               /* 8px * 0.818, rounded -- proportional, not a second hand-picked number */
+  --row-height: 36px;                        /* D-14's exact stated value */
+  --row-height-padding-y: 4px;               /* 4px grid, not a proportional 8px*ratio value -- 36px row height minus
+                                                 4px top + 4px bottom padding leaves 28px for the 20px-tall body text
+                                                 line plus vertical centering */
 }
 ```
 
@@ -96,7 +98,7 @@ Unchanged 8px grid (skill §2.3). This phase's only spacing decision is the dens
 | `--space-4` | 16px | `Account`/`Appearance` row horizontal padding (`px-4`, matches existing `SettingsRowView`/`Appearance` row convention) |
 | `--space-6` | 24px | gap between `Account`, `Appearance`, `Instance`, `Advanced` blocks (unchanged) |
 | `--row-height` | 44px / 36px (compact) | Account row height, Appearance row min-height, `ListRow`/`InsetGroup` rows app-wide |
-| `--row-height-padding-y` | 8px / 6px (compact) | vertical padding on rows that are not a fixed-height flex row (the three `Appearance` rows, which today use `py-2` — see §3 below) |
+| `--row-height-padding-y` | 8px / 4px (compact) | vertical padding on rows that are not a fixed-height flex row (the three `Appearance` rows, which today use `py-2` — see §3 below); 4px is on-grid, not a proportional derivation from 8px |
 
 Exceptions: none new. Touch targets stay ≥44px everywhere a control is directly tappable —
 including the `Edit` button and each `SegmentedControl` segment — **even in compact density**
@@ -158,7 +160,10 @@ Sheet's primary action.
 | Sheet field labels — Name | "Name", "Current password" |
 | Sheet field labels — Email | "Email", "Current password" |
 | Sheet field labels — Password | "Current password", "New password", "Confirm new password" |
-| Sheet footer (all three, D-01) | "Cancel" (ghost, closes without saving) + "Save" (primary, `accent-fill`) — same left-to-right DOM order as `ServerSheet.tsx`'s existing pattern (Cancel first in DOM, both right-aligned, Cancel visually left of Save) |
+| Sheet footer — Name | "Cancel" (ghost) + "Save name" (primary, `accent-fill`, `data-testid="account-name-save"`) |
+| Sheet footer — Email | "Cancel" (ghost) + "Save email" (primary, `data-testid="account-email-save"`) |
+| Sheet footer — Password | "Cancel" (ghost) + "Save password" (primary, `data-testid="account-password-save"`) |
+| Sheet footer — DOM/layout (all three) | Same left-to-right order as `ServerSheet.tsx`'s existing pattern: `Cancel` first in DOM, both right-aligned, `Cancel` visually left of the primary button. "Cancel" itself is an accepted project convention inherited from Phase 8 `Sheet`s (`08-UI-SPEC.md` — every existing Sheet footer uses bare "Cancel" for the dismiss action) — a documented exception to the generic-label rule, not a silent match; only the primary CTA needed a specific verb+noun. |
 | Field error — wrong current password (all three sheets, `INVALID_CREDENTIAL`) | "Current password is incorrect." under the Current password field |
 | Field error — email format | "Enter a valid email address." (reuses `login/page.tsx`'s existing `EMAIL_FIELD_ERROR` copy verbatim, under the Email field) |
 | Field error — email domain unresolvable (`EMAIL_DOMAIN_UNRESOLVABLE`, D-03) | "We couldn't find a mail server for this domain. Check the address and try again." under the Email field |
@@ -240,6 +245,12 @@ row separators from `InsetGroup`'s own `ROW_CLASSES` (unchanged).
 </InsetGroup>
 ```
 
+The bare "Edit" label on the Name/Email rows is intentional: the row's own label ("Name"/"Email")
+sits immediately to its left, so "Edit" reads unambiguously as "Edit name"/"Edit email" in context
+— it is not a standalone generic label. Password uses "Change" for the same contextual reason
+(reading unambiguously as "Change password"), and additionally because no value is shown for that
+row to imply there is something already visible to "edit" (§Copywriting, §9 #16).
+
 ### 1.2 Edit `Sheet`s (D-01, D-02)
 
 Each `Edit`/`Change` button opens the **existing** `packages/ui/src/Sheet.tsx` (480px lateral
@@ -250,17 +261,17 @@ behavior). One `Sheet` instance per row, opened/closed via local `open` state ex
 **Name sheet** (`data-testid="account-name-sheet"`):
 1. `Field label="Name"` → `Input` (`data-testid="account-name-input"`, `autoFocus`, `autoComplete="name"`)
 2. `Field label="Current password"` → `Input type="password"` (`data-testid="account-current-password-input"`, `autoComplete="current-password"`)
-3. Footer: `Cancel` (ghost) + `Save` (primary, `data-testid="account-name-save"`, `loading` while the request is in flight)
+3. Footer: `Cancel` (ghost) + `Save name` (primary, `data-testid="account-name-save"`, `loading` while the request is in flight)
 
 **Email sheet** (`data-testid="account-email-sheet"`): identical shape, `Field label="Email"` →
 `Input type="email"` (`data-testid="account-email-input"`, `autoComplete="email"`), same Current
-password field, `Save` testid `account-email-save`.
+password field, footer `Cancel` + `Save email` (`data-testid="account-email-save"`).
 
 **Password sheet** (`data-testid="account-password-sheet"`):
 1. `Field label="Current password"` → `Input type="password"` (`data-testid="account-current-password-input"`, `autoComplete="current-password"`)
 2. `Field label="New password"` → `Input type="password"` (`data-testid="account-new-password-input"`, `autoComplete="new-password"`)
 3. `Field label="Confirm new password"` → `Input type="password"` (`data-testid="account-confirm-password-input"`, `autoComplete="new-password"`)
-4. Footer: `Cancel` + `Save` (`data-testid="account-password-save"`)
+4. Footer: `Cancel` + `Save password` (`data-testid="account-password-save"`)
 
 **States (all three sheets, the "seven states" DoD requirement):**
 
@@ -270,8 +281,8 @@ password field, `Save` testid `account-email-save`.
 | hover | `Button`'s existing hover classes, unchanged |
 | focus | `Input`'s existing `focus-visible:border-accent`, unchanged; see §Accessibility for focus order |
 | active | `PRESS_CLASSES` `scale(0.97)`, unchanged |
-| disabled | `Save` disabled while a required field is empty or `submitting` |
-| loading | `Save` renders `loading` (existing `Button` prop — `aria-busy`, never a spinner, per §9 #4) while the request is in flight; both fields become read-only (`disabled`) for the duration so a resubmit cannot race the first |
+| disabled | The primary button (`Save name`/`Save email`/`Save password`) disabled while a required field is empty or `submitting` |
+| loading | The primary button renders `loading` (existing `Button` prop — `aria-busy`, never a spinner, per §9 #4) while the request is in flight, label unchanged; both fields become read-only (`disabled`) for the duration so a resubmit cannot race the first |
 | error | Field-level errors per §Copywriting under the specific field; a `Banner` (existing component) for any error that is not attributable to one field |
 
 On success: the Sheet closes, the row's value updates immediately (Name/Email — no page reload,
@@ -408,14 +419,14 @@ Visual/DOM/tab order, top to bottom, is identical across all three sheets:
    matching `ServerSheet.tsx`'s existing precedent of focusing the first meaningful field)
 3. Subsequent fields in the order listed in §1.2 (top to bottom)
 4. Footer `Cancel` button
-5. Footer `Save` button
+5. Footer primary button (`Save name`/`Save email`/`Save password`)
 
 Shift+Tab from the first field returns to the Close button (Radix's own wrap-around, unchanged).
-Tab from `Save` wraps back to the Close button (Radix's own trap).
+Tab from the primary button wraps back to the Close button (Radix's own trap).
 
 ### 5.2 Focus return on close
 
-On close (Save success, Cancel, Esc, outside click), focus returns to the row's `Edit`/`Change`
+On close (save success, Cancel, Esc, outside click), focus returns to the row's `Edit`/`Change`
 button that opened the Sheet — the trigger element is captured explicitly at open time (a
 `triggerRef` set in the row's `onClick` handler before `onOpenChange(true)`, per
 `09-RESEARCH.md`'s note on `deferred-items.md`'s open Esc-focus-return gap: **this phase's own
@@ -494,3 +505,7 @@ Reduce motion, Density) → `Instance` (unchanged) → `Advanced` `Disclosure` (
 only authored moment stays the `Advanced` `Disclosure`'s `grid-template-rows` expand/collapse
 (`08-UI-SPEC.md` §8.3) — this phase adds no second moment; the password-change `Notice`'s entry is
 a plain `--duration-panel` fade, not an authored moment.
+
+`Account` is a peer `InsetGroup` with no new focal weighting versus `Appearance`/`Instance`/
+`Advanced`; the only authored moment on the page remains the `Advanced` `Disclosure` (Phase 8
+D-11).
