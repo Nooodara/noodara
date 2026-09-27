@@ -1,4 +1,6 @@
+import { parsePreferencesCookieValue, PREFERENCES_COOKIE_NAME, preferencesToRootAttributes } from '@noodara/domain/preferences';
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import type { ReactNode } from 'react';
 import { THEME_BOOTSTRAP_SCRIPT } from '../lib/theme-script';
 import './globals.css';
@@ -27,9 +29,21 @@ export const metadata: Metadata = {
 // D-10/UI-01: the authenticated shell (sidebar, toolbar) is a route-group layout a later plan
 // (05-12) adds -- /setup and /login deliberately render outside it, and this root layout stays a
 // bare document shell with no chrome of its own.
-export default function RootLayout({ children }: { children: ReactNode }) {
+//
+// D-09/09-07-PLAN.md Task 2: `async` + `await cookies()` so the `noodara-prefs` mirror cookie
+// drives `<html>`'s data-theme/data-motion/data-density attributes in the first byte of HTML --
+// zero flash for anyone with an explicit (non-auto) saved preference, with or without JS. Reading
+// `cookies()` here opts every route under this layout into dynamic rendering, including /login and
+// /setup (RESEARCH Pitfall 3, accepted: this is a local-admin control panel, not a static site).
+// Only `preferencesToRootAttributes(parsePreferencesCookieValue(...))`'s enum-only output ever
+// reaches this markup (T-09-06) -- a corrupted/tampered cookie value is never echoed raw.
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const cookieStore = await cookies();
+  const preferences = parsePreferencesCookieValue(cookieStore.get(PREFERENCES_COOKIE_NAME)?.value);
+  const rootAttributes = preferences !== null ? preferencesToRootAttributes(preferences) : {};
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning {...rootAttributes}>
       <head>
         {/*
          * T-5-29 (05-07-PLAN.md threat register): the single, deliberate, reviewed

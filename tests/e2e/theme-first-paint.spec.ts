@@ -54,6 +54,11 @@ async function installFrameSampler(page: Page): Promise<void> {
     const state = { frames: [] as string[], mutations: 0 };
     window.__themeFirstPaint = state;
 
+    // Observes `document` itself (always a valid Node from the very first tick), not
+    // `document.documentElement` -- an `addInitScript` callback fires before the parser has even
+    // created the <html> element on a real navigation (`document.documentElement` is briefly
+    // `null`, confirmed empirically), so `subtree: true` is what actually lets this observer catch
+    // a mutation on <html> once it exists, rather than throwing at setup.
     const observer = new MutationObserver((records) => {
       for (const record of records) {
         if (record.attributeName === 'data-theme') {
@@ -61,13 +66,18 @@ async function installFrameSampler(page: Page): Promise<void> {
         }
       }
     });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    observer.observe(document, { attributes: true, attributeFilter: ['data-theme'], subtree: true });
 
     function sample(): void {
       if (state.frames.length >= 10) {
         return;
       }
-      state.frames.push(getComputedStyle(document.body).backgroundColor);
+      // Same early-execution reality as above: `document.body` may not exist yet on the very
+      // first few frames of a real navigation -- skip those ticks rather than throwing, and keep
+      // scheduling until it does.
+      if (document.body !== null) {
+        state.frames.push(getComputedStyle(document.body).backgroundColor);
+      }
       requestAnimationFrame(sample);
     }
     requestAnimationFrame(sample);
@@ -192,6 +202,7 @@ test('@theme-first-paint no theme flash on reload for dark and light, on /login 
 });
 
 test('@theme-first-paint no theme flash for a light preference on /login', async ({ page, context }) => {
+
   await addPreferencesCookie(context, 'light.system.comfortable');
   await installFrameSampler(page);
 

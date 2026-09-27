@@ -13,8 +13,9 @@ import { THEME_BOOTSTRAP_SCRIPT } from './theme-script';
 // T-09-24) -- `new Function` evaluates it against the real jsdom globals exactly like a real
 // `<script>` tag would, without ever going through `dangerouslySetInnerHTML`/React at all.
 function runBootstrapScript(): void {
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval -- the whole point of this test is
-  // evaluating the exact script string layout.tsx injects, not a callback of our own.
+  // The whole point of this test is evaluating the exact script string layout.tsx injects, not a
+  // callback of our own -- `new Function` is the deliberate, reviewed exception here.
+  // eslint-disable-next-line @typescript-eslint/no-implied-eval, @typescript-eslint/no-unsafe-call
   new Function(THEME_BOOTSTRAP_SCRIPT)();
 }
 
