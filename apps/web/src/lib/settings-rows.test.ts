@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PLACEHOLDER } from '@noodara/ui';
-import { advancedRows, ENV_VAR_CAPTION, instanceRows, type ConfigResponse } from './settings-rows';
+import { advancedRows, ENV_VAR_CAPTION, instanceRows, type ConfigResponse, type SettingsRow } from './settings-rows';
+import { accountRows, type EditableAccountRow } from './account-rows';
 
 function buildConfig(overrides: Partial<ConfigResponse> = {}): ConfigResponse {
   return {
@@ -100,6 +101,47 @@ describe('SettingsRow shape', () => {
       expect(keys).not.toContain('onChange');
       expect(keys).not.toContain('writable');
     }
+  });
+});
+
+describe('SET-06/D-17: SettingsRow can never carry an edit handler', () => {
+  it('rejects a value with onEdit at the type level -- proven load-bearing by the @ts-expect-error directive below', () => {
+    // @ts-expect-error -- SET-06/D-17: SettingsRow can never carry an edit handler
+    const withHandler: SettingsRow = { label: 'x', value: 'y', mono: true, onEdit: () => undefined };
+    expect(withHandler).toBeDefined();
+  });
+
+  it('rejects a value with onChange at the type level', () => {
+    // @ts-expect-error -- SET-06/D-17: SettingsRow can never carry an onChange handler
+    const withOnChange: SettingsRow = { label: 'x', value: 'y', mono: true, onChange: () => undefined };
+    expect(withOnChange).toBeDefined();
+  });
+
+  it('rejects an EditableAccountRow assigned to SettingsRow at the type level -- the two types stay structurally distinct', () => {
+    const row: EditableAccountRow = { field: 'name', label: 'Name', value: 'Ada', action: 'Edit' };
+    // @ts-expect-error -- SET-06/D-17: EditableAccountRow is not assignable to SettingsRow
+    const asSettingsRow: SettingsRow = row;
+    expect(asSettingsRow).toBeDefined();
+  });
+});
+
+describe('accountRows', () => {
+  it('returns three EditableAccountRow entries for a populated user -- Name, Email, then Password with a null value', () => {
+    const rows = accountRows({ name: 'Ada', email: 'a@b.co' });
+
+    expect(rows).toEqual([
+      { field: 'name', label: 'Name', value: 'Ada', action: 'Edit' },
+      { field: 'email', label: 'Email', value: 'a@b.co', action: 'Edit' },
+      { field: 'password', label: 'Password', value: null, action: 'Change' },
+    ]);
+  });
+
+  it('degrades Name/Email to empty strings for a null user, Password stays null', () => {
+    const rows = accountRows(null);
+
+    expect(rows[0]?.value).toBe('');
+    expect(rows[1]?.value).toBe('');
+    expect(rows[2]?.value).toBeNull();
   });
 });
 
