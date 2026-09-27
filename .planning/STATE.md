@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 09-06-PLAN.md
-last_updated: "2026-09-27T09:09:53.248Z"
+stopped_at: Completed 09-10-PLAN.md
+last_updated: "2026-09-27T09:31:57.909Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 44
-  completed_plans: 38
+  completed_plans: 39
   percent: 25
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 09 (settings-editables) — EXECUTING
-Plan: 9 of 14
+Plan: 10 of 14
 Status: Ready to execute
 Last activity: 2026-09-27
 
-Progress: [█████████░] 86%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
@@ -196,6 +196,7 @@ Progress: [█████████░] 86%
 | Phase 09 P06 | ~80min | 2 tasks | 10 files |
 | Phase 09 P07 | 90min | 2 tasks | 6 files |
 | Phase 09 P08 | 35min | 2 tasks | 5 files |
+| Phase 09 P10 | 10min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -538,6 +539,8 @@ Recent decisions affecting current work:
 - [Phase ?]: Root layout is now async and reads noodara-prefs via await cookies(), making /login and /setup dynamic routes (RESEARCH Pitfall 3, accepted)
 - [Phase ?]: 09-08: buildPreferencesSetCookie namespace-imports @noodara/domain/preferences so serializePreferencesCookieValue appears once (grep-based acceptance)
 - [Phase ?]: 09-08: PATCH /api/account/preferences reuses ValidationErrorBodySchema for its 400 response, since every failure there is a Zod schema-validation error, not a service-level one
+- [Phase ?]: login's genericFailureMessage returns the fixed generic string for every code except NETWORK_ERROR; the banner was already visible, just worded differently than the UI-SPEC's exact copy
+- [Phase ?]: session-user.ts's shared store re-triggers a load on every 0->1 listener transition rather than caching forever, keeping Sidebar.test.tsx passing unmodified
 
 ### Pending Todos
 
@@ -613,8 +616,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-27T09:09:50.181Z
-Stopped at: Completed 09-06-PLAN.md
+Last session: 2026-09-27T09:31:57.901Z
+Stopped at: Completed 09-10-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
