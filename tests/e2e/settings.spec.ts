@@ -94,19 +94,28 @@ test('@settings the SSH timeout rows render seconds, never a raw millisecond cou
   await expect(main.getByText('60000', { exact: true })).toHaveCount(0);
 });
 
-test('@settings the screen has zero form controls anywhere in the main region', async ({ page }) => {
+// 09-12-PLAN.md Task 3 (SET-02/SET-03/SET-06, D-01/D-17): this assertion originally covered the
+// whole screen when every group on /settings was read-only (Phase 5). It is now scoped to
+// Instance/Advanced -- `SettingsRow`'s own SET-06 structural guarantee (see
+// apps/web/src/lib/settings-rows.test.ts's @ts-expect-error proof) -- since Account is
+// deliberately editable (Name/Email `Edit`, Password `Change`) and Appearance is deliberately a
+// `SegmentedControl` (a `radio`-role control, not one of the roles this test bans).
+test('@settings the Instance/Advanced groups have zero form controls and no save/apply/edit button', async ({ page }) => {
   await login(page);
   await page.goto('/settings');
 
-  const main = page.getByRole('main');
-  await main.getByRole('button', { name: 'Advanced' }).click();
+  const instance = page.getByTestId('settings-instance-group');
+  const advanced = page.getByTestId('settings-advanced-disclosure');
+  await page.getByRole('main').getByRole('button', { name: 'Advanced' }).click();
 
   // Queried by role, not by tag name -- a custom component that merely behaves like an input
   // would still be caught (SET-01's read-only rule, T-5-70).
-  for (const role of ['textbox', 'combobox', 'spinbutton', 'checkbox', 'switch'] as const) {
-    await expect(main.getByRole(role)).toHaveCount(0);
+  for (const role of ['textbox', 'combobox', 'spinbutton', 'checkbox', 'switch', 'radio'] as const) {
+    await expect(instance.getByRole(role)).toHaveCount(0);
+    await expect(advanced.getByRole(role)).toHaveCount(0);
   }
-  await expect(main.getByRole('button', { name: /save|apply|edit/i })).toHaveCount(0);
+  await expect(instance.getByRole('button', { name: /save|apply|edit|change/i })).toHaveCount(0);
+  await expect(advanced.getByRole('button', { name: /save|apply|edit|change/i })).toHaveCount(0);
 });
 
 test('@settings a 500 shows the exact error banner with the code in mono, and Retry re-issues the request', async ({ page }) => {

@@ -1,13 +1,13 @@
 'use client';
 
 // The Settings screen (SET-01, 05-UI-SPEC.md SS2.7) -- fetches the read-only `GET /api/config` on
-// mount and renders SettingsGroups.tsx's Instance/Advanced groups. D-15 keeps every account-
-// management surface (a list of active credentials, a revoke-one/revoke-all control, "sign out
-// everywhere") out of this phase entirely -- signing out stays reachable from the shell's own
-// fixed bottom cluster on every authenticated screen (05-12-PLAN.md), never duplicated here, and
-// this file adds no such control of its own. A failed fetch, including an expired credential
-// state, renders through the same generic error banner as any other failure below -- this screen
-// deliberately does not special-case that outcome with its own redirect, matching D-15's scope.
+// mount and renders SettingsGroups.tsx's four groups: Account, Appearance, Instance and Advanced.
+// Account management itself (Name/Email/Password edit Sheets, the password-change Notice) lives
+// entirely in SettingsGroups.tsx's own Account group (09-12-PLAN.md) -- this file's fetch/loading/
+// error handling is unchanged, config-only, and does not gate or wait on the account/preferences
+// data SettingsGroups reads through its own hooks. A failed `GET /api/config` fetch, including an
+// expired credential state, renders through the same generic error banner as any other failure
+// below -- this screen deliberately does not special-case that outcome with its own redirect.
 import { useCallback, useEffect, useState } from 'react';
 import { Banner, SkeletonRow } from '@noodara/ui';
 import { Toolbar } from '../../../components/Toolbar';

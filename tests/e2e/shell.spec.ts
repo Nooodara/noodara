@@ -128,6 +128,21 @@ test('@shell the Theme control in Settings sets data-theme and the choice surviv
 
   await page.reload();
   await expect.poll(() => focusedTheme(page)).toBe('light');
+
+  // Unlike the old ThemeToggle (localStorage/cookie only), this control's write path really PATCHes
+  // /api/account/preferences (D-09) -- it persists on the shared E2E admin user for the lifetime of
+  // this stack. Restore the default ('auto', DEFAULT_PREFERENCES) so this test leaves no state for
+  // sibling spec files (e.g. theme-first-paint.spec.ts's cookie-driven no-flash assertions) that
+  // assume this account still carries its original preferences.
+  const restorePatch = page.waitForResponse(
+    (response) => response.url().includes('/api/account/preferences') && response.request().method() === 'PATCH',
+  );
+  await page.getByTestId('settings-theme-control').getByRole('radio', { name: 'Auto' }).click();
+  await restorePatch;
+  await expect(page.getByTestId('settings-theme-control').getByRole('radio', { name: 'Auto' })).toHaveAttribute(
+    'data-state',
+    'checked',
+  );
 });
 
 test('@shell the sidebar collapses to an icon rail at 1024px and a bottom sheet below 900px', async ({ page }) => {

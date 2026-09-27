@@ -3,19 +3,25 @@ import { DEFAULT_PREFERENCES, type Preferences } from '@noodara/domain/preferenc
 import type { ApiResult } from './api-client';
 import { updateAppearancePreference, type UpdateAppearanceDeps } from './appearance';
 
-function buildDeps(overrides: Partial<UpdateAppearanceDeps> = {}): UpdateAppearanceDeps & {
-  apply: ReturnType<typeof vi.fn>;
-  setStored: ReturnType<typeof vi.fn>;
-  send: ReturnType<typeof vi.fn>;
-  getCurrent: ReturnType<typeof vi.fn>;
-} {
+function buildDeps() {
   return {
-    apply: vi.fn(),
-    setStored: vi.fn(),
-    send: vi.fn(),
-    getCurrent: vi.fn(() => ({ theme: 'auto', reduceMotion: 'system', density: 'comfortable' }) as Preferences),
-    ...overrides,
+    apply: vi.fn<UpdateAppearanceDeps['apply']>(),
+    setStored: vi.fn<UpdateAppearanceDeps['setStored']>(),
+    send: vi.fn<(method: 'PATCH', path: string, body?: unknown) => Promise<ApiResult<Preferences>>>(),
+    getCurrent: vi.fn<UpdateAppearanceDeps['getCurrent']>(() => ({
+      theme: 'auto',
+      reduceMotion: 'system',
+      density: 'comfortable',
+    })),
   };
+}
+
+// vitest's `Mock<T>` erases a generic call signature's own type parameter to `unknown` (a known
+// limitation of the mock type, not a workaround specific to this file) -- every real call site
+// only ever instantiates `send`'s `T` as `Preferences`, so this narrow, single-purpose cast back
+// to `UpdateAppearanceDeps['send']` is exact for every test in this file.
+function asDeps(deps: object): Partial<UpdateAppearanceDeps> {
+  return deps;
 }
 
 describe('updateAppearancePreference', () => {
@@ -31,7 +37,7 @@ describe('updateAppearancePreference', () => {
       return Promise.resolve({ ok: true, data: serverResponse } satisfies ApiResult<Preferences>);
     });
 
-    const result = await updateAppearancePreference('theme', 'dark', deps);
+    const result = await updateAppearancePreference('theme', 'dark', asDeps(deps));
 
     expect(callOrder).toEqual(['apply', 'send']);
     expect(deps.apply).toHaveBeenCalledWith({ theme: 'dark', reduceMotion: 'system', density: 'comfortable' });
@@ -50,7 +56,7 @@ describe('updateAppearancePreference', () => {
       unauthorized: false,
     } satisfies ApiResult<Preferences>);
 
-    const result = await updateAppearancePreference('reduceMotion', 'on', deps);
+    const result = await updateAppearancePreference('reduceMotion', 'on', asDeps(deps));
 
     expect(deps.apply).toHaveBeenNthCalledWith(1, { theme: 'auto', reduceMotion: 'on', density: 'comfortable' });
     expect(deps.apply).toHaveBeenNthCalledWith(2, { theme: 'auto', reduceMotion: 'system', density: 'comfortable' });
@@ -66,24 +72,26 @@ describe('updateAppearancePreference', () => {
       data: { theme: 'auto', reduceMotion: 'system', density: 'compact' },
     } satisfies ApiResult<Preferences>);
 
-    await updateAppearancePreference('density', 'compact', deps);
+    await updateAppearancePreference('density', 'compact', asDeps(deps));
 
     expect(deps.send).toHaveBeenCalledWith('PATCH', '/api/account/preferences', { density: 'compact' });
   });
 
   it('falls back to DEFAULT_PREFERENCES with no injected deps and no mirror cookie present', async () => {
-    document.cookie = 'noodara-prefs=; Path=/; Max-Age=0';
-
+    // This file runs under Vitest's node-environment `apps` project (no `document`) -- exactly
+    // the "no mirror yet" case this test exercises: `readPreferencesMirror`'s own try/catch
+    // already degrades a throwing/absent `document` to `null`, so `defaultGetCurrent` falls
+    // through to `DEFAULT_PREFERENCES` without this test needing to fake a cookie at all.
     const sendSpy = vi.fn().mockResolvedValue({
       ok: true,
       data: { ...DEFAULT_PREFERENCES, theme: 'light' },
     } satisfies ApiResult<Preferences>);
 
-    const result = await updateAppearancePreference('theme', 'light', {
-      apply: vi.fn(),
-      setStored: vi.fn(),
-      send: sendSpy,
-    });
+    const result = await updateAppearancePreference(
+      'theme',
+      'light',
+      asDeps({ apply: vi.fn(), setStored: vi.fn(), send: sendSpy, getCurrent: vi.fn() }),
+    );
 
     expect(sendSpy).toHaveBeenCalledWith('PATCH', '/api/account/preferences', { theme: 'light' });
     expect(result).toEqual({ ok: true });
