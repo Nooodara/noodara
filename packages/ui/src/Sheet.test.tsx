@@ -135,6 +135,23 @@ describe('Sheet', () => {
     expect(panel.className).not.toContain('bg-surface-1/72');
   });
 
+  // Mobile round 1 adjustment (09-14 checkpoint): the panel used to be a fixed `w-[480px]` --
+  // wider than a 440px-wide iPhone viewport, so it overflowed horizontally and the labels/close
+  // button sat off-screen. It must go full width on narrow viewports, capped at 480px on wider
+  // ones, never a bare fixed 480px.
+  it('is full width capped at 480px, never a fixed 480px panel', () => {
+    renderUi(
+      <Sheet open onOpenChange={vi.fn()} title="Add server">
+        <p>Sheet body content</p>
+      </Sheet>,
+    );
+
+    const panel = screen.getByRole('dialog');
+    expect(panel.className).toContain('w-full');
+    expect(panel.className).toContain('max-w-[480px]');
+    expect(panel.className).not.toMatch(/(?<!max-)w-\[480px\]/);
+  });
+
   // 08-06-PLAN.md Task 2 (UI-10, 08-UI-SPEC.md SS10): prefers-reduced-transparency drops the
   // Sheet's translucency and blur entirely -- fully opaque background, no backdrop-filter.
   it('drops to a solid bg-surface-elevated and disables backdrop-filter under prefers-reduced-transparency', () => {
