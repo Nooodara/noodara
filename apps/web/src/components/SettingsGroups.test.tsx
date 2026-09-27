@@ -209,4 +209,26 @@ describe('SettingsGroups', () => {
     expect(screen.getByText('60s')).toBeInTheDocument();
     expect(screen.queryByText('2500')).not.toBeInTheDocument();
   });
+
+  it('T-09-14: Account row label stays fixed-width and the value column truncates, so a long email never wraps the row onto two lines at 375px (09-UI-SPEC.md §5.6)', () => {
+    vi.spyOn(sessionUser, 'useSessionUser').mockReturnValue({
+      name: 'Ada Lovelace',
+      email: 'a-genuinely-long-address-for-this-real-admin-account@noodara.example.test',
+    });
+    renderUi(<SettingsGroups config={buildConfig()} />);
+
+    const emailLabel = screen.getByText('Email');
+    // The label must never be the thing that shrinks/truncates (ListRow.tsx's own
+    // PRIMARY_TEXT/TRAILING split precedent, TRAILING_CLASSES: 'flex shrink-0 ...') --
+    // it is short, fixed copy, not user content.
+    expect(emailLabel.className).toMatch(/\bshrink-0\b/);
+
+    const emailValue = screen.getByText('a-genuinely-long-address-for-this-real-admin-account@noodara.example.test');
+    expect(emailValue.className).toMatch(/\btruncate\b/);
+    // The value's own flex column must be the one allowed to shrink below its content size
+    // (Tailwind's `min-w-0`, matching ListRow.tsx's ROOT_CLASSES 'flex min-w-0 flex-1 ...') --
+    // without it, `truncate` has no effect inside a flex row and the text still wraps/overflows.
+    expect(emailValue.parentElement?.className).toMatch(/\bmin-w-0\b/);
+    expect(emailValue.parentElement?.className).toMatch(/\bflex-1\b/);
+  });
 });
