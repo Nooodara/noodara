@@ -13,7 +13,7 @@
   plus `canary-ui.spec.ts` and `theme-first-paint.spec.ts` (15/15). Cost: /setup paints the OS
   theme until the bootstrap script runs (no account exists yet at that point).
 
-## Logged during 09-09 (not fixed — out of this plan's scope)
+## Logged during 09-09 — RESOLVED by the orchestrator in wave 4 (`@testing-library/react` declared in `apps/web/package.json`, `pnpm boundaries` clean: 735 files, 0 issues)
 
 - **`pnpm boundaries` fails on `apps/web/src/lib/session-user.test.ts`: `@testing-library/react`
   imported dynamically but not declared as a dependency of `@noodara/web`.** Introduced by 09-10
