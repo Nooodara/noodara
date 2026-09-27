@@ -295,7 +295,7 @@ test('@rowmenu at a 440x956 mobile viewport, opening the row menu never clips it
 
   // The row's own primary text must still be visible and unchanged while the menu is open --
   // the reported bug replaced it with nothing.
-  await expect(row.getByText(name)).toBeVisible();
+  await expect(row.getByText(name, { exact: true })).toBeVisible();
   const rowBoxWhileOpen = await row.boundingBox();
   expect(rowBoxWhileOpen).toEqual(rowBoxBeforeOpen);
 
