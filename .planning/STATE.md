@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
-status: executing
-stopped_at: Completed 08-17-PLAN.md
-last_updated: "2026-09-26T14:07:39.711Z"
-last_activity: 2026-09-26
+status: verifying
+stopped_at: Completed 08-19-PLAN.md (G3 final gate closed)
+last_updated: "2026-09-27T03:42:33.008Z"
+last_activity: 2026-09-27
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 30
-  completed_plans: 29
-  percent: 13
+  completed_plans: 30
+  percent: 25
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 ## Current Position
 
-Phase: 08 (redise-o-de-la-app) — EXECUTING
+Phase: 08 (redise-o-de-la-app) — READY FOR VERIFICATION
 Plan: 20 of 20
-Status: Ready to execute
-Last activity: 2026-09-26
+Status: Phase complete — ready for verification
+Last activity: 2026-09-27
 
-Progress: [██████████] 97%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -186,6 +186,7 @@ Progress: [██████████] 97%
 | Phase 08 P18 | 33min | 3 tasks | 10 files |
 | Phase 08 P16 | 45min | 3 tasks | 8 files |
 | Phase 08 P17 | 55min | 3 tasks | 10 files |
+| Phase 08 P19 | 480min | 3 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -509,6 +510,8 @@ Recent decisions affecting current work:
 - [Phase ?]: userEvent.setup() must precede any manual navigator.clipboard stub in a test — Reversed order lets userEvent's own internal clipboard-stub install silently clobber a manually-defined stub, reliably breaking the click-to-copy assertion
 - [Phase ?]: ServerFacts' dimmed Host fingerprint row overrides --color-ink on a wrapper instead of adding a dimmed prop to Fingerprint — Keeps FingerprintProps fixed to value/compareTo/label/copyLabel/data-testid per 08-17-PLAN.md Task 1; Tailwind's text-ink utility resolves through var(--color-ink), which cascades to descendants
 - [Phase ?]: UI-08 stays Pending after 08-17 — Both authored moments (discovery narration 08-18, Fingerprint/TOFU 08-17) are technically complete, but the brand-swap distinguishability clause is the human's judgement call at G3
+- [Phase 08]: G3 (final) approved 2026-09-26 by Pablo Gutierrez after one adjustment round; brand-swap verdict and drag-feel judgement were never given in words and are recorded as delegated approval, not fabricated
+- [Phase 08]: UI-08 marked complete on delegated brand-swap approval; UI-11 stays Pending (NavTree still generic per D-07); UI-04 stays Pending (screen-reader pass never performed)
 
 ### Pending Todos
 
@@ -584,8 +587,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-26T14:07:39.702Z
-Stopped at: Completed 08-17-PLAN.md
+Last session: 2026-09-27T03:42:33.001Z
+Stopped at: Completed 08-19-PLAN.md (G3 final gate closed)
 Resume file: None
 
 ## Operator Next Steps

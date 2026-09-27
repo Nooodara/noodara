@@ -30,7 +30,7 @@ Full phase details, plans and success criteria: [milestones/v0.1-ROADMAP.md](mil
 - Decimal phases (8.1, 8.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 7: Identidad y brand kit** - Logotipo (monograma + wordmark), favicon y hoja de marca en ambos temas, aplicados en app y README tras aprobación humana. (completed 2026-09-23 — 10/10 plans, verifier 15/15, human_needed only for the favicon-in-real-tab check tracked in 07-HUMAN-UAT.md)
-- [ ] **Phase 8: Rediseño de la app** - Elevación flotante, movimiento con propósito, momentos autorados, fallbacks de accesibilidad y el shell preparado para inspector, jerarquía y menú de cuenta; primera revisión visual humana.
+- [x] **Phase 8: Rediseño de la app** - Elevación flotante, movimiento con propósito, momentos autorados, fallbacks de accesibilidad y el shell preparado para inspector, jerarquía y menú de cuenta; primera revisión visual humana. (completed 2026-09-27)
 - [ ] **Phase 9: Settings editables** - Perfil del admin (nombre, email, password), tema y preferencias visuales persistidas en el servidor sin parpadeo.
 - [ ] **Phase 10: Sitio de docs y landing pública** - `apps/site` estático con Fumadocs, landing honesta con la identidad, publicado a GitHub Pages desde CI con test de exactitud.
 - [ ] **Phase 11: Motor de deploy — fundamentos** - Spikes resueltos, dominio y esquema de Project/Environment/Service/Deployment, plantillas parametrizadas, exec en streaming, fixture sshd+dockerd y fixtures oficiales.
@@ -127,7 +127,7 @@ Plans:
   4. `prefers-reduced-motion`, `prefers-reduced-transparency` y `prefers-contrast: more` tienen alternativas intencionales en toolbar, sheet, dialog y menú; el hover se gatea con `(hover: hover) and (pointer: fine)`; nunca hay más de tres `backdrop-filter` simultáneos (contado en el peor caso: toolbar + Sheet + RowMenu + Tooltip).
   5. El shell tiene el slot del inspector, la navegación jerárquica y el menú de cuenta previstos sin placeholders visibles (hoy poblados con Servers/Activity/Settings); cada pantalla rediseñada tiene contraste medido (≥4.5:1 cuerpo, ≥3:1 texto grande y bordes únicos), se probó a 375/900/1280/1920 px con contenido real, y el usuario aprobó screenshots en ambos temas; los 104 E2E existentes siguen verdes y el nightly 20x también.
 
-**Plans:** 19/20 plans executed
+**Plans:** 20/20 plans complete
 
 Plans:
 **Wave 1**
@@ -187,7 +187,7 @@ Plans:
 
 **Wave 13** *(blocked on Wave 12 completion)*
 
-- [ ] 08-19-PLAN.md — G3 human gate: live motion review, brand-swap test, 20x nightly, approved captures committed
+- [x] 08-19-PLAN.md — G3 human gate: live motion review, brand-swap test, 20x nightly, approved captures committed
 
 **UI hint**: yes
 
@@ -311,7 +311,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 7. Identidad y brand kit | 10/10 | Complete | 2026-09-23 |
-| 8. Rediseño de la app | 19/20 | In Progress|  |
+| 8. Rediseño de la app | 20/20 | Complete   | 2026-09-27 |
 | 9. Settings editables | 0/TBD | Not started | - |
 | 10. Sitio de docs y landing pública | 0/TBD | Not started | - |
 | 11. Motor de deploy — fundamentos | 0/TBD | Not started | - |
