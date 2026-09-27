@@ -12,3 +12,18 @@
   `tests/e2e/setup.spec.ts` "the server-rendered /setup?token=... document never echoes the token",
   plus `canary-ui.spec.ts` and `theme-first-paint.spec.ts` (15/15). Cost: /setup paints the OS
   theme until the bootstrap script runs (no account exists yet at that point).
+
+## Logged during 09-09 (not fixed — out of this plan's scope)
+
+- **`pnpm boundaries` fails on `apps/web/src/lib/session-user.test.ts`: `@testing-library/react`
+  imported dynamically but not declared as a dependency of `@noodara/web`.** Introduced by 09-10
+  (`bb44602 feat(09-10): turn session-user into a shared store with server-wins preferences`),
+  which pre-dates 09-09's own file set (`apps/control-plane/src/auth/*`, `apps/control-plane/src/
+  services/change-account-password.ts`, `apps/control-plane/src/routes/account.ts`,
+  `tests/integration/account/password.test.ts`, `tests/integration/activity/canary-account.test.ts`,
+  `package.json`'s `security:scan-leaks` script, `apps/control-plane/src/logger.ts`) — confirmed via
+  `git log --oneline -1 -- apps/web/src/lib/session-user.test.ts`. 8 boundary violations, all the
+  same root cause (missing `@testing-library/react` devDependency entry in `apps/web/package.json`).
+  Not fixed here per the scope-boundary rule (only auto-fix issues directly caused by the current
+  task's own changes). Fix: add `@testing-library/react` to `apps/web/package.json`'s
+  `devDependencies` (it is already installed transitively, per pnpm's lockfile, but not declared).
