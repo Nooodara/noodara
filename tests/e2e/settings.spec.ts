@@ -303,3 +303,262 @@ test('@settings Instance and Advanced stay read-only', async ({ page }) => {
 
   await expect(advanced.getByText('Set by an environment variable')).toHaveCount(5);
 });
+
+// 09-13-PLAN.md Task 2: Appearance flows (SET-04/SET-05, D-09/D-12/D-13/D-14/D-15). Reuses
+// tests/e2e/theme-first-paint.spec.ts's own frame-sampler/SSR-HTML technique and
+// tests/e2e/a11y-fallbacks.spec.ts's transform-decomposition technique, copied rather than
+// imported (each spec file owns its own helpers, matching this directory's existing precedent).
+
+// tokens.css's [data-theme="dark"] --canvas value (#161618) -- the color a real browser resolves
+// body's background to once the dark stylesheet rule applies.
+const SETTINGS_DARK_CANVAS_RGB = 'rgb(22, 22, 24)';
+
+declare global {
+  interface Window {
+    /** Populated by installFrameSampler below -- a distinct name from theme-first-paint.spec.ts's
+     *  own window global so the two files' init scripts never collide within the same page. */
+    __settingsFramePaint?: { readonly frames: string[]; mutations: number };
+  }
+}
+
+function htmlTagOf(body: string): string {
+  const match = /<html[^>]*>/.exec(body);
+  if (match === null) {
+    throw new Error('no <html> opening tag found in response body');
+  }
+  return match[0];
+}
+
+async function installFrameSampler(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const state = { frames: [] as string[], mutations: 0 };
+    window.__settingsFramePaint = state;
+
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        if (record.attributeName === 'data-theme') {
+          state.mutations += 1;
+        }
+      }
+    });
+    observer.observe(document, { attributes: true, attributeFilter: ['data-theme'], subtree: true });
+
+    function sample(): void {
+      if (state.frames.length >= 10) return;
+      if (document.body !== null) {
+        state.frames.push(getComputedStyle(document.body).backgroundColor);
+      }
+      requestAnimationFrame(sample);
+    }
+    requestAnimationFrame(sample);
+  });
+}
+
+async function waitForFrameSample(page: Page): Promise<{ frames: string[]; mutations: number }> {
+  await expect
+    .poll(() => page.evaluate(() => window.__settingsFramePaint?.frames.length ?? 0))
+    .toBeGreaterThanOrEqual(10);
+  return page.evaluate(() => {
+    const state = window.__settingsFramePaint;
+    if (state === undefined) {
+      throw new Error('frame sampler not installed');
+    }
+    return { frames: state.frames, mutations: state.mutations };
+  });
+}
+
+interface TransformMatrix {
+  readonly translateX: number;
+  readonly scaleX: number;
+  readonly scaleY: number;
+}
+
+function decomposeTransform(transform: string): TransformMatrix {
+  if (transform === 'none') {
+    return { translateX: 0, scaleX: 1, scaleY: 1 };
+  }
+  const match = /matrix\(([^)]+)\)/.exec(transform);
+  if (match?.[1] === undefined) {
+    throw new Error(`unrecognised computed transform: ${transform}`);
+  }
+  const parts = match[1].split(',').map((part) => Number(part.trim()));
+  const [a, b, c, d, tx] = parts;
+  if (a === undefined || b === undefined || c === undefined || d === undefined || tx === undefined) {
+    throw new Error(`unrecognised computed transform: ${transform}`);
+  }
+  return { translateX: tx, scaleX: Math.sqrt(a * a + b * b), scaleY: Math.sqrt(c * c + d * d) };
+}
+
+/** Clicks a `SegmentedControl` segment and waits for the real `PATCH /api/account/preferences`
+ *  round trip `updateAppearancePreference` issues -- a no-op (already-selected) segment never
+ *  fires a change event, so this checks `data-state` first rather than waiting on a response that
+ *  would never arrive. Used both to drive the test's own action and to reset every control back to
+ *  its default in `finally`, per this task's own behavior bullet. */
+async function setSegment(page: Page, testId: string, label: string): Promise<void> {
+  const radio = page.getByTestId(testId).getByRole('radio', { name: label });
+  const alreadyChecked = (await radio.getAttribute('data-state')) === 'checked';
+  if (alreadyChecked) return;
+
+  const patched = page.waitForResponse(
+    (response) => response.url().includes('/api/account/preferences') && response.request().method() === 'PATCH',
+  );
+  await radio.click();
+  await patched;
+  await expect(radio).toHaveAttribute('data-state', 'checked');
+}
+
+async function resetAppearance(page: Page): Promise<void> {
+  await page.goto('/settings');
+  await setSegment(page, 'settings-theme-control', 'Auto');
+  await setSegment(page, 'settings-reduce-motion-control', 'System');
+  await setSegment(page, 'settings-density-control', 'Comfortable');
+}
+
+test('@settings theme choice persists with no theme flash on reload', async ({ page, context }) => {
+  await login(page);
+  await page.goto('/settings');
+
+  try {
+    await setSegment(page, 'settings-theme-control', 'Dark');
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.getAttribute('data-theme')))
+      .toBe('dark');
+
+    await installFrameSampler(page);
+    await page.reload();
+    const sample = await waitForFrameSample(page);
+    expect(sample.mutations).toBe(0);
+    expect(new Set(sample.frames).size).toBe(1);
+    expect(sample.frames[0]).toBe(SETTINGS_DARK_CANVAS_RGB);
+
+    const ssrResponse = await context.request.get('/settings');
+    expect(htmlTagOf(await ssrResponse.text())).toContain('data-theme="dark"');
+  } finally {
+    await resetAppearance(page);
+  }
+});
+
+test('@settings manual theme override wins over the OS', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await login(page);
+  await page.goto('/settings');
+
+  try {
+    await setSegment(page, 'settings-theme-control', 'Light');
+    await page.reload();
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.getAttribute('data-theme')))
+      .toBe('light');
+  } finally {
+    await resetAppearance(page);
+  }
+});
+
+test('@settings theme preference follows the account to a second browser', async ({ page, browser }) => {
+  await login(page);
+  await page.goto('/settings');
+
+  try {
+    await setSegment(page, 'settings-theme-control', 'Dark');
+
+    // A fresh, unauthenticated browser context, with no cookies of its own -- the theme it ends up
+    // with can only have come from the account's own stored preference (D-09/D-10), not this
+    // context's browser mirror.
+    const contextC = await browser.newContext();
+    try {
+      const pageC = await contextC.newPage();
+      await login(pageC);
+
+      await expect
+        .poll(() => pageC.evaluate(() => document.documentElement.getAttribute('data-theme')))
+        .toBe('dark');
+
+      const ssrResponse = await contextC.request.get('/servers');
+      expect(htmlTagOf(await ssrResponse.text())).toContain('data-theme="dark"');
+    } finally {
+      await contextC.close();
+    }
+  } finally {
+    await resetAppearance(page);
+  }
+});
+
+test('@settings reduce motion On forces the Sheet fallback', async ({ page }) => {
+  await login(page);
+  await page.goto('/settings');
+
+  try {
+    await setSegment(page, 'settings-reduce-motion-control', 'On');
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.getAttribute('data-motion')))
+      .toBe('reduce');
+
+    await page.goto('/servers');
+    await page.getByRole('button', { name: 'Add server' }).click();
+    await expect(page.getByTestId('server-sheet')).toBeVisible();
+
+    const panel = page.getByTestId('server-sheet');
+    const panelTransform = await panel.evaluate((el) => getComputedStyle(el).transform);
+    expect(decomposeTransform(panelTransform).translateX).toBe(0);
+
+    const dragSurface = page.getByTestId('server-sheet-drag-surface');
+    // The drag surface's own entry-settle spring must finish before the gesture starts, or its
+    // own tail end could be mistaken for drag movement (a11y-fallbacks.spec.ts's own precedent).
+    await expect
+      .poll(async () =>
+        decomposeTransform(await dragSurface.evaluate((el) => getComputedStyle(el).transform)).translateX,
+      )
+      .toBe(0);
+
+    const box = await dragSurface.boundingBox();
+    if (box === null) {
+      throw new Error('server-sheet-drag-surface has no bounding box');
+    }
+    const startX = box.x + box.width / 2;
+    const startY = box.y + 20;
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX - 200, startY, { steps: 10 });
+    await page.mouse.up();
+
+    const afterTransform = await dragSurface.evaluate((el) => getComputedStyle(el).transform);
+    expect(decomposeTransform(afterTransform).translateX).toBe(0);
+  } finally {
+    await resetAppearance(page);
+  }
+});
+
+test('@settings density Compact shrinks rows app-wide', async ({ page }) => {
+  await login(page);
+  await page.goto('/settings');
+
+  try {
+    const name = `settings-density-${String(Date.now())}`;
+    const created = await page.request.post('/api/servers', {
+      data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+    });
+    expect(created.status()).toBe(201);
+
+    await page.goto('/servers');
+    const row = page.getByTestId('servers-row').filter({ hasText: name }).locator('[data-row="true"]');
+    await expect(row).toBeVisible();
+    const comfortableBox = await row.boundingBox();
+    expect(comfortableBox?.height).toBeCloseTo(44, 0);
+    const fontBefore = await row.getByText(name, { exact: true }).evaluate((el) => getComputedStyle(el).fontSize);
+
+    await page.goto('/settings');
+    await setSegment(page, 'settings-density-control', 'Compact');
+
+    await page.goto('/servers');
+    const rowAfter = page.getByTestId('servers-row').filter({ hasText: name }).locator('[data-row="true"]');
+    await expect(rowAfter).toBeVisible();
+    const compactBox = await rowAfter.boundingBox();
+    expect(compactBox?.height).toBeCloseTo(36, 0);
+    const fontAfter = await rowAfter
+      .getByText(name, { exact: true })
+      .evaluate((el) => getComputedStyle(el).fontSize);
+    expect(fontAfter).toBe(fontBefore);
+  } finally {
+    await resetAppearance(page);
+  }
+});

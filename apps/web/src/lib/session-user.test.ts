@@ -235,6 +235,36 @@ describe('session-user shared store', () => {
     expect(applyPreferencesMock).not.toHaveBeenCalled();
   });
 
+  // 09-13-PLAN.md Task 2 (Rule 1 bug, found by the real cross-browser theme-sync E2E case):
+  // `GET /api/account/preferences` itself re-issues the `noodara-prefs` Set-Cookie header on every
+  // call (`buildPreferencesSetCookie`, apps/control-plane/src/routes/account.ts), and a browser
+  // applies a fetch response's Set-Cookie before the response promise settles -- so reading the
+  // mirror *after* this request resolves always sees the value this very request just wrote. The
+  // mirror must be captured before the request fires, or a brand-new session (mirror genuinely
+  // null beforehand) would see a manufactured "already agrees" match and skip `applyPreferences`
+  // entirely, leaving whatever `data-theme` happened to be painted before login uncorrected.
+  it('still applies the server preferences when the mirror only starts agreeing because this same request set it (T-09-13)', async () => {
+    readPreferencesMirrorMock.mockReturnValue(null);
+    mockRoutes({
+      preferences: () => {
+        // Simulates the real browser applying this response's own Set-Cookie header before the
+        // fetch promise resolves -- readPreferencesMirror() would now see the just-written value.
+        readPreferencesMirrorMock.mockReturnValue(DARK_PREFERENCES);
+        return Promise.resolve(preferencesSuccess(DARK_PREFERENCES));
+      },
+    });
+
+    const { useAccountPreferences } = await import('./session-user');
+    const { renderHook, waitFor } = await import('@testing-library/react');
+
+    renderHook(() => useAccountPreferences());
+
+    await waitFor(() => {
+      expect(applyPreferencesMock).toHaveBeenCalledTimes(1);
+    });
+    expect(applyPreferencesMock).toHaveBeenCalledWith(DARK_PREFERENCES);
+  });
+
   it('setStoredPreferences updates subscribers without any network call', async () => {
     mockRoutes({ preferences: () => Promise.resolve(preferencesSuccess(AUTO_PREFERENCES)) });
 
