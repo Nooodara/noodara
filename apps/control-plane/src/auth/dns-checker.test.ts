@@ -14,7 +14,7 @@ function fakeResolver(overrides: Partial<DnsResolverLike> = {}): DnsResolverLike
   return {
     resolveMx: overrides.resolveMx ?? (() => Promise.reject(dnsError('ENOTFOUND'))),
     resolve4: overrides.resolve4 ?? (() => Promise.reject(dnsError('ENOTFOUND'))),
-    cancel: overrides.cancel,
+    ...(overrides.cancel !== undefined ? { cancel: overrides.cancel } : {}),
   };
 }
 
