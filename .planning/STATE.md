@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
-status: verifying
-stopped_at: Completed 08-19-PLAN.md (G3 final gate closed)
-last_updated: "2026-09-27T03:42:33.008Z"
+status: ready_to_plan
+stopped_at: Phase 08 complete (20/20) — ready to discuss Phase 9
+last_updated: 2026-09-27T03:52:17.761Z
 last_activity: 2026-09-27
 progress:
   total_phases: 8
-  completed_phases: 2
-  total_plans: 30
+  completed_phases: 1
+  total_plans: 109
   completed_plans: 30
-  percent: 25
+  percent: 13
 ---
 
 # Project State
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** Phase 08 — redise-o-de-la-app
+**Current focus:** Phase 9 — settings editables
 
 ## Current Position
 
-Phase: 08 (redise-o-de-la-app) — READY FOR VERIFICATION
-Plan: 20 of 20
-Status: Phase complete — ready for verification
+Phase: 9
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-09-27
 
 Progress: [██████████] 100%
@@ -36,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 119
+- Total plans completed: 139
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -51,6 +51,7 @@ Progress: [██████████] 100%
 | 05 | 46 | - | - |
 | 06 | 15 | - | - |
 | 07 | 10 | - | - |
+| 08 | 20 | - | - |
 
 **Recent Trend:**
 
