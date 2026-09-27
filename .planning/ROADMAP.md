@@ -229,7 +229,7 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 09-09-PLAN.md — POST /api/account/password (Better Auth revokeOtherSessions), reason-bearing 401, leak canary
-- [ ] 09-11-PLAN.md — Account sheets: Name, Email, Password
+- [x] 09-11-PLAN.md — Account sheets: Name, Email, Password
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -349,7 +349,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 |-------|----------------|--------|-----------|
 | 7. Identidad y brand kit | 10/10 | Complete | 2026-09-23 |
 | 8. Rediseño de la app | 20/20 | Complete   | 2026-09-27 |
-| 9. Settings editables | 10/14 | In Progress|  |
+| 9. Settings editables | 11/14 | In Progress|  |
 | 10. Sitio de docs y landing pública | 0/TBD | Not started | - |
 | 11. Motor de deploy — fundamentos | 0/TBD | Not started | - |
 | 12. Motor de deploy — runtime | 0/TBD | Not started | - |
