@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { Monitor, Moon, Sun } from 'lucide-react';
+// The Appearance preferences write/read path (D-09, D-12, P17). This module no longer owns a
+// component -- Settings' three `SegmentedControl` rows (apps/web's SettingsGroups.tsx, via
+// apps/web/src/lib/appearance.ts's `updateAppearancePreference`) are the only Appearance UI --
+// but it stays the single browser write path (`applyPreferences`) and the single mirror-cookie
+// reader (`readPreferencesMirror`) every caller routes through, exactly as before 09-12.
 import {
-  DEFAULT_PREFERENCES,
   PREFERENCES_COOKIE_MAX_AGE_SECONDS,
   PREFERENCES_COOKIE_NAME,
   parsePreferencesCookieValue,
@@ -9,7 +11,6 @@ import {
   serializePreferencesCookieValue,
   type Preferences,
 } from '@noodara/domain/preferences';
-import { Button } from './Button.js';
 
 // The single storage key this whole codebase ever reads/writes for the theme preference --
 // exported (not re-declared) so ThemeToggle.test.tsx never repeats the literal string, keeping
@@ -17,25 +18,10 @@ import { Button } from './Button.js';
 // "noodara-theme" packages/ui/src` is 1). apps/web/src/lib/theme-script.ts's first-paint
 // bootstrap script reads the identical literal independently, by design -- that file runs before
 // any JS bundle (this module included) is even parsed, so it cannot import from here.
+// `applyPreferences` below is the only writer of this key.
 export const STORAGE_KEY = 'noodara-theme';
 
-type StoredTheme = 'light' | 'dark';
-type Mode = StoredTheme | 'system';
-
-// Never trusts a tampered/foreign stored value -- only the two literal strings this component
-// itself ever writes are accepted back; anything else (missing key, or a stray value from a
-// browser extension/older version) falls back to 'system' exactly like theme-script.ts's own
-// bootstrap does for a missing key.
-function readStoredTheme(): StoredTheme | null {
-  try {
-    const value = localStorage.getItem(STORAGE_KEY);
-    return value === 'light' || value === 'dark' ? value : null;
-  } catch {
-    return null;
-  }
-}
-
-function resolveSystemTheme(): StoredTheme {
+function resolveSystemTheme(): 'light' | 'dark' {
   try {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   } catch {
@@ -76,10 +62,11 @@ export function readPreferencesMirror(): Preferences | null {
  * localStorage cache (a cache only -- the cookie mirror below is the source SSR reads) and the
  * `noodara-prefs` mirror cookie itself. No other function in this codebase ever calls
  * `setAttribute`/`removeAttribute` for these three attributes or writes either the storage key or
- * the cookie -- both of ThemeToggle's own write sites (the click handler and the mount-settle
- * effect below) route through this one function instead of writing directly. The server sets the
- * identical cookie, via the same domain codec, on `PATCH /api/account/preferences` responses
- * (09-08) -- this is the browser-side half of that single source of truth.
+ * the cookie -- every caller (Settings' `SegmentedControl`s via
+ * apps/web/src/lib/appearance.ts's `updateAppearancePreference`) routes through this one function
+ * instead of writing directly. The server sets the identical cookie, via the same domain codec, on
+ * `PATCH /api/account/preferences` responses (09-08) -- this is the browser-side half of that
+ * single source of truth.
  *
  * Every storage/cookie write is independently try/catch-guarded: a throwing `localStorage`
  * (private mode, full quota) or a throwing `document.cookie` setter (a hardened browser or
@@ -127,89 +114,9 @@ export function applyPreferences(preferences: Preferences): void {
   }
 }
 
-function nextMode(mode: Mode): Mode {
-  if (mode === 'light') {
-    return 'dark';
-  }
-  if (mode === 'dark') {
-    return 'system';
-  }
-  return 'light';
-}
-
-const MODE_LABEL: Record<Mode, string> = {
-  light: 'Light',
-  dark: 'Dark',
-  system: 'System',
-};
-
-const MODE_ICON = { light: Sun, dark: Moon, system: Monitor } as const;
-const ICON_PROPS = { 'aria-hidden': true, size: 16, strokeWidth: 1.5 } as const;
-
-export interface ThemeToggleProps {
-  readonly 'data-testid'?: string;
-}
-
-// ThemeToggle (05-UI-SPEC.md Theme switching, Component Inventory) -- still the only component in
-// this codebase that ever writes localStorage's noodara-theme key or <html>'s
-// data-theme/data-motion/data-density attributes after the initial page load, now entirely
-// through `applyPreferences` above (P17, D-12): its own click handler and mount-settle effect
-// never call `setAttribute`/`localStorage` directly, they only decide *which* `Preferences` value
-// to apply. Its only counterpart is apps/web's first-paint bootstrap script
-// (apps/web/src/lib/theme-script.ts, THEME_BOOTSTRAP_SCRIPT), which reads the same
-// localStorage/cookie once, synchronously, before hydration, and never writes to either again.
-// This component itself is superseded by 09-12's Settings `SegmentedControl` (D-12) -- until then
-// it keeps the app fully working, cycling light -> dark -> system and preserving whichever
-// reduceMotion/density the `noodara-prefs` mirror cookie already carries.
-export function ThemeToggle({ 'data-testid': testId }: ThemeToggleProps) {
-  // WR-C-01: the server never has a `localStorage` to read, so the initial render must never
-  // depend on it -- 'system' is a fixed, environment-independent default, identical on the
-  // server and on the very first client render (no hydration mismatch). The real stored
-  // preference (if any) is adopted a moment later, in the mount effect below.
-  const [mode, setMode] = useState<Mode>('system');
-  // Guards the data-theme-writing effect below against clobbering
-  // `THEME_BOOTSTRAP_SCRIPT`'s (apps/web/src/lib/theme-script.ts) already-correct pre-hydration
-  // value with a wrong system-default one, for the single frame between this component settling
-  // on 'system' at mount and the storage-read effect adopting the real stored value. `false`
-  // only for that one frame; the very first data-theme effect run flips it and returns without
-  // writing, and every run after that (including the one the storage-read effect's `setMode`
-  // triggers) writes normally.
-  const settledRef = useRef(false);
-
-  useEffect(() => {
-    const stored = readStoredTheme();
-    if (stored !== null) {
-      setMode(stored);
-    }
-    // No stored value -- 'system' was already correct and THEME_BOOTSTRAP_SCRIPT already applied
-    // the matching data-theme before hydration; nothing else to settle.
-  }, []);
-
-  useEffect(() => {
-    if (!settledRef.current) {
-      settledRef.current = true;
-      return;
-    }
-    // Preserves whichever reduceMotion/density the mirror cookie already carries -- this effect
-    // (and the click handler below) only ever changes theme, never the other two preferences.
-    const current = readPreferencesMirror() ?? DEFAULT_PREFERENCES;
-    applyPreferences({ ...current, theme: mode === 'system' ? 'auto' : mode });
-  }, [mode]);
-
-  const handleClick = () => {
-    setMode(nextMode(mode));
-  };
-
-  const Icon = MODE_ICON[mode];
-
-  return (
-    <Button
-      variant="ghost"
-      data-testid={testId}
-      aria-label={`Theme: ${MODE_LABEL[mode]}`}
-      onClick={handleClick}
-    >
-      <Icon {...ICON_PROPS} />
-    </Button>
-  );
-}
+// D-12 (09-12-PLAN.md Task 2): the cyclic icon-button component that used to live here is gone --
+// Settings' three `SegmentedControl` rows are the only Appearance UI now, and `applyPreferences`
+// above is their single write path (P17), same function this module always exported for exactly
+// this reason. This module keeps its name and stays the single write path apps/web's first-paint
+// bootstrap script (apps/web/src/lib/theme-script.ts, THEME_BOOTSTRAP_SCRIPT) has a matching,
+// independent read-once-before-hydration counterpart for.
