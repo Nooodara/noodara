@@ -19,6 +19,15 @@ describe('LabelValue', () => {
     expect(screen.getByText('203.0.113.4:22')).toBeInTheDocument();
   });
 
+  // D-14: vertical padding comes from the single --row-height-padding-y token, not a hardcoded py-2.
+  it('takes its vertical padding from var(--row-height-padding-y), never a hardcoded py-2', () => {
+    const { container } = renderUi(<LabelValue label="Host" value="203.0.113.4:22" data-testid="row" />);
+
+    const root = container.querySelector('[data-testid="row"]');
+    expect(root?.className).toMatch(/py-\[var\(--row-height-padding-y\)\]/);
+    expect(root?.className).not.toMatch(/\bpy-2\b/);
+  });
+
   it('renders the value in mono when mono is supplied', () => {
     renderUi(<LabelValue label="Host" value="203.0.113.4:22" mono />);
 

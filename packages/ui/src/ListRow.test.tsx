@@ -65,10 +65,14 @@ describe('ListRow', () => {
     expect(observedDefaultPrevented).toBe(false);
   });
 
-  it('emits a data-height of 44, matching SkeletonRow', () => {
+  it('carries data-row="true" and its height from the --row-height token, not a hardcoded data-height (D-14)', () => {
     renderUi(<ListRow onActivate={vi.fn()} primaryText="Row" data-testid="row" />);
 
-    expect(screen.getByTestId('row')).toHaveAttribute('data-height', '44');
+    const row = screen.getByTestId('row');
+    expect(row).toHaveAttribute('data-row', 'true');
+    expect(row).not.toHaveAttribute('data-height');
+    expect(row.className).toMatch(/h-\[var\(--row-height\)\]/);
+    expect(row).not.toHaveAttribute('style');
   });
 
   it('renders an optional secondary slot inside the activation element', () => {

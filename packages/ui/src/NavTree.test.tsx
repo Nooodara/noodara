@@ -50,6 +50,15 @@ describe('NavTree flat leaves (today\'s data shape)', () => {
     expect(screen.getByTestId('nav-tree-item-settings')).toHaveAttribute('href', '/settings');
   });
 
+  // D-14: item height comes from the single --row-height token, not a hardcoded h-11.
+  it('takes its leaf item height from var(--row-height), never a hardcoded h-11', () => {
+    renderUi(<NavTree items={FLAT_ITEMS} activeHref="/servers" linkComponent={FakeLink} />);
+
+    const item = screen.getByTestId('nav-tree-item-servers');
+    expect(item.className).toMatch(/h-\[var\(--row-height\)\]/);
+    expect(item.className).not.toMatch(/\bh-11\b/);
+  });
+
   it('marks only the active href with aria-current="page"', () => {
     renderUi(<NavTree items={FLAT_ITEMS} activeHref="/activity" linkComponent={FakeLink} />);
 

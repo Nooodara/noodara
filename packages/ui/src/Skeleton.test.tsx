@@ -39,12 +39,14 @@ describe('Skeleton', () => {
 });
 
 describe('SkeletonRow', () => {
-  it('renders at 44px height, readable from a data-height attribute rather than a computed style', () => {
+  it('carries data-row="true" and its height from the --row-height token, not a hardcoded data-height (D-14)', () => {
     const { container } = renderUi(<SkeletonRow />);
 
     const row = container.querySelector('[data-testid="skeleton-row"]');
     expect(row).not.toBeNull();
-    expect(row).toHaveAttribute('data-height', '44');
+    expect(row).toHaveAttribute('data-row', 'true');
+    expect(row).not.toHaveAttribute('data-height');
+    expect(row?.className).toMatch(/h-\[var\(--row-height\)\]/);
   });
 
   it('renders no role="progressbar" and no role="status"', () => {
