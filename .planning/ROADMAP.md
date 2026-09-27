@@ -31,7 +31,7 @@ Full phase details, plans and success criteria: [milestones/v0.1-ROADMAP.md](mil
 
 - [x] **Phase 7: Identidad y brand kit** - Logotipo (monograma + wordmark), favicon y hoja de marca en ambos temas, aplicados en app y README tras aprobación humana. (completed 2026-09-23 — 10/10 plans, verifier 15/15, human_needed only for the favicon-in-real-tab check tracked in 07-HUMAN-UAT.md)
 - [x] **Phase 8: Rediseño de la app** - Elevación flotante, movimiento con propósito, momentos autorados, fallbacks de accesibilidad y el shell preparado para inspector, jerarquía y menú de cuenta; primera revisión visual humana. (completed 2026-09-27)
-- [ ] **Phase 9: Settings editables** - Perfil del admin (nombre, email, password), tema y preferencias visuales persistidas en el servidor sin parpadeo.
+- [x] **Phase 9: Settings editables** - Perfil del admin (nombre, email, password), tema y preferencias visuales persistidas en el servidor sin parpadeo. (completed 2026-09-27)
 - [ ] **Phase 10: Sitio de docs y landing pública** - `apps/site` estático con Fumadocs, landing honesta con la identidad, publicado a GitHub Pages desde CI con test de exactitud.
 - [ ] **Phase 11: Motor de deploy — fundamentos** - Spikes resueltos, dominio y esquema de Project/Environment/Service/Deployment, plantillas parametrizadas, exec en streaming, fixture sshd+dockerd y fixtures oficiales.
 - [ ] **Phase 12: Motor de deploy — runtime** - Cola, worker, cancelación con kill confirmado, limpieza en toda salida, reconciliación, API y SSE; 20 deploys y 20 ciclos sin huérfanos.
@@ -241,7 +241,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 09-14-PLAN.md — UX review, full gate and human visual approval
+- [x] 09-14-PLAN.md — UX review, full gate and human visual approval
 
 **UI hint**: yes
 
@@ -349,7 +349,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 |-------|----------------|--------|-----------|
 | 7. Identidad y brand kit | 10/10 | Complete | 2026-09-23 |
 | 8. Rediseño de la app | 20/20 | Complete   | 2026-09-27 |
-| 9. Settings editables | 13/14 | In Progress|  |
+| 9. Settings editables | 14/14 | Complete   | 2026-09-27 |
 | 10. Sitio de docs y landing pública | 0/TBD | Not started | - |
 | 11. Motor de deploy — fundamentos | 0/TBD | Not started | - |
 | 12. Motor de deploy — runtime | 0/TBD | Not started | - |
