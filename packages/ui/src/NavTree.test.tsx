@@ -86,6 +86,21 @@ describe('NavTree flat leaves (today\'s data shape)', () => {
     expect(navigated).toBe(true);
   });
 
+  // Mobile round 1 adjustment (09-14 checkpoint): below the 900px rail breakpoint (bottom-sheet
+  // drawer and any other narrow layout) the label must render alongside the icon -- it was
+  // previously hidden everywhere below 1280px, silently erasing "Servers / Activity / Settings"
+  // text from the <900px drawer, which only ever meant to hide the label in the 900-1279px icon
+  // rail specifically.
+  it('shows the label below the 900px rail breakpoint and at >=1280px, hiding it only in the 900-1279px icon rail', () => {
+    renderUi(<NavTree items={FLAT_ITEMS} activeHref="/servers" linkComponent={FakeLink} />);
+
+    const label = screen.getByTestId('nav-tree-item-servers').querySelector('span');
+    expect(label).not.toBeNull();
+    expect(label?.className).toContain('inline');
+    expect(label?.className).toContain('min-[900px]:hidden');
+    expect(label?.className).toContain('min-[1280px]:inline');
+  });
+
   it('never renders a leaf with no href and no children', () => {
     const items: readonly NavTreeItem[] = [
       ...FLAT_ITEMS,
