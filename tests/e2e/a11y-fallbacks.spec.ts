@@ -157,3 +157,75 @@ test('@a11y-fallbacks without emulation, the Sheet panel declares a real transfo
   const transitionDuration = await panel.evaluate((el) => getComputedStyle(el).transitionDuration);
   expect(transitionDuration).not.toBe('0s');
 });
+
+// D-13 (09-04-PLAN.md Task 1): a forced `data-motion="reduce"` on `<html>` must drive the exact
+// same fallback as the OS `prefers-reduced-motion: reduce` media query above -- no OS emulation at
+// all here, only the attribute the Settings preference control (09-12) will eventually write.
+test('@a11y-fallbacks forced reduce motion preference: Sheet opens opacity-only without OS emulation', async ({
+  page,
+}) => {
+  await login(page);
+  await page.evaluate(() => {
+    document.documentElement.setAttribute('data-motion', 'reduce');
+  });
+
+  await page.getByRole('button', { name: 'Add server' }).click();
+  await expect(page.getByTestId('server-sheet')).toBeVisible();
+
+  const panel = page.getByTestId('server-sheet');
+  const transform = await panel.evaluate((el) => getComputedStyle(el).transform);
+  expect(decomposeTransform(transform).translateX).toBe(0);
+
+  const transitionProperty = await panel.evaluate((el) => getComputedStyle(el).transitionProperty);
+  expect(transitionProperty).not.toContain('transform');
+  expect(transitionProperty).toContain('opacity');
+});
+
+test('@a11y-fallbacks forced reduce motion preference: Dialog opens without scale', async ({ page }) => {
+  await login(page);
+  await page.evaluate(() => {
+    document.documentElement.setAttribute('data-motion', 'reduce');
+  });
+
+  const name = `a11y-dialog-forced-${String(Date.now())}`;
+  await seedServer(page, name);
+  await page.reload();
+  await page.evaluate(() => {
+    document.documentElement.setAttribute('data-motion', 'reduce');
+  });
+
+  const row = page.getByTestId('servers-row').filter({ hasText: name });
+  await row.hover();
+  await page.getByRole('button', { name: `Actions for ${name}` }).click();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
+  await expect(page.getByTestId('delete-server-dialog')).toBeVisible();
+
+  const transform = await page
+    .getByTestId('delete-server-dialog')
+    .evaluate((el) => getComputedStyle(el).transform);
+  const { scaleX, scaleY } = decomposeTransform(transform);
+  expect(scaleX).toBe(1);
+  expect(scaleY).toBe(1);
+});
+
+// The positive control for the override direction itself: OS reduce is emulated, but the forced
+// `data-motion="allow"` attribute must win, restoring the real transform-based transition.
+test('@a11y-fallbacks allow motion preference overrides OS reduce: Sheet declares a transform transition', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await login(page);
+  await page.evaluate(() => {
+    document.documentElement.setAttribute('data-motion', 'allow');
+  });
+
+  await page.getByRole('button', { name: 'Add server' }).click();
+  await expect(page.getByTestId('server-sheet')).toBeVisible();
+
+  const panel = page.getByTestId('server-sheet');
+  const transitionProperty = await panel.evaluate((el) => getComputedStyle(el).transitionProperty);
+  expect(transitionProperty).toContain('transform');
+
+  const transitionDuration = await panel.evaluate((el) => getComputedStyle(el).transitionDuration);
+  expect(transitionDuration).not.toBe('0s');
+});
