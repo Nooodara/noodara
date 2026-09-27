@@ -65,3 +65,42 @@ No new threat surface introduced beyond what 09-CONTEXT.md's threat register alr
 - `pnpm check:ui-safety` — all 12 static gates hold, re-confirmed on the final tree
 
 Full-suite re-runs were sequenced one Testcontainers-heavy job at a time on this machine (an initial concurrent `test:integration` + `security:scan-leaks` run produced one false stray-container failure and cascading `ECONNREFUSED` noise from resource contention between two simultaneous Testcontainers stacks — not a product defect; both were re-run cleanly in isolation with the results above).
+
+## Adjustment round 1 (mobile checkpoint, 2026-09-27)
+
+The human reviewer walked the app on a real iPhone 16 Pro Max (CSS viewport 440x956, DPR 3) after the initial approval request and found three mobile-only defects in the shell/servers screens. All three were reproduced against the running dev stack, fixed with TDD (a failing test committed before its fix, in the owning file), and verified visually before/after against the same running stack.
+
+### 1. RowMenu clipped and hid row content at 440px
+
+- **Root cause:** `RowMenu.tsx`'s content was `absolute right-0 top-full` inside the trigger's own `relative inline-block` wrapper — a plain DOM descendant of the row, itself inside `InsetGroup`'s `overflow-hidden` rounded card (`InsetGroup.tsx`'s `BLOCK_CLASSES`). At 440px the open menu was clipped by that ancestor instead of floating below the row; the "row content disappears" half of the report was `dist` not having been rebuilt from source during manual reproduction (the running dev stack imports `@noodara/ui` from its built `dist/`, which `turbo run dev` builds once at startup with no watcher) — the real, honest before/after reproduction below rebuilt `dist` from each state to confirm both halves genuinely came from the same code path.
+- **Fix:** `RowMenu.tsx` now renders its content through `DialogPrimitive.Portal` (re-parented to `document.body`, escaping every ancestor's `overflow-hidden`), positioned with `position: fixed` at coordinates measured from the trigger's own `getBoundingClientRect()` in a `useLayoutEffect` (flips to open upward when there is not enough room below — viewport-aware). No new Radix primitive was introduced (`react-dialog` was already approved, ADR-0000); `AccountMenu.tsx`'s sibling component already relies on the same non-modal Dialog foundation.
+- **Tests:** `RowMenu.test.tsx` — "renders its open content through a portal, escaping an overflow-hidden ancestor instead of being clipped by it" and "positions its content with a fixed, viewport-relative position rather than an absolute child of the row" (RED `451be64`, GREEN `a186e66`). Unrun E2E: `tests/e2e/servers-list.spec.ts` — "@rowmenu at a 440x956 mobile viewport, opening the row menu never clips it and never hides the row's own content".
+- **Visual evidence:** `before/01-servers-row-menu-open-440.png` (row content replaced by a clipped "Edit" box) vs `after/01-servers-row-menu-open-440.png` (row intact, menu floating correctly below the trigger). No regression at 900px (`after/06-servers-row-menu-900.png`) or 1280px (`after/09-servers-row-menu-1280.png`).
+
+### 2. Sheet panel overflowed a 440px viewport
+
+- **Root cause:** `Sheet.tsx`'s `PANEL_CLASSES` used a fixed `w-[480px]`, wider than a 440px viewport — labels ("Name", "Host", "SSH port") and the close button sat partly off-screen. The drag-dismiss threshold and the closing hand-off distance were also hardcoded to the same `PANEL_WIDTH_PX = 480` constant.
+- **Fix:** the panel is now `w-full max-w-[480px]` — full width below 480px, capped at 480px above it. `handleDragEnd` reads the panel's own real width off `contentRef.current.getBoundingClientRect()` (falling back to the 480px constant only when unmeasurable, e.g. jsdom) and uses that measured width for both the midpoint-snap threshold and the closing animation's target offset, so a phone-width panel's own drag-to-dismiss threshold tracks its own actual width instead of the old desktop 480px.
+- **Tests:** `Sheet.test.tsx` — "is full width capped at 480px, never a fixed 480px panel" (RED `93ef31b`, GREEN `1c339bb`). Unrun E2E: `tests/e2e/server-sheet.spec.ts` — "@sheet at a 440x956 mobile viewport, the panel is full width..." and "@sheet at 1280px, the panel stays capped at exactly 480px..." (regression guard).
+- **Visual evidence:** `before/02-edit-server-sheet-440.png` (panel overflowing right, close button crowded) vs `after/02-edit-server-sheet-440.png` (panel fits exactly, every label and the close button fully visible). No regression at 900px (`after/07-edit-server-sheet-900.png`) or 1280px (`after/10-edit-server-sheet-1280.png`, still exactly 480px wide).
+
+### 3. NavTree hid labels in the <900px mobile drawer
+
+- **Root cause:** `NavTree.tsx`'s `LABEL_CLASSES = 'hidden min-[1280px]:inline'` hid the label everywhere below 1280px, including the <900px bottom-sheet drawer — it was only ever meant to hide the label in the 900-1279px icon rail.
+- **Fix:** `LABEL_CLASSES = 'inline min-[900px]:hidden min-[1280px]:inline'` — visible by default (covers the <900px drawer), hidden only in the 900-1279px rail, visible again at >=1280px. The rail's own tooltip-on-hover/focus behavior (`Tooltip` wrapping each trigger) is unchanged.
+- **Tests:** `NavTree.test.tsx` — "shows the label below the 900px rail breakpoint and at >=1280px, hiding it only in the 900-1279px icon rail" (RED `48e2d35`, GREEN `6f522c8`). `tests/e2e/shell.spec.ts`'s existing "@shell the sidebar collapses to an icon rail..." test gained an assertion that the label is visible in the <900px drawer; a new "@shell at a 440x956 mobile viewport, the bottom-sheet drawer shows..." test was added (both unrun, same port conflict).
+- **Visual evidence:** `before/03-hamburger-drawer-440.png` (icons only, no text) vs `after/03-hamburger-drawer-440.png` (labels visible next to each icon). No regression at 900px (`after/08-sidebar-rail-900.png`, rail still icon-only) or 1280px (`after/11-sidebar-expanded-1280.png`, labels still shown in the expanded sidebar).
+
+### Not a defect (confirmed, no action)
+
+The "test" server showing "Unreachable / CONNECT_TIMEOUT" in every capture above is expected — its disposable sshd container is not running in this environment; unrelated to the three fixes.
+
+### Gate summary (adjustment round 1, commits `48e2d35`..`5faf1b2`)
+
+- `pnpm exec vitest run packages/ui apps/web` — 80 files / 1029 tests passed
+- `pnpm test` (full unit suite) — 175 files / 2993 tests passed
+- `pnpm lint` — clean (9/9 tasks, turbo)
+- `pnpm typecheck` — clean (all packages + `tests/e2e`, `tests/integration/ssh`, `tests/integration/installer`, `scripts/brand`, `scripts/ui`)
+- `pnpm boundaries` — 744 files, 0 issues
+- `pnpm check:ui-safety` — all 12 static gates hold (no new shadow, no new hex/rgb literal, hover-gating and easing-token rules unaffected)
+- `pnpm test:integration` and `pnpm test:e2e` were **not** run this round (the human reviewer's dev stack was live on the same ports throughout this session, and the checkpoint instructions were explicit not to start a second stack or touch the running one) — the three new/updated E2E specs above are written and typecheck (`tsc -p tests/e2e/tsconfig.json --noEmit` clean) but unrun; the orchestrator must run `pnpm test:e2e` before re-approval.
