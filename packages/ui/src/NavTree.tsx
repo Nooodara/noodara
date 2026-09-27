@@ -60,7 +60,12 @@ const ITEM_CLASSES = cn(
   PRESS_CLASSES,
 );
 const ACTIVE_ITEM_CLASSES = 'bg-accent-soft text-ink';
-const LABEL_CLASSES = 'hidden min-[1280px]:inline';
+// Mobile round 1 adjustment (09-14 checkpoint): the label is visible by default (the <900px
+// bottom-sheet drawer, D-03) and at >=1280px (the expanded sidebar) -- it is hidden only in the
+// 900-1279px icon rail, where the tooltip on the trigger itself carries the label instead. The
+// previous `hidden min-[1280px]:inline` silently hid the label everywhere below 1280px, including
+// the drawer where it was never meant to be hidden.
+const LABEL_CLASSES = 'inline min-[900px]:hidden min-[1280px]:inline';
 const ICON_PROPS = { 'aria-hidden': true, size: 20, strokeWidth: 1.5 } as const;
 
 const TRIGGER_CLASSES = cn(ITEM_CLASSES, 'w-full justify-between');
