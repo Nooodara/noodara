@@ -60,4 +60,14 @@ describe('Notice', () => {
     expect(messageEl.className).toMatch(/max-w-\[70ch\]/);
     expect(messageEl.className).toMatch(/normal-nums/);
   });
+
+  // 09-UI-SPEC.md SS5.3 (09-10-PLAN.md Task 3): a screen reader must announce the notice's own
+  // content without requiring focus to move there -- the password-change Notice (Settings and
+  // /login) is the first caller that actually depends on this, but the attribute belongs on the
+  // component itself so every existing caller gets it too.
+  it('carries role="status" so a screen reader announces its content without a focus move', () => {
+    const { container } = renderUi(<Notice message="First-trust notice." />);
+
+    expect(container.querySelector('[role="status"]')).not.toBeNull();
+  });
 });
