@@ -159,7 +159,11 @@ test('@discovery the Discovery section renders above the stat tiles', async ({ p
   await login(page);
   await page.goto(`/servers/${fixture.id}`);
 
-  const discoveryHeading = page.getByRole('heading', { name: 'Discovery' });
+  // `exact: true` -- the fixture's own server name ("discovery-position-srv") contains "discovery"
+  // as a case-insensitive substring, so the default substring match also resolves the page's own
+  // `<h1>` server-name heading, a strict-mode violation (two elements) discovered by the first
+  // nightly repeat run at G3.
+  const discoveryHeading = page.getByRole('heading', { name: 'Discovery', exact: true });
   const statTiles = page.getByTestId('server-facts-tiles');
   await expect(discoveryHeading).toBeVisible();
   await expect(statTiles).toBeVisible();
