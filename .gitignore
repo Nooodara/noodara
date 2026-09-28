@@ -40,5 +40,14 @@ docs/ui/review/*
 apps/site/out/
 apps/site/.source/
 
+# Public site synced assets (10-02, T-10-13)
+# Regenerated on every dev/build run by apps/site/scripts/sync-site-assets.mjs from
+# packages/ui/brand/* and docs/ui/approved/*; never hand-edited or committed as a site file.
+apps/site/public/screenshots/
+apps/site/src/app/favicon.ico
+apps/site/src/app/icon.svg
+apps/site/src/app/apple-icon.png
+apps/site/src/app/opengraph-image.png
+
 # OS
 .DS_Store
