@@ -1,7 +1,7 @@
 'use client';
 
-// 10-07-PLAN.md Task 2 (D-14, 10-UI-SPEC.md Copywriting + Typography). GitHub Pages serves this
-// route's static output (`out/404.html`) for any unmatched path, so it is the one page every
+// 10-07-PLAN.md Task 2 (D-14, 10-UI-SPEC.md Copywriting + Typography). Cloudflare Pages serves
+// this route's static output (`out/404.html`) for any unmatched path, so it is the one page every
 // broken link lands on -- D-14 requires it still carry the Noodara identity, not a bare browser
 // error. `'use client'`: the one `@noodara/ui` import this file needs (`Lockup`) comes from a
 // barrel whose other exports use hooks with no `'use client'` directive of their own (same reason

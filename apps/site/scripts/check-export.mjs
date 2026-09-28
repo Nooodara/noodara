@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-// 10-07-PLAN.md Task 1 (D-14/D-16/SITE-01, T-10-05/T-10-03/T-10-21): the post-build gate every
-// `pnpm --filter @noodara/site build` runs (wired as `&& node scripts/check-export.mjs` in
-// package.json's `build` script -- 10-03's PR gate and the Pages publish step both inherit it for
-// free). Walks the real `apps/site/out` directory and fails the build (exit 1) the moment any
-// exported HTML/CSS file loads a third-party asset, declares an `@font-face`, carries the
-// preview `/noodara` base-path prefix in a CNAME-present (production) build, or leaks a
-// control-plane secret env value -- never trusted by review alone (10-06-SUMMARY.md's own
-// "a rule checked by a command does not erode" precedent, scripts/check-ui-safety.mjs).
+// 10-07-PLAN.md Task 1 (D-14/D-16/SITE-01, T-10-05/T-10-03/T-10-21), amended quick-260928-gmm
+// (D-12a): the post-build gate every `pnpm --filter @noodara/site build` runs (wired as
+// `&& node scripts/check-export.mjs` in package.json's `build` script -- 10-03's PR gate and the
+// Cloudflare Pages publish step both inherit it for free). Walks the real `apps/site/out`
+// directory and fails the build (exit 1) the moment any exported HTML/CSS file loads a
+// third-party asset, declares an `@font-face`, or leaks a control-plane secret env value --
+// never trusted by review alone (10-06-SUMMARY.md's own "a rule checked by a command does not
+// erode" precedent, scripts/check-ui-safety.mjs). basePath-mismatch checking was removed here:
+// Cloudflare Pages always serves the export at the root, so that failure mode no longer exists.
 //
 // Zero third-party dependencies -- node builtins and this app's own site-config.mjs only
 // (mirrors scripts/check-ui-safety.mjs's zero-dependency discipline). Every pure detection
@@ -16,7 +17,7 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { PREVIEW_BASE_PATH, readCname, SITE_ORIGIN } from '../site-config.mjs';
+import { SITE_ORIGIN } from '../site-config.mjs';
 
 const SITE_ORIGIN_ORIGIN = new URL(SITE_ORIGIN).origin;
 
@@ -145,64 +146,20 @@ export function findLeakedEnvNames(text) {
   return findings;
 }
 
-/**
- * Finds every exported asset URL carrying the preview `/noodara` base-path prefix. Only
- * meaningful when `cnamePresent` is true (D-12: a CNAME-present build must resolve at the
- * production root, never the preview prefix) -- a non-CNAME preview build legitimately uses the
- * prefix everywhere, so this always returns `[]` when `cnamePresent` is false.
- * @param {string} html
- * @param {{ cnamePresent: boolean }} params
- * @returns {Array<{ path: string }>}
- */
-export function findBasePathMismatch(html, { cnamePresent }) {
-  if (!cnamePresent) return [];
-  const PATTERN = /\b(?:src|href)\s*=\s*["'](\/noodara\/[^"']*)["']/gi;
-  const findings = [];
-  let match;
-  while ((match = PATTERN.exec(html)) !== null) {
-    findings.push({ path: match[1] });
-  }
-  return findings;
-}
-
-const ANCHOR_TAG_PATTERN = /<a\b([^>]*)>/gi;
-const ANCHOR_HREF_PATTERN = /\bhref\s*=\s*["']([^"']+)["']/i;
-
-/**
- * Finds every `<a href="...">` in `html` whose href is root-relative (starts with a single `/`,
- * not `//`) but is not itself `basePath` or prefixed with `${basePath}/`. Only meaningful when
- * `cnamePresent` is false (D-12: a non-CNAME preview build resolves at `<owner>.github.io/
- * <basePath>`, so every internal navigation link must carry the prefix -- Next only rewrites
- * `basePath` onto `next/link`/`<Image>`, never a plain `<a href>`, so a raw internal anchor left
- * unprefixed 404s under this build shape). Always returns `[]` when `cnamePresent` is true (a
- * CNAME-present/production build resolves at the root, so no prefix is expected) or `basePath` is
- * empty.
- * @param {string} html
- * @param {{ cnamePresent: boolean, basePath: string }} params
- * @returns {Array<{ path: string }>}
- */
-export function findMissingBasePathPrefix(html, { cnamePresent, basePath }) {
-  if (cnamePresent || !basePath) return [];
-
-  const findings = [];
-  ANCHOR_TAG_PATTERN.lastIndex = 0;
-  let tagMatch;
-  while ((tagMatch = ANCHOR_TAG_PATTERN.exec(html)) !== null) {
-    const hrefMatch = tagMatch[1].match(ANCHOR_HREF_PATTERN);
-    if (hrefMatch === null) continue;
-
-    const href = hrefMatch[1];
-    if (!href.startsWith('/') || href.startsWith('//')) continue;
-    if (href === basePath || href.startsWith(`${basePath}/`)) continue;
-
-    findings.push({ path: href });
-  }
-  return findings;
-}
-
 // Every export must contain these. 10-11-PLAN.md Task 2 added 'index.html' once the landing page
-// shipped (the composed `/` route, 10-02's placeholder replaced).
-export const REQUIRED_EXPORT_FILES = ['404.html', 'sitemap.xml', 'robots.txt', 'api/search', 'docs.html', 'index.html'];
+// shipped (the composed `/` route, 10-02's placeholder replaced). quick-260928-gmm added
+// '_headers' (Cloudflare Pages response-header config, checked via the exact-match branch in
+// findMissingRequiredFiles below -- Next copies public/_headers into out/_headers verbatim, so no
+// `.html`/`/index.html` variant ever applies to this entry).
+export const REQUIRED_EXPORT_FILES = [
+  '404.html',
+  'sitemap.xml',
+  'robots.txt',
+  'api/search',
+  'docs.html',
+  'index.html',
+  '_headers',
+];
 
 /**
  * Checks every `requiredFiles` entry against `producedFiles` (a Set of export-relative paths)
@@ -259,8 +216,7 @@ if (isMainModule()) {
     process.exit(1);
   }
 
-  const cnamePresent = readCname(siteRoot) !== null;
-  const requiredFiles = cnamePresent ? [...REQUIRED_EXPORT_FILES, 'CNAME'] : REQUIRED_EXPORT_FILES;
+  const requiredFiles = REQUIRED_EXPORT_FILES;
 
   const allFindings = [];
   let checkedFiles = 0;
@@ -274,12 +230,6 @@ if (isMainModule()) {
       const content = readFileSync(absPath, 'utf8');
       for (const finding of findThirdPartyAssetUrls(content)) {
         allFindings.push({ file: relPath, kind: 'third-party-asset', ...finding });
-      }
-      for (const finding of findBasePathMismatch(content, { cnamePresent })) {
-        allFindings.push({ file: relPath, kind: 'base-path-mismatch', ...finding });
-      }
-      for (const finding of findMissingBasePathPrefix(content, { cnamePresent, basePath: PREVIEW_BASE_PATH })) {
-        allFindings.push({ file: relPath, kind: 'missing-preview-base-path', ...finding });
       }
       for (const finding of findLeakedEnvNames(content)) {
         allFindings.push({ file: relPath, kind: 'leaked-env', ...finding });

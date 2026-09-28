@@ -27,8 +27,8 @@ function readRequiredEnv(name: string, value: string | undefined): string {
   return value;
 }
 
-/** `basePath` is the one field allowed to be the empty string (root basePath, D-11/D-12's
- *  CNAME-present production case) -- everything else fails fast when missing or empty. */
+/** `basePath` is the one field allowed to be the empty string (root basePath, D-11/D-12a's
+ *  always-root Cloudflare Pages case) -- everything else fails fast when missing or empty. */
 export function readBuildInfo(): SiteBuildInfo {
   const origin = readRequiredEnv('NOODARA_SITE_ORIGIN', process.env.NOODARA_SITE_ORIGIN);
   const version = readRequiredEnv('NOODARA_SITE_VERSION', process.env.NOODARA_SITE_VERSION);

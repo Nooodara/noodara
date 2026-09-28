@@ -8,9 +8,9 @@
 // repository's real LICENSE file -- neither is ever hand-typed in UI code.
 // D-11 (custom domain): SITE_ORIGIN below is the single place the production origin literal is
 // spelled out anywhere in this repo's build-time config.
-// D-12 (CNAME-gated basePath): basePath is '' when apps/site/public/CNAME exists at build time
-// (production, custom domain already routes to the repo root) and '/noodara' otherwise (so the
-// site still works from <owner>.github.io/noodara before DNS/CNAME is configured).
+// D-12a (quick-260928-gmm, amends D-12): basePath is always the empty string -- Cloudflare Pages
+// serves this static export at the root on both `*.pages.dev` and any custom domain, so there is
+// no CNAME-gated subpath case left to resolve here.
 //
 // Why the version falls back to package.json: this monorepo is nested inside a larger, untagged
 // personal repository locally (`git describe` always fails here -- 10-RESEARCH.md "Assumptions
@@ -22,33 +22,9 @@
 // ESM, node builtins only (no third-party dependency at config-evaluation time).
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
+import { readFileSync } from 'node:fs';
 
 export const SITE_ORIGIN = 'https://noodara.com';
-export const PREVIEW_BASE_PATH = '/noodara';
-
-/**
- * @param {{ cnameExists: boolean }} params
- * @returns {string}
- */
-export function resolveBasePath({ cnameExists }) {
-  return cnameExists ? '' : PREVIEW_BASE_PATH;
-}
-
-/**
- * Reads `<siteRoot>/public/CNAME`, returning its trimmed first line, or `null` when the file is
- * absent or empty.
- * @param {string} siteRoot
- * @returns {string | null}
- */
-export function readCname(siteRoot) {
-  const cnamePath = path.join(siteRoot, 'public', 'CNAME');
-  if (!existsSync(cnamePath)) return null;
-
-  const contents = readFileSync(cnamePath, 'utf8').trim();
-  return contents.length > 0 ? contents : null;
-}
 
 /**
  * Runs `git describe --tags --abbrev=0 --match 'v[0-9]*'` in `cwd`, with an explicit 5s timeout

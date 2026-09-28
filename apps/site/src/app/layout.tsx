@@ -6,9 +6,9 @@ import { readBuildInfo } from '../lib/build-info';
 import { SITE_THEME_BOOTSTRAP_SCRIPT } from '../lib/theme-script';
 import './global.css';
 
-// 10-02-PLAN.md Task 3 (D-11/D-12, SITE-03). `metadataBase` is `readBuildInfo().origin` -- always
-// `https://noodara.com` in the CNAME-present production build (D-11), or the GitHub Pages preview
-// origin otherwise -- read once at build time, never hand-typed (matches
+// 10-02-PLAN.md Task 3 (D-11/D-12a, SITE-03). `metadataBase` is `readBuildInfo().origin` --
+// always `https://noodara.com` (Cloudflare Pages always serves this export at the root, quick-
+// 260928-gmm) -- read once at build time, never hand-typed (matches
 // apps/site/next.config.mjs's own SITE_ORIGIN/site-config.mjs discipline). No `icons` key: the
 // file-convention icons (favicon.ico, icon.svg, apple-icon.png, opengraph-image.png) are synced
 // into this same `app/` directory by scripts/sync-site-assets.mjs before every dev/build run and

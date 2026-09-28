@@ -1,9 +1,9 @@
-// 10-07-PLAN.md Task 2 (D-14, SITE-01, D-12): pure sitemap/robots builders consumed by
+// 10-07-PLAN.md Task 2 (D-14, SITE-01, D-12a): pure sitemap/robots builders consumed by
 // app/sitemap.ts and app/robots.ts. Never a `lastModified` field -- this artifact carries no
 // dates (the same "no dates" rule 10-06's content-rules.ts enforces on prose, D-10). Always
-// built against the caller-supplied canonical origin, never the preview build's basePath (D-12:
-// "Canonical URLs always https://noodara.com/..., independent of the basePath computed for the
-// non-CNAME preview build" -- 10-UI-SPEC.md SEO/Metadata Contract).
+// built against the caller-supplied canonical origin -- "Canonical URLs always
+// https://noodara.com/...", basePath is always empty on Cloudflare Pages (D-12a, amends
+// 10-UI-SPEC.md SEO/Metadata Contract).
 
 export interface SitemapEntry {
   readonly url: string;

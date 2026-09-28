@@ -1,11 +1,12 @@
 'use client';
 
-// 10-05-PLAN.md Task 2 (D-08 static search). `flexsearchStaticClient`'s `from` option (confirmed
-// against apps/site/node_modules/fumadocs-core/dist/client-ByEdoQoD.d.ts -- NOT an "index URL"
-// named option, `from`, defaulting to `/api/search`) is prefixed with the build's basePath: the
-// static index is fetched by a raw `fetch(url)` call that Next.js does not rewrite the way it
-// rewrites `<Link>`/`<Image>` -- without the prefix, a CNAME-absent `/noodara` build would 404
-// fetching `/api/search` instead of `/noodara/api/search`.
+// 10-05-PLAN.md Task 2 (D-08 static search), amended D-12a. `flexsearchStaticClient`'s `from`
+// option (confirmed against apps/site/node_modules/fumadocs-core/dist/client-ByEdoQoD.d.ts -- NOT
+// an "index URL" named option, `from`, defaulting to `/api/search`) is prefixed with the build's
+// basePath: the static index is fetched by a raw `fetch(url)` call that Next.js does not rewrite
+// the way it rewrites `<Link>`/`<Image>` -- basePath is always empty on Cloudflare Pages (D-12a),
+// so this prefixing is a no-op today, but stays in place as the one place that would need to
+// change if a non-root basePath were ever reintroduced.
 import { useDocsSearch } from 'fumadocs-core/search/client';
 import { flexsearchStaticClient } from 'fumadocs-core/search/client/flexsearch-static';
 import {
