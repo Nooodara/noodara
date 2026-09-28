@@ -280,7 +280,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 10-06-PLAN.md — Honesty guards: forbidden words/dates, `scope.ts` claims vs PROJECT.md, ScopeNote/ScopeTable
+- [x] 10-06-PLAN.md — Honesty guards: forbidden words/dates, `scope.ts` claims vs PROJECT.md, ScopeNote/ScopeTable
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -398,7 +398,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 | 7. Identidad y brand kit | 10/10 | Complete | 2026-09-23 |
 | 8. Rediseño de la app | 20/20 | Complete   | 2026-09-27 |
 | 9. Settings editables | 14/14 | Complete   | 2026-09-27 |
-| 10. Sitio de docs y landing pública | 5/12 | In Progress|  |
+| 10. Sitio de docs y landing pública | 6/12 | In Progress|  |
 | 11. Motor de deploy — fundamentos | 0/TBD | Not started | - |
 | 12. Motor de deploy — runtime | 0/TBD | Not started | - |
 | 13. UI de Projects & Services y E2E de deploy | 0/TBD | Not started | - |

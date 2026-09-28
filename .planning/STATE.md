@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 10-05-PLAN.md
-last_updated: "2026-09-28T05:42:33.308Z"
+stopped_at: Completed 10-06-PLAN.md
+last_updated: "2026-09-28T05:57:30.630Z"
 last_activity: 2026-09-28
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 56
-  completed_plans: 49
+  completed_plans: 50
   percent: 38
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 10 (sitio-de-docs-y-landing-p-blica) — EXECUTING
-Plan: 6 of 12
+Plan: 7 of 12
 Status: Ready to execute
 Last activity: 2026-09-28
 
-Progress: [█████████░] 88%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
@@ -208,6 +208,7 @@ Progress: [█████████░] 88%
 | Phase 10 P03 | 9 | 2 tasks | 6 files |
 | Phase 10 P04 | 18min | 2 tasks | 5 files |
 | Phase 10 P05 | 27min | 2 tasks | 17 files |
+| Phase 10 P06 | 10min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -570,6 +571,8 @@ Recent decisions affecting current work:
 - [Phase 10]: Site review capture (10-04): exempt Chromium's own 404 resource-load console message on the intentional not-found surface only — D-16's console-error check must not always fail the capture that deliberately visits a nonexistent path; real JS errors and real 404s on every other surface still fail the run
 - [Phase 10]: 10-05: fumadocs-mdx macro.include matches only the file's basename (picomatch basename:true) -- use a filename-only pattern ('source.ts'), never a directory-scoped glob
 - [Phase 10]: 10-05: apps/site docs/layout.tsx isolates its one @noodara/ui import (Lockup) behind a dedicated 'use client' wrapper (DocsNavTitle.tsx) since the barrel re-exports hook-using components with no directive of their own
+- [Phase 10]: check-ui-safety.mjs excludes content-rules.ts/test.ts from the dangerouslySetInnerHTML scan (detection data, not real usage) — findUnsafeMarkup's own rule needs the literal string as data; the existing allowlist gate asserts an exact total of 2, one per app root layout
+- [Phase 10]: domains-tls and app-config exclusions share one PROJECT.md projectAnchor — PROJECT.md's own Out of Scope bullet bundles domains/TLS/env-vars/secrets in one line; the plan's interfaces block lists 7 anchors for 8 exclusions
 
 ### Pending Todos
 
@@ -645,8 +648,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-28T05:42:23.176Z
-Stopped at: Completed 10-05-PLAN.md
+Last session: 2026-09-28T05:57:30.622Z
+Stopped at: Completed 10-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
