@@ -54,8 +54,12 @@ export function resolveStaticPath(outDir: string, urlPath: string): string | nul
     return null;
   }
 
-  const normalised = path.normalize(decoded).replace(/^(\.\.[/\\])+/, '/');
-  const relative = normalised.replace(/^[/\\]+/, '');
+  // WR-02: the actual security boundary is the `path.relative(outDir, candidate)` check below --
+  // it alone rejects any candidate that would resolve outside `outDir`, including a traversal
+  // reintroduced by `path.normalize` from an interior "../" segment (e.g. `foo/../../etc/passwd`
+  // normalises to `../etc/passwd`). No pre-strip of a leading "../" run is needed or performed
+  // here; do not assume one is required before this check.
+  const relative = path.normalize(decoded).replace(/^[/\\]+/, '');
 
   const candidates =
     relative === ''

@@ -87,6 +87,15 @@ describe('resolveStaticPath', () => {
     expect(resolveStaticPath(outDir, '/../../etc/passwd')).toBeNull();
   });
 
+  it('rejects a traversal reintroduced by normalize (an interior "../" segment), WR-02', () => {
+    // path.normalize('foo/../../etc/passwd') -> '../etc/passwd', which is not a *leading* run of
+    // '../' before normalize runs -- the real security boundary here is the path.relative(outDir,
+    // candidate) check below, not any regex strip, so this must reject regardless of which of the
+    // two runs first.
+    const outDir = makeOutDir();
+    expect(resolveStaticPath(outDir, '/foo/../../etc/passwd')).toBeNull();
+  });
+
   it('returns null for a genuinely missing path', () => {
     const outDir = makeOutDir();
     expect(resolveStaticPath(outDir, '/missing')).toBeNull();
