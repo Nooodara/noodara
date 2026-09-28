@@ -196,7 +196,9 @@ describe('public site workflows (D-12/D-13, structural)', () => {
   function extractJobsSection(source: string): string {
     const jobsSectionMatch = source.match(/\njobs:\n([\s\S]*)$/);
     expect(jobsSectionMatch, 'jobs: section not found').toBeTruthy();
-    return jobsSectionMatch?.[1] ?? '';
+    // Leading \n so extractJobBlock's `\n {2}${jobName}:\n` pattern also matches the very first
+    // job in the section, not just jobs preceded by a prior job's own content.
+    return `\n${jobsSectionMatch?.[1] ?? ''}`;
   }
 
   function extractJobBlock(source: string, jobName: string): string {
