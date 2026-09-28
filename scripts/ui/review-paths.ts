@@ -55,3 +55,32 @@ export function reviewPngPath(surface: Screen | Overlay, theme: Theme, width: Wi
 export function approvedPngPath(screen: Screen, theme: Theme): string {
   return path.join(APPROVED_ROOT, `${screen}-${theme}.png`);
 }
+
+// --- Public site review matrix (10-04-PLAN.md Task 1, SITE-03) ---
+//
+// The public site (`apps/site`, static export) gets its own review tree under
+// `docs/ui/review/site/` -- a sibling of the app's own `docs/ui/review/`, never mixed into it,
+// so a site capture round and an app capture round never collide or overwrite each other.
+
+/** The directory every site-review-round capture is written under. */
+export const SITE_REVIEW_ROOT = path.join(REVIEW_ROOT, 'site');
+
+/** The six surfaces `capture-site-review.ts` visits, in order: the landing page, four
+ *  representative docs pages (one per sidebar group, D-08), and the 404 page. */
+export const SITE_PAGES = [
+  { id: 'landing', path: '/' },
+  { id: 'docs-install', path: '/docs/getting-started/install' },
+  { id: 'docs-first-server', path: '/docs/getting-started/first-server' },
+  { id: 'docs-concept-server', path: '/docs/concepts/server' },
+  { id: 'docs-scope', path: '/docs/reference/scope' },
+  { id: 'not-found', path: '/this-page-does-not-exist' },
+] as const;
+
+/** A `SITE_PAGES` id, plus the one extra surface that has no page of its own: the landing
+ *  captured a second time with `prefers-reduced-motion` instead of a fresh route (D-18). */
+export type SiteSurface = (typeof SITE_PAGES)[number]['id'] | 'landing-reduced-motion';
+
+/** A site-review-round capture's absolute path -- one file per surface, theme and width. */
+export function siteReviewPngPath(surface: SiteSurface, theme: Theme, width: Width): string {
+  return path.join(SITE_REVIEW_ROOT, `${surface}-${theme}-${String(width)}.png`);
+}
