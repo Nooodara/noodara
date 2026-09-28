@@ -1,5 +1,102 @@
 # UX Review — Public site (Phase 10, Plan 12)
 
+## Round 1 (landing redesign per user feedback)
+
+Fecha: 2026-09-28 · Commits: `227b4f2`…`f1a12f9` · Modo: código + `pnpm ui:review:site` captures
+
+User feedback at the human checkpoint (Task 2): the site was correct but "muy simplona". Full
+brief: `.planning/phases/10-sitio-de-docs-y-landing-p-blica/10-12-ROUND1-BRIEF.md`. Direction: the
+`impeccable` skill's Persuade mode (`bolder`/`layout`/`typeset`/`animate`) and Emil Kowalski's
+`animate`/`review-animations` skills, with dokploy.com and coolify.io as *structural* references
+(density, hero scale, feature-grid rhythm, tabbed product tour, FAQ, closing CTA) — never their
+visual language (both use dark backgrounds, glow, gradients, sponsor walls; none of that crossed
+over, per CLAUDE.md §5).
+
+**What changed (D-02a/D-18a, full detail in `10-CONTEXT.md`'s Round 1 amendment):**
+
+- Three-pillar section → hairline `FeatureGrid` (11 capabilities, glyph + title + claim) + tabbed
+  `ProductTour` (6 approved captures, `role=tablist`, arrow-key navigation, wrapping).
+- Added `PrinciplesBand` ("How it's built"), native-`<details>` `FAQSection`, `ClosingCta` band
+  (install command a second time).
+- Hero: fact-based eyebrow (license + "Self-hosted" + "No agent", the last pinned at runtime to
+  the real `connect-ssh` claim), fluid display size (`clamp(2.5rem, 2rem + 3vw, 5.5rem)`, a
+  **local, hero-only** CSS var — the shared `--text-display-size` token is untouched, still 28px
+  everywhere else including every docs H1), one-shot clip-path reveal on the hero screenshot.
+- `SiteFooter` → four columns (one per D-08 docs group + the original Project column).
+- Once-only scroll reveal (`useScrollReveal`, `apps/site/src/lib/`) wrapping below-fold sections.
+
+**Reference ideas taken vs. rejected:**
+
+| Idea | Source | Taken? | Why |
+|---|---|---|---|
+| Oversized centered display headline, eyebrow line | Dokploy | Taken | Direct brief instruction; backed by real facts (license, connect-ssh claim), not invented copy |
+| Install command in the hero | Dokploy | Already present (D-01), unchanged | — |
+| Hairline feature grid (icon + title + 2 lines, shared borders) | Dokploy | Taken | Matches craft-floor's "one continuous grid, not N discrete cards" distinction — no shadow, no per-cell radius |
+| Tabbed product tour swapping a screenshot | Dokploy | Taken | Exactly the six D-17-approved captures, no new screenshot |
+| FAQ accordion | Dokploy | Taken, facts-only | Every answer is an existing capability claim or the build-time license fact; never a `SCOPE_EXCLUSIONS` statement (would trip the "no excluded term outside the scope block" test) |
+| Closing CTA band, multi-column footer | Dokploy | Taken | Footer columns are the D-08 sidebar groups, not invented nav |
+| Dense 3-column icon feature list | Coolify | Taken (folded into FeatureGrid) | Same grid serves both references' feature-list intent |
+| Dark background, glow/gradient hero backdrop | Both | **Rejected** | CLAUDE.md §5 bans decorative gradients/glows outright; light+dark both stay first-class (D-15) |
+| Stars/download counters, sponsor walls | Both | **Rejected** | No such facts exist for Noodara (D-06/D-14: zero third-party API calls); explicitly out per the brief's "What we take" note |
+| Testimonials, pricing, cloud plans, comparisons | Both | **Rejected** | Out of scope (D-04: no competitor names, no comparisons); no such facts to show |
+| Kicker/eyebrow above heading | impeccable `craft-floor.md` | **Overridden by explicit brief instruction** | `craft-floor.md` bans a decorative kicker; this eyebrow is verifiable facts (license, self-hosted, no agent), not decoration, and the user's own brief named it explicitly — brief wins over general skill guidance (impeccable's own "the brief wins" rule) |
+| "Same-size cards of icon+heading+text" anti-pattern | impeccable `craft-floor.md` | **Reconciled, not fully avoided** | FeatureGrid is visually one continuous hairline grid (shared borders, no per-cell radius/shadow/surface step), the specific structure craft-floor treats as different from "N discrete elevated cards" — the closest available reconciliation given the brief's explicit Dokploy-grid request |
+
+**Locked rules that overrode skill advice (per CLAUDE.md §5 / UI-SPEC core, unchanged this round):**
+one blue accent only, zero card/button shadows, zero decorative gradients/glows/gradient text,
+system font stack (no self-hosted display face), dark+light both first-class, zero third-party
+requests, approved-captures-only (D-17), honesty rules D-03/D-04/D-10 (every claim traced to
+`DELIVERED_CAPABILITIES`/`site-facts.ts`, enforced by `Landing.test.tsx`/`landing-claims.test.ts`).
+
+**Fix batch (found in the first capture round, fixed in the same round, commit `f1a12f9`):**
+
+1. Hero's `text-[var(--site-hero-display-size)]` was parsed by Tailwind as a **color** utility
+   (ambiguous arbitrary-value inference), not font-size — the headline rendered at its old, small
+   size. Fixed with the `text-[length:var(...)]` type hint; confirmed against the built CSS
+   (`.text-\[length\:var(--site-hero-display-size)\]{font-size:var(--site-hero-display-size)}`).
+2. `useScrollReveal`'s hide-until-intersect left the FeatureGrid/ProductTour/PrinciplesBand/
+   FAQSection sections **permanently invisible** in the capture: Playwright's `fullPage`
+   screenshot renders content beyond the configured viewport without ever firing a real
+   scroll/resize event, so the observer's intersection never flips. Fixed with a 400ms fallback
+   timer that force-reveals regardless of intersection — belt-and-suspenders, D-18a's "never
+   removed silently" now holds for headless capture and for any real visitor whose environment
+   never delivers a genuine intersection change.
+3. FAQSection's `list-none` on `<summary>` removed the browser's own disclosure triangle with no
+   replacement, leaving the questions looking like static text. Added a visible chevron that
+   rotates via `group-open:rotate-180` (CSS transition only, no new state).
+
+**Gate after the fix batch:**
+
+- `pnpm vitest run` — 198 files / 3248 tests passed
+- `pnpm typecheck` — clean (all packages incl. `@noodara/site`)
+- `pnpm lint` — clean (all packages incl. `@noodara/site`)
+- `pnpm check:ui-safety` — 12/12 repo-wide gates hold (zero new hex/shadow/gradient literal)
+- `pnpm boundaries` — 837 files, 0 issues
+- `node scripts/check-workflow-pins.mjs` — clean
+- `pnpm --filter @noodara/site build` — "check-export: 21 files, zero third-party assets"
+- `pnpm ui:review:site` — 50 captures, zero third-party requests, exit 0
+- `pnpm security:scan-leaks` — canary suite green (1/1 Playwright `@canary` spec; Vitest canaries
+  are part of the 3248-test run above)
+- `pnpm vitest run tests/unit/site/site-approval-record.test.ts tests/unit/ui/approval-record.test.ts tests/unit/brand/approval-record.test.ts` — 37/37 passed
+
+**Verified visually** (`docs/ui/review/site/landing-{light,dark}-{375,900,1280,1920}.png`,
+`landing-reduced-motion-{light,dark}-1280.png`): hero eyebrow + fluid headline render at real
+display scale in both themes and at 375px; FeatureGrid's shared hairline borders render both
+horizontal and vertical dividers correctly (no shadow, no gradient); ProductTour's 6 tabs render
+with the active tab underlined in `--accent`, `Install` selected by default, tabs scroll
+horizontally within their own row at 375px with no page-level overflow; FAQSection's chevrons are
+visible in both themes; footer's four columns stack to 2 columns at 375px; reduced-motion capture
+shows the hero's Viewfinder mark at rest (no mid-animation frame). Every mobile capture confirms
+no horizontal page overflow.
+
+**Not fixed, same three notes as the initial review round below** (fixture screenshot names,
+`v0.1.0` footer version, hero screenshot's empty panel space) — still architectural/process
+decisions outside this plan's scope (Rule 4), unchanged by this redesign.
+
+---
+
+## Initial review round
+
 Fecha: 2026-09-28 · Commit: 09803de · Modo: screenshots + código
 
 Alcance: `apps/site` — landing en `/` (Hero, three pillars, positioning, How it works, "What it

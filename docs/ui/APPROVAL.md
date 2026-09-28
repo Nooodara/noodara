@@ -145,8 +145,32 @@ back, and mid-flight re-grab resuming from the panel's current position) — all
 
 ### Adjustment log
 
-- **Round 1: pending.**
-- **Round 2: pending.**
+- **Round 1: landing redesign per user feedback at the human checkpoint ("muy simplona"),
+  applying `impeccable`/Emil Kowalski's skills with dokploy.com/coolify.io as structural
+  references (`10-12-ROUND1-BRIEF.md`, D-02a/D-18a, commits `227b4f2`…`f1a12f9`):**
+  1. Three-pillar section replaced by a hairline `FeatureGrid` over all 11
+     `DELIVERED_CAPABILITIES` (two new: `encrypted-credentials`, `explicit-timeouts`) and a tabbed
+     `ProductTour` over the six approved captures (`setup`/`login`/`servers`/`server-detail`/
+     `activity`/`settings`, `role=tablist` with arrow-key navigation). RED `451360a`, GREEN
+     `1c99aca`/`991262a`.
+  2. Added `PrinciplesBand` ("How it's built"), a native `<details>` `FAQSection`, and a
+     `ClosingCta` band re-rendering the install command (now appears twice on the page).
+  3. Hero: fact-based eyebrow line, a fluid hero-only display size (local CSS var, `--space`-scale
+     token set unchanged), a one-shot clip-path reveal on the screenshot.
+  4. `SiteFooter` rebuilt to four columns (one per D-08 docs group + the original Project column).
+  5. Once-only scroll reveal via a new `useScrollReveal` hook (`apps/site/src/lib/`, kept out of
+     `components/landing/` so the source scan stays meaningful) wrapping below-fold sections.
+  6. Fix batch found in the first `pnpm ui:review:site` capture round, applied in the same round
+     per the bounded-verification process (commit `f1a12f9`): the hero's fluid size was being
+     parsed as a Tailwind color utility instead of font-size (fixed with a `length:` type hint);
+     `useScrollReveal` gained a 400ms fallback timer after full-page captures showed whole
+     sections staying invisible (Playwright's `fullPage` screenshot never fires a real
+     scroll/resize event, so an unconditional hide-until-intersect left them permanently hidden);
+     the FAQ's `list-none` had removed the native `<details>` disclosure triangle with no
+     replacement, so a visible rotating chevron was added.
+  7. Full gate re-run green after the fix batch (see `docs/ui-reviews/public-site-2026-09.md`'s
+     Round 1 section for the exact commands/results).
+- **Round 2: none.**
 
 ## What this record gates
 
