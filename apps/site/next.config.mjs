@@ -12,6 +12,8 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { createMDX } from 'fumadocs-mdx/next';
+
 import {
   SITE_ORIGIN,
   describeLatestTag,
@@ -53,4 +55,9 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// 10-05-PLAN.md Task 1 (RESEARCH.md Pattern 2). `createMDX` wraps -- never replaces -- the config
+// above: it wires the fumadocs-mdx bundler plugin (loads `source.config.ts`, transforms the
+// `defineDocs`/`loader` macro calls in `src/lib/source.ts`) without touching any key already set
+// here. `macro.include` is deliberately narrow (only the one file that calls the macro API), per
+// fumadocs-mdx/next's own `CreateMDXOptions.macro.include` contract.
+export default createMDX({ macro: { include: ['src/lib/**/*.ts'] } })(nextConfig);

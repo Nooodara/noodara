@@ -1,0 +1,4 @@
+{
+  "title": "Reference",
+  "pages": ["variables", "exit-codes", "error-codes", "scope"]
+}

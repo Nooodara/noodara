@@ -1,0 +1,4 @@
+{
+  "title": "Operate",
+  "pages": ["upgrade", "rollback", "backups", "troubleshooting"]
+}
