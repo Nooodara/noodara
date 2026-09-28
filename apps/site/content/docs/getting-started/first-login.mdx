@@ -1,0 +1,42 @@
+---
+title: First login
+description: Create the admin account the first time you open the panel.
+---
+
+Once the stack reports healthy, the installer prints the panel URL and, if no admin account exists
+yet, a one-time setup token:
+
+```
+Noodara is running.
+Panel: http://203.0.113.7:3000
+One-time setup token: <token>
+Open the panel and enter this token to create the admin account.
+```
+
+Open the panel URL and enter the token to create the first admin account. The token is printed
+only once, the first time an admin does not yet exist — a later run against the same installation
+will not reprint it once an admin has been created.
+
+To skip the token step entirely, set both `NOODARA_ADMIN_EMAIL` and `NOODARA_ADMIN_PASSWORD`
+before running the installer. Both are required together — setting only one makes the installer
+print a warning naming both variables and fall back to the normal token flow, using neither value.
+
+Before anything is written, the installer itself checks `NOODARA_ADMIN_PASSWORD` for: no embedded
+newline or carriage return, no literal single quote (`'`, which cannot be written safely into the
+generated `.env` file), at least 12 characters, and that it does not equal the admin email address
+or the part of it before the `@`. A password failing any of these is rejected immediately, before
+`.env` is touched.
+
+The control plane enforces the rest of its password policy — most importantly, rejecting a
+common or easily guessed password — only later, inside the `api` container, once
+`docker compose up` has already started it. A password that fails that check does not fail
+immediately: the installer waits out its full health-check budget (5 minutes by default) before
+exiting with code 53, with the real reason (for example "Password is too common") in the `api`
+service's own log tail:
+
+```sh
+docker compose -f /opt/noodara/docker-compose.yml logs api
+```
+
+Once the admin account exists, you may remove both variables from `/opt/noodara/.env` — they are
+only ever read at install time.

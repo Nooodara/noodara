@@ -1,0 +1,151 @@
+---
+title: Install
+description: Install Noodara on a single Ubuntu VPS with one command.
+---
+
+This page is the complete reference for installing a Noodara panel on a single VPS. It describes
+exactly what `install.sh` does today — every command, every default and every exit code here is
+read directly from the script, not from a plan written in advance.
+
+## Requirements
+
+- Ubuntu 22.04 LTS or 24.04 LTS, `amd64` or `arm64`. No other operating system or architecture is
+  supported; the installer refuses to continue on anything else.
+- Root access, or `sudo`.
+- 2 GB RAM recommended. 1 GB is the hard minimum — below it the installer refuses to continue.
+  Between 1 GB and 2 GB it prints a warning and continues.
+- 5 GB free disk on the filesystem the install directory lives on (or its nearest existing parent,
+  on a fresh host).
+- A free host port for the panel. The default is `3000`; override it with `NOODARA_PORT`.
+
+Every one of these checks runs **before** the installer writes or installs anything. If any check
+fails, the installer stops immediately with a message naming exactly what failed and how to fix
+it, and the system is left exactly as it was.
+
+## Install
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sh
+```
+
+`nooodara` is filled in with the real GitHub organization or user once the
+repository is published. Run this as root, or with `sudo sh` if you are not root.
+
+To set any of the variables in [Supported variables](/docs/reference/variables) for this command,
+put the assignment on the `sh` side of the pipe, never before `curl`: a `VAR=value` prefix in
+front of `curl` applies only to `curl` itself, not to the `sh` process reading its piped output, so
+the installer would never see it. As root: `curl -fsSL <url> | NOODARA_PORT=8080 sh`. With `sudo`,
+every variable must also go after `sudo` — plain `sudo sh` on its own already drops the caller's
+environment the same way a `VAR=value` placed before `curl` does:
+`curl -fsSL <url> | sudo NOODARA_PORT=8080 sh`.
+
+## Install without piping to a shell
+
+Piping a remote script straight into a root shell is a trust decision, and you do not have to make
+it blindly. Download the script, read it, then run it:
+
+```sh
+curl -fsSL -o install.sh https://raw.githubusercontent.com/nooodara/noodara/main/install.sh
+less install.sh
+sh install.sh
+```
+
+This is the same guidance Docker's own `get.docker.com` installer gives, and it is the recommended
+path for anyone who will not run a remote script as root sight-unseen. The script is strict POSIX
+`sh`: every function is self-contained, and the only thing that ever runs at the top level is a
+single guarded call at the very bottom of the file — a connection dropped mid-download can only
+ever leave a partial set of function definitions behind, never a half-finished install.
+
+## What gets installed
+
+The installer brings up six Docker Compose services under `/opt/noodara`:
+
+| Service | What it runs |
+|---|---|
+| `postgres` | The database, in a named volume |
+| `redis` | The queue and cache, in a named volume |
+| `migrate` | A one-shot that applies database migrations, then exits |
+| `api` | The control-plane HTTP API |
+| `worker` | The background job worker |
+| `web` | The panel UI, proxying `/api/*` to `api` |
+
+Only `web` publishes a port on the host — the one you set with `NOODARA_PORT` (default `3000`).
+`postgres` and `redis` are not reachable from outside the host at all; `api` is reached only
+through `web`'s own proxy.
+
+Everything lives under `/opt/noodara`:
+
+- `docker-compose.yml` — the topology above, mode `644`, replaced on every run so an upgrade picks
+  up any topology change.
+- `.env` — every secret and setting, mode `600`, owned by root. This file is generated once, on a
+  fresh install, and never regenerated afterward.
+- `install.log` — a plain, timestamped record of which steps ran. It never contains a secret or
+  the setup token, only step names and the names (never the values) of variables that were
+  generated or preserved.
+
+Data lives in two named Docker volumes, not bind mounts, so it survives a `docker compose down`
+and an upgrade without any extra configuration.
+
+`api`/`migrate`/`worker` all run the same published image,
+`ghcr.io/<owner>/noodara-control-plane:<version>`, differing only by which command they run inside
+it; `web` runs `ghcr.io/<owner>/noodara-web:<version>`. Both images are published for `linux/amd64`
+and `linux/arm64` as a single multi-arch manifest, and `<version>` is always an explicit release
+tag — the installer never pulls the unversioned tag, so a restart can never silently change which
+release is running.
+
+<ScopeNote id="domains-tls" />
+
+## Plain HTTP warning
+
+**The default install serves the panel over plain, unencrypted HTTP.** When the resolved panel URL
+starts with `http://`, the installer writes `NOODARA_COOKIE_INSECURE=true` into `.env`, which
+disables the session cookie's `Secure` attribute so you can still log in over an unencrypted
+connection. This also means the session cookie — and the one-time setup token, the first time you
+use it — travel in the clear. Anyone able to observe traffic between your browser and the server
+can read them.
+
+Noodara does not terminate TLS. To add TLS today:
+
+1. Put a reverse proxy (for example Caddy or nginx) in front of the panel, terminating TLS there
+   and forwarding to `127.0.0.1:<NOODARA_PORT>`.
+2. Edit `/opt/noodara/.env`: set `NOODARA_PUBLIC_URL` to the `https://` origin the proxy serves,
+   and remove the `NOODARA_COOKIE_INSECURE` line entirely — it is only ever meant to exist for an
+   `http://` origin.
+3. Apply the edit — re-running the installer does **not** do this (see
+   [Supported variables](/docs/reference/variables)); run Compose directly instead:
+
+   ```sh
+   docker compose -f /opt/noodara/docker-compose.yml up -d
+   ```
+
+4. Confirm it took: `docker compose -f /opt/noodara/docker-compose.yml exec api env | grep
+   NOODARA_PUBLIC_URL` should show the new `https://` origin, and logging in through the proxy's
+   `https://` URL should set a session cookie with the `Secure` attribute (visible in the
+   browser's own cookie inspector).
+
+## Firewall
+
+If `ufw` is active, the installer detects it and prints an advisory — it never modifies a firewall
+rule itself. The advisory says, verbatim:
+
+> ufw is active on this server. Docker publishes container ports by inserting its own iptables rules, which typically bypass ufw's rules entirely for published ports -- a port Docker publishes may be reachable from the internet even if ufw shows it as denied.
+
+This is the precise, load-bearing fact: **do not rely on `ufw` to protect the panel's published
+port.** A port Docker has published is commonly reachable from the internet regardless of what
+`ufw status` reports. If you want `ufw` to actually govern Docker's published ports, you need
+additional `DOCKER-USER` iptables-chain configuration beyond `ufw allow`/`ufw deny` — that
+configuration is outside the scope of this installer.
+
+To allow the panel port through `ufw` anyway (for example, if you have already configured the
+`DOCKER-USER` chain):
+
+```sh
+sudo ufw allow <port>/tcp
+```
+
+And, separately:
+
+> Remember your cloud provider's own firewall/security-group rules also apply -- ufw only governs this host.
+
+Your cloud provider's own firewall or security group is a real, independent boundary — check it
+too.

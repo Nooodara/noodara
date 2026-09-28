@@ -1,0 +1,46 @@
+---
+title: Supported variables
+description: Every environment variable install.sh reads, and how to change one after install.
+---
+
+These are the only variables an operator is expected to set. Every other environment variable
+`install.sh` reads is either a fixed default or an internal test seam and is not documented here.
+
+| Variable | Default | Effect |
+|---|---|---|
+| `NOODARA_VERSION` | Latest published release | Pins the exact release tag to install. Must match `[A-Za-z0-9_][A-Za-z0-9_.-]*` (1–128 characters) and must never be `latest`. A leading `v` (e.g. `v0.1.0`) is accepted and stripped automatically. |
+| `NOODARA_PORT` | `3000` | The host port the panel is published on. Must be a number between 1 and 65535. |
+| `NOODARA_PUBLIC_URL` | Auto-detected public IP, then local IP, over `http://` | The public origin the panel is reachable at. Must start with `http://` or `https://` followed by a host, and must not contain whitespace, a single quote, a double quote, a backslash, a dollar sign, a backtick or an embedded newline/carriage return. |
+| `NOODARA_ADMIN_EMAIL` | unset | Pre-seeds the admin account's email. Must be set together with `NOODARA_ADMIN_PASSWORD`, or not at all. |
+| `NOODARA_ADMIN_PASSWORD` | unset | Pre-seeds the admin account's password. At least 12 characters, no single quote, must not equal the admin email or the part of it before the `@`. The control plane also rejects a common password, checked later at boot (see [First login](/docs/getting-started/first-login)). Must be set together with `NOODARA_ADMIN_EMAIL`, or not at all. |
+| `NOODARA_SKIP_RESOURCE_CHECK` | unset | Set to `1` to skip the RAM/disk checks entirely — a deliberate override for a host you already know is fine. |
+
+None of these variables — or any value derived from them — may contain an embedded newline or
+carriage return; the installer rejects any such value outright, naming the variable but never
+echoing the rejected value, before writing anything to disk.
+
+After install, you may edit a small number of keys directly in `/opt/noodara/.env`:
+
+- `NOODARA_PORT` — change the published panel port. The new port must be free on the host.
+- `NOODARA_PUBLIC_URL` — change the panel's public origin.
+- `NOODARA_COOKIE_INSECURE` — remove this line once a TLS proxy is genuinely in front (see the
+  [Install page's Plain HTTP warning](/docs/getting-started/install#plain-http-warning)).
+
+**Re-running the installer does not apply an `.env` edit.** On the same version, with the stack
+already healthy, a re-run is a true no-op (see [Upgrade](/docs/operate/upgrade)): it never runs
+`docker compose up`, so nothing you changed in `.env` is picked up. To apply an edit, run Compose
+directly, from the install directory:
+
+```sh
+docker compose -f /opt/noodara/docker-compose.yml up -d
+```
+
+Compose reads the current `.env` and recreates only the services whose resolved configuration
+changed — `web` for `NOODARA_PORT`, `api`/`worker` for `NOODARA_PUBLIC_URL` or
+`NOODARA_COOKIE_INSECURE` — leaving the rest untouched.
+
+**`.env` always wins over a re-run's environment.** If you pass `NOODARA_PORT` or
+`NOODARA_PUBLIC_URL` as an environment variable to a re-run and it disagrees with what `.env`
+already has recorded, the installer prints a single warning naming both values and keeps the one
+already in `.env`; it never overwrites your edit. To change either value, edit `/opt/noodara/.env`
+directly and apply it with the `docker compose ... up -d` command above.

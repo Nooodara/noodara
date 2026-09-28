@@ -1,0 +1,17 @@
+---
+title: Backups
+description: What to back up yourself before you rely on an installation.
+---
+
+This release has no managed, automatic backups. Two things are worth backing up yourself before
+you rely on this installation:
+
+- **`/opt/noodara/.env`.** Its `NOODARA_MASTER_KEY` value is unrecoverable if lost — every stored
+  SSH credential becomes permanently undecryptable without it. Back this file up somewhere safe,
+  outside the VPS itself.
+- **The two named Docker volumes** (`noodara_postgres_data` and `noodara_redis_data`), especially
+  before an upgrade. A `pg_dump` of the `postgres` volume, taken and stored off the host, is the
+  simplest option today.
+
+`install.log` never contains a secret — it is safe to share for diagnosis. `.env.bak-*` files do
+contain secrets, exactly like `.env` itself, and should be handled and stored the same way.

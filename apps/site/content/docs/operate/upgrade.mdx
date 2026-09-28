@@ -1,0 +1,31 @@
+---
+title: Upgrade
+description: Upgrading is re-running the exact same install command.
+---
+
+Upgrading is re-running the exact same install command, optionally pinning a specific release with
+`NOODARA_VERSION`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sh
+```
+
+What actually happens depends on what the installer finds:
+
+- **Same version, stack already healthy** — a true no-op. Nothing is written: no backup, no image
+  pull, no `docker compose up`. Only a single, immediate health check runs, and the summary is
+  printed again.
+- **Same version, stack stopped or unhealthy** — a repair. The installer prints "The stack is not
+  healthy; starting it.", then pulls images and brings the stack back up. `.env` is not touched —
+  there is nothing to change when the version has not moved.
+- **Different version** — a genuine upgrade. The installer backs up `.env` to a timestamped copy
+  (see below), records the version you are moving from, updates `.env`'s version line, pulls the
+  new images and brings the stack up on the new version.
+
+Every one of these paths preserves your existing secrets and data. Nothing here ever regenerates a
+secret, deletes a volume, or touches a value already present in `.env` — an upgrade only ever adds
+a variable a newer release genuinely requires, and only when it is not already there.
+
+Before any upgrade write, the installer copies the current `.env` to
+`/opt/noodara/.env.bak-<timestamp>`, mode `600`. **This backup file contains the same secrets as
+`.env` itself** — treat it with the same care.

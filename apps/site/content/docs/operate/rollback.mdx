@@ -1,0 +1,23 @@
+---
+title: Rollback
+description: Go back to a previous release when an upgrade's health check fails.
+---
+
+There is no automatic rollback in this release. If an upgrade's health check fails, the installer
+exits with a non-zero status, shows the log tail of the service that failed to become healthy, and
+tells you the exact command to go back. As root:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | NOODARA_VERSION=<previous-version> sh
+```
+
+Or with `sudo` (the variable must go after `sudo`, same as on the [Install](/docs/getting-started/install) page):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sudo NOODARA_VERSION=<previous-version> sh
+```
+
+The previous version is the one the installer names in that message — it is also recorded in
+`/opt/noodara/.env` for later reference. A failed upgrade never rolls back on its own, and it never
+touches your data volumes or your existing `.env` beyond what the upgrade attempt itself already
+wrote (the one `.env.bak-<timestamp>` backup described in [Upgrade](/docs/operate/upgrade)).

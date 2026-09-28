@@ -1,0 +1,28 @@
+---
+title: Exit codes
+description: Every exit code install.sh can produce, taken directly from the script.
+---
+
+This is the complete list of exit codes the installer can produce, taken directly from the script.
+For what to do about each one, see [Troubleshooting](/docs/operate/troubleshooting).
+
+| Exit code | Reason |
+|---|---|
+| 10 | Not running as root |
+| 11 | A required command is missing |
+| 12 | Unsupported operating system |
+| 13 | Unsupported architecture |
+| 14 | Insufficient RAM |
+| 15 | Insufficient free disk |
+| 16 | The panel port is already in use |
+| 17 | Docker was installed via snap |
+| 20 | Docker Engine installation failed |
+| 21 | The Compose plugin is still missing after installation |
+| 22 | Docker is installed but its daemon is not responding |
+| 30 | Writing `.env` (or a value in it) failed |
+| 40 | Could not resolve which version to install |
+| 41 | Could not resolve a public URL |
+| 50 | Pulling images failed |
+| 51 | `docker compose up` failed |
+| 52 | Database migrations failed |
+| 53 | A service did not become healthy in time |

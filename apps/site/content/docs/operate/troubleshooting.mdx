@@ -1,0 +1,60 @@
+---
+title: Troubleshooting
+description: The complete exit code table and the commands to diagnose a failed install.
+---
+
+Every failure the installer can produce has its own exit code and its own actionable message.
+This is the complete table, taken directly from the script:
+
+| Exit code | Reason | What to do |
+|---|---|---|
+| 10 | Not running as root | Re-run the installer with `sudo`. |
+| 11 | A required command is missing | Install the named command (`curl`, `openssl`, `ss`, `ip`, `awk` or `grep`) and re-run. |
+| 12 | Unsupported operating system | Noodara requires Ubuntu 22.04 or 24.04. |
+| 13 | Unsupported architecture | Noodara requires `amd64` or `arm64`. |
+| 14 | Insufficient RAM | Free up memory, add RAM, or set `NOODARA_SKIP_RESOURCE_CHECK=1` to override deliberately. |
+| 15 | Insufficient free disk | Free up disk space, or set `NOODARA_SKIP_RESOURCE_CHECK=1` to override deliberately. |
+| 16 | The panel port is already in use | Set `NOODARA_PORT=<other>` and re-run. |
+| 17 | Docker was installed via snap | Remove it (`sudo snap remove docker`) and re-run — Noodara does not support a snap-installed Docker. |
+| 20 | Docker Engine installation failed | Read the `apt` output printed above the error and fix the underlying issue, or install Docker manually. |
+| 21 | The Compose plugin is still missing after installation | Install `docker-compose-plugin` manually and re-run. |
+| 22 | Docker is installed but its daemon is not responding | Start it (`sudo systemctl start docker`) and re-run. Nothing is touched — the installer never removes or reinstalls an existing Docker. |
+| 30 | Writing `.env` (or a value in it) failed | The message names the exact variable or file operation that failed; fix it and re-run. |
+| 40 | Could not resolve which version to install | Set `NOODARA_VERSION=<tag>` explicitly and re-run. |
+| 41 | Could not resolve a public URL | Set `NOODARA_PUBLIC_URL=<url>` explicitly and re-run. |
+| 50 | Pulling images failed | Check network connectivity and the resolved image tags, then re-run. |
+| 51 | `docker compose up` failed | Read Compose's own error and the service state printed above. Data and secrets are untouched. |
+| 52 | Database migrations failed | Read the `migrate` service's log tail printed above. Data and secrets are untouched. |
+| 53 | A service did not become healthy in time | Read the named service's log tail printed above. Data and secrets are untouched; see [Rollback](/docs/operate/rollback) if this happened during an upgrade. |
+
+**Reading logs:**
+
+```sh
+docker compose -f /opt/noodara/docker-compose.yml logs <service>
+```
+
+**Checking health:**
+
+```sh
+docker compose -f /opt/noodara/docker-compose.yml ps
+docker compose -f /opt/noodara/docker-compose.yml exec -T api node -e "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" && echo healthy
+curl -I http://127.0.0.1:<port>/login
+```
+
+The `ps` HEALTH column reflects each service's own Compose `healthcheck:`. The middle command
+re-runs the `api` container's own healthcheck by hand, from inside the container against its
+`/health` route directly (the same call `docker-compose.yml`'s `api` healthcheck itself makes) —
+only `web` publishes a port on the host, and `web` only proxies `/api/*` to `api` (see
+[What gets installed](/docs/getting-started/install#what-gets-installed)), so `/health` is never
+reachable from outside the container. The last command confirms the panel itself is answering on
+the port you published.
+
+**Running the operator CLI inside the running `api` container:**
+
+```sh
+docker compose -f /opt/noodara/docker-compose.yml exec api node dist/cli/index.js admin reset
+docker compose -f /opt/noodara/docker-compose.yml exec api node dist/cli/index.js secrets rotate
+```
+
+`admin reset` issues a one-time recovery token for the existing admin account. `secrets rotate`
+re-encrypts every stored credential under a newly rotated master key.
