@@ -179,6 +179,32 @@ lookup this session), and `08-11-PLAN.md`'s in-place fix to the existing hand-ro
 is recorded here so a future reader does not re-litigate installing it without first re-running the
 `[ASSUMED]`-package human checkpoint the Package Legitimacy Gate protocol requires.
 
+### Phase 10 additions
+
+`10-RESEARCH.md`'s Package Legitimacy Audit evaluated the five packages `apps/site` (the public
+docs/landing site, 10-01-PLAN.md) needs: `fumadocs-core`, `fumadocs-ui`, `fumadocs-mdx`,
+`flexsearch` and `@types/mdx`. All five ran through `slopcheck install fumadocs-core fumadocs-ui
+fumadocs-mdx` (2026-09-27) and scored `[OK]` ("scanned 3 packages, 3 OK"); `flexsearch` and
+`@types/mdx` (added by the planner as required peers of `fumadocs-core`/`fumadocs-mdx`/
+`fumadocs-ui`) were each independently `slopcheck scan`ned the same day, also `[OK]`. No package
+was removed or flagged suspicious.
+
+| Package | Expected repository | Resolved version | slopcheck verdict | Date |
+|---|---|---|---|---|
+| fumadocs-core | fuma-nama/fumadocs | 16.15.15 | `[OK]` | 2026-09-27 |
+| fumadocs-ui | fuma-nama/fumadocs | 16.15.15 | `[OK]` | 2026-09-27 |
+| fumadocs-mdx | fuma-nama/fumadocs | 15.4.5 | `[OK]` | 2026-09-27 |
+| flexsearch | nextapps-de/flexsearch | 0.8.212 | `[OK]` | 2026-09-27 |
+| @types/mdx | DefinitelyTyped/DefinitelyTyped | 2.0.14 | `[OK]` | 2026-09-27 |
+
+The docs search backend is `fumadocs-core/search/flexsearch`'s **static** client
+(`flexsearchStaticClient`), not Orama -- `10-RESEARCH.md`'s "State of the Art" section corrects
+`.planning/research/STACK.md`'s original "Orama" assumption: Orama's current Fumadocs integration
+is server/API-route-based and does not work inside `output: 'export'`, while flexsearch's static
+client runs entirely client-side against a build-time JSON index. D-08's intent -- static search,
+zero third parties -- is unchanged; only the concrete library differs from the earlier research
+pass.
+
 ## Re-running this check
 
 This check must be re-run whenever one of these pins changes, or before

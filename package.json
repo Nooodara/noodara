@@ -7,8 +7,10 @@
   },
   "packageManager": "pnpm@10.34.5",
   "scripts": {
-    "dev": "turbo run dev dev:worker",
-    "build": "turbo run build",
+    "dev": "turbo run dev dev:worker --filter=!@noodara/site",
+    "build": "turbo run build --filter=!@noodara/site",
+    "site:dev": "pnpm --filter @noodara/site dev",
+    "site:build": "pnpm --filter @noodara/site build",
     "start": "pnpm --filter @noodara/control-plane start",
     "start:worker": "pnpm --filter @noodara/control-plane start:worker",
     "lint": "turbo run lint",

@@ -51,7 +51,7 @@ export default defineConfig({
           // and apps/web (once it exists) must not inherit the `apps` project's control-plane
           // env stand-ins below -- a browser-side app has no business reading
           // NOODARA_MASTER_KEY/DATABASE_URL/etc.
-          include: ['packages/ui/src/**/*.test.tsx', 'apps/web/src/**/*.test.tsx'],
+          include: ['packages/ui/src/**/*.test.tsx', 'apps/web/src/**/*.test.tsx', 'apps/site/src/**/*.test.tsx'],
           environment: 'jsdom',
           setupFiles: ['./vitest.setup.dom.ts'],
         },

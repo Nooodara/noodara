@@ -35,5 +35,10 @@ docs/brand/review/*
 docs/ui/review/*
 !docs/ui/review/README.md
 
+# Public site build output (10-01)
+# Regenerated on demand by `pnpm site:build`/`pnpm --filter @noodara/site build`; never committed.
+apps/site/out/
+apps/site/.source/
+
 # OS
 .DS_Store
