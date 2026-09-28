@@ -1,0 +1,18 @@
+---
+title: Project
+description: The top-level grouping of a Noodara deployment.
+---
+
+A Project is the top-level container in Noodara's model. It groups one or more Environments, each
+of which in turn groups the Services that make up an application.
+
+```text
+Project → Environment → Service → Deployment
+```
+
+A Project has a name and, later, its own shared configuration; every Environment underneath it
+belongs to exactly one Project.
+
+Noodara does not create or deploy Projects from the panel in this release — the model exists so
+the rest of this documentation, and the releases that build on it, have a name for "everything
+that belongs together."

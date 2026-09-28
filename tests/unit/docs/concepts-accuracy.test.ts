@@ -31,9 +31,12 @@ const webSrcText = () =>
     .map((file) => readFileSync(file, 'utf8'))
     .join('\n');
 
-/** Every `**...**` bold span in a Markdown string, in order of appearance. */
+/** Every `**...**` bold span in a Markdown string, in order of appearance. Hard line wraps inside
+ *  a span (prose-wrapped source, not a real line break) are collapsed to a single space first, so
+ *  a label wrapped across two lines still matches its verbatim, unwrapped source string. */
 function boldSpans(text: string): string[] {
-  return [...text.matchAll(/\*\*([^*]+)\*\*/g)].map((m) => m[1] ?? '').filter((s) => s.length > 0);
+  const unwrapped = text.replace(/\*\*([^*]+)\*\*/gs, (_m, inner: string) => `**${inner.replace(/\s+/g, ' ')}**`);
+  return [...unwrapped.matchAll(/\*\*([^*]+)\*\*/g)].map((m) => m[1] ?? '').filter((s) => s.length > 0);
 }
 
 const FORBIDDEN_UI_PHRASES = ['in the panel you can', 'click', 'the UI lets', 'open the'];
@@ -81,7 +84,11 @@ describe('concepts/server.mdx statuses match the domain', () => {
     const match = page.match(/## Statuses\n([\s\S]*?)(\n## |$)/);
     expect(match, '"## Statuses" section not found').toBeTruthy();
     const section = match?.[1] ?? '';
-    const words = [...section.matchAll(/^\|\s*([A-Za-z]+)\s*\|/gm)].map((m) => m[1] ?? '');
+    // Table body only -- skip the header row and the `|---|---|` separator, both of which
+    // precede the first `|---` line.
+    const bodyStart = section.indexOf('\n|---');
+    const body = bodyStart === -1 ? '' : section.slice(bodyStart);
+    const words = [...body.matchAll(/^\|\s*([A-Za-z]+)\s*\|/gm)].map((m) => m[1] ?? '');
 
     const expectedWords = SERVER_STATUSES.map((status) => STATUS_WORDS[status]);
     expect(new Set(words)).toEqual(new Set(expectedWords));

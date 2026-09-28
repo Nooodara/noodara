@@ -1,0 +1,56 @@
+---
+title: Your first server
+description: Connect an Ubuntu server over SSH and watch Noodara discover it.
+---
+
+This guide walks the real flow, start to finish: install the panel, sign in, add a server, trust
+its host key, watch discovery run, and read what it found.
+
+## 1. Install and sign in
+
+Follow [Install](/docs/getting-started/install) and then
+[First login](/docs/getting-started/first-login) to get the panel running and create the admin
+account.
+
+No agent is installed on the server at any point in this guide. Noodara reaches it only over SSH,
+using the credential you give it below.
+
+## 2. Add a server
+
+From the server list, open **Add server**. It asks for:
+
+- **Name** — how the server appears in the panel.
+- **Host** — the hostname or IP address.
+- **SSH port** — `22` unless you changed it.
+- **SSH user** — the account Noodara connects as (root, or a user with `sudo`).
+- A credential: either **Password** or **Private key**.
+
+Choose **Save and connect** to register the server and connect immediately, or **Save without
+connecting** to register it and connect later.
+
+## 3. Trust the fingerprint
+
+The first time Noodara connects, the server presents its SSH host key fingerprint. Noodara shows
+it in blocks of four characters — the way a person actually compares a hash by eye — and asks you
+to trust it before continuing, the same trust-on-first-use step any SSH client asks for. Compare it
+against the fingerprint from the server itself (your cloud provider's console, or `ssh-keygen -lf`
+run on the server), not from the panel alone: the whole point of the check is to verify the two
+independently.
+
+If the server's host key ever changes later, Noodara shows the previously trusted fingerprint next
+to the new one and asks you to review both before you press **Trust new fingerprint**.
+
+## 4. Discovery
+
+Once connected, Noodara runs discovery over the same SSH session, step by step: SSH reachable,
+Authenticated, then OS, Resources, Docker and Access. Each step reports pass or fail as it
+completes — nothing is shown before it has actually run.
+
+## 5. Read the server detail
+
+When discovery finishes, the server detail page shows what it found: the OS and architecture, CPU
+cores, RAM, disk, uptime, and whether Docker is installed. Every fact is timestamped "as of" the
+discovery run that produced it — these are point-in-time results, not a live metric.
+
+If something goes wrong along the way, see [Troubleshooting](/docs/operate/troubleshooting) or the
+full [error codes reference](/docs/reference/error-codes).

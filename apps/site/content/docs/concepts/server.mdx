@@ -1,0 +1,27 @@
+---
+title: Server
+description: An Ubuntu host Noodara reaches over SSH.
+---
+
+A Server is a single Ubuntu 22.04 or 24.04 host that Noodara connects to over SSH. Its
+credential — a password or a private key — is encrypted at rest and never shown again once saved,
+including to Noodara's own admins.
+
+## Statuses
+
+| Status | Meaning |
+|---|---|
+| Pending | Registered, never connected. |
+| Connecting | A connect attempt is in progress. |
+| Connected | The last connection or discovery run succeeded. |
+| Disconnected | Closed cleanly; nothing is wrong. |
+| Unreachable | The host did not respond in time. |
+| Error | Authentication failed, the host key changed, or a command failed. |
+
+A server can always retry: no status is a dead end.
+
+## Fingerprint trust
+
+Noodara verifies the server's SSH host key fingerprint the first time it connects, and again if
+the key ever changes, before trusting it — see
+[Your first server](/docs/getting-started/first-server) for the exact steps.

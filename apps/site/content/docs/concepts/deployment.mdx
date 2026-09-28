@@ -1,0 +1,13 @@
+---
+title: Deployment
+description: One attempt to build and run a Service.
+---
+
+A Deployment is one attempt to build and run a Service: it has a source commit, a status, and a
+start and end time. Each Deployment belongs to exactly one Service, and a Service can have many
+Deployments over time — one per attempt, successful or not.
+
+<ScopeNote id="deploy-services" />
+
+Noodara records no Deployments in this release: the model exists so the rest of this
+documentation, and the release that builds on it, have a name for "one attempt to run a Service."

@@ -1,0 +1,16 @@
+---
+title: Environment
+description: A named grouping of Services inside a Project, such as production or staging.
+---
+
+An Environment groups the Services that run together for one purpose — typically `production`,
+`staging` or `development`, though the name is free text. It belongs to exactly one Project, and
+its name is unique within that Project.
+
+Configuration meant for every Service in an Environment — shared environment variables and
+secrets — is scoped at the Environment level, so it does not have to be repeated on each Service
+underneath it.
+
+<ScopeNote id="app-config" />
+
+Noodara does not create or deploy Environments from the panel in this release.
