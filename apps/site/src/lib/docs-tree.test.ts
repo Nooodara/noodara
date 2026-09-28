@@ -4,7 +4,7 @@
 // whether Fumadocs' own loader parses the tree the same way (that's proven separately by the real
 // `pnpm --filter @noodara/site build` route summary in Task 2). Runs under the `apps` vitest
 // project (apps/*/src/**/*.test.ts, node environment) -- see vitest.config.ts.
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -90,6 +90,24 @@ describe('content/docs meta.json tree (D-08 four-group sidebar order)', () => {
         expect(owner, `"${slug}" appears in both "${owner ?? ''}" and "${group}"`).toBeUndefined();
         seen.set(slug, group);
       }
+    }
+  });
+
+  it('every listed slug has an MDX file, and every MDX file (outside index) is listed', () => {
+    const groups = ['getting-started', 'concepts', 'operate', 'reference'] as const;
+    const listedSlugs = new Set<string>();
+    for (const group of groups) {
+      const meta = readMetaJson(group, 'meta.json');
+      for (const slug of meta.pages ?? []) {
+        listedSlugs.add(`${group}/${slug}`);
+        expect(existsSync(path.join(CONTENT_DOCS_DIR, group, `${slug}.mdx`)), `"${group}/${slug}" has no MDX file`).toBe(true);
+      }
+    }
+
+    const mdxFiles = listMdxFiles().filter((relativePath) => relativePath !== 'index.mdx');
+    for (const relativePath of mdxFiles) {
+      const slug = relativePath.replace(/\.mdx$/, '');
+      expect(listedSlugs.has(slug), `"${slug}.mdx" exists but is not listed in any meta.json`).toBe(true);
     }
   });
 
