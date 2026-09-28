@@ -22,7 +22,6 @@
 // ESM, node builtins only (no third-party dependency at config-evaluation time).
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
 
 export const SITE_ORIGIN = 'https://noodara.com';
 
