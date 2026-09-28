@@ -1,13 +1,12 @@
-// 10-12-PLAN.md Round 1 (D-18a). RED: written before apps/site/src/lib/use-scroll-reveal.ts
-// exists. This is the ONE file in apps/site allowed to reference IntersectionObserver literally
-// (Landing.test.tsx's source scan bans it inside components/landing/ -- the hook lives outside
-// that directory on purpose, consumed only through the RevealSection wrapper component).
+// 10-12-PLAN.md Round 1 fix batch (orchestrator review). RED: written before the rewritten
+// useScrollReveal exists. Replaces the previous "flip to false immediately after mount, force-
+// reveal after a fallback timer" behaviour (which flickered every already-visible section
+// visible -> hidden -> visible and never actually revealed on real scroll) with three contracts:
 //
-// Progressive-enhancement contract: `revealed` starts `true` (safe default -- content is visible
-// before hydration and with no JS/no IntersectionObserver support), then briefly flips to `false`
-// only when a real observer is available, until the element's first intersection fires it back to
-// `true` and the observer disconnects (once-only, D-18a: "never re-fires").
-
+// 1. A node already within the initial viewport (`rect.top <= window.innerHeight`) is NEVER
+//    hidden -- `revealed` stays `true` for its whole life, no flicker.
+// 2. A node below the initial viewport starts hidden, then reveals once it genuinely intersects.
+// 3. `prefers-reduced-motion: reduce` never hides anything, regardless of position.
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useScrollReveal } from './use-scroll-reveal';
@@ -30,12 +29,42 @@ class FakeIntersectionObserver {
   }
 
   unobserve(): void {
-    // no-op: this hook is expected to call disconnect() instead, asserted below.
+    // no-op: this hook calls disconnect() instead, asserted below.
   }
 
   disconnect(): void {
     this.disconnected = true;
   }
+}
+
+function stubMatchMedia(reduced: boolean): void {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockImplementation((query: string) => ({
+      matches: reduced && query.includes('prefers-reduced-motion'),
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+}
+
+/** Stubs `getBoundingClientRect` on every element to report the given `top`, and sets
+ *  `window.innerHeight`. jsdom's own layout engine always returns 0 for every rect, so a "below
+ *  the fold" node has to be simulated explicitly. */
+function stubViewport({ top, innerHeight }: { top: number; innerHeight: number }): void {
+  Element.prototype.getBoundingClientRect = vi.fn().mockReturnValue({
+    top,
+    left: 0,
+    right: 0,
+    bottom: top,
+    width: 0,
+    height: 0,
+    x: 0,
+    y: top,
+    toJSON: () => ({}),
+  });
+  vi.stubGlobal('innerHeight', innerHeight);
 }
 
 function Probe({ onState }: { onState: (revealed: boolean) => void }) {
@@ -48,6 +77,7 @@ afterEach(() => {
   cleanup();
   FakeIntersectionObserver.instances = [];
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe('useScrollReveal', () => {
@@ -58,13 +88,26 @@ describe('useScrollReveal', () => {
     expect(latest).toBe(true);
   });
 
-  it('flips to false after mount, then back to true once the observed element intersects, and disconnects (once)', () => {
+  it('a node already within the initial viewport is never hidden (no flicker)', () => {
     vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver);
+    stubMatchMedia(false);
+    stubViewport({ top: 100, innerHeight: 800 });
+
     let latest = false;
     render(<Probe onState={(revealed) => (latest = revealed)} />);
 
-    // After mount, the effect observed the real DOM node and (because it is not yet reported
-    // intersecting) flipped revealed to false.
+    expect(latest).toBe(true);
+    expect(FakeIntersectionObserver.instances).toHaveLength(0);
+  });
+
+  it('a node below the initial viewport hides, then reveals once it genuinely intersects, and disconnects (once)', () => {
+    vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver);
+    stubMatchMedia(false);
+    stubViewport({ top: 2000, innerHeight: 800 });
+
+    let latest = false;
+    render(<Probe onState={(revealed) => (latest = revealed)} />);
+
     expect(latest).toBe(false);
 
     const observer = FakeIntersectionObserver.instances.at(-1);
@@ -79,5 +122,17 @@ describe('useScrollReveal', () => {
 
     expect(latest).toBe(true);
     expect(observer.disconnected).toBe(true);
+  });
+
+  it('prefers-reduced-motion never hides, even for a node below the initial viewport', () => {
+    vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver);
+    stubMatchMedia(true);
+    stubViewport({ top: 2000, innerHeight: 800 });
+
+    let latest = false;
+    render(<Probe onState={(revealed) => (latest = revealed)} />);
+
+    expect(latest).toBe(true);
+    expect(FakeIntersectionObserver.instances).toHaveLength(0);
   });
 });

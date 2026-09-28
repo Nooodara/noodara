@@ -7,13 +7,13 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { APPROVED_SCREENS, INSTALL_COMMAND } from '../../lib/site-facts';
-import { CAPABILITY_TITLES, DELIVERED_CAPABILITIES } from '../../content/scope';
+import { DELIVERED_CAPABILITIES } from '../../content/scope';
+import { FEATURE_GRID_CELLS, FEATURE_GRID_DESKTOP_COLUMNS } from '../../content/feature-grid';
 import { InstallCommand } from './InstallCommand';
 import { ScreenshotFrame } from './ScreenshotFrame';
 import { HowItWorksDiagram } from './HowItWorksDiagram';
 import { FeatureGrid } from './FeatureGrid';
 import { ProductTour } from './ProductTour';
-import { PrinciplesBand } from './PrinciplesBand';
 import { FAQSection } from './FAQSection';
 import { ClosingCta } from './ClosingCta';
 import { CapabilityGlyph } from './CapabilityGlyph';
@@ -106,9 +106,11 @@ describe('ScreenshotFrame', () => {
   });
 });
 
-// 10-12-PLAN.md Round 1 (D-02a). RED: written before FeatureGrid/ProductTour/PrinciplesBand/
-// FAQSection/ClosingCta/CapabilityGlyph exist -- replaces the old three-pillar PillarCard
-// coverage above with coverage for the feature grid + tabbed product tour that supersede it.
+// 10-12-PLAN.md Round 1 (D-02a). RED: written before FeatureGrid/ProductTour/FAQSection/
+// ClosingCta/CapabilityGlyph exist -- replaces the old three-pillar PillarCard coverage above
+// with coverage for the feature grid + tabbed product tour that supersede it. (PrinciplesBand
+// existed briefly in this round and was removed in the fix batch -- it repeated four FeatureGrid
+// cells word for word; see HowItWorksDiagram.tsx and Landing.tsx for where that content lives.)
 
 describe('CapabilityGlyph', () => {
   it('renders one aria-hidden <svg> per known capability id, every stroke/fill currentColor or none', () => {
@@ -131,14 +133,22 @@ describe('CapabilityGlyph', () => {
 });
 
 describe('FeatureGrid', () => {
-  it('renders one cell per DELIVERED_CAPABILITIES entry, each with its title and claim', () => {
+  it('renders every DELIVERED_CAPABILITIES claim exactly once, grouped into 9 cells (a multiple of the desktop column count, no ragged row)', () => {
     render(<FeatureGrid />);
-    expect(DELIVERED_CAPABILITIES.length).toBeGreaterThanOrEqual(8);
-    expect(DELIVERED_CAPABILITIES.length).toBeLessThanOrEqual(12);
+    expect(FEATURE_GRID_CELLS.length).toBe(9);
+    expect(FEATURE_GRID_CELLS.length % FEATURE_GRID_DESKTOP_COLUMNS).toBe(0);
     for (const capability of DELIVERED_CAPABILITIES) {
-      expect(screen.getByText(CAPABILITY_TITLES[capability.id])).toBeInTheDocument();
       expect(screen.getByText(capability.claim)).toBeInTheDocument();
     }
+    for (const cell of FEATURE_GRID_CELLS) {
+      expect(screen.getByText(cell.title)).toBeInTheDocument();
+    }
+  });
+
+  it('never uses a 2-column tablet tier (grid-cols-2) -- only 1 column mobile, 3 columns desktop, so 9 cells never end a row short', () => {
+    const { container } = render(<FeatureGrid />);
+    const grid = container.querySelector('[data-testid="feature-grid"]');
+    expect(grid?.className).not.toMatch(/grid-cols-2/);
   });
 
   it('renders no element with a class or style containing "shadow"', () => {
@@ -149,17 +159,6 @@ describe('FeatureGrid', () => {
       return /shadow/i.test(className) || /shadow/i.test(style);
     });
     expect(offenders).toHaveLength(0);
-  });
-});
-
-describe('PrinciplesBand', () => {
-  it('renders the four "how it is built" claims (encrypted-credentials/fingerprint-trust/explicit-timeouts/connect-ssh)', () => {
-    render(<PrinciplesBand />);
-    for (const id of ['encrypted-credentials', 'fingerprint-trust', 'explicit-timeouts', 'connect-ssh'] as const) {
-      const capability = DELIVERED_CAPABILITIES.find((c) => c.id === id);
-      if (capability === undefined) throw new Error(`fixture bug: unknown capability id "${id}"`);
-      expect(screen.getByText(capability.claim)).toBeInTheDocument();
-    }
   });
 });
 

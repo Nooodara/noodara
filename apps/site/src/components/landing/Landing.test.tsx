@@ -9,7 +9,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CAPABILITY_TITLES, DELIVERED_CAPABILITIES, findExcludedTerms, SCOPE_EXCLUSIONS } from '../../content/scope';
+import { DELIVERED_CAPABILITIES, findExcludedTerms, SCOPE_EXCLUSIONS } from '../../content/scope';
+import { FEATURE_GRID_CELLS } from '../../content/feature-grid';
 import { APPROVED_SCREENS, GITHUB_URL, INSTALL_COMMAND } from '../../lib/site-facts';
 import { Landing } from './Landing';
 
@@ -70,12 +71,15 @@ describe('Landing', () => {
     expect(githubLink).toHaveAttribute('href', GITHUB_URL);
   });
 
-  it('renders a feature grid with every DELIVERED_CAPABILITIES title and claim (D-02a)', () => {
+  it('renders a feature grid with every DELIVERED_CAPABILITIES claim, grouped into 9 cells (D-02a, Round 1 fix)', () => {
     render(<Landing />);
     const grid = within(screen.getByTestId('feature-grid'));
+    expect(FEATURE_GRID_CELLS.length).toBe(9);
     for (const capability of DELIVERED_CAPABILITIES) {
-      expect(grid.getByText(CAPABILITY_TITLES[capability.id])).toBeInTheDocument();
       expect(grid.getByText(claimFor(capability.id))).toBeInTheDocument();
+    }
+    for (const cell of FEATURE_GRID_CELLS) {
+      expect(grid.getByText(cell.title)).toBeInTheDocument();
     }
   });
 
@@ -85,11 +89,21 @@ describe('Landing', () => {
     expect(tabs).toHaveLength(APPROVED_SCREENS.length);
   });
 
-  it('renders a "How it is built" principles band with encrypted-credentials/explicit-timeouts claims (D-02a)', () => {
+  it('does not render a redundant "How it is built" band duplicating FeatureGrid cells (Round 1 fix)', () => {
     render(<Landing />);
-    const band = within(screen.getByTestId('principles-band'));
-    expect(band.getByText(claimFor('encrypted-credentials'))).toBeInTheDocument();
-    expect(band.getByText(claimFor('explicit-timeouts'))).toBeInTheDocument();
+    expect(screen.queryByTestId('principles-band')).toBeNull();
+  });
+
+  it('"How it works" step captions never duplicate a DELIVERED_CAPABILITIES claim verbatim (no redundant section)', () => {
+    const claims = new Set<string>(DELIVERED_CAPABILITIES.map((c) => c.claim));
+    const stepCaptions = [
+      'Install Noodara on an Ubuntu VPS',
+      'Add your servers over SSH — no agent',
+      'Noodara discovers and watches them',
+    ];
+    for (const caption of stepCaptions) {
+      expect(claims.has(caption)).toBe(false);
+    }
   });
 
   it('renders an FAQ of native <details> disclosures, answers backed by DELIVERED_CAPABILITIES claims (D-02a)', () => {
