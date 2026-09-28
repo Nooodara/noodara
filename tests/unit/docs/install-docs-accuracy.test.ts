@@ -1,40 +1,69 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// Plan 06-14: docs/install.md and README.md are operator-facing documentation for a script
-// (install.sh) that already exists and has already passed through ~10 audit-driven post-execution
-// fixes across plans 06-04..06-13. The docs must describe the script that actually ships, not the
-// one any single plan described in advance -- so accuracy here is tested against install.sh's own
-// source, never asserted by hand. Mirrors tests/unit/scripts/check-workflow-pins.test.ts's own
-// "structural proof against the real files" pattern: everything below is read from disk, with no
-// network call and no shell execution.
+// Plan 10-08 (D-07): the install text now lives only in apps/site/content/docs -- docs/install.md
+// is a short stub. The "doc that can't lie" discipline from plan 06-14 carries over unchanged:
+// every fact below is read from the real MDX pages and diffed against install.sh's own source,
+// never hand-typed or asserted by hand. Mirrors tests/unit/scripts/check-workflow-pins.test.ts's
+// own "structural proof against the real files" pattern: everything below is read from disk, with
+// no network call and no shell execution.
+
+const DOCS_DIR = 'apps/site/content/docs';
 
 const installSh = () => readFileSync('install.sh', 'utf8');
-const installDocs = () => readFileSync('docs/install.md', 'utf8');
 const readme = () => readFileSync('README.md', 'utf8');
 
-describe('docs/install.md accuracy against install.sh', () => {
-  it('every exit code in noodara_exit_code_for appears in the troubleshooting table with the same number, and no extra code appears', () => {
+/** Reads one MDX page under apps/site/content/docs, e.g. docsPage('getting-started/install'). */
+const docsPage = (rel: string) => readFileSync(path.join(DOCS_DIR, `${rel}.mdx`), 'utf8');
+
+/** Every .mdx file under apps/site/content/docs, concatenated -- for assertions that must hold
+ *  across the whole docs tree rather than any one page. */
+function listMdxFiles(dir: string = DOCS_DIR): string[] {
+  const files: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    const absolute = path.join(dir, entry);
+    if (statSync(absolute).isDirectory()) {
+      files.push(...listMdxFiles(absolute));
+    } else if (entry.endsWith('.mdx')) {
+      files.push(absolute);
+    }
+  }
+  return files;
+}
+
+const allDocsPages = () => listMdxFiles().map((file) => readFileSync(file, 'utf8')).join('\n');
+
+describe('install docs (apps/site/content/docs) accuracy against install.sh', () => {
+  it('every exit code in noodara_exit_code_for appears in the Troubleshooting page table with the same number, and no extra code appears', () => {
     const source = installSh();
     const fnMatch = source.match(/noodara_exit_code_for\(\) \{([\s\S]*?)\n\}/);
     expect(fnMatch, 'noodara_exit_code_for function not found in install.sh').toBeTruthy();
     const body = fnMatch?.[1] ?? '';
-    // Matches lines like: `    not-root) printf '%s\n' 10 ;;` -- never the `*) ... exit 99` default
-    // branch, which starts with a literal `*`, not a word character.
     const codes = [...body.matchAll(/^\s+[\w-]+\)\s*printf '%s\\n' (\d+) ;;/gm)].map((m) => Number(m[1]));
     expect(codes.length).toBeGreaterThan(0);
 
-    const docs = installDocs();
-    const troubleshootingMatch = docs.match(/## Troubleshooting\n([\s\S]*?)(\n## |$)/);
-    expect(troubleshootingMatch, 'Troubleshooting section not found in docs/install.md').toBeTruthy();
-    const section = troubleshootingMatch?.[1] ?? '';
-    const docCodes = [...section.matchAll(/^\|\s*(\d+)\s*\|/gm)].map((m) => Number(m[1]));
+    const page = docsPage('operate/troubleshooting');
+    const docCodes = [...page.matchAll(/^\|\s*(\d+)\s*\|/gm)].map((m) => Number(m[1]));
 
     expect(new Set(docCodes)).toEqual(new Set(codes));
     expect(docCodes.length).toBe(codes.length);
   });
 
-  it("the firewall section quotes install.sh's own ufw wording verbatim, extracted from the script", () => {
+  it('every exit code in noodara_exit_code_for also appears in the Reference › Exit codes page table, and no extra code appears', () => {
+    const source = installSh();
+    const fnMatch = source.match(/noodara_exit_code_for\(\) \{([\s\S]*?)\n\}/);
+    const body = fnMatch?.[1] ?? '';
+    const codes = [...body.matchAll(/^\s+[\w-]+\)\s*printf '%s\\n' (\d+) ;;/gm)].map((m) => Number(m[1]));
+
+    const page = docsPage('reference/exit-codes');
+    const docCodes = [...page.matchAll(/^\|\s*(\d+)\s*\|/gm)].map((m) => Number(m[1]));
+
+    expect(new Set(docCodes)).toEqual(new Set(codes));
+    expect(docCodes.length).toBe(codes.length);
+  });
+
+  it("the Install page quotes install.sh's own ufw wording verbatim, extracted from the script", () => {
     const source = installSh();
     const fnMatch = source.match(/noodara_check_ufw\(\) \{([\s\S]*?)\n\}/);
     expect(fnMatch, 'noodara_check_ufw function not found in install.sh').toBeTruthy();
@@ -45,12 +74,12 @@ describe('docs/install.md accuracy against install.sh', () => {
     expect(bypassMatch, "install.sh's 'typically bypass' sentence not found").toBeTruthy();
     expect(cloudMatch, "install.sh's cloud-provider sentence not found").toBeTruthy();
 
-    const docs = installDocs();
-    expect(docs).toContain(bypassMatch?.[1]);
-    expect(docs).toContain(cloudMatch?.[1]);
+    const page = docsPage('getting-started/install');
+    expect(page).toContain(bypassMatch?.[1]);
+    expect(page).toContain(cloudMatch?.[1]);
   });
 
-  it('no D-19 test-only override variable name appears in docs/install.md or README.md', () => {
+  it('no D-19 test-only override variable name appears anywhere under apps/site/content/docs or in README.md', () => {
     const testOnlyVars = [
       'NOODARA_INTERNAL_IMAGE_PREFIX',
       'NOODARA_INSTALL_SH_SOURCE_ONLY',
@@ -68,16 +97,16 @@ describe('docs/install.md accuracy against install.sh', () => {
       'NOODARA_REPO_NAME',
       'NOODARA_INSTALL_DIR',
     ];
-    const docs = installDocs();
+    const docs = allDocsPages();
     const rm = readme();
     for (const v of testOnlyVars) {
-      expect(docs, `${v} must not appear in docs/install.md (D-19)`).not.toContain(v);
+      expect(docs, `${v} must not appear under apps/site/content/docs (D-19)`).not.toContain(v);
       expect(rm, `${v} must not appear in README.md (D-19)`).not.toContain(v);
     }
   });
 
-  it('every NOODARA_ variable named in docs/install.md actually occurs in install.sh', () => {
-    const docs = installDocs();
+  it('every NOODARA_ variable named anywhere under apps/site/content/docs actually occurs in install.sh', () => {
+    const docs = allDocsPages();
     const source = installSh();
     const names = new Set([...docs.matchAll(/\bNOODARA_[A-Z0-9_]+\b/g)].map((m) => m[0]));
     expect(names.size).toBeGreaterThan(0);
@@ -86,7 +115,7 @@ describe('docs/install.md accuracy against install.sh', () => {
     }
   });
 
-  it("the one-line install command and the download-read-run alternative reference the same script URL, built from install.sh's own placeholder owner/repo", () => {
+  it("the Install page's one-line install command and its download-read-run alternative reference the same script URL, built from install.sh's own placeholder owner/repo", () => {
     const source = installSh();
     const ownerMatch = source.match(/NOODARA_REPO_OWNER="\$\{NOODARA_REPO_OWNER:-([A-Za-z0-9_]+)\}"/);
     const repoMatch = source.match(/NOODARA_REPO_NAME="\$\{NOODARA_REPO_NAME:-([A-Za-z0-9_]+)\}"/);
@@ -96,29 +125,29 @@ describe('docs/install.md accuracy against install.sh', () => {
     const repo = repoMatch?.[1];
     const expectedUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/install.sh`;
 
-    const docs = installDocs();
-    const occurrences = docs.split(expectedUrl).length - 1;
-    expect(occurrences, `expected "${expectedUrl}" to appear at least twice in docs/install.md`).toBeGreaterThanOrEqual(2);
+    const page = docsPage('getting-started/install');
+    const occurrences = page.split(expectedUrl).length - 1;
+    expect(occurrences, `expected "${expectedUrl}" to appear at least twice on the Install page`).toBeGreaterThanOrEqual(2);
   });
 
-  it('the literal :latest image tag never appears in docs/install.md or README.md', () => {
-    expect(installDocs()).not.toContain(':latest');
+  it('the literal :latest image tag never appears under apps/site/content/docs or in README.md', () => {
+    expect(allDocsPages()).not.toContain(':latest');
     expect(readme()).not.toContain(':latest');
   });
 
-  it('no internal planning id (plan number, threat id, decision id) appears in docs/install.md or README.md', () => {
+  it('no internal planning id (plan number, threat id, decision id) appears under apps/site/content/docs or in README.md', () => {
     const patterns: RegExp[] = [/\b0[1-6]-\d{2}\b/, /T-0\d-\d+/, /\bD-\d{2}\b/];
-    for (const doc of [installDocs(), readme()]) {
+    for (const doc of [allDocsPages(), readme()]) {
       for (const p of patterns) {
         expect(doc).not.toMatch(p);
       }
     }
   });
 
-  it('documents the ghcr.io image reference shape without ever using the unversioned tag', () => {
-    const docs = installDocs();
-    expect(docs).toMatch(/ghcr\.io\/.*\/noodara-control-plane/);
-    expect(docs).toMatch(/ghcr\.io\/.*\/noodara-web/);
+  it('the Install page documents the ghcr.io image reference shape without ever using the unversioned tag', () => {
+    const page = docsPage('getting-started/install');
+    expect(page).toMatch(/ghcr\.io\/.*\/noodara-control-plane/);
+    expect(page).toMatch(/ghcr\.io\/.*\/noodara-web/);
   });
 
   // Post-execution fix (orchestrator audit Finding 1, 06-14 follow-up): a `VAR=value cmd1 | cmd2`
@@ -127,75 +156,84 @@ describe('docs/install.md accuracy against install.sh', () => {
   // place a NOODARA_* assignment on the `sh` side of the pipe (after `sudo` when `sudo` is used),
   // never in front of `curl`.
   it('never places a NOODARA_*= assignment before curl in a piped-install command', () => {
-    for (const doc of [installDocs(), readme()]) {
+    for (const doc of [allDocsPages(), readme()]) {
       expect(doc).not.toMatch(/\bNOODARA_[A-Z0-9_]+=\S*\s+curl\b/);
     }
   });
 
-  it('the rollback command places NOODARA_VERSION on the sh side of the pipe, both as root and with sudo', () => {
-    const docs = installDocs();
+  it('the Rollback page places NOODARA_VERSION on the sh side of the pipe, both as root and with sudo', () => {
+    const page = docsPage('operate/rollback');
     // The owner is read from install.sh's own default, never hand-written here, so the docs and the
     // script can only ever agree on one owner string.
     const ownerMatch = installSh().match(/NOODARA_REPO_OWNER="\$\{NOODARA_REPO_OWNER:-([A-Za-z0-9_-]+)\}"/);
     expect(ownerMatch, 'NOODARA_REPO_OWNER default not found in install.sh').toBeTruthy();
     const url = `https://raw.githubusercontent.com/${ownerMatch?.[1] ?? ''}/noodara/main/install.sh`;
-    expect(docs).toContain(`curl -fsSL ${url} | NOODARA_VERSION=<previous-version> sh`);
-    expect(docs).toContain(`curl -fsSL ${url} | sudo NOODARA_VERSION=<previous-version> sh`);
+    expect(page).toContain(`curl -fsSL ${url} | NOODARA_VERSION=<previous-version> sh`);
+    expect(page).toContain(`curl -fsSL ${url} | sudo NOODARA_VERSION=<previous-version> sh`);
   });
 
   // Post-execution fix (orchestrator audit Finding 2, 06-14 follow-up): only `web` publishes a
   // port, and `web` only rewrites `/api/:path*` to the control plane (apps/web/next.config.ts) --
   // `/health` on the published panel port is answered by Next.js, never the control plane.
-  it('never documents /health (or any non-/api/ route) reachable on the published panel port', () => {
-    const docs = installDocs();
-    const matches = [...docs.matchAll(/127\.0\.0\.1:<port>(\/\S*)?/g)].map((m) => m[1] ?? '');
+  it('the Troubleshooting page never documents /health (or any non-/api/ route) reachable on the published panel port', () => {
+    const page = docsPage('operate/troubleshooting');
+    const matches = [...page.matchAll(/127\.0\.0\.1:<port>(\/\S*)?/g)].map((m) => m[1] ?? '');
     expect(matches.length).toBeGreaterThan(0);
-    for (const path of matches) {
-      const allowed = path === '' || path === '/' || path === '/login' || path.startsWith('/api/');
-      expect(allowed, `unexpected path documented on the published panel port: '${path}'`).toBe(true);
+    for (const p of matches) {
+      const allowed = p === '' || p === '/' || p === '/login' || p.startsWith('/api/');
+      expect(allowed, `unexpected path documented on the published panel port: '${p}'`).toBe(true);
     }
-    expect(docs).not.toContain('curl http://127.0.0.1:<port>/health');
+    expect(page).not.toContain('curl http://127.0.0.1:<port>/health');
   });
 
   // Post-execution fix (orchestrator audit Finding 3, 06-14 follow-up): a same-version re-run with
   // an already-healthy stack is a true no-op (D-09) -- it never runs `docker compose up`, so
   // telling the operator to "edit .env and re-run the installer" to apply a change does nothing.
   // The only real way to apply an edited `.env` is `docker compose ... up -d` directly.
-  it('never tells the operator to re-run the installer to apply an .env edit, and documents the docker compose apply command', () => {
-    const docs = installDocs();
-    expect(docs).not.toContain('and re-run the installer to apply them');
-    expect(docs).not.toContain('edit /opt/noodara/.env directly and re-run the installer');
-    expect(docs).not.toMatch(/Re-run the installer with `NOODARA_PUBLIC_URL`/);
-    expect(docs).toContain('docker compose -f /opt/noodara/docker-compose.yml up -d');
-    expect(docs.toLowerCase()).toMatch(/re-running the installer does not apply an `?\.env`? edit/);
+  it('the Reference › Supported variables page never tells the operator to re-run the installer to apply an .env edit, and documents the docker compose apply command', () => {
+    const page = docsPage('reference/variables');
+    expect(page).not.toContain('and re-run the installer to apply them');
+    expect(page).not.toContain('edit /opt/noodara/.env directly and re-run the installer');
+    expect(page).not.toMatch(/Re-run the installer with `NOODARA_PUBLIC_URL`/);
+    expect(page).toContain('docker compose -f /opt/noodara/docker-compose.yml up -d');
+    expect(page.toLowerCase()).toMatch(/re-running the installer does not apply an `?\.env`? edit/);
   });
 
   // Post-execution fix (orchestrator audit WR-04): the admin-password minimum length install.sh
-  // itself checks up front (NOODARA_ADMIN_PASSWORD_MIN_LENGTH) must be the same number
-  // docs/install.md documents -- extracted from install.sh's own source, never hand-typed twice.
-  it("the documented admin-password minimum length matches install.sh's own NOODARA_ADMIN_PASSWORD_MIN_LENGTH constant", () => {
+  // itself checks up front (NOODARA_ADMIN_PASSWORD_MIN_LENGTH) must be the same number the
+  // First login page documents -- extracted from install.sh's own source, never hand-typed twice.
+  it("the First login page's documented admin-password minimum length matches install.sh's own NOODARA_ADMIN_PASSWORD_MIN_LENGTH constant", () => {
     const source = installSh();
     const match = source.match(/readonly NOODARA_ADMIN_PASSWORD_MIN_LENGTH=(\d+)/);
     expect(match, 'NOODARA_ADMIN_PASSWORD_MIN_LENGTH constant not found in install.sh').toBeTruthy();
     const minLength = match?.[1] ?? '';
 
-    const docs = installDocs();
-    expect(docs).toContain(`at least ${minLength} characters`);
+    const page = docsPage('getting-started/first-login');
+    expect(page).toContain(`at least ${minLength} characters`);
   });
 
-  // Post-execution fix (orchestrator audit WR-04): docs/install.md must plainly say the
+  // Post-execution fix (orchestrator audit WR-04): the First login page must plainly say the
   // common-password check happens later, at control-plane boot, and name the real diagnostic
   // command -- never imply the full password policy is rejected outright before anything is
   // written (the finding this fix addresses).
-  it('the First login section explains that a common admin password is rejected later, at boot, surfacing as exit 53 in the api log tail', () => {
-    const docs = installDocs();
-    const firstLoginMatch = docs.match(/## First login\n([\s\S]*?)(\n## |$)/);
-    expect(firstLoginMatch, 'First login section not found in docs/install.md').toBeTruthy();
-    const section = firstLoginMatch?.[1] ?? '';
+  it('the First login page explains that a common admin password is rejected later, at boot, surfacing as exit 53 in the api log tail', () => {
+    const page = docsPage('getting-started/first-login');
 
-    expect(section.toLowerCase()).toContain('common');
-    expect(section).toContain('docker compose -f /opt/noodara/docker-compose.yml logs api');
-    expect(section).toContain('53');
+    expect(page.toLowerCase()).toContain('common');
+    expect(page).toContain('docker compose -f /opt/noodara/docker-compose.yml logs api');
+    expect(page).toContain('53');
+  });
+});
+
+describe('docs/install.md stub (D-07)', () => {
+  const installStub = () => readFileSync('docs/install.md', 'utf8');
+
+  it('points at the site as the single source, keeps the #firewall anchor alive, and carries no exit-code table', () => {
+    const stub = installStub();
+    expect(stub).toContain('https://noodara.com/docs/getting-started/install');
+    expect(stub).toMatch(/#firewall/);
+    expect(stub.split('\n').length).toBeLessThanOrEqual(25);
+    expect(stub).not.toMatch(/\|\s*10\s*\|/);
   });
 });
 
