@@ -55,9 +55,19 @@ const nextConfig = {
   },
 };
 
-// 10-05-PLAN.md Task 1 (RESEARCH.md Pattern 2). `createMDX` wraps -- never replaces -- the config
-// above: it wires the fumadocs-mdx bundler plugin (loads `source.config.ts`, transforms the
-// `defineDocs`/`loader` macro calls in `src/lib/source.ts`) without touching any key already set
-// here. `macro.include` is deliberately narrow (only the one file that calls the macro API), per
-// fumadocs-mdx/next's own `CreateMDXOptions.macro.include` contract.
-export default createMDX({ macro: { include: ['src/lib/**/*.ts'] } })(nextConfig);
+// 10-05-PLAN.md Task 1/2 (RESEARCH.md Pattern 2). `createMDX` wraps -- never replaces -- the
+// config above: it wires the fumadocs-mdx bundler plugin (loads `source.config.ts`, transforms
+// the `defineDocs`/`loader` macro calls in `src/lib/source.ts`) without touching any key already
+// set here.
+//
+// `macro.include` patterns are matched with picomatch's `basename: true` mode
+// (fumadocs-mdx/dist/options-BNnYUjkM.js's `createMacroMatcher`), which tests every pattern's
+// compiled regex against ONLY the file's basename (`picomatch.matchBase`), never the full
+// relative path -- a directory-scoped glob like `src/lib/**/*.ts` can therefore never match
+// anything (its regex requires a literal `src/lib/` prefix the bare basename never has), which
+// silently breaks the whole `/docs` route at "Collecting page data" time with `[MDX] this macro
+// was not compiled by the bundler plugin`, confirmed against the real installed
+// fumadocs-mdx@15.4.5 by both `next build` and `next build --webpack`. `'source.ts'` matches this
+// module's exact basename regardless of directory, which is both correct and as narrowly scoped
+// as this bundler's matching mode allows.
+export default createMDX({ macro: { include: ['source.ts'] } })(nextConfig);

@@ -41,12 +41,13 @@ function listMdxFiles(dir: string = CONTENT_DOCS_DIR, prefix = ''): string[] {
  *  the first two `---` markers. Deliberately not a full YAML parser -- this repo has no
  *  `gray-matter` dependency and every frontmatter value this test reads is a single-line string. */
 function readFrontmatterField(mdx: string, field: string): string | undefined {
-  const match = mdx.match(/^---\n([\s\S]*?)\n---/);
-  if (match === null) return undefined;
-  const frontmatter = match[1] as string;
-  const fieldMatch = frontmatter.match(new RegExp(`^${field}:\\s*(.+)$`, 'm'));
-  if (fieldMatch === undefined || fieldMatch === null) return undefined;
-  return (fieldMatch[1] as string).trim().replace(/^["']|["']$/g, '');
+  const match = /^---\n([\s\S]*?)\n---/.exec(mdx);
+  const frontmatter = match?.[1];
+  if (frontmatter === undefined) return undefined;
+  const fieldMatch = new RegExp(`^${field}:\\s*(.+)$`, 'm').exec(frontmatter);
+  const rawValue = fieldMatch?.[1];
+  if (rawValue === undefined) return undefined;
+  return rawValue.trim().replace(/^["']|["']$/g, '');
 }
 
 describe('content/docs meta.json tree (D-08 four-group sidebar order)', () => {
@@ -86,7 +87,7 @@ describe('content/docs meta.json tree (D-08 four-group sidebar order)', () => {
       const meta = readMetaJson(group, 'meta.json');
       for (const slug of meta.pages ?? []) {
         const owner = seen.get(slug);
-        expect(owner, `"${slug}" appears in both "${owner}" and "${group}"`).toBeUndefined();
+        expect(owner, `"${slug}" appears in both "${owner ?? ''}" and "${group}"`).toBeUndefined();
         seen.set(slug, group);
       }
     }

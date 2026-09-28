@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { RootProvider } from 'fumadocs-ui/provider/next';
+import { SiteSearchDialog } from '../components/SiteSearchDialog';
 import { readBuildInfo } from '../lib/build-info';
 import { SITE_THEME_BOOTSTRAP_SCRIPT } from '../lib/theme-script';
 import './global.css';
@@ -51,10 +52,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         {/* theme.enabled: false -- this site has its own SiteThemeToggle/bootstrap script
-            (D-15), not next-themes' own cookie-less client-only toggle. search.enabled: false --
-            plan 10-05 wires the static Fumadocs search dialog; until then there is no search
-            index to back it. */}
-        <RootProvider theme={{ enabled: false }} search={{ enabled: false }}>
+            (D-15), not next-themes' own cookie-less client-only toggle. search.SearchDialog --
+            10-05-PLAN.md: the static Fumadocs search dialog over the flexsearch index this app's
+            own /api/search route bakes into the export at build time. */}
+        <RootProvider theme={{ enabled: false }} search={{ SearchDialog: SiteSearchDialog }}>
           {children}
         </RootProvider>
       </body>
