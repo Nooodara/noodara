@@ -92,6 +92,11 @@
         "dependencies": {
           "allow": ["ui-components", "@noodara/config", "pure-domain", "ssh-adapter"]
         }
+      },
+      "public-site": {
+        "dependencies": {
+          "deny": ["@noodara/control-plane", "@noodara/web"]
+        }
       }
     }
   }

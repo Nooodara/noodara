@@ -3,19 +3,31 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // 10-01-PLAN.md Task 3 (SITE-02): apps/site is a public, statically-exported artifact and must
-// never pull in the control plane, the web app, the SSH adapter, or the domain package. Turborepo
-// boundary tags are TRANSITIVE (Context7 /vercel/turborepo: "rules are applied even for
-// dependencies of dependencies"), so a turbo-level deny of `@noodara/domain` for the site would
-// fail as soon as the site depends on `@noodara/ui` (packages/ui/package.json depends on
-// @noodara/domain, e.g. ThemeToggle/tone import `@noodara/domain/preferences`). This means the
-// full CONTEXT boundary requirement (no control-plane, no domain, ui allowed) is only fully
-// enforced by TWO mechanisms together:
-//   1. a turbo `public-site` tag denying @noodara/control-plane, @noodara/web and ssh-adapter
-//      (added to turbo.json by this same task -- transitive denial works fine here because
-//      nothing @noodara/ui depends on is control-plane/web/ssh-adapter-tagged)
-//   2. this test's manifest + import scan, which catches @noodara/domain (and any relative-path
-//      escape hatch into apps/control-plane or apps/web) that a turbo tag rule cannot reach
-//      transitively without also blocking the explicitly-allowed @noodara/ui.
+// never pull in the control plane, the web app, the SSH adapter, or the domain package. The full
+// CONTEXT boundary requirement (no control-plane, no domain, no ssh, ui allowed) is enforced by
+// TWO mechanisms together, because a turbo `public-site` tag rule cannot reach every one of those
+// four packages on its own:
+//   1. a turbo `public-site` tag denying @noodara/control-plane and @noodara/web (added to
+//      turbo.json by this same task) -- both are unreachable from apps/site's real dependency
+//      graph today, so a turbo-level deny works cleanly for these two.
+//   2. this test's manifest + import scan, which is the ONLY enforcement for @noodara/domain and
+//      @noodara/ssh, for two independent reasons:
+//      - @noodara/domain: turbo boundary tags are TRANSITIVE (Context7 /vercel/turborepo: "rules
+//        are applied even for dependencies of dependencies"), and packages/ui/package.json (the
+//        explicitly-allowed @noodara/ui) itself depends on @noodara/domain (e.g. ThemeToggle/tone
+//        imports `@noodara/domain/preferences`) -- a turbo-level deny of @noodara/domain would
+//        therefore also block the allowed @noodara/ui.
+//      - @noodara/ssh: the monorepo ROOT package.json has its own, unrelated and legitimate
+//        `"@noodara/ssh": "workspace:*"` devDependency (needed to typecheck
+//        tests/integration/ssh/**, which import `@noodara/ssh` directly and live outside any
+//        workspace package). `turbo boundaries` treats that root-level dependency as reachable
+//        from every workspace package's own graph -- confirmed empirically: adding "ssh-adapter"
+//        to this tag's turbo deny list fails `pnpm boundaries` for @noodara/site even though
+//        apps/site's own package.json and source files never reference @noodara/ssh at all (this
+//        test's own "no forbidden dependency"/"no forbidden import" checks below pass either
+//        way). Removing root's own @noodara/ssh devDependency to work around this would break an
+//        unrelated, pre-existing integration-test typecheck path -- out of scope for this plan --
+//        so ssh-adapter is deliberately left off the turbo tag's deny list and enforced here only.
 // Modeled structurally on tests/unit/scripts/check-workflow-pins.test.ts's "read the real files on
 // disk, no network, no execution" pattern.
 
@@ -152,12 +164,21 @@ describe('apps/site import boundary (structural, reads real repo files)', () => 
     expect(violations).toEqual([]);
   });
 
-  it('turbo.json declares a public-site boundary tag denying control-plane/web/ssh-adapter', () => {
+  it('turbo.json declares a public-site boundary tag denying control-plane/web', () => {
     const turboJson = JSON.parse(readFileSync('turbo.json', 'utf8'));
     const deny = turboJson.boundaries?.tags?.['public-site']?.dependencies?.deny ?? [];
 
-    for (const forbidden of ['@noodara/control-plane', '@noodara/web', 'ssh-adapter']) {
+    for (const forbidden of ['@noodara/control-plane', '@noodara/web']) {
       expect(deny).toContain(forbidden);
+    }
+  });
+
+  it('no file under apps/site imports @noodara/ssh (enforced here, not by a turbo tag -- see header comment)', () => {
+    const files = listSiteSourceFiles('apps/site');
+
+    for (const file of files) {
+      const source = readFileSync(file, 'utf8');
+      expect(source).not.toMatch(/@noodara\/ssh/);
     }
   });
 
