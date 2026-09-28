@@ -10,7 +10,7 @@
 
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useScrollReveal } from '../../../apps/site/src/lib/use-scroll-reveal';
+import { useScrollReveal } from './use-scroll-reveal';
 
 type ObserverCallback = (entries: readonly { isIntersecting: boolean; target: Element }[]) => void;
 
