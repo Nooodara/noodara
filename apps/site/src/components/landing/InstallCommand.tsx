@@ -8,6 +8,7 @@
 // A local TooltipProvider (not the app-wide one -- apps/site has none) so CopyButton's "Copied"
 // confirmation tooltip has an ancestor, matching packages/ui/src/testing/render.tsx's own
 // per-mount-site pattern for a component that needs exactly one.
+import Link from 'next/link';
 import { CopyButton, TooltipProvider } from '@noodara/ui';
 import { INSTALL_COMMAND } from '../../lib/site-facts';
 
@@ -23,12 +24,12 @@ export function InstallCommand() {
           </code>
           <CopyButton value={INSTALL_COMMAND} label="Copy install command" />
         </div>
-        <a
+        <Link
           href={INSTALL_WITHOUT_PIPING_HREF}
           className="mt-2 inline-block text-caption text-accent-text underline-offset-4 hover:underline"
         >
           Download, read, run
-        </a>
+        </Link>
       </div>
     </TooltipProvider>
   );

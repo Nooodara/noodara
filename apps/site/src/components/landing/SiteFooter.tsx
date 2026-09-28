@@ -7,6 +7,7 @@
 // column (Docs/GitHub/license/version, unchanged text and links so the existing footer test keeps
 // passing). Still no star count, no fetch, no third-party call (T-10-05's mitigation for the
 // star-counter/privacy threat).
+import Link from 'next/link';
 import { readBuildInfo } from '../../lib/build-info';
 import { GITHUB_URL } from '../../lib/site-facts';
 import { DOCS_NAV_GROUPS } from '../../lib/docs-nav';
@@ -27,17 +28,17 @@ export function SiteFooter() {
           <div key={group.heading} className="flex flex-col gap-3">
             <p className={GROUP_HEADING_CLASSES}>{group.heading}</p>
             {group.links.map((link) => (
-              <a key={link.href} href={link.href} className={LINK_CLASSES}>
+              <Link key={link.href} href={link.href} className={LINK_CLASSES}>
                 {link.label}
-              </a>
+              </Link>
             ))}
           </div>
         ))}
         <div className="col-span-2 flex flex-col gap-3 min-[900px]:col-span-1">
           <p className={GROUP_HEADING_CLASSES}>Project</p>
-          <a href="/docs" className={LINK_CLASSES}>
+          <Link href="/docs" className={LINK_CLASSES}>
             Docs
-          </a>
+          </Link>
           <a href={GITHUB_URL} rel="noopener noreferrer" className={LINK_CLASSES}>
             GitHub
           </a>

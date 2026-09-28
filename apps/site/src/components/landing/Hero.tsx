@@ -9,6 +9,7 @@
 // (32px mobile -> 40px at >=900px per the UI-SPEC layout contract) since Lockup itself takes only
 // a fixed `height` prop with no responsive variant.
 import type { CSSProperties } from 'react';
+import Link from 'next/link';
 import { Lockup } from '@noodara/ui';
 import { InstallCommand } from './InstallCommand';
 import { ScreenshotFrame } from './ScreenshotFrame';
@@ -62,9 +63,9 @@ export function Hero() {
       </p>
       <InstallCommand />
       <div className="flex flex-wrap items-center gap-4">
-        <a href="/docs" className={PRIMARY_CTA_CLASSES}>
+        <Link href="/docs" className={PRIMARY_CTA_CLASSES}>
           Read the docs
-        </a>
+        </Link>
         <a href={GITHUB_URL} rel="noopener noreferrer" className={SECONDARY_CTA_CLASSES}>
           View on GitHub
         </a>

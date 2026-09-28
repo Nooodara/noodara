@@ -11,6 +11,7 @@
 // `'use client'` directive of their own, so any Server Component importing `Lockup` from it pulls
 // that whole graph in -- this file is composed straight into Landing.tsx (a Server Component), so
 // the boundary has to live here.
+import Link from 'next/link';
 import { Lockup } from '@noodara/ui';
 import { SiteThemeToggle } from '../SiteThemeToggle';
 import { GITHUB_URL } from '../../lib/site-facts';
@@ -24,16 +25,16 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-10 border-b border-hairline bg-canvas">
       <div className="mx-auto flex h-16 max-w-[1120px] items-center justify-between px-6 min-[900px]:px-8">
-        <a
+        <Link
           href="/"
           className="inline-flex h-11 items-center text-ink outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <Lockup title="Noodara" height={24} />
-        </a>
+        </Link>
         <nav className="flex items-center gap-2">
-          <a href="/docs" className={NAV_LINK_CLASSES}>
+          <Link href="/docs" className={NAV_LINK_CLASSES}>
             Docs
-          </a>
+          </Link>
           <a href={GITHUB_URL} rel="noopener noreferrer" className={NAV_LINK_CLASSES}>
             GitHub
           </a>

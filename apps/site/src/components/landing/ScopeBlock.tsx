@@ -3,6 +3,7 @@
 // Scope of this release reference page. Present-tense facts only, never a future promise or a
 // date (scope.ts's own statements are already proven free of forbidden wording by
 // tests/unit/site/landing-claims.test.ts).
+import Link from 'next/link';
 import { SCOPE_EXCLUSIONS } from '../../content/scope';
 
 const LINK_CLASSES =
@@ -22,9 +23,9 @@ export function ScopeBlock() {
           </li>
         ))}
       </ul>
-      <a href="/docs/reference/scope" className={`mt-4 inline-block ${LINK_CLASSES}`}>
+      <Link href="/docs/reference/scope" className={`mt-4 inline-block ${LINK_CLASSES}`}>
         See full scope
-      </a>
+      </Link>
     </section>
   );
 }

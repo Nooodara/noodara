@@ -16,7 +16,7 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { readCname, SITE_ORIGIN } from '../site-config.mjs';
+import { PREVIEW_BASE_PATH, readCname, SITE_ORIGIN } from '../site-config.mjs';
 
 const SITE_ORIGIN_ORIGIN = new URL(SITE_ORIGIN).origin;
 
@@ -165,6 +165,41 @@ export function findBasePathMismatch(html, { cnamePresent }) {
   return findings;
 }
 
+const ANCHOR_TAG_PATTERN = /<a\b([^>]*)>/gi;
+const ANCHOR_HREF_PATTERN = /\bhref\s*=\s*["']([^"']+)["']/i;
+
+/**
+ * Finds every `<a href="...">` in `html` whose href is root-relative (starts with a single `/`,
+ * not `//`) but is not itself `basePath` or prefixed with `${basePath}/`. Only meaningful when
+ * `cnamePresent` is false (D-12: a non-CNAME preview build resolves at `<owner>.github.io/
+ * <basePath>`, so every internal navigation link must carry the prefix -- Next only rewrites
+ * `basePath` onto `next/link`/`<Image>`, never a plain `<a href>`, so a raw internal anchor left
+ * unprefixed 404s under this build shape). Always returns `[]` when `cnamePresent` is true (a
+ * CNAME-present/production build resolves at the root, so no prefix is expected) or `basePath` is
+ * empty.
+ * @param {string} html
+ * @param {{ cnamePresent: boolean, basePath: string }} params
+ * @returns {Array<{ path: string }>}
+ */
+export function findMissingBasePathPrefix(html, { cnamePresent, basePath }) {
+  if (cnamePresent || !basePath) return [];
+
+  const findings = [];
+  ANCHOR_TAG_PATTERN.lastIndex = 0;
+  let tagMatch;
+  while ((tagMatch = ANCHOR_TAG_PATTERN.exec(html)) !== null) {
+    const hrefMatch = tagMatch[1].match(ANCHOR_HREF_PATTERN);
+    if (hrefMatch === null) continue;
+
+    const href = hrefMatch[1];
+    if (!href.startsWith('/') || href.startsWith('//')) continue;
+    if (href === basePath || href.startsWith(`${basePath}/`)) continue;
+
+    findings.push({ path: href });
+  }
+  return findings;
+}
+
 // Every export must contain these. 10-11-PLAN.md Task 2 added 'index.html' once the landing page
 // shipped (the composed `/` route, 10-02's placeholder replaced).
 export const REQUIRED_EXPORT_FILES = ['404.html', 'sitemap.xml', 'robots.txt', 'api/search', 'docs.html', 'index.html'];
@@ -219,6 +254,9 @@ if (isMainModule()) {
       }
       for (const finding of findBasePathMismatch(content, { cnamePresent })) {
         allFindings.push({ file: relPath, kind: 'base-path-mismatch', ...finding });
+      }
+      for (const finding of findMissingBasePathPrefix(content, { cnamePresent, basePath: PREVIEW_BASE_PATH })) {
+        allFindings.push({ file: relPath, kind: 'missing-preview-base-path', ...finding });
       }
       for (const finding of findLeakedEnvNames(content)) {
         allFindings.push({ file: relPath, kind: 'leaked-env', ...finding });

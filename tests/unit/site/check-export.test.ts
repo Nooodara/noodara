@@ -9,6 +9,7 @@ import {
   findBasePathMismatch,
   findFontFaces,
   findLeakedEnvNames,
+  findMissingBasePathPrefix,
   findThirdPartyAssetUrls,
   REQUIRED_EXPORT_FILES,
 } from '../../../apps/site/scripts/check-export.mjs';
@@ -107,6 +108,44 @@ describe('findBasePathMismatch', () => {
   it('flags nothing when no CNAME is present (preview build legitimately uses the prefix)', () => {
     expect(
       findBasePathMismatch('<script src="/noodara/_next/static/x.js">', { cnamePresent: false }),
+    ).toEqual([]);
+  });
+});
+
+describe('findMissingBasePathPrefix', () => {
+  it('flags a raw root-relative <a href> not prefixed with the preview basePath when no CNAME is present', () => {
+    expect(
+      findMissingBasePathPrefix('<a href="/docs">Docs</a>', { cnamePresent: false, basePath: '/noodara' }),
+    ).toHaveLength(1);
+  });
+
+  it('flags the wordmark "/" home link the same way', () => {
+    expect(
+      findMissingBasePathPrefix('<a href="/">Home</a>', { cnamePresent: false, basePath: '/noodara' }),
+    ).toHaveLength(1);
+  });
+
+  it('passes an already-prefixed <a href="/noodara/docs">', () => {
+    expect(
+      findMissingBasePathPrefix('<a href="/noodara/docs">Docs</a>', {
+        cnamePresent: false,
+        basePath: '/noodara',
+      }),
+    ).toEqual([]);
+  });
+
+  it('ignores an external absolute <a href>', () => {
+    expect(
+      findMissingBasePathPrefix('<a href="https://github.com/nooodara/noodara">GitHub</a>', {
+        cnamePresent: false,
+        basePath: '/noodara',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags nothing when a CNAME is present (production root basePath build)', () => {
+    expect(
+      findMissingBasePathPrefix('<a href="/docs">Docs</a>', { cnamePresent: true, basePath: '/noodara' }),
     ).toEqual([]);
   });
 });
