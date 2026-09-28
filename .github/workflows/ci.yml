@@ -24,6 +24,11 @@ name: CI
 # the downloaded release archive's SHA256 against gitleaks' own published checksum file before
 # extracting it, instead of piping `curl` straight into `tar`. None of this makes any job's
 # actual test commands, `--audit-level`, `--frozen-lockfile` or stray-container checks weaker.
+#
+# Plan 10-03 (SITE-02, D-13): the `site` job below builds apps/site's static export and runs its
+# docs-accuracy/claims/boundary tests on every pull request -- the site's own PR gate, kept
+# entirely separate from .github/workflows/public-site.yml (which only publishes, on push to
+# main).
 
 on:
   pull_request:
@@ -118,6 +123,33 @@ jobs:
       # Enforces the Turborepo import rule keeping packages/domain pure (zero I/O), so the
       # boundary can't erode silently once it's only checked by habit locally (T-1-52).
       - run: pnpm boundaries
+
+  site:
+    name: site
+    runs-on: ubuntu-latest
+    # A cold pnpm install plus one static `next build --output export` of a single small app, then
+    # the site's own docs-accuracy/claims/boundary Vitest suites -- same headroom as `boundaries`
+    # and `typecheck` above.
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          # Matches public-site.yml's own build step: apps/site/site-config.mjs's
+          # describeLatestTag() reads the latest v* git tag for the footer version (D-06).
+          fetch-depth: 0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # apps/site/public/CNAME is committed, so this PR-gate build always exercises the real,
+      # root-basePath production shape (10-RESEARCH.md Pitfall 4), the same build public-site.yml
+      # runs on push to main -- never the `/noodara` preview-subpath shape.
+      - run: pnpm --filter @noodara/site build
+      - run: pnpm exec vitest run tests/unit/docs tests/unit/site
 
   unit:
     name: unit
