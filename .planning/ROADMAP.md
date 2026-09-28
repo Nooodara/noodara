@@ -32,7 +32,7 @@ Full phase details, plans and success criteria: [milestones/v0.1-ROADMAP.md](mil
 - [x] **Phase 7: Identidad y brand kit** - Logotipo (monograma + wordmark), favicon y hoja de marca en ambos temas, aplicados en app y README tras aprobación humana. (completed 2026-09-23 — 10/10 plans, verifier 15/15, human_needed only for the favicon-in-real-tab check tracked in 07-HUMAN-UAT.md)
 - [x] **Phase 8: Rediseño de la app** - Elevación flotante, movimiento con propósito, momentos autorados, fallbacks de accesibilidad y el shell preparado para inspector, jerarquía y menú de cuenta; primera revisión visual humana. (completed 2026-09-27)
 - [x] **Phase 9: Settings editables** - Perfil del admin (nombre, email, password), tema y preferencias visuales persistidas en el servidor sin parpadeo. (completed 2026-09-27)
-- [ ] **Phase 10: Sitio de docs y landing pública** - `apps/site` estático con Fumadocs, landing honesta con la identidad, publicado a GitHub Pages desde CI con test de exactitud.
+- [x] **Phase 10: Sitio de docs y landing pública** - `apps/site` estático con Fumadocs, landing honesta con la identidad, publicado a GitHub Pages desde CI con test de exactitud. (completed 2026-09-28)
 - [ ] **Phase 11: Motor de deploy — fundamentos** - Spikes resueltos, dominio y esquema de Project/Environment/Service/Deployment, plantillas parametrizadas, exec en streaming, fixture sshd+dockerd y fixtures oficiales.
 - [ ] **Phase 12: Motor de deploy — runtime** - Cola, worker, cancelación con kill confirmado, limpieza en toda salida, reconciliación, API y SSE; 20 deploys y 20 ciclos sin huérfanos.
 - [ ] **Phase 13: UI de Projects & Services y E2E de deploy** - Jerarquía, creación de servicio, deploy narrado, logs en vivo en el inspector y el E2E crítico contra fixtures reales.
@@ -304,7 +304,7 @@ Plans:
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 10-12-PLAN.md — UX review, full gate, security review, human approval in both themes
+- [x] 10-12-PLAN.md — UX review, full gate, security review, human approval in both themes
 
 **UI hint**: yes
 
@@ -398,7 +398,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 | 7. Identidad y brand kit | 10/10 | Complete | 2026-09-23 |
 | 8. Rediseño de la app | 20/20 | Complete   | 2026-09-27 |
 | 9. Settings editables | 14/14 | Complete   | 2026-09-27 |
-| 10. Sitio de docs y landing pública | 11/12 | In Progress|  |
+| 10. Sitio de docs y landing pública | 12/12 | Complete   | 2026-09-28 |
 | 11. Motor de deploy — fundamentos | 0/TBD | Not started | - |
 | 12. Motor de deploy — runtime | 0/TBD | Not started | - |
 | 13. UI de Projects & Services y E2E de deploy | 0/TBD | Not started | - |
