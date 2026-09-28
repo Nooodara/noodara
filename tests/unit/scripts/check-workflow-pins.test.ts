@@ -290,11 +290,21 @@ describe('public site workflows (D-12/D-13, structural)', () => {
     expect(deployJob).not.toContain('deploy-pages');
   });
 
-  it('public-site.yml pins cloudflare/wrangler-action to a 40-hex SHA and an exact wranglerVersion', () => {
+  it('public-site.yml runs an exact-version wrangler via npx with the Cloudflare secrets only in env', () => {
+    // fast 2026-09-28: cloudflare/wrangler-action auto-installs wrangler with `pnpm add`, which
+    // pnpm refuses at a workspace root, so the first real deploy failed before uploading. `npx`
+    // runs a pinned wrangler without touching the workspace or its lockfile.
     const source = publicSiteYml();
+    const deployJob = extractJobBlock(extractJobsSection(source), 'deploy');
 
-    expect(source).toContain('cloudflare/wrangler-action@');
-    expect(source).toMatch(/wranglerVersion:\s*['"]?\d+\.\d+\.\d+['"]?/);
+    expect(source).not.toContain('cloudflare/wrangler-action');
+    expect(deployJob).toMatch(
+      /run: npx --yes wrangler@\d+\.\d+\.\d+ pages deploy apps\/site\/out --project-name=noodara-site --branch=main/,
+    );
+    expect(deployJob).toContain('CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}');
+    expect(deployJob).toContain('CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}');
+    // Secrets never land on the command line (process listings, logs).
+    expect(deployJob).not.toMatch(/run:.*secrets\./);
   });
 
   it('public-site.yml never declares a github-pages environment or pages/id-token permissions anywhere', () => {
