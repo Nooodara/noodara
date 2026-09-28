@@ -35,7 +35,7 @@ export function SiteHeader() {
           <Link href="/docs" className={NAV_LINK_CLASSES}>
             Docs
           </Link>
-          <a href={GITHUB_URL} rel="noopener noreferrer" className={NAV_LINK_CLASSES}>
+          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={NAV_LINK_CLASSES}>
             GitHub
           </a>
           <SiteThemeToggle />

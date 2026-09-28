@@ -39,7 +39,7 @@ export function SiteFooter() {
           <Link href="/docs" className={LINK_CLASSES}>
             Docs
           </Link>
-          <a href={GITHUB_URL} rel="noopener noreferrer" className={LINK_CLASSES}>
+          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={LINK_CLASSES}>
             GitHub
           </a>
           <p className="text-caption font-normal text-ink-secondary">

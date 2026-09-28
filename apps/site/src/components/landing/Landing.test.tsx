@@ -168,6 +168,15 @@ describe('Landing', () => {
     }
   });
 
+  it('every GitHub link opens in a new tab (target="_blank", matching its rel="noopener noreferrer")', () => {
+    render(<Landing />);
+    const githubLinks = [...document.querySelectorAll('a')].filter((a) => a.getAttribute('href') === GITHUB_URL);
+    expect(githubLinks.length).toBeGreaterThanOrEqual(2);
+    for (const link of githubLinks) {
+      expect(link).toHaveAttribute('target', '_blank');
+    }
+  });
+
   it('every absolute http(s) <a> either has no target="_blank", or rel contains noopener and noreferrer', () => {
     render(<Landing />);
     const anchors = document.querySelectorAll('a');

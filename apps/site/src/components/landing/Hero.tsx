@@ -66,7 +66,7 @@ export function Hero() {
         <Link href="/docs" className={PRIMARY_CTA_CLASSES}>
           Read the docs
         </Link>
-        <a href={GITHUB_URL} rel="noopener noreferrer" className={SECONDARY_CTA_CLASSES}>
+        <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={SECONDARY_CTA_CLASSES}>
           View on GitHub
         </a>
       </div>
