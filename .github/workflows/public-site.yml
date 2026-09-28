@@ -67,7 +67,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # basePath is always root on Cloudflare Pages (D-12a) -- no CNAME file, no preview subpath.
-      - run: pnpm --filter @noodara/site build
+      #
+      # quick-260928-m8j: `pnpm site:build` (turbo run build --filter=@noodara/site), NOT
+      # `pnpm --filter @noodara/site build` directly -- see ci.yml's `site` job for the full
+      # rationale (Turbo's `^build` edge builds @noodara/domain and @noodara/ui first).
+      - run: pnpm site:build
       - uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

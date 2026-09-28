@@ -10,7 +10,7 @@
     "dev": "turbo run dev dev:worker --filter=!@noodara/site",
     "build": "turbo run build --filter=!@noodara/site",
     "site:dev": "pnpm --filter @noodara/site dev",
-    "site:build": "pnpm --filter @noodara/site build",
+    "site:build": "turbo run build --filter=@noodara/site",
     "start": "pnpm --filter @noodara/control-plane start",
     "start:worker": "pnpm --filter @noodara/control-plane start:worker",
     "lint": "turbo run lint",

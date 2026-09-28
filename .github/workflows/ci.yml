@@ -148,7 +148,12 @@ jobs:
       # basePath is always root now (Cloudflare Pages, quick-260928-gmm) -- no CNAME file, no
       # preview subpath -- so this PR-gate build always exercises the real production shape, the
       # same build public-site.yml runs on push to main.
-      - run: pnpm --filter @noodara/site build
+      #
+      # quick-260928-m8j: `pnpm site:build` (turbo run build --filter=@noodara/site), NOT
+      # `pnpm --filter @noodara/site build` directly -- Turbo's `^build` task-graph edge builds
+      # @noodara/domain and @noodara/ui first. A direct pnpm filter invocation skips that edge
+      # entirely, so a clean checkout's `next build` fails with `Can't resolve '@noodara/ui'`.
+      - run: pnpm site:build
       - run: pnpm exec vitest run tests/unit/docs tests/unit/site
 
   unit:
