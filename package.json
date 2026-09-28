@@ -29,6 +29,7 @@
     "brand:check": "tsx --tsconfig packages/ui/tsconfig.json scripts/brand/generate-brand-assets.ts --check",
     "brand:construction": "tsx --tsconfig packages/ui/tsconfig.json scripts/brand/construction-sheet.ts",
     "ui:review": "tsx --tsconfig packages/ui/tsconfig.json scripts/ui/capture-ui-review.ts",
+    "ui:review:site": "tsx --tsconfig scripts/ui/tsconfig.json scripts/ui/capture-site-review.ts",
     "db:migrate": "pnpm --filter @noodara/control-plane db:migrate",
     "boundaries": "turbo boundaries",
     "check:ui-safety": "node scripts/check-ui-safety.mjs",
