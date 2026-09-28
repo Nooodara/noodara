@@ -53,7 +53,7 @@ export function Hero() {
       <p data-testid="hero-eyebrow" className="text-label uppercase tracking-[0.08em] text-ink-secondary">
         {license} · Self-hosted · No agent
       </p>
-      <h1 className="max-w-[18ch] font-display text-[var(--site-hero-display-size)] font-semibold leading-[1.05] tracking-[-0.02em] text-ink">
+      <h1 className="max-w-[18ch] font-display text-[length:var(--site-hero-display-size)] font-semibold leading-[1.05] tracking-[-0.02em] text-ink">
         Your infrastructure, understood.
       </h1>
       <p className="max-w-[65ch] text-body font-normal text-ink-secondary">

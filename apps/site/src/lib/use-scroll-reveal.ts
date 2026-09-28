@@ -5,12 +5,20 @@
 // ("landing files contain no IntersectionObserver") keeps meaning what it always meant: no
 // landing component owns its own observer, they consume this hook through RevealSection instead.
 //
-// Progressive enhancement: `revealed` starts `true` (safe default -- correct with no JS, no
-// hydration yet, or no IntersectionObserver support: content is simply visible, nothing to
-// animate). Only once a real observer is available does the hook flip to `false` immediately
-// after mount, then back to `true` the first time the observed element intersects the viewport --
-// disconnecting immediately after (D-18a "never re-fires", no parallax, no repeated animation).
+// Progressive enhancement, belt-and-suspenders: `revealed` starts `true` (correct with no JS, no
+// hydration yet, or no IntersectionObserver support -- content is simply visible, nothing to
+// animate). Once a real observer is available it flips to `false` immediately after mount, then
+// back to `true` the first time the observed element intersects the viewport, disconnecting
+// immediately after (D-18a "never re-fires"). A REVEAL_FALLBACK_MS safety timer also force-reveals
+// regardless of intersection: Playwright's own full-page screenshot (scripts/ui/
+// capture-site-review.ts) renders content beyond the configured viewport without ever firing a
+// real scroll or resize event, so an element below the fold would otherwise never intersect and
+// stay hidden forever in that capture. The same guarantee protects any real visitor whose
+// environment never delivers a genuine intersection change -- content must never depend on a
+// scroll happening to become readable.
 import { useEffect, useRef, useState } from 'react';
+
+const REVEAL_FALLBACK_MS = 400;
 
 export interface ScrollRevealResult<T extends HTMLElement> {
   readonly ref: React.RefObject<T | null>;
@@ -40,8 +48,14 @@ export function useScrollReveal<T extends HTMLElement>(): ScrollRevealResult<T> 
     );
     observer.observe(node);
 
+    const fallback = setTimeout(() => {
+      setRevealed(true);
+      observer.disconnect();
+    }, REVEAL_FALLBACK_MS);
+
     return () => {
       observer.disconnect();
+      clearTimeout(fallback);
     };
   }, []);
 

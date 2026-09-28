@@ -28,8 +28,26 @@ function claimFor(id: CapabilityId): string {
 }
 
 const SUMMARY_CLASSES =
-  'cursor-pointer list-none text-headline font-semibold text-ink outline-none ' +
+  'flex cursor-pointer list-none items-center justify-between gap-4 text-headline font-semibold text-ink outline-none ' +
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+
+// A visible expand/collapse affordance -- `list-none` above removes the browser's own <details>
+// triangle, so this chevron replaces it (never remove an affordance without a replacement).
+// Rotates 180deg when the parent <details> is open, via Tailwind's `group-open:` variant.
+function DisclosureChevron() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      className="shrink-0 text-ink-secondary transition-transform duration-[var(--duration-micro)] ease-[var(--ease-standard)] group-open:rotate-180"
+    >
+      <path d="M4 6 L8 10 L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 export function FAQSection() {
   const { license } = readBuildInfo();
@@ -40,14 +58,20 @@ export function FAQSection() {
       <div className="flex flex-col divide-y divide-hairline border-t border-b border-hairline">
         {FAQ_ITEMS.map((item) => (
           <details key={item.question} className="group py-4">
-            <summary className={SUMMARY_CLASSES}>{item.question}</summary>
+            <summary className={SUMMARY_CLASSES}>
+              {item.question}
+              <DisclosureChevron />
+            </summary>
             <p className="mt-2 text-body font-normal text-ink-secondary">
               {item.capabilityId === undefined ? null : claimFor(item.capabilityId)}
             </p>
           </details>
         ))}
         <details className="group py-4">
-          <summary className={SUMMARY_CLASSES}>Is Noodara open source?</summary>
+          <summary className={SUMMARY_CLASSES}>
+            Is Noodara open source?
+            <DisclosureChevron />
+          </summary>
           <p className="mt-2 text-body font-normal text-ink-secondary">Noodara is source-available under the {license} license.</p>
         </details>
       </div>
