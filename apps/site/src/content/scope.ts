@@ -93,7 +93,7 @@ export const DELIVERED_CAPABILITIES = [
   },
 ] as const satisfies readonly Capability[];
 
-// 10-12-PLAN.md Round 1 (D-02a). Short grid/card titles for FeatureGrid/PrinciplesBand -- labels
+// Round 1 landing redesign (D-02a). Short grid/card titles for FeatureGrid/PrinciplesBand -- labels
 // only, never asserted against PROJECT.md (that is claim's job, via landing-claims.test.ts).
 export const CAPABILITY_TITLES: Record<(typeof DELIVERED_CAPABILITIES)[number]['id'], string> = {
   install: 'One-command install',

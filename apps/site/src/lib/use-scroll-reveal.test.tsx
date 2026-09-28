@@ -68,14 +68,16 @@ describe('useScrollReveal', () => {
     expect(latest).toBe(false);
 
     const observer = FakeIntersectionObserver.instances.at(-1);
-    expect(observer).toBeDefined();
-    expect(observer?.observed).toHaveLength(1);
+    if (observer === undefined) throw new Error('expected the hook to construct an IntersectionObserver');
+    expect(observer.observed).toHaveLength(1);
+    const [observedNode] = observer.observed;
+    if (observedNode === undefined) throw new Error('expected one observed node');
 
     act(() => {
-      observer?.callback([{ isIntersecting: true, target: observer.observed[0] as Element }]);
+      observer.callback([{ isIntersecting: true, target: observedNode }]);
     });
 
     expect(latest).toBe(true);
-    expect(observer?.disconnected).toBe(true);
+    expect(observer.disconnected).toBe(true);
   });
 });

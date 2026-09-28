@@ -122,6 +122,83 @@ article {
  */
 :root {
   --site-section-gap-lg: calc(var(--space-12) * 2);
+  /*
+   * 10-12-PLAN.md Round 1 amendment (D-02a): the hero's own fluid display size, 40px -> 88px.
+   * Local, hero-only -- never a change to the shared --text-display-size token (still 28px
+   * everywhere else, including every docs H1), following --site-section-gap-lg's own precedent
+   * immediately above.
+   */
+  --site-hero-display-size: clamp(2.5rem, 2rem + 3vw, 5.5rem);
+}
+
+/*
+ * 10-12-PLAN.md Round 1 (D-18a). Hero screenshot: a one-shot clip-path reveal on first paint,
+ * `@starting-style`-driven (CSS only, no JS, no second IntersectionObserver -- see
+ * ScreenshotFrame.tsx's `revealOnLoad` prop, Hero.tsx's only call site). Unsupported browsers
+ * simply render the end state with no animation, an intentional no-op fallback.
+ */
+.site-hero-reveal {
+  clip-path: inset(0 0 0% 0);
+  opacity: 1;
+  transition:
+    clip-path 500ms var(--ease-out),
+    opacity 500ms var(--ease-out);
+}
+
+@starting-style {
+  .site-hero-reveal {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-hero-reveal {
+    clip-path: inset(0 0 0% 0);
+    transition: opacity 200ms var(--ease-out);
+  }
+
+  @starting-style {
+    .site-hero-reveal {
+      clip-path: inset(0 0 0% 0);
+      opacity: 0;
+    }
+  }
+}
+
+/*
+ * 10-12-PLAN.md Round 1 (D-18a). ProductTour panel entrance -- an approximate crossfade (opacity
+ * + 8px translate) each time the active tab remounts the panel (`key={active.screen}` in
+ * ProductTour.tsx), `@starting-style`-driven, `--duration-panel` (200ms) `--ease-out`.
+ * `prefers-reduced-motion` drops the translate, keeps a plain opacity crossfade (never zero).
+ */
+.site-tour-panel {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--duration-panel) var(--ease-out),
+    transform var(--duration-panel) var(--ease-out);
+}
+
+@starting-style {
+  .site-tour-panel {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-tour-panel {
+    transform: none;
+    transition: opacity var(--duration-panel) var(--ease-out);
+  }
+
+  @starting-style {
+    .site-tour-panel {
+      opacity: 0;
+      transform: none;
+    }
+  }
 }
 
 /*

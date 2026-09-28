@@ -13,8 +13,18 @@ import { Lockup } from '@noodara/ui';
 import { InstallCommand } from './InstallCommand';
 import { ScreenshotFrame } from './ScreenshotFrame';
 import { GITHUB_URL } from '../../lib/site-facts';
+import { readBuildInfo } from '../../lib/build-info';
+import { DELIVERED_CAPABILITIES } from '../../content/scope';
 
 const APERTURE_FOCUS_STYLE = { '--aperture-progress': 1 } as CSSProperties;
+
+// 10-12-PLAN.md Round 1 (D-02a). The eyebrow's "no agent" wording is pinned to the real
+// connect-ssh claim at runtime -- if that claim ever stops saying "no agent", this throws instead
+// of silently drifting into an unbacked marketing phrase.
+const CONNECT_SSH_CLAIM = DELIVERED_CAPABILITIES.find((c) => c.id === 'connect-ssh')?.claim ?? '';
+if (!CONNECT_SSH_CLAIM.toLowerCase().includes('no agent')) {
+  throw new Error('Hero: eyebrow says "no agent" but the connect-ssh capability claim no longer does');
+}
 
 const PRIMARY_CTA_CLASSES =
   'inline-flex min-h-11 items-center justify-center rounded-sm bg-accent-fill px-4 text-body font-semibold text-on-accent ' +
@@ -27,6 +37,8 @@ const SECONDARY_CTA_CLASSES =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 export function Hero() {
+  const { license } = readBuildInfo();
+
   return (
     <section className="flex flex-col gap-6">
       <div
@@ -38,7 +50,12 @@ export function Hero() {
       >
         <Lockup title="Noodara" height={32} />
       </div>
-      <h1 className="text-display font-semibold text-ink">Your infrastructure, understood.</h1>
+      <p data-testid="hero-eyebrow" className="text-label uppercase tracking-[0.08em] text-ink-secondary">
+        {license} · Self-hosted · No agent
+      </p>
+      <h1 className="max-w-[18ch] font-display text-[var(--site-hero-display-size)] font-semibold leading-[1.05] tracking-[-0.02em] text-ink">
+        Your infrastructure, understood.
+      </h1>
       <p className="max-w-[65ch] text-body font-normal text-ink-secondary">
         Connect a server over SSH, watch Noodara discover it, and see exactly what&apos;s running — no agent, no
         black box.
@@ -52,7 +69,12 @@ export function Hero() {
           View on GitHub
         </a>
       </div>
-      <ScreenshotFrame screen="servers" loading="eager" alt="The Noodara servers list with a connected Ubuntu server" />
+      <ScreenshotFrame
+        screen="servers"
+        loading="eager"
+        alt="The Noodara servers list with a connected Ubuntu server"
+        revealOnLoad
+      />
     </section>
   );
 }

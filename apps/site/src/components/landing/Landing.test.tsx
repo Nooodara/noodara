@@ -51,7 +51,7 @@ describe('Landing', () => {
     expect(eyebrow.textContent).toContain('Apache License 2.0');
     expect(eyebrow.textContent).toMatch(/self-hosted/i);
     expect(eyebrow.textContent).toMatch(/no agent/i);
-    expect(findExcludedTerms(eyebrow.textContent ?? '')).toEqual([]);
+    expect(findExcludedTerms(eyebrow.textContent)).toEqual([]);
   });
 
   it('renders INSTALL_COMMAND twice (hero + closing CTA band) in a <code>, each with a "Copy install command" button', () => {

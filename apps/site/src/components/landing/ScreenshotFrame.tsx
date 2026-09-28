@@ -17,14 +17,20 @@ export interface ScreenshotFrameProps {
   readonly alt: string;
   readonly loading?: 'eager' | 'lazy';
   readonly caption?: string;
+  /** 10-12-PLAN.md Round 1 (D-18a): the hero's own one-shot clip-path reveal on load -- a plain
+   *  CSS class (`site-hero-reveal`, global.css), pure `@starting-style`, no observer of any kind.
+   *  Default false; every other ScreenshotFrame call site (FeatureGrid glyphs use none,
+   *  ProductTour has its own tab-switch transition) is unaffected. */
+  readonly revealOnLoad?: boolean;
 }
 
 const CAPTURE_WIDTH = 1280;
 const CAPTURE_HEIGHT = 900;
 
-export function ScreenshotFrame({ screen, alt, loading = 'lazy', caption }: ScreenshotFrameProps) {
+export function ScreenshotFrame({ screen, alt, loading = 'lazy', caption, revealOnLoad = false }: ScreenshotFrameProps) {
   return (
-    <figure className="overflow-hidden rounded-lg border border-hairline">
+    <figure className={`overflow-hidden rounded-lg border border-hairline ${revealOnLoad ? 'site-hero-reveal' : ''}`}>
+
       <img
         className="site-shot-light block w-full"
         src={assetPath(`/screenshots/${screen}-light.png`)}

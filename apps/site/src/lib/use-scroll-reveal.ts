@@ -40,7 +40,9 @@ export function useScrollReveal<T extends HTMLElement>(): ScrollRevealResult<T> 
     );
     observer.observe(node);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+    };
   }, []);
 
   return { ref, revealed };
