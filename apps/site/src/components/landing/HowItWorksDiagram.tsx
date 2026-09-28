@@ -1,3 +1,12 @@
+'use client';
+
+// 10-11-PLAN.md deviation (Rule 3, blocking issue): `'use client'` added when this file was first
+// composed into Landing.tsx (a Server Component) -- `@noodara/ui`'s barrel re-exports hook-using
+// components with no `'use client'` of their own, so any Server Component importing `Logo` from
+// it pulls that whole graph in and fails the build (same reason
+// apps/site/src/components/DocsNavTitle.tsx isolates its own Lockup import, 10-05-PLAN.md). This
+// component itself uses no hook; the directive only draws the client/server boundary.
+//
 // 10-09-PLAN.md Task 2 (D-05, T-10-05). "How it works" in three steps, hand-drawn inline SVG in
 // `currentColor` on the brand-kit's own 24-unit grid / 3-unit stroke (packages/ui/src/brand/
 // geometry.ts's GRID/STROKE, cited rather than re-imported: the geometry primitives are not

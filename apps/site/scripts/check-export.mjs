@@ -165,8 +165,9 @@ export function findBasePathMismatch(html, { cnamePresent }) {
   return findings;
 }
 
-// Every export must contain these. Plan 10-11 adds 'index.html' once the landing page ships.
-export const REQUIRED_EXPORT_FILES = ['404.html', 'sitemap.xml', 'robots.txt', 'api/search', 'docs.html'];
+// Every export must contain these. 10-11-PLAN.md Task 2 added 'index.html' once the landing page
+// shipped (the composed `/` route, 10-02's placeholder replaced).
+export const REQUIRED_EXPORT_FILES = ['404.html', 'sitemap.xml', 'robots.txt', 'api/search', 'docs.html', 'index.html'];
 
 /**
  * Recursively lists every file under `dir`, returned as paths relative to `dir` with forward

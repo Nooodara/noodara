@@ -113,6 +113,13 @@ describe('findBasePathMismatch', () => {
 
 describe('REQUIRED_EXPORT_FILES', () => {
   it('lists the exact set of files every export must contain', () => {
-    expect(REQUIRED_EXPORT_FILES).toEqual(['404.html', 'sitemap.xml', 'robots.txt', 'api/search', 'docs.html']);
+    expect(REQUIRED_EXPORT_FILES).toEqual([
+      '404.html',
+      'sitemap.xml',
+      'robots.txt',
+      'api/search',
+      'docs.html',
+      'index.html',
+    ]);
   });
 });

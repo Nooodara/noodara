@@ -1,8 +1,16 @@
-// 10-02-PLAN.md deviation (Rule 3, blocking issue): `next build --output export` needs at least
-// one route to export at all -- this plan's own scope is the theme/token/layout shell, not the
-// landing page content (D-01..D-06, a later plan). This is a bare, unstyled placeholder so
-// `pnpm --filter @noodara/site build` succeeds and `apps/site/out/` exists; the next landing plan
-// replaces this file's body entirely.
+import type { Metadata } from 'next';
+import { Landing } from '../components/landing/Landing';
+
+// 10-11-PLAN.md Task 2 (D-01..D-06). Replaces 10-02's placeholder route: `/` now renders the real
+// landing composed from tested parts (Landing.tsx). `alternates.canonical` matches the root
+// layout's own metadataBase discipline -- the canonical URL is always this route, independent of
+// the preview build's non-CNAME basePath.
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+};
+
 export default function HomePage() {
-  return <main>Noodara</main>;
+  return <Landing />;
 }

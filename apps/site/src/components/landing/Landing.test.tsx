@@ -104,13 +104,13 @@ describe('Landing', () => {
     if (clonedScopeBlock !== null) clonedScopeBlock.remove();
     expect(scopeBlock).not.toBeNull();
 
-    const findings = findExcludedTerms(clone.textContent ?? '');
+    const findings = findExcludedTerms(clone.textContent);
     expect(findings).toEqual([]);
   });
 
   it('never names a competitor (D-04)', () => {
     const { container } = render(<Landing />);
-    expect(container.textContent ?? '').not.toMatch(/coolify|dokploy|heroku|vercel|netlify|render\.com/i);
+    expect(container.textContent).not.toMatch(/coolify|dokploy|heroku|vercel|netlify|render\.com/i);
   });
 
   it('every <img> src is an approved screenshot under /screenshots/', () => {
