@@ -138,10 +138,14 @@ back, and mid-flight re-grab resuming from the panel's current position) — all
 | Field | Value |
 | --- | --- |
 | Gate | Phase 10 — Public site |
-| Date | pending |
-| Rounds used | pending |
-| Approver | pending |
+| Date | 2026-09-28 |
+| Rounds used | 1 |
+| Approver | Pablo Gutierrez |
 | Evidence | `docs/ui/review/site/` — landing and docs captures in both themes at 375/900/1280/1920px, plus a reduced-motion landing capture, produced by `pnpm ui:review:site`; `docs/ui-reviews/public-site-2026-09.md` (per-dimension PASS/FLAG/BLOCK verdicts) |
+
+**Approver's verdict** (verbatim, Spanish): "mira te la approved pero la verdad es que está en
+pañales, la vamos a ir mejorando mientras mas cosas surjan" — approved as an early version, to be
+iterated on as more comes up. Not a request for further changes in this plan.
 
 ### Adjustment log
 
