@@ -86,8 +86,8 @@ completed: 2026-09-27
 
 ## Task Commits
 
-1. **Task 1: Fumadocs source, sidebar meta and docs home (tree test first)** -- `223b1e6` (test, RED) -> `0fcbafc` (feat, GREEN)
-2. **Task 2: Docs layout and page route, static search, header toggle and lockup** -- `7585ef2` (feat, includes the RSC-safety fix, the macro.include fix, and lint fixes to Task 1's own test file discovered while running this task's verify command)
+1. **Task 1: Fumadocs source, sidebar meta and docs home (tree test first)** -- `0d718e9` (test, RED) -> `8a49599` (feat, GREEN)
+2. **Task 2: Docs layout and page route, static search, header toggle and lockup** -- `7fbc957` (feat, includes the RSC-safety fix, the macro.include fix, and lint fixes to Task 1's own test file discovered while running this task's verify command)
 
 ## Files Created/Modified
 
@@ -118,7 +118,7 @@ See `key-decisions` in frontmatter: the `macro.include` basename-matching fix, t
 - **Fix:** Changed `next.config.mjs`'s `macro.include` to `['source.ts']` -- a basename-only pattern that matches the macro-calling file regardless of directory, which is both correct under this matching mode and as narrowly scoped as the mode allows.
 - **Files modified:** `apps/site/next.config.mjs`
 - **Verification:** `pnpm --filter @noodara/site build` (both Turbopack and `--webpack`) produces the correct static/SSG route summary with zero `ƒ` routes; `apps/site/out/docs.html` and `apps/site/out/api/search` both exist and are valid.
-- **Committed in:** `7585ef2` (Task 2 commit)
+- **Committed in:** `7fbc957` (Task 2 commit)
 
 **2. [Rule 1 - Bug] `docs/layout.tsx` importing `Lockup` directly from `@noodara/ui`'s barrel crashed the Server Component build**
 - **Found during:** Task 2's first build attempt, before the macro.include issue was found
@@ -126,7 +126,7 @@ See `key-decisions` in frontmatter: the `macro.include` basename-matching fix, t
 - **Fix:** Added `apps/site/src/components/DocsNavTitle.tsx`, a one-component `'use client'` wrapper around `Lockup`, and imported that from `docs/layout.tsx` instead of `Lockup` directly.
 - **Files modified:** `apps/site/src/components/DocsNavTitle.tsx` (new), `apps/site/src/app/docs/layout.tsx`
 - **Verification:** `pnpm --filter @noodara/site build` compiles and collects page data successfully past this point.
-- **Committed in:** `7585ef2` (Task 2 commit)
+- **Committed in:** `7fbc957` (Task 2 commit)
 
 **3. [Rule 1 - Bug] Six lint errors in Task 1's own `docs-tree.test.ts`, surfaced by Task 2's `pnpm --filter @noodara/site lint` verify step**
 - **Found during:** Task 2's verify step
@@ -134,7 +134,7 @@ See `key-decisions` in frontmatter: the `macro.include` basename-matching fix, t
 - **Fix:** Rewrote `readFrontmatterField` to use `RegExp#exec()` and optional-chaining instead of `as`-assertions; replaced a forbidden `!` non-null assertion pattern with `?.[1]` + explicit `undefined` checks; guarded the template-literal interpolation of a possibly-`undefined` value with `?? ''`.
 - **Files modified:** `apps/site/src/lib/docs-tree.test.ts`
 - **Verification:** `pnpm --filter @noodara/site lint` exits 0; `pnpm vitest run apps/site/src/lib/docs-tree.test.ts` still 7/7 pass after the rewrite.
-- **Committed in:** `7585ef2` (Task 2 commit, alongside the Task 2 files it was discovered while verifying)
+- **Committed in:** `7fbc957` (Task 2 commit, alongside the Task 2 files it was discovered while verifying)
 
 **4. [Rule 1 - Bug] Acceptance-criteria grep for `cookies\(|headers\(` matched this plan's own explanatory comment, not real code**
 - **Found during:** Task 2's acceptance-criteria check
@@ -142,7 +142,7 @@ See `key-decisions` in frontmatter: the `macro.include` basename-matching fix, t
 - **Fix:** Reworded the comment to describe the same fact without repeating the literal substrings.
 - **Files modified:** `apps/site/src/app/docs/[[...slug]]/page.tsx`
 - **Verification:** `grep -rlE "cookies\(|headers\(" apps/site/src` returns nothing.
-- **Committed in:** `7585ef2` (Task 2 commit)
+- **Committed in:** `7fbc957` (Task 2 commit)
 
 ---
 
@@ -171,9 +171,9 @@ See `key-decisions` in frontmatter: the `macro.include` basename-matching fix, t
 - `apps/site/src/app/api/search/route.ts` -- FOUND
 - `apps/site/src/components/SiteSearchDialog.tsx` -- FOUND
 - `apps/site/src/components/DocsNavTitle.tsx` -- FOUND
-- Commit `223b1e6` -- FOUND
-- Commit `0fcbafc` -- FOUND
-- Commit `7585ef2` -- FOUND
+- Commit `0d718e9` -- FOUND
+- Commit `8a49599` -- FOUND
+- Commit `7fbc957` -- FOUND
 - `pnpm vitest run apps/site/src/lib/docs-tree.test.ts` -- 7/7 pass
 - `pnpm --filter @noodara/site build` -- exits 0, `/docs/[[...slug]]` is `●`, `/api/search` is `○`, zero `ƒ` routes; `out/docs.html` and `out/api/search` present, `out/api/search` is valid JSON
 - `pnpm --filter @noodara/site typecheck` / `lint` -- exit 0
