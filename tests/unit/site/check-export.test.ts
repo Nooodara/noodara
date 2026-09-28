@@ -10,6 +10,7 @@ import {
   findFontFaces,
   findLeakedEnvNames,
   findMissingBasePathPrefix,
+  findMissingRequiredFiles,
   findThirdPartyAssetUrls,
   REQUIRED_EXPORT_FILES,
 } from '../../../apps/site/scripts/check-export.mjs';
@@ -147,6 +148,33 @@ describe('findMissingBasePathPrefix', () => {
     expect(
       findMissingBasePathPrefix('<a href="/docs">Docs</a>', { cnamePresent: true, basePath: '/noodara' }),
     ).toEqual([]);
+  });
+});
+
+describe('findMissingRequiredFiles', () => {
+  it('accepts an entry matched exactly (the real shape a route handler exports today)', () => {
+    expect(findMissingRequiredFiles(new Set(['api/search']), ['api/search'])).toEqual([]);
+    expect(findMissingRequiredFiles(new Set(['CNAME']), ['CNAME'])).toEqual([]);
+  });
+
+  it('accepts an entry as "<entry>.html"', () => {
+    expect(findMissingRequiredFiles(new Set(['api/search.html']), ['api/search'])).toEqual([]);
+  });
+
+  it('accepts an entry as "<entry>/index.html"', () => {
+    expect(findMissingRequiredFiles(new Set(['api/search/index.html']), ['api/search'])).toEqual([]);
+  });
+
+  it('rejects an entry produced deeper than the three known export shapes', () => {
+    expect(findMissingRequiredFiles(new Set(['api/search/foo/bar.json']), ['api/search'])).toEqual([
+      'api/search',
+    ]);
+  });
+
+  it('reports every missing entry, in order', () => {
+    expect(findMissingRequiredFiles(new Set(['index.html']), ['404.html', 'index.html'])).toEqual([
+      '404.html',
+    ]);
   });
 });
 

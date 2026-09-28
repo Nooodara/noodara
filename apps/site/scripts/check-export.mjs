@@ -205,6 +205,29 @@ export function findMissingBasePathPrefix(html, { cnamePresent, basePath }) {
 export const REQUIRED_EXPORT_FILES = ['404.html', 'sitemap.xml', 'robots.txt', 'api/search', 'docs.html', 'index.html'];
 
 /**
+ * Checks every `requiredFiles` entry against `producedFiles` (a Set of export-relative paths)
+ * and returns the entries that are missing. Each entry is accepted only via one of the exact leaf
+ * shapes `next export` can plausibly produce: the entry itself (e.g. `api/search`, the real flat
+ * file a route handler exports today), `<entry>.html`, or `<entry>/index.html` -- never an
+ * arbitrarily deep `startsWith` match, which would stay green even if a future export nested the
+ * output somewhere unexpected without anyone verifying what shape was actually produced (WR-01).
+ * @param {Set<string>} producedFiles
+ * @param {string[]} requiredFiles
+ * @returns {string[]}
+ */
+export function findMissingRequiredFiles(producedFiles, requiredFiles) {
+  const missing = [];
+  for (const requiredFile of requiredFiles) {
+    const found =
+      producedFiles.has(requiredFile) ||
+      producedFiles.has(`${requiredFile}.html`) ||
+      producedFiles.has(`${requiredFile}/index.html`);
+    if (!found) missing.push(requiredFile);
+  }
+  return missing;
+}
+
+/**
  * Recursively lists every file under `dir`, returned as paths relative to `dir` with forward
  * slashes (so a Windows checkout still matches REQUIRED_EXPORT_FILES's posix-style entries).
  * @param {string} dir
@@ -274,13 +297,8 @@ if (isMainModule()) {
   }
 
   const producedFiles = new Set(listFilesRecursive(outDir));
-  for (const requiredFile of requiredFiles) {
-    const found = [...producedFiles].some(
-      (f) => f === requiredFile || f === `${requiredFile}.html` || f.startsWith(`${requiredFile}/`),
-    );
-    if (!found) {
-      allFindings.push({ file: requiredFile, kind: 'missing-required-file' });
-    }
+  for (const requiredFile of findMissingRequiredFiles(producedFiles, requiredFiles)) {
+    allFindings.push({ file: requiredFile, kind: 'missing-required-file' });
   }
 
   if (allFindings.length > 0) {
