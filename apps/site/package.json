@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "node scripts/sync-site-assets.mjs && next dev --port 3200",
-    "build": "node scripts/sync-site-assets.mjs && next build",
+    "build": "node scripts/sync-site-assets.mjs && next build && node scripts/check-export.mjs",
     "lint": "eslint --config ../../packages/config/eslint.config.js --ignore-pattern out --ignore-pattern .source .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --root ../.. --project apps --project dom"
