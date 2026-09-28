@@ -82,7 +82,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Documentación y sitio público (DOCS, SITE)
 
-- [ ] **DOCS-01**: Existe `apps/site` (Next 16 + Fumadocs, exportación estática) con la documentación pública: instalación (mismo comando y misma tabla de exit codes que `docs/install.md`), conceptos (servidor, proyecto, environment, servicio, deployment), guía de primer deploy, límites de v0.2 dichos sin "coming soon", y actualización/rollback.
+- [ ] **DOCS-01**: Existe `apps/site` (Next 16 + Fumadocs, exportación estática) con la documentación pública: instalación (mismo comando y misma tabla de exit codes que `docs/install.md`), conceptos (servidor, proyecto, environment, servicio, deployment), guía de primer deploy, límites de v0.2 dichos sin "coming soon", y actualización/rollback. (Fase 10 entrega "Your first server"; "Your first deploy" llega con la Fase 13, que reabre este requisito — D-09 de la Fase 10).
 - [ ] **DOCS-02**: Un test de exactitud verifica que los comandos, variables y códigos de error de la documentación coinciden con `install.sh` y con el vocabulario de errores real, igual que `install-docs-accuracy.test.ts`.
 - [ ] **SITE-01**: La landing pública (modo Persuade) presenta el producto con su identidad, screenshots reales de la app, el comando de instalación y enlaces a docs y GitHub; sin afirmaciones que el producto no cumpla, sin imágenes ni fuentes de terceros sin self-hosting, con metadatos SEO básicos y Open Graph.
 - [ ] **SITE-02**: El sitio se publica automáticamente desde CI (`public-site.yml`) a GitHub Pages en cada push a `main`, con el dominio configurable por CNAME sin cambiar el sitio, y su build forma parte de los gates del PR.

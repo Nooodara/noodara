@@ -248,6 +248,8 @@ Plans:
 ### Phase 10: Sitio de docs y landing pública
 
 **Goal**: Cualquier persona que llega a Noodara desde fuera encuentra una landing honesta con la identidad y una documentación pública (instalación, conceptos, primer deploy, límites de v0.2, upgrade/rollback) que se publica sola desde CI, que nunca miente sobre comandos, variables ni códigos de error, y que cumple el mismo piso de calidad que la app.
+
+**Nota (D-09):** esta fase entrega "Your first server"; la página "Your first deploy" la añade la Fase 13, que reabre DOCS-01 al cerrar.
 **Depends on**: Phase 7 (identidad y assets), Phase 8 (tokens finales y screenshots reales de la app rediseñada); Phase 11 solo para la mitad de códigos de error de DOCS-02 (el test lee las tablas de clasificación reales), que puede añadirse cuando la Fase 11 cierre si esta fase la precede en el calendario.
 **Requirements**: DOCS-01, DOCS-02, SITE-01, SITE-02, SITE-03
 **Research flag**: yes, light — Fumadocs 16 + Next 16 + Tailwind v4 compartiendo tokens con `packages/ui`, restricciones de exportación estática (búsqueda Orama en modo estático) y GitHub Pages con CNAME (D1, D2).
@@ -351,6 +353,8 @@ Plans:
   3. Los logs de build aparecen en vivo en el panel inspector (monoespaciada, auto-scroll con "jump to bottom", no modal) plegando los chunks SSE por `seq` sobre un snapshot GET sin replay; los logs de runtime se ven bajo demanda con tail y follow; los eventos de estado se aplican con la misma función pura de reconciliación por secuencia que v0.1 usa para servidores, probada con reordenamientos para que un evento y un snapshot en vuelo nunca dejen estado obsoleto.
   4. Redeploy, stop, restart, remove, cancelar, archivar/eliminar proyecto, eliminar environment y eliminar servicio están disponibles desde la UI; cada acción destructiva exige escribir el nombre exacto y el cambio de fuente avisa que exige redeploy.
   5. El E2E de Playwright cubre proyecto → environment → servicio desde `node-api` → deploy con logs en vivo → servicio alcanzable por el puerto publicado → build fallido con `failing-build` y error accionable → cancelación en curso sin huérfanos → propiedad entre proyectos, corre en CI y 20/20 en nightly; cada pantalla nueva cumple el DoD de UI (contraste medido, 375/900/1280/1920 px, ambos temas, reduced-motion) y el usuario aprobó screenshots en ambos temas.
+
+**Docs (D-09 de la Fase 10):** añadir apps/site/content/docs/getting-started/first-deploy.mdx, retirar "deploy-services" de las exclusiones de apps/site/src/content/scope.ts y cerrar DOCS-01.
 
 **Plans**: TBD
 **UI hint**: yes
