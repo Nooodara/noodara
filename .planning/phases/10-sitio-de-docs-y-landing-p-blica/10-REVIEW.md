@@ -101,6 +101,33 @@ findings:
   info: 3
   total: 8
 status: issues_found
+fixed_at: 2026-09-28T15:52:00Z
+fixes:
+  - id: CR-01
+    status: fixed
+    commit: a5f8473
+  - id: WR-01
+    status: fixed
+    commit: bb4b962
+  - id: WR-02
+    status: fixed
+    commit: 0ed861e
+  - id: WR-03
+    status: fixed
+    commit: 7a84416
+  - id: WR-04
+    status: fixed
+    commit: 48a8cf3
+  - id: IN-01
+    status: skipped
+    reason: "out of --fix scope (info-tier, not requested)"
+  - id: IN-02
+    status: skipped
+    reason: "out of --fix scope (info-tier, not requested)"
+  - id: IN-03
+    status: skipped
+    reason: "out of --fix scope (info-tier, not requested)"
+fix_status: critical_warning_fixed
 ---
 
 # Phase 10: Code Review Report
@@ -108,6 +135,11 @@ status: issues_found
 **Reviewed:** 2026-09-28T15:35:08Z
 **Depth:** standard
 **Files Reviewed:** 47 read directly (of 84 listed in scope)
+**Fixed:** 2026-09-28 -- all 1 Critical + 4 Warning findings fixed (CR-01, WR-01..WR-04); 3 Info
+findings left unfixed (out of requested scope). See commits a5f8473, bb4b962, 0ed861e, 7a84416,
+48a8cf3. `pnpm vitest run` (3269 tests), `pnpm typecheck`, `pnpm lint`, `pnpm check:ui-safety`,
+`pnpm boundaries`, and `pnpm --filter @noodara/site build` (both CNAME-present and CNAME-absent
+shapes) all pass after the fixes.
 **Status:** issues_found
 
 ## Summary
