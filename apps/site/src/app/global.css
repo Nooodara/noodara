@@ -167,6 +167,42 @@ article {
 }
 
 /*
+ * 10-12-PLAN.md Round 1 fix batch (orchestrator review, item 5). HowItWorksDiagram's connectors
+ * draw in once via stroke-dashoffset when the diagram's RevealSection ancestor reports
+ * data-revealed="true" -- `--dash-length` (set inline per connector, Connector in
+ * HowItWorksDiagram.tsx) is that connector's own path length in SVG user units.
+ * `prefers-reduced-motion` leaves every connector fully drawn and static, never mid-animation.
+ */
+.site-connector-draw {
+  stroke-dasharray: var(--dash-length);
+  stroke-dashoffset: var(--dash-length);
+  transition: stroke-dashoffset 500ms var(--ease-out);
+}
+
+[data-revealed='true'] .site-connector-draw {
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-connector-draw {
+    stroke-dashoffset: 0;
+    transition: none;
+  }
+}
+
+/*
+ * 10-12-PLAN.md Round 1 fix batch (orchestrator review, item 3). ProductTour's tablist scrolls
+ * horizontally at narrow widths (mobile) -- this mask-image fade signals there is more to scroll
+ * without painting any surface gradient (an opacity mask, not a colour gradient; the reviewer's
+ * own allowance). Static at every width; harmless (a no-op visually) when the row does not
+ * overflow.
+ */
+.site-tour-tablist-fade {
+  mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+}
+
+/*
  * 10-12-PLAN.md Round 1 (D-18a). ProductTour panel entrance -- an approximate crossfade (opacity
  * + 8px translate) each time the active tab remounts the panel (`key={active.screen}` in
  * ProductTour.tsx), `@starting-style`-driven, `--duration-panel` (200ms) `--ease-out`.

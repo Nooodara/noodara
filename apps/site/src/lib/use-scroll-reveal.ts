@@ -1,28 +1,36 @@
 'use client';
 
-// 10-12-PLAN.md Round 1 (D-18a). The one once-only scroll-reveal primitive the redesign uses --
-// deliberately kept out of apps/site/src/components/landing/ so Landing.test.tsx's source scan
-// ("landing files contain no IntersectionObserver") keeps meaning what it always meant: no
-// landing component owns its own observer, they consume this hook through RevealSection instead.
+// 10-12-PLAN.md Round 1 (D-18a), rewritten in the orchestrator's Round 1 review fix batch. The
+// one once-only scroll-reveal primitive the redesign uses -- deliberately kept out of
+// apps/site/src/components/landing/ so Landing.test.tsx's source scan ("landing files contain no
+// IntersectionObserver") keeps meaning what it always meant: no landing component owns its own
+// observer, they consume this hook through RevealSection instead.
 //
-// Progressive enhancement, belt-and-suspenders: `revealed` starts `true` (correct with no JS, no
-// hydration yet, or no IntersectionObserver support -- content is simply visible, nothing to
-// animate). Once a real observer is available it flips to `false` immediately after mount, then
-// back to `true` the first time the observed element intersects the viewport, disconnecting
-// immediately after (D-18a "never re-fires"). A REVEAL_FALLBACK_MS safety timer also force-reveals
-// regardless of intersection: Playwright's own full-page screenshot (scripts/ui/
-// capture-site-review.ts) renders content beyond the configured viewport without ever firing a
-// real scroll or resize event, so an element below the fold would otherwise never intersect and
-// stay hidden forever in that capture. The same guarantee protects any real visitor whose
-// environment never delivers a genuine intersection change -- content must never depend on a
-// scroll happening to become readable.
+// Three contracts, in order of priority:
+// 1. `revealed` starts `true` (safe default -- correct with no JS, no hydration yet, or no
+//    IntersectionObserver support: content is simply visible, nothing to animate).
+// 2. A node already inside the initial viewport at mount (`rect.top <= window.innerHeight`) is
+//    NEVER hidden -- the previous version unconditionally hid every wrapped section right after
+//    mount, which flickered every already-visible section (visible -> hidden -> fade back in) and
+//    depended on a 400ms fallback timer to ever show below-fold content again, since Playwright's
+//    own full-page screenshot never fires a real scroll/resize event on its own. That fallback
+//    timer is gone: `scripts/ui/capture-site-review.ts` now scrolls the real page before
+//    capturing, so below-fold sections reveal legitimately through real intersection instead.
+// 3. `prefers-reduced-motion: reduce` never hides anything, regardless of position -- checked
+//    once at mount (a one-shot reveal decision, not a live-updating preference).
 import { useEffect, useRef, useState } from 'react';
-
-const REVEAL_FALLBACK_MS = 400;
 
 export interface ScrollRevealResult<T extends HTMLElement> {
   readonly ref: React.RefObject<T | null>;
   readonly revealed: boolean;
+}
+
+function prefersReducedMotion(): boolean {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
 }
 
 export function useScrollReveal<T extends HTMLElement>(): ScrollRevealResult<T> {
@@ -32,6 +40,11 @@ export function useScrollReveal<T extends HTMLElement>(): ScrollRevealResult<T> 
   useEffect(() => {
     const node = ref.current;
     if (node === null || typeof IntersectionObserver === 'undefined') return;
+    if (prefersReducedMotion()) return;
+
+    const rect = node.getBoundingClientRect();
+    const alreadyInView = rect.top <= window.innerHeight;
+    if (alreadyInView) return;
 
     setRevealed(false);
 
@@ -48,14 +61,8 @@ export function useScrollReveal<T extends HTMLElement>(): ScrollRevealResult<T> 
     );
     observer.observe(node);
 
-    const fallback = setTimeout(() => {
-      setRevealed(true);
-      observer.disconnect();
-    }, REVEAL_FALLBACK_MS);
-
     return () => {
       observer.disconnect();
-      clearTimeout(fallback);
     };
   }, []);
 

@@ -40,6 +40,26 @@ interface Violation {
   readonly theme: Theme;
 }
 
+/** Scrolls the page down in steps and back to the top before a `fullPage` screenshot. `fullPage`
+ *  screenshots never fire a real scroll/resize event on their own -- without this, any
+ *  IntersectionObserver-driven reveal (apps/site/src/lib/use-scroll-reveal.ts, D-18a) never sees
+ *  its below-fold sections intersect and they'd render hidden in every capture. 150ms per step
+ *  comfortably clears the reveal transition's own 200ms/500ms durations. */
+async function scrollThroughPage(page: Page): Promise<void> {
+  const scrollHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+  const STEP = 600;
+  for (let y = 0; y < scrollHeight; y += STEP) {
+    await page.evaluate((yPos) => {
+      window.scrollTo(0, yPos);
+    }, y);
+    await page.waitForTimeout(150);
+  }
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+  });
+  await page.waitForTimeout(150);
+}
+
 async function captureSurface(
   context: BrowserContext,
   origin: string,
@@ -70,6 +90,7 @@ async function captureSurface(
   await page.setViewportSize({ width, height: VIEWPORT_HEIGHT[width] });
   await page.goto(origin + urlPath, { waitUntil: 'networkidle' });
   await page.evaluate(() => document.fonts.ready);
+  await scrollThroughPage(page);
 
   const fileName = reducedMotion ? 'landing-reduced-motion' : surface;
   writeIfChanged(siteReviewPngPath(fileName, theme, width), await page.screenshot({ fullPage: true, type: 'png' }));

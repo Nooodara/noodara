@@ -7,17 +7,26 @@
 // apps/site/src/components/DocsNavTitle.tsx isolates its own Lockup import, 10-05-PLAN.md). This
 // component itself uses no hook; the directive only draws the client/server boundary.
 //
-// 10-09-PLAN.md Task 2 (D-05, T-10-05). "How it works" in three steps, hand-drawn inline SVG in
-// `currentColor` on the brand-kit's own 24-unit grid / 3-unit stroke (packages/ui/src/brand/
-// geometry.ts's GRID/STROKE, cited rather than re-imported: the geometry primitives are not
-// barrel exports, per this plan's own interfaces note). No third-party icon or illustration --
-// the VPS outline and server stack are drawn here on that same grid; the third node reuses
-// `<Logo />` from '@noodara/ui', the one brand mark for "Noodara discovers".
+// 10-09-PLAN.md Task 2 (D-05, T-10-05), compacted in the orchestrator's Round 1 review batch
+// (item 5): the brief asked for "a compact three-step numbered sequence" replacing the previous
+// full-bleed, oversized diagram (it rendered at the landing's own 1120px content width with no
+// cap, dwarfing every other section at 1280px). Fixed with a `max-w-[520px]` centered wrapper, a
+// numbered badge per step (the one place this landing uses section numbers -- craft-floor.md's
+// own "01/02/03" default is a ban with no brief exception EXCEPT this one, which the Round 1
+// brief names explicitly: "a compact three-step numbered sequence"), and once-only
+// stroke-dashoffset connectors that draw in when the section scrolls into view (D-18a),
+// `prefers-reduced-motion` leaving them fully drawn and static.
+//
+// Hand-drawn inline SVG in `currentColor` on the brand-kit's own 24-unit grid / 3-unit stroke
+// (packages/ui/src/brand/geometry.ts's GRID/STROKE, cited rather than re-imported: the geometry
+// primitives are not barrel exports). No third-party icon or illustration -- the VPS outline and
+// server stack are drawn here on that same grid; the third node reuses `<Logo />` from
+// '@noodara/ui', the one brand mark for "Noodara discovers".
 //
 // Captions render as ordinary HTML text next to/under the SVG, never SVG <text>, so they scale
 // with the app's own type system instead of a fixed SVG font-size. Responsive: a horizontal row
-// at >=900px, a stacked column below that breakpoint (UI-SPEC layout contract). No animation --
-// D-18 reserves the one motion moment for the hero's own aperture focus, not this diagram.
+// at >=900px, a stacked column below that breakpoint (UI-SPEC layout contract).
+import type { CSSProperties } from 'react';
 import { Logo } from '@noodara/ui';
 
 // Mirrors geometry.ts: GRID = 24 units per node, STROKE = 3.
@@ -36,13 +45,14 @@ const ACCESSIBLE_TITLE =
   'How Noodara works: install on an Ubuntu VPS, add servers over SSH, Noodara discovers and watches them';
 
 interface Step {
+  readonly number: 1 | 2 | 3;
   readonly caption: string;
 }
 
 const STEPS: readonly Step[] = [
-  { caption: 'Install Noodara on an Ubuntu VPS' },
-  { caption: 'Add your servers over SSH — no agent' },
-  { caption: 'Noodara discovers and watches them' },
+  { number: 1, caption: 'Install Noodara on an Ubuntu VPS' },
+  { number: 2, caption: 'Add your servers over SSH — no agent' },
+  { number: 3, caption: 'Noodara discovers and watches them' },
 ];
 
 /** A rounded-rect outline standing for the VPS (step 1) -- filled `none`, stroked `currentColor`,
@@ -88,16 +98,33 @@ function ServerStack({ x, y }: { x: number; y: number }) {
   );
 }
 
-/** A straight connector between two adjacent nodes, `currentColor`, `STROKE`-wide. */
+/** A straight connector between two adjacent nodes, `currentColor`, `STROKE`-wide. `.site-
+ *  connector-draw` (global.css) draws it in once via stroke-dashoffset when the diagram's
+ *  RevealSection ancestor reports `data-revealed="true"` (D-18a); `--dash-length` is this
+ *  connector's own path length in SVG user units, so the dash pattern always matches exactly. */
 function Connector({ fromX, toX, y }: { fromX: number; toX: number; y: number }) {
-  return <line x1={fromX} y1={y} x2={toX} y2={y} stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />;
+  const length = Math.abs(toX - fromX);
+  const dashStyle = { '--dash-length': length } as CSSProperties;
+  return (
+    <line
+      x1={fromX}
+      y1={y}
+      x2={toX}
+      y2={y}
+      stroke="currentColor"
+      strokeWidth={STROKE}
+      strokeLinecap="round"
+      className="site-connector-draw"
+      style={dashStyle}
+    />
+  );
 }
 
 export function HowItWorksDiagram() {
   const centerY = VIEW_HEIGHT / 2;
 
   return (
-    <div className="flex flex-col gap-6 min-[900px]:gap-4">
+    <div className="mx-auto flex w-full max-w-[520px] flex-col gap-6">
       <svg
         role="img"
         aria-label={ACCESSIBLE_TITLE}
@@ -116,11 +143,14 @@ export function HowItWorksDiagram() {
           <Logo size={GRID} />
         </g>
       </svg>
-      <div className="grid grid-cols-1 gap-4 text-center min-[900px]:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-3">
         {STEPS.map((step) => (
-          <p key={step.caption} className="text-body font-normal text-ink-secondary">
-            {step.caption}
-          </p>
+          <div key={step.caption} className="flex flex-col items-center gap-2 text-center">
+            <span className="flex h-6 w-6 items-center justify-center rounded-pill border border-hairline text-caption font-semibold text-ink-secondary">
+              {step.number}
+            </span>
+            <p className="text-body font-normal text-ink-secondary">{step.caption}</p>
+          </div>
         ))}
       </div>
     </div>
