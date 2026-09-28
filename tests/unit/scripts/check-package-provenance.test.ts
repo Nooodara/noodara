@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 // `enumerateLockedDependencies` shells out to the local `pnpm list -r --depth 0 --json` (no
 // network call — pnpm already has the workspace's node_modules resolved on disk), so this stays
 // a fast, deterministic unit test rather than an integration test against a real registry.
-import { enumerateLockedDependencies } from '../../../scripts/check-package-provenance.mjs';
+import { enumerateLockedDependencies, normaliseRepoUrl } from '../../../scripts/check-package-provenance.mjs';
 
 // The exact packages WR-C-14 named as missing from the old hardcoded EXPECTED_PACKAGES list.
 const WR_C_14_PACKAGES = ['ssh2', 'argon2', 'better-auth', 'pg', 'fastify', 'pino', 'zod'];
@@ -43,5 +43,33 @@ describe('check-package-provenance.mjs enumerateLockedDependencies', () => {
     for (const workspacePackage of ['@noodara/domain', '@noodara/ssh', '@noodara/ui']) {
       expect(names).not.toContain(workspacePackage);
     }
+  });
+});
+
+// 10-01-PLAN.md Task 2: `npm view fumadocs-core@16.15.15 repository.url` (and fumadocs-ui,
+// fumadocs-mdx at their own pinned versions) returns the npm registry's `github:owner/repo`
+// shorthand form, not a `git+https://`/`git://`/`ssh://` URL. normaliseRepoUrl() had no branch for
+// this shorthand, so it fell through unstripped and never matched `expectedOwnerRepo`, failing the
+// gate closed for three legitimate, slopcheck-approved packages -- a real bug this plan's own
+// `node scripts/check-package-provenance.mjs` verification step caught.
+describe('normaliseRepoUrl', () => {
+  it('strips the "github:" shorthand prefix npm uses for some registry repository.url values', () => {
+    expect(normaliseRepoUrl('github:fuma-nama/fumadocs')).toBe('fuma-nama/fumadocs');
+  });
+
+  it('still handles the git+https:// form used by most packages', () => {
+    expect(normaliseRepoUrl('git+https://github.com/nextapps-de/flexsearch.git')).toBe('nextapps-de/flexsearch');
+  });
+
+  it('still handles a bare https:// GitHub URL with no git+ prefix', () => {
+    expect(normaliseRepoUrl('https://github.com/DefinitelyTyped/DefinitelyTyped.git')).toBe(
+      'definitelytyped/definitelytyped',
+    );
+  });
+
+  it('returns null for a falsy or non-string input', () => {
+    expect(normaliseRepoUrl(null)).toBeNull();
+    expect(normaliseRepoUrl(undefined)).toBeNull();
+    expect(normaliseRepoUrl('')).toBeNull();
   });
 });
