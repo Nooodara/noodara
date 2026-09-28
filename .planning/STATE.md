@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 10-08-PLAN.md
-last_updated: "2026-09-28T06:14:02.981Z"
+stopped_at: Completed 10-09-PLAN.md
+last_updated: "2026-09-28T06:23:22.526Z"
 last_activity: 2026-09-28
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 56
-  completed_plans: 52
+  completed_plans: 53
   percent: 38
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 10 (sitio-de-docs-y-landing-p-blica) — EXECUTING
-Plan: 9 of 12
+Plan: 10 of 12
 Status: Ready to execute
 Last activity: 2026-09-28
 
-Progress: [█████████░] 93%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -211,6 +211,7 @@ Progress: [█████████░] 93%
 | Phase 10 P06 | 10min | 3 tasks | 11 files |
 | Phase 10 P07 | 26min | 2 tasks | 8 files |
 | Phase 10 P08 | 25min | 2 tasks | 10 files |
+| Phase 10 P09 | 55min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -576,6 +577,9 @@ Recent decisions affecting current work:
 - [Phase 10]: check-ui-safety.mjs excludes content-rules.ts/test.ts from the dangerouslySetInnerHTML scan (detection data, not real usage) — findUnsafeMarkup's own rule needs the literal string as data; the existing allowlist gate asserts an exact total of 2, one per app root layout
 - [Phase 10]: domains-tls and app-config exclusions share one PROJECT.md projectAnchor — PROJECT.md's own Out of Scope bullet bundles domains/TLS/env-vars/secrets in one line; the plan's interfaces block lists 7 anchors for 8 exclusions
 - [Phase 10-07]: check-export.mjs post-build gate blocks third-party assets, @font-face, wrong base path, and leaked secret env values on every site build
+- [Phase 10]: site-facts.ts builds INSTALL_SCRIPT_URL/GITHUB_URL from two small owner/repo constants; the test diffs them against install.sh/README so they cannot drift
+- [Phase 10]: InstallCommand mounts its own local TooltipProvider since apps/site has no app-wide one
+- [Phase 10]: HowItWorksDiagram renders its three captions as HTML text, not SVG text, so they inherit the site type system
 
 ### Pending Todos
 
@@ -651,8 +655,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-28T06:14:02.972Z
-Stopped at: Completed 10-08-PLAN.md
+Last session: 2026-09-28T06:23:17.940Z
+Stopped at: Completed 10-09-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
