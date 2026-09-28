@@ -133,6 +133,21 @@ back, and mid-flight re-grab resuming from the panel's current position) — all
 - **Open, deferred (not a defect of this phase, no action taken):** at 440px the server row truncates the name to "t…" and the status pill to "Unreac" — a Phase 8 row-layout constraint, not introduced by this plan.
 - **Round 2: none.**
 
+## Phase 10 — Public site
+
+| Field | Value |
+| --- | --- |
+| Gate | Phase 10 — Public site |
+| Date | pending |
+| Rounds used | pending |
+| Approver | pending |
+| Evidence | `docs/ui/review/site/` — landing and docs captures in both themes at 375/900/1280/1920px, plus a reduced-motion landing capture, produced by `pnpm ui:review:site`; `docs/ui-reviews/public-site-2026-09.md` (per-dimension PASS/FLAG/BLOCK verdicts) |
+
+### Adjustment log
+
+- **Round 1: pending.**
+- **Round 2: pending.**
+
 ## What this record gates
 
 D-13: no gate's own wave of work is considered complete until its block above is filled in with a
