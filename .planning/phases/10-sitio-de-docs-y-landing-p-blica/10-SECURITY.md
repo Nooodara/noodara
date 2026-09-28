@@ -127,3 +127,4 @@ created: 2026-09-28
 - [x] `status: verified` set in frontmatter
 
 **Approval:** verified 2026-09-28
+- 2026-09-28 (fast, after the first real deploy failed): `cloudflare/wrangler-action` was replaced by `npx --yes wrangler@4.143.0 pages deploy …` because the action's `pnpm add wrangler` auto-install is refused at a pnpm workspace root. T-10-10 now rests on the exact wrangler version (npm registry integrity; same unpinned-transitive-deps exposure the action's own install had), `contents: read`, push-to-main-only trigger, and the two Cloudflare secrets passed only through step `env` (never on the command line), all asserted by `check-workflow-pins.test.ts`.

@@ -9,8 +9,8 @@ name: Publish site
 # docker-compose*.yml, asserted by tests/unit/scripts/check-workflow-pins.test.ts).
 #
 # Single job, no artifact hand-off: Cloudflare Pages has no equivalent of GitHub Pages' separate
-# upload/deploy actions -- `cloudflare/wrangler-action` builds nothing itself, it just uploads
-# `apps/site/out` directly with `wrangler pages deploy`, so build and deploy stay one job.
+# upload/deploy actions -- `wrangler pages deploy` (run via npx) builds nothing itself, it uploads
+# `apps/site/out` directly, so build and deploy stay one job.
 #
 # No path filter on the push trigger above: D-13 notes captures, tokens and copy that affect the
 # site live outside apps/site (packages/ui/brand, docs/ui/approved, docs/install.md), so scoping
@@ -72,9 +72,10 @@ jobs:
       # `pnpm --filter @noodara/site build` directly -- see ci.yml's `site` job for the full
       # rationale (Turbo's `^build` edge builds @noodara/domain and @noodara/ui first).
       - run: pnpm site:build
-      - uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy apps/site/out --project-name=noodara-site --branch=main
-          wranglerVersion: '4.143.0'
+      # The official wrangler GitHub Action auto-installs wrangler with `pnpm add`, which pnpm refuses
+      # at a workspace root; npx runs the pinned version without touching the workspace.
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.143.0 pages deploy apps/site/out --project-name=noodara-site --branch=main
