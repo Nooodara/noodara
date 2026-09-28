@@ -150,6 +150,30 @@ See `key-decisions` in frontmatter: press-class duplication (no `./press` export
 - `apps/site/src/app/page.tsx` is a placeholder only -- the next landing-page plan (10-03 per the phase's wave plan) replaces its body with the real Hero/pillars/scope content (D-01..D-06) and should delete this plan's placeholder comment along with it.
 - `SiteThemeToggle` is built and tested but not yet mounted anywhere (no `SiteHeader` exists yet) -- a later plan wires it into the header.
 
+## Self-Check: PASSED
+
+- `apps/site/src/lib/site-theme.ts` — FOUND
+- `apps/site/src/lib/theme-script.ts` — FOUND
+- `apps/site/src/lib/build-info.ts` — FOUND
+- `apps/site/src/components/SiteThemeToggle.tsx` — FOUND
+- `apps/site/scripts/sync-site-assets.mjs` — FOUND
+- `apps/site/src/app/global.css` — FOUND
+- `apps/site/src/app/layout.tsx` — FOUND
+- `apps/site/src/app/page.tsx` — FOUND
+- `scripts/check-ui-safety.mjs` — FOUND
+- Commit `1e3357f` — FOUND
+- Commit `de0cd99` — FOUND
+- Commit `0e8d28f` — FOUND
+- Commit `421f2ec` — FOUND
+- Commit `0c24e8c` — FOUND
+- Commit `26504dd` — FOUND
+- `pnpm vitest run apps/site tests/unit/site` — 85/85 pass
+- `pnpm check:ui-safety` — exits 0
+- `pnpm --filter @noodara/site build` — exits 0, `apps/site/out/404.html` present
+- `pnpm --filter @noodara/site typecheck` / `lint` — exit 0
+- `pnpm boundaries` — exits 0
+- `pnpm test` (full repo) — 3086/3086 pass, no regressions
+
 ---
 *Phase: 10-sitio-de-docs-y-landing-pública*
 *Completed: 2026-09-27*
