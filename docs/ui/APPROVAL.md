@@ -170,6 +170,31 @@ back, and mid-flight re-grab resuming from the panel's current position) — all
      replacement, so a visible rotating chevron was added.
   7. Full gate re-run green after the fix batch (see `docs/ui-reviews/public-site-2026-09.md`'s
      Round 1 section for the exact commands/results).
+  8. **Orchestrator review of the Round 1 captures found six further defects, fixed in one batch
+     and re-verified (commits `d8f2aaf`/`72f3ad0`), superseding items 2/6 above where they
+     conflict:**
+     - Reveal flicker: `useScrollReveal` unconditionally hid every wrapped section right after
+       mount (flickering already-visible content) and depended on the 400ms fallback timer above
+       to ever show below-fold content again. Rewritten: a node already in the initial viewport is
+       never hidden; `prefers-reduced-motion` never hides anything; the fallback timer is gone --
+       `capture-site-review.ts` now scrolls the page in steps before the `fullPage` screenshot so
+       below-fold sections reveal through real intersection.
+     - `FeatureGrid`'s 11 cells in 3 columns left a ragged last row. Merged two evidenced-
+       capability pairs into one cell each (`feature-grid.ts`) to reach 9 cells -- an exact
+       multiple of the grid's one column count (3; no 2-column tablet tier at any breakpoint).
+     - `ProductTour` opened on `setup` (a near-empty form) by default. Reordered tabs by visual
+       density, defaulted to `servers`, capped the panel frame width, added a mask-image edge
+       fade on the mobile tablist row.
+     - Removed the standalone `PrinciplesBand` ("How it's built") -- it repeated four `FeatureGrid`
+       cells word for word.
+     - `HowItWorksDiagram` compacted to a centered `max-w-[520px]` numbered three-step sequence
+       with once-only stroke-dashoffset connectors (reduced motion: fully drawn, static) --
+       previously rendered at the full 1120px content width and dominated the page.
+     - `SiteFooter`'s docs columns now list every real page of their D-08 group (`DOCS_NAV_GROUPS`,
+       read from `meta.json` + MDX frontmatter) instead of one link that looked like a broken list.
+     - Also tightened the hero + positioning line into one rhythm instead of a separately
+       full-section-gapped floating paragraph.
+     - Full gate re-run green (`docs/ui-reviews/public-site-2026-09.md`'s Round 1 section).
 - **Round 2: none.**
 
 ## What this record gates

@@ -93,6 +93,98 @@ no horizontal page overflow.
 `v0.1.0` footer version, hero screenshot's empty panel space) — still architectural/process
 decisions outside this plan's scope (Rule 4), unchanged by this redesign.
 
+### Round 1, orchestrator review pass (six defects, one fix batch)
+
+Fecha: 2026-09-28 · Commits: `d8f2aaf` (tests), `72f3ad0` (fix) · Modo: código + `pnpm
+ui:review:site` captures, viewed at `landing-{light,dark}-1280.png` and `landing-dark-375.png`
+
+The orchestrator viewed the Round 1 captures directly and found six defects the automated gate
+couldn't catch (all pass/fail checks were already green — these are visual/UX judgment calls):
+
+1. **Reveal flicker + fake scroll reveal.** `useScrollReveal` set `revealed=false` on every
+   wrapped section immediately after mount, including sections already on screen at first paint —
+   they flickered visible → hidden → fade back in. A 400ms fallback timer papered over the fact
+   that real intersection never fired in a full-page screenshot (no real scroll/resize event).
+   **Fix:** the hook now only hides a node whose `getBoundingClientRect().top` starts below
+   `window.innerHeight` at mount; `prefers-reduced-motion` skips hiding entirely; the fallback
+   timer is gone. `scripts/ui/capture-site-review.ts` scrolls the page in 600px steps (150ms
+   settle each) and back to top before every `fullPage` screenshot, so below-fold sections reveal
+   through genuine intersection. New tests: in-view node never hidden, below-fold node hides then
+   reveals on real intersect, reduced motion never hides (`apps/site/src/lib/
+   use-scroll-reveal.test.tsx`).
+2. **Ragged feature grid.** 11 cells in a 3-column grid left an empty hole in the last row. 11 is
+   prime — no column count divides it evenly. **Fix:** merged two evidenced-capability pairs into
+   one cell each (`appearance`+`account` → "Personalize your account", `encrypted-credentials`+
+   `explicit-timeouts` → "Secure by default") in a new `feature-grid.ts` — no invented capability,
+   every claim's exact text still renders, just two cells now hold two claims each. 9 cells is an
+   exact multiple of the grid's one column count (3; the 2-column tablet tier was dropped so no
+   breakpoint ever ends a row short). New test: cell count % desktop columns === 0, every
+   `DELIVERED_CAPABILITIES` id covered exactly once (`apps/site/src/content/feature-grid.test.ts`).
+3. **Product tour default tab.** Opened on "Install" (the `setup` capture — a tiny form in a huge
+   empty frame), the weakest image on the page, right where attention lands first. **Fix:**
+   reordered tabs by visual density (`servers` → `server-detail` → `activity` → `settings` →
+   `login` → `setup`), defaulted to `servers`; capped the panel frame at `max-w-[720px]` so a
+   sparse capture doesn't sit in a vast full-width empty panel (framing only, the capture itself is
+   never cropped, D-17 "la captura tal cual"); added a `mask-image` edge fade on the mobile
+   tablist row (an opacity mask, not a colour gradient on any surface) so the cut-off "Discover"
+   tab at 375px now reads as "more to scroll" instead of looking broken.
+4. **Redundant "How it's built" band.** Its four items were word-for-word duplicates of four
+   `FeatureGrid` cells directly above it. **Fix:** removed `PrinciplesBand` entirely. New tests:
+   `principles-band` testid absent from `Landing`, "How it works" step captions never match a
+   `DELIVERED_CAPABILITIES` claim verbatim (guards against the same duplication reappearing
+   elsewhere).
+5. **"How it works" diagram not replaced.** Still the original full-bleed diagram at the landing's
+   own 1120px content width, dominating the page at 1280px — the brief had asked for a compact
+   three-step numbered sequence. **Fix:** `HowItWorksDiagram` now renders inside a centered
+   `max-w-[520px]` wrapper with a numbered badge (1/2/3) per step, and its connectors draw in once
+   via `stroke-dashoffset` when the section's `RevealSection` ancestor reports
+   `data-revealed="true"` (`prefers-reduced-motion`: fully drawn, static, never mid-animation).
+6. **Sparse footer.** Each docs column showed one link only ("Getting started: Install") — looked
+   incomplete next to a heading implying a whole group. **Fix:** new `DOCS_NAV_GROUPS`
+   (`apps/site/src/lib/docs-nav.ts`) reads every page of each D-08 group straight from its real
+   `meta.json` + MDX frontmatter `title` (never a hand-typed, driftable copy); `SiteFooter` now
+   lists all of them. New test: every group has more than one link, every link's label/href
+   matches the real frontmatter/meta.json independently re-read
+   (`apps/site/src/lib/docs-nav.test.ts`).
+
+Also tightened: "Most panels manage your servers…" previously floated alone in its own
+full-section-gapped band; it now shares a tight `gap-6` rhythm with the Hero directly above it.
+
+**Implementation note (found while building, not a visual defect):** `docs-nav.ts`'s first
+attempt used `import.meta.dirname` (the same pattern `docs-tree.test.ts`/`review-paths.ts` use
+safely) but `next build` failed — Next's own webpack/Turbopack bundling of this Server Component
+graph does not reliably preserve `import.meta.dirname`, unlike `next.config.mjs`'s use of the same
+symbol (Node runs that file directly, unbundled). Fixed by trying `import.meta.dirname` first
+(works under Vitest/tsx) and falling back to `process.cwd()` (reliable under `next build`, which
+always runs with cwd = `apps/site`), picking whichever resolves to a real `content/docs` directory
+on disk.
+
+**Gate after this fix batch:**
+
+- `pnpm vitest run` — 200 files / 3257 tests passed
+- `pnpm run typecheck` — clean (all packages incl. `@noodara/site`, plus the chained
+  `tests/integration`/`tests/e2e`/`scripts/brand`/`scripts/ui` `tsc` checks)
+- `pnpm lint` — clean (all packages incl. `@noodara/site`)
+- `pnpm check:ui-safety` — 12/12 repo-wide gates hold
+- `pnpm boundaries` — 840 files, 0 issues
+- `node scripts/check-workflow-pins.mjs` — clean
+- `pnpm --filter @noodara/site build` — "check-export: 21 files, zero third-party assets"
+- `pnpm ui:review:site` — 50 captures, zero third-party requests, exit 0 (now takes longer per
+  capture: the new scroll-through step adds ~1-2s per surface)
+- `pnpm security:scan-leaks` — canary suite green (1/1 Playwright `@canary` spec; Vitest canaries
+  are part of the 3257-test run above)
+
+**Verified visually** (`landing-{light,dark}-{375,900,1280,1920}.png`,
+`landing-reduced-motion-{light,dark}-1280.png`): FeatureGrid renders as a clean 3×3 grid at
+≥900px and stacks to 1 column at 375px with no ragged row at either breakpoint; ProductTour opens
+on the populated `servers` capture by default, its frame no longer dwarfs the page; no standalone
+"How it's built" band between ProductTour and "How it works"; "How it works" is now a compact,
+centered, numbered sequence, clearly smaller than the hero screenshot above it; FAQ unchanged
+(chevrons still visible); footer shows the full page list per group (e.g. Getting started: Install,
+First login, Your first server); reduced-motion capture shows every connector fully drawn and
+every section fully visible, nothing mid-animation or hidden; mobile tab row shows the mask fade
+cutting off the last visible tab label, confirming the scroll affordance renders.
+
 ---
 
 ## Initial review round
