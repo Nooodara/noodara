@@ -16,21 +16,21 @@
 // structurally impossible.
 //
 // ALLOWLIST, NEVER A GLOB. SITE_ASSET_FILES names every dest file this script may ever write --
-// exactly 14 keys (4 brand files + 5 screens x 2 themes) -- so a stray or renamed file under
+// exactly 16 keys (4 brand files + 6 screens x 2 themes) -- so a stray or renamed file under
 // packages/ui/brand/ or docs/ui/approved/ can never land somewhere new under apps/site unnoticed,
 // and a renamed/removed approved capture fails the build loudly instead of silently vanishing
 // from the shipped site. This script never removes a file: a foreign file already present in a
 // destination directory is left untouched, by design -- sync is additive/idempotent only, never
 // destructive.
 //
-// Deliberately excludes the "setup" screen: only servers, login, server-detail, activity and
-// settings appear on the public site (D-01/D-02's hero + three pillars) -- the "setup" capture
-// stays approved-set-only, not on `noodara.com`.
+// 10-12-PLAN.md Round 1 (D-02a): "setup" now ships too -- the ProductTour's six tabs
+// (setup/login/servers/server-detail/activity/settings) need all six approved captures. Order
+// here follows site-facts.ts's own APPROVED_SCREENS order.
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-const SCREENS = ['servers', 'login', 'server-detail', 'activity', 'settings'];
+const SCREENS = ['setup', 'login', 'servers', 'server-detail', 'activity', 'settings'];
 const THEMES = ['light', 'dark'];
 
 /** dest (relative to apps/site) -> src (relative to repo root). Frozen so a caller can never

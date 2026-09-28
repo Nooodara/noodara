@@ -24,7 +24,9 @@ export const INSTALL_COMMAND = `curl -fsSL ${INSTALL_SCRIPT_URL} | sh` as const;
 export const GITHUB_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}` as const;
 
 /** The only screenshots D-17 allows the landing to render -- each one approved by the user in
- *  Phase 8 and synced to docs/ui/approved by apps/site/scripts/sync-site-assets.mjs (10-02). */
-export const APPROVED_SCREENS = ['servers', 'login', 'server-detail', 'activity', 'settings'] as const;
+ *  Phase 8 and synced to docs/ui/approved by apps/site/scripts/sync-site-assets.mjs (10-02).
+ *  10-12-PLAN.md Round 1 (D-02a) adds "setup" and fixes this order to the ProductTour's own tab
+ *  order (setup -> login -> servers -> server-detail -> activity -> settings). */
+export const APPROVED_SCREENS = ['setup', 'login', 'servers', 'server-detail', 'activity', 'settings'] as const;
 
 export type ApprovedScreen = (typeof APPROVED_SCREENS)[number];

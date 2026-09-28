@@ -50,8 +50,8 @@ describe('INSTALL_SCRIPT_URL / INSTALL_COMMAND / GITHUB_URL', () => {
 });
 
 describe('APPROVED_SCREENS', () => {
-  it('equals the five approved screens, in order', () => {
-    expect(APPROVED_SCREENS).toEqual(['servers', 'login', 'server-detail', 'activity', 'settings']);
+  it('equals the six approved screens, in ProductTour tab order', () => {
+    expect(APPROVED_SCREENS).toEqual(['setup', 'login', 'servers', 'server-detail', 'activity', 'settings']);
   });
 
   it('every screen has both a light and a dark PNG under docs/ui/approved', () => {

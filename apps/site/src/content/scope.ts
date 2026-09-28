@@ -79,7 +79,35 @@ export const DELIVERED_CAPABILITIES = [
     claim: 'Upgrade or roll back an installation from the command line.',
     evidence: ['install.sh', 'tests/integration/installer'],
   },
+  {
+    id: 'encrypted-credentials',
+    pillar: 'connect',
+    claim: 'Encrypt server credentials at rest.',
+    evidence: ['apps/control-plane/src/services/credential-store.ts'],
+  },
+  {
+    id: 'explicit-timeouts',
+    pillar: 'connect',
+    claim: 'Apply an explicit timeout to every SSH command.',
+    evidence: ['packages/ssh/src/exec-with-timeout.ts'],
+  },
 ] as const satisfies readonly Capability[];
+
+// 10-12-PLAN.md Round 1 (D-02a). Short grid/card titles for FeatureGrid/PrinciplesBand -- labels
+// only, never asserted against PROJECT.md (that is claim's job, via landing-claims.test.ts).
+export const CAPABILITY_TITLES: Record<(typeof DELIVERED_CAPABILITIES)[number]['id'], string> = {
+  install: 'One-command install',
+  'connect-ssh': 'Connect over SSH',
+  'fingerprint-trust': 'Verified fingerprints',
+  discovery: 'Step-by-step discovery',
+  'server-detail': 'Full server detail',
+  'activity-log': 'Activity log',
+  appearance: 'Themes & density',
+  account: 'Account settings',
+  'upgrade-rollback': 'Upgrade & rollback',
+  'encrypted-credentials': 'Encrypted at rest',
+  'explicit-timeouts': 'Explicit timeouts',
+};
 
 export const SCOPE_EXCLUSIONS = [
   {

@@ -3,14 +3,20 @@
 // NOODARA_SITE_* build-time env vars (build-info.test.ts's own pattern) so readBuildInfo/assetPath
 // work under jsdom without a real Next.js build.
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { INSTALL_COMMAND } from '../../lib/site-facts';
+import { APPROVED_SCREENS, INSTALL_COMMAND } from '../../lib/site-facts';
+import { CAPABILITY_TITLES, DELIVERED_CAPABILITIES } from '../../content/scope';
 import { InstallCommand } from './InstallCommand';
 import { ScreenshotFrame } from './ScreenshotFrame';
-import { PillarCard } from './PillarCard';
 import { HowItWorksDiagram } from './HowItWorksDiagram';
+import { FeatureGrid } from './FeatureGrid';
+import { ProductTour } from './ProductTour';
+import { PrinciplesBand } from './PrinciplesBand';
+import { FAQSection } from './FAQSection';
+import { ClosingCta } from './ClosingCta';
+import { CapabilityGlyph } from './CapabilityGlyph';
 
 function stubClipboard(writeText: ReturnType<typeof vi.fn>): void {
   Object.defineProperty(navigator, 'clipboard', {
@@ -100,15 +106,139 @@ describe('ScreenshotFrame', () => {
   });
 });
 
-describe('PillarCard', () => {
-  it('renders an h3 with the title, the discovery claim text, and a ScreenshotFrame', () => {
-    render(<PillarCard title="Discover" capability="discovery" screen="server-detail" />);
+// 10-12-PLAN.md Round 1 (D-02a). RED: written before FeatureGrid/ProductTour/PrinciplesBand/
+// FAQSection/ClosingCta/CapabilityGlyph exist -- replaces the old three-pillar PillarCard
+// coverage above with coverage for the feature grid + tabbed product tour that supersede it.
 
-    expect(screen.getByRole('heading', { level: 3, name: 'Discover' })).toBeInTheDocument();
-    expect(
-      screen.getByText('Discover a server step by step, with a pass or fail check at each stage.'),
-    ).toBeInTheDocument();
-    expect(document.querySelectorAll('img')).toHaveLength(2);
+describe('CapabilityGlyph', () => {
+  it('renders one aria-hidden <svg> per known capability id, every stroke/fill currentColor or none', () => {
+    for (const capability of DELIVERED_CAPABILITIES) {
+      const { container, unmount } = render(<CapabilityGlyph id={capability.id} />);
+      const svg = container.querySelector('svg');
+      expect(svg, `no <svg> for "${capability.id}"`).not.toBeNull();
+      expect(svg).toHaveAttribute('aria-hidden', 'true');
+      const shapes = svg?.querySelectorAll('rect, line, path, circle') ?? [];
+      expect(shapes.length, `"${capability.id}" glyph has no shapes`).toBeGreaterThan(0);
+      for (const shape of shapes) {
+        const fill = shape.getAttribute('fill');
+        const stroke = shape.getAttribute('stroke');
+        if (fill !== null) expect(fill === 'currentColor' || fill === 'none').toBe(true);
+        if (stroke !== null) expect(stroke === 'currentColor' || stroke === 'none').toBe(true);
+      }
+      unmount();
+    }
+  });
+});
+
+describe('FeatureGrid', () => {
+  it('renders one cell per DELIVERED_CAPABILITIES entry, each with its title and claim', () => {
+    render(<FeatureGrid />);
+    expect(DELIVERED_CAPABILITIES.length).toBeGreaterThanOrEqual(8);
+    expect(DELIVERED_CAPABILITIES.length).toBeLessThanOrEqual(12);
+    for (const capability of DELIVERED_CAPABILITIES) {
+      expect(screen.getByText(CAPABILITY_TITLES[capability.id])).toBeInTheDocument();
+      expect(screen.getByText(capability.claim)).toBeInTheDocument();
+    }
+  });
+
+  it('renders no element with a class or style containing "shadow"', () => {
+    const { container } = render(<FeatureGrid />);
+    const offenders = [...container.querySelectorAll('*')].filter((el) => {
+      const className = typeof el.className === 'string' ? el.className : '';
+      const style = el.getAttribute('style') ?? '';
+      return /shadow/i.test(className) || /shadow/i.test(style);
+    });
+    expect(offenders).toHaveLength(0);
+  });
+});
+
+describe('PrinciplesBand', () => {
+  it('renders the four "how it is built" claims (encrypted-credentials/fingerprint-trust/explicit-timeouts/connect-ssh)', () => {
+    render(<PrinciplesBand />);
+    for (const id of ['encrypted-credentials', 'fingerprint-trust', 'explicit-timeouts', 'connect-ssh'] as const) {
+      const capability = DELIVERED_CAPABILITIES.find((c) => c.id === id);
+      if (capability === undefined) throw new Error(`fixture bug: unknown capability id "${id}"`);
+      expect(screen.getByText(capability.claim)).toBeInTheDocument();
+    }
+  });
+});
+
+describe('ProductTour', () => {
+  beforeEach(() => {
+    vi.stubEnv('NOODARA_SITE_ORIGIN', 'https://noodara.com');
+    vi.stubEnv('NOODARA_SITE_BASE_PATH', '');
+    vi.stubEnv('NOODARA_SITE_VERSION', 'v0.1.0');
+    vi.stubEnv('NOODARA_SITE_LICENSE', 'Apache License 2.0');
+  });
+
+  it('renders a role="tablist" of 6 tabs matching APPROVED_SCREENS, first tab selected, one visible screenshot', () => {
+    render(<ProductTour />);
+    const tablist = screen.getByRole('tablist');
+    const tabs = within(tablist).getAllByRole('tab');
+    expect(tabs).toHaveLength(6);
+    expect(tabs.map((t) => t.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false', 'false', 'false', 'false']);
+    expect(document.querySelectorAll('img[alt]:not([alt=""])').length).toBe(1);
+  });
+
+  it('ArrowRight moves selection to the next tab and swaps the visible caption', async () => {
+    const user = userEvent.setup();
+    render(<ProductTour />);
+    const tabs = screen.getAllByRole('tab');
+    tabs[0]?.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
+    expect(tabs[1]).toHaveFocus();
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('ArrowRight on the last tab wraps to the first', async () => {
+    const user = userEvent.setup();
+    render(<ProductTour />);
+    const tabs = screen.getAllByRole('tab');
+    tabs[5]?.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('every panel screenshot src is an approved screenshot under /screenshots/', () => {
+    render(<ProductTour />);
+    const images = document.querySelectorAll('img');
+    expect(images.length).toBeGreaterThan(0);
+    for (const img of images) {
+      const src = img.getAttribute('src') ?? '';
+      expect(src.startsWith('/screenshots/')).toBe(true);
+      expect(APPROVED_SCREENS.some((s) => src.includes(`/screenshots/${s}-`))).toBe(true);
+    }
+  });
+});
+
+describe('FAQSection', () => {
+  it('renders every answer as an existing DELIVERED_CAPABILITIES claim (never a SCOPE_EXCLUSIONS statement)', () => {
+    render(<FAQSection />);
+    for (const id of ['connect-ssh', 'fingerprint-trust', 'encrypted-credentials', 'discovery', 'install'] as const) {
+      const capability = DELIVERED_CAPABILITIES.find((c) => c.id === id);
+      if (capability === undefined) throw new Error(`fixture bug: unknown capability id "${id}"`);
+      expect(screen.getByText(capability.claim)).toBeInTheDocument();
+    }
+  });
+
+  it('uses native <details>/<summary> disclosures (zero custom JS accordion)', () => {
+    const { container } = render(<FAQSection />);
+    const details = container.querySelectorAll('details');
+    expect(details.length).toBeGreaterThanOrEqual(5);
+    for (const detail of details) {
+      expect(detail.querySelector('summary')).not.toBeNull();
+    }
+  });
+});
+
+describe('ClosingCta', () => {
+  it('renders INSTALL_COMMAND inside a <code> and a "Copy install command" button', () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    stubClipboard(writeText);
+    render(<ClosingCta />);
+    expect(screen.getByText(INSTALL_COMMAND).tagName).toBe('CODE');
+    expect(screen.getByRole('button', { name: 'Copy install command' })).toBeInTheDocument();
   });
 });
 

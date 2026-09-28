@@ -7,9 +7,9 @@
 
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DELIVERED_CAPABILITIES, findExcludedTerms, SCOPE_EXCLUSIONS } from '../../content/scope';
+import { CAPABILITY_TITLES, DELIVERED_CAPABILITIES, findExcludedTerms, SCOPE_EXCLUSIONS } from '../../content/scope';
 import { APPROVED_SCREENS, GITHUB_URL, INSTALL_COMMAND } from '../../lib/site-facts';
 import { Landing } from './Landing';
 
@@ -45,12 +45,21 @@ describe('Landing', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Your infrastructure, understood.' })).toBeInTheDocument();
   });
 
-  it('renders INSTALL_COMMAND exactly once in a <code>, plus a "Copy install command" button', () => {
+  it('renders a hero eyebrow line built from the build-time license and the connect-ssh "no agent" fact', () => {
+    render(<Landing />);
+    const eyebrow = screen.getByTestId('hero-eyebrow');
+    expect(eyebrow.textContent).toContain('Apache License 2.0');
+    expect(eyebrow.textContent).toMatch(/self-hosted/i);
+    expect(eyebrow.textContent).toMatch(/no agent/i);
+    expect(findExcludedTerms(eyebrow.textContent ?? '')).toEqual([]);
+  });
+
+  it('renders INSTALL_COMMAND twice (hero + closing CTA band) in a <code>, each with a "Copy install command" button', () => {
     render(<Landing />);
     const codeEls = screen.getAllByText(INSTALL_COMMAND);
-    expect(codeEls).toHaveLength(1);
-    expect(codeEls[0]?.tagName).toBe('CODE');
-    expect(screen.getByRole('button', { name: 'Copy install command' })).toBeInTheDocument();
+    expect(codeEls).toHaveLength(2);
+    for (const el of codeEls) expect(el.tagName).toBe('CODE');
+    expect(screen.getAllByRole('button', { name: 'Copy install command' })).toHaveLength(2);
   });
 
   it('renders "Read the docs" linking into /docs and "View on GitHub" linking to GITHUB_URL', () => {
@@ -61,14 +70,34 @@ describe('Landing', () => {
     expect(githubLink).toHaveAttribute('href', GITHUB_URL);
   });
 
-  it('renders Connect/Discover/Understand headings, each with its DELIVERED_CAPABILITIES claim', () => {
+  it('renders a feature grid with every DELIVERED_CAPABILITIES title and claim (D-02a)', () => {
     render(<Landing />);
-    expect(screen.getByRole('heading', { name: 'Connect' })).toBeInTheDocument();
-    expect(screen.getByText(claimFor('connect-ssh'))).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Discover' })).toBeInTheDocument();
-    expect(screen.getByText(claimFor('discovery'))).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Understand' })).toBeInTheDocument();
-    expect(screen.getByText(claimFor('activity-log'))).toBeInTheDocument();
+    const grid = within(screen.getByTestId('feature-grid'));
+    for (const capability of DELIVERED_CAPABILITIES) {
+      expect(grid.getByText(CAPABILITY_TITLES[capability.id])).toBeInTheDocument();
+      expect(grid.getByText(claimFor(capability.id))).toBeInTheDocument();
+    }
+  });
+
+  it('renders a tabbed product tour over the 6 APPROVED_SCREENS (D-02a)', () => {
+    render(<Landing />);
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs).toHaveLength(APPROVED_SCREENS.length);
+  });
+
+  it('renders a "How it is built" principles band with encrypted-credentials/explicit-timeouts claims (D-02a)', () => {
+    render(<Landing />);
+    const band = within(screen.getByTestId('principles-band'));
+    expect(band.getByText(claimFor('encrypted-credentials'))).toBeInTheDocument();
+    expect(band.getByText(claimFor('explicit-timeouts'))).toBeInTheDocument();
+  });
+
+  it('renders an FAQ of native <details> disclosures, answers backed by DELIVERED_CAPABILITIES claims (D-02a)', () => {
+    render(<Landing />);
+    const faqRoot = screen.getByTestId('faq-section');
+    const faq = within(faqRoot);
+    expect(faqRoot.querySelectorAll('details').length).toBeGreaterThanOrEqual(5);
+    expect(faq.getByText(claimFor('install'))).toBeInTheDocument();
   });
 
   it('renders "What it does not do yet" inside the scope block, listing every showOnLanding exclusion and a link to /docs/reference/scope', () => {
@@ -158,6 +187,16 @@ describe('Landing', () => {
     expect(footerDocsLink).toBeDefined();
     const footerGithubLink = [...(footer?.querySelectorAll('a') ?? [])].find((a) => a.textContent === 'GitHub');
     expect(footerGithubLink).toHaveAttribute('href', GITHUB_URL);
+  });
+
+  it('the footer has one representative link per D-08 docs group (Getting started/Concepts/Operate/Reference)', () => {
+    render(<Landing />);
+    const footer = document.querySelector('footer');
+    const hrefs = [...(footer?.querySelectorAll('a') ?? [])].map((a) => a.getAttribute('href'));
+    expect(hrefs).toContain('/docs/getting-started/install');
+    expect(hrefs).toContain('/docs/concepts/server');
+    expect(hrefs).toContain('/docs/operate/upgrade');
+    expect(hrefs).toContain('/docs/reference/scope');
   });
 
   it('source scan: non-test landing files contain no fetch(, no IntersectionObserver, no onScroll, no version literal and no stargazers', () => {

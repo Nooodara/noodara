@@ -48,8 +48,8 @@ function seedSources(repoRoot: string): void {
 }
 
 describe('apps/site/scripts/sync-site-assets.mjs SITE_ASSET_FILES', () => {
-  it('has exactly 14 dest:src entries (4 brand files + 5 screens x 2 themes)', () => {
-    expect(Object.keys(SITE_ASSET_FILES)).toHaveLength(14);
+  it('has exactly 16 dest:src entries (4 brand files + 6 screens x 2 themes)', () => {
+    expect(Object.keys(SITE_ASSET_FILES)).toHaveLength(16);
   });
 
   it('maps exactly the four brand destinations to packages/ui/brand sources', () => {
@@ -60,7 +60,7 @@ describe('apps/site/scripts/sync-site-assets.mjs SITE_ASSET_FILES', () => {
   });
 
   it('maps every screen/theme screenshot to its docs/ui/approved source', () => {
-    const screens = ['servers', 'login', 'server-detail', 'activity', 'settings'];
+    const screens = ['setup', 'servers', 'login', 'server-detail', 'activity', 'settings'];
     for (const screen of screens) {
       for (const theme of ['light', 'dark']) {
         expect(SITE_ASSET_FILES[`public/screenshots/${screen}-${theme}.png`]).toBe(
@@ -70,8 +70,9 @@ describe('apps/site/scripts/sync-site-assets.mjs SITE_ASSET_FILES', () => {
     }
   });
 
-  it('never maps the "setup" screen (only servers/login/server-detail/activity/settings ship on the site)', () => {
-    expect(Object.keys(SITE_ASSET_FILES).some((dest) => dest.includes('setup'))).toBe(false);
+  it('maps the "setup" screen too (10-12 Round 1: the ProductTour shows all six approved captures)', () => {
+    expect(SITE_ASSET_FILES['public/screenshots/setup-light.png']).toBe('docs/ui/approved/setup-light.png');
+    expect(SITE_ASSET_FILES['public/screenshots/setup-dark.png']).toBe('docs/ui/approved/setup-dark.png');
   });
 
   it('every source exists in the real repo', () => {
@@ -82,7 +83,7 @@ describe('apps/site/scripts/sync-site-assets.mjs SITE_ASSET_FILES', () => {
 });
 
 describe('apps/site/scripts/sync-site-assets.mjs syncSiteAssets', () => {
-  it('writes exactly 14 files under the allowlisted dest paths when every source is present', () => {
+  it('writes exactly 16 files under the allowlisted dest paths when every source is present', () => {
     const repoRoot = makeTempDir('site-sync-repo-');
     const siteRoot = makeTempDir('site-sync-site-');
     seedSources(repoRoot);
