@@ -12,12 +12,12 @@ updated: 2026-09-28T15:45:41Z
 
 ## Tests
 
-### 1. Real GitHub Pages deploy of noodara.com
-expected: Settings → Pages source = GitHub Actions, custom domain noodara.com with Enforce HTTPS, and a green `public-site.yml` run on a push to main; https://noodara.com serves the same site as the local `apps/site/out` build.
+### 1. Real Cloudflare Pages deploy of noodara-site
+expected: the `noodara-site` Pages project exists (Direct Upload), `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` are set as GitHub repo secrets, and a green `public-site.yml` run on a push to main serves the same site at the project's `*.pages.dev` URL as the local `apps/site/out` build.
 result: [pending]
 
-### 2. DNS records for noodara.com
-expected: Apex A/AAAA records point to GitHub Pages and `www` is a CNAME to the Pages host, as documented in `apps/site/README.md`; both names resolve and www redirects to the apex.
+### 2. Nameserver cutover and custom domain for noodara.com
+expected: `noodara.com`'s nameservers at Namecheap point to Cloudflare's two assigned nameservers, `noodara.com` and `www.noodara.com` are added as custom domains on the `noodara-site` Pages project with TLS active, and `www` redirects to the apex.
 result: [pending]
 
 ## Summary

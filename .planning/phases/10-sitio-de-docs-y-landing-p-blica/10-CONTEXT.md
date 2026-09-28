@@ -35,6 +35,26 @@ Fuera: cualquier feature de producto, analytics, newsletter, blog, versionado de
 - **D-13: Cada push a `main` publica; el PR corre el sitio como gate.** Sin filtro de paths (capturas, tokens y textos que afectan al sitio viven fuera de `apps/site`). El job de PR en `ci.yml` añade: `pnpm --filter @noodara/site build` (export estático), el test de exactitud, el test de afirmaciones y el boundary test. El sitio nunca aparece en `docker-compose.yml` ni en `release.yml`.
 - **D-14: Piezas web estándar, cero terceros.** `sitemap.xml`, `robots.txt`, página 404 con la identidad, metadatos SEO y Open Graph (imagen 1200×630 de la Fase 7 D-12, self-hosted). Sin analytics en esta fase; se deja documentado dónde se enchufaría un analytics self-hosted más adelante (idea diferida), sin código ni placeholder visible.
 
+### Enmienda 2026-09-28: Cloudflare Pages en vez de GitHub Pages
+
+Decisión bloqueada del usuario (2026-09-28), ejecutada en `quick-260928-gmm`: sin GitHub Pages,
+hosting en Cloudflare Pages vía Direct Upload; `noodara.com` sigue registrado en Namecheap y solo
+mueve sus nameservers a Cloudflare. Esta enmienda amplía (no borra) las mecánicas de hosting de
+D-11/D-12/D-13.
+
+- **D-11a (amends D-11).** `noodara.com` sigue en raíz, pero ahora vía un custom domain de
+  Cloudflare Pages (no un `CNAME` file; el dominio se añade en el dashboard de Cloudflare Pages
+  tras mover los nameservers desde Namecheap). TLS lo gestiona Cloudflare.
+- **D-12a (amends D-12).** Publicación por `wrangler-action` (Direct Upload) en vez de
+  `upload-pages-artifact`/`deploy-pages`; sin `gh-pages`, sin artifact de Actions. `basePath`/
+  `assetPrefix` son siempre raíz — Cloudflare Pages no tiene el caso "subruta de preview" que
+  GitHub Pages project-sites sí tenía, así que `resolveBasePath`/`readCname` se eliminan en vez de
+  mantenerse condicionales. `metadataBase`/URLs canónicas siguen en `https://noodara.com`, sin
+  cambio.
+- **D-13a (amends D-13).** El trigger (`push: branches: [main]` + `workflow_dispatch`, sin filtro
+  de paths) y el PR gate en `ci.yml` (`site` job) se mantienen exactamente igual — solo cambia el
+  job de publicación.
+
 ### Look del sitio: temas y tipografía
 - **D-15: Sigue al SO + toggle en el header.** `prefers-color-scheme` por defecto, toggle en la cabecera del sitio y de los docs, preferencia en `localStorage` (el sitio no tiene servidor); script de bootstrap sin flash como el de la app. Los tokens vienen de `packages/ui/tokens.css` (mismos valores claro/oscuro), nunca copiados a mano.
 - **D-16: Fuente del sistema, como la app.** Misma pila que `packages/ui` (SF Pro → Inter del SO → sans-serif); mono del sistema para comandos, códigos y variables. Cero fuentes descargadas, cero terceros. El wordmark y el monograma son los SVG de `packages/ui/brand/` (lockup claro/oscuro).
