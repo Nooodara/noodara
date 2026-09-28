@@ -79,7 +79,7 @@ describe('ScreenshotFrame', () => {
 
     const images = document.querySelectorAll('img');
     expect(images).toHaveLength(2);
-    const dark = images[1] as HTMLImageElement;
+    const dark = images.item(1);
     expect(dark).toHaveClass('site-shot-dark');
     expect(dark.getAttribute('src')).toContain('/screenshots/servers-dark.png');
     expect(dark.getAttribute('alt')).toBe('');
