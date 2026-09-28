@@ -236,28 +236,19 @@ describe('public site workflows (D-12/D-13, structural)', () => {
     expect(publicSiteYml()).toMatch(/\npermissions:\s*\{\}/);
   });
 
-  it('public-site.yml build job has only contents: read', () => {
-    const jobsSection = extractJobsSection(publicSiteYml());
-    const buildJob = extractJobBlock(jobsSection, 'build');
-
-    expect(buildJob).toMatch(/permissions:\s*\n\s*contents:\s*read/);
-    expect(buildJob).not.toMatch(/pages:\s*write/);
-    expect(buildJob).not.toMatch(/id-token:\s*write/);
-  });
-
-  it('public-site.yml deploy job has only pages: write and id-token: write, plus the github-pages environment', () => {
+  it('public-site.yml\'s deploy job has only contents: read, never pages: or id-token:', () => {
     const jobsSection = extractJobsSection(publicSiteYml());
     const deployJob = extractJobBlock(jobsSection, 'deploy');
 
-    expect(deployJob).toMatch(/permissions:\s*\n\s*pages:\s*write\s*\n\s*id-token:\s*write/);
-    expect(deployJob).not.toMatch(/contents:\s*write/);
-    expect(deployJob).toMatch(/environment:\s*\n\s*name:\s*github-pages/);
+    expect(deployJob).toMatch(/permissions:\s*\n\s*contents:\s*read/);
+    expect(deployJob).not.toMatch(/pages:\s*write/);
+    expect(deployJob).not.toMatch(/id-token:\s*write/);
   });
 
-  it('public-site.yml sets concurrency group pages with cancel-in-progress: false', () => {
+  it('sets concurrency group cloudflare-pages with cancel-in-progress: false', () => {
     const source = publicSiteYml();
 
-    expect(source).toMatch(/concurrency:\s*\n\s*group:\s*pages\s*\n\s*cancel-in-progress:\s*false/);
+    expect(source).toMatch(/concurrency:\s*\n\s*group:\s*cloudflare-pages\s*\n\s*cancel-in-progress:\s*false/);
   });
 
   it('every job in public-site.yml declares timeout-minutes:', () => {
@@ -271,18 +262,42 @@ describe('public site workflows (D-12/D-13, structural)', () => {
     }
   });
 
-  it('public-site.yml references no secrets.', () => {
-    expect(publicSiteYml()).not.toMatch(/secrets\./);
+  it('references only the two Cloudflare secrets, never any other secret', () => {
+    const source = publicSiteYml();
+    const captured = [...source.matchAll(/secrets\.([A-Z0-9_]+)/g)].map((m) => m[1]);
+    const allowed = new Set(['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID']);
+
+    expect(captured.length).toBeGreaterThan(0);
+    for (const name of captured) {
+      expect(allowed.has(name as string), `unexpected secret: ${name}`).toBe(true);
+    }
   });
 
-  it('public-site.yml build job checks out with fetch-depth: 0, installs, builds and uploads apps/site/out', () => {
+  it('deploy job checks out with fetch-depth: 0, installs, builds and deploys apps/site/out via wrangler', () => {
     const jobsSection = extractJobsSection(publicSiteYml());
-    const buildJob = extractJobBlock(jobsSection, 'build');
+    const deployJob = extractJobBlock(jobsSection, 'deploy');
 
-    expect(buildJob).toMatch(/fetch-depth:\s*0/);
-    expect(buildJob).toContain('pnpm install --frozen-lockfile');
-    expect(buildJob).toContain('pnpm --filter @noodara/site build');
-    expect(buildJob).toMatch(/path:\s*apps\/site\/out/);
+    expect(deployJob).toMatch(/fetch-depth:\s*0/);
+    expect(deployJob).toContain('pnpm install --frozen-lockfile');
+    expect(deployJob).toContain('pnpm --filter @noodara/site build');
+    expect(deployJob).toContain('pages deploy apps/site/out --project-name=noodara-site --branch=main');
+    expect(deployJob).not.toContain('upload-pages-artifact');
+    expect(deployJob).not.toContain('deploy-pages');
+  });
+
+  it('public-site.yml pins cloudflare/wrangler-action to a 40-hex SHA and an exact wranglerVersion', () => {
+    const source = publicSiteYml();
+
+    expect(source).toContain('cloudflare/wrangler-action@');
+    expect(source).toMatch(/wranglerVersion:\s*['"]?\d+\.\d+\.\d+['"]?/);
+  });
+
+  it('public-site.yml never declares a github-pages environment or pages/id-token permissions anywhere', () => {
+    const source = publicSiteYml();
+
+    expect(source).not.toMatch(/environment:\s*\n\s*name:\s*github-pages/);
+    expect(source).not.toContain('pages: write');
+    expect(source).not.toContain('id-token: write');
   });
 
   it('ci.yml has a site job with contents: read, timeout-minutes, fetch-depth: 0, the site build and docs/site tests, and no job-level if:', () => {

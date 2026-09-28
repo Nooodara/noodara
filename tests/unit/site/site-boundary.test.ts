@@ -188,7 +188,7 @@ describe('apps/site import boundary (structural, reads real repo files)', () => 
     expect(siteTurboJson.tags).toEqual(['public-site']);
   });
 
-  it('apps/site/public/CNAME exists (sanity: listSiteSourceFiles must not choke on non-source files)', () => {
-    expect(existsSync('apps/site/public/CNAME')).toBe(true);
+  it('apps/site/public/_headers exists (sanity: listSiteSourceFiles must not choke on non-source files)', () => {
+    expect(existsSync('apps/site/public/_headers')).toBe(true);
   });
 });

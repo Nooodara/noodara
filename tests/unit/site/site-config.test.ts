@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -8,62 +8,15 @@ import { describe, expect, it } from 'vitest';
 // hand-typed literal in `apps/site` UI/config code. This test is written before
 // apps/site/site-config.mjs exists (RED), per CLAUDE.md's TDD gate.
 import {
-  PREVIEW_BASE_PATH,
   SITE_ORIGIN,
   describeLatestTag,
-  readCname,
   readLicenseName,
-  resolveBasePath,
   resolveSiteVersion,
 } from '../../../apps/site/site-config.mjs';
 
-describe('SITE_ORIGIN / PREVIEW_BASE_PATH', () => {
+describe('SITE_ORIGIN', () => {
   it('SITE_ORIGIN is the canonical noodara.com origin (D-12)', () => {
     expect(SITE_ORIGIN).toBe('https://noodara.com');
-  });
-
-  it('PREVIEW_BASE_PATH is the GitHub Pages project-site fallback (D-12)', () => {
-    expect(PREVIEW_BASE_PATH).toBe('/noodara');
-  });
-});
-
-describe('resolveBasePath', () => {
-  it('returns the empty string (root) when a CNAME exists', () => {
-    expect(resolveBasePath({ cnameExists: true })).toBe('');
-  });
-
-  it('returns /noodara when no CNAME exists', () => {
-    expect(resolveBasePath({ cnameExists: false })).toBe(PREVIEW_BASE_PATH);
-  });
-});
-
-describe('readCname', () => {
-  it('returns the trimmed first line of public/CNAME when present', () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'noodara-site-config-'));
-    mkdirSync(path.join(dir, 'public'), { recursive: true });
-    writeFileSync(path.join(dir, 'public', 'CNAME'), 'noodara.com\n', 'utf8');
-
-    expect(readCname(dir)).toBe('noodara.com');
-
-    rmSync(dir, { recursive: true, force: true });
-  });
-
-  it('returns null when public/CNAME is absent', () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'noodara-site-config-'));
-
-    expect(readCname(dir)).toBeNull();
-
-    rmSync(dir, { recursive: true, force: true });
-  });
-
-  it('returns null when public/CNAME is empty', () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'noodara-site-config-'));
-    mkdirSync(path.join(dir, 'public'), { recursive: true });
-    writeFileSync(path.join(dir, 'public', 'CNAME'), '', 'utf8');
-
-    expect(readCname(dir)).toBeNull();
-
-    rmSync(dir, { recursive: true, force: true });
   });
 });
 

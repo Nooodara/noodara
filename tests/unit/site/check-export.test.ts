@@ -6,10 +6,8 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  findBasePathMismatch,
   findFontFaces,
   findLeakedEnvNames,
-  findMissingBasePathPrefix,
   findMissingRequiredFiles,
   findThirdPartyAssetUrls,
   REQUIRED_EXPORT_FILES,
@@ -93,64 +91,6 @@ describe('findLeakedEnvNames', () => {
   });
 });
 
-describe('findBasePathMismatch', () => {
-  it('flags a preview-prefixed src when a CNAME is present', () => {
-    expect(
-      findBasePathMismatch('<script src="/noodara/_next/static/x.js">', { cnamePresent: true }),
-    ).toHaveLength(1);
-  });
-
-  it('flags a preview-prefixed href when a CNAME is present', () => {
-    expect(
-      findBasePathMismatch('<link href="/noodara/style.css">', { cnamePresent: true }),
-    ).toHaveLength(1);
-  });
-
-  it('flags nothing when no CNAME is present (preview build legitimately uses the prefix)', () => {
-    expect(
-      findBasePathMismatch('<script src="/noodara/_next/static/x.js">', { cnamePresent: false }),
-    ).toEqual([]);
-  });
-});
-
-describe('findMissingBasePathPrefix', () => {
-  it('flags a raw root-relative <a href> not prefixed with the preview basePath when no CNAME is present', () => {
-    expect(
-      findMissingBasePathPrefix('<a href="/docs">Docs</a>', { cnamePresent: false, basePath: '/noodara' }),
-    ).toHaveLength(1);
-  });
-
-  it('flags the wordmark "/" home link the same way', () => {
-    expect(
-      findMissingBasePathPrefix('<a href="/">Home</a>', { cnamePresent: false, basePath: '/noodara' }),
-    ).toHaveLength(1);
-  });
-
-  it('passes an already-prefixed <a href="/noodara/docs">', () => {
-    expect(
-      findMissingBasePathPrefix('<a href="/noodara/docs">Docs</a>', {
-        cnamePresent: false,
-        basePath: '/noodara',
-      }),
-    ).toEqual([]);
-  });
-
-  it('ignores an external absolute <a href>', () => {
-    expect(
-      findMissingBasePathPrefix('<a href="https://github.com/nooodara/noodara">GitHub</a>', {
-        cnamePresent: false,
-        basePath: '/noodara',
-      }),
-    ).toEqual([]);
-  });
-
-  it('flags nothing when a CNAME is present (production root basePath build)', () => {
-    expect(
-      findMissingBasePathPrefix('<a href="/docs">Docs</a>', { cnamePresent: true, basePath: '/noodara' }),
-    ).toEqual([]);
-  });
-});
-
 describe('findMissingRequiredFiles', () => {
   it('accepts an entry matched exactly (the real shape a route handler exports today)', () => {
     expect(findMissingRequiredFiles(new Set(['api/search']), ['api/search'])).toEqual([]);
@@ -187,6 +127,7 @@ describe('REQUIRED_EXPORT_FILES', () => {
       'api/search',
       'docs.html',
       'index.html',
+      '_headers',
     ]);
   });
 });
