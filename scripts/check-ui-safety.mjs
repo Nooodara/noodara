@@ -168,7 +168,7 @@ function runCountGate({ name, files, pattern, expected, comparator }) {
   return { name, total, expected, ok, perFile };
 }
 
-const TSX_GLOBS = ['apps/web/src', 'packages/ui/src'];
+const TSX_GLOBS = ['apps/web/src', 'apps/site/src', 'packages/ui/src'];
 const ALL_SOURCE_FILES = TSX_GLOBS.flatMap((dir) => listFiles(dir)).filter((f) => /\.(ts|tsx|css)$/.test(f));
 const NON_TEST_SOURCE_FILES = ALL_SOURCE_FILES.filter((f) => !isTestFile(f));
 const NON_TEST_TSX_FILES = NON_TEST_SOURCE_FILES.filter((f) => f.endsWith('.tsx'));
@@ -219,14 +219,58 @@ function runBuiltinEasingGate() {
   return { name: BUILTIN_EASING_GATE_NAME, total, expected: 0, ok: total === 0, perFile };
 }
 
+// 10-02-PLAN.md Task 3 (T-5-99, T-10-11): a second app (apps/site) now legitimately needs its own
+// reviewed bootstrap script -- a naive "expected: 1" repo-wide total can no longer tell a second
+// deliberate occurrence apart from a stray one landing anywhere else. This per-file allowlist
+// gate replaces the old plain count: the total across the whole scan must be exactly 2, and the
+// only two files ever allowed to carry it are these two app root layouts, one occurrence each.
+const DANGEROUSLY_SET_INNER_HTML_ALLOWLIST = [
+  path.join('apps', 'web', 'src', 'app', 'layout.tsx'),
+  path.join('apps', 'site', 'src', 'app', 'layout.tsx'),
+];
+const DANGEROUSLY_SET_INNER_HTML_PATTERN = /dangerouslySetInnerHTML/g;
+
+/** Scans a `{ relPath: content }` map (comment lines stripped first) for `dangerouslySetInnerHTML`
+ *  occurrences. Passes only when the total is exactly 2 AND every file that carries one is on
+ *  `DANGEROUSLY_SET_INNER_HTML_ALLOWLIST` AND every allowlisted file carries exactly one --
+ *  `offenders` names any non-allowlisted file with an occurrence, `missing` names any allowlisted
+ *  file with none. Exported disk-free for the same testability reason as `scanShadowUsage` above. */
+export function scanDangerouslySetInnerHtmlAllowlist(fileContents) {
+  const perFile = [];
+  let total = 0;
+  const offenders = [];
+
+  for (const [relPath, content] of Object.entries(fileContents)) {
+    const code = stripCommentLines(content);
+    const matches = code.match(DANGEROUSLY_SET_INNER_HTML_PATTERN);
+    const count = matches === null ? 0 : matches.length;
+    if (count > 0) {
+      perFile.push({ relPath, count });
+      total += count;
+      if (!DANGEROUSLY_SET_INNER_HTML_ALLOWLIST.includes(relPath)) {
+        offenders.push(relPath);
+      }
+    }
+  }
+
+  const missing = DANGEROUSLY_SET_INNER_HTML_ALLOWLIST.filter(
+    (allowedPath) => !perFile.some((f) => f.relPath === allowedPath),
+  );
+  const ok = total === 2 && offenders.length === 0 && missing.length === 0;
+
+  return { total, perFile, offenders, missing, ok };
+}
+
+const DANGEROUSLY_SET_INNER_HTML_GATE_NAME =
+  'exactly one reviewed dangerouslySetInnerHTML per app root layout (T-5-99, T-10-11)';
+
+function runDangerouslySetInnerHtmlGate() {
+  const { total, perFile, ok } = scanDangerouslySetInnerHtmlAllowlist(readFileContents(ALL_SOURCE_FILES));
+  return { name: DANGEROUSLY_SET_INNER_HTML_GATE_NAME, total, expected: 2, ok, perFile };
+}
+
 const gates = [
-  runCountGate({
-    name: 'exactly one reviewed dangerouslySetInnerHTML occurrence (T-5-99)',
-    files: ALL_SOURCE_FILES,
-    pattern: /dangerouslySetInnerHTML/g,
-    expected: 1,
-    comparator: (total, expected) => total === expected,
-  }),
+  runDangerouslySetInnerHtmlGate(),
   runCountGate({
     name: 'zero JSON.stringify in a component or page file',
     files: NON_TEST_TSX_FILES,

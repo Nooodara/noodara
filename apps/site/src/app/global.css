@@ -1,0 +1,143 @@
+/*
+ * 10-02-PLAN.md Task 3 (SITE-03, D-15/D-16). Import order matters: Tailwind, then Fumadocs UI's
+ * own default palette (so its @theme block exists to be overridden), then Noodara's own tokens
+ * (so the mapping block below can reference them). @source pulls packages/ui/src's own Tailwind
+ * utility classes into this build's scan, same reason and same relative depth as
+ * apps/web/src/app/globals.css's own @source directive (Tailwind v4's automatic source detection
+ * only scans downward from this stylesheet's own base path).
+ */
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+@import '@noodara/ui/tokens.css';
+@import '@noodara/ui/theme.css';
+@import '@noodara/ui/aperture.css';
+
+@source '../../../../packages/ui/src';
+
+/*
+ * Fumadocs re-skin (SITE-03 "mismo piso de calidad", D-15/D-16): every --color-fd-* variable
+ * fumadocs-ui's neutral.css declares is assigned here, as a var(--token) reference into
+ * tokens.css above -- never a literal, never left at Fumadocs' own default palette.
+ * tests/unit/site/fumadocs-token-map.test.ts enumerates neutral.css's own variable list and
+ * measures every mapped text/background pair at >= 4.5:1 in both themes, so this block cannot
+ * silently drift out of sync with a Fumadocs upgrade.
+ *
+ * `--color-fd-accent` deliberately does NOT map to any --accent* token: Fumadocs' own "accent" is
+ * a hover/active row background (sidebar items, command menu rows), not Noodara's single brand
+ * accent -- mapping it to --accent would turn every hovered sidebar row blue, violating the
+ * "one accent colour" rule (UI-SPEC §Color).
+ *
+ * Selector covers both :root (light, no data-theme attribute) and html.dark (RESEARCH.md
+ * Pitfall 5: Fumadocs UI's own shipped CSS keys off the `.dark` class, not
+ * `[data-theme="dark"]` -- site-theme.ts/theme-script.ts write both in one place so neither
+ * stylesheet ever observes a torn state).
+ */
+:root,
+html.dark {
+  --color-fd-background: var(--canvas);
+  --color-fd-foreground: var(--ink);
+  --color-fd-muted: var(--surface-2);
+  --color-fd-muted-foreground: var(--ink-secondary);
+  --color-fd-popover: var(--surface-2);
+  --color-fd-popover-foreground: var(--ink);
+  --color-fd-card: var(--surface-1);
+  --color-fd-card-foreground: var(--ink);
+  --color-fd-border: var(--hairline);
+  --color-fd-primary: var(--accent-fill);
+  --color-fd-primary-foreground: var(--on-accent);
+  --color-fd-secondary: var(--surface-2);
+  --color-fd-secondary-foreground: var(--ink);
+  --color-fd-accent: var(--surface-3);
+  --color-fd-accent-foreground: var(--ink);
+  --color-fd-ring: var(--accent);
+  --color-fd-overlay: var(--ink);
+
+  /* fumadocs-ui/css/lib/default-colors.css's `@theme static` block (Callout/admonition tones and
+     diff/code-highlight colours) -- mapped to the nearest existing status token per tone, never a
+     new literal. --idea reuses --status-warn-text (both read as an amber "tip" tone in this
+     system, which has no separate idea/tip status); --info reuses --accent-text (the only blue in
+     the system) since there is no dedicated info status token. */
+  --color-fd-info: var(--accent-text);
+  --color-fd-warning: var(--status-warn-text);
+  --color-fd-error: var(--status-error-text);
+  --color-fd-success: var(--status-ok-text);
+  --color-fd-idea: var(--status-warn-text);
+  --color-fd-diff-remove: var(--status-error-soft);
+  --color-fd-diff-remove-symbol: var(--status-error-text);
+  --color-fd-diff-add: var(--status-ok-soft);
+  --color-fd-diff-add-symbol: var(--status-ok-text);
+}
+
+/*
+ * Base element styles, copied from apps/web/src/app/globals.css's own discipline: every value is
+ * a var(--token) reference, never a literal colour/size here.
+ */
+html,
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--font-mono);
+}
+
+/* skill noodara-ux-apple / UI-SPEC §Accessibility: a visible focus ring everywhere. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+/* Typographic measure (UI-09/UI-SPEC §Typography): headings resist an orphaned short last line,
+   body copy resists a ragged one, and the docs article body caps prose width at 75ch. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+article {
+  max-inline-size: 75ch;
+}
+
+/*
+ * UI-SPEC §Spacing exception: the landing's own section-to-section rhythm on desktop (96px)
+ * needs more breathing room than the app's own 48px max -- declared once here as a local var,
+ * never a global token, never a literal elsewhere.
+ */
+:root {
+  --site-section-gap-lg: calc(var(--space-12) * 2);
+}
+
+/*
+ * D-17: <picture> light/dark screenshot sources follow the SITE's own toggle (data-theme), not
+ * the OS media query alone -- `<source media="(prefers-color-scheme: dark)">` only ever sees the
+ * OS preference, which would desync from an explicit toggle override. ScreenshotFrame (a later
+ * plan) renders both variants and this pair of rules picks the right one to display.
+ */
+.site-shot-dark {
+  display: none;
+}
+
+html[data-theme='dark'] .site-shot-dark {
+  display: block;
+}
+
+html[data-theme='dark'] .site-shot-light {
+  display: none;
+}
