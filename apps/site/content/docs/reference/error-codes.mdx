@@ -1,0 +1,39 @@
+---
+title: Error codes
+description: Every error code the Noodara API returns, with its HTTP status.
+---
+
+Every failed request returns a JSON body shaped like this:
+
+```json
+{ "error": "<CODE>", "message": "<text>" }
+```
+
+`error` is always one of the codes below. `message` is a short, human-readable description, and
+nothing else — no internal detail is ever attached to it.
+
+## HTTP API errors
+
+| Code | HTTP status | Meaning |
+|---|---|---|
+| `VALIDATION_FAILED` | 400 | The request body does not match the endpoint's schema. |
+| `INVALID_CREDENTIAL` | 400 | The submitted SSH credential (password or private key) is invalid, or the current password did not match on a re-authenticated action. |
+| `UNAUTHORIZED` | 401 | There is no active session; sign in again. |
+| `FORBIDDEN_ORIGIN` | 403 | The request's `Origin` header is not the panel's own origin. |
+| `NOT_FOUND` | 404 | The requested resource does not exist. |
+| `NAME_TAKEN` | 409 | Another server already uses that name. |
+| `HOST_TAKEN` | 409 | Another server already uses that host and port. |
+| `SERVER_BUSY` | 409 | The server has a connection or discovery run already in progress. |
+| `ALREADY_CONNECTING` | 409 | A connect or discovery run for this server is already in progress. |
+| `SERVER_NOT_CONNECTED` | 409 | The action requires the server to be connected first. |
+| `NO_PENDING_FINGERPRINT` | 409 | There is no pending host-key fingerprint to trust. |
+| `FINGERPRINT_MISMATCH` | 409 | The fingerprint you tried to trust no longer matches what the server has pending. |
+| `SERVER_NOT_TRUSTABLE` | 409 | The server is not in a state that can trust a fingerprint right now. |
+| `CONFIRMATION_MISMATCH` | 409 | The typed confirmation text did not match what the action required. |
+| `QUEUE_UNAVAILABLE` | 503 | The background job queue is unavailable; try again shortly. |
+| `SSE_LIMIT_REACHED` | 503 | Too many live event streams are already open. |
+| `INTERNAL_ERROR` | 500 | An unexpected server error occurred. |
+| `EMAIL_DOMAIN_UNRESOLVABLE` | 400 | The new email address's domain does not resolve. |
+| `EMAIL_DOMAIN_CHECK_UNAVAILABLE` | 503 | The email domain check could not run; try again shortly. |
+| `REAUTH_LOCKED` | 429 | Too many recent re-authentication attempts; wait before trying again. |
+| `SESSION_REVOKED_PASSWORD_CHANGED` | 401 | The session was signed out because the account's password changed. |
