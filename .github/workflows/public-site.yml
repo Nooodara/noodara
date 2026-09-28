@@ -1,52 +1,59 @@
 name: Publish site
 
-# Plan 10-03 (SITE-02, D-11/D-12/D-13): publishes `apps/site`'s static export to GitHub Pages on
+# Plan 10-03 (SITE-02, D-11/D-12/D-13), amended quick-260928-gmm (D-11a/D-12a/D-13a): publishes
+# `apps/site`'s static export to Cloudflare Pages (project `noodara-site`, Direct Upload) on
 # every push to main. This is deliberately a separate workflow from release.yml: different
 # cadence (every push to main vs. a version tag), a different, public artifact (a static site vs.
-# multi-arch container images), and no shared token scope -- release.yml never touches Pages and
-# this workflow never touches GHCR (D-13: the site never enters release.yml or any
+# multi-arch container images), and no shared token scope -- release.yml never touches Cloudflare
+# and this workflow never touches GHCR (D-13: the site never enters release.yml or any
 # docker-compose*.yml, asserted by tests/unit/scripts/check-workflow-pins.test.ts).
 #
-# No Pages-configuration action step: apps/site/site-config.mjs already computes its own basePath
-# from apps/site/public/CNAME at build time (10-01, D-12), so there is nothing left for a separate
-# setup action to resolve -- one fewer action, one fewer permission.
+# Single job, no artifact hand-off: Cloudflare Pages has no equivalent of GitHub Pages' separate
+# upload/deploy actions -- `cloudflare/wrangler-action` builds nothing itself, it just uploads
+# `apps/site/out` directly with `wrangler pages deploy`, so build and deploy stay one job.
 #
 # No path filter on the push trigger above: D-13 notes captures, tokens and copy that affect the
 # site live outside apps/site (packages/ui/brand, docs/ui/approved, docs/install.md), so scoping
 # the trigger to a subdirectory would silently skip a real publish-worthy change.
 #
-# Repo Settings -> Pages -> "Build and deployment" -> Source must be set to "GitHub Actions" once
-# (a one-time manual repo setting this workflow cannot make itself) -- see apps/site/README.md.
+# One-time setup this workflow cannot make itself: create the Cloudflare Pages project
+# `noodara-site` (Direct Upload, no git integration) and add `CLOUDFLARE_API_TOKEN`/
+# `CLOUDFLARE_ACCOUNT_ID` as GitHub repo secrets -- see apps/site/README.md.
 #
 # Every third-party `uses:` below is pinned to a 40-character commit SHA with its human-readable
-# tag as a trailing comment, verified live via `gh api repos/<repo>/tags` on 2026-09-27 (see the
-# plan's own <interfaces> block), and enforced by scripts/check-workflow-pins.mjs.
+# tag as a trailing comment, verified live via `gh api repos/<repo>/tags` / `git ls-remote --tags`
+# on 2026-09-27/2026-09-28 (see the plan's own <interfaces> block), and enforced by
+# scripts/check-workflow-pins.mjs.
 
 on:
   push:
     branches: [main]
-  # Lets the site be re-published manually (e.g. right after changing Pages settings) without
+  # Lets the site be re-published manually (e.g. right after changing the Pages project) without
   # needing an empty commit to main.
   workflow_dispatch:
 
 permissions: {}
 
 concurrency:
-  group: pages
+  group: cloudflare-pages
   cancel-in-progress: false
 
 env:
   NODE_VERSION: '22'
 
 jobs:
-  build:
-    name: build
+  deploy:
+    name: deploy
     runs-on: ubuntu-latest
-    # A cold pnpm install plus one static `next build --output export` of a single small app --
-    # well under ci.yml's own 15-minute unit-job budget for a much larger full-workspace run.
+    # A cold pnpm install plus one static `next build --output export` of a single small app,
+    # plus a wrangler upload -- well under ci.yml's own 15-minute unit-job budget for a much
+    # larger full-workspace run.
     timeout-minutes: 15
     permissions:
       contents: read
+    environment:
+      name: production
+      url: https://noodara.com
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -59,25 +66,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # apps/site/public/CNAME is a committed file, so this build always exercises the real,
-      # root-basePath production shape (10-RESEARCH.md Pitfall 4) -- never the `/noodara` preview
-      # subpath.
+      # basePath is always root on Cloudflare Pages (D-12a) -- no CNAME file, no preview subpath.
       - run: pnpm --filter @noodara/site build
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+      - uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
         with:
-          path: apps/site/out
-
-  deploy:
-    name: deploy
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/site/out --project-name=noodara-site --branch=main
+          wranglerVersion: '4.143.0'

@@ -145,9 +145,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # apps/site/public/CNAME is committed, so this PR-gate build always exercises the real,
-      # root-basePath production shape (10-RESEARCH.md Pitfall 4), the same build public-site.yml
-      # runs on push to main -- never the `/noodara` preview-subpath shape.
+      # basePath is always root now (Cloudflare Pages, quick-260928-gmm) -- no CNAME file, no
+      # preview subpath -- so this PR-gate build always exercises the real production shape, the
+      # same build public-site.yml runs on push to main.
       - run: pnpm --filter @noodara/site build
       - run: pnpm exec vitest run tests/unit/docs tests/unit/site
 
