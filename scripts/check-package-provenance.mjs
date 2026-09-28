@@ -209,6 +209,17 @@ const EXPECTED_PACKAGES = [
   // same research pass and deliberately NOT installed (see ADR-0000's "Phase 8 additions" section)
   // -- it has no entry here on purpose.
   { name: 'motion', expectedOwnerRepo: 'motiondivision/motion' },
+
+  // Phase 10 (10-01-PLAN.md): apps/site's docs/landing stack. All five verified via
+  // `npm view <pkg>@<pinned-version> repository.url` on 2026-09-27 (10-RESEARCH.md's "Package
+  // Legitimacy Audit" table, all `[OK]` via slopcheck). `fumadocs-core`, `fumadocs-ui` and
+  // `fumadocs-mdx` share one repository (a single multi-package repo, `fuma-nama/fumadocs`) --
+  // confirmed independently for each package's own pinned version, not assumed from one lookup.
+  { name: 'fumadocs-core', expectedOwnerRepo: 'fuma-nama/fumadocs' },
+  { name: 'fumadocs-ui', expectedOwnerRepo: 'fuma-nama/fumadocs' },
+  { name: 'fumadocs-mdx', expectedOwnerRepo: 'fuma-nama/fumadocs' },
+  { name: 'flexsearch', expectedOwnerRepo: 'nextapps-de/flexsearch' },
+  { name: '@types/mdx', expectedOwnerRepo: 'DefinitelyTyped/DefinitelyTyped' },
 ];
 
 const EXPECTED_BY_NAME = new Map(
@@ -237,6 +248,12 @@ function normaliseRepoUrl(rawUrl) {
   url = url.replace(/^ssh:\/\/git@/, '');
   url = url.replace(/^git:\/\//, '');
   url = url.replace(/^https:\/\//, '');
+
+  // 10-01-PLAN.md Task 2: npm's registry also returns a bare `github:owner/repo` shorthand for
+  // some packages' `repository.url` (observed for fumadocs-core/fumadocs-ui/fumadocs-mdx at their
+  // pinned versions) -- without this branch the shorthand fell through unstripped and never
+  // equalled the expected `owner/repo` string, failing the gate closed for legitimate packages.
+  url = url.replace(/^github:/, '');
 
   url = url.replace(/^github\.com[:/]/, '');
 
