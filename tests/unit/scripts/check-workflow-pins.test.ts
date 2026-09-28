@@ -178,3 +178,128 @@ describe('release pipeline workflow files (structural, no GitHub Actions run req
     expect(jobBlock).toMatch(/timeout-minutes:/);
   });
 });
+
+// Plan 10-03 (SITE-02, D-11/D-12/D-13, T-10-01/T-10-02/T-10-10/T-10-03/T-10-16): the same
+// offline, structural discipline as the release-pipeline describe block above, now proving
+// public-site.yml (the GitHub Pages publish workflow) and ci.yml's `site` PR gate job stay
+// SHA-pinned, least-privilege, push-to-main-only, and fully isolated from release.yml and every
+// docker-compose file -- before either workflow file exists.
+describe('public site workflows (D-12/D-13, structural)', () => {
+  const publicSiteYml = () => readFileSync('.github/workflows/public-site.yml', 'utf8');
+  const ciYml = () => readFileSync('.github/workflows/ci.yml', 'utf8');
+  const releaseYml = () => readFileSync('.github/workflows/release.yml', 'utf8');
+  const dockerComposeYml = () => readFileSync('docker-compose.yml', 'utf8');
+  const dockerComposeDevYml = () => readFileSync('docker-compose.dev.yml', 'utf8');
+
+  // Same job-block extraction shape used by the release.yml describe block above, reused here
+  // against public-site.yml and ci.yml's own `jobs:` sections.
+  function extractJobsSection(source: string): string {
+    const jobsSectionMatch = source.match(/\njobs:\n([\s\S]*)$/);
+    expect(jobsSectionMatch, 'jobs: section not found').toBeTruthy();
+    return jobsSectionMatch?.[1] ?? '';
+  }
+
+  function extractJobBlock(source: string, jobName: string): string {
+    const jobBlockMatch = source.match(
+      new RegExp(`\\n {2}${jobName}:\\n([\\s\\S]*?)(?=\\n {2}[a-z][a-z0-9_-]*:\\n|$)`),
+    );
+    expect(jobBlockMatch, `job "${jobName}" block not found`).toBeTruthy();
+    return jobBlockMatch?.[1] ?? '';
+  }
+
+  it('public-site.yml: every uses: is pinned to a 40-hex SHA', () => {
+    expect(scanWorkflowPins(publicSiteYml())).toEqual([]);
+  });
+
+  it('ci.yml: every uses: is still pinned to a 40-hex SHA after this plan\'s edits', () => {
+    expect(scanWorkflowPins(ciYml())).toEqual([]);
+  });
+
+  it('public-site.yml triggers on push to main and workflow_dispatch only, never pull_request', () => {
+    const source = publicSiteYml();
+    const onSectionMatch = source.match(/\non:\n([\s\S]*?)(?=\n[a-z]+:\n)/);
+    expect(onSectionMatch, 'on: section not found').toBeTruthy();
+    const onSection = onSectionMatch?.[1] ?? '';
+
+    expect(onSection).toMatch(/push:\s*\n\s*branches:\s*\[main\]/);
+    expect(onSection).toMatch(/workflow_dispatch:/);
+    expect(onSection).not.toMatch(/pull_request/);
+  });
+
+  it('public-site.yml never declares a paths: or paths-ignore: filter (D-13)', () => {
+    expect(publicSiteYml()).not.toMatch(/paths(-ignore)?:/);
+  });
+
+  it('public-site.yml declares a top-level permissions: {} block', () => {
+    expect(publicSiteYml()).toMatch(/\npermissions:\s*\{\}/);
+  });
+
+  it('public-site.yml build job has only contents: read', () => {
+    const jobsSection = extractJobsSection(publicSiteYml());
+    const buildJob = extractJobBlock(jobsSection, 'build');
+
+    expect(buildJob).toMatch(/permissions:\s*\n\s*contents:\s*read/);
+    expect(buildJob).not.toMatch(/pages:\s*write/);
+    expect(buildJob).not.toMatch(/id-token:\s*write/);
+  });
+
+  it('public-site.yml deploy job has only pages: write and id-token: write, plus the github-pages environment', () => {
+    const jobsSection = extractJobsSection(publicSiteYml());
+    const deployJob = extractJobBlock(jobsSection, 'deploy');
+
+    expect(deployJob).toMatch(/permissions:\s*\n\s*pages:\s*write\s*\n\s*id-token:\s*write/);
+    expect(deployJob).not.toMatch(/contents:\s*write/);
+    expect(deployJob).toMatch(/environment:\s*\n\s*name:\s*github-pages/);
+  });
+
+  it('public-site.yml sets concurrency group pages with cancel-in-progress: false', () => {
+    const source = publicSiteYml();
+
+    expect(source).toMatch(/concurrency:\s*\n\s*group:\s*pages\s*\n\s*cancel-in-progress:\s*false/);
+  });
+
+  it('every job in public-site.yml declares timeout-minutes:', () => {
+    const jobsSection = extractJobsSection(publicSiteYml());
+    const jobNames = [...jobsSection.matchAll(/^ {2}([a-z][a-z0-9_-]*):\s*$/gm)].map((m) => m[1]);
+
+    expect(jobNames.length).toBeGreaterThan(0);
+    for (const jobName of jobNames) {
+      const jobBlock = extractJobBlock(jobsSection, jobName as string);
+      expect(jobBlock, `job "${jobName}" missing timeout-minutes:`).toMatch(/timeout-minutes:/);
+    }
+  });
+
+  it('public-site.yml references no secrets.', () => {
+    expect(publicSiteYml()).not.toMatch(/secrets\./);
+  });
+
+  it('public-site.yml build job checks out with fetch-depth: 0, installs, builds and uploads apps/site/out', () => {
+    const jobsSection = extractJobsSection(publicSiteYml());
+    const buildJob = extractJobBlock(jobsSection, 'build');
+
+    expect(buildJob).toMatch(/fetch-depth:\s*0/);
+    expect(buildJob).toContain('pnpm install --frozen-lockfile');
+    expect(buildJob).toContain('pnpm --filter @noodara/site build');
+    expect(buildJob).toMatch(/path:\s*apps\/site\/out/);
+  });
+
+  it('ci.yml has a site job with contents: read, timeout-minutes, fetch-depth: 0, the site build and docs/site tests, and no job-level if:', () => {
+    const jobsSection = extractJobsSection(ciYml());
+    const siteJob = extractJobBlock(jobsSection, 'site');
+
+    expect(siteJob).toMatch(/permissions:\s*\n\s*contents:\s*read/);
+    expect(siteJob).toMatch(/timeout-minutes:/);
+    expect(siteJob).toMatch(/fetch-depth:\s*0/);
+    expect(siteJob).toContain('pnpm --filter @noodara/site build');
+    expect(siteJob).toContain('pnpm exec vitest run tests/unit/docs tests/unit/site');
+    expect(siteJob).not.toMatch(/^\s*if:/m);
+  });
+
+  it('release.yml, docker-compose.yml and docker-compose.dev.yml never mention the site', () => {
+    for (const source of [releaseYml(), dockerComposeYml(), dockerComposeDevYml()]) {
+      expect(source).not.toContain('apps/site');
+      expect(source).not.toContain('@noodara/site');
+      expect(source).not.toContain('public-site');
+    }
+  });
+});
