@@ -279,7 +279,12 @@ describe('public site workflows (D-12/D-13, structural)', () => {
 
     expect(deployJob).toMatch(/fetch-depth:\s*0/);
     expect(deployJob).toContain('pnpm install --frozen-lockfile');
-    expect(deployJob).toContain('pnpm --filter @noodara/site build');
+    // quick-260928-m8j: `pnpm --filter @noodara/site build` invokes apps/site's own `build`
+    // script directly, bypassing Turborepo's `^build` task-graph edge -- on a clean checkout
+    // (no pre-built packages/ui/dist) `next build` then fails with `Can't resolve '@noodara/ui'`.
+    // `pnpm site:build` runs `turbo run build --filter=@noodara/site`, which builds
+    // @noodara/domain and @noodara/ui first.
+    expect(deployJob).toContain('pnpm site:build');
     expect(deployJob).toContain('pages deploy apps/site/out --project-name=noodara-site --branch=main');
     expect(deployJob).not.toContain('upload-pages-artifact');
     expect(deployJob).not.toContain('deploy-pages');
@@ -307,9 +312,18 @@ describe('public site workflows (D-12/D-13, structural)', () => {
     expect(siteJob).toMatch(/permissions:\s*\n\s*contents:\s*read/);
     expect(siteJob).toMatch(/timeout-minutes:/);
     expect(siteJob).toMatch(/fetch-depth:\s*0/);
-    expect(siteJob).toContain('pnpm --filter @noodara/site build');
+    // quick-260928-m8j: same reason as public-site.yml's deploy job above -- this PR gate must
+    // build through Turbo (`pnpm site:build`), not `pnpm --filter @noodara/site build` directly,
+    // or it silently passes locally (workspace deps already built) and fails on a clean checkout.
+    expect(siteJob).toContain('pnpm site:build');
     expect(siteJob).toContain('pnpm exec vitest run tests/unit/docs tests/unit/site');
     expect(siteJob).not.toMatch(/^\s*if:/m);
+  });
+
+  it('root package.json builds the site through Turbo so @noodara/ui and @noodara/domain are built first', () => {
+    const rootPkg = JSON.parse(readFileSync('package.json', 'utf8')) as { scripts?: Record<string, string> };
+
+    expect(rootPkg.scripts?.['site:build']).toBe('turbo run build --filter=@noodara/site');
   });
 
   it('release.yml, docker-compose.yml and docker-compose.dev.yml never mention the site', () => {
