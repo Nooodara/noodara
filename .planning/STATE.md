@@ -4,13 +4,13 @@ milestone: v0.2
 milestone_name: Projects & Services
 status: executing
 stopped_at: Completed 10-09-PLAN.md
-last_updated: "2026-09-28T06:23:22.526Z"
+last_updated: "2026-09-28T06:33:46.747Z"
 last_activity: 2026-09-28
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 56
-  completed_plans: 53
+  completed_plans: 54
   percent: 38
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 10 (sitio-de-docs-y-landing-p-blica) — EXECUTING
-Plan: 10 of 12
+Plan: 11 of 12
 Status: Ready to execute
 Last activity: 2026-09-28
 
-Progress: [██████████] 95%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
@@ -212,6 +212,7 @@ Progress: [██████████] 95%
 | Phase 10 P07 | 26min | 2 tasks | 8 files |
 | Phase 10 P08 | 25min | 2 tasks | 10 files |
 | Phase 10 P09 | 55min | 2 tasks | 7 files |
+| Phase 10 P10 | 55min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -580,6 +581,8 @@ Recent decisions affecting current work:
 - [Phase 10]: site-facts.ts builds INSTALL_SCRIPT_URL/GITHUB_URL from two small owner/repo constants; the test diffs them against install.sh/README so they cannot drift
 - [Phase 10]: InstallCommand mounts its own local TooltipProvider since apps/site has no app-wide one
 - [Phase 10]: HowItWorksDiagram renders its three captions as HTML text, not SVG text, so they inherit the site type system
+- [Phase ?]: 10-10: meta.json full D-08 lists already present from 10-05; docs-tree.test.ts tightened to prove every slug has an MDX file and vice versa
+- [Phase ?]: 10-10: concepts/project.mdx has no ScopeNote (not named in must_haves); its closing sentence states the not-managed-by-panel fact in plain prose
 
 ### Pending Todos
 
@@ -655,7 +658,7 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-28T06:23:17.940Z
+Last session: 2026-09-28T06:32:20.709Z
 Stopped at: Completed 10-09-PLAN.md
 Resume file: None
 
