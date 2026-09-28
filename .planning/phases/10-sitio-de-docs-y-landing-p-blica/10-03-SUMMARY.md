@@ -114,6 +114,7 @@ None.
 - `node scripts/check-workflow-pins.mjs` (all 4 workflow files) — clean
 - `pnpm test` (full repo) — 3099/3099 pass
 - `pnpm lint` / `pnpm typecheck` / `pnpm boundaries` — all exit 0
+- Commit `72ffce4` (this SUMMARY.md itself) — FOUND, verified post-commit
 
 ---
 *Phase: 10-sitio-de-docs-y-landing-pública*
