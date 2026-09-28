@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 10-01-PLAN.md
-last_updated: "2026-09-28T04:54:06.526Z"
+stopped_at: Completed 10-02-PLAN.md
+last_updated: "2026-09-28T05:14:33.502Z"
 last_activity: 2026-09-28
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 56
-  completed_plans: 45
+  completed_plans: 46
   percent: 38
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 10 (sitio-de-docs-y-landing-p-blica) — EXECUTING
-Plan: 2 of 12
+Plan: 3 of 12
 Status: Ready to execute
 Last activity: 2026-09-28
 
-Progress: [████████░░] 80%
+Progress: [████████░░] 82%
 
 ## Performance Metrics
 
@@ -204,6 +204,7 @@ Progress: [████████░░] 80%
 | Phase 09 P13 | 75min | 2 tasks | 3 files |
 | Phase 09 P14 | ~90min + checkpoint | 2 tasks | 13 files |
 | Phase 10 P01 | 12min | 3 tasks | 16 files |
+| Phase 10 P02 | 12min | 3 tasks | 20 files |
 
 ## Accumulated Context
 
@@ -558,6 +559,9 @@ Recent decisions affecting current work:
 - [Phase 09]: [Phase 09 P14]: Checkpoint round 1 -- the human reviewer found three mobile-only defects on a real iPhone 16 Pro Max (440x956), all in shared Phase 8 shell/servers components, not this plan's own Account/Appearance work: RowMenu clipped by InsetGroup's overflow-hidden (fixed via DialogPrimitive.Portal + fixed, trigger-measured position, reusing AccountMenu's existing convention), Sheet's fixed w-[480px] panel overflowing 440px (fixed to w-full max-w-[480px] with a measured drag threshold), and NavTree hiding labels in the <900px hamburger drawer (fixed to show by default, hidden only in the 900-1279px rail). Reviewer approved after this single round: verbatim 'Listo, todo bien ahora. De lujo'.
 - [Phase 10]: 10-01: ssh-adapter excluded from turbo public-site deny list (root's own @noodara/ssh devDependency makes turbo boundaries see it as reachable from every package); enforced by site-boundary.test.ts instead
 - [Phase 10]: 10-01: fixed normaliseRepoUrl() to strip npm's github: shorthand repository.url prefix, uncovered by fumadocs-core/ui/mdx's registry metadata
+- [Phase 10]: 10-02: press-class duplicated in SiteThemeToggle.tsx (no ./press export subpath from @noodara/ui)
+- [Phase 10]: 10-02: 9 undocumented --color-fd-* Callout/diff tones mapped to nearest status token (idea/warning share status-warn-text, info uses accent-text)
+- [Phase 10]: 10-02: --color-fd-overlay mapped to var(--ink), the nearest ink token; never contrast-measured (backdrop only, not text)
 
 ### Pending Todos
 
@@ -633,8 +637,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-28T04:54:06.518Z
-Stopped at: Completed 10-01-PLAN.md
+Last session: 2026-09-28T05:14:33.494Z
+Stopped at: Completed 10-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
