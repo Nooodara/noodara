@@ -64,9 +64,16 @@ function filesUnder(dir: string): string[] {
 }
 
 describe('docs/ui/APPROVAL.md', () => {
-  it('has exactly one "| Gate |" row per gate (three total)', () => {
-    const matches = approval().match(/\| Gate \|/g) ?? [];
-    expect(matches).toHaveLength(3);
+  it('has exactly one "| Gate |" row per redesign gate (later phases may append their own)', () => {
+    // Phase 9+ append further approval blocks to the same record (D-15 keeps one document), so the
+    // count is no longer fixed at three; each of G1/G2/G3 must still appear exactly once.
+    const cells = (approval().match(/^\| Gate \|\s*(.+?)\s*\|\s*$/gm) ?? []).map((line) =>
+      line.replace(/^\| Gate \|\s*/, '').replace(/\s*\|\s*$/, ''),
+    );
+    expect(cells.length).toBeGreaterThanOrEqual(GATES.length);
+    for (const gate of GATES) {
+      expect(cells.filter((cell) => cell.startsWith(`${gate} `)), `${gate} Gate rows`).toHaveLength(1);
+    }
   });
 
   for (const gate of GATES) {
