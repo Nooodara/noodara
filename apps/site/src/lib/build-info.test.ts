@@ -45,17 +45,17 @@ describe('readBuildInfo', () => {
   it('throws a named error when NOODARA_SITE_ORIGIN is missing', () => {
     stubValidEnv({ NOODARA_SITE_ORIGIN: undefined });
     vi.stubEnv('NOODARA_SITE_ORIGIN', '');
-    expect(() => readBuildInfo()).toThrowError(/NOODARA_SITE_ORIGIN/);
+    expect(() => readBuildInfo()).toThrow(/NOODARA_SITE_ORIGIN/);
   });
 
   it('throws a named error when NOODARA_SITE_VERSION is empty', () => {
     stubValidEnv({ NOODARA_SITE_VERSION: '' });
-    expect(() => readBuildInfo()).toThrowError(/NOODARA_SITE_VERSION/);
+    expect(() => readBuildInfo()).toThrow(/NOODARA_SITE_VERSION/);
   });
 
   it('throws a named error when NOODARA_SITE_LICENSE is empty', () => {
     stubValidEnv({ NOODARA_SITE_LICENSE: '' });
-    expect(() => readBuildInfo()).toThrowError(/NOODARA_SITE_LICENSE/);
+    expect(() => readBuildInfo()).toThrow(/NOODARA_SITE_LICENSE/);
   });
 
   it('basePath may be the empty string without throwing', () => {
@@ -77,6 +77,6 @@ describe('assetPath', () => {
 
   it('throws when the argument does not start with "/"', () => {
     stubValidEnv();
-    expect(() => assetPath('screenshots/servers-light.png')).toThrowError(/must start with/);
+    expect(() => assetPath('screenshots/servers-light.png')).toThrow(/must start with/);
   });
 });

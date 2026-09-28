@@ -103,7 +103,7 @@ describe('readStoredTheme', () => {
 
 describe('resolveSystemTheme', () => {
   it('returns "light" and never throws when matchMedia throws', () => {
-    vi.spyOn(window, 'matchMedia').mockImplementation(() => {
+    vi.stubGlobal('matchMedia', () => {
       throw new Error('blocked');
     });
 
@@ -111,7 +111,7 @@ describe('resolveSystemTheme', () => {
   });
 
   it('returns "dark" when matchMedia reports prefers-color-scheme: dark', () => {
-    vi.spyOn(window, 'matchMedia').mockReturnValue({ matches: true } as MediaQueryList);
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: true, media: query }));
     expect(resolveSystemTheme()).toBe('dark');
   });
 });
