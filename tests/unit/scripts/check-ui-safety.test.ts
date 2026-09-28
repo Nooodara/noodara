@@ -8,7 +8,12 @@ import { describe, expect, it } from 'vitest';
 // the `.mjs` file and assert on its return value directly, no real file I/O or spawning the whole
 // script needed. Each scan function takes a plain `{ relPath: content }` map so a fixture can
 // exercise the allowlist/comment-stripping/counting behaviour without ever touching disk.
-import { scanBackdropFilterUsage, scanBuiltinEasingUsage, scanShadowUsage } from '../../../scripts/check-ui-safety.mjs';
+import {
+  scanBackdropFilterUsage,
+  scanBuiltinEasingUsage,
+  scanDangerouslySetInnerHtmlAllowlist,
+  scanShadowUsage,
+} from '../../../scripts/check-ui-safety.mjs';
 
 describe('scanShadowUsage (UI-03: zero shadows outside Sheet/Dialog/RowMenu/AccountMenu)', () => {
   it('passes on the repo as it stands today (nothing has a shadow)', () => {
@@ -172,5 +177,54 @@ describe('scanBuiltinEasingUsage (UI-05: no CSS built-in easing keyword survives
     });
 
     expect(total).toBe(0);
+  });
+});
+
+// 10-02-PLAN.md Task 3 (T-5-99, T-10-11): the plain total-count gate that used to police
+// dangerouslySetInnerHTML repo-wide degenerates the moment a second app legitimately needs its
+// own bootstrap script -- a naive "expected: 2" total can't tell a second reviewed layout.tsx
+// occurrence apart from a stray one landing anywhere else. This per-file allowlist gate replaces
+// it: total must be exactly 2, and the only two files carrying it must be
+// apps/web/src/app/layout.tsx and apps/site/src/app/layout.tsx, one each.
+describe('scanDangerouslySetInnerHtmlAllowlist (T-5-99, T-10-11: exactly one per app root layout)', () => {
+  it('passes when both allowlisted layouts each carry exactly one occurrence', () => {
+    const { total, ok, offenders, missing } = scanDangerouslySetInnerHtmlAllowlist({
+      'apps/web/src/app/layout.tsx': '<script dangerouslySetInnerHTML={{ __html: X }} />',
+      'apps/site/src/app/layout.tsx': '<script dangerouslySetInnerHTML={{ __html: Y }} />',
+    });
+
+    expect(total).toBe(2);
+    expect(ok).toBe(true);
+    expect(offenders).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  it('fails when a third, non-allowlisted file also uses dangerouslySetInnerHTML', () => {
+    const { total, ok, offenders } = scanDangerouslySetInnerHtmlAllowlist({
+      'apps/web/src/app/layout.tsx': 'dangerouslySetInnerHTML',
+      'apps/site/src/app/layout.tsx': 'dangerouslySetInnerHTML',
+      'apps/site/src/components/Rogue.tsx': 'dangerouslySetInnerHTML',
+    });
+
+    expect(total).toBe(3);
+    expect(ok).toBe(false);
+    expect(offenders).toEqual(['apps/site/src/components/Rogue.tsx']);
+  });
+
+  it('fails when an allowlisted layout is missing its occurrence entirely', () => {
+    const { ok, missing } = scanDangerouslySetInnerHtmlAllowlist({
+      'apps/web/src/app/layout.tsx': 'dangerouslySetInnerHTML',
+    });
+
+    expect(ok).toBe(false);
+    expect(missing).toEqual(['apps/site/src/app/layout.tsx']);
+  });
+
+  it('ignores a mention inside a comment line', () => {
+    const { total } = scanDangerouslySetInnerHtmlAllowlist({
+      'apps/web/src/app/layout.tsx': '// never do this: dangerouslySetInnerHTML\ndangerouslySetInnerHTML',
+    });
+
+    expect(total).toBe(1);
   });
 });
