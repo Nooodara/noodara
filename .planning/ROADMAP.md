@@ -272,7 +272,7 @@ Plans:
 
 - [x] 10-02-PLAN.md — Theme (OS + toggle, no flash), tokens + Fumadocs re-skin with measured contrast, asset sync, root layout, ui-safety
 - [x] 10-03-PLAN.md — `public-site.yml` + `site` PR job in ci.yml (SHA-pinned, least privilege), DNS/Pages notes, D-09 note
-- [ ] 10-04-PLAN.md — `pnpm ui:review:site`: static server + capture matrix that fails on third-party requests
+- [x] 10-04-PLAN.md — `pnpm ui:review:site`: static server + capture matrix that fails on third-party requests
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -398,7 +398,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 | 7. Identidad y brand kit | 10/10 | Complete | 2026-09-23 |
 | 8. Rediseño de la app | 20/20 | Complete   | 2026-09-27 |
 | 9. Settings editables | 14/14 | Complete   | 2026-09-27 |
-| 10. Sitio de docs y landing pública | 3/12 | In Progress|  |
+| 10. Sitio de docs y landing pública | 4/12 | In Progress|  |
 | 11. Motor de deploy — fundamentos | 0/TBD | Not started | - |
 | 12. Motor de deploy — runtime | 0/TBD | Not started | - |
 | 13. UI de Projects & Services y E2E de deploy | 0/TBD | Not started | - |
