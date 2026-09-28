@@ -141,6 +141,8 @@ pnpm --filter @noodara/site add -D fumadocs-mdx@15.4.5
 | fumadocs-core | npm | [OK] | Approved |
 | fumadocs-ui | npm | [OK] | Approved |
 | fumadocs-mdx | npm | [OK] | Approved |
+| flexsearch | npm | [OK] | Approved (added by planner: optional peer of fumadocs-core required by `fumadocs-core/search/flexsearch`; `slopcheck scan` 2026-09-27, pin 0.8.212, repo nextapps-de/flexsearch) |
+| @types/mdx | npm | [OK] | Approved (added by planner: peer of fumadocs-mdx/fumadocs-ui; `slopcheck scan` 2026-09-27, pin 2.0.14, repo DefinitelyTyped/DefinitelyTyped) |
 
 All three ran through `slopcheck install fumadocs-core fumadocs-ui fumadocs-mdx` (2026-09-27) and scored `[OK]` ("scanned 3 packages, 3 OK"). No packages removed or flagged suspicious. (The subsequent `npm install` step inside slopcheck's own sandbox failed only because it tried a literal `npm install` against this pnpm workspace's `workspace:*` protocol references — that failure is unrelated to the legitimacy scan itself and made no changes to this repo, confirmed via `git status`.)
 

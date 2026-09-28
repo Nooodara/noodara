@@ -259,7 +259,21 @@ Plans:
   4. Cada push a `main` publica el sitio a GitHub Pages vía `public-site.yml`; el dominio se cambia solo con el archivo CNAME; el build del sitio es un gate del PR; el sitio nunca entra en `docker-compose.yml` ni en `release.yml`.
   5. El sitio cumple contraste medido, tipografía, ambos temas y `prefers-reduced-motion`, y el usuario aprobó screenshots en ambos temas.
 
-**Plans**: TBD
+**Plans**: 12 plans (10 waves)
+
+Plans:
+- [ ] 10-01-PLAN.md — Scaffold `apps/site` (Next 16 export), basePath/version/license config, boundaries, provenance
+- [ ] 10-02-PLAN.md — Theme (OS + toggle, no flash), tokens + Fumadocs re-skin with measured contrast, asset sync, root layout, ui-safety
+- [ ] 10-03-PLAN.md — `public-site.yml` + `site` PR job in ci.yml (SHA-pinned, least privilege), DNS/Pages notes, D-09 note
+- [ ] 10-04-PLAN.md — `pnpm ui:review:site`: static server + capture matrix that fails on third-party requests
+- [ ] 10-05-PLAN.md — Fumadocs engine: `/docs` static route, four-group sidebar, flexsearch static search
+- [ ] 10-06-PLAN.md — Honesty guards: forbidden words/dates, `scope.ts` claims vs PROJECT.md, ScopeNote/ScopeTable
+- [ ] 10-07-PLAN.md — sitemap/robots/404 + export checker (no third-party assets, base path, leaked env)
+- [ ] 10-08-PLAN.md — Install docs moved to MDX (single source), accuracy test re-pointed, `docs/install.md` stub
+- [ ] 10-09-PLAN.md — Landing parts: install command, flat captures, pillar card, How it works SVG
+- [ ] 10-10-PLAN.md — Error codes (tested vs real vocabulary), Scope page, Your first server, Concepts
+- [ ] 10-11-PLAN.md — Landing at `/` with render test proving it claims only what ships
+- [ ] 10-12-PLAN.md — UX review, full gate, security review, human approval in both themes
 **UI hint**: yes
 
 ### Phase 11: Motor de deploy — fundamentos
