@@ -83,4 +83,11 @@ function readGroup(slug: (typeof GROUP_SLUGS)[number]): DocsNavGroup {
   };
 }
 
+// WR-03: computed at module-eval time, so any single malformed meta.json/frontmatter (missing
+// title/pages/frontmatter block) throws here and takes the whole `next build` down with it --
+// this module is imported by SiteFooter.tsx (a Server Component), so a typo in one unrelated docs
+// page's frontmatter breaks the landing page build too. This is intentional fail-loud behavior
+// (CLAUDE.md SS2.3), not a bug -- surfacing a content typo as an unmissable build failure rather
+// than a silently empty/wrong footer nav -- but the blast radius is worth knowing about before
+// changing this file: a caller-side try/catch here would only hide the failure, not fix it.
 export const DOCS_NAV_GROUPS: readonly DocsNavGroup[] = GROUP_SLUGS.map(readGroup);
