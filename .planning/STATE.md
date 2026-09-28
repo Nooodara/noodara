@@ -4,13 +4,13 @@ milestone: v0.2
 milestone_name: Projects & Services
 status: executing
 stopped_at: Completed 10-06-PLAN.md
-last_updated: "2026-09-28T05:57:30.630Z"
+last_updated: "2026-09-28T06:05:07.635Z"
 last_activity: 2026-09-28
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 56
-  completed_plans: 50
+  completed_plans: 51
   percent: 38
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 10 (sitio-de-docs-y-landing-p-blica) — EXECUTING
-Plan: 7 of 12
+Plan: 8 of 12
 Status: Ready to execute
 Last activity: 2026-09-28
 
-Progress: [█████████░] 89%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
@@ -209,6 +209,7 @@ Progress: [█████████░] 89%
 | Phase 10 P04 | 18min | 2 tasks | 5 files |
 | Phase 10 P05 | 27min | 2 tasks | 17 files |
 | Phase 10 P06 | 10min | 3 tasks | 11 files |
+| Phase 10 P07 | 26min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -573,6 +574,7 @@ Recent decisions affecting current work:
 - [Phase 10]: 10-05: apps/site docs/layout.tsx isolates its one @noodara/ui import (Lockup) behind a dedicated 'use client' wrapper (DocsNavTitle.tsx) since the barrel re-exports hook-using components with no directive of their own
 - [Phase 10]: check-ui-safety.mjs excludes content-rules.ts/test.ts from the dangerouslySetInnerHTML scan (detection data, not real usage) — findUnsafeMarkup's own rule needs the literal string as data; the existing allowlist gate asserts an exact total of 2, one per app root layout
 - [Phase 10]: domains-tls and app-config exclusions share one PROJECT.md projectAnchor — PROJECT.md's own Out of Scope bullet bundles domains/TLS/env-vars/secrets in one line; the plan's interfaces block lists 7 anchors for 8 exclusions
+- [Phase 10-07]: check-export.mjs post-build gate blocks third-party assets, @font-face, wrong base path, and leaked secret env values on every site build
 
 ### Pending Todos
 
@@ -648,7 +650,7 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-28T05:57:30.622Z
+Last session: 2026-09-28T06:05:04.340Z
 Stopped at: Completed 10-06-PLAN.md
 Resume file: None
 
