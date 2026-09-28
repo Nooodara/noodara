@@ -14,6 +14,21 @@ Pre-existing failures/out-of-scope discoveries found during plan execution that 
   4, in a future plan that also adds the Phase 10 approval entry) before this test can be trusted
   again.
 
+## From 10-12 (Task 1, full gate)
+
+- `pnpm test:e2e`'s `tests/e2e/servers-list.spec.ts:277` (`@rowmenu at a 440x956 mobile viewport,
+  opening the row menu never clips it and never hides the row's own content`) fails when run as
+  part of the full 175-spec suite (`y: 1120` expected vs `y: 654` received — a resource-contention
+  timing issue, same class of failure the Phase 9 approval record already noted: "an initial
+  concurrent test:integration + security:scan-leaks run produced one false stray-container
+  failure ... not a product defect"), but passes in isolation
+  (`pnpm exec playwright test tests/e2e/servers-list.spec.ts -g "opening the row menu never
+  clips it"` → 1/1 pass). Reproduced twice (174/175 both full runs). The spec and the component
+  it exercises (`RowMenu.tsx`, `apps/web`) are untouched by any Phase 10 plan (`git log` shows the
+  spec's last touch at `461245d`, phase 09-14, before Phase 10 started). Out of scope per the
+  scope-boundary rule (only auto-fix issues directly caused by the current task's own changes);
+  not fixed here.
+
 ## From 10-06 (Task 1)
 
 - `scripts/check-ui-safety.mjs` imports `statSync` from `node:fs` but never uses it (pre-existing
