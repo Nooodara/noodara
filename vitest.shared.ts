@@ -35,6 +35,10 @@ export const domainSourceAliases: AliasOptions = [
     replacement: fileURLToPath(new URL('./packages/domain/src/discovery/index.ts', import.meta.url)),
   },
   {
+    find: '@noodara/domain/preferences',
+    replacement: fileURLToPath(new URL('./packages/domain/src/preferences/index.ts', import.meta.url)),
+  },
+  {
     find: /^@noodara\/domain$/,
     replacement: fileURLToPath(new URL('./packages/domain/src/index.ts', import.meta.url)),
   },
