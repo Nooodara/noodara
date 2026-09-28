@@ -22,7 +22,7 @@ const MONTH_NAMES =
   'January|February|March|April|May|June|July|August|September|October|November|December|' +
   'Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept|Sep|Oct|Nov|Dec';
 
-const WORDING_RULES: ReadonlyArray<{ rule: WordingFinding['rule']; pattern: RegExp }> = [
+const WORDING_RULES: readonly { rule: WordingFinding['rule']; pattern: RegExp }[] = [
   { rule: 'coming-soon', pattern: /\bcoming soon\b/gi },
   { rule: 'soon', pattern: /\bsoon\b/gi },
   { rule: 'roadmap', pattern: /\broadmap\b/gi },
@@ -44,13 +44,13 @@ export function findForbiddenWording(text: string): WordingFinding[] {
   const findings: WordingFinding[] = [];
   for (const { rule, pattern } of WORDING_RULES) {
     for (const match of text.matchAll(pattern)) {
-      findings.push({ rule, match: match[0], index: match.index ?? 0 });
+      findings.push({ rule, match: match[0], index: match.index });
     }
   }
   return findings.sort((a, b) => a.index - b.index);
 }
 
-const MARKUP_RULES: ReadonlyArray<{ rule: MarkupFinding['rule']; pattern: RegExp }> = [
+const MARKUP_RULES: readonly { rule: MarkupFinding['rule']; pattern: RegExp }[] = [
   { rule: 'script-tag', pattern: /<script\b/gi },
   { rule: 'iframe-tag', pattern: /<iframe\b/gi },
   { rule: 'javascript-url', pattern: /javascript:/gi },
@@ -76,7 +76,7 @@ export function findUnsafeMarkup(text: string): MarkupFinding[] {
   const findings: MarkupFinding[] = [];
   for (const { rule, pattern } of MARKUP_RULES) {
     for (const match of scanned.matchAll(pattern)) {
-      findings.push({ rule, match: match[0], index: match.index ?? 0 });
+      findings.push({ rule, match: match[0], index: match.index });
     }
   }
   return findings.sort((a, b) => a.index - b.index);

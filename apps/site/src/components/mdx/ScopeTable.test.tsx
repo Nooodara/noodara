@@ -57,7 +57,7 @@ describe('ScopeNote', () => {
     render(<ScopeNote id="app-config" />);
 
     const exclusion = SCOPE_EXCLUSIONS.find((e) => e.id === 'app-config');
-    const text = document.body.textContent ?? '';
+    const text = document.body.textContent;
     const withoutStatement = text.replace(exclusion?.statement ?? '', '');
     const withoutLink = withoutStatement.replace('See the full scope', '');
     expect(withoutLink.trim()).toBe('');

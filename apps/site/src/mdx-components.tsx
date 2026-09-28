@@ -5,10 +5,14 @@
 // duplicating it).
 import defaultMdxComponents from 'fumadocs-ui/mdx';
 import type { MDXComponents } from 'mdx/types';
+import { ScopeNote } from './components/mdx/ScopeNote';
+import { ScopeTable } from './components/mdx/ScopeTable';
 
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
     ...defaultMdxComponents,
+    ScopeNote,
+    ScopeTable,
     ...components,
   };
 }

@@ -228,6 +228,15 @@ const DANGEROUSLY_SET_INNER_HTML_ALLOWLIST = [
   path.join('apps', 'web', 'src', 'app', 'layout.tsx'),
   path.join('apps', 'site', 'src', 'app', 'layout.tsx'),
 ];
+// 10-06-PLAN.md Task 1 (D-10/T-10-06): content-rules.ts's findUnsafeMarkup literally detects
+// the string 'dangerouslySetInnerHTML' as forbidden MDX markup -- it never renders one. Its
+// fixture test embeds the same literal as test data. Neither is a real occurrence this gate
+// exists to catch, so both are excluded from the scan rather than added to the render-site
+// allowlist above (which asserts exactly one occurrence per app root layout).
+const DANGEROUSLY_SET_INNER_HTML_SCAN_EXCLUDE = new Set([
+  path.join('apps', 'site', 'src', 'lib', 'content-rules.ts'),
+  path.join('apps', 'site', 'src', 'lib', 'content-rules.test.ts'),
+]);
 const DANGEROUSLY_SET_INNER_HTML_PATTERN = /dangerouslySetInnerHTML/g;
 
 /** Scans a `{ relPath: content }` map (comment lines stripped first) for `dangerouslySetInnerHTML`
@@ -241,6 +250,7 @@ export function scanDangerouslySetInnerHtmlAllowlist(fileContents) {
   const offenders = [];
 
   for (const [relPath, content] of Object.entries(fileContents)) {
+    if (DANGEROUSLY_SET_INNER_HTML_SCAN_EXCLUDE.has(relPath)) continue;
     const code = stripCommentLines(content);
     const matches = code.match(DANGEROUSLY_SET_INNER_HTML_PATTERN);
     const count = matches === null ? 0 : matches.length;
