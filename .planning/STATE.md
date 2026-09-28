@@ -4,13 +4,13 @@ milestone: v0.2
 milestone_name: Projects & Services
 status: executing
 stopped_at: Completed 10-02-PLAN.md
-last_updated: "2026-09-28T05:14:33.502Z"
+last_updated: "2026-09-28T05:20:43.767Z"
 last_activity: 2026-09-28
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 56
-  completed_plans: 46
+  completed_plans: 47
   percent: 38
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 10 (sitio-de-docs-y-landing-p-blica) — EXECUTING
-Plan: 3 of 12
+Plan: 4 of 12
 Status: Ready to execute
 Last activity: 2026-09-28
 
-Progress: [████████░░] 82%
+Progress: [████████░░] 84%
 
 ## Performance Metrics
 
@@ -205,6 +205,7 @@ Progress: [████████░░] 82%
 | Phase 09 P14 | ~90min + checkpoint | 2 tasks | 13 files |
 | Phase 10 P01 | 12min | 3 tasks | 16 files |
 | Phase 10 P02 | 12min | 3 tasks | 20 files |
+| Phase 10 P03 | 9 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -562,6 +563,8 @@ Recent decisions affecting current work:
 - [Phase 10]: 10-02: press-class duplicated in SiteThemeToggle.tsx (no ./press export subpath from @noodara/ui)
 - [Phase 10]: 10-02: 9 undocumented --color-fd-* Callout/diff tones mapped to nearest status token (idea/warning share status-warn-text, info uses accent-text)
 - [Phase 10]: 10-02: --color-fd-overlay mapped to var(--ink), the nearest ink token; never contrast-measured (backdrop only, not text)
+- [Phase ?]: No configure-pages step in public-site.yml: apps/site/site-config.mjs already computes basePath from public/CNAME at build time
+- [Phase ?]: public-site.yml build job and ci.yml site job both use fetch-depth: 0 so the footer version reads the latest v* git tag in both the PR gate and the real publish
 
 ### Pending Todos
 
@@ -637,7 +640,7 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-28T05:14:33.494Z
+Last session: 2026-09-28T05:20:43.759Z
 Stopped at: Completed 10-02-PLAN.md
 Resume file: None
 
