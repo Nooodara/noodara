@@ -646,6 +646,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260920-ly9 | Render the server-side `sshUser` field error in ServerSheet (was silently swallowed; gap 5 residual from 05-GAP-CLOSURE-AUDIT.md) + guard test over every server-sheet form field | 2026-09-20 | 8d7091a | [260920-ly9-render-server-side-sshuser-field-error-i](./quick/260920-ly9-render-server-side-sshuser-field-error-i/) |
 | 260921-13a | Fix CR-01 (UI dead end: no reconnect control after a host/port edit in ERROR/HOST_KEY_CHANGED — reproduced live by the user; `derivePrimaryAction` now falls back to Retry when nothing is pending, banner shows calm re-capture copy) and WR-01 (`trustFingerprint` clears `lastErrorCode` on promote so the banner goes away; 05-39 guard + WHERE predicate untouched). Unit 1527, E2E 93/93, binding test 11/11 unmodified | 2026-09-21 | af0361d | [260921-13a-fix-host-key-dead-end-and-stale-banner](./quick/260921-13a-fix-host-key-dead-end-and-stale-banner/) |
+| 260928-gmm | Move the public site from GitHub Pages to Cloudflare Pages: SHA-pinned wrangler-action deploy on push to main, root basePath (CNAME gating removed), `_headers` security/cache headers, README cutover guide (Namecheap → Cloudflare nameservers). Unit 3256 | 2026-09-28 | cfbfe8c | [260928-gmm-move-public-site-hosting-from-github-pag](./quick/260928-gmm-move-public-site-hosting-from-github-pag/) |
 
 ## Deferred Items
 
