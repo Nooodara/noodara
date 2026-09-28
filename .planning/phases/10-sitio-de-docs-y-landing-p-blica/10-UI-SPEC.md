@@ -213,6 +213,33 @@ Not applicable — no shadcn registry is used in this project (see Design System
 
 ---
 
+## Round 1 Amendment (2026-09-28)
+
+Landing redesign per user feedback ("muy simplona") — see `10-CONTEXT.md` §"Round 1 amendment" for
+D-02a/D-18a and `10-12-ROUND1-BRIEF.md` for the full brief. Everything in this section is additive
+to the contract above; anything not listed here (color, one accent, no shadows/gradients, font,
+spacing scale, a11y contract) is unchanged.
+
+| Property | Value |
+|---|---|
+| Hero display size | New **local, hero-only** var `--site-hero-display-size: clamp(2.5rem, 2rem + 3vw, 5.5rem)` (40px → 88px fluid), declared once in `apps/site/app/global.css` next to `--site-section-gap-lg`'s own precedent — never a change to the shared `--text-display-size` token (still 28px everywhere else, including docs H1). Tracking `-0.02em`, weight 600 (still only 400/600 anywhere). |
+| Hero eyebrow | One small-caps/mono line above the headline, e.g. "Open source · Self-hosted · No agent" — every word is a capability/license fact already asserted elsewhere (`connect-ssh` claim, `LICENSE`), never new marketing copy. This is the one deliberate exception to `craft-floor.md`'s eyebrow ban: the brief explicitly asked for it (Dokploy reference), and an eyebrow of verifiable facts is not the "decorative kicker" that reference bans. |
+| New component: `FeatureGrid` | `apps/site/src/components/landing/FeatureGrid.tsx`. Renders every `DELIVERED_CAPABILITIES` entry (9→11 after D-02a's two additions) in a shared-hairline grid (`border-collapse`-style: adjoining cells share one 1px `--hairline`, not individually rounded/bordered cards — matches the Dokploy reference's grid, not the "same-size card" anti-pattern, because cells are visually one grid, not N discrete cards). 3 columns ≥1280px, 2 at 900-1279px, 1 below. Each cell: one hand-drawn `currentColor` glyph (`CapabilityGlyph.tsx`, same 24-unit/3-stroke grid as `HowItWorksDiagram`), a short title (new `CAPABILITY_TITLES` map in `scope.ts`, labels only — not claims, not tested against `PROJECT.md`), and the capability's own claim text (never retyped). |
+| New component: `ProductTour` | `apps/site/src/components/landing/ProductTour.tsx`, client component. `role="tablist"` of 6 tabs over `APPROVED_SCREENS` (`setup, login, servers, server-detail, activity, settings`), each `role="tab"` with `aria-selected`/roving `tabIndex`, ArrowLeft/ArrowRight (wrapping) to move selection, matching a native tab pattern. Panel is a `ScreenshotFrame` per screen with a caption reusing an existing `DELIVERED_CAPABILITIES` claim (`install`/`fingerprint-trust`/`connect-ssh`/`server-detail`/`activity-log`/`appearance`, in that order). Crossfade + 8px translate transition between panels, `--duration-panel` (200ms) `--ease-out`; `prefers-reduced-motion` drops the translate, keeps a plain opacity crossfade. |
+| New component: `PrinciplesBand` | `apps/site/src/components/landing/PrinciplesBand.tsx`. "How it's built" — 4 cells, same glyph+claim discipline as `FeatureGrid`, capabilities `encrypted-credentials`/`fingerprint-trust`/`explicit-timeouts`/`connect-ssh`. |
+| New component: `FAQSection` | `apps/site/src/components/landing/FAQSection.tsx`. Native `<details>/<summary>` (zero new JS, native keyboard/screen-reader support), one entry per question; every answer is an existing capability claim (`connect-ssh`/`fingerprint-trust`/`encrypted-credentials`/`discovery`/`install`) or the build-time license fact via `readBuildInfo()`. Deliberately never quotes a `SCOPE_EXCLUSIONS` statement (those stay inside `ScopeBlock` only — see `Landing.test.tsx`'s "no excluded term outside the scope block" test, which this section must not trip). |
+| New component: `ClosingCta` | `apps/site/src/components/landing/ClosingCta.tsx`. Re-renders `InstallCommand` on a `--surface-2` band near the page end (D-01's install command now appears twice: hero + here) with a short heading; deliberately does not repeat the "Read the docs"/"View on GitHub" links (kept singular for the existing link-uniqueness tests and to avoid redundant nav). |
+| `SiteFooter` rewrite | Four columns: one per D-08 docs group (Getting started → Install, Concepts → Server, Operate → Upgrade, Reference → Scope of this release — one representative link each, real MDX routes) plus the existing Project column (Docs, GitHub, license, version — unchanged text/links so the existing footer test keeps passing). |
+| Section rhythm | Alternates `--canvas`/`--surface-1` between sections instead of one flat background (still zero gradients — a flat step change only), continuing the existing `--space-8`/`--site-section-gap-lg` vertical rhythm. |
+| Scroll reveal | One tiny hook, `apps/site/src/lib/use-scroll-reveal.ts` (`IntersectionObserver`, once per element, unobserves after first intersection — never re-fires, never parallax/scroll-jacking). Consuming components add `data-reveal`/`data-revealed` attributes; `global.css` supplies the opacity+translate transition and its `prefers-reduced-motion` fallback (opacity only). This is the only file in `apps/site` allowed to import `IntersectionObserver` — kept out of `components/landing/` on purpose (see `10-CONTEXT.md` D-18a). |
+| Removed | `PillarCard.tsx` and its three-pillar composition in `Landing.tsx` — superseded by `FeatureGrid` + `ProductTour` per D-02a. `APPROVED_SCREENS` gains `setup` (was excluded from the site in Phase 10.02-10.11; the product tour is the first surface that shows it) — `sync-site-assets.mjs`'s allowlist grows from 14 to 16 dest files. |
+
+**Checker re-verification:** the six dimensions below re-pass against this amendment — no new hex
+literal, no shadow, no gradient, no second accent color, weights still 400/600 only, spacing still
+token-only (the one new local var follows the existing `--site-section-gap-lg` precedent exactly).
+
+---
+
 ## Checker Sign-Off
 
 - [ ] Dimension 1 Copywriting: PASS

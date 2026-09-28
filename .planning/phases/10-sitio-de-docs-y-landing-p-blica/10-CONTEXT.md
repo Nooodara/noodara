@@ -41,6 +41,44 @@ Fuera: cualquier feature de producto, analytics, newsletter, blog, versionado de
 - **D-17: Capturas planas.** La captura tal cual, borde hairline, radio `lg`, sin marco de ventana ni sombra; `<picture>` con la versión clara y oscura según el tema del sitio. Solo capturas de `docs/ui/approved/` (las aprobadas por el usuario en la Fase 8), copiadas/optimizadas en build, nunca capturas nuevas sin aprobar.
 - **D-18: Un solo momento de movimiento.** El monograma Viewfinder enfoca una vez al cargar el hero (misma animación que `/login`, Fase 8 D-11, reutilizando `packages/ui/src/brand/geometry.ts`); hover/focus sutiles; nada al hacer scroll, sin parallax, sin gradientes ni glow. `prefers-reduced-motion` lo sustituye por crossfade/estático.
 
+### Round 1 amendment (2026-09-28)
+
+User feedback at the 10-12 human checkpoint: the landing was correct but "muy simplona". Direction:
+use the `impeccable` skill and Emil Kowalski's animation/design skills, taking dokploy.com and
+coolify.io as structural (not visual) references. Full brief:
+`.planning/phases/10-sitio-de-docs-y-landing-p-blica/10-12-ROUND1-BRIEF.md`.
+
+- **D-02a (amends D-02).** The three pillars become a **feature grid** rendering every entry in
+  `DELIVERED_CAPABILITIES` (hairline shared-border grid, own inline SVG glyph + title + claim,
+  no card shadows) plus a **tabbed product tour** over the six approved captures (setup, login,
+  servers, server-detail, activity, settings — `APPROVED_SCREENS`), each tab captioned by an
+  existing `DELIVERED_CAPABILITIES` claim. Two capabilities were added to back new "how it's
+  built" copy: `encrypted-credentials` (evidence `apps/control-plane/src/services/credential-store.ts`)
+  and `explicit-timeouts` (evidence `packages/ssh/src/exec-with-timeout.ts`). Still only approved
+  captures (D-17), still only what ships — no new claim anywhere without a `DELIVERED_CAPABILITIES`
+  or `SCOPE_EXCLUSIONS` entry backing it.
+- **D-18a (amends D-18).** More than one motion moment is now allowed: the hero's aperture focus
+  (unchanged), a one-shot clip-path reveal on the hero screenshot, a once-only scroll reveal
+  (opacity + small translate, IntersectionObserver-driven, applied once per section — never
+  parallax, never repeated) on the feature grid/principles/FAQ sections, and a crossfade +
+  translate transition between product-tour tabs. All CSS transitions/`@starting-style`, no
+  motion library. `prefers-reduced-motion` removes transform-based movement everywhere, keeping
+  opacity-only or static fallbacks. The scroll-reveal hook lives in `apps/site/src/lib/` (not
+  `components/landing/`) so the existing "landing files contain no IntersectionObserver" source
+  scan keeps testing what it always tested: the landing components themselves stay declarative,
+  observing via an imported hook rather than each owning its own observer.
+- **New sections added:** a "How it's built" principles band (4 cards: encrypted credentials,
+  verified fingerprints, explicit timeouts, no agent — all `DELIVERED_CAPABILITIES` claims, no new
+  prose), an FAQ (native `<details>/<summary>`, zero new JS, every answer is an existing
+  capability claim or the build-time license/version fact — never a `SCOPE_EXCLUSIONS` statement
+  outside `ScopeBlock`, to keep the "no excluded term outside the scope block" test meaningful), a
+  closing CTA band re-rendering `InstallCommand` (now appears twice on the page: hero + closing
+  band), and a four-column footer (one column per D-08 docs group, one link each, plus the
+  existing Docs/GitHub/license/version column).
+- **Stays locked, unchanged by this round:** CLAUDE.md §5 (one accent, no shadows, no gradients/
+  glows/gradient text, system font), zero third-party requests, approved-captures-only, D-03/D-04/
+  D-10 honesty rules, dark+light parity.
+
 ### Claude's Discretion
 - Mecanismo del test de afirmaciones (SITE-01): cómo se marcan las capacidades afirmadas en la landing (p. ej. un JSON/MDX frontmatter de `claims` con la lista cerrada de capacidades entregadas) y cómo se contrastan con el Out of Scope de `PROJECT.md` y con la lista de "Not included" de la página de alcance.
 - Forma exacta del boundary test (Turborepo boundaries ya existe en `pnpm boundaries`: añadir `apps/site` con tags que prohíban `apps/control-plane` y `@noodara/domain`; `@noodara/ui` sí se permite).
