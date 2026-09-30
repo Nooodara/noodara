@@ -1,8 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { eq, sql } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { Database } from '../../../apps/control-plane/src/db/client.js';
-import { runMigrations } from '../../../apps/control-plane/src/db/migrate.js';
+import { MIGRATIONS_FOLDER, runMigrations } from '../../../apps/control-plane/src/db/migrate.js';
 import * as schema from '../../../apps/control-plane/src/db/schema/index.js';
 import {
   seedDiscoverySnapshot,
@@ -254,6 +255,33 @@ describe('migrations applied from scratch (QA-06)', () => {
     const secondRunCount = await countBookkeepingRows(fixture.db);
 
     expect(secondRunCount).toBe(firstRunCount);
+  });
+});
+
+describe('migration 0005 defensive guards (T-11-15)', () => {
+  it('re-executing every 0005 statement on a fully migrated database is a no-op', async () => {
+    fixture = await startPostgres();
+    const contents = readFileSync(
+      `${MIGRATIONS_FOLDER}/0005_phase11_deploy_engine.sql`,
+      'utf8',
+    );
+
+    for (const statement of contents.split('--> statement-breakpoint')) {
+      await fixture.db.execute(sql.raw(statement));
+    }
+
+    const tableNames = await listTableNames(fixture.db);
+    expect(tableNames).toEqual(expect.arrayContaining(['services', 'deployments']));
+    const enumValues = await fixture.db.execute<{ value: string }>(
+      sql`select unnest(enum_range(null::credential_type))::text as value`,
+    );
+    expect(enumValues.rows.map((row) => row.value)).toEqual([
+      'ssh_private_key',
+      'ssh_password',
+      'git_deploy_key',
+      'git_https_token',
+      'registry_password',
+    ]);
   });
 });
 
