@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 11-12-PLAN.md
+stopped_at: "Paused in 11-13 Task 3 (wip commit 0b88160); 11-09 awaiting ADR 0008 approval"
 last_updated: "2026-09-30T14:51:26.397Z"
-last_activity: 2026-09-30
+last_activity: 2026-09-30 -- Phase 11 paused by user (11/16 plans done)
 progress:
   total_phases: 8
   completed_phases: 4
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 11 (Motor de deploy — fundamentos) — EXECUTING
-Plan: 12 of 16
-Status: Ready to execute
-Last activity: 2026-09-30
+Plan: 13 of 16 (11-13 Tasks 1-2 done, Task 3 wip; 11-09 at human checkpoint)
+Status: Paused — resume with /gsd-execute-phase 11
+Last activity: 2026-09-30 -- paused; ADR 0008 open items 1-4 await user
 
 Progress: [█████████░] 93%
 
