@@ -32,12 +32,13 @@ export function isStepResolved(state: CheckState): boolean {
   return !UNRESOLVED_STATES.has(state);
 }
 
-// SS4.2's four ids whose `fail` still leaves the server usable -- a named constant list (not a
+// SS4.2's ids (plus D-03's docker_buildkit) whose `fail` still leaves the server usable -- a named constant list (not a
 // chain of conditionals) so the "usable despite failure" set is reviewable in one place, per this
 // plan's own action text. A `fail` on any other id ended the run and renders red.
 const USABLE_DESPITE_FAILURE_IDS: ReadonlySet<DiscoveryCheckId> = new Set([
   'docker_version',
   'docker_compose_version',
+  'docker_buildkit',
   'sudo',
   'docker_group',
 ]);

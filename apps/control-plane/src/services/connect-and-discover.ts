@@ -215,7 +215,7 @@ function classifyDiscoveryOutcome(
   return { status: 'CONNECTED', lastErrorCode: null };
 }
 
-/** The twelve `servers` fact columns `mergeDiscoveryFacts` reads/writes, projected off a row. */
+/** The thirteen `servers` fact columns `mergeDiscoveryFacts` reads/writes, projected off a row. */
 function currentFactsOf(row: ServerRow): Parameters<typeof mergeDiscoveryFacts>[0] {
   return {
     hostname: row.hostname,
@@ -230,6 +230,7 @@ function currentFactsOf(row: ServerRow): Parameters<typeof mergeDiscoveryFacts>[
     dockerInstalled: row.dockerInstalled,
     dockerVersion: row.dockerVersion,
     dockerComposeVersion: row.dockerComposeVersion,
+    dockerBuildkitAvailable: row.dockerBuildkitAvailable,
   };
 }
 

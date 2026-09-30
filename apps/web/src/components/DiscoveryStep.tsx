@@ -72,8 +72,8 @@ const STATE_ICON = {
 } as const satisfies Record<CheckState, LucideIcon>;
 
 // SS5.5, verbatim, keyed by the one `DiscoveryCheckId` each line can ever apply to -- these are
-// exactly the ids `severityFor` (discovery-progress.ts) can ever mark `warning` for, so every
-// warning check this component receives has a line here by construction.
+// the ids `severityFor` (discovery-progress.ts) can mark `warning` for. `docker_buildkit` (D-03)
+// has no line: its check detail already carries the remediation (install docker-buildx-plugin).
 const WARNING_CONSEQUENCE_COPY: Partial<Record<DiscoveryCheckId, string>> = {
   os_release: 'Outside the supported matrix (Ubuntu 22.04/24.04). Some features may not work as expected.',
   docker_version: 'Docker is not installed on this server. Install Docker to prepare it for future deployments.',

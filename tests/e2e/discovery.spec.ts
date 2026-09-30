@@ -236,6 +236,7 @@ test('@discovery a run whose Docker check failed renders amber with the SS5.5 co
     checks: buildDiscoveryChecks({
       docker_version: { status: 'fail', detail: 'Docker is not installed on this server.' },
       docker_compose_version: { status: 'skipped', detail: 'Skipped: Docker is not installed on this server.' },
+      docker_buildkit: { status: 'skipped', detail: 'Skipped: Docker is not installed on this server.' },
     }),
     warnings: [],
   });
@@ -379,7 +380,7 @@ test('@discovery a page that joins mid-run never shows an unreceived earlier che
   // never received (matches the shell's own `connected` semantics, StreamStatus.tsx).
   await expect(page.getByTestId('shell-stream-status')).toHaveCount(0);
 
-  // Only the two Docker-group checks (late in DISCOVERY_CHECK_IDS order) ever arrive at this
+  // Only the three Docker-group checks (late in DISCOVERY_CHECK_IDS order) ever arrive at this
   // page -- simulating a page that mounted after hostname..docker_version had already resolved
   // for real and were broadcast to nobody this page's own EventSource was open in time to hear.
   await dispatchDiscoveryCheck(page, fixture.id, { id: 'docker_version', status: 'pass', detail: 'Docker 27.3.1', durationMs: 12 });
@@ -389,12 +390,18 @@ test('@discovery a page that joins mid-run never shows an unreceived earlier che
     detail: 'v2.29.7',
     durationMs: 9,
   });
+  await dispatchDiscoveryCheck(page, fixture.id, {
+    id: 'docker_buildkit',
+    status: 'pass',
+    detail: 'BuildKit is available.',
+    durationMs: 7,
+  });
 
   // 'os' and 'resources' groups never received any of their checks -- must stay pending, never
   // running/pass on the strength of the later Docker checks alone.
   await expect(page.getByTestId('discovery-step-os')).toHaveAttribute('data-severity', 'pending');
   await expect(page.getByTestId('discovery-step-resources')).toHaveAttribute('data-severity', 'pending');
-  // 'docker' genuinely received both of its own checks -- correctly resolves.
+  // 'docker' genuinely received all three of its own checks -- correctly resolves.
   await expect(page.getByTestId('discovery-step-docker')).toHaveAttribute('data-severity', 'pass');
   // 'access' (sudo/docker_group) is next in DISCOVERY_CHECK_IDS order -- sudo (immediately after
   // the last received id) is the one and only id running; docker_group stays pending.

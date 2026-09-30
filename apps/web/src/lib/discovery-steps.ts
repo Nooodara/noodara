@@ -1,4 +1,4 @@
-// The six-step grouping DISC-02/D-06 narrates the eleven `DiscoveryCheckId`s through
+// The six-step grouping DISC-02/D-06 narrates the twelve `DiscoveryCheckId`s through
 // (05-UI-SPEC.md SS4.1). Mirrors `packages/ssh/src/run-discovery.ts`'s own
 // `DISCOVERY_STEPS`/`DISCOVERY_SEQUENCE` idiom (05-PATTERNS.md): `CHECK_TO_STEP` is declared
 // `as const satisfies Record<DiscoveryCheckId, DiscoveryStepName>` so a check id added to (or
@@ -15,7 +15,7 @@ export const DISCOVERY_STEP_NAMES = ['ssh_reachable', 'authenticated', 'os', 're
 export type DiscoveryStepName = (typeof DISCOVERY_STEP_NAMES)[number];
 
 // D-06's exact grouping: OS = hostname/os_release/arch; Resources = cpu/memory/disk/uptime;
-// Docker = docker_version/docker_compose_version; Access = sudo/docker_group. Keys are quoted
+// Docker = docker_version/docker_compose_version/docker_buildkit; Access = sudo/docker_group. Keys are quoted
 // string literals (not bare identifiers) so each check id appears in this file exactly once, as
 // a map key only -- never re-typed into a parallel union alongside it.
 export const CHECK_TO_STEP = {
@@ -28,6 +28,7 @@ export const CHECK_TO_STEP = {
   'uptime': 'resources',
   'docker_version': 'docker',
   'docker_compose_version': 'docker',
+  'docker_buildkit': 'docker',
   'sudo': 'access',
   'docker_group': 'access',
 } as const satisfies Record<DiscoveryCheckId, DiscoveryStepName>;
