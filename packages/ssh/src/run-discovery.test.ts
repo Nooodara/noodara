@@ -48,6 +48,10 @@ function successfulScripts(): Record<CommandName, ExecResult> {
       stdout: '{"Client":{"Version":"24.0.7"},"Server":{"Version":"24.0.7"}}',
     }),
     'docker.compose_version': execResult({ commandName: 'docker.compose_version', stdout: 'v2.29.1' }),
+    'docker.buildkit': execResult({
+      commandName: 'docker.buildkit',
+      stdout: 'Usage:  docker buildx build [OPTIONS] PATH | URL | -\n\nStart a build\n',
+    }),
     'access.sudo': execResult({ commandName: 'access.sudo', exitCode: 0 }),
     'access.docker_group': execResult({ commandName: 'access.docker_group', stdout: 'deployer docker sudo\n' }),
   };
@@ -424,6 +428,7 @@ describe('runDiscovery — warnings and the D-08 discovery-total budget (DISC-04
       'uptime',
       'docker_version',
       'docker_compose_version',
+      'docker_buildkit',
       'sudo',
       'docker_group',
     ];
@@ -456,6 +461,111 @@ describe('runDiscovery — warnings and the D-08 discovery-total budget (DISC-04
     expect(snapshot.warnings).toContain('UNSUPPORTED_OS');
     expect(snapshot.warnings).toContain('COMMAND_TIMEOUT');
     expect(new Set(snapshot.warnings).size).toBe(snapshot.warnings.length);
+  });
+});
+
+describe('runDiscovery — docker_buildkit (D-03, ADR 0008 G3)', () => {
+  const LEGACY_USAGE = 'Usage:  docker build [OPTIONS] PATH | URL | -\n\nBuild an image from a Dockerfile\n';
+
+  async function discoverWith(buildkit: ExecResult | undefined, dockerVersion?: ExecResult) {
+    const scripts: Partial<Record<CommandName, ExecResult>> = successfulScripts();
+    if (buildkit) {
+      scripts['docker.buildkit'] = buildkit;
+    }
+    if (dockerVersion) {
+      scripts['docker.version'] = dockerVersion;
+    }
+    const { session, execCalls } = buildFakeSession(scripts);
+    const snapshot = await runDiscovery({
+      session,
+      sshUser: 'deployer',
+      timeouts: DEFAULT_TIMEOUTS,
+      redactor: createRedactor(),
+    });
+    const check = snapshot.checks.find((c) => c.id === 'docker_buildkit');
+    return { snapshot, check, execCalls };
+  }
+
+  it('runs right after docker_compose_version', () => {
+    const ids = DISCOVERY_SEQUENCE.map((entry) => entry.id);
+    expect(ids.indexOf('docker_buildkit')).toBe(ids.indexOf('docker_compose_version') + 1);
+    expect(DISCOVERY_SEQUENCE.find((e) => e.id === 'docker_buildkit')?.commandName).toBe('docker.buildkit');
+  });
+
+  it('BuildKit active: pass, names BuildKit, fact true', async () => {
+    const { snapshot, check } = await discoverWith(undefined);
+
+    expect(check?.status).toBe('pass');
+    expect(check?.detail).toContain('BuildKit');
+    expect(snapshot.facts.dockerBuildkitAvailable).toBe(true);
+  });
+
+  it('plugin missing: fail with an actionable docker-buildx-plugin message, fact false, no warning', async () => {
+    const { snapshot, check } = await discoverWith(
+      execResult({
+        commandName: 'docker.buildkit',
+        stdout: LEGACY_USAGE,
+        stderr: 'DEPRECATED: The legacy builder is deprecated. Install the buildx component to build images with BuildKit',
+      }),
+    );
+
+    expect(check?.status).toBe('fail');
+    expect(check?.detail).toContain('docker-buildx-plugin');
+    expect(check?.detail).toContain('sudo apt-get install docker-buildx-plugin');
+    expect(snapshot.facts.dockerBuildkitAvailable).toBe(false);
+    // Not a connection failure: the server outcome is unaffected (D-03).
+    expect(snapshot.warnings).toEqual([]);
+  });
+
+  it('BuildKit disabled (DOCKER_BUILDKIT=0): fail with its own message, not the plugin one, fact false', async () => {
+    const { snapshot, check } = await discoverWith(
+      execResult({
+        commandName: 'docker.buildkit',
+        stdout: LEGACY_USAGE,
+        stderr: 'DEPRECATED: The legacy builder is deprecated. BuildKit is currently disabled; enable it by removing the DOCKER_BUILDKIT=0',
+      }),
+    );
+
+    expect(check?.status).toBe('fail');
+    expect(check?.detail).toContain('DOCKER_BUILDKIT');
+    expect(check?.detail).not.toContain('docker-buildx-plugin');
+    expect(snapshot.facts.dockerBuildkitAvailable).toBe(false);
+    expect(snapshot.warnings).toEqual([]);
+  });
+
+  it('daemon unreachable: fail without claiming the plugin is missing, fact stays null', async () => {
+    const { snapshot, check } = await discoverWith(
+      execResult({
+        commandName: 'docker.buildkit',
+        exitCode: 1,
+        stderr: 'Cannot connect to the Docker daemon at unix:///var/run/docker.sock.',
+      }),
+    );
+
+    expect(check?.status).toBe('fail');
+    expect(check?.detail).not.toContain('docker-buildx-plugin');
+    expect(snapshot.facts.dockerBuildkitAvailable).toBeNull();
+  });
+
+  it('unparseable output: fail without claiming the plugin is missing, fact stays null', async () => {
+    const { snapshot, check } = await discoverWith(
+      execResult({ commandName: 'docker.buildkit', stdout: 'garbage\n' }),
+    );
+
+    expect(check?.status).toBe('fail');
+    expect(check?.detail).not.toContain('docker-buildx-plugin');
+    expect(snapshot.facts.dockerBuildkitAvailable).toBeNull();
+  });
+
+  it('Docker not installed: skipped without executing docker.buildkit', async () => {
+    const { snapshot, check, execCalls } = await discoverWith(
+      undefined,
+      execResult({ commandName: 'docker.version', exitCode: 127, stdout: '' }),
+    );
+
+    expect(check?.status).toBe('skipped');
+    expect(execCalls).not.toContain('docker.buildkit');
+    expect(snapshot.facts.dockerBuildkitAvailable).toBeNull();
   });
 });
 
@@ -524,6 +634,7 @@ describe('runDiscovery — onCheck callback (D-05)', () => {
       'uptime',
       'docker_version',
       'docker_compose_version',
+      'docker_buildkit',
       'sudo',
       'docker_group',
     ];

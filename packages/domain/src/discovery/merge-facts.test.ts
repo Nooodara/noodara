@@ -16,6 +16,7 @@ function buildFacts(overrides: Partial<DiscoveryFacts> = {}): DiscoveryFacts {
     dockerInstalled: null,
     dockerVersion: null,
     dockerComposeVersion: null,
+    dockerBuildkitAvailable: null,
     ...overrides,
   };
 }
@@ -43,6 +44,7 @@ const FACTS_KEYS = [
   'dockerInstalled',
   'dockerVersion',
   'dockerComposeVersion',
+  'dockerBuildkitAvailable',
 ] as const satisfies readonly (keyof DiscoveryFacts)[];
 
 // Non-null sample value per key, distinct from any other key's sample, used by the exhaustive
@@ -60,6 +62,7 @@ const SAMPLE_VALUES: { [K in (typeof FACTS_KEYS)[number]]: DiscoveryFacts[K] } =
   dockerInstalled: true,
   dockerVersion: '27.0.0',
   dockerComposeVersion: '2.29.0',
+  dockerBuildkitAvailable: true,
 };
 
 describe('mergeDiscoveryFacts', () => {
@@ -90,6 +93,24 @@ describe('mergeDiscoveryFacts', () => {
     const merged = mergeDiscoveryFacts(current, incoming);
 
     expect(merged.dockerInstalled).toBe(false);
+  });
+
+  it('dockerBuildkitAvailable: false overwrites true (D-03: a detected absence is a value)', () => {
+    const merged = mergeDiscoveryFacts(
+      buildFacts({ dockerBuildkitAvailable: true }),
+      buildFacts({ dockerBuildkitAvailable: false }),
+    );
+
+    expect(merged.dockerBuildkitAvailable).toBe(false);
+  });
+
+  it('dockerBuildkitAvailable: a null incoming keeps the current value (not observed)', () => {
+    const merged = mergeDiscoveryFacts(
+      buildFacts({ dockerBuildkitAvailable: false }),
+      buildFacts({ dockerBuildkitAvailable: null }),
+    );
+
+    expect(merged.dockerBuildkitAvailable).toBe(false);
   });
 
   it('cpuCores: 0 overwrites 8 (0 is a value, not an absence)', () => {
@@ -126,7 +147,7 @@ describe('mergeDiscoveryFacts', () => {
     expect(merged).toEqual(incoming);
   });
 
-  it('the result has exactly the 12 DiscoveryFacts keys, no more', () => {
+  it('the result has exactly the 13 DiscoveryFacts keys, no more', () => {
     const merged = mergeDiscoveryFacts(buildFacts(), buildFacts());
 
     expect(Object.keys(merged).sort()).toEqual([...FACTS_KEYS].sort());

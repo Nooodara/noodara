@@ -6,7 +6,7 @@ import { COMMAND_NAMES, COMMAND_TEMPLATES, commandFor, escapeShellArg, type Comm
 // The exactness guard SEC-04 requires (02-CONTEXT.md, Pitfall 9 / Dokploy GHSA-fcgq-jjfg-hrhj).
 // Hand-written once here as this test's independent expectation of the allowlist, mirroring the
 // "table generated mechanically from the frozen tuple" style of
-// packages/domain/src/server/server-state.test.ts — adding a 12th template without updating this
+// packages/domain/src/server/server-state.test.ts — adding a 13th template without updating this
 // list fails the suite.
 const EXPECTED_COMMAND_NAMES: readonly CommandName[] = [
   'discovery.hostname',
@@ -18,17 +18,18 @@ const EXPECTED_COMMAND_NAMES: readonly CommandName[] = [
   'discovery.uptime',
   'docker.version',
   'docker.compose_version',
+  'docker.buildkit',
   'access.sudo',
   'access.docker_group',
 ];
 
 describe('COMMAND_NAMES', () => {
-  it('is exactly the 11 expected names, in order', () => {
+  it('is exactly the 12 expected names, in order', () => {
     expect(COMMAND_NAMES).toEqual(EXPECTED_COMMAND_NAMES);
   });
 
-  it('has exactly 11 entries', () => {
-    expect(COMMAND_NAMES.length).toBe(11);
+  it('has exactly 12 entries', () => {
+    expect(COMMAND_NAMES.length).toBe(12);
   });
 
   it('matches the keys of COMMAND_TEMPLATES exactly', () => {
@@ -93,10 +94,16 @@ describe('docker.compose_version', () => {
   });
 });
 
+describe('docker.buildkit', () => {
+  it('is ADR 0008 G3\'s chosen command verbatim (first line of the help decides; no DOCKER_BUILDKIT)', () => {
+    expect(commandFor('docker.buildkit')).toBe('docker build --help');
+  });
+});
+
 describe('CommandName <-> DiscoveryCheckId correspondence', () => {
   it('has exactly one DiscoveryCheckId for every CommandName and vice versa', () => {
     expect(COMMAND_NAMES.length).toBe(DISCOVERY_CHECK_IDS.length);
-    expect(DISCOVERY_CHECK_IDS.length).toBe(11);
+    expect(DISCOVERY_CHECK_IDS.length).toBe(12);
   });
 });
 
