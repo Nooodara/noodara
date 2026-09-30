@@ -322,7 +322,45 @@ Plans:
   4. La allowlist de `packages/ssh` crece solo con plantillas cerradas parametrizadas (`git.clone`, `git.checkout`, `docker.build/pull/login/create/start/stop/restart/remove/inspect/logs/ps`, `fs.remove_deploy_dir`, kill remoto) cuyos argumentos pasan por validador de dominio y `escapeShellArg` (`--` antes de posicionales, guard de exactitud actualizado); el exec en streaming entrega salida en chunks redactados por chunk, acotados en bytes, abortables y con stdin, con `classifyGitError`/`classifyDockerError` como tablas congeladas que nunca lanzan; `packages/git` y `packages/docker` existen bajo el tag `ssh-adapter`.
   5. Existe la imagen combinada sshd+dockerd de Testcontainers (22.04 y 24.04) con un repositorio Git bare accesible por SSH y deploy keys generadas por corrida, que ejerce un pull real desde registry y la autenticación de registry; existen `fixtures/node-api`, `fixtures/static-app` y `fixtures/failing-build` con `.dockerignore` y contexto de build < 1 MiB asertado; ningún recurso `noodara.test=true` sobrevive a una corrida.
 
-**Plans**: TBD
+**Plans:** 16 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 11-01-PLAN.md — Deployment domain: 7-state FSM, error vocabulary, deriveServiceStatus, LFS/submodule probe parser (`@noodara/domain/deployment`)
+- [ ] 11-02-PLAN.md — Branded validators: repository URL, branch, SHA, image ref, paths, deterministic names/workspace, ServiceSource without build args/env
+- [ ] 11-03-PLAN.md — Test infra: sshd+dockerd images 22.04/24.04 with bare Git repo, htpasswd registry, base-image supply, harness helpers, CI matrix D-11
+- [ ] 11-04-PLAN.md — Official fixtures node-api, static-app, failing-build with digest pins, .dockerignore and < 1 MiB guard
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 11-05-PLAN.md — Schema + migration 0005 (composite FK, partial unique index, credential enum/public_key, [BLOCKING] pnpm db:migrate)
+- [ ] 11-06-PLAN.md — Spikes G1 (secret transfer) and G2 (confirmed remote kill) as permanent contract tests + git error captures
+- [ ] 11-07-PLAN.md — Spikes G3 (BuildKit default/detection) and G4 (docker ps NDJSON stability) with real captures
+- [ ] 11-08-PLAN.md — QA-07 on the real fixture: build/run official fixtures, context size, registry pull/login, docker error captures
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 11-09-PLAN.md — ADR 0008 from measured evidence, domain-model skill update, human acceptance (checkpoint)
+- [ ] 11-10-PLAN.md — Pure parsers: docker ps, container state, BuildKit status against real captures
+- [ ] 11-11-PLAN.md — classifyGitError / classifyDockerError frozen never-throwing tables
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 11-12-PLAN.md — docker_buildkit discovery check, fact persisted in servers.docker_buildkit_available
+- [ ] 11-13-PLAN.md — Closed parameterized deploy allowlist (27 templates, RemoteCommand brand, exactness guard)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 11-14-PLAN.md — Streaming exec (redacted, bounded, abortable, stdin), SshDeploySession, confirmed remote kill (D-04)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 11-15-PLAN.md — `@noodara/git` and `@noodara/docker` packages under the ssh-adapter tag
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 11-16-PLAN.md — End-to-end primitive composition on the fixture: happy path, DEP-08 rejections, failure isolation, secret non-leakage, cleanup
 
 ### Phase 12: Motor de deploy — runtime
 
