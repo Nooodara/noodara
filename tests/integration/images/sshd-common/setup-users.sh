@@ -15,8 +15,9 @@
 set -eu
 
 # The `docker` group must exist even though no daemon does in the plain variant — `id -nG`
-# membership is the only thing SERV-08's docker-group check inspects.
-groupadd docker
+# membership is the only thing SERV-08's docker-group check inspects. The sshd-dockerd images
+# install docker-ce first, which already creates it.
+getent group docker >/dev/null || groupadd docker
 
 useradd -m -s /bin/bash deployer
 usermod -aG docker deployer
