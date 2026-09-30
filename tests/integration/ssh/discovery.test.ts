@@ -114,6 +114,7 @@ describe.each(UBUNTU_VERSIONS)('full discovery (Ubuntu %s)', (ubuntu) => {
     //     same canonical tuple, so asserting against it here proves the same fact without
     //     reaching past the package's public surface. ---
     expect(snapshot.checks).toHaveLength(DISCOVERY_CHECK_IDS.length);
+    expect(snapshot.checks).toHaveLength(12);
     expect(snapshot.checks.map((check) => check.id)).toEqual([...DISCOVERY_CHECK_IDS]);
 
     await outcome.session.close();
@@ -163,8 +164,12 @@ describe.each(UBUNTU_VERSIONS)('SERV-08 access-check matrix (Ubuntu %s)', (ubunt
       expect(sudoCheck?.detail.length).toBeGreaterThan(0);
 
       // D-13: a failed access check is a warning, not a blocker — every other check still
-      // passes, including for `restricted`, which fails both access checks.
-      const otherChecks = snapshot.checks.filter((check) => check.id !== 'sudo' && check.id !== 'docker_group');
+      // passes, including for `restricted`, which fails both access checks. `docker_buildkit` is
+      // excluded: this image ships docker-ce-cli without docker-buildx-plugin (asserted in the
+      // Docker variants block below).
+      const otherChecks = snapshot.checks.filter(
+        (check) => check.id !== 'sudo' && check.id !== 'docker_group' && check.id !== 'docker_buildkit',
+      );
       for (const check of otherChecks) {
         expect(check.status, `check "${check.id}" was not pass for user "${user}"`).toBe('pass');
       }
@@ -202,6 +207,10 @@ describe.each(UBUNTU_VERSIONS)('Docker variants (D-12) (Ubuntu %s)', (ubuntu) =>
     expect(snapshot.facts.dockerVersion).toBeNull();
     const composeCheck = snapshot.checks.find((check) => check.id === 'docker_compose_version');
     expect(composeCheck?.status).toBe('skipped');
+    // D-03: no Docker CLI, nothing to ask about BuildKit; the fact stays unobserved.
+    const buildkitCheck = snapshot.checks.find((check) => check.id === 'docker_buildkit');
+    expect(buildkitCheck?.status).toBe('skipped');
+    expect(snapshot.facts.dockerBuildkitAvailable).toBeNull();
     expect(snapshot.warnings).not.toContain('UNSUPPORTED_OS');
 
     for (const fact of [
@@ -255,6 +264,39 @@ describe.each(UBUNTU_VERSIONS)('Docker variants (D-12) (Ubuntu %s)', (ubuntu) =>
     const oracleJson: unknown = JSON.parse(oracleResult.stdout);
     const oracleClientVersion = (oracleJson as { Client?: { Version?: unknown } }).Client?.Version;
     expect(snapshot.facts.dockerVersion).toBe(oracleClientVersion);
+
+    await outcome.session.close();
+  });
+
+  it('the docker-CLI image (no docker-buildx-plugin) fails docker_buildkit with the actionable message and stays warning-free', async () => {
+    fixture = await startSshd({ ubuntu, dockerCli: true });
+    const key = await readTestKey(fixture, 'ed25519');
+    const adapter = createSsh2Adapter();
+    const redactor = createRedactor();
+
+    const outcome = await adapter.connect({
+      target: { host: fixture.host, port: fixture.port, user: 'deployer' },
+      credential: { kind: 'private_key', privateKey: secretValue(key, 'ssh_private_key') },
+      timeouts: TIMEOUTS,
+      trustedFingerprint: null,
+      redactor,
+    });
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+
+    const snapshot = await runDiscovery({
+      session: outcome.session,
+      sshUser: 'deployer',
+      timeouts: { discoveryMs: TIMEOUTS.discoveryMs },
+      redactor,
+    });
+
+    const buildkitCheck = snapshot.checks.find((check) => check.id === 'docker_buildkit');
+    expect(buildkitCheck?.status).toBe('fail');
+    expect(buildkitCheck?.detail).toContain('sudo apt-get install docker-buildx-plugin');
+    expect(snapshot.facts.dockerBuildkitAvailable).toBe(false);
+    // D-03: a missing plugin is a server fact, never a connection warning.
+    expect(snapshot.warnings).toEqual([]);
 
     await outcome.session.close();
   });

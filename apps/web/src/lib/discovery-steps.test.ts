@@ -17,14 +17,14 @@ describe('discovery-steps', () => {
     expect(DISCOVERY_STEP_NAMES).toEqual(['ssh_reachable', 'authenticated', 'os', 'resources', 'docker', 'access']);
   });
 
-  it('maps every one of the eleven DISCOVERY_CHECK_IDS to a step, iterating the imported tuple', () => {
-    expect(DISCOVERY_CHECK_IDS.length).toBe(11);
+  it('maps every one of the twelve DISCOVERY_CHECK_IDS to a step, iterating the imported tuple', () => {
+    expect(DISCOVERY_CHECK_IDS.length).toBe(12);
     for (const id of DISCOVERY_CHECK_IDS) {
       const step = CHECK_TO_STEP[id];
       expect(step).toBeDefined();
       expect(DISCOVERY_STEP_NAMES).toContain(step);
     }
-    // Exactly eleven entries -- no extra, no missing.
+    // Exactly twelve entries -- no extra, no missing.
     expect(Object.keys(CHECK_TO_STEP)).toHaveLength(DISCOVERY_CHECK_IDS.length);
   });
 
@@ -43,7 +43,7 @@ describe('discovery-steps', () => {
 
     expect(grouped.os).toEqual(['hostname', 'os_release', 'arch']);
     expect(grouped.resources).toEqual(['cpu', 'memory', 'disk', 'uptime']);
-    expect(grouped.docker).toEqual(['docker_version', 'docker_compose_version']);
+    expect(grouped.docker).toEqual(['docker_version', 'docker_compose_version', 'docker_buildkit']);
     expect(grouped.access).toEqual(['sudo', 'docker_group']);
   });
 

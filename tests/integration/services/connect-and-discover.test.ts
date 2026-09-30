@@ -142,6 +142,7 @@ function buildFacts(overrides: Partial<DiscoveryFacts> = {}): DiscoveryFacts {
     dockerInstalled: null,
     dockerVersion: null,
     dockerComposeVersion: null,
+    dockerBuildkitAvailable: null,
     ...overrides,
   };
 }
@@ -743,6 +744,49 @@ describe('discovery phase (DISC-03, D-02, D-06, D-07)', () => {
     expect(result.server.dockerInstalled).toBe(true);
     expect(result.server.dockerVersion).toBe('27.0.0');
     expect(result.server.dockerComposeVersion).toBe('2.29.0');
+  });
+
+  it('D-03: persists dockerBuildkitAvailable to servers.docker_buildkit_available and keeps it on a null re-run', async () => {
+    fixture = await startServiceFixture();
+    const server = await registerFixtureServer(fixture);
+    const { connectAndDiscover } = await loadConnectAndDiscover();
+    const run = async (facts: DiscoveryFacts, checks: DiscoveryCheck[]) => {
+      fixture?.setSshPort(
+        buildFakeSshPort({
+          ok: true,
+          session: buildFakeSshSession({}),
+          fingerprint: FP1,
+          fingerprintCaptured: false,
+          attempts: 1,
+        }),
+      );
+      if (!fixture) throw new Error('fixture not started');
+      return connectAndDiscover(fixture.deps, {
+        actor: SYSTEM,
+        serverId: server.id,
+        discover: () => Promise.resolve(buildSnapshot({ facts, checks })),
+      });
+    };
+
+    const first = await run(buildFacts({ dockerBuildkitAvailable: true }), [buildCheck('docker_buildkit', 'pass')]);
+    expect(first.ok).toBe(true);
+    expect((await serverRow(fixture, server.id))?.dockerBuildkitAvailable).toBe(true);
+
+    // plugin_missing: the check fails, the fact flips to false, and the server stays CONNECTED.
+    const second = await run(buildFacts({ dockerBuildkitAvailable: false }), [
+      buildCheck('hostname', 'pass'),
+      buildCheck('docker_buildkit', 'fail'),
+    ]);
+    expect(second.ok).toBe(true);
+    const afterMissing = await serverRow(fixture, server.id);
+    expect(afterMissing?.dockerBuildkitAvailable).toBe(false);
+    expect(afterMissing?.status).toBe('CONNECTED');
+    expect(afterMissing?.lastErrorCode).toBeNull();
+
+    // Not observed (e.g. daemon unreachable): null never overwrites the known value (D-07).
+    const third = await run(buildFacts({ dockerBuildkitAvailable: null }), [buildCheck('hostname', 'pass')]);
+    expect(third.ok).toBe(true);
+    expect((await serverRow(fixture, server.id))?.dockerBuildkitAvailable).toBe(false);
   });
 
   it('D-07: preserves previously known facts when a later run reports them null', async () => {

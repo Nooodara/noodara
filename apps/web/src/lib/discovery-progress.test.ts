@@ -25,8 +25,8 @@ function fullSettled(overrides: Partial<Record<(typeof DISCOVERY_CHECK_IDS)[numb
 }
 
 describe('severityFor', () => {
-  it('is warning for a fail on docker_version, docker_compose_version, sudo or docker_group', () => {
-    for (const id of ['docker_version', 'docker_compose_version', 'sudo', 'docker_group'] as const) {
+  it('is warning for a fail on docker_version, docker_compose_version, docker_buildkit, sudo or docker_group', () => {
+    for (const id of ['docker_version', 'docker_compose_version', 'docker_buildkit', 'sudo', 'docker_group'] as const) {
       expect(severityFor(check(id, { status: 'fail' }), [])).toBe('warning');
     }
   });
