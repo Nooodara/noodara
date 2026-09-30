@@ -266,7 +266,7 @@ describe('classifyGitError safety', () => {
         throw new Error('boom');
       },
       stdoutTail: '',
-    } as unknown as RemoteFailure);
+    });
 
     for (const input of [hostile, hostileFailure, hostileStderr, null, undefined, 42, 'x']) {
       const result = classifyGitError(input as GitFailureInput, {
