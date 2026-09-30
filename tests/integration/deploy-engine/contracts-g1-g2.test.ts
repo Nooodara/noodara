@@ -9,7 +9,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { Client } from '@noodara/ssh/testing';
 import type { ClientChannel } from '@noodara/ssh/testing';
 import {
@@ -51,6 +51,8 @@ interface Running {
   readonly channel: ClientChannel;
   stdout(): string;
   stderr(): string;
+  /** When ssh2 received exit-status/exit-signal, if it has. */
+  exitedAt(): number | undefined;
   /** Settles on the channel's 'close'; exit code/signal as ssh2 reported them. */
   readonly done: Promise<RunResult>;
 }
@@ -86,6 +88,7 @@ function start(client: Client, command: string): Promise<Running> {
       let stderr = '';
       let exitCode: number | null = null;
       let signal: string | undefined;
+      let exitedAt: number | undefined;
       channel.on('data', (chunk: Buffer) => {
         stdout += chunk.toString('utf8');
       });
@@ -95,6 +98,7 @@ function start(client: Client, command: string): Promise<Running> {
       channel.on('exit', (code: number | null, signalName?: string) => {
         exitCode = code;
         signal = signalName;
+        exitedAt = Date.now();
       });
       const done = new Promise<RunResult>((settle, fail) => {
         const timer = setTimeout(() => {
@@ -106,7 +110,13 @@ function start(client: Client, command: string): Promise<Running> {
           settle({ exitCode, signal, stdout, stderr });
         });
       });
-      resolve({ channel, stdout: () => stdout, stderr: () => stderr, done });
+      resolve({
+        channel,
+        stdout: () => stdout,
+        stderr: () => stderr,
+        exitedAt: () => exitedAt,
+        done,
+      });
     });
   });
 }
@@ -139,6 +149,15 @@ async function pollUntil(
       return { ok: false, elapsedMs: Date.now() - startedAt };
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
+}
+
+/** Resolves `undefined` after `ms`: races a channel close without ever rejecting. */
+function settleAfter(ms: number): Promise<undefined> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(undefined);
+    }, ms);
+  });
 }
 
 function measure(tag: 'G1' | 'G2', ubuntu: string, data: Record<string, unknown>): void {
@@ -550,5 +569,369 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         }
       },
     );
+  },
+);
+
+// --- G2 -----------------------------------------------------------------------------------------
+
+const SLOW_BUILD_DOCKERFILE = readFileSync(
+  path.join(HERE, 'fixtures/slow-build/Dockerfile'),
+  'utf8',
+);
+const SLOW_BUILD_STARTED = 'NOODARA_SLOW_BUILD_STARTED';
+const LAUNCH_IN_GROUP = `setsid sh -c 'echo $$ > "$0"; exec "$@"'`;
+const LAUNCH_IN_GROUP_WAIT = `setsid -w sh -c 'echo $$ > "$0"; exec "$@"'`;
+/**
+ * Measured on both versions: /bin/sh is dash, whose builtin `kill -TERM -- "-$pgid"` fails with
+ * `kill: Illegal number: -` (exit 2) and kills nothing. `kill -s TERM -- "-$pgid"` is the form that
+ * works; the rejected form stays below as a negative contract.
+ */
+const KILL_GROUP_DASH_REJECTED = `sh -c 'read -r pgid < "$0" && kill -TERM -- "-$pgid"'`;
+const KILL_GROUP = `sh -c 'read -r pgid < "$0" && kill -s TERM -- "-$pgid"'`;
+const WRITE_DOCKERFILE = `sh -c 'umask 077 && mkdir -p "$0" && cat > "$0/Dockerfile"'`;
+const BUILD_STEP = 'sleep 300';
+
+describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
+  'G2 / ADR 0008 / D-04: confirmed remote kill on Ubuntu %s',
+  (ubuntu) => {
+    let stack: DeployEngineStack | undefined;
+    let client: Client | undefined;
+
+    const s = (): DeployEngineStack => {
+      if (stack === undefined) throw new Error('stack not started');
+      return stack;
+    };
+    const c = (): Client => {
+      if (client === undefined) throw new Error('client not connected');
+      return client;
+    };
+
+    /** Remote truth: pids whose full argv matches, seen as root. Never inferred locally. */
+    const pids = async (pattern: string): Promise<string[]> => {
+      const result = await s().exec(['pgrep', '-f', pattern]);
+      return result.stdout.split('\n').filter((line) => line.trim() !== '');
+    };
+    const groupPids = async (pgid: string): Promise<string[]> => {
+      const result = await s().exec(['pgrep', '-g', pgid]);
+      return result.stdout.split('\n').filter((line) => line.trim() !== '');
+    };
+    const absent = (pattern: string, timeoutMs: number) =>
+      pollUntil(async () => (await pids(pattern)).length === 0, timeoutMs);
+    const present = (pattern: string, timeoutMs: number) =>
+      pollUntil(async () => (await pids(pattern)).length > 0, timeoutMs);
+    const groupAbsent = (pgid: string, timeoutMs: number) =>
+      pollUntil(async () => (await groupPids(pgid)).length === 0, timeoutMs);
+    const readPgid = async (pidfile: string): Promise<string> => {
+      const found = await pollUntil(
+        async () => (await run(c(), `test -s ${q(pidfile)}`)).exitCode === 0,
+        5_000,
+      );
+      expect(found.ok).toBe(true);
+      return (await run(c(), `cat ${q(pidfile)}`)).stdout.trim();
+    };
+
+    /** docker build of fixtures/slow-build, optionally under a launcher; resolves once RUN started. */
+    const startSlowBuild = async (
+      ws: string,
+      launcher: string | undefined,
+    ): Promise<{ readonly running: Running; readonly tag: string }> => {
+      const tag = `noodara-test/slow:${randomUUID()}`;
+      const written = await run(
+        c(),
+        `${WRITE_DOCKERFILE} ${q(`${ws}/build`)}`,
+        SLOW_BUILD_DOCKERFILE,
+      );
+      expect(written.exitCode).toBe(0);
+      const build = `docker build --progress=plain -t ${q(tag)} ${q(`${ws}/build`)}`;
+      const running = await start(
+        c(),
+        launcher === undefined ? build : `${launcher} ${q(`${ws}/run/build.pid`)} ${build}`,
+      );
+      running.done.catch(() => undefined);
+      const started = await pollUntil(
+        async () => `${running.stdout()}${running.stderr()}`.includes(SLOW_BUILD_STARTED),
+        120_000,
+        250,
+      );
+      expect(started.ok).toBe(true);
+      expect((await present(BUILD_STEP, 5_000)).ok).toBe(true);
+      return { running, tag };
+    };
+
+    const slowImagesLeft = async (): Promise<string> =>
+      (await s().exec(['docker', 'images', '-q', 'noodara-test/slow'])).stdout.trim();
+
+    beforeAll(async () => {
+      stack = await startDeployEngineStack({ ubuntu });
+      client = await connect(stack);
+      const versions = await stack.exec([
+        'sh',
+        '-c',
+        'ssh -V 2>&1; docker version --format "{{.Server.Version}}"; docker buildx version; setsid --version',
+      ]);
+      measure('G2', ubuntu, { versions: versions.stdout.trim().split('\n') });
+    }, STACK_TIMEOUT_MS);
+
+    afterEach(async () => {
+      // Fallback cleanup, then assert: no spike process or image may outlive its test.
+      await s().exec(['pkill', '-KILL', '-f', 'sleep 30[0-9]']);
+      expect((await absent('sleep 30[0-9]', 5_000)).ok).toBe(true);
+      expect(await slowImagesLeft()).toBe('');
+    });
+
+    afterAll(async () => {
+      client?.end();
+      await stack?.stop();
+      await assertNoStrayTestContainers();
+    }, STACK_TIMEOUT_MS);
+
+    it('G2 / ADR 0008 / D-04: negative control: destroying the channel, then ending the whole connection, leaves a no-pty `sleep` running', async () => {
+      const running = await start(c(), 'sleep 301');
+      running.done.catch(() => undefined);
+      expect((await present('sleep 301', 5_000)).ok).toBe(true);
+
+      running.channel.destroy();
+      await new Promise((resolve) => setTimeout(resolve, 3_000));
+      const afterDestroy = await pids('sleep 301');
+
+      const second = await connect(s());
+      const other = await start(second, 'sleep 301');
+      other.done.catch(() => undefined);
+      expect((await present('sleep 301', 5_000)).ok).toBe(true);
+      second.end();
+      await new Promise((resolve) => setTimeout(resolve, 3_000));
+      const afterEnd = await pids('sleep 301');
+
+      measure('G2', ubuntu, {
+        candidate: 'channel.destroy / client.end',
+        survivesDestroy: afterDestroy.length === 1,
+        survivesConnectionEnd: afterEnd.length === 2,
+      });
+      expect(afterDestroy).toHaveLength(1);
+      expect(afterEnd).toHaveLength(2);
+    });
+
+    it.each(['TERM', 'KILL'] as const)(
+      'G2 / ADR 0008 / D-04: channel.signal(%s) on a single no-pty command removes it (pgrep) and ssh2 reports the exit signal',
+      async (signalName) => {
+        const running = await start(c(), 'sleep 302');
+        expect((await present('sleep 302', 5_000)).ok).toBe(true);
+
+        running.channel.signal(signalName);
+        const gone = await absent('sleep 302', 5_000);
+        const result = await Promise.race([running.done, settleAfter(2_000)]);
+
+        measure('G2', ubuntu, {
+          candidate: `channel.signal(${signalName})`,
+          killed: gone.ok,
+          timeToAbsenceMs: gone.elapsedMs,
+          exit:
+            result === undefined ? 'no close' : { code: result.exitCode, signal: result.signal },
+        });
+        expect(gone.ok).toBe(true);
+        expect(result?.exitCode).toBeNull();
+        expect(result?.signal).toBe(`SIG${signalName}`);
+      },
+    );
+
+    it('G2 / ADR 0008 / D-04: channel.signal(TERM) on a process tree removes every member (sshd signals the session process group)', async () => {
+      const running = await start(c(), `sh -c 'sleep 302 & sleep 302; wait'`);
+      running.done.catch(() => undefined);
+      expect((await present('sleep 302', 5_000)).ok).toBe(true);
+      const before = await pids('sleep 302');
+
+      running.channel.signal('TERM');
+      const gone = await absent('sleep 302', 5_000);
+
+      measure('G2', ubuntu, {
+        candidate: 'channel.signal(TERM) tree',
+        killed: gone.ok,
+        timeToAbsenceMs: gone.elapsedMs,
+        pidsBefore: before.length,
+      });
+      expect(before.length).toBeGreaterThanOrEqual(3);
+      expect(gone.ok).toBe(true);
+    });
+
+    it('G2 / ADR 0008 / D-04: dash rejects `kill -TERM -- "-$pgid"` (Illegal number, exit 2) and the group survives', async () => {
+      const ws = await makeWorkspace(c());
+      const pidfile = `${ws}/run/clone.pid`;
+      try {
+        const running = await start(c(), `${LAUNCH_IN_GROUP_WAIT} ${q(pidfile)} sleep 303`);
+        running.done.catch(() => undefined);
+        const pgid = await readPgid(pidfile);
+
+        const kill = await run(c(), `${KILL_GROUP_DASH_REJECTED} ${q(pidfile)}`);
+        await new Promise((resolve) => setTimeout(resolve, 1_000));
+        const alive = await groupPids(pgid);
+
+        measure('G2', ubuntu, {
+          candidate: 'kill -TERM -- -pgid (dash)',
+          killExit: kill.exitCode,
+          stderr: kill.stderr.replace(ws, '<ws>').trim(),
+          groupAliveAfter: alive.length,
+        });
+        expect(kill.exitCode).toBe(2);
+        expect(kill.stderr).toMatch(/kill: Illegal number: -/);
+        expect(alive.length).toBeGreaterThan(0);
+      } finally {
+        await removeWorkspace(c(), ws);
+      }
+    });
+
+    it.each([
+      { label: 'setsid', launcher: LAUNCH_IN_GROUP, exitStatus: 0, earlyExit: true },
+      { label: 'setsid -w', launcher: LAUNCH_IN_GROUP_WAIT, exitStatus: 15, earlyExit: false },
+    ])(
+      'G2 / ADR 0008 / D-04: $label + pidfile + kill -s TERM -- "-$pgid" removes the whole tree (pgrep -g); the launch channel reports exit $exitStatus (early: $earlyExit)',
+      async ({ label, launcher, exitStatus, earlyExit }) => {
+        const ws = await makeWorkspace(c());
+        const pidfile = `${ws}/run/clone.pid`;
+        try {
+          const running = await start(
+            c(),
+            `${launcher} ${q(pidfile)} sh -c 'sleep 303 & sleep 303; wait'`,
+          );
+          const pgid = await readPgid(pidfile);
+          expect((await present('sleep 303', 5_000)).ok).toBe(true);
+          // Long enough for an early exit-status (setsid forking) to be observable before the kill.
+          await new Promise((resolve) => setTimeout(resolve, 1_000));
+          const groupBefore = await groupPids(pgid);
+          const exitedBeforeKill = running.exitedAt() !== undefined;
+
+          const killedAt = Date.now();
+          const kill = await run(c(), `${KILL_GROUP} ${q(pidfile)}`);
+          const [groupGone, sleepsGone] = await Promise.all([
+            groupAbsent(pgid, 5_000),
+            absent('sleep 303', 5_000),
+          ]);
+          const result = await Promise.race([running.done, settleAfter(2_000)]);
+
+          measure('G2', ubuntu, {
+            candidate: `${label}+pidfile+kill-s-TERM-pgid`,
+            killExit: kill.exitCode,
+            groupSizeBefore: groupBefore.length,
+            killed: groupGone.ok && sleepsGone.ok,
+            timeToAbsenceMs: Math.max(groupGone.elapsedMs, sleepsGone.elapsedMs),
+            exitStatusBeforeKill: exitedBeforeKill,
+            launchExit:
+              result === undefined ? 'no close' : { code: result.exitCode, signal: result.signal },
+            killToLaunchCloseMs: Date.now() - killedAt,
+          });
+          expect(kill.exitCode).toBe(0);
+          expect(groupBefore.length).toBeGreaterThanOrEqual(3);
+          expect(groupGone.ok).toBe(true);
+          expect(sleepsGone.ok).toBe(true);
+          expect(result?.exitCode).toBe(exitStatus);
+          // Plain setsid is already a session leader under sshd, so it forks and exits 0 at once:
+          // the real exit status is lost. Only `setsid -w` carries it (raw signal number, 15).
+          expect(exitedBeforeKill).toBe(earlyExit);
+        } finally {
+          await removeWorkspace(c(), ws);
+        }
+      },
+    );
+
+    it('G2 / ADR 0008 / D-04: `docker kill` has no target during a BuildKit RUN step: docker ps is empty and the step runs under runc in its own process group', async () => {
+      const ws = await makeWorkspace(c());
+      try {
+        const { running } = await startSlowBuild(ws, LAUNCH_IN_GROUP_WAIT);
+        const pgid = await readPgid(`${ws}/run/build.pid`);
+        const dockerPs = (await s().exec(['docker', 'ps', '-aq'])).stdout.trim();
+        const [stepPid] = await pids(`^${BUILD_STEP}$`);
+        const ancestry = await s().exec([
+          'sh',
+          '-c',
+          'ps -o pgid= -p "$1"; ps -o args= -p "$(ps -o ppid= -p "$1" | tr -d " ")"',
+          'sh',
+          stepPid ?? '0',
+        ]);
+        const [stepPgid, parentArgs] = ancestry.stdout.trim().split('\n');
+        await run(c(), `${KILL_GROUP} ${q(`${ws}/run/build.pid`)}`);
+        await running.done;
+
+        measure('G2', ubuntu, {
+          candidate: 'docker kill (build container)',
+          dockerPsDuringRun: dockerPs === '' ? 'empty' : dockerPs,
+          stepPgidDiffersFromCli: stepPgid?.trim() !== pgid,
+          stepParent: parentArgs?.trim().split(' ').slice(0, 1).join(' '),
+        });
+        expect(dockerPs).toBe('');
+        expect(stepPgid?.trim()).not.toBe(pgid);
+        expect(parentArgs).toMatch(/^runc .*\/var\/lib\/docker\/buildkit\/executor/);
+      } finally {
+        await removeWorkspace(c(), ws);
+      }
+    });
+
+    it('G2 / ADR 0008 / D-04: channel.signal(TERM) on a plain `docker build` exec cancels the RUN step (confirmed with pgrep)', async () => {
+      const ws = await makeWorkspace(c());
+      try {
+        const { running } = await startSlowBuild(ws, undefined);
+
+        running.channel.signal('TERM');
+        const [stepGone, cliGone] = await Promise.all([
+          absent(BUILD_STEP, 30_000),
+          absent('docker build --progress=plain', 30_000),
+        ]);
+        const result = await Promise.race([running.done, settleAfter(5_000)]);
+
+        measure('G2', ubuntu, {
+          candidate: 'channel.signal(TERM) docker build',
+          killed: stepGone.ok && cliGone.ok,
+          stepAbsentMs: stepGone.elapsedMs,
+          cliAbsentMs: cliGone.elapsedMs,
+          canceled: running.stderr().includes('CANCELED'),
+          exit:
+            result === undefined ? 'no close' : { code: result.exitCode, signal: result.signal },
+        });
+        expect(stepGone.ok).toBe(true);
+        expect(cliGone.ok).toBe(true);
+      } finally {
+        await removeWorkspace(c(), ws);
+      }
+    });
+
+    it('G2 / ADR 0008 / D-04: combined sequence: setsid -w + pidfile + kill -s TERM -- "-$pgid", docker kill only if a container is still alive after 2 s, success only when the RUN step is absent in ps', async () => {
+      const ws = await makeWorkspace(c());
+      const pidfile = `${ws}/run/build.pid`;
+      try {
+        const { running } = await startSlowBuild(ws, LAUNCH_IN_GROUP_WAIT);
+        const pgid = await readPgid(pidfile);
+        const everythingGone = async (): Promise<boolean> =>
+          (await groupPids(pgid)).length === 0 && (await pids(BUILD_STEP)).length === 0;
+
+        const killedAt = Date.now();
+        const kill = await run(c(), `${KILL_GROUP} ${q(pidfile)}`);
+        const first = await pollUntil(everythingGone, 2_000);
+        let dockerKillTargets: string[] = [];
+        if (!first.ok) {
+          dockerKillTargets = (await run(c(), 'docker ps -q')).stdout.split('\n').filter(Boolean);
+          for (const id of dockerKillTargets) await run(c(), `docker kill ${q(id)}`);
+        }
+        const confirmed = first.ok ? first : await pollUntil(everythingGone, 10_000);
+        const confirmedMs = Date.now() - killedAt;
+        const result = await Promise.race([running.done, settleAfter(5_000)]);
+
+        measure('G2', ubuntu, {
+          candidate: 'combined D-04 (docker build)',
+          killExit: kill.exitCode,
+          confirmedAbsent: confirmed.ok,
+          timeToAbsenceMs: confirmedMs,
+          dockerKillBranchTaken: !first.ok,
+          dockerKillTargets: dockerKillTargets.length,
+          canceled: running.stderr().includes('CANCELED'),
+          launchExit:
+            result === undefined ? 'no close' : { code: result.exitCode, signal: result.signal },
+        });
+        expect(kill.exitCode).toBe(0);
+        expect(confirmed.ok).toBe(true);
+        expect(await pids(BUILD_STEP)).toEqual([]);
+        expect(first.ok).toBe(true);
+        expect(running.stderr()).toContain('CANCELED');
+      } finally {
+        await removeWorkspace(c(), ws);
+      }
+    });
   },
 );
