@@ -322,7 +322,7 @@ Plans:
   4. La allowlist de `packages/ssh` crece solo con plantillas cerradas parametrizadas (`git.clone`, `git.checkout`, `docker.build/pull/login/create/start/stop/restart/remove/inspect/logs/ps`, `fs.remove_deploy_dir`, kill remoto) cuyos argumentos pasan por validador de dominio y `escapeShellArg` (`--` antes de posicionales, guard de exactitud actualizado); el exec en streaming entrega salida en chunks redactados por chunk, acotados en bytes, abortables y con stdin, con `classifyGitError`/`classifyDockerError` como tablas congeladas que nunca lanzan; `packages/git` y `packages/docker` existen bajo el tag `ssh-adapter`.
   5. Existe la imagen combinada sshd+dockerd de Testcontainers (22.04 y 24.04) con un repositorio Git bare accesible por SSH y deploy keys generadas por corrida, que ejerce un pull real desde registry y la autenticación de registry; existen `fixtures/node-api`, `fixtures/static-app` y `fixtures/failing-build` con `.dockerignore` y contexto de build < 1 MiB asertado; ningún recurso `noodara.test=true` sobrevive a una corrida.
 
-**Plans:** 9/16 plans executed
+**Plans:** 10/16 plans executed
 
 Plans:
 **Wave 1**
@@ -343,7 +343,7 @@ Plans:
 
 - [ ] 11-09-PLAN.md — ADR 0008 from measured evidence, domain-model skill update, human acceptance (checkpoint)
 - [x] 11-10-PLAN.md — Pure parsers: docker ps, container state, BuildKit status against real captures
-- [ ] 11-11-PLAN.md — classifyGitError / classifyDockerError frozen never-throwing tables
+- [x] 11-11-PLAN.md — classifyGitError / classifyDockerError frozen never-throwing tables
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -437,7 +437,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 | 8. Rediseño de la app | 20/20 | Complete   | 2026-09-27 |
 | 9. Settings editables | 14/14 | Complete   | 2026-09-27 |
 | 10. Sitio de docs y landing pública | 12/12 | Complete    | 2026-09-28 |
-| 11. Motor de deploy — fundamentos | 9/16 | In Progress|  |
+| 11. Motor de deploy — fundamentos | 10/16 | In Progress|  |
 | 12. Motor de deploy — runtime | 0/TBD | Not started | - |
 | 13. UI de Projects & Services y E2E de deploy | 0/TBD | Not started | - |
 | 14. Hardening y gate de release v0.2 | 0/TBD | Not started | - |
