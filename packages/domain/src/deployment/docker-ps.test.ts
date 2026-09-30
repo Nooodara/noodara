@@ -42,7 +42,8 @@ describe("parseDockerPsOutput (real captures)", () => {
 
   it.each(VERSIONS)("maps observations by name on Ubuntu %s", (version) => {
     const { containers } = ok(ps(version));
-    const byState = (s: string) => containers.find((c) => c.state === s)!.name;
+    const byState = (s: string) =>
+      containers.find((c) => c.state === s)?.name ?? "";
     expect(toContainerObservation(containers, byState("running"))).toEqual({
       kind: "running",
     });

@@ -36,6 +36,13 @@ export type DockerPsResult =
   | { readonly kind: "daemon_unreachable" }
   | { readonly kind: "unparseable"; readonly reason: string };
 
+type PsLine = Partial<
+  Record<
+    "ID" | "Image" | "Names" | "State" | "Status" | "Labels" | "Ports",
+    unknown
+  >
+>;
+
 function str(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
@@ -55,24 +62,24 @@ function toContainer(value: unknown): ObservedContainer | string {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return "Line was not a JSON object";
   }
-  const o = value as Record<string, unknown>;
-  const name = str(o["Names"]);
+  const o = value as PsLine;
+  const name = str(o.Names);
   if (name.length === 0) {
     return "Line had no Names string";
   }
-  const state = o["State"];
+  const state = o.State;
   if (!isDockerContainerState(state)) {
     return "Line had a missing or unknown State";
   }
-  const match = EXITED_STATUS.exec(str(o["Status"]));
+  const match = EXITED_STATUS.exec(str(o.Status));
   return {
-    id: str(o["ID"]),
+    id: str(o.ID),
     name,
-    image: str(o["Image"]),
+    image: str(o.Image),
     state,
     exitCode: match?.[1] === undefined ? null : Number(match[1]),
-    labels: parseLabels(str(o["Labels"])),
-    ports: str(o["Ports"]),
+    labels: parseLabels(str(o.Labels)),
+    ports: str(o.Ports),
   };
 }
 
@@ -86,7 +93,7 @@ export function parseDockerPsOutput(output: CommandOutput): DockerPsResult {
     }
     return {
       kind: "unparseable",
-      reason: `docker ps exited with code ${output.exitCode}`,
+      reason: `docker ps exited with code ${String(output.exitCode)}`,
     };
   }
 
