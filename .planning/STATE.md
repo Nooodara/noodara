@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 11-04-PLAN.md
-last_updated: "2026-09-30T03:21:04.803Z"
+stopped_at: Completed 11-05-PLAN.md
+last_updated: "2026-09-30T03:31:14.596Z"
 last_activity: 2026-09-30
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 72
-  completed_plans: 60
+  completed_plans: 61
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 11 (Motor de deploy — fundamentos) — EXECUTING
-Plan: 5 of 16
+Plan: 6 of 16
 Status: Ready to execute
 Last activity: 2026-09-30
 
-Progress: [████████░░] 83%
+Progress: [█████████░] 85%
 
 ## Performance Metrics
 
@@ -219,6 +219,7 @@ Progress: [████████░░] 83%
 | Phase 11 P02 | 12min | 3 tasks | 8 files |
 | Phase 11 P03 | 15 min | 3 tasks | 13 files |
 | Phase 11 P04 | 20min | 2 tasks | 11 files |
+| Phase 11 P05 | 25 min | 3 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -594,6 +595,8 @@ Recent decisions affecting current work:
 - [Phase 10]: Phase 10 public site approved 2026-09-28, 1 round. — Human verdict: 'esta en panias... la vamos a ir mejorando' (early version, will keep improving) -- not a request for further changes in this plan.
 - [Phase 11]: 11-02: repository hosts must survive WHATWG URL host parsing unchanged (rejects IPv4 shorthands such as 127.1); [ and ] are metacharacters except in a bracketed IPv6 host
 - [Phase 11]: 11-03 G7: pull-through mirror (mirror.gcr.io) alongside the D-10 htpasswd registry; orchestrator-selected default, pending user confirmation at ADR 0008 review
+- [Phase 11]: 11-05: toServerCredentialType narrows the widened credential_type to SSH types; a non-SSH type on a server credential throws
+- [Phase 11]: 11-05: no migration may reference an enum value added by ADD VALUE (drizzle runs pending migrations in one transaction); enforced by migration-hygiene.test.ts
 
 ### Pending Todos
 
@@ -672,8 +675,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-30T03:21:04.796Z
-Stopped at: Completed 11-04-PLAN.md
+Last session: 2026-09-30T03:31:09.240Z
+Stopped at: Completed 11-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
