@@ -193,9 +193,16 @@ jobs:
     # cold `pnpm test:integration` (Postgres/Redis Testcontainers + up to four built sshd image
     # variants) at ~31 minutes — this plan's own objective text calls that figure "the binding
     # one". 45 min keeps real headroom above it without masking a genuine hang.
-    timeout-minutes: 45
+    # 11-03 (D-11): +5 min for tests/integration/deploy-engine. One harness run on 24.04 measured
+    # ~99s locally including a fresh image build (~35s no-cache); +50% per version, and main runs
+    # both versions, so ~5 min.
+    timeout-minutes: 50
     permissions:
       contents: read
+    # D-11: deploy-engine suites run Ubuntu 24.04 on pull requests and 22.04 + 24.04 on main. Only
+    # tests/integration/helpers/deploy-engine.ts reads this; the ssh suites keep their own lists.
+    env:
+      NOODARA_TEST_UBUNTU: ${{ github.event_name == 'pull_request' && '24.04' || 'all' }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
@@ -237,6 +244,17 @@ jobs:
             exit 1
           fi
           echo "no stray noodara.test=true containers"
+      # D-14: the deploy-engine stack creates its own labelled network; none may survive either.
+      - name: Fail if any noodara.test network survived
+        if: always()
+        run: |
+          stray=$(docker network ls -q --filter label=noodara.test=true)
+          if [ -n "$stray" ]; then
+            echo "::error::stray networks labelled noodara.test=true survived the integration run"
+            docker network ls --filter label=noodara.test=true
+            exit 1
+          fi
+          echo "no stray noodara.test=true networks"
 
   security:
     name: security

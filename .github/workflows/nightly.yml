@@ -187,3 +187,45 @@ jobs:
             exit 1
           fi
           echo "no stray noodara.test=true containers"
+
+  # 11-03 (D-11): the deploy-engine fixture suites on both Ubuntu versions every night, plus the
+  # D-14 container and network leak checks. ci.yml runs them too (24.04 on PRs, both on main).
+  deploy-engine:
+    name: deploy-engine
+    runs-on: ubuntu-latest
+    # One harness run measured ~99s per version locally (fresh image build included); 30 min
+    # leaves room for the suites later plans add under tests/integration/deploy-engine.
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Deploy-engine suites on Ubuntu 22.04 and 24.04 (D-11)
+        run: NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine
+      - name: Fail if any noodara.test container survived
+        if: always()
+        run: |
+          stray=$(docker ps -aq --filter "label=noodara.test=true")
+          if [ -n "$stray" ]; then
+            echo "::error::stray containers labelled noodara.test=true survived the deploy-engine run"
+            docker ps -a --filter "label=noodara.test=true"
+            exit 1
+          fi
+          echo "no stray noodara.test=true containers"
+      - name: Fail if any noodara.test network survived
+        if: always()
+        run: |
+          stray=$(docker network ls -q --filter label=noodara.test=true)
+          if [ -n "$stray" ]; then
+            echo "::error::stray networks labelled noodara.test=true survived the deploy-engine run"
+            docker network ls --filter label=noodara.test=true
+            exit 1
+          fi
+          echo "no stray noodara.test=true networks"
