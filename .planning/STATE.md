@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 11-11-PLAN.md
-last_updated: "2026-09-30T14:28:14.076Z"
+stopped_at: Completed 11-12-PLAN.md
+last_updated: "2026-09-30T14:51:26.397Z"
 last_activity: 2026-09-30
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 72
-  completed_plans: 66
+  completed_plans: 67
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 11 (Motor de deploy — fundamentos) — EXECUTING
-Plan: 11 of 16
+Plan: 12 of 16
 Status: Ready to execute
 Last activity: 2026-09-30
 
-Progress: [█████████░] 92%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -223,6 +223,7 @@ Progress: [█████████░] 92%
 | Phase 11 P06 | 45 min | 2 tasks | 12 files |
 | Phase 11 P07 | 50min | 2 tasks | 21 files |
 | Phase 11 P08 | 15min | 2 tasks | 14 files |
+| Phase 11 P12 | 20min | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -607,6 +608,7 @@ Recent decisions affecting current work:
 - [Phase 11]: 11-07 G3: BuildKit discovery check is docker build --help (Usage line); buildx version and docker info plugins give a false positive under DOCKER_BUILDKIT=0
 - [Phase 11]: 11-07 G4: docker.ps template needs --size=false; {{json .}} computes Size otherwise (A3 false); key set identical on 22.04/24.04
 - [Phase 11]: 11-08: registry pull identity asserted via RootFS.Layers (.Id changes across push+pull under containerd store); classifyDockerError must key on stderr (docker CLI exits 1 for all captured failures except port clash 125)
+- [Phase 11]: 11-12: dockerBuildkitAvailable is true only for active, false for plugin_missing/buildkit_disabled, null for daemon_unreachable/unparseable; a BuildKit fail never demotes CONNECTED
 
 ### Pending Todos
 
@@ -685,8 +687,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-30T14:28:14.069Z
-Stopped at: Completed 11-08-PLAN.md
+Last session: 2026-09-30T14:51:26.390Z
+Stopped at: Completed 11-12-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
