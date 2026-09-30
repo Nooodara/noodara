@@ -21,6 +21,8 @@ export type DeploySecretPath = Brand<string, 'DeploySecretPath'>;
 export type DeployRunPath = Brand<string, 'DeployRunPath'>;
 export type DockerConfigDir = Brand<string, 'DockerConfigDir'>;
 export type RepoBuildPath = Brand<string, 'RepoBuildPath'>;
+/** A lowercase UUID of a Service or Deployment, e.g. for `noodara.*` Docker label values. */
+export type ResourceId = Brand<string, 'ResourceId'>;
 
 export const DEPLOY_SECRET_NAMES = [
   'deploy_key',
@@ -201,6 +203,11 @@ function resourceIdFailure<T>(): ValidationResult<T> {
 
 function isResourceId(id: string): boolean {
   return RESOURCE_ID_PATTERN.test(id);
+}
+
+export function validateResourceId(input: string): ValidationResult<ResourceId> {
+  if (!isResourceId(input)) return resourceIdFailure();
+  return ok(input as ResourceId);
 }
 
 export function containerNameFor(serviceId: string): ValidationResult<ContainerName> {
