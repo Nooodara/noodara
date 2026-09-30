@@ -1,0 +1,7 @@
+# exit=128
+Cloning into 'repo'...
+ssh: Could not resolve hostname nohost.noodara-test.internal: Name or service not known
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.

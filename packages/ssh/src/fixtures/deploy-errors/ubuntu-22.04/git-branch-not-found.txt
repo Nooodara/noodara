@@ -1,0 +1,6 @@
+# exit=128
+Cloning into 'repo'...
+Warning: Permanently added 'git.noodara-test.internal' (ED25519) to the list of known hosts.
+warning: Could not find remote branch does-not-exist to clone.
+fatal: Remote branch does-not-exist not found in upstream origin
+fatal: the remote end hung up unexpectedly
