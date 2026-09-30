@@ -1,0 +1,32 @@
+# exit=1
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 236B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 86B done
+#3 DONE 0.0s
+
+#4 [1/2] FROM docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
+#4 resolve docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 done
+#4 CACHED
+
+#5 [2/2] RUN echo "NOODARA_FIXTURE_BUILD_FAILURE: intentional failure from fixtures/failing-build" >&2 && exit 42
+#5 0.085 NOODARA_FIXTURE_BUILD_FAILURE: intentional failure from fixtures/failing-build
+#5 ERROR: process "/bin/sh -c echo \"NOODARA_FIXTURE_BUILD_FAILURE: intentional failure from fixtures/failing-build\" >&2 && exit 42" did not complete successfully: exit code: 42
+------
+ > [2/2] RUN echo "NOODARA_FIXTURE_BUILD_FAILURE: intentional failure from fixtures/failing-build" >&2 && exit 42:
+0.085 NOODARA_FIXTURE_BUILD_FAILURE: intentional failure from fixtures/failing-build
+------
+Dockerfile:2
+--------------------
+   1 |     FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
+   2 | >>> RUN echo "NOODARA_FIXTURE_BUILD_FAILURE: intentional failure from fixtures/failing-build" >&2 && exit 42
+   3 |     
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c echo \"NOODARA_FIXTURE_BUILD_FAILURE: intentional failure from fixtures/failing-build\" >&2 && exit 42" did not complete successfully: exit code: 42

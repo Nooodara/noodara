@@ -1,0 +1,2 @@
+# exit=1
+Error response from daemon: login attempt to http://registry.noodara-test.internal:5000/v2/ failed with status: 401 Unauthorized

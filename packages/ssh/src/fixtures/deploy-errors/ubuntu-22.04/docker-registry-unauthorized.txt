@@ -1,0 +1,2 @@
+# exit=1
+Error response from daemon: failed to resolve reference "registry.noodara-test.internal:5000/fixtures/nginx:1.31-alpine": pull access denied, repository does not exist or may require authorization: authorization failed: no basic auth credentials

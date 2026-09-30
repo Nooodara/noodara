@@ -4,7 +4,7 @@
 // the adapter and never a mock. Remote scripts are constant strings; the variable parts (fresh-UUID
 // paths, tags, names) travel as positional parameters. Measurements go to NOODARA_MEASUREMENTS_FILE.
 import { randomUUID } from 'node:crypto';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -12,6 +12,7 @@ import { Client } from '@noodara/ssh/testing';
 import type { ClientChannel } from '@noodara/ssh/testing';
 import {
   DEPLOY_ENGINE_UBUNTU_VERSIONS,
+  preloadedRefFor,
   startDeployEngineStack,
   type DeployEngineStack,
 } from '../helpers/deploy-engine.js';
@@ -19,6 +20,8 @@ import { assertNoStrayTestContainers } from '../helpers/ssh.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.resolve(HERE, '../../../fixtures');
+const DEPLOY_ERRORS_DIR = path.resolve(HERE, '../../../packages/ssh/src/fixtures/deploy-errors');
+const CAPTURE_FIXTURES = process.env['NOODARA_CAPTURE_FIXTURES'] === '1';
 const STACK_TIMEOUT_MS = 900_000;
 const SSH_COMMAND_TIMEOUT_MS = 300_000;
 const WORKSPACE_ROOT = '/opt/noodara-deploy';
@@ -165,6 +168,33 @@ const RUN_UNTIL_HEALTHY =
   `if [ "$i" -ge 200 ]; then echo "not healthy after 10s" >&2; exit 91; fi; sleep 0.05; done; ` +
   `end=$(date +%s%N); echo "NOODARA_HEALTHY_MS=$(( (end - start) / 1000000 ))"; printf "%s" "$body"'`;
 
+// Registry and failure scripts. Passwords only ever travel on the channel's stdin.
+const DOCKER_LOGIN = `sh -c 'docker --config "$0/secrets/docker" login --username "$1" --password-stdin "$2"'`;
+const DOCKER_PULL = `sh -c 'docker --config "$0/secrets/docker" pull "$1"'`;
+const DOCKER_BUILD_MISSING_DOCKERFILE = `sh -c 'docker build --progress=plain --file "$0/repo/Missing.Dockerfile" -t "$1" "$0/repo"'`;
+const LAYERS_OF = (ref: string): string =>
+  `docker image inspect --format '{{json .RootFS.Layers}}' ${q(ref)}`;
+const DOCKER_RUN_DETACHED = `sh -c 'docker run -d --name "$0" --label noodara.test=true -p "$2" "$1"'`;
+
+type DockerCaptureFile =
+  | 'docker-build-failed.txt'
+  | 'docker-dockerfile-not-found.txt'
+  | 'docker-registry-unauthorized.txt'
+  | 'docker-login-failed.txt'
+  | 'docker-image-not-found.txt'
+  | 'docker-port-in-use.txt';
+
+/** Mirrored in packages/ssh/src/fixtures/deploy-errors/DOCKER.md. */
+const DOCKER_MARKERS: Record<DockerCaptureFile, RegExp> = {
+  'docker-build-failed.txt': /did not complete successfully: exit code: \d+/,
+  'docker-dockerfile-not-found.txt':
+    /failed to read dockerfile: open \S+: no such file or directory/,
+  'docker-registry-unauthorized.txt': /authorization failed: no basic auth credentials/,
+  'docker-login-failed.txt': /login attempt to \S+ failed with status: 401 Unauthorized/,
+  'docker-image-not-found.txt': /manifest unknown|not found/,
+  'docker-port-in-use.txt': /Bind for \S+ failed: port is already allocated/,
+};
+
 function remoteMs(output: string, key: string): number {
   const match = new RegExp(`${key}=(\\d+)`).exec(output);
   if (match?.[1] === undefined) throw new Error(`${key} missing from output`);
@@ -229,6 +259,83 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         `${RUN_UNTIL_HEALTHY} ${q(name)} ${q(image)} ${q(publish)} ${q(url)}`,
       );
       return { ...result, name };
+    };
+
+    const makeWorkspace = async (): Promise<string> => {
+      const ws = `${WORKSPACE_ROOT}/${randomUUID()}`;
+      workspaces.push(ws);
+      await mustRun(`${MAKE_WORKSPACE} ${q(ws)}`);
+      return ws;
+    };
+
+    /** Every process's argv on the deploy host, seen as root. */
+    const psArgs = async (): Promise<string> => {
+      const result = await s().exec(['ps', '-eo', 'pid,args']);
+      expect(result.exitCode).toBe(0);
+      return result.stdout;
+    };
+
+    /**
+     * `docker login --password-stdin` with the password written but stdin held open, so the CLI is
+     * alive and blocked while ps is sampled. Returns the login result and the sampled argv.
+     */
+    const loginSamplingPs = async (
+      ws: string,
+      password: string,
+    ): Promise<{ readonly result: RunResult; readonly psDuring: string }> => {
+      const { host, username } = s().registry;
+      const running = await start(c(), `${DOCKER_LOGIN} ${q(ws)} ${q(username)} ${q(host)}`);
+      running.channel.write(`${password}\n`);
+      let psDuring = '';
+      const deadline = Date.now() + 5_000;
+      while (!psDuring.includes('password-stdin') && Date.now() < deadline) {
+        psDuring = await psArgs();
+      }
+      running.channel.end();
+      const result = await running.done;
+      expect(psDuring).toContain('password-stdin');
+      return { result, psDuring };
+    };
+
+    /** Values that must never reach a capture file or argv. */
+    const secretNeedles = (extra: readonly string[] = []): string[] => {
+      const { username, password } = s().registry;
+      return [password, Buffer.from(`${username}:${password}`).toString('base64'), ...extra];
+    };
+
+    /** Per-run values replaced so captures are comparable across runs and hold no identifiers. */
+    const scrub = (output: string): string =>
+      output
+        .replaceAll(`${WORKSPACE_ROOT}/`, '<ws-root>/')
+        .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '<uuid>')
+        .replace(/(?<!sha256:)\b[0-9a-f]{64}\b/g, '<id>')
+        .replaceAll(s().registry.username, '<registry-user>');
+
+    /** Writes (capture mode) then asserts a docker failure capture: `# exit=<code>`, then stderr. */
+    const captureFailure = (
+      file: DockerCaptureFile,
+      result: RunResult,
+      extraNeedles: readonly string[] = [],
+    ): void => {
+      const recorded = `# exit=${String(result.exitCode)}\n${scrub(result.stderr)}`;
+      const fixturePath = path.join(DEPLOY_ERRORS_DIR, `ubuntu-${ubuntu}`, file);
+      measure(ubuntu, { dockerFailure: file, exitCode: result.exitCode });
+      for (const needle of secretNeedles(extraNeedles)) {
+        expect(recorded.includes(needle)).toBe(false);
+        expect(result.stdout.includes(needle)).toBe(false);
+      }
+      if (CAPTURE_FIXTURES) {
+        mkdirSync(path.dirname(fixturePath), { recursive: true });
+        writeFileSync(fixturePath, recorded);
+      }
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toMatch(DOCKER_MARKERS[file]);
+      const fixture = readFileSync(fixturePath, 'utf8');
+      expect(fixture.split('\n')[0]).toBe(`# exit=${String(result.exitCode)}`);
+      expect(fixture).toMatch(DOCKER_MARKERS[file]);
+      for (const needle of secretNeedles(extraNeedles)) {
+        expect(fixture.includes(needle)).toBe(false);
+      }
     };
 
     beforeAll(async () => {
@@ -347,6 +454,108 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
           expect(attempt.stderr).toContain('NOODARA_FIXTURE_BUILD_FAILURE');
           expect(attempt.stderr).toContain('exit code: 42');
         }
+      });
+    });
+
+    describe('QA-07 / D-10 / G1: registry auth and docker failure captures', () => {
+      it('QA-07 / D-10 / G1: pull through the htpasswd registry fails without login and with a wrong password, succeeds after `docker login --password-stdin`, and neither password ever shows in ps args', async () => {
+        const ws = await makeWorkspace();
+        const { host, password } = s().registry;
+        const wrongPassword = `wrong-${randomUUID()}`;
+        // nginx base: dropping both refs forces the authorised pull to fetch the manifest from the
+        // registry. Layers may still be in the content store (shared with static-app), so no
+        // "Pull complete" is guaranteed; "Downloaded newer image" proves the authorised fetch.
+        const base = s().baseImages.find((image) => image.startsWith('nginx:'));
+        if (base === undefined) throw new Error('nginx base image not preloaded');
+        const preloaded = preloadedRefFor(host, base);
+        const imageId = await mustRun(`docker image inspect --format '{{.Id}}' ${q(preloaded)}`);
+        // The Id is the index/manifest digest and changes across push+pull of a single-platform
+        // image; the RootFS diff IDs are the content identity.
+        const layersBefore = await mustRun(LAYERS_OF(preloaded));
+        await mustRun(`docker rmi ${q(preloaded)} ${q(base)}`);
+        expect((await run(c(), `docker image inspect ${q(imageId)}`)).exitCode).not.toBe(0);
+
+        const unauthorized = await run(c(), `${DOCKER_PULL} ${q(ws)} ${q(preloaded)}`);
+        captureFailure('docker-registry-unauthorized.txt', unauthorized, [wrongPassword]);
+
+        const wrong = await loginSamplingPs(ws, wrongPassword);
+        captureFailure('docker-login-failed.txt', wrong.result, [wrongPassword]);
+        const right = await loginSamplingPs(ws, password);
+        const pullStartedAt = Date.now();
+        const pulled = await run(c(), `${DOCKER_PULL} ${q(ws)} ${q(preloaded)}`);
+        const pullMs = Date.now() - pullStartedAt;
+        const pulledId = await mustRun(`docker image inspect --format '{{.Id}}' ${q(preloaded)}`);
+        const layersAfter = await mustRun(LAYERS_OF(preloaded));
+
+        const missing = await run(
+          c(),
+          `${DOCKER_PULL} ${q(ws)} ${q(`${host}/fixtures/does-not-exist:1`)}`,
+        );
+        captureFailure('docker-image-not-found.txt', missing, [wrongPassword]);
+
+        measure(ubuntu, {
+          registry: 'htpasswd',
+          unauthorizedPullExit: unauthorized.exitCode,
+          wrongLoginExit: wrong.result.exitCode,
+          rightLoginExit: right.result.exitCode,
+          pullExit: pulled.exitCode,
+          pullMs,
+          pulledLayers: (pulled.stdout.match(/Pull complete/g) ?? []).length,
+          downloadedNewer: pulled.stdout.includes('Status: Downloaded newer image'),
+          sameImageId: pulledId === imageId,
+          sameLayers: layersAfter === layersBefore,
+          missingPullExit: missing.exitCode,
+        });
+        for (const sample of [wrong.psDuring, right.psDuring]) {
+          expect(sample.includes(password)).toBe(false);
+          expect(sample.includes(wrongPassword)).toBe(false);
+        }
+        expect(right.result.exitCode).toBe(0);
+        expect(pulled.exitCode).toBe(0);
+        expect(pulled.stdout).toMatch(/Digest: sha256:[0-9a-f]{64}/);
+        expect(pulled.stdout).toContain(`Status: Downloaded newer image for ${preloaded}`);
+        expect(layersBefore).toMatch(/^\["sha256:[0-9a-f]{64}"/);
+        expect(layersAfter).toBe(layersBefore);
+      });
+
+      it('QA-07 / D-13: failing-build output is captured as docker-build-failed', async () => {
+        const ws = await cloneFixture('failing-build');
+
+        const built = await build(ws, 'failing-build');
+
+        captureFailure('docker-build-failed.txt', built);
+        expect(built.stderr).toContain('NOODARA_FIXTURE_BUILD_FAILURE');
+      });
+
+      it('QA-07: `docker build --file` naming a missing Dockerfile is captured as docker-dockerfile-not-found', async () => {
+        const ws = await cloneFixture('node-api');
+        const tag = `noodara-test/node-api:${randomUUID()}`;
+        images.push(tag);
+
+        const built = await run(c(), `${DOCKER_BUILD_MISSING_DOCKERFILE} ${q(ws)} ${q(tag)}`);
+
+        captureFailure('docker-dockerfile-not-found.txt', built);
+      });
+
+      it('QA-07: a second container publishing an allocated host port is captured as docker-port-in-use', async () => {
+        const ws = await cloneFixture('node-api');
+        const built = await build(ws, 'node-api');
+        expect(built.exitCode).toBe(0);
+        const first = await runUntilHealthy(
+          built.tag,
+          '13100:3000',
+          'http://127.0.0.1:13100/health',
+        );
+        expect(first.exitCode).toBe(0);
+        const name = `noodara-test-${randomUUID()}`;
+        containers.push(name);
+
+        const second = await run(
+          c(),
+          `${DOCKER_RUN_DETACHED} ${q(name)} ${q(built.tag)} ${q('13100:3000')}`,
+        );
+
+        captureFailure('docker-port-in-use.txt', second);
       });
     });
   },

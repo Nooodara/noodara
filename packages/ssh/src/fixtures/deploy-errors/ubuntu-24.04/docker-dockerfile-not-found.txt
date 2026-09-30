@@ -1,0 +1,7 @@
+# exit=1
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Missing.Dockerfile
+#1 transferring dockerfile: 2B done
+#1 DONE 0.0s
+ERROR: failed to build: failed to solve: failed to read dockerfile: open Missing.Dockerfile: no such file or directory

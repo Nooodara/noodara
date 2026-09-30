@@ -1,0 +1,4 @@
+# exit=125
+docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint noodara-test-<uuid> (<id>): Bind for 0.0.0.0:13100 failed: port is already allocated
+
+Run 'docker run --help' for more information
