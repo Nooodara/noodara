@@ -78,7 +78,11 @@ function sshExec(stack: DeployEngineStack, command: string, stdin?: string): Pro
   });
 }
 
-async function writeDeployerFile(stack: DeployEngineStack, target: string, content: string): Promise<void> {
+async function writeDeployerFile(
+  stack: DeployEngineStack,
+  target: string,
+  content: string,
+): Promise<void> {
   const result = await stack.exec(['sh', '-c', 'umask 077 && cat > "$1"', 'sh', target], {
     user: 'deployer',
     stdin: content,
@@ -168,9 +172,12 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('deploy-engine harness on Ubuntu %s
   });
 
   it('seeds a gitlink and an LFS pointer when asked', async () => {
-    const result = await current().exec(['git', '-C', '/srv/git/edge-cases.git', 'ls-tree', '-r', 'main'], {
-      user: 'git',
-    });
+    const result = await current().exec(
+      ['git', '-C', '/srv/git/edge-cases.git', 'ls-tree', '-r', 'main'],
+      {
+        user: 'git',
+      },
+    );
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toMatch(/^160000 commit [0-9a-f]{40}\tvendor\/sub$/m);
@@ -194,12 +201,18 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('deploy-engine harness on Ubuntu %s
     expect(login.exitCode).toBe(0);
     expect(login.stdout + login.stderr).not.toContain(s.registry.password);
 
-    const pull = await sshExec(s, `docker image rm -f ${image} >/dev/null 2>&1; docker pull ${image}`);
+    const pull = await sshExec(
+      s,
+      `docker image rm -f ${image} >/dev/null 2>&1; docker pull ${image}`,
+    );
     expect(pull.exitCode).toBe(0);
 
     const logout = await sshExec(s, `docker logout ${s.registry.host}`);
     expect(logout.exitCode).toBe(0);
-    const denied = await sshExec(s, `docker image rm -f ${image} >/dev/null 2>&1; docker pull ${image}`);
+    const denied = await sshExec(
+      s,
+      `docker image rm -f ${image} >/dev/null 2>&1; docker pull ${image}`,
+    );
     expect(denied.exitCode).not.toBe(0);
   });
 

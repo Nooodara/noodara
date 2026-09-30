@@ -14,7 +14,7 @@
     "start": "pnpm --filter @noodara/control-plane start",
     "start:worker": "pnpm --filter @noodara/control-plane start:worker",
     "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck && tsc -p tests/integration/ssh/tsconfig.json --noEmit && tsc -p tests/e2e/tsconfig.json --noEmit && tsc -p tests/integration/installer/tsconfig.json --noEmit && tsc -p scripts/brand/tsconfig.json --noEmit && tsc -p scripts/ui/tsconfig.json --noEmit",
+    "typecheck": "turbo run typecheck && tsc -p tests/integration/ssh/tsconfig.json --noEmit && tsc -p tests/integration/deploy-engine/tsconfig.json --noEmit && tsc -p tests/e2e/tsconfig.json --noEmit && tsc -p tests/integration/installer/tsconfig.json --noEmit && tsc -p scripts/brand/tsconfig.json --noEmit && tsc -p scripts/ui/tsconfig.json --noEmit",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:installer": "vitest run --config vitest.installer.config.ts",
