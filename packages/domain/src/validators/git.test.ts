@@ -47,12 +47,35 @@ describe('validateRepositoryUrl', () => {
     expect(codeOf(validateRepositoryUrl(url))).toBe('REPOSITORY_URL_CONTAINS_WHITESPACE');
   });
 
-  it.each([';', '|', '&', '$', '`', '(', ')', '<', '>', '\\', '"', "'", '*', '[', ']', '{', '}', '!'])(
-    'rejects the metacharacter %s with REPOSITORY_URL_CONTAINS_METACHARACTER',
-    (char) => {
-      const result = validateRepositoryUrl(`https://github.com/acme/app${char}x.git`);
+  it.each([
+    ';',
+    '|',
+    '&',
+    '$',
+    '`',
+    '(',
+    ')',
+    '<',
+    '>',
+    '\\',
+    '"',
+    "'",
+    '*',
+    '[',
+    ']',
+    '{',
+    '}',
+    '!',
+  ])('rejects the metacharacter %s with REPOSITORY_URL_CONTAINS_METACHARACTER', (char) => {
+    const result = validateRepositoryUrl(`https://github.com/acme/app${char}x.git`);
 
-      expect(codeOf(result)).toBe('REPOSITORY_URL_CONTAINS_METACHARACTER');
+    expect(codeOf(result)).toBe('REPOSITORY_URL_CONTAINS_METACHARACTER');
+  });
+
+  it.each(['https://[not-ipv6]/acme/app.git', 'https://[2001:db8::1/acme/app.git'])(
+    'rejects a bracket outside a well-formed IPv6 host in %s as a metacharacter',
+    (url) => {
+      expect(codeOf(validateRepositoryUrl(url))).toBe('REPOSITORY_URL_CONTAINS_METACHARACTER');
     },
   );
 
@@ -130,12 +153,12 @@ describe('validateRepositoryUrl', () => {
     '[fd00::1]',
     '[fec0::1]',
     '[::ffff:10.0.0.1]',
-    '[not-ipv6]',
-    '[2001:db8::1',
+    '[::ffff:a00:1]',
+    '[1:2:3]',
     '-github.com',
     'github-.com',
     `${'a'.repeat(64)}.com`,
-    `${'a'.repeat(60)}.${'b'.repeat(60)}.${'c'.repeat(60)}.${'d'.repeat(60)}.com`,
+    Array.from({ length: 5 }, () => 'a'.repeat(60)).join('.'),
     'git_hub.com',
     'github..com',
     'github.com.',
@@ -222,12 +245,24 @@ describe('validateGitBranch', () => {
     expect(validateGitBranch('a'.repeat(255)).ok).toBe(true);
   });
 
-  it.each(['my branch', 'a~1', 'a^', 'a:b', 'a?', 'a*', 'a[b', 'a\\b', 'a@b', 'a{b', 'a@{1}', 'a;b', 'a\nb', 'ñ'])(
-    'rejects %j with GIT_BRANCH_INVALID_CHARACTER',
-    (branch) => {
-      expect(codeOf(validateGitBranch(branch))).toBe('GIT_BRANCH_INVALID_CHARACTER');
-    },
-  );
+  it.each([
+    'my branch',
+    'a~1',
+    'a^',
+    'a:b',
+    'a?',
+    'a*',
+    'a[b',
+    'a\\b',
+    'a@b',
+    'a{b',
+    'a@{1}',
+    'a;b',
+    'a\nb',
+    'ñ',
+  ])('rejects %j with GIT_BRANCH_INVALID_CHARACTER', (branch) => {
+    expect(codeOf(validateGitBranch(branch))).toBe('GIT_BRANCH_INVALID_CHARACTER');
+  });
 
   it.each(['-main', '/main', 'main/', 'main.', 'feature/.hidden', '.hidden'])(
     'rejects %s with GIT_BRANCH_INVALID_BOUNDARY',
@@ -236,9 +271,12 @@ describe('validateGitBranch', () => {
     },
   );
 
-  it.each(['a..b', '../main', 'feature/..'])('rejects %s with GIT_BRANCH_PATH_TRAVERSAL', (branch) => {
-    expect(codeOf(validateGitBranch(branch))).toBe('GIT_BRANCH_PATH_TRAVERSAL');
-  });
+  it.each(['a..b', '../main', 'feature/..'])(
+    'rejects %s with GIT_BRANCH_PATH_TRAVERSAL',
+    (branch) => {
+      expect(codeOf(validateGitBranch(branch))).toBe('GIT_BRANCH_PATH_TRAVERSAL');
+    },
+  );
 
   it('rejects a//b with GIT_BRANCH_EMPTY_SEGMENT', () => {
     expect(codeOf(validateGitBranch('a//b'))).toBe('GIT_BRANCH_EMPTY_SEGMENT');
