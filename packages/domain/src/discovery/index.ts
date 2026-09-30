@@ -5,3 +5,4 @@ export * from './access.js';
 export * from './resources.js';
 export * from './docker-version.js';
 export * from './merge-facts.js';
+export * from './buildkit.js';
