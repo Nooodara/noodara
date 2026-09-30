@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 11-05-PLAN.md
-last_updated: "2026-09-30T03:31:14.596Z"
+stopped_at: Completed 11-06-PLAN.md
+last_updated: "2026-09-30T04:00:42.077Z"
 last_activity: 2026-09-30
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 72
-  completed_plans: 61
+  completed_plans: 62
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 11 (Motor de deploy — fundamentos) — EXECUTING
-Plan: 6 of 16
+Plan: 7 of 16
 Status: Ready to execute
 Last activity: 2026-09-30
 
-Progress: [█████████░] 85%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
@@ -220,6 +220,7 @@ Progress: [█████████░] 85%
 | Phase 11 P03 | 15 min | 3 tasks | 13 files |
 | Phase 11 P04 | 20min | 2 tasks | 11 files |
 | Phase 11 P05 | 25 min | 3 tasks | 23 files |
+| Phase 11 P06 | 45 min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -597,6 +598,10 @@ Recent decisions affecting current work:
 - [Phase 11]: 11-03 G7: pull-through mirror (mirror.gcr.io) alongside the D-10 htpasswd registry; orchestrator-selected default, pending user confirmation at ADR 0008 review
 - [Phase 11]: 11-05: toServerCredentialType narrows the widened credential_type to SSH types; a non-SSH type on a server credential throws
 - [Phase 11]: 11-05: no migration may reference an enum value added by ADD VALUE (drizzle runs pending migrations in one transaction); enforced by migration-hygiene.test.ts
+- [Phase 11]: 11-06 G1: secrets go over exec stdin to umask 077 && cat; SFTP measured but not adopted (raw open gets umask 002)
+- [Phase 11]: 11-06 G1: docker login --config <ws>/secrets/docker --password-stdin keeps creds in the workspace (0600), never in ~/.docker
+- [Phase 11]: 11-06 G2: kill form is kill -s TERM -- -pgid (dash rejects kill -TERM -- -pgid, exit 2); launcher must be setsid -w (plain setsid reports exit 0 early)
+- [Phase 11]: 11-06 G2: channel.signal kills the whole no-pty session tree on OpenSSH 8.9/9.6; docker kill has no target during a BuildKit RUN; combined D-04 proven, docker-kill branch not taken
 
 ### Pending Todos
 
@@ -675,8 +680,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-30T03:31:09.240Z
-Stopped at: Completed 11-05-PLAN.md
+Last session: 2026-09-30T04:00:26.555Z
+Stopped at: Completed 11-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
