@@ -3,7 +3,12 @@
 // the real column set, not a hand-picked subset.
 import { describe, expect, it } from 'vitest';
 import type { servers } from '../db/schema/servers.js';
-import { SERVER_VIEW_KEYS, toServerView, type ServerView } from './server-view.js';
+import {
+  SERVER_VIEW_KEYS,
+  toServerCredentialType,
+  toServerView,
+  type ServerView,
+} from './server-view.js';
 
 type ServerRow = typeof servers.$inferSelect;
 
@@ -118,4 +123,20 @@ describe('toServerView', () => {
     const view: ServerView = toServerView(buildServerRow(), 'ssh_password');
     expect(view.id).toBe('srv-1');
   });
+});
+
+// Phase 11 (D-16): credential_type also holds service credentials now. A server's credential is
+// always an SSH one; any other stored type is corrupt data and must fail loudly, never be
+// projected onto a ServerView.
+describe('toServerCredentialType', () => {
+  it.each(['ssh_private_key', 'ssh_password'] as const)('accepts %s unchanged', (type) => {
+    expect(toServerCredentialType(type)).toBe(type);
+  });
+
+  it.each(['git_deploy_key', 'git_https_token', 'registry_password'] as const)(
+    'rejects the service credential type %s',
+    (type) => {
+      expect(() => toServerCredentialType(type)).toThrow(/not an SSH credential/);
+    },
+  );
 });
