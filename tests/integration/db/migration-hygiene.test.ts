@@ -37,6 +37,9 @@ const CREATE_TABLE_WITHOUT_GUARD = /CREATE\s+TABLE\s+(?!IF NOT EXISTS)/i;
 const CREATE_INDEX_WITHOUT_GUARD = /CREATE\s+(?:UNIQUE\s+)?INDEX\s+(?!IF NOT EXISTS)/i;
 const DROP_WITHOUT_GUARD = /\bDROP\s+(TABLE|INDEX|TYPE|CONSTRAINT)\s+(?!IF EXISTS)/i;
 const CREATE_TYPE = /CREATE\s+TYPE\b/i;
+const ADD_VALUE = /ALTER\s+TYPE\b[\s\S]*?\bADD\s+VALUE\b/i;
+const ADD_VALUE_GUARDED = /ADD\s+VALUE\s+IF\s+NOT\s+EXISTS\s+'/i;
+const ADD_VALUE_LITERAL = /ADD\s+VALUE\s+(?:IF\s+NOT\s+EXISTS\s+)?'([^']+)'/gi;
 
 describe('migration hygiene guard (QA-06, T-1-21)', () => {
   const migrationFiles = readMigrationFiles();
@@ -90,4 +93,50 @@ describe('migration hygiene guard (QA-06, T-1-21)', () => {
       }
     },
   );
+
+  // T-11-15: drizzle-orm's migrator runs every pending migration inside ONE transaction, and
+  // PostgreSQL forbids using an enum value in the transaction that added it ("unsafe use of new
+  // value"). A fresh install runs 0000..latest together, so no statement in ANY migration may
+  // reference a value added by `ALTER TYPE ... ADD VALUE` anywhere.
+  const addedEnumValues = [
+    ...new Set(
+      migrationFiles.flatMap((file) =>
+        file.statements.flatMap((statement) =>
+          [...statement.matchAll(ADD_VALUE_LITERAL)].map((match) => match[1] ?? ''),
+        ),
+      ),
+    ),
+  ].filter((value) => value.length > 0);
+
+  it.each(statementCases.filter(({ statement }) => ADD_VALUE.test(statement)))(
+    '$label guards ALTER TYPE ... ADD VALUE with IF NOT EXISTS',
+    ({ fileName, statement }) => {
+      expect(statement, `${fileName}: ADD VALUE without IF NOT EXISTS: ${statement}`).toMatch(
+        ADD_VALUE_GUARDED,
+      );
+    },
+  );
+
+  it('no migration statement references an enum value added by ADD VALUE', () => {
+    const offenders = statementCases
+      .filter(({ statement }) => !ADD_VALUE.test(statement))
+      .flatMap(({ label, statement }) =>
+        addedEnumValues
+          .filter((value) => statement.includes(`'${value}'`))
+          .map((value) => `${label} uses '${value}'`),
+      );
+
+    expect(offenders).toEqual([]);
+  });
+
+  it('the guard itself detects the ADD VALUE literals it must protect', () => {
+    const sample = `ALTER TYPE "public"."credential_type" ADD VALUE IF NOT EXISTS 'git_deploy_key';`;
+
+    expect([...sample.matchAll(ADD_VALUE_LITERAL)].map((match) => match[1])).toEqual([
+      'git_deploy_key',
+    ]);
+    expect(addedEnumValues).toEqual(
+      expect.arrayContaining(['git_deploy_key', 'git_https_token', 'registry_password']),
+    );
+  });
 });

@@ -111,16 +111,17 @@ export async function seedRepresentativeData(db: Database): Promise<Representati
   `);
   const loginAttempt = assertDefined(insertedLoginAttempts.rows[0], 'login attempt');
 
+  // Raw SQL restricted to the columns present in the *previous* migration snapshot (0004) —
+  // migration 0005 adds `public_key` (D-18), which does not exist yet at this point (same
+  // pattern as login_attempts/lockout_count above).
   const encryptedValue = encryptSecret('representative-ssh-key-material', SEED_ENCRYPTION_KEY);
-  const insertedCredentials = await db
-    .insert(schema.credentials)
-    .values({
-      type: 'ssh_password',
-      encryptedValue,
-      keyVersion: SEED_ENCRYPTION_KEY.version,
-    })
-    .returning();
-  const credential = assertDefined(insertedCredentials[0], 'credential');
+  const credentialId = uuidv7();
+  const insertedCredentials = await db.execute<{ id: string }>(sql`
+    insert into credentials (id, type, encrypted_value, key_version)
+    values (${credentialId}, 'ssh_password', ${encryptedValue}, ${SEED_ENCRYPTION_KEY.version})
+    returning id
+  `);
+  const credential = assertDefined(insertedCredentials.rows[0], 'credential');
 
   // Raw SQL restricted to the columns present in the *previous* migration snapshot (0001) — this
   // plan's migration 0002 adds host_fingerprint_captured_at/pending_fingerprint_seen_at, which do

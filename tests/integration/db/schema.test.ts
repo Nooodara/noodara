@@ -13,6 +13,11 @@ const EXPECTED_TABLES = [
   'credentials',
   'activity_events',
   'discovery_snapshots',
+  'projects',
+  'environments',
+  'services',
+  'deployments',
+  'deployment_log_chunks',
 ];
 
 const EXPECTED_ENUMS = [
@@ -23,6 +28,12 @@ const EXPECTED_ENUMS = [
   'login_attempt_scope',
   'activity_actor_type',
   'activity_outcome',
+  'service_source_type',
+  'service_status',
+  'deployment_status',
+  'deployment_trigger',
+  'deployment_error_code',
+  'deployment_log_phase',
 ];
 
 const UUID_V7_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/;

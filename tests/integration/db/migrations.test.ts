@@ -25,6 +25,11 @@ const EXPECTED_TABLES = [
   'credentials',
   'activity_events',
   'discovery_snapshots',
+  'projects',
+  'environments',
+  'services',
+  'deployments',
+  'deployment_log_chunks',
 ];
 
 const EXPECTED_ENUMS = [
@@ -35,6 +40,12 @@ const EXPECTED_ENUMS = [
   'login_attempt_scope',
   'activity_actor_type',
   'activity_outcome',
+  'service_source_type',
+  'service_status',
+  'deployment_status',
+  'deployment_trigger',
+  'deployment_error_code',
+  'deployment_log_phase',
 ];
 
 async function listTableNames(db: Database): Promise<string[]> {
@@ -110,10 +121,20 @@ async function fetchSeededSnapshot(db: Database, ids: RepresentativeDataIds) {
     last_failure_at: string | null;
   }>(sql`select id, scope, scope_key, failure_count, last_failure_at from login_attempts where id = ${ids.loginAttemptId}`);
   const loginAttempt = loginAttemptResult.rows[0];
-  const [credential] = await db
-    .select()
-    .from(schema.credentials)
-    .where(eq(schema.credentials.id, ids.credentialId));
+  // Raw SQL restricted to the columns present in the *previous* migration snapshot (0004):
+  // migration 0005 adds `public_key` (D-18), absent at the "before" snapshot.
+  const credentialResult = await db.execute<{
+    id: string;
+    type: string;
+    encrypted_value: string;
+    key_version: number;
+    created_at: string;
+    updated_at: string;
+  }>(sql`
+    select id, type, encrypted_value, key_version, created_at, updated_at
+    from credentials where id = ${ids.credentialId}
+  `);
+  const credential = credentialResult.rows[0];
   // Raw SQL restricted to the columns present in the *previous* migration snapshot (0001):
   // `schema.servers` (the current code's schema module) includes `host_fingerprint_captured_at`
   // and `pending_fingerprint_seen_at`, the two columns migration 0002 adds — they do not exist yet
@@ -182,6 +203,7 @@ describe('migrations applied from scratch (QA-06)', () => {
       '0002_phase2_fingerprint_timestamps',
       '0003_phase3_discovery_snapshots',
       '0004_phase9_user_preferences',
+      '0005_phase11_deploy_engine',
     ]);
   });
 
@@ -515,5 +537,20 @@ describe('migrations applied from the previous snapshot (QA-06, PITFALLS.md #10)
       sql`select preferences from users where id = ${ids.userId}`,
     );
     expect(preferencesResult.rows[0]?.preferences).toEqual({});
+
+    // Migration 0005 adds `docker_buildkit_available` (D-03 fact) to `servers` and `public_key`
+    // (D-18) to `credentials`, both tables with a pre-existing row. Both columns are nullable with
+    // no default, so the backfill must be NULL; widening `credential_type` (D-16) must leave the
+    // pre-existing ssh_private_key row untouched.
+    const buildkitResult = await fixture.db.execute<{ docker_buildkit_available: boolean | null }>(
+      sql`select docker_buildkit_available from servers where id = ${ids.serverId}`,
+    );
+    expect(buildkitResult.rows[0]?.docker_buildkit_available).toBeNull();
+    const credentialAfterResult = await fixture.db.execute<{ type: string; public_key: string | null }>(
+      sql`select type, public_key from credentials where id = ${ids.credentialId}`,
+    );
+    expect(credentialAfterResult.rows[0]?.public_key).toBeNull();
+    expect(credentialAfterResult.rows[0]?.type).toBe(before.credential?.type);
+    expect(credentialAfterResult.rows[0]?.type).toBe('ssh_password');
   });
 });
