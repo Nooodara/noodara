@@ -7,7 +7,7 @@ import { asc, eq } from 'drizzle-orm';
 import { credentials } from '../db/schema/credentials.js';
 import { servers } from '../db/schema/servers.js';
 import type { ServerServicesDeps } from './server-service-deps.js';
-import { toServerView, type ServerView } from './server-view.js';
+import { toServerCredentialType, toServerView, type ServerView } from './server-view.js';
 
 /**
  * Returns the `ServerView` for `serverId`, or `null` when no such server exists — absence is the
@@ -32,7 +32,7 @@ export async function getServerView(
     throw new Error(`getServerView: credential ${row.credentialId} not found`);
   }
 
-  return toServerView(row, credentialRow.type);
+  return toServerView(row, toServerCredentialType(credentialRow.type));
 }
 
 /**
@@ -54,6 +54,6 @@ export async function listServerViews(deps: ServerServicesDeps): Promise<ServerV
     if (credentialType === undefined) {
       throw new Error(`listServerViews: credential ${row.credentialId} not found`);
     }
-    return toServerView(row, credentialType);
+    return toServerView(row, toServerCredentialType(credentialType));
   });
 }

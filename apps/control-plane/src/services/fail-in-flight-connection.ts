@@ -9,7 +9,7 @@ import { credentials } from '../db/schema/credentials.js';
 import { servers } from '../db/schema/servers.js';
 import { publishServerEvent } from '../events/server-event-publisher.js';
 import type { ServerServicesDeps, ServiceActor } from './server-service-deps.js';
-import { toServerView, type ServerView } from './server-view.js';
+import { toServerCredentialType, toServerView, type ServerView } from './server-view.js';
 
 export interface FailInFlightConnectionInput {
   readonly actor: ServiceActor;
@@ -97,7 +97,7 @@ export async function failInFlightConnection(
       throw new Error(`failInFlightConnection: credential ${updatedRow.credentialId} not found`);
     }
 
-    return { ok: true, skipped: false, server: toServerView(updatedRow, credentialRow.type) };
+    return { ok: true, skipped: false, server: toServerView(updatedRow, toServerCredentialType(credentialRow.type)) };
   });
 
   // D-04: publish only after the transaction has committed, and only for a real resolution.

@@ -37,6 +37,7 @@ function buildServerRow(overrides: Partial<ServerRow> = {}): ServerRow {
     dockerInstalled: true,
     dockerVersion: '27.0.0',
     dockerComposeVersion: '2.30.0',
+    dockerBuildkitAvailable: null,
     lastSeenAt: new Date('2026-01-02T00:00:00Z'),
     lastErrorCode: null,
     createdAt: new Date('2025-12-01T00:00:00Z'),

@@ -11,6 +11,17 @@ export type ServerRow = typeof servers.$inferSelect;
 
 export type CredentialType = 'ssh_private_key' | 'ssh_password';
 
+/**
+ * Narrows a stored `credential_type` (which also holds service credentials since phase 11, D-16)
+ * to the SSH types a server credential can have. Anything else is corrupt data: fail loudly.
+ */
+export function toServerCredentialType(type: string): CredentialType {
+  if (type === 'ssh_private_key' || type === 'ssh_password') {
+    return type;
+  }
+  throw new Error(`server credential type ${type} is not an SSH credential`);
+}
+
 export interface ServerView {
   readonly id: string;
   readonly name: string;

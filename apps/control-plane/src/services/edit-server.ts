@@ -30,7 +30,7 @@ import {
   type EncodedCredential,
 } from './credential-store.js';
 import type { ServerServicesDeps, ServiceActor } from './server-service-deps.js';
-import { toServerView, type ServerView } from './server-view.js';
+import { toServerCredentialType, toServerView, type ServerView } from './server-view.js';
 
 const NAME_UNIQUE_CONSTRAINT = 'servers_name_lower_unique_idx';
 const HOST_PORT_UNIQUE_CONSTRAINT = 'servers_host_port_unique_idx';
@@ -81,7 +81,7 @@ async function fetchCredentialType(
   if (!row) {
     throw new Error(`editServer: credential ${credentialId} not found`);
   }
-  return row.type;
+  return toServerCredentialType(row.type);
 }
 
 /**

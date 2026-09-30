@@ -12,7 +12,7 @@ import { credentials } from '../db/schema/credentials.js';
 import { servers } from '../db/schema/servers.js';
 import { publishServerEvent } from '../events/server-event-publisher.js';
 import type { ServerServicesDeps, ServiceActor } from './server-service-deps.js';
-import { toServerView, type ServerView } from './server-view.js';
+import { toServerCredentialType, toServerView, type ServerView } from './server-view.js';
 
 export interface TrustFingerprintInput {
   readonly actor: ServiceActor;
@@ -185,7 +185,7 @@ export async function trustFingerprint(
       throw new Error(`trustFingerprint: credential ${updatedRow.credentialId} not found`);
     }
 
-    return { ok: true, server: toServerView(updatedRow, credentialRow.type) };
+    return { ok: true, server: toServerView(updatedRow, toServerCredentialType(credentialRow.type)) };
   });
 
   // D-04: publish only after the transaction has committed.

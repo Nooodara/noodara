@@ -59,6 +59,9 @@ export const servers = pgTable(
     // D-09 (phase 3): nullable, backfills NULL for pre-existing rows; filled by the same discovery
     // run that fills dockerVersion.
     dockerComposeVersion: text('docker_compose_version'),
+    // D-03 (phase 11): whether BuildKit is the active builder; NULL until a discovery run
+    // observes it.
+    dockerBuildkitAvailable: boolean('docker_buildkit_available'),
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
     lastErrorCode: serverErrorCodeEnum('last_error_code'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

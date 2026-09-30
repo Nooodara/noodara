@@ -35,11 +35,11 @@ import { credentials } from '../db/schema/credentials.js';
 import { discoverySnapshots } from '../db/schema/discovery-snapshots.js';
 import { servers } from '../db/schema/servers.js';
 import { publishServerEvent } from '../events/server-event-publisher.js';
-import { decodeCredential } from './credential-store.js';
+import { decodeCredential, type CredentialRow } from './credential-store.js';
 import { failInFlightConnection } from './fail-in-flight-connection.js';
 import { logRecoveryFailure } from './log-recovery-failure.js';
 import type { ServerServicesDeps, ServiceActor } from './server-service-deps.js';
-import { toServerView, type ServerView } from './server-view.js';
+import { toServerCredentialType, toServerView, type ServerView } from './server-view.js';
 
 export interface ConnectAndDiscoverInput {
   readonly actor: ServiceActor;
@@ -81,7 +81,6 @@ export type ConnectAndDiscoverResult =
       readonly message: string;
     };
 
-type CredentialRow = typeof credentials.$inferSelect;
 type ServerRow = typeof servers.$inferSelect;
 
 interface LockedServer {
@@ -131,7 +130,15 @@ async function lockAndBeginConnecting(
       throw new Error(`connectAndDiscover: credential ${row.credentialId} not found`);
     }
 
-    return { ok: true, row: updatedRow, credentialRow };
+    return {
+      ok: true,
+      row: updatedRow,
+      credentialRow: {
+        type: toServerCredentialType(credentialRow.type),
+        encryptedValue: credentialRow.encryptedValue,
+        keyVersion: credentialRow.keyVersion,
+      },
+    };
   });
 }
 

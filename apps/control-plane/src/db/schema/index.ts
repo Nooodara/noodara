@@ -7,3 +7,8 @@ export * from './credentials.js';
 export * from './servers.js';
 export * from './activity-events.js';
 export * from './discovery-snapshots.js';
+export * from './projects.js';
+export * from './environments.js';
+export * from './services.js';
+export * from './deployments.js';
+export * from './deployment-log-chunks.js';
