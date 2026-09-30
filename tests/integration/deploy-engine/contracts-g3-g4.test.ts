@@ -10,7 +10,7 @@ import { randomUUID } from 'node:crypto';
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { Client } from '@noodara/ssh/testing';
 import type { ClientChannel } from '@noodara/ssh/testing';
 import {
@@ -375,3 +375,294 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     });
   },
 );
+
+// --- G4 -----------------------------------------------------------------------------------------
+
+const DEPLOYMENT_FIXTURES = path.join(REPO_ROOT, 'packages/domain/src/deployment/fixtures');
+
+/**
+ * The docker.ps template 11-10/11-13 adopt. `--size=false` is required, not decorative: measured,
+ * the CLI turns size computation ON by itself whenever the template references `.Size`, and
+ * `{{json .}}` does (research assumption A3 was wrong). Only an explicit `--size=false` stops it.
+ */
+const DOCKER_PS = `docker ps --all --no-trunc --size=false --filter label=noodara.managed=true --format '{{json .}}'`;
+/** Same without any size flag: what A3 assumed was cheap. */
+const DOCKER_PS_DEFAULT = `docker ps --all --no-trunc --filter label=noodara.managed=true --format '{{json .}}'`;
+const DOCKER_PS_SIZE = `docker ps --all --no-trunc --size --filter label=noodara.managed=true --format '{{json .}}'`;
+/** Files written into the running container's writable layer so the size walk has a real cost. */
+const CHURN_FILES = 50_000;
+const CHURN = `sh -c 'mkdir /churn && cd /churn && seq 1 "$0" | xargs touch'`;
+const DOCKER_INSPECT_STATE = `docker inspect --type container --format '{{json .State}}' --`;
+/** Remote wall time of one command in ms, so ssh round-trips do not pollute the Size comparison. */
+const TIMED = `sh -c 's=$(date +%s%N); eval "$0" >/dev/null; e=$(date +%s%N); echo $(( (e - s) / 1000000 ))'`;
+
+/** Fields the parser in 11-10 relies on; the full set per version is in the fixture README. */
+const REQUIRED_PS_KEYS = [
+  'CreatedAt',
+  'ID',
+  'Image',
+  'Labels',
+  'Names',
+  'Ports',
+  'State',
+  'Status',
+];
+const REQUIRED_STATE_KEYS = [
+  'ExitCode',
+  'FinishedAt',
+  'OOMKilled',
+  'Running',
+  'StartedAt',
+  'Status',
+];
+const TIMING_RUNS = 5;
+
+function labelArgs(serviceId: string, deploymentId: string): string {
+  return [
+    'noodara.managed=true',
+    `noodara.service_id=${serviceId}`,
+    `noodara.deployment_id=${deploymentId}`,
+    'noodara.test=true',
+  ]
+    .map((label) => `--label ${q(label)}`)
+    .join(' ');
+}
+
+function parseNdjson(stdout: string): Record<string, unknown>[] {
+  return stdout
+    .split('\n')
+    .filter((line) => line !== '')
+    .map((line) => JSON.parse(line) as Record<string, unknown>);
+}
+
+function keySet(objects: readonly Record<string, unknown>[]): string[] {
+  const keys = new Set<string>();
+  for (const object of objects) for (const key of Object.keys(object)) keys.add(key);
+  return [...keys].sort();
+}
+
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)] ?? Number.NaN;
+}
+
+function deploymentFixture(ubuntu: string, file: string): string {
+  return path.join(DEPLOYMENT_FIXTURES, `ubuntu-${ubuntu}`, file);
+}
+
+/** Writes in capture mode, then always reads back: normal mode compares against the capture. */
+function captureOrRead(file: string, content: string): string {
+  if (CAPTURE_FIXTURES) {
+    mkdirSync(path.dirname(file), { recursive: true });
+    writeFileSync(file, content);
+  }
+  return readFileSync(file, 'utf8');
+}
+
+describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
+  'G4 / ADR 0008: docker ps NDJSON field stability on Ubuntu %s',
+  (ubuntu) => {
+    let stack: DeployEngineStack | undefined;
+    let client: Client | undefined;
+    let created: { running: string; exited: string; created: string; network: string } | undefined;
+
+    const c = (): Client => {
+      if (client === undefined) throw new Error('client not connected');
+      return client;
+    };
+    const mustRun = async (command: string, expectedExit = 0): Promise<string> => {
+      const result = await run(c(), command);
+      expect(result.exitCode, `${command}\n${result.stderr}`).toBe(expectedExit);
+      return result.stdout;
+    };
+
+    /** running (published port, own network), exited non-zero, created never started. */
+    const createTrio = async (): Promise<NonNullable<typeof created>> => {
+      const base = stack?.baseImages[0];
+      if (base === undefined) throw new Error('no base image preloaded');
+      const [a, b, cc] = [randomUUID(), randomUUID(), randomUUID()];
+      const trio = {
+        running: `noodara-${a}`,
+        exited: `noodara-${b}`,
+        created: `noodara-${cc}`,
+        network: `noodara-net-${a}`,
+      };
+      created = trio;
+      await mustRun(`docker network create --label noodara.test=true -- ${q(trio.network)}`);
+      await mustRun(
+        `docker run -d --name ${q(trio.running)} --network ${q(trio.network)} -p 18080:3000 ` +
+          `${labelArgs(a, randomUUID())} ${q(base)} sleep 3600`,
+      );
+      await mustRun(
+        `docker run --name ${q(trio.exited)} ${labelArgs(b, randomUUID())} ${q(base)} sh -c 'exit 3'`,
+        3,
+      );
+      await mustRun(
+        `docker create --name ${q(trio.created)} ${labelArgs(cc, randomUUID())} ${q(base)} sleep 3600`,
+      );
+      return trio;
+    };
+
+    beforeAll(async () => {
+      stack = await startDeployEngineStack({ ubuntu });
+      client = await connect(stack);
+      const versions = await run(
+        c(),
+        'docker version --format "{{.Client.Version}} {{.Server.Version}} {{.Server.APIVersion}}"',
+      );
+      measure('G4', ubuntu, { dockerClientServerApi: versions.stdout.trim() });
+    }, STACK_TIMEOUT_MS);
+
+    afterEach(async () => {
+      if (created !== undefined) {
+        const trio = created;
+        created = undefined;
+        await mustRun(
+          `docker rm -f -- ${q(trio.running)} ${q(trio.exited)} ${q(trio.created)} >/dev/null`,
+        );
+        await mustRun(`docker network rm -- ${q(trio.network)} >/dev/null`);
+      }
+      expect(await mustRun('docker ps -aq --filter label=noodara.test=true')).toBe('');
+      expect(await mustRun('docker network ls -q --filter label=noodara.test=true')).toBe('');
+    });
+
+    afterAll(async () => {
+      client?.end();
+      await stack?.stop();
+      await assertNoStrayTestContainers();
+    }, STACK_TIMEOUT_MS);
+
+    it(`G4 / ADR 0008: \`docker ps --all --no-trunc --size=false --filter label=noodara.managed=true --format '{{json .}}'\` is NDJSON, one object per container, with running / exited / created states and the captured key set`, async () => {
+      const trio = await createTrio();
+
+      const stdout = await mustRun(DOCKER_PS);
+      const lines = stdout.split('\n').filter((line) => line !== '');
+      const objects = lines.map((line) => JSON.parse(line) as Record<string, unknown>);
+      const byName = new Map(objects.map((o) => [o['Names'], o]));
+      measure('G4', ubuntu, { case: 'docker ps', keySet: keySet(objects), lines: lines.length });
+
+      expect(stdout.endsWith('\n')).toBe(true);
+      expect(lines).toHaveLength(3);
+      for (const object of objects) {
+        for (const key of REQUIRED_PS_KEYS) expect(object, key).toHaveProperty(key);
+        expect(String(object['Labels'])).toContain('noodara.managed=true');
+        expect(String(object['ID'])).toMatch(/^[0-9a-f]{64}$/);
+      }
+      expect(byName.get(trio.running)?.['State']).toBe('running');
+      expect(String(byName.get(trio.running)?.['Ports'])).toContain('18080->3000/tcp');
+      expect(String(byName.get(trio.running)?.['Networks'])).toBe(trio.network);
+      expect(byName.get(trio.exited)?.['State']).toBe('exited');
+      expect(String(byName.get(trio.exited)?.['Status'])).toMatch(/^Exited \(3\) /);
+      expect(byName.get(trio.created)?.['State']).toBe('created');
+      expect(byName.get(trio.created)?.['Status']).toBe('Created');
+
+      const captured = captureOrRead(deploymentFixture(ubuntu, 'docker_ps.ndjson'), stdout);
+      expect(keySet(parseNdjson(captured))).toEqual(keySet(objects));
+      expect(
+        parseNdjson(captured)
+          .map((o) => o['State'])
+          .sort(),
+      ).toEqual(['created', 'exited', 'running']);
+    });
+
+    it('G4 / ADR 0008: `{{json .}}` computes Size unless `--size=false` is passed; the chosen template passes it and gets "0B"', async () => {
+      const trio = await createTrio();
+      const churnStarted = Date.now();
+      await mustRun(`docker exec ${q(trio.running)} ${CHURN} ${String(CHURN_FILES)}`);
+      const churnMs = Date.now() - churnStarted;
+
+      const variants = { chosen: DOCKER_PS, noFlag: DOCKER_PS_DEFAULT, withSize: DOCKER_PS_SIZE };
+      const parsed: Record<string, Record<string, unknown>[]> = {};
+      const timings: Record<string, number[]> = {};
+      for (const [name, command] of Object.entries(variants)) {
+        parsed[name] = parseNdjson(await mustRun(command));
+        timings[name] = [];
+      }
+      for (let i = 0; i < TIMING_RUNS; i += 1) {
+        for (const [name, command] of Object.entries(variants)) {
+          timings[name]?.push(Number((await mustRun(`${TIMED} ${q(command)}`)).trim()));
+        }
+      }
+      const sizes = (name: string): unknown[] =>
+        (parsed[name] ?? []).map((o) => [o['Names'], o['Size'] ?? '(absent)']);
+      measure('G4', ubuntu, {
+        case: 'size',
+        churnFiles: CHURN_FILES,
+        churnMs,
+        sizes: { chosen: sizes('chosen'), noFlag: sizes('noFlag'), withSize: sizes('withSize') },
+        timingsMs: timings,
+        medianMs: Object.fromEntries(
+          Object.entries(timings).map(([name, values]) => [name, median(values)]),
+        ),
+      });
+
+      expect(DOCKER_PS).toContain('--size=false');
+      expect(keySet(parsed['noFlag'] ?? [])).toEqual(keySet(parsed['chosen'] ?? []));
+      expect(keySet(parsed['withSize'] ?? [])).toEqual(keySet(parsed['chosen'] ?? []));
+      for (const object of parsed['chosen'] ?? []) expect(object['Size']).toBe('0B');
+      for (const name of ['noFlag', 'withSize']) {
+        for (const object of parsed[name] ?? []) {
+          expect(String(object['Size']), name).toMatch(/^\S+ \(virtual \S+\)$/);
+        }
+      }
+    });
+
+    it('G4 / ADR 0008: `docker inspect --type container --format {{json .State}}` of the running and exited containers is captured with the state fields', async () => {
+      const trio = await createTrio();
+
+      const running = JSON.parse(
+        await mustRun(`${DOCKER_INSPECT_STATE} ${q(trio.running)}`),
+      ) as Record<string, unknown>;
+      const exitedRaw = await mustRun(`${DOCKER_INSPECT_STATE} ${q(trio.exited)}`);
+      const exited = JSON.parse(exitedRaw) as Record<string, unknown>;
+      measure('G4', ubuntu, {
+        case: 'inspect state',
+        runningKeys: Object.keys(running).sort(),
+        exitedKeys: Object.keys(exited).sort(),
+      });
+
+      for (const state of [running, exited]) {
+        for (const key of REQUIRED_STATE_KEYS) expect(state, key).toHaveProperty(key);
+      }
+      expect(running).toMatchObject({
+        Status: 'running',
+        Running: true,
+        ExitCode: 0,
+        OOMKilled: false,
+      });
+      expect(exited).toMatchObject({
+        Status: 'exited',
+        Running: false,
+        ExitCode: 3,
+        OOMKilled: false,
+      });
+
+      const runningCaptured = captureOrRead(
+        deploymentFixture(ubuntu, 'docker_inspect_state_running.json'),
+        await mustRun(`${DOCKER_INSPECT_STATE} ${q(trio.running)}`),
+      );
+      const exitedCaptured = captureOrRead(
+        deploymentFixture(ubuntu, 'docker_inspect_state_exited.json'),
+        exitedRaw,
+      );
+      expect(Object.keys(JSON.parse(runningCaptured) as object).sort()).toEqual(
+        Object.keys(running).sort(),
+      );
+      expect(Object.keys(JSON.parse(exitedCaptured) as object).sort()).toEqual(
+        Object.keys(exited).sort(),
+      );
+    });
+  },
+);
+
+describe('G4 / ADR 0008: docker ps captures agree across Ubuntu versions', () => {
+  it('G4 / ADR 0008: 22.04 and 24.04 docker ps captures have the same key set, each line valid JSON', () => {
+    const [jammy, noble] = (['22.04', '24.04'] as const).map((ubuntu) =>
+      parseNdjson(readFileSync(deploymentFixture(ubuntu, 'docker_ps.ndjson'), 'utf8')),
+    );
+
+    expect(jammy).toHaveLength(3);
+    expect(noble).toHaveLength(3);
+    expect(keySet(noble ?? [])).toEqual(keySet(jammy ?? []));
+  });
+});
