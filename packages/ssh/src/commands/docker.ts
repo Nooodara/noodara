@@ -4,4 +4,7 @@
 export const DOCKER_COMMANDS = {
   'docker.version': "docker version --format '{{json .}}'",
   'docker.compose_version': 'docker compose version --short',
+  // ADR 0008 G3 (D-03): only the first stdout line, exit code and stderr are a contract
+  // (`Usage:  docker buildx build` = BuildKit active). Never sets DOCKER_BUILDKIT.
+  'docker.buildkit': 'docker build --help',
 } as const;

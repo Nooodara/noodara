@@ -1,5 +1,5 @@
 // Discovery orchestration over one reused connection (DISC-01, DISC-04, SERV-08, SEC-05,
-// 02-CONTEXT.md D-08/D-11/D-12/D-13). `runDiscovery` turns eleven allowlisted `session.exec()`
+// 02-CONTEXT.md D-08/D-11/D-12/D-13). `runDiscovery` turns twelve allowlisted `session.exec()`
 // calls into a typed `DiscoverySnapshot`: every check is reported separately (pass/fail/skipped/
 // not_applicable), a single failing or timed-out check never aborts the run, and the caller (not
 // this module) owns the session's lifecycle — `runDiscovery` never calls `session.close()`.
@@ -12,6 +12,7 @@ import {
   parseDockerGroupMembership,
   parseDockerVersion,
   parseComposeVersion,
+  parseBuildKitStatus,
   parseHostname,
   parseMeminfo,
   parseOsRelease,
@@ -40,7 +41,7 @@ export interface RunDiscoveryInput {
   readonly session: SshSession;
   /** The SSH user this session authenticated as — `'root'` is treated as the root case directly
    *  (D-13); no remote `id -u` call is made, since the caller already knows this value and a
-   *  twelfth command would fall outside the frozen SEC-04 allowlist. */
+   *  thirteenth command would fall outside the frozen SEC-04 allowlist. */
   readonly sshUser: string;
   readonly timeouts: RunDiscoveryTimeouts;
   readonly redactor: Redactor;
@@ -105,6 +106,7 @@ function emptyFacts(): DiscoveryFacts {
     dockerInstalled: null,
     dockerVersion: null,
     dockerComposeVersion: null,
+    dockerBuildkitAvailable: null,
   };
 }
 
@@ -294,6 +296,60 @@ const DISCOVERY_STEPS = {
       }
     },
   },
+  docker_buildkit: {
+    commandName: 'docker.buildkit',
+    // Same D-12 reasoning as docker_compose_version: no CLI, nothing to ask.
+    appliesTo: (state) =>
+      state.dockerNotInstalled
+        ? {
+            applies: false,
+            status: 'skipped',
+            detail: 'Skipped: Docker is not installed on this server.',
+          }
+        : APPLIES,
+    evaluate: (result) => {
+      const parsed = parseBuildKitStatus({
+        stdout: result.stdout,
+        stderr: result.stderr,
+        exitCode: result.exitCode ?? -1,
+      });
+      // D-03: only active/plugin_missing/buildkit_disabled are observations of the fact. A
+      // BuildKit failure is a fact about the server, never a warning or a connection failure.
+      switch (parsed.kind) {
+        case 'active':
+          return {
+            status: 'pass',
+            detail:
+              parsed.version === null ? 'BuildKit is available.' : `BuildKit is available (${parsed.version}).`,
+            facts: { dockerBuildkitAvailable: true },
+          };
+        case 'plugin_missing':
+          return {
+            status: 'fail',
+            detail:
+              'BuildKit is not available: install docker-buildx-plugin (sudo apt-get install docker-buildx-plugin) to deploy Dockerfile services.',
+            facts: { dockerBuildkitAvailable: false },
+          };
+        case 'buildkit_disabled':
+          return {
+            status: 'fail',
+            detail:
+              'BuildKit is disabled by DOCKER_BUILDKIT=0 in the environment. Remove that setting to deploy Dockerfile services.',
+            facts: { dockerBuildkitAvailable: false },
+          };
+        case 'daemon_unreachable':
+          return {
+            status: 'fail',
+            detail: 'Could not check BuildKit: the Docker daemon is unreachable.',
+          };
+        case 'unparseable':
+          return {
+            status: 'fail',
+            detail: `BuildKit status could not be determined: ${parsed.reason}`,
+          };
+      }
+    },
+  },
   sudo: {
     commandName: 'access.sudo',
     appliesTo: (state) =>
@@ -437,7 +493,7 @@ export async function runDiscovery(input: RunDiscoveryInput): Promise<DiscoveryS
     try {
       // A plain, sequentially-awaited loop, not a concurrent one: D-13's narrative requires a
       // fixed order, and running these concurrently would also open concurrent channels over one
-      // connection for no benefit on an eleven-command run.
+      // connection for no benefit on a twelve-command run.
       const result = await session.exec(entry.commandName);
       durationMs = result.durationMs;
       outcome = entry.evaluate(result, state);

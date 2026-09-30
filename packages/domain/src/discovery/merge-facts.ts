@@ -20,6 +20,7 @@ const FACTS_KEYS = [
   'dockerInstalled',
   'dockerVersion',
   'dockerComposeVersion',
+  'dockerBuildkitAvailable',
 ] as const satisfies readonly (keyof DiscoveryFacts)[];
 
 /**

@@ -27,6 +27,7 @@ export const DISCOVERY_CHECK_IDS = [
   'uptime',
   'docker_version',
   'docker_compose_version',
+  'docker_buildkit',
   'sudo',
   'docker_group',
 ] as const;
@@ -63,6 +64,8 @@ export interface DiscoveryFacts {
   readonly dockerInstalled: boolean | null;
   readonly dockerVersion: string | null;
   readonly dockerComposeVersion: string | null;
+  /** D-03 / ADR 0008 G3: whether a real `docker build` would use BuildKit. `null` = not observed. */
+  readonly dockerBuildkitAvailable: boolean | null;
 }
 
 /**

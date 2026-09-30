@@ -1,6 +1,6 @@
 // The complete, frozen SSH command allowlist (SEC-04, T-2-01, T-2-02). This — plus `SshSession.exec`
 // taking a `CommandName` instead of a string (ssh-port.ts) — is the whole of "no user input ever
-// reaches a shell". allowlist.test.ts is the exactness guard: it asserts this set is exactly 11
+// reaches a shell". allowlist.test.ts is the exactness guard: it asserts this set is exactly 12
 // entries, in this order, none containing an interpolation marker.
 import { ACCESS_COMMANDS } from './access.js';
 import { DISCOVERY_COMMANDS } from './discovery.js';
