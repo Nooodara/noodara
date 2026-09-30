@@ -65,3 +65,46 @@ labelled as derived, never saved into this directory as if it were
 captured — so a reader can never mistake a derived sample for measured
 reality (docs/adr/0004-ssh-adapter-empirical-contracts.md records this
 gap explicitly).
+
+## docker_buildkit (11-07, G3, D-03)
+
+Chosen discovery command, verbatim:
+
+```sh
+docker build --help
+```
+
+Run as deployer. `docker build` is handed by the CLI to `docker buildx build`
+only when BuildKit is the builder a real build would use, and `--help` goes
+through the same dispatch. The first stdout line is the signal:
+
+| State | First stdout line | Exit | stderr |
+|---|---|---|---|
+| BuildKit active | `Usage:  docker buildx build [OPTIONS] PATH \| URL \| -` | 0 | empty |
+| buildx plugin missing | `Usage:  docker build [OPTIONS] PATH \| URL \| -` | 0 | `DEPRECATED: ... Install the buildx component ...` |
+| `DOCKER_BUILDKIT=0` in the session env | `Usage:  docker build [OPTIONS] PATH \| URL \| -` | 0 | `DEPRECATED: ... BuildKit is currently disabled ...` |
+
+Why not a structured command: `docker buildx version` and
+`docker info --format '{{json .ClientInfo.Plugins}}'` separate "plugin
+installed" from "plugin missing", but both still report the plugin when
+`DOCKER_BUILDKIT=0` is set, while a real `docker build` then uses the legacy
+builder (a false positive, RESEARCH Pitfall 2). `docker buildx inspect` fails
+without the plugin but has the same false positive. Only the Usage line
+followed the real build in all three states.
+
+Files per Ubuntu version (`.meta.json` holds command, session env, exit code,
+stderr, Docker and buildx versions, UTC capture date):
+
+- `docker_buildkit.txt` / `.meta.json`: BuildKit active (fixture as built).
+- `docker_buildkit.plugin_missing.txt` / `.meta.json`: after
+  `sudo apt-get remove -y docker-buildx-plugin`.
+- `docker_buildkit.legacy_env.txt` / `.meta.json`: plugin installed, the
+  command run with `DOCKER_BUILDKIT=0` in the session env. Noodara never sets
+  that variable; this capture only documents the false-positive case.
+
+Captured 2026-09-30 (UTC) by
+`NOODARA_CAPTURE_FIXTURES=1 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/contracts-g3-g4.test.ts -t G3`
+against `tests/integration/images/sshd-dockerd-ubuntu-{22.04,24.04}` (Docker
+29.8.1, buildx v0.37.1 on both; macOS arm64 host). The captures are byte-identical
+across the two versions. The help body lists buildx's flags and will change
+with buildx releases; only the first line, exit code and stderr are a contract.
