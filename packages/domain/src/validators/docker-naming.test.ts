@@ -18,6 +18,7 @@ import {
   validateImageRef,
   validateRegistryHost,
   validateRegistryUsername,
+  validateResourceId,
 } from './docker-naming.js';
 
 const SERVICE_ID = '3f2b8c1e-9a4d-4e7b-8c2f-1a2b3c4d5e6f';
@@ -227,6 +228,11 @@ describe('deterministic names', () => {
     expect(codeOf(deploymentImageRefFor(id, DEPLOYMENT_ID))).toBe('RESOURCE_ID_INVALID');
     expect(codeOf(deploymentImageRefFor(SERVICE_ID, id))).toBe('RESOURCE_ID_INVALID');
     expect(codeOf(deployWorkspaceFor(id))).toBe('RESOURCE_ID_INVALID');
+    expect(codeOf(validateResourceId(id))).toBe('RESOURCE_ID_INVALID');
+  });
+
+  it('brands a lowercase UUID as a ResourceId (docker label values, 11-13)', () => {
+    expect(validateResourceId(SERVICE_ID)).toEqual({ ok: true, value: SERVICE_ID });
   });
 });
 
