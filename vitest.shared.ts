@@ -59,6 +59,14 @@ export const domainSourceAliases: AliasOptions = [
 // domainSourceAliases): the subpath entry must come before the bare regex entry so a caller can
 // tell them apart, even though the bare entry's regex form already can't match the subpath.
 export const sshSourceAliases: AliasOptions = [
+  // 11-13: the deploy templates for tests/integration/deploy-engine. Exact-match regex, listed
+  // first, so the `@noodara/ssh/testing` prefix entry below never swallows it.
+  {
+    find: /^@noodara\/ssh\/testing\/deploy-templates$/,
+    replacement: fileURLToPath(
+      new URL('./packages/ssh/src/testing/deploy-templates.ts', import.meta.url),
+    ),
+  },
   {
     find: '@noodara/ssh/testing',
     replacement: fileURLToPath(new URL('./packages/ssh/src/testing/raw-ssh2.ts', import.meta.url)),

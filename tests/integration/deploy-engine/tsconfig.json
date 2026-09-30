@@ -8,7 +8,8 @@
       // Mirrors vitest.shared.ts's sshSourceAliases: `@noodara/ssh/testing` has no `exports`
       // entry in packages/ssh/package.json (it is Vitest-only, never reachable from plain Node),
       // so a bare tsc invocation over this directory needs the same alias Vitest applies.
-      "@noodara/ssh/testing": ["../../../packages/ssh/src/testing/raw-ssh2.ts"]
+      "@noodara/ssh/testing": ["../../../packages/ssh/src/testing/raw-ssh2.ts"],
+      "@noodara/ssh/testing/deploy-templates": ["../../../packages/ssh/src/testing/deploy-templates.ts"]
     }
   },
   "include": ["**/*.ts", "../helpers/ssh.ts", "../helpers/deploy-engine.ts", "../helpers/deploy-keys.ts", "../helpers/registry.ts"]
