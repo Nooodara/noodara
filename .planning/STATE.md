@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
 status: executing
-stopped_at: Completed 11-01-PLAN.md
-last_updated: "2026-09-30T02:50:12.470Z"
+stopped_at: Completed 11-02-PLAN.md
+last_updated: "2026-09-30T02:58:09.198Z"
 last_activity: 2026-09-30
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 72
-  completed_plans: 57
+  completed_plans: 58
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 ## Current Position
 
 Phase: 11 (Motor de deploy — fundamentos) — EXECUTING
-Plan: 2 of 16
+Plan: 3 of 16
 Status: Ready to execute
 Last activity: 2026-09-30
 
-Progress: [████████░░] 79%
+Progress: [████████░░] 81%
 
 ## Performance Metrics
 
@@ -216,6 +216,7 @@ Progress: [████████░░] 79%
 | Phase 10 P10 | 55min | 3 tasks | 11 files |
 | Phase 10 P11 | 45min | 2 tasks | 10 files |
 | Phase 10 P12 | 120min | 2 tasks | 34 files |
+| Phase 11 P02 | 12min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -589,6 +590,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 10-11: Landing composed at / from tested parts; per-component 'use client' boundaries (SiteHeader/Hero/HowItWorksDiagram) around @noodara/ui barrel imports
 - [Phase 10]: D-02a: three-pillar landing section replaced by FeatureGrid + tabbed ProductTour, per user checkpoint feedback ('muy simplona'). — dokploy.com/coolify.io used as structural references only; every locked rule (one accent, no shadows/gradients, honesty tests) stayed intact.
 - [Phase 10]: Phase 10 public site approved 2026-09-28, 1 round. — Human verdict: 'esta en panias... la vamos a ir mejorando' (early version, will keep improving) -- not a request for further changes in this plan.
+- [Phase 11]: 11-02: repository hosts must survive WHATWG URL host parsing unchanged (rejects IPv4 shorthands such as 127.1); [ and ] are metacharacters except in a bracketed IPv6 host
 
 ### Pending Todos
 
@@ -667,8 +669,8 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-30T02:50:12.463Z
-Stopped at: Completed 11-01-PLAN.md
+Last session: 2026-09-30T02:58:09.191Z
+Stopped at: Completed 11-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
