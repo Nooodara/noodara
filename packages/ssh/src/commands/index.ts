@@ -5,8 +5,8 @@ export * from './discovery.js';
 export * from './docker.js';
 export * from './access.js';
 export * from './allowlist.js';
-// Deploy allowlist (11-13). createRemoteCommand is deliberately not re-exported: only the builder
-// modules in this directory may create a RemoteCommand.
+// Deploy allowlist (11-13). The RemoteCommand factory is deliberately not re-exported: only the
+// builder modules in this directory may create one.
 export * from './deploy-allowlist.js';
 export { renderRemoteCommand } from './remote-command.js';
 export type { RemoteCommand, RemoteCommandStdin } from './remote-command.js';
