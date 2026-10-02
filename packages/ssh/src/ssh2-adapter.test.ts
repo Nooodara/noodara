@@ -584,7 +584,7 @@ describe('createSsh2Adapter', () => {
 
       const promise = session.stream(
         writeSecretFile(ws.value.secretFile('deploy_key')),
-        options([], { stdin: secretValue('stdin-secret-value', 'deploy_key') }),
+        options([], { stdin: secretValue('stdin-secret-value', 'ssh_private_key') }),
       );
       channels[0]?.emitClose(0);
       await promise;

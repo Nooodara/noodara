@@ -37,3 +37,49 @@ export { RETRYABLE_ERROR_CODES } from './retry.js';
 // changes shape and key-loader.ts's own behaviour is untouched.
 export { InvalidCredentialError, loadPrivateKey } from './key-loader.js';
 export type { LoadPrivateKeyResult, PrivateKeyCredential } from './key-loader.js';
+// Deploy engine surface (11-14, T-11-43). Callers build commands only through the typed builders,
+// which return a branded RemoteCommand; createRemoteCommand, renderRemoteCommand, SHELL_SCRIPTS
+// and escapeShellArg stay internal so no string can reach SshDeploySession.stream.
+export type {
+  SshDeploySession,
+  StreamChunk,
+  StreamOptions,
+  StreamResult,
+} from './ssh-port.js';
+export type { DeployCommandName, RemoteCommand } from './commands/index.js';
+export {
+  ASKPASS_SCRIPT_CONTENT,
+  DEPLOY_COMMAND_NAMES,
+  dockerBuild,
+  dockerCreate,
+  dockerImageRemove,
+  dockerInspectState,
+  dockerKill,
+  dockerLogin,
+  dockerLogout,
+  dockerLogs,
+  dockerNetworkCreate,
+  dockerNetworkRemove,
+  dockerPs,
+  dockerPull,
+  dockerRemove,
+  dockerRestart,
+  dockerStart,
+  dockerStop,
+  gitCheckout,
+  gitClone,
+  gitHeadSha,
+  gitProbeFeatures,
+  groupAlive,
+  killGroup,
+  prepareWorkspace,
+  removeDeployDir,
+  supervise,
+  writeAskpassFile,
+  writeSecretFile,
+} from './commands/index.js';
+export { classifyGitError } from './git-error-classifier.js';
+export { classifyDockerError } from './docker-error-classifier.js';
+export { DEFAULT_MAX_LINE_BYTES, DEFAULT_TAIL_BYTES, registerSecretForStreaming } from './exec-streaming.js';
+export { killSupervisedOperation } from './remote-kill.js';
+export type { KillSupervisedOperationInput, KillSupervisedOperationResult, KillStep } from './remote-kill.js';

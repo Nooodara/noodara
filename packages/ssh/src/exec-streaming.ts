@@ -102,11 +102,12 @@ function validate(command: RemoteCommand, options: StreamOptions): void {
   assertPositiveInteger('idleTimeoutMs', options.idleTimeoutMs);
   assertPositiveInteger('maxTotalBytes', options.maxTotalBytes);
   assertPositiveInteger('maxLineBytes', options.maxLineBytes);
+  // Usage errors are RangeError/TypeError so the adapter can pass them through unclassified.
   if (command.stdin === 'secret' && options.stdin === undefined) {
-    throw new Error(`${command.name} reads a secret from stdin; options.stdin is required`);
+    throw new TypeError(`${command.name} reads a secret from stdin; options.stdin is required`);
   }
   if (command.stdin === 'none' && options.stdin !== undefined) {
-    throw new Error(`${command.name} takes no stdin; refusing to send a secret to it`);
+    throw new TypeError(`${command.name} takes no stdin; refusing to send a secret to it`);
   }
 }
 

@@ -11,10 +11,11 @@
 import { Client } from 'ssh2';
 import { revealSecret, type Redactor } from '@noodara/domain/security';
 import type { ServerErrorCode } from '@noodara/domain/server';
-import type { CommandName } from './commands/index.js';
+import type { CommandName, RemoteCommand } from './commands/index.js';
 import { classifySshError } from './error-classifier.js';
 import { TransportClosedError, type SshFailure } from './errors.js';
-import { execWithTimeout, type ExecChannel } from './exec-with-timeout.js';
+import { execStreaming, type StreamChannel } from './exec-streaming.js';
+import { execWithTimeout } from './exec-with-timeout.js';
 import { formatFingerprint } from './fingerprint.js';
 import { createHostVerifier, type HostVerifier } from './host-verifier.js';
 import { loadPrivateKey } from './key-loader.js';
@@ -26,10 +27,12 @@ import type {
   ExecResult,
   HostFingerprint,
   SshCredential,
+  SshDeploySession,
   SshPort,
-  SshSession,
   SshTarget,
   SshTimeouts,
+  StreamOptions,
+  StreamResult,
 } from './ssh-port.js';
 
 /** D-08/D-09: keepalive during a connection is fixed, never configurable per server. */
@@ -75,7 +78,8 @@ interface Ssh2ClientLike {
     ) => void,
   ): unknown;
   end(): void;
-  exec(command: string, callback: (err: Error | undefined, channel: ExecChannel) => void): void;
+  /** `StreamChannel` (ssh2's `ClientChannel` satisfies it) is a superset of what exec needs. */
+  exec(command: string, callback: (err: Error | undefined, channel: StreamChannel) => void): void;
 }
 
 interface Ssh2ConnectOptions {
@@ -198,13 +202,32 @@ const HOST_KEY_UNPARSEABLE_MESSAGE =
   "The server presented a host key that could not be parsed. This is not a host-key-change warning — " +
   "no fingerprint could be computed to compare against a trusted one. Check the server's SSH host key configuration.";
 
+/** One exec or stream waiting on its channel; rejected by the connection's 'error'/'close'. */
+interface InFlightOp {
+  readonly commandName: string;
+  readonly onTransportLost: (failure: SshFailure) => void;
+}
+
 /** Mutable state shared between the connect-phase listeners and the session created after
  *  'ready' — a single 'error'/'close' listener pair (attached once, kept for the connection's
- *  lifetime) reads and writes this so no ssh2 event can arrive with no listener attached. */
+ *  lifetime) reads and writes this so no ssh2 event can arrive with no listener attached.
+ *  A set, not a single slot (11-14): nothing serializes ops on one connection (the mutex only
+ *  covers connect), and a deploy stream must run while killSupervisedOperation probes on other
+ *  channels of the same connection, so every in-flight op must learn of a transport loss. */
 interface SessionState {
-  inFlightCommand: CommandName | null;
-  onTransportLost: ((failure: SshFailure) => void) | null;
+  readonly inFlight: Set<InFlightOp>;
   closed: boolean;
+}
+
+/** Notifies every in-flight op; each op removes itself when it settles. */
+function failInFlight(sessionState: SessionState, failureFor: (op: InFlightOp) => SshFailure): void {
+  for (const op of [...sessionState.inFlight]) op.onTransportLost(failureFor(op));
+}
+
+/** execStreaming's usage errors (bad bounds, stdin mismatch) are caller bugs, never transport
+ *  failures, and carry no remote text: they propagate as they are. */
+function isUsageError(err: unknown): boolean {
+  return err instanceof RangeError || err instanceof TypeError;
 }
 
 function makeSession(
@@ -213,30 +236,44 @@ function makeSession(
   commandMs: number,
   sessionState: SessionState,
   revealed: RevealedCredential,
-): SshSession {
-  async function exec(name: CommandName): Promise<ExecResult> {
+): SshDeploySession {
+  /** Races one channel operation against transport loss; every rejection is classified. */
+  async function track<T>(commandName: string, run: () => Promise<T>): Promise<T> {
     if (sessionState.closed) {
-      throw new SshExecFailure(classifySshError(new TransportClosedError(name), { phase: 'exec', redactor }));
+      throw new SshExecFailure(classifySshError(new TransportClosedError(commandName), { phase: 'exec', redactor }));
     }
 
-    sessionState.inFlightCommand = name;
+    let op: InFlightOp | undefined;
     const transportLost = new Promise<never>((_resolve, reject) => {
-      sessionState.onTransportLost = (failure) => {
-        reject(new SshExecFailure(failure));
+      op = {
+        commandName,
+        onTransportLost: (failure) => {
+          reject(new SshExecFailure(failure));
+        },
       };
+      sessionState.inFlight.add(op);
     });
 
     try {
       return await Promise.race([
-        execWithTimeout({ client, commandName: name, timeoutMs: commandMs, redactor }).catch((err: unknown) => {
+        run().catch((err: unknown) => {
+          if (isUsageError(err)) throw err;
           throw new SshExecFailure(classifySshError(err, { phase: 'exec', redactor }));
         }),
         transportLost,
       ]);
     } finally {
-      sessionState.inFlightCommand = null;
-      sessionState.onTransportLost = null;
+      if (op !== undefined) sessionState.inFlight.delete(op);
     }
+  }
+
+  function exec(name: CommandName): Promise<ExecResult> {
+    return track(name, () => execWithTimeout({ client, commandName: name, timeoutMs: commandMs, redactor }));
+  }
+
+  /** Each stream opens its own channel; it may run alongside other streams and execs. */
+  function stream(command: RemoteCommand, options: StreamOptions): Promise<StreamResult> {
+    return track(command.name, () => execStreaming({ client, command, options, redactor }));
   }
 
   function close(): Promise<void> {
@@ -252,7 +289,7 @@ function makeSession(
     return Promise.resolve();
   }
 
-  return { exec, close };
+  return { exec, stream, close };
 }
 
 const CONNECT_PHASE_CLOSE_MESSAGE =
@@ -266,7 +303,7 @@ const CONNECT_PHASE_CLOSE_MESSAGE =
 async function attemptConnect(
   input: ConnectInput,
   createClient: () => Ssh2ClientLike,
-): Promise<ConnectOutcome> {
+): Promise<ConnectOutcome<SshDeploySession>> {
   const { target, credential, timeouts, trustedFingerprint, redactor } = input;
 
   // WR-03: reveal the credential exactly once per attempt. `loadPrivateKey` already reveals the
@@ -302,11 +339,11 @@ async function attemptConnect(
     return { ok: false, errorCode: failure.errorCode, message: failure.message, attempts: 1 };
   }
 
-  return new Promise<ConnectOutcome>((resolve) => {
+  return new Promise<ConnectOutcome<SshDeploySession>>((resolve) => {
     let settled = false;
-    const sessionState: SessionState = { inFlightCommand: null, onTransportLost: null, closed: false };
+    const sessionState: SessionState = { inFlight: new Set(), closed: false };
 
-    function settle(outcome: ConnectOutcome): void {
+    function settle(outcome: ConnectOutcome<SshDeploySession>): void {
       if (settled) return;
       settled = true;
       resolve(outcome);
@@ -349,9 +386,7 @@ async function attemptConnect(
         settle({ ok: false, errorCode: failure.errorCode, message: failure.message, attempts: 1 });
         return;
       }
-      if (sessionState.inFlightCommand !== null && sessionState.onTransportLost !== null) {
-        sessionState.onTransportLost(classifySshError(err, { phase: 'exec', redactor }));
-      }
+      failInFlight(sessionState, () => classifySshError(err, { phase: 'exec', redactor }));
     });
 
     client.on('close', () => {
@@ -369,13 +404,9 @@ async function attemptConnect(
         });
         return;
       }
-      if (sessionState.inFlightCommand !== null && sessionState.onTransportLost !== null) {
-        const failure = classifySshError(new TransportClosedError(sessionState.inFlightCommand), {
-          phase: 'exec',
-          redactor,
-        });
-        sessionState.onTransportLost(failure);
-      }
+      failInFlight(sessionState, (op) =>
+        classifySshError(new TransportClosedError(op.commandName), { phase: 'exec', redactor }),
+      );
     });
 
     if (revealed.rawPassword !== undefined) {
@@ -417,12 +448,12 @@ async function attemptConnect(
  * most one connection per `user@host:port` is active inside this adapter at a time — mutex on the
  * outside, retry on the inside, so both attempts of a retried connect share the one slot.
  */
-export function createSsh2Adapter(deps: CreateSsh2AdapterDeps = {}): SshPort {
+export function createSsh2Adapter(deps: CreateSsh2AdapterDeps = {}): SshPort<SshDeploySession> {
   const createClient = deps.createClient ?? (() => new Client() as unknown as Ssh2ClientLike);
   const sleepFn = deps.sleep ?? sleep;
   const mutex = createConnectionMutex();
 
-  async function connect(input: ConnectInput): Promise<ConnectOutcome> {
+  async function connect(input: ConnectInput): Promise<ConnectOutcome<SshDeploySession>> {
     const mutexKey = `${input.target.user}@${input.target.host}:${String(input.target.port)}`;
     return mutex.runExclusive(mutexKey, () =>
       withRetry(() => attemptConnect(input, createClient), { sleep: sleepFn }),
