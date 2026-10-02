@@ -85,7 +85,7 @@
       },
       "ssh-adapter": {
         "dependencies": {
-          "allow": ["pure-domain", "@noodara/config"]
+          "allow": ["pure-domain", "@noodara/config", "ssh-adapter"]
         }
       },
       "ui-components": {
