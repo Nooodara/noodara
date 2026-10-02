@@ -1,0 +1,1 @@
+{"type":"session","summary":"Phase 11 execution migrated from GSD to agent-flow at 11/16 plans; 11-13 active (round-trip test wip 0b88160), 11-09 blocked on ADR 0008 acceptance","module":"deploy-engine","files":[".agent-flow/plan.json",".planning/phases/11-motor-de-deploy-fundamentos/.continue-here.md"],"createdAt":"2026-10-02T01:40:01.969Z"}

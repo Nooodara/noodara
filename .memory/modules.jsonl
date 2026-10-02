@@ -1,0 +1,1 @@
+{"type":"note","summary":"Real-infra harness: tests/integration/helpers/deploy-engine.ts (sshd+dockerd, NOODARA_TEST_UBUNTU=22.04|24.04|all); contract tests in tests/integration/deploy-engine/","module":"deploy-engine","files":["tests/integration/helpers/deploy-engine.ts"],"createdAt":"2026-10-02T01:40:02.727Z"}

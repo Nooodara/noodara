@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "packageManager": "pnpm",
+  "detectedStack": [
+    "Docker"
+  ],
+  "planningDir": ".planning",
+  "memoryDir": ".memory",
+  "adapters": {
+    "codex": false,
+    "claude": true
+  },
+  "orchestration": {
+    "gates": {
+      "test": "pnpm test",
+      "typecheck": "pnpm typecheck",
+      "lint": "pnpm lint",
+      "boundaries": "pnpm boundaries",
+      "build": "pnpm build",
+      "it-deploy-templates": "NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/deploy-templates.test.ts",
+      "it-exec-streaming": "NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/exec-streaming.test.ts",
+      "it-engine-primitives": "NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/engine-primitives.test.ts",
+      "it-deploy-engine-all": "NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine",
+      "it-full": "pnpm test:integration",
+      "adr-0008-accepted": "grep -A2 \"## Status\" docs/adr/0008-deploy-engine-empirical-contracts.md | grep -q \"Accepted\""
+    },
+    "defaultGates": [
+      "test",
+      "typecheck",
+      "lint",
+      "boundaries"
+    ],
+    "strictGates": true,
+    "review": {
+      "tier": 0
+    },
+    "router": {
+      "enabled": true,
+      "thresholds": {
+        "standard": 2,
+        "deep": 5
+      }
+    },
+    "tiers": {
+      "light": {
+        "model": "haiku",
+        "effort": "low"
+      },
+      "standard": {
+        "model": "sonnet",
+        "effort": "medium"
+      },
+      "deep": {
+        "model": "opus",
+        "effort": "high"
+      }
+    },
+    "models": {
+      "reviewer": "sonnet",
+      "hardener": "sonnet",
+      "escalation": "opus"
+    },
+    "escalateAfterFailures": 2,
+    "contextBudgetTokens": 150000
+  }
+}

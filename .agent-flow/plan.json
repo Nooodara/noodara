@@ -1,0 +1,445 @@
+{
+  "schemaVersion": 1,
+  "milestone": "v0.2",
+  "createdAt": "2026-10-02T01:39:08.568Z",
+  "updatedAt": "2026-10-02T01:39:31.372Z",
+  "cursor": {
+    "phase": "11",
+    "task": "11-13"
+  },
+  "phases": [
+    {
+      "id": "11",
+      "title": "Motor de deploy — fundamentos",
+      "goal": "Everything the engine needs to be built RED-first exists and is proven on real infrastructure: spikes resolved (ADR 0008), pure domain, schema, parameterized allowlist templates, streaming exec, git/docker packages, sshd+dockerd fixture and official fixtures.",
+      "requirements": [
+        "DEP-01",
+        "DEP-08",
+        "SVC-08",
+        "PROJ-04",
+        "QA-07",
+        "QA-10"
+      ],
+      "status": "active",
+      "tasks": [
+        {
+          "id": "11-01",
+          "title": "Deployment state machine, error codes, deriveServiceStatus, repository feature probe",
+          "wave": 1,
+          "status": "done",
+          "scope": [
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-01-SUMMARY.md"
+          ],
+          "gates": [],
+          "acceptance": []
+        },
+        {
+          "id": "11-02",
+          "title": "Branded validators (SVC-08)",
+          "wave": 1,
+          "status": "done",
+          "scope": [
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-02-SUMMARY.md"
+          ],
+          "gates": [],
+          "acceptance": []
+        },
+        {
+          "id": "11-03",
+          "title": "sshd+dockerd harness 22.04/24.04, bare git over SSH, htpasswd registry, G7 mirror",
+          "wave": 1,
+          "status": "done",
+          "scope": [
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-03-SUMMARY.md"
+          ],
+          "gates": [],
+          "acceptance": []
+        },
+        {
+          "id": "11-04",
+          "title": "Official fixtures node-api, static-app, failing-build",
+          "wave": 1,
+          "status": "done",
+          "scope": [
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-04-SUMMARY.md"
+          ],
+          "gates": [],
+          "acceptance": [],
+          "waives": [
+            "http-api",
+            "auth-secrets"
+          ]
+        },
+        {
+          "id": "11-05",
+          "title": "Schema + migration 0005 (composite FK, partial unique index)",
+          "wave": 2,
+          "status": "done",
+          "scope": [
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-05-SUMMARY.md"
+          ],
+          "gates": [],
+          "acceptance": []
+        },
+        {
+          "id": "11-06",
+          "title": "G1/G2 contract tests + git error captures",
+          "wave": 2,
+          "status": "done",
+          "scope": [
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-06-SUMMARY.md"
+          ],
+          "gates": [],
+          "acceptance": []
+        },
+        {
+          "id": "11-07",
+          "title": "G3/G4 contract tests + captures",
+          "wave": 2,
+          "status": "done",
+          "scope": [
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-07-SUMMARY.md"
+          ],
+          "gates": [],
+          "acceptance": []
+        },
+        {
+          "id": "11-08",
+          "title": "Fixtures end-to-end, registry auth, docker error captures",
+          "wave": 2,
+          "status": "done",
+          "scope": [
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-08-SUMMARY.md"
+          ],
+          "gates": [],
+          "acceptance": [],
+          "waives": [
+            "http-api",
+            "auth-secrets"
+          ]
+        },
+        {
+          "id": "11-09",
+          "title": "ADR 0008 human acceptance (11-09 Task 3), then SUMMARY",
+          "wave": 3,
+          "status": "blocked",
+          "scope": [
+            "docs/adr/0008-deploy-engine-empirical-contracts.md",
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-09-PLAN.md"
+          ],
+          "gates": [
+            "adr-0008-accepted"
+          ],
+          "tier": "light",
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "User answered the 4 open items: G7 mirror, D-04 wording (kill -s TERM + setsid -w), docker kill branch for builds, HTTPS token measurement",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "ADR 0008 Status reads Accepted with a date",
+              "proof": "adr-0008-accepted"
+            },
+            {
+              "id": "SUM",
+              "text": ".planning/phases/11-motor-de-deploy-fundamentos/11-09-SUMMARY.md written (GSD trail kept)",
+              "proof": "manual"
+            }
+          ],
+          "waives": [
+            "auth-secrets",
+            "randomness"
+          ]
+        },
+        {
+          "id": "11-10",
+          "title": "docker ps / container state / BuildKit parsers",
+          "wave": 3,
+          "status": "done",
+          "scope": [
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-10-SUMMARY.md"
+          ],
+          "gates": [],
+          "acceptance": []
+        },
+        {
+          "id": "11-11",
+          "title": "classifyGitError / classifyDockerError",
+          "wave": 3,
+          "status": "done",
+          "scope": [
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-11-SUMMARY.md"
+          ],
+          "gates": [],
+          "acceptance": []
+        },
+        {
+          "id": "11-12",
+          "title": "docker_buildkit discovery check + servers.docker_buildkit_available",
+          "wave": 4,
+          "status": "done",
+          "scope": [
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-12-SUMMARY.md"
+          ],
+          "gates": [],
+          "acceptance": [],
+          "waives": [
+            "http-api",
+            "auth-secrets"
+          ]
+        },
+        {
+          "id": "11-13",
+          "title": "Finish allowlist templates: run real round-trip test (wip 0b88160) on 22.04/24.04, SUMMARY",
+          "wave": 4,
+          "status": "active",
+          "tier": "deep",
+          "scope": [
+            "packages/ssh/src/commands/",
+            "tests/integration/deploy-engine/deploy-templates.test.ts",
+            "packages/ssh/src/testing/deploy-templates.ts",
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-13-PLAN.md",
+            "docs/adr/0008-deploy-engine-empirical-contracts.md"
+          ],
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-deploy-templates"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Plan Tasks 1-3 already committed RED/GREEN (de82491..9abadd7); deploy-templates.test.ts passes on Ubuntu 22.04 and 24.04",
+              "proof": "it-deploy-templates"
+            },
+            {
+              "id": "A2",
+              "text": "process.group_alive (pgrep -g) proven on the real fixture with a supervised docker build",
+              "proof": "it-deploy-templates"
+            },
+            {
+              "id": "A3",
+              "text": "Every template takes branded types, escapes each argv token, uses -- before positionals; exactness guard and POSIX injection round-trip pass",
+              "proof": "test"
+            },
+            {
+              "id": "ADR",
+              "text": "Where the GSD plan text contradicts ADR 0008 (kill -s TERM, setsid -w, docker ps --size=false, git exit 128), the ADR wins; differences listed in the SUMMARY under ADR overrides",
+              "proof": "manual"
+            },
+            {
+              "id": "SUM",
+              "text": ".planning/phases/11-motor-de-deploy-fundamentos/11-13-SUMMARY.md written (GSD trail kept)",
+              "proof": "manual"
+            },
+            {
+              "id": "SEC",
+              "text": "Secrets (deploy key, token, registry password) are never logged and never reach argv, env, URLs or error messages; streamed output is redacted; per-run test secrets use crypto.randomBytes; canary assertions prove it",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "randomness/crypto-random",
+            "auth-secrets/password-hashing"
+          ]
+        },
+        {
+          "id": "11-14",
+          "title": "Streaming exec, SshDeploySession wiring, killSupervisedOperation, real-fixture proof",
+          "wave": 5,
+          "dependsOn": [
+            "11-13"
+          ],
+          "tier": "deep",
+          "scope": [
+            "packages/ssh/src/exec-streaming.ts",
+            "packages/ssh/src/remote-kill.ts",
+            "packages/ssh/src/ssh-port.ts",
+            "packages/ssh/src/ssh2-adapter.ts",
+            "packages/ssh/src/index.ts",
+            "tests/integration/deploy-engine/exec-streaming.test.ts",
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-14-PLAN.md",
+            "docs/adr/0008-deploy-engine-empirical-contracts.md"
+          ],
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-exec-streaming"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Line-oriented chunks redacted per chunk (secrets split across chunks or lines never leak), bounded per line UTF-8-safe and in total bytes, abortable, with stdin",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Max duration and idle timeout; outcomes completed / timed_out / idle_timeout / aborted distinguished",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "killSupervisedOperation implements ADR 0008 G2 and reports confirmed only when the group is absent in ps; never throws",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Cancelling a supervised docker build leaves no build process alive on 22.04 and 24.04",
+              "proof": "it-exec-streaming"
+            },
+            {
+              "id": "A5",
+              "text": "Measured defaults recorded (line cap, total cap, time-to-first-chunk, kill-to-absence)",
+              "proof": "manual"
+            },
+            {
+              "id": "A6",
+              "text": "Existing SshSession fakes and v0.1 behavior unchanged",
+              "proof": "test"
+            },
+            {
+              "id": "ADR",
+              "text": "Where the GSD plan text contradicts ADR 0008 (kill -s TERM, setsid -w, docker ps --size=false, git exit 128), the ADR wins; differences listed in the SUMMARY under ADR overrides",
+              "proof": "manual"
+            },
+            {
+              "id": "SUM",
+              "text": ".planning/phases/11-motor-de-deploy-fundamentos/11-14-SUMMARY.md written (GSD trail kept)",
+              "proof": "manual"
+            }
+          ]
+        },
+        {
+          "id": "11-15",
+          "title": "@noodara/git and @noodara/docker packages (ssh-adapter tag)",
+          "wave": 6,
+          "dependsOn": [
+            "11-14"
+          ],
+          "tier": "deep",
+          "scope": [
+            "packages/git/",
+            "packages/docker/",
+            "turbo.json",
+            "vitest.shared.ts",
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-15-PLAN.md"
+          ],
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Packages depend only on @noodara/domain and @noodara/ssh; boundaries green, domain still pure",
+              "proof": "boundaries"
+            },
+            {
+              "id": "A2",
+              "text": "cloneRepository: prepare workspace, credential via stdin, supervised shallow clone, head SHA, feature probe; LFS/submodules give UNSUPPORTED_REPOSITORY_FEATURE",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Docker wrappers call one allowlisted template each via stream, classify with classifyDockerError; registry creds only via --password-stdin into per-deployment --config",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "No raw strings reach templates; no build args or env vars exposed; no ssh2 import, no env reads",
+              "proof": "test"
+            },
+            {
+              "id": "SUM",
+              "text": ".planning/phases/11-motor-de-deploy-fundamentos/11-15-SUMMARY.md written (GSD trail kept)",
+              "proof": "manual"
+            },
+            {
+              "id": "SEC",
+              "text": "Secrets (deploy key, token, registry password) are never logged and never reach argv, env, URLs or error messages; streamed output is redacted; per-run test secrets use crypto.randomBytes; canary assertions prove it",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing"
+          ]
+        },
+        {
+          "id": "11-16",
+          "title": "End-to-end composition proof of all primitives on 22.04 and 24.04",
+          "wave": 7,
+          "dependsOn": [
+            "11-15"
+          ],
+          "tier": "deep",
+          "scope": [
+            "tests/integration/deploy-engine/engine-primitives.test.ts",
+            ".planning/phases/11-motor-de-deploy-fundamentos/11-16-PLAN.md"
+          ],
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-engine-primitives"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Manual deploy of node-api composes: SSH clone with per-run deploy key, build noodara/<serviceId>:<deploymentId>, run noodara-<serviceId> on noodara-net-<serviceId>, docker ps observed, deriveServiceStatus RUNNING",
+              "proof": "it-engine-primitives"
+            },
+            {
+              "id": "A2",
+              "text": "LFS pointer and .gitmodules repos rejected with UNSUPPORTED_REPOSITORY_FEATURE",
+              "proof": "it-engine-primitives"
+            },
+            {
+              "id": "A3",
+              "text": "failing-build gives BUILD_FAILED and leaves the previous container untouched",
+              "proof": "it-engine-primitives"
+            },
+            {
+              "id": "A4",
+              "text": "Private registry pull works; wrong password gives REGISTRY_AUTH_FAILED",
+              "proof": "it-engine-primitives"
+            },
+            {
+              "id": "A5",
+              "text": "Canary secrets absent from ps, .git/config, docker inspect and docker history",
+              "proof": "it-engine-primitives"
+            },
+            {
+              "id": "A6",
+              "text": "After teardown no noodara.managed or noodara.test=true resource and no /opt/noodara-deploy/<id> remains",
+              "proof": "it-engine-primitives"
+            },
+            {
+              "id": "SUM",
+              "text": ".planning/phases/11-motor-de-deploy-fundamentos/11-16-SUMMARY.md written (GSD trail kept)",
+              "proof": "manual"
+            },
+            {
+              "id": "SEC",
+              "text": "Secrets (deploy key, token, registry password) are never logged and never reach argv, env, URLs or error messages; streamed output is redacted; per-run test secrets use crypto.randomBytes; canary assertions prove it",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "http-api/body-cap"
+          ]
+        }
+      ]
+    }
+  ]
+}

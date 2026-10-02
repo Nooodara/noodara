@@ -51,3 +51,13 @@ apps/site/src/app/opengraph-image.png
 
 # OS
 .DS_Store
+
+# agent-flow scratch (generated)
+.agent-flow/memory.db
+.agent-flow/logs/
+.agent-flow/handoffs/
+.agent-flow/review-*.prompt.md
+.agent-flow/review-*.verdict.json
+.agent-flow/harden.*
+.agent-flow/task-stats.json
+.agent-flow/gate-cache.json
