@@ -16,7 +16,7 @@
       "typecheck": "pnpm typecheck",
       "lint": "pnpm lint",
       "boundaries": "pnpm boundaries",
-      "build": "pnpm build",
+      "build": "NOODARA_API_ORIGIN=http://localhost:3100 pnpm build",
       "it-deploy-templates": "NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/deploy-templates.test.ts",
       "it-exec-streaming": "NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/exec-streaming.test.ts",
       "it-engine-primitives": "NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/engine-primitives.test.ts",
