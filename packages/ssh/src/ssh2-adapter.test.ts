@@ -9,10 +9,12 @@
 import { utils, type ParsedKey } from 'ssh2';
 import { createRedactor, secretValue, type Redactor } from '@noodara/domain/security';
 import { describe, expect, it, vi } from 'vitest';
+import { deployWorkspaceFor } from '@noodara/domain/validators';
+import { dockerPs, renderRemoteCommand, writeSecretFile } from './commands/index.js';
 import { computeFingerprint, formatFingerprint } from './fingerprint.js';
 import { createSsh2Adapter } from './ssh2-adapter.js';
 import { generateTestKeys, type TestKeySet } from './testing/generate-keys.js';
-import type { ConnectInput, HostFingerprint, SshCredential, SshTimeouts } from './ssh-port.js';
+import type { ConnectInput, HostFingerprint, SshCredential, SshTimeouts, StreamChunk, StreamOptions } from './ssh-port.js';
 
 // --- Fakes -------------------------------------------------------------------------------------
 
@@ -51,6 +53,19 @@ class FakeExecChannel {
     } else {
       this.errorListeners.push(listener as (err: Error) => void);
     }
+  }
+
+  readonly stdinWrites: string[] = [];
+  endCalls = 0;
+
+  // The stdin half `stream()` needs (11-14); `exec()` never calls either.
+  write(data: string | Buffer): boolean {
+    this.stdinWrites.push(data.toString());
+    return true;
+  }
+
+  end(): void {
+    this.endCalls += 1;
   }
 
   destroy(): void {
@@ -520,6 +535,115 @@ describe('createSsh2Adapter', () => {
       client.emit('close');
 
       await expect(execPromise).rejects.toMatchObject({ errorCode: 'CONNECTION_LOST' });
+    });
+  });
+
+  describe('session.stream (11-14, T-11-43)', () => {
+    const STREAM_BOUNDS = { maxDurationMs: 30_000, idleTimeoutMs: 30_000, maxTotalBytes: 65_536, maxLineBytes: 1_024 };
+
+    async function connectWithChannels(redactor: Redactor = createRedactor()) {
+      const client = new FakeClient();
+      client.connectImpl = acceptHandshakeThenReady(client);
+      const channels: FakeExecChannel[] = [];
+      client.execImpl = (_command, callback) => {
+        const channel = new FakeExecChannel();
+        channels.push(channel);
+        callback(undefined, channel);
+      };
+      const adapter = buildAdapter({ createClient: () => client });
+      const outcome = await adapter.connect(buildInput({ redactor }));
+      if (!outcome.ok) throw new Error('test setup: expected a successful connect');
+      return { client, channels, session: outcome.session };
+    }
+
+    function options(chunks: StreamChunk[] = [], extra: Partial<StreamOptions> = {}): StreamOptions {
+      return { ...STREAM_BOUNDS, onChunk: (chunk) => chunks.push(chunk), ...extra };
+    }
+
+    it('renders the RemoteCommand, delivers redacted chunks and resolves a completed StreamResult', async () => {
+      const redactor = createRedactor();
+      redactor.register('canary-token-0123456789', 'registry_password');
+      const { client, channels, session } = await connectWithChannels(redactor);
+      const chunks: StreamChunk[] = [];
+
+      const promise = session.stream(dockerPs(), options(chunks));
+      channels[0]?.emitData(Buffer.from('line canary-token-0123456789\n'));
+      channels[0]?.emitClose(0);
+      const result = await promise;
+
+      expect(client.execCommands).toEqual([renderRemoteCommand(dockerPs())]);
+      expect(result).toMatchObject({ commandName: 'docker.ps', outcome: 'completed', exitCode: 0 });
+      expect(chunks.map((chunk) => chunk.text).join('')).not.toContain('canary-token-0123456789');
+      expect(chunks.map((chunk) => chunk.text).join('')).toContain('[REDACTED');
+    });
+
+    it('writes a secret stdin once and ends it (G1)', async () => {
+      const ws = deployWorkspaceFor('3f2b8c1e-9d4a-4f6b-8a2c-1e5d7f9b0c3a');
+      if (!ws.ok) throw new Error('test setup: workspace');
+      const { channels, session } = await connectWithChannels();
+
+      const promise = session.stream(
+        writeSecretFile(ws.value.secretFile('deploy_key')),
+        options([], { stdin: secretValue('stdin-secret-value', 'deploy_key') }),
+      );
+      channels[0]?.emitClose(0);
+      await promise;
+
+      expect(channels[0]?.stdinWrites.join('')).toBe('stdin-secret-value');
+      expect(channels[0]?.endCalls).toBe(1);
+    });
+
+    it('rejects after close() with the classified CONNECTION_LOST failure exec uses, without opening a channel', async () => {
+      const { client, session } = await connectWithChannels();
+      await session.close();
+
+      await expect(session.stream(dockerPs(), options())).rejects.toMatchObject({
+        name: 'SshExecFailure',
+        errorCode: 'CONNECTION_LOST',
+      });
+      expect(client.execCommands).toEqual([]);
+    });
+
+    it('rejects a usage error unclassified, so a caller bug is never reported as a lost connection', async () => {
+      const { client, session } = await connectWithChannels();
+
+      await expect(session.stream(dockerPs(), options([], { maxDurationMs: 0 }))).rejects.toBeInstanceOf(RangeError);
+      expect(client.execCommands).toEqual([]);
+    });
+
+    it('classifies a channel error through classifySshError', async () => {
+      const { channels, session } = await connectWithChannels();
+
+      const promise = session.stream(dockerPs(), options());
+      channels[0]?.emitError(new Error('Channel open failure: raw ssh2 text'));
+
+      await expect(promise).rejects.toMatchObject({ name: 'SshExecFailure', errorCode: 'CONNECTION_LOST' });
+    });
+
+    it('runs a stream and an exec concurrently on two channels and rejects every in-flight op on transport loss', async () => {
+      const { client, channels, session } = await connectWithChannels();
+
+      const first = session.stream(dockerPs(), options());
+      const second = session.stream(dockerPs(), options());
+      const exec = session.exec('discovery.hostname');
+      expect(channels).toHaveLength(3);
+      client.emit('close');
+
+      await expect(first).rejects.toMatchObject({ errorCode: 'CONNECTION_LOST' });
+      await expect(second).rejects.toMatchObject({ errorCode: 'CONNECTION_LOST' });
+      await expect(exec).rejects.toMatchObject({ errorCode: 'CONNECTION_LOST' });
+    });
+
+    it('still rejects the remaining op on transport loss after a concurrent op has finished', async () => {
+      const { client, channels, session } = await connectWithChannels();
+
+      const long = session.stream(dockerPs(), options());
+      const short = session.stream(dockerPs(), options());
+      channels[1]?.emitClose(0);
+      await expect(short).resolves.toMatchObject({ outcome: 'completed' });
+      client.emit('error', ssh2Error({ message: 'read ECONNRESET' }));
+
+      await expect(long).rejects.toMatchObject({ name: 'SshExecFailure' });
     });
   });
 
