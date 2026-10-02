@@ -7,7 +7,12 @@ import {
   type DeployWorkspace,
   type ValidationResult,
 } from '@noodara/domain/validators';
-import { describe, expect, it } from 'vitest';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
 import { ADVERSARIAL_VALUES, shellWords } from '../testing/shell-round-trip.js';
 import { gitCheckout, gitClone } from './git.js';
 import { renderRemoteCommand } from './remote-command.js';
@@ -178,5 +183,74 @@ describe('killGroup / groupAlive', () => {
     for (const command of [killGroup(value as DeployRunPath), groupAlive(value as DeployRunPath)]) {
       expect(shellWords(renderRemoteCommand(command))).toEqual(command.argv);
     }
+  });
+});
+
+describe('secret canary (SEC, T-11-35): secrets travel on stdin only', () => {
+  // Per-run canaries: a fixed literal could be matched by accident or leak into a snapshot.
+  const canary = (): string => `noodara-canary-${randomBytes(32).toString('base64url')}`;
+  const dirs: string[] = [];
+  const tempDir = (): string => {
+    const dir = mkdtempSync(join(tmpdir(), 'noodara-secret-canary-'));
+    dirs.push(dir);
+    return dir;
+  };
+  const runWithStdin = (commandLine: string, stdin: string): string => {
+    const result = spawnSync('/bin/sh', ['-c', commandLine], {
+      input: stdin,
+      encoding: 'utf8',
+      timeout: 10_000,
+    });
+    if (result.status !== 0) throw new Error(`exit ${String(result.status)}`);
+    return `${result.stdout}${result.stderr}`;
+  };
+
+  afterEach(() => {
+    for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('writeSecretFile lands the stdin bytes at 0600 while the command line and output never hold them', () => {
+    const secret = canary();
+    const file = join(tempDir(), 'deploy_key');
+    const commandLine = renderRemoteCommand(writeSecretFile(file as DeploySecretPath));
+
+    const output = runWithStdin(commandLine, secret);
+
+    expect(commandLine).not.toContain(secret);
+    expect(output).toBe('');
+    expect(readFileSync(file, 'utf8')).toBe(secret);
+    expect(statSync(file).mode & 0o777).toBe(0o600);
+  });
+
+  it('the askpass helper hands git the token from its file, and neither its content nor any argv holds the token', () => {
+    const token = canary();
+    const dir = tempDir();
+    const askpass = join(dir, 'askpass');
+    const tokenFile = join(dir, 'https_token');
+    const writeAskpass = renderRemoteCommand(writeAskpassFile(askpass as DeploySecretPath));
+    const writeToken = renderRemoteCommand(writeSecretFile(tokenFile as DeploySecretPath));
+
+    const output =
+      runWithStdin(writeAskpass, ASKPASS_SCRIPT_CONTENT) + runWithStdin(writeToken, token);
+    // A minimal, fixed environment: the helper needs only sh and cat.
+    const env = { PATH: '/usr/bin:/bin', NOODARA_ASKPASS_TOKEN_FILE: tokenFile };
+    const password = execFileSync(askpass, ["Password for 'https://x-access-token@github.com': "], {
+      env,
+      encoding: 'utf8',
+      timeout: 10_000,
+    });
+    const username = execFileSync(askpass, ["Username for 'https://github.com': "], {
+      env,
+      encoding: 'utf8',
+      timeout: 10_000,
+    });
+
+    expect(output).toBe('');
+    expect(password).toBe(token);
+    expect(username).toBe('x-access-token\n');
+    expect(readFileSync(askpass, 'utf8')).toBe(ASKPASS_SCRIPT_CONTENT);
+    expect(statSync(askpass).mode & 0o777).toBe(0o700);
+    expect(statSync(tokenFile).mode & 0o777).toBe(0o600);
+    for (const line of [writeAskpass, writeToken]) expect(line).not.toContain(token);
   });
 });

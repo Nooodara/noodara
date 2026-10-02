@@ -2,7 +2,9 @@
 // remote command here is a builder's output passed through renderRemoteCommand, exactly as the
 // engine will send it; raw strings are used only for test setup and root-side checks. Proves
 // process.group_alive (not measured by the 11-06 contracts) with a supervised docker build.
-import { createHash, randomUUID } from 'node:crypto';
+// SEC: every command line and every byte of output is kept in a transcript, and the last test
+// asserts that no secret (deploy key, token canary, registry password) ever appears in it.
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,7 +37,9 @@ import {
   removeDeployDir,
   renderRemoteCommand,
   supervise,
+  writeAskpassFile,
   writeSecretFile,
+  ASKPASS_SCRIPT_CONTENT,
   type RemoteCommand,
 } from '@noodara/ssh/testing/deploy-templates';
 import {
@@ -174,6 +178,11 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
   (ubuntu) => {
     let stack: DeployEngineStack | undefined;
     let client: Client | undefined;
+    /** Every rendered command line and every stdout/stderr chunk seen by this suite. */
+    const transcript: string[] = [];
+    /** Per-run secret canaries (crypto.randomBytes, never a fixed literal). */
+    const tokenCanary = `noodara-canary-${randomBytes(32).toString('base64url')}`;
+    const fileCanary = `noodara-canary-${randomBytes(32).toString('base64url')}`;
 
     const s = (): DeployEngineStack => {
       if (stack === undefined) throw new Error('stack not started');
@@ -183,16 +192,25 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       if (client === undefined) throw new Error('client not connected');
       return client;
     };
-    const run = (command: RemoteCommand, stdin?: string): Promise<RunResult> =>
-      runLine(c(), renderRemoteCommand(command), stdin);
+    const record = (commandLine: string, result: RunResult): RunResult => {
+      transcript.push(commandLine, result.stdout, result.stderr);
+      return result;
+    };
+    const run = async (command: RemoteCommand, stdin?: string): Promise<RunResult> => {
+      const commandLine = renderRemoteCommand(command);
+      return record(commandLine, await runLine(c(), commandLine, stdin));
+    };
     const mustRun = async (command: RemoteCommand, stdin?: string): Promise<string> => {
       const result = await run(command, stdin);
       expect(result.exitCode, `${command.name}: ${result.stderr}`).toBe(0);
       return result.stdout;
     };
     /** Root-side truth, never the template under test. */
-    const rootOut = async (argv: readonly string[]): Promise<string> =>
-      (await s().exec(argv)).stdout.trim();
+    const rootOut = async (argv: readonly string[]): Promise<string> => {
+      const result = await s().exec(argv);
+      transcript.push(result.stdout, result.stderr);
+      return result.stdout.trim();
+    };
 
     const withWorkspace = async (body: (ws: DeployWorkspace) => Promise<void>): Promise<void> => {
       const ws = valid(deployWorkspaceFor(randomUUID()));
@@ -246,7 +264,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
 
     it('G1: fs.prepare_workspace makes 700 secrets/run dirs and secrets.write_file lands the stdin bytes at 0600', async () => {
       await withWorkspace(async (ws) => {
-        const secret = `-----BEGIN TEST SECRET-----\n${randomUUID()}\n-----END TEST SECRET-----\n`;
+        const secret = `-----BEGIN TEST SECRET-----\n${fileCanary}\n-----END TEST SECRET-----\n`;
         await mustRun(writeSecretFile(ws.secretFile('https_token')), secret);
 
         const modes = await rootOut([
@@ -264,7 +282,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
           '700 deployer',
           '600 deployer',
         ]);
-        expect(sha.split(' ')[0]).toBe(createHash('sha256').update(secret).digest('hex'));
+        expect(sha.split(' ')[0]).toBe(sha256(secret));
       });
     });
 
@@ -318,11 +336,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
           valid(validateBuildContextPath('slow')),
           valid(validateDockerfilePath('slow/Dockerfile')),
         );
-        const written = await runLine(
-          c(),
-          `${WRITE_DOCKERFILE} ${q(contextPath)}`,
-          SLOW_BUILD_DOCKERFILE,
-        );
+        const writeLine = `${WRITE_DOCKERFILE} ${q(contextPath)}`;
+        const written = record(writeLine, await runLine(c(), writeLine, SLOW_BUILD_DOCKERFILE));
         expect(written.exitCode).toBe(0);
 
         const pidFile = ws.pidFile('build');
@@ -334,7 +349,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
           serviceId,
           deploymentId,
         });
-        const running = await start(c(), renderRemoteCommand(supervise(pidFile, build)));
+        const launchLine = renderRemoteCommand(supervise(pidFile, build));
+        const running = await start(c(), launchLine);
         running.channel.end();
         try {
           const started = await pollUntil(
@@ -357,7 +373,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
               (await rootOut(['pgrep', '-f', 'sleep 300'])) === '',
             5_000,
           );
-          const launch = await running.done;
+          const launch = record(launchLine, await running.done);
 
           expect(aliveBefore.exitCode).toBe(0);
           expect(killed.exitCode).toBe(0);
@@ -400,10 +416,14 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         const configMode = await rootOut(['stat', '-c', '%a', ws.dockerConfigDir]);
         await mustRun(dockerLogout({ config: ws.dockerConfigDir, host }));
         const afterLogout = await rootOut(['cat', `${ws.dockerConfigDir}/config.json`]);
+        const basicAuth = Buffer.from(`${s().registry.username}:${s().registry.password}`).toString(
+          'base64',
+        );
 
         expect(refused.exitCode).not.toBe(0);
         expect(configMode).toBe('700');
         expect(afterLogout).not.toContain(host);
+        expect(afterLogout).not.toContain(basicAuth);
       });
     });
 
@@ -437,7 +457,14 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         const lines = (await mustRun(dockerPs()))
           .split('\n')
           .filter((line) => line !== '')
-          .map((line) => JSON.parse(line) as { Names: string; Labels: string; Size: string });
+          .map(
+            (line) =>
+              JSON.parse(line) as {
+                Names: string;
+                Labels: string;
+                Size: string;
+              },
+          );
         const mine = lines.find((line) => line.Names === container);
         await mustRun(dockerLogs({ container, tail: 10, follow: false }));
         await mustRun(dockerStop({ container, timeoutSeconds: 5 }));
@@ -481,5 +508,42 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         .filter((line) => line.includes(container));
       expect(left).toEqual([]);
     });
+
+    it('SEC: an https token reaches its 0600 file over stdin only, and the askpass helper is 0700 without it', async () => {
+      await withWorkspace(async (ws) => {
+        // DEPLOY_SECRET_NAMES has no askpass entry yet (Phase 12 adds it with the HTTPS clone);
+        // the known_hosts slot stands in, since an https_token clone never uses one.
+        const askpass = ws.secretFile('known_hosts');
+        await mustRun(writeSecretFile(ws.secretFile('https_token')), tokenCanary);
+        await mustRun(writeAskpassFile(askpass), ASKPASS_SCRIPT_CONTENT);
+
+        const modes = await rootOut(['stat', '-c', '%a %U', ws.secretFile('https_token'), askpass]);
+        const tokenSha = await rootOut(['sha256sum', ws.secretFile('https_token')]);
+        const askpassSha = await rootOut(['sha256sum', askpass]);
+
+        expect(modes.split('\n')).toEqual(['600 deployer', '700 deployer']);
+        expect(tokenSha.split(' ')[0]).toBe(sha256(tokenCanary));
+        expect(askpassSha.split(' ')[0]).toBe(sha256(ASKPASS_SCRIPT_CONTENT));
+      });
+    });
+
+    // Runs last: the transcript then holds every command line and output of this suite.
+    it('SEC canary: no secret ever appears in a command line or in any streamed output', () => {
+      const keyBody = s()
+        .deployKey.privateKey.split('\n')
+        .filter((line) => line !== '' && !line.startsWith('-----'));
+      const secrets = [tokenCanary, fileCanary, s().registry.password, ...keyBody];
+      const joined = transcript.join('\n');
+
+      expect(transcript.length).toBeGreaterThan(50);
+      expect(keyBody.length).toBeGreaterThan(0);
+      for (const secret of secrets) {
+        expect(joined.includes(secret), 'a secret leaked into argv or output').toBe(false);
+      }
+    });
   },
 );
+
+function sha256(value: string): string {
+  return createHash('sha256').update(value).digest('hex');
+}

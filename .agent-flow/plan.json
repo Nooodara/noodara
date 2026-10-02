@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-02T01:39:31.372Z",
+  "updatedAt": "2026-10-02T01:59:20.099Z",
   "cursor": {
     "phase": "11",
-    "task": "11-13"
+    "task": "11-14"
   },
   "phases": [
     {
@@ -20,49 +20,57 @@
         "QA-07",
         "QA-10"
       ],
+      "dependsOn": [],
       "status": "active",
       "tasks": [
         {
           "id": "11-01",
           "title": "Deployment state machine, error codes, deriveServiceStatus, repository feature probe",
-          "wave": 1,
-          "status": "done",
           "scope": [
             ".planning/phases/11-motor-de-deploy-fundamentos/11-01-SUMMARY.md"
           ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "done",
           "gates": [],
-          "acceptance": []
+          "acceptance": [],
+          "waives": []
         },
         {
           "id": "11-02",
           "title": "Branded validators (SVC-08)",
-          "wave": 1,
-          "status": "done",
           "scope": [
             ".planning/phases/11-motor-de-deploy-fundamentos/11-02-SUMMARY.md"
           ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "done",
           "gates": [],
-          "acceptance": []
+          "acceptance": [],
+          "waives": []
         },
         {
           "id": "11-03",
           "title": "sshd+dockerd harness 22.04/24.04, bare git over SSH, htpasswd registry, G7 mirror",
-          "wave": 1,
-          "status": "done",
           "scope": [
             ".planning/phases/11-motor-de-deploy-fundamentos/11-03-SUMMARY.md"
           ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "done",
           "gates": [],
-          "acceptance": []
+          "acceptance": [],
+          "waives": []
         },
         {
           "id": "11-04",
           "title": "Official fixtures node-api, static-app, failing-build",
-          "wave": 1,
-          "status": "done",
           "scope": [
             ".planning/phases/11-motor-de-deploy-fundamentos/11-04-SUMMARY.md"
           ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "done",
           "gates": [],
           "acceptance": [],
           "waives": [
@@ -73,44 +81,51 @@
         {
           "id": "11-05",
           "title": "Schema + migration 0005 (composite FK, partial unique index)",
-          "wave": 2,
-          "status": "done",
           "scope": [
             ".planning/phases/11-motor-de-deploy-fundamentos/11-05-SUMMARY.md"
           ],
+          "wave": 2,
+          "dependsOn": [],
+          "status": "done",
           "gates": [],
-          "acceptance": []
+          "acceptance": [],
+          "waives": []
         },
         {
           "id": "11-06",
           "title": "G1/G2 contract tests + git error captures",
-          "wave": 2,
-          "status": "done",
           "scope": [
             ".planning/phases/11-motor-de-deploy-fundamentos/11-06-SUMMARY.md"
           ],
+          "wave": 2,
+          "dependsOn": [],
+          "status": "done",
           "gates": [],
-          "acceptance": []
+          "acceptance": [],
+          "waives": []
         },
         {
           "id": "11-07",
           "title": "G3/G4 contract tests + captures",
-          "wave": 2,
-          "status": "done",
           "scope": [
             ".planning/phases/11-motor-de-deploy-fundamentos/11-07-SUMMARY.md"
           ],
+          "wave": 2,
+          "dependsOn": [],
+          "status": "done",
           "gates": [],
-          "acceptance": []
+          "acceptance": [],
+          "waives": []
         },
         {
           "id": "11-08",
           "title": "Fixtures end-to-end, registry auth, docker error captures",
-          "wave": 2,
-          "status": "done",
           "scope": [
             ".planning/phases/11-motor-de-deploy-fundamentos/11-08-SUMMARY.md"
           ],
+          "wave": 2,
+          "dependsOn": [],
+          "status": "done",
           "gates": [],
           "acceptance": [],
           "waives": [
@@ -121,16 +136,16 @@
         {
           "id": "11-09",
           "title": "ADR 0008 human acceptance (11-09 Task 3), then SUMMARY",
-          "wave": 3,
-          "status": "blocked",
           "scope": [
             "docs/adr/0008-deploy-engine-empirical-contracts.md",
             ".planning/phases/11-motor-de-deploy-fundamentos/11-09-PLAN.md"
           ],
+          "wave": 3,
+          "dependsOn": [],
+          "status": "blocked",
           "gates": [
             "adr-0008-accepted"
           ],
-          "tier": "light",
           "acceptance": [
             {
               "id": "A1",
@@ -151,38 +166,44 @@
           "waives": [
             "auth-secrets",
             "randomness"
-          ]
+          ],
+          "tier": "light"
         },
         {
           "id": "11-10",
           "title": "docker ps / container state / BuildKit parsers",
-          "wave": 3,
-          "status": "done",
           "scope": [
             ".planning/phases/11-motor-de-deploy-fundamentos/11-10-SUMMARY.md"
           ],
+          "wave": 3,
+          "dependsOn": [],
+          "status": "done",
           "gates": [],
-          "acceptance": []
+          "acceptance": [],
+          "waives": []
         },
         {
           "id": "11-11",
           "title": "classifyGitError / classifyDockerError",
-          "wave": 3,
-          "status": "done",
           "scope": [
             ".planning/phases/11-motor-de-deploy-fundamentos/11-11-SUMMARY.md"
           ],
+          "wave": 3,
+          "dependsOn": [],
+          "status": "done",
           "gates": [],
-          "acceptance": []
+          "acceptance": [],
+          "waives": []
         },
         {
           "id": "11-12",
           "title": "docker_buildkit discovery check + servers.docker_buildkit_available",
-          "wave": 4,
-          "status": "done",
           "scope": [
             ".planning/phases/11-motor-de-deploy-fundamentos/11-12-SUMMARY.md"
           ],
+          "wave": 4,
+          "dependsOn": [],
+          "status": "done",
           "gates": [],
           "acceptance": [],
           "waives": [
@@ -193,9 +214,6 @@
         {
           "id": "11-13",
           "title": "Finish allowlist templates: run real round-trip test (wip 0b88160) on 22.04/24.04, SUMMARY",
-          "wave": 4,
-          "status": "active",
-          "tier": "deep",
           "scope": [
             "packages/ssh/src/commands/",
             "tests/integration/deploy-engine/deploy-templates.test.ts",
@@ -203,6 +221,9 @@
             ".planning/phases/11-motor-de-deploy-fundamentos/11-13-PLAN.md",
             "docs/adr/0008-deploy-engine-empirical-contracts.md"
           ],
+          "wave": 4,
+          "dependsOn": [],
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
@@ -245,16 +266,12 @@
           "waives": [
             "randomness/crypto-random",
             "auth-secrets/password-hashing"
-          ]
+          ],
+          "tier": "deep"
         },
         {
           "id": "11-14",
           "title": "Streaming exec, SshDeploySession wiring, killSupervisedOperation, real-fixture proof",
-          "wave": 5,
-          "dependsOn": [
-            "11-13"
-          ],
-          "tier": "deep",
           "scope": [
             "packages/ssh/src/exec-streaming.ts",
             "packages/ssh/src/remote-kill.ts",
@@ -265,6 +282,11 @@
             ".planning/phases/11-motor-de-deploy-fundamentos/11-14-PLAN.md",
             "docs/adr/0008-deploy-engine-empirical-contracts.md"
           ],
+          "wave": 5,
+          "dependsOn": [
+            "11-13"
+          ],
+          "status": "pending",
           "gates": [
             "test",
             "typecheck",
@@ -313,16 +335,13 @@
               "text": ".planning/phases/11-motor-de-deploy-fundamentos/11-14-SUMMARY.md written (GSD trail kept)",
               "proof": "manual"
             }
-          ]
+          ],
+          "waives": [],
+          "tier": "deep"
         },
         {
           "id": "11-15",
           "title": "@noodara/git and @noodara/docker packages (ssh-adapter tag)",
-          "wave": 6,
-          "dependsOn": [
-            "11-14"
-          ],
-          "tier": "deep",
           "scope": [
             "packages/git/",
             "packages/docker/",
@@ -330,6 +349,11 @@
             "vitest.shared.ts",
             ".planning/phases/11-motor-de-deploy-fundamentos/11-15-PLAN.md"
           ],
+          "wave": 6,
+          "dependsOn": [
+            "11-14"
+          ],
+          "status": "pending",
           "gates": [
             "test",
             "typecheck",
@@ -371,20 +395,21 @@
           ],
           "waives": [
             "auth-secrets/password-hashing"
-          ]
+          ],
+          "tier": "deep"
         },
         {
           "id": "11-16",
           "title": "End-to-end composition proof of all primitives on 22.04 and 24.04",
-          "wave": 7,
-          "dependsOn": [
-            "11-15"
-          ],
-          "tier": "deep",
           "scope": [
             "tests/integration/deploy-engine/engine-primitives.test.ts",
             ".planning/phases/11-motor-de-deploy-fundamentos/11-16-PLAN.md"
           ],
+          "wave": 7,
+          "dependsOn": [
+            "11-15"
+          ],
+          "status": "pending",
           "gates": [
             "test",
             "typecheck",
@@ -437,7 +462,8 @@
           "waives": [
             "auth-secrets/password-hashing",
             "http-api/body-cap"
-          ]
+          ],
+          "tier": "deep"
         }
       ]
     }
