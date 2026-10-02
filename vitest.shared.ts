@@ -75,6 +75,15 @@ export const sshSourceAliases: AliasOptions = [
     find: /^@noodara\/ssh$/,
     replacement: fileURLToPath(new URL('./packages/ssh/src/index.ts', import.meta.url)),
   },
+  // 11-15: the ssh-adapter wrappers over the deploy templates, same source-alias rationale.
+  {
+    find: /^@noodara\/git$/,
+    replacement: fileURLToPath(new URL('./packages/git/src/index.ts', import.meta.url)),
+  },
+  {
+    find: /^@noodara\/docker$/,
+    replacement: fileURLToPath(new URL('./packages/docker/src/index.ts', import.meta.url)),
+  },
 ];
 
 // Same rationale as domainSourceAliases/sshSourceAliases above, for @noodara/ui (05-06-PLAN.md
