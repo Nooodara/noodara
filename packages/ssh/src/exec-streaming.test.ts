@@ -239,7 +239,7 @@ describe('execStreaming: line chunks (criterion 4)', () => {
 describe('execStreaming: redaction per chunk (T-11-39)', () => {
   it('never leaks a registered secret split across two data events', async () => {
     const t = setup();
-    const secret = 'tok-en123-very-secret-value';
+    const secret = 'token123-very-secret-value';
     t.redactor.register(secret, 'token');
     const promise = t.start();
 
@@ -249,7 +249,7 @@ describe('execStreaming: redaction per chunk (T-11-39)', () => {
     const result = await promise;
 
     expect(texts(t.chunks)).toEqual(['auth: [REDACTED:token] ok\n']);
-    expect(result.stdoutTail).not.toContain('tok-en123');
+    expect(result.stdoutTail).not.toContain('token123');
   });
 
   it('redacts every line of a multi-line secret registered with registerSecretForStreaming', async () => {
@@ -612,7 +612,7 @@ describe('execStreaming: stdin and failures (T-11-42)', () => {
     }).catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(Error);
-    expect(String((error as Error).message)).not.toContain(plaintext);
+    expect((error as Error).message).not.toContain(plaintext);
     expect(t.client.commands).toHaveLength(0);
   });
 

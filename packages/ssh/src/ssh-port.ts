@@ -6,7 +6,7 @@
 
 import type { ServerErrorCode } from '@noodara/domain/server';
 import type { Redactor, SecretValue } from '@noodara/domain/security';
-import type { CommandName } from './commands/index.js';
+import type { CommandName, DeployCommandName, RemoteCommand } from './commands/index.js';
 
 /** The connection coordinates for a single SSH attempt. No credential, no timeouts — see below. */
 export interface SshTarget {
@@ -74,6 +74,55 @@ export interface SshSession {
   close(): Promise<void>;
 }
 
+/** One delivery of streamed output (11-14): one or more complete lines, already redacted. */
+export interface StreamChunk {
+  readonly stream: 'stdout' | 'stderr';
+  /** Redacted. Complete lines, except a final partial line flushed when the stream ends. */
+  readonly text: string;
+  /** Increases by one per chunk across both streams. */
+  readonly seq: number;
+  /** A line in this chunk was cut at `maxLineBytes`; the rest of that line was dropped. */
+  readonly truncatedLine: boolean;
+}
+
+/** Every bound is mandatory (T-11-40). Closing the channel never stops the remote process (ADR
+ *  0008 G2): a timeout or abort must be followed by `killSupervisedOperation`. */
+export interface StreamOptions {
+  /** Required when `command.stdin` is `'secret'`, rejected otherwise. Written once, then EOF. */
+  readonly stdin?: SecretValue;
+  readonly maxDurationMs: number;
+  readonly idleTimeoutMs: number;
+  /** Cap on the redacted bytes delivered through `onChunk`, both streams together. */
+  readonly maxTotalBytes: number;
+  readonly maxLineBytes: number;
+  readonly signal?: AbortSignal;
+  readonly onChunk: (chunk: StreamChunk) => void;
+}
+
+export interface StreamResult {
+  readonly commandName: DeployCommandName;
+  readonly outcome: 'completed' | 'timed_out' | 'idle_timeout' | 'aborted';
+  readonly exitCode: number | null;
+  readonly exitSignal: string | null;
+  readonly durationMs: number;
+  /** Raw bytes received from the remote, both streams, delivered or not. */
+  readonly totalBytes: number;
+  /** A line was cut or `maxTotalBytes` stopped delivery. */
+  readonly truncated: boolean;
+  /** Last 8 KiB of redacted output per stream (including undelivered lines), for classifiers. */
+  readonly stdoutTail: string;
+  readonly stderrTail: string;
+}
+
+/**
+ * The deploy-engine session (11-14). Additive over `SshSession`: `stream` accepts only a
+ * `RemoteCommand` (module-private brand, built by the deploy templates), never a string (T-11-43).
+ * Several streams may run at once on one connection, each on its own channel.
+ */
+export interface SshDeploySession extends SshSession {
+  stream(command: RemoteCommand, options: StreamOptions): Promise<StreamResult>;
+}
+
 /** Everything `SshPort.connect` needs. `redactor` is injected, never constructed internally. */
 export interface ConnectInput {
   readonly target: SshTarget;
@@ -91,10 +140,10 @@ export interface ConnectInput {
  * `HOST_KEY_CHANGED`; every other error code omits it entirely (`exactOptionalPropertyTypes`).
  * `attempts` is 1 or 2 per D-10's single-retry policy.
  */
-export type ConnectOutcome =
+export type ConnectOutcome<S extends SshSession = SshSession> =
   | {
       readonly ok: true;
-      readonly session: SshSession;
+      readonly session: S;
       readonly fingerprint: HostFingerprint;
       readonly fingerprintCaptured: boolean;
       readonly attempts: number;
@@ -112,6 +161,6 @@ export type ConnectOutcome =
  * and never throws (SERV-07) — every failure, including an unclassified one, lands as a
  * `{ ok: false }` outcome.
  */
-export interface SshPort {
-  connect(input: ConnectInput): Promise<ConnectOutcome>;
+export interface SshPort<S extends SshSession = SshSession> {
+  connect(input: ConnectInput): Promise<ConnectOutcome<S>>;
 }
