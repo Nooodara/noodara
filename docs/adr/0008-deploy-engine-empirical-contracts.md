@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed — 2026-09-30
+Accepted — 2026-10-04
 
 ## Context
 
@@ -304,14 +304,21 @@ or `RootFS.Layers`, never `.Id`. This applies to the engine too (Phase 12 image 
 
 Builds are warm (bases preloaded). Secret transfer time was not measured separately.
 
-## Open items (for acceptance)
+## Open items (Accepted 2026-10-04)
 
-| # | Item | Proposed resolution |
+Items 1–4 resolved by user approval on 2026-10-04:
+
+| # | Item | Resolution |
 |---|---|---|
-| 1 | G7 mirror (`mirror.gcr.io` pull-through) was chosen by the orchestrator, not by the user | User confirms the mirror, or picks preload-only |
-| 2 | D-04 text says `kill -- -pgid`; measured working form is `kill -s TERM -- "-$pgid"` launched with `setsid -w` | Accept as a wording correction of D-04, not a change of mechanism |
-| 3 | D-04's `docker kill` branch has no target during `docker build` (0 in every run) | Keep it as D-04 requires (it applies to `docker run` containers); user may drop it for builds |
-| 4 | The HTTPS-token clone path (`https_token`, `git_https_token` credential) was not measured; only the deploy key was | Measure it in the plan that implements HTTPS clone before it ships, or accept deploy key only for v0.2 |
+| 1 | G7 mirror (`mirror.gcr.io` pull-through) was chosen by the orchestrator, not by the user | ✓ User confirms the mirror; pull-through mirror of mirror.gcr.io stays |
+| 2 | D-04 text says `kill -- -pgid`; measured working form is `kill -s TERM -- "-$pgid"` launched with `setsid -w` | ✓ Accept as a wording correction of D-04, not a change of mechanism |
+| 3 | D-04's `docker kill` branch has no target during `docker build` (0 in every run) | ✓ Keep it as a safety net; it does not claim to kill BuildKit builds |
+| 4 | The HTTPS-token clone path (`https_token`, `git_https_token` credential) was not measured; only the deploy key was | ✓ Measure it with a contract test in Phase 12 before deploy keys are marked deprecated |
+
+Remaining open items:
+
+| # | Item | Status |
+|---|---|---|
 | 5 | G3 detection reads help text; a future Docker CLI could change the `Usage:` line | Accepted risk: the contract test and captures fail on any change |
 | 6 | All measurements on macOS arm64 Docker Desktop; the amd64 `ubuntu-latest` CI run of these files is not cited here | Confirm one green `main`/nightly run of `tests/integration/deploy-engine` before Phase 12 |
 | 7 | 11-06 saw one unexplained Testcontainers `Failed to build image` on 22.04 (re-run passed) | Watch in CI; no contract impact |
