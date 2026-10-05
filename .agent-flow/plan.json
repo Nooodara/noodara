@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-05T15:33:26.097Z",
+  "updatedAt": "2026-10-05T15:33:26.520Z",
   "cursor": {
     "phase": "12",
     "task": "12-15"
@@ -1544,7 +1544,7 @@
           "dependsOn": [
             "12-14b"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -1597,20 +1597,26 @@
             "apps/control-plane/src/routes/http-errors.test.ts",
             "apps/control-plane/src/routes/api-scope.ts",
             "apps/site/content/docs/reference/error-codes.mdx",
-            "apps/control-plane/src/app.ts"
+            "apps/control-plane/src/app.ts",
+            "packages/ssh/src/commands/docker-deploy.ts",
+            "packages/ssh/src/commands/docker-deploy.test.ts",
+            "packages/ssh/src/commands/deploy-allowlist.test.ts",
+            "packages/domain/src/validators/docker-naming.ts",
+            "packages/domain/src/validators/docker-naming.test.ts"
           ],
           "wave": 12,
           "dependsOn": [
             "12-14b",
             "12-03"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
             "lint",
             "boundaries",
-            "it-runtime-container-logs"
+            "it-runtime-container-logs",
+            "it-deploy-templates"
           ],
           "acceptance": [
             {
