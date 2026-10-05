@@ -49,6 +49,9 @@ nothing else — no internal detail is ever attached to it.
 | `CREDENTIAL_SOURCE_MISMATCH` | 409 | The credential does not fit the service's source: a deploy key needs an ssh repository URL, an HTTPS token an `https://` one, a registry password an image source. |
 | `SERVICE_CREDENTIAL_INVALID` | 422 | A credential field failed validation; `reason` names the rule. The submitted value is never echoed back. |
 | `SERVER_HAS_SERVICES` | 409 | The server still runs services; `blockingServices` lists them. Move or delete them first. |
+| `DEPLOYMENT_IN_PROGRESS` | 409 | The service already has a deployment in progress; wait for it to finish or cancel it. |
+| `PROJECT_ARCHIVED` | 409 | The project is archived; unarchive it to deploy its services. |
+| `DEPLOYMENT_INPUT_INVALID` | 422 | The deploy request carried a field it does not accept; the body must be empty or `{}`. |
 
 A request the server cannot read at all gets one of three fixed codes with the same body shape:
 `MALFORMED_REQUEST` (400, the body is not valid JSON), `PAYLOAD_TOO_LARGE` (413) or

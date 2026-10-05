@@ -44,7 +44,10 @@ export type ServiceErrorCode =
   | 'SERVER_BUILDKIT_UNAVAILABLE'
   | 'CREDENTIAL_SOURCE_MISMATCH'
   | 'SERVICE_CREDENTIAL_INVALID'
-  | 'SERVER_HAS_SERVICES';
+  | 'SERVER_HAS_SERVICES'
+  | 'DEPLOYMENT_IN_PROGRESS'
+  | 'PROJECT_ARCHIVED'
+  | 'DEPLOYMENT_INPUT_INVALID';
 
 export const SERVICE_ERROR_STATUS = Object.freeze({
   VALIDATION_FAILED: 400,
@@ -86,6 +89,10 @@ export const SERVICE_ERROR_STATUS = Object.freeze({
   CREDENTIAL_SOURCE_MISMATCH: 409,
   SERVICE_CREDENTIAL_INVALID: 422,
   SERVER_HAS_SERVICES: 409,
+  // 12-10: deployments. One active deploy per service and archived projects are state conflicts.
+  DEPLOYMENT_IN_PROGRESS: 409,
+  PROJECT_ARCHIVED: 409,
+  DEPLOYMENT_INPUT_INVALID: 422,
 } satisfies Record<ServiceErrorCode, number>);
 
 const UNKNOWN_CODE_STATUS = 500;

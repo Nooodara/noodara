@@ -24,6 +24,7 @@ import type { SseBroadcaster } from '../events/sse-broadcaster.js';
 import accountRoutes from './account.js';
 import activityRoutes from './activity.js';
 import configRoutes from './config.js';
+import deploymentsRoutes from './deployments.js';
 import createEventsRoutes from './events.js';
 import projectsRoutes from './projects.js';
 import serversRoutes from './servers.js';
@@ -65,6 +66,7 @@ const apiScope: FastifyPluginCallback<ApiScopeOptions> = (fastify, opts, done) =
     fastify.register(serversRoutes);
     fastify.register(projectsRoutes);
     fastify.register(servicesRoutes);
+    fastify.register(deploymentsRoutes);
     fastify.register(
       createEventsRoutes({
         broadcaster: opts.broadcaster,

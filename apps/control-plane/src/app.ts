@@ -17,6 +17,7 @@ import type { ServerEventPublisher } from './events/server-event-publisher.js';
 import { createSseBroadcaster, type SseBroadcaster } from './events/sse-broadcaster.js';
 import { createLogger } from './logger.js';
 import { createConnectServerQueue, type ConnectServerQueue } from './queue/connect-server-queue.js';
+import { createDeployQueue, type DeployQueue } from './queue/deploy-queue.js';
 import {
   createHealthRedisConnection,
   createPublisherRedisConnection,
@@ -31,6 +32,7 @@ import setupRoutes from './routes/setup.js';
 import { resolveServerServicesDeps, type ServiceLogger } from './services/server-service-deps.js';
 import { createProjectServices, type ProjectServices } from './services/project-services.js';
 import { createServerServices, type ServerServices } from './services/server-services.js';
+import { createDeploymentServices, type DeploymentServices } from './services/deployment-services.js';
 import { createServiceServices, panelPortsFromEnv, type ServiceServices } from './services/service-services.js';
 
 export interface BuildAppDeps {
@@ -40,7 +42,11 @@ export interface BuildAppDeps {
   projectServices?: ProjectServices;
   /** 12-08: `/api/projects/:projectId/services` services; built lazily from `getDb()`. */
   serviceServices?: ServiceServices;
+  /** 12-10: deploy/read deployments; built lazily from `getDb()` and the deploy queue. */
+  deploymentServices?: DeploymentServices;
   queue?: ConnectServerQueue;
+  /** 12-10: the `deployments` queue producer; a caller-injected queue is never closed here. */
+  deployQueue?: DeployQueue;
   broadcaster?: SseBroadcaster;
   eventPublisher?: ServerEventPublisher;
   healthRedis?: Redis;
@@ -116,6 +122,60 @@ function createServiceServicesResolver(
           now: () => new Date(),
           events: eventPublisher,
           panelPorts: panelPortsFromEnv({ apiPort: env.PORT, publicUrl: env.NOODARA_PUBLIC_URL }),
+        }),
+      )
+      .catch((error: unknown) => {
+        cached = undefined;
+        throw error;
+      });
+    return cached;
+  };
+}
+
+/** 12-10: the deploy queue producer, owned and closed by this instance unless injected. */
+function createDeployQueueResolver(deps: BuildAppDeps): {
+  getDeployQueue: () => DeployQueue;
+  closeOwnedDeployQueue: () => Promise<void>;
+} {
+  let owned: { queue: DeployQueue; connection: Redis } | undefined;
+  const getDeployQueue = (): DeployQueue => {
+    if (deps.deployQueue !== undefined) return deps.deployQueue;
+    if (owned === undefined) {
+      const connection = createQueueRedisConnection(env.REDIS_URL);
+      owned = { queue: createDeployQueue({ connection }), connection };
+    }
+    return owned.queue;
+  };
+  const closeOwnedDeployQueue = async (): Promise<void> => {
+    if (owned === undefined) return;
+    const { queue, connection } = owned;
+    owned = undefined;
+    await queue.close();
+    connection.disconnect();
+  };
+  return { getDeployQueue, closeOwnedDeployQueue };
+}
+
+/** 12-10: same lazy shape; the queue itself is resolved on the first enqueue, not at boot. */
+function createDeploymentServicesResolver(
+  deps: BuildAppDeps,
+  eventPublisher: ServerEventPublisher,
+  getDeployQueue: () => DeployQueue,
+  logger: FastifyBaseLogger,
+): () => Promise<DeploymentServices> {
+  let cached: Promise<DeploymentServices> | undefined;
+  return () => {
+    if (deps.deploymentServices !== undefined) {
+      return Promise.resolve(deps.deploymentServices);
+    }
+    cached ??= getDb()
+      .then((db) =>
+        createDeploymentServices({
+          db,
+          now: () => new Date(),
+          events: eventPublisher,
+          queue: { enqueue: (payload) => getDeployQueue().enqueue(payload) },
+          logger,
         }),
       )
       .catch((error: unknown) => {
@@ -301,6 +361,8 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   // 12-07: `routes/projects.ts` resolves its services per request, the same deferred way.
   app.decorate('getProjectServices', createProjectServicesResolver(deps));
   app.decorate('getServiceServices', createServiceServicesResolver(deps, eventPublisher));
+  const { getDeployQueue, closeOwnedDeployQueue } = createDeployQueueResolver(deps);
+  app.decorate('getDeploymentServices', createDeploymentServicesResolver(deps, eventPublisher, getDeployQueue, app.log));
 
   // Plan 04-08 (Task 3): the connect/discover routes' queue producer. A queue has no open
   // streaming response, so `onClose` (not `preClose`, which Plan 04-09's SSE streams need) is the
@@ -348,6 +410,7 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
 
   app.addHook('onClose', async () => {
     await closeOwnedResources();
+    await closeOwnedDeployQueue();
     // Closed here, after `preClose` has already ended every stream — never before, and never a
     // connection this instance did not itself open (`deps.broadcaster`/`deps.eventPublisher`
     // overrides keep ownership with whoever injected them, same as `getQueue` above).

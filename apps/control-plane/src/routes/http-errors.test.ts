@@ -85,6 +85,9 @@ describe('SERVICE_ERROR_STATUS / mapServiceCodeToStatus (D-16)', () => {
     ['CREDENTIAL_SOURCE_MISMATCH', 409],
     ['SERVICE_CREDENTIAL_INVALID', 422],
     ['SERVER_HAS_SERVICES', 409],
+    ['DEPLOYMENT_IN_PROGRESS', 409],
+    ['PROJECT_ARCHIVED', 409],
+    ['DEPLOYMENT_INPUT_INVALID', 422],
   ] satisfies [ServiceErrorCode, number][])('maps %s to %d', (code, status) => {
     expect(mapServiceCodeToStatus(code)).toBe(status);
   });
