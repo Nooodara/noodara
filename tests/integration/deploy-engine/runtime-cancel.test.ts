@@ -524,8 +524,10 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
       let crashed = false;
       const isCrashed = (): boolean => crashed;
       const closes: (() => Promise<void>)[] = [];
+      const streamed: string[] = [];
       const doomed = workerModule.createDeployJobHandler({
         ...deps(),
+        sinkFor: () => ({ write: (entry) => streamed.push(entry.text), close: () => Promise.resolve() }),
         store: freezeOnCrash(deps().store, isCrashed),
         connect: async (id, runRedactor, signal) => {
           const connected = await deps().connect(id, runRedactor, signal);
@@ -538,6 +540,12 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
 
       await waitStatus(deploymentId, (status) => status === 'BUILDING');
       await waitFor('the slow build step to run', markerRunning);
+      // The docker CLI streams the build over the SSH channel: a write after the channel is gone
+      // kills it (EPIPE) and BuildKit then cancels the step. Crash only once the RUN step's echo
+      // reached the worker, so the CLI has nothing left to print until `sleep 307` ends.
+      await waitFor('the RUN step output to reach the worker', () =>
+        Promise.resolve(/#\d+ [\d.]+ noodara-cancel-build/.test(streamed.join(''))),
+      );
       crashed = true;
       await Promise.all(closes.map((close) => close().catch(() => undefined)));
       // The build survives its dead worker (setsid -w): only the sweep can stop it.
