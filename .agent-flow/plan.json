@@ -835,7 +835,8 @@
             "tests/integration/projects/",
             "apps/control-plane/src/routes/http-errors.ts",
             "apps/control-plane/src/routes/http-errors.test.ts",
-            "apps/control-plane/src/routes/api-scope.ts"
+            "apps/control-plane/src/routes/api-scope.ts",
+            "apps/site/content/docs/reference/error-codes.mdx"
           ],
           "wave": 2,
           "dependsOn": [
@@ -903,7 +904,8 @@
             "tests/integration/projects/",
             "apps/control-plane/src/routes/http-errors.ts",
             "apps/control-plane/src/routes/http-errors.test.ts",
-            "apps/control-plane/src/routes/api-scope.ts"
+            "apps/control-plane/src/routes/api-scope.ts",
+            "apps/site/content/docs/reference/error-codes.mdx"
           ],
           "wave": 3,
           "dependsOn": [
@@ -974,7 +976,8 @@
             "tests/integration/services/delete-server.test.ts",
             "apps/control-plane/src/routes/http-errors.ts",
             "apps/control-plane/src/routes/http-errors.test.ts",
-            "apps/control-plane/src/routes/api-scope.ts"
+            "apps/control-plane/src/routes/api-scope.ts",
+            "apps/site/content/docs/reference/error-codes.mdx"
           ],
           "wave": 4,
           "dependsOn": [
@@ -1058,7 +1061,8 @@
             "tests/integration/queue/deploy-queue.test.ts",
             "apps/control-plane/src/routes/http-errors.ts",
             "apps/control-plane/src/routes/http-errors.test.ts",
-            "apps/control-plane/src/routes/api-scope.ts"
+            "apps/control-plane/src/routes/api-scope.ts",
+            "apps/site/content/docs/reference/error-codes.mdx"
           ],
           "wave": 5,
           "dependsOn": [
@@ -1125,7 +1129,8 @@
             "tests/integration/helpers/deploy-engine.ts",
             "apps/control-plane/src/routes/http-errors.ts",
             "apps/control-plane/src/routes/http-errors.test.ts",
-            "apps/control-plane/src/routes/api-scope.ts"
+            "apps/control-plane/src/routes/api-scope.ts",
+            "apps/site/content/docs/reference/error-codes.mdx"
           ],
           "wave": 6,
           "dependsOn": [
@@ -1214,7 +1219,8 @@
             "tests/integration/deploy-engine/runtime-build-logs.test.ts",
             "apps/control-plane/src/routes/http-errors.ts",
             "apps/control-plane/src/routes/http-errors.test.ts",
-            "apps/control-plane/src/routes/api-scope.ts"
+            "apps/control-plane/src/routes/api-scope.ts",
+            "apps/site/content/docs/reference/error-codes.mdx"
           ],
           "wave": 7,
           "dependsOn": [
@@ -1293,7 +1299,8 @@
             "tests/integration/deploy-engine/runtime-cancel.test.ts",
             "apps/control-plane/src/routes/http-errors.ts",
             "apps/control-plane/src/routes/http-errors.test.ts",
-            "apps/control-plane/src/routes/api-scope.ts"
+            "apps/control-plane/src/routes/api-scope.ts",
+            "apps/site/content/docs/reference/error-codes.mdx"
           ],
           "wave": 8,
           "dependsOn": [
@@ -1364,7 +1371,8 @@
             "tests/integration/deploy-engine/runtime-service-ops.test.ts",
             "apps/control-plane/src/routes/http-errors.ts",
             "apps/control-plane/src/routes/http-errors.test.ts",
-            "apps/control-plane/src/routes/api-scope.ts"
+            "apps/control-plane/src/routes/api-scope.ts",
+            "apps/site/content/docs/reference/error-codes.mdx"
           ],
           "wave": 9,
           "dependsOn": [
@@ -1490,7 +1498,8 @@
             "tests/integration/deploy-engine/runtime-container-logs.test.ts",
             "apps/control-plane/src/routes/http-errors.ts",
             "apps/control-plane/src/routes/http-errors.test.ts",
-            "apps/control-plane/src/routes/api-scope.ts"
+            "apps/control-plane/src/routes/api-scope.ts",
+            "apps/site/content/docs/reference/error-codes.mdx"
           ],
           "wave": 10,
           "dependsOn": [
