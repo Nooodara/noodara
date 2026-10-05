@@ -22,7 +22,19 @@
       "it-engine-primitives": "NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/engine-primitives.test.ts",
       "it-deploy-engine-all": "NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine",
       "it-full": "pnpm test:integration",
-      "adr-0008-accepted": "grep -A2 \"## Status\" docs/adr/0008-deploy-engine-empirical-contracts.md | grep -q \"Accepted\""
+      "adr-0008-accepted": "grep -A2 \"## Status\" docs/adr/0008-deploy-engine-empirical-contracts.md | grep -q \"Accepted\"",
+      "it-projects": "pnpm exec vitest run --config vitest.integration.config.ts tests/integration/projects",
+      "it-delete-server": "pnpm exec vitest run --config vitest.integration.config.ts tests/integration/services/delete-server.test.ts",
+      "it-deploy-queue": "pnpm exec vitest run --config vitest.integration.config.ts tests/integration/queue/deploy-queue.test.ts",
+      "it-https-token": "NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/contracts-https-token.test.ts",
+      "it-runtime-pipeline": "NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/runtime-pipeline.test.ts",
+      "it-runtime-build-logs": "NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/runtime-build-logs.test.ts",
+      "it-runtime-cancel": "NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/runtime-cancel.test.ts",
+      "it-runtime-service-ops": "NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/runtime-service-ops.test.ts",
+      "it-runtime-reconcile": "NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/runtime-reconcile.test.ts",
+      "it-runtime-container-logs": "NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/runtime-container-logs.test.ts",
+      "it-canary-deploy": "NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/activity/canary-deploy.test.ts",
+      "it-soak": "NOODARA_SOAK=1 NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/soak.test.ts"
     },
     "defaultGates": [
       "test",

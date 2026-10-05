@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-04T21:47:16.926Z",
+  "updatedAt": "2026-10-05T04:15:26.879Z",
   "cursor": {
     "phase": null,
     "task": null
@@ -464,6 +464,1203 @@
             "http-api/body-cap"
           ],
           "tier": "deep"
+        }
+      ]
+    },
+    {
+      "id": "12",
+      "title": "Motor de deploy — runtime",
+      "goal": "Through the API a person creates project → environment → service (Git, Dockerfile or image, public or private) on a connected server and deploys it in the worker with live build logs, real container state, cancellation that kills the remote process, cleanup on every exit and honest reconciliation; 20 deploys and 20 create/delete cycles leave nothing orphaned.",
+      "requirements": [
+        "PROJ-01",
+        "PROJ-02",
+        "PROJ-03",
+        "PROJ-05",
+        "SVC-01",
+        "SVC-02",
+        "SVC-03",
+        "SVC-04",
+        "SVC-05",
+        "SVC-06",
+        "SVC-07",
+        "DEP-02",
+        "DEP-03",
+        "DEP-04",
+        "DEP-05",
+        "DEP-06",
+        "DEP-07",
+        "DEP-09",
+        "LOG-01",
+        "LOG-02",
+        "LOG-03",
+        "REC-01",
+        "REC-03",
+        "QA-08"
+      ],
+      "dependsOn": [
+        "11"
+      ],
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "12-01",
+          "title": "Domain: project, environment and service inputs",
+          "scope": [
+            "packages/domain/src/project/",
+            "packages/domain/src/validators/service-source.ts",
+            "packages/domain/src/validators/service-source.test.ts",
+            "packages/domain/src/index.ts",
+            "packages/domain/package.json"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Project name and slug derivation (unique-safe, lowercase, collision suffix is the caller's job) and optional description validated into branded types",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Environment name validator accepts any valid name; production/staging/development exported as suggestions only, kind stays free text (D23)",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Service create/edit input validators for git (url, branch, context, Dockerfile, optional target), image (tag or digest, never implicit :latest), internal port and optional published port; no build-arg or env fields exist (D13)",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "classifyServiceEdit() pure: says whether an edit changes the source (requires redeploy) or only metadata",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": ">=95% statement and branch coverage on the new validators; domain purity test still green",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Git URL validator accepts only https:// and ssh (scp-style or ssh://) after parsing; rejects file:, ext::, git://, http://, javascript:/data:, embedded userinfo credentials, and values starting with '-' or containing whitespace/control chars",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Branch, context path and Dockerfile path validators reject '..' segments, absolute paths, leading '-', NUL/newline and over-long values; image ref validator rejects whitespace, leading '-' and malformed digests",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "Slug derivation handles empty result (all non-ASCII/symbols), Unicode normalization, max length and reserved words with a deterministic fallback; ports validated as integers in 1-65535 and published port not equal to internal-only reserved ports",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "randomness/crypto-random"
+          ]
+        },
+        {
+          "id": "12-02",
+          "title": "Domain: runtime policies (resource ledger, port preflight, reconcile diff, post-start polls)",
+          "scope": [
+            "packages/domain/src/deployment/resource-ledger.ts",
+            "packages/domain/src/deployment/resource-ledger.test.ts",
+            "packages/domain/src/deployment/port-preflight.ts",
+            "packages/domain/src/deployment/port-preflight.test.ts",
+            "packages/domain/src/deployment/reconcile-diff.ts",
+            "packages/domain/src/deployment/reconcile-diff.test.ts",
+            "packages/domain/src/deployment/post-start-polls.ts",
+            "packages/domain/src/deployment/post-start-polls.test.ts",
+            "packages/domain/src/deployment/index.ts"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Resource ledger records workspace, per-attempt image, network, container and secrets file, and returns the cleanup set for each exit (SUCCESS, FAILED, CANCELLED, timeout, WORKER_CRASHED); the per-service running container is never in a failed attempt's cleanup set",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Port preflight rejects collisions with other services on the server, the panel ports and ports in the parsed docker ps snapshot, returning PORT_IN_USE with the conflicting owner",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Reconcile diff maps one docker ps snapshot to per-service container states, reports only changed services, and flags containers stopped or removed outside Noodara as discrepancies",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Post-start poll schedule is 5 polls with 1 s to 8 s backoff, parameterised, and decides SUCCESS / START_FAILED / keep polling from inspect results",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": ">=95% statement and branch coverage on the four modules",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Resource ledger cleanup set is idempotent: computing and executing it twice yields the same set and a second run on already-removed resources is not an error",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap"
+          ]
+        },
+        {
+          "id": "12-03",
+          "title": "Domain: build-log chunker and runtime-log sanitizer",
+          "scope": [
+            "packages/domain/src/deployment/log-chunker.ts",
+            "packages/domain/src/deployment/log-chunker.test.ts",
+            "packages/domain/src/deployment/log-sanitize.ts",
+            "packages/domain/src/deployment/log-sanitize.test.ts",
+            "packages/domain/src/deployment/index.ts"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "12-02"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Chunker flushes on time or size (defaults 250 ms / 16 KB, injected clock), assigns a monotonic seq per deployment and phase",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Per-line cap (16 KB) truncates UTF-8-safely with a visible marker; per-phase cap (10 MiB) stops accepting and emits one truncation notice",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Sanitizer strips ANSI escapes and replaces binary / invalid UTF-8 with a placeholder; never throws on arbitrary bytes (property test)",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "No I/O, no timers owned by the module; >=95% coverage",
+              "proof": "test"
+            }
+          ],
+          "waives": []
+        },
+        {
+          "id": "12-04",
+          "title": "Deploy env knobs and deploy job budget",
+          "scope": [
+            "apps/control-plane/src/env.ts",
+            "apps/control-plane/src/env.test.ts",
+            "turbo.json",
+            ".env.example",
+            "apps/control-plane/src/queue/deploy-job-budget.ts",
+            "apps/control-plane/src/queue/deploy-job-budget.test.ts"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Knobs NOODARA_DEPLOY_MAX_MS, NOODARA_DEPLOY_IDLE_MS, NOODARA_DEPLOY_CONCURRENCY, NOODARA_DEPLOY_LOG_MAX_BYTES, NOODARA_DEPLOY_LOG_FLUSH_MS/BYTES, NOODARA_DEPLOY_LOG_RETENTION_DAYS, NOODARA_RECONCILE_INTERVAL_MS, NOODARA_RUNTIME_LOG_TAIL, NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS with research defaults and range validation",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Every knob listed in turbo.json passThroughEnv and documented in .env.example (ADR 0003)",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Deploy lock duration and Redis cancel-key TTL derived from NOODARA_DEPLOY_MAX_MS so BullMQ never reaps a live build (unit-tested at min and max)",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Cross-knob validation: IDLE_MS <= MAX_MS, FLUSH_BYTES <= per-line cap, LOG_MAX_BYTES >= phase cap; invalid combinations fail boot with a named error without echoing unrelated env values",
+              "proof": "test"
+            }
+          ],
+          "waives": []
+        },
+        {
+          "id": "12-05",
+          "title": "Activity actions and SSE event surface for projects, services and deployments",
+          "scope": [
+            "packages/domain/src/activity/",
+            "apps/control-plane/src/events/",
+            "apps/control-plane/src/routes/events.ts",
+            "apps/control-plane/src/routes/events.test.ts"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Activity actions for project, environment, service and deployment lifecycle (incl. out-of-band container change) with metadata allowlists that cannot carry secrets",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "SSE surface is exactly service.updated, service.deleted, deployment.updated, deployment.log_chunk added to the server events (D22); no project.* or environment.* events",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "deployment.log_chunk payload is bounded and carries deploymentId, phase, seq; backpressure eviction behaviour of sse-broadcaster unchanged (existing tests green)",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "http-api/input-validation"
+          ]
+        },
+        {
+          "id": "12-06",
+          "title": "HTTPS-token clone contract test and askpass secret slot",
+          "scope": [
+            "packages/ssh/src/commands/workspace.ts",
+            "packages/ssh/src/commands/workspace.test.ts",
+            "packages/ssh/src/commands/git.ts",
+            "packages/ssh/src/commands/git.test.ts",
+            "packages/ssh/src/testing/",
+            "packages/git/src/",
+            "tests/integration/helpers/deploy-engine.ts",
+            "tests/integration/deploy-engine/contracts-https-token.test.ts",
+            "docs/adr/0008-deploy-engine-empirical-contracts.md"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-https-token",
+            "it-deploy-templates"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Askpass helper gets its own secret file name under <ws>/secrets (no longer the known_hosts slot), mode 600, removed with the workspace",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Fixture serves an HTTPS (or HTTP basic-auth) git remote; clone with a token via askpass succeeds on 22.04 and 24.04, wrong token gives REPOSITORY_AUTH_FAILED",
+              "proof": "it-https-token"
+            },
+            {
+              "id": "A3",
+              "text": "Token absent from ps, .git/config, remote URL and every captured stream",
+              "proof": "it-https-token"
+            },
+            {
+              "id": "A4",
+              "text": "ADR 0008 open item 4 updated with the measured result",
+              "proof": "manual"
+            },
+            {
+              "id": "SEC",
+              "text": "Deploy keys, HTTPS tokens and registry passwords never reach argv, URLs, env-over-SSH, logs, API responses, activity metadata or error messages; every streamed chunk goes through the Redactor; a per-run canary asserts it",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist",
+            "randomness/crypto-random"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "12-07",
+          "title": "Projects and environments API",
+          "scope": [
+            "apps/control-plane/src/routes/projects.ts",
+            "apps/control-plane/src/routes/project-schemas.ts",
+            "apps/control-plane/src/routes/project-schemas.test.ts",
+            "apps/control-plane/src/services/project-services.ts",
+            "apps/control-plane/src/services/project-services.test.ts",
+            "apps/control-plane/src/app.ts",
+            "tests/integration/projects/"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "12-01",
+            "12-05"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-projects"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Create, edit, list and read projects (unique name case-insensitive, slug derived) and environments (unique per project); duplicates give a named 409",
+              "proof": "it-projects"
+            },
+            {
+              "id": "A2",
+              "text": "Archive and unarchive; delete only an archived project by typing its exact name (422 otherwise); the DB cascade covers environments, services, deployments, log chunks and service credentials (remote cleanup arrives in 12-14)",
+              "proof": "it-projects"
+            },
+            {
+              "id": "A3",
+              "text": "Environment routes reject an environment id from another project (404, no existence leak)",
+              "proof": "it-projects"
+            },
+            {
+              "id": "A4",
+              "text": "Every mutation writes an activity event; routes behind requireSession and origin guard like servers.ts",
+              "proof": "it-projects"
+            },
+            {
+              "id": "H1",
+              "text": "Malformed JSON, wrong content-type, unknown fields and oversized bodies on project/environment routes return 400/413/422 and the API keeps serving; name uniqueness race (two parallel creates differing only in case) yields one 201 and one named 409, never a 500",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Project and environment endpoints return 401 without session and 403 on cross-origin mutation; unauthenticated requests never reveal whether an id exists",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "auth-secrets/secret-logging",
+            "randomness/crypto-random"
+          ]
+        },
+        {
+          "id": "12-08",
+          "title": "Services API: create, edit, read with derived status and guards",
+          "scope": [
+            "apps/control-plane/src/routes/services.ts",
+            "apps/control-plane/src/routes/service-schemas.ts",
+            "apps/control-plane/src/routes/service-schemas.test.ts",
+            "apps/control-plane/src/services/service-services.ts",
+            "apps/control-plane/src/services/service-services.test.ts",
+            "apps/control-plane/src/services/service-view.ts",
+            "apps/control-plane/src/services/service-view.test.ts",
+            "apps/control-plane/src/app.ts",
+            "tests/integration/projects/"
+          ],
+          "wave": 3,
+          "dependsOn": [
+            "12-07",
+            "12-02"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-projects"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Create git and image services only on a CONNECTED server with Docker; Dockerfile (git) services rejected when docker_buildkit_available is false (ADR 0008 G3)",
+              "proof": "it-projects"
+            },
+            {
+              "id": "A2",
+              "text": "Published port optional and off by default; collisions with other services on the server and the panel ports give PORT_IN_USE at create/edit time",
+              "proof": "it-projects"
+            },
+            {
+              "id": "A3",
+              "text": "Read returns every SVC-05 field with status from deriveServiceStatus (never a hand-written value); edit flags requiresRedeploy when the source changes",
+              "proof": "it-projects"
+            },
+            {
+              "id": "A4",
+              "text": "No route accepts a service, environment or server id outside the path's project; covered by a cross-project ownership test",
+              "proof": "it-projects"
+            },
+            {
+              "id": "A5",
+              "text": "Create and edit write activity events and publish service.updated",
+              "proof": "it-projects"
+            },
+            {
+              "id": "H1",
+              "text": "Service create/edit routes enforce body cap and reject malformed JSON with explicit 4xx; git URL scheme allowlist and path validators from 12-01 are applied server-side (not only in UI) and violations return a named 422",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Port collision check at create/edit is race-safe: two concurrent creates claiming the same published port on one server result in exactly one success (DB-level constraint or lock), the other PORT_IN_USE",
+              "proof": "test"
+            }
+          ],
+          "waives": []
+        },
+        {
+          "id": "12-09",
+          "title": "Private source credentials and delete-server guard",
+          "scope": [
+            "apps/control-plane/src/services/service-credentials.ts",
+            "apps/control-plane/src/services/service-credentials.test.ts",
+            "apps/control-plane/src/services/credential-store.ts",
+            "apps/control-plane/src/services/credential-store.test.ts",
+            "apps/control-plane/src/services/service-services.ts",
+            "apps/control-plane/src/routes/services.ts",
+            "apps/control-plane/src/routes/service-schemas.ts",
+            "apps/control-plane/src/services/delete-server.ts",
+            "apps/control-plane/src/routes/servers.ts",
+            "tests/integration/projects/",
+            "tests/integration/services/delete-server.test.ts"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "12-08",
+            "12-06"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-projects",
+            "it-delete-server"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Noodara generates an ed25519 deploy key per service, stores the private half encrypted at rest, returns only the public key",
+              "proof": "it-projects"
+            },
+            {
+              "id": "A2",
+              "text": "HTTPS token and registry password accepted write-only, encrypted at rest, never returned (responses expose only presence and type)",
+              "proof": "it-projects"
+            },
+            {
+              "id": "A3",
+              "text": "Credentials are rotated or removed when the source changes and deleted with the service (no orphan credentials rows)",
+              "proof": "it-projects"
+            },
+            {
+              "id": "A4",
+              "text": "Deleting a server with services returns 409 naming the blocking services (PROJ-05)",
+              "proof": "it-delete-server"
+            },
+            {
+              "id": "SEC",
+              "text": "Deploy keys, HTTPS tokens and registry passwords never reach argv, URLs, env-over-SSH, logs, API responses, activity metadata or error messages; every streamed chunk goes through the Redactor; a per-run canary asserts it",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Credential encryption uses authenticated encryption with a fresh random nonce per write; ciphertext tamper is detected on decrypt; deploy keys are generated with node:crypto (no Math.random) and each service gets a distinct key",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Credential store never exposes plaintext through toJSON/inspect/error serialization; decrypt failures surface a closed-vocabulary code without ciphertext or key material",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "Credential inputs are validated server-side: token and registry password length capped, registry host and username validated, request body capped (413) and malformed JSON rejected (400) without echoing the submitted secret",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "persistence/atomic-write",
+            "persistence/missing-file-boot",
+            "randomness/crypto-random"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "12-10",
+          "title": "Deploy queue and enqueue / read API",
+          "scope": [
+            "apps/control-plane/src/queue/deploy-queue.ts",
+            "apps/control-plane/src/queue/deploy-queue.test.ts",
+            "apps/control-plane/src/queue/deploy-job-payload.ts",
+            "apps/control-plane/src/queue/deploy-job-payload.test.ts",
+            "apps/control-plane/src/routes/deployments.ts",
+            "apps/control-plane/src/routes/deployment-schemas.ts",
+            "apps/control-plane/src/routes/deployment-schemas.test.ts",
+            "apps/control-plane/src/services/deployment-services.ts",
+            "apps/control-plane/src/services/deployment-services.test.ts",
+            "apps/control-plane/src/app.ts",
+            "apps/control-plane/src/server.ts",
+            "tests/integration/queue/deploy-queue.test.ts"
+          ],
+          "wave": 5,
+          "dependsOn": [
+            "12-09",
+            "12-04"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-deploy-queue"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "POST /api/services/:id/deploy inserts a QUEUED deployment (source snapshot) and enqueues jobId deploy-<deploymentId>, answering immediately",
+              "proof": "it-deploy-queue"
+            },
+            {
+              "id": "A2",
+              "text": "A second deploy while one is active returns 409 DEPLOYMENT_IN_PROGRESS via the partial unique index, also under a concurrent race (two parallel POSTs, exactly one 201)",
+              "proof": "it-deploy-queue"
+            },
+            {
+              "id": "A3",
+              "text": "Archived project blocks deploys with a named error",
+              "proof": "it-deploy-queue"
+            },
+            {
+              "id": "A4",
+              "text": "GET deployment list per service (paginated, newest first) and detail; payload contains ids only, never secrets",
+              "proof": "it-deploy-queue"
+            },
+            {
+              "id": "H1",
+              "text": "If enqueue fails after the QUEUED insert (Redis down), the deployment is moved to FAILED with a named code or the insert is rolled back; no deployment stays QUEUED without a job; API answers a named 503, not a crash",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Deployment list pagination caps page size (upper bound validated) and rejects malformed cursors/limits with 4xx; reading a deployment of another service/project returns 404",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "Deploy, cancel and other POST routes enforce the Fastify body cap (413) and reject unknown fields (422)",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/secret-logging"
+          ]
+        },
+        {
+          "id": "12-11",
+          "title": "Deploy job pipeline: clone, build or pull, preflight, start, verify, cleanup",
+          "scope": [
+            "apps/control-plane/src/deploy/",
+            "apps/control-plane/src/worker.ts",
+            "apps/control-plane/src/services/deployment-services.ts",
+            "tests/integration/deploy-engine/runtime-pipeline.test.ts",
+            "tests/integration/helpers/deploy-engine.ts"
+          ],
+          "wave": 6,
+          "dependsOn": [
+            "12-10",
+            "12-02",
+            "12-06"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-runtime-pipeline"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Worker clones --depth 1 into /opt/noodara-deploy/<deploymentId> (SHA captured), builds noodara/<serviceId>:<deploymentId> with optional target, or pulls the image (registry login via --password-stdin into the per-deployment --config)",
+              "proof": "it-runtime-pipeline"
+            },
+            {
+              "id": "A2",
+              "text": "Port preflight against real docker ps; then old container replaced by noodara-<serviceId> on noodara-net-<serviceId> with --log-opt max-size/max-file; post-start polls decide SUCCESS or START_FAILED",
+              "proof": "it-runtime-pipeline"
+            },
+            {
+              "id": "A3",
+              "text": "Statuses move only through the domain state machine (QUEUED→PREPARING→BUILDING→DEPLOYING→SUCCESS/FAILED); service status cache recomputed and service.updated / deployment.updated published",
+              "proof": "it-runtime-pipeline"
+            },
+            {
+              "id": "A4",
+              "text": "failing-build ends FAILED/BUILD_FAILED with the previous container still running; max vs idle timeout give BUILD_TIMEOUT vs BUILD_STALLED",
+              "proof": "it-runtime-pipeline"
+            },
+            {
+              "id": "A5",
+              "text": "Ledger cleanup on every exit removes workspace, secrets, partial image and half-created container/network; superseded image removed after the new container runs; images compared by digest or RootFS.Layers, never .Id (ADR 0008)",
+              "proof": "it-runtime-pipeline"
+            },
+            {
+              "id": "A6",
+              "text": "Log output goes through an injected sink interface (real sink in 12-12)",
+              "proof": "test"
+            },
+            {
+              "id": "ERR",
+              "text": "SSH, Docker or Git failures surface as a closed-vocabulary code with an actionable message; raw remote stderr never reaches an API response and no remote failure crashes the API or the worker",
+              "proof": "test"
+            },
+            {
+              "id": "SEC",
+              "text": "Deploy keys, HTTPS tokens and registry passwords never reach argv, URLs, env-over-SSH, logs, API responses, activity metadata or error messages; every streamed chunk goes through the Redactor; a per-run canary asserts it",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Worker job is idempotent against BullMQ stall/retry: a re-delivered job for a deployment already past QUEUED does not re-run remote commands (attempts 1 or state guard), proven by a stalled-job test",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Per-deployment workspace path, image tag and container/network names are built only from validated ids; repo-controlled values (branch, Dockerfile path, git output) are never interpolated into shell strings, proven with hostile names ($(), backticks, ';', leading '-') in a fixture repo",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "http-api/body-cap",
+            "randomness/crypto-random"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "12-12",
+          "title": "Build log pipeline: redact, persist, publish, resync, retention",
+          "scope": [
+            "apps/control-plane/src/deploy/log-sink.ts",
+            "apps/control-plane/src/deploy/log-sink.test.ts",
+            "apps/control-plane/src/deploy/log-retention.ts",
+            "apps/control-plane/src/deploy/log-retention.test.ts",
+            "apps/control-plane/src/routes/deployments.ts",
+            "apps/control-plane/src/routes/deployment-schemas.ts",
+            "apps/control-plane/src/worker.ts",
+            "tests/integration/deploy-engine/runtime-build-logs.test.ts"
+          ],
+          "wave": 7,
+          "dependsOn": [
+            "12-11",
+            "12-03",
+            "12-05"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-runtime-build-logs"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Every chunk passes the Redactor before persistence, Redis or SSE; a secret split across chunks never leaks",
+              "proof": "it-runtime-build-logs"
+            },
+            {
+              "id": "A2",
+              "text": "Chunks persisted append-only in deployment_log_chunks with seq, flushed on the 12-03 cadence, capped per line and per phase",
+              "proof": "it-runtime-build-logs"
+            },
+            {
+              "id": "A3",
+              "text": "deployment.log_chunk reaches an SSE client live during a node-api build; GET /api/deployments/:id/logs?since=<seq> returns only later chunks (no replay)",
+              "proof": "it-runtime-build-logs"
+            },
+            {
+              "id": "A4",
+              "text": "Retention job deletes chunks older than NOODARA_DEPLOY_LOG_RETENTION_DAYS without touching the deployment rows",
+              "proof": "it-runtime-build-logs"
+            },
+            {
+              "id": "A5",
+              "text": "A fixture that logs continuously for minutes keeps API RSS and SSE buffers bounded (no eviction of a healthy client); numbers recorded",
+              "proof": "it-runtime-build-logs"
+            },
+            {
+              "id": "SEC",
+              "text": "Deploy keys, HTTPS tokens and registry passwords never reach argv, URLs, env-over-SSH, logs, API responses, activity metadata or error messages; every streamed chunk goes through the Redactor; a per-run canary asserts it",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Log persistence failure (DB error) or Redis publish failure is logged without chunk content and does not fail or stall the deployment; seq has a unique constraint per deployment and phase and duplicate inserts are rejected",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "GET /api/deployments/:id/logs validates since as a non-negative integer, caps page size, requires session and returns 404 for deployments outside the caller's scope",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "http-api/body-cap",
+            "persistence/atomic-write",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot",
+            "randomness/crypto-random"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "12-13",
+          "title": "Cancellation and worker-crash sweep",
+          "scope": [
+            "apps/control-plane/src/deploy/",
+            "apps/control-plane/src/worker.ts",
+            "apps/control-plane/src/routes/deployments.ts",
+            "apps/control-plane/src/services/deployment-services.ts",
+            "tests/integration/deploy-engine/runtime-cancel.test.ts"
+          ],
+          "wave": 8,
+          "dependsOn": [
+            "12-12"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-runtime-cancel"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Cancelling a QUEUED deployment removes the job and ends CANCELLED; it never executes any remote command",
+              "proof": "it-runtime-cancel"
+            },
+            {
+              "id": "A2",
+              "text": "Cancelling a running build: Redis flag (TTL from 12-04) → killSupervisedOperation (kill -s TERM -- \"-$pgid\" under setsid -w, ADR 0008) → confirmed absence in ps → channel destroyed → cleanup → CANCELLED; only the worker transitions",
+              "proof": "it-runtime-cancel"
+            },
+            {
+              "id": "A3",
+              "text": "After cancel no container, partial image, network, workspace or secrets file remains and docker system df is unchanged",
+              "proof": "it-runtime-cancel"
+            },
+            {
+              "id": "A4",
+              "text": "Worker killed mid-build: startup sweep marks FAILED/WORKER_CRASHED, cleans per-deployment resources, never the per-service container",
+              "proof": "it-runtime-cancel"
+            },
+            {
+              "id": "ERR",
+              "text": "SSH, Docker or Git failures surface as a closed-vocabulary code with an actionable message; raw remote stderr never reaches an API response and no remote failure crashes the API or the worker",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Cancel is idempotent and race-safe: cancelling a terminal deployment returns a named 409, a second cancel during CANCELLING is a no-op, and cancel racing with SUCCESS leaves exactly one terminal state",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "If killSupervisedOperation cannot confirm absence, deployment still ends FAILED/CANCEL_UNCONFIRMED-style named code with cleanup attempted and a warning activity event; the worker does not hang past a bounded timeout",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "http-api/input-validation"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "12-14",
+          "title": "Service operations and deletion with remote cleanup",
+          "scope": [
+            "apps/control-plane/src/deploy/",
+            "apps/control-plane/src/worker.ts",
+            "apps/control-plane/src/routes/services.ts",
+            "apps/control-plane/src/routes/projects.ts",
+            "apps/control-plane/src/services/service-services.ts",
+            "apps/control-plane/src/services/project-services.ts",
+            "tests/integration/deploy-engine/runtime-service-ops.test.ts"
+          ],
+          "wave": 9,
+          "dependsOn": [
+            "12-13"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-runtime-service-ops",
+            "it-projects"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Redeploy, stop, restart and remove are timed jobs that write activity events and publish service.updated",
+              "proof": "it-runtime-service-ops"
+            },
+            {
+              "id": "A2",
+              "text": "Deleting a service (exact name) stops and removes its container, network, own images and workspace, then its credentials and rows; service.deleted published",
+              "proof": "it-runtime-service-ops"
+            },
+            {
+              "id": "A3",
+              "text": "Deleting an archived project runs the same remote cleanup for every service before the DB cascade; an unreachable server leaves a named error, not orphaned rows pointing nowhere",
+              "proof": "it-runtime-service-ops"
+            },
+            {
+              "id": "A4",
+              "text": "Operations on a service with an active deployment return 409 DEPLOYMENT_IN_PROGRESS",
+              "proof": "it-runtime-service-ops"
+            },
+            {
+              "id": "ERR",
+              "text": "SSH, Docker or Git failures surface as a closed-vocabulary code with an actionable message; raw remote stderr never reaches an API response and no remote failure crashes the API or the worker",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Service delete is resumable and idempotent: a failure midway (SSH drop) leaves the service row with a named error and re-running the delete completes cleanup without errors on already-removed resources",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Delete confirmation compares the exact name server-side; wrong/missing confirmation returns 422 and performs no remote command",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "Service operation and delete routes enforce the body cap (413), validate the confirmation field length and reject unknown fields (422)",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "auth-secrets/secret-logging"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "12-15",
+          "title": "Reconciliation tick",
+          "scope": [
+            "apps/control-plane/src/reconcile/",
+            "apps/control-plane/src/worker.ts",
+            "tests/integration/deploy-engine/runtime-reconcile.test.ts"
+          ],
+          "wave": 10,
+          "dependsOn": [
+            "12-14"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-runtime-reconcile"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Repeatable job every NOODARA_RECONCILE_INTERVAL_MS runs one docker ps --size=false per CONNECTED server, never per service, with commandMs timeout",
+              "proof": "it-runtime-reconcile"
+            },
+            {
+              "id": "A2",
+              "text": "Changed container state updates the cached service status and emits service.updated; unchanged state emits nothing",
+              "proof": "it-runtime-reconcile"
+            },
+            {
+              "id": "A3",
+              "text": "A container stopped or removed outside Noodara shows in the next tick and writes one activity event (no repeat on later ticks)",
+              "proof": "it-runtime-reconcile"
+            },
+            {
+              "id": "A4",
+              "text": "An unreachable server marks its services UNKNOWN, never STOPPED, and does not crash the tick for other servers",
+              "proof": "it-runtime-reconcile"
+            },
+            {
+              "id": "H1",
+              "text": "Reconcile ticks never overlap (a slow tick delays the next rather than running concurrently) and skip services with an active deployment so they cannot overwrite in-flight status",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation"
+          ]
+        },
+        {
+          "id": "12-16",
+          "title": "Runtime logs on demand",
+          "scope": [
+            "apps/control-plane/src/routes/services.ts",
+            "apps/control-plane/src/routes/service-schemas.ts",
+            "apps/control-plane/src/services/container-logs.ts",
+            "apps/control-plane/src/services/container-logs.test.ts",
+            "tests/integration/deploy-engine/runtime-container-logs.test.ts"
+          ],
+          "wave": 10,
+          "dependsOn": [
+            "12-14",
+            "12-03"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-runtime-container-logs"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "GET tail returns the last N lines (default NOODARA_RUNTIME_LOG_TAIL, upper bound validated) with timestamps",
+              "proof": "it-runtime-container-logs"
+            },
+            {
+              "id": "A2",
+              "text": "Follow is a dedicated bounded stream (not a new global SSE type) that ends at NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS and when the client disconnects, killing the remote docker logs",
+              "proof": "it-runtime-container-logs"
+            },
+            {
+              "id": "A3",
+              "text": "Output is redacted and sanitized (ANSI, binary) and never persisted",
+              "proof": "it-runtime-container-logs"
+            },
+            {
+              "id": "ERR",
+              "text": "SSH, Docker or Git failures surface as a closed-vocabulary code with an actionable message; raw remote stderr never reaches an API response and no remote failure crashes the API or the worker",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Concurrent follow streams are capped per server and per user with a named 429/409; tail validates N as a positive integer within the upper bound and rejects other values with 4xx",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "persistence/atomic-write",
+            "persistence/missing-file-boot"
+          ]
+        },
+        {
+          "id": "12-17",
+          "title": "Leak canaries for the deploy engine",
+          "scope": [
+            "tests/integration/activity/canary-deploy.test.ts",
+            "tests/integration/deploy-engine/fixtures/",
+            "tests/integration/helpers/deploy-engine.ts",
+            "package.json"
+          ],
+          "wave": 11,
+          "dependsOn": [
+            "12-15",
+            "12-16"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-canary-deploy"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Canaries for git-URL token, deploy key, registry password and a fixture build that prints a canary",
+              "proof": "it-canary-deploy"
+            },
+            {
+              "id": "A2",
+              "text": "Absence asserted in build logs, deployment_log_chunks, SSE stream, activity_events.metadata, every API response, docker inspect, docker history and the remote .git/config",
+              "proof": "it-canary-deploy"
+            },
+            {
+              "id": "A3",
+              "text": "pnpm security:scan-leaks includes the new file",
+              "proof": "manual"
+            },
+            {
+              "id": "SEC",
+              "text": "Deploy keys, HTTPS tokens and registry passwords never reach argv, URLs, env-over-SSH, logs, API responses, activity metadata or error messages; every streamed chunk goes through the Redactor; a per-run canary asserts it",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist",
+            "randomness/crypto-random"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "12-18",
+          "title": "QA-08 soak: 20 deploys and 20 create/delete cycles",
+          "scope": [
+            "tests/integration/deploy-engine/soak.test.ts",
+            ".github/workflows/nightly.yml"
+          ],
+          "wave": 11,
+          "dependsOn": [
+            "12-15"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-soak"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "20 consecutive node-api deployments complete SUCCESS",
+              "proof": "it-soak"
+            },
+            {
+              "id": "A2",
+              "text": "20 service create/delete cycles leave no container, network, image or workspace; docker system df equal before and after, twice in a row without manual prune",
+              "proof": "it-soak"
+            },
+            {
+              "id": "A3",
+              "text": "Nightly runs the soak on 22.04 and 24.04 (NOODARA_SOAK=1) and fails on any surviving noodara.test=true resource",
+              "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "Soak records per-iteration duration and docker system df before/after to an artifact so leak regressions are visible, and fails when any iteration exceeds the deploy max timeout",
+              "proof": "manual"
+            }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation"
+          ]
+        },
+        {
+          "id": "12-19",
+          "title": "Measured defaults, docs and phase verification",
+          "scope": [
+            "docs/deploy-engine.md",
+            "docs/adr/0008-deploy-engine-empirical-contracts.md",
+            ".planning/REQUIREMENTS.md",
+            ".planning/ROADMAP.md",
+            ".planning/STATE.md"
+          ],
+          "wave": 12,
+          "dependsOn": [
+            "12-17",
+            "12-18"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build",
+            "it-deploy-engine-all"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Measured numbers recorded for every knob (flush, line and phase caps, reconcile interval and cost, timeouts, post-start polls, log tail/follow) with fixture and Ubuntu version",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "docs/deploy-engine.md describes the API surface, statuses, error codes and knobs in under two pages",
+              "proof": "manual"
+            },
+            {
+              "id": "A3",
+              "text": "ADR 0008 open item 6 closed with a green amd64 CI run of tests/integration/deploy-engine",
+              "proof": "manual"
+            },
+            {
+              "id": "A4",
+              "text": "Phase 12 requirements ticked in REQUIREMENTS.md and ROADMAP.md",
+              "proof": "manual"
+            }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation"
+          ],
+          "tier": "light"
         }
       ]
     }
