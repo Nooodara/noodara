@@ -88,6 +88,7 @@ describe('SERVICE_ERROR_STATUS / mapServiceCodeToStatus (D-16)', () => {
     ['DEPLOYMENT_IN_PROGRESS', 409],
     ['PROJECT_ARCHIVED', 409],
     ['DEPLOYMENT_INPUT_INVALID', 422],
+    ['DEPLOYMENT_NOT_CANCELLABLE', 409],
   ] satisfies [ServiceErrorCode, number][])('maps %s to %d', (code, status) => {
     expect(mapServiceCodeToStatus(code)).toBe(status);
   });

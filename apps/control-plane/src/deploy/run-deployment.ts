@@ -134,7 +134,17 @@ export interface DeploymentOutcome {
   /** What this attempt knows about `noodara-<serviceId>`; null when it never touched it. */
   readonly container: ContainerObservation | null;
   readonly cleanup: readonly CleanupReport[];
+  /** H2: set when a cancel could not confirm the remote process gone; the worker records it. */
+  readonly warning?: DeploymentWarning;
 }
+
+/** Named warning of an unconfirmed cancel; carried by the `deployment.finished` activity event. */
+export const CANCEL_UNCONFIRMED = 'CANCEL_UNCONFIRMED';
+export type DeploymentWarning = typeof CANCEL_UNCONFIRMED;
+
+/** The closed `deployment_error_code` (pg enum) has no cancel code, so an unconfirmed cancel is
+ *  recorded as the code whose fix is the same (check the server), with its own message. */
+export const CANCEL_UNCONFIRMED_ERROR_CODE: DeploymentErrorCode = 'SERVER_UNREACHABLE';
 
 export const DEPLOY_MESSAGES = Object.freeze({
   BUILD_TIMEOUT:
@@ -145,12 +155,19 @@ export const DEPLOY_MESSAGES = Object.freeze({
     'The deploy job stopped on an unexpected internal error. Redeploy; if it happens again, check the worker logs.',
   DOCKER_PS_UNREADABLE:
     'Noodara could not read the container list from Docker on the server. Check that Docker is running and healthy, then redeploy.',
+  CANCEL_UNCONFIRMED:
+    'The deployment was cancelled, but Noodara could not confirm that its build stopped on the server. Check the server for a leftover build process, then redeploy.',
 });
 
 const CLEANUP_MAX_TOTAL_BYTES = 65_536;
 
 type End =
-  | { readonly status: 'FAILED'; readonly code: DeploymentErrorCode; readonly message: string }
+  | {
+      readonly status: 'FAILED';
+      readonly code: DeploymentErrorCode;
+      readonly message: string;
+      readonly warning?: DeploymentWarning;
+    }
   | { readonly status: 'CANCELLED' };
 
 /** Internal control flow: ends the attempt with a known outcome. Never escapes runDeployment. */
@@ -211,7 +228,7 @@ function startFailedMessage(reason: string, exitCode: number | null, oomKilled: 
 
 function exitFor(end: End | null): DeploymentExit {
   if (end === null) return 'SUCCESS';
-  if (end.status === 'CANCELLED') return 'CANCELLED';
+  if (end.status === 'CANCELLED' || end.warning !== undefined) return 'CANCELLED';
   return end.code === 'BUILD_TIMEOUT' || end.code === 'BUILD_STALLED' ? 'TIMEOUT' : 'FAILED';
 }
 
@@ -259,22 +276,31 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     };
   };
 
-  const context = (phase: DeploymentLogPhase | null): DockerStepContext => ({
-    session,
-    redactor,
-    limits: stepLimits(),
-    ...(input.signal === undefined ? {} : { signal: input.signal }),
-    ...(phase === null ? {} : {
-          onChunk: (chunk: StreamChunk) => {
-            log(phase, chunk.stream, chunk.text);
-          },
-        }),
-  });
+  // A2: a cancel seen between steps ends the attempt before the next remote command. Once the
+  // container swap starts the attempt runs to its end (H1): a half-done swap is worse than a
+  // late cancel, and the row still ends in exactly one terminal state.
+  let cancellable = true;
+  const context = (phase: DeploymentLogPhase | null): DockerStepContext => {
+    const signal = cancellable ? input.signal : undefined;
+    if (signal?.aborted === true) throw new DeployStop({ status: 'CANCELLED' });
+    return {
+      session,
+      redactor,
+      limits: stepLimits(),
+      ...(signal === undefined ? {} : { signal }),
+      ...(phase === null ? {} : {
+            onChunk: (chunk: StreamChunk) => {
+              log(phase, chunk.stream, chunk.text);
+            },
+          }),
+    };
+  };
 
   /** Unwraps a step; an interrupted supervised step is killed before the attempt ends. */
   const check = async <T>(result: StepResult<T>, supervised: SupervisedOperation | null): Promise<T> => {
     if (result.ok) return result.value;
     if (result.kind === 'failed') failed(result.code, result.message);
+    let confirmed = true;
     if (supervised !== null) {
       const killed = await killSupervisedOperation({
         session,
@@ -284,10 +310,20 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
         pollIntervalMs: limits.killPollMs,
         redactor,
       });
-      if (!killed.confirmed) log('deploy', 'system', `The interrupted ${supervised} could not be confirmed stopped on the server.`);
+      confirmed = killed.confirmed;
+      if (!confirmed) log('deploy', 'system', `The interrupted ${supervised} could not be confirmed stopped on the server.`);
     }
     switch (result.outcome) {
       case 'aborted':
+        // H2: a cancel ends CANCELLED only once the remote group is confirmed gone.
+        if (!confirmed) {
+          throw new DeployStop({
+            status: 'FAILED',
+            code: CANCEL_UNCONFIRMED_ERROR_CODE,
+            message: DEPLOY_MESSAGES.CANCEL_UNCONFIRMED,
+            warning: CANCEL_UNCONFIRMED,
+          });
+        }
         throw new DeployStop({ status: 'CANCELLED' });
       case 'timed_out':
         return failed('BUILD_TIMEOUT', DEPLOY_MESSAGES.BUILD_TIMEOUT);
@@ -359,6 +395,7 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     await check(network, null);
     if (network.ok && network.result.exitCode === 0) ledger = recordResource(ledger, { kind: 'network_created' });
 
+    cancellable = false;
     if (previous !== null) {
       containerTouched = true;
       await check(await stopContainer(context('deploy'), { serviceId, timeoutSeconds: limits.stopTimeoutSeconds }), null);
@@ -420,7 +457,7 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
   // Cleanup runs on every exit; it never throws (the outcome is already decided).
   let cleanup: CleanupReport[] = [];
   try {
-    cleanup = await runCleanup(input, workspace, ledger, exitFor(end));
+    cleanup = await runLedgerCleanup(session, limits, workspace, ledger, exitFor(end));
   } finally {
     secrets.forEach((raw) => {
       redactor.release(raw);
@@ -440,6 +477,7 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     commitSha,
     container,
     cleanup,
+    ...(end.warning === undefined ? {} : { warning: end.warning }),
   };
 }
 
@@ -461,9 +499,11 @@ function cleanupCommand(resource: CleanupResource, workspace: DeployWorkspace, l
   }
 }
 
-/** Runs the ledger's cleanup set for `exit`; every removal is bounded and never forced. */
-async function runCleanup(
-  input: RunDeploymentInput,
+/** Runs the ledger's cleanup set for `exit`; every removal is bounded and never forced. Never
+ *  throws. Also used by the worker-crash sweep (12-13 A4). */
+export async function runLedgerCleanup(
+  session: SshDeploySession,
+  limits: Pick<DeployRunLimits, 'cleanupStepMs' | 'maxLineBytes'>,
   workspace: DeployWorkspace,
   ledger: ResourceLedger,
   exit: DeploymentExit,
@@ -474,11 +514,11 @@ async function runCleanup(
     if (command === null) continue;
     let outcome: CleanupOutcome;
     try {
-      const result = await input.session.stream(command, {
-        maxDurationMs: input.limits.cleanupStepMs,
-        idleTimeoutMs: input.limits.cleanupStepMs,
+      const result = await session.stream(command, {
+        maxDurationMs: limits.cleanupStepMs,
+        idleTimeoutMs: limits.cleanupStepMs,
         maxTotalBytes: CLEANUP_MAX_TOTAL_BYTES,
-        maxLineBytes: input.limits.maxLineBytes,
+        maxLineBytes: limits.maxLineBytes,
         onChunk: () => {
           // Cleanup output is classified from the tails, never logged.
         },

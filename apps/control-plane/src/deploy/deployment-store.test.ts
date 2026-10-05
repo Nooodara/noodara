@@ -324,3 +324,84 @@ describe('deployment store: finish (C3, ERR)', () => {
     expect(h.published).toEqual([]);
   });
 });
+
+describe('deployment store: cancel (12-13 A1, H1, H2)', () => {
+  const ACTOR = { type: 'user', id: '0192f1a4-7b3c-7d2e-8f00-00000000dddd' } as const;
+  const activityValues = (h: ReturnType<typeof harness>): unknown[] =>
+    h.ops
+      .filter((op) => op.root === 'insert' && op.table === activityEvents)
+      .map((op) => op.calls.find((c) => c.method === 'values')?.args[0]);
+
+  it('a QUEUED deployment ends CANCELLED under the row lock, with both events, in one transaction (A1)', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'QUEUED' }), service: serviceRow({ status: 'RUNNING' }) });
+
+    const result = await h.store.requestCancel(DEPLOYMENT_ID, ACTOR);
+
+    expect(result).toMatchObject({ kind: 'cancelled', deployment: { status: 'CANCELLED', errorCode: null } });
+    expect(h.state.deployment).toMatchObject({ status: 'CANCELLED', completedAt: NOW });
+    const lock = h.ops.find((op) => op.root === 'select');
+    expect(lock?.inTx).toBe(true);
+    expect(lock?.calls.some((c) => c.method === 'for' && c.args[0] === 'update')).toBe(true);
+    expect(activityValues(h)).toEqual([
+      expect.objectContaining({ actorType: 'user', actorId: ACTOR.id, action: 'deployment.cancel_requested', metadata: { serviceId: SERVICE_ID, status: 'QUEUED' } }),
+      expect.objectContaining({ actorType: 'system', action: 'deployment.finished', outcome: 'failure', metadata: expect.objectContaining({ status: 'CANCELLED' }) as unknown }),
+    ]);
+    expect(h.published.map((event) => event.type)).toEqual(['deployment.updated', 'service.updated']);
+  });
+
+  it.each(['PREPARING', 'BUILDING', 'DEPLOYING'] as const)('a %s deployment is reported running and left to its worker (A2)', async (status) => {
+    const h = harness({ deployment: deploymentRow({ status, startedAt: STARTED }), service: serviceRow() });
+
+    const result = await h.store.requestCancel(DEPLOYMENT_ID, ACTOR);
+
+    expect(result).toMatchObject({ kind: 'running', deployment: { status } });
+    expect(h.ops.filter((op) => op.root !== 'select')).toEqual([]);
+    expect(h.published).toEqual([]);
+  });
+
+  it.each(['SUCCESS', 'FAILED', 'CANCELLED'] as const)('a %s deployment is reported terminal and never touched (H1)', async (status) => {
+    const h = harness({ deployment: deploymentRow({ status }), service: serviceRow() });
+
+    const result = await h.store.requestCancel(DEPLOYMENT_ID, ACTOR);
+
+    expect(result).toMatchObject({ kind: 'terminal', deployment: { status } });
+    expect(h.ops.filter((op) => op.root !== 'select')).toEqual([]);
+    expect(h.published).toEqual([]);
+  });
+
+  it('a missing deployment is reported missing', async () => {
+    const h = harness({ deployment: null, service: null });
+    expect(await h.store.requestCancel(DEPLOYMENT_ID, ACTOR)).toEqual({ kind: 'missing' });
+  });
+
+  it('records the cancel_requested event of a running deployment with the actor', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'BUILDING', startedAt: STARTED }), service: serviceRow() });
+    const result = await h.store.requestCancel(DEPLOYMENT_ID, ACTOR);
+    if (result.kind !== 'running') throw new Error('expected running');
+
+    await h.store.recordCancelRequested(result.deployment, ACTOR);
+
+    expect(activityValues(h)).toEqual([
+      expect.objectContaining({ actorId: ACTOR.id, action: 'deployment.cancel_requested', metadata: { serviceId: SERVICE_ID, status: 'BUILDING' } }),
+    ]);
+  });
+
+  it('an unconfirmed cancel keeps the row code and puts the named warning on the finished event (H2)', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'BUILDING', startedAt: STARTED }), service: serviceRow() });
+
+    await h.store.finish(
+      DEPLOYMENT_ID,
+      finishInput({ status: 'FAILED', errorCode: 'SERVER_UNREACHABLE', errorMessage: DEPLOY_MESSAGES.CANCEL_UNCONFIRMED, container: null, warning: 'CANCEL_UNCONFIRMED' }),
+    );
+
+    expect(h.state.deployment).toMatchObject({ status: 'FAILED', errorCode: 'SERVER_UNREACHABLE', errorMessage: DEPLOY_MESSAGES.CANCEL_UNCONFIRMED });
+    expect(activityValues(h)).toEqual([expect.objectContaining({ action: 'deployment.finished', outcome: 'failure', errorCode: 'CANCEL_UNCONFIRMED' })]);
+  });
+
+  it('lists in-flight deployments joined to their service server', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'BUILDING' }), service: serviceRow() });
+    await h.store.inFlight();
+    const op = h.ops[0];
+    expect(op?.calls.map((c) => c.method)).toEqual(['from', 'innerJoin', 'where']);
+  });
+});

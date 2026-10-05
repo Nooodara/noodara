@@ -21,6 +21,9 @@ import type { ExecResult, RemoteCommand, SshDeploySession, StreamOptions, Stream
 import { describe, expect, it, vi } from 'vitest';
 import type { DeploymentLogEntry, DeploymentLogSink } from './log-sink.js';
 import {
+  CANCEL_UNCONFIRMED,
+  CANCEL_UNCONFIRMED_ERROR_CODE,
+  DEPLOY_MESSAGES,
   runDeployment,
   type DeployCredential,
   type DeployRunLimits,
@@ -115,6 +118,8 @@ class FakeSession implements SshDeploySession {
   readonly calls: { key: string; command: RemoteCommand; options: StreamOptions }[] = [];
   private readonly cursors = new Map<string, number>();
   private readonly scripts: Record<string, Script | Script[]>;
+  /** Called with each command key as it starts (e.g. to cancel mid-run). */
+  onStream: ((key: string) => void) | null = null;
 
   /** `redactor` null: a leaky session that does not redact, to prove the pipeline does. */
   constructor(
@@ -135,6 +140,7 @@ class FakeSession implements SshDeploySession {
   stream(command: RemoteCommand, options: StreamOptions): Promise<StreamResult> {
     const key = keyOf(command);
     this.calls.push({ key, command, options });
+    this.onStream?.(key);
     const entry = this.scripts[key] ?? {};
     let script: Script;
     if (Array.isArray(entry)) {
@@ -521,6 +527,97 @@ describe('runDeployment: timeouts and cleanup in finally (C2)', () => {
     expect(result).toMatchObject({ status: 'CANCELLED', errorCode: null });
     expect(h.session.keys()).toContain('process.kill_group');
     expect(h.session.keys().at(-1)).toBe('fs.remove_deploy_dir');
+  });
+
+  it('a cancel mid-build kills the group, confirms it gone, ends CANCELLED and cleans up (A2)', async () => {
+    const controller = new AbortController();
+    const h = harness({ scripts: { 'supervise:build': { outcome: 'aborted', exitCode: null } }, signal: controller.signal });
+    h.session.onStream = (key) => {
+      if (key === 'supervise:build') controller.abort();
+    };
+
+    const result = await runDeployment(h.input);
+
+    expect(result).toMatchObject({ status: 'CANCELLED', errorCode: null });
+    expect(result.warning).toBeUndefined();
+    const keys = h.session.keys();
+    expect(keys.slice(keys.indexOf('supervise:build'))).toEqual([
+      'supervise:build',
+      'process.kill_group',
+      'process.group_alive',
+      'fs.remove_deploy_dir',
+    ]);
+    expect(h.session.argv('process.kill_group').join(' ')).toContain(WORKSPACE.pidFile('build'));
+    expect(keys).not.toContain('docker.stop');
+  });
+
+  it('a cancel seen between steps ends CANCELLED before the next remote command (A2)', async () => {
+    const controller = new AbortController();
+    const h = harness({ signal: controller.signal });
+    const advance = h.progress.advance.bind(h.progress);
+    h.progress.advance = (from, to) => {
+      if (to === 'BUILDING') controller.abort();
+      return advance(from, to);
+    };
+
+    const result = await runDeployment(h.input);
+
+    expect(result).toMatchObject({ status: 'CANCELLED', errorCode: null });
+    expect(h.session.keys()).not.toContain('supervise:build');
+    expect(h.session.keys()).not.toContain('process.kill_group');
+    expect(h.session.keys().at(-1)).toBe('fs.remove_deploy_dir');
+  });
+
+  it('an already aborted signal runs no remote command but the workspace cleanup (A1)', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const h = harness({ signal: controller.signal });
+
+    const result = await runDeployment(h.input);
+
+    expect(result).toMatchObject({ status: 'CANCELLED' });
+    expect(h.session.keys()).toEqual(['fs.remove_deploy_dir']);
+  });
+
+  it('an unconfirmed kill ends FAILED with the named warning, still cleans up and stays bounded (H2)', async () => {
+    const controller = new AbortController();
+    const h = harness({
+      scripts: { 'supervise:build': { outcome: 'aborted', exitCode: null }, 'process.group_alive': { exitCode: 0 } },
+      signal: controller.signal,
+      limits: { killConfirmMs: 300, killPollMs: 50 },
+    });
+    h.session.onStream = (key) => {
+      if (key === 'supervise:build') controller.abort();
+    };
+    const started = Date.now();
+
+    const result = await runDeployment(h.input);
+
+    expect(Date.now() - started).toBeLessThan(2_000);
+    expect(result).toMatchObject({
+      status: 'FAILED',
+      errorCode: CANCEL_UNCONFIRMED_ERROR_CODE,
+      errorMessage: DEPLOY_MESSAGES.CANCEL_UNCONFIRMED,
+      warning: CANCEL_UNCONFIRMED,
+    });
+    expect(h.session.keys().filter((key) => key === 'process.group_alive').length).toBeGreaterThan(0);
+    expect(h.session.keys().at(-1)).toBe('fs.remove_deploy_dir');
+  });
+
+  it('a cancel after the container swap started is ignored: the attempt ends SUCCESS (H1)', async () => {
+    const controller = new AbortController();
+    const h = harness({ signal: controller.signal });
+    h.session.onStream = (key) => {
+      if (key === 'docker.create') controller.abort();
+    };
+
+    const result = await runDeployment(h.input);
+
+    expect(result).toMatchObject({ status: 'SUCCESS', container: { kind: 'running' } });
+    const createIndex = h.session.calls.findIndex((call) => call.key === 'docker.create');
+    for (const call of h.session.calls.slice(createIndex + 1)) {
+      expect(call.options.signal).toBeUndefined();
+    }
   });
 
   it('a thrown error (store down) ends FAILED WORKER_CRASHED without leaking it, and still cleans up', async () => {

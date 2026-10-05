@@ -317,7 +317,8 @@ export interface DeploymentFinishedEventInput {
   readonly status: DeploymentStatus;
   readonly durationMs: number;
   readonly commitSha: string | null;
-  readonly errorCode: DeploymentErrorCode | null;
+  /** The row's code, or the named warning of an unconfirmed cancel (12-13 H2). */
+  readonly errorCode: DeploymentErrorCode | 'CANCEL_UNCONFIRMED' | null;
 }
 
 /** The deploy store's `deployment.finished` row, inside its finish transaction. ACT-01 keeps
@@ -333,6 +334,35 @@ export function writeDeploymentFinishedEvent(tx: Transaction, input: DeploymentF
       outcome: input.status === 'SUCCESS' ? 'success' : 'failure',
       ...(input.errorCode === null ? {} : { errorCode: input.errorCode }),
       metadata: { serviceId: input.serviceId, status: input.status, durationMs: input.durationMs, commitSha: input.commitSha },
+    },
+    now,
+  );
+}
+
+export interface DeploymentCancelRequestedEventInput {
+  readonly deploymentId: string;
+  readonly serviceId: string;
+  /** The status the deployment had when the cancel was requested. */
+  readonly status: DeploymentStatus;
+  readonly actor: ServiceActor;
+}
+
+/** 12-13: `deployment.cancel_requested`, written once per accepted cancel (ACT-01). */
+export function writeDeploymentCancelRequestedEvent(
+  tx: Transaction,
+  input: DeploymentCancelRequestedEventInput,
+  now: Date,
+): Promise<string> {
+  return writeActivityEvent(
+    tx,
+    {
+      actorType: input.actor.type,
+      actorId: input.actor.type === 'user' ? input.actor.id : null,
+      entityType: 'deployment',
+      entityId: input.deploymentId,
+      action: 'deployment.cancel_requested',
+      outcome: 'success',
+      metadata: { serviceId: input.serviceId, status: input.status },
     },
     now,
   );

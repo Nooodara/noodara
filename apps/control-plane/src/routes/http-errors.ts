@@ -47,7 +47,8 @@ export type ServiceErrorCode =
   | 'SERVER_HAS_SERVICES'
   | 'DEPLOYMENT_IN_PROGRESS'
   | 'PROJECT_ARCHIVED'
-  | 'DEPLOYMENT_INPUT_INVALID';
+  | 'DEPLOYMENT_INPUT_INVALID'
+  | 'DEPLOYMENT_NOT_CANCELLABLE';
 
 export const SERVICE_ERROR_STATUS = Object.freeze({
   VALIDATION_FAILED: 400,
@@ -93,6 +94,8 @@ export const SERVICE_ERROR_STATUS = Object.freeze({
   DEPLOYMENT_IN_PROGRESS: 409,
   PROJECT_ARCHIVED: 409,
   DEPLOYMENT_INPUT_INVALID: 422,
+  // 12-13: cancelling a deployment that already ended is a state conflict.
+  DEPLOYMENT_NOT_CANCELLABLE: 409,
 } satisfies Record<ServiceErrorCode, number>);
 
 const UNKNOWN_CODE_STATUS = 500;

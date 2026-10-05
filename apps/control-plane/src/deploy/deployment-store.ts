@@ -6,8 +6,11 @@
 // - finish: terminal status, timings, error code/message, the services.status cache (D5), the
 //   `deployment.finished` activity event in the same transaction, then deployment.updated and
 //   service.updated after commit. Idempotent: an already terminal row is left alone.
+// - requestCancel (12-13): under the same row lock a QUEUED row ends CANCELLED here (the worker's
+//   claim then finds nothing to run); a running row is only reported, its worker does the
+//   transition. Terminal rows are reported, never touched (H1).
 // Error messages are the pipeline's fixed texts (never raw remote output), capped here again.
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import {
   deriveServiceStatus,
   isTerminalDeploymentStatus,
@@ -23,12 +26,14 @@ import { services } from '../db/schema/services.js';
 import { publishServerEvent, type ServerEventPublisher } from '../events/server-event-publisher.js';
 import {
   toDeploymentView,
+  writeDeploymentCancelRequestedEvent,
   writeDeploymentFinishedEvent,
   type DeploymentRow,
   type DeploymentView,
 } from '../services/deployment-services.js';
+import type { ServiceActor } from '../services/server-service-deps.js';
 import { containerObservationFromCache, toServiceView, type ServiceView } from '../services/service-view.js';
-import { DEPLOY_MESSAGES, type DeploymentProgress } from './run-deployment.js';
+import { DEPLOY_MESSAGES, type DeploymentProgress, type DeploymentWarning } from './run-deployment.js';
 
 export interface DeploymentStoreDeps {
   readonly db: Database;
@@ -43,7 +48,27 @@ export interface FinishDeploymentInput {
   readonly commitSha: CommitSha | null;
   /** What the attempt observed of `noodara-<serviceId>`; null keeps the cached observation. */
   readonly container: ContainerObservation | null;
+  /** H2: carried by the `deployment.finished` event as its errorCode (the row keeps its code). */
+  readonly warning?: DeploymentWarning;
 }
+
+export type StoreCancelResult =
+  | { readonly kind: 'missing' }
+  | { readonly kind: 'terminal'; readonly deployment: DeploymentView }
+  /** It was QUEUED: it is CANCELLED now and no job may run it. */
+  | { readonly kind: 'cancelled'; readonly deployment: DeploymentView }
+  /** Claimed by a worker: only that worker may move it (A2). */
+  | { readonly kind: 'running'; readonly deployment: DeploymentView };
+
+/** A deployment a worker had claimed, with the server it ran against (the crash sweep's input). */
+export interface InFlightDeployment {
+  readonly deploymentId: string;
+  readonly serviceId: string;
+  readonly serverId: string;
+  readonly status: DeploymentStatus;
+}
+
+const IN_FLIGHT_STATUSES = ['PREPARING', 'BUILDING', 'DEPLOYING'] as const;
 
 export interface DeploymentStore {
   /** QUEUED -> PREPARING, or null when the row is missing or already past QUEUED (H1). */
@@ -51,6 +76,10 @@ export interface DeploymentStore {
   progress(deploymentId: string): DeploymentProgress;
   /** The terminal write; null when the row is missing or already terminal. */
   finish(deploymentId: string, input: FinishDeploymentInput): Promise<DeploymentView | null>;
+  requestCancel(deploymentId: string, actor: ServiceActor): Promise<StoreCancelResult>;
+  /** The `deployment.cancel_requested` event of an accepted cancel on a running deployment. */
+  recordCancelRequested(deployment: DeploymentView, actor: ServiceActor): Promise<void>;
+  inFlight(): Promise<InFlightDeployment[]>;
 }
 
 /** The row was not at the status the worker expected (cancelled or finished elsewhere). */
@@ -131,8 +160,39 @@ async function finishRow(
     serviceView = toServiceView(cachedRow ?? { ...service, status: cached }, { status });
   }
 
-  await writeDeploymentFinishedEvent(tx, { deploymentId, serviceId: row.serviceId, status, durationMs, commitSha, errorCode }, now);
+  await writeDeploymentFinishedEvent(
+    tx,
+    { deploymentId, serviceId: row.serviceId, status, durationMs, commitSha, errorCode: input.warning ?? errorCode },
+    now,
+  );
   return { deployment: updated, service: serviceView };
+}
+
+type CancelRow =
+  | { readonly kind: 'missing' }
+  | { readonly kind: 'terminal' | 'running'; readonly row: DeploymentRow }
+  | { readonly kind: 'cancelled'; readonly finished: Finished };
+
+async function cancelRow(tx: Transaction, deps: DeploymentStoreDeps, deploymentId: string, actor: ServiceActor): Promise<CancelRow> {
+  const [row] = await tx.select().from(deployments).where(eq(deployments.id, deploymentId)).for('update');
+  if (!row) return { kind: 'missing' };
+  if (isTerminalDeploymentStatus(row.status)) return { kind: 'terminal', row };
+  if (row.status !== 'QUEUED') return { kind: 'running', row };
+  await writeDeploymentCancelRequestedEvent(tx, { deploymentId, serviceId: row.serviceId, status: row.status, actor }, deps.now());
+  const finished = await finishRow(tx, deps, deploymentId, {
+    status: 'CANCELLED',
+    errorCode: null,
+    errorMessage: null,
+    commitSha: null,
+    container: null,
+  });
+  if (!finished) throw new Error('requestCancel: the locked QUEUED row could not be finished');
+  return { kind: 'cancelled', finished };
+}
+
+async function publishFinished(deps: DeploymentStoreDeps, finished: Finished): Promise<void> {
+  await publishDeployment(deps, finished.deployment);
+  if (finished.service) await publishServerEvent(deps.events, { type: 'service.updated', service: finished.service });
 }
 
 export function createDeploymentStore(deps: DeploymentStoreDeps): DeploymentStore {
@@ -167,9 +227,44 @@ export function createDeploymentStore(deps: DeploymentStoreDeps): DeploymentStor
     async finish(deploymentId, input) {
       const finished = await deps.db.transaction((tx) => finishRow(tx, deps, deploymentId, input));
       if (!finished) return null;
-      await publishDeployment(deps, finished.deployment);
-      if (finished.service) await publishServerEvent(deps.events, { type: 'service.updated', service: finished.service });
+      await publishFinished(deps, finished);
       return toDeploymentView(finished.deployment);
+    },
+
+    async requestCancel(deploymentId, actor) {
+      const result = await deps.db.transaction((tx) => cancelRow(tx, deps, deploymentId, actor));
+      switch (result.kind) {
+        case 'missing':
+          return result;
+        case 'cancelled':
+          await publishFinished(deps, result.finished);
+          return { kind: 'cancelled', deployment: toDeploymentView(result.finished.deployment) };
+        default:
+          return { kind: result.kind, deployment: toDeploymentView(result.row) };
+      }
+    },
+
+    async recordCancelRequested(deployment, actor) {
+      await deps.db.transaction((tx) =>
+        writeDeploymentCancelRequestedEvent(
+          tx,
+          { deploymentId: deployment.id, serviceId: deployment.serviceId, status: deployment.status, actor },
+          deps.now(),
+        ),
+      );
+    },
+
+    async inFlight() {
+      return deps.db
+        .select({
+          deploymentId: deployments.id,
+          serviceId: deployments.serviceId,
+          serverId: services.serverId,
+          status: deployments.status,
+        })
+        .from(deployments)
+        .innerJoin(services, eq(services.id, deployments.serviceId))
+        .where(inArray(deployments.status, [...IN_FLIGHT_STATUSES]));
     },
   };
 }

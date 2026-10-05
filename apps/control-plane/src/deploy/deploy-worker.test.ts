@@ -228,3 +228,103 @@ describe('deploy job handler: failures never crash the worker and never carry ra
     }
   });
 });
+
+describe('deploy job handler: cancel (12-13 A1, A2, H2)', () => {
+  function cancelDeps(options: { abortedAtStart?: boolean } = {}) {
+    const controller = new AbortController();
+    if (options.abortedAtStart === true) controller.abort();
+    const stop = vi.fn();
+    const clear = vi.fn(() => Promise.resolve());
+    return { controller, stop, clear, cancel: { watch: vi.fn(() => ({ signal: controller.signal, stop })), clear } };
+  }
+
+  it('passes the cancel watch signal to the connector and the pipeline, then stops it and clears the flag', async () => {
+    const c = cancelDeps();
+    const h = harness({ cancel: c.cancel });
+
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'SUCCESS' });
+
+    expect(c.cancel.watch).toHaveBeenCalledWith(DEPLOYMENT_ID);
+    const runSignal = h.runInputs[0]?.signal;
+    expect(runSignal).toBeInstanceOf(AbortSignal);
+    c.controller.abort();
+    expect(runSignal?.aborted).toBe(true);
+    expect(c.stop).toHaveBeenCalledOnce();
+    expect(c.clear).toHaveBeenCalledWith(DEPLOYMENT_ID);
+  });
+
+  it('a cancel seen before the connection ends CANCELLED without connecting (A1)', async () => {
+    const c = cancelDeps({ abortedAtStart: true });
+    const h = harness({ cancel: c.cancel });
+
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'CANCELLED' });
+
+    expect(h.deps.connect).not.toHaveBeenCalled();
+    expect(h.runInputs).toEqual([]);
+    expect(h.finished).toEqual([{ status: 'CANCELLED', errorCode: null, errorMessage: null, commitSha: null, container: null }]);
+    expect(c.clear).toHaveBeenCalledOnce();
+  });
+
+  it('a connect cut short by the cancel ends CANCELLED, not SERVER_UNREACHABLE', async () => {
+    const c = cancelDeps();
+    const h = harness({
+      cancel: c.cancel,
+      connect: vi.fn(() => {
+        c.controller.abort();
+        return Promise.resolve({ ok: false as const, code: 'SERVER_UNREACHABLE' as const });
+      }),
+    });
+
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'CANCELLED' });
+    expect(h.finished[0]).toMatchObject({ status: 'CANCELLED', errorCode: null });
+  });
+
+  it('a connection that opened as the cancel arrived is closed and nothing runs', async () => {
+    const c = cancelDeps();
+    const h = harness({
+      cancel: c.cancel,
+      connect: vi.fn(() => {
+        c.controller.abort();
+        return Promise.resolve({ ok: true as const, session: h.session, close: h.sessionClose });
+      }),
+    });
+
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'CANCELLED' });
+    expect(h.runInputs).toEqual([]);
+    expect(h.sessionClose).toHaveBeenCalledOnce();
+  });
+
+  it('an unconfirmed cancel is finished with its named warning and logged without text (H2)', async () => {
+    const c = cancelDeps();
+    const h = harness({
+      cancel: c.cancel,
+      run: () =>
+        Promise.resolve({
+          ...SUCCESS,
+          status: 'FAILED',
+          errorCode: 'SERVER_UNREACHABLE',
+          errorMessage: DEPLOY_MESSAGES.CANCEL_UNCONFIRMED,
+          container: null,
+          warning: 'CANCEL_UNCONFIRMED',
+        }),
+    });
+
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'FAILED' });
+    expect(h.finished[0]).toMatchObject({ status: 'FAILED', warning: 'CANCEL_UNCONFIRMED' });
+    expect(h.logs.some((log) => log.level === 'warn' && log.fields.warning === 'CANCEL_UNCONFIRMED')).toBe(true);
+  });
+
+  it('a flag that cannot be cleared or watched never fails the job', async () => {
+    const h = harness({
+      cancel: {
+        watch: () => {
+          throw new Error(RAW_REMOTE);
+        },
+        clear: () => Promise.reject(new Error(RAW_REMOTE)),
+      },
+    });
+
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'SUCCESS' });
+    expect(JSON.stringify(h.logs)).not.toContain('pw@db');
+  });
+});

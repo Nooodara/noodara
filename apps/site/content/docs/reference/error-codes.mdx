@@ -52,6 +52,7 @@ nothing else — no internal detail is ever attached to it.
 | `DEPLOYMENT_IN_PROGRESS` | 409 | The service already has a deployment in progress; wait for it to finish or cancel it. |
 | `PROJECT_ARCHIVED` | 409 | The project is archived; unarchive it to deploy its services. |
 | `DEPLOYMENT_INPUT_INVALID` | 422 | The deploy request carried a field it does not accept; the body must be empty or `{}`. |
+| `DEPLOYMENT_NOT_CANCELLABLE` | 409 | The deployment already ended; only a queued or running deployment can be cancelled. |
 
 A request the server cannot read at all gets one of three fixed codes with the same body shape:
 `MALFORMED_REQUEST` (400, the body is not valid JSON), `PAYLOAD_TOO_LARGE` (413) or

@@ -3,10 +3,13 @@
 // the worker does the rest. A deployment read under the wrong service is a 404 (H2).
 // 12-12: `GET /api/deployments/:id/logs` reads persisted build-log chunks after a cursor, the
 // resync path for a client that missed `deployment.log_chunk` events (no replay of older chunks).
+// 12-13: `POST /api/deployments/:id/cancel` ends a QUEUED deployment or flags a running one for its
+// worker (202 either way); a terminal deployment is a named 409.
 import type { ZodTypeProvider } from '@fastify/type-provider-zod';
 import type { FastifyPluginCallback, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { getDb } from '../db/client.js';
+import type { CancelDeployment } from '../deploy/cancel-deployment.js';
 import { readDeploymentLogs, type DeploymentLogReader } from '../deploy/log-sink.js';
 import type { DeploymentServices } from '../services/deployment-services.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
@@ -35,6 +38,7 @@ import {
 declare module 'fastify' {
   interface FastifyInstance {
     getDeploymentServices(): Promise<DeploymentServices>;
+    getCancelDeployment(): Promise<CancelDeployment>;
   }
 }
 
@@ -56,6 +60,8 @@ const READ_ERRORS = { 400: BadRequestSchema, 401: ErrorBodySchema, 404: ErrorBod
 export interface DeploymentsRoutesOptions {
   /** Injectable for route tests; defaults to the Postgres reader. */
   readonly readLogs?: DeploymentLogReader;
+  /** Injectable for route tests; defaults to `fastify.getCancelDeployment()` from `app.ts`. */
+  readonly cancelDeployment?: CancelDeployment;
 }
 
 const readLogsFromDb: DeploymentLogReader = async (deploymentId, query) =>
@@ -64,6 +70,8 @@ const readLogsFromDb: DeploymentLogReader = async (deploymentId, query) =>
 const deploymentsRoutes: FastifyPluginCallback<DeploymentsRoutesOptions> = (fastify, opts, done) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
   const readLogs = opts.readLogs ?? readLogsFromDb;
+  const resolveCancel = (): Promise<CancelDeployment> =>
+    opts.cancelDeployment !== undefined ? Promise.resolve(opts.cancelDeployment) : fastify.getCancelDeployment();
 
   app.route({
     method: 'POST',
@@ -162,6 +170,25 @@ const deploymentsRoutes: FastifyPluginCallback<DeploymentsRoutesOptions> = (fast
         return;
       }
       await reply.send(deployment);
+    },
+  });
+
+  app.route({
+    method: 'POST',
+    url: '/api/deployments/:deploymentId/cancel',
+    schema: {
+      params: DeploymentIdParamSchema,
+      response: { 202: DeploymentViewSchema, ...READ_ERRORS, 409: ErrorBodySchema, 503: ErrorBodySchema },
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const cancelDeployment = await resolveCancel();
+      const result = await cancelDeployment(request.params.deploymentId, actor);
+      if (!result.ok) {
+        await sendFailure(reply, result);
+        return;
+      }
+      await reply.code(202).send(result.deployment);
     },
   });
 

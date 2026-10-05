@@ -7,13 +7,17 @@ import './env.js';
 import { hostname } from 'node:os';
 import { createSsh2Adapter } from '@noodara/ssh';
 import { getDb } from './db/client.js';
+import { cancelFlagRedisFrom, createDeployCancelFlags, watchDeployCancel } from './deploy/cancel-flag.js';
 import { createDeployJobDeps, startDeployWorker } from './deploy/deploy-runtime.js';
+import { sweepCrashedDeployments } from './deploy/deploy-sweep.js';
+import { createDeploymentStore } from './deploy/deployment-store.js';
 import { createDeployJobHandler } from './deploy/deploy-worker.js';
 import { purgeDeploymentLogChunks, startDeploymentLogRetention } from './deploy/log-retention.js';
 import { createDbLogChunkWriter, createDeploymentLogSinkFactory } from './deploy/log-sink.js';
 import { DEPLOY_LOG_LINE_MAX_BYTES, env } from './env.js';
 import { createRedisServerEventPublisher } from './events/redis-server-event-publisher.js';
 import { createLogger } from './logger.js';
+import { computeDeployCancelKeyTtlMs } from './queue/deploy-job-budget.js';
 import { computeJobLockDurationMs } from './queue/job-budget.js';
 import { createConnectServerQueue } from './queue/connect-server-queue.js';
 import { createWorker, sweepAbandonedConnections } from './queue/connect-server-worker.js';
@@ -91,24 +95,45 @@ async function main(): Promise<void> {
       maxPhaseBytes: env.NOODARA_DEPLOY_LOG_MAX_BYTES,
     },
   });
+  const deployJobDeps = createDeployJobDeps({
+    db,
+    events: eventPublisher,
+    ssh: createSsh2Adapter(),
+    timeouts: deps.timeouts,
+    masterKeys: () => Promise.resolve(deps.masterKeys),
+    panelPorts: panelPortsFromEnv({ apiPort: env.PORT, publicUrl: env.NOODARA_PUBLIC_URL }),
+    config: {
+      deployMaxMs: env.NOODARA_DEPLOY_MAX_MS,
+      idleMs: env.NOODARA_DEPLOY_IDLE_MS,
+      logMaxBytes: env.NOODARA_DEPLOY_LOG_MAX_BYTES,
+      logLineMaxBytes: DEPLOY_LOG_LINE_MAX_BYTES,
+    },
+    logger,
+  });
+  // 12-13 (A2): the API raises a cancel flag on the queue connection; each job watches its own.
+  const deployCancelFlags = createDeployCancelFlags({
+    redis: cancelFlagRedisFrom(queueConnection),
+    ttlMs: computeDeployCancelKeyTtlMs(env.NOODARA_DEPLOY_MAX_MS),
+  });
+  // 12-13 (A4): before taking jobs, a deployment still mid-flight was left by a crashed worker. Its
+  // row ends FAILED/WORKER_CRASHED now; remote cleanup runs in the background and never blocks boot.
+  const deploySweep = await sweepCrashedDeployments({
+    store: createDeploymentStore({ db, now: () => new Date(), events: eventPublisher }),
+    connect: deployJobDeps.connect,
+    createRedactor: deployJobDeps.createRedactor,
+    limits: deployJobDeps.limits,
+    logger,
+  });
+  logger.info({ sweptCount: deploySweep.swept.length }, 'worker startup sweep for crashed deployments complete');
+  void deploySweep.cleanup;
   const deployHandle = startDeployWorker({
     handler: createDeployJobHandler({
-      ...createDeployJobDeps({
-        db,
-        events: eventPublisher,
-        ssh: createSsh2Adapter(),
-        timeouts: deps.timeouts,
-        masterKeys: () => Promise.resolve(deps.masterKeys),
-        panelPorts: panelPortsFromEnv({ apiPort: env.PORT, publicUrl: env.NOODARA_PUBLIC_URL }),
-        config: {
-          deployMaxMs: env.NOODARA_DEPLOY_MAX_MS,
-          idleMs: env.NOODARA_DEPLOY_IDLE_MS,
-          logMaxBytes: env.NOODARA_DEPLOY_LOG_MAX_BYTES,
-          logLineMaxBytes: DEPLOY_LOG_LINE_MAX_BYTES,
-        },
-        logger,
-      }),
+      ...deployJobDeps,
       sinkFor: deployLogSinkFor,
+      cancel: {
+        watch: (deploymentId) => watchDeployCancel({ flags: deployCancelFlags, deploymentId }),
+        clear: (deploymentId) => deployCancelFlags.clear(deploymentId),
+      },
     }),
     connection: deployWorkerConnection,
     concurrency: env.NOODARA_DEPLOY_CONCURRENCY,

@@ -11,12 +11,16 @@ import { appRedactor } from './activity/redaction.js';
 import { createDnsChecker, type DnsChecker } from './auth/dns-checker.js';
 import { decodeMasterKey, logMasterKeyWarning } from './boot/master-key.js';
 import { getDb } from './db/client.js';
+import { createCancelDeployment, type CancelDeployment } from './deploy/cancel-deployment.js';
+import { cancelFlagRedisFrom, createDeployCancelFlags } from './deploy/cancel-flag.js';
+import { createDeploymentStore } from './deploy/deployment-store.js';
 import { env } from './env.js';
 import { createRedisServerEventPublisher } from './events/redis-server-event-publisher.js';
 import type { ServerEventPublisher } from './events/server-event-publisher.js';
 import { createSseBroadcaster, type SseBroadcaster } from './events/sse-broadcaster.js';
 import { createLogger } from './logger.js';
 import { createConnectServerQueue, type ConnectServerQueue } from './queue/connect-server-queue.js';
+import { computeDeployCancelKeyTtlMs } from './queue/deploy-job-budget.js';
 import { createDeployQueue, type DeployQueue } from './queue/deploy-queue.js';
 import {
   createHealthRedisConnection,
@@ -47,6 +51,9 @@ export interface BuildAppDeps {
   queue?: ConnectServerQueue;
   /** 12-10: the `deployments` queue producer; a caller-injected queue is never closed here. */
   deployQueue?: DeployQueue;
+  /** 12-13: `POST /api/deployments/:id/cancel`; built lazily from `getDb()`, the deploy queue and
+   *  its Redis connection when not injected. */
+  cancelDeployment?: CancelDeployment;
   broadcaster?: SseBroadcaster;
   eventPublisher?: ServerEventPublisher;
   healthRedis?: Redis;
@@ -132,28 +139,61 @@ function createServiceServicesResolver(
   };
 }
 
-/** 12-10: the deploy queue producer, owned and closed by this instance unless injected. */
+/** 12-10: the deploy queue producer, owned and closed by this instance unless injected.
+ *  12-13: its Redis connection also carries the cancel flags, so cancel opens nothing new. */
 function createDeployQueueResolver(deps: BuildAppDeps): {
   getDeployQueue: () => DeployQueue;
+  getDeployRedis: () => Redis;
   closeOwnedDeployQueue: () => Promise<void>;
 } {
-  let owned: { queue: DeployQueue; connection: Redis } | undefined;
+  let connection: Redis | undefined;
+  let ownedQueue: DeployQueue | undefined;
+  const getDeployRedis = (): Redis => (connection ??= createQueueRedisConnection(env.REDIS_URL));
   const getDeployQueue = (): DeployQueue => {
     if (deps.deployQueue !== undefined) return deps.deployQueue;
-    if (owned === undefined) {
-      const connection = createQueueRedisConnection(env.REDIS_URL);
-      owned = { queue: createDeployQueue({ connection }), connection };
-    }
-    return owned.queue;
+    return (ownedQueue ??= createDeployQueue({ connection: getDeployRedis() }));
   };
   const closeOwnedDeployQueue = async (): Promise<void> => {
-    if (owned === undefined) return;
-    const { queue, connection } = owned;
-    owned = undefined;
-    await queue.close();
-    connection.disconnect();
+    const queue = ownedQueue;
+    const owned = connection;
+    ownedQueue = undefined;
+    connection = undefined;
+    if (queue !== undefined) await queue.close();
+    owned?.disconnect();
   };
-  return { getDeployQueue, closeOwnedDeployQueue };
+  return { getDeployQueue, getDeployRedis, closeOwnedDeployQueue };
+}
+
+/** 12-13: the cancel service, built on first cancel from the deploy queue resolver's connection. */
+function createCancelDeploymentResolver(
+  deps: BuildAppDeps,
+  eventPublisher: ServerEventPublisher,
+  queue: { getDeployQueue: () => DeployQueue; getDeployRedis: () => Redis },
+  logger: FastifyBaseLogger,
+): () => Promise<CancelDeployment> {
+  let cached: Promise<CancelDeployment> | undefined;
+  return () => {
+    if (deps.cancelDeployment !== undefined) {
+      return Promise.resolve(deps.cancelDeployment);
+    }
+    cached ??= getDb()
+      .then((db) =>
+        createCancelDeployment({
+          store: createDeploymentStore({ db, now: () => new Date(), events: eventPublisher }),
+          flags: createDeployCancelFlags({
+            redis: cancelFlagRedisFrom(queue.getDeployRedis()),
+            ttlMs: computeDeployCancelKeyTtlMs(env.NOODARA_DEPLOY_MAX_MS),
+          }),
+          queue: { removeJob: (deploymentId) => queue.getDeployQueue().removeJob(deploymentId) },
+          logger,
+        }),
+      )
+      .catch((error: unknown) => {
+        cached = undefined;
+        throw error;
+      });
+    return cached;
+  };
 }
 
 /** 12-10: same lazy shape; the queue itself is resolved on the first enqueue, not at boot. */
@@ -361,8 +401,12 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   // 12-07: `routes/projects.ts` resolves its services per request, the same deferred way.
   app.decorate('getProjectServices', createProjectServicesResolver(deps));
   app.decorate('getServiceServices', createServiceServicesResolver(deps, eventPublisher));
-  const { getDeployQueue, closeOwnedDeployQueue } = createDeployQueueResolver(deps);
+  const { getDeployQueue, getDeployRedis, closeOwnedDeployQueue } = createDeployQueueResolver(deps);
   app.decorate('getDeploymentServices', createDeploymentServicesResolver(deps, eventPublisher, getDeployQueue, app.log));
+  app.decorate(
+    'getCancelDeployment',
+    createCancelDeploymentResolver(deps, eventPublisher, { getDeployQueue, getDeployRedis }, app.log),
+  );
 
   // Plan 04-08 (Task 3): the connect/discover routes' queue producer. A queue has no open
   // streaming response, so `onClose` (not `preClose`, which Plan 04-09's SSE streams need) is the
