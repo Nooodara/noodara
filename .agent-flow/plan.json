@@ -1424,7 +1424,8 @@
             "apps/control-plane/src/routes/http-errors.test.ts",
             "apps/control-plane/src/routes/api-scope.ts",
             "apps/site/content/docs/reference/error-codes.mdx",
-            "apps/control-plane/src/app.ts"
+            "apps/control-plane/src/app.ts",
+            "tests/integration/projects/"
           ],
           "wave": 10,
           "dependsOn": [
