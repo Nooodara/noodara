@@ -8,3 +8,4 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-09-30: ADR 0008 wins over pre-spike plan text (kill -s TERM, setsid -w, docker ps --size=false, git errors classified by text).
 - 2026-10-04: ADR 0008 accepted. G7 mirror.gcr.io pull-through confirmed; D-04 is `kill -s TERM -- "-$pgid"` under `setsid -w`; `docker kill` kept as a safety net (it does not cancel BuildKit builds); HTTPS-token clone gets a contract test in Phase 12.
 - 2026-10-04: agent-flow replaces GSD as the project workflow from Phase 12 on (plan, execute, verify, close). `.planning/phases/` 1–11 stays as read-only history. Phase review is tier 1 (independent `flow-reviewer`).
+- 2026-10-05: Cancel cleanup (12-13 A3) compares `docker system df` Images/Containers/Local Volumes only. A cancelled BuildKit build leaves an unused cache record (~8 kB); build cache is BuildKit-owned and its retention/pruning belongs to Phase 14 (D11/D12). Recorded in ADR 0008.

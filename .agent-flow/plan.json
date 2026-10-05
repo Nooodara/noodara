@@ -1351,7 +1351,8 @@
             "apps/control-plane/src/routes/http-errors.test.ts",
             "apps/control-plane/src/routes/api-scope.ts",
             "apps/site/content/docs/reference/error-codes.mdx",
-            "apps/control-plane/src/app.ts"
+            "apps/control-plane/src/app.ts",
+            "docs/adr/0008-deploy-engine-empirical-contracts.md"
           ],
           "wave": 9,
           "dependsOn": [
@@ -1378,7 +1379,7 @@
             },
             {
               "id": "A3",
-              "text": "After cancel no container, partial image, network, workspace or secrets file remains and docker system df is unchanged",
+              "text": "After cancel no container, partial image, network, volume, workspace or secrets file remains, and docker system df Images/Containers/Local Volumes are unchanged; BuildKit build-cache records are excluded from the comparison (bounded growth only, retention is Phase 14 per ADR 0008)",
               "proof": "it-runtime-cancel"
             },
             {
