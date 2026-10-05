@@ -51,7 +51,7 @@ function fakeSessions(servers: Record<string, FakeServer>) {
         calls.push({ serverId, command, options });
         if (server.delayMs !== undefined) await new Promise((resolve) => setTimeout(resolve, server.delayMs));
         const chunk: StreamChunk = { stream: 'stdout', text: server.stdout, seq: 1, truncatedLine: false };
-        options.onChunk?.(chunk);
+        options.onChunk(chunk);
         return {
           commandName: command.name,
           outcome: 'completed',
@@ -62,7 +62,7 @@ function fakeSessions(servers: Record<string, FakeServer>) {
           truncated: false,
           stdoutTail: server.stdout,
           stderrTail: server.stderr ?? '',
-        } as StreamResult;
+        };
       },
     } as unknown as SshDeploySession;
     return Promise.resolve({

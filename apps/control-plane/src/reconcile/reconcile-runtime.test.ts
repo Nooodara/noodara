@@ -92,12 +92,14 @@ describe('serializeTicks (H1)', () => {
 describe('startReconcileLoop (A1, H1)', () => {
   function fakes() {
     const schedulers: unknown[][] = [];
+    const queueClose = vi.fn(() => Promise.resolve());
+    const workerClose = vi.fn(() => Promise.resolve());
     const queue: ReconcileQueueLike = {
       upsertJobScheduler: vi.fn((...args: unknown[]) => {
         schedulers.push(args);
         return Promise.resolve({});
       }),
-      close: vi.fn(() => Promise.resolve()),
+      close: queueClose,
     };
     let processor: ((job: { name?: string }) => Promise<unknown>) | undefined;
     let options: Record<string, unknown> | undefined;
@@ -107,11 +109,13 @@ describe('startReconcileLoop (A1, H1)', () => {
         listeners.set(event, listener);
         return worker;
       }),
-      close: vi.fn(() => Promise.resolve()),
+      close: workerClose,
     };
     return {
       queue,
       worker,
+      queueClose,
+      workerClose,
       schedulers,
       listeners,
       processor: () => {
@@ -139,8 +143,8 @@ describe('startReconcileLoop (A1, H1)', () => {
     const handle = await startReconcileLoop({
       intervalMs: 30_000,
       tick,
-      queueConnection: {} as never,
-      workerConnection: {} as never,
+      queueConnection: {},
+      workerConnection: {},
       logger,
       createQueue: f.createQueue,
       createWorker: f.createWorker,
@@ -157,8 +161,8 @@ describe('startReconcileLoop (A1, H1)', () => {
     expect(f.listeners.has('error')).toBe(true);
 
     await handle.close();
-    expect(f.worker.close).toHaveBeenCalled();
-    expect(f.queue.close).toHaveBeenCalled();
+    expect(f.workerClose).toHaveBeenCalled();
+    expect(f.queueClose).toHaveBeenCalled();
   });
 
   it('two jobs delivered at once never run the tick concurrently', async () => {
@@ -177,8 +181,8 @@ describe('startReconcileLoop (A1, H1)', () => {
     await startReconcileLoop({
       intervalMs: 5_000,
       tick,
-      queueConnection: {} as never,
-      workerConnection: {} as never,
+      queueConnection: {},
+      workerConnection: {},
       logger,
       createQueue: f.createQueue,
       createWorker: f.createWorker,
@@ -197,8 +201,8 @@ describe('startReconcileLoop (A1, H1)', () => {
     await startReconcileLoop({
       intervalMs: 5_000,
       tick: () => Promise.reject(new Error('redis://:secret@host')),
-      queueConnection: {} as never,
-      workerConnection: {} as never,
+      queueConnection: {},
+      workerConnection: {},
       logger,
       createQueue: f.createQueue,
       createWorker: f.createWorker,
