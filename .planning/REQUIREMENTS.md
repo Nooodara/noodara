@@ -38,47 +38,47 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Proyectos y environments (PROJ)
 
-- [ ] **PROJ-01**: El usuario crea un proyecto con nombre único (slug derivado) y descripción opcional, lo edita y lo lista.
-- [ ] **PROJ-02**: El usuario archiva un proyecto; un proyecto archivado no acepta nuevos deploys y solo un proyecto archivado puede eliminarse, escribiendo su nombre exacto; al eliminarlo se eliminan sus environments, servicios, deployments, logs y credenciales asociadas.
-- [ ] **PROJ-03**: El usuario crea, edita y elimina environments dentro de un proyecto; `production`, `staging` y `development` se sugieren pero cualquier nombre válido se acepta; el nombre es único dentro del proyecto.
+- [x] **PROJ-01**: El usuario crea un proyecto con nombre único (slug derivado) y descripción opcional, lo edita y lo lista.
+- [x] **PROJ-02**: El usuario archiva un proyecto; un proyecto archivado no acepta nuevos deploys y solo un proyecto archivado puede eliminarse, escribiendo su nombre exacto; al eliminarlo se eliminan sus environments, servicios, deployments, logs y credenciales asociadas.
+- [x] **PROJ-03**: El usuario crea, edita y elimina environments dentro de un proyecto; `production`, `staging` y `development` se sugieren pero cualquier nombre válido se acepta; el nombre es único dentro del proyecto.
 - [x] **PROJ-04**: La propiedad es jerárquica y la garantiza la base de datos: un environment pertenece a un solo proyecto y un servicio a un solo environment; ninguna ruta acepta un id de otro proyecto.
-- [ ] **PROJ-05**: Un servidor con servicios no puede eliminarse; el error nombra los servicios que lo bloquean.
+- [x] **PROJ-05**: Un servidor con servicios no puede eliminarse; el error nombra los servicios que lo bloquean.
 
 ### Servicios (SVC)
 
-- [ ] **SVC-01**: El usuario crea un servicio desde un repositorio Git (URL, rama, contexto de build, ruta del Dockerfile, puerto interno) asignado a un servidor conectado del mismo proyecto.
-- [ ] **SVC-02**: El usuario crea un servicio desde un Dockerfile del repositorio con `target` opcional, y desde una imagen Docker (referencia con tag o digest explícito, nunca `:latest` implícito).
-- [ ] **SVC-03**: Un repositorio privado se autentica con una deploy key generada por Noodara (clave pública mostrada para registrarla en el proveedor) o con un token HTTPS; la credencial se cifra at-rest, nunca aparece en argv, URL, logs ni API, y se elimina con el servicio.
-- [ ] **SVC-04**: Una imagen de un registry privado (GHCR, Docker Hub) se autentica con una credencial de registry cifrada, pasada al remoto por `--password-stdin`, nunca por argv ni logs.
-- [ ] **SVC-05**: Cada servicio registra name, project, environment, server, source type, repository/image, branch, internal port, published port opcional, status, created_at y updated_at; el usuario lo edita (el cambio de fuente exige redeploy) y lo elimina escribiendo el nombre exacto, lo que detiene y elimina su contenedor, red, imágenes propias y workspace remoto.
-- [ ] **SVC-06**: El usuario puede publicar opcionalmente un puerto del host para el servicio; la validación rechaza colisiones con otros servicios del mismo servidor, con el panel y con puertos en uso reales (`PORT_IN_USE`); por defecto no se publica nada.
-- [ ] **SVC-07**: El estado mostrado de un servicio se deriva del estado real de su contenedor y de su último deployment (`running`, `stopped`, `deploying`, `failed`, `never_deployed`), nunca de un valor guardado a mano.
+- [x] **SVC-01**: El usuario crea un servicio desde un repositorio Git (URL, rama, contexto de build, ruta del Dockerfile, puerto interno) asignado a un servidor conectado del mismo proyecto.
+- [x] **SVC-02**: El usuario crea un servicio desde un Dockerfile del repositorio con `target` opcional, y desde una imagen Docker (referencia con tag o digest explícito, nunca `:latest` implícito).
+- [x] **SVC-03**: Un repositorio privado se autentica con una deploy key generada por Noodara (clave pública mostrada para registrarla en el proveedor) o con un token HTTPS; la credencial se cifra at-rest, nunca aparece en argv, URL, logs ni API, y se elimina con el servicio.
+- [x] **SVC-04**: Una imagen de un registry privado (GHCR, Docker Hub) se autentica con una credencial de registry cifrada, pasada al remoto por `--password-stdin`, nunca por argv ni logs.
+- [x] **SVC-05**: Cada servicio registra name, project, environment, server, source type, repository/image, branch, internal port, published port opcional, status, created_at y updated_at; el usuario lo edita (el cambio de fuente exige redeploy) y lo elimina escribiendo el nombre exacto, lo que detiene y elimina su contenedor, red, imágenes propias y workspace remoto.
+- [x] **SVC-06**: El usuario puede publicar opcionalmente un puerto del host para el servicio; la validación rechaza colisiones con otros servicios del mismo servidor, con el panel y con puertos en uso reales (`PORT_IN_USE`); por defecto no se publica nada.
+- [x] **SVC-07**: El estado mostrado de un servicio se deriva del estado real de su contenedor y de su último deployment (`running`, `stopped`, `deploying`, `failed`, `never_deployed`), nunca de un valor guardado a mano.
 - [x] **SVC-08**: Toda URL de repositorio, rama, ruta y referencia de imagen se valida en `packages/domain` contra un vocabulario cerrado y se pasa al shell remoto solo a través de plantillas de la allowlist con `escapeShellArg`; un valor con caracteres de shell, `..`, saltos de línea o esquemas no permitidos se rechaza con un error nombrado antes de tocar el servidor.
 
 ### Deployments y operaciones remotas (DEP)
 
 - [x] **DEP-01**: El usuario lanza un deploy manual; el deployment pasa por `QUEUED → PREPARING → BUILDING → DEPLOYING → SUCCESS | FAILED | CANCELLED`, definido en `packages/domain` con tabla de transiciones validada y forward-compatible con los estados de v0.3.
-- [ ] **DEP-02**: El deploy clona el repositorio en el servidor (`--depth 1`, rama indicada, SHA capturado), construye la imagen con etiqueta por intento (`<servicio>:<deploymentId>`) y arranca el contenedor con nombre determinista en una red propia del servicio (`noodara-net-<serviceId>`), todo con timeouts explícitos (máximo total y de inactividad).
-- [ ] **DEP-03**: Un build fallido nunca reemplaza el contenedor en ejecución; el deployment termina `FAILED` con un código de error de vocabulario cerrado (`CLONE_FAILED`, `AUTH_FAILED`, `BUILD_FAILED`, `IMAGE_PULL_FAILED`, `PORT_IN_USE`, `START_FAILED`, `TIMEOUT`, …) y un mensaje accionable, nunca texto crudo del servidor.
-- [ ] **DEP-04**: El usuario cancela un deployment en cola (nunca llega a ejecutarse) y uno en curso (señal cooperativa → kill confirmado del proceso remoto → cierre del canal SSH → limpieza); ambos casos terminan `CANCELLED` sin dejar contenedores, imágenes parciales, redes ni directorios temporales.
-- [ ] **DEP-05**: Cada deployment mantiene un registro de los recursos que creó y los limpia en toda ruta de salida (éxito, fallo, cancelación, timeout, caída del worker); un deployment interrumpido por una caída del worker se marca `FAILED` al reiniciar, nunca queda `BUILDING` para siempre.
-- [ ] **DEP-06**: Solo puede haber un deployment activo por servicio (índice parcial único en base de datos + jobId `deploy-<deploymentId>`); un segundo intento se encola o se rechaza con un error nombrado, nunca corre en paralelo.
-- [ ] **DEP-07**: El usuario redespliega (re-ejecuta el build actual), detiene, reinicia y elimina el contenedor de un servicio desde la UI y la API; cada operación es un job con timeout y queda en el activity log.
+- [x] **DEP-02**: El deploy clona el repositorio en el servidor (`--depth 1`, rama indicada, SHA capturado), construye la imagen con etiqueta por intento (`<servicio>:<deploymentId>`) y arranca el contenedor con nombre determinista en una red propia del servicio (`noodara-net-<serviceId>`), todo con timeouts explícitos (máximo total y de inactividad).
+- [x] **DEP-03**: Un build fallido nunca reemplaza el contenedor en ejecución; el deployment termina `FAILED` con un código de error de vocabulario cerrado (`CLONE_FAILED`, `AUTH_FAILED`, `BUILD_FAILED`, `IMAGE_PULL_FAILED`, `PORT_IN_USE`, `START_FAILED`, `TIMEOUT`, …) y un mensaje accionable, nunca texto crudo del servidor.
+- [x] **DEP-04**: El usuario cancela un deployment en cola (nunca llega a ejecutarse) y uno en curso (señal cooperativa → kill confirmado del proceso remoto → cierre del canal SSH → limpieza); ambos casos terminan `CANCELLED` sin dejar contenedores, imágenes parciales, redes ni directorios temporales.
+- [x] **DEP-05**: Cada deployment mantiene un registro de los recursos que creó y los limpia en toda ruta de salida (éxito, fallo, cancelación, timeout, caída del worker); un deployment interrumpido por una caída del worker se marca `FAILED` al reiniciar, nunca queda `BUILDING` para siempre.
+- [x] **DEP-06**: Solo puede haber un deployment activo por servicio (índice parcial único en base de datos + jobId `deploy-<deploymentId>`); un segundo intento se encola o se rechaza con un error nombrado, nunca corre en paralelo.
+- [x] **DEP-07**: El usuario redespliega (re-ejecuta el build actual), detiene, reinicia y elimina el contenedor de un servicio desde la UI y la API; cada operación es un job con timeout y queda en el activity log.
 - [x] **DEP-08**: En v0.2 no existen build args ni variables de entorno de aplicación (llegan en v0.4); la UI y los docs lo dicen explícitamente y el modelo no expone campos para ello; LFS y submodules se rechazan con `UNSUPPORTED_REPOSITORY_FEATURE`.
-- [ ] **DEP-09**: Ningún secreto (deploy key, token, credencial de registry) aparece en `docker inspect`, `docker history`, argv, logs de build o activity log; el canary de fugas se extiende a estas superficies.
+- [x] **DEP-09**: Ningún secreto (deploy key, token, credencial de registry) aparece en `docker inspect`, `docker history`, argv, logs de build o activity log; el canary de fugas se extiende a estas superficies.
 
 ### Logs (LOG)
 
-- [ ] **LOG-01**: Los logs de build se transmiten en vivo a la UI por el SSE existente (nuevo tipo de evento), en chunks acotados (flush por tiempo/tamaño, límite por línea, tope por fase), pasados por el Redactor antes de salir del worker.
-- [ ] **LOG-02**: Los logs de build se persisten en chunks append-only con secuencia y se pueden consultar después (`since=<seq>` en el resync sin replay), con tope de tamaño por deployment y retención configurable.
-- [ ] **LOG-03**: El usuario ve los logs de runtime del contenedor bajo demanda (tail de N líneas y follow acotado en tiempo), con ANSI y salida binaria saneados; no se persisten.
+- [x] **LOG-01**: Los logs de build se transmiten en vivo a la UI por el SSE existente (nuevo tipo de evento), en chunks acotados (flush por tiempo/tamaño, límite por línea, tope por fase), pasados por el Redactor antes de salir del worker.
+- [x] **LOG-02**: Los logs de build se persisten en chunks append-only con secuencia y se pueden consultar después (`since=<seq>` en el resync sin replay), con tope de tamaño por deployment y retención configurable.
+- [x] **LOG-03**: El usuario ve los logs de runtime del contenedor bajo demanda (tail de N líneas y follow acotado en tiempo), con ANSI y salida binaria saneados; no se persisten.
 - [ ] **LOG-04**: La UI de deploy narra los pasos (clonar, construir, arrancar, verificar) con duración y estado cada uno, reutilizando el patrón de la narración del discovery, y muestra el error clasificado con su recuperación cuando falla.
 
 ### Reconciliación de estado (REC)
 
-- [ ] **REC-01**: Un ciclo de reconciliación por servidor (un `docker ps` por tick, no por servicio) actualiza el estado real de los contenedores y emite eventos SSE solo cuando algo cambia; la UI nunca hace polling propio.
+- [x] **REC-01**: Un ciclo de reconciliación por servidor (un `docker ps` por tick, no por servicio) actualiza el estado real de los contenedores y emite eventos SSE solo cuando algo cambia; la UI nunca hace polling propio.
 - [ ] **REC-02**: La UI aplica los eventos de estado con la misma función pura de reconciliación por secuencia que v0.1 usa para servidores, de modo que un evento y un snapshot en vuelo nunca dejan un estado obsoleto.
-- [ ] **REC-03**: Un contenedor detenido o eliminado fuera de Noodara se refleja en la UI en el siguiente ciclo, y el activity log registra la discrepancia.
+- [x] **REC-03**: Un contenedor detenido o eliminado fuera de Noodara se refleja en la UI en el siguiente ciclo, y el activity log registra la discrepancia.
 
 ### Documentación y sitio público (DOCS, SITE)
 
@@ -98,7 +98,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Calidad (QA)
 
 - [x] **QA-07**: Existen los fixtures oficiales `node-api`, `static-app` y `failing-build` (contexto de build < 1 MiB) y un fixture Testcontainers sshd+dockerd que ejerce el pull real desde registry y la autenticación de registry.
-- [ ] **QA-08**: 20 deployments consecutivos del mismo servicio completan correctamente y 20 ciclos create/delete de servicio no dejan contenedores, redes, imágenes ni workspaces huérfanos (`docker system df` estable), en la suite de integración y en nightly.
+- [x] **QA-08**: 20 deployments consecutivos del mismo servicio completan correctamente y 20 ciclos create/delete de servicio no dejan contenedores, redes, imágenes ni workspaces huérfanos (`docker system df` estable), en la suite de integración y en nightly.
 - [ ] **QA-09**: El E2E crítico cubre proyecto → environment → servicio desde `node-api` → deploy con logs en vivo → servicio alcanzable por el puerto publicado → build fallido con `failing-build` y error accionable → cancelación en curso sin huérfanos.
 - [x] **QA-10**: Los cuatro spikes de la investigación (transferencia de secretos sin argv, kill remoto confirmado, BuildKit por defecto en Docker 23+, estabilidad del JSON de `docker ps`) se resuelven con evidencia antes de implementar el motor, y los números por defecto (flush, topes de logs, intervalo de reconciliación, timeouts) se miden y se registran como en v0.1.
 

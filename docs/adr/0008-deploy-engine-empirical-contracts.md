@@ -369,26 +369,25 @@ retention and pruning belong to Phase 14 (D11/D12). Stall/timeout kills presumab
 
 ## Phase 12 Measurements
 
-Soak test measured on Ubuntu 24.04 fixture (sshd+dockerd, Docker Desktop macOS arm64):
+Soak measured on Ubuntu 24.04 only (sshd+dockerd, macOS arm64 Docker Desktop); knob-level verification in `docs/deploy-engine.md`:
 
 | Measurement | Result | Test |
 |---|---|---|
 | 20 consecutive node-api deploys (same service) | 20/20 SUCCESS; p50 4036 ms, p95 5554 ms | `soak.test.ts` A1 |
-| 20 create → deploy → delete cycles | 20/20 SUCCESS; per-cycle p50 4373 ms; full cycle p50 4373 ms | `soak.test.ts` A2 |
+| 20 create → deploy → delete cycles | 20/20 SUCCESS; per-cycle deploy p50 4033 ms; full cycle p50 4373 ms | `soak.test.ts` A2 |
 | Cleanup parity: docker system df (Images/Containers/Volumes) | Baseline = final (two settled checks, no prune) | `soak.test.ts` A2 |
-| Build logs per node-api deploy | ~4–5 MiB logs observed | `soak.test.ts` |
-| Reconcile tick (docker ps) cost | 25–27 ms per 50k-layer image on 24.04 | Measured in 11-07 (phase contract test) |
+| Build logs per node-api deploy | not measured; 16,384 B line cap and 65,536 B phase cap truncation asserted | `runtime-build-logs.test.ts` |
+| Reconcile tick (`docker ps --size=false`) cost | 34–37 ms on 22.04, 25–27 ms on 24.04 (50k-file layer) | Phase 11 contract table above; Phase 12 `runtime-reconcile.test.ts` A1 only asserts one `docker ps` per server per 5 s tick |
 
 **Defaults confirmed and no adjustments needed:**
 
-- `NOODARA_DEPLOY_LOG_MAX_BYTES = 10 MiB` per phase (observed ~5 MiB per test fixture deploy, 2× safety margin)
+- `NOODARA_DEPLOY_LOG_MAX_BYTES = 10 MiB` per phase (kept; truncation behaviour verified at scaled-down caps)
 - `NOODARA_DEPLOY_LOG_FLUSH_MS = 250 ms`, `NOODARA_DEPLOY_LOG_FLUSH_BYTES = 16 KiB` (live SSE chunk size validated)
-- `NOODARA_RECONCILE_INTERVAL_MS = 30 s` (cost 25–27 ms per tick, negligible at 30s intervals)
+- `NOODARA_RECONCILE_INTERVAL_MS = 30 s` (cost 25–37 ms per tick per the Phase 11 contract table, negligible at 30 s)
 - `NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS = 10 min` (configurable cap enforced)
 - All timeouts and concurrency knobs validated against range constraints in `env.ts`
 
 **Open items:**
 
-Item 6 (amd64 CI run of tests/integration/deploy-engine) remains pending until the branch runs on GitHub CI
-with a green result. No contract changes anticipated from amd64 since all contract tests (G1–G4) passed on
+Item 6 (amd64 CI run of tests/integration/deploy-engine) remains **pending, requires a green GitHub amd64 CI run that does not exist yet**. No contract changes anticipated from amd64 since all contract tests (G1–G4) passed on
 both Ubuntu 22.04 and 24.04 in Phase 11.
