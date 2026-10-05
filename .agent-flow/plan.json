@@ -1602,7 +1602,9 @@
             "packages/ssh/src/commands/docker-deploy.test.ts",
             "packages/ssh/src/commands/deploy-allowlist.test.ts",
             "packages/domain/src/validators/docker-naming.ts",
-            "packages/domain/src/validators/docker-naming.test.ts"
+            "packages/domain/src/validators/docker-naming.test.ts",
+            "apps/control-plane/src/deploy/deploy-sweep.ts",
+            "apps/control-plane/src/deploy/deploy-sweep.test.ts"
           ],
           "wave": 12,
           "dependsOn": [
