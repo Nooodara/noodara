@@ -233,7 +233,10 @@ jobs:
       # what was and wasn't measured. No image-publishing or cross-job image-caching step is added
       # here on purpose: every image is built locally, used within this same job, and discarded —
       # none of that extra machinery is needed for a suite that never ships an image anywhere.
-      - run: pnpm test:integration
+      # Phase 12: tests/integration/deploy-engine (real builds on the sshd+dockerd fixture, both
+      # Ubuntu versions) no longer fits this job's budget; nightly.yml runs it in full in the
+      # `deploy-engine` and `soak` jobs, so pushes and PRs skip it here.
+      - run: pnpm test:integration --exclude 'tests/integration/deploy-engine/**'
       - name: Fail if any noodara.test container survived
         if: always()
         run: |
