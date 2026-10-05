@@ -8,3 +8,5 @@ export * from './resource-ledger.js';
 export * from './port-preflight.js';
 export * from './reconcile-diff.js';
 export * from './post-start-polls.js';
+export * from './log-chunker.js';
+export * from './log-sanitize.js';
