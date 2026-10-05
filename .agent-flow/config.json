@@ -32,7 +32,7 @@
     ],
     "strictGates": true,
     "review": {
-      "tier": 0
+      "tier": 1
     },
     "router": {
       "enabled": true,
