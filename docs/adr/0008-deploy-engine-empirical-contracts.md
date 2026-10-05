@@ -354,3 +354,15 @@ Remaining open items:
   confirmed absence) and stdin writes for G1.
 - Phase 12 compares images by registry digest or `RootFS.Layers`, not `.Id`.
 - No Phase 12 plan may be written before this ADR is Accepted (D-01).
+
+## Cancel and build cache (Phase 12)
+
+Measured in 12-13 (`runtime-cancel.test.ts`): each build killed mid-`RUN` leaves one BuildKit
+record (`mount / from exec /bin/sh -c ...`, Mutable false, Usage count 0, ~8 kB, parent = base
+layer). Context and Dockerfile `source.local` records are reused. `docker system df` Build Cache
+went `7 / 234MB` → `8 / 234.1MB`; Images, Containers and Local Volumes were unchanged.
+
+Decision (2026-10-05, `.planning/DECISIONS.md`): cancel cleanup is checked against `docker system df`
+Images/Containers/Local Volumes only. BuildKit cache records are excluded from that parity and only
+checked for bounded growth (≤ 64 kB per cancel in the test). Build cache is BuildKit-owned; its
+retention and pruning belong to Phase 14 (D11/D12). Stall/timeout kills presumably leave the same record.

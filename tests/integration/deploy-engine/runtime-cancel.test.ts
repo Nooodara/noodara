@@ -50,6 +50,8 @@ const KEY_VERSION = 1;
 const DEPLOY_MAX_MS = 300_000;
 const TERMINAL = new Set(['SUCCESS', 'FAILED', 'CANCELLED']);
 const SLOW_REPO = 'slow-build';
+/** Bound on BuildKit cache growth per cancelled build (the measured orphan record is ~8 kB, ADR 0008). */
+const MAX_CACHE_GROWTH_PER_CANCEL = 64_000;
 /** The ps marker of the slow build's RUN step: unique to this file. */
 const SLOW_MARKER = 'sleep 307';
 const ACTOR = { type: 'system' } as const;
@@ -159,6 +161,23 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
     (await rootOut(['sh', '-c', 'ps -eww -o args= | grep -F -- "$0" | grep -v grep || true', SLOW_MARKER])) !== '';
   const dockerFootprint = async (): Promise<string> =>
     rootOut(['docker', 'system', 'df', '--format', '{{.Type}} {{.TotalCount}} {{.Active}} {{.Size}}']);
+  /** A3 compares Images/Containers/Local Volumes only; BuildKit cache is checked as bounded growth (ADR 0008). */
+  const withoutBuildCache = (footprint: string): string =>
+    footprint
+      .split('\n')
+      .filter((line) => !line.startsWith('Build Cache'))
+      .join('\n');
+  /** Total bytes of BuildKit cache records, from `docker buildx du --verbose`. */
+  const buildCacheBytes = async (): Promise<number> => {
+    const du = await root(['docker', 'buildx', 'du', '--verbose']);
+    expect(du.exitCode, du.stderr).toBe(0);
+    let total = 0;
+    for (const match of du.stdout.matchAll(/^Size:\s+([\d.]+)\s*([kMGT]?B)$/gm)) {
+      const unit = { B: 1, kB: 1e3, MB: 1e6, GB: 1e9, TB: 1e12 }[match[2] as 'B' | 'kB' | 'MB' | 'GB' | 'TB'];
+      total += Number(match[1]) * unit;
+    }
+    return total;
+  };
 
   const waitFor = async (what: string, check: () => Promise<boolean>, timeoutMs = WAIT_MS): Promise<void> => {
     const deadline = Date.now() + timeoutMs;
@@ -459,15 +478,17 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
     }
   };
 
-  it('A2/A3: cancelling a running build kills its process group, cleans up and ends CANCELLED with docker df unchanged', async () => {
+  it('A2/A3: cancelling a running build kills its process group, cleans up and ends CANCELLED with docker df unchanged (build cache bounded)', async () => {
     if (startWorker === undefined) throw new Error('runtime not started');
     startWorker();
     // Any build attempt records the shared base-image layers and the clone context in BuildKit's
-    // cache, cancelled or not. A first cancel warms that shared cache; the second must add nothing.
+    // cache, cancelled or not. A first cancel warms that shared cache; the second adds at most one
+    // small orphan record (bounded below).
     const warmUp = await deployAndCancelMidBuild(await insertSlowService());
     expect(warmUp.status).toBe('CANCELLED');
     const serviceId = await insertSlowService();
     const before = await settledFootprint();
+    const cacheBefore = await buildCacheBytes();
 
     const row = await deployAndCancelMidBuild(serviceId);
     expect(row.status).toBe('CANCELLED');
@@ -480,8 +501,12 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
     expect(await containerExists(`noodara-${serviceId}`)).toBe(false);
     await expectNoDeploymentResources(serviceId, row.id);
     const after = await settledFootprint();
-    const cacheDetail = after === before ? '' : (await rootOut(['sh', '-c', 'docker buildx du --verbose 2>/dev/null || docker system df -v'])).slice(-4_000);
-    expect(after, cacheDetail).toBe(before);
+    expect(withoutBuildCache(after), `docker system df before:\n${before}`).toBe(withoutBuildCache(before));
+    // An interrupted build leaves one unused ~8 kB BuildKit record (ADR 0008); growth stays bounded.
+    const cacheGrowth = (await buildCacheBytes()) - cacheBefore;
+    const cacheDetail =
+      cacheGrowth <= MAX_CACHE_GROWTH_PER_CANCEL ? '' : (await rootOut(['docker', 'buildx', 'du', '--verbose'])).slice(-4_000);
+    expect(cacheGrowth, cacheDetail).toBeLessThanOrEqual(MAX_CACHE_GROWTH_PER_CANCEL);
     expect(JSON.stringify(logged)).not.toContain('CANCEL_UNCONFIRMED');
   }, CASE_TIMEOUT_MS);
 
