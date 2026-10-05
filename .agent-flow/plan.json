@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-05T04:15:26.879Z",
+  "updatedAt": "2026-10-05T04:37:21.296Z",
   "cursor": {
-    "phase": null,
-    "task": null
+    "phase": "12",
+    "task": "12-02"
   },
   "phases": [
     {
@@ -500,7 +500,7 @@
       "dependsOn": [
         "11"
       ],
-      "status": "pending",
+      "status": "active",
       "tasks": [
         {
           "id": "12-01",
@@ -514,7 +514,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
@@ -586,7 +586,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -688,7 +688,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -731,7 +731,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -777,7 +777,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
