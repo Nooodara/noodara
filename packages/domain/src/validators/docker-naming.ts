@@ -32,7 +32,8 @@ export const DEPLOY_SECRET_NAMES = [
 ] as const;
 export type DeploySecretName = (typeof DEPLOY_SECRET_NAMES)[number];
 
-export const SUPERVISED_OPERATIONS = ['clone', 'build', 'pull'] as const;
+/** `logs` is a runtime `docker logs --follow` stream (12-16), killed by group like the others. */
+export const SUPERVISED_OPERATIONS = ['clone', 'build', 'pull', 'logs'] as const;
 export type SupervisedOperation = (typeof SUPERVISED_OPERATIONS)[number];
 
 export interface DeployWorkspace {

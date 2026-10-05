@@ -332,6 +332,16 @@ describe('dockerLogs', () => {
     expect(() => dockerLogs({ container, tail, follow: false })).toThrow(RangeError);
   });
 
+  it('makes only the follow form supervisable (ADR 0008: it must be killable by group)', () => {
+    expect(dockerLogs({ container, tail: 10, follow: true }).supervisable).toBe(true);
+    expect(dockerLogs({ container, tail: 10, follow: false }).supervisable).toBe(false);
+  });
+
+  it('keeps stdin closed in both forms', () => {
+    expect(dockerLogs({ container, tail: 10, follow: true }).stdin).toBe('none');
+    expect(dockerLogs({ container, tail: 10, follow: false }).stdin).toBe('none');
+  });
+
   it('accepts the 10000 upper bound', () => {
     expect(dockerLogs({ container, tail: 10_000, follow: false }).argv).toContain('10000');
   });

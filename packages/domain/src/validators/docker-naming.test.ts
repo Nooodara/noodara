@@ -251,6 +251,7 @@ describe('deployWorkspaceFor', () => {
     expect(ws.dockerConfigDir).toBe(`${root}/secrets/docker`);
     expect(ws.secretFile('deploy_key')).toBe(`${root}/secrets/deploy_key`);
     expect(ws.pidFile('build')).toBe(`${root}/run/build.pid`);
+    expect(ws.pidFile('logs')).toBe(`${root}/run/logs.pid`);
   });
 
   it('exposes every secret and supervised-operation name as a path under its directory', () => {
@@ -264,7 +265,7 @@ describe('deployWorkspaceFor', () => {
       'https_token',
       'registry_password',
     ]);
-    expect(SUPERVISED_OPERATIONS).toEqual(['clone', 'build', 'pull']);
+    expect(SUPERVISED_OPERATIONS).toEqual(['clone', 'build', 'pull', 'logs']);
     for (const name of DEPLOY_SECRET_NAMES) {
       expect(ws.secretFile(name)).toBe(`${ws.secretsDir}/${name}`);
     }
