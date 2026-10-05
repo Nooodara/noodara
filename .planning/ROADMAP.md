@@ -33,7 +33,7 @@ Full phase details, plans and success criteria: [milestones/v0.1-ROADMAP.md](mil
 - [x] **Phase 8: Rediseño de la app** - Elevación flotante, movimiento con propósito, momentos autorados, fallbacks de accesibilidad y el shell preparado para inspector, jerarquía y menú de cuenta; primera revisión visual humana. (completed 2026-09-27)
 - [x] **Phase 9: Settings editables** - Perfil del admin (nombre, email, password), tema y preferencias visuales persistidas en el servidor sin parpadeo. (completed 2026-09-27)
 - [x] **Phase 10: Sitio de docs y landing pública** - `apps/site` estático con Fumadocs, landing honesta con la identidad, publicado a GitHub Pages desde CI con test de exactitud. (completed 2026-09-28)
-- [ ] **Phase 11: Motor de deploy — fundamentos** - Spikes resueltos, dominio y esquema de Project/Environment/Service/Deployment, plantillas parametrizadas, exec en streaming, fixture sshd+dockerd y fixtures oficiales.
+- [x] **Phase 11: Motor de deploy — fundamentos** - Spikes resueltos, dominio y esquema de Project/Environment/Service/Deployment, plantillas parametrizadas, exec en streaming, fixture sshd+dockerd y fixtures oficiales. (completed 2026-10-05)
 - [ ] **Phase 12: Motor de deploy — runtime** - Cola, worker, cancelación con kill confirmado, limpieza en toda salida, reconciliación, API y SSE; 20 deploys y 20 ciclos sin huérfanos.
 - [ ] **Phase 13: UI de Projects & Services y E2E de deploy** - Jerarquía, creación de servicio, deploy narrado, logs en vivo en el inspector y el E2E crítico contra fixtures reales.
 - [ ] **Phase 14: Hardening y gate de release v0.2** - Rotación de logs, poda de backups, imagen < 600 MB, `check-posix-sh` sin falsos positivos, deuda humana de v0.1 cerrada, `v0.2.0`.
@@ -322,7 +322,7 @@ Plans:
   4. La allowlist de `packages/ssh` crece solo con plantillas cerradas parametrizadas (`git.clone`, `git.checkout`, `docker.build/pull/login/create/start/stop/restart/remove/inspect/logs/ps`, `fs.remove_deploy_dir`, kill remoto) cuyos argumentos pasan por validador de dominio y `escapeShellArg` (`--` antes de posicionales, guard de exactitud actualizado); el exec en streaming entrega salida en chunks redactados por chunk, acotados en bytes, abortables y con stdin, con `classifyGitError`/`classifyDockerError` como tablas congeladas que nunca lanzan; `packages/git` y `packages/docker` existen bajo el tag `ssh-adapter`.
   5. Existe la imagen combinada sshd+dockerd de Testcontainers (22.04 y 24.04) con un repositorio Git bare accesible por SSH y deploy keys generadas por corrida, que ejerce un pull real desde registry y la autenticación de registry; existen `fixtures/node-api`, `fixtures/static-app` y `fixtures/failing-build` con `.dockerignore` y contexto de build < 1 MiB asertado; ningún recurso `noodara.test=true` sobrevive a una corrida.
 
-**Plans:** 11/16 plans executed
+**Plans:** 16/16 plans complete
 
 Plans:
 **Wave 1**
@@ -341,26 +341,26 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 11-09-PLAN.md — ADR 0008 from measured evidence, domain-model skill update, human acceptance (checkpoint)
+- [x] 11-09-PLAN.md — ADR 0008 from measured evidence, domain-model skill update, human acceptance (checkpoint)
 - [x] 11-10-PLAN.md — Pure parsers: docker ps, container state, BuildKit status against real captures
 - [x] 11-11-PLAN.md — classifyGitError / classifyDockerError frozen never-throwing tables
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 11-12-PLAN.md — docker_buildkit discovery check, fact persisted in servers.docker_buildkit_available
-- [ ] 11-13-PLAN.md — Closed parameterized deploy allowlist (27 templates, RemoteCommand brand, exactness guard)
+- [x] 11-13-PLAN.md — Closed parameterized deploy allowlist (27 templates, RemoteCommand brand, exactness guard)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 11-14-PLAN.md — Streaming exec (redacted, bounded, abortable, stdin), SshDeploySession, confirmed remote kill (D-04)
+- [x] 11-14-PLAN.md — Streaming exec (redacted, bounded, abortable, stdin), SshDeploySession, confirmed remote kill (D-04)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 11-15-PLAN.md — `@noodara/git` and `@noodara/docker` packages under the ssh-adapter tag
+- [x] 11-15-PLAN.md — `@noodara/git` and `@noodara/docker` packages under the ssh-adapter tag
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 11-16-PLAN.md — End-to-end primitive composition on the fixture: happy path, DEP-08 rejections, failure isolation, secret non-leakage, cleanup
+- [x] 11-16-PLAN.md — End-to-end primitive composition on the fixture: happy path, DEP-08 rejections, failure isolation, secret non-leakage, cleanup
 
 ### Phase 12: Motor de deploy — runtime
 
@@ -437,7 +437,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 | 8. Rediseño de la app | 20/20 | Complete   | 2026-09-27 |
 | 9. Settings editables | 14/14 | Complete   | 2026-09-27 |
 | 10. Sitio de docs y landing pública | 12/12 | Complete    | 2026-09-28 |
-| 11. Motor de deploy — fundamentos | 11/16 | In Progress|  |
+| 11. Motor de deploy — fundamentos | 16/16 | Complete    | 2026-10-05 |
 | 12. Motor de deploy — runtime | 0/TBD | Not started | - |
 | 13. UI de Projects & Services y E2E de deploy | 0/TBD | Not started | - |
 | 14. Hardening y gate de release v0.2 | 0/TBD | Not started | - |

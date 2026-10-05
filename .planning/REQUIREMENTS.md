@@ -41,7 +41,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **PROJ-01**: El usuario crea un proyecto con nombre único (slug derivado) y descripción opcional, lo edita y lo lista.
 - [ ] **PROJ-02**: El usuario archiva un proyecto; un proyecto archivado no acepta nuevos deploys y solo un proyecto archivado puede eliminarse, escribiendo su nombre exacto; al eliminarlo se eliminan sus environments, servicios, deployments, logs y credenciales asociadas.
 - [ ] **PROJ-03**: El usuario crea, edita y elimina environments dentro de un proyecto; `production`, `staging` y `development` se sugieren pero cualquier nombre válido se acepta; el nombre es único dentro del proyecto.
-- [ ] **PROJ-04**: La propiedad es jerárquica y la garantiza la base de datos: un environment pertenece a un solo proyecto y un servicio a un solo environment; ninguna ruta acepta un id de otro proyecto.
+- [x] **PROJ-04**: La propiedad es jerárquica y la garantiza la base de datos: un environment pertenece a un solo proyecto y un servicio a un solo environment; ninguna ruta acepta un id de otro proyecto.
 - [ ] **PROJ-05**: Un servidor con servicios no puede eliminarse; el error nombra los servicios que lo bloquean.
 
 ### Servicios (SVC)
@@ -53,18 +53,18 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **SVC-05**: Cada servicio registra name, project, environment, server, source type, repository/image, branch, internal port, published port opcional, status, created_at y updated_at; el usuario lo edita (el cambio de fuente exige redeploy) y lo elimina escribiendo el nombre exacto, lo que detiene y elimina su contenedor, red, imágenes propias y workspace remoto.
 - [ ] **SVC-06**: El usuario puede publicar opcionalmente un puerto del host para el servicio; la validación rechaza colisiones con otros servicios del mismo servidor, con el panel y con puertos en uso reales (`PORT_IN_USE`); por defecto no se publica nada.
 - [ ] **SVC-07**: El estado mostrado de un servicio se deriva del estado real de su contenedor y de su último deployment (`running`, `stopped`, `deploying`, `failed`, `never_deployed`), nunca de un valor guardado a mano.
-- [ ] **SVC-08**: Toda URL de repositorio, rama, ruta y referencia de imagen se valida en `packages/domain` contra un vocabulario cerrado y se pasa al shell remoto solo a través de plantillas de la allowlist con `escapeShellArg`; un valor con caracteres de shell, `..`, saltos de línea o esquemas no permitidos se rechaza con un error nombrado antes de tocar el servidor.
+- [x] **SVC-08**: Toda URL de repositorio, rama, ruta y referencia de imagen se valida en `packages/domain` contra un vocabulario cerrado y se pasa al shell remoto solo a través de plantillas de la allowlist con `escapeShellArg`; un valor con caracteres de shell, `..`, saltos de línea o esquemas no permitidos se rechaza con un error nombrado antes de tocar el servidor.
 
 ### Deployments y operaciones remotas (DEP)
 
-- [ ] **DEP-01**: El usuario lanza un deploy manual; el deployment pasa por `QUEUED → PREPARING → BUILDING → DEPLOYING → SUCCESS | FAILED | CANCELLED`, definido en `packages/domain` con tabla de transiciones validada y forward-compatible con los estados de v0.3.
+- [x] **DEP-01**: El usuario lanza un deploy manual; el deployment pasa por `QUEUED → PREPARING → BUILDING → DEPLOYING → SUCCESS | FAILED | CANCELLED`, definido en `packages/domain` con tabla de transiciones validada y forward-compatible con los estados de v0.3.
 - [ ] **DEP-02**: El deploy clona el repositorio en el servidor (`--depth 1`, rama indicada, SHA capturado), construye la imagen con etiqueta por intento (`<servicio>:<deploymentId>`) y arranca el contenedor con nombre determinista en una red propia del servicio (`noodara-net-<serviceId>`), todo con timeouts explícitos (máximo total y de inactividad).
 - [ ] **DEP-03**: Un build fallido nunca reemplaza el contenedor en ejecución; el deployment termina `FAILED` con un código de error de vocabulario cerrado (`CLONE_FAILED`, `AUTH_FAILED`, `BUILD_FAILED`, `IMAGE_PULL_FAILED`, `PORT_IN_USE`, `START_FAILED`, `TIMEOUT`, …) y un mensaje accionable, nunca texto crudo del servidor.
 - [ ] **DEP-04**: El usuario cancela un deployment en cola (nunca llega a ejecutarse) y uno en curso (señal cooperativa → kill confirmado del proceso remoto → cierre del canal SSH → limpieza); ambos casos terminan `CANCELLED` sin dejar contenedores, imágenes parciales, redes ni directorios temporales.
 - [ ] **DEP-05**: Cada deployment mantiene un registro de los recursos que creó y los limpia en toda ruta de salida (éxito, fallo, cancelación, timeout, caída del worker); un deployment interrumpido por una caída del worker se marca `FAILED` al reiniciar, nunca queda `BUILDING` para siempre.
 - [ ] **DEP-06**: Solo puede haber un deployment activo por servicio (índice parcial único en base de datos + jobId `deploy-<deploymentId>`); un segundo intento se encola o se rechaza con un error nombrado, nunca corre en paralelo.
 - [ ] **DEP-07**: El usuario redespliega (re-ejecuta el build actual), detiene, reinicia y elimina el contenedor de un servicio desde la UI y la API; cada operación es un job con timeout y queda en el activity log.
-- [ ] **DEP-08**: En v0.2 no existen build args ni variables de entorno de aplicación (llegan en v0.4); la UI y los docs lo dicen explícitamente y el modelo no expone campos para ello; LFS y submodules se rechazan con `UNSUPPORTED_REPOSITORY_FEATURE`.
+- [x] **DEP-08**: En v0.2 no existen build args ni variables de entorno de aplicación (llegan en v0.4); la UI y los docs lo dicen explícitamente y el modelo no expone campos para ello; LFS y submodules se rechazan con `UNSUPPORTED_REPOSITORY_FEATURE`.
 - [ ] **DEP-09**: Ningún secreto (deploy key, token, credencial de registry) aparece en `docker inspect`, `docker history`, argv, logs de build o activity log; el canary de fugas se extiende a estas superficies.
 
 ### Logs (LOG)
@@ -97,10 +97,10 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Calidad (QA)
 
-- [ ] **QA-07**: Existen los fixtures oficiales `node-api`, `static-app` y `failing-build` (contexto de build < 1 MiB) y un fixture Testcontainers sshd+dockerd que ejerce el pull real desde registry y la autenticación de registry.
+- [x] **QA-07**: Existen los fixtures oficiales `node-api`, `static-app` y `failing-build` (contexto de build < 1 MiB) y un fixture Testcontainers sshd+dockerd que ejerce el pull real desde registry y la autenticación de registry.
 - [ ] **QA-08**: 20 deployments consecutivos del mismo servicio completan correctamente y 20 ciclos create/delete de servicio no dejan contenedores, redes, imágenes ni workspaces huérfanos (`docker system df` estable), en la suite de integración y en nightly.
 - [ ] **QA-09**: El E2E crítico cubre proyecto → environment → servicio desde `node-api` → deploy con logs en vivo → servicio alcanzable por el puerto publicado → build fallido con `failing-build` y error accionable → cancelación en curso sin huérfanos.
-- [ ] **QA-10**: Los cuatro spikes de la investigación (transferencia de secretos sin argv, kill remoto confirmado, BuildKit por defecto en Docker 23+, estabilidad del JSON de `docker ps`) se resuelven con evidencia antes de implementar el motor, y los números por defecto (flush, topes de logs, intervalo de reconciliación, timeouts) se miden y se registran como en v0.1.
+- [x] **QA-10**: Los cuatro spikes de la investigación (transferencia de secretos sin argv, kill remoto confirmado, BuildKit por defecto en Docker 23+, estabilidad del JSON de `docker ps`) se resuelven con evidencia antes de implementar el motor, y los números por defecto (flush, topes de logs, intervalo de reconciliación, timeouts) se miden y se registran como en v0.1.
 
 ## v2 Requirements
 
@@ -175,12 +175,12 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | SITE-01 | Phase 10 | Complete |
 | SITE-02 | Phase 10 | Complete |
 | SITE-03 | Phase 10 | Complete |
-| DEP-01 | Phase 11 | Pending |
-| DEP-08 | Phase 11 | Pending |
-| SVC-08 | Phase 11 | Pending |
-| PROJ-04 | Phase 11 | Pending |
-| QA-07 | Phase 11 | Pending |
-| QA-10 | Phase 11 | Pending |
+| DEP-01 | Phase 11 | Complete |
+| DEP-08 | Phase 11 | Complete |
+| SVC-08 | Phase 11 | Complete |
+| PROJ-04 | Phase 11 | Complete |
+| QA-07 | Phase 11 | Complete |
+| QA-10 | Phase 11 | Complete |
 | PROJ-01 | Phase 12 | Pending |
 | PROJ-02 | Phase 12 | Pending |
 | PROJ-03 | Phase 12 | Pending |

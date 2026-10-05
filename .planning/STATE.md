@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
-status: executing
-stopped_at: "Paused in 11-13 Task 3 (wip commit 0b88160); 11-09 awaiting ADR 0008 approval"
-last_updated: "2026-09-30T14:51:26.397Z"
-last_activity: 2026-09-30 -- Phase 11 paused by user (11/16 plans done)
+status: ready_to_plan
+stopped_at: Phase 11 complete (16/16) — ready to discuss Phase 12
+last_updated: 2026-10-05T03:33:35.326Z
+last_activity: 2026-10-04 -- Phase 11 complete (16/16), ADR 0008 accepted
 progress:
   total_phases: 8
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 72
-  completed_plans: 67
-  percent: 50
+  completed_plans: 72
+  percent: 62
 ---
 
 # Project State
@@ -21,22 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** Phase 11 — Motor de deploy — fundamentos
+**Current focus:** Phase 12 — motor de deploy — runtime
 
 ## Current Position
 
-Phase: 11 (Motor de deploy — fundamentos) — EXECUTING
-Plan: 13 of 16 (11-13 Tasks 1-2 done, Task 3 wip; 11-09 at human checkpoint)
-Status: Paused — resume with /gsd-execute-phase 11
-Last activity: 2026-09-30 -- paused; ADR 0008 open items 1-4 await user
+Phase: 12
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-05
 
-Progress: [█████████░] 93%
+Progress: [██████░░░░] 62%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 165
+- Total plans completed: 181
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -54,6 +54,7 @@ Progress: [█████████░] 93%
 | 08 | 20 | - | - |
 | 09 | 14 | - | - |
 | 10 | 12 | - | - |
+| 11 | 16 | - | - |
 
 **Recent Trend:**
 
