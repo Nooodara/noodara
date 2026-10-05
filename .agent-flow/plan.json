@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-05T07:19:31.506Z",
+  "updatedAt": "2026-10-05T07:19:42.551Z",
   "cursor": {
     "phase": "12",
     "task": "12-13"
@@ -1350,13 +1350,14 @@
             "apps/control-plane/src/routes/http-errors.ts",
             "apps/control-plane/src/routes/http-errors.test.ts",
             "apps/control-plane/src/routes/api-scope.ts",
-            "apps/site/content/docs/reference/error-codes.mdx"
+            "apps/site/content/docs/reference/error-codes.mdx",
+            "apps/control-plane/src/app.ts"
           ],
           "wave": 9,
           "dependsOn": [
             "12-12"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -1422,7 +1423,8 @@
             "apps/control-plane/src/routes/http-errors.ts",
             "apps/control-plane/src/routes/http-errors.test.ts",
             "apps/control-plane/src/routes/api-scope.ts",
-            "apps/site/content/docs/reference/error-codes.mdx"
+            "apps/site/content/docs/reference/error-codes.mdx",
+            "apps/control-plane/src/app.ts"
           ],
           "wave": 10,
           "dependsOn": [
@@ -1549,7 +1551,8 @@
             "apps/control-plane/src/routes/http-errors.ts",
             "apps/control-plane/src/routes/http-errors.test.ts",
             "apps/control-plane/src/routes/api-scope.ts",
-            "apps/site/content/docs/reference/error-codes.mdx"
+            "apps/site/content/docs/reference/error-codes.mdx",
+            "apps/control-plane/src/app.ts"
           ],
           "wave": 11,
           "dependsOn": [
