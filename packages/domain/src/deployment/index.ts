@@ -4,3 +4,7 @@ export * from './service-status.js';
 export * from './repository-features.js';
 export * from './container-state.js';
 export * from './docker-ps.js';
+export * from './resource-ledger.js';
+export * from './port-preflight.js';
+export * from './reconcile-diff.js';
+export * from './post-start-polls.js';
