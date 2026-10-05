@@ -94,6 +94,11 @@ describe('SERVICE_ERROR_STATUS / mapServiceCodeToStatus (D-16)', () => {
     ['SERVICE_OPERATION_IN_PROGRESS', 409],
     ['SERVER_UNREACHABLE', 502],
     ['SERVICE_CLEANUP_FAILED', 502],
+    ['CONTAINER_NOT_FOUND', 409],
+    ['RUNTIME_LOG_TAIL_INVALID', 422],
+    ['RUNTIME_LOG_FOLLOW_LIMIT_REACHED', 429],
+    ['RUNTIME_LOGS_FAILED', 502],
+    ['RUNTIME_LOGS_TIMEOUT', 504],
   ] satisfies [ServiceErrorCode, number][])('maps %s to %d', (code, status) => {
     expect(mapServiceCodeToStatus(code)).toBe(status);
   });

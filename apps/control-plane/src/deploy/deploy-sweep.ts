@@ -10,7 +10,7 @@ import { createResourceLedger, type ResourceLedger } from '@noodara/domain/deplo
 import type { Redactor } from '@noodara/domain/security';
 import {
   deployWorkspaceFor,
-  SUPERVISED_OPERATIONS,
+  DEPLOYMENT_SUPERVISED_OPERATIONS,
   validateResourceId,
   type DeployWorkspace,
 } from '@noodara/domain/validators';
@@ -73,7 +73,8 @@ async function cleanUp(deps: DeploySweepDeps, target: CleanupTarget): Promise<vo
       return;
     }
     close = connected.close;
-    for (const op of SUPERVISED_OPERATIONS) {
+    // Deployment operations only: a runtime log follow is never a deployment's leftover.
+    for (const op of DEPLOYMENT_SUPERVISED_OPERATIONS) {
       const killed = await killSupervisedOperation({
         session: connected.session,
         pidFile: target.workspace.pidFile(op),

@@ -6,10 +6,12 @@ import type { ZodTypeProvider } from '@fastify/type-provider-zod';
 import type { FastifyPluginCallback, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { SERVICE_OPERATIONS } from '../deploy/service-ops.js';
+import type { ContainerLogLine, ContainerLogs } from '../services/container-logs.js';
 import type { ServiceCredentialsResult } from '../services/service-credentials.js';
 import type { ServiceServices } from '../services/service-services.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
 import { DeploymentViewSchema } from './deployment-schemas.js';
+import { exceedsBackpressureBudget } from './events.js';
 import {
   ErrorBodySchema,
   FieldErrorBodySchema,
@@ -24,6 +26,8 @@ import {
   ListServicesResponseSchema,
   RegistryCredentialBodySchema,
   RepositoryCredentialBodySchema,
+  RuntimeLogsQuerySchema,
+  RuntimeLogsResponseSchema,
   SERVICE_ROUTE_BODY_LIMIT_BYTES,
   ServiceCredentialErrorBodySchema,
   ServiceCredentialsResponseSchema,
@@ -37,6 +41,7 @@ import {
 declare module 'fastify' {
   interface FastifyInstance {
     getServiceServices(): Promise<ServiceServices>;
+    getContainerLogs(): ContainerLogs;
   }
 }
 
@@ -274,6 +279,142 @@ const servicesRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         return;
       }
       await reply.send({ ok: true as const, serviceId: result.serviceId });
+    },
+  });
+
+  // -------------------------------------------------------------------------------------------
+  // Runtime logs (12-16): read on demand from the server, never stored. Tail is one JSON
+  // response; follow is a dedicated bounded NDJSON stream (not a global SSE type) that ends at
+  // the configured max duration or when the client leaves, killing the remote docker logs.
+  // -------------------------------------------------------------------------------------------
+
+  const LOG_ERRORS = {
+    400: BadRequestSchema,
+    401: ErrorBodySchema,
+    404: ErrorBodySchema,
+    409: ErrorBodySchema,
+    422: ErrorBodySchema,
+    429: ErrorBodySchema,
+    502: ErrorBodySchema,
+    503: ErrorBodySchema,
+    504: ErrorBodySchema,
+  };
+  const logsUrl = '/api/projects/:projectId/services/:serviceId/logs';
+
+  async function findService(reply: FastifyReply, projectId: string, serviceId: string): Promise<string | null> {
+    // Scoped to the path's project first: another project's service reads as missing (A4).
+    const service = await (await fastify.getServiceServices()).getService(projectId, serviceId);
+    if (!service) {
+      await sendFailure(reply, { code: 'NOT_FOUND', message: `Service "${serviceId}" not found` });
+      return null;
+    }
+    return service.serverId;
+  }
+
+  app.route({
+    method: 'GET',
+    url: logsUrl,
+    schema: {
+      params: ServiceParamsSchema,
+      querystring: RuntimeLogsQuerySchema,
+      response: { 200: RuntimeLogsResponseSchema, ...LOG_ERRORS },
+    },
+    handler: async (request, reply) => {
+      requireActor(request.actor);
+      const logs = fastify.getContainerLogs();
+      const tail = logs.resolveTail(request.query.tail);
+      if (!tail.ok) {
+        await sendFailure(reply, tail);
+        return;
+      }
+      const serverId = await findService(reply, request.params.projectId, request.params.serviceId);
+      if (serverId === null) return;
+      const result = await logs.tail({ serverId, serviceId: request.params.serviceId, tail: tail.value });
+      if (!result.ok) {
+        await sendFailure(reply, result);
+        return;
+      }
+      await reply.send({ lines: result.lines, truncated: result.truncated });
+    },
+  });
+
+  app.route({
+    method: 'GET',
+    url: `${logsUrl}/follow`,
+    schema: {
+      params: ServiceParamsSchema,
+      querystring: RuntimeLogsQuerySchema,
+      response: LOG_ERRORS,
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const logs = fastify.getContainerLogs();
+      const tail = logs.resolveTail(request.query.tail);
+      if (!tail.ok) {
+        await sendFailure(reply, tail);
+        return;
+      }
+      const serverId = await findService(reply, request.params.projectId, request.params.serviceId);
+      if (serverId === null) return;
+
+      // The response's close fires when the client leaves (or after our own end): either way the
+      // stream must stop. Registered before opening, so a client gone mid-open still aborts.
+      const clientGone = new AbortController();
+      const abort = (): void => {
+        clientGone.abort();
+      };
+      reply.raw.on('close', abort);
+      if (request.raw.destroyed || request.raw.socket.destroyed) abort();
+
+      const opened = await logs.openFollow({
+        serverId,
+        serviceId: request.params.serviceId,
+        // The per-user cap key; a system actor never reaches a session-guarded route.
+        userId: actor.type === 'user' ? actor.id : 'system',
+        tail: tail.value,
+        signal: clientGone.signal,
+      });
+      if (!opened.ok) {
+        reply.raw.off('close', abort);
+        if (clientGone.signal.aborted) return;
+        await sendFailure(reply, opened);
+        return;
+      }
+
+      reply.hijack();
+      const raw = reply.raw;
+      // A peer that stops reading must not grow our buffer: drop it like a disconnect.
+      const evict = (): void => {
+        abort();
+        if (!raw.destroyed) raw.destroy();
+      };
+      raw.on('error', evict);
+      const writeFrame = (frame: Record<string, unknown>): void => {
+        if (raw.writableEnded || raw.destroyed) return;
+        if (exceedsBackpressureBudget(raw.writableLength)) {
+          evict();
+          return;
+        }
+        try {
+          raw.write(`${JSON.stringify(frame)}\n`);
+        } catch {
+          evict();
+        }
+      };
+      if (!clientGone.signal.aborted) {
+        raw.writeHead(200, {
+          'Content-Type': 'application/x-ndjson; charset=utf-8',
+          'Cache-Control': 'no-cache',
+          'X-Accel-Buffering': 'no',
+        });
+      }
+
+      const end = await opened.stream.pump((line: ContainerLogLine) => {
+        writeFrame({ type: 'line', ...line });
+      });
+      writeFrame({ type: 'end', reason: end.reason });
+      raw.off('close', abort);
+      if (!raw.writableEnded && !raw.destroyed) raw.end();
     },
   });
 

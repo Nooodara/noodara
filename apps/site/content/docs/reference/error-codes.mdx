@@ -56,8 +56,13 @@ nothing else — no internal detail is ever attached to it.
 | `SERVICE_OPERATION_INVALID` | 422 | The service operation request carried a field it does not accept, or the delete confirmation was missing. |
 | `SERVICE_NOT_DEPLOYED` | 409 | The service has never been deployed, so there is no container to stop, restart or remove. |
 | `SERVICE_OPERATION_IN_PROGRESS` | 409 | Another stop, restart or remove for this service is already queued; wait for it to finish. |
-| `SERVER_UNREACHABLE` | 502 | The panel could not reach the server over SSH to clean up the service; nothing was deleted. Try again. |
+| `SERVER_UNREACHABLE` | 502 | The panel could not reach the server over SSH (to clean up the service or read its logs); a delete removed nothing. Try again. |
 | `SERVICE_CLEANUP_FAILED` | 502 | Removing the service's container, network, images or files on the server failed; nothing was deleted. Try again. |
+| `CONTAINER_NOT_FOUND` | 409 | The service has no container on the server, so there are no runtime logs. Deploy the service first. |
+| `RUNTIME_LOG_TAIL_INVALID` | 422 | `tail` must be a whole number from 1 to 10000. |
+| `RUNTIME_LOG_FOLLOW_LIMIT_REACHED` | 429 | Too many live log streams are open for this server or account. Close one and try again. |
+| `RUNTIME_LOGS_FAILED` | 502 | Docker on the server could not read the service logs. Try again or redeploy. |
+| `RUNTIME_LOGS_TIMEOUT` | 504 | Reading the service logs timed out. Try again with a smaller `tail`. |
 
 A request the server cannot read at all gets one of three fixed codes with the same body shape:
 `MALFORMED_REQUEST` (400, the body is not valid JSON), `PAYLOAD_TOO_LARGE` (413) or

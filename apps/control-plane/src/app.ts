@@ -43,6 +43,12 @@ import authRoutes from './routes/auth.js';
 import healthRoutes from './routes/health.js';
 import { toClientRequestError, toErrorBody, toValidationErrorBody } from './routes/http-errors.js';
 import setupRoutes from './routes/setup.js';
+import {
+  createContainerLogs,
+  DEFAULT_CONTAINER_LOGS_LIMITS,
+  type ContainerLogs,
+  type ContainerLogsDeps,
+} from './services/container-logs.js';
 import { resolveServerServicesDeps, type ServiceLogger } from './services/server-service-deps.js';
 import { createProjectServices, type ProjectServices } from './services/project-services.js';
 import { createServerServices, type ServerServices } from './services/server-services.js';
@@ -66,6 +72,8 @@ export interface BuildAppDeps {
   serviceOperationQueue?: ServiceOperationQueue;
   /** 12-14: remote cleanup on service/project delete; defaults to SSH via the deploy connect. */
   serviceRemoteCleanup?: ServiceRemoteCleanup;
+  /** 12-16: runtime container logs (tail and follow); defaults to SSH via the deploy connect. */
+  containerLogs?: ContainerLogs;
   /** 12-13: `POST /api/deployments/:id/cancel`; built lazily from `getDb()`, the deploy queue and
    *  its Redis connection when not injected. */
   cancelDeployment?: CancelDeployment;
@@ -195,6 +203,42 @@ function createRemoteCleanupResolver(deps: BuildAppDeps): ServiceRemoteCleanup {
       return { ok: false, code: 'SERVER_UNREACHABLE', message: SERVICE_OPS_MESSAGES.SERVER_UNREACHABLE };
     }
   };
+}
+
+/** 12-16: the default runtime-log reader. The deploy connect is resolved on first use, so
+ *  building the app opens nothing; a setup failure reads as an unreachable server. */
+function createContainerLogsResolver(deps: BuildAppDeps, logger: FastifyBaseLogger): ContainerLogs {
+  if (deps.containerLogs !== undefined) return deps.containerLogs;
+  let cached: Promise<ContainerLogsDeps['connect']> | undefined;
+  const resolveConnect = (): Promise<ContainerLogsDeps['connect']> =>
+    (cached ??= getDb()
+      .then((db) =>
+        createDeployConnect({
+          loadServer: loadDeployServerFromDb(db),
+          ssh: createSsh2Adapter(),
+          timeouts: {
+            connectMs: env.NOODARA_SSH_CONNECT_TIMEOUT_MS,
+            commandMs: env.NOODARA_SSH_COMMAND_TIMEOUT_MS,
+            discoveryMs: env.NOODARA_SSH_DISCOVERY_TIMEOUT_MS,
+          },
+          masterKeys: masterKeysFromEnvironment(),
+        }),
+      )
+      .catch((error: unknown) => {
+        cached = undefined;
+        throw error;
+      }));
+  return createContainerLogs({
+    // A rejection here is mapped to SERVER_UNREACHABLE by createContainerLogs.
+    connect: async (serverId, redactor, signal) => (await resolveConnect())(serverId, redactor, signal),
+    createRedactor,
+    limits: {
+      ...DEFAULT_CONTAINER_LOGS_LIMITS,
+      defaultTail: env.NOODARA_RUNTIME_LOG_TAIL,
+      followMaxMs: env.NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS,
+    },
+    logger,
+  });
 }
 
 /** 12-10: the deploy queue producer, owned and closed by this instance unless injected.
@@ -472,6 +516,8 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   app.decorate('getProjectServices', createProjectServicesResolver(deps, eventPublisher, remoteCleanup));
   app.decorate('getServiceServices', createServiceServicesResolver(deps, eventPublisher, { getOperationQueue, remoteCleanup }));
   app.decorate('getDeploymentServices', createDeploymentServicesResolver(deps, eventPublisher, getDeployQueue, app.log));
+  const containerLogs = createContainerLogsResolver(deps, app.log);
+  app.decorate('getContainerLogs', () => containerLogs);
   app.decorate(
     'getCancelDeployment',
     createCancelDeploymentResolver(deps, eventPublisher, { getDeployQueue, getDeployRedis }, app.log),
@@ -518,7 +564,8 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   // an SSE stream never ends on its own, so ending it only in `onClose` would deadlock
   // `app.close()` forever waiting for a drain step that can never complete.
   app.addHook('preClose', async () => {
-    await broadcaster.closeAll();
+    // 12-16: open log follows end first (remote docker logs killed), so the drain can complete.
+    await Promise.all([broadcaster.closeAll(), containerLogs.closeAll()]);
   });
 
   app.addHook('onClose', async () => {

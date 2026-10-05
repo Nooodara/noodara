@@ -108,6 +108,15 @@ describe('sweepCrashedDeployments (A4)', () => {
     expect(h.close).toHaveBeenCalledOnce();
   });
 
+  it('never kills a runtime log follow (12-16): only deployment operations are swept', async () => {
+    const h = harness([row()]);
+
+    await (await sweepCrashedDeployments(h.deps)).cleanup;
+
+    const all = h.remote.commands.flatMap((command) => [...command.argv]).join(' ');
+    expect(all).not.toContain(workspaceOf(DEPLOYMENT_ID).pidFile('logs'));
+  });
+
   it('skips a row that turned terminal meanwhile: no cleanup of resources it does not own', async () => {
     const h = harness([row()], {
       store: { inFlight: () => Promise.resolve([row()]), finish: () => Promise.resolve(null) },

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEPLOY_SECRET_NAMES,
+  DEPLOYMENT_SUPERVISED_OPERATIONS,
   SUPERVISED_OPERATIONS,
   type BuildContextPath,
   type DeployRepoPath,
@@ -266,6 +267,7 @@ describe('deployWorkspaceFor', () => {
       'registry_password',
     ]);
     expect(SUPERVISED_OPERATIONS).toEqual(['clone', 'build', 'pull', 'logs']);
+    expect(DEPLOYMENT_SUPERVISED_OPERATIONS).toEqual(['clone', 'build', 'pull']);
     for (const name of DEPLOY_SECRET_NAMES) {
       expect(ws.secretFile(name)).toBe(`${ws.secretsDir}/${name}`);
     }

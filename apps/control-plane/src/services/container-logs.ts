@@ -128,6 +128,8 @@ export interface FollowRequest extends TailRequest {
 }
 
 export interface ContainerLogs {
+  /** The `tail` query value against this instance's limits. */
+  resolveTail(raw: string | undefined): ReturnType<typeof resolveTail>;
   tail(request: TailRequest): Promise<TailResult>;
   openFollow(request: FollowRequest): Promise<OpenFollowResult>;
   activeFollows(): number;
@@ -182,7 +184,10 @@ function toLines(chunk: StreamChunk): ContainerLogLine[] {
   });
 }
 
-type Connected = { readonly session: SshDeploySession; readonly close: () => Promise<void> };
+interface Connected {
+  readonly session: SshDeploySession;
+  readonly close: () => Promise<void>;
+}
 
 async function safeClose(connected: Connected | null): Promise<void> {
   if (connected === null) return;
@@ -391,7 +396,15 @@ export function createContainerLogs(deps: ContainerLogsDeps): ContainerLogs {
     const done = new Promise<void>((resolve) => {
       resolveDone = resolve;
     });
-    const entry = { stop: () => stopWith('shutdown'), done };
+    let pumped: Promise<FollowEnd> | null = null;
+    // An un-pumped stream still holds a slot and a run dir: shutdown pumps it to its teardown.
+    const entry = {
+      stop: () => {
+        stopWith('shutdown');
+        pumped ??= pump(() => undefined);
+      },
+      done,
+    };
     active.add(entry);
 
     async function kill(session: SshDeploySession): Promise<boolean> {
@@ -498,13 +511,13 @@ export function createContainerLogs(deps: ContainerLogsDeps): ContainerLogs {
       return { reason, remoteStopped };
     }
 
-    let pumped: Promise<FollowEnd> | null = null;
     return {
       pump: (onLine) => (pumped ??= pump(onLine)),
     };
   }
 
   return {
+    resolveTail: (raw) => resolveTail(raw, limits),
     tail,
     openFollow,
     activeFollows: () => slots,

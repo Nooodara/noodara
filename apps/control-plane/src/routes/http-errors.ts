@@ -53,7 +53,12 @@ export type ServiceErrorCode =
   | 'SERVICE_NOT_DEPLOYED'
   | 'SERVICE_OPERATION_IN_PROGRESS'
   | 'SERVER_UNREACHABLE'
-  | 'SERVICE_CLEANUP_FAILED';
+  | 'SERVICE_CLEANUP_FAILED'
+  | 'CONTAINER_NOT_FOUND'
+  | 'RUNTIME_LOG_TAIL_INVALID'
+  | 'RUNTIME_LOG_FOLLOW_LIMIT_REACHED'
+  | 'RUNTIME_LOGS_FAILED'
+  | 'RUNTIME_LOGS_TIMEOUT';
 
 export const SERVICE_ERROR_STATUS = Object.freeze({
   VALIDATION_FAILED: 400,
@@ -108,6 +113,13 @@ export const SERVICE_ERROR_STATUS = Object.freeze({
   SERVICE_OPERATION_IN_PROGRESS: 409,
   SERVER_UNREACHABLE: 502,
   SERVICE_CLEANUP_FAILED: 502,
+  // 12-16: runtime container logs. A missing container is a state conflict (deploy it first);
+  // docker failing or hanging on the server is a bad gateway / gateway timeout.
+  CONTAINER_NOT_FOUND: 409,
+  RUNTIME_LOG_TAIL_INVALID: 422,
+  RUNTIME_LOG_FOLLOW_LIMIT_REACHED: 429,
+  RUNTIME_LOGS_FAILED: 502,
+  RUNTIME_LOGS_TIMEOUT: 504,
 } satisfies Record<ServiceErrorCode, number>);
 
 const UNKNOWN_CODE_STATUS = 500;

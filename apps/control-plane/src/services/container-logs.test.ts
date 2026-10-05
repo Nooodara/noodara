@@ -199,7 +199,8 @@ describe('resolveTail', () => {
       expect(result.ok).toBe(false);
       if (result.ok) return;
       expect(result.code).toBe('RUNTIME_LOG_TAIL_INVALID');
-      expect(result.message).not.toContain(raw.length > 0 ? raw : '\u0000');
+      // Fixed copy: the raw value is never echoed back.
+      expect(result.message).toBe(CONTAINER_LOGS_MESSAGES.RUNTIME_LOG_TAIL_INVALID);
     },
   );
 });
@@ -281,7 +282,7 @@ describe('tail', () => {
     const deps = depsFor(new FakeSession());
     const result = await createContainerLogs(deps).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 10_001 });
 
-    expect(result.ok === false && result.code).toBe('RUNTIME_LOG_TAIL_INVALID');
+    expect(result.ok ? null : result.code).toBe('RUNTIME_LOG_TAIL_INVALID');
     expect(deps.connects).toEqual([]);
   });
 });
@@ -472,7 +473,7 @@ describe('follow caps (H1)', () => {
     expect((await logs.openFollow({ ...request, serverId: SERVER_ID })).ok).toBe(true);
     const second = await logs.openFollow({ ...request, serverId: OTHER_SERVER_ID });
 
-    expect(second.ok === false && second.code).toBe('RUNTIME_LOG_FOLLOW_LIMIT_REACHED');
+    expect(second.ok ? null : second.code).toBe('RUNTIME_LOG_FOLLOW_LIMIT_REACHED');
     await logs.closeAll();
   });
 
@@ -509,6 +510,25 @@ describe('follow caps (H1)', () => {
     expect(await ended).toEqual({ reason: 'shutdown', remoteStopped: true });
     expect(session.names()).toContain('process.kill_group');
     expect(logs.activeFollows()).toBe(0);
+  });
+
+  it('closeAll never hangs on an opened but un-pumped stream; it frees the slot and the run dir', async () => {
+    const session = new FakeSession({ 'process.supervise': { hold: true } });
+    const logs = createContainerLogs(depsFor(session));
+    const opened = await logs.openFollow({
+      serverId: SERVER_ID,
+      serviceId: SERVICE_ID,
+      userId: USER_ID,
+      tail: 5,
+      signal: new AbortController().signal,
+    });
+    if (!opened.ok) throw new Error('expected open');
+
+    await logs.closeAll();
+
+    expect(logs.activeFollows()).toBe(0);
+    expect(session.names()).not.toContain('process.supervise');
+    expect(session.names()).toContain('fs.remove_deploy_dir');
   });
 
   it('a throwing onLine never crashes the pump; the stream ends and the group is killed', async () => {

@@ -85,3 +85,20 @@ export const ServiceCredentialErrorBodySchema = z.object({
   message: z.string(),
   reason: z.string(),
 });
+
+// 12-16: runtime container logs. `tail` stays a raw short string here so a bad value becomes the
+// named 422 RUNTIME_LOG_TAIL_INVALID (resolveTail), not the generic 400; the cap bounds parsing.
+export const RuntimeLogsQuerySchema = z.object({
+  tail: z.string().max(16).optional(),
+});
+
+const RuntimeLogLineSchema = z.object({
+  stream: z.enum(['stdout', 'stderr']),
+  timestamp: z.string().nullable(),
+  text: z.string(),
+});
+
+export const RuntimeLogsResponseSchema = z.object({
+  lines: z.array(RuntimeLogLineSchema),
+  truncated: z.boolean(),
+});

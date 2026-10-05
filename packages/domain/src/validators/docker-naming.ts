@@ -34,6 +34,8 @@ export type DeploySecretName = (typeof DEPLOY_SECRET_NAMES)[number];
 
 /** `logs` is a runtime `docker logs --follow` stream (12-16), killed by group like the others. */
 export const SUPERVISED_OPERATIONS = ['clone', 'build', 'pull', 'logs'] as const;
+/** The operations a deployment runs; the crash sweep kills only these, never a log follow. */
+export const DEPLOYMENT_SUPERVISED_OPERATIONS = ['clone', 'build', 'pull'] as const satisfies readonly SupervisedOperation[];
 export type SupervisedOperation = (typeof SUPERVISED_OPERATIONS)[number];
 
 export interface DeployWorkspace {
