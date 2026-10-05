@@ -93,7 +93,9 @@ export function createDeployJobDeps(deps: DeployRuntimeDeps): DeployJobDeps {
 }
 
 /** What a job on the shared `deployments` queue resolves to. */
-export type DeployQueueJobResult = { outcome: DeployJobOutcome | ServiceOperationJobOutcome };
+export interface DeployQueueJobResult {
+  outcome: DeployJobOutcome | ServiceOperationJobOutcome;
+}
 
 export interface ServiceOperationRuntimeDeps {
   readonly loadTarget: ServiceOperationJobDeps['loadTarget'];

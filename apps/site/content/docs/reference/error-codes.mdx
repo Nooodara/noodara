@@ -62,3 +62,8 @@ nothing else — no internal detail is ever attached to it.
 A request the server cannot read at all gets one of three fixed codes with the same body shape:
 `MALFORMED_REQUEST` (400, the body is not valid JSON), `PAYLOAD_TOO_LARGE` (413) or
 `UNSUPPORTED_MEDIA_TYPE` (415, send `application/json`).
+
+A stop, restart or remove runs in the background after its `202`, so its failures never come back as
+an HTTP error. They appear only in the service's activity: `SERVER_UNREACHABLE`,
+`SERVER_DOCKER_UNAVAILABLE`, `CONTAINER_NOT_FOUND` (the container is gone; redeploy),
+`SERVICE_OPERATION_FAILED` (Docker rejected the operation) or `SERVICE_OPERATION_TIMEOUT`.
