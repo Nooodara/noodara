@@ -20,9 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { eq } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import parseSetCookie from 'set-cookie-parser';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createRedactor, revealSecret, secretValue } from '@noodara/domain/security';
-import { createSsh2Adapter, formatFingerprint } from '@noodara/ssh';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   activityEvents,
   credentials,
@@ -43,6 +41,7 @@ import { startRedis, type RedisFixture } from '../helpers/redis.js';
 
 type ApiApp = ReturnType<(typeof import('../../../apps/control-plane/src/app.js'))['buildApp']>;
 type ServiceCredentialsModule = typeof import('../../../apps/control-plane/src/services/service-credentials.js');
+type DomainSecurityModule = typeof import('@noodara/domain/security');
 type Json = Record<string, unknown>;
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -165,6 +164,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-17 / A1-A2: deploy-engine leak 
   let app: ApiApp | undefined;
   let sse: SseClient | undefined;
   let serviceCredentials: ServiceCredentialsModule | undefined;
+  let domainSecurity: DomainSecurityModule | undefined;
   let tempRoot: string | undefined;
   let worker: { close(): Promise<void> } | undefined;
   let cookie = '';
@@ -297,6 +297,15 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-17 / A1-A2: deploy-engine leak 
   };
 
   beforeAll(async () => {
+    // Each Ubuntu block owns its Postgres/Redis, but app modules cache their env-bound clients
+    // (env.js, db/client.js getDb()). Without a fresh module graph the second block's API would
+    // reuse the first block's stopped Postgres and Redis (opaque 500 on /api/setup). Domain/ssh
+    // resolve to source, so they are re-evaluated too: take them from the same fresh graph
+    // (SecretValue's #raw is per class).
+    vi.resetModules();
+    domainSecurity = await import('@noodara/domain/security');
+    const { createRedactor, revealSecret, secretValue } = domainSecurity;
+    const { createSsh2Adapter, formatFingerprint } = await import('@noodara/ssh');
     tempRoot = mkdtempSync(path.join(tmpdir(), 'noodara-canary-deploy-'));
     const httpsRepo = writeCanaryRepo(tempRoot, REPOS.https, BUILD_CANARIES.https);
     const sshRepo = writeCanaryRepo(tempRoot, REPOS.ssh, BUILD_CANARIES.ssh);
@@ -524,10 +533,10 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-17 / A1-A2: deploy-engine leak 
         .innerJoin(credentials, eq(credentials.id, services.repositoryCredentialId))
         .where(eq(services.id, sshService));
       if (!sshRow) throw new Error('generated deploy key row missing');
-      if (serviceCredentials === undefined) throw new Error('modules not loaded');
+      if (serviceCredentials === undefined || domainSecurity === undefined) throw new Error('modules not loaded');
       const decoded = serviceCredentials.decodeServiceCredential(sshRow, { current: masterKey });
       if (decoded.kind !== 'deploy_key') throw new Error(`expected a deploy key, got ${decoded.kind}`);
-      credentialCanaries.push(...privateKeyCanaries('deploy key', revealSecret(decoded.privateKey)));
+      credentialCanaries.push(...privateKeyCanaries('deploy key', domainSecurity.revealSecret(decoded.privateKey)));
 
       // Registry password: an image source pulled from the htpasswd registry.
       const nginx = s().baseImages.find((ref) => ref.startsWith('nginx:'));
