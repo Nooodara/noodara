@@ -48,7 +48,12 @@ export type ServiceErrorCode =
   | 'DEPLOYMENT_IN_PROGRESS'
   | 'PROJECT_ARCHIVED'
   | 'DEPLOYMENT_INPUT_INVALID'
-  | 'DEPLOYMENT_NOT_CANCELLABLE';
+  | 'DEPLOYMENT_NOT_CANCELLABLE'
+  | 'SERVICE_OPERATION_INVALID'
+  | 'SERVICE_NOT_DEPLOYED'
+  | 'SERVICE_OPERATION_IN_PROGRESS'
+  | 'SERVER_UNREACHABLE'
+  | 'SERVICE_CLEANUP_FAILED';
 
 export const SERVICE_ERROR_STATUS = Object.freeze({
   VALIDATION_FAILED: 400,
@@ -96,6 +101,13 @@ export const SERVICE_ERROR_STATUS = Object.freeze({
   DEPLOYMENT_INPUT_INVALID: 422,
   // 12-13: cancelling a deployment that already ended is a state conflict.
   DEPLOYMENT_NOT_CANCELLABLE: 409,
+  // 12-14: service operations (stop/restart/remove/delete). Remote failures during a delete are a
+  // bad gateway: the panel is fine, the server it talks to is not.
+  SERVICE_OPERATION_INVALID: 422,
+  SERVICE_NOT_DEPLOYED: 409,
+  SERVICE_OPERATION_IN_PROGRESS: 409,
+  SERVER_UNREACHABLE: 502,
+  SERVICE_CLEANUP_FAILED: 502,
 } satisfies Record<ServiceErrorCode, number>);
 
 const UNKNOWN_CODE_STATUS = 500;
