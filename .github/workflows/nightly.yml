@@ -229,3 +229,56 @@ jobs:
             exit 1
           fi
           echo "no stray noodara.test=true networks"
+
+  # 12-18 (QA-08): the deploy-engine soak on both Ubuntu versions — 20 consecutive node-api
+  # deploys and 20 service create/deploy/delete cycles per version, opt-in via NOODARA_SOAK=1 so
+  # the deploy-engine job above (and every PR) skips it. Per-iteration durations and docker system
+  # df snapshots are uploaded as an artifact so leak or slowdown regressions are visible.
+  soak:
+    name: soak
+    runs-on: ubuntu-latest
+    # Healthy: a few minutes per phase per version. The test itself fails any iteration over the
+    # 300s deploy max, so this cap only bounds a fully stuck run.
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Deploy-engine soak on Ubuntu 22.04 and 24.04 (QA-08)
+        # runner.* is only available at step level, not in jobs.<id>.env.
+        env:
+          NOODARA_SOAK_ARTIFACT_DIR: ${{ runner.temp }}/soak-artifacts
+        run: NOODARA_SOAK=1 NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/soak.test.ts
+      - name: Upload soak artifact
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: soak-report
+          path: ${{ runner.temp }}/soak-artifacts/
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Fail if any noodara.test resource survived
+        if: always()
+        run: |
+          failed=0
+          for kind in container network volume; do
+            case "$kind" in
+              container) stray=$(docker ps -aq --filter "label=noodara.test=true") ;;
+              network) stray=$(docker network ls -q --filter "label=noodara.test=true") ;;
+              volume) stray=$(docker volume ls -q --filter "label=noodara.test=true") ;;
+            esac
+            if [ -n "$stray" ]; then
+              echo "::error::stray ${kind}s labelled noodara.test=true survived the soak run"
+              echo "$stray"
+              failed=1
+            fi
+          done
+          [ "$failed" -eq 0 ] || exit 1
+          echo "no stray noodara.test=true containers, networks or volumes"
