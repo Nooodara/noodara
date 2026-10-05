@@ -32,7 +32,11 @@ export type ServiceErrorCode =
   | 'EMAIL_DOMAIN_UNRESOLVABLE'
   | 'EMAIL_DOMAIN_CHECK_UNAVAILABLE'
   | 'REAUTH_LOCKED'
-  | 'SESSION_REVOKED_PASSWORD_CHANGED';
+  | 'SESSION_REVOKED_PASSWORD_CHANGED'
+  | 'PROJECT_NAME_TAKEN'
+  | 'ENVIRONMENT_NAME_TAKEN'
+  | 'PROJECT_NOT_ARCHIVED'
+  | 'DELETE_CONFIRMATION_MISMATCH';
 
 export const SERVICE_ERROR_STATUS = Object.freeze({
   VALIDATION_FAILED: 400,
@@ -58,6 +62,12 @@ export const SERVICE_ERROR_STATUS = Object.freeze({
   EMAIL_DOMAIN_CHECK_UNAVAILABLE: 503,
   REAUTH_LOCKED: 429,
   SESSION_REVOKED_PASSWORD_CHANGED: 401,
+  // Phase 12 (12-07): projects and environments. A failed delete confirmation is 422 here, unlike
+  // the server delete's CONFIRMATION_MISMATCH (409), and later delete routes reuse this code.
+  PROJECT_NAME_TAKEN: 409,
+  ENVIRONMENT_NAME_TAKEN: 409,
+  PROJECT_NOT_ARCHIVED: 422,
+  DELETE_CONFIRMATION_MISMATCH: 422,
 } satisfies Record<ServiceErrorCode, number>);
 
 const UNKNOWN_CODE_STATUS = 500;
@@ -73,6 +83,32 @@ export function mapServiceCodeToStatus(code: string): number {
  *  could otherwise leak a `stack` or `cause` property onto the wire. */
 export function toErrorBody(code: string, message: string): { error: string; message: string } {
   return { error: code, message };
+}
+
+const CLIENT_REQUEST_ERRORS: Readonly<Record<number, { error: string; message: string }>> = Object.freeze({
+  413: { error: 'PAYLOAD_TOO_LARGE', message: 'Request body is too large' },
+  415: { error: 'UNSUPPORTED_MEDIA_TYPE', message: 'Request content type is not supported' },
+});
+const MALFORMED_REQUEST = { error: 'MALFORMED_REQUEST', message: 'Request could not be parsed' };
+
+/**
+ * A Fastify-owned request error (`FST_*` code with a 4xx status: malformed or empty JSON, an
+ * oversized body, an unsupported content type) stays a 4xx with a fixed body. Its own message is
+ * never forwarded, since a parser message can quote the submitted input. Anything else returns
+ * `null` and falls through to the opaque 500.
+ */
+export function toClientRequestError(error: {
+  readonly code?: unknown;
+  readonly statusCode?: unknown;
+  readonly message?: unknown;
+}): { status: number; body: { error: string; message: string } } | null {
+  const { code, statusCode } = error;
+  if (typeof code !== 'string' || !code.startsWith('FST_')) return null;
+  if (typeof statusCode !== 'number' || !Number.isInteger(statusCode) || statusCode < 400 || statusCode > 499) {
+    return null;
+  }
+  const known = CLIENT_REQUEST_ERRORS[statusCode] ?? MALFORMED_REQUEST;
+  return { status: statusCode, body: toErrorBody(known.error, known.message) };
 }
 
 const VALIDATION_ERROR_MESSAGE = 'Request does not match the schema';

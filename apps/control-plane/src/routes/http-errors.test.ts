@@ -6,6 +6,7 @@ import {
   FieldErrorBodySchema,
   mapServiceCodeToStatus,
   SERVICE_ERROR_STATUS,
+  toClientRequestError,
   toErrorBody,
   toValidationErrorBody,
   type ServiceErrorCode,
@@ -72,6 +73,10 @@ describe('SERVICE_ERROR_STATUS / mapServiceCodeToStatus (D-16)', () => {
     ['EMAIL_DOMAIN_CHECK_UNAVAILABLE', 503],
     ['REAUTH_LOCKED', 429],
     ['SESSION_REVOKED_PASSWORD_CHANGED', 401],
+    ['PROJECT_NAME_TAKEN', 409],
+    ['ENVIRONMENT_NAME_TAKEN', 409],
+    ['PROJECT_NOT_ARCHIVED', 422],
+    ['DELETE_CONFIRMATION_MISMATCH', 422],
   ] satisfies [ServiceErrorCode, number][])('maps %s to %d', (code, status) => {
     expect(mapServiceCodeToStatus(code)).toBe(status);
   });
@@ -83,6 +88,32 @@ describe('SERVICE_ERROR_STATUS / mapServiceCodeToStatus (D-16)', () => {
 
   it('freezes the table so a later mutation is a no-op', () => {
     expect(Object.isFrozen(SERVICE_ERROR_STATUS)).toBe(true);
+  });
+});
+
+describe('toClientRequestError (Fastify-owned 4xx kept as 4xx)', () => {
+  it.each([
+    ['FST_ERR_CTP_INVALID_JSON_BODY', 400, 'MALFORMED_REQUEST'],
+    ['FST_ERR_CTP_EMPTY_JSON_BODY', 400, 'MALFORMED_REQUEST'],
+    ['FST_ERR_CTP_BODY_TOO_LARGE', 413, 'PAYLOAD_TOO_LARGE'],
+    ['FST_ERR_CTP_INVALID_MEDIA_TYPE', 415, 'UNSUPPORTED_MEDIA_TYPE'],
+  ])('maps %s to %d %s with a fixed message', (code, statusCode, error) => {
+    const result = toClientRequestError({ code, statusCode, message: 'Unexpected token } at "CANARY"' });
+    expect(result?.status).toBe(statusCode);
+    expect(result?.body.error).toBe(error);
+    expect(Object.keys(result?.body ?? {})).toStrictEqual(['error', 'message']);
+    expect(typeof result?.body.message).toBe('string');
+    expect(JSON.stringify(result)).not.toContain('CANARY');
+  });
+
+  it('returns null for an error that is not Fastify-owned, even with a 4xx statusCode', () => {
+    expect(toClientRequestError({ code: 'SOME_LIB', statusCode: 404, message: 'x' })).toBeNull();
+    expect(toClientRequestError({ statusCode: 400, message: 'x' })).toBeNull();
+  });
+
+  it('returns null for a Fastify error outside the 4xx range', () => {
+    expect(toClientRequestError({ code: 'FST_ERR_SOMETHING', statusCode: 500, message: 'x' })).toBeNull();
+    expect(toClientRequestError({ code: 'FST_ERR_SOMETHING', message: 'x' })).toBeNull();
   });
 });
 

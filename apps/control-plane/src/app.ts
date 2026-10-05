@@ -10,6 +10,7 @@ import type { Redis } from 'ioredis';
 import { appRedactor } from './activity/redaction.js';
 import { createDnsChecker, type DnsChecker } from './auth/dns-checker.js';
 import { decodeMasterKey, logMasterKeyWarning } from './boot/master-key.js';
+import { getDb } from './db/client.js';
 import { env } from './env.js';
 import { createRedisServerEventPublisher } from './events/redis-server-event-publisher.js';
 import type { ServerEventPublisher } from './events/server-event-publisher.js';
@@ -25,14 +26,17 @@ import {
 import apiScope from './routes/api-scope.js';
 import authRoutes from './routes/auth.js';
 import healthRoutes from './routes/health.js';
-import { toErrorBody, toValidationErrorBody } from './routes/http-errors.js';
+import { toClientRequestError, toErrorBody, toValidationErrorBody } from './routes/http-errors.js';
 import setupRoutes from './routes/setup.js';
 import { resolveServerServicesDeps, type ServiceLogger } from './services/server-service-deps.js';
+import { createProjectServices, type ProjectServices } from './services/project-services.js';
 import { createServerServices, type ServerServices } from './services/server-services.js';
 
 export interface BuildAppDeps {
   logger?: FastifyInstance['log'];
   serverServices?: ServerServices;
+  /** 12-07: `/api/projects` services; built lazily from `getDb()` when not injected. */
+  projectServices?: ProjectServices;
   queue?: ConnectServerQueue;
   broadcaster?: SseBroadcaster;
   eventPublisher?: ServerEventPublisher;
@@ -70,6 +74,24 @@ function createServerServicesResolver(
     return (cached ??= resolveServerServicesDeps({ events: eventPublisher, logger }).then(
       createServerServices,
     ));
+  };
+}
+
+/** Same lazy, per-instance memoised shape as `createServerServicesResolver`, for `/api/projects`.
+ *  A failed first resolution is not cached, so a later request retries the database. */
+function createProjectServicesResolver(deps: BuildAppDeps): () => Promise<ProjectServices> {
+  let cached: Promise<ProjectServices> | undefined;
+  return () => {
+    if (deps.projectServices !== undefined) {
+      return Promise.resolve(deps.projectServices);
+    }
+    cached ??= getDb()
+      .then((db) => createProjectServices({ db, now: () => new Date() }))
+      .catch((error: unknown) => {
+        cached = undefined;
+        throw error;
+      });
+    return cached;
   };
 }
 
@@ -214,6 +236,15 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
       reply.code(500).send(toErrorBody('INTERNAL_ERROR', 'Internal error'));
       return;
     }
+    // 12-07: a Fastify-owned request error (malformed JSON, oversized body, unsupported content
+    // type) is the caller's fault and keeps its 4xx, with a fixed body. Only the code and status
+    // are logged: the parser message can quote the submitted body.
+    const clientError = toClientRequestError(error);
+    if (clientError !== null) {
+      request.log.info({ code: error.code, statusCode: clientError.status }, 'request rejected by parser');
+      reply.code(clientError.status).send(clientError.body);
+      return;
+    }
     // T-4-04: the raw `error.message` never reaches the client and is only ever logged through
     // `appRedactor.redact`, never as the unredacted original — this is what makes the D-22 canary
     // (and `security:scan-leaks`) pass for every route, not just the ones that remember to do it.
@@ -235,6 +266,9 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   // Plan 04-08: `routes/servers.ts` calls `await fastify.getServerServices()` once per request —
   // never at module load, which would open a Postgres pool merely by importing the route file.
   app.decorate('getServerServices', createServerServicesResolver(deps, eventPublisher, app.log));
+
+  // 12-07: `routes/projects.ts` resolves its services per request, the same deferred way.
+  app.decorate('getProjectServices', createProjectServicesResolver(deps));
 
   // Plan 04-08 (Task 3): the connect/discover routes' queue producer. A queue has no open
   // streaming response, so `onClose` (not `preClose`, which Plan 04-09's SSE streams need) is the

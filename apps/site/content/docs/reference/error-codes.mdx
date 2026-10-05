@@ -37,3 +37,11 @@ nothing else — no internal detail is ever attached to it.
 | `EMAIL_DOMAIN_CHECK_UNAVAILABLE` | 503 | The email domain check could not run; try again shortly. |
 | `REAUTH_LOCKED` | 429 | Too many recent re-authentication attempts; wait before trying again. |
 | `SESSION_REVOKED_PASSWORD_CHANGED` | 401 | The session was signed out because the account's password changed. |
+| `PROJECT_NAME_TAKEN` | 409 | Another project already uses that name (names are compared case-insensitively). |
+| `ENVIRONMENT_NAME_TAKEN` | 409 | The project already has an environment with that name. |
+| `PROJECT_NOT_ARCHIVED` | 422 | The project must be archived before it can be deleted. |
+| `DELETE_CONFIRMATION_MISMATCH` | 422 | The typed name did not exactly match the name of the resource being deleted. |
+
+A request the server cannot read at all gets one of three fixed codes with the same body shape:
+`MALFORMED_REQUEST` (400, the body is not valid JSON), `PAYLOAD_TOO_LARGE` (413) or
+`UNSUPPORTED_MEDIA_TYPE` (415, send `application/json`).

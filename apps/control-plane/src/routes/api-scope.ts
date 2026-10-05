@@ -25,6 +25,7 @@ import accountRoutes from './account.js';
 import activityRoutes from './activity.js';
 import configRoutes from './config.js';
 import createEventsRoutes from './events.js';
+import projectsRoutes from './projects.js';
 import serversRoutes from './servers.js';
 import sessionsRoutes from './sessions.js';
 
@@ -61,6 +62,7 @@ const apiScope: FastifyPluginCallback<ApiScopeOptions> = (fastify, opts, done) =
   requireSession(fastify, {}, () => {
     fastify.register(sessionsRoutes);
     fastify.register(serversRoutes);
+    fastify.register(projectsRoutes);
     fastify.register(
       createEventsRoutes({
         broadcaster: opts.broadcaster,
