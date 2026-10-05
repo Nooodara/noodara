@@ -14,9 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { eq } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import parseSetCookie from 'set-cookie-parser';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createRedactor, revealSecret, secretValue } from '@noodara/domain/security';
-import { createSsh2Adapter, formatFingerprint } from '@noodara/ssh';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   credentials,
   deploymentLogChunks,
@@ -336,6 +334,13 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-12 / A1-A5: build logs on real 
     });
 
   beforeAll(async () => {
+    // Each Ubuntu block owns its Postgres/Redis, but app modules cache their env-bound clients
+    // (env.js, db/client.js getDb()). Without a fresh module graph the second block's API would
+    // reuse the first block's stopped Postgres and Redis. Domain/ssh resolve to source, so they
+    // are re-evaluated too: take them from the same fresh graph (SecretValue's #raw is per class).
+    vi.resetModules();
+    const { createRedactor, revealSecret, secretValue } = await import('@noodara/domain/security');
+    const { createSsh2Adapter, formatFingerprint } = await import('@noodara/ssh');
     const [stackStarted, pgStarted, redisStarted] = await Promise.all([
       (async () => {
         const base = nodeBaseOf(resolveBaseImages());
