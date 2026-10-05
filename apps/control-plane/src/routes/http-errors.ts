@@ -36,7 +36,12 @@ export type ServiceErrorCode =
   | 'PROJECT_NAME_TAKEN'
   | 'ENVIRONMENT_NAME_TAKEN'
   | 'PROJECT_NOT_ARCHIVED'
-  | 'DELETE_CONFIRMATION_MISMATCH';
+  | 'DELETE_CONFIRMATION_MISMATCH'
+  | 'SERVICE_INPUT_INVALID'
+  | 'SERVICE_NAME_TAKEN'
+  | 'PORT_IN_USE'
+  | 'SERVER_DOCKER_UNAVAILABLE'
+  | 'SERVER_BUILDKIT_UNAVAILABLE';
 
 export const SERVICE_ERROR_STATUS = Object.freeze({
   VALIDATION_FAILED: 400,
@@ -68,6 +73,13 @@ export const SERVICE_ERROR_STATUS = Object.freeze({
   ENVIRONMENT_NAME_TAKEN: 409,
   PROJECT_NOT_ARCHIVED: 422,
   DELETE_CONFIRMATION_MISMATCH: 422,
+  // 12-08: services. A domain validation failure is a named 422 carrying the validator's code as
+  // `reason`; the server and port guards are 409 (the request is valid, the state is not).
+  SERVICE_INPUT_INVALID: 422,
+  SERVICE_NAME_TAKEN: 409,
+  PORT_IN_USE: 409,
+  SERVER_DOCKER_UNAVAILABLE: 409,
+  SERVER_BUILDKIT_UNAVAILABLE: 409,
 } satisfies Record<ServiceErrorCode, number>);
 
 const UNKNOWN_CODE_STATUS = 500;

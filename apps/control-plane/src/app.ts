@@ -31,12 +31,15 @@ import setupRoutes from './routes/setup.js';
 import { resolveServerServicesDeps, type ServiceLogger } from './services/server-service-deps.js';
 import { createProjectServices, type ProjectServices } from './services/project-services.js';
 import { createServerServices, type ServerServices } from './services/server-services.js';
+import { createServiceServices, panelPortsFromEnv, type ServiceServices } from './services/service-services.js';
 
 export interface BuildAppDeps {
   logger?: FastifyInstance['log'];
   serverServices?: ServerServices;
   /** 12-07: `/api/projects` services; built lazily from `getDb()` when not injected. */
   projectServices?: ProjectServices;
+  /** 12-08: `/api/projects/:projectId/services` services; built lazily from `getDb()`. */
+  serviceServices?: ServiceServices;
   queue?: ConnectServerQueue;
   broadcaster?: SseBroadcaster;
   eventPublisher?: ServerEventPublisher;
@@ -87,6 +90,34 @@ function createProjectServicesResolver(deps: BuildAppDeps): () => Promise<Projec
     }
     cached ??= getDb()
       .then((db) => createProjectServices({ db, now: () => new Date() }))
+      .catch((error: unknown) => {
+        cached = undefined;
+        throw error;
+      });
+    return cached;
+  };
+}
+
+/** 12-08: same lazy shape for services; they publish `service.updated` through the app's
+ *  publisher and refuse the panel's own ports (API and public URL) as published ports. */
+function createServiceServicesResolver(
+  deps: BuildAppDeps,
+  eventPublisher: ServerEventPublisher,
+): () => Promise<ServiceServices> {
+  let cached: Promise<ServiceServices> | undefined;
+  return () => {
+    if (deps.serviceServices !== undefined) {
+      return Promise.resolve(deps.serviceServices);
+    }
+    cached ??= getDb()
+      .then((db) =>
+        createServiceServices({
+          db,
+          now: () => new Date(),
+          events: eventPublisher,
+          panelPorts: panelPortsFromEnv({ apiPort: env.PORT, publicUrl: env.NOODARA_PUBLIC_URL }),
+        }),
+      )
       .catch((error: unknown) => {
         cached = undefined;
         throw error;
@@ -269,6 +300,7 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
 
   // 12-07: `routes/projects.ts` resolves its services per request, the same deferred way.
   app.decorate('getProjectServices', createProjectServicesResolver(deps));
+  app.decorate('getServiceServices', createServiceServicesResolver(deps, eventPublisher));
 
   // Plan 04-08 (Task 3): the connect/discover routes' queue producer. A queue has no open
   // streaming response, so `onClose` (not `preClose`, which Plan 04-09's SSE streams need) is the

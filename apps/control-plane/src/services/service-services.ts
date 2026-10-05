@@ -1,0 +1,496 @@
+// 12-08: services (SVC-05). Input is validated by the domain before any query, so a bad field
+// fails by name (H1). Each mutation commits its row and its activity event in one transaction and
+// publishes `service.updated` after the commit (D22). The server row is locked FOR NO KEY UPDATE
+// before the port check, so two writes claiming a port on one server run one after the other and
+// the second sees the first (H2); unrelated FK inserts are not blocked by that lock mode.
+import { and, asc, desc, eq, inArray, isNotNull, ne, sql } from 'drizzle-orm';
+import { uuidv7 } from 'uuidv7';
+import {
+  classifyServiceEdit,
+  validateServiceCreateInput,
+  validateServiceEditInput,
+  type ServiceEditableFields,
+  type ServiceEditField,
+} from '@noodara/domain';
+import { preflightPublishedPort, type DeploymentStatus, type PortOwner } from '@noodara/domain/deployment';
+import type { ServiceSource } from '@noodara/domain/validators';
+import { writeActivityEvent } from '../activity/write-activity-event.js';
+import type { Database } from '../db/client.js';
+import { deployments } from '../db/schema/deployments.js';
+import { environments } from '../db/schema/environments.js';
+import { projects } from '../db/schema/projects.js';
+import { servers } from '../db/schema/servers.js';
+import { services } from '../db/schema/services.js';
+import { publishServerEvent, type ServerEventPublisher } from '../events/server-event-publisher.js';
+import type { ServiceActor } from './server-service-deps.js';
+import { toServiceView, type ServiceRow, type ServiceView } from './service-view.js';
+
+export interface PanelPort {
+  readonly port: number;
+  readonly label: string;
+}
+
+export interface ServiceServicesDeps {
+  readonly db: Database;
+  readonly now: () => Date;
+  readonly events: ServerEventPublisher;
+  /** The panel's own host ports (API and public URL); a service may never publish on them. */
+  readonly panelPorts: readonly PanelPort[];
+}
+
+type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
+
+const SERVICE_NAME_UNIQUE_CONSTRAINT = 'services_environment_name_lower_unique_idx';
+const PANEL_LABEL = 'Noodara panel';
+
+/** The API port plus the public URL's port (or its scheme default), deduplicated. */
+export function panelPortsFromEnv(input: { readonly apiPort: number; readonly publicUrl: string }): PanelPort[] {
+  const ports = [input.apiPort];
+  try {
+    const url = new URL(input.publicUrl);
+    const port = url.port !== '' ? Number(url.port) : url.protocol === 'https:' ? 443 : url.protocol === 'http:' ? 80 : null;
+    if (port !== null) ports.push(port);
+  } catch {
+    // env.ts validates NOODARA_PUBLIC_URL at boot; an unparsable value only loses the extra port.
+  }
+  return [...new Set(ports)].map((port) => ({ port, label: PANEL_LABEL }));
+}
+
+type SourceColumns = Pick<
+  ServiceRow,
+  'sourceType' | 'repositoryUrl' | 'branch' | 'buildContext' | 'dockerfilePath' | 'buildTarget' | 'imageRef'
+>;
+
+/** Every source column is written, so switching kinds clears the other kind's columns. */
+export function serviceColumnsFromSource(source: ServiceSource): SourceColumns {
+  if (source.kind === 'image') {
+    return {
+      sourceType: 'image',
+      repositoryUrl: null,
+      branch: null,
+      buildContext: null,
+      dockerfilePath: null,
+      buildTarget: null,
+      imageRef: source.imageRef,
+    };
+  }
+  return {
+    sourceType: 'git',
+    repositoryUrl: source.repositoryUrl,
+    branch: source.branch,
+    buildContext: source.buildContext,
+    dockerfilePath: source.dockerfilePath,
+    buildTarget: source.target,
+    imageRef: null,
+  };
+}
+
+/** The stored row as the domain's editable shape (the row was validated when written). */
+export function editableFieldsFromRow(
+  row: SourceColumns & Pick<ServiceRow, 'name' | 'internalPort' | 'publishedPort'>,
+): ServiceEditableFields {
+  const source =
+    row.sourceType === 'image'
+      ? { kind: 'image', imageRef: row.imageRef }
+      : {
+          kind: 'git',
+          repositoryUrl: row.repositoryUrl,
+          branch: row.branch,
+          buildContext: row.buildContext,
+          dockerfilePath: row.dockerfilePath,
+          target: row.buildTarget,
+        };
+  return {
+    name: row.name,
+    source,
+    internalPort: row.internalPort,
+    publishedPort: row.publishedPort,
+  } as ServiceEditableFields;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Failures
+// ---------------------------------------------------------------------------------------------
+
+interface Failure<Code extends string> {
+  readonly ok: false;
+  readonly code: Code;
+  readonly message: string;
+}
+
+export interface ServiceInputInvalid {
+  readonly ok: false;
+  readonly code: 'SERVICE_INPUT_INVALID';
+  readonly message: string;
+  /** The domain validator's own code, e.g. `REPOSITORY_URL_UNSUPPORTED_SCHEME`. */
+  readonly reason: string;
+}
+
+function inputInvalid(failure: { code: string; message: string }): ServiceInputInvalid {
+  return { ok: false, code: 'SERVICE_INPUT_INVALID', message: failure.message, reason: failure.code };
+}
+
+function notFound(kind: 'Project' | 'Environment' | 'Server' | 'Service', id: string): Failure<'NOT_FOUND'> {
+  return { ok: false, code: 'NOT_FOUND', message: `${kind} "${id}" not found` };
+}
+
+function nameTaken(name: string): Failure<'SERVICE_NAME_TAKEN'> {
+  return { ok: false, code: 'SERVICE_NAME_TAKEN', message: `This environment already has a service named "${name}"` };
+}
+
+function portInUse(port: number, owner: PortOwner): Failure<'PORT_IN_USE'> {
+  const by =
+    owner.kind === 'panel'
+      ? `the ${owner.label}`
+      : owner.kind === 'service'
+        ? 'another service on this server'
+        : 'a container on this server';
+  return { ok: false, code: 'PORT_IN_USE', message: `Port ${port.toString()} is already used by ${by}` };
+}
+
+function buildkitUnavailable(): Failure<'SERVER_BUILDKIT_UNAVAILABLE'> {
+  return {
+    ok: false,
+    code: 'SERVER_BUILDKIT_UNAVAILABLE',
+    message: 'Dockerfile builds need Docker BuildKit on this server; use an image source or enable BuildKit',
+  };
+}
+
+function actorFields(actor: ServiceActor): { actorType: 'user' | 'system'; actorId: string | null } {
+  return { actorType: actor.type, actorId: actor.type === 'user' ? actor.id : null };
+}
+
+/** drizzle wraps the `pg` error; `.code`/`.constraint` live on `cause` (see project-services.ts). */
+function uniqueViolationConstraint(error: unknown): string | undefined {
+  const cause = (error as { cause?: { code?: string; constraint?: string } } | undefined)?.cause;
+  return cause?.code === '23505' ? cause.constraint : undefined;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Queries
+// ---------------------------------------------------------------------------------------------
+
+type ServerGuardRow = Pick<
+  typeof servers.$inferSelect,
+  'id' | 'status' | 'dockerInstalled' | 'dockerBuildkitAvailable'
+>;
+
+/** FOR NO KEY UPDATE: serializes port claims per server without blocking FK key-share locks. */
+async function lockServer(tx: Transaction, serverId: string): Promise<ServerGuardRow | undefined> {
+  const [row] = await tx
+    .select({
+      id: servers.id,
+      status: servers.status,
+      dockerInstalled: servers.dockerInstalled,
+      dockerBuildkitAvailable: servers.dockerBuildkitAvailable,
+    })
+    .from(servers)
+    .where(eq(servers.id, serverId))
+    .for('no key update');
+  return row;
+}
+
+async function serviceNameInUse(tx: Transaction, environmentId: string, name: string, exceptId?: string): Promise<boolean> {
+  const sameName = and(eq(services.environmentId, environmentId), sql`lower(${services.name}) = lower(${name})`);
+  const [row] = await tx
+    .select({ id: services.id })
+    .from(services)
+    .where(exceptId === undefined ? sameName : and(sameName, ne(services.id, exceptId)))
+    .limit(1);
+  return row !== undefined;
+}
+
+async function checkPublishedPort(
+  tx: Transaction,
+  deps: ServiceServicesDeps,
+  serverId: string,
+  serviceId: string,
+  publishedPort: number | null,
+): Promise<Failure<'PORT_IN_USE'> | null> {
+  if (publishedPort === null) return null;
+  const otherServices = await tx
+    .select({ serviceId: services.id, publishedPort: services.publishedPort })
+    .from(services)
+    .where(and(eq(services.serverId, serverId), isNotNull(services.publishedPort)));
+  // No `docker ps` here: the engine's pre-deploy preflight checks the live containers (D10).
+  const result = preflightPublishedPort({
+    serviceId,
+    publishedPort,
+    otherServices,
+    panelPorts: deps.panelPorts,
+    containers: [],
+  });
+  return result.ok ? null : portInUse(result.port, result.owner);
+}
+
+type Reader = Pick<Database, 'selectDistinctOn'>;
+
+async function latestDeploymentStatuses(db: Reader, serviceIds: readonly string[]): Promise<Map<string, DeploymentStatus>> {
+  if (serviceIds.length === 0) return new Map();
+  const rows = await db
+    .selectDistinctOn([deployments.serviceId], { serviceId: deployments.serviceId, status: deployments.status })
+    .from(deployments)
+    .where(inArray(deployments.serviceId, [...serviceIds]))
+    .orderBy(deployments.serviceId, desc(deployments.createdAt), desc(deployments.id));
+  return new Map(rows.map((row) => [row.serviceId, row.status]));
+}
+
+async function viewOf(db: Reader, row: ServiceRow): Promise<ServiceView> {
+  const status = (await latestDeploymentStatuses(db, [row.id])).get(row.id);
+  return toServiceView(row, status === undefined ? null : { status });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Reads
+// ---------------------------------------------------------------------------------------------
+
+/** `null` when the project does not exist. */
+export async function listServices(deps: ServiceServicesDeps, projectId: string): Promise<ServiceView[] | null> {
+  const [project] = await deps.db.select({ id: projects.id }).from(projects).where(eq(projects.id, projectId)).limit(1);
+  if (!project) return null;
+  const rows = await deps.db.select().from(services).where(eq(services.projectId, projectId)).orderBy(asc(services.name), asc(services.id));
+  const latest = await latestDeploymentStatuses(deps.db, rows.map((row) => row.id));
+  return rows.map((row) => {
+    const status = latest.get(row.id);
+    return toServiceView(row, status === undefined ? null : { status });
+  });
+}
+
+/** Scoped by both ids: a service of another project reads exactly like a missing one (A4). */
+export async function getService(deps: ServiceServicesDeps, projectId: string, serviceId: string): Promise<ServiceView | null> {
+  const [row] = await deps.db
+    .select()
+    .from(services)
+    .where(and(eq(services.id, serviceId), eq(services.projectId, projectId)))
+    .limit(1);
+  return row ? viewOf(deps.db, row) : null;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Create
+// ---------------------------------------------------------------------------------------------
+
+export interface CreateServiceInput {
+  readonly actor: ServiceActor;
+  readonly projectId: string;
+  readonly environmentId: string;
+  /** The raw body minus `environmentId`; the domain validator rejects any other key by name. */
+  readonly fields: unknown;
+}
+
+export type CreateServiceFailureCode =
+  | 'SERVICE_INPUT_INVALID'
+  | 'NOT_FOUND'
+  | 'SERVER_NOT_CONNECTED'
+  | 'SERVER_DOCKER_UNAVAILABLE'
+  | 'SERVER_BUILDKIT_UNAVAILABLE'
+  | 'SERVICE_NAME_TAKEN'
+  | 'PORT_IN_USE';
+
+export type CreateServiceResult =
+  | { readonly ok: true; readonly service: ServiceView }
+  | ServiceInputInvalid
+  | Failure<Exclude<CreateServiceFailureCode, 'SERVICE_INPUT_INVALID'>>;
+
+export async function createService(deps: ServiceServicesDeps, input: CreateServiceInput): Promise<CreateServiceResult> {
+  const validated = validateServiceCreateInput(input.fields);
+  if (!validated.ok) return inputInvalid(validated);
+  const fields = validated.value;
+  const serviceId = uuidv7();
+
+  let result: CreateServiceResult;
+  try {
+    result = await deps.db.transaction(async (tx): Promise<CreateServiceResult> => {
+      // FOR SHARE: a concurrent project delete waits for this insert, never races past it.
+      const [project] = await tx.select({ id: projects.id }).from(projects).where(eq(projects.id, input.projectId)).for('share');
+      if (!project) return notFound('Project', input.projectId);
+      const [environment] = await tx
+        .select({ id: environments.id })
+        .from(environments)
+        .where(and(eq(environments.id, input.environmentId), eq(environments.projectId, project.id)))
+        .limit(1);
+      if (!environment) return notFound('Environment', input.environmentId);
+
+      const server = await lockServer(tx, fields.serverId);
+      if (!server) return notFound('Server', fields.serverId);
+      if (server.status !== 'CONNECTED') {
+        return { ok: false, code: 'SERVER_NOT_CONNECTED', message: 'The server must be connected before it can run services' };
+      }
+      if (server.dockerInstalled !== true) {
+        return { ok: false, code: 'SERVER_DOCKER_UNAVAILABLE', message: 'Docker is not installed on this server' };
+      }
+      // ADR 0008 G3: unknown (null) BuildKit support is treated as unavailable.
+      if (fields.source.kind === 'git' && server.dockerBuildkitAvailable !== true) return buildkitUnavailable();
+
+      if (await serviceNameInUse(tx, environment.id, fields.name)) return nameTaken(fields.name);
+      const portFailure = await checkPublishedPort(tx, deps, server.id, serviceId, fields.publishedPort);
+      if (portFailure) return portFailure;
+
+      const now = deps.now();
+      const [row] = await tx
+        .insert(services)
+        .values({
+          id: serviceId,
+          projectId: project.id,
+          environmentId: environment.id,
+          serverId: server.id,
+          name: fields.name,
+          ...serviceColumnsFromSource(fields.source),
+          internalPort: fields.internalPort,
+          publishedPort: fields.publishedPort,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
+      if (!row) throw new Error('createService: insert returned no row');
+
+      await writeActivityEvent(
+        tx,
+        {
+          ...actorFields(input.actor),
+          entityType: 'service',
+          entityId: row.id,
+          action: 'service.created',
+          outcome: 'success',
+          metadata: {
+            projectId: row.projectId,
+            environmentId: row.environmentId,
+            serverId: row.serverId,
+            name: row.name,
+            sourceType: row.sourceType,
+          },
+        },
+        now,
+      );
+      return { ok: true, service: toServiceView(row, null) };
+    });
+  } catch (error) {
+    if (uniqueViolationConstraint(error) === SERVICE_NAME_UNIQUE_CONSTRAINT) return nameTaken(fields.name);
+    throw error;
+  }
+  if (result.ok) await publishServerEvent(deps.events, { type: 'service.updated', service: result.service });
+  return result;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Edit
+// ---------------------------------------------------------------------------------------------
+
+export interface UpdateServiceInput {
+  readonly actor: ServiceActor;
+  readonly projectId: string;
+  readonly serviceId: string;
+  readonly fields: unknown;
+}
+
+export type UpdateServiceFailureCode =
+  | 'SERVICE_INPUT_INVALID'
+  | 'NOT_FOUND'
+  | 'SERVER_BUILDKIT_UNAVAILABLE'
+  | 'SERVICE_NAME_TAKEN'
+  | 'PORT_IN_USE';
+
+export interface UpdateServiceSuccess {
+  readonly ok: true;
+  readonly service: ServiceView;
+  /** True when the change only takes effect in a new container (source or a port changed). */
+  readonly requiresRedeploy: boolean;
+  readonly changedFields: readonly ServiceEditField[];
+}
+
+export type UpdateServiceResult =
+  | UpdateServiceSuccess
+  | ServiceInputInvalid
+  | Failure<Exclude<UpdateServiceFailureCode, 'SERVICE_INPUT_INVALID'>>;
+
+export async function updateService(deps: ServiceServicesDeps, input: UpdateServiceInput): Promise<UpdateServiceResult> {
+  const validated = validateServiceEditInput(input.fields);
+  if (!validated.ok) return inputInvalid(validated);
+  const edit = validated.value;
+  const scoped = and(eq(services.id, input.serviceId), eq(services.projectId, input.projectId));
+
+  let result: UpdateServiceResult;
+  try {
+    result = await deps.db.transaction(async (tx): Promise<UpdateServiceResult> => {
+      const [located] = await tx.select({ serverId: services.serverId }).from(services).where(scoped).limit(1);
+      if (!located) return notFound('Service', input.serviceId);
+      // Server first, then the service: the same lock order as create, so port claims serialize.
+      const server = await lockServer(tx, located.serverId);
+      const [current] = await tx.select().from(services).where(scoped).for('update');
+      if (!current || !server) return notFound('Service', input.serviceId);
+
+      const classification = classifyServiceEdit(editableFieldsFromRow(current), edit);
+      const changed = new Set(classification.changedFields);
+      if (classification.kind === 'none') {
+        return { ok: true, service: await viewOf(tx, current), requiresRedeploy: false, changedFields: [] };
+      }
+      if (changed.has('source') && edit.source?.kind === 'git' && server.dockerBuildkitAvailable !== true) {
+        return buildkitUnavailable();
+      }
+      if (changed.has('name') && edit.name !== undefined && (await serviceNameInUse(tx, current.environmentId, edit.name, current.id))) {
+        return nameTaken(edit.name);
+      }
+      if (changed.has('publishedPort') && edit.publishedPort !== undefined) {
+        const portFailure = await checkPublishedPort(tx, deps, server.id, current.id, edit.publishedPort);
+        if (portFailure) return portFailure;
+      }
+
+      const now = deps.now();
+      const [row] = await tx
+        .update(services)
+        .set({
+          ...(changed.has('name') && edit.name !== undefined ? { name: edit.name } : {}),
+          ...(changed.has('source') && edit.source !== undefined ? serviceColumnsFromSource(edit.source) : {}),
+          ...(changed.has('internalPort') && edit.internalPort !== undefined ? { internalPort: edit.internalPort } : {}),
+          ...(changed.has('publishedPort') && edit.publishedPort !== undefined ? { publishedPort: edit.publishedPort } : {}),
+          updatedAt: now,
+        })
+        .where(eq(services.id, current.id))
+        .returning();
+      if (!row) throw new Error('updateService: update returned no row');
+
+      const requiresRedeploy = classification.kind === 'redeploy';
+      await writeActivityEvent(
+        tx,
+        {
+          ...actorFields(input.actor),
+          entityType: 'service',
+          entityId: row.id,
+          action: 'service.updated',
+          outcome: 'success',
+          metadata: { changedFields: [...classification.changedFields], requiresRedeploy },
+        },
+        now,
+      );
+      return { ok: true, service: await viewOf(tx, row), requiresRedeploy, changedFields: classification.changedFields };
+    });
+  } catch (error) {
+    if (uniqueViolationConstraint(error) === SERVICE_NAME_UNIQUE_CONSTRAINT && edit.name !== undefined) {
+      return nameTaken(edit.name);
+    }
+    throw error;
+  }
+  // A no-op edit (nothing changed) commits nothing, so it publishes nothing.
+  if (result.ok && result.changedFields.length > 0) await publishServerEvent(deps.events, { type: 'service.updated', service: result.service });
+  return result;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Factory
+// ---------------------------------------------------------------------------------------------
+
+export interface ServiceServices {
+  listServices(projectId: string): Promise<ServiceView[] | null>;
+  getService(projectId: string, serviceId: string): Promise<ServiceView | null>;
+  createService(input: CreateServiceInput): Promise<CreateServiceResult>;
+  updateService(input: UpdateServiceInput): Promise<UpdateServiceResult>;
+}
+
+export function createServiceServices(deps: ServiceServicesDeps): ServiceServices {
+  return {
+    listServices: (projectId) => listServices(deps, projectId),
+    getService: (projectId, serviceId) => getService(deps, projectId, serviceId),
+    createService: (input) => createService(deps, input),
+    updateService: (input) => updateService(deps, input),
+  };
+}

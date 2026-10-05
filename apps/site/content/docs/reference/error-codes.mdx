@@ -41,6 +41,11 @@ nothing else — no internal detail is ever attached to it.
 | `ENVIRONMENT_NAME_TAKEN` | 409 | The project already has an environment with that name. |
 | `PROJECT_NOT_ARCHIVED` | 422 | The project must be archived before it can be deleted. |
 | `DELETE_CONFIRMATION_MISMATCH` | 422 | The typed name did not exactly match the name of the resource being deleted. |
+| `SERVICE_INPUT_INVALID` | 422 | A service field failed validation; `reason` names the rule, such as `REPOSITORY_URL_UNSUPPORTED_SCHEME` or `SERVICE_INPUT_UNSUPPORTED_FIELD`. |
+| `SERVICE_NAME_TAKEN` | 409 | The environment already has a service with that name. |
+| `PORT_IN_USE` | 409 | The published port is already taken on that server, by another service or by the panel itself. |
+| `SERVER_DOCKER_UNAVAILABLE` | 409 | Docker is not installed on the server; services need it. |
+| `SERVER_BUILDKIT_UNAVAILABLE` | 409 | Dockerfile (git) services need Docker BuildKit on the server; use an image source or enable BuildKit. |
 
 A request the server cannot read at all gets one of three fixed codes with the same body shape:
 `MALFORMED_REQUEST` (400, the body is not valid JSON), `PAYLOAD_TOO_LARGE` (413) or

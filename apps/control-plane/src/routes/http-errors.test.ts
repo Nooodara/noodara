@@ -77,6 +77,11 @@ describe('SERVICE_ERROR_STATUS / mapServiceCodeToStatus (D-16)', () => {
     ['ENVIRONMENT_NAME_TAKEN', 409],
     ['PROJECT_NOT_ARCHIVED', 422],
     ['DELETE_CONFIRMATION_MISMATCH', 422],
+    ['SERVICE_INPUT_INVALID', 422],
+    ['SERVICE_NAME_TAKEN', 409],
+    ['PORT_IN_USE', 409],
+    ['SERVER_DOCKER_UNAVAILABLE', 409],
+    ['SERVER_BUILDKIT_UNAVAILABLE', 409],
   ] satisfies [ServiceErrorCode, number][])('maps %s to %d', (code, status) => {
     expect(mapServiceCodeToStatus(code)).toBe(status);
   });
