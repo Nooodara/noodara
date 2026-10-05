@@ -5,8 +5,11 @@
 import './env.js';
 
 import { hostname } from 'node:os';
+import { createSsh2Adapter } from '@noodara/ssh';
 import { getDb } from './db/client.js';
-import { env } from './env.js';
+import { createDeployJobDeps, startDeployWorker } from './deploy/deploy-runtime.js';
+import { createDeployJobHandler } from './deploy/deploy-worker.js';
+import { DEPLOY_LOG_LINE_MAX_BYTES, env } from './env.js';
 import { createRedisServerEventPublisher } from './events/redis-server-event-publisher.js';
 import { createLogger } from './logger.js';
 import { computeJobLockDurationMs } from './queue/job-budget.js';
@@ -21,6 +24,7 @@ import {
 } from './redis/connections.js';
 import { resolveServerServicesDeps } from './services/server-service-deps.js';
 import { createServerServices } from './services/server-services.js';
+import { panelPortsFromEnv } from './services/service-services.js';
 
 const logger = createLogger();
 const workerId = `${hostname()}-${String(process.pid)}`;
@@ -70,6 +74,33 @@ async function main(): Promise<void> {
     stalledIntervalMs: lockDurationMs,
   });
 
+  // 12-11b (W1): the deploy worker runs beside the connect worker on its own blocking connection.
+  // It shares the SSH timeouts and master keys, but never the connect worker's lock budget.
+  const deployWorkerConnection = createWorkerRedisConnection(env.REDIS_URL);
+  const deployHandle = startDeployWorker({
+    handler: createDeployJobHandler(
+      createDeployJobDeps({
+        db,
+        events: eventPublisher,
+        ssh: createSsh2Adapter(),
+        timeouts: deps.timeouts,
+        masterKeys: () => Promise.resolve(deps.masterKeys),
+        panelPorts: panelPortsFromEnv({ apiPort: env.PORT, publicUrl: env.NOODARA_PUBLIC_URL }),
+        config: {
+          deployMaxMs: env.NOODARA_DEPLOY_MAX_MS,
+          idleMs: env.NOODARA_DEPLOY_IDLE_MS,
+          logMaxBytes: env.NOODARA_DEPLOY_LOG_MAX_BYTES,
+          logLineMaxBytes: DEPLOY_LOG_LINE_MAX_BYTES,
+        },
+        logger,
+      }),
+    ),
+    connection: deployWorkerConnection,
+    concurrency: env.NOODARA_DEPLOY_CONCURRENCY,
+    deployMaxMs: env.NOODARA_DEPLOY_MAX_MS,
+    logger,
+  });
+
   // The literal "Worker ready" is the boot smoke test's deterministic stdout marker, mirroring
   // how server.ts's "Server listening" line is used today.
   logger.info({ concurrency: env.NOODARA_WORKER_CONCURRENCY, workerId }, 'Worker ready');
@@ -87,13 +118,17 @@ async function main(): Promise<void> {
     // — the next startup's CONNECTING sweep cleans up whatever was mid-flight. Every cleanup step
     // now runs even if `handle.close()` or `queue.close()` rejects (T-4-32).
     await runWorkerShutdown({
-      close: () => handle.close(),
+      // Both workers close together; the deploy worker cancels its in-flight jobs first.
+      close: () => Promise.all([handle.close(), deployHandle.close()]).then(() => undefined),
       graceMs: lockDurationMs,
       stopHeartbeat,
       closeQueue: () => queue.close(),
       disconnect: [
         () => {
           workerConnection.disconnect();
+        },
+        () => {
+          deployWorkerConnection.disconnect();
         },
         () => {
           queueConnection.disconnect();

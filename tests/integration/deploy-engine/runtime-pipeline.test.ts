@@ -1,0 +1,639 @@
+// 12-11b (A1-A5): the production deploy runtime end to end on the real sshd + dockerd fixture.
+// triggerDeploy (Postgres row + BullMQ job) -> startDeployWorker on a real Redis -> the handler built
+// by createDeployJobDeps (DB target loader, DB-backed connect with a pinned fingerprint, deploy store)
+// -> runDeployment over createSsh2Adapter. Root-side truth comes from `stack.exec` (inspect, ps,
+// test -e). Images are compared by RootFS.Layers, never `.Id` (ADR 0008).
+// App modules are imported dynamically after a valid test env is written: several of them import
+// env.ts, which fail-fasts at import time (INST-06).
+import { randomBytes, randomUUID } from 'node:crypto';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { eq } from 'drizzle-orm';
+import { Redis } from 'ioredis';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { createRedactor, secretValue } from '@noodara/domain/security';
+import { createSsh2Adapter, formatFingerprint } from '@noodara/ssh';
+import {
+  credentials,
+  deployments,
+  environments,
+  projects,
+  servers,
+  services,
+} from '../../../apps/control-plane/src/db/schema/index.js';
+import type { ServerEvent } from '../../../apps/control-plane/src/events/server-event-publisher.js';
+import type { DeployRunLimits } from '../../../apps/control-plane/src/deploy/run-deployment.js';
+import {
+  DEPLOY_ENGINE_UBUNTU_VERSIONS,
+  preloadedRefFor,
+  resolveBaseImages,
+  startDeployEngineStack,
+  type DeployEngineStack,
+} from '../helpers/deploy-engine.js';
+import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
+import { startRedis, type RedisFixture } from '../helpers/redis.js';
+
+type DeployRuntimeModule = typeof import('../../../apps/control-plane/src/deploy/deploy-runtime.js');
+type DeployWorkerModule = typeof import('../../../apps/control-plane/src/deploy/deploy-worker.js');
+type DeploymentServicesModule = typeof import('../../../apps/control-plane/src/services/deployment-services.js');
+type DeployQueueModule = typeof import('../../../apps/control-plane/src/queue/deploy-queue.js');
+type ServiceCredentialsModule = typeof import('../../../apps/control-plane/src/services/service-credentials.js');
+type CredentialStoreModule = typeof import('../../../apps/control-plane/src/services/credential-store.js');
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const FIXTURES_DIR = path.resolve(HERE, '../../../fixtures');
+const STACK_TIMEOUT_MS = 900_000;
+const CASE_TIMEOUT_MS = 600_000;
+const TERMINAL_WAIT_MS = 300_000;
+const POLL_MS = 500;
+const WORKSPACE_ROOT = '/opt/noodara-deploy';
+const PORTS = { app: 13_210, squatted: 13_211, image: 13_212 } as const;
+const KEY_VERSION = 1;
+const DEPLOY_MAX_MS = 300_000;
+const TERMINAL = new Set(['SUCCESS', 'FAILED', 'CANCELLED']);
+
+const REPOS = {
+  nodeApi: 'node-api',
+  failingBuild: 'failing-build',
+  multiStage: 'multi-stage',
+  silent: 'silent-build',
+  chatty: 'chatty-build',
+} as const;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function nodeBaseOf(baseImages: readonly string[]): string {
+  const base = baseImages.find((ref) => ref.startsWith('node:'));
+  if (base === undefined) throw new Error('harness preloaded no node base image');
+  return base;
+}
+
+/** Temp build contexts the fixtures/ directory does not carry: a named target, a silent and a chatty build. */
+function writeTempRepos(root: string, nodeBase: string): Record<'multiStage' | 'silent' | 'chatty', string> {
+  const write = (name: string, dockerfile: string): string => {
+    const dir = path.join(root, name);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(path.join(dir, 'Dockerfile'), dockerfile);
+    return dir;
+  };
+  return {
+    // Building without `--target app` reaches the `broken` stage and fails: success proves the target.
+    multiStage: write(
+      REPOS.multiStage,
+      [
+        `FROM ${nodeBase} AS base`,
+        'WORKDIR /app',
+        'FROM base AS app',
+        'RUN echo app-stage > /app/marker',
+        'CMD ["node","-e","setInterval(() => {}, 1000)"]',
+        'FROM base AS broken',
+        'RUN echo "NOODARA_TARGET_PROOF: the default stage must not build" >&2 && exit 3',
+        '',
+      ].join('\n'),
+    ),
+    silent: write(REPOS.silent, [`FROM ${nodeBase}`, 'RUN sleep 311', ''].join('\n')),
+    chatty: write(
+      REPOS.chatty,
+      [
+        `FROM ${nodeBase}`,
+        'RUN i=0; while [ "$i" -lt 600 ]; do echo "noodara-tick $i"; i=$((i+1)); sleep 0.5; done',
+        '',
+      ].join('\n'),
+    ),
+  };
+}
+
+interface LoggedLine {
+  readonly level: string;
+  readonly fields: Record<string, unknown>;
+  readonly message: string;
+}
+
+describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
+  '12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu %s',
+  (ubuntu) => {
+    let stack: DeployEngineStack | undefined;
+    let postgres: PostgresFixture | undefined;
+    let redis: RedisFixture | undefined;
+    let queueConnection: Redis | undefined;
+    let workerConnection: Redis | undefined;
+    let worker: { close(): Promise<void> } | undefined;
+    let queue: { close(): Promise<void> } | undefined;
+    let tempRoot: string | undefined;
+    let triggerDeploy: ((serviceId: string) => Promise<string>) | undefined;
+    let serviceCredentials: ServiceCredentialsModule | undefined;
+
+    const masterKey = randomBytes(32);
+    const events: ServerEvent[] = [];
+    const logged: LoggedLine[] = [];
+    const limitOverrides = new Map<string, DeployRunLimits>();
+    let projectId = '';
+    let environmentId = '';
+    let serverId = '';
+    let nodeBase = '';
+
+    const s = (): DeployEngineStack => {
+      if (stack === undefined) throw new Error('stack not started');
+      return stack;
+    };
+    const db = (): PostgresFixture['db'] => {
+      if (postgres === undefined) throw new Error('postgres not started');
+      return postgres.db;
+    };
+    const creds = (): ServiceCredentialsModule => {
+      if (serviceCredentials === undefined) throw new Error('modules not loaded');
+      return serviceCredentials;
+    };
+    const root = (argv: readonly string[]) => s().exec(argv, { user: 'root' });
+    const rootOut = async (argv: readonly string[]): Promise<string> => (await root(argv)).stdout.trim();
+    const exists = async (argv: readonly string[]): Promise<boolean> => (await root(argv)).exitCode === 0;
+    const imageExists = (ref: string) => exists(['docker', 'image', 'inspect', ref]);
+    const networkExists = (name: string) => exists(['docker', 'network', 'inspect', name]);
+    const containerExists = (name: string) => exists(['docker', 'container', 'inspect', name]);
+    const pathGone = async (target: string): Promise<boolean> => !(await exists(['test', '-e', target]));
+    const layersOf = async (argv: readonly string[]): Promise<string[]> =>
+      JSON.parse(await rootOut([...argv, '--format', '{{json .RootFS.Layers}}'])) as string[];
+    const containerImageLayers = async (container: string): Promise<string[]> => {
+      const imageId = await rootOut(['docker', 'container', 'inspect', container, '--format', '{{.Image}}']);
+      return layersOf(['docker', 'image', 'inspect', imageId]);
+    };
+    const inspectContainer = async (name: string, template: string): Promise<string> =>
+      rootOut(['docker', 'container', 'inspect', name, '--format', template]);
+
+    const insertRepositoryCredential = async (): Promise<string> => {
+      const encoded = creds().encodeServiceCredential(
+        {
+          kind: 'deploy_key',
+          privateKey: secretValue(s().deployKey.privateKey, 'ssh_private_key'),
+          publicKey: s().deployKey.publicKey,
+        },
+        { key: masterKey, version: KEY_VERSION },
+      );
+      return db().transaction((tx) => creds().insertServiceCredential(tx, encoded, new Date()));
+    };
+
+    const insertRegistryCredential = async (): Promise<string> => {
+      const encoded = creds().encodeServiceCredential(
+        {
+          kind: 'registry',
+          host: s().registry.host,
+          username: s().registry.username,
+          password: secretValue(s().registry.password, 'api_key'),
+        },
+        { key: masterKey, version: KEY_VERSION },
+      );
+      return db().transaction((tx) => creds().insertServiceCredential(tx, encoded, new Date()));
+    };
+
+    const insertGitService = async (input: {
+      readonly repo: string;
+      readonly publishedPort: number | null;
+      readonly buildTarget?: string;
+    }): Promise<string> => {
+      const [row] = await db()
+        .insert(services)
+        .values({
+          projectId,
+          environmentId,
+          serverId,
+          name: `svc-${randomUUID().slice(0, 8)}`,
+          sourceType: 'git',
+          repositoryUrl: s().gitRepoUrl(input.repo),
+          branch: 'main',
+          buildContext: '.',
+          dockerfilePath: 'Dockerfile',
+          buildTarget: input.buildTarget ?? null,
+          internalPort: 3000,
+          publishedPort: input.publishedPort,
+          repositoryCredentialId: await insertRepositoryCredential(),
+        })
+        .returning({ id: services.id });
+      if (!row) throw new Error('service insert returned no row');
+      return row.id;
+    };
+
+    const insertImageService = async (imageRef: string, publishedPort: number): Promise<string> => {
+      const [row] = await db()
+        .insert(services)
+        .values({
+          projectId,
+          environmentId,
+          serverId,
+          name: `img-${randomUUID().slice(0, 8)}`,
+          sourceType: 'image',
+          imageRef,
+          internalPort: 80,
+          publishedPort,
+          registryCredentialId: await insertRegistryCredential(),
+        })
+        .returning({ id: services.id });
+      if (!row) throw new Error('service insert returned no row');
+      return row.id;
+    };
+
+    const deploymentRow = async (deploymentId: string) => {
+      const [row] = await db().select().from(deployments).where(eq(deployments.id, deploymentId));
+      if (!row) throw new Error(`deployment ${deploymentId} missing`);
+      return row;
+    };
+
+    /** Triggers through the real API service path and waits for the worker to finish the row. */
+    const deploy = async (serviceId: string) => {
+      if (triggerDeploy === undefined) throw new Error('runtime not started');
+      const deploymentId = await triggerDeploy(serviceId);
+      const deadline = Date.now() + TERMINAL_WAIT_MS;
+      for (;;) {
+        const row = await deploymentRow(deploymentId);
+        if (TERMINAL.has(row.status)) return row;
+        if (Date.now() > deadline) throw new Error(`deployment ${deploymentId} stuck in ${row.status}`);
+        await delay(POLL_MS);
+      }
+    };
+
+    const deploymentStatuses = (deploymentId: string): string[] =>
+      events.flatMap((event) =>
+        event.type === 'deployment.updated' && event.deployment.id === deploymentId ? [event.deployment.status] : [],
+      );
+    const lastServiceStatus = (serviceId: string): string | undefined =>
+      events
+        .flatMap((event) => (event.type === 'service.updated' && event.service.id === serviceId ? [event.service.status] : []))
+        .at(-1);
+    const serviceStatus = async (serviceId: string): Promise<string> => {
+      const [row] = await db().select({ status: services.status }).from(services).where(eq(services.id, serviceId));
+      if (!row) throw new Error('service missing');
+      return row.status;
+    };
+
+    /** The worker's own edges, in order; QUEUED is published by triggerDeploy and may race the claim. */
+    const expectStatusPath = (deploymentId: string, terminal: readonly string[]): void => {
+      const statuses = deploymentStatuses(deploymentId);
+      expect(statuses).toContain('QUEUED');
+      expect(statuses.filter((status) => status !== 'QUEUED')).toEqual(['PREPARING', ...terminal]);
+    };
+
+    /** A1/A5: workspace, its secrets and the registry --config dir are gone on every exit. */
+    const expectWorkspaceGone = async (deploymentId: string): Promise<void> => {
+      expect(await pathGone(`${WORKSPACE_ROOT}/${deploymentId}`)).toBe(true);
+    };
+
+    beforeAll(async () => {
+      const [stackStarted, pgStarted, redisStarted] = await Promise.all([
+        (async () => {
+          const base = nodeBaseOf(resolveBaseImages());
+          tempRoot = mkdtempSync(path.join(tmpdir(), 'noodara-runtime-pipeline-'));
+          const temp = writeTempRepos(tempRoot, base);
+          return startDeployEngineStack({
+            ubuntu,
+            seedRepositories: [
+              { name: REPOS.nodeApi, sourceDir: path.join(FIXTURES_DIR, 'node-api') },
+              { name: REPOS.failingBuild, sourceDir: path.join(FIXTURES_DIR, 'failing-build') },
+              { name: REPOS.multiStage, sourceDir: temp.multiStage },
+              { name: REPOS.silent, sourceDir: temp.silent },
+              { name: REPOS.chatty, sourceDir: temp.chatty },
+            ],
+          });
+        })(),
+        startPostgres(),
+        startRedis(),
+      ]);
+      stack = stackStarted;
+      postgres = pgStarted;
+      redis = redisStarted;
+      nodeBase = nodeBaseOf(stack.baseImages);
+
+      process.env.NOODARA_MASTER_KEY = masterKey.toString('base64');
+      process.env.BETTER_AUTH_SECRET = `runtime-pipeline-${randomUUID()}-${randomUUID()}`;
+      process.env.DATABASE_URL = postgres.connectionString;
+      process.env.REDIS_URL = redis.connectionUrl;
+      process.env.NOODARA_PUBLIC_URL = 'http://localhost:3000';
+
+      const runtime: DeployRuntimeModule = await import('../../../apps/control-plane/src/deploy/deploy-runtime.js');
+      const workerModule: DeployWorkerModule = await import('../../../apps/control-plane/src/deploy/deploy-worker.js');
+      const deploymentServices: DeploymentServicesModule = await import(
+        '../../../apps/control-plane/src/services/deployment-services.js'
+      );
+      const queueModule: DeployQueueModule = await import('../../../apps/control-plane/src/queue/deploy-queue.js');
+      const credentialStore: CredentialStoreModule = await import('../../../apps/control-plane/src/services/credential-store.js');
+      serviceCredentials = await import('../../../apps/control-plane/src/services/service-credentials.js');
+
+      // Server row: CONNECTED, Docker present, fingerprint pinned from a first trusted connect.
+      const redactor = createRedactor();
+      const probe = await createSsh2Adapter().connect({
+        target: { host: stack.ssh.host, port: stack.ssh.port, user: stack.ssh.user },
+        credential: { kind: 'private_key', privateKey: secretValue(stack.ssh.privateKey, 'ssh_private_key') },
+        timeouts: { connectMs: 20_000, commandMs: 60_000, discoveryMs: 120_000 },
+        trustedFingerprint: null,
+        redactor,
+      });
+      if (!probe.ok) throw new Error(`fingerprint probe failed: ${probe.errorCode}`);
+      const fingerprint = formatFingerprint(probe.fingerprint);
+      await probe.session.close();
+
+      const encoded = credentialStore.encodeCredential(
+        { kind: 'private_key', privateKey: stack.ssh.privateKey },
+        { key: masterKey, version: KEY_VERSION },
+        redactor,
+      );
+      if (!encoded.ok) throw new Error(`server credential rejected: ${encoded.code}`);
+      const [credentialRow] = await db()
+        .insert(credentials)
+        .values({ type: encoded.type, encryptedValue: encoded.encryptedValue, keyVersion: encoded.keyVersion })
+        .returning({ id: credentials.id });
+      if (!credentialRow) throw new Error('credential insert returned no row');
+      const [serverRow] = await db()
+        .insert(servers)
+        .values({
+          name: `deploy-host-${ubuntu}`,
+          host: stack.ssh.host,
+          sshPort: stack.ssh.port,
+          sshUser: stack.ssh.user,
+          credentialId: credentialRow.id,
+          status: 'CONNECTED',
+          hostFingerprint: fingerprint,
+          dockerInstalled: true,
+        })
+        .returning({ id: servers.id });
+      if (!serverRow) throw new Error('server insert returned no row');
+      serverId = serverRow.id;
+
+      const now = new Date();
+      const [projectRow] = await db()
+        .insert(projects)
+        .values({ name: 'Runtime pipeline', slug: `runtime-${randomUUID().slice(0, 8)}`, createdAt: now, updatedAt: now })
+        .returning({ id: projects.id });
+      if (!projectRow) throw new Error('project insert returned no row');
+      projectId = projectRow.id;
+      const [environmentRow] = await db()
+        .insert(environments)
+        .values({ projectId, name: 'production', createdAt: now, updatedAt: now })
+        .returning({ id: environments.id });
+      if (!environmentRow) throw new Error('environment insert returned no row');
+      environmentId = environmentRow.id;
+
+      // Runtime: the same wiring src/worker.ts uses, with a recording publisher and logger.
+      const recordingEvents = {
+        publish(event: ServerEvent): Promise<void> {
+          events.push(event);
+          return Promise.resolve();
+        },
+      };
+      const logger = {
+        info: (fields: Record<string, unknown>, message: string) => logged.push({ level: 'info', fields, message }),
+        warn: (fields: Record<string, unknown>, message: string) => logged.push({ level: 'warn', fields, message }),
+        error: (fields: Record<string, unknown>, message: string) => logged.push({ level: 'error', fields, message }),
+      };
+      const baseDeps = runtime.createDeployJobDeps({
+        db: db(),
+        events: recordingEvents,
+        ssh: createSsh2Adapter(),
+        timeouts: { connectMs: 20_000, commandMs: 60_000, discoveryMs: 120_000 },
+        masterKeys: () => Promise.resolve({ current: masterKey }),
+        panelPorts: [],
+        config: { deployMaxMs: DEPLOY_MAX_MS, idleMs: 120_000, logMaxBytes: 1_048_576, logLineMaxBytes: 16_384 },
+        logger,
+      });
+      const defaultHandler = workerModule.createDeployJobHandler(baseDeps);
+      const handler = (data: unknown, signal?: AbortSignal) => {
+        const serviceId = (data as { serviceId?: unknown } | null)?.serviceId;
+        const limits = typeof serviceId === 'string' ? limitOverrides.get(serviceId) : undefined;
+        return limits === undefined
+          ? defaultHandler(data, signal)
+          : workerModule.createDeployJobHandler({ ...baseDeps, limits })(data, signal);
+      };
+
+      workerConnection = new Redis(redis.connectionUrl, { maxRetriesPerRequest: null });
+      queueConnection = new Redis(redis.connectionUrl, { maxRetriesPerRequest: null });
+      worker = runtime.startDeployWorker({
+        handler,
+        connection: workerConnection,
+        concurrency: 2,
+        deployMaxMs: DEPLOY_MAX_MS,
+        logger,
+      });
+      const deployQueue = queueModule.createDeployQueue({ connection: queueConnection, enqueueTimeoutMs: 10_000 });
+      queue = deployQueue;
+      const deploymentApi = deploymentServices.createDeploymentServices({
+        db: db(),
+        now: () => new Date(),
+        events: recordingEvents,
+        queue: deployQueue,
+        logger,
+      });
+      triggerDeploy = async (serviceId) => {
+        const result = await deploymentApi.triggerDeploy({ actor: { type: 'system' }, serviceId });
+        if (!result.ok) throw new Error(`triggerDeploy failed: ${result.code}`);
+        return result.deployment.id;
+      };
+    }, STACK_TIMEOUT_MS);
+
+    afterAll(async () => {
+      await worker?.close();
+      await queue?.close();
+      workerConnection?.disconnect();
+      queueConnection?.disconnect();
+      await redis?.stop();
+      await postgres?.stop();
+      await stack?.stop();
+      if (tempRoot !== undefined) rmSync(tempRoot, { recursive: true, force: true });
+    }, STACK_TIMEOUT_MS);
+
+    let appServiceId = '';
+    let secondContainerId = '';
+    let secondImage = '';
+
+    it('A1/A2/A3/A5: a git deploy clones, builds, replaces the container and removes the superseded image', async () => {
+      appServiceId = await insertGitService({ repo: REPOS.nodeApi, publishedPort: PORTS.app });
+      const container = `noodara-${appServiceId}`;
+      const network = `noodara-net-${appServiceId}`;
+
+      const first = await deploy(appServiceId);
+      expect({ status: first.status, errorCode: first.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
+      // A1: --depth 1 clone, SHA captured from the clone.
+      const headSha = (
+        await s().exec(['git', '-C', `/srv/git/${REPOS.nodeApi}.git`, 'rev-parse', 'main'], { user: 'git' })
+      ).stdout.trim();
+      expect(headSha).toMatch(/^[0-9a-f]{40}$/);
+      expect(first.commitSha).toBe(headSha);
+      const firstImage = `noodara/${appServiceId}:${first.id}`;
+      expect(await imageExists(firstImage)).toBe(true);
+      // A2: named container on the per-service network, bounded json-file logs, published port live.
+      expect(await inspectContainer(container, '{{.State.Running}}')).toBe('true');
+      expect(await inspectContainer(container, '{{.Config.Image}}')).toBe(firstImage);
+      const networks = JSON.parse(await inspectContainer(container, '{{json .NetworkSettings.Networks}}')) as Record<string, unknown>;
+      expect(Object.keys(networks)).toContain(network);
+      const logConfig = JSON.parse(await inspectContainer(container, '{{json .HostConfig.LogConfig}}')) as {
+        Type: string;
+        Config: Record<string, string>;
+      };
+      expect(logConfig.Config['max-size']).toBeTruthy();
+      expect(logConfig.Config['max-file']).toBeTruthy();
+      expect(await rootOut(['curl', '-fsS', `http://127.0.0.1:${String(PORTS.app)}/health`])).toBe('ok');
+      // A3: every edge through the state machine, the cache recomputed and published.
+      expectStatusPath(first.id, ['BUILDING', 'DEPLOYING', 'SUCCESS']);
+      expect(await serviceStatus(appServiceId)).toBe('RUNNING');
+      expect(lastServiceStatus(appServiceId)).toBe('RUNNING');
+      await expectWorkspaceGone(first.id);
+      const firstContainerId = await inspectContainer(container, '{{.Id}}');
+
+      const second = await deploy(appServiceId);
+      expect({ status: second.status, errorCode: second.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
+      secondImage = `noodara/${appServiceId}:${second.id}`;
+      secondContainerId = await inspectContainer(container, '{{.Id}}');
+      expect(secondContainerId).not.toBe(firstContainerId);
+      expect(await inspectContainer(container, '{{.Config.Image}}')).toBe(secondImage);
+      // A5: the superseded own image is gone once the new container runs; identity by layers, not .Id.
+      expect(await imageExists(firstImage)).toBe(false);
+      expect(await containerImageLayers(container)).toEqual(await layersOf(['docker', 'image', 'inspect', secondImage]));
+      expectStatusPath(second.id, ['BUILDING', 'DEPLOYING', 'SUCCESS']);
+      await expectWorkspaceGone(second.id);
+    }, CASE_TIMEOUT_MS);
+
+    it('A4/A5: a failing build ends FAILED/BUILD_FAILED, the previous container keeps running and the partial image is removed', async () => {
+      expect(appServiceId).not.toBe('');
+      const container = `noodara-${appServiceId}`;
+      await db()
+        .update(services)
+        .set({ repositoryUrl: s().gitRepoUrl(REPOS.failingBuild) })
+        .where(eq(services.id, appServiceId));
+      try {
+        const failed = await deploy(appServiceId);
+        expect({ status: failed.status, errorCode: failed.errorCode }).toEqual({ status: 'FAILED', errorCode: 'BUILD_FAILED' });
+        expect(failed.errorMessage).not.toContain('NOODARA_FIXTURE_BUILD_FAILURE');
+        expectStatusPath(failed.id, ['BUILDING', 'FAILED']);
+        expect(await inspectContainer(container, '{{.Id}}')).toBe(secondContainerId);
+        expect(await inspectContainer(container, '{{.State.Running}}')).toBe('true');
+        expect(await imageExists(secondImage)).toBe(true);
+        expect(await imageExists(`noodara/${appServiceId}:${failed.id}`)).toBe(false);
+        expect(await serviceStatus(appServiceId)).toBe(lastServiceStatus(appServiceId));
+        await expectWorkspaceGone(failed.id);
+      } finally {
+        await db()
+          .update(services)
+          .set({ repositoryUrl: s().gitRepoUrl(REPOS.nodeApi) })
+          .where(eq(services.id, appServiceId));
+      }
+    }, CASE_TIMEOUT_MS);
+
+    it('A2: the port preflight reads the real docker ps and fails PORT_IN_USE before touching any container', async () => {
+      const squatter = `runtime-squatter-${randomUUID().slice(0, 8)}`;
+      const created = await root([
+        'docker', 'run', '-d', '--name', squatter,
+        '--label', 'noodara.managed=true',
+        '--label', `noodara.service_id=${randomUUID()}`,
+        '-p', `${String(PORTS.squatted)}:3000`,
+        nodeBase, 'sleep', '600',
+      ]);
+      expect(created.exitCode, created.stderr).toBe(0);
+      try {
+        const serviceId = await insertGitService({ repo: REPOS.nodeApi, publishedPort: PORTS.squatted });
+        const blocked = await deploy(serviceId);
+        expect({ status: blocked.status, errorCode: blocked.errorCode }).toEqual({ status: 'FAILED', errorCode: 'PORT_IN_USE' });
+        expectStatusPath(blocked.id, ['BUILDING', 'DEPLOYING', 'FAILED']);
+        expect(await containerExists(`noodara-${serviceId}`)).toBe(false);
+        expect(await networkExists(`noodara-net-${serviceId}`)).toBe(false);
+        // A5: the built image never got a container, so the ledger removes it.
+        expect(await imageExists(`noodara/${serviceId}:${blocked.id}`)).toBe(false);
+        expect(await inspectContainer(squatter, '{{.State.Running}}')).toBe('true');
+        await expectWorkspaceGone(blocked.id);
+      } finally {
+        await root(['docker', 'rm', '-f', squatter]);
+      }
+    }, CASE_TIMEOUT_MS);
+
+    it('A1: a git source with a build target builds only that stage', async () => {
+      const serviceId = await insertGitService({ repo: REPOS.multiStage, publishedPort: null, buildTarget: 'app' });
+      const done = await deploy(serviceId);
+      expect({ status: done.status, errorCode: done.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
+      const container = `noodara-${serviceId}`;
+      expect(await inspectContainer(container, '{{.State.Running}}')).toBe('true');
+      expect(await rootOut(['docker', 'exec', container, 'cat', '/app/marker'])).toBe('app-stage');
+      await expectWorkspaceGone(done.id);
+    }, CASE_TIMEOUT_MS);
+
+    it('A1: an image source pulls from the htpasswd registry with its credential and runs it', async () => {
+      const nginx = s().baseImages.find((ref) => ref.startsWith('nginx:'));
+      if (nginx === undefined) throw new Error('harness preloaded no nginx base image');
+      const imageRef = preloadedRefFor(s().registry.host, nginx);
+      const serviceId = await insertImageService(imageRef, PORTS.image);
+      const done = await deploy(serviceId);
+      expect({ status: done.status, errorCode: done.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
+      expect(done.commitSha).toBeNull();
+      expectStatusPath(done.id, ['BUILDING', 'DEPLOYING', 'SUCCESS']);
+      const container = `noodara-${serviceId}`;
+      expect(await inspectContainer(container, '{{.Config.Image}}')).toBe(imageRef);
+      expect(await containerImageLayers(container)).toEqual(await layersOf(['docker', 'image', 'inspect', imageRef]));
+      expect(await root(['curl', '-fsS', '-o', '/dev/null', `http://127.0.0.1:${String(PORTS.image)}/`])).toMatchObject({ exitCode: 0 });
+      // The per-deployment --config dir (registry auth) went with the workspace.
+      await expectWorkspaceGone(done.id);
+    }, CASE_TIMEOUT_MS);
+
+    it('A5: a container create that fails after the network was created removes the network and the partial image', async () => {
+      const serviceId = await insertGitService({ repo: REPOS.nodeApi, publishedPort: null });
+      const name = `noodara-${serviceId}`;
+      // A foreign, unmanaged container holding the name: invisible to the managed docker ps.
+      const foreign = await root(['docker', 'create', '--name', name, nodeBase, 'true']);
+      expect(foreign.exitCode, foreign.stderr).toBe(0);
+      const foreignId = foreign.stdout.trim();
+      try {
+        const failed = await deploy(serviceId);
+        expect(failed.status).toBe('FAILED');
+        expect(failed.errorCode).not.toBeNull();
+        expectStatusPath(failed.id, ['BUILDING', 'DEPLOYING', 'FAILED']);
+        expect(await networkExists(`noodara-net-${serviceId}`)).toBe(false);
+        expect(await imageExists(`noodara/${serviceId}:${failed.id}`)).toBe(false);
+        expect(await inspectContainer(name, '{{.Id}}')).toBe(foreignId);
+        await expectWorkspaceGone(failed.id);
+      } finally {
+        await root(['docker', 'rm', '-f', foreignId]);
+      }
+    }, CASE_TIMEOUT_MS);
+
+    const buildProcessGone = async (marker: string): Promise<boolean> => {
+      const deadline = Date.now() + 60_000;
+      for (;;) {
+        const ps = await rootOut(['sh', '-c', 'ps -eww -o args= | grep -F -- "$0" | grep -v grep || true', marker]);
+        if (ps === '') return true;
+        if (Date.now() > deadline) return false;
+        await delay(1_000);
+      }
+    };
+
+    it('A4: a silent build hits the idle timeout (BUILD_STALLED) and a chatty one the max timeout (BUILD_TIMEOUT)', async () => {
+      const silentId = await insertGitService({ repo: REPOS.silent, publishedPort: null });
+      const chattyId = await insertGitService({ repo: REPOS.chatty, publishedPort: null });
+      const limits = (await import('../../../apps/control-plane/src/deploy/deploy-runtime.js')).deployRunLimits;
+      limitOverrides.set(silentId, {
+        ...limits({ deployMaxMs: 240_000, idleMs: 15_000, logMaxBytes: 1_048_576, logLineMaxBytes: 16_384 }),
+      });
+      limitOverrides.set(chattyId, {
+        ...limits({ deployMaxMs: 40_000, idleMs: 20_000, logMaxBytes: 1_048_576, logLineMaxBytes: 16_384 }),
+      });
+
+      const [silent, chatty] = await Promise.all([deploy(silentId), deploy(chattyId)]);
+      expect({ status: silent.status, errorCode: silent.errorCode }).toEqual({ status: 'FAILED', errorCode: 'BUILD_STALLED' });
+      expect({ status: chatty.status, errorCode: chatty.errorCode }).toEqual({ status: 'FAILED', errorCode: 'BUILD_TIMEOUT' });
+      for (const [serviceId, row] of [[silentId, silent], [chattyId, chatty]] as const) {
+        expectStatusPath(row.id, ['BUILDING', 'FAILED']);
+        expect(await imageExists(`noodara/${serviceId}:${row.id}`)).toBe(false);
+        expect(await containerExists(`noodara-${serviceId}`)).toBe(false);
+        await expectWorkspaceGone(row.id);
+      }
+      // The interrupted builds were killed, not left running on the server.
+      expect(await buildProcessGone('sleep 311')).toBe(true);
+      expect(await buildProcessGone('noodara-tick')).toBe(true);
+    }, CASE_TIMEOUT_MS);
+
+    it('noodara-security: no credential reaches events, logs or deployment rows', async () => {
+      const rows = await db().select().from(deployments);
+      const surface = JSON.stringify({ events, logged, rows });
+      expect(surface).not.toContain(s().registry.password);
+      expect(surface).not.toContain(s().deployKey.privateKey.split('\n')[1] ?? s().deployKey.privateKey);
+      expect(surface).not.toContain(s().ssh.privateKey.split('\n')[1] ?? s().ssh.privateKey);
+      expect(surface).not.toContain(masterKey.toString('base64'));
+    });
+  },
+);
