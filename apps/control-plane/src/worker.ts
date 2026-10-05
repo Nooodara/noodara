@@ -8,12 +8,13 @@ import { hostname } from 'node:os';
 import { createSsh2Adapter } from '@noodara/ssh';
 import { getDb } from './db/client.js';
 import { cancelFlagRedisFrom, createDeployCancelFlags, watchDeployCancel } from './deploy/cancel-flag.js';
-import { createDeployJobDeps, startDeployWorker } from './deploy/deploy-runtime.js';
+import { createDeployJobDeps, createServiceOperationJobDeps, startDeployWorker } from './deploy/deploy-runtime.js';
 import { sweepCrashedDeployments } from './deploy/deploy-sweep.js';
 import { createDeploymentStore } from './deploy/deployment-store.js';
 import { createDeployJobHandler } from './deploy/deploy-worker.js';
 import { purgeDeploymentLogChunks, startDeploymentLogRetention } from './deploy/log-retention.js';
 import { createDbLogChunkWriter, createDeploymentLogSinkFactory } from './deploy/log-sink.js';
+import { createServiceOperationJobHandler } from './deploy/service-ops-job.js';
 import { DEPLOY_LOG_LINE_MAX_BYTES, env } from './env.js';
 import { createRedisServerEventPublisher } from './events/redis-server-event-publisher.js';
 import { createLogger } from './logger.js';
@@ -30,7 +31,7 @@ import {
 } from './redis/connections.js';
 import { resolveServerServicesDeps } from './services/server-service-deps.js';
 import { createServerServices } from './services/server-services.js';
-import { panelPortsFromEnv } from './services/service-services.js';
+import { loadServiceOperationTarget, panelPortsFromEnv, recordServiceOperation } from './services/service-services.js';
 
 const logger = createLogger();
 const workerId = `${hostname()}-${String(process.pid)}`;
@@ -126,6 +127,16 @@ async function main(): Promise<void> {
   });
   logger.info({ sweptCount: deploySweep.swept.length }, 'worker startup sweep for crashed deployments complete');
   void deploySweep.cleanup;
+  // 12-14: stop / restart / remove share the deploy worker; the outcome is recorded through the
+  // services helpers (activity + status cache), never written from src/deploy.
+  const serviceOperationHandler = createServiceOperationJobHandler(
+    createServiceOperationJobDeps(deployJobDeps, {
+      loadTarget: (serviceId) => loadServiceOperationTarget(db, serviceId),
+      record: (input) => recordServiceOperation(db, () => new Date(), input),
+      events: eventPublisher,
+      logger,
+    }),
+  );
   const deployHandle = startDeployWorker({
     handler: createDeployJobHandler({
       ...deployJobDeps,
@@ -135,6 +146,7 @@ async function main(): Promise<void> {
         clear: (deploymentId) => deployCancelFlags.clear(deploymentId),
       },
     }),
+    serviceOperationHandler,
     connection: deployWorkerConnection,
     concurrency: env.NOODARA_DEPLOY_CONCURRENCY,
     deployMaxMs: env.NOODARA_DEPLOY_MAX_MS,

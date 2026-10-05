@@ -12,7 +12,14 @@ import {
   type ServiceEditableFields,
   type ServiceEditField,
 } from '@noodara/domain';
-import { preflightPublishedPort, type DeploymentStatus, type PortOwner } from '@noodara/domain/deployment';
+import {
+  deriveServiceStatus,
+  NON_TERMINAL_DEPLOYMENT_STATUSES,
+  preflightPublishedPort,
+  type ContainerObservation,
+  type DeploymentStatus,
+  type PortOwner,
+} from '@noodara/domain/deployment';
 import type { ServiceSource } from '@noodara/domain/validators';
 import { writeActivityEvent } from '../activity/write-activity-event.js';
 import type { Database } from '../db/client.js';
@@ -21,6 +28,8 @@ import { environments } from '../db/schema/environments.js';
 import { projects } from '../db/schema/projects.js';
 import { servers } from '../db/schema/servers.js';
 import { services } from '../db/schema/services.js';
+import type { ServiceOperation, ServiceRemoteCleanup } from '../deploy/service-ops.js';
+import type { RecordServiceOperationInput, ServiceOperationQueue, ServiceOperationTarget } from '../deploy/service-ops-job.js';
 import { publishServerEvent, type ServerEventPublisher } from '../events/server-event-publisher.js';
 import type { MasterKeys, ServiceActor } from './server-service-deps.js';
 import {
@@ -37,7 +46,7 @@ import {
   type ServiceCredentialsView,
   type ServiceCredentialTarget,
 } from './service-credentials.js';
-import { toServiceView, type ServiceRow, type ServiceView } from './service-view.js';
+import { containerObservationFromCache, toServiceView, type ServiceRow, type ServiceView } from './service-view.js';
 
 export interface PanelPort {
   readonly port: number;
@@ -52,6 +61,10 @@ export interface ServiceServicesDeps {
   readonly panelPorts: readonly PanelPort[];
   /** Master keys for credential envelopes; defaults to the environment's, resolved lazily. */
   readonly masterKeys?: () => Promise<MasterKeys>;
+  /** 12-14: the stop/restart/remove producer; without it an operation is QUEUE_UNAVAILABLE. */
+  readonly operationQueue?: ServiceOperationQueue;
+  /** 12-14: remote cleanup on delete; without it a deployed service cannot be deleted. */
+  readonly remoteCleanup?: ServiceRemoteCleanup;
 }
 
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
@@ -504,6 +517,236 @@ export async function updateService(deps: ServiceServicesDeps, input: UpdateServ
 }
 
 // ---------------------------------------------------------------------------------------------
+// Operations and delete (12-14)
+// ---------------------------------------------------------------------------------------------
+
+type Selector = Pick<Database, 'select'>;
+
+/** A non-terminal deployment exists: the deploy owns the container. */
+async function hasActiveDeployment(db: Selector, serviceId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: deployments.id })
+    .from(deployments)
+    .where(and(eq(deployments.serviceId, serviceId), inArray(deployments.status, [...NON_TERMINAL_DEPLOYMENT_STATUSES])))
+    .limit(1);
+  return row !== undefined;
+}
+
+/** Deployments a worker claimed (`startedAt` set): the only ones that can leave remote resources.
+ *  Newest first, as the cleanup expects. */
+export async function claimedDeploymentIds(db: Selector, serviceId: string): Promise<string[]> {
+  const rows = await db
+    .select({ id: deployments.id })
+    .from(deployments)
+    .where(and(eq(deployments.serviceId, serviceId), isNotNull(deployments.startedAt)))
+    .orderBy(desc(deployments.createdAt), desc(deployments.id));
+  return rows.map((row) => row.id);
+}
+
+async function scopedServiceRow(db: Selector, projectId: string, serviceId: string) {
+  const [row] = await db
+    .select()
+    .from(services)
+    .where(and(eq(services.id, serviceId), eq(services.projectId, projectId)))
+    .limit(1);
+  return row;
+}
+
+const deploymentInProgress = (): Failure<'DEPLOYMENT_IN_PROGRESS'> => ({
+  ok: false,
+  code: 'DEPLOYMENT_IN_PROGRESS',
+  message: 'This service has a deployment in progress; wait for it to finish or cancel it',
+});
+
+export interface RequestServiceOperationInput {
+  readonly actor: ServiceActor;
+  readonly projectId: string;
+  readonly serviceId: string;
+  readonly operation: ServiceOperation;
+}
+
+export type RequestServiceOperationFailureCode =
+  | 'NOT_FOUND'
+  | 'DEPLOYMENT_IN_PROGRESS'
+  | 'SERVICE_NOT_DEPLOYED'
+  | 'SERVICE_OPERATION_IN_PROGRESS'
+  | 'QUEUE_UNAVAILABLE';
+
+export type RequestServiceOperationResult =
+  | { readonly ok: true; readonly service: ServiceView }
+  | Failure<RequestServiceOperationFailureCode>;
+
+/** Queues stop / restart / remove. The job re-checks the target before touching the server. */
+export async function requestServiceOperation(
+  deps: ServiceServicesDeps,
+  input: RequestServiceOperationInput,
+): Promise<RequestServiceOperationResult> {
+  const row = await scopedServiceRow(deps.db, input.projectId, input.serviceId);
+  if (!row) return notFound('Service', input.serviceId);
+  if (await hasActiveDeployment(deps.db, row.id)) return deploymentInProgress();
+  if ((await claimedDeploymentIds(deps.db, row.id)).length === 0) {
+    return { ok: false, code: 'SERVICE_NOT_DEPLOYED', message: 'This service has not been deployed yet' };
+  }
+  if (deps.operationQueue === undefined) {
+    return { ok: false, code: 'QUEUE_UNAVAILABLE', message: 'Job queue is unavailable; try again shortly' };
+  }
+  const enqueued = await deps.operationQueue.enqueue({
+    serviceId: row.id,
+    operation: input.operation,
+    actorId: input.actor.type === 'user' ? input.actor.id : null,
+  });
+  if (!enqueued.ok) return { ok: false, code: enqueued.code, message: enqueued.message };
+  return { ok: true, service: await viewOf(deps.db, row) };
+}
+
+/** The job's target: `null` when the service is gone. */
+export async function loadServiceOperationTarget(db: Database, serviceId: string): Promise<ServiceOperationTarget | null> {
+  const [row] = await db.select({ serverId: services.serverId }).from(services).where(eq(services.id, serviceId)).limit(1);
+  if (!row) return null;
+  return { serverId: row.serverId, activeDeployment: await hasActiveDeployment(db, serviceId) };
+}
+
+const OPERATION_ACTIONS = {
+  stop: 'service.stopped',
+  restart: 'service.restarted',
+  remove: 'service.container_changed',
+} as const satisfies Record<ServiceOperation, string>;
+
+/** Writes the operation's activity event and the status cache in one transaction. `null` when
+ *  the service no longer exists. Only ids, codes and counts reach the event (never output). */
+export async function recordServiceOperation(
+  db: Database,
+  now: () => Date,
+  input: RecordServiceOperationInput,
+): Promise<ServiceView | null> {
+  return db.transaction(async (tx) => {
+    const [service] = await tx.select().from(services).where(eq(services.id, input.serviceId)).for('update');
+    if (!service) return null;
+    const latest = (await latestDeploymentStatuses(tx, [service.id])).get(service.id);
+    const { result } = input;
+    const container: ContainerObservation = result.ok
+      ? result.container
+      : result.code === 'CONTAINER_NOT_FOUND'
+        ? { kind: 'absent' }
+        : containerObservationFromCache(service.status);
+    const cached = deriveServiceStatus({ latestDeployment: latest === undefined ? null : { status: latest }, container });
+    const [updated] = await tx.update(services).set({ status: cached }).where(eq(services.id, service.id)).returning();
+
+    const action = OPERATION_ACTIONS[input.operation];
+    const metadata =
+      action === 'service.container_changed'
+        ? { serverId: input.serverId, previousStatus: service.status, observedState: container.kind }
+        : { serverId: input.serverId, durationMs: result.durationMs };
+    await writeActivityEvent(
+      tx,
+      {
+        ...actorFields(input.actor),
+        entityType: 'service',
+        entityId: service.id,
+        action,
+        outcome: result.ok ? 'success' : 'failure',
+        ...(result.ok ? {} : { errorCode: result.code }),
+        metadata,
+      },
+      now(),
+    );
+    return toServiceView(updated ?? { ...service, status: cached }, latest === undefined ? null : { status: latest });
+  });
+}
+
+export interface DeleteServiceInput {
+  readonly actor: ServiceActor;
+  readonly projectId: string;
+  readonly serviceId: string;
+  readonly confirmName: string;
+}
+
+export type DeleteServiceFailureCode =
+  | 'NOT_FOUND'
+  | 'DELETE_CONFIRMATION_MISMATCH'
+  | 'DEPLOYMENT_IN_PROGRESS'
+  | 'SERVER_UNREACHABLE'
+  | 'SERVER_DOCKER_UNAVAILABLE'
+  | 'SERVICE_CLEANUP_FAILED';
+
+export type DeleteServiceResult = { readonly ok: true; readonly serviceId: string } | Failure<DeleteServiceFailureCode>;
+
+const CLEANUP_UNAVAILABLE = {
+  ok: false,
+  code: 'SERVICE_CLEANUP_FAILED',
+  message: 'Remote cleanup is not available; the service was kept',
+} as const;
+
+/**
+ * Removes the service's container, network, images and workspaces from its server (only when a
+ * deployment was ever claimed), then its row, deployments (cascade) and credentials. A cleanup
+ * failure keeps the row and records a failed `service.deleted`, so the delete can be retried.
+ */
+export async function deleteService(deps: ServiceServicesDeps, input: DeleteServiceInput): Promise<DeleteServiceResult> {
+  const row = await scopedServiceRow(deps.db, input.projectId, input.serviceId);
+  if (!row) return notFound('Service', input.serviceId);
+  if (input.confirmName !== row.name) {
+    return { ok: false, code: 'DELETE_CONFIRMATION_MISMATCH', message: 'Confirmation name does not match the service name' };
+  }
+  if (await hasActiveDeployment(deps.db, row.id)) return deploymentInProgress();
+
+  const metadata = { projectId: row.projectId, environmentId: row.environmentId, serverId: row.serverId, name: row.name };
+  const deploymentIds = await claimedDeploymentIds(deps.db, row.id);
+  if (deploymentIds.length > 0) {
+    const cleaned =
+      deps.remoteCleanup === undefined
+        ? CLEANUP_UNAVAILABLE
+        : await deps.remoteCleanup({ serverId: row.serverId, serviceId: row.id, deploymentIds });
+    if (!cleaned.ok) {
+      await deps.db.transaction((tx) =>
+        writeActivityEvent(
+          tx,
+          {
+            ...actorFields(input.actor),
+            entityType: 'service',
+            entityId: row.id,
+            action: 'service.deleted',
+            outcome: 'failure',
+            errorCode: cleaned.code,
+            metadata,
+          },
+          deps.now(),
+        ),
+      );
+      return { ok: false, code: cleaned.code, message: cleaned.message };
+    }
+  }
+
+  const result = await deps.db.transaction(async (tx): Promise<DeleteServiceResult> => {
+    const [current] = await tx
+      .select()
+      .from(services)
+      .where(and(eq(services.id, row.id), eq(services.projectId, input.projectId)))
+      .for('update');
+    if (!current) return notFound('Service', input.serviceId);
+    // A deploy claimed after the cleanup owns new remote resources: refuse rather than leak them.
+    if (await hasActiveDeployment(tx, current.id)) return deploymentInProgress();
+    await writeActivityEvent(
+      tx,
+      {
+        ...actorFields(input.actor),
+        entityType: 'service',
+        entityId: current.id,
+        action: 'service.deleted',
+        outcome: 'success',
+        metadata,
+      },
+      deps.now(),
+    );
+    await tx.delete(services).where(eq(services.id, current.id));
+    await deleteCredentialRows(tx, [current.repositoryCredentialId, current.registryCredentialId]);
+    return { ok: true, serviceId: current.id };
+  });
+  if (result.ok) await publishServerEvent(deps.events, { type: 'service.deleted', id: result.serviceId });
+  return result;
+}
+
+// ---------------------------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------------------------
 
@@ -512,6 +755,8 @@ export interface ServiceServices {
   getService(projectId: string, serviceId: string): Promise<ServiceView | null>;
   createService(input: CreateServiceInput): Promise<CreateServiceResult>;
   updateService(input: UpdateServiceInput): Promise<UpdateServiceResult>;
+  requestServiceOperation(input: RequestServiceOperationInput): Promise<RequestServiceOperationResult>;
+  deleteService(input: DeleteServiceInput): Promise<DeleteServiceResult>;
   getServiceCredentials(projectId: string, serviceId: string): Promise<ServiceCredentialsView | null>;
   setRepositoryCredential(
     target: ServiceCredentialTarget & { readonly input: RepositoryCredentialInput },
@@ -545,5 +790,7 @@ export function createServiceServices(deps: ServiceServicesDeps): ServiceService
     getService: (projectId, serviceId) => getService(deps, projectId, serviceId),
     createService: (input) => createService(deps, input),
     updateService: (input) => updateService(deps, input),
+    requestServiceOperation: (input) => requestServiceOperation(deps, input),
+    deleteService: (input) => deleteService(deps, input),
   };
 }

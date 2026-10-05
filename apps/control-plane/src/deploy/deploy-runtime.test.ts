@@ -12,12 +12,13 @@ import { DEPLOY_QUEUE_NAME } from '../queue/deploy-queue.js';
 import { noopServerEventPublisher } from '../events/server-event-publisher.js';
 import { createDeployJobDeps, startDeployWorker, type DeployWorkerLike } from './deploy-runtime.js';
 import { noopDeploymentLogSink } from './log-sink.js';
+import { SERVICE_OPERATION_JOB_NAME } from './service-ops-job.js';
 
 const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
 const connection = {} as Redis;
 
 function fakeWorkerFactory() {
-  const calls: { name: string; processor: (job: { data: unknown }, token?: string, signal?: AbortSignal) => Promise<unknown>; opts: WorkerOptions }[] = [];
+  const calls: { name: string; processor: (job: { name?: string; data: unknown }, token?: string, signal?: AbortSignal) => Promise<unknown>; opts: WorkerOptions }[] = [];
   const order: string[] = [];
   const listeners = new Map<string, (...args: unknown[]) => void>();
   const worker: DeployWorkerLike = {
@@ -69,6 +70,45 @@ describe('startDeployWorker', () => {
     const result = await fake.calls[0]?.processor({ data: { deploymentId: 'x' } }, 'token', signal);
     expect(handler).toHaveBeenCalledWith({ deploymentId: 'x' }, signal);
     expect(result).toEqual({ outcome: 'ALREADY_CLAIMED' });
+  });
+
+  it('dispatches service-operation jobs to the service operation handler, never to the deploy handler', async () => {
+    const fake = fakeWorkerFactory();
+    const handler = vi.fn(() => Promise.resolve({ outcome: 'SUCCESS' as const }));
+    const serviceOperationHandler = vi.fn(() => Promise.resolve('succeeded' as const));
+    startDeployWorker({
+      handler,
+      serviceOperationHandler,
+      connection,
+      concurrency: 1,
+      deployMaxMs: 600_000,
+      logger,
+      createWorker: fake.createWorker,
+    });
+    const data = { serviceId: 'svc', operation: 'stop', actorId: null };
+    const result = await fake.calls[0]?.processor({ name: SERVICE_OPERATION_JOB_NAME, data });
+    expect(serviceOperationHandler).toHaveBeenCalledWith(data);
+    expect(handler).not.toHaveBeenCalled();
+    expect(result).toEqual({ outcome: 'succeeded' });
+  });
+
+  it('keeps deploy jobs on the deploy handler when a service operation handler is wired', async () => {
+    const fake = fakeWorkerFactory();
+    const handler = vi.fn(() => Promise.resolve({ outcome: 'SUCCESS' as const }));
+    const serviceOperationHandler = vi.fn(() => Promise.resolve('succeeded' as const));
+    startDeployWorker({ handler, serviceOperationHandler, connection, concurrency: 1, deployMaxMs: 600_000, logger, createWorker: fake.createWorker });
+    await fake.calls[0]?.processor({ name: 'deploy-service', data: { deploymentId: 'x' } });
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(serviceOperationHandler).not.toHaveBeenCalled();
+  });
+
+  it('ignores a service-operation job when no handler is wired (never runs it as a deploy)', async () => {
+    const fake = fakeWorkerFactory();
+    const handler = vi.fn(() => Promise.resolve({ outcome: 'SUCCESS' as const }));
+    startDeployWorker({ handler, connection, concurrency: 1, deployMaxMs: 600_000, logger, createWorker: fake.createWorker });
+    const result = await fake.calls[0]?.processor({ name: SERVICE_OPERATION_JOB_NAME, data: {} });
+    expect(handler).not.toHaveBeenCalled();
+    expect(result).toEqual({ outcome: 'invalid_payload' });
   });
 
   it('logs worker errors without their message (a Redis error can carry a URL)', () => {
@@ -132,6 +172,13 @@ describe('createDeployJobDeps', () => {
 
 describe('src/worker.ts wiring (W1)', () => {
   const source = readFileSync(fileURLToPath(new URL('../worker.ts', import.meta.url)), 'utf8');
+
+  it('wires the service-operation handler into the deploy worker (12-14)', () => {
+    expect(source).toMatch(/createServiceOperationJobHandler\(\s*createServiceOperationJobDeps\(deployJobDeps/);
+    expect(source).toMatch(/startDeployWorker\(\{[\s\S]*serviceOperationHandler,/);
+    expect(source).toMatch(/loadServiceOperationTarget\(db, serviceId\)/);
+    expect(source).toMatch(/recordServiceOperation\(db,/);
+  });
 
   it('starts the deploy worker with NOODARA_DEPLOY_CONCURRENCY on its own Redis connection', () => {
     expect(source).toMatch(/startDeployWorker\(\{[\s\S]*concurrency: env\.NOODARA_DEPLOY_CONCURRENCY/);

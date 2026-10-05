@@ -22,6 +22,12 @@ import { deployWorkerOptions, type DeployJobDeps, type DeployJobLogger, type Dep
 import { createDeploymentStore } from './deployment-store.js';
 import { noopDeploymentLogSink } from './log-sink.js';
 import type { DeployRunLimits } from './run-deployment.js';
+import {
+  SERVICE_OPERATION_JOB_NAME,
+  type ServiceOperationJobDeps,
+  type ServiceOperationJobOutcome,
+} from './service-ops-job.js';
+import { DEFAULT_SERVICE_OPS_LIMITS } from './service-ops.js';
 
 export interface DeployRuntimeConfig {
   /** NOODARA_DEPLOY_MAX_MS */
@@ -86,7 +92,35 @@ export function createDeployJobDeps(deps: DeployRuntimeDeps): DeployJobDeps {
   };
 }
 
-type DeployProcessor = (job: { readonly data: unknown }, token?: string, signal?: AbortSignal) => Promise<{ outcome: DeployJobOutcome }>;
+/** What a job on the shared `deployments` queue resolves to. */
+export type DeployQueueJobResult = { outcome: DeployJobOutcome | ServiceOperationJobOutcome };
+
+export interface ServiceOperationRuntimeDeps {
+  readonly loadTarget: ServiceOperationJobDeps['loadTarget'];
+  readonly record: ServiceOperationJobDeps['record'];
+}
+
+/** 12-14: the service-operation handler's deps, sharing the deploy job's SSH connect. */
+export function createServiceOperationJobDeps(
+  deploy: Pick<DeployJobDeps, 'connect' | 'createRedactor'>,
+  deps: ServiceOperationRuntimeDeps & { readonly events: ServerEventPublisher; readonly logger: DeployJobLogger },
+): ServiceOperationJobDeps {
+  return {
+    loadTarget: deps.loadTarget,
+    record: deps.record,
+    events: deps.events,
+    connect: deploy.connect,
+    createRedactor: deploy.createRedactor,
+    limits: DEFAULT_SERVICE_OPS_LIMITS,
+    logger: deps.logger,
+  };
+}
+
+type DeployProcessor = (
+  job: { readonly name?: string; readonly data: unknown },
+  token?: string,
+  signal?: AbortSignal,
+) => Promise<DeployQueueJobResult>;
 
 /** The slice of a BullMQ Worker this module uses; injectable for the unit test. */
 export interface DeployWorkerLike {
@@ -99,10 +133,12 @@ export interface DeployWorkerLike {
 export type CreateDeployBullWorker = (name: string, processor: DeployProcessor, opts: WorkerOptions) => DeployWorkerLike;
 
 const createBullWorker: CreateDeployBullWorker = (name, processor, opts) =>
-  new Worker<unknown, { outcome: DeployJobOutcome }>(name, (job, token, signal) => processor(job, token, signal), opts);
+  new Worker<unknown, DeployQueueJobResult>(name, (job, token, signal) => processor(job, token, signal), opts);
 
 export interface StartDeployWorkerOptions {
   readonly handler: (data: unknown, signal?: AbortSignal) => Promise<{ outcome: DeployJobOutcome }>;
+  /** 12-14: handles `service-operation` jobs (same queue, same worker). Without it they are dropped. */
+  readonly serviceOperationHandler?: (data: unknown) => Promise<ServiceOperationJobOutcome>;
   /** A dedicated worker connection (`maxRetriesPerRequest: null`), never the queue's. */
   readonly connection: Redis;
   readonly concurrency: number;
@@ -125,7 +161,18 @@ export function startDeployWorker(options: StartDeployWorkerOptions): DeployWork
   const { logger } = options;
   const worker = create(
     DEPLOY_QUEUE_NAME,
-    (job, _token, signal) => options.handler(job.data, signal),
+    async (job, _token, signal) => {
+      // A service-operation job never reaches the deploy handler (it would fail its payload parse
+      // and, worse, be counted as a deploy).
+      if (job.name === SERVICE_OPERATION_JOB_NAME) {
+        if (options.serviceOperationHandler === undefined) {
+          logger.warn({}, 'service operation job ignored: no handler wired');
+          return { outcome: 'invalid_payload' };
+        }
+        return { outcome: await options.serviceOperationHandler(job.data) };
+      }
+      return options.handler(job.data, signal);
+    },
     {
       connection: options.connection,
       prefix: BULLMQ_PREFIX,

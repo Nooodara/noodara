@@ -1,8 +1,9 @@
 // 12-07: projects and environments. Each mutation commits its row change and its activity event
 // in one transaction (ARCHITECTURE.md §6). Uniqueness is pre-checked inside the transaction and
 // backed by the database's unique indexes; a lost race surfaces as a named failure, never a 500.
-// No SSE event is published for projects or environments (ROADMAP D22: clients refetch).
-import { and, asc, count, eq, inArray, ne, sql } from 'drizzle-orm';
+// No SSE event is published for projects or environments (ROADMAP D22: clients refetch); a project
+// delete publishes `service.deleted` for each service it removed (12-14).
+import { and, asc, count, desc, eq, inArray, isNotNull, ne, sql } from 'drizzle-orm';
 import {
   projectSlugWithSuffix,
   validateEnvironmentName,
@@ -13,6 +14,9 @@ import {
 import { writeActivityEvent } from '../activity/write-activity-event.js';
 import type { Database } from '../db/client.js';
 import { credentials } from '../db/schema/credentials.js';
+import { deployments } from '../db/schema/deployments.js';
+import type { ServiceRemoteCleanup } from '../deploy/service-ops.js';
+import { noopServerEventPublisher, publishServerEvent, type ServerEventPublisher } from '../events/server-event-publisher.js';
 import { environments } from '../db/schema/environments.js';
 import { projects } from '../db/schema/projects.js';
 import { services } from '../db/schema/services.js';
@@ -21,6 +25,10 @@ import type { ServiceActor } from './server-service-deps.js';
 export interface ProjectServicesDeps {
   readonly db: Database;
   readonly now: () => Date;
+  /** 12-14: remote cleanup of deployed services on delete; without it such a project is kept. */
+  readonly remoteCleanup?: ServiceRemoteCleanup;
+  /** 12-14: `service.deleted` for each service a project delete removed. */
+  readonly events?: ServerEventPublisher;
 }
 
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
@@ -389,35 +397,106 @@ export interface DeleteProjectInput {
   readonly confirmName: string;
 }
 
-export type DeleteProjectFailureCode = 'NOT_FOUND' | 'PROJECT_NOT_ARCHIVED' | 'DELETE_CONFIRMATION_MISMATCH';
+export type DeleteProjectFailureCode =
+  | 'NOT_FOUND'
+  | 'PROJECT_NOT_ARCHIVED'
+  | 'DELETE_CONFIRMATION_MISMATCH'
+  | 'DEPLOYMENT_IN_PROGRESS'
+  | 'SERVER_UNREACHABLE'
+  | 'SERVER_DOCKER_UNAVAILABLE'
+  | 'SERVICE_CLEANUP_FAILED';
 
 export type DeleteProjectResult =
   | { readonly ok: true; readonly projectId: string }
   | { readonly ok: false; readonly code: DeleteProjectFailureCode; readonly message: string };
 
+/** A worker is running a deployment of one of these services. A QUEUED one is not: the cascade
+ *  removes it and its job finds no row. */
+async function hasRunningDeployment(db: Pick<Database, 'select'>, serviceIds: readonly string[]): Promise<boolean> {
+  if (serviceIds.length === 0) return false;
+  const [row] = await db
+    .select({ id: deployments.id })
+    .from(deployments)
+    .where(and(inArray(deployments.serviceId, [...serviceIds]), inArray(deployments.status, ['PREPARING', 'BUILDING', 'DEPLOYING'])))
+    .limit(1);
+  return row !== undefined;
+}
+
+type DeleteProjectFailure = Extract<DeleteProjectResult, { ok: false }>;
+
+function deleteProjectPrecheck(
+  current: ProjectRow | undefined,
+  input: DeleteProjectInput,
+): DeleteProjectFailure | null {
+  if (!current) return projectNotFound(input.projectId);
+  if (current.archivedAt === null) {
+    return { ok: false, code: 'PROJECT_NOT_ARCHIVED', message: 'Archive the project before deleting it' };
+  }
+  if (input.confirmName !== current.name) {
+    return {
+      ok: false,
+      code: 'DELETE_CONFIRMATION_MISMATCH',
+      message: 'Confirmation name does not match the project name',
+    };
+  }
+  return null;
+}
+
+const runningDeployment: DeleteProjectFailure = {
+  ok: false,
+  code: 'DEPLOYMENT_IN_PROGRESS',
+  message: 'A service of this project has a deployment in progress; wait for it to finish or cancel it',
+};
+
+/** 12-14: removes each deployed service's container, network, images and workspaces first;
+ *  the first failure keeps the whole project so the delete can be retried. */
+async function cleanupProjectServices(deps: ProjectServicesDeps, projectId: string): Promise<DeleteProjectFailure | null> {
+  const rows = await deps.db
+    .select({ id: services.id, serverId: services.serverId })
+    .from(services)
+    .where(eq(services.projectId, projectId));
+  if (await hasRunningDeployment(deps.db, rows.map((row) => row.id))) return runningDeployment;
+  for (const row of rows) {
+    const claimed = await deps.db
+      .select({ id: deployments.id })
+      .from(deployments)
+      .where(and(eq(deployments.serviceId, row.id), isNotNull(deployments.startedAt)))
+      .orderBy(desc(deployments.createdAt), desc(deployments.id));
+    if (claimed.length === 0) continue;
+    if (deps.remoteCleanup === undefined) {
+      return { ok: false, code: 'SERVICE_CLEANUP_FAILED', message: 'Remote cleanup is not available; the project was kept' };
+    }
+    const cleaned = await deps.remoteCleanup({
+      serverId: row.serverId,
+      serviceId: row.id,
+      deploymentIds: claimed.map((deployment) => deployment.id),
+    });
+    if (!cleaned.ok) return { ok: false, code: cleaned.code, message: cleaned.message };
+  }
+  return null;
+}
+
 /**
  * Deletes an archived project whose exact name the caller repeated (strict `!==`: no trimming,
  * no case folding). The event is written while the row still exists; the project delete cascades
  * environments, services, deployments and log chunks; then the services' credentials go, after
- * the services, because `services.*_credential_id` are RESTRICT. Remote cleanup is 12-14's job.
+ * the services, because `services.*_credential_id` are RESTRICT. Each deployed service is
+ * cleaned on its server first (12-14).
  */
 export async function deleteProject(
   deps: ProjectServicesDeps,
   input: DeleteProjectInput,
 ): Promise<DeleteProjectResult> {
-  return deps.db.transaction(async (tx): Promise<DeleteProjectResult> => {
+  // Checked before any remote work: a wrong name or an active project never touches a server.
+  const [before] = await deps.db.select().from(projects).where(eq(projects.id, input.projectId)).limit(1);
+  const refused = deleteProjectPrecheck(before, input) ?? (await cleanupProjectServices(deps, input.projectId));
+  if (refused) return refused;
+
+  let deletedServiceIds: string[] = [];
+  const result = await deps.db.transaction(async (tx): Promise<DeleteProjectResult> => {
     const current = await lockProject(tx, input.projectId, 'update');
-    if (!current) return projectNotFound(input.projectId);
-    if (current.archivedAt === null) {
-      return { ok: false, code: 'PROJECT_NOT_ARCHIVED', message: 'Archive the project before deleting it' };
-    }
-    if (input.confirmName !== current.name) {
-      return {
-        ok: false,
-        code: 'DELETE_CONFIRMATION_MISMATCH',
-        message: 'Confirmation name does not match the project name',
-      };
-    }
+    const failure = deleteProjectPrecheck(current, input);
+    if (failure || !current) return failure ?? projectNotFound(input.projectId);
 
     const [environmentCount] = await tx
       .select({ value: count() })
@@ -425,12 +504,15 @@ export async function deleteProject(
       .where(eq(environments.projectId, current.id));
     const serviceRows = await tx
       .select({
+        id: services.id,
         repositoryCredentialId: services.repositoryCredentialId,
         registryCredentialId: services.registryCredentialId,
       })
       .from(services)
       .where(eq(services.projectId, current.id))
       .for('update');
+    // A deploy claimed after the cleanup owns new remote resources: refuse rather than leak them.
+    if (await hasRunningDeployment(tx, serviceRows.map((row) => row.id))) return runningDeployment;
     const credentialIds = serviceRows
       .flatMap((row) => [row.repositoryCredentialId, row.registryCredentialId])
       .filter((id): id is string => id !== null);
@@ -457,8 +539,14 @@ export async function deleteProject(
     if (credentialIds.length > 0) {
       await tx.delete(credentials).where(inArray(credentials.id, credentialIds));
     }
+    deletedServiceIds = serviceRows.map((row) => row.id);
     return { ok: true, projectId: current.id };
   });
+  if (result.ok) {
+    const events = deps.events ?? noopServerEventPublisher;
+    for (const id of deletedServiceIds) await publishServerEvent(events, { type: 'service.deleted', id });
+  }
+  return result;
 }
 
 // ---------------------------------------------------------------------------------------------

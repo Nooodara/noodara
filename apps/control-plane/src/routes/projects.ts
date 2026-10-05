@@ -179,7 +179,11 @@ const projectsRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         400: BadRequestSchema,
         401: ErrorBodySchema,
         404: ErrorBodySchema,
+        // 12-14: a running deployment or Docker down (409); an unreachable server or a failed
+        // remote cleanup (502). The project is kept in each case.
+        409: ErrorBodySchema,
         422: ErrorBodySchema,
+        502: ErrorBodySchema,
       },
     },
     handler: async (request, reply) => {

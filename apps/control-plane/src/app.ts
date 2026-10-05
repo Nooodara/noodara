@@ -6,6 +6,8 @@ import {
   validatorCompiler,
 } from '@fastify/type-provider-zod';
 import Fastify from 'fastify';
+import { createRedactor } from '@noodara/domain/security';
+import { createSsh2Adapter } from '@noodara/ssh';
 import type { Redis } from 'ioredis';
 import { appRedactor } from './activity/redaction.js';
 import { createDnsChecker, type DnsChecker } from './auth/dns-checker.js';
@@ -13,7 +15,15 @@ import { decodeMasterKey, logMasterKeyWarning } from './boot/master-key.js';
 import { getDb } from './db/client.js';
 import { createCancelDeployment, type CancelDeployment } from './deploy/cancel-deployment.js';
 import { cancelFlagRedisFrom, createDeployCancelFlags } from './deploy/cancel-flag.js';
+import { createDeployConnect, loadDeployServerFromDb } from './deploy/deploy-connect.js';
 import { createDeploymentStore } from './deploy/deployment-store.js';
+import {
+  createServiceRemoteCleanup,
+  DEFAULT_SERVICE_OPS_LIMITS,
+  SERVICE_OPS_MESSAGES,
+  type ServiceRemoteCleanup,
+} from './deploy/service-ops.js';
+import { createServiceOperationQueue, type ServiceOperationQueue } from './deploy/service-ops-job.js';
 import { env } from './env.js';
 import { createRedisServerEventPublisher } from './events/redis-server-event-publisher.js';
 import type { ServerEventPublisher } from './events/server-event-publisher.js';
@@ -37,6 +47,7 @@ import { resolveServerServicesDeps, type ServiceLogger } from './services/server
 import { createProjectServices, type ProjectServices } from './services/project-services.js';
 import { createServerServices, type ServerServices } from './services/server-services.js';
 import { createDeploymentServices, type DeploymentServices } from './services/deployment-services.js';
+import { masterKeysFromEnvironment } from './services/service-credentials.js';
 import { createServiceServices, panelPortsFromEnv, type ServiceServices } from './services/service-services.js';
 
 export interface BuildAppDeps {
@@ -51,6 +62,10 @@ export interface BuildAppDeps {
   queue?: ConnectServerQueue;
   /** 12-10: the `deployments` queue producer; a caller-injected queue is never closed here. */
   deployQueue?: DeployQueue;
+  /** 12-14: the stop/restart/remove producer; built on the deploy queue's Redis connection. */
+  serviceOperationQueue?: ServiceOperationQueue;
+  /** 12-14: remote cleanup on service/project delete; defaults to SSH via the deploy connect. */
+  serviceRemoteCleanup?: ServiceRemoteCleanup;
   /** 12-13: `POST /api/deployments/:id/cancel`; built lazily from `getDb()`, the deploy queue and
    *  its Redis connection when not injected. */
   cancelDeployment?: CancelDeployment;
@@ -95,14 +110,18 @@ function createServerServicesResolver(
 
 /** Same lazy, per-instance memoised shape as `createServerServicesResolver`, for `/api/projects`.
  *  A failed first resolution is not cached, so a later request retries the database. */
-function createProjectServicesResolver(deps: BuildAppDeps): () => Promise<ProjectServices> {
+function createProjectServicesResolver(
+  deps: BuildAppDeps,
+  eventPublisher: ServerEventPublisher,
+  remoteCleanup: ServiceRemoteCleanup,
+): () => Promise<ProjectServices> {
   let cached: Promise<ProjectServices> | undefined;
   return () => {
     if (deps.projectServices !== undefined) {
       return Promise.resolve(deps.projectServices);
     }
     cached ??= getDb()
-      .then((db) => createProjectServices({ db, now: () => new Date() }))
+      .then((db) => createProjectServices({ db, now: () => new Date(), events: eventPublisher, remoteCleanup }))
       .catch((error: unknown) => {
         cached = undefined;
         throw error;
@@ -116,6 +135,7 @@ function createProjectServicesResolver(deps: BuildAppDeps): () => Promise<Projec
 function createServiceServicesResolver(
   deps: BuildAppDeps,
   eventPublisher: ServerEventPublisher,
+  operations: { getOperationQueue: () => ServiceOperationQueue; remoteCleanup: ServiceRemoteCleanup },
 ): () => Promise<ServiceServices> {
   let cached: Promise<ServiceServices> | undefined;
   return () => {
@@ -129,6 +149,8 @@ function createServiceServicesResolver(
           now: () => new Date(),
           events: eventPublisher,
           panelPorts: panelPortsFromEnv({ apiPort: env.PORT, publicUrl: env.NOODARA_PUBLIC_URL }),
+          operationQueue: { enqueue: (payload) => operations.getOperationQueue().enqueue(payload), close: () => Promise.resolve() },
+          remoteCleanup: operations.remoteCleanup,
         }),
       )
       .catch((error: unknown) => {
@@ -139,29 +161,75 @@ function createServiceServicesResolver(
   };
 }
 
+/** 12-14: the default remote cleanup, SSH through the deploy connect. Everything is resolved on
+ *  first use, so building the app opens nothing. Never rejects (a setup failure is unreachable). */
+function createRemoteCleanupResolver(deps: BuildAppDeps): ServiceRemoteCleanup {
+  if (deps.serviceRemoteCleanup !== undefined) return deps.serviceRemoteCleanup;
+  let cached: Promise<ServiceRemoteCleanup> | undefined;
+  const resolve = (): Promise<ServiceRemoteCleanup> =>
+    (cached ??= getDb()
+      .then((db) =>
+        createServiceRemoteCleanup({
+          connect: createDeployConnect({
+            loadServer: loadDeployServerFromDb(db),
+            ssh: createSsh2Adapter(),
+            timeouts: {
+              connectMs: env.NOODARA_SSH_CONNECT_TIMEOUT_MS,
+              commandMs: env.NOODARA_SSH_COMMAND_TIMEOUT_MS,
+              discoveryMs: env.NOODARA_SSH_DISCOVERY_TIMEOUT_MS,
+            },
+            masterKeys: masterKeysFromEnvironment(),
+          }),
+          createRedactor,
+          limits: DEFAULT_SERVICE_OPS_LIMITS,
+        }),
+      )
+      .catch((error: unknown) => {
+        cached = undefined;
+        throw error;
+      }));
+  return async (request) => {
+    try {
+      return await (await resolve())(request);
+    } catch {
+      return { ok: false, code: 'SERVER_UNREACHABLE', message: SERVICE_OPS_MESSAGES.SERVER_UNREACHABLE };
+    }
+  };
+}
+
 /** 12-10: the deploy queue producer, owned and closed by this instance unless injected.
  *  12-13: its Redis connection also carries the cancel flags, so cancel opens nothing new. */
 function createDeployQueueResolver(deps: BuildAppDeps): {
   getDeployQueue: () => DeployQueue;
   getDeployRedis: () => Redis;
+  /** 12-14: the service-operation producer, on the same `deployments` queue and connection. */
+  getOperationQueue: () => ServiceOperationQueue;
   closeOwnedDeployQueue: () => Promise<void>;
 } {
   let connection: Redis | undefined;
   let ownedQueue: DeployQueue | undefined;
+  let ownedOperationQueue: ServiceOperationQueue | undefined;
   const getDeployRedis = (): Redis => (connection ??= createQueueRedisConnection(env.REDIS_URL));
   const getDeployQueue = (): DeployQueue => {
     if (deps.deployQueue !== undefined) return deps.deployQueue;
     return (ownedQueue ??= createDeployQueue({ connection: getDeployRedis() }));
   };
+  const getOperationQueue = (): ServiceOperationQueue => {
+    if (deps.serviceOperationQueue !== undefined) return deps.serviceOperationQueue;
+    return (ownedOperationQueue ??= createServiceOperationQueue({ connection: getDeployRedis() }));
+  };
   const closeOwnedDeployQueue = async (): Promise<void> => {
     const queue = ownedQueue;
+    const operationQueue = ownedOperationQueue;
     const owned = connection;
     ownedQueue = undefined;
+    ownedOperationQueue = undefined;
     connection = undefined;
     if (queue !== undefined) await queue.close();
+    if (operationQueue !== undefined) await operationQueue.close();
     owned?.disconnect();
   };
-  return { getDeployQueue, getDeployRedis, closeOwnedDeployQueue };
+  return { getDeployQueue, getDeployRedis, getOperationQueue, closeOwnedDeployQueue };
 }
 
 /** 12-13: the cancel service, built on first cancel from the deploy queue resolver's connection. */
@@ -399,9 +467,10 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   app.decorate('getServerServices', createServerServicesResolver(deps, eventPublisher, app.log));
 
   // 12-07: `routes/projects.ts` resolves its services per request, the same deferred way.
-  app.decorate('getProjectServices', createProjectServicesResolver(deps));
-  app.decorate('getServiceServices', createServiceServicesResolver(deps, eventPublisher));
-  const { getDeployQueue, getDeployRedis, closeOwnedDeployQueue } = createDeployQueueResolver(deps);
+  const { getDeployQueue, getDeployRedis, getOperationQueue, closeOwnedDeployQueue } = createDeployQueueResolver(deps);
+  const remoteCleanup = createRemoteCleanupResolver(deps);
+  app.decorate('getProjectServices', createProjectServicesResolver(deps, eventPublisher, remoteCleanup));
+  app.decorate('getServiceServices', createServiceServicesResolver(deps, eventPublisher, { getOperationQueue, remoteCleanup }));
   app.decorate('getDeploymentServices', createDeploymentServicesResolver(deps, eventPublisher, getDeployQueue, app.log));
   app.decorate(
     'getCancelDeployment',
