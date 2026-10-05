@@ -1,7 +1,12 @@
 // 12-10: schemas for the deployment routes. The deploy body accepts no field at all; it is parsed
 // loosely so the handler can answer a named 422 (DEPLOYMENT_INPUT_INVALID) instead of a generic
 // 400. Response schemas strip unknown keys on serialization, so a view never leaks extra fields.
-import { DEPLOYMENT_ERROR_CODES, DEPLOYMENT_STATUSES, DEPLOYMENT_TRIGGERS } from '@noodara/domain/deployment';
+import {
+  DEPLOYMENT_ERROR_CODES,
+  DEPLOYMENT_LOG_PHASES,
+  DEPLOYMENT_STATUSES,
+  DEPLOYMENT_TRIGGERS,
+} from '@noodara/domain/deployment';
 import { z } from 'zod';
 
 /** A deploy request carries nothing; 1 KiB is plenty for `{}` and rejects anything larger (413). */
@@ -64,4 +69,38 @@ export const DeploymentViewSchema = z.object({
 export const DeploymentListResponseSchema = z.object({
   items: z.array(DeploymentViewSchema),
   nextCursor: z.string().nullable(),
+});
+
+// 12-12 (H2): `GET /api/deployments/:id/logs`. The cursor is (`phase`, `since`): chunks strictly
+// after it, in phase order then seq. `since` is a plain non-negative decimal integer (no sign,
+// exponent or blank), at most the Postgres `integer` range. A page holds at most
+// `DEPLOYMENT_LOGS_MAX_LIMIT` chunks of at most 16 KB each.
+export const DEPLOYMENT_LOGS_DEFAULT_LIMIT = 50;
+export const DEPLOYMENT_LOGS_MAX_LIMIT = 100;
+const MAX_LOG_SEQ = 2_147_483_647;
+
+export const DeploymentLogsQuerySchema = z
+  .object({
+    phase: z.enum(DEPLOYMENT_LOG_PHASES).default('prepare'),
+    since: z
+      .string()
+      .regex(/^\d{1,10}$/, 'since must be a non-negative integer')
+      .transform(Number)
+      .pipe(z.number().int().min(0).max(MAX_LOG_SEQ))
+      .default(0),
+    limit: z.coerce.number().int().min(1).max(DEPLOYMENT_LOGS_MAX_LIMIT).default(DEPLOYMENT_LOGS_DEFAULT_LIMIT),
+  })
+  .strict();
+
+export const DeploymentLogChunkViewSchema = z.object({
+  phase: z.enum(DEPLOYMENT_LOG_PHASES),
+  seq: z.number().int(),
+  text: z.string(),
+  byteLength: z.number().int(),
+  createdAt: z.string(),
+});
+
+export const DeploymentLogsResponseSchema = z.object({
+  items: z.array(DeploymentLogChunkViewSchema),
+  hasMore: z.boolean(),
 });

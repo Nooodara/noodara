@@ -9,6 +9,8 @@ import { createSsh2Adapter } from '@noodara/ssh';
 import { getDb } from './db/client.js';
 import { createDeployJobDeps, startDeployWorker } from './deploy/deploy-runtime.js';
 import { createDeployJobHandler } from './deploy/deploy-worker.js';
+import { purgeDeploymentLogChunks, startDeploymentLogRetention } from './deploy/log-retention.js';
+import { createDbLogChunkWriter, createDeploymentLogSinkFactory } from './deploy/log-sink.js';
 import { DEPLOY_LOG_LINE_MAX_BYTES, env } from './env.js';
 import { createRedisServerEventPublisher } from './events/redis-server-event-publisher.js';
 import { createLogger } from './logger.js';
@@ -77,9 +79,21 @@ async function main(): Promise<void> {
   // 12-11b (W1): the deploy worker runs beside the connect worker on its own blocking connection.
   // It shares the SSH timeouts and master keys, but never the connect worker's lock budget.
   const deployWorkerConnection = createWorkerRedisConnection(env.REDIS_URL);
+  // 12-12: build logs go to `deployment_log_chunks` and `deployment.log_chunk` (redacted upstream).
+  const deployLogSinkFor = createDeploymentLogSinkFactory({
+    writer: createDbLogChunkWriter(db),
+    events: eventPublisher,
+    logger,
+    policy: {
+      flushIntervalMs: env.NOODARA_DEPLOY_LOG_FLUSH_MS,
+      flushBytes: env.NOODARA_DEPLOY_LOG_FLUSH_BYTES,
+      maxLineBytes: DEPLOY_LOG_LINE_MAX_BYTES,
+      maxPhaseBytes: env.NOODARA_DEPLOY_LOG_MAX_BYTES,
+    },
+  });
   const deployHandle = startDeployWorker({
-    handler: createDeployJobHandler(
-      createDeployJobDeps({
+    handler: createDeployJobHandler({
+      ...createDeployJobDeps({
         db,
         events: eventPublisher,
         ssh: createSsh2Adapter(),
@@ -94,10 +108,18 @@ async function main(): Promise<void> {
         },
         logger,
       }),
-    ),
+      sinkFor: deployLogSinkFor,
+    }),
     connection: deployWorkerConnection,
     concurrency: env.NOODARA_DEPLOY_CONCURRENCY,
     deployMaxMs: env.NOODARA_DEPLOY_MAX_MS,
+    logger,
+  });
+
+  // 12-12 (A4): purge build-log chunks past NOODARA_DEPLOY_LOG_RETENTION_DAYS, hourly.
+  const logRetention = startDeploymentLogRetention({
+    purge: (cutoff) => purgeDeploymentLogChunks(db, cutoff),
+    retentionDays: env.NOODARA_DEPLOY_LOG_RETENTION_DAYS,
     logger,
   });
 
@@ -119,7 +141,7 @@ async function main(): Promise<void> {
     // now runs even if `handle.close()` or `queue.close()` rejects (T-4-32).
     await runWorkerShutdown({
       // Both workers close together; the deploy worker cancels its in-flight jobs first.
-      close: () => Promise.all([handle.close(), deployHandle.close()]).then(() => undefined),
+      close: () => Promise.all([handle.close(), deployHandle.close(), logRetention.stop()]).then(() => undefined),
       graceMs: lockDurationMs,
       stopHeartbeat,
       closeQueue: () => queue.close(),

@@ -1,9 +1,13 @@
 // 12-10: deploy a service and read its deployments. Registered inside the guarded scope in
 // `api-scope.ts`. The deploy answers as soon as the QUEUED row exists and its job is enqueued;
 // the worker does the rest. A deployment read under the wrong service is a 404 (H2).
+// 12-12: `GET /api/deployments/:id/logs` reads persisted build-log chunks after a cursor, the
+// resync path for a client that missed `deployment.log_chunk` events (no replay of older chunks).
 import type { ZodTypeProvider } from '@fastify/type-provider-zod';
 import type { FastifyPluginCallback, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { getDb } from '../db/client.js';
+import { readDeploymentLogs, type DeploymentLogReader } from '../deploy/log-sink.js';
 import type { DeploymentServices } from '../services/deployment-services.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
 import { decodeActivityCursor } from './activity-cursor.js';
@@ -13,6 +17,8 @@ import {
   DeploymentIdParamSchema,
   DeploymentListQuerySchema,
   DeploymentListResponseSchema,
+  DeploymentLogsQuerySchema,
+  DeploymentLogsResponseSchema,
   DeploymentViewSchema,
   ServiceDeploymentParamsSchema,
   ServiceIdParamSchema,
@@ -47,8 +53,17 @@ async function sendFailure(reply: FastifyReply, failure: { readonly code: string
 
 const READ_ERRORS = { 400: BadRequestSchema, 401: ErrorBodySchema, 404: ErrorBodySchema };
 
-const deploymentsRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
+export interface DeploymentsRoutesOptions {
+  /** Injectable for route tests; defaults to the Postgres reader. */
+  readonly readLogs?: DeploymentLogReader;
+}
+
+const readLogsFromDb: DeploymentLogReader = async (deploymentId, query) =>
+  readDeploymentLogs(await getDb(), deploymentId, query);
+
+const deploymentsRoutes: FastifyPluginCallback<DeploymentsRoutesOptions> = (fastify, opts, done) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
+  const readLogs = opts.readLogs ?? readLogsFromDb;
 
   app.route({
     method: 'POST',
@@ -147,6 +162,25 @@ const deploymentsRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         return;
       }
       await reply.send(deployment);
+    },
+  });
+
+  app.route({
+    method: 'GET',
+    url: '/api/deployments/:deploymentId/logs',
+    schema: {
+      params: DeploymentIdParamSchema,
+      querystring: DeploymentLogsQuerySchema,
+      response: { 200: DeploymentLogsResponseSchema, ...READ_ERRORS },
+    },
+    handler: async (request, reply) => {
+      const { phase, since, limit } = request.query;
+      const page = await readLogs(request.params.deploymentId, { phase, since, limit });
+      if (page === null) {
+        await sendFailure(reply, { code: 'NOT_FOUND', message: `Deployment "${request.params.deploymentId}" not found` });
+        return;
+      }
+      await reply.send({ items: [...page.items], hasMore: page.hasMore });
     },
   });
 
