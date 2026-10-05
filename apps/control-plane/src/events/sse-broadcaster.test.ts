@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { MAX_LOG_CHUNK_EVENT_MESSAGE_BYTES } from './deploy-engine-events.js';
 import { SERVER_EVENTS_CHANNEL } from './redis-server-event-publisher.js';
 import { createSseBroadcaster, type SseStream } from './sse-broadcaster.js';
 
@@ -314,5 +315,80 @@ describe('createSseBroadcaster', () => {
       fs.readFile(new URL('./sse-broadcaster.ts', import.meta.url), 'utf8'),
     );
     expect(/Last-Event-ID|lastEventId/.test(fileContents)).toBe(false);
+  });
+});
+
+// 12-05 A2/A3: the four deploy engine event types (D22) fan out exactly like the server events;
+// project.* / environment.* never do; a deployment.log_chunk is forwarded only when well formed
+// and bounded.
+describe('createSseBroadcaster deploy engine events (D22)', () => {
+  async function startedBroadcaster() {
+    const subscriber = buildFakeSubscriber();
+    const logger = buildFakeLogger();
+    const broadcaster = createSseBroadcaster({ subscriber: subscriber as never, logger: logger as never, maxConnections: 32 });
+    const stream = buildFakeStream();
+    broadcaster.add(stream);
+    await broadcaster.start();
+    return { subscriber, stream };
+  }
+
+  const AT = '2026-10-04T00:00:00.000Z';
+  const DEPLOYMENT_ID = '3f0e1c2a-8d1b-4b5e-9a7c-1d2e3f4a5b6c';
+
+  it.each([
+    ['service.updated', { service: { id: 's', projectId: 'p', environmentId: 'e', serverId: 'v', status: 'RUNNING' } }],
+    ['service.deleted', { id: 's' }],
+    ['deployment.updated', { deployment: { id: 'd', serviceId: 's', status: 'BUILDING', errorCode: null } }],
+    ['deployment.log_chunk', { deploymentId: DEPLOYMENT_ID, phase: 'build', seq: 0, text: 'Step 1/4\n', truncated: false }],
+  ])('forwards a %s message as its own SSE event', async (type, body) => {
+    const { subscriber, stream } = await startedBroadcaster();
+    const message = JSON.stringify({ type, ...body, at: AT });
+
+    subscriber.emitMessage(SERVER_EVENTS_CHANNEL, message);
+
+    expect(stream.chunks).toStrictEqual([`event: ${type}\ndata: ${message}\n\n`]);
+  });
+
+  it.each(['project.updated', 'project.deleted', 'environment.updated', 'environment.deleted', 'deployment.log_chunks', 'service.created'])(
+    'drops a %s message (not part of the SSE surface)',
+    async (type) => {
+      const { subscriber, stream } = await startedBroadcaster();
+
+      subscriber.emitMessage(SERVER_EVENTS_CHANNEL, JSON.stringify({ type, id: 'x', at: AT }));
+
+      expect(stream.chunks).toStrictEqual([]);
+    },
+  );
+
+  it('drops a malformed deployment.log_chunk (missing seq) and keeps forwarding later messages', async () => {
+    const { subscriber, stream } = await startedBroadcaster();
+
+    subscriber.emitMessage(
+      SERVER_EVENTS_CHANNEL,
+      JSON.stringify({ type: 'deployment.log_chunk', deploymentId: DEPLOYMENT_ID, phase: 'build', text: 'x', at: AT }),
+    );
+    expect(stream.chunks).toStrictEqual([]);
+
+    const message = JSON.stringify({ type: 'service.deleted', id: 's', at: AT });
+    subscriber.emitMessage(SERVER_EVENTS_CHANNEL, message);
+    expect(stream.chunks).toStrictEqual([`event: service.deleted\ndata: ${message}\n\n`]);
+  });
+
+  it('drops a deployment.log_chunk whose message exceeds MAX_LOG_CHUNK_EVENT_MESSAGE_BYTES', async () => {
+    const { subscriber, stream } = await startedBroadcaster();
+    const message = JSON.stringify({
+      type: 'deployment.log_chunk',
+      deploymentId: DEPLOYMENT_ID,
+      phase: 'build',
+      seq: 1,
+      text: 'x',
+      truncated: false,
+      padding: ' '.repeat(MAX_LOG_CHUNK_EVENT_MESSAGE_BYTES),
+      at: AT,
+    });
+
+    subscriber.emitMessage(SERVER_EVENTS_CHANNEL, message);
+
+    expect(stream.chunks).toStrictEqual([]);
   });
 });

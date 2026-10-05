@@ -11,8 +11,22 @@
 // (D-05, T-5-13) — never raw command output, and deliberately never facts, a snapshot or a
 // `ServerView`. There is deliberately no per-transition event type — the UI discriminates on
 // `server.status`.
+//
+// Phase 12 (12-05, D22) adds the four deploy engine events (`deploy-engine-events.ts`) to this same
+// union, publisher and channel. The name `ServerEvent` is historical: it is the union of every
+// event the global SSE stream carries, and `SSE_EVENT_TYPES` lists exactly those types.
 import type { DiscoveryCheck } from '@noodara/domain/discovery';
 import type { ServerView } from '../services/server-view.js';
+import { DEPLOY_ENGINE_EVENT_TYPES, type DeployEngineEvent } from './deploy-engine-events.js';
+
+export const SERVER_EVENT_TYPES = Object.freeze([
+  'server.updated',
+  'server.deleted',
+  'server.discovery_progress',
+] as const);
+
+/** Every event type `GET /api/events` may carry (D-02, D-05, D22): literal names only. */
+export const SSE_EVENT_TYPES = Object.freeze([...SERVER_EVENT_TYPES, ...DEPLOY_ENGINE_EVENT_TYPES] as const);
 
 export type ServerEvent =
   | { readonly type: 'server.updated'; readonly server: ServerView }
@@ -21,7 +35,8 @@ export type ServerEvent =
       readonly type: 'server.discovery_progress';
       readonly serverId: string;
       readonly check: DiscoveryCheck;
-    };
+    }
+  | DeployEngineEvent;
 
 /**
  * The publication port every Phase 3 service depends on through `ServerServicesDeps.events`.

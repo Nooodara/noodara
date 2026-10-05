@@ -9,6 +9,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import Fastify from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SessionResolver } from '../auth/require-session.js';
+import { buildDeploymentLogChunkEvent, MAX_LOG_CHUNK_EVENT_MESSAGE_BYTES } from '../events/deploy-engine-events.js';
 import type { SseBroadcaster, SseStream } from '../events/sse-broadcaster.js';
 import createEventsRoutes, { exceedsBackpressureBudget, SSE_MAX_BUFFERED_BYTES } from './events.js';
 
@@ -229,5 +230,43 @@ describe('GET /api/events releases the subscriber slot on a write-time error (WR
     rawRes.emit('error', new Error('simulated ECONNRESET'));
 
     expect(streams.size).toBe(0);
+  });
+});
+
+// 12-05 A3: the bounded deployment.log_chunk frame and the unchanged backpressure budget.
+describe('GET /api/events and deployment.log_chunk (12-05)', () => {
+  it('a maximum-size log chunk frame is far inside the backpressure budget (two fit with room)', () => {
+    const maxFrameBytes = MAX_LOG_CHUNK_EVENT_MESSAGE_BYTES + 'event: deployment.log_chunk\ndata: \n\n'.length;
+    expect(exceedsBackpressureBudget(2 * maxFrameBytes)).toBe(false);
+    expect(SSE_MAX_BUFFERED_BYTES).toBe(1_048_576);
+  });
+
+  it('delivers a deployment.log_chunk frame written through the registered stream to the client', async () => {
+    const getSession: SessionResolver = () => Promise.resolve({ session: { id: 's1' } } as never);
+    const { app, broadcaster } = await buildTestApp(getSession, 60_000);
+    apps.push(app);
+
+    const response = await app.inject({ method: 'GET', url: '/api/events', payloadAsStream: true });
+    expect(response.statusCode).toBe(200);
+    const body = response.stream();
+    const received: string[] = [];
+    body.on('data', (chunk: Buffer) => {
+      received.push(chunk.toString('utf8'));
+    });
+
+    const event = buildDeploymentLogChunkEvent({
+      deploymentId: '3f0e1c2a-8d1b-4b5e-9a7c-1d2e3f4a5b6c',
+      phase: 'build',
+      seq: 2,
+      text: 'Step 2/4 : RUN npm ci\n',
+    });
+    const frame = `event: deployment.log_chunk\ndata: ${JSON.stringify(event)}\n\n`;
+    const [stream] = [...broadcaster.streams];
+    stream?.write(frame);
+
+    await vi.waitFor(() => {
+      expect(received.join('')).toContain(frame);
+    });
+    expect(broadcaster.size).toBe(1);
   });
 });

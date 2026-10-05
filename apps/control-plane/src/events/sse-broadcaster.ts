@@ -5,7 +5,9 @@
 import type { FastifyBaseLogger } from 'fastify';
 import type { Redis } from 'ioredis';
 import type { Logger } from 'pino';
+import { isWellFormedLogChunkMessage } from './deploy-engine-events.js';
 import { SERVER_EVENTS_CHANNEL } from './redis-server-event-publisher.js';
+import { SSE_EVENT_TYPES } from './server-event-publisher.js';
 
 /**
  * The narrow structural surface the broadcaster writes SSE frames to. Deliberately not Fastify's
@@ -34,15 +36,11 @@ export interface CreateSseBroadcasterOptions {
   readonly maxConnections: number;
 }
 
-// D-02/D-05: the only three event types this phase ever forwards. A message whose `type` is
-// anything else — including a foreign publisher's message on a shared Redis instance — is dropped
-// before ever reaching a stream's `write` (T-4-36). Extended with a literal string only, never a
-// wildcard/prefix/regex match (T-4-36, T-5-14).
-const KNOWN_EVENT_TYPES = new Set([
-  'server.updated',
-  'server.deleted',
-  'server.discovery_progress',
-]);
+// D-02/D-05/D22: the only event types ever forwarded (`SSE_EVENT_TYPES`: three server events plus
+// the four deploy engine events). A message whose `type` is anything else — including a foreign
+// publisher's message on a shared Redis instance — is dropped before ever reaching a stream's
+// `write` (T-4-36). Literal strings only, never a wildcard/prefix/regex match (T-4-36, T-5-14).
+const KNOWN_EVENT_TYPES: ReadonlySet<string> = new Set(SSE_EVENT_TYPES);
 
 // D-27/T-4-37: an `UNSUBSCRIBE` issued on a connection that has never actually reached Redis (or
 // is stuck retrying against an unreachable one) sits in ioredis's offline command queue forever —
@@ -88,6 +86,15 @@ export function createSseBroadcaster(options: CreateSseBroadcasterOptions): SseB
       // T-4-36: a foreign or malformed `type` never reaches a stream's `write` — this is the
       // control that keeps a shared Redis instance from letting an unrelated writer inject
       // arbitrary SSE frames into an admin's browser.
+      return;
+    }
+
+    // 12-05 A3: a log chunk is the one high-volume type; one that is oversized or missing its
+    // deploymentId/phase/seq never reaches a stream (dropped silently, like an unknown type).
+    if (
+      parsed.type === 'deployment.log_chunk' &&
+      !isWellFormedLogChunkMessage(parsed, Buffer.byteLength(message, 'utf8'))
+    ) {
       return;
     }
 

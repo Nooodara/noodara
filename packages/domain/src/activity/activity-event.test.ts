@@ -259,14 +259,14 @@ describe('server actions (ACT-01, D-16)', () => {
     ).toThrow(InvalidActivityActionError);
   });
 
-  it('throws InvalidActivityActionError for an unknown namespace (project.created)', () => {
+  it('throws InvalidActivityActionError for an unknown namespace (cluster.created)', () => {
     expect(() =>
       buildActivityEvent(
         {
           actorType: 'user',
-          entityType: 'project',
-          entityId: 'proj-1',
-          action: 'project.created' as ActivityAction,
+          entityType: 'cluster',
+          entityId: 'cluster-1',
+          action: 'cluster.created' as ActivityAction,
           outcome: 'success',
         },
         NOW,

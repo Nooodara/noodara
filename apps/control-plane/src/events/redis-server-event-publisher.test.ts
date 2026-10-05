@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ServerView } from '../services/server-view.js';
+import { buildDeploymentLogChunkEvent } from './deploy-engine-events.js';
 import { createRedisServerEventPublisher, SERVER_EVENTS_CHANNEL } from './redis-server-event-publisher.js';
 
 // D-03/D-04/T-4-38: a structural fake Redis (`{ publish: vi.fn() }`) and a capturing logger — this
@@ -90,6 +91,45 @@ describe('createRedisServerEventPublisher', () => {
     expect(Object.keys(parsed).sort()).toStrictEqual(['at', 'id', 'type']);
     expect(parsed.id).toBe('deleted-id');
     expect(parsed.server).toBeUndefined();
+  });
+
+  it('publishes deployment.log_chunk to SERVER_EVENTS_CHANNEL with deploymentId, phase, seq, text, truncated and at', async () => {
+    const redis = buildFakeRedis();
+    const logger = buildFakeLogger();
+    const publisher = createRedisServerEventPublisher(redis as never, logger as never);
+    const event = buildDeploymentLogChunkEvent({
+      deploymentId: '22222222-2222-4222-8222-222222222222',
+      phase: 'build',
+      seq: 4,
+      text: '#5 DONE 0.4s\n',
+    });
+
+    await publisher.publish(event);
+
+    const [channel, rawMessage] = redis.publish.mock.calls[0] as [string, string];
+    expect(channel).toBe(SERVER_EVENTS_CHANNEL);
+    const parsed = JSON.parse(rawMessage) as Record<string, unknown>;
+    expect(Object.keys(parsed).sort()).toStrictEqual(['at', 'deploymentId', 'phase', 'seq', 'text', 'truncated', 'type']);
+    expect(parsed).toMatchObject({ type: 'deployment.log_chunk', phase: 'build', seq: 4, text: '#5 DONE 0.4s\n' });
+  });
+
+  it('publishes service.deleted and deployment.updated on the same channel', async () => {
+    const redis = buildFakeRedis();
+    const logger = buildFakeLogger();
+    const publisher = createRedisServerEventPublisher(redis as never, logger as never);
+
+    await publisher.publish({ type: 'service.deleted', id: 'svc-1' });
+    await publisher.publish({
+      type: 'deployment.updated',
+      deployment: { id: 'dep-1', serviceId: 'svc-1', status: 'FAILED', errorCode: 'BUILD_FAILED' },
+    });
+
+    const calls = redis.publish.mock.calls as [string, string][];
+    expect(calls.map(([channel]) => channel)).toStrictEqual([SERVER_EVENTS_CHANNEL, SERVER_EVENTS_CHANNEL]);
+    expect(JSON.parse(calls[1]?.[1] ?? '{}')).toMatchObject({
+      type: 'deployment.updated',
+      deployment: { id: 'dep-1', status: 'FAILED', errorCode: 'BUILD_FAILED' },
+    });
   });
 
   it('serialises Date fields inside server to ISO-8601 strings', async () => {
