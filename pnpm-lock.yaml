@@ -123,9 +123,15 @@ importers:
       '@fastify/type-provider-zod':
         specifier: 1.0.0
         version: 1.0.0(@fastify/swagger@9.8.1)(fastify@5.12.3)(openapi-types@12.1.3)(zod@4.6.1)
+      '@noodara/docker':
+        specifier: workspace:*
+        version: link:../../packages/docker
       '@noodara/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@noodara/git':
+        specifier: workspace:*
+        version: link:../../packages/git
       '@noodara/ssh':
         specifier: workspace:*
         version: link:../../packages/ssh

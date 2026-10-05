@@ -308,6 +308,37 @@ export async function triggerDeploy(deps: DeploymentServicesDeps, input: Trigger
 }
 
 // ---------------------------------------------------------------------------------------------
+// Worker outcome (12-11)
+// ---------------------------------------------------------------------------------------------
+
+export interface DeploymentFinishedEventInput {
+  readonly deploymentId: string;
+  readonly serviceId: string;
+  readonly status: DeploymentStatus;
+  readonly durationMs: number;
+  readonly commitSha: string | null;
+  readonly errorCode: DeploymentErrorCode | null;
+}
+
+/** The deploy store's `deployment.finished` row, inside its finish transaction. ACT-01 keeps
+ *  `writeActivityEvent` behind src/services/; the worker is the system actor. */
+export function writeDeploymentFinishedEvent(tx: Transaction, input: DeploymentFinishedEventInput, now: Date): Promise<string> {
+  return writeActivityEvent(
+    tx,
+    {
+      actorType: 'system',
+      entityType: 'deployment',
+      entityId: input.deploymentId,
+      action: 'deployment.finished',
+      outcome: input.status === 'SUCCESS' ? 'success' : 'failure',
+      ...(input.errorCode === null ? {} : { errorCode: input.errorCode }),
+      metadata: { serviceId: input.serviceId, status: input.status, durationMs: input.durationMs, commitSha: input.commitSha },
+    },
+    now,
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
 // Reads
 // ---------------------------------------------------------------------------------------------
 
