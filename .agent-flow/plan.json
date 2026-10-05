@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-05T04:38:45.681Z",
+  "updatedAt": "2026-10-05T04:39:06.418Z",
   "cursor": {
     "phase": "12",
     "task": "12-06"
@@ -644,7 +644,7 @@
           "dependsOn": [
             "12-02"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -832,14 +832,17 @@
             "apps/control-plane/src/services/project-services.ts",
             "apps/control-plane/src/services/project-services.test.ts",
             "apps/control-plane/src/app.ts",
-            "tests/integration/projects/"
+            "tests/integration/projects/",
+            "apps/control-plane/src/routes/http-errors.ts",
+            "apps/control-plane/src/routes/http-errors.test.ts",
+            "apps/control-plane/src/routes/api-scope.ts"
           ],
           "wave": 2,
           "dependsOn": [
             "12-01",
             "12-05"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -897,7 +900,10 @@
             "apps/control-plane/src/services/service-view.ts",
             "apps/control-plane/src/services/service-view.test.ts",
             "apps/control-plane/src/app.ts",
-            "tests/integration/projects/"
+            "tests/integration/projects/",
+            "apps/control-plane/src/routes/http-errors.ts",
+            "apps/control-plane/src/routes/http-errors.test.ts",
+            "apps/control-plane/src/routes/api-scope.ts"
           ],
           "wave": 3,
           "dependsOn": [
@@ -965,7 +971,10 @@
             "apps/control-plane/src/services/delete-server.ts",
             "apps/control-plane/src/routes/servers.ts",
             "tests/integration/projects/",
-            "tests/integration/services/delete-server.test.ts"
+            "tests/integration/services/delete-server.test.ts",
+            "apps/control-plane/src/routes/http-errors.ts",
+            "apps/control-plane/src/routes/http-errors.test.ts",
+            "apps/control-plane/src/routes/api-scope.ts"
           ],
           "wave": 4,
           "dependsOn": [
@@ -1046,7 +1055,10 @@
             "apps/control-plane/src/services/deployment-services.test.ts",
             "apps/control-plane/src/app.ts",
             "apps/control-plane/src/server.ts",
-            "tests/integration/queue/deploy-queue.test.ts"
+            "tests/integration/queue/deploy-queue.test.ts",
+            "apps/control-plane/src/routes/http-errors.ts",
+            "apps/control-plane/src/routes/http-errors.test.ts",
+            "apps/control-plane/src/routes/api-scope.ts"
           ],
           "wave": 5,
           "dependsOn": [
@@ -1110,7 +1122,10 @@
             "apps/control-plane/src/worker.ts",
             "apps/control-plane/src/services/deployment-services.ts",
             "tests/integration/deploy-engine/runtime-pipeline.test.ts",
-            "tests/integration/helpers/deploy-engine.ts"
+            "tests/integration/helpers/deploy-engine.ts",
+            "apps/control-plane/src/routes/http-errors.ts",
+            "apps/control-plane/src/routes/http-errors.test.ts",
+            "apps/control-plane/src/routes/api-scope.ts"
           ],
           "wave": 6,
           "dependsOn": [
@@ -1196,7 +1211,10 @@
             "apps/control-plane/src/routes/deployments.ts",
             "apps/control-plane/src/routes/deployment-schemas.ts",
             "apps/control-plane/src/worker.ts",
-            "tests/integration/deploy-engine/runtime-build-logs.test.ts"
+            "tests/integration/deploy-engine/runtime-build-logs.test.ts",
+            "apps/control-plane/src/routes/http-errors.ts",
+            "apps/control-plane/src/routes/http-errors.test.ts",
+            "apps/control-plane/src/routes/api-scope.ts"
           ],
           "wave": 7,
           "dependsOn": [
@@ -1272,7 +1290,10 @@
             "apps/control-plane/src/worker.ts",
             "apps/control-plane/src/routes/deployments.ts",
             "apps/control-plane/src/services/deployment-services.ts",
-            "tests/integration/deploy-engine/runtime-cancel.test.ts"
+            "tests/integration/deploy-engine/runtime-cancel.test.ts",
+            "apps/control-plane/src/routes/http-errors.ts",
+            "apps/control-plane/src/routes/http-errors.test.ts",
+            "apps/control-plane/src/routes/api-scope.ts"
           ],
           "wave": 8,
           "dependsOn": [
@@ -1340,7 +1361,10 @@
             "apps/control-plane/src/routes/projects.ts",
             "apps/control-plane/src/services/service-services.ts",
             "apps/control-plane/src/services/project-services.ts",
-            "tests/integration/deploy-engine/runtime-service-ops.test.ts"
+            "tests/integration/deploy-engine/runtime-service-ops.test.ts",
+            "apps/control-plane/src/routes/http-errors.ts",
+            "apps/control-plane/src/routes/http-errors.test.ts",
+            "apps/control-plane/src/routes/api-scope.ts"
           ],
           "wave": 9,
           "dependsOn": [
@@ -1463,7 +1487,10 @@
             "apps/control-plane/src/routes/service-schemas.ts",
             "apps/control-plane/src/services/container-logs.ts",
             "apps/control-plane/src/services/container-logs.test.ts",
-            "tests/integration/deploy-engine/runtime-container-logs.test.ts"
+            "tests/integration/deploy-engine/runtime-container-logs.test.ts",
+            "apps/control-plane/src/routes/http-errors.ts",
+            "apps/control-plane/src/routes/http-errors.test.ts",
+            "apps/control-plane/src/routes/api-scope.ts"
           ],
           "wave": 10,
           "dependsOn": [
