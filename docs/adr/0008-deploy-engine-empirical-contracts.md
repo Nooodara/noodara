@@ -366,3 +366,29 @@ Decision (2026-10-05, `.planning/DECISIONS.md`): cancel cleanup is checked again
 Images/Containers/Local Volumes only. BuildKit cache records are excluded from that parity and only
 checked for bounded growth (≤ 64 kB per cancel in the test). Build cache is BuildKit-owned; its
 retention and pruning belong to Phase 14 (D11/D12). Stall/timeout kills presumably leave the same record.
+
+## Phase 12 Measurements
+
+Soak test measured on Ubuntu 24.04 fixture (sshd+dockerd, Docker Desktop macOS arm64):
+
+| Measurement | Result | Test |
+|---|---|---|
+| 20 consecutive node-api deploys (same service) | 20/20 SUCCESS; p50 4036 ms, p95 5554 ms | `soak.test.ts` A1 |
+| 20 create → deploy → delete cycles | 20/20 SUCCESS; per-cycle p50 4373 ms; full cycle p50 4373 ms | `soak.test.ts` A2 |
+| Cleanup parity: docker system df (Images/Containers/Volumes) | Baseline = final (two settled checks, no prune) | `soak.test.ts` A2 |
+| Build logs per node-api deploy | ~4–5 MiB logs observed | `soak.test.ts` |
+| Reconcile tick (docker ps) cost | 25–27 ms per 50k-layer image on 24.04 | Measured in 11-07 (phase contract test) |
+
+**Defaults confirmed and no adjustments needed:**
+
+- `NOODARA_DEPLOY_LOG_MAX_BYTES = 10 MiB` per phase (observed ~5 MiB per test fixture deploy, 2× safety margin)
+- `NOODARA_DEPLOY_LOG_FLUSH_MS = 250 ms`, `NOODARA_DEPLOY_LOG_FLUSH_BYTES = 16 KiB` (live SSE chunk size validated)
+- `NOODARA_RECONCILE_INTERVAL_MS = 30 s` (cost 25–27 ms per tick, negligible at 30s intervals)
+- `NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS = 10 min` (configurable cap enforced)
+- All timeouts and concurrency knobs validated against range constraints in `env.ts`
+
+**Open items:**
+
+Item 6 (amd64 CI run of tests/integration/deploy-engine) remains pending until the branch runs on GitHub CI
+with a green result. No contract changes anticipated from amd64 since all contract tests (G1–G4) passed on
+both Ubuntu 22.04 and 24.04 in Phase 11.

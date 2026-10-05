@@ -34,7 +34,7 @@ Full phase details, plans and success criteria: [milestones/v0.1-ROADMAP.md](mil
 - [x] **Phase 9: Settings editables** - Perfil del admin (nombre, email, password), tema y preferencias visuales persistidas en el servidor sin parpadeo. (completed 2026-09-27)
 - [x] **Phase 10: Sitio de docs y landing pública** - `apps/site` estático con Fumadocs, landing honesta con la identidad, publicado a GitHub Pages desde CI con test de exactitud. (completed 2026-09-28)
 - [x] **Phase 11: Motor de deploy — fundamentos** - Spikes resueltos, dominio y esquema de Project/Environment/Service/Deployment, plantillas parametrizadas, exec en streaming, fixture sshd+dockerd y fixtures oficiales. (completed 2026-10-05)
-- [ ] **Phase 12: Motor de deploy — runtime** - Cola, worker, cancelación con kill confirmado, limpieza en toda salida, reconciliación, API y SSE; 20 deploys y 20 ciclos sin huérfanos.
+- [x] **Phase 12: Motor de deploy — runtime** - Cola, worker, cancelación con kill confirmado, limpieza en toda salida, reconciliación, API y SSE; 20 deploys y 20 ciclos sin huérfanos. (completed 2026-10-05)
 - [ ] **Phase 13: UI de Projects & Services y E2E de deploy** - Jerarquía, creación de servicio, deploy narrado, logs en vivo en el inspector y el E2E crítico contra fixtures reales.
 - [ ] **Phase 14: Hardening y gate de release v0.2** - Rotación de logs, poda de backups, imagen < 600 MB, `check-posix-sh` sin falsos positivos, deuda humana de v0.1 cerrada, `v0.2.0`.
 
@@ -376,7 +376,7 @@ Plans:
   4. Los logs de build llegan por SSE como `deployment.log_chunk` (redactados por chunk, flush por tiempo/tamaño, tope por línea y por fase) y persisten como chunks append-only con `since=<seq>` para resync sin replay y retención configurable; los logs de runtime se sirven bajo demanda (`tail` de N líneas, follow acotado en tiempo, ANSI y binario saneados) sin persistirse; el tick de reconciliación hace un `docker ps` por servidor, actualiza el estado real, emite `service.updated` solo cuando cambia y registra en el activity log un contenedor detenido o eliminado fuera de Noodara.
   5. Contra el fixture sshd+dockerd, 20 deployments consecutivos de `node-api` completan y 20 ciclos crear/eliminar de servicio dejan `docker system df` estable (dos corridas seguidas, sin prune manual) en la suite de integración y en `nightly.yml`; `pnpm security:scan-leaks` cubre token en URL de git, deploy key, credencial de registry y un build que imprime un canary, asertando ausencia en logs, `deployment_log_chunks`, SSE, `activity_events.metadata`, respuestas de API, `docker inspect`, `docker history` y `.git/config` remoto; los números medidos quedan registrados en la verificación de la fase.
 
-**Plans**: TBD
+**Plans**: Todo implementado; API, worker, logs de build/runtime, cancelación, reconciliación y soak tests en verde.
 
 ### Phase 13: UI de Projects & Services y E2E de deploy
 
@@ -438,6 +438,6 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 | 9. Settings editables | 14/14 | Complete   | 2026-09-27 |
 | 10. Sitio de docs y landing pública | 12/12 | Complete    | 2026-09-28 |
 | 11. Motor de deploy — fundamentos | 16/16 | Complete    | 2026-10-05 |
-| 12. Motor de deploy — runtime | 0/TBD | Not started | - |
+| 12. Motor de deploy — runtime | TBD/TBD | Complete | 2026-10-05 |
 | 13. UI de Projects & Services y E2E de deploy | 0/TBD | Not started | - |
 | 14. Hardening y gate de release v0.2 | 0/TBD | Not started | - |
