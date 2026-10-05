@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
-import { describe, expect, it } from 'vitest';
-import { parseEnv } from './env.js';
+import { readFileSync } from 'node:fs';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DEPLOY_ENV_KNOBS, DEPLOY_LOG_LINE_MAX_BYTES, loadEnv, parseEnv } from './env.js';
 
 function base64Key(byteLength = 32): string {
   return randomBytes(byteLength).toString('base64');
@@ -453,5 +454,190 @@ describe('parseEnv', () => {
         expect(issue).not.toHaveProperty('received');
       }
     });
+  });
+});
+
+describe('deploy engine knobs (Phase 12, D15/D16/D8)', () => {
+  const DEFAULTS: Record<string, number> = {
+    NOODARA_DEPLOY_MAX_MS: 3_600_000,
+    NOODARA_DEPLOY_IDLE_MS: 300_000,
+    NOODARA_DEPLOY_CONCURRENCY: 1,
+    NOODARA_DEPLOY_LOG_MAX_BYTES: 10_485_760,
+    NOODARA_DEPLOY_LOG_FLUSH_MS: 250,
+    NOODARA_DEPLOY_LOG_FLUSH_BYTES: 16_384,
+    NOODARA_DEPLOY_LOG_RETENTION_DAYS: 30,
+    NOODARA_RECONCILE_INTERVAL_MS: 30_000,
+    NOODARA_RUNTIME_LOG_TAIL: 1000,
+    NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS: 600_000,
+  };
+
+  // [variable, min, max] — each boundary is valid on its own with every other knob at its default.
+  const RANGES: readonly (readonly [string, number, number])[] = [
+    ['NOODARA_DEPLOY_MAX_MS', 300_000, 14_400_000],
+    ['NOODARA_DEPLOY_IDLE_MS', 10_000, 3_600_000],
+    ['NOODARA_DEPLOY_CONCURRENCY', 1, 10],
+    ['NOODARA_DEPLOY_LOG_MAX_BYTES', 16_384, 104_857_600],
+    ['NOODARA_DEPLOY_LOG_FLUSH_MS', 50, 5000],
+    ['NOODARA_DEPLOY_LOG_FLUSH_BYTES', 1024, 16_384],
+    ['NOODARA_DEPLOY_LOG_RETENTION_DAYS', 1, 365],
+    ['NOODARA_RECONCILE_INTERVAL_MS', 5000, 600_000],
+    ['NOODARA_RUNTIME_LOG_TAIL', 1, 10_000],
+    ['NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS', 10_000, 3_600_000],
+  ];
+
+  function issuesFor(overrides: Record<string, string>): { variable: string; requirement: string }[] {
+    const result = parseEnv(validSource(overrides));
+    if (result.ok) throw new Error('expected failure');
+    return result.issues;
+  }
+
+  it('declares exactly the ten deploy knobs', () => {
+    expect([...DEPLOY_ENV_KNOBS].sort()).toEqual(Object.keys(DEFAULTS).sort());
+  });
+
+  it('applies every research default when unset', () => {
+    const result = parseEnv(validSource());
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('expected success');
+    for (const [variable, expected] of Object.entries(DEFAULTS)) {
+      expect(result.value[variable as keyof typeof result.value], variable).toBe(expected);
+    }
+  });
+
+  it('keeps the flush-bytes default equal to the 16 KiB per-line cap', () => {
+    expect(DEPLOY_LOG_LINE_MAX_BYTES).toBe(16_384);
+  });
+
+  it.each(RANGES)('accepts the boundary values of %s', (variable, min, max) => {
+    for (const value of [min, max]) {
+      const result = parseEnv(validSource({ [variable]: String(value) }));
+
+      expect(result.ok, `${variable}=${String(value)}`).toBe(true);
+      if (!result.ok) throw new Error('expected success');
+      expect(result.value[variable as keyof typeof result.value]).toBe(value);
+    }
+  });
+
+  it.each(RANGES)('rejects %s just outside its range with one value-free issue', (variable, min, max) => {
+    for (const value of [min - 1, max + 1]) {
+      const issues = issuesFor({ [variable]: String(value) });
+
+      expect(issues).toHaveLength(1);
+      expect(issues[0]?.variable).toBe(variable);
+      expect(issues[0]?.requirement).not.toMatch(new RegExp(`\\b${String(value)}\\b`));
+    }
+  });
+
+  it.each(RANGES)('rejects a non-integer %s instead of producing NaN', (variable) => {
+    const issues = issuesFor({ [variable]: '12.5' });
+
+    expect(issues.map((issue) => issue.variable)).toEqual([variable]);
+  });
+
+  describe('cross-knob validation (H1)', () => {
+    it('rejects an idle timeout larger than the deploy max, against the idle variable', () => {
+      const issues = issuesFor({ NOODARA_DEPLOY_MAX_MS: '600000', NOODARA_DEPLOY_IDLE_MS: '600001' });
+
+      expect(issues).toEqual([
+        {
+          variable: 'NOODARA_DEPLOY_IDLE_MS',
+          requirement: 'NOODARA_DEPLOY_IDLE_MS must be less than or equal to NOODARA_DEPLOY_MAX_MS (D15)',
+        },
+      ]);
+    });
+
+    it('accepts an idle timeout exactly equal to the deploy max', () => {
+      const result = parseEnv(validSource({ NOODARA_DEPLOY_MAX_MS: '600000', NOODARA_DEPLOY_IDLE_MS: '600000' }));
+
+      expect(result.ok).toBe(true);
+    });
+
+    it('rejects a flush size larger than the per-line cap with a named requirement', () => {
+      const issues = issuesFor({ NOODARA_DEPLOY_LOG_FLUSH_BYTES: '16385' });
+
+      expect(issues).toHaveLength(1);
+      expect(issues[0]?.variable).toBe('NOODARA_DEPLOY_LOG_FLUSH_BYTES');
+      expect(issues[0]?.requirement).toContain('per-line cap');
+    });
+
+    it('rejects a per-phase log cap smaller than the per-line cap with a named requirement', () => {
+      const issues = issuesFor({ NOODARA_DEPLOY_LOG_MAX_BYTES: '16383' });
+
+      expect(issues).toHaveLength(1);
+      expect(issues[0]?.variable).toBe('NOODARA_DEPLOY_LOG_MAX_BYTES');
+      expect(issues[0]?.requirement).toContain('per-line cap');
+    });
+
+    it('does not report a cross-knob issue on top of a range issue for the same variable', () => {
+      const issues = issuesFor({ NOODARA_DEPLOY_MAX_MS: '1', NOODARA_DEPLOY_IDLE_MS: '10000' });
+
+      expect(issues.map((issue) => issue.variable)).toEqual(['NOODARA_DEPLOY_MAX_MS']);
+    });
+  });
+
+  describe('boot failure (loadEnv)', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('fails boot naming the variable without echoing any other env value', () => {
+      const source = validSource({
+        NOODARA_ADMIN_EMAIL: 'admin-canary@example.com',
+        NOODARA_ADMIN_PASSWORD: 'admin-password-canary-91827',
+        NOODARA_DEPLOY_MAX_MS: '777777',
+        NOODARA_DEPLOY_IDLE_MS: '888888',
+      });
+      const written: string[] = [];
+      vi.spyOn(process.stderr, 'write').mockImplementation((chunk: string | Uint8Array) => {
+        written.push(String(chunk));
+        return true;
+      });
+      vi.spyOn(process, 'exit').mockImplementation((code?: string | number | null) => {
+        throw new Error(`exit ${String(code)}`);
+      });
+
+      expect(() => loadEnv(source)).toThrow('exit 1');
+
+      const output = written.join('');
+      expect(output).toContain('NOODARA_CONFIG_ERROR NOODARA_DEPLOY_IDLE_MS:');
+      for (const [variable, value] of Object.entries(source)) {
+        if (value === undefined) continue;
+        expect(output, `${variable} value leaked`).not.toContain(value);
+      }
+    });
+  });
+});
+
+describe('env wiring (ADR 0003)', () => {
+  const turbo = JSON.parse(readFileSync(new URL('../../../turbo.json', import.meta.url), 'utf8')) as {
+    tasks: Record<string, { passThroughEnv?: string[] }>;
+  };
+  const envExample = readFileSync(new URL('../../../.env.example', import.meta.url), 'utf8');
+
+  function allEnvKeys(): string[] {
+    const result = parseEnv(
+      validSource({
+        NOODARA_MASTER_KEY_PREVIOUS: base64Key(32),
+        NOODARA_ADMIN_EMAIL: 'admin@example.com',
+        NOODARA_ADMIN_PASSWORD: 'a-long-admin-password',
+      }),
+    );
+    if (!result.ok) throw new Error('expected success');
+    return Object.keys(result.value);
+  }
+
+  it.each(['dev', 'dev:worker'])('lists every validated variable in the %s passThroughEnv', (task) => {
+    const passThrough = turbo.tasks[task]?.passThroughEnv ?? [];
+
+    for (const variable of allEnvKeys()) {
+      expect(passThrough, `${variable} missing from ${task}`).toContain(variable);
+    }
+  });
+
+  it('documents every deploy knob in .env.example', () => {
+    for (const variable of DEPLOY_ENV_KNOBS) {
+      expect(envExample, `${variable} missing from .env.example`).toMatch(new RegExp(`^${variable}=$`, 'm'));
+    }
   });
 });
