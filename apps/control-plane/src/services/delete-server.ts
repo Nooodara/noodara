@@ -5,10 +5,11 @@
 // `servers.credential_id` references it with ON DELETE no action. Deleting credentials first
 // would violate that still-present reference. All of it commits in one `deps.db.transaction`, or
 // nothing at all.
-import { eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { writeActivityEvent } from '../activity/write-activity-event.js';
 import { credentials } from '../db/schema/credentials.js';
 import { servers } from '../db/schema/servers.js';
+import { services } from '../db/schema/services.js';
 import { publishServerEvent } from '../events/server-event-publisher.js';
 import type { ServerServicesDeps, ServiceActor } from './server-service-deps.js';
 
@@ -20,9 +21,31 @@ export interface DeleteServerInput {
 
 export type DeleteServerFailureCode = 'NOT_FOUND' | 'SERVER_BUSY' | 'CONFIRMATION_MISMATCH';
 
+export interface BlockingService {
+  readonly id: string;
+  readonly name: string;
+  readonly projectId: string;
+}
+
 export type DeleteServerResult =
   | { readonly ok: true; readonly serverId: string }
-  | { readonly ok: false; readonly code: DeleteServerFailureCode; readonly message: string };
+  | { readonly ok: false; readonly code: DeleteServerFailureCode; readonly message: string }
+  | {
+      readonly ok: false;
+      readonly code: 'SERVER_HAS_SERVICES';
+      readonly message: string;
+      readonly blockingServices: readonly BlockingService[];
+    };
+
+/** At most this many names go into the message; `blockingServices` always lists them all. */
+const NAMED_IN_MESSAGE = 5;
+
+function hasServicesMessage(blocking: readonly BlockingService[]): string {
+  const names = blocking.slice(0, NAMED_IN_MESSAGE).map((service) => `"${service.name}"`);
+  const more = blocking.length - names.length;
+  const list = more > 0 ? `${names.join(', ')} and ${more.toString()} more` : names.join(', ');
+  return `Server still has services: ${list}. Move or delete them first`;
+}
 
 /**
  * SERV-03: requires the caller to repeat the server's exact name (D-12: strict `!==`, no
@@ -54,6 +77,22 @@ export async function deleteServer(
         ok: false,
         code: 'SERVER_BUSY',
         message: 'Server has a connection attempt in flight',
+      };
+    }
+
+    // PROJ-05/A4: a server with services is never deleted from under them. The FOR UPDATE above
+    // conflicts with the lock createService takes on the server, so no service lands after this.
+    const blocking = await tx
+      .select({ id: services.id, name: services.name, projectId: services.projectId })
+      .from(services)
+      .where(eq(services.serverId, row.id))
+      .orderBy(asc(services.name), asc(services.id));
+    if (blocking.length > 0) {
+      return {
+        ok: false,
+        code: 'SERVER_HAS_SERVICES',
+        message: hasServicesMessage(blocking),
+        blockingServices: blocking,
       };
     }
 

@@ -16,16 +16,24 @@ import { generateKeyPairSync, randomBytes } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { inspect } from 'node:util';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   createRedactor,
   decryptSecret,
+  encryptSecret,
   revealSecret,
   SecretTamperError,
   type EncryptedBlob,
   type EncryptionKey,
 } from '@noodara/domain/security';
-import { currentKeyVersion, decodeCredential, encodeCredential } from './credential-store.js';
+import {
+  CredentialDecryptError,
+  currentKeyVersion,
+  decodeCredential,
+  decryptCredentialEnvelope,
+  encodeCredential,
+} from './credential-store.js';
 
 function encodeLengthPrefixed(buf: Buffer): Buffer {
   const len = Buffer.alloc(4);
@@ -330,6 +338,81 @@ describe('credential-store', () => {
   describe('currentKeyVersion', () => {
     it('is exported as an async function (integration-tested in plan 03-05)', () => {
       expect(typeof currentKeyVersion).toBe('function');
+    });
+  });
+});
+
+// 12-09 H1/H2: the one decrypt path for service credentials. Failures surface a closed code and a
+// fixed message: never the ciphertext, the key, or the underlying envelope error.
+describe('decryptCredentialEnvelope', () => {
+  const current = randomBytes(32);
+  const previous = randomBytes(32);
+  const canary = `canary-${randomBytes(12).toString('hex')}`;
+
+  function expectClosedFailure(run: () => unknown, code: string, forbidden: readonly string[]): void {
+    let caught: unknown;
+    try {
+      run();
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(CredentialDecryptError);
+    const error = caught as CredentialDecryptError;
+    expect(error.code).toBe(code);
+    expect(error.cause).toBeUndefined();
+    const surfaces = [error.message, String(error.stack), JSON.stringify(error), inspect(error)];
+    for (const surface of surfaces) {
+      for (const value of forbidden) expect(surface).not.toContain(value);
+    }
+  }
+
+  it('decrypts under the current key', () => {
+    const encryptedValue = encryptSecret(canary, { key: current, version: 2 });
+    expect(decryptCredentialEnvelope({ encryptedValue, keyVersion: 2 }, { current })).toBe(canary);
+  });
+
+  it('falls back to the previous key during a rotation window', () => {
+    const encryptedValue = encryptSecret(canary, { key: previous, version: 1 });
+    expect(decryptCredentialEnvelope({ encryptedValue, keyVersion: 1 }, { current, previous })).toBe(canary);
+  });
+
+  it('detects a tampered ciphertext with CREDENTIAL_TAMPERED and no ciphertext in any surface', () => {
+    const encryptedValue = encryptSecret(canary, { key: current, version: 1 });
+    const segments = encryptedValue.split(':');
+    const body = Buffer.from(segments[2] ?? '', 'base64');
+    body[0] = (body[0] ?? 0) ^ 0xff;
+    const tampered = [segments[0], segments[1], body.toString('base64'), segments[3]].join(':');
+    expectClosedFailure(
+      () => decryptCredentialEnvelope({ encryptedValue: tampered, keyVersion: 1 }, { current, previous }),
+      'CREDENTIAL_TAMPERED',
+      [canary, tampered, body.toString('base64'), current.toString('base64'), previous.toString('base64')],
+    );
+  });
+
+  it('rejects a row whose key version does not match its envelope with CREDENTIAL_KEY_UNKNOWN', () => {
+    const encryptedValue = encryptSecret(canary, { key: current, version: 3 });
+    expectClosedFailure(
+      () => decryptCredentialEnvelope({ encryptedValue, keyVersion: 1 }, { current }),
+      'CREDENTIAL_KEY_UNKNOWN',
+      [canary, encryptedValue, current.toString('base64')],
+    );
+  });
+
+  it('rejects a malformed envelope with CREDENTIAL_MALFORMED', () => {
+    const malformed = `v1:${canary}`;
+    expectClosedFailure(
+      () => decryptCredentialEnvelope({ encryptedValue: malformed, keyVersion: 1 }, { current }),
+      'CREDENTIAL_MALFORMED',
+      [canary],
+    );
+  });
+
+  it('serializes the error to its closed fields only', () => {
+    const error = new CredentialDecryptError('CREDENTIAL_TAMPERED');
+    expect(JSON.parse(JSON.stringify(error))).toStrictEqual({
+      name: 'CredentialDecryptError',
+      code: 'CREDENTIAL_TAMPERED',
+      message: error.message,
     });
   });
 });

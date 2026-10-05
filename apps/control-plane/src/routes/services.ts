@@ -5,6 +5,7 @@
 import type { ZodTypeProvider } from '@fastify/type-provider-zod';
 import type { FastifyPluginCallback, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import type { ServiceCredentialsResult } from '../services/service-credentials.js';
 import type { ServiceServices } from '../services/service-services.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
 import { ErrorBodySchema, mapServiceCodeToStatus, toErrorBody, ValidationErrorBodySchema } from './http-errors.js';
@@ -12,7 +13,11 @@ import { ProjectIdParamSchema } from './project-schemas.js';
 import {
   CreateServiceBodySchema,
   ListServicesResponseSchema,
+  RegistryCredentialBodySchema,
+  RepositoryCredentialBodySchema,
   SERVICE_ROUTE_BODY_LIMIT_BYTES,
+  ServiceCredentialErrorBodySchema,
+  ServiceCredentialsResponseSchema,
   ServiceInputErrorBodySchema,
   ServiceParamsSchema,
   ServiceViewSchema,
@@ -149,6 +154,106 @@ const servicesRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
       });
     },
   });
+
+  // -------------------------------------------------------------------------------------------
+  // Credentials (12-09): write-only. Responses carry presence, type and a deploy key's public
+  // half only; the submitted token or password is never echoed, logged or put in an event.
+  // -------------------------------------------------------------------------------------------
+
+  const CREDENTIAL_ERRORS = { ...MUTATION_ERRORS, 422: ServiceCredentialErrorBodySchema };
+  const credentialsUrl = '/api/projects/:projectId/services/:serviceId/credentials';
+
+  async function sendCredentials(reply: FastifyReply, result: ServiceCredentialsResult): Promise<void> {
+    if (!result.ok) {
+      await sendFailure(reply, result);
+      return;
+    }
+    await reply.send(result.credentials);
+  }
+
+  app.route({
+    method: 'GET',
+    url: credentialsUrl,
+    schema: {
+      params: ServiceParamsSchema,
+      response: { 200: ServiceCredentialsResponseSchema, 400: BadRequestSchema, 401: ErrorBodySchema, 404: ErrorBodySchema },
+    },
+    handler: async (request, reply) => {
+      const services = await fastify.getServiceServices();
+      const view = await services.getServiceCredentials(request.params.projectId, request.params.serviceId);
+      if (!view) {
+        await sendFailure(reply, { code: 'NOT_FOUND', message: `Service "${request.params.serviceId}" not found` });
+        return;
+      }
+      await reply.send(view);
+    },
+  });
+
+  app.route({
+    method: 'PUT',
+    url: `${credentialsUrl}/repository`,
+    bodyLimit: SERVICE_ROUTE_BODY_LIMIT_BYTES,
+    schema: {
+      params: ServiceParamsSchema,
+      body: RepositoryCredentialBodySchema,
+      response: { 200: ServiceCredentialsResponseSchema, ...CREDENTIAL_ERRORS },
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const services = await fastify.getServiceServices();
+      const result = await services.setRepositoryCredential({
+        actor,
+        projectId: request.params.projectId,
+        serviceId: request.params.serviceId,
+        input: request.body,
+      });
+      await sendCredentials(reply, result);
+    },
+  });
+
+  app.route({
+    method: 'PUT',
+    url: `${credentialsUrl}/registry`,
+    bodyLimit: SERVICE_ROUTE_BODY_LIMIT_BYTES,
+    schema: {
+      params: ServiceParamsSchema,
+      body: RegistryCredentialBodySchema,
+      response: { 200: ServiceCredentialsResponseSchema, ...CREDENTIAL_ERRORS },
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const services = await fastify.getServiceServices();
+      const result = await services.setRegistryCredential({
+        actor,
+        projectId: request.params.projectId,
+        serviceId: request.params.serviceId,
+        input: request.body,
+      });
+      await sendCredentials(reply, result);
+    },
+  });
+
+  for (const slot of ['repository', 'registry'] as const) {
+    app.route({
+      method: 'DELETE',
+      url: `${credentialsUrl}/${slot}`,
+      schema: {
+        params: ServiceParamsSchema,
+        response: { 200: ServiceCredentialsResponseSchema, ...CREDENTIAL_ERRORS },
+      },
+      handler: async (request, reply) => {
+        const actor = requireActor(request.actor);
+        const services = await fastify.getServiceServices();
+        const result = await services.removeServiceCredential({
+          actor,
+          projectId: request.params.projectId,
+          serviceId: request.params.serviceId,
+          slot,
+        });
+        await sendCredentials(reply, result);
+      },
+    });
+  }
 
   done();
 };

@@ -13,8 +13,10 @@
 import {
   encryptSecret,
   decryptSecret,
+  MalformedBlobError,
   secretValue,
   SecretTamperError,
+  UnknownKeyVersionError,
   type EncryptedBlob,
   type EncryptionKey,
   type Redactor,
@@ -147,6 +149,66 @@ export function decodeCredential(row: CredentialRow, masterKeys: MasterKeys): Ss
         // 'ssh_private_key' protects the same key material; the redactor's label is cosmetic.
         passphrase: secretValue(parsed.passphrase, 'ssh_private_key'),
       };
+}
+
+export type CredentialDecryptCode = 'CREDENTIAL_TAMPERED' | 'CREDENTIAL_KEY_UNKNOWN' | 'CREDENTIAL_MALFORMED';
+
+const DECRYPT_MESSAGES: Readonly<Record<CredentialDecryptCode, string>> = Object.freeze({
+  CREDENTIAL_TAMPERED: 'Stored credential failed authentication',
+  CREDENTIAL_KEY_UNKNOWN: 'Stored credential was encrypted with an unknown key version',
+  CREDENTIAL_MALFORMED: 'Stored credential is malformed',
+});
+
+/** 12-09 H2: a decrypt failure as a closed code with a fixed message. It never carries the
+ *  ciphertext, the key, or the envelope error as `cause`, and serializes to its closed fields. */
+export class CredentialDecryptError extends Error {
+  readonly code: CredentialDecryptCode;
+
+  constructor(code: CredentialDecryptCode) {
+    super(DECRYPT_MESSAGES[code]);
+    this.name = 'CredentialDecryptError';
+    this.code = code;
+  }
+
+  toJSON(): { name: string; code: CredentialDecryptCode; message: string } {
+    return { name: this.name, code: this.code, message: this.message };
+  }
+}
+
+function decryptCodeOf(error: unknown): CredentialDecryptCode | null {
+  if (error instanceof SecretTamperError) return 'CREDENTIAL_TAMPERED';
+  if (error instanceof UnknownKeyVersionError) return 'CREDENTIAL_KEY_UNKNOWN';
+  if (error instanceof MalformedBlobError) return 'CREDENTIAL_MALFORMED';
+  return null;
+}
+
+/**
+ * 12-09: decrypts a service credential row with the same current-then-previous fallback as
+ * `decodeCredential`. The plaintext is returned to `service-credentials.ts` only, which wraps it
+ * in a `SecretValue` at once. Every envelope failure becomes a `CredentialDecryptError`.
+ */
+export function decryptCredentialEnvelope(
+  row: { readonly encryptedValue: string; readonly keyVersion: number },
+  masterKeys: MasterKeys,
+): string {
+  const blob = row.encryptedValue as EncryptedBlob;
+  const attempt = (key: Buffer): string => decryptSecret(blob, new Map([[row.keyVersion, key]]));
+  let code: CredentialDecryptCode | null;
+  try {
+    return attempt(masterKeys.current);
+  } catch (error) {
+    code = decryptCodeOf(error);
+    if (code === null) throw error;
+  }
+  if (code === 'CREDENTIAL_TAMPERED' && masterKeys.previous !== undefined) {
+    try {
+      return attempt(masterKeys.previous);
+    } catch (error) {
+      code = decryptCodeOf(error);
+      if (code === null) throw error;
+    }
+  }
+  throw new CredentialDecryptError(code);
 }
 
 /** The `key_version` a newly-encrypted credential should use — the current maximum across every

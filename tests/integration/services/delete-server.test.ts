@@ -12,7 +12,10 @@ import {
   activityEvents,
   credentials,
   discoverySnapshots,
+  environments,
+  projects,
   servers,
+  services,
 } from '../../../apps/control-plane/src/db/schema/index.js';
 import { seedDiscoverySnapshot } from '../fixtures/representative-data.js';
 import { assertNoStrayTestContainers } from '../helpers/ssh.js';
@@ -298,5 +301,55 @@ describe('deleteServer (SERV-03, ACT-01, D-11, D-12, D-14)', () => {
     const json = JSON.stringify(result);
     expect(json).not.toContain('encryptedValue');
     expect(json).not.toContain('credentialId');
+  });
+
+  it('refuses a server that still has services with SERVER_HAS_SERVICES naming them (A4, PROJ-05)', async () => {
+    fixture = await startServiceFixture();
+    const server = await registerFixtureServer(fixture);
+    const other = await registerFixtureServer(fixture);
+    const suffix = randomUUID().slice(0, 8);
+    const [project] = await fixture.db
+      .insert(projects)
+      .values({ name: `Guard ${suffix}`, slug: `guard-${suffix}` })
+      .returning({ id: projects.id });
+    if (!project) throw new Error('project arrangement failed');
+    const [environment] = await fixture.db
+      .insert(environments)
+      .values({ projectId: project.id, name: 'production' })
+      .returning({ id: environments.id });
+    if (!environment) throw new Error('environment arrangement failed');
+    const seeded = await fixture.db
+      .insert(services)
+      .values(
+        ['api', 'worker'].map((name) => ({
+          projectId: project.id,
+          environmentId: environment.id,
+          serverId: server.id,
+          name,
+          sourceType: 'image' as const,
+          imageRef: 'nginx:1.27',
+          internalPort: 80,
+        })),
+      )
+      .returning({ id: services.id, name: services.name });
+    const eventsBefore = await fetchActivityEventsFor(fixture, server.id);
+
+    const result = await deleteFixtureServer(fixture, { serverId: server.id, confirmName: server.name });
+
+    expect(result).toMatchObject({ ok: false, code: 'SERVER_HAS_SERVICES' });
+    if (result.ok || result.code !== 'SERVER_HAS_SERVICES') throw new Error('expected SERVER_HAS_SERVICES');
+    expect(result.message).toContain('api');
+    expect(result.message).toContain('worker');
+    expect([...result.blockingServices].sort((a, b) => a.name.localeCompare(b.name))).toStrictEqual(
+      [...seeded]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((row) => ({ id: row.id, name: row.name, projectId: project.id })),
+    );
+    expect(await fetchServerRow(fixture, server.id)).toBeDefined();
+    expect(await fetchActivityEventsFor(fixture, server.id)).toHaveLength(eventsBefore.length);
+
+    // A server with no services is still deletable.
+    const freed = await deleteFixtureServer(fixture, { serverId: other.id, confirmName: other.name });
+    expect(freed).toStrictEqual({ ok: true, serverId: other.id });
   });
 });

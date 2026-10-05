@@ -91,6 +91,11 @@ function buildEditServerInput(
 
 const ListServersResponseSchema = z.object({ items: z.array(ServerViewSchema) });
 const DeleteServerResponseSchema = z.object({ ok: z.literal(true), serverId: z.uuid() });
+
+/** 409 on delete: `SERVER_HAS_SERVICES` also lists the services in the way (PROJ-05). */
+const DeleteServerConflictSchema = ErrorBodySchema.extend({
+  blockingServices: z.array(z.object({ id: z.uuid(), name: z.string(), projectId: z.uuid() })).optional(),
+});
 const ConnectResponseSchema = z.object({ server: ServerViewSchema, jobId: z.string() });
 
 /**
@@ -242,7 +247,7 @@ const serversRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         200: DeleteServerResponseSchema,
         401: ErrorBodySchema,
         404: ErrorBodySchema,
-        409: ErrorBodySchema,
+        409: DeleteServerConflictSchema,
       },
     },
     handler: async (request, reply) => {
@@ -254,6 +259,13 @@ const serversRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         confirmName: request.body.confirmName,
       });
       if (!result.ok) {
+        if (result.code === 'SERVER_HAS_SERVICES') {
+          await reply.code(409).send({
+            ...toErrorBody(result.code, result.message),
+            blockingServices: result.blockingServices.map(({ id, name, projectId }) => ({ id, name, projectId })),
+          });
+          return;
+        }
         await sendServiceError(reply, result.code, result.message);
         return;
       }

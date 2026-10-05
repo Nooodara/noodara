@@ -50,3 +50,38 @@ export const ServiceInputErrorBodySchema = z.object({
   message: z.string(),
   reason: z.string(),
 });
+
+// ---------------------------------------------------------------------------------------------
+// Credentials (12-09): write-only. Bodies are strict so a stray field is a 400, and lengths are
+// bounded by the service's validators (fixed messages that never quote the value, H3).
+// ---------------------------------------------------------------------------------------------
+
+export const RepositoryCredentialBodySchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('deploy_key') }),
+  z.strictObject({ kind: z.literal('https_token'), token: z.string() }),
+]);
+
+export const RegistryCredentialBodySchema = z.strictObject({
+  host: z.string().optional(),
+  username: z.string(),
+  password: z.string(),
+});
+
+const CredentialSummarySchema = z.object({
+  type: z.enum(['git_deploy_key', 'git_https_token', 'registry_password']),
+  /** The deploy key's public half; `null` for every other type. */
+  publicKey: z.string().nullable(),
+});
+
+/** Only presence, type and the deploy key's public half: a secret never leaves the server (A1, A2). */
+export const ServiceCredentialsResponseSchema = z.object({
+  repository: CredentialSummarySchema.nullable(),
+  registry: CredentialSummarySchema.nullable(),
+});
+
+/** 422 for a credential that failed validation: `reason` names the rule, never the value. */
+export const ServiceCredentialErrorBodySchema = z.object({
+  error: z.literal('SERVICE_CREDENTIAL_INVALID'),
+  message: z.string(),
+  reason: z.string(),
+});

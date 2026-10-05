@@ -22,7 +22,21 @@ import { projects } from '../db/schema/projects.js';
 import { servers } from '../db/schema/servers.js';
 import { services } from '../db/schema/services.js';
 import { publishServerEvent, type ServerEventPublisher } from '../events/server-event-publisher.js';
-import type { ServiceActor } from './server-service-deps.js';
+import type { MasterKeys, ServiceActor } from './server-service-deps.js';
+import {
+  credentialChangesForSource,
+  deleteCredentialRows,
+  getServiceCredentials,
+  masterKeysFromEnvironment,
+  removeServiceCredential,
+  setRegistryCredential,
+  setRepositoryCredential,
+  type RegistryCredentialInput,
+  type RepositoryCredentialInput,
+  type ServiceCredentialsResult,
+  type ServiceCredentialsView,
+  type ServiceCredentialTarget,
+} from './service-credentials.js';
 import { toServiceView, type ServiceRow, type ServiceView } from './service-view.js';
 
 export interface PanelPort {
@@ -36,6 +50,8 @@ export interface ServiceServicesDeps {
   readonly events: ServerEventPublisher;
   /** The panel's own host ports (API and public URL); a service may never publish on them. */
   readonly panelPorts: readonly PanelPort[];
+  /** Master keys for credential envelopes; defaults to the environment's, resolved lazily. */
+  readonly masterKeys?: () => Promise<MasterKeys>;
 }
 
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
@@ -436,11 +452,18 @@ export async function updateService(deps: ServiceServicesDeps, input: UpdateServ
       }
 
       const now = deps.now();
+      // A credential never follows the service to another repository or registry (A3).
+      const sourceColumns = changed.has('source') && edit.source !== undefined ? serviceColumnsFromSource(edit.source) : null;
+      const credentialChanges =
+        sourceColumns === null
+          ? { columns: {}, staleIds: [] }
+          : await credentialChangesForSource(tx, { masterKeys: masterKeysOf(deps) }, current, sourceColumns, now);
       const [row] = await tx
         .update(services)
         .set({
           ...(changed.has('name') && edit.name !== undefined ? { name: edit.name } : {}),
-          ...(changed.has('source') && edit.source !== undefined ? serviceColumnsFromSource(edit.source) : {}),
+          ...(sourceColumns ?? {}),
+          ...credentialChanges.columns,
           ...(changed.has('internalPort') && edit.internalPort !== undefined ? { internalPort: edit.internalPort } : {}),
           ...(changed.has('publishedPort') && edit.publishedPort !== undefined ? { publishedPort: edit.publishedPort } : {}),
           updatedAt: now,
@@ -448,6 +471,7 @@ export async function updateService(deps: ServiceServicesDeps, input: UpdateServ
         .where(eq(services.id, current.id))
         .returning();
       if (!row) throw new Error('updateService: update returned no row');
+      await deleteCredentialRows(tx, credentialChanges.staleIds);
 
       const requiresRedeploy = classification.kind === 'redeploy';
       await writeActivityEvent(
@@ -458,7 +482,11 @@ export async function updateService(deps: ServiceServicesDeps, input: UpdateServ
           entityId: row.id,
           action: 'service.updated',
           outcome: 'success',
-          metadata: { changedFields: [...classification.changedFields], requiresRedeploy },
+          metadata: {
+            changedFields: [...classification.changedFields],
+            requiresRedeploy,
+            ...(credentialChanges.staleIds.length > 0 ? { credentialReplaced: true } : {}),
+          },
         },
         now,
       );
@@ -484,10 +512,35 @@ export interface ServiceServices {
   getService(projectId: string, serviceId: string): Promise<ServiceView | null>;
   createService(input: CreateServiceInput): Promise<CreateServiceResult>;
   updateService(input: UpdateServiceInput): Promise<UpdateServiceResult>;
+  getServiceCredentials(projectId: string, serviceId: string): Promise<ServiceCredentialsView | null>;
+  setRepositoryCredential(
+    target: ServiceCredentialTarget & { readonly input: RepositoryCredentialInput },
+  ): Promise<ServiceCredentialsResult>;
+  setRegistryCredential(target: ServiceCredentialTarget & { readonly input: RegistryCredentialInput }): Promise<ServiceCredentialsResult>;
+  removeServiceCredential(
+    target: ServiceCredentialTarget & { readonly slot: 'repository' | 'registry' },
+  ): Promise<ServiceCredentialsResult>;
+}
+
+const defaultMasterKeys = new WeakMap<ServiceServicesDeps, () => Promise<MasterKeys>>();
+
+function masterKeysOf(deps: ServiceServicesDeps): () => Promise<MasterKeys> {
+  if (deps.masterKeys) return deps.masterKeys;
+  let resolved = defaultMasterKeys.get(deps);
+  if (!resolved) {
+    resolved = masterKeysFromEnvironment();
+    defaultMasterKeys.set(deps, resolved);
+  }
+  return resolved;
 }
 
 export function createServiceServices(deps: ServiceServicesDeps): ServiceServices {
+  const credentialDeps = { db: deps.db, now: deps.now, masterKeys: masterKeysOf(deps) };
   return {
+    getServiceCredentials: (projectId, serviceId) => getServiceCredentials(credentialDeps, projectId, serviceId),
+    setRepositoryCredential: (target) => setRepositoryCredential(credentialDeps, target),
+    setRegistryCredential: (target) => setRegistryCredential(credentialDeps, target),
+    removeServiceCredential: (target) => removeServiceCredential(credentialDeps, target),
     listServices: (projectId) => listServices(deps, projectId),
     getService: (projectId, serviceId) => getService(deps, projectId, serviceId),
     createService: (input) => createService(deps, input),
