@@ -18,6 +18,7 @@ import { createServiceOperationJobHandler } from './deploy/service-ops-job.js';
 import { DEPLOY_LOG_LINE_MAX_BYTES, env } from './env.js';
 import { createRedisServerEventPublisher } from './events/redis-server-event-publisher.js';
 import { createLogger } from './logger.js';
+import { startWorkerReconcile } from './reconcile/reconcile-wiring.js';
 import { computeDeployCancelKeyTtlMs } from './queue/deploy-job-budget.js';
 import { computeJobLockDurationMs } from './queue/job-budget.js';
 import { createConnectServerQueue } from './queue/connect-server-queue.js';
@@ -160,6 +161,21 @@ async function main(): Promise<void> {
     logger,
   });
 
+  // 12-15: the reconcile tick, a repeatable job on its own queue and blocking connection. One
+  // `docker ps` per CONNECTED server every NOODARA_RECONCILE_INTERVAL_MS, never overlapping.
+  const reconcileWorkerConnection = createWorkerRedisConnection(env.REDIS_URL);
+  const reconcile = await startWorkerReconcile({
+    db,
+    connect: deployJobDeps.connect,
+    createRedactor: deployJobDeps.createRedactor,
+    events: eventPublisher,
+    logger,
+    commandMs: env.NOODARA_SSH_COMMAND_TIMEOUT_MS,
+    intervalMs: env.NOODARA_RECONCILE_INTERVAL_MS,
+    queueConnection,
+    workerConnection: reconcileWorkerConnection,
+  });
+
   // The literal "Worker ready" is the boot smoke test's deterministic stdout marker, mirroring
   // how server.ts's "Server listening" line is used today.
   logger.info({ concurrency: env.NOODARA_WORKER_CONCURRENCY, workerId }, 'Worker ready');
@@ -178,7 +194,8 @@ async function main(): Promise<void> {
     // now runs even if `handle.close()` or `queue.close()` rejects (T-4-32).
     await runWorkerShutdown({
       // Both workers close together; the deploy worker cancels its in-flight jobs first.
-      close: () => Promise.all([handle.close(), deployHandle.close(), logRetention.stop()]).then(() => undefined),
+      close: () =>
+        Promise.all([handle.close(), deployHandle.close(), logRetention.stop(), reconcile.close()]).then(() => undefined),
       graceMs: lockDurationMs,
       stopHeartbeat,
       closeQueue: () => queue.close(),
@@ -188,6 +205,9 @@ async function main(): Promise<void> {
         },
         () => {
           deployWorkerConnection.disconnect();
+        },
+        () => {
+          reconcileWorkerConnection.disconnect();
         },
         () => {
           queueConnection.disconnect();
