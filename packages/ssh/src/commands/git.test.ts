@@ -38,6 +38,8 @@ const GIT_PREAMBLE = [
   'protocol.ssh.allow=always',
   '-c',
   'core.hooksPath=/dev/null',
+  '-c',
+  'credential.helper=',
   'clone',
   '--depth',
   '1',
@@ -73,25 +75,53 @@ describe('gitClone', () => {
     ]);
   });
 
-  it('https_token: env GIT_ASKPASS plus the token file path, never the token itself', () => {
+  it('https_token: env GIT_ASKPASS at the askpass slot plus the token file path, never the token itself', () => {
+    const httpsUrl = valid(validateRepositoryUrl('https://github.com/noodara/node-api.git'));
     const command = gitClone({
-      url: valid(validateRepositoryUrl('https://github.com/noodara/node-api.git')),
+      url: httpsUrl,
       branch,
       target: ws.repo,
-      auth: {
-        kind: 'https_token',
-        askpassFile: ws.secretFile('https_token'),
-        tokenFile: ws.secretFile('https_token'),
-      },
+      auth: { kind: 'https_token', workspace: ws },
     });
 
-    expect(command.argv.slice(0, 4)).toEqual([
+    expect(command.argv).toEqual([
       'env',
-      `GIT_ASKPASS=${ws.secretsDir}/https_token`,
+      `GIT_ASKPASS=${ws.secretsDir}/askpass`,
       `NOODARA_ASKPASS_TOKEN_FILE=${ws.secretsDir}/https_token`,
       'GIT_TERMINAL_PROMPT=0',
+      ...GIT_PREAMBLE,
+      branch,
+      '--',
+      httpsUrl,
+      ws.repo,
     ]);
     expect(command.argv.join(' ')).not.toContain('GIT_SSH_COMMAND');
+    expect(command.argv.join(' ')).not.toContain(`${ws.secretsDir}/known_hosts`);
+  });
+
+  it('https_token: refuses a forged workspace, since git executes the askpass path', () => {
+    expect(() =>
+      gitClone({
+        url,
+        branch,
+        target: ws.repo,
+        auth: { kind: 'https_token', workspace: { ...ws, secretsDir: '/usr/bin' as DeploySecretPath } },
+      }),
+    ).toThrow(/workspace/);
+  });
+
+  it('resets every configured credential helper, so no helper can persist the token', () => {
+    for (const auth of [
+      { kind: 'none' } as const,
+      { kind: 'https_token', workspace: ws } as const,
+    ]) {
+      const argv = gitClone({ url, branch, target: ws.repo, auth }).argv;
+      const clone = argv.indexOf('clone');
+      const at = argv.indexOf('credential.helper=');
+      expect(at).toBeGreaterThan(0);
+      expect(argv[at - 1]).toBe('-c');
+      expect(at).toBeLessThan(clone);
+    }
   });
 
   it('none: no GIT_SSH_COMMAND and no GIT_ASKPASS', () => {

@@ -1,17 +1,20 @@
 // Git deploy templates (SVC-08, D14, ADR 0008 G1). Branded inputs only; every token is escaped by
 // renderRemoteCommand. The clone is shallow, never recurses into submodules, runs no hooks and
-// allows only the https and ssh transports (defense in depth next to the D-05 URL validator).
+// allows only the https and ssh transports (defense in depth next to the D-05 URL validator), and
+// resets every configured credential helper so none (e.g. `store`) can persist an HTTPS token.
 // Git exits 128 for every failure class (ADR 0008 G1): callers classify stderr, never the code.
 import type {
   CommitSha,
   DeployRepoPath,
   DeploySecretPath,
+  DeployWorkspace,
   GitBranch,
   RepositoryUrl,
 } from '@noodara/domain/validators';
 import { escapeShellArg } from './allowlist.js';
 import { createRemoteCommand, type RemoteCommand } from './remote-command.js';
 import { SHELL_SCRIPTS } from './shell-scripts.js';
+import { askpassFileFor } from './workspace.js';
 
 /** Paths only: no variant can carry a secret value (T-11-35). */
 export type GitCloneAuth =
@@ -21,11 +24,8 @@ export type GitCloneAuth =
       readonly keyFile: DeploySecretPath;
       readonly knownHostsFile: DeploySecretPath;
     }
-  | {
-      readonly kind: 'https_token';
-      readonly askpassFile: DeploySecretPath;
-      readonly tokenFile: DeploySecretPath;
-    };
+  /** Both paths come from the workspace: the askpass slot and the https_token file. */
+  | { readonly kind: 'https_token'; readonly workspace: DeployWorkspace };
 
 export interface GitCloneInput {
   readonly url: RepositoryUrl;
@@ -44,7 +44,11 @@ function authEnv(auth: GitCloneAuth): string[] {
         `GIT_SSH_COMMAND=ssh -i ${escapeShellArg(auth.keyFile)} -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=${escapeShellArg(auth.knownHostsFile)}`,
       ];
     case 'https_token':
-      return [`GIT_ASKPASS=${auth.askpassFile}`, `NOODARA_ASKPASS_TOKEN_FILE=${auth.tokenFile}`];
+      // git runs GIT_ASKPASS without a shell; both values are fixed workspace paths.
+      return [
+        `GIT_ASKPASS=${askpassFileFor(auth.workspace)}`,
+        `NOODARA_ASKPASS_TOKEN_FILE=${auth.workspace.secretFile('https_token')}`,
+      ];
   }
 }
 
@@ -64,6 +68,8 @@ export function gitClone(input: GitCloneInput): RemoteCommand {
       'protocol.ssh.allow=always',
       '-c',
       'core.hooksPath=/dev/null',
+      '-c',
+      'credential.helper=',
       'clone',
       '--depth',
       '1',

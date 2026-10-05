@@ -89,20 +89,17 @@ function credentialPlan(workspace: DeployWorkspace, credential: GitCredential): 
         secrets: [credential.privateKey],
       };
     }
-    case 'https_token': {
-      const tokenFile = workspace.secretFile('https_token');
-      // DEPLOY_SECRET_NAMES has no askpass entry yet (11-13 open item); the known_hosts slot is
-      // unused by an HTTPS clone. HTTPS-token clone is not measured end to end (ADR 0008 item 4).
-      const askpassFile = workspace.secretFile('known_hosts');
+    case 'https_token':
+      // The helper has its own <ws>/secrets/askpass slot (writeAskpassFile(workspace)); measured
+      // end to end over HTTPS in ADR 0008 open item 4.
       return {
         writes: [
-          { command: writeSecretFile(tokenFile), stdin: credential.token },
-          { command: writeAskpassFile(askpassFile), stdin: ASKPASS_SCRIPT },
+          { command: writeSecretFile(workspace.secretFile('https_token')), stdin: credential.token },
+          { command: writeAskpassFile(workspace), stdin: ASKPASS_SCRIPT },
         ],
-        auth: { kind: 'https_token', askpassFile, tokenFile },
+        auth: { kind: 'https_token', workspace },
         secrets: [credential.token, ASKPASS_SCRIPT],
       };
-    }
   }
 }
 

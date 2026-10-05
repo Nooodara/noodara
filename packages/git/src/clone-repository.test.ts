@@ -298,7 +298,11 @@ describe('cloneRepository with an HTTPS token', () => {
     expect(tokenWrite.stdin).toBe(token);
     const askpassWrite = session.call('secrets.write_askpass');
     expect(askpassWrite.stdin).toBe(ASKPASS_SCRIPT_CONTENT);
+    // A1: the helper has its own slot, no longer the known_hosts one.
+    expect(askpassWrite.command.argv.at(-1)).toBe(`${ws.secretsDir}/askpass`);
+    expect(askpassWrite.command.argv.at(-1)).not.toBe(ws.secretFile('known_hosts'));
     const clone = session.call('process.supervise').command.argv;
+    expect(clone).toContain('credential.helper=');
     expect(clone).toContain(`GIT_ASKPASS=${String(askpassWrite.command.argv.at(-1))}`);
     expect(clone).toContain(`NOODARA_ASKPASS_TOKEN_FILE=${ws.secretFile('https_token')}`);
     expectNoSecretInArgv(session, [token]);

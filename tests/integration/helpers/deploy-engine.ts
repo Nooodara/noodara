@@ -3,11 +3,14 @@
 //     reachable over real SSH as `deployer`, also serving bare Git repositories to a per-run
 //     deploy key under a D-06-valid alias;
 //   - the D-10 htpasswd registry, preloaded with the fixtures' digest-pinned base images;
-//   - the G7 pull-through mirror the nested dockerd uses for docker.io.
+//   - the G7 pull-through mirror the nested dockerd uses for docker.io;
+//   - optionally (12-06) an HTTPS git host: git-http-backend behind nginx basic auth, its per-run
+//     CA trusted by the deploy host, for the askpass HTTPS-token clone contract.
 // Everything carries `noodara.test=true` and stop() removes it all (D-14).
 import { execFileSync } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -38,6 +41,9 @@ const FIXTURES_DIR = path.resolve(HERE, '../../../fixtures');
 
 export const DEPLOY_HOST_ALIAS = 'deploy-host.noodara-test.internal';
 export const GIT_HOST_ALIAS = 'git.noodara-test.internal';
+export const GIT_HTTPS_HOST_ALIAS = 'git-https.noodara-test.internal';
+/** The user name the askpass helper answers (ASKPASS_SCRIPT_CONTENT). */
+export const GIT_HTTPS_USERNAME = 'x-access-token';
 export const DEPLOY_HOST_READY_LINE = 'NOODARA_DEPLOY_HOST_READY';
 
 /** Used until 11-04 lands fixtures/*\/Dockerfile. Index digests resolved on 2026-09-29. */
@@ -78,6 +84,14 @@ export interface SeedRepository {
 export interface StartDeployEngineStackOptions {
   readonly ubuntu: UbuntuVersion;
   readonly seedRepositories?: readonly SeedRepository[];
+  /** 12-06: also serve every seed repository over HTTPS with a per-run token. */
+  readonly httpsGit?: boolean;
+}
+
+export interface HttpsGitHost {
+  /** Per-run random token; the only accepted password for GIT_HTTPS_USERNAME. */
+  readonly token: string;
+  repoUrl(name: string): string;
 }
 
 export interface StackExecOptions {
@@ -108,6 +122,8 @@ export interface DeployEngineStack {
     readonly password: string;
   };
   gitRepoUrl(name: string): string;
+  /** null unless started with `httpsGit: true`. */
+  readonly httpsGit: HttpsGitHost | null;
   /** Digest-pinned refs, e.g. node:22-alpine@sha256:... */
   readonly baseImages: readonly string[];
   /** Upstream the G7 mirror proxies (mirror.gcr.io, or the Docker Hub fallback). */
@@ -181,6 +197,128 @@ rm -rf "$work"
 `;
 
 const LFS_POINTER_OID = 'a'.repeat(64);
+
+// 12-06 HTTPS git host. nginx (pinned by index digest) terminates TLS with a leaf signed by a CA
+// generated at container start, checks basic auth against an apr1 hash of the per-run token
+// (delivered as a 0600 file, never argv or env, deleted once hashed) and hands /git/* to
+// git-http-backend through fcgiwrap. Everything runs as `git`, which owns the bare repositories.
+const GIT_HTTPS_BASE_IMAGE =
+  'nginx:alpine@sha256:df221db836e1754089190208cee7eeda94f233197056426eda74a43ab1abeac2';
+const GIT_HTTPS_READY_LINE = 'NOODARA_GIT_HTTPS_READY';
+const GIT_HTTPS_CA_TARGET = '/usr/local/share/ca-certificates/noodara-test-git-https.crt';
+
+const GIT_HTTPS_DOCKERFILE = `FROM ${GIT_HTTPS_BASE_IMAGE}
+RUN apk add --no-cache git git-daemon fcgiwrap openssl \\
+    && addgroup -S git && adduser -S -D -H -G git -s /sbin/nologin git \\
+    && mkdir -p /srv/git /run/fcgi /certs /auth \\
+    && chown git:git /srv/git /run/fcgi \\
+    && test -x /usr/libexec/git-core/git-http-backend
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY entrypoint.sh /usr/local/bin/noodara-git-https
+RUN chmod 0755 /usr/local/bin/noodara-git-https
+ENTRYPOINT ["/usr/local/bin/noodara-git-https"]
+`;
+
+const GIT_HTTPS_NGINX_CONF = `user git git;
+worker_processes 1;
+error_log /dev/stderr warn;
+pid /run/nginx.pid;
+events { worker_connections 64; }
+http {
+  access_log /dev/stdout;
+  server {
+    listen 443 ssl;
+    ssl_certificate /certs/server.crt;
+    ssl_certificate_key /certs/server.key;
+    client_max_body_size 0;
+    location ~ ^/git(/.*)$ {
+      auth_basic "noodara-test";
+      auth_basic_user_file /auth/htpasswd;
+      include /etc/nginx/fastcgi_params;
+      fastcgi_param SCRIPT_FILENAME /usr/libexec/git-core/git-http-backend;
+      fastcgi_param GIT_PROJECT_ROOT /srv/git;
+      fastcgi_param GIT_HTTP_EXPORT_ALL 1;
+      fastcgi_param PATH_INFO $1;
+      fastcgi_param REMOTE_USER $remote_user;
+      fastcgi_pass unix:/run/fcgi/fcgiwrap.sock;
+    }
+  }
+}
+`;
+
+const GIT_HTTPS_ENTRYPOINT = `#!/bin/sh
+set -eu
+host_name=$1; user_name=$2
+cd /certs
+openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes -days 2 \\
+  -subj /CN=noodara-test-git-https-ca -keyout ca.key -out ca.crt \\
+  -addext basicConstraints=critical,CA:TRUE -addext keyUsage=critical,keyCertSign,cRLSign 2>/dev/null
+openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes \\
+  -subj "/CN=$host_name" -keyout server.key -out server.csr 2>/dev/null
+printf 'subjectAltName=DNS:%s\\nextendedKeyUsage=serverAuth\\nbasicConstraints=critical,CA:FALSE\\nkeyUsage=critical,digitalSignature\\n' "$host_name" > server.ext
+openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -days 2 \\
+  -extfile server.ext -out server.crt 2>/dev/null
+rm -f ca.key ca.srl server.csr server.ext
+chmod 0644 ca.crt server.crt
+chmod 0600 server.key
+hash=$(openssl passwd -apr1 -stdin < /auth/token)
+rm -f /auth/token
+printf '%s:%s\\n' "$user_name" "$hash" > /auth/htpasswd
+chmod 0644 /auth/htpasswd
+su -s /bin/sh git -c 'exec fcgiwrap -s unix:/run/fcgi/fcgiwrap.sock' &
+i=0
+while [ ! -S /run/fcgi/fcgiwrap.sock ] && [ "$i" -lt 100 ]; do i=$((i + 1)); sleep 0.1; done
+nginx
+trap 'exit 0' TERM INT
+echo ${GIT_HTTPS_READY_LINE}
+while :; do sleep 1; done
+`;
+
+interface StartedHttpsGit {
+  readonly container: StartedTestContainer;
+  readonly caCertificate: string;
+}
+
+async function startHttpsGitHost(networkName: string, token: string): Promise<StartedHttpsGit> {
+  const context = mkdtempSync(path.join(tmpdir(), 'noodara-git-https-'));
+  let image: GenericContainer;
+  try {
+    writeFileSync(path.join(context, 'Dockerfile'), GIT_HTTPS_DOCKERFILE);
+    writeFileSync(path.join(context, 'nginx.conf'), GIT_HTTPS_NGINX_CONF);
+    writeFileSync(path.join(context, 'entrypoint.sh'), GIT_HTTPS_ENTRYPOINT);
+    image = await withTimeout(
+      GenericContainer.fromDockerfile(context).build(),
+      BUILD_TIMEOUT_MS,
+      'build git-https host',
+    );
+  } finally {
+    rmSync(context, { recursive: true, force: true });
+  }
+  const container = await image
+    .withName(`noodara-git-https-${randomUUID()}`)
+    .withLabels({ 'noodara.test': 'true' })
+    .withNetworkMode(networkName)
+    .withNetworkAliases(GIT_HTTPS_HOST_ALIAS)
+    .withCommand([GIT_HTTPS_HOST_ALIAS, GIT_HTTPS_USERNAME])
+    .withCopyContentToContainer([{ content: token, target: '/auth/token', mode: 0o600 }])
+    .withWaitStrategy(Wait.forLogMessage(GIT_HTTPS_READY_LINE))
+    .withStartupTimeout(STARTUP_TIMEOUT_MS)
+    .start();
+  try {
+    const ca = await withTimeout(
+      container.exec(['cat', '/certs/ca.crt']),
+      DEFAULT_EXEC_TIMEOUT_MS,
+      'read git-https CA',
+    );
+    if (ca.exitCode !== 0 || !ca.stdout.includes('BEGIN CERTIFICATE')) {
+      throw new Error('deploy-engine: git-https host produced no CA certificate');
+    }
+    return { container, caCertificate: ca.stdout };
+  } catch (error) {
+    await container.stop();
+    throw error;
+  }
+}
 
 export async function startDeployEngineStack(
   options: StartDeployEngineStackOptions,
@@ -401,31 +539,61 @@ export async function startDeployEngineStack(
       await exec(['docker', 'logout', registry.host], { user: 'deployer' });
     }
 
-    for (const repo of seedRepositories) {
-      const branch = repo.branch ?? 'main';
-      await host.copyDirectoriesToContainer([
-        { source: repo.sourceDir, target: `/tmp/noodara-seed-${repo.name}` },
-      ]);
-      const seeded = await rawExec(
-        [
-          'sh',
-          '-c',
-          SEED_SCRIPT,
-          'sh',
-          repo.name,
-          branch,
-          repo.withGitmodules === true ? '1' : '0',
-          repo.withLfsPointer === true ? '1' : '0',
-          LFS_POINTER_OID,
-        ],
-        {
-          user: 'root',
-          env: { GIT_AUTHOR_DATE: SEED_COMMIT_DATE, GIT_COMMITTER_DATE: SEED_COMMIT_DATE },
-        },
-      );
-      if (seeded.exitCode !== 0) {
-        throw new Error(`deploy-engine: seeding '${repo.name}' failed: ${seeded.stderr.trim()}`);
+    /** Seeds every repository into `target`'s /srv/git, owned by its `git` user. */
+    const seedInto = async (target: StartedTestContainer, label: string): Promise<void> => {
+      for (const repo of seedRepositories) {
+        const branch = repo.branch ?? 'main';
+        await target.copyDirectoriesToContainer([
+          { source: repo.sourceDir, target: `/tmp/noodara-seed-${repo.name}` },
+        ]);
+        const seeded = await withTimeout(
+          target.exec(
+            [
+              'sh',
+              '-c',
+              SEED_SCRIPT,
+              'sh',
+              repo.name,
+              branch,
+              repo.withGitmodules === true ? '1' : '0',
+              repo.withLfsPointer === true ? '1' : '0',
+              LFS_POINTER_OID,
+            ],
+            {
+              user: 'root',
+              env: { GIT_AUTHOR_DATE: SEED_COMMIT_DATE, GIT_COMMITTER_DATE: SEED_COMMIT_DATE },
+            },
+          ),
+          DEFAULT_EXEC_TIMEOUT_MS,
+          `seed ${repo.name} on ${label}`,
+        );
+        if (seeded.exitCode !== 0) {
+          throw new Error(
+            `deploy-engine: seeding '${repo.name}' on ${label} failed: ${seeded.stderr.trim()}`,
+          );
+        }
       }
+    };
+    await seedInto(host, 'the ssh git host');
+
+    let httpsGit: HttpsGitHost | null = null;
+    if (options.httpsGit === true) {
+      // Per-run random token, as a real provider issues one; never a committed literal.
+      const token = randomBytes(24).toString('base64url');
+      const gitHttps = await startHttpsGitHost(networkName, token);
+      cleanups.push(async () => {
+        await gitHttps.container.stop();
+      });
+      await seedInto(gitHttps.container, 'the https git host');
+      // Trusted like a public CA: the clone template itself carries no TLS override.
+      await host.copyContentToContainer([
+        { content: gitHttps.caCertificate, target: GIT_HTTPS_CA_TARGET, mode: 0o644 },
+      ]);
+      await mustExec('update-ca-certificates', ['update-ca-certificates'], { user: 'root' });
+      httpsGit = {
+        token,
+        repoUrl: (name: string) => `https://${GIT_HTTPS_HOST_ALIAS}/git/${name}.git`,
+      };
     }
 
     let stopped = false;
@@ -450,6 +618,7 @@ export async function startDeployEngineStack(
         password: credentials.password,
       },
       gitRepoUrl: (name: string) => `git@${GIT_HOST_ALIAS}:/srv/git/${name}.git`,
+      httpsGit,
       baseImages,
       mirrorUpstream: mirror.upstream,
       exec,

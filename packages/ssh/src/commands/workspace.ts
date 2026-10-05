@@ -7,9 +7,9 @@ import { createRemoteCommand, type RemoteCommand } from './remote-command.js';
 import { SHELL_SCRIPTS } from './shell-scripts.js';
 
 /**
- * The askpass helper Phase 12 writes with writeAskpassFile (D7). Git calls it with the prompt as
- * $1; the token is read from the mode-600 file named by NOODARA_ASKPASS_TOKEN_FILE, so it never
- * appears in argv or env. HTTPS-token clone is not yet measured end to end (ADR 0008 open item 4).
+ * The askpass helper written with writeAskpassFile (D7). Git calls it with the prompt as $1; the
+ * token is read from the mode-600 file named by NOODARA_ASKPASS_TOKEN_FILE, so it never appears in
+ * argv or env. Measured end to end over HTTPS on 22.04 and 24.04 (ADR 0008 open item 4).
  */
 export const ASKPASS_SCRIPT_CONTENT = [
   '#!/bin/sh',
@@ -30,6 +30,21 @@ function assertWorkspaceRoot(workspace: DeployWorkspace): string {
     throw new Error('Refusing a workspace root outside /opt/noodara-deploy/<uuid>');
   }
   return root;
+}
+
+/**
+ * The askpass helper's own slot under <ws>/secrets (A1): not a DEPLOY_SECRET_NAMES file, so it never
+ * overwrites a credential, and a sibling of the clone, so it never enters a build context.
+ */
+export const ASKPASS_FILE_NAME = 'askpass';
+
+/** `<root>/secrets/askpass`. Git executes this path, so a forged workspace is refused. */
+export function askpassFileFor(workspace: DeployWorkspace): DeploySecretPath {
+  const root = assertWorkspaceRoot(workspace);
+  if (workspace.secretsDir !== `${root}/secrets`) {
+    throw new Error('Refusing a workspace whose secrets dir is not <root>/secrets');
+  }
+  return `${workspace.secretsDir}/${ASKPASS_FILE_NAME}` as DeploySecretPath;
 }
 
 export function prepareWorkspace(workspace: DeployWorkspace): RemoteCommand {
@@ -59,7 +74,9 @@ export function writeSecretFile(path: DeploySecretPath): RemoteCommand {
   });
 }
 
-export function writeAskpassFile(path: DeploySecretPath): RemoteCommand {
+/** Pass the workspace to write the helper to its own slot (askpassFileFor); mode 0700, it is run. */
+export function writeAskpassFile(target: DeployWorkspace | DeploySecretPath): RemoteCommand {
+  const path = typeof target === 'string' ? target : askpassFileFor(target);
   return createRemoteCommand({
     name: 'secrets.write_askpass',
     argv: ['sh', '-c', SHELL_SCRIPTS.writeAskpassFromStdin, path],

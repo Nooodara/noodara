@@ -1,4 +1,5 @@
 import {
+  DEPLOY_SECRET_NAMES,
   deployWorkspaceFor,
   validateGitBranch,
   validateRepositoryUrl,
@@ -18,7 +19,9 @@ import { gitCheckout, gitClone } from './git.js';
 import { renderRemoteCommand } from './remote-command.js';
 import { SHELL_SCRIPTS } from './shell-scripts.js';
 import {
+  ASKPASS_FILE_NAME,
   ASKPASS_SCRIPT_CONTENT,
+  askpassFileFor,
   groupAlive,
   killGroup,
   prepareWorkspace,
@@ -100,6 +103,18 @@ describe('writeSecretFile / writeAskpassFile', () => {
     expect(command.stdin).toBe('secret');
   });
 
+  it('writeAskpassFile(workspace) writes the helper to its own askpass slot', () => {
+    const command = writeAskpassFile(ws);
+
+    expect(command.argv).toEqual([
+      'sh',
+      '-c',
+      SHELL_SCRIPTS.writeAskpassFromStdin,
+      `${ws.secretsDir}/askpass`,
+    ]);
+    expect(command.stdin).toBe('secret');
+  });
+
   it.each(ADVERSARIAL_VALUES)('round-trips %j as literal words', (value) => {
     for (const command of [
       writeSecretFile(value as DeploySecretPath),
@@ -107,6 +122,35 @@ describe('writeSecretFile / writeAskpassFile', () => {
     ]) {
       expect(shellWords(renderRemoteCommand(command))).toEqual(command.argv);
     }
+  });
+});
+
+describe('askpassFileFor (A1: the askpass helper has its own secret slot)', () => {
+  it('is <ws>/secrets/askpass', () => {
+    expect(ASKPASS_FILE_NAME).toBe('askpass');
+    expect(askpassFileFor(ws)).toBe(`${ws.secretsDir}/askpass`);
+    expect(askpassFileFor(ws)).toBe(`${ws.root}/secrets/askpass`);
+  });
+
+  it('never shares a slot with a DEPLOY_SECRET_NAMES file (no longer the known_hosts slot)', () => {
+    expect(DEPLOY_SECRET_NAMES).not.toContain(ASKPASS_FILE_NAME);
+    for (const name of DEPLOY_SECRET_NAMES) {
+      expect(askpassFileFor(ws)).not.toBe(ws.secretFile(name));
+    }
+    expect(askpassFileFor(ws)).not.toBe(ws.secretFile('known_hosts'));
+  });
+
+  it('lives outside the clone (never in a build context) and inside the root removeDeployDir deletes', () => {
+    expect(askpassFileFor(ws).startsWith(`${ws.repo}/`)).toBe(false);
+    expect(askpassFileFor(ws).startsWith(`${removeDeployDir(ws).argv.at(-1) ?? ''}/`)).toBe(true);
+  });
+
+  it.each([
+    { label: 'a root outside /opt/noodara-deploy/<uuid>', forged: { ...ws, root: '/tmp/x' } },
+    { label: 'a secretsDir that is not <root>/secrets', forged: { ...ws, secretsDir: '/usr/local/bin' } },
+  ])('refuses a forged workspace: $label (git executes this path)', ({ forged }) => {
+    expect(() => askpassFileFor(forged as unknown as DeployWorkspace)).toThrow(/workspace/);
+    expect(() => writeAskpassFile(forged as unknown as DeployWorkspace)).toThrow(/workspace/);
   });
 });
 

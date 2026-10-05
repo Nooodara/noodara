@@ -313,7 +313,22 @@ Items 1–4 resolved by user approval on 2026-10-04:
 | 1 | G7 mirror (`mirror.gcr.io` pull-through) was chosen by the orchestrator, not by the user | ✓ User confirms the mirror; pull-through mirror of mirror.gcr.io stays |
 | 2 | D-04 text says `kill -- -pgid`; measured working form is `kill -s TERM -- "-$pgid"` launched with `setsid -w` | ✓ Accept as a wording correction of D-04, not a change of mechanism |
 | 3 | D-04's `docker kill` branch has no target during `docker build` (0 in every run) | ✓ Keep it as a safety net; it does not claim to kill BuildKit builds |
-| 4 | The HTTPS-token clone path (`https_token`, `git_https_token` credential) was not measured; only the deploy key was | ✓ Measure it with a contract test in Phase 12 before deploy keys are marked deprecated |
+| 4 | The HTTPS-token clone path (`https_token`, `git_https_token` credential) was not measured; only the deploy key was | ✓ Measured in 12-06 (see below) |
+
+Item 4, measured 2026-10-04 by `contracts-https-token.test.ts` (git-http-backend behind nginx
+basic auth, per-run CA trusted by the deploy host, per-run random token):
+
+| Check | 22.04 | 24.04 |
+|---|---|---|
+| Clone with the right token via `GIT_ASKPASS=<ws>/secrets/askpass` (token read from `<ws>/secrets/https_token`) | exit 0, SHA = seeded `main` | same |
+| Wrong token | exit 128, `Authentication failed for '...'` → `REPOSITORY_AUTH_FAILED` | same |
+| Modes: askpass / https_token / secrets dir | 700 / 600 / 700, owner deployer | same |
+| Token (raw and basic-auth base64) in `ps`, `/proc/*/cmdline`, `/proc/*/environ`, `.git/config`, the clone tree, `remote get-url`, every chunk/tail/message | absent | absent |
+| User `credential.helper=store` set globally | not used (`-c credential.helper=` resets it); no `~/.git-credentials` | same |
+| After `removeWorkspace` | askpass, token file and workspace gone | same |
+
+The helper has its own `askpass` slot under `<ws>/secrets` (no longer the `known_hosts` slot). It
+is 0700, not 0600: git executes `GIT_ASKPASS` directly, without a shell.
 
 Remaining open items:
 
