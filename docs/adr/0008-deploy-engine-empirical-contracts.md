@@ -377,6 +377,7 @@ Soak table below measured on Ubuntu 24.04 (sshd+dockerd, macOS arm64 Docker Desk
 | 20 create → deploy → delete cycles | 20/20 SUCCESS; per-cycle deploy p50 4033 ms; full cycle p50 4373 ms | `soak.test.ts` A2 |
 | Cleanup parity: docker system df (Images/Containers/Volumes) | Baseline = final (two settled checks, no prune) | `soak.test.ts` A2 |
 | Build logs per node-api deploy | not measured; 16,384 B line cap and 65,536 B phase cap truncation asserted | `runtime-build-logs.test.ts` |
+| Continuous-log build, 150 s (Ubuntu 24.04, macOS arm64 Docker Desktop, 2026-10-05; test phase cap 4 MiB, flush 250 ms / 16 KiB) | API RSS 138.1 MiB before, 141.4 MiB peak (+3.3 MiB; RSS after not printed); max SSE buffered 0 B vs 1 MiB `SSE_MAX_BUFFERED_BYTES`; sink peak pending 3,212 B, 0 dropped; 463 build / 465 total chunks, all 465 received over SSE; evictions: no count printed, client asserted never closed | `runtime-build-logs.test.ts` A5 |
 | Reconcile tick (`docker ps --size=false`) cost | 34–37 ms on 22.04, 25–27 ms on 24.04 (50k-file layer) | Phase 11 contract table above; Phase 12 `runtime-reconcile.test.ts` A1 only asserts one `docker ps` per server per 5 s tick |
 
 **Defaults confirmed and no adjustments needed:**
