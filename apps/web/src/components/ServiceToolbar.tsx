@@ -27,6 +27,7 @@ import {
   type ServiceOperation,
   type ServiceView,
 } from '../lib/deploy-api';
+import { RUNTIME_LOGS_INSPECTOR_HREF } from '../app/(shell)/@inspector/inspector-route';
 import type { DeployApiErrorCode } from '../lib/api-client';
 import { requireSession } from '../lib/require-session';
 import {
@@ -253,6 +254,15 @@ export function ServiceToolbar({
           <TonePill presentation={status} title={status.meaning} data-testid="service-status-pill" />
         </div>
         <StreamStatus connected={connected} />
+        {/* 13-14: navigation, not an operation, so it stays usable while an action is pending. */}
+        <Link
+          href={RUNTIME_LOGS_INSPECTOR_HREF}
+          scroll={false}
+          data-testid="service-logs"
+          className="inline-flex h-8 items-center justify-center rounded-sm px-3.5 text-callout font-medium text-ink-secondary outline-none hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          Logs
+        </Link>
         <fieldset
           disabled={pending !== null}
           aria-busy={pending !== null}

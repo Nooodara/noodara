@@ -8,6 +8,8 @@
 // deploymentWriteFromEvent (13-08): a patch for a row not shown yet refetches the first page.
 // A cursor the server rejects (invalid or expired) resets the history to the first page.
 // Commit SHA and trigger come from the server and are rendered as plain React text, never markup.
+// 13-14: each row links to `?deployment=<id>`, which opens its build log in the @inspector slot.
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, InsetGroup, RelativeTime, SkeletonRow } from '@noodara/ui';
 import { listDeployments, type DeploymentView } from '../lib/deploy-api';
@@ -15,6 +17,7 @@ import { deploymentWriteFromEvent } from '../lib/deploy-store';
 import { requireSession } from '../lib/require-session';
 import { deploymentStatusPresentation, formatDuration, shortSha, triggerWord } from '../lib/service-status-copy';
 import type { SyncStream } from '../lib/use-server-events';
+import { deploymentInspectorHref } from '../app/(shell)/@inspector/inspector-route';
 import { TonePill } from './ServiceToolbar';
 
 export const DEPLOYMENT_PAGE_SIZE = 20;
@@ -244,12 +247,15 @@ export function DeploymentHistory({ history, now }: DeploymentHistoryProps) {
     body = rows.map((row) => {
       const status = deploymentStatusPresentation(row.status);
       return (
-        <div
+        <Link
           key={row.id}
+          href={deploymentInspectorHref(row.id)}
+          scroll={false}
           data-testid={`deployment-row-${row.id}`}
           data-status={row.status}
-          className="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-callout"
+          className="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-callout outline-none hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
         >
+          <span className="sr-only">Open build log: </span>
           <TonePill presentation={status} data-testid="deployment-status" />
           <span data-testid="deployment-trigger" className="text-ink">
             {triggerWord(row.trigger)}
@@ -263,7 +269,7 @@ export function DeploymentHistory({ history, now }: DeploymentHistoryProps) {
           <span className="ml-auto text-caption text-ink-secondary">
             <RelativeTime value={row.createdAt} now={now} data-testid="deployment-time" />
           </span>
-        </div>
+        </Link>
       );
     });
   }

@@ -12,8 +12,9 @@
 // screen) reads the shared stream and the mobile-nav toggle from that one context, never a second
 // `useServerEvents()` call of its own.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { cn, TooltipProvider } from '@noodara/ui';
+import { TooltipProvider } from '@noodara/ui';
 import { Sidebar } from '../../components/Sidebar';
+import { INSPECTOR_SLOT_CLASSES } from './@inspector/inspector-route';
 import { requireSession } from '../../lib/require-session';
 import { ShellContext, type ShellContextValue } from '../../lib/shell-context';
 import { useServerEvents } from '../../lib/use-server-events';
@@ -118,15 +119,9 @@ export default function ShellLayout({
               shadow (the shadow gate's allowlist is Sheet/Dialog/RowMenu/AccountMenu only). No
               overlay element exists at any breakpoint -- non-blocking, no blocking backdrop of any
               kind, per the brief's own "panel paralelo no bloqueante ... sin overlay" rule for
-              exactly this kind of panel (§7.7). */}
-          <aside
-            data-testid="shell-inspector-slot"
-            className={cn(
-              'w-0 border-0',
-              'has-[>*]:min-[1280px]:w-[384px]',
-              'has-[>*]:max-[1279px]:fixed has-[>*]:max-[1279px]:inset-y-0 has-[>*]:max-[1279px]:right-0 has-[>*]:max-[1279px]:z-40 has-[>*]:max-[1279px]:w-[384px] has-[>*]:max-[1279px]:border-l has-[>*]:max-[1279px]:border-hairline has-[>*]:max-[1279px]:bg-surface-elevated',
-            )}
-          >
+              exactly this kind of panel (§7.7). 13-14: the classes live in inspector-route.ts
+              (tested there) and add a full-width sheet below 640px. */}
+          <aside data-testid="shell-inspector-slot" className={INSPECTOR_SLOT_CLASSES}>
             {inspector}
           </aside>
         </div>

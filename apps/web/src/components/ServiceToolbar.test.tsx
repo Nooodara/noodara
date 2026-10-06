@@ -281,6 +281,15 @@ describe('ServiceToolbar actions (13-12 A2)', () => {
     expect(deployApi.deleteService).toHaveBeenCalledWith(PROJECT_ID, SERVICE_ID, 'api');
   });
 
+  it('has a Logs action that opens runtime logs in the inspector, not a second primary (13-14 A5)', () => {
+    renderToolbar();
+
+    const logs = screen.getByRole('link', { name: 'Logs' });
+    expect(logs).toHaveAttribute('data-testid', 'service-logs');
+    expect(logs.getAttribute('href')).toBe('?logs=runtime');
+    expect(logs).not.toHaveAttribute('data-variant', 'primary');
+  });
+
   it('opens edit', async () => {
     const { user, onEdit } = renderToolbar();
 

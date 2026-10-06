@@ -293,6 +293,17 @@ describe('DeploymentHistory hardening (13-12 H2)', () => {
     expect(screen.queryByTestId('deployment-history-more')).not.toBeInTheDocument();
   });
 
+  it('links each row to its build log in the inspector, keeping the service path (13-14 A5)', async () => {
+    deployApi.listDeployments.mockReturnValue(page([deployment(1), deployment(2)]));
+    renderHistory();
+
+    const row = await screen.findByTestId(`deployment-row-${id(2)}`);
+    expect(row.tagName).toBe('A');
+    expect(row.getAttribute('href')).toBe(`?deployment=${id(2)}`);
+    expect(row).toHaveAccessibleName(/build log/i);
+    expect(screen.getByTestId(`deployment-row-${id(1)}`).getAttribute('href')).toBe(`?deployment=${id(1)}`);
+  });
+
   it('renders the commit SHA and trigger from the server as inert text', async () => {
     const markup = '<img src=x onerror="alert(1)">';
     deployApi.listDeployments.mockReturnValue(page([deployment(1, { commitSha: `${markup}deadbeef`, trigger: markup as DeploymentView['trigger'] })]));
