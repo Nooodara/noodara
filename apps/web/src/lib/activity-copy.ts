@@ -10,7 +10,17 @@
 // which is what makes "an unrecognised key never reaches any part of the output" structural
 // rather than a convention: a key this file never names by name can never appear in
 // `sentenceFor`'s or `curatedDetailFor`'s output, full stop.
-import { ACCOUNT_ACTIONS, AUTH_ACTIONS, SERVER_ACTIONS, type ActivityAction } from '@noodara/domain/activity';
+import {
+  ACCOUNT_ACTIONS,
+  AUTH_ACTIONS,
+  DEPLOYMENT_ACTIONS,
+  ENVIRONMENT_ACTIONS,
+  PROJECT_ACTIONS,
+  SERVER_ACTIONS,
+  SERVICE_ACTIONS,
+  type ActivityAction,
+  type DeployEngineAction,
+} from '@noodara/domain/activity';
 
 /** The wire shape `GET /api/activity` returns (05-15-PLAN.md's `<interfaces>` block), hand-copied
  *  rather than imported across the apps/web/apps/control-plane boundary -- the same discipline
@@ -40,6 +50,14 @@ export interface ResolvedServer {
  *  this module never fetches anything itself. Returns `null` when `entityId` does not match any
  *  currently-known server (deleted, or simply not loaded yet). */
 export type ServerLookup = (entityId: string) => ResolvedServer | null;
+
+/** Optional lookups for project and service names the caller currently knows. A hit only tells
+ *  this module the entity still exists (and its name); hrefs are always built here, from ids that
+ *  pass `SAFE_ID`, never taken from the caller or from metadata. */
+export interface ActivityLookups {
+  readonly project?: (projectId: string) => { readonly name: string } | null;
+  readonly service?: (serviceId: string) => { readonly name: string; readonly projectId: string } | null;
+}
 
 export interface ActivitySentenceServerSegment {
   readonly label: string;
@@ -130,6 +148,88 @@ function resolveServerSegment(
   }
 
   return { label: 'a deleted server', href: null, mono: false };
+}
+
+const SAFE_ID = /^[A-Za-z0-9_-]{1,128}$/;
+
+function safeId(value: string | null | undefined): string | null {
+  return value !== null && value !== undefined && SAFE_ID.test(value) ? value : null;
+}
+
+function entitySegment(
+  name: string | null,
+  id: string | null,
+  href: string | null,
+  fallback: string,
+): ActivitySentenceServerSegment {
+  if (name !== null) return { label: name, href, mono: false };
+  if (id !== null) return { label: id.slice(0, 8), href: null, mono: true };
+  return { label: fallback, href: null, mono: false };
+}
+
+function projectSegment(
+  projectId: string | null,
+  item: ActivityItem,
+  lookups: ActivityLookups,
+  neverLink = false,
+): ActivitySentenceServerSegment {
+  const id = safeId(projectId);
+  const hit = id === null || neverLink ? null : (lookups.project?.(id) ?? null);
+  const name = hit?.name ?? stringField(item.metadata, 'name') ?? null;
+  return entitySegment(name, id, hit === null || id === null ? null : `/projects/${id}`, 'a deleted project');
+}
+
+function serviceSegment(
+  serviceId: string | null,
+  item: ActivityItem,
+  lookups: ActivityLookups,
+  neverLink = false,
+): ActivitySentenceServerSegment {
+  const id = safeId(serviceId);
+  const hit = id === null || neverLink ? null : (lookups.service?.(id) ?? null);
+  const projectId = hit === null ? null : safeId(hit.projectId);
+  const href = hit !== null && id !== null && projectId !== null ? `/projects/${projectId}/services/${id}` : null;
+  const name = hit?.name ?? stringField(item.metadata, 'name') ?? null;
+  return entitySegment(name, id, href, 'a deleted service');
+}
+
+function projectSentence(
+  before: string,
+  after: string,
+  item: ActivityItem,
+  lookups: ActivityLookups,
+  options: { readonly neverLink?: boolean } = {},
+): ActivitySentence {
+  return { before, server: projectSegment(item.entityId, item, lookups, options.neverLink), after };
+}
+
+/** Environment rows link to their project (metadata.projectId), never to the environment. */
+function environmentSentence(verb: string, item: ActivityItem, lookups: ActivityLookups): ActivitySentence {
+  const name = stringField(item.metadata, 'name');
+  const projectId = safeId(stringField(item.metadata, 'projectId'));
+  const hit = projectId === null ? null : (lookups.project?.(projectId) ?? null);
+  const before = `${actorLabel(item)} ${verb} environment ${name ?? ''}`.trimEnd();
+  if (hit === null || projectId === null) return textSentence(before);
+  return {
+    before: `${before} in `,
+    server: { label: hit.name, href: `/projects/${projectId}`, mono: false },
+    after: '',
+  };
+}
+
+function serviceSentence(
+  before: string,
+  after: string,
+  item: ActivityItem,
+  lookups: ActivityLookups,
+  options: { readonly neverLink?: boolean } = {},
+): ActivitySentence {
+  return { before, server: serviceSegment(item.entityId, item, lookups, options.neverLink), after };
+}
+
+function deploymentSentence(before: string, after: string, item: ActivityItem, lookups: ActivityLookups): ActivitySentence {
+  const serviceId = stringField(item.metadata, 'serviceId') ?? null;
+  return { before, server: serviceSegment(serviceId, { ...item, metadata: {} }, lookups), after };
 }
 
 function textSentence(text: string): ActivitySentence {
@@ -235,6 +335,47 @@ function newFingerprintEntry(item: ActivityItem): CuratedDetailEntry | undefined
   return fingerprint === undefined ? undefined : { label: 'New', value: fingerprint, mono: true };
 }
 
+function statusEntry(item: ActivityItem): CuratedDetailEntry | undefined {
+  const status = stringField(item.metadata, 'status');
+  return status === undefined ? undefined : { label: 'Status', value: status, mono: true };
+}
+
+function triggerEntry(item: ActivityItem): CuratedDetailEntry | undefined {
+  const trigger = stringField(item.metadata, 'trigger');
+  return trigger === undefined ? undefined : { label: 'Trigger', value: trigger, mono: true };
+}
+
+function commitEntry(item: ActivityItem): CuratedDetailEntry | undefined {
+  const sha = stringField(item.metadata, 'commitSha');
+  return sha === undefined ? undefined : { label: 'Commit', value: sha.slice(0, 7), mono: true };
+}
+
+function countEntry(item: ActivityItem, key: string, label: string): CuratedDetailEntry | undefined {
+  const count = numberField(item.metadata, key);
+  if (count === undefined || count < 0 || !Number.isInteger(count)) return undefined;
+  return { label, value: String(count), mono: false };
+}
+
+function sourceTypeEntry(item: ActivityItem): CuratedDetailEntry | undefined {
+  const source = stringField(item.metadata, 'sourceType');
+  return source === undefined ? undefined : { label: 'Source', value: source, mono: true };
+}
+
+function requiresRedeployEntry(item: ActivityItem): CuratedDetailEntry | undefined {
+  const value = booleanField(item.metadata, 'requiresRedeploy');
+  return value === undefined ? undefined : { label: 'Needs redeploy', value: value ? 'yes' : 'no', mono: false };
+}
+
+function observedStateEntry(item: ActivityItem): CuratedDetailEntry | undefined {
+  const state = stringField(item.metadata, 'observedState');
+  return state === undefined ? undefined : { label: 'Observed', value: state, mono: true };
+}
+
+function kindEntry(item: ActivityItem): CuratedDetailEntry | undefined {
+  const kind = stringField(item.metadata, 'kind');
+  return kind === undefined ? undefined : { label: 'Kind', value: kind, mono: false };
+}
+
 function nameEntry(item: ActivityItem): CuratedDetailEntry | undefined {
   const name = stringField(item.metadata, 'name');
   return name === undefined ? undefined : { label: 'Name', value: name, mono: false };
@@ -252,7 +393,7 @@ function sessionsRevokedEntry(item: ActivityItem): CuratedDetailEntry | undefine
 // --- the frozen, exhaustive table -----------------------------------------------------------
 
 interface ActivityCopyEntry {
-  readonly sentence: (item: ActivityItem, lookupServer: ServerLookup) => ActivitySentence;
+  readonly sentence: (item: ActivityItem, lookupServer: ServerLookup, lookups: ActivityLookups) => ActivitySentence;
   readonly curatedDetail: (item: ActivityItem) => readonly CuratedDetailEntry[];
 }
 
@@ -342,26 +483,120 @@ const ACTIVITY_COPY = {
   },
 } satisfies Record<ActivityAction, ActivityCopyEntry>;
 
-const KNOWN_ACTIONS: ReadonlySet<string> = new Set<string>([...AUTH_ACTIONS, ...SERVER_ACTIONS, ...ACCOUNT_ACTIONS]);
+const changedEntry = (item: ActivityItem) => compact([fieldsChangedEntry(item)]);
 
-function isKnownAction(action: string): action is ActivityAction {
+const DEPLOY_ENGINE_COPY = {
+  'project.created': {
+    sentence: (item, _s, l) => projectSentence(`${actorLabel(item)} created project `, '', item, l),
+    curatedDetail: () => [],
+  },
+  'project.updated': {
+    sentence: (item, _s, l) => projectSentence(`${actorLabel(item)} edited project `, '', item, l),
+    curatedDetail: changedEntry,
+  },
+  'project.archived': {
+    sentence: (item, _s, l) => projectSentence(`${actorLabel(item)} archived project `, '', item, l),
+    curatedDetail: () => [],
+  },
+  'project.unarchived': {
+    sentence: (item, _s, l) => projectSentence(`${actorLabel(item)} restored project `, '', item, l),
+    curatedDetail: () => [],
+  },
+  'project.deleted': {
+    sentence: (item, _s, l) => projectSentence(`${actorLabel(item)} deleted project `, '', item, l, { neverLink: true }),
+    curatedDetail: (item) =>
+      compact([countEntry(item, 'environments', 'Environments'), countEntry(item, 'services', 'Services')]),
+  },
+  'environment.created': {
+    sentence: (item, _s, l) => environmentSentence('created', item, l),
+    curatedDetail: (item) => compact([kindEntry(item)]),
+  },
+  'environment.updated': {
+    sentence: (item, _s, l) => environmentSentence('edited', item, l),
+    curatedDetail: changedEntry,
+  },
+  'environment.deleted': {
+    sentence: (item, _s, l) => environmentSentence('deleted', item, l),
+    curatedDetail: () => [],
+  },
+  'service.created': {
+    sentence: (item, _s, l) => serviceSentence(`${actorLabel(item)} created service `, '', item, l),
+    curatedDetail: (item) => compact([sourceTypeEntry(item)]),
+  },
+  'service.updated': {
+    sentence: (item, _s, l) => serviceSentence(`${actorLabel(item)} edited service `, '', item, l),
+    curatedDetail: (item) =>
+      compact([fieldsChangedEntry(item), requiresRedeployEntry(item), credentialReplacedEntry(item)]),
+  },
+  'service.deleted': {
+    sentence: (item, _s, l) =>
+      serviceSentence(`${actorLabel(item)} deleted service `, '', item, l, { neverLink: true }),
+    curatedDetail: () => [],
+  },
+  'service.started': {
+    sentence: (item, _s, l) => serviceSentence(`${actorLabel(item)} started service `, '', item, l),
+    curatedDetail: (item) => compact([durationEntry(item)]),
+  },
+  'service.stopped': {
+    sentence: (item, _s, l) => serviceSentence(`${actorLabel(item)} stopped service `, '', item, l),
+    curatedDetail: (item) => compact([durationEntry(item)]),
+  },
+  'service.restarted': {
+    sentence: (item, _s, l) => serviceSentence(`${actorLabel(item)} restarted service `, '', item, l),
+    curatedDetail: (item) => compact([durationEntry(item)]),
+  },
+  'service.container_changed': {
+    sentence: (item, _s, l) => serviceSentence('The container of service ', ' changed outside Noodara', item, l),
+    curatedDetail: (item) => compact([observedStateEntry(item)]),
+  },
+  'deployment.queued': {
+    sentence: (item, _s, l) => deploymentSentence(`${actorLabel(item)} queued a deployment of `, '', item, l),
+    curatedDetail: (item) => compact([triggerEntry(item)]),
+  },
+  'deployment.cancel_requested': {
+    sentence: (item, _s, l) => deploymentSentence(`${actorLabel(item)} requested to cancel the deployment of `, '', item, l),
+    curatedDetail: (item) => compact([statusEntry(item)]),
+  },
+  'deployment.finished': {
+    sentence: (item, _s, l) =>
+      item.outcome === 'success'
+        ? deploymentSentence('Deployment of ', ' finished', item, l)
+        : deploymentSentence('Deployment of ', ' failed', item, l),
+    curatedDetail: (item) =>
+      compact([statusEntry(item), durationEntry(item), commitEntry(item), item.outcome === 'failure' ? errorEntry(item) : undefined]),
+  },
+} satisfies Record<DeployEngineAction, ActivityCopyEntry>;
+
+const ANY_COPY: Readonly<Record<string, ActivityCopyEntry>> = { ...ACTIVITY_COPY, ...DEPLOY_ENGINE_COPY };
+
+const KNOWN_ACTIONS: ReadonlySet<string> = new Set<string>([
+  ...AUTH_ACTIONS,
+  ...SERVER_ACTIONS,
+  ...ACCOUNT_ACTIONS,
+  ...PROJECT_ACTIONS,
+  ...ENVIRONMENT_ACTIONS,
+  ...SERVICE_ACTIONS,
+  ...DEPLOYMENT_ACTIONS,
+]);
+
+function isKnownAction(action: string): boolean {
   return KNOWN_ACTIONS.has(action);
 }
 
 /** The exact §5.6 sentence for `item`, or a generic, non-revealing fallback (naming only the
- *  entity type) for an action outside the known fourteen -- the raw `action` string is never
+ *  entity type) for an action this module does not know -- the raw `action` string is never
  *  interpolated into that fallback. */
-export function sentenceFor(item: ActivityItem, lookupServer: ServerLookup): ActivitySentence {
-  if (!isKnownAction(item.action)) {
-    return textSentence(`An activity event occurred on this ${item.entityType}.`);
+export function sentenceFor(item: ActivityItem, lookupServer: ServerLookup, lookups: ActivityLookups = {}): ActivitySentence {
+  const entry = isKnownAction(item.action) ? ANY_COPY[item.action] : undefined;
+  if (entry === undefined) {
+    return textSentence(`An activity event occurred on this ${typeof item.entityType === 'string' ? item.entityType : 'entity'}.`);
   }
-  return ACTIVITY_COPY[item.action].sentence(item, lookupServer);
+  return entry.sentence(item, lookupServer, lookups);
 }
 
-/** The curated label/value pairs `item`'s action allows, in §5.6 order -- `[]` for an action with
- *  no curated keys (the three chevron-less auth actions) and `[]` for an action this module does
- *  not know at all. */
+/** The curated label/value pairs `item`'s action allows, in order -- `[]` for an action with no
+ *  curated keys and `[]` for an action this module does not know at all. */
 export function curatedDetailFor(item: ActivityItem): readonly CuratedDetailEntry[] {
-  if (!isKnownAction(item.action)) return [];
-  return ACTIVITY_COPY[item.action].curatedDetail(item);
+  const entry = isKnownAction(item.action) ? ANY_COPY[item.action] : undefined;
+  return entry === undefined ? [] : entry.curatedDetail(item);
 }

@@ -1,7 +1,14 @@
 // Task 1 RED (05-15-PLAN.md): `activity-copy.ts` does not exist yet -- every import below fails
 // to resolve, which is the right reason for this file to fail before implementation exists.
 import { describe, expect, it } from 'vitest';
-import { curatedDetailFor, sentenceFor, type ActivityItem, type ServerLookup } from './activity-copy';
+import {
+  DEPLOYMENT_ACTIONS,
+  DEPLOY_ENGINE_ACTIONS,
+  ENVIRONMENT_ACTIONS,
+  PROJECT_ACTIONS,
+  SERVICE_ACTIONS,
+} from '@noodara/domain/activity';
+import { curatedDetailFor, sentenceFor, type ActivityItem, type ActivityLookups, type ServerLookup } from './activity-copy';
 
 function buildItem(overrides: Partial<ActivityItem> & Pick<ActivityItem, 'action'>): ActivityItem {
   return {
@@ -230,5 +237,111 @@ describe('account.* actions (SET-02/SET-03, D-08)', () => {
     const item = buildItem({ action: 'account.name_changed', metadata: { name: 'Ada', email: 'leak@example.test' } });
 
     expect(curatedDetailFor(item)).toEqual([{ label: 'Name', value: 'Ada', mono: false }]);
+  });
+});
+
+describe('deploy engine copy', () => {
+  const lookups: ActivityLookups = {
+    project: (id) => (id === 'prj-1' ? { name: 'Shop' } : null),
+    service: (id) => (id === 'svc-1' ? { name: 'api', projectId: 'prj-1' } : null),
+  };
+  const text = (s: ReturnType<typeof sentenceFor>) => s.before + (s.server?.label ?? '') + s.after;
+
+  it('has human copy for every deploy engine action (A1)', () => {
+    for (const group of [PROJECT_ACTIONS, ENVIRONMENT_ACTIONS, SERVICE_ACTIONS, DEPLOYMENT_ACTIONS, DEPLOY_ENGINE_ACTIONS]) {
+      for (const action of group) {
+        const item = buildItem({ action, entityType: action.split('.')[0] ?? '', entityId: 'prj-1', metadata: {} });
+        const out = text(sentenceFor(item, notFoundLookup, lookups));
+        expect(out, action).not.toMatch(/activity event occurred/);
+        expect(out, action).not.toMatch(/[a-z]+\.[a-z_]+/);
+        expect(() => curatedDetailFor(item)).not.toThrow();
+      }
+    }
+  });
+
+  it('links a live project and renders plain text once deleted (A2)', () => {
+    const live = sentenceFor(buildItem({ action: 'project.updated', entityId: 'prj-1' }), notFoundLookup, lookups);
+    expect(live.server).toEqual({ label: 'Shop', href: '/projects/prj-1', mono: false });
+    const gone = sentenceFor(
+      buildItem({ action: 'project.updated', entityId: 'prj-9', metadata: { name: 'Old' } }),
+      notFoundLookup,
+      lookups,
+    );
+    expect(gone.server).toEqual({ label: 'Old', href: null, mono: false });
+    const deleted = sentenceFor(buildItem({ action: 'project.deleted', entityId: 'prj-1' }), notFoundLookup, lookups);
+    expect(deleted.server?.href).toBeNull();
+  });
+
+  it('links a live service via its project and a deployment via metadata.serviceId (A2)', () => {
+    const svc = sentenceFor(buildItem({ action: 'service.started', entityId: 'svc-1' }), notFoundLookup, lookups);
+    expect(svc.server?.href).toBe('/projects/prj-1/services/svc-1');
+    const dep = sentenceFor(
+      buildItem({ action: 'deployment.queued', entityId: 'dep-1', metadata: { serviceId: 'svc-1' } }),
+      notFoundLookup,
+      lookups,
+    );
+    expect(dep.server?.href).toBe('/projects/prj-1/services/svc-1');
+    const none = sentenceFor(
+      buildItem({ action: 'deployment.queued', entityId: 'dep-1', metadata: { serviceId: 'svc-2' } }),
+      notFoundLookup,
+      lookups,
+    );
+    expect(none.server?.href).toBeNull();
+    expect(sentenceFor(buildItem({ action: 'service.deleted', entityId: 'svc-1' }), notFoundLookup, lookups).server?.href).toBeNull();
+  });
+
+  it('links an environment row to its project only', () => {
+    const s = sentenceFor(
+      buildItem({ action: 'environment.created', entityId: 'env-1', metadata: { projectId: 'prj-1', name: 'prod' } }),
+      notFoundLookup,
+      lookups,
+    );
+    expect(text(s)).toBe('Admin created environment prod in Shop');
+    expect(s.server?.href).toBe('/projects/prj-1');
+  });
+
+  it('never builds hrefs from unsafe ids or throws on hostile input (H1)', () => {
+    const evil: ActivityLookups = {
+      project: () => ({ name: 'x' }),
+      service: () => ({ name: 'y', projectId: 'javascript:alert(1)' }),
+    };
+    for (const id of ['javascript:alert(1)', '//evil.com', 'a/../b', '']) {
+      const p = sentenceFor(buildItem({ action: 'project.updated', entityId: id }), notFoundLookup, evil);
+      expect(p.server?.href ?? null).toBeNull();
+      const e = sentenceFor(
+        buildItem({ action: 'environment.updated', metadata: { projectId: id, name: 'e' } }),
+        notFoundLookup,
+        evil,
+      );
+      expect(e.server).toBeNull();
+    }
+    expect(sentenceFor(buildItem({ action: 'service.started', entityId: 'svc-1' }), notFoundLookup, evil).server?.href).toBeNull();
+    for (const metadata of [null, undefined, 'str', 42, [], { name: { a: 1 }, serviceId: 5, durationMs: 'x', commitSha: {} }]) {
+      for (const action of DEPLOY_ENGINE_ACTIONS) {
+        const item = buildItem({ action, entityId: null, metadata });
+        const s = sentenceFor(item, notFoundLookup, lookups);
+        expect(text(s)).not.toContain('{');
+        expect(() => curatedDetailFor(item)).not.toThrow();
+      }
+    }
+  });
+
+  it('falls back generically for unknown actions without echoing them', () => {
+    const s = sentenceFor(buildItem({ action: 'weird.thing', entityType: 'widget' }), notFoundLookup, lookups);
+    expect(text(s)).toBe('An activity event occurred on this widget.');
+    expect(curatedDetailFor(buildItem({ action: '__proto__' }))).toEqual([]);
+    expect(text(sentenceFor(buildItem({ action: 'constructor' }), notFoundLookup))).not.toContain('constructor');
+  });
+
+  it('renders curated details as text and shortens commit sha', () => {
+    const d = curatedDetailFor(
+      buildItem({
+        action: 'deployment.finished',
+        outcome: 'failure',
+        errorCode: 'BUILD_FAILED',
+        metadata: { status: 'FAILED', durationMs: 1200, commitSha: 'abcdef1234567' },
+      }),
+    );
+    expect(d.map((e) => e.value)).toEqual(['FAILED', '1200ms', 'abcdef1', 'BUILD_FAILED']);
   });
 });

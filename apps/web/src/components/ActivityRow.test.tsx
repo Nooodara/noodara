@@ -130,3 +130,20 @@ describe('ActivityRow -- no raw JSON ever reaches the DOM', () => {
     }
   });
 });
+
+describe('ActivityRow deploy engine rows', () => {
+  it('links to a live project and renders plain text when deleted', () => {
+    const base = {
+      id: 'e1', occurredAt: '2026-09-19T10:00:00.000Z', actorType: 'user', actorId: 'a', entityType: 'project',
+      entityId: 'prj-1', action: 'project.updated', outcome: 'success', errorCode: null, metadata: {},
+    } as const;
+    const live = renderUi(
+      <ActivityRow item={base} now={NOW} lookupServer={notFoundLookup} lookups={{ project: () => ({ name: 'Shop' }) }} />,
+    );
+    expect(live.getByRole('link', { name: 'Shop' }).getAttribute('href')).toBe('/projects/prj-1');
+    live.unmount();
+    const gone = renderUi(<ActivityRow item={{ ...base, metadata: { name: 'Shop' } }} now={NOW} lookupServer={notFoundLookup} />);
+    expect(gone.queryByRole('link')).toBeNull();
+    expect(gone.getByText('Shop')).toBeTruthy();
+  });
+});

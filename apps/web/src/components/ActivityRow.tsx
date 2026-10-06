@@ -6,7 +6,7 @@
 // guarantee against ACT-02's T-5-64 (an unrecognised metadata key can never reach this row,
 // because this component never even looks at `metadata` itself).
 import { cn, Disclosure, LabelValue, RelativeTime } from '@noodara/ui';
-import { curatedDetailFor, sentenceFor, type ActivityItem, type ServerLookup } from '../lib/activity-copy';
+import { curatedDetailFor, sentenceFor, type ActivityItem, type ActivityLookups, type ServerLookup } from '../lib/activity-copy';
 
 // UI-07/D-11 (08-UI-SPEC.md §8.3, 08-16-PLAN.md Task 2): this screen's own one authored moment --
 // a per-arrival entry, `translateY(4px)+opacity` over 200ms `--ease-out`, no stagger (deliberately
@@ -22,6 +22,8 @@ export interface ActivityRowProps {
    *  (ServerRow, RelativeTime itself) so "as of" text is deterministic in tests. */
   readonly now: Date;
   readonly lookupServer: ServerLookup;
+  /** Optional project/service lookups; without them those rows render plain text. */
+  readonly lookups?: ActivityLookups;
   /** `ActivityList` gates this to a row genuinely new since its previous render -- never an
    *  initial load, never a "Load older" append. */
   readonly entering?: boolean;
@@ -36,8 +38,8 @@ const SERVER_LINK_MONO_CLASSES = 'font-mono text-mono text-accent-text hover:und
 const SERVER_TEXT_CLASSES = 'text-ink';
 const SERVER_TEXT_MONO_CLASSES = 'font-mono text-mono text-ink';
 
-export function ActivityRow({ item, now, lookupServer, entering = false }: ActivityRowProps) {
-  const sentence = sentenceFor(item, lookupServer);
+export function ActivityRow({ item, now, lookupServer, lookups, entering = false }: ActivityRowProps) {
+  const sentence = sentenceFor(item, lookupServer, lookups);
   const detail = curatedDetailFor(item);
   const hasDetail = detail.length > 0;
 
