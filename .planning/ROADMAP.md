@@ -394,7 +394,7 @@ Plans:
 
 **Docs (D-09 de la Fase 10):** añadir apps/site/content/docs/getting-started/first-deploy.mdx, retirar "deploy-services" de las exclusiones de apps/site/src/content/scope.ts y cerrar DOCS-01.
 
-**Plans**: TBD
+**Plans**: 19 tasks in `.agent-flow/plan.json` (13-01..13-19): API gaps (env delete, event `updatedAt`, step timeline), client libs, e2e stack, CI debt, screens, inspector, E2E QA-09, UI DoD, docs, close-out.
 **UI hint**: yes
 
 ### Phase 14: Hardening y gate de release v0.2

@@ -1805,6 +1805,906 @@
           "tier": "light"
         }
       ]
+    },
+    {
+      "id": "13",
+      "title": "UI de Projects & Services y E2E de deploy",
+      "goal": "From the UI a person creates project, environment and service, deploys it watching the build narrated step by step and live logs in the inspector, sees the real container state, recovers from a failure with an actionable hint, and the critical Playwright E2E proves it against real fixtures.",
+      "requirements": [
+        "LOG-04",
+        "REC-02",
+        "QA-09",
+        "DOCS-01"
+      ],
+      "dependsOn": [
+        "12"
+      ],
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "13-01",
+          "title": "API: delete environment with exact-name confirmation",
+          "scope": [
+            "apps/control-plane/src/routes/projects.ts",
+            "apps/control-plane/src/routes/project-schemas.ts",
+            "apps/control-plane/src/routes/project-schemas.test.ts",
+            "apps/control-plane/src/routes/http-errors.ts",
+            "apps/control-plane/src/services/",
+            "tests/integration/projects/",
+            "apps/site/content/docs/reference/error-codes.mdx",
+            "docs/deploy-engine.md"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-projects"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "DELETE /api/projects/:projectId/environments/:environmentId requires the exact environment name in the body; a mismatch is 422 like project delete, an unknown or foreign-project id is 404",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Deleting an environment that still has services is rejected with 409 ENVIRONMENT_NOT_EMPTY and changes nothing; an empty environment is deleted and environment.deleted is written to the activity log",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Integration test in tests/integration/projects covers success, name mismatch, non-empty, foreign project and unauthenticated cases",
+              "proof": "it-projects"
+            },
+            {
+              "id": "A4",
+              "text": "error-codes.mdx and docs/deploy-engine.md list the new route and ENVIRONMENT_NOT_EMPTY",
+              "proof": "manual"
+            }
+          ]
+        },
+        {
+          "id": "13-02",
+          "title": "Events: updatedAt on service.updated and deployment.updated",
+          "scope": [
+            "apps/control-plane/src/events/deploy-engine-events.ts",
+            "apps/control-plane/src/events/deploy-engine-events.test.ts",
+            "apps/control-plane/src/deploy/",
+            "apps/control-plane/src/services/",
+            "apps/control-plane/src/reconcile/",
+            "tests/integration/deploy-engine/runtime-reconcile.test.ts"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-runtime-reconcile"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "ServiceEventView and DeploymentEventView carry updatedAt (ISO string) equal to the row updated_at written in the same transaction as the change they announce",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Every publisher of service.updated / deployment.updated passes the post-write updatedAt; a unit test fails if an event is built without it",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "The SSE type set stays at the four deploy-engine types (D22); no new event type is added",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "runtime-reconcile integration test asserts updatedAt on a reconcile-driven service.updated is >= the snapshot GET value",
+              "proof": "it-runtime-reconcile"
+            }
+          ]
+        },
+        {
+          "id": "13-03",
+          "title": "Deployment step timeline: clone, build, start, verify",
+          "scope": [
+            "packages/domain/src/deployment/deployment-steps.ts",
+            "packages/domain/src/deployment/deployment-steps.test.ts",
+            "packages/domain/src/deployment/index.ts",
+            "apps/control-plane/src/db/schema/deployments.ts",
+            "apps/control-plane/src/db/migrations/",
+            "apps/control-plane/src/deploy/",
+            "apps/control-plane/src/routes/deployment-schemas.ts",
+            "apps/control-plane/src/routes/deployment-schemas.test.ts",
+            "apps/control-plane/src/routes/deployments.ts",
+            "tests/integration/deploy-engine/runtime-pipeline.test.ts",
+            "docs/deploy-engine.md"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-runtime-pipeline"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Pure domain function deriveDeploymentSteps() returns exactly four steps (clone|pull, build, start, verify) each with state pending|running|success|failed|cancelled|skipped and startedAt/completedAt; image sources show pull and skip build; >=95% statement and branch coverage",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "A versioned migration adds nullable step timestamps to deployments; the worker records each step boundary in the same write as the status transition, so a crash never leaves a step running without a status that explains it",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "GET deployment views expose steps[] derived by the domain function; a failed deploy marks the failing step failed and later steps pending, a cancel marks the running step cancelled",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "runtime-pipeline integration test asserts four ordered steps with non-null durations on a node-api success and failed build step on failing-build",
+              "proof": "it-runtime-pipeline"
+            }
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "13-04",
+          "title": "Web: build-log fold by (phase, seq) over snapshot",
+          "scope": [
+            "apps/web/src/lib/build-log.ts",
+            "apps/web/src/lib/build-log.test.ts"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Pure foldBuildLog(state, input) merges GET pages and SSE deployment.log_chunk events ordered by phase (prepare, build, deploy) then seq, dropping duplicates and never reordering already-shown text",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "A gap in seq marks the state as needing resync with the exact (phase, since) cursor for GET /logs; a chunk older than the cursor is ignored (no replay)",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Truncated SSE chunks are replaced by the full GET chunk with the same (phase, seq)",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Property-style tests shuffle arrival order of snapshot pages and events and always converge to the same text; >=95% branch coverage",
+              "proof": "test"
+            }
+          ]
+        },
+        {
+          "id": "13-05",
+          "title": "Web: typed API client for projects, environments, services, deployments, logs",
+          "scope": [
+            "apps/web/src/lib/api-client.ts",
+            "apps/web/src/lib/api-client.test.ts",
+            "apps/web/src/lib/deploy-api.ts",
+            "apps/web/src/lib/deploy-api.test.ts",
+            "apps/web/src/lib/runtime-log-stream.ts",
+            "apps/web/src/lib/runtime-log-stream.test.ts"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "deploy-api.ts exposes typed calls for every route in docs/deploy-engine.md used by the UI, built on the existing api-client error model; response types come from the control-plane schemas, not re-declared by hand",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Credential calls are write-only: no client function or type reads a secret value back; tests assert the PUT body is never logged or kept in state",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "runtime-log-stream.ts reads the NDJSON follow stream with an AbortController, stops on abort, server end or RUNTIME_LOG_FOLLOW_LIMIT_REACHED and surfaces RUNTIME_LOGS_* codes as typed errors; tested with MSW",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Every call has an explicit timeout; a network failure resolves to a typed error, never an unhandled rejection",
+              "proof": "test"
+            }
+          ]
+        },
+        {
+          "id": "13-06",
+          "title": "E2E stack: deploy host, git host and registry for Playwright",
+          "scope": [
+            "tests/e2e/fixtures/stack.ts",
+            "tests/e2e/fixtures/deploy-host.ts",
+            "tests/e2e/global-setup.ts",
+            "tests/e2e/global-teardown.ts",
+            "tests/integration/helpers/deploy-engine.ts",
+            "playwright.config.ts",
+            "tests/e2e/deploy-host.spec.ts"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "e2e-deploy-host"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "The e2e stack can start the deploy-engine host (sshd + dockerd, git host with node-api and failing-build repos, pinned-digest registry mirror) by reusing tests/integration/helpers/deploy-engine.ts, never a second copy of its setup",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Specs get a handle exposing the SSH connection data, repo URLs and an exec() into the deploy host to curl the published port and list containers, images, networks and workspaces",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Teardown stops every container it started even when a spec fails; existing specs keep starting only what they used before (no deploy host unless requested)",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "A smoke spec starts the deploy host, runs docker info inside it and tears down cleanly",
+              "proof": "e2e-deploy-host"
+            }
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "13-07",
+          "title": "CI debt: @rowmenu 440x956 and a11y-fallbacks reduced-motion flake",
+          "scope": [
+            "tests/e2e/servers-list.spec.ts",
+            "tests/e2e/a11y-fallbacks.spec.ts",
+            "packages/ui/src/RowMenu.tsx",
+            "packages/ui/src/RowMenu.test.tsx",
+            "apps/web/src/components/ServerRow.tsx",
+            "apps/web/src/components/ServerList.tsx"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "e2e-servers"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Root cause of the @rowmenu 440x956 failure is reproduced by a failing test first and documented in the commit body; the fix is in product code unless the test assumption is proven wrong",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "servers-list.spec.ts and a11y-fallbacks.spec.ts pass 10 consecutive runs locally with a fresh stack",
+              "proof": "e2e-servers"
+            },
+            {
+              "id": "A3",
+              "text": "No retry, timeout bump or skip is added to hide the failure",
+              "proof": "test"
+            }
+          ]
+        },
+        {
+          "id": "13-08",
+          "title": "Web: deploy-engine events and shared sequence reconciliation",
+          "scope": [
+            "apps/web/src/lib/server-events.ts",
+            "apps/web/src/lib/server-events.test.ts",
+            "apps/web/src/lib/server-store.ts",
+            "apps/web/src/lib/server-store.test.ts",
+            "apps/web/src/lib/entity-reconcile.ts",
+            "apps/web/src/lib/entity-reconcile.test.ts",
+            "apps/web/src/lib/deploy-store.ts",
+            "apps/web/src/lib/deploy-store.test.ts",
+            "apps/web/src/lib/use-server-events.ts",
+            "apps/web/src/lib/use-server-events.test.tsx",
+            "apps/web/src/lib/shell-context.tsx"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "13-02",
+            "13-04"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "The frame parser accepts the four deploy-engine types and drops malformed frames like it does for server types",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "One generic pure reconcile function keyed by id + updatedAt is used by both the server store and the new service/deployment stores; reconcileSnapshot for servers keeps its tests green on top of it (REC-02: same function)",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Reorder tests: for every permutation of (snapshot in flight, updated event, deleted event) the final state equals the newest write; an event never regresses a newer snapshot and a delete is never resurrected",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "The shell keeps exactly one EventSource; log chunks are routed to subscribers by deploymentId and never stored for deployments nobody is viewing",
+              "proof": "test"
+            }
+          ]
+        },
+        {
+          "id": "13-09",
+          "title": "Shell: Projects hierarchy in the sidebar and projects list",
+          "scope": [
+            "apps/web/src/components/Sidebar.tsx",
+            "apps/web/src/components/Sidebar.test.tsx",
+            "apps/web/src/components/ProjectNav.ts",
+            "apps/web/src/components/ProjectNav.test.ts",
+            "apps/web/src/app/(shell)/projects/page.tsx",
+            "apps/web/src/app/(shell)/projects/page.test.tsx",
+            "apps/web/src/components/ProjectSheet.tsx",
+            "apps/web/src/components/ProjectSheet.test.tsx",
+            "apps/web/src/app/page.tsx",
+            "packages/ui/src/NavTree.tsx",
+            "packages/ui/src/NavTree.test.tsx",
+            "tests/e2e/shell.spec.ts"
+          ],
+          "wave": 3,
+          "dependsOn": [
+            "13-05",
+            "13-08"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Sidebar NavTree shows Projects -> Environment -> Service as a hierarchy with Servers, Activity and Settings as peers; active path is highlighted and keyboard navigation works as in Phase 8",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Projects list with a create sheet (name, optional description; slug shown as derived); archived projects are visually separated and say they reject deploys",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Empty state teaches the hierarchy in one sentence and offers one primary action; no coming-soon copy and no env vars mention beyond the stated v0.2 limit",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "The sidebar updates live from service.updated/service.deleted events without a reload",
+              "proof": "test"
+            }
+          ]
+        },
+        {
+          "id": "13-10",
+          "title": "Project and environment management with exact-name confirmation",
+          "scope": [
+            "apps/web/src/app/(shell)/projects/[projectId]/page.tsx",
+            "apps/web/src/app/(shell)/projects/[projectId]/page.test.tsx",
+            "apps/web/src/components/EnvironmentSheet.tsx",
+            "apps/web/src/components/EnvironmentSheet.test.tsx",
+            "apps/web/src/components/ConfirmByNameDialog.tsx",
+            "apps/web/src/components/ConfirmByNameDialog.test.tsx",
+            "apps/web/src/components/ProjectToolbar.tsx",
+            "apps/web/src/components/ProjectToolbar.test.tsx"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "13-01",
+            "13-09"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Project view lists environments and their services; create environment suggests production, staging, development and accepts any valid name, showing the server-side validation error in place",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Edit project, archive, unarchive and delete (archived only) are available; delete and environment delete require typing the exact name using confirm-match from packages/ui",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Deleting a non-empty environment shows the ENVIRONMENT_NOT_EMPTY recovery (remove its services first), never a raw error",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "ConfirmByNameDialog is generic and reused by service delete in 13-12",
+              "proof": "test"
+            }
+          ]
+        },
+        {
+          "id": "13-11",
+          "title": "Service create and edit: source control, server picker, private credentials",
+          "scope": [
+            "apps/web/src/components/ServiceSheet.tsx",
+            "apps/web/src/components/ServiceSheet.test.tsx",
+            "apps/web/src/components/SourceFields.tsx",
+            "apps/web/src/components/SourceFields.test.tsx",
+            "apps/web/src/components/SourceCredentialFields.tsx",
+            "apps/web/src/components/SourceCredentialFields.test.tsx",
+            "apps/web/src/lib/service-form.ts",
+            "apps/web/src/lib/service-form.test.ts"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "13-05",
+            "13-09"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Segmented control Git / Dockerfile / Image switches the fields; validation reuses @noodara/domain validators client-side and shows the server error when they disagree",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Server picker lists only CONNECTED servers with Docker available; other servers are absent, and an empty picker explains how to connect one",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Repo token / SSH key / registry password are write-only inputs: after saving the UI shows only configured/not configured with replace and remove, the value is cleared from state and never rendered, logged or put in the URL",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "No env var or build arg fields exist; the sheet states the v0.2 limit once (variables arrive later) without coming-soon wording",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "Editing the source shows that a redeploy is needed before the change takes effect (classifyServiceEdit)",
+              "proof": "test"
+            }
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "13-12",
+          "title": "Service view: derived status, Deploy, history and operations",
+          "scope": [
+            "apps/web/src/app/(shell)/projects/[projectId]/services/[serviceId]/page.tsx",
+            "apps/web/src/app/(shell)/projects/[projectId]/services/[serviceId]/page.test.tsx",
+            "apps/web/src/components/ServiceToolbar.tsx",
+            "apps/web/src/components/ServiceToolbar.test.tsx",
+            "apps/web/src/components/DeploymentHistory.tsx",
+            "apps/web/src/components/DeploymentHistory.test.tsx",
+            "apps/web/src/components/ServiceFacts.tsx",
+            "apps/web/src/components/ServiceFacts.test.tsx",
+            "apps/web/src/lib/service-status-copy.ts",
+            "apps/web/src/lib/service-status-copy.test.ts"
+          ],
+          "wave": 5,
+          "dependsOn": [
+            "13-08",
+            "13-10"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Status pill shows the derived status (running, stopped, deploying, failed, never_deployed) and UNKNOWN honestly with what it means; never a stored value",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Exactly one primary action, Deploy; redeploy, stop, restart, remove container and delete service live in the overflow menu; delete requires the exact service name",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "An active deployment shows Cancel; DEPLOYMENT_IN_PROGRESS and DEPLOYMENT_NOT_CANCELLABLE show their recovery copy",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Deployment history lists status, trigger, short commit SHA (mono), duration and relative time, paginated by cursor, and updates live from deployment.updated",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "Archived project: Deploy is disabled with the reason stated",
+              "proof": "test"
+            }
+          ]
+        },
+        {
+          "id": "13-13",
+          "title": "Deploy narration and classified errors",
+          "scope": [
+            "apps/web/src/components/DeploymentSteps.tsx",
+            "apps/web/src/components/DeploymentSteps.test.tsx",
+            "apps/web/src/components/DiscoveryStep.tsx",
+            "apps/web/src/lib/deploy-error-copy.ts",
+            "apps/web/src/lib/deploy-error-copy.test.ts",
+            "apps/web/src/lib/error-copy.ts",
+            "apps/web/src/lib/error-copy.test.ts"
+          ],
+          "wave": 6,
+          "dependsOn": [
+            "13-03",
+            "13-12"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Narration shows clone (or pull), build, start, verify with per-step state and duration, reusing the DiscoveryStep visual treatment (extracted, not copied)",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Every DEPLOYMENT_ERROR_CODES value maps to a title and an actionable recovery; a test fails if a code is added without copy",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "errorMessage from the server is never rendered as raw text; only the classified copy and, when present, the sanitized last build log lines in the inspector",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Reduced motion: the running-step indicator does not animate",
+              "proof": "test"
+            }
+          ]
+        },
+        {
+          "id": "13-14",
+          "title": "Inspector: live build logs and on-demand runtime logs",
+          "scope": [
+            "apps/web/src/app/(shell)/@inspector/",
+            "apps/web/src/components/LogView.tsx",
+            "apps/web/src/components/LogView.test.tsx",
+            "apps/web/src/components/BuildLogPanel.tsx",
+            "apps/web/src/components/BuildLogPanel.test.tsx",
+            "apps/web/src/components/RuntimeLogPanel.tsx",
+            "apps/web/src/components/RuntimeLogPanel.test.tsx",
+            "apps/web/src/app/(shell)/layout.tsx"
+          ],
+          "wave": 6,
+          "dependsOn": [
+            "13-04",
+            "13-08",
+            "13-12"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Build logs open in the @inspector parallel-route slot (not a modal) for the selected deployment: GET snapshot first, then SSE chunks folded with foldBuildLog; reload mid-build shows the same text without replay",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Monospace, auto-scroll while at bottom, Jump to bottom appears when the user scrolls up; ANSI is already sanitized server-side and rendered as text only (no innerHTML)",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Runtime logs load on demand with a tail selector and a Follow toggle using runtime-log-stream; follow stops on navigation, toggle off and server limit, and says why",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Inspector closes with Escape and returns focus; at 375 px it becomes a full-height sheet; with no selection the slot stays zero width as in Phase 8",
+              "proof": "test"
+            }
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "13-15",
+          "title": "Activity copy for project, environment, service and deployment actions",
+          "scope": [
+            "apps/web/src/lib/activity-copy.ts",
+            "apps/web/src/lib/activity-copy.test.ts",
+            "apps/web/src/components/ActivityRow.tsx",
+            "apps/web/src/components/ActivityRow.test.tsx"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "13-01"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Every action in PROJECT_ACTIONS, ENVIRONMENT_ACTIONS, SERVICE_ACTIONS, DEPLOYMENT_ACTIONS and DEPLOY_ENGINE_ACTIONS has human copy; a test iterates the domain arrays and fails on any missing action",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Rows link to the project or service when it still exists and render plain text when it was deleted",
+              "proof": "test"
+            }
+          ]
+        },
+        {
+          "id": "13-16",
+          "title": "E2E critical deploy path (QA-09)",
+          "scope": [
+            "tests/e2e/deploy.spec.ts",
+            "tests/e2e/fixtures/",
+            ".github/workflows/",
+            "package.json"
+          ],
+          "wave": 7,
+          "dependsOn": [
+            "13-06",
+            "13-07",
+            "13-11",
+            "13-13",
+            "13-14"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "e2e-deploy"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Playwright creates project -> environment -> service from node-api through the UI, deploys, sees live build logs in the inspector and the four steps succeed",
+              "proof": "e2e-deploy"
+            },
+            {
+              "id": "A2",
+              "text": "The service answers on its published port (curl from inside the deploy host returns the node-api JSON)",
+              "proof": "e2e-deploy"
+            },
+            {
+              "id": "A3",
+              "text": "A failing-build service ends FAILED with the BUILD_FAILED copy and recovery visible, and the previously running container of the first service is untouched",
+              "proof": "e2e-deploy"
+            },
+            {
+              "id": "A4",
+              "text": "Cancelling an in-progress build ends CANCELLED and the deploy host has no leftover noodara containers, images, networks or workspaces for it",
+              "proof": "e2e-deploy"
+            },
+            {
+              "id": "A5",
+              "text": "Ownership: a service id from project A requested under project B is not found in the UI and API",
+              "proof": "e2e-deploy"
+            },
+            {
+              "id": "A6",
+              "text": "Runs in the CI main workflow and in nightly e2e-repeat; 20/20 locally with pnpm test:e2e:repeat before close",
+              "proof": "e2e-deploy"
+            }
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "13-17",
+          "title": "UI DoD for new screens and screenshot approval",
+          "scope": [
+            "tests/e2e/dod-hardening.spec.ts",
+            "tests/e2e/projects-dod.spec.ts",
+            "tests/e2e/keyboard-motion.spec.ts",
+            "docs/ui-review/"
+          ],
+          "wave": 7,
+          "dependsOn": [
+            "13-10",
+            "13-12",
+            "13-13",
+            "13-14"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "e2e-dod"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Measured contrast meets the design-system thresholds on every new screen in both themes",
+              "proof": "e2e-dod"
+            },
+            {
+              "id": "A2",
+              "text": "Projects, project, service, create sheets and inspector render without horizontal scroll or clipping at 375, 900, 1280 and 1920 px in light and dark",
+              "proof": "e2e-dod"
+            },
+            {
+              "id": "A3",
+              "text": "Reduced motion removes non-essential animation on the new screens",
+              "proof": "e2e-dod"
+            },
+            {
+              "id": "A4",
+              "text": "noodara-ux-review report for the new screens has no BLOCK; screenshots in both themes are saved under docs/ui-review/ and the user approved them",
+              "proof": "manual"
+            }
+          ]
+        },
+        {
+          "id": "13-18",
+          "title": "Docs: first deploy guide",
+          "scope": [
+            "apps/site/content/docs/getting-started/first-deploy.mdx",
+            "apps/site/content/docs/getting-started/meta.json",
+            "apps/site/src/content/scope.ts",
+            "apps/site/src/content/scope.test.ts"
+          ],
+          "wave": 8,
+          "dependsOn": [
+            "13-16"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "first-deploy.mdx walks project -> environment -> service -> deploy -> logs with the exact UI labels, states the v0.2 limits (no env vars or build args, stop-then-start downtime) without coming-soon wording",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "'deploy-services' is removed from the scope exclusions and the site builds",
+              "proof": "build"
+            }
+          ],
+          "tier": "light"
+        },
+        {
+          "id": "13-19",
+          "title": "Phase 13 verification and requirement close-out",
+          "scope": [
+            ".planning/REQUIREMENTS.md",
+            ".planning/ROADMAP.md",
+            ".planning/STATE.md",
+            "docs/deploy-engine.md"
+          ],
+          "wave": 9,
+          "dependsOn": [
+            "13-15",
+            "13-16",
+            "13-17",
+            "13-18"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build",
+            "it-full"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "pnpm test:integration and pnpm test:e2e are green with port 3000 free; LOG-04, REC-02, QA-09 and DOCS-01 are marked complete with evidence",
+              "proof": "it-full"
+            },
+            {
+              "id": "A2",
+              "text": "OPEN_QUESTIONS 4-6 and the 13 assumptions are either confirmed by the user or still listed as open",
+              "proof": "manual"
+            }
+          ],
+          "tier": "light"
+        }
+      ]
     }
   ]
 }

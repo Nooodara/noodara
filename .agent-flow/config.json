@@ -34,7 +34,11 @@
       "it-runtime-reconcile": "NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/runtime-reconcile.test.ts",
       "it-runtime-container-logs": "NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/runtime-container-logs.test.ts",
       "it-canary-deploy": "NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/activity/canary-deploy.test.ts",
-      "it-soak": "NOODARA_SOAK=1 NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/soak.test.ts"
+      "it-soak": "NOODARA_SOAK=1 NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/soak.test.ts",
+      "e2e-servers": "pnpm exec playwright test tests/e2e/servers-list.spec.ts tests/e2e/a11y-fallbacks.spec.ts",
+      "e2e-deploy": "pnpm exec playwright test tests/e2e/deploy.spec.ts",
+      "e2e-deploy-host": "pnpm exec playwright test tests/e2e/deploy-host.spec.ts",
+      "e2e-dod": "pnpm exec playwright test tests/e2e/projects-dod.spec.ts tests/e2e/dod-hardening.spec.ts"
     },
     "defaultGates": [
       "test",
