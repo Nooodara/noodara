@@ -4,8 +4,8 @@ milestone: v0.2
 milestone_name: Projects & Services
 status: ready_to_plan
 stopped_at: Phase 12 complete — ready to plan Phase 13
-last_updated: 2026-10-05T10:45:00.000Z
-last_activity: 2026-10-05 -- Phase 12 complete (runtime engine, API, logs, reconciliation, soak tests all green)
+last_updated: 2026-10-06T08:00:00.000Z
+last_activity: 2026-10-06 -- Phase 12 closed (21/21, tier-1 review pass after 2 fail rounds; CI green except pre-existing e2e @rowmenu)
 progress:
   total_phases: 8
   completed_phases: 6
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 Phase: 12 complete
 Plan: —
 Status: Ready to plan Phase 13
-Last activity: 2026-10-05
+Last activity: 2026-10-06
 
 Progress: [██████░░░░] 62%
 
