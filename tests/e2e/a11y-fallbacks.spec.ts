@@ -34,6 +34,19 @@ async function login(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/servers$/);
 }
 
+// The shell's session store (apps/web/src/lib/session-user.ts `ensureLoaded`) loads the account
+// preferences after login and, when no `noodara-prefs` mirror existed before that request, calls
+// `applyPreferences(server)`, which rewrites `<html data-motion>`. A forced attribute set before
+// that response lands is silently removed -- the race behind the reduced-motion flake (13-07).
+// `applyPreferences` runs synchronously before the store emits, and the emit is what fills the
+// account menu trigger with the user's name, so a non-empty trigger means the write already happened.
+async function forceMotion(page: Page, value: 'reduce' | 'allow'): Promise<void> {
+  await expect(page.getByTestId('shell-account-menu-trigger')).toHaveText(/\S/);
+  await page.evaluate((motion) => {
+    document.documentElement.setAttribute('data-motion', motion);
+  }, value);
+}
+
 interface Matrix {
   readonly translateX: number;
   readonly scaleX: number;
@@ -165,9 +178,7 @@ test('@a11y-fallbacks forced reduce motion preference: Sheet opens opacity-only 
   page,
 }) => {
   await login(page);
-  await page.evaluate(() => {
-    document.documentElement.setAttribute('data-motion', 'reduce');
-  });
+  await forceMotion(page, 'reduce');
 
   await page.getByRole('button', { name: 'Add server' }).click();
   await expect(page.getByTestId('server-sheet')).toBeVisible();
@@ -183,16 +194,12 @@ test('@a11y-fallbacks forced reduce motion preference: Sheet opens opacity-only 
 
 test('@a11y-fallbacks forced reduce motion preference: Dialog opens without scale', async ({ page }) => {
   await login(page);
-  await page.evaluate(() => {
-    document.documentElement.setAttribute('data-motion', 'reduce');
-  });
+  await forceMotion(page, 'reduce');
 
   const name = `a11y-dialog-forced-${String(Date.now())}`;
   await seedServer(page, name);
   await page.reload();
-  await page.evaluate(() => {
-    document.documentElement.setAttribute('data-motion', 'reduce');
-  });
+  await forceMotion(page, 'reduce');
 
   const row = page.getByTestId('servers-row').filter({ hasText: name });
   await row.hover();
@@ -215,9 +222,7 @@ test('@a11y-fallbacks allow motion preference overrides OS reduce: Sheet declare
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await login(page);
-  await page.evaluate(() => {
-    document.documentElement.setAttribute('data-motion', 'allow');
-  });
+  await forceMotion(page, 'allow');
 
   await page.getByRole('button', { name: 'Add server' }).click();
   await expect(page.getByTestId('server-sheet')).toBeVisible();
@@ -234,9 +239,7 @@ test('@a11y-fallbacks allow motion preference overrides OS reduce: Sheet declare
 // respect a forced preference -- no OS emulation here, only the attribute.
 test('@a11y-fallbacks forced reduce motion preference: Sheet drag surface does not move', async ({ page }) => {
   await login(page);
-  await page.evaluate(() => {
-    document.documentElement.setAttribute('data-motion', 'reduce');
-  });
+  await forceMotion(page, 'reduce');
 
   await page.getByRole('button', { name: 'Add server' }).click();
   await expect(page.getByTestId('server-sheet')).toBeVisible();

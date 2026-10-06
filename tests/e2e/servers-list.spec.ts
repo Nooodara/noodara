@@ -14,7 +14,7 @@
 // and row-menu tests below use the real API instead (seeding one server each through an
 // authenticated request from the browser context), so this spec still proves data really flows
 // from a real `POST`/`GET /api/servers` round trip through to the rendered row.
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './fixtures/stack.js';
 
 const EMPTY_TITLE = 'No servers yet';
@@ -268,39 +268,22 @@ test('@servers a row\'s actions menu is absent until opened, then exposes Edit a
   await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
 });
 
-// Mobile round 1 adjustment (09-14 checkpoint): the human reviewer found that at a real iPhone 16
-// Pro Max viewport (440x956, DPR 3) the servers list's InsetGroup card (`overflow-hidden`) clipped
-// the row menu instead of showing it below the row, and the row's own content (name, host:port,
-// status pill, time) disappeared while it was open. NOT YET RUN -- port conflict with the running
-// dev stack (see 09-14 checkpoint return); jsdom's own `RowMenu.test.tsx` already proves the
-// portal/fixed-position structural fix, this is the real-browser, real-viewport proof.
-test('@rowmenu at a 440x956 mobile viewport, opening the row menu never clips it and never hides the row\'s own content', async ({
-  page,
-}) => {
-  await login(page);
-  await page.setViewportSize({ width: 440, height: 956 });
+// Enough rows to push a later-sorting row below the fold of a 956px-tall viewport (44px rows).
+const BELOW_THE_FOLD_FILLERS = 25;
 
-  const name = `rowmenu-mobile-${String(Date.now())}`;
-  const created = await page.request.post('/api/servers', {
-    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
-  });
-  expect(created.status()).toBe(201);
+async function seedFillers(page: Page, prefix: string, count: number): Promise<void> {
+  for (let index = 0; index < count; index += 1) {
+    const filler = `${prefix}-${String(index).padStart(2, '0')}`;
+    const response = await page.request.post('/api/servers', {
+      data: { name: filler, host: `${filler}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+    });
+    expect(response.status()).toBe(201);
+  }
+}
 
-  const row = page.getByTestId('servers-row').filter({ hasText: name });
-  await expect(row).toBeVisible();
-  const rowBoxBeforeOpen = await row.boundingBox();
-  expect(rowBoxBeforeOpen).not.toBeNull();
-
-  await page.getByRole('button', { name: `Actions for ${name}` }).click();
-
-  // The row's own primary text must still be visible and unchanged while the menu is open --
-  // the reported bug replaced it with nothing.
-  await expect(row.getByText(name, { exact: true })).toBeVisible();
-  const rowBoxWhileOpen = await row.boundingBox();
-  expect(rowBoxWhileOpen).toEqual(rowBoxBeforeOpen);
-
-  // The open menu itself must be fully visible (not clipped to zero/negative size by an
-  // overflow-hidden ancestor) and fully inside the 440px-wide viewport.
+/** Proves the open menu is really on screen: inside the viewport, and each item's own center
+ *  hit-tests to that item (so no `overflow-hidden` ancestor or overlay clips or covers it). */
+async function expectMenuFullyVisible(page: Page, viewport: { width: number; height: number }): Promise<void> {
   const menu = page.getByRole('menu');
   await expect(menu).toBeVisible();
   const menuBox = await menu.boundingBox();
@@ -308,11 +291,133 @@ test('@rowmenu at a 440x956 mobile viewport, opening the row menu never clips it
   expect(menuBox!.width).toBeGreaterThan(0);
   expect(menuBox!.height).toBeGreaterThan(0);
   expect(menuBox!.x).toBeGreaterThanOrEqual(0);
-  expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(440);
-  expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(956);
+  expect(menuBox!.y).toBeGreaterThanOrEqual(0);
+  expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(viewport.width);
+  expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(viewport.height);
 
-  await expect(page.getByRole('menuitem', { name: 'Edit' })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
+  for (const label of ['Edit', 'Delete']) {
+    const item = page.getByRole('menuitem', { name: label });
+    await expect(item).toBeVisible();
+    const hitsItself = await item.evaluate((el) => {
+      const rect = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return hit !== null && (hit === el || el.contains(hit));
+    });
+    expect(hitsItself, `"${label}" is covered or clipped`).toBe(true);
+  }
+}
+
+/** Brings the row on screen and lets its first-load entrance transition settle, so a bounding
+ *  box read afterwards is the row's resting position (the click's own auto-scroll and the
+ *  stagger's translateY are the only two things that move a row; neither is the menu). */
+async function settleRowInView(row: Locator): Promise<void> {
+  await row.scrollIntoViewIfNeeded();
+  await row.evaluate(async (el) => {
+    await Promise.all(el.getAnimations({ subtree: true }).map((animation) => animation.finished));
+  });
+}
+
+// Mobile round 1 adjustment (09-14 checkpoint): the human reviewer found that at a real iPhone 16
+// Pro Max viewport (440x956, DPR 3) the servers list's InsetGroup card (`overflow-hidden`) clipped
+// the row menu instead of showing it below the row, and the row's own content (name, host:port,
+// status pill, time) disappeared while it was open.
+//
+// 13-07 root cause of the CI-only failure: in the full suite the list (sorted by name) holds
+// enough earlier servers that this row starts below the fold at 956px. The old version read the
+// row's box before the click, Playwright's actionability scroll then moved the page, and the
+// row's viewport y changed (1210 -> 879) with the menu rendering correctly (flipped upward, not
+// clipped). The fillers below pin that condition; the baseline is now read after the row is in
+// view, so the assertion compares open vs. closed, not scrolled vs. unscrolled.
+test('@rowmenu at a 440x956 mobile viewport, opening the row menu never clips it and never hides the row\'s own content', async ({
+  page,
+}) => {
+  await login(page);
+  const viewport = { width: 440, height: 956 };
+  await page.setViewportSize(viewport);
+
+  const stamp = String(Date.now());
+  const name = `rowmenu-mobile-${stamp}`;
+  // CI's full suite: the list is sorted by name and earlier specs leave many servers sorting
+  // before this one, so at 956px tall the row starts below the fold. Pinned here with fillers
+  // that sort first ("fill" < "mobile"), instead of depending on which specs ran before.
+  await seedFillers(page, `rowmenu-fill-${stamp}`, BELOW_THE_FOLD_FILLERS);
+  const created = await page.request.post('/api/servers', {
+    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+  });
+  expect(created.status()).toBe(201);
+
+  const row = page.getByTestId('servers-row').filter({ hasText: name });
+  await expect(row).toBeVisible();
+  await settleRowInView(row);
+  const rowBoxBeforeOpen = await row.boundingBox();
+  expect(rowBoxBeforeOpen).not.toBeNull();
+  const scrollYBeforeOpen = await page.evaluate(() => window.scrollY);
+
+  await page.getByRole('button', { name: `Actions for ${name}` }).click();
+
+  // The row's own primary text must still be visible and unchanged while the menu is open --
+  // the reported bug replaced it with nothing. Opening the menu must not scroll the page either.
+  await expect(row.getByText(name, { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollYBeforeOpen);
+  const rowBoxWhileOpen = await row.boundingBox();
+  expect(rowBoxWhileOpen).toEqual(rowBoxBeforeOpen);
+
+  await expectMenuFullyVisible(page, viewport);
+});
+
+// 13-07 (H1): the same contract at every layout breakpoint the shell has, by pointer and by
+// keyboard, with the row as the last one in view (the case that flips the menu upward). Escape
+// closes it and hands focus back to the trigger in both paths.
+const ROW_MENU_VIEWPORTS = [
+  { width: 375, height: 667 },
+  { width: 440, height: 956 },
+  { width: 900, height: 700 },
+  { width: 1280, height: 800 },
+] as const;
+
+test('@rowmenu at 375, 440, 900 and 1280 widths the row menu opens unclipped by pointer and by keyboard, and Escape returns focus to the trigger', async ({
+  page,
+}) => {
+  await login(page);
+
+  const stamp = String(Date.now());
+  const name = `rowmenu-widths-${stamp}`;
+  await seedFillers(page, `rowmenu-fill-${stamp}`, BELOW_THE_FOLD_FILLERS);
+  const created = await page.request.post('/api/servers', {
+    data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
+  });
+  expect(created.status()).toBe(201);
+
+  const row = page.getByTestId('servers-row').filter({ hasText: name });
+  const trigger = page.getByRole('button', { name: `Actions for ${name}` });
+  await expect(row).toBeVisible();
+
+  for (const viewport of ROW_MENU_VIEWPORTS) {
+    await test.step(`${String(viewport.width)}x${String(viewport.height)}`, async () => {
+      await page.setViewportSize(viewport);
+      await settleRowInView(row);
+
+      // Pointer.
+      await row.hover();
+      await trigger.click();
+      await expectMenuFullyVisible(page, viewport);
+      await page.keyboard.press('Escape');
+      await expect(page.getByRole('menu')).toHaveCount(0);
+      await expect(trigger).toBeFocused();
+
+      // Keyboard.
+      await trigger.focus();
+      await page.keyboard.press('Enter');
+      await expect(page.getByRole('menuitem', { name: 'Edit' })).toBeFocused();
+      await expectMenuFullyVisible(page, viewport);
+      await page.keyboard.press('ArrowDown');
+      await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(page.getByRole('menu')).toHaveCount(0);
+      await expect(trigger).toBeFocused();
+      await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+  }
 });
 
 // 08-04-PLAN.md Task 3 (UI-04/UI-05, P14): the three RowMenu behaviours jsdom cannot honestly
@@ -540,6 +645,9 @@ test('@scroll-edge the toolbar border-bottom is transparent at scroll-top, visib
 
   const toolbar = page.getByTestId('shell-toolbar');
   await expect(toolbar).toBeVisible();
+  // The wheel below only scrolls once the 20 rows have rendered and overflow the viewport; wheeling
+  // while the list is still loading scrolls nothing and leaves the border transparent (13-07).
+  await expect(page.getByTestId('servers-row')).toHaveCount(items.length);
 
   async function borderBottomAlpha(): Promise<number> {
     const color = await toolbar.evaluate((el) => getComputedStyle(el).borderBottomColor);
