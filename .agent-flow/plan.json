@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-06T15:48:20.088Z",
+  "updatedAt": "2026-10-06T20:41:11.433Z",
   "cursor": {
     "phase": null,
     "task": null
@@ -1864,8 +1864,19 @@
               "id": "A4",
               "text": "error-codes.mdx and docs/deploy-engine.md list the new route and ENVIRONMENT_NOT_EMPTY",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "Environment delete is race-safe: a service created concurrently with the delete never leaves an orphan service row; either the delete returns 409 ENVIRONMENT_NOT_EMPTY or the create returns 404, never a 500 or dangling environment_id (check and delete in one transaction or under a row lock).",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Environment delete route rejects malformed JSON, missing name field, unknown fields and oversized bodies with 400/413/422 and the API keeps serving; it requires a session (401) and passes the origin guard (403 cross-origin), and the 404/422 responses do not reveal whether an id exists in another project.",
+              "proof": "test"
             }
-          ]
+          ],
+          "waives": []
         },
         {
           "id": "13-02",
@@ -1908,8 +1919,14 @@
               "id": "A4",
               "text": "runtime-reconcile integration test asserts updatedAt on a reconcile-driven service.updated is >= the snapshot GET value",
               "proof": "it-runtime-reconcile"
+            },
+            {
+              "id": "H1",
+              "text": "updatedAt on events is monotonic per entity: two rapid writes to the same service or deployment never publish an older updatedAt after a newer one, and the event payload carries no fields beyond the existing allowlisted view (no secrets, no errorMessage raw text).",
+              "proof": "test"
             }
-          ]
+          ],
+          "waives": []
         },
         {
           "id": "13-03",
@@ -1957,8 +1974,19 @@
               "id": "A4",
               "text": "runtime-pipeline integration test asserts four ordered steps with non-null durations on a node-api success and failed build step on failing-build",
               "proof": "it-runtime-pipeline"
+            },
+            {
+              "id": "H1",
+              "text": "Step timestamps are written only through the domain state machine transition and a single DB write: a concurrent cancel and success leave step timestamps consistent with the one terminal status (no step left running on a terminal deployment); the migration is additive with nullable columns, applies cleanly on a DB with existing deployments, and old rows derive steps without throwing.",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "deriveDeploymentSteps is total over every deployment status and error code combination (property test over all statuses x source types): never throws, always returns exactly four steps in fixed order, and durations are never negative when clocks are skewed or completedAt precedes startedAt.",
+              "proof": "test"
             }
           ],
+          "waives": [],
           "tier": "deep"
         },
         {
@@ -1997,8 +2025,19 @@
               "id": "A4",
               "text": "Property-style tests shuffle arrival order of snapshot pages and events and always converge to the same text; >=95% branch coverage",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "foldBuildLog is bounded: total retained text is capped (matching the server per-phase cap) with a visible truncation marker, a pathological flood of chunks or a gap that never resolves does not grow memory unbounded or loop on resync, and malformed chunk input (negative seq, non-integer, unknown phase) is dropped without throwing.",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Log text is treated as inert data: chunk content containing ANSI/escape sequences, HTML or script tags and secret-looking canary strings is preserved verbatim as text by the fold and never interpreted, and the fold never logs chunk content.",
+              "proof": "test"
             }
-          ]
+          ],
+          "waives": []
         },
         {
           "id": "13-05",
@@ -2040,7 +2079,28 @@
               "id": "A4",
               "text": "Every call has an explicit timeout; a network failure resolves to a typed error, never an unhandled rejection",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "api-client never forwards or logs secrets: request bodies of credential calls are excluded from any error object, thrown message, console output and retry/telemetry payloads, and an error response echoing the submitted secret is not surfaced to callers (canary test).",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Mutating calls send credentials: same-origin cookies and the origin-guard-compatible headers, and a 401 from any call resolves to the existing session-expired handling instead of being retried or swallowed; non-idempotent POSTs (deploy, cancel) are never auto-retried on timeout.",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "runtime-log-stream is bounded and safe: a partial NDJSON line split across reads is reassembled, a malformed line is skipped without ending the stream, a line over a client cap is truncated, total buffered lines are capped, and the reader is released (reader.cancel) on abort, server end and error with no leaked connection.",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist"
           ]
         },
         {
@@ -2085,7 +2145,28 @@
               "id": "A4",
               "text": "A smoke spec starts the deploy host, runs docker info inside it and tears down cleanly",
               "proof": "e2e-deploy-host"
+            },
+            {
+              "id": "H1",
+              "text": "Deploy host teardown is leak-free and idempotent: running global-teardown twice, or after a crashed setup, removes every container, network and volume carrying the e2e label without erroring, only touches resources it created (run-scoped label, never a host-wide prune), and uses per-run randomly generated credentials for the registry and SSH keys that are not written to the repo or test logs.",
+              "proof": "e2e-deploy-host"
+            },
+            {
+              "id": "H2",
+              "text": "The deploy host handle has a bounded startup timeout and a readiness check (sshd, dockerd, git host and registry all answering) before specs run; a failure to start fails the run with a named error instead of hanging, and exec() has a per-call timeout and returns exit code and redacted output.",
+              "proof": "e2e-deploy-host"
+            },
+            {
+              "id": "H3",
+              "text": "Per-run SSH keys, registry htpasswd and git token come from crypto-grade generators in the shared helper, never fixed literals, and are written only to the run temp dir",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist"
           ],
           "tier": "deep"
         },
@@ -2125,7 +2206,17 @@
               "id": "A3",
               "text": "No retry, timeout bump or skip is added to hide the failure",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "The fix introduces no viewport-specific hack or layout change at other breakpoints: the RowMenu stays operable by keyboard and pointer at 440x956 and at 375, 900 and 1280 widths, the menu is not clipped by overflow containers, and the focus trap/return and Escape behavior from Phase 8 still pass.",
+              "proof": "e2e-servers"
             }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist"
           ]
         },
         {
@@ -2176,7 +2267,23 @@
               "id": "A4",
               "text": "The shell keeps exactly one EventSource; log chunks are routed to subscribers by deploymentId and never stored for deployments nobody is viewing",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Event stream resilience: after an EventSource reconnect the shell refetches service and deployment snapshots and reconciles them with the same function, an event for an unknown id or with a missing/invalid updatedAt is ignored or triggers a refetch without crashing, and a deployment.log_chunk for an unsubscribed deployment is dropped without allocating per-deployment state.",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Log subscriptions are cleaned up: unsubscribing (unmount, navigation, inspector close) removes the handler so no chunk is delivered or retained afterwards, and subscribe/unsubscribe over 1000 cycles leaves zero registered handlers (leak test).",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist",
+            "persistence"
           ]
         },
         {
@@ -2229,7 +2336,23 @@
               "id": "A4",
               "text": "The sidebar updates live from service.updated/service.deleted events without a reload",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Project and service names rendered in the sidebar, list and sheet are escaped as text (a name like <img onerror=...> or a very long name with no spaces renders inert and truncated with the full name in a tooltip/accessible label), and the create sheet submit is disabled while pending so a double click sends one POST and a server 409 duplicate name shows in place.",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Sidebar live updates are bounded and correct: a service.deleted for the currently active route navigates to the project view with a notice instead of a broken page, and a burst of 200 service.updated events renders without re-rendering unaffected tree branches beyond the changed node.",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist",
+            "randomness/crypto-random"
           ]
         },
         {
@@ -2278,7 +2401,22 @@
               "id": "A4",
               "text": "ConfirmByNameDialog is generic and reused by service delete in 13-12",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Destructive dialogs are safe: ConfirmByNameDialog keeps the confirm button disabled until the exact name matches (case and whitespace sensitive), submits once, is dismissed by Escape, returns focus to the trigger, and the typed value is never put in the URL; a 404 on delete (already deleted elsewhere) is treated as done and refreshes the list.",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Environment and project form errors map server 409/422 codes to field-level messages in place, never raw server text, and the form state survives a failed submit so the user's input is not lost.",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist"
           ]
         },
         {
@@ -2332,7 +2470,31 @@
               "id": "A5",
               "text": "Editing the source shows that a redeploy is needed before the change takes effect (classifyServiceEdit)",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Credential fields: after save or on cancel/sheet close the secret is removed from React state, form defaults and any persisted draft (no localStorage/sessionStorage/URL), inputs use autocomplete=off and type=password, the field is not included in error reports, and a failed save does not echo the submitted value in the UI error.",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Client-side validation mirrors the server allowlist for git URLs: https:// and ssh forms are accepted and file:, ext::, git://, http://, javascript:, embedded userinfo, leading '-' and path '..' are rejected inline before any request is sent, and the SSH deploy-key flow shows only the public key with a copy action.",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "Create/edit submit prevents duplicate submissions (disabled while pending, single POST on double click) and a server PORT_IN_USE or BUILDKIT_UNAVAILABLE-style error is mapped to the relevant field with an actionable hint.",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist",
+            "persistence",
+            "randomness/crypto-random"
           ],
           "tier": "deep"
         },
@@ -2389,7 +2551,22 @@
               "id": "A5",
               "text": "Archived project: Deploy is disabled with the reason stated",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Action safety: Deploy and overflow actions are disabled while a request is pending so a double click enqueues exactly one deployment, and a 409 DEPLOYMENT_IN_PROGRESS from a race refreshes state instead of showing an error toast loop; cancel is available only while the deployment is cancellable and a second click is a no-op.",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Deployment history pagination handles an invalid or expired cursor by resetting to the first page, merges deployment.updated events by id without duplicating rows across pages, and the commit SHA and trigger values from the server are rendered as inert text.",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist"
           ]
         },
         {
@@ -2437,7 +2614,18 @@
               "id": "A4",
               "text": "Reduced motion: the running-step indicator does not animate",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Unknown or future error codes fall back to a generic classified copy with a safe recovery (never undefined, never the raw errorMessage), and sanitized last build log lines shown with an error are length-capped, rendered as text and pass through a client-side secret-pattern guard that masks canary secrets even if the server missed them.",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist"
           ]
         },
         {
@@ -2487,7 +2675,27 @@
               "id": "A4",
               "text": "Inspector closes with Escape and returns focus; at 375 px it becomes a full-height sheet; with no selection the slot stays zero width as in Phase 8",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Log panels are bounded in the DOM: the build log keeps a capped number of rendered lines (virtualized or windowed) with a visible truncated notice, a flood of 100k lines keeps the main thread responsive (no per-chunk full re-render), and opening/closing the inspector 50 times leaves no live EventSource subscription, stream reader or timer.",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Runtime follow lifecycle: leaving the page, toggling Follow off, changing tail, or unmount aborts the fetch and the server-side docker logs is terminated; a 429 or capacity error for concurrent follow streams shows its typed recovery copy and the Follow toggle returns to off; a server limit reached message states the reason once.",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "Inspector selection comes from the route (deployment id in the URL), a deployment id outside the caller's scope or that no longer exists renders a not-found state without a thrown error or infinite loading, and the panel does not leak the previous deployment's text when the selection changes.",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist"
           ],
           "tier": "deep"
         },
@@ -2521,8 +2729,14 @@
               "id": "A2",
               "text": "Rows link to the project or service when it still exists and render plain text when it was deleted",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Activity copy renders names and metadata as text only and tolerates missing, null or unexpected metadata keys and unknown actions with a generic fallback row (never throws or shows raw JSON), and links to a project or service are built only from validated ids (never from metadata strings) with no open-redirect or javascript: hrefs.",
+              "proof": "test"
             }
-          ]
+          ],
+          "waives": []
         },
         {
           "id": "13-16",
@@ -2579,7 +2793,29 @@
               "id": "A6",
               "text": "Runs in the CI main workflow and in nightly e2e-repeat; 20/20 locally with pnpm test:e2e:repeat before close",
               "proof": "e2e-deploy"
+            },
+            {
+              "id": "H1",
+              "text": "Test hygiene: E2E credentials, deploy keys and registry passwords are generated per run with crypto.randomBytes, never committed, and a canary secret entered in the service form and used in a clone/registry login is asserted absent from the page DOM, console logs, network responses, Playwright trace/HAR artifacts, and the uploaded CI artifacts.",
+              "proof": "e2e-deploy"
+            },
+            {
+              "id": "H2",
+              "text": "The e2e deploy spec is deterministic: it waits on observable UI state (step statuses, SSE-driven updates) rather than fixed sleeps, uses a bounded per-test timeout below the CI job timeout, cleans up its created project/services in afterEach even on failure, and passes with Playwright retries disabled.",
+              "proof": "e2e-deploy"
+            },
+            {
+              "id": "H3",
+              "text": "The cancel scenario also asserts the cancelled deployment's build process is gone from ps on the deploy host (not only that Docker resources are absent), and that reloading the page mid-build shows the same log text with no duplicated or lost lines.",
+              "proof": "e2e-deploy"
             }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist"
           ],
           "tier": "deep"
         },
@@ -2627,7 +2863,20 @@
               "id": "A4",
               "text": "noodara-ux-review report for the new screens has no BLOCK; screenshots in both themes are saved under docs/ui-review/ and the user approved them",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "Every interactive element on the new screens is keyboard reachable in logical order with a visible focus ring, dialogs and sheets trap focus and restore it on close, status is conveyed by text or icon and not color alone, and an axe scan on each new screen in both themes reports zero serious or critical violations.",
+              "proof": "e2e-dod"
+            },
+            {
+              "id": "H2",
+              "text": "Long content stress: a project name of 200 characters, a service with a 300-character repo URL, and a 10,000-line build log render without horizontal page scroll or overlapping at 375 px, in both themes.",
+              "proof": "e2e-dod"
             }
+          ],
+          "waives": [
+            "persistence"
           ]
         },
         {
@@ -2661,7 +2910,16 @@
               "id": "A2",
               "text": "'deploy-services' is removed from the scope exclusions and the site builds",
               "proof": "build"
+            },
+            {
+              "id": "H1",
+              "text": "first-deploy.mdx is verified against reality: every UI label quoted in the guide exists in the web source (a test greps the labels), internal links resolve, code blocks contain no real-looking secrets or tokens (placeholders only), and the page appears in meta.json navigation order and in the site search index.",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "randomness/crypto-random"
           ],
           "tier": "light"
         },
@@ -2700,8 +2958,19 @@
               "id": "A2",
               "text": "OPEN_QUESTIONS 4-6 and the 13 assumptions are either confirmed by the user or still listed as open",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "Phase close-out leaves no skipped or quarantined tests: a grep of apps/, packages/ and tests/ for .skip, .only, test.fixme and retries added in phase 13 returns nothing without a linked justification, and pnpm security:scan-leaks passes including any new phase 13 spec.",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "A final pnpm test:e2e:repeat run (20/20) and pnpm lint, typecheck and boundaries are recorded with command output in the SUMMARY, and docs/deploy-engine.md route list matches the registered Fastify routes (a check fails if a route exists without documentation).",
+              "proof": "manual"
             }
           ],
+          "waives": [],
           "tier": "light"
         }
       ]
