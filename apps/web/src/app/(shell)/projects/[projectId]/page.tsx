@@ -5,10 +5,11 @@
 // environment goes through ConfirmByNameDialog: a non-empty environment gets the
 // ENVIRONMENT_NOT_EMPTY recovery copy, a 404 counts as already deleted. Each environment section
 // carries the `environment-<id>` anchor the sidebar links to. Data refetches on stream (re)open
-// and on the projects-changed bus.
+// and on the projects-changed bus. 13-12: each environment has a New service action that opens
+// ServiceSheet in create mode; a save refetches the project and tells the sidebar.
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Banner, EmptyState, InsetGroup, ListRow, RowMenu, SkeletonRow } from '@noodara/ui';
+import { Banner, Button, EmptyState, InsetGroup, ListRow, RowMenu, SkeletonRow } from '@noodara/ui';
 import { ConfirmByNameDialog, deleteOutcome } from '../../../../components/ConfirmByNameDialog';
 import { ENVIRONMENT_NOT_EMPTY_COPY, EnvironmentSheet } from '../../../../components/EnvironmentSheet';
 import {
@@ -19,7 +20,9 @@ import {
   subscribeProjectsChanged,
 } from '../../../../components/ProjectNav';
 import { ProjectToolbar } from '../../../../components/ProjectToolbar';
+import { ServiceSheet } from '../../../../components/ServiceSheet';
 import { Toolbar } from '../../../../components/Toolbar';
+import { apiGet, type ServerView } from '../../../../lib/api-client';
 import {
   deleteEnvironment,
   getProject,
@@ -42,6 +45,10 @@ type PageState =
       readonly environments: readonly EnvironmentView[];
       readonly services: readonly ServiceView[];
     };
+
+interface ListServersResponse {
+  readonly items: ServerView[];
+}
 
 const ENVIRONMENTS_EMPTY_BODY = 'An environment groups the services you deploy together, for example production or staging.';
 const SKELETON_ROW_COUNT = 3;
@@ -70,6 +77,10 @@ export default function ProjectPage() {
   // `deleting` keeps the target after close so focus can return to its menu trigger.
   const [deleting, setDeleting] = useState<EnvironmentView | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  // The environment a new service is being created in; kept after close like `deleting`.
+  const [creatingIn, setCreatingIn] = useState<string | null>(null);
+  const [serviceSheetOpen, setServiceSheetOpen] = useState(false);
+  const [servers, setServers] = useState<readonly ServerView[]>([]);
   const latestRequest = useRef(0);
 
   const fetchProject = useCallback((): void => {
@@ -104,9 +115,18 @@ export default function ProjectPage() {
     );
   }, [projectId]);
 
+  const fetchServers = useCallback((): void => {
+    void apiGet<ListServersResponse>('/api/servers').then((result) => {
+      if (result.ok) setServers(result.data.items);
+    });
+  }, []);
+
   useEffect(() => {
     fetchProject();
   }, [fetchProject]);
+  useEffect(() => {
+    fetchServers();
+  }, [fetchServers]);
   useEffect(() => registerResync(fetchProject), [registerResync, fetchProject]);
   useEffect(() => subscribeProjectsChanged(fetchProject), [fetchProject]);
 
@@ -204,21 +224,35 @@ export default function ProjectPage() {
                   <h2 id={`environment-title-${environment.id}`} className="min-w-0 truncate font-mono text-headline font-semibold text-ink">
                     {environment.name}
                   </h2>
-                  <RowMenu
-                    triggerLabel={`Actions for ${environment.name}`}
-                    data-testid={menuTestId(environment.id)}
-                    items={[
-                      {
-                        id: 'delete',
-                        label: 'Delete environment',
-                        destructive: true,
-                        onSelect: () => {
-                          setDeleting(environment);
-                          setDeleteOpen(true);
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      data-testid={`new-service-${environment.id}`}
+                      onClick={() => {
+                        setCreatingIn(environment.id);
+                        setServiceSheetOpen(true);
+                        fetchServers();
+                      }}
+                    >
+                      New service
+                    </Button>
+                    <RowMenu
+                      triggerLabel={`Actions for ${environment.name}`}
+                      data-testid={menuTestId(environment.id)}
+                      items={[
+                        {
+                          id: 'delete',
+                          label: 'Delete environment',
+                          destructive: true,
+                          onSelect: () => {
+                            setDeleting(environment);
+                            setDeleteOpen(true);
+                          },
                         },
-                      },
-                    ]}
-                  />
+                      ]}
+                    />
+                  </div>
                 </div>
                 <InsetGroup data-testid={`environment-services-${environment.id}`}>
                   {services.length === 0 ? (
@@ -251,6 +285,19 @@ export default function ProjectPage() {
         existingNames={environments.map((environment) => environment.name)}
         onCreated={fetchProject}
       />
+      {creatingIn !== null ? (
+        <ServiceSheet
+          open={serviceSheetOpen}
+          onOpenChange={setServiceSheetOpen}
+          projectId={project.id}
+          environmentId={creatingIn}
+          servers={servers}
+          onSaved={() => {
+            fetchProject();
+            notifyProjectsChanged();
+          }}
+        />
+      ) : null}
       <ConfirmByNameDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}

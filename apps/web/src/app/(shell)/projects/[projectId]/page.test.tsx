@@ -10,6 +10,8 @@ const PROJECT_ID = '11111111-1111-4111-8111-111111111111';
 const PROD_ID = '22222222-2222-4222-8222-222222222222';
 const STAGING_ID = '33333333-3333-4333-8333-333333333333';
 const SERVICE_ID = '44444444-4444-4444-8444-444444444444';
+const SERVER_ID = '55555555-5555-4555-8555-555555555555';
+const NEW_SERVICE_ID = '66666666-6666-4666-8666-666666666666';
 
 const nav = vi.hoisted(() => ({ params: { projectId: '' }, push: vi.fn() }));
 const deployApi = vi.hoisted(() => ({
@@ -41,6 +43,36 @@ vi.mock('../../../../lib/deploy-api', () => ({
   deleteProject: (id: string, confirmName: string) => deployApi.deleteProject(id, confirmName) as unknown,
 }));
 vi.mock('../../../../lib/require-session', () => ({ requireSession: () => undefined }));
+const apiClient = vi.hoisted(() => ({ apiGet: vi.fn() }));
+vi.mock('../../../../lib/api-client', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  apiGet: (path: string) => apiClient.apiGet(path) as unknown,
+}));
+// ServiceSheet itself is covered by ServiceSheet.test.tsx; here only how the page opens it and reacts to a save.
+vi.mock('../../../../components/ServiceSheet', () => ({
+  ServiceSheet: (props: {
+    open: boolean;
+    environmentId: string;
+    servers: readonly { id: string }[];
+    service?: unknown;
+    onSaved?: (service: unknown, info: { requiresRedeploy: boolean }) => void;
+    onOpenChange: (open: boolean) => void;
+  }) =>
+    props.open ? (
+      <div data-testid="service-sheet" data-mode={props.service === undefined ? 'create' : 'edit'} data-environment={props.environmentId}>
+        <span data-testid="service-sheet-servers">{props.servers.map((server) => server.id).join(',')}</span>
+        <button
+          type="button"
+          onClick={() => {
+            props.onSaved?.({}, { requiresRedeploy: false });
+            props.onOpenChange(false);
+          }}
+        >
+          Save stub
+        </button>
+      </div>
+    ) : null,
+}));
 
 const SHELL_CONTEXT: ShellContextValue = {
   connected: true,
@@ -114,6 +146,8 @@ beforeEach(() => {
   nav.params = { projectId: PROJECT_ID };
   nav.push.mockReset();
   for (const fn of Object.values(deployApi)) fn.mockReset();
+  apiClient.apiGet.mockReset();
+  apiClient.apiGet.mockImplementation(() => ok({ items: [{ id: SERVER_ID, name: 'edge-1' }] }));
 });
 
 describe('Project page (13-10 A1, A2, A3, H1)', () => {
@@ -266,5 +300,47 @@ describe('Project page (13-10 A1, A2, A3, H1)', () => {
     await waitFor(() => {
       expect(nav.push).toHaveBeenCalledWith('/projects');
     });
+  });
+});
+
+describe('Project page: New service per environment (13-12 A6)', () => {
+  it('has a New service action per environment that opens ServiceSheet in create mode for that environment', async () => {
+    seed();
+    const user = renderPage();
+
+    expect(await screen.findByTestId(`new-service-${PROD_ID}`)).toHaveTextContent('New service');
+    expect(screen.getByTestId(`new-service-${STAGING_ID}`)).toBeInTheDocument();
+    expect(screen.queryByTestId('service-sheet')).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId(`new-service-${STAGING_ID}`));
+
+    const sheet = await screen.findByTestId('service-sheet');
+    expect(sheet).toHaveAttribute('data-mode', 'create');
+    expect(sheet).toHaveAttribute('data-environment', STAGING_ID);
+    expect(apiClient.apiGet).toHaveBeenCalledWith('/api/servers');
+    await waitFor(() => {
+      expect(within(sheet).getByTestId('service-sheet-servers')).toHaveTextContent(SERVER_ID);
+    });
+  });
+
+  it('updates the services list and the sidebar after a save, without a reload', async () => {
+    seed();
+    const changed = vi.fn();
+    const unsubscribe = subscribeProjectsChanged(changed);
+    const user = renderPage();
+
+    await user.click(await screen.findByTestId(`new-service-${STAGING_ID}`));
+    const callsBefore = deployApi.listServices.mock.calls.length;
+    deployApi.listServices.mockImplementation(() =>
+      ok({ items: [service(SERVICE_ID, PROD_ID, 'api'), service(NEW_SERVICE_ID, STAGING_ID, 'worker')] }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Save stub' }));
+
+    expect(await screen.findByTestId(`service-row-${NEW_SERVICE_ID}`)).toHaveTextContent('worker');
+    expect(within(screen.getByTestId(`environment-services-${STAGING_ID}`)).getByText('worker')).toBeInTheDocument();
+    expect(deployApi.listServices.mock.calls.length).toBeGreaterThan(callsBefore);
+    expect(changed).toHaveBeenCalled();
+    expect(screen.queryByTestId('service-sheet')).not.toBeInTheDocument();
+    unsubscribe();
   });
 });

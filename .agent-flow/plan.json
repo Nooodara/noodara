@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-06T22:50:59.494Z",
+  "updatedAt": "2026-10-06T23:09:20.487Z",
   "cursor": {
     "phase": "13",
-    "task": "13-12"
+    "task": "13-13"
   },
   "phases": [
     {
@@ -2541,14 +2541,16 @@
             "apps/web/src/components/ServiceFacts.tsx",
             "apps/web/src/components/ServiceFacts.test.tsx",
             "apps/web/src/lib/service-status-copy.ts",
-            "apps/web/src/lib/service-status-copy.test.ts"
+            "apps/web/src/lib/service-status-copy.test.ts",
+            "apps/web/src/app/(shell)/projects/[projectId]/page.tsx",
+            "apps/web/src/app/(shell)/projects/[projectId]/page.test.tsx"
           ],
           "wave": 5,
           "dependsOn": [
             "13-08",
             "13-10"
           ],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
@@ -2590,6 +2592,11 @@
             {
               "id": "H2",
               "text": "Deployment history pagination handles an invalid or expired cursor by resetting to the first page, merges deployment.updated events by id without duplicating rows across pages, and the commit SHA and trigger values from the server are rendered as inert text.",
+              "proof": "test"
+            },
+            {
+              "id": "A6",
+              "text": "ServiceSheet (13-11) is reachable: the project view has a New service action per environment that opens it in create mode, and the service view has Edit that opens it in edit mode; after save the lists update without reload",
               "proof": "test"
             }
           ],
