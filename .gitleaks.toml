@@ -30,6 +30,7 @@ paths = [
   '''^packages/ui/src/Input\.test\.tsx$''',
   '''^apps/web/src/components/SettingsGroups\.test\.tsx$''',
   '''^apps/web/src/lib/settings-rows\.test\.ts$''',
+  '''^apps/control-plane/src/deploy/log-sink\.test\.ts$''',
 ]
 
 [[allowlists]]
@@ -38,13 +39,24 @@ condition = "AND"
 paths = [
   '''^apps/control-plane/src/services/credential-store\.test\.ts$''',
   '''^tests/e2e/server-sheet\.spec\.ts$''',
+  '''^apps/control-plane/src/deploy/deploy-target\.test\.ts$''',
+  '''^apps/control-plane/src/deploy/run-deployment\.test\.ts$''',
+  '''^packages/git/src/clone-repository\.test\.ts$''',
 ]
 regexes = ['''-----BEGIN [A-Z ]*PRIVATE KEY-----''']
 
 [[allowlists]]
 description = "Committed raw gate logs of phase runs: SSH host-key fingerprints of throwaway test containers (public values) and, in older commits, one-time setup tokens of test databases destroyed at the end of the same run (masked in the current tree)."
-paths = ['''^\.planning/phases/[^/]+/gate-logs/''']
+paths = [
+  '''^\.planning/phases/[^/]+/gate-logs/''',
+  '''^\.planning/milestones/[^/]+/[^/]+/gate-logs/''',
+]
 
 [[allowlists]]
 description = "An illustrative NOODARA_MASTER_KEY example inside an internal planning document, never a value any environment used."
-paths = ['''^\.planning/phases/03-servicios-de-aplicaci-n-activity-log-y-redacci-n/03-03-PLAN\.md$''']
+paths = [
+  '''^\.planning/phases/03-servicios-de-aplicaci-n-activity-log-y-redacci-n/03-03-PLAN\.md$''',
+  '''^\.planning/milestones/v0\.1-phases/03-servicios-de-aplicaci-n-activity-log-y-redacci-n/03-03-PLAN\.md$''',
+  # Phase 11 plan quoting the same public Vitest fixture key from vitest.config.ts.
+  '''^\.planning/phases/11-motor-de-deploy-fundamentos/11-05-PLAN\.md$''',
+]
