@@ -21,3 +21,5 @@ overrides:
   'brace-expansion@>=2 <3': ^2.1.6
   'brace-expansion@>=4 <6': ^5.0.11
   '@grpc/grpc-js@>=1.14.0 <1.14.5': ^1.14.5
+  # GHSA-68fv-2mgg-jv7q via @vitest/coverage-v8 > magicast (dev only).
+  'source-map-js@>=1.0.0 <1.2.2': ^1.2.2
