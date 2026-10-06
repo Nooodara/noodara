@@ -90,6 +90,8 @@ export interface DeployRunLimits {
 /** Persists each status edge as it happens (the store, in production). */
 export interface DeploymentProgress {
   advance(from: DeploymentStatus, to: DeploymentStatus): Promise<void>;
+  /** The start -> verify step boundary (13-03): the container started, post-start polls begin. */
+  enterVerify(): Promise<void>;
   recordCommitSha(sha: CommitSha): Promise<void>;
 }
 
@@ -416,6 +418,8 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     ledger = recordResource(ledger, { kind: 'container_created' });
     await check(await startContainer(context('deploy'), { serviceId }), null);
 
+    // verify
+    await progress.enterVerify();
     let { delayMs, state } = startPostStartPolls(input.pollPolicy);
     for (;;) {
       await clock.sleep(delayMs);

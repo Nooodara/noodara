@@ -10,3 +10,4 @@ export * from './reconcile-diff.js';
 export * from './post-start-polls.js';
 export * from './log-chunker.js';
 export * from './log-sanitize.js';
+export * from './deployment-steps.js';

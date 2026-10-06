@@ -3,6 +3,9 @@
 //   (a BullMQ re-delivery of a job already past QUEUED) returns null, so the caller runs nothing.
 // - progress: every edge goes through `transitionDeployment` and an UPDATE on the expected status
 //   under the row lock; a row that moved underneath is a conflict, never a silent overwrite.
+//   13-03: the edge's step boundary (`stepBoundaryOfTransition`) is set in that same UPDATE, and
+//   the start -> verify boundary is one conditional UPDATE allowed only while DEPLOYING, so a
+//   terminal row never gains a boundary after its status.
 // - updatedAt (13-02 H1): every write moves it strictly forward (`nextUpdatedAt` on the locked
 //   row), and the events carry that value.
 // - finish: terminal status, timings, error code/message, the services.status cache (D5), the
@@ -14,12 +17,15 @@
 // Error messages are the pipeline's fixed texts (never raw remote output), capped here again.
 import { and, eq, inArray } from 'drizzle-orm';
 import {
+  canEnterVerifyStep,
   deriveServiceStatus,
   isTerminalDeploymentStatus,
+  stepBoundaryOfTransition,
   transitionDeployment,
   type ContainerObservation,
   type DeploymentErrorCode,
   type DeploymentStatus,
+  type DeploymentStepBoundary,
 } from '@noodara/domain/deployment';
 import type { CommitSha } from '@noodara/domain/validators';
 import type { Database } from '../db/client.js';
@@ -103,6 +109,11 @@ type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
 
 function capMessage(message: string): string {
   return message.length <= MAX_ERROR_MESSAGE_LENGTH ? message : `${message.slice(0, MAX_ERROR_MESSAGE_LENGTH - 1)}…`;
+}
+
+function boundaryOf(from: DeploymentStatus, to: DeploymentStatus, now: Date): Partial<Record<DeploymentStepBoundary, Date>> {
+  const boundary = stepBoundaryOfTransition(from, to);
+  return boundary === null ? {} : { [boundary]: now };
 }
 
 async function publishDeployment(deps: DeploymentStoreDeps, row: DeploymentRow): Promise<void> {
@@ -218,15 +229,31 @@ export function createDeploymentStore(deps: DeploymentStoreDeps): DeploymentStor
           const row = await deps.db.transaction(async (tx) => {
             const [current] = await tx.select().from(deployments).where(eq(deployments.id, deploymentId)).for('update');
             if (current?.status !== from) return null;
+            const now = deps.now();
             const [updated] = await tx
               .update(deployments)
-              .set({ status: next, updatedAt: nextUpdatedAt(current.updatedAt, deps.now()) })
+              .set({ status: next, updatedAt: nextUpdatedAt(current.updatedAt, now), ...boundaryOf(from, next, now) })
               .where(and(eq(deployments.id, deploymentId), eq(deployments.status, from)))
               .returning();
             return updated ?? null;
           });
           if (!row) throw new DeploymentConflictError(deploymentId, from);
           await publishDeployment(deps, row);
+        },
+        async enterVerify() {
+          const row = await deps.db.transaction(async (tx) => {
+            const [current] = await tx.select().from(deployments).where(eq(deployments.id, deploymentId)).for('update');
+            if (!current || !canEnterVerifyStep(current.status) || current.verifyingStartedAt !== null) return null;
+            const now = deps.now();
+            const [updated] = await tx
+              .update(deployments)
+              .set({ verifyingStartedAt: now, updatedAt: nextUpdatedAt(current.updatedAt, now) })
+              .where(and(eq(deployments.id, deploymentId), eq(deployments.status, current.status)))
+              .returning();
+            return updated ?? null;
+          });
+          // Not DEPLOYING any more (finished elsewhere): nothing to record, the status explains it.
+          if (row) await publishDeployment(deps, row);
         },
         async recordCommitSha(sha) {
           await deps.db.transaction(async (tx) => {

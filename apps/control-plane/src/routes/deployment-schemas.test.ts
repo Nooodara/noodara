@@ -7,6 +7,7 @@ import {
   DeploymentListQuerySchema,
   DeploymentListResponseSchema,
   DeploymentViewSchema,
+  DeploymentWithStepsViewSchema,
   ServiceDeploymentParamsSchema,
   unknownDeployFields,
 } from './deployment-schemas.js';
@@ -108,6 +109,37 @@ describe('deployment view schema', () => {
   });
 
   it('wraps pages with a nullable next cursor', () => {
-    expect(DeploymentListResponseSchema.parse({ items: [VIEW], nextCursor: null }).items).toHaveLength(1);
+    expect(DeploymentListResponseSchema.parse({ items: [WITH_STEPS], nextCursor: null }).items).toHaveLength(1);
+  });
+
+  it('list items carry the step timeline (13-03 A3)', () => {
+    expect(DeploymentListResponseSchema.safeParse({ items: [VIEW], nextCursor: null }).success).toBe(false);
+  });
+});
+
+const pendingStep = (name: string) => ({ name, state: 'pending', startedAt: null, completedAt: null, durationMs: null });
+const WITH_STEPS = {
+  ...VIEW,
+  steps: [pendingStep('pull'), { ...pendingStep('build'), state: 'skipped' }, pendingStep('start'), pendingStep('verify')],
+};
+
+describe('DeploymentWithStepsViewSchema (13-03 A3)', () => {
+  it('accepts exactly four steps with a known name and state', () => {
+    expect(DeploymentWithStepsViewSchema.parse(WITH_STEPS).steps.map((step) => step.name)).toEqual(['pull', 'build', 'start', 'verify']);
+  });
+
+  it('rejects a timeline that is not four steps long', () => {
+    expect(DeploymentWithStepsViewSchema.safeParse({ ...WITH_STEPS, steps: WITH_STEPS.steps.slice(0, 3) }).success).toBe(false);
+  });
+
+  it('rejects unknown states, unknown names and negative durations', () => {
+    const withStep = (step: Record<string, unknown>) => ({ ...WITH_STEPS, steps: [step, ...WITH_STEPS.steps.slice(1)] });
+    expect(DeploymentWithStepsViewSchema.safeParse(withStep({ ...pendingStep('pull'), state: 'done' })).success).toBe(false);
+    expect(DeploymentWithStepsViewSchema.safeParse(withStep(pendingStep('deploy'))).success).toBe(false);
+    expect(DeploymentWithStepsViewSchema.safeParse(withStep({ ...pendingStep('pull'), durationMs: -1 })).success).toBe(false);
+  });
+
+  it('the plain view (POST responses) has no steps key', () => {
+    expect(Object.keys(DeploymentViewSchema.shape)).not.toContain('steps');
   });
 });

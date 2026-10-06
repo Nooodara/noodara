@@ -188,11 +188,17 @@ class FakeSession implements SshDeploySession {
 class RecordingProgress implements DeploymentProgress {
   readonly advances: [DeploymentStatus, DeploymentStatus][] = [];
   readonly shas: string[] = [];
+  verifyEntered = 0;
   failOn: DeploymentStatus | null = null;
 
   advance(from: DeploymentStatus, to: DeploymentStatus): Promise<void> {
     if (to === this.failOn) return Promise.reject(new Error('connection to postgres://u:pw@db lost'));
     this.advances.push([from, to]);
+    return Promise.resolve();
+  }
+
+  enterVerify(): Promise<void> {
+    this.verifyEntered += 1;
     return Promise.resolve();
   }
 
@@ -285,6 +291,8 @@ describe('runDeployment: git source (C1)', () => {
       ['PREPARING', 'BUILDING'],
       ['BUILDING', 'DEPLOYING'],
     ]);
+    // 13-03: the verify step begins once the container started, before the post-start polls.
+    expect(h.progress.verifyEntered).toBe(1);
     expect(h.progress.shas).toEqual([SHA]);
     expect(h.session.keys()).toEqual([
       'fs.prepare_workspace',
@@ -368,6 +376,7 @@ describe('runDeployment: git source (C1)', () => {
       expect(h.session.keys()).not.toContain(key);
     }
     expect(h.progress.advances).toEqual([['PREPARING', 'BUILDING']]);
+    expect(h.progress.verifyEntered).toBe(0);
     expect(h.session.keys().at(-1)).toBe('fs.remove_deploy_dir');
   });
 });

@@ -10,9 +10,10 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { deriveDeploymentSteps, type DeploymentStep } from '@noodara/domain/deployment';
 import { createRedactor, secretValue } from '@noodara/domain/security';
 import { createSsh2Adapter, formatFingerprint } from '@noodara/ssh';
 import {
@@ -25,6 +26,9 @@ import {
 } from '../../../apps/control-plane/src/db/schema/index.js';
 import type { ServerEvent } from '../../../apps/control-plane/src/events/server-event-publisher.js';
 import type { DeployRunLimits } from '../../../apps/control-plane/src/deploy/run-deployment.js';
+import { readDeploymentStepStamps } from '../../../apps/control-plane/src/deploy/deployment-steps-view.js';
+import { runMigrations } from '../../../apps/control-plane/src/db/migrate.js';
+import { applyMigrationsUpTo } from '../helpers/migrations.js';
 import {
   DEPLOY_ENGINE_UBUNTU_VERSIONS,
   preloadedRefFor,
@@ -35,6 +39,7 @@ import {
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../helpers/redis.js';
 
+type DeploymentStoreModule = typeof import('../../../apps/control-plane/src/deploy/deployment-store.js');
 type DeployRuntimeModule = typeof import('../../../apps/control-plane/src/deploy/deploy-runtime.js');
 type DeployWorkerModule = typeof import('../../../apps/control-plane/src/deploy/deploy-worker.js');
 type DeploymentServicesModule = typeof import('../../../apps/control-plane/src/services/deployment-services.js');
@@ -241,6 +246,11 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       return row;
     };
 
+    /** 13-03: the timeline the GET views derive, from the stored row. */
+    const stepsOf = (row: typeof deployments.$inferSelect): DeploymentStep[] =>
+      deriveDeploymentSteps({ ...row, sourceType: (row.source as { sourceType: 'git' | 'image' }).sourceType });
+    const stepStates = (row: typeof deployments.$inferSelect): string[] => stepsOf(row).map((step) => step.state);
+
     /** Triggers through the real API service path and waits for the worker to finish the row. */
     const deploy = async (serviceId: string) => {
       if (triggerDeploy === undefined) throw new Error('runtime not started');
@@ -272,7 +282,10 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     const expectStatusPath = (deploymentId: string, terminal: readonly string[]): void => {
       const statuses = deploymentStatuses(deploymentId);
       expect(statuses).toContain('QUEUED');
-      expect(statuses.filter((status) => status !== 'QUEUED')).toEqual(['PREPARING', ...terminal]);
+      // 13-03: entering the verify step publishes a DEPLOYING update with no status edge; collapse
+      // consecutive repeats so the path lists status edges only.
+      const edges = statuses.filter((status, i) => status !== 'QUEUED' && status !== statuses[i - 1]);
+      expect(edges).toEqual(['PREPARING', ...terminal]);
     };
 
     /** A1/A5: workspace, its secrets and the registry --config dir are gone on every exit. */
@@ -474,6 +487,31 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       expect(await rootOut(['curl', '-fsS', `http://127.0.0.1:${String(PORTS.app)}/health`])).toBe('ok');
       // A3: every edge through the state machine, the cache recomputed and published.
       expectStatusPath(first.id, ['BUILDING', 'DEPLOYING', 'SUCCESS']);
+      // 13-03 A4: four ordered steps, each with a duration, chained boundary to boundary.
+      const steps = stepsOf(first);
+      expect(steps.map((step) => [step.name, step.state])).toEqual([
+        ['clone', 'success'],
+        ['build', 'success'],
+        ['start', 'success'],
+        ['verify', 'success'],
+      ]);
+      for (const [index, step] of steps.entries()) {
+        expect(step.durationMs, step.name).not.toBeNull();
+        expect(step.startedAt, step.name).not.toBeNull();
+        const next = steps[index + 1];
+        if (next) {
+          expect(next.startedAt?.getTime()).toBeGreaterThanOrEqual(step.startedAt?.getTime() ?? Infinity);
+          expect(step.completedAt).toEqual(next.startedAt);
+        }
+      }
+      expect(steps[0]?.startedAt).toEqual(first.startedAt);
+      expect(steps[3]?.completedAt).toEqual(first.completedAt);
+      // The GET views read the same boundaries.
+      expect((await readDeploymentStepStamps(db(), [first.id])).get(first.id)).toEqual({
+        buildingStartedAt: first.buildingStartedAt,
+        deployingStartedAt: first.deployingStartedAt,
+        verifyingStartedAt: first.verifyingStartedAt,
+      });
       expect(await serviceStatus(appServiceId)).toBe('RUNNING');
       expect(lastServiceStatus(appServiceId)).toBe('RUNNING');
       await expectWorkspaceGone(first.id);
@@ -504,6 +542,11 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         expect({ status: failed.status, errorCode: failed.errorCode }).toEqual({ status: 'FAILED', errorCode: 'BUILD_FAILED' });
         expect(failed.errorMessage).not.toContain('NOODARA_FIXTURE_BUILD_FAILURE');
         expectStatusPath(failed.id, ['BUILDING', 'FAILED']);
+        // 13-03 A4: the build step failed, the later steps never started.
+        expect(stepStates(failed)).toEqual(['success', 'failed', 'pending', 'pending']);
+        expect(stepsOf(failed)[1]?.durationMs).not.toBeNull();
+        expect(failed.deployingStartedAt).toBeNull();
+        expect(failed.verifyingStartedAt).toBeNull();
         expect(await inspectContainer(container, '{{.Id}}')).toBe(secondContainerId);
         expect(await inspectContainer(container, '{{.State.Running}}')).toBe('true');
         expect(await imageExists(secondImage)).toBe(true);
@@ -533,6 +576,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         const blocked = await deploy(serviceId);
         expect({ status: blocked.status, errorCode: blocked.errorCode }).toEqual({ status: 'FAILED', errorCode: 'PORT_IN_USE' });
         expectStatusPath(blocked.id, ['BUILDING', 'DEPLOYING', 'FAILED']);
+        expect(stepStates(blocked)).toEqual(['success', 'success', 'failed', 'pending']);
         expect(await containerExists(`noodara-${serviceId}`)).toBe(false);
         expect(await networkExists(`noodara-net-${serviceId}`)).toBe(false);
         // A5: the built image never got a container, so the ledger removes it.
@@ -563,6 +607,13 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       expect({ status: done.status, errorCode: done.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
       expect(done.commitSha).toBeNull();
       expectStatusPath(done.id, ['BUILDING', 'DEPLOYING', 'SUCCESS']);
+      // 13-03: an image source pulls and skips the build.
+      expect(stepsOf(done).map((step) => [step.name, step.state])).toEqual([
+        ['pull', 'success'],
+        ['build', 'skipped'],
+        ['start', 'success'],
+        ['verify', 'success'],
+      ]);
       const container = `noodara-${serviceId}`;
       expect(await inspectContainer(container, '{{.Config.Image}}')).toBe(imageRef);
       expect(await containerImageLayers(container)).toEqual(await layersOf(['docker', 'image', 'inspect', imageRef]));
@@ -637,3 +688,121 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     });
   },
 );
+
+// 13-03 H3: the step-boundary migration is additive. A database at the previous migration with a
+// deployment in flight upgrades through the production migrator; the row keeps null boundaries,
+// derives a valid timeline from its status, and the boot sweep's terminal write still works on it.
+describe('13-03 H3: step boundaries migrate onto a database with deployments in flight', () => {
+  let pg: PostgresFixture | undefined;
+
+  afterAll(async () => {
+    await pg?.stop();
+  }, STACK_TIMEOUT_MS);
+
+  it('migrates mid-deploy, derives from status alone, and finishes the in-flight row', async () => {
+    pg = await startPostgres({ migrate: false });
+    const { db } = pg;
+    await applyMigrationsUpTo(db, '0005_phase11_deploy_engine');
+
+    const [credential] = await db
+      .insert(credentials)
+      .values({ type: 'ssh_private_key', encryptedValue: 'not-a-real-ciphertext', keyVersion: KEY_VERSION })
+      .returning({ id: credentials.id });
+    if (!credential) throw new Error('credential insert returned no row');
+    const [server] = await db
+      .insert(servers)
+      .values({ name: 'legacy-host', host: '203.0.113.10', sshPort: 22, sshUser: 'deployer', credentialId: credential.id })
+      .returning({ id: servers.id });
+    if (!server) throw new Error('server insert returned no row');
+    const now = new Date();
+    const [project] = await db
+      .insert(projects)
+      .values({ name: 'Legacy', slug: `legacy-${randomUUID().slice(0, 8)}`, createdAt: now, updatedAt: now })
+      .returning({ id: projects.id });
+    if (!project) throw new Error('project insert returned no row');
+    const [environment] = await db
+      .insert(environments)
+      .values({ projectId: project.id, name: 'production', createdAt: now, updatedAt: now })
+      .returning({ id: environments.id });
+    if (!environment) throw new Error('environment insert returned no row');
+    const [service] = await db
+      .insert(services)
+      .values({
+        projectId: project.id,
+        environmentId: environment.id,
+        serverId: server.id,
+        name: 'legacy-api',
+        sourceType: 'git',
+        repositoryUrl: 'https://example.com/acme/api.git',
+        branch: 'main',
+        buildContext: '.',
+        dockerfilePath: 'Dockerfile',
+        internalPort: 3000,
+      })
+      .returning({ id: services.id });
+    if (!service) throw new Error('service insert returned no row');
+
+    // Raw SQL: the pre-13-03 table has no step columns for drizzle's insert to name.
+    const source = JSON.stringify({
+      sourceType: 'git',
+      repositoryUrl: 'https://example.com/acme/api.git',
+      branch: 'main',
+      buildContext: '.',
+      dockerfilePath: 'Dockerfile',
+      buildTarget: null,
+      imageRef: null,
+      internalPort: 3000,
+      publishedPort: null,
+    });
+    const inFlightId = randomUUID();
+    const failedId = randomUUID();
+    await db.execute(sql`
+      insert into deployments (id, service_id, status, source, started_at, created_at, updated_at)
+      values (${inFlightId}, ${service.id}, 'BUILDING', ${source}::jsonb, now() - interval '30 seconds', now(), now())`);
+    await db.execute(sql`
+      insert into deployments (id, service_id, status, source, started_at, completed_at, duration_ms, error_code, error_message, created_at, updated_at)
+      values (${failedId}, ${service.id}, 'FAILED', ${source}::jsonb, now() - interval '2 minutes', now() - interval '1 minute',
+              60000, 'BUILD_FAILED', 'The Docker build failed.', now() - interval '2 minutes', now())`);
+
+    // Boot: the production migrator applies only what is missing.
+    await runMigrations(db);
+
+    const rowOf = async (id: string) => {
+      const [row] = await db.select().from(deployments).where(eq(deployments.id, id));
+      if (!row) throw new Error(`deployment ${id} missing`);
+      return row;
+    };
+    const statesOf = (row: typeof deployments.$inferSelect): string[] =>
+      deriveDeploymentSteps({ ...row, sourceType: 'git' }).map((step) => step.state);
+
+    const inFlight = await rowOf(inFlightId);
+    expect([inFlight.buildingStartedAt, inFlight.deployingStartedAt, inFlight.verifyingStartedAt]).toEqual([null, null, null]);
+    expect(statesOf(inFlight)).toEqual(['success', 'running', 'pending', 'pending']);
+    expect(statesOf(await rowOf(failedId))).toEqual(['success', 'failed', 'pending', 'pending']);
+    const stamps = await readDeploymentStepStamps(db, [inFlightId, failedId]);
+    expect(stamps.get(inFlightId)).toEqual({ buildingStartedAt: null, deployingStartedAt: null, verifyingStartedAt: null });
+
+    // The boot sweep's write path: in-flight rows end WORKER_CRASHED without throwing.
+    process.env.NOODARA_MASTER_KEY ??= randomBytes(32).toString('base64');
+    process.env.BETTER_AUTH_SECRET ??= `runtime-pipeline-${randomUUID()}-${randomUUID()}`;
+    process.env.DATABASE_URL ??= pg.connectionString;
+    process.env.REDIS_URL ??= 'redis://127.0.0.1:6379';
+    process.env.NOODARA_PUBLIC_URL ??= 'http://localhost:3000';
+    const storeModule: DeploymentStoreModule = await import('../../../apps/control-plane/src/deploy/deployment-store.js');
+    const store = storeModule.createDeploymentStore({ db, now: () => new Date(), events: { publish: () => Promise.resolve() } });
+    const swept = await store.inFlight();
+    expect(swept.map((row) => row.deploymentId)).toEqual([inFlightId]);
+    await store.finish(inFlightId, {
+      status: 'FAILED',
+      errorCode: 'WORKER_CRASHED',
+      errorMessage: 'The deploy worker stopped before this deployment finished.',
+      commitSha: null,
+      container: null,
+    });
+    const finished = await rowOf(inFlightId);
+    expect(finished.status).toBe('FAILED');
+    const timeline = deriveDeploymentSteps({ ...finished, sourceType: 'git' });
+    expect(timeline).toHaveLength(4);
+    expect(timeline.filter((step) => step.state === 'running')).toEqual([]);
+  }, CASE_TIMEOUT_MS);
+});

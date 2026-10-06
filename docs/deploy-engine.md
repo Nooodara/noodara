@@ -22,6 +22,14 @@ Transitions: `QUEUED → PREPARING | CANCELLED`; `PREPARING → BUILDING | FAILE
 
 Full list in `apps/site/content/docs/reference/error-codes.mdx`. Build-time codes (`BUILD_FAILED`, `BUILD_TIMEOUT`, `BUILD_STALLED`, `CLONE_FAILED`, `REPOSITORY_AUTH_FAILED`, `IMAGE_PULL_FAILED`, `START_FAILED`, `WORKER_CRASHED`) are logged on the deployment, not returned as HTTP errors. HTTP: `DEPLOYMENT_IN_PROGRESS` 409, `DEPLOYMENT_INPUT_INVALID` 422, `DEPLOYMENT_NOT_CANCELLABLE` 409, `CONTAINER_NOT_FOUND` 409, `RUNTIME_LOG_TAIL_INVALID` 422 (`tail` 1-10000), `RUNTIME_LOG_FOLLOW_LIMIT_REACHED` 429, `RUNTIME_LOGS_FAILED` 502, `RUNTIME_LOGS_TIMEOUT` 504, `PORT_IN_USE` 409.
 
+## Step Timeline (13-03)
+
+`GET` deployment views carry `steps[]`: always four, in order `clone` (`pull` for image sources), `build` (`skipped` for image sources), `start`, `verify`. Each has `state` (`pending|running|success|failed|cancelled|skipped`), `startedAt`, `completedAt` and `durationMs` (null unless both ends are known, never negative).
+
+- Derived by `deriveDeploymentSteps()` in `packages/domain` (pure, total over status x source x error code). States come from the status; timestamps only add times, so a terminal deployment never shows a running step.
+- Boundaries: `startedAt` (clone/pull), `building_started_at`, `deploying_started_at`, `verifying_started_at` (migration `0006`, nullable), `completedAt`. Each is written in the same `UPDATE` as its status edge; `verify` starts after `docker start`, written only while `DEPLOYING`.
+- A failed deploy marks the step it reached `failed` and later steps `pending`; a cancel marks it `cancelled`. Rows without boundaries (pre-0006, or failed before the first boundary) map the error code to its step.
+
 ## Measured Defaults
 
 Fixtures: real `sshd+dockerd`. Phase 12 numbers are **Ubuntu 24.04 on macOS arm64 Docker Desktop** ("fresh" = re-run 2026-10-05); Phase 11 contract numbers cover 22.04 and 24.04. amd64 runner: nightly run 37398385044 (ADR 0008 item 6). Tests live in `tests/integration/deploy-engine/`; "Unit" = not exercised end to end.

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { deriveDeploymentSteps } from '@noodara/domain/deployment';
 import type { CommitSha } from '@noodara/domain/validators';
 import type { Database } from '../db/client.js';
 import { activityEvents } from '../db/schema/activity-events.js';
@@ -39,6 +40,9 @@ function deploymentRow(overrides: Partial<DeploymentRow> = {}): DeploymentRow {
     commitSha: null,
     previousDeploymentId: null,
     startedAt: null,
+    buildingStartedAt: null,
+    deployingStartedAt: null,
+    verifyingStartedAt: null,
     completedAt: null,
     durationMs: null,
     errorCode: null,
@@ -237,6 +241,83 @@ describe('deployment store: progress (C1)', () => {
     const h = harness({ deployment: deploymentRow({ status: 'PREPARING' }), service: serviceRow() });
     await h.store.progress(DEPLOYMENT_ID).recordCommitSha(SHA);
     expect(h.state.deployment?.commitSha).toBe(SHA);
+  });
+});
+
+describe('deployment store: step boundaries (13-03 A2, H1)', () => {
+  const stepsOf = (row: DeploymentRow | null) => {
+    if (!row) throw new Error('row missing');
+    return deriveDeploymentSteps({ ...row, sourceType: 'git' }).map((s) => s.state);
+  };
+  const at = <T,>(items: readonly T[], index: number): T => {
+    const item = items[index];
+    if (item === undefined) throw new Error(`no item at ${String(index)}`);
+    return item;
+  };
+
+  it('writes each status edge and its step boundary in one UPDATE', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'PREPARING', startedAt: STARTED }), service: serviceRow() });
+    const progress = h.store.progress(DEPLOYMENT_ID);
+
+    await progress.advance('PREPARING', 'BUILDING');
+    const building = h.ops.filter((op) => op.root === 'update');
+    expect(building).toHaveLength(1);
+    expect(h.setOf(at(building, 0))).toMatchObject({ status: 'BUILDING', buildingStartedAt: NOW });
+
+    await progress.advance('BUILDING', 'DEPLOYING');
+    const updates = h.ops.filter((op) => op.root === 'update');
+    expect(updates).toHaveLength(2);
+    expect(h.setOf(at(updates, 1))).toMatchObject({ status: 'DEPLOYING', deployingStartedAt: NOW });
+    expect(h.setOf(at(updates, 1))).not.toHaveProperty('buildingStartedAt');
+    expect(stepsOf(h.state.deployment)).toEqual(['success', 'success', 'running', 'pending']);
+  });
+
+  it('enters verify with one conditional UPDATE while DEPLOYING and publishes it', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'DEPLOYING', startedAt: STARTED }), service: serviceRow() });
+    await h.store.progress(DEPLOYMENT_ID).enterVerify();
+    const updates = h.ops.filter((op) => op.root === 'update');
+    expect(updates).toHaveLength(1);
+    expect(h.setOf(at(updates, 0))).toMatchObject({ verifyingStartedAt: NOW });
+    expect(h.setOf(at(updates, 0))).not.toHaveProperty('status');
+    expect(updates[0]?.inTx).toBe(true);
+    expect(h.published.at(-1)).toMatchObject({ type: 'deployment.updated', deployment: { status: 'DEPLOYING' } });
+    expect(stepsOf(h.state.deployment)).toEqual(['success', 'success', 'success', 'running']);
+  });
+
+  it.each(['SUCCESS', 'FAILED', 'CANCELLED', 'BUILDING'] as const)('never enters verify on a %s row', async (status) => {
+    const h = harness({ deployment: deploymentRow({ status, startedAt: STARTED }), service: serviceRow() });
+    await h.store.progress(DEPLOYMENT_ID).enterVerify();
+    expect(h.ops.filter((op) => op.root === 'update')).toEqual([]);
+    expect(h.published).toEqual([]);
+  });
+
+  it('enters verify once', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'DEPLOYING', verifyingStartedAt: STARTED }), service: serviceRow() });
+    await h.store.progress(DEPLOYMENT_ID).enterVerify();
+    expect(h.ops.filter((op) => op.root === 'update')).toEqual([]);
+  });
+
+  it('a missing row records nothing', async () => {
+    const h = harness({ deployment: null, service: null });
+    await h.store.progress(DEPLOYMENT_ID).enterVerify();
+    expect(h.published).toEqual([]);
+  });
+
+  it('a concurrent cancel and success leave one terminal status and no running step', async () => {
+    const h = harness({
+      deployment: deploymentRow({ status: 'DEPLOYING', startedAt: STARTED, buildingStartedAt: STARTED, deployingStartedAt: STARTED }),
+      service: serviceRow(),
+    });
+    const progress = h.store.progress(DEPLOYMENT_ID);
+    const cancelled = await h.store.finish(DEPLOYMENT_ID, finishInput({ status: 'CANCELLED', container: null }));
+    const succeeded = await h.store.finish(DEPLOYMENT_ID, finishInput());
+    await progress.enterVerify();
+
+    expect(cancelled?.status).toBe('CANCELLED');
+    expect(succeeded).toBeNull();
+    expect(h.state.deployment?.status).toBe('CANCELLED');
+    expect(h.state.deployment?.verifyingStartedAt).toBeNull();
+    expect(stepsOf(h.state.deployment)).toEqual(['success', 'success', 'cancelled', 'pending']);
   });
 });
 

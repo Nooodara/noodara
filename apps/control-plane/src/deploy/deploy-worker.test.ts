@@ -51,7 +51,7 @@ function harness(overrides: Partial<DeployJobDeps> = {}) {
   const deps: DeployJobDeps = {
     store: {
       claim: vi.fn(() => Promise.resolve(claims.shift() ?? null)),
-      progress: () => ({ advance: () => Promise.resolve(), recordCommitSha: () => Promise.resolve() }),
+      progress: () => ({ advance: () => Promise.resolve(), enterVerify: () => Promise.resolve(), recordCommitSha: () => Promise.resolve() }),
       finish: vi.fn((_id: string, input: FinishDeploymentInput) => {
         finished.push(input);
         return Promise.resolve(null);
@@ -144,7 +144,7 @@ describe('deploy job handler: idempotent against stall and retry (H1)', () => {
     const h = harness({
       store: {
         claim: () => Promise.reject(new Error(RAW_REMOTE)),
-        progress: () => ({ advance: () => Promise.resolve(), recordCommitSha: () => Promise.resolve() }),
+        progress: () => ({ advance: () => Promise.resolve(), enterVerify: () => Promise.resolve(), recordCommitSha: () => Promise.resolve() }),
         finish: () => Promise.resolve(null),
       },
     });

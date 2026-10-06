@@ -205,6 +205,7 @@ describe('migrations applied from scratch (QA-06)', () => {
       '0003_phase3_discovery_snapshots',
       '0004_phase9_user_preferences',
       '0005_phase11_deploy_engine',
+      '0006_phase13_deployment_steps',
     ]);
   });
 
@@ -281,6 +282,28 @@ describe('migration 0005 defensive guards (T-11-15)', () => {
       'git_deploy_key',
       'git_https_token',
       'registry_password',
+    ]);
+  });
+});
+
+describe('migration 0006 step boundaries (13-03 H1, H3)', () => {
+  it('adds three nullable timestamptz columns and re-executing it is a no-op', async () => {
+    fixture = await startPostgres();
+    const contents = readFileSync(`${MIGRATIONS_FOLDER}/0006_phase13_deployment_steps.sql`, 'utf8');
+    for (const statement of contents.split('--> statement-breakpoint')) {
+      await fixture.db.execute(sql.raw(statement));
+    }
+
+    const columns = await fixture.db.execute<{ column_name: string; data_type: string; is_nullable: string }>(sql`
+      select column_name, data_type, is_nullable from information_schema.columns
+      where table_name = 'deployments'
+        and column_name in ('building_started_at', 'deploying_started_at', 'verifying_started_at')
+      order by column_name
+    `);
+    expect(columns.rows).toEqual([
+      { column_name: 'building_started_at', data_type: 'timestamp with time zone', is_nullable: 'YES' },
+      { column_name: 'deploying_started_at', data_type: 'timestamp with time zone', is_nullable: 'YES' },
+      { column_name: 'verifying_started_at', data_type: 'timestamp with time zone', is_nullable: 'YES' },
     ]);
   });
 });

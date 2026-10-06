@@ -59,6 +59,11 @@ export const deployments = pgTable(
       { onDelete: "set null" },
     ),
     startedAt: timestamp("started_at", { withTimezone: true }),
+    // 13-03 step boundaries, written in the same UPDATE as their status edge (verify: the one
+    // write allowed only while DEPLOYING). Nullable: older rows derive their steps from status.
+    buildingStartedAt: timestamp("building_started_at", { withTimezone: true }),
+    deployingStartedAt: timestamp("deploying_started_at", { withTimezone: true }),
+    verifyingStartedAt: timestamp("verifying_started_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     durationMs: integer("duration_ms"),
     errorCode: deploymentErrorCodeEnum("error_code"),

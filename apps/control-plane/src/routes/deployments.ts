@@ -5,11 +5,18 @@
 // resync path for a client that missed `deployment.log_chunk` events (no replay of older chunks).
 // 12-13: `POST /api/deployments/:id/cancel` ends a QUEUED deployment or flags a running one for its
 // worker (202 either way); a terminal deployment is a named 409.
+// 13-03: the three GET views carry `steps[]` (clone|pull, build, start, verify).
 import type { ZodTypeProvider } from '@fastify/type-provider-zod';
 import type { FastifyPluginCallback, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { getDb } from '../db/client.js';
 import type { CancelDeployment } from '../deploy/cancel-deployment.js';
+import {
+  attachDeploymentSteps,
+  attachDeploymentStepsTo,
+  readDeploymentStepStamps,
+  type DeploymentStepStampReader,
+} from '../deploy/deployment-steps-view.js';
 import { readDeploymentLogs, type DeploymentLogReader } from '../deploy/log-sink.js';
 import type { DeploymentServices } from '../services/deployment-services.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
@@ -23,6 +30,7 @@ import {
   DeploymentLogsQuerySchema,
   DeploymentLogsResponseSchema,
   DeploymentViewSchema,
+  DeploymentWithStepsViewSchema,
   ServiceDeploymentParamsSchema,
   ServiceIdParamSchema,
   unknownDeployFields,
@@ -62,7 +70,12 @@ export interface DeploymentsRoutesOptions {
   readonly readLogs?: DeploymentLogReader;
   /** Injectable for route tests; defaults to `fastify.getCancelDeployment()` from `app.ts`. */
   readonly cancelDeployment?: CancelDeployment;
+  /** Injectable for route tests; defaults to the Postgres step-boundary reader. */
+  readonly readStepStamps?: DeploymentStepStampReader;
 }
+
+const readStepStampsFromDb: DeploymentStepStampReader = async (deploymentIds) =>
+  readDeploymentStepStamps(await getDb(), deploymentIds);
 
 const readLogsFromDb: DeploymentLogReader = async (deploymentId, query) =>
   readDeploymentLogs(await getDb(), deploymentId, query);
@@ -70,6 +83,7 @@ const readLogsFromDb: DeploymentLogReader = async (deploymentId, query) =>
 const deploymentsRoutes: FastifyPluginCallback<DeploymentsRoutesOptions> = (fastify, opts, done) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
   const readLogs = opts.readLogs ?? readLogsFromDb;
+  const readStepStamps = opts.readStepStamps ?? readStepStampsFromDb;
   const resolveCancel = (): Promise<CancelDeployment> =>
     opts.cancelDeployment !== undefined ? Promise.resolve(opts.cancelDeployment) : fastify.getCancelDeployment();
 
@@ -133,7 +147,7 @@ const deploymentsRoutes: FastifyPluginCallback<DeploymentsRoutesOptions> = (fast
         await sendFailure(reply, { code: 'NOT_FOUND', message: `Service "${request.params.serviceId}" not found` });
         return;
       }
-      await reply.send(page);
+      await reply.send({ items: await attachDeploymentSteps(readStepStamps, page.items), nextCursor: page.nextCursor });
     },
   });
 
@@ -142,7 +156,7 @@ const deploymentsRoutes: FastifyPluginCallback<DeploymentsRoutesOptions> = (fast
     url: '/api/services/:serviceId/deployments/:deploymentId',
     schema: {
       params: ServiceDeploymentParamsSchema,
-      response: { 200: DeploymentViewSchema, ...READ_ERRORS },
+      response: { 200: DeploymentWithStepsViewSchema, ...READ_ERRORS },
     },
     handler: async (request, reply) => {
       const deploymentServices = await fastify.getDeploymentServices();
@@ -151,7 +165,7 @@ const deploymentsRoutes: FastifyPluginCallback<DeploymentsRoutesOptions> = (fast
         await sendFailure(reply, { code: 'NOT_FOUND', message: `Deployment "${request.params.deploymentId}" not found` });
         return;
       }
-      await reply.send(deployment);
+      await reply.send(await attachDeploymentStepsTo(readStepStamps, deployment));
     },
   });
 
@@ -160,7 +174,7 @@ const deploymentsRoutes: FastifyPluginCallback<DeploymentsRoutesOptions> = (fast
     url: '/api/deployments/:deploymentId',
     schema: {
       params: DeploymentIdParamSchema,
-      response: { 200: DeploymentViewSchema, ...READ_ERRORS },
+      response: { 200: DeploymentWithStepsViewSchema, ...READ_ERRORS },
     },
     handler: async (request, reply) => {
       const deploymentServices = await fastify.getDeploymentServices();
@@ -169,7 +183,7 @@ const deploymentsRoutes: FastifyPluginCallback<DeploymentsRoutesOptions> = (fast
         await sendFailure(reply, { code: 'NOT_FOUND', message: `Deployment "${request.params.deploymentId}" not found` });
         return;
       }
-      await reply.send(deployment);
+      await reply.send(await attachDeploymentStepsTo(readStepStamps, deployment));
     },
   });
 

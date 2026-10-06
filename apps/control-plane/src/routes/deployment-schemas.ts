@@ -5,6 +5,8 @@ import {
   DEPLOYMENT_ERROR_CODES,
   DEPLOYMENT_LOG_PHASES,
   DEPLOYMENT_STATUSES,
+  DEPLOYMENT_STEP_NAMES,
+  DEPLOYMENT_STEP_STATES,
   DEPLOYMENT_TRIGGERS,
 } from '@noodara/domain/deployment';
 import { z } from 'zod';
@@ -66,8 +68,21 @@ export const DeploymentViewSchema = z.object({
   updatedAt: z.string(),
 });
 
+// 13-03 (A3): the GET views add the four-step timeline derived by deriveDeploymentSteps.
+export const DeploymentStepViewSchema = z.object({
+  name: z.enum(DEPLOYMENT_STEP_NAMES),
+  state: z.enum(DEPLOYMENT_STEP_STATES),
+  startedAt: z.string().nullable(),
+  completedAt: z.string().nullable(),
+  durationMs: z.number().int().min(0).nullable(),
+});
+
+export const DeploymentWithStepsViewSchema = DeploymentViewSchema.extend({
+  steps: z.array(DeploymentStepViewSchema).length(4),
+});
+
 export const DeploymentListResponseSchema = z.object({
-  items: z.array(DeploymentViewSchema),
+  items: z.array(DeploymentWithStepsViewSchema),
   nextCursor: z.string().nullable(),
 });
 
