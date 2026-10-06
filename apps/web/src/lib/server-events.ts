@@ -4,23 +4,46 @@
 // depth, never trusting the frame that does arrive at face value. Pure parsing/reducer helpers
 // only: no `EventSource`, no I/O. `use-server-events.ts` is the only caller.
 //
-// The three event names mirror `apps/control-plane/src/events/server-event-publisher.ts`'s
-// `ServerEvent` union exactly -- never a superset, never a wildcard/prefix match (same T-4-36/
-// T-5-14 discipline the server-side allowlist documents). `ServerView` is hand-copied from
+// The seven event names mirror the control plane's `SSE_EVENT_TYPES` exactly: the three
+// `ServerEvent`s of `server-event-publisher.ts` plus the four deploy-engine events of
+// `deploy-engine-events.ts` (13-08) -- never a superset, never a wildcard/prefix match (same
+// T-4-36/T-5-14 discipline the server-side allowlist documents). `ServerView` is hand-copied from
 // `api-client.ts` (itself hand-copied from the control plane, per that file's own documented
 // rule) rather than imported across the apps/web/apps/control-plane boundary.
+import {
+  DEPLOYMENT_ERROR_CODES,
+  DEPLOYMENT_LOG_PHASES,
+  DEPLOYMENT_STATUSES,
+  SERVICE_STATUSES,
+  type DeploymentErrorCode,
+  type DeploymentLogPhase,
+  type DeploymentStatus,
+} from '@noodara/domain/deployment';
 import { DISCOVERY_CHECK_IDS, type DiscoveryCheck } from '@noodara/domain/discovery';
 import type { ServerView } from './api-client';
+import type { ServiceView } from './deploy-api';
 
-export type KnownEventType = 'server.updated' | 'server.deleted' | 'server.discovery_progress';
+export type ServerEventType = 'server.updated' | 'server.deleted' | 'server.discovery_progress';
 
-export const KNOWN_EVENT_TYPES: ReadonlySet<KnownEventType> = new Set([
+export type DeployEngineEventType =
+  | 'service.updated'
+  | 'service.deleted'
+  | 'deployment.updated'
+  | 'deployment.log_chunk';
+
+export type KnownEventType = ServerEventType | DeployEngineEventType;
+
+export const KNOWN_EVENT_TYPES: ReadonlySet<KnownEventType> = new Set<KnownEventType>([
   'server.updated',
   'server.deleted',
   'server.discovery_progress',
+  'service.updated',
+  'service.deleted',
+  'deployment.updated',
+  'deployment.log_chunk',
 ]);
 
-/** Accepts exactly the three allowlisted strings; rejects anything else, including a near-miss
+/** Accepts exactly the seven allowlisted strings; rejects anything else, including a near-miss
  *  type string and an empty string -- never a prefix/wildcard match. */
 export function isKnownEventType(value: string): value is KnownEventType {
   return KNOWN_EVENT_TYPES.has(value as KnownEventType);
@@ -44,13 +67,117 @@ export interface ServerDiscoveryProgressEvent {
 
 export type ServerEvent = ServerUpdatedEvent | ServerDeletedEvent | ServerDiscoveryProgressEvent;
 
+export interface ServiceUpdatedEvent {
+  readonly type: 'service.updated';
+  readonly service: ServiceView;
+}
+
+export interface ServiceDeletedEvent {
+  readonly type: 'service.deleted';
+  readonly id: string;
+}
+
+/** The control plane's allowlisted `DeploymentEventView`: never `errorMessage` nor the source. */
+export interface DeploymentEventView {
+  readonly id: string;
+  readonly serviceId: string;
+  readonly status: DeploymentStatus;
+  readonly errorCode: DeploymentErrorCode | null;
+  readonly updatedAt: string;
+}
+
+export interface DeploymentUpdatedEvent {
+  readonly type: 'deployment.updated';
+  readonly deployment: DeploymentEventView;
+}
+
+export interface DeploymentLogChunkEvent {
+  readonly type: 'deployment.log_chunk';
+  readonly deploymentId: string;
+  readonly phase: DeploymentLogPhase;
+  readonly seq: number;
+  readonly text: string;
+  readonly truncated: boolean;
+}
+
+/** The deploy-engine events that change a service or deployment list (everything but logs). */
+export type DeployEntityEvent = ServiceUpdatedEvent | ServiceDeletedEvent | DeploymentUpdatedEvent;
+
+export type DeployEngineEvent = DeployEntityEvent | DeploymentLogChunkEvent;
+
+export type StreamEvent = ServerEvent | DeployEngineEvent;
+
+export function isServerEvent(event: StreamEvent): event is ServerEvent {
+  return event.type.startsWith('server.');
+}
+
 export type ParseServerEventFrameResult =
-  | { readonly ok: true; readonly event: ServerEvent }
+  | { readonly ok: true; readonly event: StreamEvent }
   | { readonly ok: false };
 
 const REJECTED: ParseServerEventFrameResult = { ok: false };
 
 const KNOWN_CHECK_IDS: ReadonlySet<string> = new Set(DISCOVERY_CHECK_IDS);
+const SERVICE_STATUS_SET: ReadonlySet<string> = new Set(SERVICE_STATUSES);
+const DEPLOYMENT_STATUS_SET: ReadonlySet<string> = new Set(DEPLOYMENT_STATUSES);
+const DEPLOYMENT_ERROR_CODE_SET: ReadonlySet<string> = new Set(DEPLOYMENT_ERROR_CODES);
+const LOG_PHASE_SET: ReadonlySet<string> = new Set(DEPLOYMENT_LOG_PHASES);
+/** Same id rule as the control plane's `DEPLOYMENT_ID_PATTERN`. */
+const ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+/** The control plane caps chunk text at 64 KiB of UTF-8; a UTF-16 length is never larger. */
+const MAX_LOG_CHUNK_TEXT_LENGTH = 64 * 1024;
+
+function isId(value: unknown): value is string {
+  return typeof value === 'string' && ID_PATTERN.test(value);
+}
+
+/** An ISO-8601 instant `Date.parse` understands; the stores order writes by it (13-08 H1). */
+export function isValidUpdatedAt(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0 && Number.isFinite(Date.parse(value));
+}
+
+function parseServiceView(value: unknown): ServiceView | null {
+  if (!isRecord(value)) return null;
+  if (!isId(value.id) || typeof value.name !== 'string') return null;
+  if (typeof value.status !== 'string' || !SERVICE_STATUS_SET.has(value.status)) return null;
+  if (!isValidUpdatedAt(value.updatedAt)) return null;
+  return value as unknown as ServiceView;
+}
+
+function parseDeploymentEventView(value: unknown): DeploymentEventView | null {
+  if (!isRecord(value)) return null;
+  if (!isId(value.id) || !isId(value.serviceId)) return null;
+  if (typeof value.status !== 'string' || !DEPLOYMENT_STATUS_SET.has(value.status)) return null;
+  const errorCode = value.errorCode;
+  if (errorCode !== null && (typeof errorCode !== 'string' || !DEPLOYMENT_ERROR_CODE_SET.has(errorCode))) {
+    return null;
+  }
+  if (!isValidUpdatedAt(value.updatedAt)) return null;
+  return {
+    id: value.id,
+    serviceId: value.serviceId,
+    status: value.status as DeploymentStatus,
+    errorCode: errorCode as DeploymentErrorCode | null,
+    updatedAt: value.updatedAt,
+  };
+}
+
+function parseLogChunk(value: Record<string, unknown>): DeploymentLogChunkEvent | null {
+  const { deploymentId, phase, seq, text, truncated } = value;
+  if (!isId(deploymentId)) return null;
+  if (typeof phase !== 'string' || !LOG_PHASE_SET.has(phase)) return null;
+  if (typeof seq !== 'number' || !Number.isSafeInteger(seq) || seq < 0) return null;
+  if (typeof text !== 'string' || text.length > MAX_LOG_CHUNK_TEXT_LENGTH) return null;
+  if (typeof truncated !== 'boolean') return null;
+  return {
+    type: 'deployment.log_chunk',
+    deploymentId,
+    phase: phase as DeploymentLogPhase,
+    seq,
+    text,
+    truncated,
+  };
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -106,6 +233,22 @@ export function parseServerEventFrame(listenerType: string, rawData: string): Pa
         ok: true,
         event: { type: 'server.discovery_progress', serverId: parsed.serverId, check: parsed.check },
       };
+    }
+    case 'service.updated': {
+      const service = parseServiceView(parsed.service);
+      return service === null ? REJECTED : { ok: true, event: { type: 'service.updated', service } };
+    }
+    case 'service.deleted': {
+      if (!isId(parsed.id)) return REJECTED;
+      return { ok: true, event: { type: 'service.deleted', id: parsed.id } };
+    }
+    case 'deployment.updated': {
+      const deployment = parseDeploymentEventView(parsed.deployment);
+      return deployment === null ? REJECTED : { ok: true, event: { type: 'deployment.updated', deployment } };
+    }
+    case 'deployment.log_chunk': {
+      const chunk = parseLogChunk(parsed);
+      return chunk === null ? REJECTED : { ok: true, event: chunk };
     }
     default: {
       return REJECTED;

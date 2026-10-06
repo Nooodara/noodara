@@ -9,7 +9,17 @@
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderUi } from '@noodara/ui/testing';
-import { useServerEvents, type UseServerEventsResult } from './use-server-events';
+import type { ServiceView } from './deploy-api';
+import { insertServiceByName, serviceWriteFromEvent } from './deploy-store';
+import type { DeployEntityEvent, DeploymentLogChunkEvent, ServerEvent } from './server-events';
+import {
+  useServerEvents,
+  useSyncedCollection,
+  type SyncedCollectionSource,
+  type SyncedCollectionState,
+  type SyncStream,
+  type UseServerEventsResult,
+} from './use-server-events';
 
 class FakeEventSource extends EventTarget {
   static readonly CONNECTING = 0;
@@ -40,6 +50,12 @@ class FakeEventSource extends EventTarget {
   rejectOverHttp(): void {
     this.readyState = FakeEventSource.CLOSED;
     this.dispatchEvent(new Event('error'));
+  }
+
+  /** One named SSE frame, as the browser delivers it to `addEventListener(type, ...)`. */
+  emit(type: string, payload: unknown): void {
+    const data = typeof payload === 'string' ? payload : JSON.stringify(payload);
+    this.dispatchEvent(new MessageEvent(type, { data }));
   }
 
   /** The connection dropped at network level: the browser is already retrying on its own. */
@@ -254,5 +270,290 @@ describe('useServerEvents reconnection', () => {
     });
 
     expect(FakeEventSource.instances).toHaveLength(1);
+  });
+});
+
+const T1 = '2026-10-06T10:00:01.000Z';
+const T2 = '2026-10-06T10:00:02.000Z';
+const SVC = '7a1d5a2e-2a49-4d0e-9f0e-6f3c3d1f2a10';
+const DEP_A = '2b7c1e44-6a0f-4a52-8d43-2f8e6a1c9b07';
+const DEP_B = '9c0d2f55-7b1a-4b63-9e54-3a9f7b2d0c18';
+
+function serviceView(id: string, name: string, updatedAt: string): ServiceView {
+  return {
+    id,
+    projectId: 'p1',
+    environmentId: 'e1',
+    serverId: 's1',
+    name,
+    sourceType: 'image',
+    repositoryUrl: null,
+    branch: null,
+    buildContext: null,
+    dockerfilePath: null,
+    buildTarget: null,
+    imageRef: 'nginx:1.27',
+    internalPort: 80,
+    publishedPort: null,
+    status: 'RUNNING',
+    createdAt: T1,
+    updatedAt,
+  };
+}
+
+function logChunk(deploymentId: string, seq: number): Omit<DeploymentLogChunkEvent, 'type'> & { type: string } {
+  return { type: 'deployment.log_chunk', deploymentId, phase: 'build', seq, text: `line ${String(seq)}\n`, truncated: false };
+}
+
+describe('useServerEvents deploy-engine routing (13-08)', () => {
+  beforeEach(() => {
+    FakeEventSource.instances = [];
+    vi.useFakeTimers();
+    vi.stubGlobal('EventSource', FakeEventSource);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps exactly one EventSource however many lists and log panels subscribe', () => {
+    const { result } = renderHook();
+    act(() => {
+      latest().open();
+    });
+    for (let i = 0; i < 20; i += 1) {
+      result.current.subscribeDeploy(() => undefined);
+      result.current.subscribeDeploymentLog(i % 2 === 0 ? DEP_A : DEP_B, () => undefined);
+      result.current.subscribe(() => undefined);
+    }
+    expect(FakeEventSource.instances).toHaveLength(1);
+  });
+
+  it('hands service and deployment events to deploy listeners only, and server events to server listeners only', () => {
+    const { result } = renderHook();
+    const deploy: DeployEntityEvent[] = [];
+    const server: ServerEvent[] = [];
+    result.current.subscribeDeploy((event) => deploy.push(event));
+    result.current.subscribe((event) => server.push(event));
+
+    act(() => {
+      latest().emit('service.updated', { type: 'service.updated', service: serviceView(SVC, 'api', T1) });
+      latest().emit('service.deleted', { type: 'service.deleted', id: SVC });
+      latest().emit('deployment.updated', {
+        type: 'deployment.updated',
+        deployment: { id: DEP_A, serviceId: SVC, status: 'BUILDING', errorCode: null, updatedAt: T1 },
+      });
+      latest().emit('server.deleted', { type: 'server.deleted', id: 'srv-1' });
+      latest().emit('deployment.log_chunk', logChunk(DEP_A, 0));
+    });
+
+    expect(deploy.map((event) => event.type)).toEqual(['service.updated', 'service.deleted', 'deployment.updated']);
+    expect(server.map((event) => event.type)).toEqual(['server.deleted']);
+  });
+
+  it('routes log chunks by deploymentId and delivers nothing after unsubscribe', () => {
+    const { result } = renderHook();
+    const a = vi.fn();
+    const b = vi.fn();
+    const offA = result.current.subscribeDeploymentLog(DEP_A, a);
+    result.current.subscribeDeploymentLog(DEP_B, b);
+
+    act(() => {
+      latest().emit('deployment.log_chunk', logChunk(DEP_A, 0));
+    });
+    expect(a).toHaveBeenCalledTimes(1);
+    expect(a.mock.calls[0]?.[0]).toMatchObject({ deploymentId: DEP_A, seq: 0 });
+    expect(b).not.toHaveBeenCalled();
+
+    offA();
+    act(() => {
+      latest().emit('deployment.log_chunk', logChunk(DEP_A, 1));
+    });
+    expect(a).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops a log chunk nobody subscribed to without throwing or reaching any listener', () => {
+    const { result } = renderHook();
+    const deploy = vi.fn();
+    const server = vi.fn();
+    result.current.subscribeDeploy(deploy);
+    result.current.subscribe(server);
+    expect(() => {
+      act(() => {
+        latest().emit('deployment.log_chunk', logChunk(DEP_B, 0));
+      });
+    }).not.toThrow();
+    expect(deploy).not.toHaveBeenCalled();
+    expect(server).not.toHaveBeenCalled();
+  });
+
+  it('1000 log subscribe/unsubscribe cycles leave no handler that receives a chunk (leak test)', () => {
+    const { result } = renderHook();
+    const handler = vi.fn();
+    for (let i = 0; i < 1000; i += 1) {
+      result.current.subscribeDeploymentLog(i % 2 === 0 ? DEP_A : DEP_B, handler)();
+    }
+    act(() => {
+      latest().emit('deployment.log_chunk', logChunk(DEP_A, 0));
+      latest().emit('deployment.log_chunk', logChunk(DEP_B, 0));
+    });
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('ignores malformed deploy-engine frames and an invalid updatedAt without crashing the stream', () => {
+    const { result } = renderHook();
+    const deploy = vi.fn();
+    result.current.subscribeDeploy(deploy);
+    act(() => {
+      latest().emit('service.updated', '{not json');
+      latest().emit('service.updated', { type: 'service.updated', service: { ...serviceView(SVC, 'api', T1), updatedAt: 'later' } });
+      latest().emit('deployment.updated', {
+        type: 'deployment.updated',
+        deployment: { id: DEP_A, serviceId: SVC, status: 'BUILDING', errorCode: null },
+      });
+      latest().emit('service.deleted', { type: 'service.updated', id: SVC });
+    });
+    expect(deploy).not.toHaveBeenCalled();
+
+    act(() => {
+      latest().emit('service.deleted', { type: 'service.deleted', id: SVC });
+    });
+    expect(deploy).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** Mounts the real shell hook and a synced service list on top of it. */
+function renderServiceList(load: () => Promise<readonly ServiceView[] | null>): {
+  readonly list: { current: SyncedCollectionState<ServiceView> };
+  readonly unmount: () => void;
+} {
+  const list = {} as { current: SyncedCollectionState<ServiceView> };
+  const source: SyncedCollectionSource<ServiceView> = {
+    key: 'env-1',
+    load,
+    toWrite: (event) => serviceWriteFromEvent(event),
+    reconcile: { insert: insertServiceByName },
+  };
+  function Probe(): null {
+    const shell = useServerEvents();
+    list.current = useSyncedCollection(shell, source);
+    return null;
+  }
+  const { unmount } = renderUi(<Probe />);
+  return { list, unmount };
+}
+
+describe('useSyncedCollection (13-08 H1)', () => {
+  beforeEach(() => {
+    FakeEventSource.instances = [];
+    vi.stubGlobal('EventSource', FakeEventSource);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('loads on mount, refetches on every reconnect and reconciles the stale snapshot with the event', async () => {
+    let resolveStale: ((value: readonly ServiceView[]) => void) | undefined;
+    const load = vi
+      .fn<() => Promise<readonly ServiceView[] | null>>()
+      .mockResolvedValueOnce([serviceView(SVC, 'api', T1)])
+      .mockResolvedValueOnce([serviceView(SVC, 'api', T1)])
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStale = resolve;
+          }),
+      );
+    const { list } = renderServiceList(load);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(list.current.loaded).toBe(true);
+    expect(load).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      latest().open();
+      await Promise.resolve();
+    });
+    expect(load).toHaveBeenCalledTimes(2);
+
+    // The stream drops and the browser reconnects: a full refetch starts...
+    await act(async () => {
+      latest().dropAtNetworkLevel();
+      latest().open();
+      await Promise.resolve();
+    });
+    expect(load).toHaveBeenCalledTimes(3);
+
+    // ...an update lands while it is in flight, then the snapshot (read earlier) arrives.
+    await act(async () => {
+      latest().emit('service.updated', { type: 'service.updated', service: serviceView(SVC, 'api-renamed', T2) });
+      await Promise.resolve();
+    });
+    await act(async () => {
+      resolveStale?.([serviceView(SVC, 'api', T1)]);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(list.current.entities).toEqual([serviceView(SVC, 'api-renamed', T2)]);
+    expect(FakeEventSource.instances).toHaveLength(1);
+  });
+
+  it('a service.deleted is never resurrected by the reconnect snapshot', async () => {
+    let resolveStale: ((value: readonly ServiceView[]) => void) | undefined;
+    const load = vi
+      .fn<() => Promise<readonly ServiceView[] | null>>()
+      .mockResolvedValueOnce([serviceView(SVC, 'api', T1)])
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStale = resolve;
+          }),
+      );
+    const { list } = renderServiceList(load);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      latest().open();
+      latest().emit('service.deleted', { type: 'service.deleted', id: SVC });
+      resolveStale?.([serviceView(SVC, 'api', T1)]);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(list.current.entities).toEqual([]);
+  });
+
+  it('unmounting removes its event listener and its resync registration', () => {
+    const listeners = new Set<(event: DeployEntityEvent) => void>();
+    const resyncs = new Set<() => void>();
+    const stream: SyncStream = {
+      subscribeDeploy: (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+      registerResync: (fn) => {
+        resyncs.add(fn);
+        return () => resyncs.delete(fn);
+      },
+    };
+    const source: SyncedCollectionSource<ServiceView> = {
+      key: 'env-1',
+      load: () => Promise.resolve([]),
+      toWrite: (event) => serviceWriteFromEvent(event),
+    };
+    function Probe(): null {
+      useSyncedCollection(stream, source);
+      return null;
+    }
+    const { unmount } = renderUi(<Probe />);
+    expect(listeners.size).toBe(1);
+    expect(resyncs.size).toBe(1);
+    unmount();
+    expect(listeners.size).toBe(0);
+    expect(resyncs.size).toBe(0);
   });
 });

@@ -5,6 +5,7 @@
 // re-render cheaply, and always keeping every untouched entry's own object identity so a patched
 // row never causes a sibling row to re-render.
 import type { ServerView } from './api-client';
+import { reconcileEntities, type EntityWrite } from './entity-reconcile';
 import type { ServerEvent } from './server-events';
 
 /** Case-insensitive comparison so "Alpha" and "alpha" sort adjacently, matching the server's own
@@ -72,27 +73,24 @@ export function applyServerEvent(list: readonly ServerView[], event: ServerEvent
  * Folds the events that arrived while a `GET /api/servers` snapshot was in flight onto that
  * snapshot, in arrival order. There is no event replay (05-UI-SPEC.md SS6), so an event delivered
  * during a fetch is either already reflected in the snapshot or strictly newer than it -- and the
- * screen cannot tell which from timing alone:
+ * screen cannot tell which from timing alone. Since 13-08 this is `reconcileEntities`, the one
+ * reconcile function servers, services and deployments share (REC-02):
  *
- * - `server.updated` for an id the snapshot lacks was created after the snapshot was read: insert.
+ * - `server.updated` for an id the snapshot lacks was created after the snapshot was read: insert
+ *   at its sorted position.
  * - `server.updated` for a known id is applied unless the snapshot's own entry is strictly newer
  *   (`updatedAt`, which every server write bumps) -- an event the snapshot already superseded must
  *   never regress the row back to an older version.
- * - `server.deleted` always applies: a server id is never reused, so a deletion can only ever be
- *   newer than any snapshot that still lists it.
+ * - `server.deleted` always applies, and no later buffered update brings the id back: a server id
+ *   is never reused, so a deletion can only ever be newer than any snapshot that still lists it.
  *
  * Returns `snapshot` itself when nothing was buffered.
  */
 export function reconcileSnapshot(snapshot: readonly ServerView[], events: readonly ServerEvent[]): readonly ServerView[] {
-  let list = snapshot;
+  const writes: EntityWrite<ServerView>[] = [];
   for (const event of events) {
-    if (event.type === 'server.updated') {
-      const known = list.find((entry) => entry.id === event.server.id);
-      if (known !== undefined && Date.parse(known.updatedAt) > Date.parse(event.server.updatedAt)) {
-        continue;
-      }
-    }
-    list = applyServerEvent(list, event);
+    if (event.type === 'server.updated') writes.push({ kind: 'put', entity: event.server });
+    else if (event.type === 'server.deleted') writes.push({ kind: 'delete', id: event.id });
   }
-  return list;
+  return reconcileEntities(snapshot, writes, { insert: insertSorted }).entities;
 }

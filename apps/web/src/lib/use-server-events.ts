@@ -20,14 +20,42 @@
 //   backoff so an at-capacity server is never hammered.
 // - A stream that never opened and keeps failing at network level gets the same backoff once it
 //   has failed repeatedly, instead of the UA-default retry interval with no backoff at all.
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { KNOWN_EVENT_TYPES, parseServerEventFrame, type ServerEvent } from './server-events';
+//
+// 13-08: the same single stream carries the four deploy-engine events. `service.*` and
+// `deployment.updated` go to `subscribeDeploy` listeners; `deployment.log_chunk` goes only to the
+// handlers subscribed for that deployment id (a chunk nobody is viewing is dropped, never kept).
+// `useSyncedCollection` keeps a service or deployment list live on top of it: snapshot on mount
+// and on every (re)open, reconciled with the events through `entity-reconcile.ts`.
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  createDeploymentLogRouter,
+  createSyncedCollection,
+  type DeploymentLogHandler,
+  type DeploymentLogRouter,
+} from './deploy-store';
+import type { EntityWrite, ReconcileOptions, VersionedEntity } from './entity-reconcile';
+import {
+  isServerEvent,
+  KNOWN_EVENT_TYPES,
+  parseServerEventFrame,
+  type DeployEntityEvent,
+  type ServerEvent,
+} from './server-events';
 
 const PRE_OPEN_FAILURE_THRESHOLD = 3;
 const PRE_OPEN_BACKOFF_BASE_MS = 5000;
 const PRE_OPEN_BACKOFF_MAX_MS = 60_000;
 
-export interface UseServerEventsResult {
+/** The deploy-engine half of the shared stream (13-08). */
+export interface DeployStreamApi {
+  /** Subscribes `listener` to `service.updated`, `service.deleted` and `deployment.updated`. */
+  readonly subscribeDeploy: (listener: (event: DeployEntityEvent) => void) => () => void;
+  /** Subscribes `handler` to one deployment's `deployment.log_chunk` events. Unsubscribe on
+   *  unmount, navigation or inspector close: nothing is delivered or retained afterwards. */
+  readonly subscribeDeploymentLog: (deploymentId: string, handler: DeploymentLogHandler) => () => void;
+}
+
+export interface UseServerEventsResult extends DeployStreamApi {
   /** `false` whenever the stream is not currently open -- drives the reconnecting indicator. */
   readonly connected: boolean;
   /** Subscribes `listener` to every well-formed frame this hook decodes. Returns an unsubscribe
@@ -52,6 +80,8 @@ export function useServerEvents(): UseServerEventsResult {
   const [closedByCaller, setClosedByCaller] = useState(false);
   const resyncCallbacksRef = useRef<Set<() => void>>(new Set());
   const listenersRef = useRef<Set<(event: ServerEvent) => void>>(new Set());
+  const deployListenersRef = useRef<Set<(event: DeployEntityEvent) => void>>(new Set());
+  const logRouterRef = useRef<DeploymentLogRouter | null>(null);
   const sourceRef = useRef<EventSource | null>(null);
   const closedByCallerRef = useRef(false);
 
@@ -127,8 +157,21 @@ export function useServerEvents(): UseServerEventsResult {
           const messageEvent = rawEvent as MessageEvent<string>;
           const result = parseServerEventFrame(type, messageEvent.data);
           if (!result.ok) return;
-          for (const listener of listenersRef.current) {
-            listener(result.event);
+          const event = result.event;
+          if (isServerEvent(event)) {
+            for (const listener of listenersRef.current) {
+              listener(event);
+            }
+          } else if (event.type === 'deployment.log_chunk') {
+            logRouterRef.current?.dispatch(event);
+          } else {
+            for (const listener of deployListenersRef.current) {
+              try {
+                listener(event);
+              } catch {
+                // One list's failure never stops another list's update.
+              }
+            }
           }
         });
       }
@@ -154,6 +197,18 @@ export function useServerEvents(): UseServerEventsResult {
     };
   }, []);
 
+  const subscribeDeploy = useCallback((listener: (event: DeployEntityEvent) => void) => {
+    deployListenersRef.current.add(listener);
+    return () => {
+      deployListenersRef.current.delete(listener);
+    };
+  }, []);
+
+  const subscribeDeploymentLog = useCallback((deploymentId: string, handler: DeploymentLogHandler) => {
+    logRouterRef.current ??= createDeploymentLogRouter();
+    return logRouterRef.current.subscribe(deploymentId, handler);
+  }, []);
+
   const registerResync = useCallback((fn: () => void) => {
     resyncCallbacksRef.current.add(fn);
     return () => {
@@ -169,5 +224,77 @@ export function useServerEvents(): UseServerEventsResult {
     setConnected(false);
   }, []);
 
-  return { connected, subscribe, registerResync, close, closedByCaller };
+  return {
+    connected,
+    subscribe,
+    subscribeDeploy,
+    subscribeDeploymentLog,
+    registerResync,
+    close,
+    closedByCaller,
+  };
+}
+
+/** What `useSyncedCollection` needs from the shell's stream. */
+export type SyncStream = Pick<UseServerEventsResult, 'subscribeDeploy' | 'registerResync'>;
+
+export interface SyncedCollectionSource<T extends VersionedEntity> {
+  /** Changing `key` (another environment, another service) starts a fresh list. */
+  readonly key: string;
+  readonly load: () => Promise<readonly T[] | null>;
+  readonly toWrite: (event: DeployEntityEvent) => EntityWrite<T> | null;
+  readonly reconcile?: ReconcileOptions<T>;
+}
+
+export interface SyncedCollectionState<T extends VersionedEntity> {
+  readonly entities: readonly T[];
+  /** `false` until the first snapshot arrived. */
+  readonly loaded: boolean;
+}
+
+/**
+ * A service or deployment list kept live by the shell: the snapshot loads on mount and again on
+ * every stream (re)open (no replay, so a reconnect means a full refetch), and every event in
+ * between is reconciled with it by id + updatedAt.
+ */
+export function useSyncedCollection<T extends VersionedEntity>(
+  stream: SyncStream,
+  source: SyncedCollectionSource<T>,
+): SyncedCollectionState<T> {
+  const { subscribeDeploy, registerResync } = stream;
+  const { key } = source;
+  const [state, setState] = useState<SyncedCollectionState<T> & { readonly key: string }>({
+    entities: [],
+    loaded: false,
+    key,
+  });
+  const sourceRef = useRef(source);
+  useLayoutEffect(() => {
+    sourceRef.current = source;
+  });
+
+  useEffect(() => {
+    const reconcile = sourceRef.current.reconcile;
+    const collection = createSyncedCollection<T>({
+      ...(reconcile === undefined ? {} : { reconcile }),
+      load: () => sourceRef.current.load(),
+      toWrite: (event) => sourceRef.current.toWrite(event),
+      onChange: (entities) => {
+        setState({ entities, loaded: true, key });
+      },
+    });
+    const offEvents = subscribeDeploy(collection.handleEvent);
+    const offResync = registerResync(() => {
+      void collection.refetch();
+    });
+    void collection.refetch();
+    return () => {
+      offEvents();
+      offResync();
+      collection.dispose();
+    };
+  }, [subscribeDeploy, registerResync, key]);
+
+  // A list from a previous key is never shown under the new one.
+  return state.key === key ? state : { entities: [], loaded: false };
 }

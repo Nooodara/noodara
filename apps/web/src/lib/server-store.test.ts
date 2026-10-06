@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { reconcileEntities } from './entity-reconcile';
 import { applyServerEvent, reconcileSnapshot, sortServers } from './server-store';
 import type { ServerView } from './api-client';
 import type { ServerEvent } from './server-events';
@@ -176,5 +177,50 @@ describe('reconcileSnapshot', () => {
     const snapshot = [buildServer({ id: '1', name: 'alpha' })];
 
     expect(reconcileSnapshot(snapshot, [])).toBe(snapshot);
+  });
+});
+
+describe('reconcileSnapshot on the shared reconcile function (13-08 REC-02)', () => {
+  const T1 = '2026-10-06T10:00:01.000Z';
+  const T2 = '2026-10-06T10:00:02.000Z';
+
+  it('a buffered deletion followed by a stale update for the same id stays deleted', () => {
+    const snapshot = [buildServer({ id: '1', name: 'alpha', updatedAt: T1 })];
+    const events: ServerEvent[] = [
+      { type: 'server.deleted', id: '1' },
+      { type: 'server.updated', server: buildServer({ id: '1', name: 'alpha', updatedAt: T2 }) },
+    ];
+    expect(reconcileSnapshot(snapshot, events)).toEqual([]);
+  });
+
+  it('ignores a buffered update whose updatedAt cannot be ordered', () => {
+    const snapshot = [buildServer({ id: '1', name: 'alpha', updatedAt: T1 })];
+    const broken = buildServer({ id: '1', name: 'renamed', updatedAt: 'not-a-date' });
+    expect(reconcileSnapshot(snapshot, [{ type: 'server.updated', server: broken }])).toBe(snapshot);
+  });
+
+  it('gives the same list as reconcileEntities with sorted insertion for a mixed buffer', () => {
+    const snapshot = sortServers([
+      buildServer({ id: '1', name: 'bravo', updatedAt: T1 }),
+      buildServer({ id: '2', name: 'delta', updatedAt: T2 }),
+    ]);
+    const events: ServerEvent[] = [
+      { type: 'server.updated', server: buildServer({ id: '3', name: 'charlie', updatedAt: T1 }) },
+      { type: 'server.updated', server: buildServer({ id: '2', name: 'delta', updatedAt: T1 }) },
+      { type: 'server.deleted', id: '1' },
+    ];
+    const viaShared = reconcileEntities(
+      snapshot,
+      [
+        { kind: 'put', entity: buildServer({ id: '3', name: 'charlie', updatedAt: T1 }) },
+        { kind: 'put', entity: buildServer({ id: '2', name: 'delta', updatedAt: T1 }) },
+        { kind: 'delete', id: '1' },
+      ],
+      { insert: (list, server) => sortServers([...list, server]) },
+    ).entities;
+    const result = reconcileSnapshot(snapshot, events);
+    expect(result).toEqual(viaShared);
+    expect(result.map((server) => server.name)).toEqual(['charlie', 'delta']);
+    expect(result[1]?.updatedAt).toBe(T2);
   });
 });
