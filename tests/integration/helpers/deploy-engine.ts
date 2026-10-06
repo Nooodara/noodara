@@ -86,6 +86,12 @@ export interface StartDeployEngineStackOptions {
   readonly seedRepositories?: readonly SeedRepository[];
   /** 12-06: also serve every seed repository over HTTPS with a per-run token. */
   readonly httpsGit?: boolean;
+  /**
+   * 13-06: extra labels (e.g. a run-scoped `noodara.e2e.run=<id>`) added to the network, the
+   * dockerd volume and every container this module builds itself. The registry and mirror join the
+   * labelled network, so a sweep by network membership reaches them too.
+   */
+  readonly labels?: Readonly<Record<string, string>>;
 }
 
 export interface HttpsGitHost {
@@ -128,6 +134,8 @@ export interface DeployEngineStack {
   readonly baseImages: readonly string[];
   /** Upstream the G7 mirror proxies (mirror.gcr.io, or the Docker Hub fallback). */
   readonly mirrorUpstream: string;
+  /** The per-run bridge network every container of this stack joins. */
+  readonly networkName: string;
   exec(command: readonly string[], options?: StackExecOptions): Promise<StackExecResult>;
   /** Idempotent. */
   stop(): Promise<void>;
@@ -279,7 +287,11 @@ interface StartedHttpsGit {
   readonly caCertificate: string;
 }
 
-async function startHttpsGitHost(networkName: string, token: string): Promise<StartedHttpsGit> {
+async function startHttpsGitHost(
+  networkName: string,
+  token: string,
+  labels: Readonly<Record<string, string>>,
+): Promise<StartedHttpsGit> {
   const context = mkdtempSync(path.join(tmpdir(), 'noodara-git-https-'));
   let image: GenericContainer;
   try {
@@ -296,7 +308,7 @@ async function startHttpsGitHost(networkName: string, token: string): Promise<St
   }
   const container = await image
     .withName(`noodara-git-https-${randomUUID()}`)
-    .withLabels({ 'noodara.test': 'true' })
+    .withLabels({ ...labels, 'noodara.test': 'true' })
     .withNetworkMode(networkName)
     .withNetworkAliases(GIT_HTTPS_HOST_ALIAS)
     .withCommand([GIT_HTTPS_HOST_ALIAS, GIT_HTTPS_USERNAME])
@@ -323,7 +335,8 @@ async function startHttpsGitHost(networkName: string, token: string): Promise<St
 export async function startDeployEngineStack(
   options: StartDeployEngineStackOptions,
 ): Promise<DeployEngineStack> {
-  const { ubuntu, seedRepositories = [] } = options;
+  const { ubuntu, seedRepositories = [], labels: extraLabels = {} } = options;
+  const labels: Readonly<Record<string, string>> = { ...extraLabels, 'noodara.test': 'true' };
   for (const repo of seedRepositories) {
     if (!SAFE_NAME.test(repo.name))
       throw new Error(`deploy-engine: invalid seed repository name '${repo.name}'`);
@@ -354,7 +367,7 @@ export async function startDeployEngineStack(
     const network = await client.network.create({
       Name: networkName,
       Driver: 'bridge',
-      Labels: { 'noodara.test': 'true' },
+      Labels: { ...labels },
     });
     cleanups.push(async () => {
       await client.network.remove(network);
@@ -363,7 +376,12 @@ export async function startDeployEngineStack(
     // Nested dockerd storage on a labelled volume (overlay on overlay is not viable), as in
     // installer-dind.ts.
     const volumeName = `noodara-deploy-engine-docker-${runId}`;
-    hostDocker(['volume', 'create', '--label', 'noodara.test=true', volumeName]);
+    hostDocker([
+      'volume',
+      'create',
+      ...Object.entries(labels).flatMap(([key, value]) => ['--label', `${key}=${value}`]),
+      volumeName,
+    ]);
     cleanups.push(() => {
       hostDocker(['volume', 'rm', '-f', volumeName]);
       return Promise.resolve();
@@ -392,7 +410,7 @@ export async function startDeployEngineStack(
       try {
         return await image
           .withName(containerName)
-          .withLabels({ 'noodara.test': 'true' })
+          .withLabels({ ...labels })
           // Nested dockerd requires privileged mode; same accepted posture as installer-dind (T-11-09).
           .withPrivilegedMode()
           .withBindMounts([{ source: volumeName, target: '/var/lib/docker' }])
@@ -507,10 +525,20 @@ export async function startDeployEngineStack(
     // Preload the auth registry with every digest-pinned base, pulled through the mirror.
     const baseImages = resolveBaseImages();
     for (const baseImage of baseImages) {
-      await mustExec('docker pull', ['docker', 'pull', '--quiet', baseImage], {
-        user: 'deployer',
-        timeoutMs: IMAGE_TRANSFER_TIMEOUT_MS,
-      });
+      // A pull-through cache can hand back a half-written blob on a cold fetch ("unexpected commit
+      // digest"); the digest pin makes a retry safe, so one transient failure is retried twice.
+      for (let attempt = 1; ; attempt += 1) {
+        const pulled = await exec(['docker', 'pull', '--quiet', baseImage], {
+          user: 'deployer',
+          timeoutMs: IMAGE_TRANSFER_TIMEOUT_MS,
+        });
+        if (pulled.exitCode === 0) break;
+        if (attempt >= 3) {
+          throw new Error(
+            `deploy-engine: docker pull exited ${String(pulled.exitCode)}: ${pulled.stderr.trim()}`,
+          );
+        }
+      }
       await mustExec(
         'docker tag',
         ['docker', 'tag', baseImage, preloadedRefFor(registry.host, baseImage)],
@@ -580,7 +608,7 @@ export async function startDeployEngineStack(
     if (options.httpsGit === true) {
       // Per-run random token, as a real provider issues one; never a committed literal.
       const token = randomBytes(24).toString('base64url');
-      const gitHttps = await startHttpsGitHost(networkName, token);
+      const gitHttps = await startHttpsGitHost(networkName, token, labels);
       cleanups.push(async () => {
         await gitHttps.container.stop();
       });
@@ -621,6 +649,7 @@ export async function startDeployEngineStack(
       httpsGit,
       baseImages,
       mirrorUpstream: mirror.upstream,
+      networkName,
       exec,
       stop,
     };

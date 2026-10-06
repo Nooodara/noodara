@@ -4,7 +4,9 @@
 // Postgres/Redis/API/worker/web stack, never raced against itself. This config deliberately
 // has no built-in single-command-server option configured: the stack fixture (not Playwright)
 // owns the lifecycle of all five processes/containers, since they must start and stop together
-// and none of them is "just a dev server".
+// and none of them is "just a dev server". The deploy host (13-06) is opt-in: only specs that use
+// fixtures/deploy-host.ts's worker-scoped `deployHost` fixture start it, with its own bounded
+// startup timeout; global-teardown.ts sweeps everything labelled with the run id.
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({

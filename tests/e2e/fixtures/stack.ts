@@ -1,13 +1,16 @@
 // Composes the real stack a Playwright spec drives — Postgres, Redis, the control-plane API, the
 // worker and the built Next.js web app — reusing the exact Testcontainers/boot-process helpers
-// tests/integration/** already established (postgres.ts, redis.ts, boot-process.ts, ssh.ts's
-// assertNoStrayTestContainers), never a parallel implementation.
+// tests/integration/** already established (postgres.ts, redis.ts, boot-process.ts, ssh.ts),
+// never a parallel implementation. Teardown only ever checks containers this run started (13-06):
+// other runs' `noodara.test=true` containers (e.g. a concurrent integration suite) are not ours.
 //
 // Port/origin contract is docs/adr/0006's, fixed rather than OS-assigned: the API listens on
 // 3100, the web app on 3000, and NOODARA_PUBLIC_URL is the web origin so a mutating request's real
 // browser `Origin` header satisfies the control plane's Origin guard instead of 403
 // FORBIDDEN_ORIGIN (T-5-41).
+import { execFile } from 'node:child_process';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import {
   buildValidBootEnv,
   buildWorkspace,
@@ -17,7 +20,9 @@ import {
 } from '../../integration/helpers/boot-process.js';
 import { startPostgres, type PostgresFixture } from '../../integration/helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../../integration/helpers/redis.js';
-import { assertNoStrayTestContainers, startSshd, type SshdFixture } from '../../integration/helpers/ssh.js';
+import { startSshd, type SshdFixture } from '../../integration/helpers/ssh.js';
+
+const execFileAsync = promisify(execFile);
 
 const API_PORT = 3100;
 const WEB_PORT = 3000;
@@ -79,6 +84,20 @@ function waitForReady(bootProcess: BootProcess, pattern: RegExp, label: string, 
       throw new Error(`startStack: ${label} did not become ready — ${err instanceof Error ? err.message : String(err)}`);
     },
   );
+}
+
+/** Run-scoped leak check: only the given container ids (the ones this run started). */
+async function assertContainersGone(ids: readonly string[]): Promise<void> {
+  const survivors: string[] = [];
+  for (const id of ids) {
+    const { stdout } = await execFileAsync('docker', ['ps', '-aq', '--no-trunc', '--filter', `id=${id}`], {
+      timeout: 30_000,
+    });
+    if (stdout.trim() !== '') survivors.push(id.slice(0, 12));
+  }
+  if (survivors.length > 0) {
+    throw new Error(`stopStack: containers started by this run survived teardown: ${survivors.join(', ')}`);
+  }
 }
 
 async function killAndWait(proc: BootProcess, label: string): Promise<void> {
@@ -213,8 +232,8 @@ export async function stopCriticalPathSshd(): Promise<void> {
 /**
  * Stops the web app, the worker and the API, then Redis and Postgres — every step individually
  * guarded so one failure can never skip the rest (the same discipline `sse-broadcaster.ts`'s
- * `closeAll` and `worker.ts`'s shutdown handler use) — and finishes by asserting no
- * `noodara.test=true` container survived (noodara-tdd skill §5).
+ * `closeAll` and `worker.ts`'s shutdown handler use) — and finishes by asserting the containers
+ * this run started are gone (noodara-tdd skill §5). Idempotent: a second call is a no-op.
  */
 export async function stopStack(stack: Stack): Promise<void> {
   // Safety net for the critical-path spec's own sshd fixture — runs first and unconditionally, so
@@ -225,10 +244,7 @@ export async function stopStack(stack: Stack): Promise<void> {
   const handle = activeStack;
   activeStack = undefined;
 
-  if (handle === undefined) {
-    await assertNoStrayTestContainers();
-    return;
-  }
+  if (handle === undefined) return;
   if (handle.baseUrl !== stack.baseUrl) {
     console.warn('stopStack: received a Stack value that does not match the active one — stopping the active one anyway');
   }
@@ -248,5 +264,5 @@ export async function stopStack(stack: Stack): Promise<void> {
     console.warn(`stopStack: Postgres container did not stop cleanly: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  await assertNoStrayTestContainers();
+  await assertContainersGone([handle.postgres.container.getId(), handle.redis.container.getId()]);
 }
