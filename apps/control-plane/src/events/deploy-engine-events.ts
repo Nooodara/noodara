@@ -3,18 +3,24 @@
 // `deployment.updated` and `deployment.log_chunk`. There is deliberately no `project.*` or
 // `environment.*` event: clients refetch those after their own mutations.
 //
-// `service.updated` / `deployment.updated` carry the caller's allowlisted view (12-08's
-// `ServiceView`, the deployment read view); the interfaces below are the minimum each view must
-// expose, never a raw row. `deployment.log_chunk` is bounded: it can only be built through
-// `buildDeploymentLogChunkEvent` (branded type), which caps `text` at
-// `MAX_LOG_CHUNK_EVENT_TEXT_BYTES`, and the broadcaster re-checks shape and size before fan-out.
+// `service.updated` / `deployment.updated` carry an allowlisted view built only through
+// `buildServiceUpdatedEvent` / `buildDeploymentUpdatedEvent` (12-08's `ServiceView` fields; the
+// deployment's id, serviceId, status, errorCode), never a raw row and never `errorMessage`. Both
+// carry `updatedAt` (13-02): the row's `updated_at` written with the change they announce, strictly
+// increasing per row, so a client keeps the newest of snapshot and event per id.
+// `deployment.log_chunk` is bounded: it can only be built through `buildDeploymentLogChunkEvent`
+// (branded type), which caps `text` at `MAX_LOG_CHUNK_EVENT_TEXT_BYTES`, and the broadcaster
+// re-checks shape and size before fan-out.
 import {
   DEPLOYMENT_LOG_PHASES,
+  DEPLOYMENT_STATUSES,
+  SERVICE_STATUSES,
   type DeploymentErrorCode,
   type DeploymentLogPhase,
   type DeploymentStatus,
   type ServiceStatus,
 } from '@noodara/domain/deployment';
+import { SERVICE_VIEW_FIELDS, type ServiceView } from '../services/service-view.js';
 
 export const DEPLOY_ENGINE_EVENT_TYPES = Object.freeze([
   'service.updated',
@@ -29,6 +35,8 @@ export interface ServiceEventView {
   readonly environmentId: string;
   readonly serverId: string;
   readonly status: ServiceStatus;
+  /** ISO-8601; the row's `updated_at` after the write this event announces. */
+  readonly updatedAt: string;
 }
 
 export interface DeploymentEventView {
@@ -36,6 +44,8 @@ export interface DeploymentEventView {
   readonly serviceId: string;
   readonly status: DeploymentStatus;
   readonly errorCode: DeploymentErrorCode | null;
+  /** ISO-8601; the row's `updated_at` after the write this event announces. */
+  readonly updatedAt: string;
 }
 
 declare const logChunkBrand: unique symbol;
@@ -51,11 +61,73 @@ export interface DeploymentLogChunkEvent {
   readonly [logChunkBrand]: true;
 }
 
+declare const updatedBrand: unique symbol;
+
+export interface ServiceUpdatedEvent {
+  readonly type: 'service.updated';
+  /** 12-08's allowlisted read view; it satisfies `ServiceEventView`. */
+  readonly service: ServiceView & ServiceEventView;
+  readonly [updatedBrand]: true;
+}
+
+export interface DeploymentUpdatedEvent {
+  readonly type: 'deployment.updated';
+  readonly deployment: DeploymentEventView;
+  readonly [updatedBrand]: true;
+}
+
 export type DeployEngineEvent =
-  | { readonly type: 'service.updated'; readonly service: ServiceEventView }
+  | ServiceUpdatedEvent
   | { readonly type: 'service.deleted'; readonly id: string }
-  | { readonly type: 'deployment.updated'; readonly deployment: DeploymentEventView }
+  | DeploymentUpdatedEvent
   | DeploymentLogChunkEvent;
+
+const SERVICE_STATUS_SET: ReadonlySet<string> = new Set(SERVICE_STATUSES);
+const DEPLOYMENT_STATUS_SET: ReadonlySet<string> = new Set(DEPLOYMENT_STATUSES);
+const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
+/** A canonical `Date#toISOString()` value; anything else is a programming error. */
+function requireUpdatedAt(type: string, value: unknown): string {
+  if (typeof value !== 'string' || !ISO_INSTANT.test(value) || new Date(value).toISOString() !== value) {
+    throw new RangeError(`${type} requires the row's updatedAt as an ISO-8601 string`);
+  }
+  return value;
+}
+
+/**
+ * The only constructor of a `service.updated` event: the view is copied field by field from
+ * `SERVICE_VIEW_FIELDS` (its allowlist, in wire order), so an extra property on the input (a
+ * credential id, a raw row column) never reaches the stream. `updatedAt` must be a valid ISO instant.
+ */
+export function buildServiceUpdatedEvent(view: ServiceView): ServiceUpdatedEvent {
+  if (!SERVICE_STATUS_SET.has(view.status)) {
+    throw new RangeError('service.updated requires a known status');
+  }
+  requireUpdatedAt('service.updated', view.updatedAt);
+  const service: Record<string, unknown> = {};
+  for (const field of SERVICE_VIEW_FIELDS) service[field] = view[field];
+  const event = { type: 'service.updated', service: service as unknown as ServiceView } as const;
+  return event as ServiceUpdatedEvent;
+}
+
+/** The only constructor of a `deployment.updated` event: id, serviceId, status, errorCode and
+ *  updatedAt; never `errorMessage`, the source snapshot or anything else of the row. */
+export function buildDeploymentUpdatedEvent(view: DeploymentEventView): DeploymentUpdatedEvent {
+  if (!DEPLOYMENT_STATUS_SET.has(view.status)) {
+    throw new RangeError('deployment.updated requires a known status');
+  }
+  const event = {
+    type: 'deployment.updated',
+    deployment: {
+      id: view.id,
+      serviceId: view.serviceId,
+      status: view.status,
+      errorCode: view.errorCode,
+      updatedAt: requireUpdatedAt('deployment.updated', view.updatedAt),
+    },
+  } as const;
+  return event as DeploymentUpdatedEvent;
+}
 
 /** 4x the 12-03 chunker's 16 KB flush size: a normal chunk is never cut here. */
 export const MAX_LOG_CHUNK_EVENT_TEXT_BYTES = 64 * 1024;
@@ -67,6 +139,7 @@ export const MAX_LOG_CHUNK_EVENT_MESSAGE_BYTES = 6 * MAX_LOG_CHUNK_EVENT_TEXT_BY
 
 const DEPLOYMENT_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 const LOG_PHASES: ReadonlySet<string> = new Set(DEPLOYMENT_LOG_PHASES);
+
 
 export interface DeploymentLogChunkInput {
   readonly deploymentId: string;

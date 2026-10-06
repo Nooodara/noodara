@@ -10,6 +10,7 @@ import { Queue, type JobsOptions } from 'bullmq';
 import type { Redactor } from '@noodara/domain/security';
 import type { Redis } from 'ioredis';
 import { z } from 'zod';
+import { buildServiceUpdatedEvent } from '../events/deploy-engine-events.js';
 import { publishServerEvent, type ServerEventPublisher } from '../events/server-event-publisher.js';
 import { BULLMQ_PREFIX } from '../queue/connect-server-queue.js';
 import { DEPLOY_QUEUE_NAME } from '../queue/deploy-queue.js';
@@ -286,7 +287,7 @@ export function createServiceOperationJobHandler(
         actor,
         result,
       });
-      if (view !== null) await publishServerEvent(deps.events, { type: 'service.updated', service: view });
+      if (view !== null) await publishServerEvent(deps.events, buildServiceUpdatedEvent(view));
     } catch (error) {
       deps.logger.warn({ ...fields, error: errorKind(error) }, 'service operation outcome could not be recorded');
     }

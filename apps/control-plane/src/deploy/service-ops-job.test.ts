@@ -107,7 +107,25 @@ describe('createServiceOperationQueue', () => {
   });
 });
 
-const VIEW = { id: SERVICE_ID, status: 'STOPPED' } as unknown as ServiceView;
+const VIEW: ServiceView = {
+  id: SERVICE_ID,
+  projectId: 'p',
+  environmentId: 'e',
+  serverId: 'v',
+  name: 'api',
+  sourceType: 'image',
+  repositoryUrl: null,
+  branch: null,
+  buildContext: null,
+  dockerfilePath: null,
+  buildTarget: null,
+  imageRef: 'nginx:1.27',
+  internalPort: 80,
+  publishedPort: null,
+  status: 'STOPPED',
+  createdAt: '2026-10-05T10:00:00.000Z',
+  updatedAt: '2026-10-05T10:00:01.000Z',
+};
 
 function handler(overrides: Partial<ServiceOperationJobDeps> = {}) {
   const events: ServerEvent[] = [];

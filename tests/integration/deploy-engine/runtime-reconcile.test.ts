@@ -31,6 +31,7 @@ import { startRedis, type RedisFixture } from '../helpers/redis.js';
 type DeployRuntimeModule = typeof import('../../../apps/control-plane/src/deploy/deploy-runtime.js');
 type ReconcileWiringModule = typeof import('../../../apps/control-plane/src/reconcile/reconcile-wiring.js');
 type CredentialStoreModule = typeof import('../../../apps/control-plane/src/services/credential-store.js');
+type ServiceServicesModule = typeof import('../../../apps/control-plane/src/services/service-services.js');
 type SshAdapter = ReturnType<typeof createSsh2Adapter>;
 type ConnectOptions = Parameters<SshAdapter['connect']>[0];
 type DeployJobDeps = ReturnType<DeployRuntimeModule['createDeployJobDeps']>;
@@ -84,6 +85,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     let workerConnection: Redis | undefined;
     let wiring: ReconcileWiringModule | undefined;
     let credentialStore: CredentialStoreModule | undefined;
+    let serviceServices: ServiceServicesModule | undefined;
     let reconcileDeps: Omit<Parameters<ReconcileWiringModule['startWorkerReconcile']>[0], 'intervalMs'> | undefined;
     let reconcile: { tick: () => Promise<unknown>; close(): Promise<void> } | undefined;
 
@@ -95,6 +97,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     let fingerprint = '';
     let nodeBase = '';
     const ids = {
+      project: '',
       server: '',
       unreachableServer: '',
       pendingServer: '',
@@ -274,6 +277,26 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       events.flatMap((event) =>
         event.type === 'service.updated' && event.service.id === serviceId ? [event.service.status] : [],
       );
+    /** updatedAt carried by every recorded service.updated for this service, in publish order. */
+    const updatedAtsFor = (serviceId: string): string[] =>
+      events.flatMap((event) =>
+        event.type === 'service.updated' && event.service.id === serviceId ? [event.service.updatedAt] : [],
+      );
+    /** What the snapshot GET (getService) returns as updatedAt for this service right now. */
+    const snapshotUpdatedAt = async (serviceId: string): Promise<string> => {
+      if (serviceServices === undefined) throw new Error('modules not loaded');
+      const view = await serviceServices.getService(
+        { db: db(), now: () => new Date(), events: { publish: () => Promise.resolve() }, panelPorts: [] },
+        ids.project,
+        serviceId,
+      );
+      if (view === null) throw new Error('service missing from the snapshot');
+      return view.updatedAt;
+    };
+    const ms = (iso: string | undefined): number => {
+      if (iso === undefined) throw new Error('no updatedAt recorded');
+      return Date.parse(iso);
+    };
     const changedActivity = async (serviceId: string) =>
       db()
         .select()
@@ -300,6 +323,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       const runtime: DeployRuntimeModule = await import('../../../apps/control-plane/src/deploy/deploy-runtime.js');
       wiring = await import('../../../apps/control-plane/src/reconcile/reconcile-wiring.js');
       credentialStore = await import('../../../apps/control-plane/src/services/credential-store.js');
+      serviceServices = await import('../../../apps/control-plane/src/services/service-services.js');
 
       // Fingerprint pinned from a first trusted connect.
       const probe = await createSsh2Adapter().connect({
@@ -317,6 +341,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       ids.unreachableServer = await insertServer(`reconcile-unreachable-${ubuntu}`, UNREACHABLE, 'CONNECTED');
       ids.pendingServer = await insertServer(`reconcile-pending-${ubuntu}`, PENDING_TARGET, 'PENDING');
       const { projectId, environmentId } = await insertProject();
+      ids.project = projectId;
       const base = { projectId, environmentId };
       // fresh: container runs, cache says STOPPED -> A2 writes RUNNING.
       ids.fresh = await insertService({ ...base, serverId: ids.server, cached: 'STOPPED', deploymentStatus: 'SUCCESS' });
@@ -382,7 +407,20 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     it(
       'A2/A4/H1: a changed state updates the cache and emits once; unreachable -> UNKNOWN; in-flight deploys are skipped',
       async () => {
+        const freshBefore = await snapshotUpdatedAt(ids.fresh);
+        const unreachableBefore = await snapshotUpdatedAt(ids.unreachable);
         await tick();
+
+        // 13-02 A4: a reconcile-driven service.updated carries the row's post-write updatedAt: never older than
+        // the snapshot GET taken before the tick, and exactly what the snapshot GET returns after it.
+        for (const [id, before] of [
+          [ids.fresh, freshBefore],
+          [ids.unreachable, unreachableBefore],
+        ] as const) {
+          const [published] = updatedAtsFor(id);
+          expect(ms(published)).toBeGreaterThanOrEqual(ms(before));
+          expect(published).toBe(await snapshotUpdatedAt(id));
+        }
 
         // A2: changed -> written + one service.updated; unchanged -> nothing.
         expect(await statusOf(ids.fresh)).toBe('RUNNING');
@@ -412,16 +450,25 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     it(
       'A3: a container stopped or removed outside Noodara shows in the next tick with one activity event, never repeated',
       async () => {
+        const steadyBefore = await snapshotUpdatedAt(ids.steady);
         expect((await root(['docker', 'stop', '-t', '1', containerName(ids.steady)])).exitCode).toBe(0);
         await tick();
         expect(await statusOf(ids.steady)).toBe('STOPPED');
         expect(updatesFor(ids.steady)).toEqual(['STOPPED']);
+        // 13-02 A4: the discrepancy event carries the post-write updatedAt the snapshot GET then returns.
+        const [steadyPublished] = updatedAtsFor(ids.steady);
+        expect(ms(steadyPublished)).toBeGreaterThanOrEqual(ms(steadyBefore));
+        expect(steadyPublished).toBe(await snapshotUpdatedAt(ids.steady));
         expect(await changedActivity(ids.steady)).toHaveLength(1);
 
         expect((await root(['docker', 'rm', '-f', containerName(ids.fresh)])).exitCode).toBe(0);
         await tick();
         expect(await statusOf(ids.fresh)).not.toBe('RUNNING');
         expect(updatesFor(ids.fresh)).toHaveLength(2);
+        // 13-02 H1: per-entity monotonic, and the latest event matches the snapshot GET.
+        const [freshFirst, freshSecond] = updatedAtsFor(ids.fresh);
+        expect(ms(freshSecond)).toBeGreaterThan(ms(freshFirst));
+        expect(freshSecond).toBe(await snapshotUpdatedAt(ids.fresh));
         expect(await changedActivity(ids.fresh)).toHaveLength(1);
 
         // Later ticks repeat neither the activity nor the event.

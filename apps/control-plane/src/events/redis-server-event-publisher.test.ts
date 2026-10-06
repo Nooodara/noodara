@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ServerView } from '../services/server-view.js';
-import { buildDeploymentLogChunkEvent } from './deploy-engine-events.js';
+import { buildDeploymentLogChunkEvent, buildDeploymentUpdatedEvent } from './deploy-engine-events.js';
 import { createRedisServerEventPublisher, SERVER_EVENTS_CHANNEL } from './redis-server-event-publisher.js';
 
 // D-03/D-04/T-4-38: a structural fake Redis (`{ publish: vi.fn() }`) and a capturing logger — this
@@ -119,10 +119,15 @@ describe('createRedisServerEventPublisher', () => {
     const publisher = createRedisServerEventPublisher(redis as never, logger as never);
 
     await publisher.publish({ type: 'service.deleted', id: 'svc-1' });
-    await publisher.publish({
-      type: 'deployment.updated',
-      deployment: { id: 'dep-1', serviceId: 'svc-1', status: 'FAILED', errorCode: 'BUILD_FAILED' },
-    });
+    await publisher.publish(
+      buildDeploymentUpdatedEvent({
+        id: 'dep-1',
+        serviceId: 'svc-1',
+        status: 'FAILED',
+        errorCode: 'BUILD_FAILED',
+        updatedAt: '2026-10-05T10:00:00.000Z',
+      }),
+    );
 
     const calls = redis.publish.mock.calls as [string, string][];
     expect(calls.map(([channel]) => channel)).toStrictEqual([SERVER_EVENTS_CHANNEL, SERVER_EVENTS_CHANNEL]);

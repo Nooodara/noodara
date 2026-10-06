@@ -13,6 +13,7 @@ import { services } from '../db/schema/services.js';
 import { jobIdForServiceOperation } from '../deploy/service-ops-job.js';
 import { recordServiceOperation } from '../services/service-services.js';
 import { toServiceView, type ServiceView } from '../services/service-view.js';
+import { nextUpdatedAtSql } from '../services/updated-at.js';
 import type { ReconcileDiscrepancyRecord, ReconcileServiceRow, ReconcileStatusWrite } from './reconcile-tick.js';
 
 /** CONNECTED servers with at least one service. */
@@ -69,7 +70,11 @@ export async function loadReconcileServices(db: Database, serverId: string): Pro
 }
 
 /** Compare-and-set on the cached status; never while a deployment is active. */
-export async function writeReconcileStatus(db: Database, write: ReconcileStatusWrite): Promise<ServiceView | null> {
+export async function writeReconcileStatus(
+  db: Database,
+  now: () => Date,
+  write: ReconcileStatusWrite,
+): Promise<ServiceView | null> {
   const activeDeployment = db
     .select({ id: deployments.id })
     .from(deployments)
@@ -81,7 +86,8 @@ export async function writeReconcileStatus(db: Database, write: ReconcileStatusW
     );
   const [row] = await db
     .update(services)
-    .set({ status: write.status })
+    // Never read under a lock, so the strictly-increasing rule runs in SQL (13-02 H1).
+    .set({ status: write.status, updatedAt: nextUpdatedAtSql(services.updatedAt, now()) })
     .where(and(eq(services.id, write.serviceId), eq(services.status, write.expected), notExists(activeDeployment)))
     .returning();
   if (row === undefined) return null;

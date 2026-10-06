@@ -23,6 +23,7 @@ import {
 } from '@noodara/domain/deployment';
 import type { Redactor } from '@noodara/domain/security';
 import type { DeployJobDeps, DeployJobLogger } from '../deploy/deploy-worker.js';
+import { buildServiceUpdatedEvent } from '../events/deploy-engine-events.js';
 import { publishServerEvent, type ServerEventPublisher } from '../events/server-event-publisher.js';
 import { containerObservationFromCache, type ServiceView } from '../services/service-view.js';
 
@@ -182,7 +183,7 @@ async function reconcileServer(deps: ReconcileTickDeps, serverId: string, counte
       }
       if (view === null) continue;
       counters.updated += 1;
-      await publishServerEvent(deps.events, { type: 'service.updated', service: view });
+      await publishServerEvent(deps.events, buildServiceUpdatedEvent(view));
     } catch (error) {
       counters.failed += 1;
       deps.logger.error({ serverId, serviceId, errorKind: errorKind(error) }, 'reconcile: service update failed');

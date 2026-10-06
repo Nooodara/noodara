@@ -88,7 +88,25 @@ function row(serviceId: string, cachedStatus: ServiceStatus, overrides: Partial<
 }
 
 function viewOf(serviceId: string, serverId: string, status: ServiceStatus): ServiceView {
-  return { id: serviceId, projectId: 'p', environmentId: 'e', serverId, status } as unknown as ServiceView;
+  return {
+    id: serviceId,
+    projectId: 'p',
+    environmentId: 'e',
+    serverId,
+    name: 'api',
+    sourceType: 'image',
+    repositoryUrl: null,
+    branch: null,
+    buildContext: null,
+    dockerfilePath: null,
+    buildTarget: null,
+    imageRef: 'nginx:1.27',
+    internalPort: 80,
+    publishedPort: null,
+    status,
+    createdAt: '2026-10-05T10:00:00.000Z',
+    updatedAt: '2026-10-05T10:00:01.000Z',
+  };
 }
 
 function harness(input: {

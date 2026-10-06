@@ -14,11 +14,13 @@ import { deployments } from '../db/schema/deployments.js';
 import { projects } from '../db/schema/projects.js';
 import { servers } from '../db/schema/servers.js';
 import { services } from '../db/schema/services.js';
+import { buildDeploymentUpdatedEvent, buildServiceUpdatedEvent } from '../events/deploy-engine-events.js';
 import { publishServerEvent, type ServerEventPublisher } from '../events/server-event-publisher.js';
 import type { DeployQueue } from '../queue/deploy-queue.js';
 import { encodeActivityCursor } from '../routes/activity-cursor.js';
 import type { ServiceActor } from './server-service-deps.js';
 import { toServiceView, type ServiceRow, type ServiceView } from './service-view.js';
+import { nextUpdatedAtSql } from './updated-at.js';
 
 export interface DeploymentServicesLogger {
   warn(fields: Record<string, unknown>, message: string): void;
@@ -235,6 +237,15 @@ async function insertQueuedDeployment(tx: Transaction, deps: DeploymentServicesD
     })
     .returning();
   if (!row) throw new Error('triggerDeploy: insert returned no row');
+  // The service's derived status moves to DEPLOYING with this row, so its updatedAt moves too
+  // (13-02): the service.updated published after the commit carries this value. Taken after the
+  // server lock, the same order as the service writes that lock the server first.
+  const [touched] = await tx
+    .update(services)
+    .set({ updatedAt: nextUpdatedAtSql(services.updatedAt, now) })
+    .where(eq(services.id, service.id))
+    .returning();
+  if (!touched) return { ok: false, code: 'NOT_FOUND', message: `Service "${input.serviceId}" not found` };
 
   const activityEventId = await writeActivityEvent(
     tx,
@@ -252,7 +263,7 @@ async function insertQueuedDeployment(tx: Transaction, deps: DeploymentServicesD
   return {
     ok: true,
     deployment: toDeploymentView(row),
-    service: toServiceView(service, { status: row.status }),
+    service: toServiceView(touched, { status: row.status }),
     activityEventId,
   };
 }
@@ -299,11 +310,8 @@ export async function triggerDeploy(deps: DeploymentServicesDeps, input: Trigger
     return queueUnavailable();
   }
 
-  await publishServerEvent(deps.events, {
-    type: 'deployment.updated',
-    deployment: { id: deployment.id, serviceId: deployment.serviceId, status: deployment.status, errorCode: deployment.errorCode },
-  });
-  await publishServerEvent(deps.events, { type: 'service.updated', service: inserted.service });
+  await publishServerEvent(deps.events, buildDeploymentUpdatedEvent(deployment));
+  await publishServerEvent(deps.events, buildServiceUpdatedEvent(inserted.service));
   return { ok: true, deployment };
 }
 

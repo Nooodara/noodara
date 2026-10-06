@@ -52,7 +52,17 @@ function row(overrides: Partial<DeploymentRow> = {}): DeploymentRow {
   };
 }
 
-const SERVICE_VIEW = { id: SERVICE_ID, projectId: 'p', environmentId: 'e', serverId: 's', status: 'DEPLOYING' } as unknown as ServiceView;
+const SERVICE_VIEW: ServiceView = {
+  id: SERVICE_ID,
+  projectId: 'p',
+  environmentId: 'e',
+  serverId: 's',
+  name: 'api',
+  ...SOURCE,
+  status: 'DEPLOYING',
+  createdAt: '2026-10-04T11:00:00.000Z',
+  updatedAt: NOW.toISOString(),
+};
 
 function harness(options: {
   transactions: (() => Promise<unknown>)[];
@@ -133,7 +143,13 @@ describe('triggerDeploy', () => {
       actor: ACTOR,
       requestedAt: NOW.toISOString(),
     });
-    expect(h.published.map((event) => event.type)).toEqual(['deployment.updated', 'service.updated']);
+    expect(h.published).toEqual([
+      {
+        type: 'deployment.updated',
+        deployment: { id: DEPLOYMENT_ID, serviceId: SERVICE_ID, status: 'QUEUED', errorCode: null, updatedAt: NOW.toISOString() },
+      },
+      { type: 'service.updated', service: SERVICE_VIEW },
+    ]);
   });
 
   it('passes a guard failure through without enqueuing', async () => {

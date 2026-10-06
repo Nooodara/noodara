@@ -51,7 +51,7 @@ export function createWorkerReconcileTick(
     connect: deps.connect,
     createRedactor: deps.createRedactor,
     commandMs: deps.commandMs,
-    writeStatus: (write) => writeReconcileStatus(deps.db, write),
+    writeStatus: (write) => writeReconcileStatus(deps.db, now, write),
     recordDiscrepancy: (record) => recordReconcileDiscrepancy(deps.db, now, record),
     events: deps.events,
     logger: deps.logger,

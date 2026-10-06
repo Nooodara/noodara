@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Database } from '../db/client.js';
 import type { ServerEvent, ServerEventPublisher } from '../events/server-event-publisher.js';
+import type { services as servicesTable } from '../db/schema/services.js';
 import {
   createServiceServices,
   editableFieldsFromRow,
   panelPortsFromEnv,
+  recordServiceOperation,
   serviceColumnsFromSource,
 } from './service-services.js';
 
@@ -194,5 +196,91 @@ describe('updateService: validation before the database (H1)', () => {
     });
     expect(result).toMatchObject({ ok: false, code: 'SERVICE_INPUT_INVALID', reason });
     expect(events).toEqual([]);
+  });
+});
+
+describe('recordServiceOperation: updatedAt (13-02 A1, H1)', () => {
+  const STORED = new Date('2026-10-05T10:00:00.000Z');
+  type Row = typeof servicesTable.$inferSelect;
+  const stored: Row = {
+    id: SERVICE_ID,
+    projectId: PROJECT_ID,
+    environmentId: ENVIRONMENT_ID,
+    serverId: SERVER_ID,
+    name: 'api',
+    sourceType: 'image',
+    repositoryUrl: null,
+    branch: null,
+    buildContext: null,
+    dockerfilePath: null,
+    buildTarget: null,
+    imageRef: 'nginx:1.27',
+    internalPort: 80,
+    publishedPort: null,
+    repositoryCredentialId: null,
+    registryCredentialId: null,
+    status: 'RUNNING',
+    createdAt: STORED,
+    updatedAt: STORED,
+  };
+
+  /** A thenable query-builder fake over one service row; records every UPDATE's `set`. */
+  function fakeDb() {
+    let row: Row = { ...stored };
+    const sets: Record<string, unknown>[] = [];
+    const chain = (resolve: () => unknown[]): unknown => {
+      const proxy: unknown = new Proxy(
+        {},
+        {
+          get(_target, prop) {
+            if (prop === 'then') return (ok: (value: unknown) => void) => {
+              ok(resolve());
+            };
+            return (...args: unknown[]) => {
+              if (prop === 'set') {
+                const set = args[0] as Record<string, unknown>;
+                sets.push(set);
+                row = { ...row, ...set };
+              }
+              return proxy;
+            };
+          },
+        },
+      );
+      return proxy;
+    };
+    const handle = {
+      select: () => chain(() => [row]),
+      selectDistinctOn: () => chain(() => [{ serviceId: SERVICE_ID, status: 'SUCCESS' }]),
+      update: () => chain(() => [row]),
+      insert: () => chain(() => [{ id: 'activity-1' }]),
+      transaction: <T>(fn: (tx: unknown) => Promise<T>): Promise<T> => fn(handle),
+    };
+    return { db: handle as unknown as Database, sets };
+  }
+
+  const record = (db: Database, now: Date) =>
+    recordServiceOperation(db, () => now, {
+      serviceId: SERVICE_ID,
+      serverId: SERVER_ID,
+      operation: 'stop',
+      actor: ACTOR,
+      result: { ok: true, operation: 'stop', previousState: 'running', container: { kind: 'stopped', exitCode: 0 }, durationMs: 5 },
+    });
+
+  it('writes updatedAt with the status cache and returns it on the view', async () => {
+    const fake = fakeDb();
+    const now = new Date('2026-10-05T10:05:00.000Z');
+    const view = await record(fake.db, now);
+    expect(fake.sets).toEqual([{ status: 'STOPPED', updatedAt: now }]);
+    expect(view?.updatedAt).toBe(now.toISOString());
+  });
+
+  it('two writes in the same millisecond (or a clock behind the row) still move updatedAt forward', async () => {
+    const fake = fakeDb();
+    const first = await record(fake.db, STORED);
+    const second = await record(fake.db, new Date(STORED.getTime() - 1_000));
+    expect(first?.updatedAt).toBe('2026-10-05T10:00:00.001Z');
+    expect(second?.updatedAt).toBe('2026-10-05T10:00:00.002Z');
   });
 });

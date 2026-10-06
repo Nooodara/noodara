@@ -30,6 +30,7 @@ import { servers } from '../db/schema/servers.js';
 import { services } from '../db/schema/services.js';
 import type { ServiceOperation, ServiceRemoteCleanup } from '../deploy/service-ops.js';
 import type { RecordServiceOperationInput, ServiceOperationQueue, ServiceOperationTarget } from '../deploy/service-ops-job.js';
+import { buildServiceUpdatedEvent } from '../events/deploy-engine-events.js';
 import { publishServerEvent, type ServerEventPublisher } from '../events/server-event-publisher.js';
 import type { MasterKeys, ServiceActor } from './server-service-deps.js';
 import {
@@ -47,6 +48,7 @@ import {
   type ServiceCredentialTarget,
 } from './service-credentials.js';
 import { containerObservationFromCache, toServiceView, type ServiceRow, type ServiceView } from './service-view.js';
+import { nextUpdatedAt } from './updated-at.js';
 
 export interface PanelPort {
   readonly port: number;
@@ -400,7 +402,7 @@ export async function createService(deps: ServiceServicesDeps, input: CreateServ
     if (uniqueViolationConstraint(error) === SERVICE_NAME_UNIQUE_CONSTRAINT) return nameTaken(fields.name);
     throw error;
   }
-  if (result.ok) await publishServerEvent(deps.events, { type: 'service.updated', service: result.service });
+  if (result.ok) await publishServerEvent(deps.events, buildServiceUpdatedEvent(result.service));
   return result;
 }
 
@@ -482,7 +484,7 @@ export async function updateService(deps: ServiceServicesDeps, input: UpdateServ
           ...credentialChanges.columns,
           ...(changed.has('internalPort') && edit.internalPort !== undefined ? { internalPort: edit.internalPort } : {}),
           ...(changed.has('publishedPort') && edit.publishedPort !== undefined ? { publishedPort: edit.publishedPort } : {}),
-          updatedAt: now,
+          updatedAt: nextUpdatedAt(current.updatedAt, now),
         })
         .where(eq(services.id, current.id))
         .returning();
@@ -515,7 +517,7 @@ export async function updateService(deps: ServiceServicesDeps, input: UpdateServ
     throw error;
   }
   // A no-op edit (nothing changed) commits nothing, so it publishes nothing.
-  if (result.ok && result.changedFields.length > 0) await publishServerEvent(deps.events, { type: 'service.updated', service: result.service });
+  if (result.ok && result.changedFields.length > 0) await publishServerEvent(deps.events, buildServiceUpdatedEvent(result.service));
   return result;
 }
 
@@ -633,7 +635,9 @@ export async function recordServiceOperation(
         ? { kind: 'absent' }
         : containerObservationFromCache(service.status);
     const cached = deriveServiceStatus({ latestDeployment: latest === undefined ? null : { status: latest }, container });
-    const [updated] = await tx.update(services).set({ status: cached }).where(eq(services.id, service.id)).returning();
+    const at = now();
+    const updatedAt = nextUpdatedAt(service.updatedAt, at);
+    const [updated] = await tx.update(services).set({ status: cached, updatedAt }).where(eq(services.id, service.id)).returning();
 
     const action = OPERATION_ACTIONS[input.operation];
     const metadata =
@@ -651,9 +655,9 @@ export async function recordServiceOperation(
         ...(result.ok ? {} : { errorCode: result.code }),
         metadata,
       },
-      now(),
+      at,
     );
-    return toServiceView(updated ?? { ...service, status: cached }, latest === undefined ? null : { status: latest });
+    return toServiceView(updated ?? { ...service, status: cached, updatedAt }, latest === undefined ? null : { status: latest });
   });
 }
 

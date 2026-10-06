@@ -188,7 +188,10 @@ describe('deployment store: claim (C3, H1)', () => {
     expect(update.inTx).toBe(true);
     expect(h.setOf(update)).toMatchObject({ status: 'PREPARING', startedAt: NOW, updatedAt: NOW });
     expect(h.published).toEqual([
-      { type: 'deployment.updated', deployment: { id: DEPLOYMENT_ID, serviceId: SERVICE_ID, status: 'PREPARING', errorCode: null } },
+      {
+        type: 'deployment.updated',
+        deployment: { id: DEPLOYMENT_ID, serviceId: SERVICE_ID, status: 'PREPARING', errorCode: null, updatedAt: NOW.toISOString() },
+      },
     ]);
   });
 
@@ -257,9 +260,20 @@ describe('deployment store: finish (C3, ERR)', () => {
       metadata: { serviceId: SERVICE_ID, status: 'SUCCESS', durationMs: 58_000, commitSha: SHA },
     });
     expect(h.published).toEqual([
-      { type: 'deployment.updated', deployment: { id: DEPLOYMENT_ID, serviceId: SERVICE_ID, status: 'SUCCESS', errorCode: null } },
-      { type: 'service.updated', service: expect.objectContaining({ id: SERVICE_ID, status: 'RUNNING' }) as unknown },
+      {
+        type: 'deployment.updated',
+        deployment: { id: DEPLOYMENT_ID, serviceId: SERVICE_ID, status: 'SUCCESS', errorCode: null, updatedAt: NOW.toISOString() },
+      },
+      {
+        type: 'service.updated',
+        service: expect.objectContaining({ id: SERVICE_ID, status: 'RUNNING', updatedAt: NOW.toISOString() }) as unknown,
+      },
     ]);
+    // A1: the service row's updated_at is written in the same transaction as its status cache.
+    const serviceWrite = h.ops.find((op) => op.root === 'update' && op.table === services);
+    if (!serviceWrite) throw new Error('expected a services status-cache write');
+    expect(serviceWrite.inTx).toBe(true);
+    expect(h.setOf(serviceWrite)).toEqual({ status: 'RUNNING', updatedAt: NOW });
   });
 
   it('a failed build keeps the service RUNNING from the cache when the container was never touched', async () => {
@@ -322,6 +336,72 @@ describe('deployment store: finish (C3, ERR)', () => {
     const h = harness({ deployment: deploymentRow({ status: 'DEPLOYING', startedAt: STARTED }), service: serviceRow(), failActivity: true });
     await expect(h.store.finish(DEPLOYMENT_ID, finishInput())).rejects.toThrow();
     expect(h.published).toEqual([]);
+  });
+});
+
+describe('deployment store: updatedAt on events (13-02 A1, H1)', () => {
+  const updatedAtOf = (event: ServerEvent | undefined): string | undefined =>
+    event?.type === 'deployment.updated' ? event.deployment.updatedAt : event?.type === 'service.updated' ? event.service.updatedAt : undefined;
+
+  it('each event carries the updatedAt written by its own transaction', async () => {
+    const h = harness({ deployment: deploymentRow(), service: serviceRow() });
+    await h.store.claim(DEPLOYMENT_ID);
+    expect(updatedAtOf(h.published.at(-1))).toBe(h.state.deployment?.updatedAt.toISOString());
+    await h.store.progress(DEPLOYMENT_ID).advance('PREPARING', 'BUILDING');
+    expect(updatedAtOf(h.published.at(-1))).toBe(h.state.deployment?.updatedAt.toISOString());
+  });
+
+  it('rapid writes with a frozen clock publish strictly increasing updatedAt per deployment and service', async () => {
+    // Every write lands in the same millisecond as the row's stored updated_at.
+    const h = harness({
+      deployment: deploymentRow({ updatedAt: NOW, createdAt: NOW }),
+      service: serviceRow({ updatedAt: NOW }),
+    });
+    await h.store.claim(DEPLOYMENT_ID);
+    const progress = h.store.progress(DEPLOYMENT_ID);
+    await progress.advance('PREPARING', 'BUILDING');
+    await progress.recordCommitSha(SHA);
+    await progress.advance('BUILDING', 'DEPLOYING');
+    await h.store.finish(DEPLOYMENT_ID, finishInput());
+
+    const deploymentTimes = h.published.filter((e) => e.type === 'deployment.updated').map(updatedAtOf);
+    const serviceTimes = h.published.filter((e) => e.type === 'service.updated').map(updatedAtOf);
+    expect(deploymentTimes).toEqual([
+      '2026-10-05T10:01:00.001Z',
+      '2026-10-05T10:01:00.002Z',
+      '2026-10-05T10:01:00.004Z',
+      '2026-10-05T10:01:00.005Z',
+    ]);
+    expect(serviceTimes).toEqual(['2026-10-05T10:01:00.001Z']);
+  });
+
+  it('a clock that steps back never publishes an older updatedAt', async () => {
+    const later = new Date(NOW.getTime() + 60_000);
+    const h = harness({ deployment: deploymentRow({ status: 'PREPARING', updatedAt: later }), service: serviceRow({ updatedAt: later }) });
+    await h.store.progress(DEPLOYMENT_ID).advance('PREPARING', 'BUILDING');
+    expect(updatedAtOf(h.published.at(-1))).toBe(new Date(later.getTime() + 1).toISOString());
+  });
+
+  it('progress writes under the row lock inside one transaction', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'PREPARING' }), service: serviceRow() });
+    await h.store.progress(DEPLOYMENT_ID).advance('PREPARING', 'BUILDING');
+    const [lock, update] = h.ops;
+    expect(lock?.inTx).toBe(true);
+    expect(lock?.calls).toContainEqual({ method: 'for', args: ['update'] });
+    expect(update?.inTx).toBe(true);
+  });
+
+  it('the deployment event never carries errorMessage or the source snapshot (H1)', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'BUILDING', startedAt: STARTED }), service: serviceRow() });
+    await h.store.finish(DEPLOYMENT_ID, finishInput({ status: 'FAILED', errorCode: 'BUILD_FAILED', errorMessage: 'The Docker build failed.', container: null }));
+    const event = h.published.find((e) => e.type === 'deployment.updated');
+    expect(event?.type === 'deployment.updated' ? Object.keys(event.deployment) : []).toEqual([
+      'id',
+      'serviceId',
+      'status',
+      'errorCode',
+      'updatedAt',
+    ]);
   });
 });
 

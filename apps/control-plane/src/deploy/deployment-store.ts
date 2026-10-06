@@ -1,8 +1,10 @@
 // 12-11 (C3, H1): the deploy worker's only write path for a deployment row.
 // - claim: QUEUED -> PREPARING under SELECT ... FOR UPDATE in one transaction. Any other status
 //   (a BullMQ re-delivery of a job already past QUEUED) returns null, so the caller runs nothing.
-// - progress: every edge goes through `transitionDeployment` and a conditional UPDATE on the
-//   expected status; a row that moved underneath is a conflict, never a silent overwrite.
+// - progress: every edge goes through `transitionDeployment` and an UPDATE on the expected status
+//   under the row lock; a row that moved underneath is a conflict, never a silent overwrite.
+// - updatedAt (13-02 H1): every write moves it strictly forward (`nextUpdatedAt` on the locked
+//   row), and the events carry that value.
 // - finish: terminal status, timings, error code/message, the services.status cache (D5), the
 //   `deployment.finished` activity event in the same transaction, then deployment.updated and
 //   service.updated after commit. Idempotent: an already terminal row is left alone.
@@ -23,6 +25,7 @@ import type { CommitSha } from '@noodara/domain/validators';
 import type { Database } from '../db/client.js';
 import { deployments } from '../db/schema/deployments.js';
 import { services } from '../db/schema/services.js';
+import { buildDeploymentUpdatedEvent, buildServiceUpdatedEvent } from '../events/deploy-engine-events.js';
 import { publishServerEvent, type ServerEventPublisher } from '../events/server-event-publisher.js';
 import {
   toDeploymentView,
@@ -33,6 +36,7 @@ import {
 } from '../services/deployment-services.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
 import { containerObservationFromCache, toServiceView, type ServiceView } from '../services/service-view.js';
+import { nextUpdatedAt } from '../services/updated-at.js';
 import { DEPLOY_MESSAGES, type DeploymentProgress, type DeploymentWarning } from './run-deployment.js';
 
 export interface DeploymentStoreDeps {
@@ -102,10 +106,7 @@ function capMessage(message: string): string {
 }
 
 async function publishDeployment(deps: DeploymentStoreDeps, row: DeploymentRow): Promise<void> {
-  await publishServerEvent(deps.events, {
-    type: 'deployment.updated',
-    deployment: { id: row.id, serviceId: row.serviceId, status: row.status, errorCode: row.errorCode },
-  });
+  await publishServerEvent(deps.events, buildDeploymentUpdatedEvent({ ...row, updatedAt: row.updatedAt.toISOString() }));
 }
 
 async function claimRow(tx: Transaction, deps: DeploymentStoreDeps, deploymentId: string): Promise<DeploymentRow | null> {
@@ -115,7 +116,7 @@ async function claimRow(tx: Transaction, deps: DeploymentStoreDeps, deploymentId
   const now = deps.now();
   const [claimed] = await tx
     .update(deployments)
-    .set({ status, startedAt: now, updatedAt: now })
+    .set({ status, startedAt: now, updatedAt: nextUpdatedAt(row.updatedAt, now) })
     .where(eq(deployments.id, deploymentId))
     .returning();
   return claimed ?? null;
@@ -146,7 +147,7 @@ async function finishRow(
 
   const [updated] = await tx
     .update(deployments)
-    .set({ status, completedAt: now, durationMs, errorCode, errorMessage, commitSha, updatedAt: now })
+    .set({ status, completedAt: now, durationMs, errorCode, errorMessage, commitSha, updatedAt: nextUpdatedAt(row.updatedAt, now) })
     .where(eq(deployments.id, deploymentId))
     .returning();
   if (!updated) throw new Error('finishDeployment: update returned no row');
@@ -156,8 +157,14 @@ async function finishRow(
   if (service) {
     const container = input.container ?? containerObservationFromCache(service.status);
     const cached = deriveServiceStatus({ latestDeployment: { status }, container });
-    const [cachedRow] = await tx.update(services).set({ status: cached }).where(eq(services.id, service.id)).returning();
-    serviceView = toServiceView(cachedRow ?? { ...service, status: cached }, { status });
+    // The derived status changed with this deployment, so the service row's updatedAt moves too.
+    const updatedAt = nextUpdatedAt(service.updatedAt, now);
+    const [cachedRow] = await tx
+      .update(services)
+      .set({ status: cached, updatedAt })
+      .where(eq(services.id, service.id))
+      .returning();
+    serviceView = toServiceView(cachedRow ?? { ...service, status: cached, updatedAt }, { status });
   }
 
   await writeDeploymentFinishedEvent(
@@ -192,7 +199,7 @@ async function cancelRow(tx: Transaction, deps: DeploymentStoreDeps, deploymentI
 
 async function publishFinished(deps: DeploymentStoreDeps, finished: Finished): Promise<void> {
   await publishDeployment(deps, finished.deployment);
-  if (finished.service) await publishServerEvent(deps.events, { type: 'service.updated', service: finished.service });
+  if (finished.service) await publishServerEvent(deps.events, buildServiceUpdatedEvent(finished.service));
 }
 
 export function createDeploymentStore(deps: DeploymentStoreDeps): DeploymentStore {
@@ -207,19 +214,29 @@ export function createDeploymentStore(deps: DeploymentStoreDeps): DeploymentStor
       return {
         async advance(from, to) {
           const next = transitionDeployment(from, to);
-          const [row] = await deps.db
-            .update(deployments)
-            .set({ status: next, updatedAt: deps.now() })
-            .where(and(eq(deployments.id, deploymentId), eq(deployments.status, from)))
-            .returning();
+          // Under the row lock, so the new updatedAt is computed from the stored one (H1).
+          const row = await deps.db.transaction(async (tx) => {
+            const [current] = await tx.select().from(deployments).where(eq(deployments.id, deploymentId)).for('update');
+            if (current?.status !== from) return null;
+            const [updated] = await tx
+              .update(deployments)
+              .set({ status: next, updatedAt: nextUpdatedAt(current.updatedAt, deps.now()) })
+              .where(and(eq(deployments.id, deploymentId), eq(deployments.status, from)))
+              .returning();
+            return updated ?? null;
+          });
           if (!row) throw new DeploymentConflictError(deploymentId, from);
           await publishDeployment(deps, row);
         },
         async recordCommitSha(sha) {
-          await deps.db
-            .update(deployments)
-            .set({ commitSha: sha, updatedAt: deps.now() })
-            .where(eq(deployments.id, deploymentId));
+          await deps.db.transaction(async (tx) => {
+            const [current] = await tx.select().from(deployments).where(eq(deployments.id, deploymentId)).for('update');
+            if (!current) return;
+            await tx
+              .update(deployments)
+              .set({ commitSha: sha, updatedAt: nextUpdatedAt(current.updatedAt, deps.now()) })
+              .where(eq(deployments.id, deploymentId));
+          });
         },
       };
     },
