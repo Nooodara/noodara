@@ -176,12 +176,25 @@ const deploymentsRoutes: FastifyPluginCallback<DeploymentsRoutesOptions> = (fast
   app.route({
     method: 'POST',
     url: '/api/deployments/:deploymentId/cancel',
+    bodyLimit: DEPLOYMENT_ROUTE_BODY_LIMIT_BYTES,
     schema: {
       params: DeploymentIdParamSchema,
-      response: { 202: DeploymentViewSchema, ...READ_ERRORS, 409: ErrorBodySchema, 503: ErrorBodySchema },
+      body: DeployBodySchema,
+      response: {
+        202: DeploymentViewSchema,
+        ...READ_ERRORS,
+        409: ErrorBodySchema,
+        422: ErrorBodySchema,
+        503: ErrorBodySchema,
+      },
     },
     handler: async (request, reply) => {
       const actor = requireActor(request.actor);
+      // 12-10 H3: same body contract as deploy; any field is a named 422, never ignored.
+      if (unknownDeployFields(request.body).length > 0) {
+        await sendFailure(reply, { code: 'DEPLOYMENT_INPUT_INVALID', message: 'The cancel request accepts no fields' });
+        return;
+      }
       const cancelDeployment = await resolveCancel();
       const result = await cancelDeployment(request.params.deploymentId, actor);
       if (!result.ok) {

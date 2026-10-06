@@ -179,4 +179,36 @@ describe('POST /api/deployments/:deploymentId/cancel', () => {
     expect(response.statusCode).toBe(400);
     expect(cancel).not.toHaveBeenCalled();
   });
+
+  it('rejects an unknown body field with the named 422 before any cancel', async () => {
+    const cancel = vi.fn<CancelDeployment>();
+    const instance = await build(cancel);
+
+    const response = await instance.inject({
+      method: 'POST',
+      url: `/api/deployments/${DEPLOYMENT_ID}/cancel`,
+      payload: { x: 1 },
+    });
+
+    expect(response.statusCode).toBe(422);
+    expect(response.json()).toMatchObject({ error: 'DEPLOYMENT_INPUT_INVALID' });
+    expect(cancel).not.toHaveBeenCalled();
+  });
+
+  it.each<[string, object | undefined]>([
+    ['an empty object', {}],
+    ['no body', undefined],
+  ])('accepts %s', async (_label, payload) => {
+    const cancel = vi.fn<CancelDeployment>(() => Promise.resolve({ ok: true, deployment: view('BUILDING') }));
+    const instance = await build(cancel);
+
+    const response = await instance.inject({
+      method: 'POST',
+      url: `/api/deployments/${DEPLOYMENT_ID}/cancel`,
+      ...(payload === undefined ? {} : { payload }),
+    });
+
+    expect(response.statusCode).toBe(202);
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
 });

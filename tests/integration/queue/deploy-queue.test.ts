@@ -339,6 +339,39 @@ describe('deploy body (H3)', () => {
 });
 
 // Runs last: it stops the Redis container.
+describe('cancel body (12-10 H3)', () => {
+  const cancel = (id: string, payload?: unknown) => call('POST', `/api/deployments/${id}/cancel`, payload);
+
+  async function queued(): Promise<{ serviceId: string; id: string }> {
+    const { serviceId } = await newService();
+    const response = await deploy(serviceId);
+    expect(response.statusCode).toBe(201);
+    return { serviceId, id: response.body.id as string };
+  }
+
+  it('rejects unknown fields with the named 422 and cancels nothing', async () => {
+    const { serviceId, id } = await queued();
+    const response = await cancel(id, { x: 1 });
+    expect(response.statusCode).toBe(422);
+    expect(response.body).toStrictEqual({ error: 'DEPLOYMENT_INPUT_INVALID', message: expect.any(String) });
+    expect((await rowsFor(serviceId))[0]?.status).toBe('QUEUED');
+  });
+
+  it('enforces the body cap with 413 and cancels nothing', async () => {
+    const { serviceId, id } = await queued();
+    const response = await cancel(id, { padding: 'x'.repeat(2048) });
+    expect(response.statusCode).toBe(413);
+    expect((await rowsFor(serviceId))[0]?.status).toBe('QUEUED');
+  });
+
+  it('still cancels with an empty object or no body', async () => {
+    const first = await queued();
+    expect((await cancel(first.id, {})).statusCode).toBe(202);
+    const second = await queued();
+    expect((await cancel(second.id)).statusCode).toBe(202);
+  });
+});
+
 describe('queue unavailable (H1)', () => {
   it('answers a named 503 and leaves no QUEUED deployment behind when Redis is down', async () => {
     const { serviceId } = await newService();
