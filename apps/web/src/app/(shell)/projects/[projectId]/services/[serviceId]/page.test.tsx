@@ -4,6 +4,7 @@ import { renderUi, screen, userEvent, waitFor } from '@noodara/ui/testing';
 import { subscribeProjectsChanged } from '../../../../../../components/ProjectNav';
 import type { DeploymentView, ServiceView } from '../../../../../../lib/deploy-api';
 import type { DeployEntityEvent } from '../../../../../../lib/server-events';
+import { DEPLOYMENT_ERROR_COPY } from '../../../../../../lib/deploy-error-copy';
 import { PROJECT_ARCHIVED_DEPLOY_COPY } from '../../../../../../lib/service-status-copy';
 import { ShellContext, type ShellContextValue } from '../../../../../../lib/shell-context';
 import ServicePage from './page';
@@ -26,6 +27,7 @@ const deployApi = vi.hoisted(() => ({
   redeployService: vi.fn(),
   runServiceOperation: vi.fn(),
   deleteService: vi.fn(),
+  getDeployment: vi.fn(),
 }));
 const apiClient = vi.hoisted(() => ({ apiGet: vi.fn() }));
 const saved = vi.hoisted((): { current: unknown } => ({ current: null }));
@@ -45,6 +47,7 @@ vi.mock('../../../../../../lib/deploy-api', () => ({
     deployApi.runServiceOperation(projectId, id, operation) as unknown,
   deleteService: (projectId: string, id: string, confirmName: string) =>
     deployApi.deleteService(projectId, id, confirmName) as unknown,
+  getDeployment: (id: string) => deployApi.getDeployment(id) as unknown,
 }));
 vi.mock('../../../../../../lib/api-client', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -166,6 +169,9 @@ function seed({ archivedAt = null as string | null, current = service(), deploym
   deployApi.getProject.mockImplementation(() => ok(project(archivedAt)));
   deployApi.getService.mockImplementation(() => ok(current));
   deployApi.listDeployments.mockImplementation(() => ok({ items: deployments, nextCursor: null }));
+  deployApi.getDeployment.mockImplementation((id: string) =>
+    ok(deployments.find((row) => row.id === id) ?? deployments[0]),
+  );
   apiClient.apiGet.mockImplementation(() => ok({ items: [{ id: SERVER_ID, name: 'edge-1' }] }));
 }
 
@@ -287,5 +293,66 @@ describe('Service page edit (13-12 A6)', () => {
     expect(changed).toHaveBeenCalled();
     expect(screen.queryByTestId('service-sheet')).not.toBeInTheDocument();
     unsubscribe();
+  });
+});
+
+function withSteps(row: DeploymentView, states: readonly string[], overrides: Partial<DeploymentView> = {}): DeploymentView {
+  const names = ['pull', 'build', 'start', 'verify'];
+  return {
+    ...row,
+    ...overrides,
+    steps: names.map((name, index) => ({
+      name,
+      state: states[index],
+      startedAt: null,
+      completedAt: null,
+      durationMs: states[index] === 'success' ? 1200 : null,
+    })),
+  } as DeploymentView;
+}
+
+describe('Service page deploy narration (13-13 A5, A3)', () => {
+  it('narrates the latest deployment and follows deployment.updated', async () => {
+    const building = withSteps(deployment('BUILDING'), ['success', 'skipped', 'running', 'pending']);
+    seed({ deployments: [building] });
+    renderPage();
+
+    const start = await screen.findByTestId('deployment-step-start');
+    expect(start).toHaveTextContent('Running');
+    expect(screen.getByTestId('deployment-step-pull')).toHaveTextContent('1.2s');
+
+    deployApi.getDeployment.mockImplementation(() =>
+      ok(withSteps(deployment('SUCCESS'), ['success', 'skipped', 'success', 'success'], { updatedAt: LATER })),
+    );
+    emit({
+      type: 'deployment.updated',
+      deployment: { id: DEPLOYMENT_ID, serviceId: SERVICE_ID, status: 'SUCCESS', errorCode: null, updatedAt: LATER },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('deployment-step-verify')).toHaveTextContent('Done');
+    });
+    expect(deployApi.getDeployment).toHaveBeenCalledWith(DEPLOYMENT_ID);
+  });
+
+  it('shows classified copy for a failed deployment, never its errorMessage', async () => {
+    const failed = withSteps(deployment('FAILED'), ['failed', 'pending', 'pending', 'pending'], {
+      errorCode: 'IMAGE_PULL_FAILED',
+      errorMessage: 'RAW-SERVER-MESSAGE pull access denied for registry.local/app',
+    });
+    seed({ deployments: [failed] });
+    renderPage();
+
+    expect(await screen.findByTestId('deployment-error')).toHaveTextContent(DEPLOYMENT_ERROR_COPY.IMAGE_PULL_FAILED.title);
+    expect(document.body.textContent).not.toContain('RAW-SERVER-MESSAGE');
+  });
+
+  it('shows no narration before the first deployment', async () => {
+    seed();
+    renderPage();
+    await screen.findByTestId('service-status-pill');
+
+    expect(screen.queryByTestId('deployment-steps')).toBeNull();
+    expect(deployApi.getDeployment).not.toHaveBeenCalled();
   });
 });

@@ -263,3 +263,7 @@ export function accountFieldErrors(failure: ApiFailure): Partial<Record<AccountF
 
   return result;
 }
+
+// 13-13: deployment errors have their own copy deck (title + recovery per DeploymentErrorCode);
+// re-exported here so this module stays the one entry point for user-facing error text.
+export { deploymentErrorCopy, type DeploymentErrorCopy } from './deploy-error-copy';

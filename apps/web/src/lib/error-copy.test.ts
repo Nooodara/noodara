@@ -312,3 +312,12 @@ describe('accountFieldErrors', () => {
     expect(ACCOUNT_GENERIC_ERROR).toBe('Something went wrong. Try again.');
   });
 });
+
+describe('deployment error copy (13-13)', () => {
+  it('is reachable from the app-wide error copy module and is the same source', async () => {
+    const deployCopy = await import('./deploy-error-copy');
+    const { deploymentErrorCopy } = await import('./error-copy');
+    expect(deploymentErrorCopy).toBe(deployCopy.deploymentErrorCopy);
+    expect(deploymentErrorCopy('BUILD_FAILED')).toBe(deployCopy.DEPLOYMENT_ERROR_COPY.BUILD_FAILED);
+  });
+});

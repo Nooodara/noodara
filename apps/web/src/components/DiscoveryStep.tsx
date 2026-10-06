@@ -11,6 +11,7 @@
 // it compiles to `@media (prefers-reduced-motion: no-preference)`, so it degrades to a static,
 // non-animated icon the instant the user's OS-level `prefers-reduced-motion` preference is on
 // (SS4.3/SS8).
+import type { ReactNode } from 'react';
 import { Check, Clock, Minus, TriangleAlert, X, type LucideIcon } from 'lucide-react';
 import type { DiscoveryCheckId } from '@noodara/domain/discovery';
 import { cn, Disclosure, type Tone } from '@noodara/ui';
@@ -109,24 +110,35 @@ export interface DiscoveryStepProps {
   readonly durationMs?: number | null;
 }
 
-export function DiscoveryStep({ stepId, label, state, checks, sshUser, durationMs = null }: DiscoveryStepProps) {
-  const tone = STATE_TONE[state];
-  const Icon = STATE_ICON[state];
-  const word = STATE_WORDS[state];
-  // UI-08/D-09: this row's own thread segment inks in (`scale-y-100`) once `buildChecklist` has
-  // already resolved it -- never a height animation (§9 #11), never a second progress
-  // computation. `isStepResolved` is the exact same function `DiscoverySection`'s own
-  // `completedFraction` sums over, imported rather than re-derived here.
-  const threadFilled = isStepResolved(state);
-  const consequenceLines = checks
-    .filter((check) => check.state === 'warning')
-    .map((check) => consequenceLineFor(check, sshUser))
-    .filter((line): line is string => line !== null);
+export interface StepRowProps {
+  /** The row's own test id (`discovery-step-<id>`, `deployment-step-<name>`). */
+  readonly testId: string;
+  /** Picks the icon, tone and pulse from the shared tables above. */
+  readonly visual: CheckState;
+  readonly label: string;
+  /** The status word; defaults to the discovery word for `visual`. */
+  readonly word?: string;
+  readonly durationMs?: number | null;
+  /** Whether this row's thread segment is inked in. */
+  readonly threadFilled: boolean;
+  readonly children?: ReactNode;
+}
+
+/**
+ * 13-13: the step row both timelines share (discovery checklist, deployment narration) -- the
+ * thread, icon, label, duration and status word. Extracted from DiscoveryStep so the deployment
+ * steps reuse it instead of a copy. The running pulse is `motion-safe:` only (reduced motion keeps
+ * the icon still).
+ */
+export function StepRow({ testId, visual, label, word = STATE_WORDS[visual], durationMs = null, threadFilled, children }: StepRowProps) {
+  const tone = STATE_TONE[visual];
+  const Icon = STATE_ICON[visual];
 
   return (
     <div
-      data-testid={`discovery-step-${stepId}`}
-      data-severity={state}
+      data-testid={testId}
+      data-severity={visual}
+      data-step-row="true"
       className="relative flex flex-col gap-1.5 border-b border-hairline py-3 last:border-b-0"
     >
       {/* Timeline thread (UI-08 D-09, 08-UI-SPEC.md §8.1): a 1px hairline track behind this row's
@@ -146,7 +158,7 @@ export function DiscoveryStep({ stepId, label, state, checks, sshUser, durationM
           aria-label={word}
           size={16}
           strokeWidth={1.5}
-          className={cn('shrink-0', TONE_TEXT_CLASSES[tone], state === 'running' && 'motion-safe:animate-pulse')}
+          className={cn('shrink-0', TONE_TEXT_CLASSES[tone], visual === 'running' && 'motion-safe:animate-pulse')}
         />
         <span className="flex-1 text-headline font-semibold text-ink">{label}</span>
         {durationMs === null ? null : (
@@ -160,6 +172,30 @@ export function DiscoveryStep({ stepId, label, state, checks, sshUser, durationM
         <span className={cn('text-caption', TONE_TEXT_CLASSES[tone])}>{word}</span>
       </div>
 
+      {children}
+    </div>
+  );
+}
+
+export function DiscoveryStep({ stepId, label, state, checks, sshUser, durationMs = null }: DiscoveryStepProps) {
+  // UI-08/D-09: this row's own thread segment inks in (`scale-y-100`) once `buildChecklist` has
+  // already resolved it -- never a height animation (§9 #11), never a second progress
+  // computation. `isStepResolved` is the exact same function `DiscoverySection`'s own
+  // `completedFraction` sums over, imported rather than re-derived here.
+  const threadFilled = isStepResolved(state);
+  const consequenceLines = checks
+    .filter((check) => check.state === 'warning')
+    .map((check) => consequenceLineFor(check, sshUser))
+    .filter((line): line is string => line !== null);
+
+  return (
+    <StepRow
+      testId={`discovery-step-${stepId}`}
+      visual={state}
+      label={label}
+      durationMs={durationMs}
+      threadFilled={threadFilled}
+    >
       {consequenceLines.map((line, index) => (
         <p key={`${stepId}-consequence-${String(index)}`} className="pl-6 text-caption text-status-warn">
           {line}
@@ -198,6 +234,6 @@ export function DiscoveryStep({ stepId, label, state, checks, sshUser, durationM
           </Disclosure>
         </div>
       ) : null}
-    </div>
+    </StepRow>
   );
 }

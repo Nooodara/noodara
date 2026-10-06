@@ -5,10 +5,13 @@
 // `service.deleted`, the history from `deployment.updated` (useDeploymentHistory); both refetch on
 // stream (re)open. Edit opens ServiceSheet (13-11) in edit mode; a save updates the view in place
 // and tells the sidebar through notifyProjectsChanged().
+// 13-13: the latest deployment is narrated step by step (DeploymentSteps), refetched with its
+// steps on that deployment's `deployment.updated`.
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Banner, EmptyState, InsetGroup, Notice, SkeletonRow } from '@noodara/ui';
 import { DeploymentHistory, useDeploymentHistory } from '../../../../../../components/DeploymentHistory';
+import { DeploymentSteps, useDeploymentSteps } from '../../../../../../components/DeploymentSteps';
 import {
   isRoutableId,
   notifyProjectsChanged,
@@ -58,6 +61,8 @@ export default function ServicePage() {
   const stream = useDeployStream();
   const { subscribeDeploy, registerResync } = stream;
   const history = useDeploymentHistory(serviceId, stream);
+  const latestRow = history.rows[0] ?? null;
+  const narrated = useDeploymentSteps(latestRow?.id ?? null, stream, latestRow);
   const [state, setState] = useState<PageState>(() => (routable ? { kind: 'loading' } : { kind: 'not-found' }));
   const [servers, setServers] = useState<readonly ServerView[]>([]);
   const [editOpen, setEditOpen] = useState(false);
@@ -208,6 +213,13 @@ export default function ServicePage() {
           />
         ) : null}
         <ServiceFacts service={service} serverName={serverName} now={now} />
+        {narrated === null ? null : (
+          <InsetGroup title="Latest deployment" data-testid="service-latest-deployment">
+            <div className="px-5 py-2">
+              <DeploymentSteps deployment={narrated} />
+            </div>
+          </InsetGroup>
+        )}
         <DeploymentHistory history={history} now={now} />
       </div>
       <ServiceSheet

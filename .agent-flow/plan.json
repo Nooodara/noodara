@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-06T23:09:20.487Z",
+  "updatedAt": "2026-10-06T23:25:42.969Z",
   "cursor": {
     "phase": "13",
-    "task": "13-13"
+    "task": "13-14"
   },
   "phases": [
     {
@@ -2616,14 +2616,16 @@
             "apps/web/src/lib/deploy-error-copy.ts",
             "apps/web/src/lib/deploy-error-copy.test.ts",
             "apps/web/src/lib/error-copy.ts",
-            "apps/web/src/lib/error-copy.test.ts"
+            "apps/web/src/lib/error-copy.test.ts",
+            "apps/web/src/app/(shell)/projects/[projectId]/services/[serviceId]/page.tsx",
+            "apps/web/src/app/(shell)/projects/[projectId]/services/[serviceId]/page.test.tsx"
           ],
           "wave": 6,
           "dependsOn": [
             "13-03",
             "13-12"
           ],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
@@ -2656,6 +2658,11 @@
               "id": "H1",
               "text": "Unknown or future error codes fall back to a generic classified copy with a safe recovery (never undefined, never the raw errorMessage), and sanitized last build log lines shown with an error are length-capped, rendered as text and pass through a client-side secret-pattern guard that masks canary secrets even if the server missed them.",
               "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "The service view renders DeploymentSteps for the latest or selected deployment and updates it live from deployment.updated",
+              "proof": "test"
             }
           ],
           "waives": [
@@ -2676,7 +2683,11 @@
             "apps/web/src/components/BuildLogPanel.test.tsx",
             "apps/web/src/components/RuntimeLogPanel.tsx",
             "apps/web/src/components/RuntimeLogPanel.test.tsx",
-            "apps/web/src/app/(shell)/layout.tsx"
+            "apps/web/src/app/(shell)/layout.tsx",
+            "apps/web/src/components/DeploymentHistory.tsx",
+            "apps/web/src/components/DeploymentHistory.test.tsx",
+            "apps/web/src/components/ServiceToolbar.tsx",
+            "apps/web/src/components/ServiceToolbar.test.tsx"
           ],
           "wave": 6,
           "dependsOn": [
@@ -2684,7 +2695,7 @@
             "13-08",
             "13-12"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -2726,6 +2737,11 @@
             {
               "id": "H3",
               "text": "Inspector selection comes from the route (deployment id in the URL), a deployment id outside the caller's scope or that no longer exists renders a not-found state without a thrown error or infinite loading, and the panel does not leak the previous deployment's text when the selection changes.",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "Selecting a deployment in the history opens its build logs in the inspector, and the service toolbar has a Logs action that opens runtime logs",
               "proof": "test"
             }
           ],
