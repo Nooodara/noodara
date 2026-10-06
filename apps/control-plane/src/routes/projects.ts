@@ -1,4 +1,5 @@
-// 12-07: the `/api/projects` and `/api/projects/:projectId/environments` routes. Same contract as
+// 12-07: the `/api/projects` and `/api/projects/:projectId/environments` routes (13-01 adds the
+// environment delete). Same contract as
 // `servers.ts`: each handler reads `request.actor`, calls one service and maps a `{ ok: false }`
 // result through `mapServiceCodeToStatus`/`toErrorBody`. Registered inside the guarded scope in
 // `api-scope.ts`, so the origin guard and `requireSession` run before any handler here, and an
@@ -12,6 +13,8 @@ import { ErrorBodySchema, mapServiceCodeToStatus, toErrorBody, ValidationErrorBo
 import {
   CreateEnvironmentBodySchema,
   CreateProjectBodySchema,
+  DeleteEnvironmentBodySchema,
+  DeleteEnvironmentResponseSchema,
   DeleteProjectBodySchema,
   DeleteProjectResponseSchema,
   EnvironmentParamsSchema,
@@ -309,6 +312,41 @@ const projectsRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         return;
       }
       await reply.send(result.environment);
+    },
+  });
+
+  // 13-01: only an empty environment, by its exact name. Another project's environment is a 404
+  // before the name is compared, so a 422 never confirms that an id exists elsewhere.
+  app.route({
+    method: 'DELETE',
+    url: '/api/projects/:projectId/environments/:environmentId',
+    bodyLimit: PROJECT_ROUTE_BODY_LIMIT_BYTES,
+    schema: {
+      params: EnvironmentParamsSchema,
+      body: DeleteEnvironmentBodySchema,
+      response: {
+        200: DeleteEnvironmentResponseSchema,
+        400: BadRequestSchema,
+        401: ErrorBodySchema,
+        404: ErrorBodySchema,
+        409: ErrorBodySchema,
+        422: ErrorBodySchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const services = await fastify.getProjectServices();
+      const result = await services.deleteEnvironment({
+        actor,
+        projectId: request.params.projectId,
+        environmentId: request.params.environmentId,
+        confirmName: request.body.confirmName,
+      });
+      if (!result.ok) {
+        await sendServiceError(reply, result.code, result.message);
+        return;
+      }
+      await reply.send({ ok: true as const, environmentId: result.environmentId });
     },
   });
 

@@ -730,6 +730,76 @@ export async function updateEnvironment(
   }
 }
 
+export interface DeleteEnvironmentInput {
+  readonly actor: ServiceActor;
+  readonly projectId: string;
+  readonly environmentId: string;
+  readonly confirmName: string;
+}
+
+export type DeleteEnvironmentFailureCode = 'NOT_FOUND' | 'DELETE_CONFIRMATION_MISMATCH' | 'ENVIRONMENT_NOT_EMPTY';
+
+export type DeleteEnvironmentResult =
+  | { readonly ok: true; readonly environmentId: string }
+  | { readonly ok: false; readonly code: DeleteEnvironmentFailureCode; readonly message: string };
+
+/**
+ * 13-01: deletes an empty environment whose exact name the caller repeated (strict `!==`, like the
+ * project delete). Scoped by both ids, so another project's environment reads as missing before
+ * the name is compared. The row is locked FOR UPDATE before services are counted: a service
+ * insert holds FOR KEY SHARE on it (createService's lookup and the FK check), so either that
+ * insert commits first and the count sees it (409), or it waits and then finds no row (404).
+ * The cascade on `services.environment_id` can therefore never remove a service here.
+ */
+export async function deleteEnvironment(
+  deps: ProjectServicesDeps,
+  input: DeleteEnvironmentInput,
+): Promise<DeleteEnvironmentResult> {
+  return deps.db.transaction(async (tx): Promise<DeleteEnvironmentResult> => {
+    const [current] = await tx
+      .select()
+      .from(environments)
+      .where(and(eq(environments.id, input.environmentId), eq(environments.projectId, input.projectId)))
+      .for('update');
+    if (!current) return environmentNotFound(input.environmentId);
+    if (input.confirmName !== current.name) {
+      return {
+        ok: false,
+        code: 'DELETE_CONFIRMATION_MISMATCH',
+        message: 'Confirmation name does not match the environment name',
+      };
+    }
+
+    const [serviceCount] = await tx
+      .select({ value: count() })
+      .from(services)
+      .where(eq(services.environmentId, current.id));
+    if ((serviceCount?.value ?? 0) > 0) {
+      return {
+        ok: false,
+        code: 'ENVIRONMENT_NOT_EMPTY',
+        message: "Delete this environment's services before deleting the environment",
+      };
+    }
+
+    const now = deps.now();
+    await writeActivityEvent(
+      tx,
+      {
+        ...actorFields(input.actor),
+        entityType: 'environment',
+        entityId: current.id,
+        action: 'environment.deleted',
+        outcome: 'success',
+        metadata: { projectId: current.projectId, name: current.name },
+      },
+      now,
+    );
+    await tx.delete(environments).where(eq(environments.id, current.id));
+    return { ok: true, environmentId: current.id };
+  });
+}
+
 // ---------------------------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------------------------
@@ -745,6 +815,7 @@ export interface ProjectServices {
   listEnvironments(projectId: string): Promise<EnvironmentView[] | null>;
   getEnvironment(projectId: string, environmentId: string): Promise<EnvironmentView | null>;
   updateEnvironment(input: UpdateEnvironmentInput): Promise<UpdateEnvironmentResult>;
+  deleteEnvironment(input: DeleteEnvironmentInput): Promise<DeleteEnvironmentResult>;
 }
 
 export function createProjectServices(deps: ProjectServicesDeps): ProjectServices {
@@ -759,5 +830,6 @@ export function createProjectServices(deps: ProjectServicesDeps): ProjectService
     listEnvironments: (projectId) => listEnvironments(deps, projectId),
     getEnvironment: (projectId, environmentId) => getEnvironment(deps, projectId, environmentId),
     updateEnvironment: (input) => updateEnvironment(deps, input),
+    deleteEnvironment: (input) => deleteEnvironment(deps, input),
   };
 }

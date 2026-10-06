@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   CreateEnvironmentBodySchema,
   CreateProjectBodySchema,
+  DeleteEnvironmentBodySchema,
+  DeleteEnvironmentResponseSchema,
   DeleteProjectBodySchema,
   EnvironmentParamsSchema,
   EnvironmentViewSchema,
@@ -45,6 +47,21 @@ describe('project request bodies', () => {
   it('requires confirmName as a string on delete, allowing an empty one to fail as a mismatch', () => {
     expect(DeleteProjectBodySchema.safeParse({}).success).toBe(false);
     expect(DeleteProjectBodySchema.safeParse({ confirmName: '' }).success).toBe(true);
+  });
+
+  it('requires exactly a string confirmName on environment delete (13-01)', () => {
+    expect(DeleteEnvironmentBodySchema.safeParse({ confirmName: 'production' }).success).toBe(true);
+    expect(DeleteEnvironmentBodySchema.safeParse({ confirmName: '' }).success).toBe(true);
+    expect(DeleteEnvironmentBodySchema.safeParse({}).success).toBe(false);
+    expect(DeleteEnvironmentBodySchema.safeParse({ name: 'production' }).success).toBe(false);
+    expect(DeleteEnvironmentBodySchema.safeParse({ confirmName: 42 }).success).toBe(false);
+    expect(DeleteEnvironmentBodySchema.safeParse({ confirmName: 'production', force: true }).success).toBe(false);
+    expect(DeleteEnvironmentBodySchema.safeParse({ confirmName: 'x'.repeat(1025) }).success).toBe(false);
+  });
+
+  it('describes an environment delete response with only ok and the environment id', () => {
+    expect(Object.keys(DeleteEnvironmentResponseSchema.shape).sort()).toEqual(['environmentId', 'ok']);
+    expect(DeleteEnvironmentResponseSchema.safeParse({ ok: true, environmentId: ENVIRONMENT_ID }).success).toBe(true);
   });
 
   it('accepts partial edits (emptiness is the domain validator job)', () => {

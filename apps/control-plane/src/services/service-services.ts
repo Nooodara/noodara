@@ -333,11 +333,14 @@ export async function createService(deps: ServiceServicesDeps, input: CreateServ
       // FOR SHARE: a concurrent project delete waits for this insert, never races past it.
       const [project] = await tx.select({ id: projects.id }).from(projects).where(eq(projects.id, input.projectId)).for('share');
       if (!project) return notFound('Project', input.projectId);
+      // FOR KEY SHARE (13-01): a concurrent environment delete (FOR UPDATE) either waits for this
+      // insert and then sees the service, or commits first and this lookup finds no row (404).
       const [environment] = await tx
         .select({ id: environments.id })
         .from(environments)
         .where(and(eq(environments.id, input.environmentId), eq(environments.projectId, project.id)))
-        .limit(1);
+        .limit(1)
+        .for('key share');
       if (!environment) return notFound('Environment', input.environmentId);
 
       const server = await lockServer(tx, fields.serverId);

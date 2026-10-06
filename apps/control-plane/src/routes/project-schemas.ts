@@ -53,6 +53,9 @@ export const UpdateEnvironmentBodySchema = z
 
 export type UpdateEnvironmentBody = z.infer<typeof UpdateEnvironmentBodySchema>;
 
+/** 13-01: same contract as the project delete; the exact environment name is compared server-side. */
+export const DeleteEnvironmentBodySchema = z.object({ confirmName: z.string().max(MAX_RAW_NAME_LENGTH) }).strict();
+
 export const ProjectViewSchema = z.object({
   id: z.uuid(),
   name: z.string(),
@@ -77,3 +80,5 @@ export const ListProjectsResponseSchema = z.object({ items: z.array(ProjectViewS
 export const ListEnvironmentsResponseSchema = z.object({ items: z.array(EnvironmentViewSchema) });
 
 export const DeleteProjectResponseSchema = z.object({ ok: z.literal(true), projectId: z.uuid() });
+
+export const DeleteEnvironmentResponseSchema = z.object({ ok: z.literal(true), environmentId: z.uuid() });

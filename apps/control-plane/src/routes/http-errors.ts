@@ -37,6 +37,7 @@ export type ServiceErrorCode =
   | 'ENVIRONMENT_NAME_TAKEN'
   | 'PROJECT_NOT_ARCHIVED'
   | 'DELETE_CONFIRMATION_MISMATCH'
+  | 'ENVIRONMENT_NOT_EMPTY'
   | 'SERVICE_INPUT_INVALID'
   | 'SERVICE_NAME_TAKEN'
   | 'PORT_IN_USE'
@@ -90,6 +91,8 @@ export const SERVICE_ERROR_STATUS = Object.freeze({
   ENVIRONMENT_NAME_TAKEN: 409,
   PROJECT_NOT_ARCHIVED: 422,
   DELETE_CONFIRMATION_MISMATCH: 422,
+  // 13-01: an environment that still has services is a state conflict; it is never cascaded.
+  ENVIRONMENT_NOT_EMPTY: 409,
   // 12-08: services. A domain validation failure is a named 422 carrying the validator's code as
   // `reason`; the server and port guards are 409 (the request is valid, the state is not).
   SERVICE_INPUT_INVALID: 422,
