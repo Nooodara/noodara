@@ -678,6 +678,24 @@ describe('createSsh2Adapter', () => {
       expect(releaseCalls()).toBe(1);
     });
 
+    it('releases once per attempt when session.close() is followed by the transport close, keeping an outer registration', async () => {
+      const client = new FakeClient();
+      client.connectImpl = acceptHandshakeThenReady(client);
+      const adapter = buildAdapter({ createClient: () => client });
+      const { redactor, releaseCalls } = countingRedactor();
+      const password = 'outer-holder-password-0123456789';
+      // An outer holder (e.g. a deployment run) registered the same value before connecting.
+      redactor.register(password, 'ssh_password');
+      const outcome = await adapter.connect(buildInput({ credential: passwordCredential(password), redactor }));
+      if (!outcome.ok) throw new Error('test setup: expected a successful connect');
+
+      await outcome.session.close();
+      client.emit('close');
+
+      expect(releaseCalls()).toBe(1);
+      expect(redactor.redact(password)).toBe('[REDACTED:ssh_password]');
+    });
+
     it('releases the revealed credential when the transport closes on its own, without an explicit session.close() (WR-02)', async () => {
       const client = new FakeClient();
       client.connectImpl = acceptHandshakeThenReady(client);

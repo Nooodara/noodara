@@ -98,6 +98,35 @@ describe('createRedactor', () => {
     expect(redactor.redact('has temp-secret in it')).toBe('has temp-secret in it');
   });
 
+  it('reference-counts registrations: a value registered twice stays redacted until released twice', () => {
+    const redactor = createRedactor();
+    redactor.register('shared-secret', 'api_key');
+    redactor.register('shared-secret', 'api_key');
+    redactor.release('shared-secret');
+    expect(redactor.redact('has shared-secret in it')).toBe('has [REDACTED:api_key] in it');
+    redactor.release('shared-secret');
+    expect(redactor.redact('has shared-secret in it')).toBe('has shared-secret in it');
+  });
+
+  it('a release with nothing registered is a no-op and never leaves a negative count behind', () => {
+    const redactor = createRedactor();
+    redactor.release('never-registered');
+    redactor.register('later-secret', 'api_key');
+    redactor.release('later-secret');
+    redactor.release('later-secret');
+    redactor.register('later-secret', 'api_key');
+    expect(redactor.redact('later-secret')).toBe('[REDACTED:api_key]');
+    redactor.release('later-secret');
+    expect(redactor.redact('later-secret')).toBe('later-secret');
+  });
+
+  it('a re-registration under a different type redacts with the latest type', () => {
+    const redactor = createRedactor();
+    redactor.register('typed-secret', 'api_key');
+    redactor.register('typed-secret', 'ssh_password');
+    expect(redactor.redact('typed-secret')).toBe('[REDACTED:ssh_password]');
+  });
+
   it('escapes regex metacharacters in a registered secret', () => {
     const redactor = createRedactor();
     const tricky = 'a.b*c+d?e(f)g[h]';

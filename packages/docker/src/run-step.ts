@@ -83,8 +83,8 @@ export async function runStep(
 
 /**
  * Registers each secret (and each line of a multi-line one) with the session's redactor before
- * the first step; the returned function releases them. One redactor per deployment: a concurrent
- * operation sharing it and the same secret would lose its registration on release.
+ * the first step; the returned function releases them. Registrations are reference-counted, so
+ * releasing here never drops an outer holder's registration of the same secret (the run's).
  */
 export function registerSecrets(redactor: Redactor, secrets: readonly SecretValue[]): () => void {
   const releases = secrets.map((secret) =>

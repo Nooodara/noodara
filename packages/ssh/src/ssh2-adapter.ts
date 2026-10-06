@@ -136,13 +136,18 @@ function revealCredential(credential: SshCredential, redactor: Redactor): Reveal
   return { rawPassword: revealSecret(credential.password, redactor) };
 }
 
+/** Attempts whose revealed values were already released (see `releaseRevealed`). */
+const releasedAttempts = new WeakSet<RevealedCredential>();
+
 /** Releases every raw value this package revealed for one connect attempt (WR-02) — called on
  *  every `attemptConnect` failure path and from `SshSession.close()`, so a `Redactor` shared
  *  across multiple `connect()`/discovery calls never accumulates credentials for the lifetime of
- *  the process. `Redactor.release` is a plain `Map.delete`, so calling this more than once for the
- *  same attempt (e.g. both the transport-level 'close' handler and an explicit `session.close()`)
- *  is always safe. */
+ *  the process. `Redactor` registrations are reference-counted, so this releases at most once per
+ *  attempt: a second call (e.g. both the transport-level 'close' handler and an explicit
+ *  `session.close()`) is a no-op instead of dropping another holder's registration. */
 function releaseRevealed(revealed: RevealedCredential, redactor: Redactor): void {
+  if (releasedAttempts.has(revealed)) return;
+  releasedAttempts.add(revealed);
   if (revealed.rawKey !== undefined) redactor.release(revealed.rawKey);
   if (revealed.rawPassphrase !== undefined) redactor.release(revealed.rawPassphrase);
   if (revealed.rawPassword !== undefined) redactor.release(revealed.rawPassword);
@@ -393,7 +398,7 @@ async function attemptConnect(
       sessionState.closed = true;
       // WR-02: covers both a pre-ready close (this attempt is failing) and a post-ready transport
       // death (the session dies without an explicit `session.close()` ever being called) — the
-      // one place both fates share. Idempotent with the release `SshSession.close()` also does.
+      // one place both fates share. A no-op after the release `SshSession.close()` already did.
       releaseRevealed(revealed, redactor);
       if (!settled) {
         settle({

@@ -4,9 +4,16 @@
 // stay isolated and a future request-scoped redactor is possible without a shared global.
 
 export interface Redactor {
-  /** Registers `value` (e.g. a decrypted credential) as sensitive under `type` for this redactor. */
+  /**
+   * Registers `value` (e.g. a decrypted credential) as sensitive under `type` for this redactor.
+   * Registrations are reference-counted: each `register` must be paired with exactly one `release`.
+   */
   register(value: string, type: string): void;
-  /** Removes `value` from the live registry, so a long-lived process does not accumulate secrets. */
+  /**
+   * Drops one registration of `value`; it stops being redacted only once every registration is
+   * released, so a nested holder (a clone inside a run) never unregisters an outer one. Releasing
+   * a value with no live registration is a no-op.
+   */
   release(value: string): void;
   /**
    * Replaces every registered value (exact, base64 and URL-encoded forms) and every structural
@@ -19,6 +26,7 @@ export interface Redactor {
 
 interface RegisteredSecret {
   type: string;
+  count: number;
 }
 
 interface MatcherSet {
@@ -64,11 +72,15 @@ export function createRedactor(): Redactor {
 
   function register(value: string, type: string): void {
     if (value.length === 0) return;
-    registry.set(value, { type });
+    const existing = registry.get(value);
+    registry.set(value, { type, count: (existing?.count ?? 0) + 1 });
   }
 
   function release(value: string): void {
-    registry.delete(value);
+    const existing = registry.get(value);
+    if (existing === undefined) return;
+    if (existing.count <= 1) registry.delete(value);
+    else existing.count -= 1;
   }
 
   // Rebuilt on every `redact()` call so a `register()`/`release()` in between is honoured

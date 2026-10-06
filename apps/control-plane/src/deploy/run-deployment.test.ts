@@ -702,6 +702,51 @@ describe('runDeployment: log sink and secrets (A6, SEC)', () => {
     expect(release).toHaveBeenCalledWith(token);
   });
 
+  it('per-run canary: a non-structural HTTPS token stays redacted in output emitted after the clone step', async () => {
+    // Plain hex: no structural pattern (ghp_, sk-, ...) masks it, only the run-level registration.
+    const token = randomBytes(24).toString('hex');
+    const h = harness({
+      leakySession: true,
+      credential: { kind: 'https_token', token: secretValue(token, 'api_key') },
+      scripts: { 'supervise:build': { stdout: `#4 RUN echo ${token}\n${token}\n` } },
+    });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('SUCCESS');
+    const buildText = h.sink.entries.filter((e) => e.phase === 'build').map((e) => e.text).join('');
+    expect(buildText).toContain('[REDACTED:api_key]');
+    expect(JSON.stringify(h.sink.entries)).not.toContain(token);
+    expect(JSON.stringify(outcome)).not.toContain(token);
+  });
+
+  it('per-run canary: a registry password stays registered after the pull step until the run ends', async () => {
+    const password = randomBytes(24).toString('hex');
+    const probes: string[] = [];
+    const h = harness({
+      source: IMAGE_SOURCE,
+      leakySession: true,
+      credential: {
+        kind: 'registry',
+        registry: {
+          host: unwrap(validateRegistryHost('registry.example.com:5000')),
+          username: unwrap(validateRegistryUsername('ci')),
+          password: secretValue(password, 'api_key'),
+        },
+      },
+    });
+    h.session.onStream = (key) => {
+      if (key === 'docker.create') probes.push(h.redactor.redact(`echo ${password}`));
+    };
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('SUCCESS');
+    expect(probes).toEqual(['echo [REDACTED:api_key]']);
+    // Released once the run ends.
+    expect(h.redactor.redact(password)).toBe(password);
+  });
+
   it('per-run canary: a deploy key and a registry password never reach argv or the sink', async () => {
     const key = `-----BEGIN OPENSSH PRIVATE KEY-----\n${randomBytes(48).toString('base64')}\n-----END OPENSSH PRIVATE KEY-----\n`;
     const h = harness({
