@@ -93,7 +93,7 @@ Detailed in `apps/site/content/docs/reference/error-codes.mdx`. Key codes for Ph
 
 ## Measured Defaults
 
-Fixtures: real `sshd+dockerd`. Phase 12 numbers below are **Ubuntu 24.04 on macOS arm64 Docker Desktop**; Phase 11 contract numbers cover 22.04 and 24.04. **Not yet run on a CI amd64 runner**: ADR 0008 open item 6 is pending, it requires a green GitHub amd64 CI run that does not exist yet.
+Fixtures: real `sshd+dockerd`. Phase 12 numbers below are **Ubuntu 24.04 on macOS arm64 Docker Desktop**; Phase 11 contract numbers cover 22.04 and 24.04. Also run on a GitHub amd64 runner (`ubuntu-latest`): ADR 0008 open item 6 is resolved by nightly run 37398385044.
 
 "Fresh" = re-run for 12-19 on 2026-10-05. "Test" = asserted by the named integration test (`tests/integration/deploy-engine/`). "Unit" = unit-tested only; default value not exercised end to end.
 
@@ -114,7 +114,14 @@ Fixtures: real `sshd+dockerd`. Phase 12 numbers below are **Ubuntu 24.04 on macO
 
 - **A1, 20 consecutive node-api deploys:** 20/20 SUCCESS; per-deploy trigger-to-terminal p50 4,036 ms, max 5,554 ms, far under the 1 h `NOODARA_DEPLOY_MAX_MS` default (test used 300 s). `docker system df` after: Images 3 (1 active), Containers 1, Local Volumes 0. Build Cache (9 records, 234.1 MB) grows and is excluded from the comparison (decision 2026-10-05, below).
 - **A2, 20 create, deploy, delete cycles:** 20/20 SUCCESS; deploy p50 4,033 ms, max 4,542 ms; full cycle p50 4,373 ms, max 4,897 ms. After each delete: container, network, image, workspace and rows gone. `df` Images/Containers/Local Volumes equal before and after (two settled checks, no prune); Build Cache excluded.
-- Nightly soak job exists; no green run is recorded yet, and none on 22.04 or amd64.
+- **Nightly soak, amd64 (`ubuntu-latest`), run 37398385044 (main @ ecd3ceb), `soak` job success; both versions 20/20 SUCCESS in A1 and A2** (from the `soak-report` artifact):
+
+| Ubuntu | A1 deploy p50 / max | A2 deploy p50 / max | A2 full cycle p50 / max |
+|---|---|---|---|
+| 22.04 | 5,524 / 7,546 ms | 5,018 / 5,022 ms | 5,883 / 5,957 ms |
+| 24.04 | 5,521 / 7,533 ms | 5,020 / 5,521 ms | 5,879 / 6,366 ms |
+
+  Not compared against the arm64 numbers above: different hardware and Docker.
 
 ## Build-Cache Decision (2026-10-05)
 

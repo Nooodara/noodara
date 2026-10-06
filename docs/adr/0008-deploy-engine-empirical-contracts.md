@@ -335,7 +335,7 @@ Remaining open items:
 | # | Item | Status |
 |---|---|---|
 | 5 | G3 detection reads help text; a future Docker CLI could change the `Usage:` line | Accepted risk: the contract test and captures fail on any change |
-| 6 | All measurements on macOS arm64 Docker Desktop; the amd64 `ubuntu-latest` CI run of these files is not cited here | Confirm one green `main`/nightly run of `tests/integration/deploy-engine` before Phase 12 |
+| 6 | All measurements on macOS arm64 Docker Desktop; the amd64 `ubuntu-latest` CI run of these files is not cited here | **Resolved (Phase 12).** Nightly run 37398385044 (workflow_dispatch, main @ ecd3ceb, repo Nooodara/noodara): `deploy-engine (22.04)` and `deploy-engine (24.04)` success, `soak` success. CI run 37402304940 (push, main @ cf5057e) is green except `e2e` (pre-existing `@rowmenu` flake, not deploy-engine); its integration job excludes `deploy-engine` (nightly-only) |
 | 7 | 11-06 saw one unexplained Testcontainers `Failed to build image` on 22.04 (re-run passed) | Watch in CI; no contract impact |
 | 8 | D-13 names `nginx:alpine`; the fixture pins `nginx:1.31-alpine@sha256:...` | Accept (tag readable, digest authoritative) |
 
@@ -369,7 +369,7 @@ retention and pruning belong to Phase 14 (D11/D12). Stall/timeout kills presumab
 
 ## Phase 12 Measurements
 
-Soak measured on Ubuntu 24.04 only (sshd+dockerd, macOS arm64 Docker Desktop); knob-level verification in `docs/deploy-engine.md`:
+Soak table below measured on Ubuntu 24.04 (sshd+dockerd, macOS arm64 Docker Desktop); the amd64 nightly soak (22.04 and 24.04) is in `docs/deploy-engine.md`; knob-level verification in `docs/deploy-engine.md`:
 
 | Measurement | Result | Test |
 |---|---|---|
@@ -389,5 +389,4 @@ Soak measured on Ubuntu 24.04 only (sshd+dockerd, macOS arm64 Docker Desktop); k
 
 **Open items:**
 
-Item 6 (amd64 CI run of tests/integration/deploy-engine) remains **pending, requires a green GitHub amd64 CI run that does not exist yet**. No contract changes anticipated from amd64 since all contract tests (G1–G4) passed on
-both Ubuntu 22.04 and 24.04 in Phase 11.
+Item 6 is **resolved**: green amd64 nightly run 37398385044 (main @ ecd3ceb) ran `deploy-engine` on 22.04 and 24.04 and the soak (numbers in `docs/deploy-engine.md`). The e2e failures in that run and in CI run 37402304940 are pre-existing (`@rowmenu` mobile test, reduced-motion flakes), outside deploy-engine.
