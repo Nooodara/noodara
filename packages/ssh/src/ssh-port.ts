@@ -86,7 +86,9 @@ export interface StreamChunk {
 }
 
 /** Every bound is mandatory (T-11-40). Closing the channel never stops the remote process (ADR
- *  0008 G2): a timeout or abort must be followed by `killSupervisedOperation`. */
+ *  0008 G2) while its output is still pending—e.g., `docker build` with streaming output exits
+ *  with EPIPE ~1s after channel close and BuildKit cancels the step; this was measured on Ubuntu 22.04.
+ *  A timeout or abort must still be followed by `killSupervisedOperation` (engine never relies on this). */
 export interface StreamOptions {
   /** Required when `command.stdin` is `'secret'`, rejected otherwise. Written once, then EOF. */
   readonly stdin?: SecretValue;

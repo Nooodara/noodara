@@ -135,8 +135,9 @@ Killing the `docker build` client is what cancels the step (dockerd cancels the 
 takes down the whole tree (research assumption A1 doubted it). D-04 still requires the combined
 sequence; signal is recorded as a working isolated candidate only.
 
-**Surprise:** closing the channel or the whole connection never kills the remote process. A kill
-primitive is mandatory for cancel and timeout.
+**Surprise:** closing the channel or the whole connection never kills the remote process while output is
+still pending (e.g., `docker build` dies of EPIPE ~1s after channel close, measured on Ubuntu 22.04).
+A kill primitive is mandatory for cancel and timeout; the engine never relies on channel close alone.
 
 ### Rejected alternatives
 
