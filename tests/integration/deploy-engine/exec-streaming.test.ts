@@ -102,10 +102,6 @@ function lastPaddingNumber(text: string): number {
   return last;
 }
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /** Live view of one stream: chunks plus the numbers this plan records. */
 interface Watched {
   readonly chunks: StreamChunk[];
@@ -179,7 +175,10 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       const result = await s().exec(argv);
       return result.stdout.trim();
     };
+    /** The RUN step is running: its `sh -c '... && sleep 300'` or the final `sleep 300` itself. */
     const sleepAlive = async (): Promise<boolean> => (await rootOut(['pgrep', '-f', 'sleep 300'])) !== '';
+    /** The RUN step reached its final, silent `sleep 300`: it has written all of its output. */
+    const buildQuiet = async (): Promise<boolean> => (await rootOut(['pgrep', '-x', '-f', 'sleep 300'])) !== '';
 
     const withWorkspace = async (body: (ws: DeployWorkspace) => Promise<void>): Promise<void> => {
       const ws = valid(deployWorkspaceFor(randomUUID()));
@@ -300,7 +299,12 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
             );
           }
           const cappedAt = Date.now();
-          await delay(2_000);
+          // Abort only once the remote is silent. Closing the channel does not signal the group,
+          // but a docker CLI that still has build output to print dies of EPIPE about 1 s after
+          // the close and BuildKit cancels the RUN step (measured in 12-19); aborting mid-output
+          // made the survival check below a race that load lost.
+          const quiet = await pollUntil(buildQuiet, 240_000);
+          expect(quiet, 'the RUN step never reached its final sleep').toBe(true);
           const abortedAt = Date.now();
           controller.abort();
           const result = record(await streaming);
@@ -328,6 +332,11 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
           );
           // The RUN header echoes the marker; only its output line (after the cap) must be absent.
           expect(watched.text()).not.toMatch(READY_OUTPUT_LINE);
+          // The CLI printed its last line before the close, so nothing is left to hit the closed
+          // pipe; a miss here means the CLI lagged the RUN step, not that the abort killed it.
+          expect(result.stderrTail + result.stdoutTail, 'docker CLI had not drained at abort').toMatch(
+            READY_OUTPUT_LINE,
+          );
           // ADR 0008 G2: closing the channel does not stop the remote build.
           expect(await sleepAlive()).toBe(true);
 
