@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { renderUi, screen } from '@noodara/ui/testing';
 import { TooltipProvider } from '@noodara/ui';
 import { ActivityList, type ActivityListState } from './ActivityList';
-import type { ActivityItem, ServerLookup } from '../lib/activity-copy';
+import type { ActivityItem, ActivityLookups, ServerLookup } from '../lib/activity-copy';
 
 const NOW = new Date('2026-03-15T12:00:00.000Z');
 const EVENT_AT = '2026-03-15T02:30:00.000Z'; // 2026-03-14T20:30 in America/Mexico_City (UTC-6)
@@ -179,5 +179,41 @@ describe('ActivityList -- day headers follow the viewer time zone prop, never a 
 
     expect(screen.getByText('YESTERDAY')).toBeInTheDocument();
     expect(screen.queryByText('TODAY')).not.toBeInTheDocument();
+  });
+});
+
+// 13-09 A5: the list forwards project/service lookups to every row; a hit links, a miss stays text.
+describe('ActivityList -- project and service lookups (13-09 A5)', () => {
+  const lookups: ActivityLookups = {
+    project: (id) => (id === 'proj-live' ? { name: 'Shop' } : null),
+    service: (id) => (id === 'svc-live' ? { name: 'api', projectId: 'proj-live' } : null),
+  };
+
+  it('links a project row to /projects/:id when the project lookup hits', () => {
+    const item = buildItem({ action: 'project.created', entityType: 'project', entityId: 'proj-live', metadata: { name: 'Shop' } });
+    renderUi(<ActivityList state={readyState(item)} now={NOW} lookupServer={notFoundLookup} lookups={lookups} timeZone="UTC" />);
+    expect(screen.getByRole('link', { name: 'Shop' })).toHaveAttribute('href', '/projects/proj-live');
+  });
+
+  it('links a service row to its project-scoped route when the service lookup hits', () => {
+    const item = buildItem({ action: 'service.created', entityType: 'service', entityId: 'svc-live', metadata: { name: 'api' } });
+    renderUi(<ActivityList state={readyState(item)} now={NOW} lookupServer={notFoundLookup} lookups={lookups} timeZone="UTC" />);
+    expect(screen.getByRole('link', { name: 'api' })).toHaveAttribute('href', '/projects/proj-live/services/svc-live');
+  });
+
+  it('keeps rows for deleted projects and services as plain text', () => {
+    const project = buildItem({ id: 'evt-p', action: 'project.created', entityType: 'project', entityId: 'proj-gone', metadata: { name: 'Old' } });
+    const service = buildItem({ id: 'evt-s', action: 'service.created', entityType: 'service', entityId: 'svc-gone', metadata: { name: 'worker' } });
+    renderUi(
+      <ActivityList state={readyStateItems([project, service])} now={NOW} lookupServer={notFoundLookup} lookups={lookups} timeZone="UTC" />,
+    );
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.getAllByTestId('activity-row')[0]).toHaveTextContent('Old');
+  });
+
+  it('renders project rows as plain text when no lookups are passed', () => {
+    const item = buildItem({ action: 'project.created', entityType: 'project', entityId: 'proj-live', metadata: { name: 'Shop' } });
+    renderUi(<ActivityList state={readyState(item)} now={NOW} lookupServer={notFoundLookup} timeZone="UTC" />);
+    expect(screen.queryByRole('link', { name: 'Shop' })).toBeNull();
   });
 });

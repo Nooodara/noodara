@@ -7,14 +7,16 @@
 // an event burst never becomes a request storm (05-CONTEXT.md's discretion note, D-14). Also
 // fetches the servers list once for `lookupServer`'s live-link resolution -- a row's server name
 // only links when that server still exists.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Toolbar } from '../../../components/Toolbar';
 import { ActivityList, type ActivityListState } from '../../../components/ActivityList';
 import { apiGet, type ApiErrorCode, type ServerView } from '../../../lib/api-client';
 import { copyForErrorCode } from '../../../lib/error-copy';
 import { requireSession } from '../../../lib/require-session';
 import { mergePage } from '../../../lib/activity-groups';
-import type { ActivityItem, ServerLookup } from '../../../lib/activity-copy';
+import type { ActivityItem, ActivityLookups, ServerLookup } from '../../../lib/activity-copy';
+import { listEnvironments, listProjects, listServices } from '../../../lib/deploy-api';
+import { loadProjectNavData, type ProjectNavData } from '../../../components/ProjectNav';
 import { useShellContext } from '../../../lib/shell-context';
 
 const PAGE_LIMIT = 50;
@@ -59,6 +61,27 @@ export default function ActivityPage() {
       }
     });
   }, []);
+
+  // 13-09 A5: project and service names for row links, best-effort like the servers list above --
+  // a failed read keeps every project/service row as plain text.
+  const [projectData, setProjectData] = useState<ProjectNavData | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void loadProjectNavData({ listProjects, listEnvironments, listServices }).then((data) => {
+      if (!cancelled && data !== null) setProjectData(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const lookups: ActivityLookups = useMemo(() => {
+    const projects = new Map((projectData?.projects ?? []).map((project) => [project.id, { name: project.name }]));
+    const services = new Map(
+      (projectData?.services ?? []).map((service) => [service.id, { name: service.name, projectId: service.projectId }]),
+    );
+    return { project: (id) => projects.get(id) ?? null, service: (id) => services.get(id) ?? null };
+  }, [projectData]);
 
   const lookupServer: ServerLookup = useCallback(
     (entityId) => {
@@ -233,7 +256,7 @@ export default function ActivityPage() {
     <>
       <Toolbar title="Activity" />
       <div className="mx-auto max-w-[1120px] p-8">
-        <ActivityList state={state} now={new Date()} lookupServer={lookupServer} />
+        <ActivityList state={state} now={new Date()} lookupServer={lookupServer} lookups={lookups} />
       </div>
     </>
   );

@@ -7,7 +7,7 @@ import { useRef } from 'react';
 import { Banner, Button, EmptyState, SkeletonRow } from '@noodara/ui';
 import { ActivityRow } from './ActivityRow';
 import { groupByDay } from '../lib/activity-groups';
-import type { ActivityItem, ServerLookup } from '../lib/activity-copy';
+import type { ActivityItem, ActivityLookups, ServerLookup } from '../lib/activity-copy';
 
 const SKELETON_ROW_COUNT = 10;
 
@@ -62,6 +62,8 @@ export interface ActivityListProps {
    *  `RelativeTime` (no platform clock read inside this component or its rows). */
   readonly now: Date;
   readonly lookupServer: ServerLookup;
+  /** Project and service lookups forwarded to every row (13-09 A5); rows without a hit stay text. */
+  readonly lookups?: ActivityLookups;
   /** The viewer's own time zone for day-header grouping (WR-B-06). Optional so tests can inject a
    *  fixed zone deterministically; defaults to the platform's own zone at runtime via
    *  `Intl.DateTimeFormat().resolvedOptions().timeZone` -- the one permitted platform-clock read
@@ -70,7 +72,7 @@ export interface ActivityListProps {
   readonly timeZone?: string;
 }
 
-export function ActivityList({ state, now, lookupServer, timeZone }: ActivityListProps) {
+export function ActivityList({ state, now, lookupServer, lookups, timeZone }: ActivityListProps) {
   // Diffed against the previous *distinct* items array (never re-keyed, never remounted -- the
   // merge-not-reset contract this screen already guarantees); on the very first ready render
   // there is nothing to diff against, so nothing enters (the initial load is not an arrival).
@@ -138,7 +140,14 @@ export function ActivityList({ state, now, lookupServer, timeZone }: ActivityLis
         <div key={group.label}>
           <div className="py-2 text-label uppercase tracking-wide text-ink-tertiary">{group.label}</div>
           {group.items.map((item) => (
-            <ActivityRow key={item.id} item={item} now={now} lookupServer={lookupServer} entering={enteringIds.has(item.id)} />
+            <ActivityRow
+              key={item.id}
+              item={item}
+              now={now}
+              lookupServer={lookupServer}
+              {...(lookups === undefined ? {} : { lookups })}
+              entering={enteringIds.has(item.id)}
+            />
           ))}
         </div>
       ))}

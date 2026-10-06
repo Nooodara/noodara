@@ -55,7 +55,9 @@ function sidebarLink(page: Page, name: string): Locator {
 // 08-08 (D-05): the old two-stop tail (theme toggle, then sign out) is now a single account-menu
 // trigger -- ThemeToggle and Sign out only enter the accessibility tree once that trigger is
 // activated (see the roving-focus case inside the menu, below).
-test('@shell pressing Tab from page load moves through the skip link, the three sidebar items, then the account menu trigger', async ({
+// 13-09: Projects sits between Servers and Activity; its disclosure toggle is a Tab stop only when
+// there is at least one project to expand (other specs may have created some on this stack).
+test('@shell pressing Tab from page load moves through the skip link, the sidebar items, then the account menu trigger', async ({
   page,
 }) => {
   await login(page);
@@ -67,6 +69,12 @@ test('@shell pressing Tab from page load moves through the skip link, the three 
   expect(await focusedAccessibleName(page)).toBe('Servers');
 
   await page.keyboard.press('Tab');
+  expect(await focusedAccessibleName(page)).toBe('Projects');
+
+  await page.keyboard.press('Tab');
+  if ((await focusedAccessibleName(page)) === 'Toggle Projects') {
+    await page.keyboard.press('Tab');
+  }
   expect(await focusedAccessibleName(page)).toBe('Activity');
 
   await page.keyboard.press('Tab');
@@ -79,10 +87,11 @@ test('@shell pressing Tab from page load moves through the skip link, the three 
 test('@shell every focused sidebar item shows a visible, non-zero focus outline', async ({ page }) => {
   await login(page);
 
-  for (let step = 0; step < 4; step += 1) {
+  // Tab to the Settings sidebar item; the stops before it vary with whether any project exists.
+  for (let step = 0; step < 8 && (await focusedAccessibleName(page)) !== 'Settings'; step += 1) {
     await page.keyboard.press('Tab');
   }
-  // 4th Tab stop is the Settings sidebar item (skip link, Servers, Activity, Settings).
+  expect(await focusedAccessibleName(page)).toBe('Settings');
   const outline = await page.evaluate(() => {
     const el = document.activeElement;
     if (el === null) return null;

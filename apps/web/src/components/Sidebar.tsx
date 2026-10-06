@@ -13,13 +13,34 @@
 // (G3 adjustment round 1, item 5, D-05 change) moved it out of `AccountMenu` too, into an
 // Appearance `InsetGroup` on `/settings` (`apps/web/src/components/SettingsGroups.tsx`) -- its
 // only mount left in the app.
+//
+// 13-09: Projects joins as the second peer, a live Project -> Environment -> Service tree built by
+// ProjectNav.ts. Services stay live from `service.updated` / `service.deleted` through the same
+// synced collection the service lists use; projects and environments come with each snapshot,
+// which refetches on stream (re)open, on the projects-changed bus, and once per unknown
+// environment. Deleting the service the user is viewing moves them to its project with a notice.
 import { History, Server, Settings } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { AccountMenu, cn, NavTree, type NavTreeItem } from '@noodara/ui';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AccountMenu, cn, NavTree, Notice, type NavTreeItem } from '@noodara/ui';
 import { Lockup, Logo } from '@noodara/ui';
 import { SignOutButton } from './SignOutButton';
 import { useSessionUser } from '../lib/session-user';
+import { useShellContext } from '../lib/shell-context';
+import { createSyncedCollection, serviceWriteFromEvent } from '../lib/deploy-store';
+import { listEnvironments, listProjects, listServices, type ServiceView } from '../lib/deploy-api';
+import type { DeployEntityEvent } from '../lib/server-events';
+import {
+  buildProjectNav,
+  EMPTY_PROJECT_NAV,
+  loadProjectNavData,
+  projectHref,
+  serviceRouteOf,
+  shareStructure,
+  subscribeProjectsChanged,
+  type ProjectNavData,
+} from './ProjectNav';
 
 export interface SidebarProps {
   readonly open: boolean;
@@ -29,11 +50,79 @@ export interface SidebarProps {
 // The three flat leaves NavTree renders today (D-07) -- unchanged labels/hrefs/icons from the
 // hand-written list this replaces. A future caller fills the same NavTree with real hierarchical
 // data purely by changing this array's shape, never by touching NavTree.tsx itself.
-const NAV_ITEMS: readonly NavTreeItem[] = [
-  { id: 'servers', label: 'Servers', href: '/servers', icon: Server },
-  { id: 'activity', label: 'Activity', href: '/activity', icon: History },
-  { id: 'settings', label: 'Settings', href: '/settings', icon: Settings },
-];
+const SERVERS_ITEM: NavTreeItem = { id: 'servers', label: 'Servers', href: '/servers', icon: Server };
+const ACTIVITY_ITEM: NavTreeItem = { id: 'activity', label: 'Activity', href: '/activity', icon: History };
+const SETTINGS_ITEM: NavTreeItem = { id: 'settings', label: 'Settings', href: '/settings', icon: Settings };
+
+const NO_EVENTS = (): (() => void) => () => undefined;
+
+/** The Projects item, kept live. Unchanged branches keep their identity (shareStructure), so
+ *  NavTree re-renders only the path to a changed node. */
+function useProjectNavTree(pathname: string | null, onActiveServiceDeleted: (projectId: string) => void): NavTreeItem {
+  const shell = useShellContext();
+  const subscribeDeploy = shell.subscribeDeploy ?? NO_EVENTS;
+  const { registerResync } = shell;
+  const [tree, setTree] = useState<NavTreeItem>(() => buildProjectNav(EMPTY_PROJECT_NAV));
+  const deletedRef = useRef(onActiveServiceDeleted);
+  const pathnameRef = useRef(pathname);
+  useEffect(() => {
+    deletedRef.current = onActiveServiceDeleted;
+    pathnameRef.current = pathname;
+  });
+
+  useEffect(() => {
+    let structure: ProjectNavData<ServiceView> = EMPTY_PROJECT_NAV as ProjectNavData<ServiceView>;
+    const requestedEnvironments = new Set<string>();
+    const publish = (services: readonly ServiceView[]): void => {
+      const next = buildProjectNav({ ...structure, services });
+      setTree((prev) => shareStructure(prev, next));
+    };
+    const collection = createSyncedCollection<ServiceView>({
+      load: async () => {
+        const data = await loadProjectNavData<ServiceView>({ listProjects, listEnvironments, listServices });
+        if (data === null) return null;
+        structure = data;
+        return data.services;
+      },
+      toWrite: (event) => serviceWriteFromEvent<ServiceView>(event),
+      onChange: (services) => {
+        publish(services);
+        // A service in an environment this snapshot did not have (created since): one refetch.
+        const known = new Set(structure.environments.map((environment) => environment.id));
+        const unknown = services.find(
+          (service) => !known.has(service.environmentId) && !requestedEnvironments.has(service.environmentId),
+        );
+        if (unknown !== undefined) {
+          requestedEnvironments.add(unknown.environmentId);
+          void collection.refetch();
+        }
+      },
+    });
+    const onEvent = (event: DeployEntityEvent): void => {
+      collection.handleEvent(event);
+      if (event.type === 'service.deleted') {
+        const route = serviceRouteOf(pathnameRef.current);
+        if (route !== null && route.serviceId === event.id) deletedRef.current(route.projectId);
+      }
+    };
+    const offEvents = subscribeDeploy(onEvent);
+    const offResync = registerResync(() => {
+      void collection.refetch();
+    });
+    const offProjects = subscribeProjectsChanged(() => {
+      void collection.refetch();
+    });
+    void collection.refetch();
+    return () => {
+      offEvents();
+      offResync();
+      offProjects();
+      collection.dispose();
+    };
+  }, [subscribeDeploy, registerResync]);
+
+  return tree;
+}
 // The brand slot (BRAND-02, D-04): the monogram alone in the 64px rail, the horizontal lockup in
 // the expanded sidebar, and NO mark at all in the below-900px bottom sheet -- the sheet is a
 // temporary navigation overlay, not the product's chrome. Both marks are always in the DOM and one
@@ -49,7 +138,14 @@ const BRAND_EXPANDED_CLASSES = 'mb-3 hidden h-11 items-center px-3 text-ink min-
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const sessionUser = useSessionUser();
+  const [serviceGone, setServiceGone] = useState(false);
+  const projectsItem = useProjectNavTree(pathname, (projectId) => {
+    setServiceGone(true);
+    router.replace(projectHref(projectId));
+  });
+  const items = useMemo(() => [SERVERS_ITEM, projectsItem, ACTIVITY_ITEM, SETTINGS_ITEM], [projectsItem]);
 
   return (
     <>
@@ -91,7 +187,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <div className={BRAND_EXPANDED_CLASSES}>
           <Lockup title="Noodara" height={20} data-testid="brand-lockup" />
         </div>
-        <NavTree items={NAV_ITEMS} activeHref={pathname} onNavigate={onClose} linkComponent={Link} />
+        <NavTree items={items} activeHref={pathname} onNavigate={onClose} linkComponent={Link} />
         <div className="mt-auto border-t border-hairline pt-1">
           <AccountMenu
             name={sessionUser?.name ?? ''}
@@ -102,6 +198,17 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           />
         </div>
       </nav>
+      {serviceGone ? (
+        <div className="fixed bottom-4 right-4 z-50 w-[min(22rem,calc(100vw-2rem))]">
+          <Notice
+            data-testid="sidebar-service-deleted"
+            message="This service was deleted. You are now viewing its project."
+            onDismiss={() => {
+              setServiceGone(false);
+            }}
+          />
+        </div>
+      ) : null}
     </>
   );
 }

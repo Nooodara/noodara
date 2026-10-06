@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-06T22:15:01.580Z",
+  "updatedAt": "2026-10-06T22:37:14.647Z",
   "cursor": {
     "phase": "13",
-    "task": "13-09"
+    "task": "13-10"
   },
   "phases": [
     {
@@ -2324,14 +2324,16 @@
             "packages/ui/src/NavTree.tsx",
             "packages/ui/src/NavTree.test.tsx",
             "tests/e2e/shell.spec.ts",
-            "apps/web/src/app/(shell)/activity/page.tsx"
+            "apps/web/src/app/(shell)/activity/page.tsx",
+            "apps/web/src/components/ActivityList.tsx",
+            "apps/web/src/components/ActivityList.test.tsx"
           ],
           "wave": 3,
           "dependsOn": [
             "13-05",
             "13-08"
           ],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
