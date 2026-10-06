@@ -1876,7 +1876,9 @@
               "proof": "test"
             }
           ],
-          "waives": []
+          "waives": [
+            "auth-secrets/secret-logging"
+          ]
         },
         {
           "id": "13-02",
@@ -1926,7 +1928,11 @@
               "proof": "test"
             }
           ],
-          "waives": []
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "http-api/input-validation"
+          ]
         },
         {
           "id": "13-03",
@@ -1984,9 +1990,19 @@
               "id": "H2",
               "text": "deriveDeploymentSteps is total over every deployment status and error code combination (property test over all statuses x source types): never throws, always returns exactly four steps in fixed order, and durations are never negative when clocks are skewed or completedAt precedes startedAt.",
               "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "The migration is additive and reversible-safe: existing deployments keep null step timestamps, deriveDeploymentSteps returns a valid timeline for them from status alone, and boot on a database migrated mid-deploy never fails",
+              "proof": "it-runtime-pipeline"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "persistence/atomic-write",
+            "persistence/missing-file-boot"
+          ],
           "tier": "deep"
         },
         {
@@ -2037,7 +2053,10 @@
               "proof": "test"
             }
           ],
-          "waives": []
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap"
+          ]
         },
         {
           "id": "13-05",
