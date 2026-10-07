@@ -2,7 +2,7 @@
 
 Fecha: 2026-10-07 · Commit: eb1de27 + working tree 14-13 (pasada 2) · Modo: screenshots + código
 Veredicto global: **FLAG** (sin BLOCK)
-Aprobación humana (A4): **pendiente**
+Aprobación humana (A4): **aprobada** por el usuario el 2026-10-07
 
 Alcance: lista de proyectos, proyecto y servicio, en light y dark, a 375 y 1280 px. Screenshots en este directorio, capturados con `NOODARA_UI_REVIEW_CAPTURE=1 pnpm exec playwright test tests/e2e/projects-dod.spec.ts -g "14-13"` (8/8 verde). `stress-*` usa un nombre de servicio y una URL de repo de 300 caracteres sin cortes.
 
