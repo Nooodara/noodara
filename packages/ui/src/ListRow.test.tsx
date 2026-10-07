@@ -134,8 +134,12 @@ describe('ListRow', () => {
 
     const primary = screen.getByText('Payments');
     const secondary = screen.getByText('Card processing, settlement');
-    expect(secondary.className).toMatch(/\bshrink-\[1000\]/);
-    expect(primary.className).not.toMatch(/\bshrink-\[/);
+    // A weighted shrink still takes a sub-pixel from the name (enough for an ellipsis): the name
+    // never shrinks, it is capped at the row width, and the description absorbs every missing pixel.
+    expect(primary.className).toMatch(/\bshrink-0\b/);
+    expect(primary.className).toMatch(/\bmax-w-full\b/);
+    expect(secondary.className).toMatch(/\bmin-w-0\b/);
+    expect(secondary.className).not.toMatch(/\bshrink-0\b/);
     expect(primary.className).toMatch(/\btruncate\b/);
     expect(secondary.className).toMatch(/\btruncate\b/);
   });

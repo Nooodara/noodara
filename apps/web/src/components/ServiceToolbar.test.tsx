@@ -158,7 +158,7 @@ async function openMenu(user: ReturnType<typeof userEvent.setup>) {
 /** jsdom has no layout: report the toolbar's width as a real browser at `width` px would. */
 function atWidth(width: number) {
   return vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
-    () => ({ width, height: 52, top: 0, left: 0, right: width, bottom: 52, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect,
+    () => ({ width, height: 52, top: 0, left: 0, right: width, bottom: 52, x: 0, y: 0, toJSON: () => ({}) }),
   );
 }
 
@@ -584,6 +584,15 @@ describe('ServiceToolbar layout at narrow widths (14-13 A1/H1)', () => {
     expect(screen.queryByTestId('service-deploy')).toBeNull();
   });
 
+  it('at 1280 px floors only a long title at 12ch, so a short name keeps the pill beside it', () => {
+    atWidth(1280);
+    const { rerender } = renderToolbar();
+    expect(screen.getByRole('heading', { level: 1 }).className).not.toMatch(/min-w-\[12ch\]/);
+
+    rerender({ service: service({ name: LONG_NAME }) });
+    expect(screen.getByRole('heading', { level: 1 }).className).toMatch(/min-w-\[12ch\]/);
+  });
+
   it('at 1280 px keeps Edit and Logs inline, out of the menu, on one row', async () => {
     atWidth(1280);
     const { user } = renderToolbar();
@@ -591,6 +600,8 @@ describe('ServiceToolbar layout at narrow widths (14-13 A1/H1)', () => {
     const toolbar = screen.getByTestId('service-toolbar');
     expect(toolbar).toHaveAttribute('data-layout', 'full');
     expect(toolbar.className).toMatch(/\bflex-nowrap\b/);
+    // A long title shrinks; the pill beside it never does (it would spill over Logs and Edit).
+    expect(screen.getByTestId('service-status-pill').parentElement?.className).toMatch(/\bshrink-0\b/);
     expect(screen.getByTestId('service-edit')).toBeInTheDocument();
     expect(screen.getByTestId('service-logs')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Billing/ })).toBeInTheDocument();

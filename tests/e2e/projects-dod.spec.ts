@@ -1075,11 +1075,24 @@ test.describe('@projects-dod Phase 13 screens', () => {
         const cells = await row.evaluate((el) => {
           const [name, description] = Array.from(el.querySelectorAll(':scope > a > span, :scope > button > span'));
           const cell = (node: Element | undefined) => ({ scroll: node?.scrollWidth ?? 0, client: node?.clientWidth ?? 0 });
-          return { name: cell(name), description: cell(description) };
+          // scrollWidth rounds: a sub-pixel squeeze still draws an ellipsis, so compare the text's own box.
+          const text = name?.firstElementChild?.getBoundingClientRect().width ?? Infinity;
+          return { name: cell(name), description: cell(description), nameText: text, nameBox: name?.getBoundingClientRect().width ?? 0 };
         });
         expect(cells.name.scroll, `[${theme}] name not truncated`).toBeLessThanOrEqual(cells.name.client);
+        expect(cells.nameText, `[${theme}] name not squeezed by a sub-pixel`).toBeLessThanOrEqual(cells.nameBox);
         expect(cells.description.scroll, `[${theme}] description truncated`).toBeGreaterThan(cells.description.client);
         await capture(page, `stress-projects-375-${theme}.png`, SHOTS_DIR_14);
+      }
+    });
+
+    test('the 375 px status row keeps the status word whole (the caption takes the leftover width)', async ({ page }) => {
+      await injectLongService(page);
+      for (const theme of THEMES) {
+        await openGitService(page, theme, 375);
+        const value = page.getByTestId('service-fact-status').locator('[data-mono]');
+        const lines = await value.evaluate((el) => el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight));
+        expect(lines, `[${theme}] status word wraps`).toBeLessThan(1.5);
       }
     });
 
@@ -1137,6 +1150,12 @@ test.describe('@projects-dod Phase 13 screens', () => {
           }
           await openGitService(page, theme, width);
           await noHorizontalScroll(page, `long service at ${String(width)} [${theme}]`);
+          // The long title must give way to the status pill, never push it over the actions.
+          const edges = await page.evaluate(() => ({
+            pill: document.querySelector('[data-testid="service-status-pill"]')?.getBoundingClientRect().right ?? Infinity,
+            title: document.querySelector('[data-testid="service-title"]')?.getBoundingClientRect().right ?? 0,
+          }));
+          expect(edges.pill, `pill inside the title block at ${String(width)} [${theme}]`).toBeLessThanOrEqual(edges.title + 0.5);
           if (width === 1280) await capture(page, `stress-service-1280-${theme}.png`, SHOTS_DIR_14);
         }
       }

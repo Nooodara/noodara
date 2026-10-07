@@ -100,4 +100,17 @@ describe('LabelValue', () => {
     expect(value.parentElement?.className).toMatch(/\bmin-w-0\b/);
     expect(value.className).toContain('[overflow-wrap:anywhere]');
   });
+
+  // 14-13 (review at 375 px): a caption sentence must give its width to the value, never squeeze a
+  // short status word ("Failed", "Never deployed") into breaking mid-word.
+  it('lets the caption take only the leftover width, so a short value never breaks mid-word', () => {
+    renderUi(<LabelValue label="Status" value="Never deployed" caption="This service has no deployments yet." data-testid="row" />);
+
+    const caption = screen.getByText('This service has no deployments yet.');
+    expect(caption.className).toMatch(/\bflex-1\b/);
+    expect(caption.className).toMatch(/\bmin-w-0\b/);
+    // The value still shrinks (min-w-0), but only once it alone overflows: the caption has no basis.
+    expect(caption.className).not.toMatch(/\bshrink-\[/);
+    expect(screen.getByText('Never deployed').className).toMatch(/\bmin-w-0\b/);
+  });
 });

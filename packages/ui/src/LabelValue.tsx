@@ -23,7 +23,9 @@ export interface LabelValueProps {
 // is a no-op visually until a caller switches to compact density.
 const ROOT_CLASSES = 'flex items-center justify-between gap-4 py-[var(--row-height-padding-y)]';
 const LABEL_CLASSES = 'shrink-0 text-caption text-ink-secondary';
-const CAPTION_CLASSES = 'text-caption text-ink-tertiary';
+// The caption takes only the width the value leaves (basis 0), so a sentence never squeezes a short
+// status word into breaking mid-word (14-13).
+const CAPTION_CLASSES = 'min-w-0 flex-1 text-caption text-ink-tertiary';
 
 // LabelValue (05-UI-SPEC.md SS2.5/SS2.7, skill SS4.6) -- a label/value row for the System/
 // Docker/Connection groups and the Settings screen. `mono` renders technical values (host,

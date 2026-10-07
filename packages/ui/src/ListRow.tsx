@@ -33,10 +33,11 @@ const ACTIVATION_CLASSES = cn(
   PRESS_CLASSES,
 );
 
-const PRIMARY_TEXT_CLASSES = 'truncate text-headline font-semibold text-ink';
-// 14-13 (A3): the secondary text shrinks first (flex-shrink is weighted by size, so a factor of
-// 1000 hands it nearly all the missing width): the name truncates only once the description is gone.
-const SECONDARY_CLASSES = 'shrink-[1000] truncate text-callout text-ink-secondary';
+// 14-13 (A3): the name never shrinks, it is only capped at the row width; the description absorbs
+// every missing pixel, so the name truncates only once the description is gone. (A weighted
+// flex-shrink still took a sub-pixel from the name, which is enough to draw an ellipsis.)
+const PRIMARY_TEXT_CLASSES = 'max-w-full shrink-0 truncate text-headline font-semibold text-ink';
+const SECONDARY_CLASSES = 'min-w-0 truncate text-callout text-ink-secondary';
 const TRAILING_CLASSES = 'flex shrink-0 items-center pr-4';
 
 // ListRow (skill SS4.4, 05-UI-SPEC.md Component Inventory, D-09) -- the hairline row (height from

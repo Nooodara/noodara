@@ -330,13 +330,16 @@ export function ServiceToolbar({
           <h1
             className={cn(
               'truncate font-semibold text-ink',
-              compact ? 'w-full min-w-0 text-title' : 'min-w-[12ch] text-display',
+              // Full: the 12ch floor only for names past 12 characters, so a short name is not
+              // stretched to 12ch with the pill drifting away from it.
+              compact ? 'w-full min-w-0 text-title' : cn('text-display', service.name.length > 12 && 'min-w-[12ch]'),
             )}
             title={service.name}
           >
             {service.name}
           </h1>
-          <div className="flex min-w-0 items-center gap-2">
+          {/* Full: shrink-0, or a long title's weighted shrink squeezes this wrapper and the pill spills over Logs. */}
+          <div className={cn('flex items-center gap-2', compact ? 'min-w-0' : 'shrink-0')}>
             <TonePill presentation={status} title={status.meaning} data-testid="service-status-pill" />
             {compact ? <StreamStatus connected={connected} /> : null}
           </div>
