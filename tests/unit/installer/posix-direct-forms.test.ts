@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { INSTALL_SH, posixInterpreters, runInstallerShell } from './sh-harness';
+import { INSTALL_SH, posixInterpreters, runInstallerShell } from './sh-harness.js';
 
 const meminfo = (content: string): string => {
   const file = path.join(mkdtempSync(path.join(tmpdir(), 'noodara-mem-')), 'meminfo');
@@ -12,7 +12,7 @@ const meminfo = (content: string): string => {
   return file;
 };
 
-describe.each(posixInterpreters())('install.sh direct POSIX forms (%s)', (interpreter) => {
+describe.each(posixInterpreters())('install.sh direct POSIX forms (%s)', (interpreter: string) => {
   it.each([
     ['MemTotal:        2097152 kB\n', '2048'],
     ['MemTotal:        1023 kB\n', '0'],
