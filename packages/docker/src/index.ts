@@ -4,6 +4,7 @@ export {
   ensureNetwork,
   inspectContainerState,
   listManagedContainers,
+  pruneBuilderCache,
   pullImage,
   removeContainer,
   removeImage,

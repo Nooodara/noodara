@@ -38,6 +38,7 @@ import {
   listManagedContainers,
   pullImage,
   removeContainer,
+  pruneBuilderCache,
   removeImage,
   removeNetwork,
   removeWorkspace,
@@ -603,6 +604,29 @@ describe('containers', () => {
     expect(session.argv('docker.image_remove')).toEqual(['docker', 'image', 'rm', '--', REGISTRY_IMAGE]);
   });
 
+  it('pruneBuilderCache runs the fixed age-based prune and never streams its output to the log', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor);
+    const chunks: unknown[] = [];
+
+    const result = await pruneBuilderCache({ ...context(session, redactor), onChunk: (c) => chunks.push(c) });
+
+    expect(result.ok).toBe(true);
+    expect(session.argv('docker.builder_prune')).toEqual(['docker', 'builder', 'prune', '--force', '--filter', 'until=168h']);
+    expect(chunks).toEqual([]);
+  });
+
+  it('pruneBuilderCache classifies a stopped daemon', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, {
+      'docker.builder_prune': { exitCode: 1, stderr: DAEMON_DOWN_STDERR },
+    });
+
+    const result = await pruneBuilderCache(context(session, redactor));
+
+    expect(result).toMatchObject({ ok: false, kind: 'failed' });
+  });
+
   it('classifies a stopped daemon on any container operation', async () => {
     const redactor = createRedactor();
     const session = new RecordingSession(redactor, {
@@ -845,6 +869,7 @@ describe('@noodara/docker package boundary', () => {
       'ensureNetwork',
       'inspectContainerState',
       'listManagedContainers',
+      'pruneBuilderCache',
       'pullImage',
       'removeContainer',
       'removeImage',

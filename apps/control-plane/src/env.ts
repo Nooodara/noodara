@@ -31,6 +31,7 @@ export const DEPLOY_ENV_KNOBS = [
   'NOODARA_RUNTIME_LOG_TAIL',
   'NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS',
   'NOODARA_DEPLOY_QUEUED_STALE_MS',
+  'NOODARA_BUILD_CACHE_PRUNE',
 ] as const;
 
 /**
@@ -85,6 +86,8 @@ export interface Env {
   NOODARA_RUNTIME_LOG_TAIL: number;
   NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS: number;
   NOODARA_DEPLOY_QUEUED_STALE_MS: number;
+  // 14-10 (D12): age-based BuildKit cache prune after a SUCCESS deploy; `off` issues no prune.
+  NOODARA_BUILD_CACHE_PRUNE: 'on' | 'off';
   PORT: number;
   LOG_LEVEL: string;
 }
@@ -110,6 +113,13 @@ function isValidBase64(value: string): boolean {
 
 function decodedByteLength(value: string): number {
   return Buffer.from(value, 'base64').length;
+}
+
+function parseOnOff(variable: string, value: string | undefined, fallback: 'on' | 'off', issues: EnvIssue[]): 'on' | 'off' {
+  if (value === undefined || value === '') return fallback;
+  if (value === 'on' || value === 'off') return value;
+  issues.push({ variable, requirement: `${variable} must be exactly "on" or "off"` });
+  return fallback;
 }
 
 function validateMasterKey(
@@ -476,6 +486,7 @@ export function parseEnv(source: EnvSource): EnvParseResult {
   // 14-08 (H1): a QUEUED deployment without a BullMQ job older than this ends ENQUEUE_FAILED. The
   // minimum stays far above the bounded enqueue timeout (deploy jobs run with attempts 1, so there
   // is no retry backoff); the maximum keeps a stuck service lock from lasting more than an hour.
+  const buildCachePrune = parseOnOff('NOODARA_BUILD_CACHE_PRUNE', source.NOODARA_BUILD_CACHE_PRUNE, 'on', issues);
   const deployQueuedStaleMs = parseTuningInt(
     'NOODARA_DEPLOY_QUEUED_STALE_MS',
     source.NOODARA_DEPLOY_QUEUED_STALE_MS,
@@ -532,6 +543,7 @@ export function parseEnv(source: EnvSource): EnvParseResult {
       NOODARA_RUNTIME_LOG_TAIL: runtimeLogTail,
       NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS: runtimeLogFollowMaxMs,
       NOODARA_DEPLOY_QUEUED_STALE_MS: deployQueuedStaleMs,
+      NOODARA_BUILD_CACHE_PRUNE: buildCachePrune,
       PORT: port,
       LOG_LEVEL: logLevel,
     },

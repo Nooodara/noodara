@@ -493,8 +493,31 @@ describe('deploy engine knobs (Phase 12, D15/D16/D8)', () => {
     return result.issues;
   }
 
-  it('declares exactly the eleven deploy knobs', () => {
-    expect([...DEPLOY_ENV_KNOBS].sort()).toEqual(Object.keys(DEFAULTS).sort());
+  it('declares exactly the twelve deploy knobs', () => {
+    expect([...DEPLOY_ENV_KNOBS].sort()).toEqual([...Object.keys(DEFAULTS), 'NOODARA_BUILD_CACHE_PRUNE'].sort());
+  });
+
+  // 14-10 (H1): a closed on|off switch; anything else fails boot against its own name.
+  describe('NOODARA_BUILD_CACHE_PRUNE', () => {
+    it('defaults to on', () => {
+      const result = parseEnv(validSource({}));
+
+      expect(result.ok && result.value.NOODARA_BUILD_CACHE_PRUNE).toBe('on');
+    });
+
+    it.each(['on', 'off'])('accepts %s', (value) => {
+      const result = parseEnv(validSource({ NOODARA_BUILD_CACHE_PRUNE: value }));
+
+      expect(result.ok && result.value.NOODARA_BUILD_CACHE_PRUNE).toBe(value);
+    });
+
+    it.each(['ON', 'true', '1', 'yes', ' off', 'off '])('rejects %j with a named requirement', (value) => {
+      const issues = issuesFor({ NOODARA_BUILD_CACHE_PRUNE: value });
+
+      expect(issues).toEqual([
+        { variable: 'NOODARA_BUILD_CACHE_PRUNE', requirement: 'NOODARA_BUILD_CACHE_PRUNE must be exactly "on" or "off"' },
+      ]);
+    });
   });
 
   it('applies every research default when unset', () => {

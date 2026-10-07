@@ -48,6 +48,7 @@ const EXPECTED_DEPLOY_COMMAND_NAMES: readonly DeployCommandName[] = [
   "docker.logs",
   "docker.ps",
   "docker.kill",
+  "docker.builder_prune",
 ];
 
 // ADR 0008 text, copied by hand. G1: secret file and workspace; G2: launcher and group kill.
@@ -72,9 +73,9 @@ const ALLOWED_PARAMETERS = new Set([
 ]);
 
 describe("DEPLOY_COMMAND_NAMES", () => {
-  it("is exactly the 28 expected names, in order", () => {
+  it("is exactly the 29 expected names, in order", () => {
     expect(DEPLOY_COMMAND_NAMES).toEqual(EXPECTED_DEPLOY_COMMAND_NAMES);
-    expect(DEPLOY_COMMAND_NAMES).toHaveLength(28);
+    expect(DEPLOY_COMMAND_NAMES).toHaveLength(29);
   });
 
   it("is frozen", () => {

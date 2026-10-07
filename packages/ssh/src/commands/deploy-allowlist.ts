@@ -30,6 +30,7 @@ export const DEPLOY_COMMAND_NAMES = Object.freeze([
   'docker.logs',
   'docker.ps',
   'docker.kill',
+  'docker.builder_prune',
 ] as const);
 
 export type DeployCommandName = (typeof DEPLOY_COMMAND_NAMES)[number];

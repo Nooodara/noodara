@@ -44,6 +44,7 @@ import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../helpers/redis.js';
 
 type DeploymentStoreModule = typeof import('../../../apps/control-plane/src/deploy/deployment-store.js');
+type BuildCachePruneModule = typeof import('../../../apps/control-plane/src/deploy/build-cache-prune.js');
 type DeployRuntimeModule = typeof import('../../../apps/control-plane/src/deploy/deploy-runtime.js');
 type DeployWorkerModule = typeof import('../../../apps/control-plane/src/deploy/deploy-worker.js');
 type DeploymentServicesModule = typeof import('../../../apps/control-plane/src/services/deployment-services.js');
@@ -133,6 +134,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     let redis: RedisFixture | undefined;
     let queueConnection: Redis | undefined;
     let workerConnection: Redis | undefined;
+    let pruneConnection: Redis | undefined;
+    let buildCachePrune: BuildCachePruneModule;
     let worker: { close(): Promise<void> } | undefined;
     let queue: { close(): Promise<void> } | undefined;
     let tempRoot: string | undefined;
@@ -331,6 +334,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       process.env.REDIS_URL = redis.connectionUrl;
       process.env.NOODARA_PUBLIC_URL = 'http://localhost:3000';
 
+      buildCachePrune = await import('../../../apps/control-plane/src/deploy/build-cache-prune.js');
       const runtime: DeployRuntimeModule = await import('../../../apps/control-plane/src/deploy/deploy-runtime.js');
       const workerModule: DeployWorkerModule = await import('../../../apps/control-plane/src/deploy/deploy-worker.js');
       const deploymentServices: DeploymentServicesModule = await import(
@@ -406,6 +410,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         warn: (fields: Record<string, unknown>, message: string) => logged.push({ level: 'warn', fields, message }),
         error: (fields: Record<string, unknown>, message: string) => logged.push({ level: 'error', fields, message }),
       };
+      pruneConnection = new Redis(redis.connectionUrl, { maxRetriesPerRequest: null });
+      const pruneRedis = buildCachePrune.buildCachePruneRedisFrom(pruneConnection);
       const baseDeps = runtime.createDeployJobDeps({
         db: db(),
         events: recordingEvents,
@@ -414,6 +420,18 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         masterKeys: () => Promise.resolve({ current: masterKey }),
         panelPorts: [],
         config: { deployMaxMs: DEPLOY_MAX_MS, idleMs: 120_000, logMaxBytes: 1_048_576, logLineMaxBytes: 16_384 },
+        // 14-10: the same wiring as src/worker.ts; the wrapper counts how often the key was taken.
+        buildCachePrune: {
+          mode: 'on',
+          redis: {
+            setNxEx: async (key, ttlSeconds) => {
+              const taken = await pruneRedis.setNxEx(key, ttlSeconds);
+              if (taken) pruneKeysTaken.push(key);
+              return taken;
+            },
+            del: (key) => pruneRedis.del(key),
+          },
+        },
         logger,
       });
       const defaultHandler = workerModule.createDeployJobHandler(baseDeps);
@@ -454,6 +472,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       await worker?.close();
       await queue?.close();
       workerConnection?.disconnect();
+      pruneConnection?.disconnect();
       queueConnection?.disconnect();
       await redis?.stop();
       await postgres?.stop();
@@ -462,6 +481,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     }, STACK_TIMEOUT_MS);
 
     let appServiceId = '';
+    const pruneKeysTaken: string[] = [];
     let secondContainerId = '';
     let secondImage = '';
 
@@ -535,6 +555,19 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       expect(await containerImageLayers(container)).toEqual(await layersOf(['docker', 'image', 'inspect', secondImage]));
       expectStatusPath(second.id, ['BUILDING', 'DEPLOYING', 'SUCCESS']);
       await expectWorkspaceGone(second.id);
+    }, CASE_TIMEOUT_MS);
+
+    it('14-10 A3: the build cache prune ran once for two consecutive deployments and left the running container and its image', async () => {
+      // The first test deployed twice on one server: SET NX admitted exactly one prune.
+      expect(pruneKeysTaken).toEqual([buildCachePrune.buildCachePruneKey(serverId)]);
+      const ttl = await queueConnection?.ttl(buildCachePrune.buildCachePruneKey(serverId));
+      expect(ttl ?? 0).toBeGreaterThan(0);
+      expect(ttl ?? 0).toBeLessThanOrEqual(86_400);
+      const container = `noodara-${appServiceId}`;
+      expect(await inspectContainer(container, '{{.State.Running}}')).toBe('true');
+      expect(await imageExists(secondImage)).toBe(true);
+      // Output (cache ids) never reaches the deployment logs or the process logger.
+      expect(JSON.stringify(logged)).not.toMatch(/Total reclaimed space|\bdeleted\b/i);
     }, CASE_TIMEOUT_MS);
 
     it('A4/A5: a failing build ends FAILED/BUILD_FAILED, the previous container keeps running and the partial image is removed', async () => {

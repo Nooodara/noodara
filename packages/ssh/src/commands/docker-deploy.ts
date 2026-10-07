@@ -326,3 +326,19 @@ export function dockerKill(
 ): RemoteCommand {
   return command("docker.kill", ["docker", "kill", "--", target]);
 }
+
+/**
+ * 14-10 (D12): age-based BuildKit cache prune. Fixed argv, host-wide (the cache is shared by every
+ * build on the server), never `--all`: images in use are untouched, only dangling cache older than
+ * a week goes. No parameters, so no caller string reaches the command.
+ */
+export function dockerBuilderPrune(): RemoteCommand {
+  return command("docker.builder_prune", [
+    "docker",
+    "builder",
+    "prune",
+    "--force",
+    "--filter",
+    "until=168h",
+  ]);
+}

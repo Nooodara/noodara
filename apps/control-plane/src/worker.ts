@@ -7,6 +7,7 @@ import './env.js';
 import { hostname } from 'node:os';
 import { createSsh2Adapter } from '@noodara/ssh';
 import { getDb } from './db/client.js';
+import { buildCachePruneRedisFrom } from './deploy/build-cache-prune.js';
 import { cancelFlagRedisFrom, createDeployCancelFlags, watchDeployCancel } from './deploy/cancel-flag.js';
 import { createDeployJobDeps, createServiceOperationJobDeps, startDeployWorker } from './deploy/deploy-runtime.js';
 import { sweepCrashedDeployments } from './deploy/deploy-sweep.js';
@@ -110,6 +111,7 @@ async function main(): Promise<void> {
       logMaxBytes: env.NOODARA_DEPLOY_LOG_MAX_BYTES,
       logLineMaxBytes: DEPLOY_LOG_LINE_MAX_BYTES,
     },
+    buildCachePrune: { mode: env.NOODARA_BUILD_CACHE_PRUNE, redis: buildCachePruneRedisFrom(queueConnection) },
     logger,
   });
   // 12-13 (A2): the API raises a cancel flag on the queue connection; each job watches its own.

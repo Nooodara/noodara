@@ -28,6 +28,7 @@ import {
 import {
   classifyDockerError,
   dockerBuild,
+  dockerBuilderPrune,
   dockerCreate,
   dockerImageRemove,
   dockerInspectState,
@@ -355,4 +356,13 @@ export function removeWorkspace(
   input: { readonly workspace: DeployWorkspace },
 ): Promise<StepResult<DeployWorkspace>> {
   return single(context, 'remove', removeDeployDir(input.workspace), input.workspace);
+}
+
+/**
+ * 14-10 (D12): host-wide age-based BuildKit cache prune. The output can list cache ids, so it is
+ * never forwarded to `onChunk` (the deployment log); only the classified failure is returned.
+ */
+export function pruneBuilderCache(context: DockerStepContext): Promise<StepResult<null>> {
+  const { onChunk: _discarded, ...quiet } = context;
+  return single(quiet, 'remove', dockerBuilderPrune(), null);
 }

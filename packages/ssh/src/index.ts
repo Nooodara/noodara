@@ -51,6 +51,7 @@ export {
   ASKPASS_SCRIPT_CONTENT,
   DEPLOY_COMMAND_NAMES,
   dockerBuild,
+  dockerBuilderPrune,
   dockerCreate,
   dockerImageRemove,
   dockerInspectState,

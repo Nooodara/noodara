@@ -32,6 +32,7 @@ import {
   dockerCreate,
   dockerImageRemove,
   dockerInspectState,
+  dockerBuilderPrune,
   dockerKill,
   dockerLogin,
   dockerLogout,
@@ -347,6 +348,22 @@ describe('dockerLogs', () => {
   });
 });
 
+describe('dockerBuilderPrune (14-10, D12)', () => {
+  it('is the fixed age-based prune: forced, until=168h, no free strings, no --all', () => {
+    const command = dockerBuilderPrune();
+
+    expect(command.name).toBe('docker.builder_prune');
+    expect(command.argv).toEqual(['docker', 'builder', 'prune', '--force', '--filter', 'until=168h']);
+    expect(command.argv).not.toContain('--all');
+    expect(command.stdin).toBe('none');
+    expect(command.supervisable).toBe(false);
+  });
+
+  it('takes no arguments, so no caller string can reach the command', () => {
+    expect(dockerBuilderPrune.length).toBe(0);
+  });
+});
+
 describe('dockerPs', () => {
   // ADR 0008 G4, verbatim.
   const ADR_0008_G4 =
@@ -408,6 +425,7 @@ function everyDockerCommand(values: {
     dockerLogs({ container: v.container, tail: 100, follow: true }),
     dockerPs(),
     dockerKill(v.container),
+    dockerBuilderPrune(),
   ];
 }
 
