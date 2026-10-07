@@ -43,6 +43,10 @@ export const domainSourceAliases: AliasOptions = [
     replacement: fileURLToPath(new URL('./packages/domain/src/deployment/index.ts', import.meta.url)),
   },
   {
+    find: '@noodara/domain/api-contract',
+    replacement: fileURLToPath(new URL('./packages/domain/src/api-contract/index.ts', import.meta.url)),
+  },
+  {
     find: /^@noodara\/domain$/,
     replacement: fileURLToPath(new URL('./packages/domain/src/index.ts', import.meta.url)),
   },
