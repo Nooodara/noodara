@@ -955,14 +955,62 @@ noodara_env_append_if_missing() {
   fi
 }
 
-# Copies `path` to `<path>.bak-<YYYYmmddHHMMSS>` and chmods the copy 600 -- written before any
-# mutation of an existing .env (D-11).
+# Copies `path` to `<path>.bak-<YYYYmmddHHMMSS>` (mode 600 from creation: umask 077 copy to a temp
+# file, then rename) -- written before any mutation of an existing .env (D-11). A same-second
+# name collision waits for the next second instead of overwriting. Afterwards older backups are
+# pruned (best effort, never fatal).
 noodara_backup_env() {
   path="$1"
   backup_path="${path}.bak-$(date +%Y%m%d%H%M%S)"
-  cp "$path" "$backup_path"
-  chmod 600 "$backup_path"
+  backup_tries=0
+  while [ -e "$backup_path" ] || [ -L "$backup_path" ]; do
+    backup_tries=$((backup_tries + 1))
+    if [ "$backup_tries" -gt 5 ]; then
+      noodara_fail env-write-failed "Failed to back up $path."
+    fi
+    sleep 1
+    backup_path="${path}.bak-$(date +%Y%m%d%H%M%S)"
+  done
+  backup_tmp="${path}.bak-tmp.$$"
+  if ! (umask 077; cp "$path" "$backup_tmp") || ! chmod 600 "$backup_tmp" || ! mv "$backup_tmp" "$backup_path"; then
+    rm -f -- "$backup_tmp"
+    noodara_fail env-write-failed "Failed to back up $path."
+  fi
+  noodara_prune_env_backups "$path" "$backup_path" || true
   printf '%s\n' "$backup_path"
+}
+
+# Keeps the newest N (NOODARA_ENV_BACKUPS_KEEP, default 5) regular-file backups named exactly
+# `<path>.bak-<14 digits>` and removes the older ones. Ordering is by the timestamp in the name,
+# never mtime. Symlinks, directories and any other name are left alone; `keep_path` (the backup
+# just written) is never removed. Invalid N falls back to 5 with a warning. Never fails the caller.
+noodara_prune_env_backups() {
+  prune_path="$1"
+  prune_keep_path="${2:-}"
+  prune_keep="${NOODARA_ENV_BACKUPS_KEEP:-5}"
+  case "$prune_keep" in
+    '' | *[!0-9]* | 0 | 0[0-9]* | [0-9][0-9][0-9][0-9][0-9][0-9][0-9]*)
+      printf '%s\n' "NOODARA_ENV_BACKUPS_KEEP must be a positive integer; using 5." >&2
+      prune_keep=5
+      ;;
+  esac
+  prune_list=""
+  for prune_file in "$prune_path".bak-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]; do
+    if [ -L "$prune_file" ] || [ ! -f "$prune_file" ]; then
+      continue
+    fi
+    prune_list="${prune_list}${prune_file}
+"
+  done
+  [ -n "$prune_list" ] || return 0
+  prune_old="$(printf '%s' "$prune_list" | sort -r | tail -n +"$((prune_keep + 1))")" || return 0
+  [ -n "$prune_old" ] || return 0
+  printf '%s\n' "$prune_old" | while IFS= read -r prune_file; do
+    if [ "$prune_file" != "$prune_keep_path" ]; then
+      rm -f -- "$prune_file" || true
+    fi
+  done
+  return 0
 }
 
 # Rewrites the single line anchored on "^<key>=" to "<key>=<value>", leaving every other line
