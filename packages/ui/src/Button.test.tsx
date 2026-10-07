@@ -107,4 +107,24 @@ describe('Button', () => {
       expect(button.className).toContain(token);
     }
   });
+
+
+  // 14-13 (H1): a 32 px button can still offer a 44 px touch target through an invisible,
+  // centered hit area (a pseudo-element of the button itself, so taps on it hit the button).
+  it('extends its touch target to 44 px with hitArea, without changing its drawn size', () => {
+    const { getByRole } = renderUi(<Button hitArea>Copy</Button>);
+    const button = getByRole('button', { name: 'Copy' });
+
+    expect(button).toHaveAttribute('data-hit-area', '44');
+    expect(button.className).toMatch(/\bh-8\b/);
+    expect(button.className).toMatch(/\brelative\b/);
+    expect(button.className).toContain('after:h-11');
+    expect(button.className).toContain('after:min-w-11');
+  });
+
+  it('has no hit-area extension by default', () => {
+    const { getByRole } = renderUi(<Button>Go</Button>);
+
+    expect(getByRole('button', { name: 'Go' })).not.toHaveAttribute('data-hit-area');
+  });
 });

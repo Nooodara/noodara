@@ -125,4 +125,18 @@ describe('ListRow', () => {
       expect(button.className).toContain(token);
     }
   });
+
+
+  // 14-13 (A3): at 375 px the secondary text (a description) gives up its width before the
+  // primary text (a name) starts to truncate.
+  it('shrinks the secondary text before the primary text', () => {
+    renderUi(<ListRow href="/projects/1" primaryText="Payments" secondary="Card processing, settlement" />);
+
+    const primary = screen.getByText('Payments');
+    const secondary = screen.getByText('Card processing, settlement');
+    expect(secondary.className).toMatch(/\bshrink-\[1000\]/);
+    expect(primary.className).not.toMatch(/\bshrink-\[/);
+    expect(primary.className).toMatch(/\btruncate\b/);
+    expect(secondary.className).toMatch(/\btruncate\b/);
+  });
 });

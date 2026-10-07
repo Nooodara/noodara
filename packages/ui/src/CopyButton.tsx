@@ -73,7 +73,7 @@ export function CopyButton({ value, label = 'Copy', 'data-testid': testId }: Cop
 
   return (
     <Tooltip content={copied ? 'Copied' : label} {...(copied ? { open: true } : {})}>
-      <Button type="button" variant="ghost" aria-label={label} data-testid={testId} onClick={handleClick}>
+      <Button type="button" variant="ghost" hitArea aria-label={label} data-testid={testId} onClick={handleClick}>
         {copied ? <Check {...ICON_PROPS} /> : <Copy {...ICON_PROPS} />}
       </Button>
     </Tooltip>

@@ -22,6 +22,8 @@ export interface RowMenuProps {
   /** The trigger's accessible name -- must describe the row it acts on (e.g. "Actions for
    *  {server name}"), never a bare "..." glyph with no label (T-5-40). */
   readonly triggerLabel: string;
+  /** 'hover' (rows): revealed on row hover/focus on fine pointers. 'always' (toolbars): always shown. */
+  readonly reveal?: 'hover' | 'always';
   readonly 'data-testid'?: string;
 }
 
@@ -31,8 +33,13 @@ export interface RowMenuProps {
 // permanently-invisible action. On a device that genuinely supports hover, the reveal-on-hover/
 // focus-within behaviour is unchanged from before; `focus-visible:` still reveals unconditionally
 // on every device, since keyboard focus is never gated behind a pointer capability.
-const TRIGGER_CLASSES = cn(
+const TRIGGER_BASE_CLASSES = cn(
   'flex h-11 w-11 shrink-0 items-center justify-center rounded-sm text-ink-secondary outline-none',
+  '[@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-2',
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+);
+const TRIGGER_CLASSES = cn(
+  TRIGGER_BASE_CLASSES,
   '[@media(hover:hover)_and_(pointer:fine)]:opacity-0',
   '[@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100',
   '[@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100',
@@ -146,7 +153,7 @@ const INSTANT_CLOSE_CLASS = '!duration-0';
 // Open state, arrow-key roving focus, close-on-select and close-source tracking all now come from
 // `useFloatingMenu` -- the same hook `AccountMenu` (08-08) builds on, so this file owns only its
 // own markup and item rendering, never a second copy of the shared floating-menu behaviour.
-export function RowMenu({ items, triggerLabel, 'data-testid': testId }: RowMenuProps) {
+export function RowMenu({ items, triggerLabel, reveal = 'hover', 'data-testid': testId }: RowMenuProps) {
   const { open, setOpen, contentRef, handleContentKeyDown, handleOpenAutoFocus, selectItem, closeSource } =
     useFloatingMenu();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -195,7 +202,7 @@ export function RowMenu({ items, triggerLabel, 'data-testid': testId }: RowMenuP
     <DialogPrimitive.Root open={open} onOpenChange={setOpen} modal={false}>
       <DialogPrimitive.Trigger
         ref={triggerRef}
-        className={TRIGGER_CLASSES}
+        className={reveal === 'always' ? TRIGGER_BASE_CLASSES : TRIGGER_CLASSES}
         data-testid={testId}
         data-hit-area={44}
         aria-haspopup="menu"

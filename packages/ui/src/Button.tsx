@@ -16,6 +16,8 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
   // SegmentedControl, ...) -- Button was the one component missing it (05-11-PLAN.md Task 2
   // needed it for `login-submit`, the first SS9 hook to land on a Button call site).
   readonly 'data-testid'?: string | undefined;
+  /** A 44 px touch target around the 32 px drawn button (14-13, H1). */
+  readonly hitArea?: boolean;
 }
 
 // 32px height (h-8 against this project's 4px spacing base), --r-sm radius, 0 14px padding,
@@ -47,6 +49,13 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 // bg-status-error-fill, not bg-status-error (05-45, decision D5): this fill carries --on-accent
 // text, and --status-error itself stays reserved for the pill dot, borders and meters, where the
 // full-saturation value is what those uses need.
+// 14-13 (H1): an invisible, centered 44 px hit area. A pseudo-element of the button itself, so a
+// tap on it activates the button, and the drawn size (h-8) does not change.
+const HIT_AREA_CLASSES = cn(
+  'relative',
+  "after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-full after:min-w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
+);
+
 const DESTRUCTIVE_FILLED_CLASSES = 'bg-status-error-fill text-on-accent hover:opacity-90';
 
 // Button (skill SS4.1, 05-UI-SPEC.md Component Inventory). `loading` never renders a spinner --
@@ -56,6 +65,7 @@ export function Button({
   variant = 'primary',
   loading = false,
   filled = false,
+  hitArea = false,
   disabled = false,
   children,
   ...rest
@@ -71,7 +81,12 @@ export function Button({
       aria-busy={loading ? true : undefined}
       data-variant={variant}
       data-filled={isDestructiveFilled ? 'true' : 'false'}
-      className={cn(BASE_CLASSES, isDestructiveFilled ? DESTRUCTIVE_FILLED_CLASSES : VARIANT_CLASSES[variant])}
+      data-hit-area={hitArea ? 44 : undefined}
+      className={cn(
+        BASE_CLASSES,
+        isDestructiveFilled ? DESTRUCTIVE_FILLED_CLASSES : VARIANT_CLASSES[variant],
+        hitArea && HIT_AREA_CLASSES,
+      )}
     >
       {children}
     </button>

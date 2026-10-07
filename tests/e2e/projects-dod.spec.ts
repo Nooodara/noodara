@@ -24,6 +24,7 @@ const THEMES = ['light', 'dark'] as const;
 type Theme = (typeof THEMES)[number];
 const CAPTURE = process.env.NOODARA_UI_REVIEW_CAPTURE === '1';
 const SHOTS_DIR = path.resolve('docs/ui-review/phase-13');
+const SHOTS_DIR_14 = path.resolve('docs/ui-review/phase-14');
 
 const LONG_NAME_LENGTH = 200;
 const LONG_REPO_URL_LENGTH = 300;
@@ -366,10 +367,10 @@ async function show(page: Page, screen: Screen, theme: Theme, width: number): Pr
   await settle(page);
 }
 
-async function capture(page: Page, file: string): Promise<void> {
+async function capture(page: Page, file: string, dir = SHOTS_DIR): Promise<void> {
   if (!CAPTURE) return;
-  mkdirSync(SHOTS_DIR, { recursive: true });
-  await page.screenshot({ path: path.join(SHOTS_DIR, file), fullPage: false, animations: 'disabled' });
+  mkdirSync(dir, { recursive: true });
+  await page.screenshot({ path: path.join(dir, file), fullPage: false, animations: 'disabled' });
 }
 
 // ---- in-browser measurements (self-contained: serialized into the page) ----
@@ -939,5 +940,215 @@ test.describe('@projects-dod Phase 13 screens', () => {
         await capture(page, `stress-build-log-375-${theme}.png`);
       });
     }
+  });
+
+  // 14-13: the 375 px debt from the Phase 13 review (docs/ui-review/phase-13/REPORT.md, Layout and
+  // Progressive disclosure). A 300-character unbroken service name is injected into the real
+  // service responses (the domain caps names well below that); the 300-character repo URL is real.
+  test.describe('14-13 375 px layout', () => {
+    const LONG_SERVICE_NAME = 'checkoutsettlementreconciliationworker'.repeat(8).slice(0, 300);
+    const HOSTILE_URL_MARKUP = '<img src=x onerror="window.__noodaraXss=1">';
+    const MAIN_SCREENS = SCREENS.filter((screen) => ['projects', 'project', 'service'].includes(screen.name));
+
+    /** Swaps the git service's name (and, with `hostileUrl`, its repository URL) in every real
+     *  services response. */
+    async function injectLongService(page: Page, options: { readonly hostileUrl?: boolean } = {}): Promise<void> {
+      await page.route(/\/api\/projects\/[^/?]+\/services(\/[^/?]+)?(\?.*)?$/, async (route) => {
+        const response = await route.fetch();
+        const text = await response.text();
+        let json: unknown;
+        try {
+          json = JSON.parse(text);
+        } catch {
+          await route.fulfill({ response, body: text });
+          return;
+        }
+        const swap = (value: unknown): unknown => {
+          if (Array.isArray(value)) return value.map(swap);
+          if (value !== null && typeof value === 'object') {
+            const record = Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, swap(inner)]));
+            if (record.id === fx.gitServiceId && typeof record.name === 'string') {
+              record.name = LONG_SERVICE_NAME;
+              if (options.hostileUrl === true && typeof record.repositoryUrl === 'string') {
+                record.repositoryUrl = `${record.repositoryUrl}${HOSTILE_URL_MARKUP}`;
+              }
+            }
+            return record;
+          }
+          return value;
+        };
+        await route.fulfill({ response, json: swap(json) });
+      });
+    }
+
+    async function openGitService(page: Page, theme: Theme, width: number): Promise<void> {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto(serviceHref(fx.gitServiceId));
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(LONG_SERVICE_NAME);
+      await expect(page.getByTestId('service-fact-repository')).toContainText('service-catalog-component');
+      await applyTheme(page, theme);
+      await settle(page);
+    }
+
+    async function noHorizontalScroll(page: Page, where: string): Promise<void> {
+      const widths = await page.evaluate(() => ({
+        scroll: document.documentElement.scrollWidth,
+        client: document.documentElement.clientWidth,
+      }));
+      expect(widths.scroll, `${where}: scrollWidth <= clientWidth`).toBeLessThanOrEqual(widths.client);
+      expect(await page.evaluate(scanLayout), where).toEqual([]);
+    }
+
+    test('A1 the service title keeps 12 characters and the toolbar stays on one row at 375 px', async ({ page }) => {
+      await injectLongService(page);
+      for (const theme of THEMES) {
+        await openGitService(page, theme, 375);
+        const toolbar = page.getByTestId('service-toolbar');
+        await expect(toolbar).toHaveAttribute('data-layout', 'compact');
+        const title = await page.getByRole('heading', { level: 1 }).evaluate((h1) => {
+          const text = h1.firstChild;
+          if (text === null || text.nodeType !== Node.TEXT_NODE) return null;
+          const range = document.createRange();
+          range.setStart(text, 0);
+          range.setEnd(text, 12);
+          const probe = document.createElement('span');
+          probe.style.font = getComputedStyle(h1).font;
+          probe.style.position = 'absolute';
+          probe.textContent = '…';
+          document.body.append(probe);
+          const ellipsis = probe.getBoundingClientRect().width;
+          probe.remove();
+          return { box: h1.clientWidth, twelve: range.getBoundingClientRect().width, ellipsis };
+        });
+        expect(title, 'title text node').not.toBeNull();
+        expect(title?.box ?? 0, `[${theme}] title shows its first 12 characters`).toBeGreaterThanOrEqual(
+          (title?.twelve ?? Infinity) + (title?.ellipsis ?? 0),
+        );
+        const rows = await toolbar.evaluate((bar) => {
+          const parts = ['a[href]', '[data-testid="service-title"]', '[data-testid="service-actions-menu"]', '[data-testid="service-deploy"]']
+            .map((selector) => bar.querySelector(selector))
+            .filter((el): el is Element => el !== null)
+            .map((el) => el.getBoundingClientRect());
+          return { count: parts.length, maxTop: Math.max(...parts.map((r) => r.top)), minBottom: Math.min(...parts.map((r) => r.bottom)) };
+        });
+        expect(rows.count, `[${theme}] back, title, menu and Deploy are in the bar`).toBe(4);
+        expect(rows.maxTop, `[${theme}] all controls share one row`).toBeLessThan(rows.minBottom);
+        await expect(page.getByTestId('service-edit')).toHaveCount(0);
+        await expect(page.getByTestId('service-logs')).toHaveCount(0);
+      }
+    });
+
+    test('A2 the 300-character repo URL truncates in the middle inside its card, the full value on demand', async ({ page }) => {
+      await injectLongService(page);
+      for (const theme of THEMES) {
+        await openGitService(page, theme, 375);
+        const row = page.getByTestId('service-fact-repository');
+        const geometry = await row.evaluate((el) => {
+          const card = el.closest('[data-testid="service-facts-source"]') ?? el;
+          const value = el.querySelector('[data-mono]');
+          const tail = el.querySelector('[data-part="tail"]');
+          const right = (node: Element | null): number => node?.getBoundingClientRect().right ?? Infinity;
+          return {
+            cardRight: card.getBoundingClientRect().right,
+            valueRight: right(value),
+            tailRight: right(tail),
+            tailText: tail?.textContent ?? '',
+            title: value?.getAttribute('title') ?? '',
+          };
+        });
+        expect(geometry.valueRight, `[${theme}] value inside the card`).toBeLessThanOrEqual(geometry.cardRight);
+        expect(geometry.tailRight, `[${theme}] the URL's end is visible`).toBeLessThanOrEqual(geometry.cardRight);
+        expect(geometry.title).toHaveLength(LONG_REPO_URL_LENGTH);
+        expect(geometry.title.endsWith(geometry.tailText)).toBe(true);
+        const copy = page.getByRole('button', { name: 'Copy Repository' });
+        await expect(copy).toBeVisible();
+        expect(await copy.evaluate((el) => getComputedStyle(el, '::after').height)).toBe('44px');
+        await capture(page, `stress-service-375-${theme}.png`, SHOTS_DIR_14);
+      }
+    });
+
+    test('A3 the 375 px projects list truncates the description before the project name', async ({ page }) => {
+      for (const theme of THEMES) {
+        await show(page, SCREENS[0] as Screen, theme, 375);
+        const row = page.getByTestId('projects-list').locator('[data-row="true"]', { hasText: fx.projectName });
+        const cells = await row.evaluate((el) => {
+          const [name, description] = Array.from(el.querySelectorAll(':scope > a > span, :scope > button > span'));
+          const cell = (node: Element | undefined) => ({ scroll: node?.scrollWidth ?? 0, client: node?.clientWidth ?? 0 });
+          return { name: cell(name), description: cell(description) };
+        });
+        expect(cells.name.scroll, `[${theme}] name not truncated`).toBeLessThanOrEqual(cells.name.client);
+        expect(cells.description.scroll, `[${theme}] description truncated`).toBeGreaterThan(cells.description.client);
+        await capture(page, `stress-projects-375-${theme}.png`, SHOTS_DIR_14);
+      }
+    });
+
+    test('H1 the overflow menu is keyboard operable at 375 px: labelled, expanded state, focus trapped, Escape returns focus', async ({ page }) => {
+      await injectLongService(page);
+      await openGitService(page, 'dark', 375);
+      const trigger = page.getByTestId('service-actions-menu');
+      await expect(trigger).toHaveAccessibleName(`Actions for ${LONG_SERVICE_NAME}`);
+      await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      const box = await trigger.boundingBox();
+      expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
+      expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+      const back = await page.getByRole('link', { name: `Back to ${fx.projectName}` }).boundingBox();
+      expect(Math.min(back?.width ?? 0, back?.height ?? 0)).toBeGreaterThanOrEqual(44);
+      expect(await page.getByTestId('service-deploy').evaluate((el) => getComputedStyle(el, '::after').height)).toBe('44px');
+
+      await trigger.focus();
+      await page.keyboard.press('Enter');
+      const menu = page.getByRole('menu');
+      await expect(menu).toBeVisible();
+      await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      await expect(menu.getByRole('menuitem', { name: 'Edit' })).toBeFocused();
+      for (let step = 0; step < 9; step += 1) {
+        await page.keyboard.press(step % 3 === 2 ? 'Shift+Tab' : 'Tab');
+        expect(await menu.evaluate((el) => el.contains(document.activeElement)), `focus stays in the menu after ${String(step + 1)} keys`).toBe(true);
+      }
+      await page.keyboard.press('Escape');
+      await expect(menu).toBeHidden();
+      await expect(trigger).toBeFocused();
+    });
+
+    test('H1 axe reports no serious or critical violation on the three screens at 375 px', async ({ page }) => {
+      await injectLongService(page);
+      for (const screen of MAIN_SCREENS) {
+        for (const theme of THEMES) {
+          await show(page, screen, theme, 375);
+          const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice']).analyze();
+          const blocking = results.violations
+            .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
+            .map((violation) => ({ rule: violation.id, targets: violation.nodes.slice(0, 5).map((node) => node.target.join(' ')) }));
+          expect.soft(blocking, `${screen.name} at 375 [${theme}]`).toEqual([]);
+        }
+      }
+    });
+
+    test('H2 no horizontal scroll at 375 and 1280 px with a 300-character service name and repo URL', async ({ page }) => {
+      test.setTimeout(3 * 60_000);
+      await injectLongService(page);
+      for (const theme of THEMES) {
+        for (const width of [375, 1280] as const) {
+          for (const screen of MAIN_SCREENS) {
+            await show(page, screen, theme, width);
+            await noHorizontalScroll(page, `${screen.name} at ${String(width)} [${theme}]`);
+            await capture(page, `${screen.name}-${String(width)}-${theme}.png`, SHOTS_DIR_14);
+          }
+          await openGitService(page, theme, width);
+          await noHorizontalScroll(page, `long service at ${String(width)} [${theme}]`);
+          if (width === 1280) await capture(page, `stress-service-1280-${theme}.png`, SHOTS_DIR_14);
+        }
+      }
+    });
+
+    test('H2 the repository URL renders as inert text, never HTML', async ({ page }) => {
+      await injectLongService(page, { hostileUrl: true });
+      await openGitService(page, 'light', 375);
+      const row = page.getByTestId('service-fact-repository');
+      await expect(row).toContainText(HOSTILE_URL_MARKUP);
+      await expect(row.locator('img')).toHaveCount(0);
+      expect(await page.evaluate(() => (window as unknown as { __noodaraXss?: number }).__noodaraXss)).toBeUndefined();
+    });
   });
 });

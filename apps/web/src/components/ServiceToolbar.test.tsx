@@ -9,7 +9,7 @@ import {
   SERVICE_ACTION_FAILED_COPY,
 } from '../lib/service-status-copy';
 import { ShellContext, type ShellContextValue } from '../lib/shell-context';
-import { ServiceToolbar } from './ServiceToolbar';
+import { COMPACT_TOOLBAR_MAX_WIDTH, ServiceToolbar, toolbarLayout } from './ServiceToolbar';
 
 const PROJECT_ID = '11111111-1111-4111-8111-111111111111';
 const SERVICE_ID = '44444444-4444-4444-8444-444444444444';
@@ -34,6 +34,11 @@ vi.mock('../lib/deploy-api', () => ({
     deployApi.deleteService(projectId, id, confirmName) as unknown,
 }));
 vi.mock('../lib/require-session', () => ({ requireSession: () => undefined }));
+
+const nav = vi.hoisted(() => ({ push: vi.fn() }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: nav.push, replace: vi.fn(), refresh: vi.fn(), back: vi.fn(), forward: vi.fn(), prefetch: vi.fn() }),
+}));
 
 const SHELL_CONTEXT: ShellContextValue = {
   connected: true,
@@ -150,8 +155,17 @@ async function openMenu(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByTestId('service-actions-menu'));
 }
 
+/** jsdom has no layout: report the toolbar's width as a real browser at `width` px would. */
+function atWidth(width: number) {
+  return vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+    () => ({ width, height: 52, top: 0, left: 0, right: width, bottom: 52, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect,
+  );
+}
+
 beforeEach(() => {
   for (const fn of Object.values(deployApi)) fn.mockReset();
+  nav.push.mockReset();
+  vi.restoreAllMocks();
 });
 
 describe('ServiceToolbar status (13-12 A1)', () => {
@@ -485,5 +499,104 @@ describe('ServiceToolbar action safety (13-12 H1)', () => {
     rerender({ activeDeployment: deployment('FAILED') });
 
     expect(screen.queryByTestId('service-cancel')).not.toBeInTheDocument();
+  });
+});
+
+describe('ServiceToolbar layout at narrow widths (14-13 A1/H1)', () => {
+  const LONG_NAME = 'checkoutsettlementreconciliationworker'.repeat(8).slice(0, 300);
+
+  it('switches to the compact layout below the threshold and only after the toolbar was measured', () => {
+    expect(toolbarLayout(375)).toBe('compact');
+    expect(toolbarLayout(COMPACT_TOOLBAR_MAX_WIDTH - 1)).toBe('compact');
+    expect(toolbarLayout(COMPACT_TOOLBAR_MAX_WIDTH)).toBe('full');
+    expect(toolbarLayout(1280)).toBe('full');
+    // Not laid out yet (jsdom, first paint): never guess compact.
+    expect(toolbarLayout(0)).toBe('full');
+  });
+
+  it('at 375 px keeps one row: the title holds at least 12 characters and Edit/Logs move to the menu', async () => {
+    atWidth(375);
+    const { user, onEdit } = renderToolbar({ service: service({ name: LONG_NAME }) });
+
+    const toolbar = screen.getByTestId('service-toolbar');
+    expect(toolbar).toHaveAttribute('data-layout', 'compact');
+    expect(toolbar.className).toMatch(/\bflex-nowrap\b/);
+    expect(toolbar.className).not.toMatch(/\bflex-wrap\b/);
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toHaveAttribute('title', LONG_NAME);
+    expect(heading.className).toMatch(/\btruncate\b/);
+    // The title block keeps 12 characters of the title's own font (ch is relative to it).
+    const titleBlock = screen.getByTestId('service-title');
+    expect(titleBlock.className).toMatch(/min-w-\[12ch\]/);
+    expect(titleBlock.className).toMatch(/\bflex-1\b/);
+    expect(titleBlock.className).toMatch(/\btext-title\b/);
+    // Everything beside the title keeps its size.
+    expect(screen.getByTestId('service-actions').className).toMatch(/\bshrink-0\b/);
+    expect(screen.queryByTestId('service-edit')).toBeNull();
+    expect(screen.queryByTestId('service-logs')).toBeNull();
+    expect(screen.getByTestId('service-deploy')).toBeInTheDocument();
+
+    await openMenu(user);
+    const items = screen.getAllByRole('menuitem').map((item) => item.textContent);
+    expect(items.slice(0, 2)).toEqual(['Edit', 'Logs']);
+    await user.click(screen.getByRole('menuitem', { name: 'Edit' }));
+    expect(onEdit).toHaveBeenCalledTimes(1);
+
+    await openMenu(user);
+    await user.click(screen.getByRole('menuitem', { name: 'Logs' }));
+    expect(nav.push).toHaveBeenCalledWith('?logs=runtime', { scroll: false });
+  });
+
+  it('at 375 px the back link is a 44 px target named after the project', () => {
+    atWidth(375);
+    renderToolbar();
+
+    const back = screen.getByRole('link', { name: 'Back to Billing' });
+    expect(back.className).toMatch(/\bh-11\b/);
+    expect(back.className).toMatch(/\bw-11\b/);
+    expect(back).toHaveAttribute('href', `/projects/${PROJECT_ID}`);
+  });
+
+  it('at 375 px gives Deploy a 44 px touch target and the menu an always-visible labelled trigger', async () => {
+    atWidth(375);
+    const { user } = renderToolbar();
+
+    expect(screen.getByTestId('service-deploy')).toHaveAttribute('data-hit-area', '44');
+    const trigger = screen.getByRole('button', { name: 'Actions for api' });
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveAttribute('data-hit-area', '44');
+    expect(trigger.className).not.toMatch(/opacity-0/);
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('at 375 px shows Cancel in the primary slot while a deployment can be cancelled', () => {
+    atWidth(375);
+    renderToolbar({ activeDeployment: deployment('BUILDING') });
+
+    expect(screen.getByTestId('service-cancel')).toHaveAccessibleName('Cancel deploy');
+    expect(screen.getByTestId('service-cancel')).toHaveAttribute('data-hit-area', '44');
+    expect(screen.queryByTestId('service-deploy')).toBeNull();
+  });
+
+  it('at 1280 px keeps Edit and Logs inline, out of the menu, on one row', async () => {
+    atWidth(1280);
+    const { user } = renderToolbar();
+
+    const toolbar = screen.getByTestId('service-toolbar');
+    expect(toolbar).toHaveAttribute('data-layout', 'full');
+    expect(toolbar.className).toMatch(/\bflex-nowrap\b/);
+    expect(screen.getByTestId('service-edit')).toBeInTheDocument();
+    expect(screen.getByTestId('service-logs')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Billing/ })).toBeInTheDocument();
+    await openMenu(user);
+    const items = screen.getAllByRole('menuitem').map((item) => item.textContent);
+    expect(items).not.toContain('Edit');
+    expect(items).not.toContain('Logs');
   });
 });

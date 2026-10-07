@@ -74,4 +74,30 @@ describe('LabelValue', () => {
     renderUi(<LabelValue label="OS" value="Ubuntu 24.04" />);
     expect(screen.getByText('Ubuntu 24.04')).toHaveAttribute('data-mono', 'false');
   });
+
+
+  // 14-13 (A2): a 300-character repository URL truncates in the middle inside the row instead of
+  // being clipped by the card edge; the full value stays available (title, screen-reader text, copy).
+  it('truncates a long value in the middle when truncate="middle", keeping the copy button reachable', () => {
+    const url = `https://git.example.test/${'service-catalog-component-'.repeat(11)}x.git`;
+    renderUi(<LabelValue label="Repository" value={url} mono copyable truncate="middle" data-testid="row" />);
+
+    const row = screen.getByTestId('row');
+    const value = row.querySelector('[data-mono]');
+    expect(value).toHaveAttribute('title', url);
+    expect(value?.querySelector('[data-part="tail"]')?.textContent).toBe(url.slice(-16));
+    expect(screen.getByText(url).className).toMatch(/\bsr-only\b/);
+    // The value column can shrink (min-w-0); the label never does.
+    expect(value?.parentElement?.className).toMatch(/\bmin-w-0\b/);
+    expect(row.querySelector('span')?.className).toMatch(/\bshrink-0\b/);
+    expect(screen.getByRole('button', { name: 'Copy Repository' })).toBeInTheDocument();
+  });
+
+  it('lets any value column shrink, so a long unbroken value never pushes the row past its card', () => {
+    renderUi(<LabelValue label="Host" value={'h'.repeat(300)} data-testid="row" />);
+
+    const value = screen.getByText('h'.repeat(300));
+    expect(value.parentElement?.className).toMatch(/\bmin-w-0\b/);
+    expect(value.className).toContain('[overflow-wrap:anywhere]');
+  });
 });

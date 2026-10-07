@@ -1,6 +1,7 @@
 import { cn } from './cn.js';
 import { CopyButton } from './CopyButton.js';
 import { PLACEHOLDER } from './format.js';
+import { MiddleTruncate } from './MiddleTruncate.js';
 
 export interface LabelValueProps {
   readonly label: string;
@@ -11,6 +12,9 @@ export interface LabelValueProps {
    *  `data-dimmed` so the dimmed state is assertable from the DOM rather than a computed style. */
   readonly dimmed?: boolean;
   readonly caption?: string;
+  /** 'middle' keeps a long value on one line, elided in the middle (14-13, A2). Otherwise a long
+   *  value wraps anywhere rather than overflowing its card. */
+  readonly truncate?: 'middle';
   readonly 'data-testid'?: string;
 }
 
@@ -18,7 +22,7 @@ export interface LabelValueProps {
 // 4px compact), not a hardcoded py-2 -- 8px is the same value comfortable renders today, so this
 // is a no-op visually until a caller switches to compact density.
 const ROOT_CLASSES = 'flex items-center justify-between gap-4 py-[var(--row-height-padding-y)]';
-const LABEL_CLASSES = 'text-caption text-ink-secondary';
+const LABEL_CLASSES = 'shrink-0 text-caption text-ink-secondary';
 const CAPTION_CLASSES = 'text-caption text-ink-tertiary';
 
 // LabelValue (05-UI-SPEC.md SS2.5/SS2.7, skill SS4.6) -- a label/value row for the System/
@@ -39,6 +43,7 @@ export function LabelValue({
   copyable = false,
   dimmed = false,
   caption,
+  truncate,
   'data-testid': testId,
 }: LabelValueProps) {
   const displayValue = value ?? PLACEHOLDER;
@@ -47,11 +52,17 @@ export function LabelValue({
   return (
     <div data-testid={testId} data-dimmed={dimmed ? 'true' : 'false'} className={ROOT_CLASSES}>
       <span className={LABEL_CLASSES}>{label}</span>
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center justify-end gap-2">
         {caption !== undefined ? <span className={CAPTION_CLASSES}>{caption}</span> : null}
-        <span data-mono={mono ? 'true' : 'false'} className={valueClasses}>
-          {displayValue}
-        </span>
+        {truncate === 'middle' && value !== null ? (
+          <span data-mono={mono ? 'true' : 'false'} className={cn('flex min-w-0', valueClasses)} title={value}>
+            <MiddleTruncate value={value} />
+          </span>
+        ) : (
+          <span data-mono={mono ? 'true' : 'false'} className={cn('min-w-0 [overflow-wrap:anywhere]', valueClasses)}>
+            {displayValue}
+          </span>
+        )}
         {copyable && value !== null ? <CopyButton value={value} label={`Copy ${label}`} /> : null}
       </div>
     </div>

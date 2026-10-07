@@ -339,4 +339,33 @@ describe('RowMenu', () => {
     expect(content.className).toContain('scale-[0.97]');
     expect(content.className).not.toContain('scale-[0]');
   });
+
+
+  // 14-13 (H1): a toolbar's overflow menu is always visible, never revealed on row hover.
+  it('keeps the trigger visible on every device when reveal="always"', () => {
+    renderUi(<RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="More actions" reveal="always" />);
+
+    const trigger = screen.getByRole('button', { name: 'More actions' });
+    expect(trigger.className).not.toMatch(/opacity-0/);
+    expect(trigger).toHaveAttribute('data-hit-area', '44');
+    expect(trigger.className).toMatch(/\bh-11\b/);
+    expect(trigger.className).toMatch(/\bw-11\b/);
+  });
+
+  it('traps Tab and Shift+Tab inside the open menu, wrapping between its items', async () => {
+    const user = userEvent.setup();
+    renderUi(<RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="More actions" />);
+
+    await user.click(screen.getByRole('button', { name: 'More actions' }));
+    const edit = screen.getByRole('menuitem', { name: 'Edit' });
+    const remove = screen.getByRole('menuitem', { name: 'Delete' });
+    expect(edit).toHaveFocus();
+
+    await user.keyboard('{Tab}');
+    expect(remove).toHaveFocus();
+    await user.keyboard('{Tab}');
+    expect(edit).toHaveFocus();
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(remove).toHaveFocus();
+  });
 });

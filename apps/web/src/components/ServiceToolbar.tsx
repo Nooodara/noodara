@@ -13,8 +13,15 @@
 //
 // The bar is a solid surface: the repo's backdrop-filter budget (UI-10) is already spent by
 // Toolbar, ServerDetailToolbar and Sheet.
+//
+// 14-13: the bar is always one row. Below COMPACT_TOOLBAR_MAX_WIDTH (measured on the bar itself,
+// so the sidebar and inspector count) it goes compact: the back link becomes a 44 px arrow, the
+// status moves under the title, Edit and Logs move into the overflow menu, and the primary slot
+// holds Deploy or, while a deployment can be cancelled, Cancel. The title keeps at least 12
+// characters of its own font.
 import Link from 'next/link';
-import { useId, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useId, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { Button, cn, RowMenu, type Tone } from '@noodara/ui';
 import {
   cancelDeployment,
@@ -107,6 +114,36 @@ export interface ServiceToolbarProps {
 
 const MENU_TEST_ID = 'service-actions-menu';
 
+/** Below this toolbar width (px) the full row no longer fits with a 12-character title. */
+export const COMPACT_TOOLBAR_MAX_WIDTH = 960;
+
+export type ToolbarLayout = 'compact' | 'full';
+
+/** 0 means not laid out yet (first render, jsdom): keep the full layout rather than guess. */
+export function toolbarLayout(width: number): ToolbarLayout {
+  return width > 0 && width < COMPACT_TOOLBAR_MAX_WIDTH ? 'compact' : 'full';
+}
+
+/** The layout for the element's current width, measured before paint and on every resize. */
+function useToolbarLayout(ref: RefObject<HTMLElement | null>): ToolbarLayout {
+  const [layout, setLayout] = useState<ToolbarLayout>('full');
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (element === null) return undefined;
+    const measure = (): void => {
+      setLayout(toolbarLayout(element.getBoundingClientRect().width));
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+    };
+  }, [ref]);
+  return layout;
+}
+
 export function ServiceToolbar({
   service,
   projectName,
@@ -119,6 +156,10 @@ export function ServiceToolbar({
   onDeleted,
 }: ServiceToolbarProps) {
   const { connected } = useShellContext();
+  const router = useRouter();
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const layout = useToolbarLayout(toolbarRef);
+  const compact = layout === 'compact';
   const archivedNoteId = useId();
   const [pending, setPending] = useState<ActionId | null>(null);
   const [message, setMessage] = useState<{
@@ -195,7 +236,21 @@ export function ServiceToolbar({
     );
   }
 
+  const compactItems = compact
+    ? [
+        { id: 'edit', label: 'Edit', onSelect: onEdit },
+        {
+          id: 'logs',
+          label: 'Logs',
+          onSelect: () => {
+            router.push(RUNTIME_LOGS_INSPECTOR_HREF, { scroll: false });
+          },
+        },
+      ]
+    : [];
+
   const menuItems = [
+    ...compactItems,
     {
       id: 'redeploy',
       label: 'Redeploy',
@@ -238,64 +293,111 @@ export function ServiceToolbar({
   return (
     <div className="flex flex-col gap-2">
       <div
+        ref={toolbarRef}
         data-testid="service-toolbar"
-        className="sticky top-0 z-30 flex min-h-[52px] flex-wrap items-center gap-3 border-b border-hairline bg-surface-1 px-4 py-2"
+        data-layout={layout}
+        className={cn(
+          'sticky top-0 z-30 flex min-h-[52px] flex-nowrap items-center border-b border-hairline bg-surface-1 px-4 py-2',
+          compact ? 'gap-2' : 'gap-3',
+        )}
       >
-        <Link
-          href={projectHref(service.projectId)}
-          className="max-w-40 shrink-0 truncate text-callout text-ink-secondary hover:text-ink"
+        {compact ? (
+          <Link
+            href={projectHref(service.projectId)}
+            aria-label={`Back to ${projectName}`}
+            className="-ml-3 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-sm text-headline text-ink-secondary outline-none hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            <span aria-hidden="true">←</span>
+          </Link>
+        ) : (
+          <Link
+            href={projectHref(service.projectId)}
+            className="max-w-40 shrink-0 truncate text-callout text-ink-secondary hover:text-ink"
+          >
+            ← {projectName}
+          </Link>
+        )}
+        {/* ch is relative to this block's font (the title's), so 12ch is 12 title characters. */}
+        <div
+          data-testid="service-title"
+          className={cn(
+            'flex flex-1',
+            // Full: min-w-0 here (an unbroken title's min-content would otherwise widen the bar);
+            // the h1 itself keeps 12ch, and COMPACT_TOOLBAR_MAX_WIDTH leaves room for it.
+            compact ? 'min-w-[12ch] flex-col items-start gap-0.5 text-title' : 'min-w-0 items-center gap-3',
+          )}
         >
-          ← {projectName}
-        </Link>
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <h1 className="min-w-0 truncate text-display font-semibold text-ink" title={service.name}>
+          <h1
+            className={cn(
+              'truncate font-semibold text-ink',
+              compact ? 'w-full min-w-0 text-title' : 'min-w-[12ch] text-display',
+            )}
+            title={service.name}
+          >
             {service.name}
           </h1>
-          <TonePill presentation={status} title={status.meaning} data-testid="service-status-pill" />
+          <div className="flex min-w-0 items-center gap-2">
+            <TonePill presentation={status} title={status.meaning} data-testid="service-status-pill" />
+            {compact ? <StreamStatus connected={connected} /> : null}
+          </div>
         </div>
-        <StreamStatus connected={connected} />
+        {compact ? null : <StreamStatus connected={connected} />}
         {/* 13-14: navigation, not an operation, so it stays usable while an action is pending. */}
-        <Link
-          href={RUNTIME_LOGS_INSPECTOR_HREF}
-          scroll={false}
-          data-testid="service-logs"
-          className="inline-flex h-8 items-center justify-center rounded-sm px-3.5 text-callout font-medium text-ink-secondary outline-none hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          Logs
-        </Link>
+        {compact ? null : (
+          <Link
+            href={RUNTIME_LOGS_INSPECTOR_HREF}
+            scroll={false}
+            data-testid="service-logs"
+            className="inline-flex h-8 shrink-0 items-center justify-center rounded-sm px-3.5 text-callout font-medium text-ink-secondary outline-none hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            Logs
+          </Link>
+        )}
         <fieldset
           disabled={pending !== null}
           aria-busy={pending !== null}
           data-testid="service-actions"
-          className="m-0 flex min-w-0 items-center gap-2 border-0 p-0"
+          className={cn('m-0 flex shrink-0 items-center border-0 p-0', compact ? 'gap-1' : 'gap-2')}
         >
           {cancellable || cancelling ? (
             <Button
               type="button"
               variant="secondary"
               data-testid="service-cancel"
+              hitArea={compact}
+              aria-label={compact && !cancelling ? 'Cancel deploy' : undefined}
               disabled={!cancellable}
               loading={pending === 'cancel'}
               onClick={cancel}
             >
-              {cancelling ? 'Cancelling…' : 'Cancel deploy'}
+              {cancelling ? 'Cancelling…' : compact ? 'Cancel' : 'Cancel deploy'}
             </Button>
           ) : null}
-          <Button type="button" variant="ghost" data-testid="service-edit" onClick={onEdit}>
-            Edit
-          </Button>
-          <RowMenu triggerLabel={`Actions for ${service.name}`} data-testid={MENU_TEST_ID} items={menuItems} />
-          <Button
-            type="button"
-            variant="primary"
-            data-testid="service-deploy"
-            disabled={deployDisabled}
-            aria-describedby={archived ? archivedNoteId : undefined}
-            loading={pending === 'deploy'}
-            onClick={deploy}
-          >
-            Deploy
-          </Button>
+          {compact ? null : (
+            <Button type="button" variant="ghost" data-testid="service-edit" onClick={onEdit}>
+              Edit
+            </Button>
+          )}
+          <RowMenu
+            triggerLabel={`Actions for ${service.name}`}
+            data-testid={MENU_TEST_ID}
+            items={menuItems}
+            reveal="always"
+          />
+          {compact && (cancellable || cancelling) ? null : (
+            <Button
+              type="button"
+              variant="primary"
+              data-testid="service-deploy"
+              hitArea={compact}
+              disabled={deployDisabled}
+              aria-describedby={archived ? archivedNoteId : undefined}
+              loading={pending === 'deploy'}
+              onClick={deploy}
+            >
+              Deploy
+            </Button>
+          )}
         </fieldset>
       </div>
       {archived ? (

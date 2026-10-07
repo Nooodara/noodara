@@ -90,3 +90,40 @@ describe('ServiceFacts (13-12 A1)', () => {
     expect(row.querySelector('time')?.getAttribute('dateTime')).toBe(STAMP);
   });
 });
+
+describe('ServiceFacts long values (14-13 A2/H2)', () => {
+  const LONG_URL = `https://git.example.test/platform-engineering/${'service-catalog-component-'.repeat(10)}x.git`;
+
+  it('truncates a 300-character repository URL in the middle, the full value in the title, the screen-reader text and the copy button', () => {
+    renderUi(
+      <ServiceFacts
+        service={service({ sourceType: 'git', repositoryUrl: LONG_URL, branch: 'main', dockerfilePath: 'Dockerfile', imageRef: null })}
+        serverName="edge-1"
+        now={NOW}
+      />,
+    );
+
+    const row = screen.getByTestId('service-fact-repository');
+    expect(row.querySelector(`[title="${LONG_URL}"]`)).not.toBeNull();
+    expect(row.querySelector('[data-part="tail"]')?.textContent).toBe(LONG_URL.slice(-16));
+    expect(screen.getByText(LONG_URL)).toHaveClass('sr-only');
+    expect(screen.getByRole('button', { name: 'Copy Repository' })).toHaveAttribute('data-hit-area', '44');
+  });
+
+  it('renders a URL carrying markup as inert text', () => {
+    const hostile = `https://x.test/<img src=x onerror=alert(1)>${'a'.repeat(80)}.git`;
+    const { container } = renderUi(
+      <ServiceFacts service={service({ sourceType: 'git', repositoryUrl: hostile, imageRef: null })} serverName={null} now={NOW} />,
+    );
+
+    expect(container.querySelector('img')).toBeNull();
+    expect(screen.getByText(hostile)).toBeInTheDocument();
+  });
+
+  it('truncates a long image reference in the middle too', () => {
+    const image = `registry.example.test/${'team/'.repeat(30)}api:1.0.0`;
+    renderUi(<ServiceFacts service={service({ sourceType: 'image', imageRef: image, repositoryUrl: null })} serverName={null} now={NOW} />);
+
+    expect(screen.getByTestId('service-fact-image').querySelector('[data-part="tail"]')?.textContent).toBe(image.slice(-16));
+  });
+});

@@ -34,7 +34,9 @@ const ACTIVATION_CLASSES = cn(
 );
 
 const PRIMARY_TEXT_CLASSES = 'truncate text-headline font-semibold text-ink';
-const SECONDARY_CLASSES = 'truncate text-callout text-ink-secondary';
+// 14-13 (A3): the secondary text shrinks first (flex-shrink is weighted by size, so a factor of
+// 1000 hands it nearly all the missing width): the name truncates only once the description is gone.
+const SECONDARY_CLASSES = 'shrink-[1000] truncate text-callout text-ink-secondary';
 const TRAILING_CLASSES = 'flex shrink-0 items-center pr-4';
 
 // ListRow (skill SS4.4, 05-UI-SPEC.md Component Inventory, D-09) -- the hairline row (height from

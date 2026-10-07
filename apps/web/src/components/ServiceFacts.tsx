@@ -30,11 +30,11 @@ export function ServiceFacts({ service, serverName, now }: ServiceFactsProps) {
       <InsetGroup title="Source" data-testid="service-facts-source">
         {isImage ? (
           <div className="px-4">
-            <LabelValue label="Image" value={service.imageRef} mono copyable data-testid="service-fact-image" />
+            <LabelValue label="Image" value={service.imageRef} mono copyable truncate="middle" data-testid="service-fact-image" />
           </div>
         ) : (
           <div className="px-4">
-            <LabelValue label="Repository" value={service.repositoryUrl} mono copyable data-testid="service-fact-repository" />
+            <LabelValue label="Repository" value={service.repositoryUrl} mono copyable truncate="middle" data-testid="service-fact-repository" />
           </div>
         )}
         {isImage ? null : (
