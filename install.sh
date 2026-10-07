@@ -203,10 +203,13 @@ noodara_check_arch() {
 }
 
 # Prints total system RAM in whole megabytes, read from NOODARA_MEMINFO_FILE's MemTotal line
-# (default /proc/meminfo). Division happens inside awk itself, never via a `$(( ))` arithmetic
-# expansion, since this file's own POSIX-sh gate treats any `((` occurrence as a bashism finding.
+# (default /proc/meminfo). A missing or non-numeric value counts as 0.
 noodara_total_ram_mb() {
-  awk '/^MemTotal:/ { printf "%d\n", $2 / 1024 }' "$NOODARA_MEMINFO_FILE"
+  _noodara_trm_kb=$(awk '/^MemTotal:/ { print $2 }' "$NOODARA_MEMINFO_FILE")
+  case "$_noodara_trm_kb" in
+    '' | *[!0-9]*) _noodara_trm_kb=0 ;;
+  esac
+  printf '%d\n' "$((_noodara_trm_kb / 1024))"
 }
 
 # Fails with reason insufficient-ram (exit 14) when total RAM is below 1024MB; warns (stderr,
@@ -246,7 +249,10 @@ noodara_check_resources() {
     [ -z "$disk_target" ] && disk_target="/"
   done
   disk_kb=$(df -Pk "$disk_target" 2>/dev/null | awk 'NR==2 { print $4 }')
-  disk_mb=$(awk -v kb="${disk_kb:-0}" 'BEGIN { printf "%d\n", kb / 1024 }')
+  case "$disk_kb" in
+    '' | *[!0-9]*) disk_kb=0 ;;
+  esac
+  disk_mb=$((disk_kb / 1024))
   if [ "$disk_mb" -lt 5120 ]; then
     noodara_fail insufficient-disk "Detected ${disk_mb}MB free disk on ${disk_target}'s filesystem, below the 5120MB (5GB) minimum. Free up disk space and re-run this installer. Set NOODARA_SKIP_RESOURCE_CHECK=1 to override deliberately."
   fi
@@ -581,7 +587,7 @@ noodara_wait_for_docker_ready() {
       _noodara_wfdr_ready=0
       break
     fi
-    _noodara_wfdr_attempt=$(awk -v n="$_noodara_wfdr_attempt" 'BEGIN { print n + 1 }')
+    _noodara_wfdr_attempt=$((_noodara_wfdr_attempt + 1))
     if [ "$_noodara_wfdr_attempt" -lt "$NOODARA_DOCKER_READY_WAIT_ATTEMPTS" ]; then
       sleep "$NOODARA_DOCKER_READY_WAIT_INTERVAL"
     fi
@@ -641,8 +647,7 @@ noodara_ensure_docker() {
 # would otherwise inject an extra `.env` line past the intended `KEY=` assignment -- e.g. a
 # NOODARA_ADMIN_PASSWORD of `pw\nNOODARA_MASTER_KEY=attacker` silently appending a second,
 # attacker-chosen NOODARA_MASTER_KEY line that a last-wins parser would prefer. Detection uses a
-# `case` pattern against a literal embedded newline / a CR obtained via `printf '\r'` -- never
-# `$'...'` or `[[ ]]` (neither is POSIX, `scripts/check-posix-sh.mjs` rejects both).
+# `case` pattern against a literal embedded newline / a CR obtained via `printf '\r'`.
 
 # Fails with reason env-write-failed, naming `_noodara_ael_name` but never echoing
 # `_noodara_ael_value` (T-06-24's own precedent: a value here may be a password), when the value
@@ -1529,8 +1534,6 @@ noodara_prepare_install_dir() {
   chmod 700 "$NOODARA_INSTALL_DIR" || noodara_fail env-write-failed "Failed to set permissions on $NOODARA_INSTALL_DIR."
 }
 
-_noodara_pcf_lp='('
-
 # Writes the production compose file (this repo's own root docker-compose.yml, Plan 06-07) to
 # $NOODARA_INSTALL_DIR/docker-compose.yml, mode 644, on every run -- overwriting any previous copy
 # is how an upgrade picks up a new topology (D-09). The file carries no secret, only ${VAR}
@@ -1540,17 +1543,7 @@ _noodara_pcf_lp='('
 #
 # This is the same byte content as the repo's own docker-compose.yml (proven by
 # tests/unit/installer/main-flow.test.ts, which calls this function against a tmpdir and diffs the
-# written file against the real one) -- with one necessary exception: two of the file's
-# healthcheck.test lines contain the literal JS arrow-function syntax "catch(()=>...)", embedding
-# the two-character substring "((" directly. scripts/check-posix-sh.mjs's arith-command rule
-# (meant to catch bash's double-paren arithmetic compound command) cannot tell that substring apart
-# from unrelated heredoc body text -- and hard_rule #7 forbids editing that gate. The workaround
-# matches this file's own established false-positive-workaround precedent (06-06-SUMMARY.md):
-# never let the literal two-character sequence "((" appear together on any physical source line of
-# install.sh. _noodara_pcf_lp above holds a single "(" character; the two affected lines are
-# written via a separate printf call that only brings the two parens together at RUNTIME (one
-# %s substitution -- "catch(" itself already supplies the method-call's own opening paren),
-# never in this file's own source text.
+# written file against the real one).
 noodara_place_compose_file() {
   _noodara_pcf_target="${NOODARA_INSTALL_DIR}/${NOODARA_COMPOSE_FILE}"
   _noodara_pcf_tmp="${_noodara_pcf_target}.tmp.$$"
@@ -1685,9 +1678,7 @@ services:
     # documented intent (D-26): the orchestrator must restart the API for a dead database, but
     # never merely because Redis or the worker is unavailable.
     healthcheck:
-NOODARA_COMPOSE_EOF_A
-    printf "      test: ['CMD', 'node', '-e', \"fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(%s)=>process.exit(1))\"]\n" "$_noodara_pcf_lp"
-    cat <<'NOODARA_COMPOSE_EOF_B'
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -1731,9 +1722,7 @@ NOODARA_COMPOSE_EOF_A
     stop_grace_period: 10s
     logging: *noodara_logging
     healthcheck:
-NOODARA_COMPOSE_EOF_B
-    printf "      test: ['CMD', 'node', '-e', \"fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(%s)=>process.exit(1))\"]\n" "$_noodara_pcf_lp"
-    cat <<'NOODARA_COMPOSE_EOF_C'
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -1745,7 +1734,7 @@ NOODARA_COMPOSE_EOF_B
 volumes:
   noodara_postgres_data:
   noodara_redis_data:
-NOODARA_COMPOSE_EOF_C
+NOODARA_COMPOSE_EOF_A
   } > "$_noodara_pcf_tmp"; then
     rm -f "$_noodara_pcf_tmp"
     noodara_fail env-write-failed "Failed to write the compose file to $_noodara_pcf_target."
@@ -1872,9 +1861,7 @@ noodara_migrate_did_fail() {
 # reaches the operator -- application logs already pass through the phase-1 pino redactor, but the
 # setup-token line deliberately bypasses pino (bootstrap-admin.ts writes it straight to stdout),
 # and a stack-trace-shaped error line could still echo a DATABASE_URL/REDIS_URL-style connection
-# string verbatim. Never uses a POSIX `[:space:]` character class -- its own text starts with the
-# literal two-character substring "[[", which check-posix-sh's bracket-test rule flags as a
-# false-positive bashism (06-02-SUMMARY.md's own precedent for the identical class of finding).
+# string verbatim.
 noodara_redact_diagnostic_text() {
   sed -e 's/NOODARA_SETUP_TOKEN=[^ ]*/NOODARA_SETUP_TOKEN=[REDACTED]/g' \
     -e 's#://[^:@]*:[^@]*@#://[REDACTED]@#g'
@@ -2026,7 +2013,7 @@ noodara_wait_for_health() {
     if [ "$_noodara_wfh_api" = "unhealthy" ] || [ "$_noodara_wfh_web" = "unhealthy" ]; then
       break
     fi
-    _noodara_wfh_attempt=$(awk -v n="$_noodara_wfh_attempt" 'BEGIN { print n + 1 }')
+    _noodara_wfh_attempt=$((_noodara_wfh_attempt + 1))
     sleep "$NOODARA_HEALTH_WAIT_INTERVAL"
   done
 
