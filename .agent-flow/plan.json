@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-07T21:50:30.878Z",
+  "updatedAt": "2026-10-07T22:08:01.402Z",
   "cursor": {
     "phase": "14",
-    "task": "14-02"
+    "task": "14-20"
   },
   "phases": [
     {
@@ -3724,21 +3724,32 @@
           "id": "14-08",
           "title": "Deploy: fail stale QUEUED deployments when enqueue and undo both fail",
           "scope": [
-            "packages/domain/src/deployment/",
-            "apps/control-plane/src/deploy/deploy-sweep.ts",
+            ".env.example",
+            "apps/control-plane/src/db/migrations/",
+            "apps/control-plane/src/db/schema/deployments.ts",
             "apps/control-plane/src/deploy/deploy-sweep.test.ts",
-            "apps/control-plane/src/deploy/deployment-store.ts",
+            "apps/control-plane/src/deploy/deploy-sweep.ts",
             "apps/control-plane/src/deploy/deployment-store.test.ts",
+            "apps/control-plane/src/deploy/deployment-store.ts",
+            "apps/control-plane/src/env.test.ts",
+            "apps/control-plane/src/env.ts",
+            "apps/control-plane/src/reconcile/reconcile-wiring.test.ts",
+            "apps/control-plane/src/reconcile/reconcile-wiring.ts",
             "apps/control-plane/src/worker.ts",
-            "tests/integration/queue/deploy-queue.test.ts",
             "apps/site/content/docs/reference/error-codes.mdx",
-            "docs/deploy-engine.md"
+            "apps/web/src/lib/deploy-error-copy.test.ts",
+            "apps/web/src/lib/deploy-error-copy.ts",
+            "docs/deploy-engine.md",
+            "packages/domain/src/deployment/",
+            "tests/integration/db/migrations.test.ts",
+            "tests/integration/queue/deploy-queue.test.ts",
+            "turbo.json"
           ],
           "wave": 3,
           "dependsOn": [
             "14-07"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -4397,7 +4408,6 @@
         {
           "id": "14-20",
           "title": "API: graceful shutdown on SIGTERM/SIGINT",
-          "tier": "standard",
           "scope": [
             "apps/control-plane/src/server.ts",
             "apps/control-plane/src/server.test.ts",
@@ -4410,7 +4420,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -4448,7 +4458,8 @@
             "persistence",
             "auth-secrets",
             "randomness"
-          ]
+          ],
+          "tier": "standard"
         }
       ]
     }
