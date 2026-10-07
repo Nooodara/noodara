@@ -651,13 +651,9 @@ describe("idempotent re-run, upgrade, no-op, repair and failed-upgrade (06-12-PL
     // Post-execution fix (orchestrator audit WR-07): explicit timeout, matching every other
     // `docker`/`docker compose` spawn in this file -- an unresponsive daemon at exactly this
     // point in the suite must fail after a bounded time, never hang forever.
-    const result = execFileSync(
-      "docker",
-      ["ps", "-aq", "--filter", "label=noodara.test=true"],
-      {
-        timeout: 30_000,
-      },
-    ).toString();
+    const result = execFileSync('docker', ['ps', '-aq', '--filter', 'label=noodara.test=true'], {
+      timeout: 30_000,
+    }).toString();
     // The fixture container ITSELF is still running at this point in the suite (afterAll has not
     // run yet) -- assert only that no UNEXPECTED extra container leaked, by checking the count is
     // at most 1 (this file's own single fixture).
