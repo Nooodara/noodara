@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-07T01:14:09.240Z",
+  "updatedAt": "2026-10-07T01:45:44.548Z",
   "cursor": {
     "phase": "13",
-    "task": "13-17"
+    "task": "13-19"
   },
   "phases": [
     {
@@ -2956,7 +2956,7 @@
             "13-14",
             "13-20"
           ],
-          "status": "active",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
@@ -3052,6 +3052,65 @@
           "tier": "light"
         },
         {
+          "id": "13-21",
+          "title": "Navigate to the new project or service after create",
+          "status": "pending",
+          "wave": 8,
+          "dependsOn": [],
+          "tier": "standard",
+          "scope": [
+            "apps/web/src/app/(shell)/projects/page.tsx",
+            "apps/web/src/app/(shell)/projects/page.test.tsx",
+            "apps/web/src/app/(shell)/projects/[projectId]/page.tsx",
+            "apps/web/src/app/(shell)/projects/[projectId]/page.test.tsx",
+            "apps/web/src/components/ProjectSheet.tsx",
+            "apps/web/src/components/ProjectSheet.test.tsx",
+            "apps/web/src/components/ServiceSheet.tsx",
+            "apps/web/src/components/ServiceSheet.test.tsx",
+            "tests/e2e/deploy.spec.ts",
+            "tests/e2e/projects-dod.spec.ts"
+          ],
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build",
+            "e2e-deploy"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Creating a project closes the sheet and navigates to /projects/<newId>; creating a service navigates to /projects/<pid>/services/<newId>; editing keeps the user where they are",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Navigation happens only after the create response succeeds; a failed create keeps the sheet open with the input intact",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "The sidebar shows the new project or service without reload, and focus lands on the new page heading",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "deploy.spec.ts follows the new flow (no clicking the new row after create) and passes",
+              "proof": "e2e-deploy"
+            }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist",
+            "auth-secrets/secret-logging",
+            "auth-secrets/password-hashing",
+            "randomness/crypto-random",
+            "persistence"
+          ]
+        },
+        {
           "id": "13-19",
           "title": "Phase 13 verification and requirement close-out",
           "scope": [
@@ -3065,7 +3124,8 @@
             "13-15",
             "13-16",
             "13-17",
-            "13-18"
+            "13-18",
+            "13-21"
           ],
           "status": "pending",
           "gates": [
