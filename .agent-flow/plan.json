@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-07T00:21:01.229Z",
+  "updatedAt": "2026-10-07T01:04:09.480Z",
   "cursor": {
     "phase": "13",
-    "task": "13-17"
+    "task": "13-20"
   },
   "phases": [
     {
@@ -2873,6 +2873,70 @@
           "tier": "deep"
         },
         {
+          "id": "13-20",
+          "title": "UI fixes from the Phase 13 DoD review",
+          "scope": [
+            "packages/ui/src/NavTree.tsx",
+            "packages/ui/src/NavTree.test.tsx",
+            "packages/ui/src/Sheet.tsx",
+            "packages/ui/src/Sheet.test.tsx",
+            "apps/web/src/components/DeploymentSteps.tsx",
+            "apps/web/src/components/DeploymentSteps.test.tsx",
+            "apps/web/src/components/DiscoveryStep.tsx",
+            "apps/web/src/components/RuntimeLogPanel.tsx",
+            "apps/web/src/components/RuntimeLogPanel.test.tsx",
+            "apps/web/src/components/ServiceFacts.tsx",
+            "apps/web/src/components/ServiceFacts.test.tsx",
+            "apps/web/src/app/(shell)/projects/[projectId]/page.tsx",
+            "apps/web/src/app/(shell)/projects/[projectId]/page.test.tsx"
+          ],
+          "wave": 7,
+          "dependsOn": [],
+          "status": "active",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Light theme: the active NavTree item and every error/notice caption on the new screens meet WCAG AA 4.5:1; NavTree no longer emits both text-ink and text-ink-secondary on the active item; the runtime \"no container yet\" notice uses neutral, not error, color",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Sheet returns focus to the element that opened it when closed by Escape, Cancel or overlay click, also when used controlled without a Trigger",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Service names in the project page truncate with ellipsis and keep a readable minimum width when the repository URL is very long; the full name stays available (title or tooltip)",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Service facts show \"Last changed\" as relative time only, never a raw ISO string; the deployment step timeline connector does not cross step icons",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "Fixes follow noodara-ux-apple tokens; no new colors, shadows or gradients",
+              "proof": "manual"
+            }
+          ],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist",
+            "randomness/crypto-random"
+          ],
+          "tier": "deep"
+        },
+        {
           "id": "13-17",
           "title": "UI DoD for new screens and screenshot approval",
           "scope": [
@@ -2880,14 +2944,17 @@
             "tests/e2e/projects-dod.spec.ts",
             "tests/e2e/keyboard-motion.spec.ts",
             "docs/ui-review/",
-            "tests/e2e/brand.spec.ts"
+            "tests/e2e/brand.spec.ts",
+            "package.json",
+            "pnpm-lock.yaml"
           ],
-          "wave": 7,
+          "wave": 8,
           "dependsOn": [
             "13-10",
             "13-12",
             "13-13",
-            "13-14"
+            "13-14",
+            "13-20"
           ],
           "status": "active",
           "gates": [
