@@ -4409,14 +4409,16 @@
           "id": "14-20",
           "title": "API: graceful shutdown on SIGTERM/SIGINT",
           "scope": [
-            "apps/control-plane/src/server.ts",
-            "apps/control-plane/src/server.test.ts",
             "apps/control-plane/src/boot/",
-            "tests/integration/boot/",
+            "apps/control-plane/src/db/client.test.ts",
+            "apps/control-plane/src/db/client.ts",
+            "apps/control-plane/src/server.test.ts",
+            "apps/control-plane/src/server.ts",
             "docs/adr/0003-runtime-entrypoints-and-module-resolution.md",
             "docs/install.md",
-            "tests/integration/installer/control-plane-image.test.ts",
-            "tests/integration/installer/compose-stack.test.ts"
+            "tests/integration/boot/",
+            "tests/integration/installer/compose-stack.test.ts",
+            "tests/integration/installer/control-plane-image.test.ts"
           ],
           "wave": 1,
           "dependsOn": [],

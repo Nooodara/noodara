@@ -23,6 +23,7 @@
 // accordingly: a bare Error no longer leaks even without the `{ err }` call-site shape, because
 // the guard is now structural rather than per-call-site.
 import { describe, expect, it } from 'vitest';
+import { createApiShutdown, type ApiShutdownDeps } from './boot/api-shutdown.js';
 import { createLogger, writableForTests } from './logger.js';
 
 describe('server.ts app.listen() failure logging shape (WR-A-04)', () => {
@@ -52,5 +53,68 @@ describe('server.ts app.listen() failure logging shape (WR-A-04)', () => {
     const [record] = records() as unknown as [{ err: { name: string }; msg: string }];
     expect(record.err.name).toBe('Error');
     expect(record.msg).toBe('listen failed');
+  });
+});
+
+describe('api graceful shutdown (14-20)', () => {
+  function setup(overrides: { close?: () => Promise<void>; timeoutMs?: number } = {}) {
+    const calls: string[] = [];
+    const warnings: unknown[] = [];
+    const exits: number[] = [];
+    const deps: ApiShutdownDeps = {
+      close: overrides.close ?? (() => {
+        calls.push('close');
+        return Promise.resolve();
+      }),
+      afterClose: [() => { calls.push('afterClose'); }],
+      timeoutMs: overrides.timeoutMs ?? 50,
+      logger: { warn: (obj) => { warnings.push(obj); } },
+      exit: (code) => { exits.push(code); },
+    };
+    return { deps, calls, warnings, exits };
+  }
+
+  it('closes the app, then the after-close steps, then exits 0', async () => {
+    const { deps, calls, exits } = setup();
+    const shutdown = createApiShutdown(deps);
+    await shutdown();
+    expect(calls).toEqual(['close', 'afterClose']);
+    expect(exits).toEqual([0]);
+  });
+
+  it('a second signal while shutting down exits non-zero without a second close', async () => {
+    let release: () => void = () => undefined;
+    const closes: string[] = [];
+    const { deps, exits } = setup({
+      close: () => {
+        closes.push('close');
+        return new Promise<void>((resolve) => { release = resolve; });
+      },
+      timeoutMs: 1000,
+    });
+    const shutdown = createApiShutdown(deps);
+    const first = shutdown();
+    await shutdown();
+    expect(exits).toEqual([1]);
+    release();
+    await first;
+    expect(closes).toHaveLength(1);
+  });
+
+  it('a close that exceeds the bounded timeout exits non-zero', async () => {
+    const { deps, exits } = setup({ close: () => new Promise<void>(() => undefined), timeoutMs: 20 });
+    await createApiShutdown(deps)();
+    expect(exits).toEqual([1]);
+  });
+
+  it('logs a close error by class only and still exits', async () => {
+    const { deps, warnings, exits, calls } = setup({
+      close: () => Promise.reject(new TypeError('CANARY-SECRET postgres://u:p@h/db')),
+    });
+    await createApiShutdown(deps)();
+    expect(JSON.stringify(warnings)).not.toContain('CANARY-SECRET');
+    expect(warnings).toEqual([{ errorClass: 'TypeError' }]);
+    expect(calls).toEqual(['afterClose']);
+    expect(exits).toEqual([1]);
   });
 });

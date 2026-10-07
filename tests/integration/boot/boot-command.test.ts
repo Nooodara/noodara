@@ -102,8 +102,9 @@ describe('start: real boot against a migrated database', () => {
       // process that exited on its own; one terminated by a signal reports the signal instead).
       // `waitForExit` resolving at all — rather than rejecting on its own timeout — is the actual
       // proof of a clean exit.
+      // 14-20: the api now handles SIGTERM itself (graceful close) and exits 0 within seconds.
       activeProcess.kill();
-      await activeProcess.waitForExit(15_000);
+      expect(await activeProcess.waitForExit(5_000)).toBe(0);
     } finally {
       await postgres.stop();
       await redis.stop();

@@ -4,12 +4,28 @@
 import './env.js';
 
 import { auth } from './auth/auth.js';
+import { createApiShutdown } from './boot/api-shutdown.js';
 import { bootstrapAdmin } from './boot/bootstrap-admin.js';
 import { getDb } from './db/client.js';
 import { env } from './env.js';
 import { buildApp } from './app.js';
 
 const app = buildApp();
+
+// 14-20: compose's stop_grace_period is 30 s; stay well below it so a stuck close exits non-zero
+// instead of being SIGKILLed (137).
+const SHUTDOWN_TIMEOUT_MS = 20_000;
+const shutdown = createApiShutdown({
+  close: () => app.close(),
+  afterClose: [],
+  timeoutMs: SHUTDOWN_TIMEOUT_MS,
+  logger: app.log,
+  exit: (code) => {
+    process.exit(code);
+  },
+});
+process.on('SIGTERM', () => void shutdown());
+process.on('SIGINT', () => void shutdown());
 
 async function main(): Promise<void> {
   const db = await getDb();

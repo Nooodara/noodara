@@ -405,6 +405,39 @@ describe('control-plane production image (06-03-PLAN.md)', () => {
   );
 
   it(
+    'docker stop on the api returns well under the 30 s grace with exit code 0, not 137 (14-20)',
+    async () => {
+      const postgres = await startPostgres({ migrate: true });
+      const redis = await startRedis();
+      let handle: LongRunningHandle | undefined;
+      try {
+        const env = baseEnv({
+          DATABASE_URL: containerAccessibleDatabaseUrl(postgres),
+          REDIS_URL: containerAccessibleRedisUrl(redis),
+        });
+        handle = await startLongRunning(IMAGE_TAG, ['node', 'dist/server.js'], env, {
+          exposePort: 3000,
+          waitFor: /Server listening at/,
+        });
+        const id = handle.container.getId();
+        const startedAt = Date.now();
+        // Default `docker stop` grace (10 s) is already far above what a graceful close needs; a
+        // SIGKILL (137) after the grace is exactly the bug this test pins.
+        dockerOrThrow(['stop', id], 60_000);
+        const elapsedMs = Date.now() - startedAt;
+        const exitCode = dockerOrThrow(['inspect', '-f', '{{.State.ExitCode}}', id]).trim();
+        expect(exitCode).toBe('0');
+        expect(elapsedMs).toBeLessThan(8_000);
+      } finally {
+        await handle?.stop().catch(() => undefined);
+        await redis.stop();
+        await postgres.stop();
+      }
+    },
+    180_000,
+  );
+
+  it(
     'node dist/worker.js reaches Worker ready and stays responsive',
     async () => {
       const postgres = await startPostgres({ migrate: true });
