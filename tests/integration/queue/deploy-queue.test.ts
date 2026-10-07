@@ -372,6 +372,110 @@ describe('cancel body (12-10 H3)', () => {
   });
 });
 
+// 14-08 A3: enqueue fails (Redis down) and the undo fails too (Postgres down), so a QUEUED row
+// with no job is left behind holding the per-service 409 lock. Once both are back, the worker's
+// stale-QUEUED sweep ends it FAILED/ENQUEUE_FAILED and frees the service.
+describe('stale QUEUED after a double outage (14-08 A3)', () => {
+  const THRESHOLD_MS = 30_000;
+  const silent = { info: () => undefined, warn: () => undefined, error: () => undefined };
+
+  async function sweepAfterThreshold() {
+    const { createWorkerReconcileTick } = await import('../../../apps/control-plane/src/reconcile/reconcile-wiring.js');
+    const connection = createQueueRedisConnection(redis.connectionUrl);
+    const reconcile = createWorkerReconcileTick({
+      db: postgres.db,
+      connect: () => Promise.reject(new Error('not used by the sweep')),
+      createRedactor: () => {
+        throw new Error('not used by the sweep');
+      },
+      events: recorder,
+      logger: silent,
+      commandMs: 5_000,
+      queueConnection: connection,
+      now: () => new Date(Date.now() + THRESHOLD_MS + 1_000),
+      staleQueued: { thresholdMs: THRESHOLD_MS, batchLimit: 1_000 },
+    });
+    try {
+      return await reconcile.sweepStaleQueued();
+    } finally {
+      await reconcile.close();
+      connection.disconnect();
+    }
+  }
+
+  it('fails the orphaned QUEUED deployment ENQUEUE_FAILED, publishes it and releases the 409 lock', async () => {
+    const { serviceId } = await newService();
+    const { triggerDeploy } = await import('../../../apps/control-plane/src/services/deployment-services.js');
+
+    // Postgres goes down after the insert: the insert transaction runs, the undo transaction fails.
+    let transactions = 0;
+    const flakyDb = new Proxy(postgres.db, {
+      get(target, property, receiver) {
+        if (property !== 'transaction') return Reflect.get(target, property, receiver) as unknown;
+        return (...args: Parameters<typeof target.transaction>) => {
+          transactions += 1;
+          if (transactions > 1) return Promise.reject(new Error('connect ECONNREFUSED 127.0.0.1:5432'));
+          return target.transaction(...args);
+        };
+      },
+    });
+    // Redis is down: the enqueue answers exactly what the real queue answers then (see H1).
+    const downQueue = {
+      enqueue: () => Promise.resolve({ ok: false as const, code: 'QUEUE_UNAVAILABLE' as const, message: 'Queue unavailable' }),
+    };
+
+    const result = await triggerDeploy(
+      { db: flakyDb, now: () => new Date(), events: recorder, queue: downQueue, logger: silent },
+      { actor: { type: 'system' }, serviceId },
+    );
+    expect(result).toMatchObject({ ok: false, code: 'QUEUE_UNAVAILABLE' });
+    expect(transactions).toBe(2);
+
+    const [orphan] = await rowsFor(serviceId);
+    expect(orphan?.status).toBe('QUEUED');
+    const deploymentId = String(orphan?.id);
+    expect(await inspector.getJob(`deploy-${deploymentId}`)).toBeUndefined();
+    expect((await deploy(serviceId)).statusCode).toBe(409);
+
+    // Both are back: the sweep ends the orphan through the state machine.
+    const activityBefore = await postgres.db.select().from(activityEvents).where(eq(activityEvents.entityId, deploymentId));
+    published.length = 0;
+    const swept = await sweepAfterThreshold();
+
+    expect(swept.failed).toContain(deploymentId);
+    const [failed] = await rowsFor(serviceId);
+    expect(failed).toMatchObject({ status: 'FAILED', errorCode: 'ENQUEUE_FAILED' });
+    expect(failed?.errorMessage).not.toMatch(/ECONNREFUSED|5432|redis:\/\//i);
+    expect(published.filter((event) => event.type === 'deployment.updated')).toHaveLength(1);
+    expect(JSON.stringify(published)).toContain(deploymentId);
+    const activityAfter = await postgres.db.select().from(activityEvents).where(eq(activityEvents.entityId, deploymentId));
+    expect(activityAfter).toHaveLength(activityBefore.length + 1);
+
+    // Idempotent: a second sweep changes nothing.
+    published.length = 0;
+    expect((await sweepAfterThreshold()).failed).not.toContain(deploymentId);
+    expect(published.filter((event) => JSON.stringify(event).includes(deploymentId))).toEqual([]);
+    const activityAgain = await postgres.db.select().from(activityEvents).where(eq(activityEvents.entityId, deploymentId));
+    expect(activityAgain).toHaveLength(activityAfter.length);
+
+    // The 409 lock is released.
+    const next = await deploy(serviceId);
+    expect(next.statusCode, JSON.stringify(next.body)).toBe(201);
+  }, 30_000);
+
+  it('never touches a QUEUED deployment whose job exists, however old', async () => {
+    const { serviceId } = await newService();
+    const response = await deploy(serviceId);
+    expect(response.statusCode).toBe(201);
+    const deploymentId = String(response.body.id);
+
+    const swept = await sweepAfterThreshold();
+
+    expect(swept.failed).not.toContain(deploymentId);
+    expect((await rowsFor(serviceId)).map((row) => row.status)).toEqual(['QUEUED']);
+  }, 30_000);
+});
+
 describe('queue unavailable (H1)', () => {
   it('answers a named 503 and leaves no QUEUED deployment behind when Redis is down', async () => {
     const { serviceId } = await newService();

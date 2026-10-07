@@ -87,6 +87,6 @@ concern the SSH host key of a Git host:
 
 `ENQUEUE_FAILED`: the deployment was accepted but never reached the job queue (Redis or Postgres was
 unreachable at that moment), so nothing ran and the service is unchanged. The worker ends such a
-deployment `FAILED` once it is older than `NOODARA_DEPLOY_QUEUED_STALE_MS` (default 2 minutes) and
-has no queue job, which frees the service for a new deploy. Check that Redis and Postgres are
+deployment `FAILED` once it has waited past the stale-queue threshold (default 2 minutes) with no
+queue job, which frees the service for a new deploy. Check that Redis and Postgres are
 reachable, then deploy again.

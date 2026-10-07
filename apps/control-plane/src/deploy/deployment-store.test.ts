@@ -583,7 +583,7 @@ function containsValue(root: unknown, wanted: unknown): boolean {
     if (node === wanted) return true;
     if (typeof node !== 'object' || node === null || seen.has(node)) continue;
     seen.add(node);
-    stack.push(...Object.values(node));
+    stack.push(...(Object.values(node) as unknown[]));
   }
   return false;
 }
