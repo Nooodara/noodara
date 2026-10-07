@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-07T16:11:20.142Z",
+  "updatedAt": "2026-10-07T16:41:48.524Z",
   "cursor": {
     "phase": "14",
     "task": "14-01"
@@ -3565,11 +3565,13 @@
             "tests/integration/deploy-engine/engine-primitives.test.ts",
             "tests/integration/deploy-engine/contracts-https-token.test.ts",
             "tests/integration/deploy-engine/runtime-pipeline.test.ts",
-            "tests/integration/helpers/"
+            "tests/integration/helpers/",
+            "packages/ssh/src/run-discovery.test.ts",
+            "tests/integration/db/migrations.test.ts"
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "active",
+          "status": "done",
           "gates": [
             "boundaries",
             "it-deploy-templates",

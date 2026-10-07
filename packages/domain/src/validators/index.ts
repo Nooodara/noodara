@@ -5,3 +5,4 @@ export * from './branded.js';
 export * from './git.js';
 export * from './docker-naming.js';
 export * from './service-source.js';
+export * from './git-host-key.js';

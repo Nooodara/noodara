@@ -65,7 +65,42 @@ const CAPTURE_CASES: readonly {
     code: 'REPOSITORY_HOST_UNREACHABLE',
     rule: 'repository-host-unreachable',
   },
+  {
+    // 14-06 A4: a clone pinned to the wrong key under StrictHostKeyChecking=yes.
+    file: 'git-host-key-mismatch.txt',
+    code: 'GIT_HOST_KEY_MISMATCH',
+    rule: 'git-host-key-mismatch',
+  },
 ];
+
+describe('git host key mismatch (14-06 A4)', () => {
+  const classify = (stderr: string) =>
+    classifyGitError(cloneFailure({ exitCode: 128, stderr, stdoutTail: '' }), {
+      redactor: createRedactor(),
+    });
+
+  it('classifies a pinned key of a type the host does not offer as a mismatch', () => {
+    const stderr =
+      'No ED25519 host key is known for [git.example.com]:2222 and you have requested strict checking.\n' +
+      'Host key verification failed.\nfatal: Could not read from remote repository.\n';
+
+    expect(classify(stderr).code).toBe('GIT_HOST_KEY_MISMATCH');
+  });
+
+  it('wins over the auth rule and never echoes the offered key', () => {
+    const stderr =
+      '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n' +
+      '@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @\n' +
+      'The fingerprint for the ED25519 key sent by the remote host is\nSHA256:abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG.\n' +
+      'Host key verification failed.\nPermission denied (publickey).\n';
+
+    const result = classify(stderr);
+
+    expect(result.code).toBe('GIT_HOST_KEY_MISMATCH');
+    expect(result.message).not.toContain('SHA256:');
+    expect(result.message).toMatch(/host key/i);
+  });
+});
 
 describe('classifyGitError over real captures', () => {
   for (const version of UBUNTU_VERSIONS) {

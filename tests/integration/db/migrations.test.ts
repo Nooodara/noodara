@@ -206,6 +206,7 @@ describe('migrations applied from scratch (QA-06)', () => {
       '0004_phase9_user_preferences',
       '0005_phase11_deploy_engine',
       '0006_phase13_deployment_steps',
+      '0007_phase14_git_host_key_codes',
     ]);
   });
 

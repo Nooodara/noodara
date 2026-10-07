@@ -2,13 +2,16 @@
 // derived from this tuple so the DB and the TS union cannot drift. DEP-03's examples
 // AUTH_FAILED/TIMEOUT are refined into REPOSITORY_AUTH_FAILED/REGISTRY_AUTH_FAILED and
 // BUILD_TIMEOUT/BUILD_STALLED (ROADMAP D15). LFS and submodules share one code; the detail
-// lives in the message (D-09).
+// lives in the message (D-09). GIT_HOST_KEY_* (14-06): the Git host's SSH key did not match the
+// pinned key, or no key could be pinned (ssh-keyscan failed); the clone never runs unpinned.
 
 export const DEPLOYMENT_ERROR_CODES = Object.freeze([
   'REPOSITORY_AUTH_FAILED',
   'REPOSITORY_NOT_FOUND',
   'BRANCH_NOT_FOUND',
   'REPOSITORY_HOST_UNREACHABLE',
+  'GIT_HOST_KEY_MISMATCH',
+  'GIT_HOST_KEY_UNAVAILABLE',
   'UNSUPPORTED_REPOSITORY_FEATURE',
   'CLONE_FAILED',
   'DOCKERFILE_NOT_FOUND',

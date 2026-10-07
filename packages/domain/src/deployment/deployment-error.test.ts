@@ -8,6 +8,8 @@ describe('DEPLOYMENT_ERROR_CODES', () => {
       'REPOSITORY_NOT_FOUND',
       'BRANCH_NOT_FOUND',
       'REPOSITORY_HOST_UNREACHABLE',
+      'GIT_HOST_KEY_MISMATCH',
+      'GIT_HOST_KEY_UNAVAILABLE',
       'UNSUPPORTED_REPOSITORY_FEATURE',
       'CLONE_FAILED',
       'DOCKERFILE_NOT_FOUND',
@@ -28,8 +30,8 @@ describe('DEPLOYMENT_ERROR_CODES', () => {
   });
 
   it('has 20 codes and no duplicates', () => {
-    expect(DEPLOYMENT_ERROR_CODES.length).toBe(20);
-    expect(new Set(DEPLOYMENT_ERROR_CODES).size).toBe(20);
+    expect(DEPLOYMENT_ERROR_CODES.length).toBe(22);
+    expect(new Set(DEPLOYMENT_ERROR_CODES).size).toBe(22);
   });
 
   it('is frozen', () => {

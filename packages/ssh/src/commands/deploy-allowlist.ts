@@ -6,6 +6,7 @@ export const DEPLOY_COMMAND_NAMES = Object.freeze([
   'git.checkout',
   'git.head_sha',
   'git.probe_features',
+  'git.keyscan',
   'fs.prepare_workspace',
   'fs.remove_deploy_dir',
   'secrets.write_file',

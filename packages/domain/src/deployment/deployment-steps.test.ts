@@ -136,6 +136,8 @@ describe('deriveDeploymentSteps', () => {
       const legacy = (errorCode: DeploymentErrorCode, sourceType: DeploymentSourceType = 'git'): string[] =>
         states(input({ status: 'FAILED', sourceType, errorCode, startedAt: at(0), completedAt: at(9) }));
       expect(legacy('CLONE_FAILED')).toEqual(['failed', 'pending', 'pending', 'pending']);
+      expect(legacy('GIT_HOST_KEY_MISMATCH')).toEqual(['failed', 'pending', 'pending', 'pending']);
+      expect(legacy('GIT_HOST_KEY_UNAVAILABLE')).toEqual(['failed', 'pending', 'pending', 'pending']);
       expect(legacy('BUILD_TIMEOUT')).toEqual(['success', 'failed', 'pending', 'pending']);
       expect(legacy('PORT_IN_USE')).toEqual(['success', 'success', 'failed', 'pending']);
       expect(legacy('START_FAILED')).toEqual(['success', 'success', 'success', 'failed']);

@@ -13,7 +13,11 @@ import {
 } from '@noodara/domain/validators';
 import { describe, expect, it } from 'vitest';
 import { ADVERSARIAL_VALUES, shellWords } from '../testing/shell-round-trip.js';
-import { gitCheckout, gitClone, gitHeadSha, gitProbeFeatures } from './git.js';
+import { readdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { gitSshEndpoint, type GitSshEndpoint } from '@noodara/domain/validators';
+import { gitCheckout, gitClone, gitHeadSha, gitKeyscan, gitProbeFeatures } from './git.js';
 import { renderRemoteCommand } from './remote-command.js';
 import { SHELL_SCRIPTS } from './shell-scripts.js';
 
@@ -65,7 +69,7 @@ describe('gitClone', () => {
     expect(command.supervisable).toBe(true);
     expect(command.argv).toEqual([
       'env',
-      `GIT_SSH_COMMAND=ssh -i '${ws.secretsDir}/deploy_key' -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile='${ws.secretsDir}/known_hosts'`,
+      `GIT_SSH_COMMAND=ssh -i '${ws.secretsDir}/deploy_key' -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile='${ws.secretsDir}/known_hosts'`,
       'GIT_TERMINAL_PROMPT=0',
       ...GIT_PREAMBLE,
       branch,
@@ -138,6 +142,21 @@ describe('gitClone', () => {
     ]);
   });
 
+  it('none with a known_hosts file: strict host key checking without an identity (A2)', () => {
+    const command = gitClone({
+      url,
+      branch,
+      target: ws.repo,
+      auth: { kind: 'none', knownHostsFile: ws.secretFile('known_hosts') },
+    });
+
+    expect(command.argv.slice(0, 3)).toEqual([
+      'env',
+      `GIT_SSH_COMMAND=ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile='${ws.secretsDir}/known_hosts'`,
+      'GIT_TERMINAL_PROMPT=0',
+    ]);
+  });
+
   it('has no parameter that could carry a secret value (auth carries paths only)', () => {
     expect(gitClone.length).toBe(1);
   });
@@ -170,7 +189,7 @@ describe('gitClone', () => {
         '-o',
         'BatchMode=yes',
         '-o',
-        'StrictHostKeyChecking=accept-new',
+        'StrictHostKeyChecking=yes',
         '-o',
         `UserKnownHostsFile=${value}`,
       ]);
@@ -215,5 +234,66 @@ describe('gitProbeFeatures', () => {
     const command = gitProbeFeatures(value as DeployRepoPath);
 
     expect(shellWords(renderRemoteCommand(command))).toEqual(command.argv);
+  });
+});
+
+function endpoint(input: string): GitSshEndpoint {
+  const parsed = gitSshEndpoint(valid(validateRepositoryUrl(input)));
+  if (!parsed) throw new Error(`no ssh endpoint for ${input}`);
+  return parsed;
+}
+
+describe('gitKeyscan (A3, H3)', () => {
+  it('scans one host on its port with an explicit timeout and only the accepted key types', () => {
+    const command = gitKeyscan(endpoint('ssh://git@git.example.com:2222/org/repo.git'));
+
+    expect(command.name).toBe('git.keyscan');
+    expect(command.stdin).toBe('none');
+    expect(command.supervisable).toBe(false);
+    expect(command.argv).toEqual([
+      'ssh-keyscan',
+      '-T',
+      '10',
+      '-t',
+      'ed25519,ecdsa,rsa',
+      '-p',
+      '2222',
+      '--',
+      'git.example.com',
+    ]);
+  });
+
+  it('uses port 22 and the normalized host for an scp-like URL', () => {
+    const command = gitKeyscan(endpoint('git@Git.Example.com:org/repo.git'));
+
+    expect(command.argv.slice(-4)).toEqual(['-p', '22', '--', 'git.example.com']);
+  });
+
+  it.each(ADVERSARIAL_VALUES)('round-trips a force-cast adversarial host %j as one literal word', (value) => {
+    const command = gitKeyscan({ host: value, port: 22, knownHostsHost: value } as unknown as GitSshEndpoint);
+
+    expect(shellWords(renderRemoteCommand(command))).toEqual(command.argv);
+    expect(command.argv.at(-1)).toBe(value);
+    expect(command.argv.at(-2)).toBe('--');
+  });
+});
+
+describe('no trust-on-first-use without pinning (A2)', () => {
+  const FORBIDDEN = ['accept', 'new'].join('-');
+  const packagesRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+
+  function sourceFiles(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name.startsWith('.')) return [];
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) return sourceFiles(path);
+      return /\.(ts|tsx|js|mjs|md|sh|txt)$/.test(entry.name) ? [path] : [];
+    });
+  }
+
+  it(`no file under packages/ mentions StrictHostKeyChecking=${FORBIDDEN}`, () => {
+    const offenders = sourceFiles(packagesRoot).filter((file) => readFileSync(file, 'utf8').includes(FORBIDDEN));
+
+    expect(offenders).toEqual([]);
   });
 });

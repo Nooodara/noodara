@@ -26,6 +26,14 @@ export const DEPLOYMENT_ERROR_COPY: Readonly<Record<DeploymentErrorCode, Deploym
     title: 'Repository host unreachable',
     recovery: 'Check that the server can reach the Git host (DNS and outbound network), then deploy again.',
   },
+  GIT_HOST_KEY_MISMATCH: {
+    title: 'Git host key changed',
+    recovery: "The Git host's SSH key does not match the pinned key. Verify the host's published key fingerprint before trusting it, then deploy again.",
+  },
+  GIT_HOST_KEY_UNAVAILABLE: {
+    title: 'Git host key unavailable',
+    recovery: "The server could not read the Git host's SSH key. Check the repository hostname and port and the server's outbound network, then deploy again.",
+  },
   UNSUPPORTED_REPOSITORY_FEATURE: {
     title: 'Unsupported repository feature',
     recovery: 'Git LFS and submodules are not supported yet. Remove them from the build or deploy from an image.',

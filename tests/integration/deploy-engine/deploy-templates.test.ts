@@ -5,7 +5,7 @@
 // SEC: every command line and every byte of output is kept in a transcript, and the last test
 // asserts that no secret (deploy key, token canary, registry password) ever appears in it.
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -30,6 +30,7 @@ import {
   gitCheckout,
   gitClone,
   gitHeadSha,
+  gitKeyscan,
   gitProbeFeatures,
   groupAlive,
   killGroup,
@@ -46,7 +47,10 @@ import {
   containerNameFor,
   deployWorkspaceFor,
   deploymentImageRefFor,
+  gitSshEndpoint,
+  knownHostsContent,
   networkNameFor,
+  parseKeyscanOutput,
   resolveRepoBuildPaths,
   validateBuildContextPath,
   validateCommitSha,
@@ -59,14 +63,18 @@ import {
   validateRepositoryUrl,
   validateResourceId,
   type DeployWorkspace,
+  type GitHostKey,
   type ValidationResult,
 } from '@noodara/domain/validators';
+import { createRedactor } from '@noodara/domain/security';
+import { classifyGitError } from '@noodara/ssh';
 import {
   DEPLOY_ENGINE_UBUNTU_VERSIONS,
   preloadedRefFor,
   startDeployEngineStack,
   type DeployEngineStack,
 } from '../helpers/deploy-engine.js';
+import { fixtureGitHostKey, wrongGitHostKey } from '../helpers/git-host-key.js';
 import { assertNoStrayTestContainers } from '../helpers/ssh.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -76,6 +84,8 @@ const SLOW_BUILD_DOCKERFILE = readFileSync(
   'utf8',
 );
 const SLOW_BUILD_STARTED = 'NOODARA_SLOW_BUILD_STARTED';
+const DEPLOY_ERRORS_DIR = path.resolve(HERE, '../../../packages/ssh/src/fixtures/deploy-errors');
+const CAPTURE_FIXTURES = process.env['NOODARA_CAPTURE_FIXTURES'] === '1';
 const STACK_TIMEOUT_MS = 900_000;
 const SSH_COMMAND_TIMEOUT_MS = 180_000;
 // Test setup only: the slow-build Dockerfile goes under the (not cloned) repo dir.
@@ -225,8 +235,14 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       }
     };
 
-    const cloneWithDeployKey = async (ws: DeployWorkspace, repoName: string): Promise<void> => {
+    /** 14-06: StrictHostKeyChecking=yes, so every clone is pinned to an explicit known_hosts. */
+    const cloneCommand = async (
+      ws: DeployWorkspace,
+      repoName: string,
+      hostKeys: readonly GitHostKey[],
+    ): Promise<RemoteCommand> => {
       await mustRun(writeSecretFile(ws.secretFile('deploy_key')), s().deployKey.privateKey);
+      await mustRun(writeSecretFile(ws.secretFile('known_hosts')), knownHostsContent(hostKeys));
       const clone = gitClone({
         url: valid(validateRepositoryUrl(s().gitRepoUrl(repoName))),
         branch: valid(validateGitBranch('main')),
@@ -237,7 +253,10 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
           knownHostsFile: ws.secretFile('known_hosts'),
         },
       });
-      await mustRun(supervise(ws.pidFile('clone'), clone));
+      return supervise(ws.pidFile('clone'), clone);
+    };
+    const cloneWithDeployKey = async (ws: DeployWorkspace, repoName: string): Promise<void> => {
+      await mustRun(await cloneCommand(ws, repoName, [await fixtureGitHostKey(s())]));
     };
 
     beforeAll(async () => {
@@ -322,6 +341,69 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
 
         expect(probe).toBe('submodules=1\nlfs=1\n');
         expect(submoduleDir).toBe('0');
+      });
+    });
+
+    it('14-06 A3/H3: git.keyscan returns the git host key and parseKeyscanOutput keeps only that host', async () => {
+      const endpoint = gitSshEndpoint(valid(validateRepositoryUrl(s().gitRepoUrl('node-api'))));
+      if (endpoint === null) throw new Error('expected an ssh endpoint');
+
+      const scanned = await run(gitKeyscan(endpoint));
+      const keys = parseKeyscanOutput(scanned.stdout, endpoint);
+
+      expect(scanned.exitCode).toBe(0);
+      expect(keys).toContainEqual(await fixtureGitHostKey(s()));
+      expect(keys.every((key) => key.host === endpoint.knownHostsHost)).toBe(true);
+    });
+
+    it('14-06 A3: a clone pinned to the scanned keys succeeds under StrictHostKeyChecking=yes', async () => {
+      const endpoint = gitSshEndpoint(valid(validateRepositoryUrl(s().gitRepoUrl('node-api'))));
+      if (endpoint === null) throw new Error('expected an ssh endpoint');
+      const keys = parseKeyscanOutput(await mustRun(gitKeyscan(endpoint)), endpoint);
+
+      await withWorkspace(async (ws) => {
+        const clone = await run(await cloneCommand(ws, 'node-api', keys));
+
+        expect(clone.exitCode, clone.stderr).toBe(0);
+        expect(clone.stderr).not.toContain('Permanently added');
+      });
+    });
+
+    it('14-06 A4: a clone pinned to the wrong host key is refused and classified GIT_HOST_KEY_MISMATCH', async () => {
+      const fixturePath = path.join(
+        DEPLOY_ERRORS_DIR,
+        `ubuntu-${ubuntu}`,
+        'git-host-key-mismatch.txt',
+      );
+      await withWorkspace(async (ws) => {
+        const clone = await run(await cloneCommand(ws, 'node-api', [wrongGitHostKey()]));
+        const classified = classifyGitError(
+          {
+            kind: 'command',
+            operation: 'clone',
+            failure: {
+              exitCode: clone.exitCode,
+              stderr: clone.stderr,
+              stdoutTail: clone.stdout,
+            },
+          },
+          { redactor: createRedactor() },
+        );
+
+        if (CAPTURE_FIXTURES) {
+          mkdirSync(path.dirname(fixturePath), { recursive: true });
+          writeFileSync(fixturePath, `# exit=${String(clone.exitCode)}\n${clone.stderr}`);
+        }
+        expect(clone.exitCode).toBe(128);
+        expect(clone.stderr).toMatch(/Host key verification failed\./);
+        expect(clone.stderr).not.toContain('BEGIN');
+        expect(classified.code).toBe('GIT_HOST_KEY_MISMATCH');
+        expect(
+          await rootOut(['sh', '-c', 'test -e "$0" && echo present || echo gone', ws.repo]),
+        ).toBe('gone');
+        const fixture = readFileSync(fixturePath, 'utf8');
+        expect(fixture.split('\n')[0]).toBe('# exit=128');
+        expect(fixture).toMatch(/Host key verification failed\./);
       });
     });
 

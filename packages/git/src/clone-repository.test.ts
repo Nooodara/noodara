@@ -7,9 +7,15 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRedactor, revealSecret, secretValue, type Redactor } from '@noodara/domain/security';
 import {
+  bundledGitHostKeysFor,
   deployWorkspaceFor,
+  gitSshEndpoint,
+  knownHostsContent,
+  parseGitHostKeyLine,
   validateServiceSource,
   type DeployWorkspace,
+  type GitHostKey,
+  type GitSshEndpoint,
   type ServiceSource,
 } from '@noodara/domain/validators';
 import {
@@ -126,15 +132,35 @@ function workspace(): DeployWorkspace {
   return ws.value;
 }
 
-function gitSource(): Extract<ServiceSource, { kind: 'git' }> {
+function gitSource(
+  repositoryUrl = 'git@github.com:acme/api.git',
+): Extract<ServiceSource, { kind: 'git' }> {
   const source = validateServiceSource({
     kind: 'git',
-    repositoryUrl: 'git@github.com:acme/api.git',
+    repositoryUrl,
     branch: 'main',
   });
-  if (!source.ok || source.value.kind !== 'git') throw new Error('test setup: source');
+  if (!source.ok || source.value.kind !== 'git')
+    throw new Error(`test setup: source ${repositoryUrl}`);
   return source.value;
 }
+
+function endpointOf(repositoryUrl: string): GitSshEndpoint {
+  const endpoint = gitSshEndpoint(gitSource(repositoryUrl).repositoryUrl);
+  if (endpoint === null) throw new Error('test setup: endpoint');
+  return endpoint;
+}
+
+function hostKey(line: string): GitHostKey {
+  const parsed = parseGitHostKeyLine(line);
+  if (!parsed.ok) throw new Error(`test setup: host key ${line}`);
+  return parsed.value;
+}
+
+const GITHUB_KEYS = bundledGitHostKeysFor(endpointOf('git@github.com:acme/api.git'));
+const ED25519_BLOB = 'AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl';
+const SELF_HOSTED_URL = 'ssh://git@git.example.com:2222/acme/api.git';
+const SELF_HOSTED_LINE = `[git.example.com]:2222 ssh-ed25519 ${ED25519_BLOB}`;
 
 /** A fresh PEM-shaped canary per run (SEC: per-run secrets from crypto.randomBytes). */
 function canaryKey(): string {
@@ -207,7 +233,7 @@ describe('cloneRepository with a deploy key', () => {
     expect(keyWrite.stdin).toBe(key);
     const knownHostsWrite = session.call('secrets.write_file', 1);
     expect(knownHostsWrite.command.argv.at(-1)).toBe(ws.secretFile('known_hosts'));
-    expect(knownHostsWrite.stdin).toBe('');
+    expect(knownHostsWrite.stdin).toBe(knownHostsContent(GITHUB_KEYS));
 
     const clone = session.call('process.supervise').command.argv;
     expect(clone).toContain(ws.pidFile('clone'));
@@ -332,11 +358,13 @@ describe('cloneRepository with an HTTPS token', () => {
 });
 
 describe('cloneRepository without a credential', () => {
-  it('issues no secrets.* command and no auth environment', async () => {
+  it('issues no secrets.* command and no auth environment for an https URL', async () => {
     const redactor = createRedactor();
     const session = new RecordingSession(redactor);
 
-    const result = await run(session, redactor, { kind: 'none' });
+    const result = await run(session, redactor, { kind: 'none' }, {
+      source: gitSource('https://github.com/acme/api.git'),
+    });
 
     expect(result.ok).toBe(true);
     expect(session.names()).toEqual([
@@ -347,6 +375,254 @@ describe('cloneRepository without a credential', () => {
     ]);
     const clone = session.call('process.supervise').command.argv;
     expect(clone.some((token) => token.startsWith('GIT_SSH_COMMAND=') || token.startsWith('GIT_ASKPASS='))).toBe(false);
+  });
+});
+
+describe('cloneRepository host key pinning (14-06)', () => {
+  const deployKey = (): GitCredential => ({
+    kind: 'deploy_key',
+    privateKey: secretValue(canaryKey(), 'ssh_private_key'),
+  });
+
+  function sshCommand(session: RecordingSession): string {
+    const token = session
+      .call('process.supervise')
+      .command.argv.find((entry) => entry.startsWith('GIT_SSH_COMMAND='));
+    if (token === undefined) throw new Error('no GIT_SSH_COMMAND');
+    return token;
+  }
+
+  it('pins a bundled host to its published keys with strict checking and never scans it (A2)', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor);
+
+    const result = await run(session, redactor, deployKey());
+
+    expect(GITHUB_KEYS.length).toBeGreaterThan(0);
+    expect(result).toMatchObject({
+      ok: true,
+      value: { hostKeys: GITHUB_KEYS, hostKeySource: 'bundled' },
+    });
+    expect(session.names()).not.toContain('git.keyscan');
+    expect(session.call('secrets.write_file', 1).stdin).toBe(knownHostsContent(GITHUB_KEYS));
+    expect(sshCommand(session)).toContain('StrictHostKeyChecking=yes');
+    expect(sshCommand(session)).toContain(workspace().secretFile('known_hosts'));
+  });
+
+  it('matches the bundled keys for an alternate spelling of the host (H4)', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor);
+
+    const result = await run(session, redactor, deployKey(), {
+      source: gitSource('git@GitHub.COM:acme/api.git'),
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: { hostKeySource: 'bundled' },
+    });
+    expect(session.names()).not.toContain('git.keyscan');
+  });
+
+  it('pins an ssh URL without a credential too: known_hosts is written and strict checking is on', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor);
+
+    const result = await run(session, redactor, { kind: 'none' });
+
+    expect(result.ok).toBe(true);
+    expect(session.names()).toEqual([
+      'fs.prepare_workspace',
+      'secrets.write_file',
+      'process.supervise',
+      'git.head_sha',
+      'git.probe_features',
+    ]);
+    expect(session.call('secrets.write_file').stdin).toBe(knownHostsContent(GITHUB_KEYS));
+    expect(sshCommand(session)).toContain('StrictHostKeyChecking=yes');
+    expect(sshCommand(session)).not.toContain(' -i ');
+  });
+
+  it('uses a pinned key for a non-default port as [host]:port and does not scan (H4)', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor);
+    const pinned = hostKey(SELF_HOSTED_LINE);
+
+    const result = await run(session, redactor, deployKey(), {
+      source: gitSource(SELF_HOSTED_URL),
+      pinnedHostKeys: [pinned],
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: { hostKeys: [pinned], hostKeySource: 'pinned' },
+    });
+    expect(session.names()).not.toContain('git.keyscan');
+    expect(session.call('secrets.write_file', 1).stdin).toBe(`${SELF_HOSTED_LINE}\n`);
+  });
+
+  it('ignores a pinned key of another host or port and scans instead', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, {
+      'git.keyscan': { stdout: `${SELF_HOSTED_LINE}\n` },
+    });
+
+    const result = await run(session, redactor, deployKey(), {
+      source: gitSource(SELF_HOSTED_URL),
+      pinnedHostKeys: [hostKey(`git.example.com ssh-ed25519 ${ED25519_BLOB}`)],
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: { hostKeySource: 'scanned' },
+    });
+    expect(session.names()).toContain('git.keyscan');
+  });
+
+  it('scans a host without a bundled or pinned key, keeps only its own key lines and pins the clone to them (A3, H3)', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, {
+      'git.keyscan': {
+        stdout: [
+          SELF_HOSTED_LINE,
+          `evil.example.com ssh-ed25519 ${ED25519_BLOB}`,
+          `git.example.com ssh-ed25519 ${ED25519_BLOB}`,
+          `@cert-authority [git.example.com]:2222 ssh-ed25519 ${ED25519_BLOB}`,
+          '',
+        ].join('\n'),
+        stderr: '# git.example.com:2222 SSH-2.0-OpenSSH_9.6\n',
+      },
+    });
+
+    const result = await run(session, redactor, deployKey(), {
+      source: gitSource(SELF_HOSTED_URL),
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        hostKeys: [hostKey(SELF_HOSTED_LINE)],
+        hostKeySource: 'scanned',
+      },
+    });
+    expect(session.names()).toEqual([
+      'fs.prepare_workspace',
+      'git.keyscan',
+      'secrets.write_file',
+      'secrets.write_file',
+      'process.supervise',
+      'git.head_sha',
+      'git.probe_features',
+    ]);
+    expect(session.call('git.keyscan').command.argv).toEqual(
+      expect.arrayContaining(['ssh-keyscan', '-T', '-p', '2222', 'git.example.com']),
+    );
+    expect(session.call('secrets.write_file', 1).stdin).toBe(`${SELF_HOSTED_LINE}\n`);
+    expect(sshCommand(session)).toContain('StrictHostKeyChecking=yes');
+  });
+
+  it('bounds the scan with its own short limits, never longer than the caller limits', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, {
+      'git.keyscan': { stdout: `${SELF_HOSTED_LINE}\n` },
+    });
+    const controller = new AbortController();
+
+    await run(session, redactor, deployKey(), {
+      source: gitSource(SELF_HOSTED_URL),
+      signal: controller.signal,
+    });
+
+    const options = session.call('git.keyscan').options;
+    expect(options.maxDurationMs).toBeLessThanOrEqual(30_000);
+    expect(options.maxDurationMs).toBeLessThanOrEqual(LIMITS.maxDurationMs);
+    expect(options.idleTimeoutMs).toBeLessThanOrEqual(LIMITS.idleTimeoutMs);
+    expect(options.maxTotalBytes).toBeLessThanOrEqual(64 * 1024);
+    expect(options.signal).toBe(controller.signal);
+  });
+
+  it.each([
+    ['empty output', { stdout: '' }],
+    ['only another host', { stdout: `evil.example.com ssh-ed25519 ${ED25519_BLOB}\n` }],
+    ['truncated output', { stdout: `${SELF_HOSTED_LINE}\n`, truncated: true }],
+    ['a non-zero exit', { exitCode: 1, stdout: `${SELF_HOSTED_LINE}\n` }],
+    ['a timeout', { outcome: 'timed_out', exitCode: null }],
+    ['an idle timeout', { outcome: 'idle_timeout', exitCode: null }],
+  ] as const)(
+    'fails closed with GIT_HOST_KEY_UNAVAILABLE on %s and never clones (H3)',
+    async (_label, script) => {
+      const redactor = createRedactor();
+      const session = new RecordingSession(redactor, { 'git.keyscan': script });
+
+      const result = await run(session, redactor, deployKey(), {
+        source: gitSource(SELF_HOSTED_URL),
+      });
+
+      expect(result).toMatchObject({
+        ok: false,
+        kind: 'failed',
+        code: 'GIT_HOST_KEY_UNAVAILABLE',
+      });
+      if (!result.ok && result.kind === 'failed')
+        expect(result.message).not.toContain(ED25519_BLOB);
+      expect(session.names()).not.toContain('secrets.write_file');
+      expect(session.names()).not.toContain('process.supervise');
+    },
+  );
+
+  it('reports a cancelled scan as aborted, not as a missing key', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, {
+      'git.keyscan': { outcome: 'aborted', exitCode: null },
+    });
+
+    const result = await run(session, redactor, deployKey(), {
+      source: gitSource(SELF_HOSTED_URL),
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      kind: 'interrupted',
+      outcome: 'aborted',
+    });
+    expect(session.names()).not.toContain('process.supervise');
+  });
+
+  it('classifies a host key verification failure on the clone as GIT_HOST_KEY_MISMATCH (A4)', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, {
+      'process.supervise': {
+        exitCode: 128,
+        stderr:
+          "Cloning into 'repo'...\nHost key verification failed.\nfatal: Could not read from remote repository.\n",
+      },
+    });
+
+    const result = await run(session, redactor, deployKey());
+
+    expect(result).toMatchObject({
+      ok: false,
+      kind: 'failed',
+      code: 'GIT_HOST_KEY_MISMATCH',
+    });
+  });
+
+  it('writes nothing about host keys for an https URL', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor);
+
+    const result = await run(
+      session,
+      redactor,
+      { kind: 'none' },
+      { source: gitSource('https://github.com/acme/api.git') },
+    );
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: { hostKeys: [], hostKeySource: 'none' },
+    });
+    expect(session.names()).not.toContain('git.keyscan');
   });
 });
 

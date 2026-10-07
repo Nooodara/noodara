@@ -3,12 +3,15 @@
 // allows only the https and ssh transports (defense in depth next to the D-05 URL validator), and
 // resets every configured credential helper so none (e.g. `store`) can persist an HTTPS token.
 // Git exits 128 for every failure class (ADR 0008 G1): callers classify stderr, never the code.
+// ssh always runs with StrictHostKeyChecking=yes against a known_hosts file written from a bundled
+// or pinned key (14-06); gitKeyscan is the only way to learn a key for a host that is not bundled.
 import type {
   CommitSha,
   DeployRepoPath,
   DeploySecretPath,
   DeployWorkspace,
   GitBranch,
+  GitSshEndpoint,
   RepositoryUrl,
 } from '@noodara/domain/validators';
 import { escapeShellArg } from './allowlist.js';
@@ -18,7 +21,8 @@ import { askpassFileFor } from './workspace.js';
 
 /** Paths only: no variant can carry a secret value (T-11-35). */
 export type GitCloneAuth =
-  | { readonly kind: 'none' }
+  /** `knownHostsFile` is set for an ssh URL: the host is still pinned without an identity. */
+  | { readonly kind: 'none'; readonly knownHostsFile?: DeploySecretPath }
   | {
       readonly kind: 'deploy_key';
       readonly keyFile: DeploySecretPath;
@@ -34,14 +38,20 @@ export interface GitCloneInput {
   readonly auth: GitCloneAuth;
 }
 
+function strictHostKeyOptions(knownHostsFile: DeploySecretPath): string {
+  return `-o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${escapeShellArg(knownHostsFile)}`;
+}
+
 function authEnv(auth: GitCloneAuth): string[] {
   switch (auth.kind) {
     case 'none':
-      return [];
+      return auth.knownHostsFile === undefined
+        ? []
+        : [`GIT_SSH_COMMAND=ssh ${strictHostKeyOptions(auth.knownHostsFile)}`];
     case 'deploy_key':
       // git evaluates GIT_SSH_COMMAND with sh, so both paths are quoted a second time.
       return [
-        `GIT_SSH_COMMAND=ssh -i ${escapeShellArg(auth.keyFile)} -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=${escapeShellArg(auth.knownHostsFile)}`,
+        `GIT_SSH_COMMAND=ssh -i ${escapeShellArg(auth.keyFile)} -o IdentitiesOnly=yes ${strictHostKeyOptions(auth.knownHostsFile)}`,
       ];
     case 'https_token':
       // git runs GIT_ASKPASS without a shell; both values are fixed workspace paths.
@@ -108,6 +118,32 @@ export function gitProbeFeatures(repo: DeployRepoPath): RemoteCommand {
   return createRemoteCommand({
     name: 'git.probe_features',
     argv: ['sh', '-c', SHELL_SCRIPTS.probeFeatures, repo],
+    stdin: 'none',
+    supervisable: false,
+  });
+}
+
+/** ssh-keyscan's per-connection timeout, in seconds. */
+export const GIT_KEYSCAN_TIMEOUT_SECONDS = 10;
+
+/**
+ * A3/H3: reads the host keys of a Git host that has no bundled key. Its output is untrusted and
+ * must go through parseKeyscanOutput, which keeps only the requested host's accepted keys.
+ */
+export function gitKeyscan(endpoint: GitSshEndpoint): RemoteCommand {
+  return createRemoteCommand({
+    name: 'git.keyscan',
+    argv: [
+      'ssh-keyscan',
+      '-T',
+      String(GIT_KEYSCAN_TIMEOUT_SECONDS),
+      '-t',
+      'ed25519,ecdsa,rsa',
+      '-p',
+      String(endpoint.port),
+      '--',
+      endpoint.host,
+    ],
     stdin: 'none',
     supervisable: false,
   });

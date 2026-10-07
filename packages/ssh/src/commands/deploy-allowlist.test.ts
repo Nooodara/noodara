@@ -24,6 +24,7 @@ const EXPECTED_DEPLOY_COMMAND_NAMES: readonly DeployCommandName[] = [
   "git.checkout",
   "git.head_sha",
   "git.probe_features",
+  "git.keyscan",
   "fs.prepare_workspace",
   "fs.remove_deploy_dir",
   "secrets.write_file",
@@ -71,9 +72,9 @@ const ALLOWED_PARAMETERS = new Set([
 ]);
 
 describe("DEPLOY_COMMAND_NAMES", () => {
-  it("is exactly the 27 expected names, in order", () => {
+  it("is exactly the 28 expected names, in order", () => {
     expect(DEPLOY_COMMAND_NAMES).toEqual(EXPECTED_DEPLOY_COMMAND_NAMES);
-    expect(DEPLOY_COMMAND_NAMES).toHaveLength(27);
+    expect(DEPLOY_COMMAND_NAMES).toHaveLength(28);
   });
 
   it("is frozen", () => {

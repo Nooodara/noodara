@@ -96,6 +96,8 @@ const REPOSITORY_NOT_FOUND_PATTERN =
   /does not appear to be a git repository|ERROR: Repository not found\.|remote: Repository not found\./;
 const BRANCH_NOT_FOUND_PATTERN = /Remote branch \S+ not found in upstream origin/;
 const DISK_FULL_PATTERN = /No space left on device/;
+const HOST_KEY_MISMATCH_PATTERN =
+  /REMOTE HOST IDENTIFICATION HAS CHANGED!|Host key verification failed\.|host key is known for \S+ and you have requested strict checking/;
 
 /**
  * Ordered, frozen rule table. The feature-probe rule is structured and comes first (D-09);
@@ -116,6 +118,15 @@ export const GIT_ERROR_CLASSIFICATION_RULES: readonly DeploymentClassificationRu
       matches: (input) => stderrMatches(input, DISK_FULL_PATTERN),
       message: () =>
         'The server ran out of disk space while fetching the repository. Free disk space on the server, then redeploy.',
+    },
+    {
+      // 14-06: StrictHostKeyChecking=yes refused the host (changed key, or no pinned key of the
+      // offered type). Before auth: ssh never authenticates to an unverified host.
+      name: 'git-host-key-mismatch',
+      code: 'GIT_HOST_KEY_MISMATCH',
+      matches: (input) => stderrMatches(input, HOST_KEY_MISMATCH_PATTERN),
+      message: () =>
+        "The Git host's SSH host key does not match the pinned key, so the clone was stopped. Verify the host's published key fingerprint before trusting a new key, then redeploy.",
     },
     {
       name: 'repository-auth-failed',

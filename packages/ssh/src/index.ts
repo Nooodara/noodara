@@ -69,6 +69,7 @@ export {
   gitCheckout,
   gitClone,
   gitHeadSha,
+  gitKeyscan,
   gitProbeFeatures,
   groupAlive,
   killGroup,

@@ -29,6 +29,7 @@ import {
   validateResourceId,
   validateServiceSource,
   type DeployWorkspace,
+  type GitHostKey,
   type ImageRef,
   type ResourceId,
   type ServiceSource,
@@ -62,6 +63,7 @@ import {
   startDeployEngineStack,
   type DeployEngineStack,
 } from '../helpers/deploy-engine.js';
+import { fixtureGitHostKey } from '../helpers/git-host-key.js';
 import { assertNoStrayTestContainers } from '../helpers/ssh.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -207,6 +209,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
   (ubuntu) => {
     let stack: DeployEngineStack | undefined;
     let session: SshDeploySession | undefined;
+    let fixtureHostKey: GitHostKey | undefined;
     const redactor: Redactor = createRedactor();
     /** Every chunk, tail and failure message any wrapper produced in this suite. */
     const transcript: string[] = [];
@@ -223,6 +226,10 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     const s = (): DeployEngineStack => {
       if (stack === undefined) throw new Error('stack not started');
       return stack;
+    };
+    const gitHostKey = (): GitHostKey => {
+      if (fixtureHostKey === undefined) throw new Error('fixture host key not read');
+      return fixtureHostKey;
     };
     const sess = (): SshDeploySession => {
       if (session === undefined) throw new Error('session not connected');
@@ -269,6 +276,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         workspace: run.workspace,
         source: gitSource(repo),
         credential: deployKey(),
+        // 14-06: the fixture git host has no bundled key; pin it like a stored per-service key.
+        pinnedHostKeys: [gitHostKey()],
         limits: LIMITS,
         onChunk: (chunk) => {
           transcript.push(chunk.text);
@@ -310,6 +319,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
           },
         ],
       });
+      fixtureHostKey = await fixtureGitHostKey(stack);
       const outcome = await createSsh2Adapter().connect({
         target: { host: stack.ssh.host, port: stack.ssh.port, user: stack.ssh.user },
         credential: {
