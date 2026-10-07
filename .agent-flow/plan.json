@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-07T11:34:12.745Z",
+  "updatedAt": "2026-10-07T15:12:06.379Z",
   "cursor": {
     "phase": null,
     "task": null
@@ -3313,7 +3313,16 @@
               "id": "A4",
               "text": "docs/install.md says where logs live and their size bounds",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "Log limits are bounded values (max-size and max-file are positive, max-size in the documented range) and the postgres and redis services keep their existing healthchecks and volumes unchanged by the logging block; the unit test fails on a missing or empty logging.options",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation"
           ],
           "tier": "light"
         },
@@ -3357,8 +3366,24 @@
               "id": "A4",
               "text": "The code stays POSIX sh and pnpm check:posix-sh passes",
               "proof": "posix-sh"
+            },
+            {
+              "id": "H1",
+              "text": "The backup is written atomically with mode 600 from creation (umask set before write, or temp file then rename), and a failure of the prune step (unreadable dir, rm error) never aborts the upgrade nor deletes the freshly written backup or .env",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "NOODARA_ENV_BACKUPS_KEEP values of 0, negative, non-numeric, empty or with whitespace/shell metacharacters fall back to a clear error or the default 5 without running rm, and file names with spaces or leading '-' are handled safely (rm -- with quoted paths, no word splitting)",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "Pruning orders backups by the 14-digit timestamp in the name, not by mtime, so a touched or restored older backup is not kept over a newer one; same-second duplicates do not collide",
+              "proof": "test"
             }
           ],
+          "waives": [],
           "tier": "standard"
         },
         {
@@ -3393,8 +3418,19 @@
               "id": "A3",
               "text": "The scanner's output format and exit codes do not change (ci.yml keeps using it unchanged)",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "The scanner never throws or hangs on empty files, files without trailing newline, unterminated heredocs, quoted heredoc delimiters (<<'EOF', <<-EOF) and CRLF input; unterminated heredocs are reported as a finding, not silently treated as comment text, and a bashism after the heredoc terminator is still reported",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "A real bashism on the same line as a suppressed pattern (for example $(( )) followed by [[ ]] or a trailing comment containing $') is still reported, so the false-positive fixes cannot mask real findings",
+              "proof": "test"
             }
           ],
+          "waives": [],
           "tier": "standard"
         },
         {
@@ -3429,8 +3465,14 @@
               "id": "A2",
               "text": "pnpm check:posix-sh passes on the new install.sh and the full installer suite is green on 22.04 and 24.04",
               "proof": "installer"
+            },
+            {
+              "id": "H1",
+              "text": "After removing the workarounds, install.sh arithmetic and character-class behavior is verified on dash (the 22.04/24.04 /bin/sh) with a unit test that executes the changed expressions, including empty/zero/non-numeric operands, rather than only passing the static scan",
+              "proof": "test"
             }
           ],
+          "waives": [],
           "tier": "standard"
         },
         {
@@ -3476,7 +3518,23 @@
               "id": "A4",
               "text": "ADR 0003 records the new runtime layout and the measured size before and after",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "The runner image runs as a non-root user, contains no devDependencies, build toolchain, pnpm store or source maps beyond dist, and the .dockerignore excludes .env*, .git and node_modules so no secret or local env file can be copied into any layer; a test inspects docker history/filesystem for these",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "The 600 MB threshold is a named constant checked against the actual built image in the same test run (not a hard-coded measured value), and the size check fails with the measured size in its message; the multi-arch (arm64) image is also under the limit or the arm64 size is recorded",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "persistence"
           ],
           "tier": "deep"
         },
@@ -3522,8 +3580,29 @@
               "id": "A4",
               "text": "A host key mismatch is classified as GIT_HOST_KEY_MISMATCH from git/ssh output (ADR 0008 text classification), with a fixture per Ubuntu version",
               "proof": "it-deploy-templates"
+            },
+            {
+              "id": "H1",
+              "text": "The bundled host keys have a recorded provenance (official publication URL and fetch date) and a test asserts each bundled line parses, has the expected type (ed25519/rsa/ecdsa) and fingerprint SHA256 matching the vendor-published fingerprint constant, so a typo or substituted key fails CI",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "The host key parser rejects lines with option prefixes, embedded newlines, wildcards or hashed hosts, leading '-', non-base64 key bodies, mismatched type/key blob, and over-long input; and the known_hosts file content is built only from validated parts (host validated, no interpolation of repo-controlled text into shell), proven with hostile hosts ($(), backticks, ';', spaces)",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "The ssh-keyscan template output is treated as untrusted: only the single requested host's key lines of an accepted type are returned, extra lines or hosts are dropped, a keyscan timeout or empty output fails closed with a named error, and the clone never proceeds without a pinned key even when keyscan fails",
+              "proof": "test"
+            },
+            {
+              "id": "H4",
+              "text": "Non-default ports and ssh:// URLs with port (host key stored as [host]:port) pin and match correctly, and host comparison is case-insensitive and ignores trailing dots so a mismatch cannot be bypassed by alternate spellings",
+              "proof": "test"
             }
           ],
+          "waives": [],
           "tier": "deep"
         },
         {
@@ -3575,7 +3654,35 @@
               "id": "A4",
               "text": "HTTPS clones are unaffected (contracts-https-token stays green); error-codes.mdx and docs/deploy-engine.md document the new code and the reset",
               "proof": "it-https-token"
+            },
+            {
+              "id": "H1",
+              "text": "The TOFU store is race-safe: two concurrent first clones of the same non-bundled host for one service result in exactly one stored key (conditional update where git_host_key is null) and the loser verifies against the winner's key instead of overwriting it; a rotated key is never auto-replaced",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "The migration is additive with nullable columns, applies cleanly on a DB with existing services, existing services with no stored key behave as first clone, and changing the service git URL host clears or re-keys the pinned key so a stale pin neither blocks nor is silently reused for a different host",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "GIT_HOST_KEY_MISMATCH error message, activity events, logs and API responses contain neither the offending nor the pinned key blob (fingerprint at most), covered by the security:scan-leaks canary or an equivalent assertion; remote ssh stderr is not echoed raw",
+              "proof": "test"
+            },
+            {
+              "id": "H4",
+              "text": "noodara services reset-host-key validates the serviceId argument (UUID, else exit non-zero with a named error and no DB write), is idempotent on a service with no pinned key, returns non-zero for an unknown service without revealing other data, and takes effect on the next deploy",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "http-api/url-scheme-allowlist",
+            "persistence/atomic-write",
+            "persistence/missing-file-boot",
+            "randomness/crypto-random"
           ],
           "tier": "deep"
         },
@@ -3620,7 +3727,27 @@
               "id": "A3",
               "text": "The integration test reproduces Postgres+Redis down during enqueue, brings them back, and sees the deployment end FAILED/ENQUEUE_FAILED with deployment.updated published and the 409 lock released",
               "proof": "it-deploy-queue"
+            },
+            {
+              "id": "H1",
+              "text": "The stale-QUEUED threshold env is range-validated (minimum above the longest legitimate enqueue-to-pickup delay, such as the BullMQ backoff, and a maximum) with a named boot error, listed in turbo.json passThroughEnv and .env.example per ADR 0003",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "The sweep decision uses an authoritative BullMQ job lookup with a Redis error treated as unknown (skip, retry next tick), never as 'no job'; a Redis outage during the sweep must not fail healthy QUEUED deployments, and the sweep is idempotent when run twice or by two workers concurrently (conditional UPDATE ... WHERE status='QUEUED', one activity event)",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "The ENQUEUE_FAILED failure writes an activity event and deployment.updated with an actionable closed-vocabulary message and no raw Redis/Postgres error text; the sweep is bounded per tick (batch limit) so a large backlog cannot block the worker",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "persistence/atomic-write",
+            "persistence/missing-file-boot"
           ],
           "tier": "deep"
         },
@@ -3657,8 +3784,19 @@
               "id": "A3",
               "text": "The stale comment in exec-streaming.ts and OPEN_QUESTIONS #7 wording are updated",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "A stdin secret that was split across the final two chunks, or echoed after the stream ended with a non-zero exit, is redacted before release; release is idempotent (a second call or a throw in the release path does not leak, double-free another stream's secret, or crash the worker), and a concurrent execStreaming call holding the same secret value keeps its own registration",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "The registered stdin secrets are not retained after release (heap or registry size returns to baseline after N streams, including aborted ones), proven with a loop test that asserts the Redactor registry is empty",
+              "proof": "test"
             }
           ],
+          "waives": [],
           "tier": "standard"
         },
         {
@@ -3708,7 +3846,26 @@
               "id": "A4",
               "text": "ADR 0009 records the policy, the host-wide impact and how to disable it (NOODARA_BUILD_CACHE_PRUNE=off)",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "The prune filter and age come from validated constants or env (NOODARA_BUILD_CACHE_PRUNE accepts only on|off, other values fail boot with a named error), the template takes no free strings, and a prune never runs while another deployment on the same server is BUILDING (skipped, retried on a later deployment)",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "The Redis once-per-24h key is set atomically (SET NX with TTL) before the prune so two concurrent deployments on one server run one prune; on Redis failure the prune is skipped, not run unbounded, and a failed prune releases or shortens the key so it is retried rather than silenced for 24 h",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "The prune never exceeds a hard timeout and its output (which can list cache IDs) is not persisted or published to build logs; with NOODARA_BUILD_CACHE_PRUNE=off no prune command is issued, proven with a fake port",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "persistence/missing-file-boot"
           ],
           "tier": "standard"
         },
@@ -3740,8 +3897,14 @@
               "id": "A2",
               "text": "With port 3000 free the boot suite is green; OPEN_QUESTIONS #3 is resolved",
               "proof": "it-boot"
+            },
+            {
+              "id": "H1",
+              "text": "The port-3000 precheck distinguishes a port held by another process from a stale Noodara test stack and, when it fails, exits before any container or DB is started so no resources are left behind; the check is skipped when an explicit alternative port env is configured",
+              "proof": "test"
             }
           ],
+          "waives": [],
           "tier": "light"
         },
         {
@@ -3776,8 +3939,14 @@
               "id": "A2",
               "text": "pnpm boundaries still passes and it-engine-primitives is green on both Ubuntu versions; OPEN_QUESTIONS #2 is resolved",
               "proof": "it-engine-primitives"
+            },
+            {
+              "id": "H1",
+              "text": "The workspace:* devDependencies are pinned in pnpm-lock.yaml and CI installs with --frozen-lockfile; adding them does not make @noodara/git or @noodara/docker importable from apps/ or packages/domain (pnpm boundaries still rejects such imports), and the tests still resolve the built or source entrypoint consistently with ADR 0003",
+              "proof": "test"
             }
           ],
+          "waives": [],
           "tier": "light"
         },
         {
@@ -3822,8 +3991,19 @@
               "id": "A4",
               "text": "noodara-ux-review passes on the three screens in light and dark at 375 and 1280 px, with screenshots in docs/ui-review/phase-14/ approved by a human",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "The overflow menu and middle-truncated URL are keyboard operable and screen-reader labeled (menu button aria-label and aria-expanded, focus trap and Escape return focus, full URL exposed via accessible name), with an axe check on the three screens at 375 px, and the touch targets are at least 44 px",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "No horizontal page scroll at 375 px and 1280 px on the three screens even with a 300-character unbroken service name and repo URL (Playwright assertion scrollWidth <= clientWidth), and the full URL is rendered as inert text (no HTML interpretation)",
+              "proof": "test"
             }
           ],
+          "waives": [],
           "tier": "deep"
         },
         {
@@ -3874,7 +4054,21 @@
               "id": "A3",
               "text": "The public site and install docs describe v0.2 (projects, services, deploy) with no placeholders for v0.4 features",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "Release version bumps are consistent: the control-plane, web and root package.json versions and the published image tags derive from one tag, and a script test fails if the tag, package versions and release notes version disagree; the -rc.N regex rejects malformed tags (v0.2.0-rc, v0.2.0-rc.0x, v0.2.0-rcfoo) and never publishes the 'latest' image tag or Release for an rc",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "The release workflow keeps least-privilege permissions, pinned action SHAs (check-workflow-pins) and does not echo secrets; the installer resolving 'latest' ignores prerelease tags even when an rc is the newest tag, proven against a fake releases API response",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap"
           ],
           "tier": "standard"
         },
@@ -3924,7 +4118,15 @@
               "id": "A4",
               "text": "No .skip/.only/fixme added in phase 14 without a linked justification",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Gate evidence logs under docs/releases/v0.2-gate-logs/ are scanned for secrets (security:scan-leaks or a canary pattern check) before commit and carry the commit SHA and date of the run, and a check fails if a gate row is marked passing without a log file referenced",
+              "proof": "test"
             }
+          ],
+          "waives": [
+            "auth-secrets/secret-logging"
           ],
           "tier": "standard"
         },
@@ -3972,7 +4174,18 @@
               "id": "A5",
               "text": "The gate verdict is READY or the blocking rows are listed",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "The rc.1 and v0.2.0 multi-arch images are verified by digest (manifest contains linux/amd64 and linux/arm64) and the installer on the real VPS pulls by the tagged version, with the digest recorded; the upgrade rollback step confirms the DB schema from migrations 0005+ is handled (documented as data-compatible or with an explicit down/restore-from-backup procedure) and a pre-upgrade backup was taken",
+              "proof": "manual"
             }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "persistence/atomic-write",
+            "persistence/missing-file-boot"
           ]
         },
         {
@@ -4013,7 +4226,18 @@
               "id": "A3",
               "text": "OPEN_QUESTIONS #2, #3, #7 and #11 are resolved; #4\u20136, #9 and #10 are confirmed by the user or kept open with an owner",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "No VPS credentials, tokens, deploy keys or IPs of the real server appear in the committed HUMAN-UAT, gate or verification documents or in screenshots (redacted), checked before publishing v0.2.0",
+              "proof": "manual"
             }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "randomness/crypto-random"
           ]
         }
       ]
