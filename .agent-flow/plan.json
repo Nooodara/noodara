@@ -10,7 +10,7 @@
   "phases": [
     {
       "id": "11",
-      "title": "Motor de deploy — fundamentos",
+      "title": "Motor de deploy \u2014 fundamentos",
       "goal": "Everything the engine needs to be built RED-first exists and is proven on real infrastructure: spikes resolved (ADR 0008), pure domain, schema, parameterized allowlist templates, streaming exec, git/docker packages, sshd+dockerd fixture and official fixtures.",
       "requirements": [
         "DEP-01",
@@ -469,8 +469,8 @@
     },
     {
       "id": "12",
-      "title": "Motor de deploy — runtime",
-      "goal": "Through the API a person creates project → environment → service (Git, Dockerfile or image, public or private) on a connected server and deploys it in the worker with live build logs, real container state, cancellation that kills the remote process, cleanup on every exit and honest reconciliation; 20 deploys and 20 create/delete cycles leave nothing orphaned.",
+      "title": "Motor de deploy \u2014 runtime",
+      "goal": "Through the API a person creates project \u2192 environment \u2192 service (Git, Dockerfile or image, public or private) on a connected server and deploys it in the worker with live build logs, real container state, cancellation that kills the remote process, cleanup on every exit and honest reconciliation; 20 deploys and 20 create/delete cycles leave nothing orphaned.",
       "requirements": [
         "PROJ-01",
         "PROJ-02",
@@ -1147,7 +1147,7 @@
           "acceptance": [
             {
               "id": "C1",
-              "text": "run-deployment sequences clone→build (or pull)→port preflight→replace container→post-start polls against fake ports, moving status only through the domain state machine; unit-tested per source type",
+              "text": "run-deployment sequences clone\u2192build (or pull)\u2192port preflight\u2192replace container\u2192post-start polls against fake ports, moving status only through the domain state machine; unit-tested per source type",
               "proof": "test"
             },
             {
@@ -1157,7 +1157,7 @@
             },
             {
               "id": "C3",
-              "text": "Deployment store claims QUEUED→PREPARING atomically under a row lock, records commit SHA, and finishes with service status cache, activity event and service.updated / deployment.updated",
+              "text": "Deployment store claims QUEUED\u2192PREPARING atomically under a row lock, records commit SHA, and finishes with service status cache, activity event and service.updated / deployment.updated",
               "proof": "test"
             },
             {
@@ -1228,7 +1228,7 @@
             },
             {
               "id": "A3",
-              "text": "Statuses move only through the domain state machine (QUEUED→PREPARING→BUILDING→DEPLOYING→SUCCESS/FAILED); service status cache recomputed and service.updated / deployment.updated published",
+              "text": "Statuses move only through the domain state machine (QUEUED\u2192PREPARING\u2192BUILDING\u2192DEPLOYING\u2192SUCCESS/FAILED); service status cache recomputed and service.updated / deployment.updated published",
               "proof": "it-runtime-pipeline"
             },
             {
@@ -1374,7 +1374,7 @@
             },
             {
               "id": "A2",
-              "text": "Cancelling a running build: Redis flag (TTL from 12-04) → killSupervisedOperation (kill -s TERM -- \"-$pgid\" under setsid -w, ADR 0008) → confirmed absence in ps → channel destroyed → cleanup → CANCELLED; only the worker transitions",
+              "text": "Cancelling a running build: Redis flag (TTL from 12-04) \u2192 killSupervisedOperation (kill -s TERM -- \"-$pgid\" under setsid -w, ADR 0008) \u2192 confirmed absence in ps \u2192 channel destroyed \u2192 cleanup \u2192 CANCELLED; only the worker transitions",
               "proof": "it-runtime-cancel"
             },
             {
@@ -3256,6 +3256,765 @@
             "http-api/url-scheme-allowlist"
           ],
           "tier": "light"
+        }
+      ]
+    },
+    {
+      "id": "14",
+      "title": "Hardening y gate de release v0.2",
+      "goal": "v0.1 operators stop paying owed debt (unbounded logs, piling .env backups, a 1.2 GB image, POSIX scanner false positives), the Phase 12/13 security and UI debt is closed, and v0.2.0 ships after a READY gate against roadmap \u00a77.8 on a real VPS.",
+      "requirements": [
+        "OPS-01",
+        "OPS-02",
+        "OPS-03",
+        "OPS-04"
+      ],
+      "dependsOn": [
+        "13"
+      ],
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "14-01",
+          "title": "Compose: log rotation on every production service",
+          "scope": [
+            "docker-compose.yml",
+            "tests/unit/installer/",
+            "tests/integration/installer/compose-stack.test.ts",
+            "docs/install.md"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-cp-image"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "All six services in docker-compose.yml (postgres, redis, migrate, api, worker, web) declare logging driver json-file with max-size and max-file, through one shared YAML anchor",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "A unit test parses docker-compose.yml and fails if any service lacks the logging block or the limits differ from the documented values",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "compose-stack.test.ts asserts via docker inspect that a running api container has the configured LogConfig",
+              "proof": "it-cp-image"
+            },
+            {
+              "id": "A4",
+              "text": "docs/install.md says where logs live and their size bounds",
+              "proof": "manual"
+            }
+          ],
+          "tier": "light"
+        },
+        {
+          "id": "14-02",
+          "title": "Installer: prune .env.bak-* keeping the newest N",
+          "scope": [
+            "install.sh",
+            "tests/unit/installer/",
+            "tests/integration/installer/idempotent-rerun.test.ts",
+            "docs/install.md"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "posix-sh",
+            "installer"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "After writing a backup, the installer deletes older .env.bak-* files next to .env and keeps the newest N (default 5, overridable by NOODARA_ENV_BACKUPS_KEEP, validated as a positive integer)",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Pruning only matches <env path>.bak-<14 digits>; files with other names, symlinks and directories are never removed",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "idempotent-rerun.test.ts runs more than N upgrades and asserts exactly N backups remain, each mode 600, and the newest one matches the pre-upgrade .env",
+              "proof": "installer"
+            },
+            {
+              "id": "A4",
+              "text": "The code stays POSIX sh and pnpm check:posix-sh passes",
+              "proof": "posix-sh"
+            }
+          ],
+          "tier": "standard"
+        },
+        {
+          "id": "14-03",
+          "title": "check-posix-sh: remove false positives with regression tests",
+          "scope": [
+            "scripts/check-posix-sh.mjs",
+            "tests/unit/scripts/check-posix-sh.test.ts"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "posix-sh"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "$(( )) arithmetic expansion, the [[:space:]] POSIX character class, $' inside comments and (( inside heredoc bodies are not reported; each case has its own regression test",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "The real bashisms are still reported: [[ ]] tests, (( )) arithmetic commands, $'...' outside comments, arrays, local, $EUID; each has a test that keeps failing",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "The scanner's output format and exit codes do not change (ci.yml keeps using it unchanged)",
+              "proof": "test"
+            }
+          ],
+          "tier": "standard"
+        },
+        {
+          "id": "14-04",
+          "title": "install.sh: retire the check-posix-sh workarounds",
+          "scope": [
+            "install.sh",
+            "tests/unit/installer/",
+            "docs/install.md"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "14-02",
+            "14-03"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "posix-sh",
+            "installer"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "The workarounds documented in install.sh (awk division instead of $(( )), ((-substring avoidance in heredocs, [:space:] avoidance) are replaced with the direct POSIX form, and the comments that justify them are removed",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "pnpm check:posix-sh passes on the new install.sh and the full installer suite is green on 22.04 and 24.04",
+              "proof": "installer"
+            }
+          ],
+          "tier": "standard"
+        },
+        {
+          "id": "14-05",
+          "title": "Control-plane image under 600 MB without breaking module resolution",
+          "scope": [
+            "apps/control-plane/Dockerfile",
+            "apps/control-plane/package.json",
+            "pnpm-workspace.yaml",
+            "pnpm-lock.yaml",
+            "tests/integration/installer/control-plane-image.test.ts",
+            "docs/adr/0003-runtime-entrypoints-and-module-resolution.md",
+            ".dockerignore"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build",
+            "it-cp-image"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "The runner stage ships only production dependencies plus compiled dist (pnpm deploy --prod or an equivalent), not the whole pruned workspace",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "control-plane-image.test.ts fails if the image is 600 MB or larger (docker image inspect Size) and records the measured size",
+              "proof": "it-cp-image"
+            },
+            {
+              "id": "A3",
+              "text": "The four entrypoints (api dist/server.js, worker dist/worker.js, migrate dist/db/migrate.js, CLI dist/cli/index.js) start from the new image and the argon2 native binding loads on the image's own architecture",
+              "proof": "it-cp-image"
+            },
+            {
+              "id": "A4",
+              "text": "ADR 0003 records the new runtime layout and the measured size before and after",
+              "proof": "manual"
+            }
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "14-06",
+          "title": "Git host key pinning: bundled keys + TOFU (domain, ssh, git)",
+          "scope": [
+            "packages/domain/src/validators/",
+            "packages/domain/src/deployment/",
+            "packages/ssh/src/commands/git.ts",
+            "packages/ssh/src/commands/git.test.ts",
+            "packages/ssh/src/deploy-templates*",
+            "packages/ssh/src/fixtures/",
+            "packages/git/src/"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-deploy-templates"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "packages/domain exports the published host keys for github.com, gitlab.com and bitbucket.org, plus a pure validator/parser for an OpenSSH host key line (host, type, base64 key) with \u226595% branch coverage",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "GIT_SSH_COMMAND uses StrictHostKeyChecking=yes with a known_hosts file written from a bundled or pinned key; accept-new no longer appears anywhere in packages/",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "For a host without a bundled or pinned key, an allowlisted ssh-keyscan template with an explicit timeout returns the key to the caller; the clone never starts on an unpinned host",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "A host key mismatch is classified as GIT_HOST_KEY_MISMATCH from git/ssh output (ADR 0008 text classification), with a fixture per Ubuntu version",
+              "proof": "it-deploy-templates"
+            }
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "14-07",
+          "title": "Git host key pinning: persistence, runtime wiring, reset",
+          "scope": [
+            "apps/control-plane/src/db/",
+            "apps/control-plane/src/deploy/run-deployment.ts",
+            "apps/control-plane/src/deploy/run-deployment.test.ts",
+            "apps/control-plane/src/deploy/deploy-runtime.ts",
+            "apps/control-plane/src/cli/",
+            "apps/control-plane/src/services/service-services.ts",
+            "tests/integration/deploy-engine/runtime-pipeline.test.ts",
+            "tests/integration/deploy-engine/contracts-https-token.test.ts",
+            "apps/site/content/docs/reference/error-codes.mdx",
+            "docs/deploy-engine.md"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "14-06"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-runtime-pipeline",
+            "it-https-token",
+            "security-leaks"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "A versioned migration adds a nullable git host key (host + key line) to services; the first SSH clone of a non-bundled host stores it and later clones pin it",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "The integration test against the real sshd+dockerd fixture covers: first clone stores the key, second clone pins it, a rotated host key fails the deployment FAILED/GIT_HOST_KEY_MISMATCH with an actionable message and no workspace left behind",
+              "proof": "it-runtime-pipeline"
+            },
+            {
+              "id": "A3",
+              "text": "The operator CLI can forget a service's pinned key (noodara services reset-host-key <serviceId>) and writes an activity event without the key material",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "HTTPS clones are unaffected (contracts-https-token stays green); error-codes.mdx and docs/deploy-engine.md document the new code and the reset",
+              "proof": "it-https-token"
+            }
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "14-08",
+          "title": "Deploy: fail stale QUEUED deployments when enqueue and undo both fail",
+          "scope": [
+            "packages/domain/src/deployment/",
+            "apps/control-plane/src/deploy/deploy-sweep.ts",
+            "apps/control-plane/src/deploy/deploy-sweep.test.ts",
+            "apps/control-plane/src/deploy/deployment-store.ts",
+            "apps/control-plane/src/deploy/deployment-store.test.ts",
+            "apps/control-plane/src/worker.ts",
+            "tests/integration/queue/deploy-queue.test.ts",
+            "apps/site/content/docs/reference/error-codes.mdx",
+            "docs/deploy-engine.md"
+          ],
+          "wave": 3,
+          "dependsOn": [
+            "14-07"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-deploy-queue"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "The worker's startup sweep and its repeatable reconcile tick move a QUEUED deployment older than a threshold (env, default 2 min) and without a BullMQ job to FAILED/ENQUEUE_FAILED through the domain state machine",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "A QUEUED deployment whose job exists, or that is younger than the threshold, is never touched; the transition is race-safe against a worker that picks it up at the same time",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "The integration test reproduces Postgres+Redis down during enqueue, brings them back, and sees the deployment end FAILED/ENQUEUE_FAILED with deployment.updated published and the 409 lock released",
+              "proof": "it-deploy-queue"
+            }
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "14-09",
+          "title": "execStreaming: release stdin secrets when the stream ends",
+          "scope": [
+            "packages/ssh/src/exec-streaming.ts",
+            "packages/ssh/src/exec-streaming.test.ts",
+            "tests/integration/deploy-engine/exec-streaming.test.ts"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-exec-streaming"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Stdin secrets registered by execStreaming are released exactly once after the last output line is redacted, on success, failure, timeout and cancel",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "A secret echoed in the final flushed chunk is still redacted (release never runs before the flush)",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "The stale comment in exec-streaming.ts and OPEN_QUESTIONS #7 wording are updated",
+              "proof": "manual"
+            }
+          ],
+          "tier": "standard"
+        },
+        {
+          "id": "14-10",
+          "title": "Build cache prune policy (D12): age-based, once a day per server",
+          "scope": [
+            "packages/ssh/src/deploy-templates*",
+            "packages/ssh/src/commands/docker.ts",
+            "packages/ssh/src/commands/docker.test.ts",
+            "packages/docker/src/",
+            "apps/control-plane/src/deploy/build-cache-prune.ts",
+            "apps/control-plane/src/deploy/build-cache-prune.test.ts",
+            "apps/control-plane/src/deploy/deploy-runtime.ts",
+            "tests/integration/deploy-engine/runtime-pipeline.test.ts",
+            "docs/adr/0009-build-cache-prune-policy.md",
+            "docs/deploy-engine.md"
+          ],
+          "wave": 3,
+          "dependsOn": [
+            "14-07"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-runtime-pipeline"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "After a SUCCESS deployment, an allowlisted docker builder prune -f --filter until=168h runs with an explicit timeout, at most once per server per 24 h (Redis key with TTL)",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "A prune failure or timeout is logged by error class only and never changes the deployment's status",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "The integration test proves the prune runs once on two consecutive deployments and does not delete the running container's image",
+              "proof": "it-runtime-pipeline"
+            },
+            {
+              "id": "A4",
+              "text": "ADR 0009 records the policy, the host-wide impact and how to disable it (NOODARA_BUILD_CACHE_PRUNE=off)",
+              "proof": "manual"
+            }
+          ],
+          "tier": "standard"
+        },
+        {
+          "id": "14-11",
+          "title": "Integration harness: clear precheck when port 3000 is taken",
+          "scope": [
+            "tests/integration/boot/boot-command.test.ts",
+            "tests/integration/global-setup.ts",
+            "tests/integration/helpers/"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-boot"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "If port 3000 is in use, pnpm test:integration fails at once with a message that names the port and how to free it, not EADDRINUSE deep in boot-command",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "With port 3000 free the boot suite is green; OPEN_QUESTIONS #3 is resolved",
+              "proof": "it-boot"
+            }
+          ],
+          "tier": "light"
+        },
+        {
+          "id": "14-12",
+          "title": "engine-primitives test: workspace:* deps instead of relative imports",
+          "scope": [
+            "package.json",
+            "pnpm-lock.yaml",
+            "tests/integration/deploy-engine/engine-primitives.test.ts",
+            "tests/integration/tsconfig.json",
+            "vitest.integration.config.ts"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "14-11"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-engine-primitives"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "engine-primitives.test.ts imports @noodara/git and @noodara/docker by package name through workspace:* devDependencies; no ../../../packages imports remain in it",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "pnpm boundaries still passes and it-engine-primitives is green on both Ubuntu versions; OPEN_QUESTIONS #2 is resolved",
+              "proof": "it-engine-primitives"
+            }
+          ],
+          "tier": "light"
+        },
+        {
+          "id": "14-13",
+          "title": "UI: 375 px debt from the Phase 13 review",
+          "scope": [
+            "apps/web/src/app/(shell)/projects/",
+            "apps/web/src/components/",
+            "packages/ui/src/",
+            "tests/e2e/projects-dod.spec.ts",
+            "tests/e2e/dod-hardening.spec.ts",
+            "docs/ui-review/phase-14/"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "ui-safety",
+            "e2e-dod"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "At 375 px the service title keeps at least its first 12 characters visible and the toolbar stays on one row (actions overflow to a menu); a component test written first proves the layout contract",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "A 300-character repo URL in the source card wraps or truncates in the middle with the full value available on demand (title/copy), never clipped by the edge",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "In the 375 px projects list the project name truncates after the description",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "noodara-ux-review passes on the three screens in light and dark at 375 and 1280 px, with screenshots in docs/ui-review/phase-14/ approved by a human",
+              "proof": "manual"
+            }
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "14-14",
+          "title": "Release prep: 0.2.0 version, rc prerelease handling, notes, site",
+          "scope": [
+            "apps/control-plane/package.json",
+            "apps/web/package.json",
+            "package.json",
+            ".github/workflows/release.yml",
+            "tests/unit/scripts/",
+            "docs/releases/v0.2.0.md",
+            "apps/site/content/docs/",
+            "apps/site/src/",
+            "README.md",
+            "docs/install.md"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "14-01",
+            "14-04",
+            "14-05",
+            "14-08",
+            "14-10",
+            "14-12",
+            "14-13"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "release.yml marks tags with a -rc.N suffix as GitHub prereleases that never become latest, so the default installer keeps resolving the last stable release; a test or check-workflow-pins case covers it",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "docs/releases/v0.2.0.md lists the v0.2 features, upgrade and rollback steps (NOODARA_VERSION pin) and known limits (no domains, no env vars, single worker)",
+              "proof": "manual"
+            },
+            {
+              "id": "A3",
+              "text": "The public site and install docs describe v0.2 (projects, services, deploy) with no placeholders for v0.4 features",
+              "proof": "manual"
+            }
+          ],
+          "tier": "standard"
+        },
+        {
+          "id": "14-15",
+          "title": "Automated v0.2 gate evidence",
+          "scope": [
+            "docs/releases/v0.2-gate.md",
+            "docs/releases/v0.2-gate-logs/",
+            ".planning/OPEN_QUESTIONS.md"
+          ],
+          "wave": 5,
+          "dependsOn": [
+            "14-14"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build",
+            "it-full",
+            "e2e-full",
+            "installer",
+            "security-leaks",
+            "ui-safety",
+            "it-soak"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "docs/releases/v0.2-gate.md has one row per roadmap \u00a77.8 criterion with status and evidence from this run (command output under v0.2-gate-logs/), following the noodara-release-gate format",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "The QA-10 measured-numbers table and the D12 build-cache policy are recorded in the gate",
+              "proof": "manual"
+            },
+            {
+              "id": "A3",
+              "text": "A real nightly.yml run on main is green (run id recorded) and ci.yml is green on the release commit",
+              "proof": "manual"
+            },
+            {
+              "id": "A4",
+              "text": "No .skip/.only/fixme added in phase 14 without a linked justification",
+              "proof": "test"
+            }
+          ],
+          "tier": "standard"
+        },
+        {
+          "id": "14-16",
+          "title": "Human gate: rc.1 on a real VPS, v0.1 human debt, upgrade and rollback",
+          "scope": [
+            "docs/releases/v0.2-gate.md",
+            "docs/releases/v0.2-gate-logs/",
+            "docs/releases/v0.2-HUMAN-UAT.md"
+          ],
+          "wave": 6,
+          "dependsOn": [
+            "14-15"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "v0.2.0-rc.1 is tagged and published with multi-arch images (amd64, arm64) in GHCR",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "On a real VPS: connect \u2192 project \u2192 environment \u2192 deploy from node-api \u2192 logs \u2192 status \u2192 failed build \u2192 cancel, recorded criterion by criterion",
+              "proof": "manual"
+            },
+            {
+              "id": "A3",
+              "text": "Real installs on Ubuntu 22.04, on arm64 and on a host with ufw active; memory observed on a 1\u20132 GB VPS",
+              "proof": "manual"
+            },
+            {
+              "id": "A4",
+              "text": "A real upgrade v0.1.0 \u2192 v0.2.0-rc.1 and its rollback to v0.1.0, with data intact",
+              "proof": "manual"
+            },
+            {
+              "id": "A5",
+              "text": "The gate verdict is READY or the blocking rows are listed",
+              "proof": "manual"
+            }
+          ]
+        },
+        {
+          "id": "14-17",
+          "title": "Publish v0.2.0 and close Phase 14",
+          "scope": [
+            "docs/releases/v0.2-gate.md",
+            "docs/releases/v0.2-HUMAN-UAT.md",
+            ".planning/REQUIREMENTS.md",
+            ".planning/ROADMAP.md",
+            ".planning/STATE.md",
+            ".planning/OPEN_QUESTIONS.md",
+            "docs/verification/phase-14.md"
+          ],
+          "wave": 7,
+          "dependsOn": [
+            "14-16"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "v0.2.0 is tagged from the rc.1 commit (or a documented fix-forward), multi-arch images are published, and a short upgrade v0.1.0 \u2192 v0.2.0 is recorded",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "OPS-01..04 are marked complete with evidence in REQUIREMENTS.md and ROADMAP.md; STATE.md moves to milestone v0.3",
+              "proof": "manual"
+            },
+            {
+              "id": "A3",
+              "text": "OPEN_QUESTIONS #2, #3, #7 and #11 are resolved; #4\u20136, #9 and #10 are confirmed by the user or kept open with an owner",
+              "proof": "manual"
+            }
+          ]
         }
       ]
     }

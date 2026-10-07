@@ -40,7 +40,14 @@
       "e2e-deploy-host": "pnpm exec playwright test tests/e2e/deploy-host.spec.ts",
       "e2e-dod": "pnpm exec playwright test tests/e2e/projects-dod.spec.ts tests/e2e/dod-hardening.spec.ts",
       "e2e-sheet": "pnpm exec playwright test tests/e2e/server-sheet.spec.ts --grep @sheet-drag",
-      "it-ssh-contracts": "pnpm exec vitest run --config vitest.integration.config.ts tests/integration/ssh/contracts.test.ts"
+      "it-ssh-contracts": "pnpm exec vitest run --config vitest.integration.config.ts tests/integration/ssh/contracts.test.ts",
+      "posix-sh": "pnpm check:posix-sh",
+      "installer": "pnpm test:installer",
+      "it-cp-image": "pnpm exec vitest run --config vitest.installer.config.ts tests/integration/installer/control-plane-image.test.ts tests/integration/installer/compose-stack.test.ts",
+      "it-boot": "pnpm exec vitest run --config vitest.integration.config.ts tests/integration/boot",
+      "security-leaks": "pnpm security:scan-leaks",
+      "ui-safety": "pnpm check:ui-safety",
+      "e2e-full": "pnpm test:e2e"
     },
     "defaultGates": [
       "test",
