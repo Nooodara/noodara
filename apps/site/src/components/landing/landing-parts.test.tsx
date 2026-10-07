@@ -133,9 +133,9 @@ describe('CapabilityGlyph', () => {
 });
 
 describe('FeatureGrid', () => {
-  it('renders every DELIVERED_CAPABILITIES claim exactly once, grouped into 9 cells (a multiple of the desktop column count, no ragged row)', () => {
+  it('renders every DELIVERED_CAPABILITIES claim exactly once, grouped into 12 cells (a multiple of the desktop column count, no ragged row)', () => {
     render(<FeatureGrid />);
-    expect(FEATURE_GRID_CELLS.length).toBe(9);
+    expect(FEATURE_GRID_CELLS.length).toBe(12);
     expect(FEATURE_GRID_CELLS.length % FEATURE_GRID_DESKTOP_COLUMNS).toBe(0);
     for (const capability of DELIVERED_CAPABILITIES) {
       expect(screen.getByText(capability.claim)).toBeInTheDocument();
@@ -145,7 +145,7 @@ describe('FeatureGrid', () => {
     }
   });
 
-  it('never uses a 2-column tablet tier (grid-cols-2) -- only 1 column mobile, 3 columns desktop, so 9 cells never end a row short', () => {
+  it('never uses a 2-column tablet tier (grid-cols-2) -- only 1 column mobile, 3 columns desktop, so 12 cells never end a row short', () => {
     const { container } = render(<FeatureGrid />);
     const grid = container.querySelector('[data-testid="feature-grid"]');
     expect(grid?.className).not.toMatch(/grid-cols-2/);

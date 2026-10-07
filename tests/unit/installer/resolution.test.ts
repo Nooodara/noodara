@@ -263,6 +263,66 @@ describe.each(posixInterpreters())('install.sh noodara_resolve_version (%s)', (i
     expect(result.status).toBe(40);
   });
 
+  describe('prerelease tags are never the default (14-14 H2)', () => {
+    const env = { NOODARA_REPO_OWNER: 'example', NOODARA_REPO_NAME: 'repo' };
+
+    it('ignores an -rc.N redirect target and takes the stable release from the API', () => {
+      const stub = [
+        'noodara_fetch_url() {',
+        '  case "$1" in',
+        '    redirect) printf "https://github.com/example/repo/releases/tag/v0.2.0-rc.1" ;;',
+        '    body) printf \'%s\' \'{"tag_name": "v0.1.0", "prerelease": false}\' ;;',
+        '  esac',
+        '}',
+      ].join('\n');
+
+      const result = resolveVersion(interpreter, stub, env);
+
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe('0.1.0');
+    });
+
+    it('fails rather than installing an rc when the fake releases API returns one as newest', () => {
+      const stub = [
+        'noodara_fetch_url() {',
+        '  case "$1" in',
+        '    redirect) return 1 ;;',
+        '    body) printf \'%s\' \'{"tag_name": "v0.2.0-rc.1", "prerelease": false}\' ;;',
+        '  esac',
+        '}',
+      ].join('\n');
+
+      const result = resolveVersion(interpreter, stub, env);
+
+      expect(result.status).not.toBe(0);
+      expect(result.stdout).not.toContain('rc.1');
+    });
+
+    it('fails when the API marks the release as a prerelease even with a plain tag', () => {
+      const stub = [
+        'noodara_fetch_url() {',
+        '  case "$1" in',
+        '    redirect) return 1 ;;',
+        '    body) printf \'%s\' \'{"tag_name": "v0.2.0", "prerelease": true}\' ;;',
+        '  esac',
+        '}',
+      ].join('\n');
+
+      const result = resolveVersion(interpreter, stub, env);
+
+      expect(result.status).not.toBe(0);
+    });
+
+    it('still installs an rc when the operator pins it with NOODARA_VERSION', () => {
+      const result = resolveVersion(interpreter, 'noodara_fetch_url() { return 1; }', {
+        NOODARA_VERSION: 'v0.2.0-rc.1',
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe('0.2.0-rc.1');
+    });
+  });
+
   it.each([
     ['0.1.0', '0.1.0'],
     ['v0.1.0', '0.1.0'],

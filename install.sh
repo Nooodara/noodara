@@ -1209,6 +1209,12 @@ noodara_resolve_version() {
         _noodara_rv_raw=""
         ;;
     esac
+    # A release candidate (-rc.N, or any other semver prerelease suffix) is never the default:
+    # release.yml publishes it with --prerelease --latest=false so GitHub already skips it, and
+    # this is the second line of defence. Operators opt in with NOODARA_VERSION.
+    case "$_noodara_rv_raw" in
+      *-*) _noodara_rv_raw="" ;;
+    esac
     if [ -n "$_noodara_rv_raw" ]; then
       _noodara_rv_tag=$(noodara_normalize_tag "$_noodara_rv_raw")
       noodara_validate_tag "$_noodara_rv_tag"
@@ -1220,6 +1226,12 @@ noodara_resolve_version() {
   _noodara_rv_body=$(noodara_fetch_url body "https://api.github.com/repos/${NOODARA_REPO_OWNER}/${NOODARA_REPO_NAME}/releases/latest" 2>/dev/null) || _noodara_rv_body=""
   if [ -n "$_noodara_rv_body" ]; then
     _noodara_rv_raw=$(printf '%s\n' "$_noodara_rv_body" | sed -n 's/.*"tag_name"[ 	]*:[ 	]*"\([^"]*\)".*/\1/p' | head -n 1)
+    case "$_noodara_rv_raw" in
+      *-*) _noodara_rv_raw="" ;;
+    esac
+    if printf '%s\n' "$_noodara_rv_body" | grep -q '"prerelease"[ 	]*:[ 	]*true'; then
+      _noodara_rv_raw=""
+    fi
     if [ -n "$_noodara_rv_raw" ]; then
       _noodara_rv_tag=$(noodara_normalize_tag "$_noodara_rv_raw")
       noodara_validate_tag "$_noodara_rv_tag"

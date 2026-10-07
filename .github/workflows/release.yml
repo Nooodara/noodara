@@ -75,11 +75,14 @@ jobs:
     # A single shell pass over two short strings, no checkout, no network. 5 min is already
     # generous headroom.
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
       owner: ${{ steps.owner.outputs.owner }}
     steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Compute and validate the release version (must match install.sh's noodara_resolve_version)
         id: version
         env:
@@ -116,7 +119,15 @@ jobs:
             echo "::error::version is too long (max 128 characters, matching noodara_validate_tag)"
             exit 1
           fi
+          # H1: one tag drives the image tag, every package.json version and the release notes
+          # file. Also rejects malformed -rc tags (v0.2.0-rc, v0.2.0-rc.0x, v0.2.0-rcfoo).
+          node scripts/check-release-version.mjs "$version"
+          case "$version" in
+            *-rc.*) prerelease=true ;;
+            *) prerelease=false ;;
+          esac
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
       - name: Lower-case the repository owner (GHCR requires a lowercase image path)
         id: owner
         env:
@@ -285,3 +296,35 @@ jobs:
             exit 1
           }
           echo "verified $ref covers both linux/amd64 and linux/arm64"
+
+  # GitHub Release for the tag. An -rc.N tag is a prerelease and is created with --latest=false so
+  # it never becomes the repository's `latest` release: install.sh resolves releases/latest, which
+  # must keep pointing at the last stable release until the final tag is cut. Needs the verified
+  # multi-arch manifests, so a release never exists for images that were not published. This is
+  # the only job with contents: write; the token is passed through `env:` and never echoed.
+  release:
+    name: release
+    needs: [prepare, verify]
+    # A workflow_dispatch dry run has no tag to attach a Release to.
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Create the GitHub Release (prerelease and not latest for -rc.N)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          base="${VERSION%%-rc.*}"
+          notes="docs/releases/v${base}.md"
+          if [ "$PRERELEASE" = "true" ]; then
+            gh release create "v${VERSION}" --title "v${VERSION}" --notes-file "$notes" --verify-tag --prerelease --latest=false
+          else
+            gh release create "v${VERSION}" --title "v${VERSION}" --notes-file "$notes" --verify-tag --latest
+          fi

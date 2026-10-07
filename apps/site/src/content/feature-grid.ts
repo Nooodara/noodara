@@ -25,6 +25,9 @@ export const FEATURE_GRID_CELLS: readonly FeatureCell[] = [
   { title: CAPABILITY_TITLES['server-detail'], capabilityIds: ['server-detail'] },
   { title: CAPABILITY_TITLES['activity-log'], capabilityIds: ['activity-log'] },
   { title: 'Personalize your account', capabilityIds: ['appearance', 'account'] },
+  { title: CAPABILITY_TITLES['projects-services'], capabilityIds: ['projects-services'] },
+  { title: CAPABILITY_TITLES['deploy-sources'], capabilityIds: ['deploy-sources'] },
+  { title: CAPABILITY_TITLES['deploy-logs'], capabilityIds: ['deploy-logs'] },
   { title: CAPABILITY_TITLES['upgrade-rollback'], capabilityIds: ['upgrade-rollback'] },
   { title: 'Secure by default', capabilityIds: ['encrypted-credentials', 'explicit-timeouts'] },
 ];

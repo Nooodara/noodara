@@ -88,6 +88,30 @@ const GLYPHS: Record<CapabilityId, ReactNode> = {
       <path d="M18 4 V8.5 H13.5" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" strokeLinejoin="round" />
     </>
   ),
+  // Stacked layers: projects, environments and services.
+  'projects-services': (
+    <>
+      <path d="M12 4 L20 8 L12 12 L4 8 Z" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinejoin="round" />
+      <path d="M4 12 L12 16 L20 12" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 16 L12 20 L20 16" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  // Upward arrow into a tray: ship a build to a server.
+  'deploy-sources': (
+    <>
+      <path d="M12 15 V5 M8 9 L12 5 L16 9" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 14 V19 H19 V14" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  // Log lines: build and runtime output.
+  'deploy-logs': (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="2.5" fill="none" stroke="currentColor" strokeWidth={STROKE} />
+      <line x1="8" y1="9" x2="16" y2="9" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+      <line x1="8" y1="12.5" x2="14" y2="12.5" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+      <line x1="8" y1="16" x2="12" y2="16" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+    </>
+  ),
   // Padlock: credentials encrypted at rest.
   'encrypted-credentials': (
     <>

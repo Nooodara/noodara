@@ -8,7 +8,7 @@ These are the only variables an operator is expected to set. Every other environ
 
 | Variable | Default | Effect |
 |---|---|---|
-| `NOODARA_VERSION` | Latest published release | Pins the exact release tag to install. Must match `[A-Za-z0-9_][A-Za-z0-9_.-]*` (1–128 characters) and must never be `latest`. A leading `v` (e.g. `v0.1.0`) is accepted and stripped automatically. |
+| `NOODARA_VERSION` | Latest stable release | Pins the exact release tag to install. The default never resolves to a release candidate (`-rc.N`); pin one explicitly, e.g. `v0.2.0-rc.1`, to try it. Must match `[A-Za-z0-9_][A-Za-z0-9_.-]*` (1–128 characters) and must never be `latest`. A leading `v` (e.g. `v0.1.0`) is accepted and stripped automatically. |
 | `NOODARA_PORT` | `3000` | The host port the panel is published on. Must be a number between 1 and 65535. |
 | `NOODARA_PUBLIC_URL` | Auto-detected public IP, then local IP, over `http://` | The public origin the panel is reachable at. Must start with `http://` or `https://` followed by a host, and must not contain whitespace, a single quote, a double quote, a backslash, a dollar sign, a backtick or an embedded newline/carriage return. |
 | `NOODARA_ADMIN_EMAIL` | unset | Pre-seeds the admin account's email. Must be set together with `NOODARA_ADMIN_PASSWORD`, or not at all. |

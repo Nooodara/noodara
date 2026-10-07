@@ -71,10 +71,10 @@ describe('Landing', () => {
     expect(githubLink).toHaveAttribute('href', GITHUB_URL);
   });
 
-  it('renders a feature grid with every DELIVERED_CAPABILITIES claim, grouped into 9 cells (D-02a, Round 1 fix)', () => {
+  it('renders a feature grid with every DELIVERED_CAPABILITIES claim, grouped into 12 cells (D-02a, Round 1 fix)', () => {
     render(<Landing />);
     const grid = within(screen.getByTestId('feature-grid'));
-    expect(FEATURE_GRID_CELLS.length).toBe(9);
+    expect(FEATURE_GRID_CELLS.length).toBe(12);
     for (const capability of DELIVERED_CAPABILITIES) {
       expect(grid.getByText(claimFor(capability.id))).toBeInTheDocument();
     }
