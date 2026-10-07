@@ -2946,7 +2946,8 @@
             "apps/site/content/docs/getting-started/meta.json",
             "apps/site/src/content/scope.ts",
             "apps/site/src/content/scope.test.ts",
-            "apps/site/src/lib/docs-tree.test.ts"
+            "apps/site/src/lib/docs-tree.test.ts",
+            "tests/unit/site/landing-claims.test.ts"
           ],
           "wave": 8,
           "dependsOn": [

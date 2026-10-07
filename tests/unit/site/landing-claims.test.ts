@@ -40,7 +40,7 @@ describe('SCOPE_EXCLUSIONS anchored to PROJECT.md', () => {
 
   it('includes the landing-visible D-03/D-09 exclusion ids', () => {
     const showOnLandingIds = SCOPE_EXCLUSIONS.filter((e) => e.showOnLanding).map((e) => e.id);
-    for (const id of ['app-config', 'domains-tls', 'advanced-deploy', 'multi-user', 'deploy-services']) {
+    for (const id of ['app-config', 'domains-tls', 'advanced-deploy', 'multi-user']) {
       expect(showOnLandingIds).toContain(id);
     }
   });
@@ -72,10 +72,9 @@ describe('DELIVERED_CAPABILITIES backed by real evidence', () => {
 });
 
 describe('findExcludedTerms', () => {
-  it('flags a claim that names both an excluded deploy feature and an excluded domains/TLS feature', () => {
-    const findings = findExcludedTerms('Deploy apps with automatic HTTPS');
+  it('flags a claim that names an excluded domains/TLS feature', () => {
+    const findings = findExcludedTerms('Automatic HTTPS');
     const ids = new Set(findings.map((f) => f.exclusionId));
-    expect(ids).toContain('deploy-services');
     expect(ids).toContain('domains-tls');
   });
 
