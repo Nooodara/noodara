@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-07T01:52:53.304Z",
+  "updatedAt": "2026-10-07T04:28:21.798Z",
   "cursor": {
     "phase": "13",
     "task": "13-19"
@@ -3113,10 +3113,6 @@
         {
           "id": "13-22",
           "title": "Deterministic @sheet-drag re-grab mid-close E2E",
-          "status": "pending",
-          "wave": 8,
-          "dependsOn": [],
-          "tier": "deep",
           "scope": [
             "tests/e2e/server-sheet.spec.ts",
             "packages/ui/src/Sheet.tsx",
@@ -3124,6 +3120,9 @@
             "packages/ui/src/sheet-drag.ts",
             "packages/ui/src/sheet-drag.test.ts"
           ],
+          "wave": 8,
+          "dependsOn": [],
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
@@ -3161,7 +3160,8 @@
             "auth-secrets/password-hashing",
             "randomness/crypto-random",
             "persistence"
-          ]
+          ],
+          "tier": "deep"
         },
         {
           "id": "13-19",

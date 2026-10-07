@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import { Button } from './Button.js';
 import { cn } from './cn.js';
 import { SPRING, toMotionSpring } from './motion-tokens.js';
+import { decidesToClose, dragElasticFor, handoffVelocity, type SheetDragPhase } from './sheet-drag.js';
 import { useCloseSource } from './use-close-source.js';
 import { useReducedMotionPreference } from './use-reduced-motion-preference.js';
 
@@ -16,19 +17,7 @@ import { useReducedMotionPreference } from './use-reduced-motion-preference.js';
 // about to render (T-08-33).
 const loadFeatures = () => import('./motion-features.js').then((res) => res.default);
 
-// Brief §7.4 step 6: "velocidad > 0.11 px/ms cierra sin importar la distancia recorrida" -- this
-// converts to 110 px/s on the assumption that Motion's `info.velocity` is px/s (Motion's own
-// `useVelocity` docs use a [-3000, 3000] example range, consistent with px/s; research Pitfall 3,
-// Assumption A3). Calibrated empirically, not derived: tune this single named constant during the
-// G2/G3 live review (D-14) -- never scatter the number elsewhere in this file.
-const DRAG_CLOSE_VELOCITY_PX_PER_S = 110;
-
-// A ceiling on the velocity handed off to the closing spring (see `handleDragEnd`) -- Motion's own
-// `useVelocity` docs use a [-3000, 3000] px/s example range; this is a generous multiple of that,
-// wide enough to never visibly cap a real flick, narrow enough to guard against the
-// effectively-infinite value a near-zero elapsed time between the last two pointer samples can
-// otherwise produce.
-const MAX_HANDOFF_VELOCITY_PX_PER_S = 8000;
+// Release thresholds, the handoff clamp and the drag elastic live in ./sheet-drag.ts (pure).
 
 // Mobile round 1 adjustment (09-14 checkpoint): the panel is no longer a fixed 480px -- on a
 // narrow viewport (e.g. a 440px-wide phone) it is full width, capped at 480px on wider ones
@@ -129,20 +118,6 @@ const FOOTER_CLASSES = 'flex items-center justify-end gap-2 border-t border-hair
 // of its "missing Description" dev warning when a sheet genuinely has no separate description
 // beyond its title and body content (the body is exactly the caller's own composed content, not
 // a fixed sentence this component could sensibly duplicate into a Description).
-// 08-12-PLAN.md Task 2 (UI-06, D19): the panel's drag-to-dismiss surface. Kept as a plain
-// function (not inlined into `Sheet`) so `handleDragEnd`'s only reason to change is the release
-// decision itself -- brief §7.4 step 6, "decisión en el release por el signo de la velocidad, no
-// por la posición", with the panel's own half-width as the position-based fallback UI-06 also
-// names ("midpoint-snap").
-// `panelWidthPx` is the caller's own real, measured panel width (Mobile round 1 adjustment,
-// 09-14): the position-based fallback must be a fraction of whatever width the panel is actually
-// rendered at (full width on a phone, capped at 480px above that), never the old hardcoded 480px
-// constant, or a phone-width panel's own midpoint-snap threshold would sit off past its own right
-// edge.
-function decidesToClose(info: PanInfo, panelWidthPx: number): boolean {
-  return info.velocity.x > DRAG_CLOSE_VELOCITY_PX_PER_S || info.offset.x > panelWidthPx / 2;
-}
-
 // 13-20 A2: every caller drives Sheet controlled, without a DialogPrimitive.Trigger, so Radix
 // Dialog's own close-focus target (its internal triggerRef) is null and focus fell to <body>.
 // The opener is remembered in a layout effect -- it runs before the portal mounts and before
@@ -188,6 +163,10 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
   // read into a piece of render state the className below can react to for the rest of this
   // close's CSS-transition lifetime (see INSTANT_CLOSE_CLASS above).
   const [instantClose, setInstantClose] = useState(false);
+  // 13-22: 'closing' while the release-to-close animation runs, so a re-grab mid-close tracks the
+  // pointer 1:1 from the panel's on-screen position instead of Motion's elastic pulling it back
+  // toward rest (see dragElasticFor). Reset whenever the sheet opens.
+  const [dragPhase, setDragPhase] = useState<SheetDragPhase>('resting');
 
   useEffect(() => {
     if (!open) {
@@ -205,6 +184,7 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
   // momentum-handoff animation in `handleDragEnd` (see the comment on `x` above).
   useEffect(() => {
     if (open) {
+      setDragPhase('resting');
       x.set(ENTRY_SETTLE_OFFSET_PX);
       void animateMotionValue(x, 0, toMotionSpring(SPRING.drawer));
     }
@@ -216,7 +196,8 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
     // measurement is unavailable (0-or-absent, e.g. jsdom, which never lays elements out).
     const measuredWidthPx = contentRef.current?.getBoundingClientRect().width;
     const panelWidthPx = measuredWidthPx !== undefined && measuredWidthPx > 0 ? measuredWidthPx : PANEL_WIDTH_PX;
-    if (decidesToClose(info, panelWidthPx)) {
+    const release = { offsetX: info.offset.x, velocityX: info.velocity.x, panelX: x.get() };
+    if (decidesToClose(release, panelWidthPx)) {
       // Brief §7.4 steps 7-8: project momentum forward and hand its velocity off as the closing
       // spring's own initial velocity -- SPRING.momentum (UI-SPEC's own "only when the gesture
       // itself carried momentum" comment) is the one case that constant exists for. The DOM
@@ -224,25 +205,19 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
       // untouched) still governs when Radix actually removes it; `onOpenChange(false)` is only
       // called once this handoff animation finishes, not before, so the two never race.
       //
-      // `info.velocity.x` is clamped to a finite, sane range before being handed to the spring: a
-      // near-zero elapsed time between the last two pointer samples (an extremely fast, short
-      // flick -- exactly the case this branch exists for) can otherwise produce an effectively
-      // infinite/non-finite velocity, which breaks the spring's own settle-detection math and
-      // leaves the returned promise never resolving (found empirically, via this task's own
-      // Playwright flick test hanging instead of closing).
-      const handoffVelocity = Number.isFinite(info.velocity.x)
-        ? Math.sign(info.velocity.x) * Math.min(Math.abs(info.velocity.x), MAX_HANDOFF_VELOCITY_PX_PER_S)
-        : DRAG_CLOSE_VELOCITY_PX_PER_S;
-      void animateMotionValue(x, panelWidthPx, toMotionSpring(SPRING.momentum, { velocity: handoffVelocity })).then(
-        () => {
-          onOpenChange(false);
-        },
-      );
+      // The velocity is clamped (handoffVelocity): a near-zero time between the last two pointer
+      // samples can produce a non-finite value that leaves the spring's promise never resolving.
+      setDragPhase('closing');
+      const closingSpring = toMotionSpring(SPRING.momentum, { velocity: handoffVelocity(info.velocity.x) });
+      void animateMotionValue(x, panelWidthPx, closingSpring).then(() => {
+        onOpenChange(false);
+      });
     } else {
       // Released without crossing the close threshold -- spring back to rest. Critically damped,
       // no overshoot (SPRING.default's own comment): this is deliberately not SPRING.momentum,
       // per UI-SPEC's token table reserving that spring for a release that actually carries the
       // gesture through to a close.
+      setDragPhase('resting');
       void animateMotionValue(x, 0, toMotionSpring(SPRING.default));
     }
   }
@@ -283,7 +258,7 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
               style={{ x }}
               drag={prefersReducedMotion ? false : 'x'}
               dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.15}
+              dragElastic={dragElasticFor(dragPhase)}
               dragMomentum
               onDragEnd={handleDragEnd}
             >

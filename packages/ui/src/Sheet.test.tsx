@@ -363,3 +363,74 @@ describe('Sheet', () => {
     });
   });
 });
+
+// 13-22: re-grab tracking during the close animation, driven through real Motion drag with
+// dispatched pointer events. jsdom lays nothing out, so the panel width falls back to 480px and
+// the drag constraints resolve to {0, 0} exactly as in the browser.
+describe('Sheet re-grab mid-close', () => {
+  function readX(el: Element): number {
+    const match = /translateX\(([-\d.]+)px\)/.exec((el as HTMLElement).style.transform);
+    return match?.[1] !== undefined ? Number.parseFloat(match[1]) : 0;
+  }
+
+  function pointer(target: EventTarget, type: string, x: number): void {
+    const event = new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientX: x, clientY: 10 });
+    Object.defineProperty(event, 'pageX', { value: x });
+    Object.defineProperty(event, 'pageY', { value: 10 });
+    Object.defineProperty(event, 'isPrimary', { value: true });
+    target.dispatchEvent(event);
+  }
+
+  async function nextFrames(count: number): Promise<void> {
+    for (let i = 0; i < count; i += 1) {
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+    }
+  }
+
+  it('tracks the pointer 1:1 from the on-screen position when re-grabbed mid-close, never jumping back toward rest', async () => {
+    const onOpenChange = vi.fn();
+    renderUi(
+      <Sheet open onOpenChange={onOpenChange} title="Add server" data-testid="sheet">
+        <p>Sheet body content</p>
+      </Sheet>,
+    );
+    const surface = await vi.waitFor(() => {
+      const el = document.querySelector('[data-testid="sheet-drag-surface"][style*="transform"]');
+      expect(el).not.toBeNull();
+      return el as HTMLElement;
+    });
+    await nextFrames(30); // let the entry settle-in finish
+
+    // Release past the midpoint (300px of pointer travel > 240px) so the close animation starts.
+    pointer(surface, 'pointerdown', 100);
+    for (const dx of [100, 200, 300]) {
+      pointer(window, 'pointermove', 100 + dx);
+      await nextFrames(1);
+    }
+    pointer(window, 'pointerup', 400);
+
+    // Deterministic mid-close state: wait on the panel's own position, not wall-clock time.
+    await vi.waitFor(() => {
+      expect(readX(surface)).toBeGreaterThan(200);
+    });
+    const xMidClose = readX(surface);
+    expect(xMidClose).toBeLessThan(480);
+
+    // Grabbing stops the close animation where it is; the rendered transform settles a frame later.
+    pointer(surface, 'pointerdown', 100);
+    await nextFrames(2);
+    const xAtGrab = readX(surface);
+    expect(xAtGrab).toBeGreaterThanOrEqual(xMidClose);
+
+    pointer(window, 'pointermove', 110);
+    await nextFrames(2);
+    const xAfterRegrab = readX(surface);
+    pointer(window, 'pointerup', 110);
+
+    expect(xAfterRegrab).toBeCloseTo(xAtGrab + 10, 0);
+  });
+});

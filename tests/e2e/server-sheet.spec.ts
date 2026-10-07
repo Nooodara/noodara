@@ -483,6 +483,20 @@ async function performDrag(
   }
 }
 
+/** Resolves after `count` animation frames have rendered in the page -- a frame count, not a
+ *  wall-clock wait, for reading a transform Motion writes on its next render. */
+async function nextAnimationFrames(page: Page, count: number): Promise<void> {
+  await page.evaluate(async (frames) => {
+    for (let i = 0; i < frames; i += 1) {
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+    }
+  }, count);
+}
+
 test.describe('@sheet-drag drag-to-dismiss (UI-06, brief §7.4)', () => {
   test('@sheet-drag dragging right past the closed edge resists progressively -- displacement grows less than the pointer\'s own movement, and never freezes', async ({
     page,
@@ -590,31 +604,56 @@ test.describe('@sheet-drag drag-to-dismiss (UI-06, brief §7.4)', () => {
     await login(page);
     await openCreateSheet(page);
 
-    // Release past the close threshold so the panel is genuinely animating shut ...
-    await performDrag(page, 260, { steps: 3, stepDelayMs: 8 });
+    // Re-grab point: just inside the viewport's right edge (the panel is pinned there), in the
+    // header's top padding -- it stays over the panel for almost the whole close travel and over
+    // no control. Taken from the viewport, not the panel's box: that box can still carry the
+    // entry slide's offset and put the point off screen, where the grab would silently miss.
+    const viewport = page.viewportSize();
+    const rest = await page.getByTestId(DRAG_SURFACE_TESTID).boundingBox();
+    if (viewport === null || rest === null) throw new Error('no viewport or drag surface box -- is the Sheet open?');
+    const grab = { x: viewport.width - 8, y: rest.y + 8 };
+
+    // Release past the midpoint (260px > 240px) at a moderate speed: the sheet closes, and the
+    // modest handoff velocity keeps the close spring mid-travel for many frames.
+    await performDrag(page, 260, { steps: 12, stepDelayMs: 30 });
+    const xAtRelease = await readDragSurfaceX(page);
     await page.mouse.up();
+    await page.mouse.move(grab.x, grab.y); // hover only, no button
 
-    // ... wait a short, fixed interval into the close animation (the panel is now somewhere
-    // between the release point and fully closed, not at either extreme) ...
-    await page.waitForTimeout(40);
-    const xMidClose = await readDragSurfaceX(page);
+    // Mid-close, deterministically: wait on the panel's own position, checked every animation
+    // frame in the page (never a wall-clock sleep) until the close animation has visibly moved it
+    // past the release point.
+    await page.waitForFunction(
+      ({ testid, from }) => {
+        const el = document.querySelector<HTMLElement>(`[data-testid="${testid}"]`);
+        const match = el === null ? null : /translateX\(([-\d.]+)px\)/.exec(el.style.transform);
+        return match?.[1] !== undefined && Number.parseFloat(match[1]) > from + 20;
+      },
+      { testid: DRAG_SURFACE_TESTID, from: xAtRelease },
+      { polling: 'raf' },
+    );
 
-    // ... then grab again and move a small amount. Research Assumption A2, tagged [ASSUMED] and
-    // requiring exactly this dedicated test before being relied on: the panel's tracking must
-    // resume from wherever it currently sits on screen, not snap back to 0 (its rest position) or
-    // jump to the in-flight close target first.
-    const start = await dragSurfaceCenter(page);
-    await page.mouse.move(start.x, start.y);
+    // Grab: Motion stops the close animation on pointerdown, wherever it has reached.
     await page.mouse.down();
-    await page.mouse.move(start.x + 10, start.y, { steps: 2 });
-    await page.waitForTimeout(30);
+    await nextAnimationFrames(page, 2);
+    const xMidClose = await readDragSurfaceX(page);
+    expect(xMidClose).toBeGreaterThan(xAtRelease);
+    expect(xMidClose).toBeLessThan(rest.width);
+    // The grab really landed on the panel: held still, it stays where it was caught.
+    await nextAnimationFrames(page, 2);
+    expect(await readDragSurfaceX(page)).toBe(xMidClose);
+
+    // ... then move a small amount. Research Assumption A2: tracking resumes from wherever the
+    // panel sits on screen, never snapping back toward 0 (rest) or jumping to the close target.
+    await page.mouse.move(grab.x + 10, grab.y, { steps: 2 });
+    await nextAnimationFrames(page, 2);
     const xAfterRegrab = await readDragSurfaceX(page);
 
     await page.mouse.up();
 
-    // The re-grabbed position must be close to where the close animation had already reached --
-    // never a hard reset to 0 first.
     expect(Math.abs(xAfterRegrab - xMidClose)).toBeLessThan(200);
+    // 1:1 means the 10px move carried the panel right from where it was, not back toward rest.
+    expect(xAfterRegrab).toBeGreaterThanOrEqual(xMidClose);
   });
 
   test('@sheet-drag Esc still closes the sheet, unaffected by the new drag surface', async ({ page }) => {
