@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
-status: ready_to_plan
-stopped_at: Phase 12 complete — ready to plan Phase 13
-last_updated: 2026-10-06T08:00:00.000Z
-last_activity: 2026-10-06 -- Phase 12 closed (21/21, tier-1 review pass after 2 fail rounds; CI green except pre-existing e2e @rowmenu)
+status: phase_review
+stopped_at: Phase 13 tasks complete — pending tier-1 review
+last_updated: 2026-10-07T12:00:00.000Z
+last_activity: 2026-10-07 -- Phase 13 tasks 22/22 green (integration full, e2e repeat 20/20, UI screenshots approved); tier-1 review pending
 progress:
   total_phases: 8
   completed_phases: 6
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-09-10)
 
 ## Current Position
 
-Phase: 12 complete
+Phase: 13 tasks complete
 Plan: —
-Status: Ready to plan Phase 13
+Status: Pending Phase 13 tier-1 review, then plan Phase 14
 Last activity: 2026-10-06
 
 Progress: [██████░░░░] 62%

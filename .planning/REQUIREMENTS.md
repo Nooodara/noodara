@@ -72,12 +72,12 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **LOG-01**: Los logs de build se transmiten en vivo a la UI por el SSE existente (nuevo tipo de evento), en chunks acotados (flush por tiempo/tamaño, límite por línea, tope por fase), pasados por el Redactor antes de salir del worker.
 - [x] **LOG-02**: Los logs de build se persisten en chunks append-only con secuencia y se pueden consultar después (`since=<seq>` en el resync sin replay), con tope de tamaño por deployment y retención configurable.
 - [x] **LOG-03**: El usuario ve los logs de runtime del contenedor bajo demanda (tail de N líneas y follow acotado en tiempo), con ANSI y salida binaria saneados; no se persisten.
-- [ ] **LOG-04**: La UI de deploy narra los pasos (clonar, construir, arrancar, verificar) con duración y estado cada uno, reutilizando el patrón de la narración del discovery, y muestra el error clasificado con su recuperación cuando falla.
+- [x] **LOG-04**: La UI de deploy narra los pasos (clonar, construir, arrancar, verificar) con duración y estado cada uno, reutilizando el patrón de la narración del discovery, y muestra el error clasificado con su recuperación cuando falla.
 
 ### Reconciliación de estado (REC)
 
 - [x] **REC-01**: Un ciclo de reconciliación por servidor (un `docker ps` por tick, no por servicio) actualiza el estado real de los contenedores y emite eventos SSE solo cuando algo cambia; la UI nunca hace polling propio.
-- [ ] **REC-02**: La UI aplica los eventos de estado con la misma función pura de reconciliación por secuencia que v0.1 usa para servidores, de modo que un evento y un snapshot en vuelo nunca dejan un estado obsoleto.
+- [x] **REC-02**: La UI aplica los eventos de estado con la misma función pura de reconciliación por secuencia que v0.1 usa para servidores, de modo que un evento y un snapshot en vuelo nunca dejan un estado obsoleto.
 - [x] **REC-03**: Un contenedor detenido o eliminado fuera de Noodara se refleja en la UI en el siguiente ciclo, y el activity log registra la discrepancia.
 
 ### Documentación y sitio público (DOCS, SITE)
@@ -99,7 +99,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 - [x] **QA-07**: Existen los fixtures oficiales `node-api`, `static-app` y `failing-build` (contexto de build < 1 MiB) y un fixture Testcontainers sshd+dockerd que ejerce el pull real desde registry y la autenticación de registry.
 - [x] **QA-08**: 20 deployments consecutivos del mismo servicio completan correctamente y 20 ciclos create/delete de servicio no dejan contenedores, redes, imágenes ni workspaces huérfanos (`docker system df` estable), en la suite de integración y en nightly.
-- [ ] **QA-09**: El E2E crítico cubre proyecto → environment → servicio desde `node-api` → deploy con logs en vivo → servicio alcanzable por el puerto publicado → build fallido con `failing-build` y error accionable → cancelación en curso sin huérfanos.
+- [x] **QA-09**: El E2E crítico cubre proyecto → environment → servicio desde `node-api` → deploy con logs en vivo → servicio alcanzable por el puerto publicado → build fallido con `failing-build` y error accionable → cancelación en curso sin huérfanos.
 - [x] **QA-10**: Los cuatro spikes de la investigación (transferencia de secretos sin argv, kill remoto confirmado, BuildKit por defecto en Docker 23+, estabilidad del JSON de `docker ps`) se resuelven con evidencia antes de implementar el motor, y los números por defecto (flush, topes de logs, intervalo de reconciliación, timeouts) se miden y se registran como en v0.1.
 
 ## v2 Requirements
@@ -170,7 +170,7 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | SET-04 | Phase 9 | Complete |
 | SET-05 | Phase 9 | Complete |
 | SET-06 | Phase 9 | Complete |
-| DOCS-01 | Phase 10 | Complete |
+| DOCS-01 | Phase 10, 13 | Complete |
 | DOCS-02 | Phase 10 | Complete |
 | SITE-01 | Phase 10 | Complete |
 | SITE-02 | Phase 10 | Complete |
@@ -205,9 +205,9 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | REC-01 | Phase 12 | Complete |
 | REC-03 | Phase 12 | Complete |
 | QA-08 | Phase 12 | Complete |
-| LOG-04 | Phase 13 | Pending |
-| REC-02 | Phase 13 | Pending |
-| QA-09 | Phase 13 | Pending |
+| LOG-04 | Phase 13 | Complete |
+| REC-02 | Phase 13 | Complete |
+| QA-09 | Phase 13 | Complete |
 | OPS-01 | Phase 14 | Pending |
 | OPS-02 | Phase 14 | Pending |
 | OPS-03 | Phase 14 | Pending |

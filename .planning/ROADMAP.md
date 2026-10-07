@@ -35,7 +35,7 @@ Full phase details, plans and success criteria: [milestones/v0.1-ROADMAP.md](mil
 - [x] **Phase 10: Sitio de docs y landing pública** - `apps/site` estático con Fumadocs, landing honesta con la identidad, publicado a GitHub Pages desde CI con test de exactitud. (completed 2026-09-28)
 - [x] **Phase 11: Motor de deploy — fundamentos** - Spikes resueltos, dominio y esquema de Project/Environment/Service/Deployment, plantillas parametrizadas, exec en streaming, fixture sshd+dockerd y fixtures oficiales. (completed 2026-10-05)
 - [x] **Phase 12: Motor de deploy — runtime** - Cola, worker, cancelación con kill confirmado, limpieza en toda salida, reconciliación, API y SSE; 20 deploys y 20 ciclos sin huérfanos. (completed 2026-10-05)
-- [ ] **Phase 13: UI de Projects & Services y E2E de deploy** - Jerarquía, creación de servicio, deploy narrado, logs en vivo en el inspector y el E2E crítico contra fixtures reales.
+- [x] **Phase 13: UI de Projects & Services y E2E de deploy** - Jerarquía, creación de servicio, deploy narrado, logs en vivo en el inspector y el E2E crítico contra fixtures reales.
 - [ ] **Phase 14: Hardening y gate de release v0.2** - Rotación de logs, poda de backups, imagen < 600 MB, `check-posix-sh` sin falsos positivos, deuda humana de v0.1 cerrada, `v0.2.0`.
 
 ## Decisions carried from research
@@ -395,6 +395,8 @@ Plans:
 **Docs (D-09 de la Fase 10):** añadir apps/site/content/docs/getting-started/first-deploy.mdx, retirar "deploy-services" de las exclusiones de apps/site/src/content/scope.ts y cerrar DOCS-01.
 
 **Plans**: 19 tasks in `.agent-flow/plan.json` (13-01..13-19): API gaps (env delete, event `updatedAt`, step timeline), client libs, e2e stack, CI debt, screens, inspector, E2E QA-09, UI DoD, docs, close-out.
+
+**Evidence (2026-10-07):** 22/22 tareas en `.agent-flow/plan.json`. `pnpm test:integration` verde (87 archivos, 969 tests), `pnpm test:e2e:repeat` 20/20 (231 tests por iteración, incluye `deploy.spec.ts` QA-09), `security:scan-leaks` verde, screenshots de ambos temas aprobados por el usuario (`docs/ui-review/phase-13/`). LOG-04 (`DeploymentSteps` + `deploy-error-copy`), REC-02 (`entity-reconcile.ts` compartido con servidores), QA-09 (`tests/e2e/deploy.spec.ts`), DOCS-01 (`first-deploy.mdx`).
 **UI hint**: yes
 
 ### Phase 14: Hardening y gate de release v0.2
