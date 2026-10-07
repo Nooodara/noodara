@@ -5,9 +5,12 @@
 // project is archived (the API rejects deleting an active project) and goes through
 // ConfirmByNameDialog. Every successful mutation calls notifyProjectsChanged() so the sidebar
 // refreshes. Failures show fixed copy, never the server's text.
+//
+// 14-19: in the compact toolbar (375 px) Edit, Archive/Unarchive and Delete move into a RowMenu and
+// New environment keeps a 44 px target with a short label, so the title keeps 12 characters.
 import { useEffect, useId, useRef, useState, type SyntheticEvent } from 'react';
 import { MAX_PROJECT_DESCRIPTION_LENGTH, MAX_PROJECT_NAME_LENGTH, validateProjectName } from '@noodara/domain';
-import { Banner, Button, Field, Input, Sheet, Textarea } from '@noodara/ui';
+import { Banner, Button, Field, Input, RowMenu, Sheet, Textarea, type RowMenuItem } from '@noodara/ui';
 import {
   archiveProject,
   deleteProject,
@@ -20,7 +23,7 @@ import { requireSession } from '../lib/require-session';
 import { ConfirmByNameDialog, deleteOutcome } from './ConfirmByNameDialog';
 import { notifyProjectsChanged, PROJECTS_HREF } from './ProjectNav';
 import { PROJECT_NAME_INVALID_COPY, PROJECT_NAME_TAKEN_COPY } from './ProjectSheet';
-import { Toolbar } from './Toolbar';
+import { Toolbar, type ToolbarLayout } from './Toolbar';
 
 export interface ProjectToolbarProps {
   readonly project: ProjectView;
@@ -35,6 +38,8 @@ export const PROJECT_UPDATE_FAILED_COPY = "Couldn't save the project. Check your
 export const PROJECT_ARCHIVE_FAILED_COPY = "Couldn't archive the project. Check your connection and try again.";
 export const PROJECT_UNARCHIVE_FAILED_COPY = "Couldn't unarchive the project. Check your connection and try again.";
 export const PROJECT_NOT_ARCHIVED_COPY = 'Archive the project before deleting it.';
+const MENU_TEST_ID = 'project-actions-menu';
+
 export const PROJECT_ARCHIVED_NOTE = 'This project is archived. New deploys are rejected until you unarchive it.';
 
 export function ProjectToolbar({ project, onProjectChange, onDeleted, onNewEnvironment }: ProjectToolbarProps) {
@@ -70,52 +75,63 @@ export function ProjectToolbar({ project, onProjectChange, onDeleted, onNewEnvir
     setActionError(archived ? PROJECT_UNARCHIVE_FAILED_COPY : PROJECT_ARCHIVE_FAILED_COPY);
   }
 
+  function openEdit(): void {
+    setEditOpen(true);
+  }
+
+  function openDelete(): void {
+    setDeleteOpen(true);
+  }
+
+  const menuItems: RowMenuItem[] = [
+    { id: 'edit', label: 'Edit', onSelect: openEdit },
+    { id: 'archive', label: archived ? 'Unarchive' : 'Archive', onSelect: () => void toggleArchive() },
+    ...(archived ? [{ id: 'delete', label: 'Delete', destructive: true, onSelect: openDelete }] : []),
+  ];
+
   return (
     <div className="flex flex-col">
       <Toolbar
         title={project.name}
         backLink={{ href: PROJECTS_HREF, label: '← Projects' }}
-        secondaryActions={
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              data-testid="project-edit-button"
-              onClick={() => {
-                setEditOpen(true);
-              }}
-            >
-              Edit
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              data-testid="project-archive-button"
-              loading={archiving}
-              disabled={archiving}
-              onClick={() => void toggleArchive()}
-            >
-              {archived ? 'Unarchive' : 'Archive'}
-            </Button>
-            {archived ? (
+        secondaryActions={(layout: ToolbarLayout) =>
+          layout === 'compact' ? (
+            <RowMenu triggerLabel={`Actions for ${project.name}`} data-testid={MENU_TEST_ID} items={menuItems} reveal="always" />
+          ) : (
+            <div className="flex items-center gap-1">
+              <Button type="button" variant="ghost" data-testid="project-edit-button" onClick={openEdit}>
+                Edit
+              </Button>
               <Button
                 type="button"
-                variant="destructive"
-                data-testid="project-delete-button"
-                onClick={() => {
-                  setDeleteOpen(true);
-                }}
+                variant="ghost"
+                data-testid="project-archive-button"
+                loading={archiving}
+                disabled={archiving}
+                onClick={() => void toggleArchive()}
               >
-                Delete
+                {archived ? 'Unarchive' : 'Archive'}
               </Button>
-            ) : null}
-          </div>
+              {archived ? (
+                <Button type="button" variant="destructive" data-testid="project-delete-button" onClick={openDelete}>
+                  Delete
+                </Button>
+              ) : null}
+            </div>
+          )
         }
-        primaryAction={
-          <Button type="button" variant="primary" data-testid="project-new-environment-button" onClick={onNewEnvironment}>
-            New environment
+        primaryAction={(layout: ToolbarLayout) => (
+          <Button
+            type="button"
+            variant="primary"
+            data-testid="project-new-environment-button"
+            hitArea={layout === 'compact'}
+            aria-label={layout === 'compact' ? 'New environment' : undefined}
+            onClick={onNewEnvironment}
+          >
+            {layout === 'compact' ? 'New' : 'New environment'}
           </Button>
-        }
+        )}
       />
       {archived ? (
         <p className="px-4 pt-2 text-caption text-ink-secondary" data-testid="project-archived-note">
@@ -136,6 +152,7 @@ export function ProjectToolbar({ project, onProjectChange, onDeleted, onNewEnvir
         confirmLabel="Delete project"
         requiredName={project.name}
         data-testid="project-delete-dialog"
+        returnFocusTo={() => document.querySelector<HTMLElement>(`[data-testid="${MENU_TEST_ID}"]`)}
         onConfirm={async (typed) => {
           const outcome = deleteOutcome(await deleteProject(project.id, typed), { PROJECT_NOT_ARCHIVED: PROJECT_NOT_ARCHIVED_COPY });
           if (outcome.ok) {

@@ -31,7 +31,7 @@ Ninguno.
 
 ## Correcciones sugeridas
 
-1. Toolbar de proyecto a 375 (FLAG, fuera de A1): aplicar el patrón compacto de `ServiceToolbar` (flecha de 44 px, título con `min-w-[12ch]`, Edit/Archive/Delete en un `RowMenu`). Va en su propia tarea (14-19).
+1. Toolbar de proyecto a 375 (FLAG, fuera de A1): aplicar el patrón compacto de `ServiceToolbar` (flecha de 44 px, título con `min-w-[12ch]`, Edit/Archive/Delete en un `RowMenu`). Va en su propia tarea (14-19). Implementado en 14-19: `Toolbar` mide su ancho (compacto bajo 800 px), flecha de 44 px, título con `min-w-[12ch]`, Edit/Archive/Delete en `RowMenu`, "New" con nombre accesible "New environment". Pendiente: capturas `project-375-*.png` / `stress-project-375-*.png` y aprobación humana para pasar Layout a PASS.
 
 ## Lo que está bien
 

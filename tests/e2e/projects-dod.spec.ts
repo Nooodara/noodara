@@ -1170,4 +1170,156 @@ test.describe('@projects-dod Phase 13 screens', () => {
       expect(await page.evaluate(() => (window as unknown as { __noodaraXss?: number }).__noodaraXss)).toBeUndefined();
     });
   });
+
+  // 14-19: the project toolbar at 375 px (docs/ui-review/phase-14/REPORT.md, Layout). The project
+  // name is swapped for a 200-character unbroken one in the real project response only.
+  test.describe('14-19 project toolbar at 375 px', () => {
+    const LONG_PROJECT_NAME = 'checkoutsettlementreconciliation'.repeat(7).slice(0, 200);
+    const PROJECT_SCREEN = SCREENS.find((screen) => screen.name === 'project') as Screen;
+
+    async function injectLongProject(page: Page): Promise<void> {
+      await page.route(new RegExp(`/api/projects/${fx.projectId}$`), async (route) => {
+        if (route.request().method() !== 'GET') {
+          await route.continue();
+          return;
+        }
+        const response = await route.fetch();
+        const json = (await response.json()) as Record<string, unknown>;
+        await route.fulfill({ response, json: { ...json, name: LONG_PROJECT_NAME } });
+      });
+    }
+
+    async function openLongProject(page: Page, theme: Theme, width: number): Promise<void> {
+      await show(page, PROJECT_SCREEN, theme, width);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(LONG_PROJECT_NAME);
+    }
+
+    async function noHorizontalScroll(page: Page, where: string): Promise<void> {
+      const widths = await page.evaluate(() => ({
+        scroll: document.documentElement.scrollWidth,
+        client: document.documentElement.clientWidth,
+      }));
+      expect(widths.scroll, `${where}: scrollWidth <= clientWidth`).toBeLessThanOrEqual(widths.client);
+      expect(await page.evaluate(scanLayout), where).toEqual([]);
+    }
+
+    test('A1 the project title keeps 12 characters and the toolbar stays on one row at 375 px', async ({ page }) => {
+      await injectLongProject(page);
+      for (const theme of THEMES) {
+        await openLongProject(page, theme, 375);
+        const toolbar = page.getByTestId('shell-toolbar');
+        await expect(toolbar).toHaveAttribute('data-layout', 'compact');
+        const title = await page.getByRole('heading', { level: 1 }).evaluate((h1) => {
+          const text = h1.firstChild;
+          if (text === null || text.nodeType !== Node.TEXT_NODE) return null;
+          const range = document.createRange();
+          range.setStart(text, 0);
+          range.setEnd(text, 12);
+          const probe = document.createElement('span');
+          probe.style.font = getComputedStyle(h1).font;
+          probe.style.position = 'absolute';
+          probe.textContent = '…';
+          document.body.append(probe);
+          const ellipsis = probe.getBoundingClientRect().width;
+          probe.remove();
+          return { box: h1.clientWidth, twelve: range.getBoundingClientRect().width, ellipsis };
+        });
+        expect(title, 'title text node').not.toBeNull();
+        expect(title?.box ?? 0, `[${theme}] title shows its first 12 characters`).toBeGreaterThanOrEqual(
+          (title?.twelve ?? Infinity) + (title?.ellipsis ?? 0),
+        );
+        const rows = await toolbar.evaluate((bar) => {
+          const parts = ['a[href]', '[data-testid="shell-toolbar-title"]', '[data-testid="project-actions-menu"]', '[data-testid="project-new-environment-button"]']
+            .map((selector) => bar.querySelector(selector))
+            .filter((el): el is Element => el !== null)
+            .map((el) => el.getBoundingClientRect());
+          return { count: parts.length, maxTop: Math.max(...parts.map((r) => r.top)), minBottom: Math.min(...parts.map((r) => r.bottom)) };
+        });
+        expect(rows.count, `[${theme}] back, title, menu and New environment are in the bar`).toBe(4);
+        expect(rows.maxTop, `[${theme}] all controls share one row`).toBeLessThan(rows.minBottom);
+        // No toolbar label wraps onto a second line.
+        const wrapped = await toolbar.evaluate((bar) =>
+          [...bar.querySelectorAll('a, button')]
+            .filter((el) => {
+              const lineHeight = parseFloat(getComputedStyle(el).lineHeight);
+              return Number.isFinite(lineHeight) && el.getBoundingClientRect().height > Math.max(44, lineHeight * 1.5) + 1;
+            })
+            .map((el) => el.textContent),
+        );
+        expect(wrapped, `[${theme}] toolbar labels on one line`).toEqual([]);
+        await expect(page.getByTestId('project-edit-button')).toHaveCount(0);
+        await expect(page.getByTestId('project-archive-button')).toHaveCount(0);
+        await expect(page.getByTestId('project-new-environment-button')).toHaveAccessibleName('New environment');
+        await capture(page, `stress-project-375-${theme}.png`, SHOTS_DIR_14);
+      }
+    });
+
+    test('A2 the back arrow and the actions menu are keyboard operable with accessible names at 375 px', async ({ page }) => {
+      await injectLongProject(page);
+      await openLongProject(page, 'dark', 375);
+      const trigger = page.getByTestId('project-actions-menu');
+      await expect(trigger).toHaveAccessibleName(`Actions for ${LONG_PROJECT_NAME}`);
+      await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      const box = await trigger.boundingBox();
+      expect(Math.min(box?.width ?? 0, box?.height ?? 0)).toBeGreaterThanOrEqual(44);
+      const back = page.getByRole('link', { name: 'Back to Projects' });
+      const backBox = await back.boundingBox();
+      expect(Math.min(backBox?.width ?? 0, backBox?.height ?? 0)).toBeGreaterThanOrEqual(44);
+      expect(await page.getByTestId('project-new-environment-button').evaluate((el) => getComputedStyle(el, '::after').height)).toBe('44px');
+
+      await trigger.focus();
+      await page.keyboard.press('Enter');
+      const menu = page.getByRole('menu');
+      await expect(menu).toBeVisible();
+      await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      await expect(menu.getByRole('menuitem')).toHaveText(['Edit', 'Archive']);
+      await expect(menu.getByRole('menuitem', { name: 'Edit' })).toBeFocused();
+      for (let step = 0; step < 6; step += 1) {
+        await page.keyboard.press(step % 3 === 2 ? 'Shift+Tab' : 'Tab');
+        expect(await menu.evaluate((el) => el.contains(document.activeElement)), `focus stays in the menu after ${String(step + 1)} keys`).toBe(true);
+      }
+      await page.keyboard.press('Escape');
+      await expect(menu).toBeHidden();
+      await expect(trigger).toBeFocused();
+
+      // Edit from the keyboard opens the sheet; closing it brings focus back to the bar.
+      await page.keyboard.press('Enter');
+      await menu.getByRole('menuitem', { name: 'Edit' }).press('Enter');
+      await expect(page.getByTestId('project-edit-sheet')).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(page.getByTestId('project-edit-sheet')).toBeHidden();
+
+      await back.focus();
+      await page.keyboard.press('Enter');
+      await expect(page).toHaveURL(/\/projects$/);
+    });
+
+    test('A2 axe reports no serious or critical violation on the project at 375 px', async ({ page }) => {
+      await injectLongProject(page);
+      for (const theme of THEMES) {
+        await openLongProject(page, theme, 375);
+        const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice']).analyze();
+        const blocking = results.violations
+          .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
+          .map((violation) => ({ rule: violation.id, targets: violation.nodes.slice(0, 5).map((node) => node.target.join(' ')) }));
+        expect.soft(blocking, `project at 375 [${theme}]`).toEqual([]);
+      }
+    });
+
+    test('A2 no horizontal scroll at 375 and 1280 px with a 200-character project name', async ({ page }) => {
+      await injectLongProject(page);
+      for (const theme of THEMES) {
+        for (const width of [375, 1280] as const) {
+          await openLongProject(page, theme, width);
+          await expect(page.getByTestId('shell-toolbar')).toHaveAttribute('data-layout', width === 375 ? 'compact' : 'full');
+          await noHorizontalScroll(page, `long project at ${String(width)} [${theme}]`);
+          if (width === 1280) {
+            await expect(page.getByTestId('project-edit-button')).toBeVisible();
+            await expect(page.getByTestId('project-archive-button')).toBeVisible();
+            await capture(page, `stress-project-1280-${theme}.png`, SHOTS_DIR_14);
+          }
+        }
+      }
+    });
+  });
 });

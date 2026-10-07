@@ -69,7 +69,23 @@ function renderToolbar(value: ProjectView = project()) {
 
 beforeEach(() => {
   for (const fn of Object.values(deployApi)) fn.mockReset();
+  vi.restoreAllMocks();
 });
+
+/** jsdom has no layout: report the toolbar's width as a real browser at `width` px would. */
+function atWidth(width: number) {
+  return vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+    () => ({ width, height: 52, top: 0, left: 0, right: width, bottom: 52, x: 0, y: 0, toJSON: () => ({}) }),
+  );
+}
+
+const ARCHIVED_AT = '2026-10-06T01:00:00.000Z';
+const LONG_NAME = 'checkoutsettlementreconciliation'.repeat(7).slice(0, 200);
+
+async function menuItems(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByTestId('project-actions-menu'));
+  return screen.getAllByRole('menuitem').map((item) => item.textContent);
+}
 
 describe('ProjectToolbar (13-10 A2, H1, H2)', () => {
   it('shows the project name, New environment, Edit and Archive; no Delete while active', async () => {
@@ -219,5 +235,95 @@ describe('ProjectToolbar (13-10 A2, H1, H2)', () => {
       expect(banner).toHaveTextContent('INTERNAL_ERROR');
       expect(banner).not.toHaveTextContent('raw server text');
     });
+  });
+});
+
+describe('ProjectToolbar at 375 px (14-19 A1)', () => {
+  it('keeps one row: the title holds 12 characters and Edit/Archive sit in the menu', async () => {
+    atWidth(375);
+    const { user } = renderToolbar(project({ name: LONG_NAME }));
+
+    const toolbar = screen.getByTestId('shell-toolbar');
+    expect(toolbar).toHaveAttribute('data-layout', 'compact');
+    expect(toolbar.className).toMatch(/\bflex-nowrap\b/);
+    expect(screen.getByTestId('shell-toolbar-title').className).toMatch(/min-w-\[12ch\]/);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveAttribute('title', LONG_NAME);
+    expect(screen.queryByTestId('project-edit-button')).toBeNull();
+    expect(screen.queryByTestId('project-archive-button')).toBeNull();
+    expect(screen.queryByTestId('project-delete-button')).toBeNull();
+    expect(await menuItems(user)).toEqual(['Edit', 'Archive']);
+  });
+
+  it('lists Edit, Unarchive and Delete for an archived project, Delete last and destructive', async () => {
+    atWidth(375);
+    const { user } = renderToolbar(project({ archivedAt: ARCHIVED_AT }));
+
+    expect(await menuItems(user)).toEqual(['Edit', 'Unarchive', 'Delete']);
+  });
+
+  it('runs every action from the menu', async () => {
+    atWidth(375);
+    const archived = project({ archivedAt: ARCHIVED_AT });
+    deployApi.archiveProject.mockReturnValue(Promise.resolve({ ok: true, data: archived }));
+    const { user, onProjectChange } = renderToolbar();
+
+    await menuItems(user);
+    await user.click(screen.getByRole('menuitem', { name: 'Archive' }));
+    await waitFor(() => {
+      expect(onProjectChange).toHaveBeenCalledWith(archived);
+    });
+
+    await menuItems(user);
+    await user.click(screen.getByRole('menuitem', { name: 'Edit' }));
+    expect(await screen.findByTestId('project-edit-sheet')).toBeInTheDocument();
+  });
+
+  it('opens the delete confirmation from the menu and returns focus to the trigger on Escape', async () => {
+    atWidth(375);
+    const { user } = renderToolbar(project({ archivedAt: ARCHIVED_AT }));
+
+    await menuItems(user);
+    await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
+    expect(await screen.findByTestId('project-delete-dialog')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(screen.queryByTestId('project-delete-dialog')).toBeNull();
+    });
+    expect(screen.getByTestId('project-actions-menu')).toHaveFocus();
+  });
+
+  it('gives the menu a labelled, always-visible 44 px trigger and the back link a 44 px arrow', () => {
+    atWidth(375);
+    renderToolbar();
+
+    const trigger = screen.getByRole('button', { name: 'Actions for Billing' });
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    expect(trigger).toHaveAttribute('data-hit-area', '44');
+    expect(trigger.className).not.toMatch(/opacity-0/);
+    expect(screen.getByRole('link', { name: 'Back to Projects' }).className).toMatch(/\bh-11\b.*\bw-11\b|\bw-11\b.*\bh-11\b/);
+  });
+
+  it('keeps New environment as the one primary action with a 44 px target and its full name', async () => {
+    atWidth(375);
+    const { user, onNewEnvironment } = renderToolbar();
+
+    const create = screen.getByTestId('project-new-environment-button');
+    expect(create).toHaveAccessibleName('New environment');
+    expect(create).toHaveAttribute('data-hit-area', '44');
+    await user.click(create);
+    expect(onNewEnvironment).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ProjectToolbar at 1280 px (14-19 A1)', () => {
+  it('keeps Edit and Archive inline with no overflow menu', () => {
+    atWidth(1280);
+    renderToolbar();
+
+    expect(screen.getByTestId('shell-toolbar')).toHaveAttribute('data-layout', 'full');
+    expect(screen.getByTestId('project-edit-button')).toBeInTheDocument();
+    expect(screen.getByTestId('project-archive-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('project-actions-menu')).toBeNull();
+    expect(screen.getByTestId('project-new-environment-button')).toHaveTextContent('New environment');
   });
 });

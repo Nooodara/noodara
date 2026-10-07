@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, renderUi, screen } from '@noodara/ui/testing';
 import { ShellContext, type ShellContextValue } from '../lib/shell-context';
-import { Toolbar } from './Toolbar';
+import { Toolbar, TOOLBAR_COMPACT_MAX_WIDTH, toolbarLayout, type ToolbarLayout } from './Toolbar';
 
 // 08-10-PLAN.md Task 1/2 (UI-07/UI-10, D-03, 08-UI-SPEC.md SS2.2/SS10): this is the toolbar's
 // first component test file. It covers two things a real browser test (tests/e2e/servers-list.spec.ts's
@@ -154,5 +154,95 @@ describe('Toolbar accessibility alternatives (UI-10)', () => {
     const className = screen.getByTestId('shell-toolbar').className;
     expect(className).toContain('contrast-more:border-hairline-strong');
     expect(className).toContain('contrast-more:bg-surface-1');
+  });
+});
+
+/** jsdom has no layout: report the toolbar's width as a real browser at `width` px would. */
+function atWidth(width: number) {
+  return vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+    () => ({ width, height: 52, top: 0, left: 0, right: width, bottom: 52, x: 0, y: 0, toJSON: () => ({}) }),
+  );
+}
+
+const LONG_TITLE = 'checkoutsettlementreconciliation'.repeat(7).slice(0, 200);
+
+describe('Toolbar layout at narrow widths (14-19 A1)', () => {
+  it('goes compact below the threshold, and only once the bar was measured', () => {
+    expect(toolbarLayout(375)).toBe('compact');
+    expect(toolbarLayout(TOOLBAR_COMPACT_MAX_WIDTH - 1)).toBe('compact');
+    expect(toolbarLayout(TOOLBAR_COMPACT_MAX_WIDTH)).toBe('full');
+    expect(toolbarLayout(1280)).toBe('full');
+    // Not laid out yet (jsdom, first paint): never guess compact.
+    expect(toolbarLayout(0)).toBe('full');
+  });
+
+  it('at 375 px stays on one row and the title block keeps 12 characters of its own font', () => {
+    atWidth(375);
+    renderToolbar({ title: LONG_TITLE, primaryAction: <button type="button">Add</button> });
+
+    const toolbar = screen.getByTestId('shell-toolbar');
+    expect(toolbar).toHaveAttribute('data-layout', 'compact');
+    expect(toolbar.className).toMatch(/\bflex-nowrap\b/);
+    expect(toolbar.className).not.toMatch(/\bflex-wrap\b/);
+    const titleBlock = screen.getByTestId('shell-toolbar-title');
+    expect(titleBlock.className).toMatch(/min-w-\[12ch\]/);
+    expect(titleBlock.className).toMatch(/\bflex-1\b/);
+    expect(titleBlock.className).toMatch(/\btext-title\b/);
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toHaveAttribute('title', LONG_TITLE);
+    expect(heading.className).toMatch(/\btruncate\b/);
+    // The actions keep their size and their labels never wrap.
+    const actions = screen.getByTestId('shell-toolbar-actions');
+    expect(actions.className).toMatch(/\bshrink-0\b/);
+    expect(actions.className).toMatch(/\bwhitespace-nowrap\b/);
+  });
+
+  it('at 375 px turns the back link into a 44 px arrow named after its destination', () => {
+    atWidth(375);
+    renderToolbar({ backLink: { href: '/projects', label: '← Projects' } });
+
+    const back = screen.getByRole('link', { name: 'Back to Projects' });
+    expect(back).toHaveAttribute('href', '/projects');
+    expect(back.className).toMatch(/\bh-11\b/);
+    expect(back.className).toMatch(/\bw-11\b/);
+    expect(back.className).toMatch(/focus-visible:outline-accent/);
+    expect(back).toHaveTextContent('←');
+  });
+
+  it('hands the measured layout to slot render functions', () => {
+    atWidth(375);
+    const seen: ToolbarLayout[] = [];
+    renderToolbar({
+      secondaryActions: (layout: ToolbarLayout) => {
+        seen.push(layout);
+        return <span data-testid="secondary">{layout}</span>;
+      },
+      primaryAction: (layout: ToolbarLayout) => <span data-testid="primary">{layout}</span>,
+    });
+
+    expect(screen.getByTestId('secondary')).toHaveTextContent('compact');
+    expect(screen.getByTestId('primary')).toHaveTextContent('compact');
+    expect(seen).toContain('compact');
+  });
+
+  it('at 1280 px keeps the full layout: text back link, slots told "full"', () => {
+    atWidth(1280);
+    renderToolbar({
+      backLink: { href: '/projects', label: '← Projects' },
+      secondaryActions: (layout: ToolbarLayout) => <span data-testid="secondary">{layout}</span>,
+    });
+
+    expect(screen.getByTestId('shell-toolbar')).toHaveAttribute('data-layout', 'full');
+    expect(screen.getByRole('link', { name: '← Projects' })).toBeInTheDocument();
+    expect(screen.getByTestId('secondary')).toHaveTextContent('full');
+    // A short title is not stretched to 12ch; a long one is floored there.
+    expect(screen.getByRole('heading', { level: 1 }).className).not.toMatch(/min-w-\[12ch\]/);
+  });
+
+  it('at 1280 px floors a long title at 12ch so the actions cannot squeeze it away', () => {
+    atWidth(1280);
+    renderToolbar({ title: LONG_TITLE });
+
+    expect(screen.getByRole('heading', { level: 1 }).className).toMatch(/min-w-\[12ch\]/);
   });
 });
