@@ -98,6 +98,10 @@ export const DEPLOYMENT_ERROR_COPY: Readonly<Record<DeploymentErrorCode, Deploym
     title: 'Deploy interrupted',
     recovery: 'The deploy worker stopped before finishing. Deploy again.',
   },
+  ENQUEUE_FAILED: {
+    title: 'Deploy never started',
+    recovery: 'The deployment could not be queued, so nothing ran and the service is unchanged. Deploy again.',
+  },
 });
 
 /** Shown for a code this build of the UI does not know (a newer server) or no code at all. */

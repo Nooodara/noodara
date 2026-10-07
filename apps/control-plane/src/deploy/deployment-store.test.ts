@@ -7,7 +7,12 @@ import { deployments } from '../db/schema/deployments.js';
 import { services } from '../db/schema/services.js';
 import type { ServerEvent } from '../events/server-event-publisher.js';
 import type { DeploymentRow } from '../services/deployment-services.js';
-import { createDeploymentStore, DeploymentConflictError, type FinishDeploymentInput } from './deployment-store.js';
+import {
+  createDeploymentStore,
+  DeploymentConflictError,
+  ENQUEUE_FAILED_MESSAGE,
+  type FinishDeploymentInput,
+} from './deployment-store.js';
 import { DEPLOY_MESSAGES } from './run-deployment.js';
 
 const SERVICE_ID = '0192f1a4-7b3c-7d2e-8f00-00000000bbbb';
@@ -401,7 +406,7 @@ describe('deployment store: finish (C3, ERR)', () => {
     expect(h.published).toEqual([]);
   });
 
-  it('refuses to finish a deployment that was never claimed (QUEUED has no FAILED edge)', async () => {
+  it('refuses to finish a deployment that was never claimed (only the stale-QUEUED sweep may fail it)', async () => {
     const h = harness({ deployment: deploymentRow({ status: 'QUEUED' }), service: serviceRow() });
     await expect(h.store.finish(DEPLOYMENT_ID, finishInput({ status: 'FAILED', errorCode: 'WORKER_CRASHED' }))).rejects.toThrow(
       /Invalid deployment transition/,
@@ -566,5 +571,93 @@ describe('deployment store: cancel (12-13 A1, H1, H2)', () => {
     await h.store.inFlight();
     const op = h.ops[0];
     expect(op?.calls.map((c) => c.method)).toEqual(['from', 'innerJoin', 'where']);
+  });
+});
+
+/** Depth-first search of a drizzle SQL tree (it has cycles through table references). */
+function containsValue(root: unknown, wanted: unknown): boolean {
+  const seen = new WeakSet<object>();
+  const stack: unknown[] = [root];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (node === wanted) return true;
+    if (typeof node !== 'object' || node === null || seen.has(node)) continue;
+    seen.add(node);
+    stack.push(...Object.values(node));
+  }
+  return false;
+}
+
+describe('deployment store: stale QUEUED (14-08 A1, A2, H2, H3)', () => {
+  const CUTOFF = new Date('2026-10-05T10:00:30.000Z');
+  const activityValues = (h: ReturnType<typeof harness>): unknown[] =>
+    h.ops
+      .filter((op) => op.root === 'insert' && op.table === activityEvents)
+      .map((op) => op.calls.find((c) => c.method === 'values')?.args[0]);
+
+  it('fails an old QUEUED row FAILED/ENQUEUE_FAILED under the row lock with one activity event and both events', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'QUEUED' }), service: serviceRow({ status: 'RUNNING' }) });
+
+    const view = await h.store.failStaleQueued(DEPLOYMENT_ID, CUTOFF);
+
+    expect(view).toMatchObject({ id: DEPLOYMENT_ID, status: 'FAILED', errorCode: 'ENQUEUE_FAILED' });
+    expect(h.state.deployment).toMatchObject({ status: 'FAILED', errorCode: 'ENQUEUE_FAILED', errorMessage: ENQUEUE_FAILED_MESSAGE, completedAt: NOW });
+    const lock = h.ops.find((op) => op.root === 'select' && h.tableOf(op) === deployments);
+    expect(lock?.inTx).toBe(true);
+    expect(lock?.calls.some((c) => c.method === 'for' && c.args[0] === 'update')).toBe(true);
+    expect(activityValues(h)).toEqual([
+      expect.objectContaining({ actorType: 'system', action: 'deployment.finished', outcome: 'failure', errorCode: 'ENQUEUE_FAILED' }),
+    ]);
+    expect(h.published.map((event) => event.type)).toEqual(['deployment.updated', 'service.updated']);
+  });
+
+  it('the conditional UPDATE matches only a row still QUEUED', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'QUEUED' }), service: serviceRow() });
+    await h.store.failStaleQueued(DEPLOYMENT_ID, CUTOFF);
+    const update = h.ops.find((op) => op.root === 'update' && op.table === deployments);
+    expect(containsValue(update?.calls.find((c) => c.method === 'where')?.args, 'QUEUED')).toBe(true);
+  });
+
+  it('a worker that claimed the row between the lock and the update leaves it alone: no event, nothing published (H2)', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'QUEUED' }), service: serviceRow(), updateMisses: true });
+    expect(await h.store.failStaleQueued(DEPLOYMENT_ID, CUTOFF)).toBeNull();
+    expect(activityValues(h)).toEqual([]);
+    expect(h.published).toEqual([]);
+  });
+
+  it.each(['PREPARING', 'BUILDING', 'DEPLOYING', 'SUCCESS', 'FAILED', 'CANCELLED'] as const)(
+    'a %s row is never touched, so a second sweep is a no-op (A2, H2)',
+    async (status) => {
+      const h = harness({ deployment: deploymentRow({ status, startedAt: STARTED }), service: serviceRow() });
+      expect(await h.store.failStaleQueued(DEPLOYMENT_ID, CUTOFF)).toBeNull();
+      expect(h.ops.filter((op) => op.root !== 'select')).toEqual([]);
+      expect(h.published).toEqual([]);
+    },
+  );
+
+  it('a QUEUED row newer than the cutoff is never touched (A2)', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'QUEUED', createdAt: new Date(CUTOFF.getTime() + 1) }), service: serviceRow() });
+    expect(await h.store.failStaleQueued(DEPLOYMENT_ID, CUTOFF)).toBeNull();
+    expect(h.ops.filter((op) => op.root !== 'select')).toEqual([]);
+  });
+
+  it('a missing row is a no-op', async () => {
+    const h = harness({ deployment: null, service: null });
+    expect(await h.store.failStaleQueued(DEPLOYMENT_ID, CUTOFF)).toBeNull();
+    expect(h.published).toEqual([]);
+  });
+
+  it('the message is actionable and carries no infrastructure detail (H3)', () => {
+    expect(ENQUEUE_FAILED_MESSAGE).toMatch(/deploy again/i);
+    expect(ENQUEUE_FAILED_MESSAGE).not.toMatch(/ECONN|ETIMEDOUT|ENOTFOUND|Error:|:\/\/|@|\d+\.\d+\.\d+\.\d+|:\d{2,5}\b/i);
+    expect(ENQUEUE_FAILED_MESSAGE.length).toBeLessThanOrEqual(1024);
+  });
+
+  it('lists stale QUEUED rows oldest first, bounded by the batch limit (H3)', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'QUEUED' }), service: serviceRow() });
+    await h.store.staleQueued(CUTOFF, 25);
+    const op = h.ops[0];
+    expect(op?.calls.map((c) => c.method)).toEqual(['from', 'where', 'orderBy', 'limit']);
+    expect(op?.calls.find((c) => c.method === 'limit')?.args).toEqual([25]);
   });
 });

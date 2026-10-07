@@ -163,6 +163,7 @@ async function main(): Promise<void> {
 
   // 12-15: the reconcile tick, a repeatable job on its own queue and blocking connection. One
   // `docker ps` per CONNECTED server every NOODARA_RECONCILE_INTERVAL_MS, never overlapping.
+  // Its startup run and each tick also sweep stale QUEUED deployments (14-08).
   const reconcileWorkerConnection = createWorkerRedisConnection(env.REDIS_URL);
   const reconcile = await startWorkerReconcile({
     db,
@@ -174,6 +175,9 @@ async function main(): Promise<void> {
     intervalMs: env.NOODARA_RECONCILE_INTERVAL_MS,
     queueConnection,
     workerConnection: reconcileWorkerConnection,
+    // 14-08: a QUEUED deployment whose job never reached the queue ends ENQUEUE_FAILED, once at
+    // startup and on every tick.
+    staleQueued: { thresholdMs: env.NOODARA_DEPLOY_QUEUED_STALE_MS },
   });
 
   // The literal "Worker ready" is the boot smoke test's deterministic stdout marker, mirroring

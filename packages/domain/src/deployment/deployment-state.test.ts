@@ -18,6 +18,8 @@ import {
 const ALLOWED_EDGES: readonly (readonly [DeploymentStatus, DeploymentStatus])[] = [
   ['QUEUED', 'PREPARING'],
   ['QUEUED', 'CANCELLED'],
+  // 14-08: a QUEUED row whose job never reached the queue ends FAILED/ENQUEUE_FAILED.
+  ['QUEUED', 'FAILED'],
   ['PREPARING', 'BUILDING'],
   ['PREPARING', 'FAILED'],
   ['PREPARING', 'CANCELLED'],
@@ -85,9 +87,9 @@ describe('canTransitionDeployment', () => {
     expect(canTransitionDeployment(from, to)).toBe(isAllowed(from, to));
   });
 
-  it('allows exactly 11 of the 49 ordered pairs', () => {
-    expect(ALLOWED_EDGES.length).toBe(11);
-    expect(ALL_PAIRS.filter(([from, to]) => canTransitionDeployment(from, to)).length).toBe(11);
+  it('allows exactly 12 of the 49 ordered pairs', () => {
+    expect(ALLOWED_EDGES.length).toBe(12);
+    expect(ALL_PAIRS.filter(([from, to]) => canTransitionDeployment(from, to)).length).toBe(12);
   });
 
   it('rejects self-transitions for all seven states', () => {

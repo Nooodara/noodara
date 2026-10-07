@@ -16,11 +16,19 @@ Phase 12 runtime engine: project/environment/service setup, deployment queue, li
 
 States (ADR 0004): `QUEUED`, `PREPARING`, `BUILDING`, `DEPLOYING` (active); `SUCCESS`, `FAILED`, `CANCELLED` (terminal). Timeouts are not a state: they end `FAILED` with `BUILD_TIMEOUT` / `BUILD_STALLED`; a failed deploy leaves the prior container running.
 
-Transitions: `QUEUED → PREPARING | CANCELLED`; `PREPARING → BUILDING | FAILED | CANCELLED`; `BUILDING → DEPLOYING | FAILED | CANCELLED`; `DEPLOYING → SUCCESS | FAILED | CANCELLED`.
+Transitions: `QUEUED → PREPARING | FAILED | CANCELLED` (`FAILED` only as `ENQUEUE_FAILED`, below); `PREPARING → BUILDING | FAILED | CANCELLED`; `BUILDING → DEPLOYING | FAILED | CANCELLED`; `DEPLOYING → SUCCESS | FAILED | CANCELLED`.
 
 ## Error Codes
 
-Full list in `apps/site/content/docs/reference/error-codes.mdx`. Build-time codes (`BUILD_FAILED`, `BUILD_TIMEOUT`, `BUILD_STALLED`, `CLONE_FAILED`, `REPOSITORY_AUTH_FAILED`, `GIT_HOST_KEY_MISMATCH`, `GIT_HOST_KEY_UNAVAILABLE`, `IMAGE_PULL_FAILED`, `START_FAILED`, `WORKER_CRASHED`) are logged on the deployment, not returned as HTTP errors. HTTP: `DEPLOYMENT_IN_PROGRESS` 409, `DEPLOYMENT_INPUT_INVALID` 422, `DEPLOYMENT_NOT_CANCELLABLE` 409, `CONTAINER_NOT_FOUND` 409, `RUNTIME_LOG_TAIL_INVALID` 422 (`tail` 1-10000), `RUNTIME_LOG_FOLLOW_LIMIT_REACHED` 429, `RUNTIME_LOGS_FAILED` 502, `RUNTIME_LOGS_TIMEOUT` 504, `PORT_IN_USE` 409.
+Full list in `apps/site/content/docs/reference/error-codes.mdx`. Build-time codes (`BUILD_FAILED`, `BUILD_TIMEOUT`, `BUILD_STALLED`, `CLONE_FAILED`, `REPOSITORY_AUTH_FAILED`, `GIT_HOST_KEY_MISMATCH`, `GIT_HOST_KEY_UNAVAILABLE`, `IMAGE_PULL_FAILED`, `START_FAILED`, `WORKER_CRASHED`, `ENQUEUE_FAILED`) are logged on the deployment, not returned as HTTP errors. HTTP: `DEPLOYMENT_IN_PROGRESS` 409, `DEPLOYMENT_INPUT_INVALID` 422, `DEPLOYMENT_NOT_CANCELLABLE` 409, `CONTAINER_NOT_FOUND` 409, `RUNTIME_LOG_TAIL_INVALID` 422 (`tail` 1-10000), `RUNTIME_LOG_FOLLOW_LIMIT_REACHED` 429, `RUNTIME_LOGS_FAILED` 502, `RUNTIME_LOGS_TIMEOUT` 504, `PORT_IN_USE` 409.
+
+## Stale QUEUED Deployments (14-08)
+
+If the API's enqueue and its undo both fail (Redis and Postgres down), the row stays `QUEUED` with no job and holds the service's 409 lock. The worker sweeps at startup and before every reconcile tick: a `QUEUED` row older than `NOODARA_DEPLOY_QUEUED_STALE_MS` (default 120000, range 30000-3600000) whose BullMQ job is absent, completed or failed ends `FAILED/ENQUEUE_FAILED` with `deployment.finished` and `deployment.updated`.
+
+- A job lookup error or timeout is unknown: the row is skipped and retried next tick, never failed.
+- The write locks the row and updates `WHERE status = 'QUEUED'`, so a concurrent claim, a second sweep or a second worker leaves one event.
+- At most 50 rows per sweep; the message is fixed and carries no Redis/Postgres error text.
 
 ## Git Host Keys (14-06, 14-07)
 

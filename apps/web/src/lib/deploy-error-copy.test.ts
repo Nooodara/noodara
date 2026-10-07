@@ -25,6 +25,13 @@ describe('deploymentErrorCopy', () => {
     expect(Object.keys(DEPLOYMENT_ERROR_COPY).sort()).toEqual([...DEPLOYMENT_ERROR_CODES].sort());
   });
 
+  it('ENQUEUE_FAILED (14-08) tells the user nothing ran and to deploy again', () => {
+    const copy = deploymentErrorCopy('ENQUEUE_FAILED');
+    expect(copy.title).toBe('Deploy never started');
+    expect(copy.recovery).toMatch(/Deploy again\.$/);
+    expect(copy.recovery).not.toMatch(/redis|postgres/i);
+  });
+
   it('gives every code its own title', () => {
     const titles = DEPLOYMENT_ERROR_CODES.map((code) => deploymentErrorCopy(code).title);
     expect(new Set(titles).size).toBe(titles.length);

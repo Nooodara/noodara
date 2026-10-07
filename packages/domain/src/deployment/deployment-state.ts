@@ -42,7 +42,8 @@ export const DEPLOYMENT_LOG_PHASES = Object.freeze(['prepare', 'build', 'deploy'
 export type DeploymentLogPhase = (typeof DEPLOYMENT_LOG_PHASES)[number];
 
 const TRANSITIONS: Readonly<Record<DeploymentStatus, readonly DeploymentStatus[]>> = Object.freeze({
-  QUEUED: ['PREPARING', 'CANCELLED'],
+  // 14-08: QUEUED -> FAILED only for ENQUEUE_FAILED (the job never reached the queue).
+  QUEUED: ['PREPARING', 'FAILED', 'CANCELLED'],
   PREPARING: ['BUILDING', 'FAILED', 'CANCELLED'],
   BUILDING: ['DEPLOYING', 'FAILED', 'CANCELLED'],
   DEPLOYING: ['SUCCESS', 'FAILED', 'CANCELLED'],

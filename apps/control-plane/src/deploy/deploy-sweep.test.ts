@@ -3,8 +3,15 @@ import { createRedactor } from '@noodara/domain/security';
 import { deployWorkspaceFor, validateResourceId } from '@noodara/domain/validators';
 import type { RemoteCommand, SshDeploySession, StreamResult } from '@noodara/ssh';
 import { describe, expect, it, vi } from 'vitest';
-import { sweepCrashedDeployments, type DeploySweepDeps } from './deploy-sweep.js';
-import type { FinishDeploymentInput, InFlightDeployment } from './deployment-store.js';
+import {
+  createDeployJobLookup,
+  STALE_QUEUED_BATCH_LIMIT,
+  sweepCrashedDeployments,
+  sweepStaleQueuedDeployments,
+  type DeploySweepDeps,
+  type StaleQueuedSweepDeps,
+} from './deploy-sweep.js';
+import type { FinishDeploymentInput, InFlightDeployment, StaleQueuedDeployment } from './deployment-store.js';
 import { DEPLOY_MESSAGES } from './run-deployment.js';
 
 const SERVICE_ID = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
@@ -156,5 +163,160 @@ describe('sweepCrashedDeployments (A4)', () => {
 
     expect(h.logs.filter((log) => log.message.includes('could not confirm'))).toHaveLength(3);
     expect(remote.commands.at(-1)?.name).toBe('docker.image_remove');
+  });
+});
+
+describe('sweepStaleQueuedDeployments (14-08 A1, A2, H2, H3)', () => {
+  const NOW = new Date('2026-10-07T12:00:00.000Z');
+  const THRESHOLD = 120_000;
+  const OLD = new Date(NOW.getTime() - THRESHOLD - 1_000);
+
+  function staleHarness(rows: StaleQueuedDeployment[], overrides: Partial<StaleQueuedSweepDeps> = {}) {
+    const logs: { level: string; fields: Record<string, unknown>; message: string }[] = [];
+    const failed: [string, Date][] = [];
+    const queuedIds = new Set(rows.map((r) => r.deploymentId));
+    const staleQueued = vi.fn((_cutoff: Date, _limit: number) => Promise.resolve(rows));
+    const deps: StaleQueuedSweepDeps = {
+      store: {
+        staleQueued,
+        // Mirrors the store's conditional UPDATE: only a row still QUEUED moves, once.
+        failStaleQueued: vi.fn((id: string, cutoff: Date) => {
+          failed.push([id, cutoff]);
+          if (!queuedIds.delete(id)) return Promise.resolve(null);
+          return Promise.resolve({ id, status: 'FAILED', errorCode: 'ENQUEUE_FAILED' } as never);
+        }),
+      },
+      jobLookup: vi.fn(() => Promise.resolve('absent' as const)),
+      thresholdMs: THRESHOLD,
+      now: () => NOW,
+      logger: {
+        info: (fields, message) => void logs.push({ level: 'info', fields, message }),
+        warn: (fields, message) => void logs.push({ level: 'warn', fields, message }),
+        error: (fields, message) => void logs.push({ level: 'error', fields, message }),
+      },
+      ...overrides,
+    };
+    return { deps, logs, failed, staleQueued };
+  }
+
+  const stale = (id = DEPLOYMENT_ID, createdAt = OLD): StaleQueuedDeployment => ({ deploymentId: id, serviceId: SERVICE_ID, createdAt });
+
+  it('fails an old QUEUED deployment whose job is absent (A1)', async () => {
+    const h = staleHarness([stale()]);
+
+    const result = await sweepStaleQueuedDeployments(h.deps);
+
+    expect(result.failed).toEqual([DEPLOYMENT_ID]);
+    expect(h.failed).toEqual([[DEPLOYMENT_ID, new Date(NOW.getTime() - THRESHOLD)]]);
+    expect(h.deps.jobLookup).toHaveBeenCalledWith(DEPLOYMENT_ID);
+  });
+
+  it('lists with the threshold cutoff and the per-tick batch limit (H3)', async () => {
+    const h = staleHarness([]);
+    await sweepStaleQueuedDeployments(h.deps);
+    expect(h.staleQueued).toHaveBeenCalledWith(new Date(NOW.getTime() - THRESHOLD), STALE_QUEUED_BATCH_LIMIT);
+    expect(STALE_QUEUED_BATCH_LIMIT).toBeGreaterThan(0);
+    expect(STALE_QUEUED_BATCH_LIMIT).toBeLessThanOrEqual(100);
+  });
+
+  it('honours a custom batch limit', async () => {
+    const h = staleHarness([], { batchLimit: 3 });
+    await sweepStaleQueuedDeployments(h.deps);
+    expect(h.staleQueued).toHaveBeenCalledWith(expect.any(Date), 3);
+  });
+
+  it('never touches a deployment whose job is live (A2)', async () => {
+    const h = staleHarness([stale()], { jobLookup: () => Promise.resolve('live') });
+    expect((await sweepStaleQueuedDeployments(h.deps)).failed).toEqual([]);
+    expect(h.failed).toEqual([]);
+  });
+
+  it('never touches a deployment younger than the threshold even if the listing returned it (A2)', async () => {
+    const h = staleHarness([stale(DEPLOYMENT_ID, new Date(NOW.getTime() - 1_000))]);
+    expect((await sweepStaleQueuedDeployments(h.deps)).failed).toEqual([]);
+    expect(h.failed).toEqual([]);
+  });
+
+  it('a Redis error during the lookup is unknown: skip and retry next tick, never fail it (H2)', async () => {
+    const h = staleHarness([stale(), stale(OTHER_DEPLOYMENT_ID)], { jobLookup: () => Promise.reject(new Error(RAW)) });
+
+    const result = await sweepStaleQueuedDeployments(h.deps);
+
+    expect(result).toMatchObject({ failed: [], unknown: 2 });
+    expect(h.failed).toEqual([]);
+    expect(JSON.stringify(h.logs)).not.toContain('ECONNREFUSED');
+    expect(JSON.stringify(h.logs)).not.toContain('postgres://');
+  });
+
+  it('a lookup that answers unknown is skipped too (H2)', async () => {
+    const h = staleHarness([stale()], { jobLookup: () => Promise.resolve('unknown') });
+    expect((await sweepStaleQueuedDeployments(h.deps)).unknown).toBe(1);
+    expect(h.failed).toEqual([]);
+  });
+
+  it('is idempotent: two concurrent sweeps fail the row once (H2)', async () => {
+    const h = staleHarness([stale()]);
+
+    const [a, b] = await Promise.all([sweepStaleQueuedDeployments(h.deps), sweepStaleQueuedDeployments(h.deps)]);
+
+    expect([...a.failed, ...b.failed]).toEqual([DEPLOYMENT_ID]);
+  });
+
+  it('a listing failure is logged by error kind and never throws', async () => {
+    const h = staleHarness([], { store: { staleQueued: () => Promise.reject(new Error(RAW)), failStaleQueued: vi.fn() } });
+
+    expect(await sweepStaleQueuedDeployments(h.deps)).toEqual({ failed: [], unknown: 0 });
+    expect(h.logs.map((l) => l.level)).toEqual(['error']);
+    expect(JSON.stringify(h.logs)).not.toContain('ECONNREFUSED');
+  });
+
+  it('a failing write on one row does not stop the next one', async () => {
+    const h = staleHarness([stale(), stale(OTHER_DEPLOYMENT_ID)]);
+    const failStaleQueued = vi.fn((id: string) =>
+      id === DEPLOYMENT_ID ? Promise.reject(new Error(RAW)) : Promise.resolve({ id } as never),
+    );
+    const result = await sweepStaleQueuedDeployments({ ...h.deps, store: { ...h.deps.store, failStaleQueued } });
+
+    expect(result.failed).toEqual([OTHER_DEPLOYMENT_ID]);
+    expect(JSON.stringify(h.logs)).not.toContain('ECONNREFUSED');
+  });
+});
+
+describe('createDeployJobLookup (14-08 H2)', () => {
+  const job = (state: string) => ({ getState: () => Promise.resolve(state) });
+
+  it('looks the job up by its deploy job id', async () => {
+    const getJob = vi.fn(() => Promise.resolve(undefined));
+    await createDeployJobLookup({ getJob })(DEPLOYMENT_ID);
+    expect(getJob).toHaveBeenCalledWith(`deploy-${DEPLOYMENT_ID}`);
+  });
+
+  it('a missing job is absent', async () => {
+    expect(await createDeployJobLookup({ getJob: () => Promise.resolve(undefined) })(DEPLOYMENT_ID)).toBe('absent');
+  });
+
+  it.each(['completed', 'failed', 'unknown'])('a %s job will never run the deployment: absent', async (state) => {
+    expect(await createDeployJobLookup({ getJob: () => Promise.resolve(job(state)) })(DEPLOYMENT_ID)).toBe('absent');
+  });
+
+  it.each(['waiting', 'active', 'delayed', 'prioritized', 'waiting-children'])('a %s job is live', async (state) => {
+    expect(await createDeployJobLookup({ getJob: () => Promise.resolve(job(state)) })(DEPLOYMENT_ID)).toBe('live');
+  });
+
+  it('a Redis error is unknown, never absent', async () => {
+    expect(await createDeployJobLookup({ getJob: () => Promise.reject(new Error(RAW)) })(DEPLOYMENT_ID)).toBe('unknown');
+    const failingState = { getState: () => Promise.reject(new Error(RAW)) };
+    expect(await createDeployJobLookup({ getJob: () => Promise.resolve(failingState) })(DEPLOYMENT_ID)).toBe('unknown');
+  });
+
+  it('a lookup that hangs (offline Redis queue) is unknown after the timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      const pending = createDeployJobLookup({ getJob: () => new Promise(() => undefined) }, { timeoutMs: 1_000 })(DEPLOYMENT_ID);
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(await pending).toBe('unknown');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -84,3 +84,9 @@ concern the SSH host key of a Git host:
   operator, then run `noodara services reset-host-key <serviceId>` and deploy again: the next clone
   stores the current key. Changing the service's repository URL to another host also forgets it.
 - `GIT_HOST_KEY_UNAVAILABLE`: the Git host's SSH key could not be read, so nothing was cloned.
+
+`ENQUEUE_FAILED`: the deployment was accepted but never reached the job queue (Redis or Postgres was
+unreachable at that moment), so nothing ran and the service is unchanged. The worker ends such a
+deployment `FAILED` once it is older than `NOODARA_DEPLOY_QUEUED_STALE_MS` (default 2 minutes) and
+has no queue job, which frees the service for a new deploy. Check that Redis and Postgres are
+reachable, then deploy again.

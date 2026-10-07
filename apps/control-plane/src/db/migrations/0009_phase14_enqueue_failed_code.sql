@@ -1,0 +1,1 @@
+ALTER TYPE "public"."deployment_error_code" ADD VALUE 'ENQUEUE_FAILED';

@@ -469,6 +469,7 @@ describe('deploy engine knobs (Phase 12, D15/D16/D8)', () => {
     NOODARA_RECONCILE_INTERVAL_MS: 30_000,
     NOODARA_RUNTIME_LOG_TAIL: 1000,
     NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS: 600_000,
+    NOODARA_DEPLOY_QUEUED_STALE_MS: 120_000,
   };
 
   // [variable, min, max] — each boundary is valid on its own with every other knob at its default.
@@ -483,6 +484,7 @@ describe('deploy engine knobs (Phase 12, D15/D16/D8)', () => {
     ['NOODARA_RECONCILE_INTERVAL_MS', 5000, 600_000],
     ['NOODARA_RUNTIME_LOG_TAIL', 1, 10_000],
     ['NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS', 10_000, 3_600_000],
+    ['NOODARA_DEPLOY_QUEUED_STALE_MS', 30_000, 3_600_000],
   ];
 
   function issuesFor(overrides: Record<string, string>): { variable: string; requirement: string }[] {
@@ -491,7 +493,7 @@ describe('deploy engine knobs (Phase 12, D15/D16/D8)', () => {
     return result.issues;
   }
 
-  it('declares exactly the ten deploy knobs', () => {
+  it('declares exactly the eleven deploy knobs', () => {
     expect([...DEPLOY_ENV_KNOBS].sort()).toEqual(Object.keys(DEFAULTS).sort());
   });
 
@@ -533,6 +535,20 @@ describe('deploy engine knobs (Phase 12, D15/D16/D8)', () => {
     const issues = issuesFor({ [variable]: '12.5' });
 
     expect(issues.map((issue) => issue.variable)).toEqual([variable]);
+  });
+
+  // 14-08 (H1): below the minimum a deployment whose job is still being enqueued (bounded
+  // enqueue timeout, no BullMQ retry backoff: attempts 1) could be failed ENQUEUE_FAILED.
+  it('rejects a stale-QUEUED threshold below its minimum with a named requirement', () => {
+    const issues = issuesFor({ NOODARA_DEPLOY_QUEUED_STALE_MS: '29999' });
+
+    expect(issues).toEqual([
+      {
+        variable: 'NOODARA_DEPLOY_QUEUED_STALE_MS',
+        requirement:
+          'NOODARA_DEPLOY_QUEUED_STALE_MS must be at least 30000 ms, above the longest legitimate enqueue-to-pickup delay',
+      },
+    ]);
   });
 
   describe('cross-knob validation (H1)', () => {

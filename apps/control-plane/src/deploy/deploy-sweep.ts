@@ -6,7 +6,19 @@
 // (its secrets go with it) and the unused deployment image. The per-service container and network
 // are never touched: an image still used by the container is refused by Docker, never forced.
 // Nothing here throws; only error class names are logged.
-import { createResourceLedger, type ResourceLedger } from '@noodara/domain/deployment';
+//
+// 14-08: `sweepStaleQueuedDeployments` runs at worker startup and on every reconcile tick. A QUEUED
+// deployment older than NOODARA_DEPLOY_QUEUED_STALE_MS whose BullMQ job is confirmed absent (the
+// API's enqueue and its undo both failed) ends FAILED/ENQUEUE_FAILED, releasing the service's
+// deploy lock. A job lookup that errors is unknown: skipped and retried on the next tick, so a
+// Redis outage never fails a healthy deployment. Bounded per call by STALE_QUEUED_BATCH_LIMIT.
+import {
+  createResourceLedger,
+  decideStaleQueued,
+  staleQueuedCutoff,
+  type ResourceLedger,
+  type StaleQueuedJob,
+} from '@noodara/domain/deployment';
 import type { Redactor } from '@noodara/domain/security';
 import {
   deployWorkspaceFor,
@@ -16,7 +28,8 @@ import {
 } from '@noodara/domain/validators';
 import { killSupervisedOperation } from '@noodara/ssh';
 import type { DeployJobDeps, DeployJobLogger } from './deploy-worker.js';
-import type { DeploymentStore, FinishDeploymentInput, InFlightDeployment } from './deployment-store.js';
+import { jobIdForDeployment } from '../queue/deploy-queue.js';
+import type { DeploymentStore, FinishDeploymentInput, InFlightDeployment, StaleQueuedDeployment } from './deployment-store.js';
 import { DEPLOY_MESSAGES, runLedgerCleanup, type DeployRunLimits } from './run-deployment.js';
 
 export interface DeploySweepDeps {
@@ -129,4 +142,103 @@ export async function sweepCrashedDeployments(deps: DeploySweepDeps): Promise<De
     for (const target of targets) await cleanUp(deps, target);
   })();
   return { swept, cleanup };
+}
+
+/** H3: at most this many stale rows per sweep; the rest wait for the next tick. */
+export const STALE_QUEUED_BATCH_LIMIT = 50;
+
+export interface StaleQueuedSweepDeps {
+  readonly store: Pick<DeploymentStore, 'staleQueued' | 'failStaleQueued'>;
+  /** Authoritative BullMQ lookup; a rejection counts as `unknown`. */
+  readonly jobLookup: (deploymentId: string) => Promise<StaleQueuedJob>;
+  /** NOODARA_DEPLOY_QUEUED_STALE_MS. */
+  readonly thresholdMs: number;
+  readonly batchLimit?: number;
+  readonly now: () => Date;
+  readonly logger: DeployJobLogger;
+}
+
+export interface StaleQueuedSweepResult {
+  /** Deployments this sweep ended ENQUEUE_FAILED. */
+  readonly failed: readonly string[];
+  /** Stale rows skipped because their job lookup failed; retried next tick. */
+  readonly unknown: number;
+}
+
+export async function sweepStaleQueuedDeployments(deps: StaleQueuedSweepDeps): Promise<StaleQueuedSweepResult> {
+  const now = deps.now();
+  const cutoff = staleQueuedCutoff(now, deps.thresholdMs);
+  let rows: StaleQueuedDeployment[];
+  try {
+    rows = await deps.store.staleQueued(cutoff, deps.batchLimit ?? STALE_QUEUED_BATCH_LIMIT);
+  } catch (error) {
+    deps.logger.error({ errorKind: errorKind(error) }, 'stale queued sweep could not list queued deployments');
+    return { failed: [], unknown: 0 };
+  }
+
+  const failed: string[] = [];
+  let unknown = 0;
+  for (const row of rows) {
+    let job: StaleQueuedJob;
+    try {
+      job = await deps.jobLookup(row.deploymentId);
+    } catch {
+      job = 'unknown';
+    }
+    if (job === 'unknown') unknown += 1;
+    const decision = decideStaleQueued({ status: 'QUEUED', createdAt: row.createdAt, now, thresholdMs: deps.thresholdMs, job });
+    if (decision === 'skip') continue;
+    try {
+      // null: claimed, cancelled or already failed meanwhile (the conditional UPDATE matched nothing).
+      if ((await deps.store.failStaleQueued(row.deploymentId, cutoff)) === null) continue;
+    } catch (error) {
+      deps.logger.error({ deploymentId: row.deploymentId, errorKind: errorKind(error) }, 'stale queued sweep could not fail a deployment');
+      continue;
+    }
+    failed.push(row.deploymentId);
+    deps.logger.warn({ deploymentId: row.deploymentId, serviceId: row.serviceId }, 'stale queued sweep failed a deployment that never reached the queue');
+  }
+  if (unknown > 0) deps.logger.warn({ unknown }, 'stale queued sweep skipped deployments whose job lookup failed');
+  return { failed, unknown };
+}
+
+/** The slice of BullMQ's `Queue` the lookup reads; a unit test passes a fake. */
+export interface DeployJobLookupQueue {
+  getJob(jobId: string): Promise<{ getState(): Promise<string> } | undefined>;
+}
+
+// A finished job, or one whose key vanished between getJob and getState, never runs the deployment.
+const DEAD_JOB_STATES = new Set(['completed', 'failed', 'unknown']);
+const DEFAULT_JOB_LOOKUP_TIMEOUT_MS = 5_000;
+
+/** `live` / `absent` from BullMQ; any error or a lookup past the timeout is `unknown` (H2). */
+export function createDeployJobLookup(
+  queue: DeployJobLookupQueue,
+  options: { readonly timeoutMs?: number } = {},
+): (deploymentId: string) => Promise<StaleQueuedJob> {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_JOB_LOOKUP_TIMEOUT_MS;
+  return async (deploymentId) => {
+    let handle: ReturnType<typeof setTimeout> | undefined;
+    const lookup = (async (): Promise<StaleQueuedJob> => {
+      const job = await queue.getJob(jobIdForDeployment(deploymentId));
+      if (job === undefined) return 'absent';
+      return DEAD_JOB_STATES.has(await job.getState()) ? 'absent' : 'live';
+    })();
+    try {
+      return await Promise.race([
+        lookup,
+        new Promise<StaleQueuedJob>((resolve) => {
+          handle = setTimeout(() => {
+            resolve('unknown');
+          }, timeoutMs);
+        }),
+      ]);
+    } catch {
+      return 'unknown';
+    } finally {
+      if (handle !== undefined) clearTimeout(handle);
+      // A lookup still pending after the timeout must not surface as an unhandled rejection.
+      lookup.catch(() => undefined);
+    }
+  };
 }

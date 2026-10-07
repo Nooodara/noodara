@@ -4,6 +4,8 @@
 // BUILD_TIMEOUT/BUILD_STALLED (ROADMAP D15). LFS and submodules share one code; the detail
 // lives in the message (D-09). GIT_HOST_KEY_* (14-06): the Git host's SSH key did not match the
 // pinned key, or no key could be pinned (ssh-keyscan failed); the clone never runs unpinned.
+// ENQUEUE_FAILED (14-08): the deploy job never reached the queue; the worker's stale-QUEUED sweep
+// fails the row so the service is not locked forever.
 
 export const DEPLOYMENT_ERROR_CODES = Object.freeze([
   'REPOSITORY_AUTH_FAILED',
@@ -28,6 +30,7 @@ export const DEPLOYMENT_ERROR_CODES = Object.freeze([
   'BUILD_TIMEOUT',
   'BUILD_STALLED',
   'WORKER_CRASHED',
+  'ENQUEUE_FAILED',
 ] as const);
 
 export type DeploymentErrorCode = (typeof DEPLOYMENT_ERROR_CODES)[number];

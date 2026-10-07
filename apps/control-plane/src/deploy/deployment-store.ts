@@ -14,11 +14,16 @@
 // - requestCancel (12-13): under the same row lock a QUEUED row ends CANCELLED here (the worker's
 //   claim then finds nothing to run); a running row is only reported, its worker does the
 //   transition. Terminal rows are reported, never touched (H1).
+// - failStaleQueued (14-08): a QUEUED row whose job never reached the queue ends
+//   FAILED/ENQUEUE_FAILED under the same row lock, with a conditional UPDATE on status 'QUEUED',
+//   so a worker's concurrent claim and a second sweep both leave it alone. Only this path may fail
+//   an unclaimed row; `finish` refuses one.
 // Error messages are the pipeline's fixed texts (never raw remote output), capped here again.
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, lte } from 'drizzle-orm';
 import {
   canEnterVerifyStep,
   deriveServiceStatus,
+  InvalidDeploymentTransitionError,
   isTerminalDeploymentStatus,
   stepBoundaryOfTransition,
   transitionDeployment,
@@ -80,6 +85,17 @@ export interface InFlightDeployment {
 
 const IN_FLIGHT_STATUSES = ['PREPARING', 'BUILDING', 'DEPLOYING'] as const;
 
+/** A QUEUED deployment old enough for the stale-QUEUED sweep to look at its job. */
+export interface StaleQueuedDeployment {
+  readonly deploymentId: string;
+  readonly serviceId: string;
+  readonly createdAt: Date;
+}
+
+/** H3: fixed and actionable; never carries Redis/Postgres error text. */
+export const ENQUEUE_FAILED_MESSAGE =
+  'The deployment never reached the job queue, so it was never started. Check that Redis and Postgres are reachable, then deploy again.';
+
 export interface DeploymentStore {
   /** QUEUED -> PREPARING, or null when the row is missing or already past QUEUED (H1). */
   claim(deploymentId: string): Promise<DeploymentRow | null>;
@@ -90,6 +106,10 @@ export interface DeploymentStore {
   /** The `deployment.cancel_requested` event of an accepted cancel on a running deployment. */
   recordCancelRequested(deployment: DeploymentView, actor: ServiceActor): Promise<void>;
   inFlight(): Promise<InFlightDeployment[]>;
+  /** QUEUED rows created at or before `cutoff`, oldest first, at most `limit` (H3). */
+  staleQueued(cutoff: Date, limit: number): Promise<StaleQueuedDeployment[]>;
+  /** QUEUED -> FAILED/ENQUEUE_FAILED; null when the row is missing, newer than `cutoff` or no longer QUEUED. */
+  failStaleQueued(deploymentId: string, cutoff: Date): Promise<DeploymentView | null>;
 }
 
 /** The row was not at the status the worker expected (cancelled or finished elsewhere). */
@@ -146,6 +166,33 @@ async function finishRow(
 ): Promise<Finished | null> {
   const [row] = await tx.select().from(deployments).where(eq(deployments.id, deploymentId)).for('update');
   if (!row || isTerminalDeploymentStatus(row.status)) return null;
+  // QUEUED -> FAILED is the stale-QUEUED sweep's edge only (14-08); a worker fails claimed rows.
+  if (row.status === 'QUEUED' && input.status === 'FAILED') throw new InvalidDeploymentTransitionError(row.status, input.status);
+  const finished = await finishLockedRow(tx, deps, row, input);
+  if (!finished) throw new Error('finishDeployment: update returned no row');
+  return finished;
+}
+
+async function failStaleRow(tx: Transaction, deps: DeploymentStoreDeps, deploymentId: string, cutoff: Date): Promise<Finished | null> {
+  const [row] = await tx.select().from(deployments).where(eq(deployments.id, deploymentId)).for('update');
+  if (row?.status !== 'QUEUED' || row.createdAt.getTime() > cutoff.getTime()) return null;
+  return finishLockedRow(tx, deps, row, {
+    status: 'FAILED',
+    errorCode: 'ENQUEUE_FAILED',
+    errorMessage: ENQUEUE_FAILED_MESSAGE,
+    commitSha: null,
+    container: null,
+  });
+}
+
+/** The terminal write on a row locked by the caller; null when the conditional UPDATE matched nothing. */
+async function finishLockedRow(
+  tx: Transaction,
+  deps: DeploymentStoreDeps,
+  row: DeploymentRow,
+  input: FinishDeploymentInput,
+): Promise<Finished | null> {
+  const deploymentId = row.id;
   const status = transitionDeployment(row.status, input.status);
   const now = deps.now();
   const durationMs = Math.max(0, now.getTime() - (row.startedAt ?? row.createdAt).getTime());
@@ -159,9 +206,9 @@ async function finishRow(
   const [updated] = await tx
     .update(deployments)
     .set({ status, completedAt: now, durationMs, errorCode, errorMessage, commitSha, updatedAt: nextUpdatedAt(row.updatedAt, now) })
-    .where(eq(deployments.id, deploymentId))
+    .where(and(eq(deployments.id, deploymentId), eq(deployments.status, row.status)))
     .returning();
-  if (!updated) throw new Error('finishDeployment: update returned no row');
+  if (!updated) return null;
 
   let serviceView: ServiceView | null = null;
   const [service] = await tx.select().from(services).where(eq(services.id, row.serviceId)).for('update');
@@ -309,6 +356,22 @@ export function createDeploymentStore(deps: DeploymentStoreDeps): DeploymentStor
         .from(deployments)
         .innerJoin(services, eq(services.id, deployments.serviceId))
         .where(inArray(deployments.status, [...IN_FLIGHT_STATUSES]));
+    },
+
+    async staleQueued(cutoff, limit) {
+      return deps.db
+        .select({ deploymentId: deployments.id, serviceId: deployments.serviceId, createdAt: deployments.createdAt })
+        .from(deployments)
+        .where(and(eq(deployments.status, 'QUEUED'), lte(deployments.createdAt, cutoff)))
+        .orderBy(asc(deployments.createdAt))
+        .limit(limit);
+    },
+
+    async failStaleQueued(deploymentId, cutoff) {
+      const finished = await deps.db.transaction((tx) => failStaleRow(tx, deps, deploymentId, cutoff));
+      if (!finished) return null;
+      await publishFinished(deps, finished);
+      return toDeploymentView(finished.deployment);
     },
   };
 }

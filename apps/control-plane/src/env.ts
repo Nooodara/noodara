@@ -30,6 +30,7 @@ export const DEPLOY_ENV_KNOBS = [
   'NOODARA_RECONCILE_INTERVAL_MS',
   'NOODARA_RUNTIME_LOG_TAIL',
   'NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS',
+  'NOODARA_DEPLOY_QUEUED_STALE_MS',
 ] as const;
 
 /**
@@ -83,6 +84,7 @@ export interface Env {
   NOODARA_RECONCILE_INTERVAL_MS: number;
   NOODARA_RUNTIME_LOG_TAIL: number;
   NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS: number;
+  NOODARA_DEPLOY_QUEUED_STALE_MS: number;
   PORT: number;
   LOG_LEVEL: string;
 }
@@ -471,6 +473,21 @@ export function parseEnv(source: EnvSource): EnvParseResult {
     issues,
     { min: 10_000, max: 3_600_000 },
   );
+  // 14-08 (H1): a QUEUED deployment without a BullMQ job older than this ends ENQUEUE_FAILED. The
+  // minimum stays far above the bounded enqueue timeout (deploy jobs run with attempts 1, so there
+  // is no retry backoff); the maximum keeps a stuck service lock from lasting more than an hour.
+  const deployQueuedStaleMs = parseTuningInt(
+    'NOODARA_DEPLOY_QUEUED_STALE_MS',
+    source.NOODARA_DEPLOY_QUEUED_STALE_MS,
+    120_000,
+    issues,
+    {
+      min: 30_000,
+      max: 3_600_000,
+      belowMinRequirement:
+        'NOODARA_DEPLOY_QUEUED_STALE_MS must be at least 30000 ms, above the longest legitimate enqueue-to-pickup delay',
+    },
+  );
   const port = parseTuningInt('PORT', source.PORT, 3000, issues);
   const logLevel = parseTuningString(source.LOG_LEVEL, 'info');
 
@@ -514,6 +531,7 @@ export function parseEnv(source: EnvSource): EnvParseResult {
       NOODARA_RECONCILE_INTERVAL_MS: reconcileIntervalMs,
       NOODARA_RUNTIME_LOG_TAIL: runtimeLogTail,
       NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS: runtimeLogFollowMaxMs,
+      NOODARA_DEPLOY_QUEUED_STALE_MS: deployQueuedStaleMs,
       PORT: port,
       LOG_LEVEL: logLevel,
     },

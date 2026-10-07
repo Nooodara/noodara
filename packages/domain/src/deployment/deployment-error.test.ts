@@ -26,12 +26,13 @@ describe('DEPLOYMENT_ERROR_CODES', () => {
       'BUILD_TIMEOUT',
       'BUILD_STALLED',
       'WORKER_CRASHED',
+      'ENQUEUE_FAILED',
     ]);
   });
 
-  it('has 20 codes and no duplicates', () => {
-    expect(DEPLOYMENT_ERROR_CODES.length).toBe(22);
-    expect(new Set(DEPLOYMENT_ERROR_CODES).size).toBe(22);
+  it('has 23 codes and no duplicates', () => {
+    expect(DEPLOYMENT_ERROR_CODES.length).toBe(23);
+    expect(new Set(DEPLOYMENT_ERROR_CODES).size).toBe(23);
   });
 
   it('is frozen', () => {
