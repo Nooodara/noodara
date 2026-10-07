@@ -13,6 +13,7 @@ import { inspect, promisify } from 'node:util';
 import { test as base } from '@playwright/test';
 import {
   preloadedRefFor,
+  resolveBaseImages,
   startDeployEngineStack,
   type DeployEngineStack,
 } from '../../integration/helpers/deploy-engine.js';
@@ -32,10 +33,34 @@ const HOST_DOCKER_TIMEOUT_MS = 60_000;
 const RUN_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const WORKSPACES_ROOT = '/opt/noodara-deploy';
 const REDACTED = '<redacted>';
+const PUBLIC_KEY_LINE = /^ssh-(ed25519|rsa) [A-Za-z0-9+/]+={0,3}( [^\r\n]*)?$/;
 const PEM_PRIVATE_KEY = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(-----END [A-Z ]*PRIVATE KEY-----|$)/g;
 
 const FIXTURES_DIR = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../../../fixtures');
 export const DEPLOY_HOST_REPOS = { nodeApi: 'node-api', failingBuild: 'failing-build' } as const;
+/** 13-16: generated per run (not a committed fixture): a build that streams numbered lines, then hangs. */
+export const SLOW_BUILD_REPO = 'slow-build';
+/** Printed once per second by the slow build's RUN step, numbered 1..SLOW_BUILD_LINES. */
+export const SLOW_BUILD_LINE_PREFIX = 'noodara-slow-line-';
+export const SLOW_BUILD_LINES = 90;
+/** ps marker of the slow build's RUN step (unique to the e2e slow build). */
+export const SLOW_BUILD_MARKER = 'sleep 613';
+
+function writeSlowBuildRepo(root: string): string {
+  const nodeBase = resolveBaseImages().find((ref) => ref.startsWith('node:'));
+  if (nodeBase === undefined) throw new DeployHostStartupError('environment', 'no node base image in fixtures/');
+  const dir = path.join(root, SLOW_BUILD_REPO);
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  writeFileSync(
+    path.join(dir, 'Dockerfile'),
+    [
+      `FROM ${nodeBase}`,
+      `RUN for i in $(seq 1 ${String(SLOW_BUILD_LINES)}); do echo "${SLOW_BUILD_LINE_PREFIX}$i"; sleep 1; done; ${SLOW_BUILD_MARKER}`,
+      '',
+    ].join('\n'),
+  );
+  return dir;
+}
 
 export type DeployHostStage = 'environment' | 'start' | 'sshd' | 'dockerd' | 'git-host' | 'registry';
 
@@ -92,12 +117,14 @@ export interface DeployHost {
   };
   readonly deployKey: { readonly privateKey: string; readonly publicKey: string };
   readonly registry: { readonly host: string; readonly username: string; readonly password: string };
-  readonly repos: { readonly nodeApi: string; readonly failingBuild: string };
+  readonly repos: { readonly nodeApi: string; readonly failingBuild: string; readonly slowBuild: string };
   gitRepoUrl(name: string): string;
   readonly baseImages: readonly string[];
   /** `<registry>/fixtures/<image>` refs preloaded in the nested dockerd. */
   readonly preloadedImages: readonly string[];
   exec(command: readonly string[], options?: DeployHostExecOptions): Promise<DeployHostExecResult>;
+  /** Lets a deploy key Noodara generated (its public half, as the UI shows it) read the git host. */
+  authorizeGitKey(publicKey: string): Promise<void>;
   /** curl http://127.0.0.1:<port><path> from inside the deploy host. */
   curlPublishedPort(port: number, urlPath?: string): Promise<CurlResult>;
   listContainers(): Promise<readonly string[]>;
@@ -236,15 +263,16 @@ export async function startDeployHost(
 
   // Per-run keys and build contexts are generated under os.tmpdir(); point it at the run dir for
   // the duration of startup so they are only ever written inside the run temp dir.
+  const slowBuildDir = writeSlowBuildRepo(hostDir);
   const previousTmp = process.env['TMPDIR'];
   process.env['TMPDIR'] = tmpDir;
   const starting = startDeployEngineStack({
     ubuntu: '24.04',
     labels: { [RUN_LABEL_KEY]: runId },
-    seedRepositories: Object.values(DEPLOY_HOST_REPOS).map((name) => ({
-      name,
-      sourceDir: path.join(FIXTURES_DIR, name),
-    })),
+    seedRepositories: [
+      ...Object.values(DEPLOY_HOST_REPOS).map((name) => ({ name, sourceDir: path.join(FIXTURES_DIR, name) })),
+      { name: SLOW_BUILD_REPO, sourceDir: slowBuildDir },
+    ],
   });
   let stack: DeployEngineStack;
   try {
@@ -287,7 +315,11 @@ export async function startDeployHost(
     return lines(result.stdout);
   };
 
-  const repos = { nodeApi: stack.gitRepoUrl(DEPLOY_HOST_REPOS.nodeApi), failingBuild: stack.gitRepoUrl(DEPLOY_HOST_REPOS.failingBuild) };
+  const repos = {
+    nodeApi: stack.gitRepoUrl(DEPLOY_HOST_REPOS.nodeApi),
+    failingBuild: stack.gitRepoUrl(DEPLOY_HOST_REPOS.failingBuild),
+    slowBuild: stack.gitRepoUrl(SLOW_BUILD_REPO),
+  };
 
   try {
     await withTimeout(
@@ -313,6 +345,18 @@ export async function startDeployHost(
     baseImages: stack.baseImages,
     preloadedImages: stack.baseImages.map((image) => preloadedRefFor(stack.registry.host, image)),
     exec,
+    async authorizeGitKey(publicKey) {
+      const key = publicKey.trim();
+      if (!PUBLIC_KEY_LINE.test(key)) throw new Error('authorizeGitKey: not a single OpenSSH public key line');
+      const result = await exec([
+        'sh',
+        '-c',
+        'printf "no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty %s\\n" "$1" >> /home/git/.ssh/authorized_keys',
+        'sh',
+        key,
+      ]);
+      if (result.exitCode !== 0) throw new Error(`authorizeGitKey exited ${String(result.exitCode)}: ${result.stderr.trim()}`);
+    },
     async curlPublishedPort(port, urlPath = '/') {
       if (!Number.isInteger(port) || port < 1 || port > 65_535) throw new Error(`invalid port ${String(port)}`);
       const result = await exec([

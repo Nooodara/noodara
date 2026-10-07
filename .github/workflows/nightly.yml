@@ -41,10 +41,13 @@ jobs:
   # text anticipated. `scripts/e2e-repeat.mjs` instead runs `pnpm test:e2e` as 20 fully independent
   # process invocations, each with its own fresh Testcontainers pair, failing on (and naming) the
   # first failing iteration rather than running all 20 and summarizing at the end.
+  # 13-16: one full `pnpm test:e2e` (with deploy.spec.ts's deploy host) measured 280s locally on a
+  # warm Docker cache; at ~2.5x for a hosted runner that is ~12 min per run, 20 runs ~240 min, plus
+  # the cold first image builds and setup. 300 stays under GitHub's 360-minute job cap.
   e2e-repeat:
     name: e2e-repeat
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 300
     permissions:
       contents: read
     steps:

@@ -449,10 +449,13 @@ jobs:
   # stale dist/.next. `playwright install --with-deps chromium` is fine on this disposable runner —
   # unlike the harness-hygiene rule against `--with-deps`/sudo on a developer's own machine
   # (05-10-SUMMARY.md's own documented deviation for `e2e:install`), CI owns this whole container.
+  # 13-16: deploy.spec.ts adds a real deploy host (sshd + dockerd + git + registry) and image
+  # builds. A full run measured 280s locally on a warm cache; 45 covers a cold hosted runner and
+  # stays above the spec's own 8-minute per-test timeout.
   e2e:
     name: e2e
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     permissions:
       contents: read
     steps:
@@ -466,11 +469,35 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm build
       - run: pnpm test:e2e
+      # 13-16 (H1): deploy.spec.ts generates real SSH deploy keys per run. Fail if any report or
+      # trace (zips included) holds private key material; the upload below only runs when clean.
+      - name: Fail if Playwright artifacts hold private key material
+        id: keyscan
+        if: always()
+        run: |
+          set +o pipefail
+          found=0
+          for dir in playwright-report test-results; do
+            [ -d "$dir" ] || continue
+            while IFS= read -r -d '' f; do
+              case "$f" in
+                *.zip) reader="unzip -p" ;;
+                *) reader="cat" ;;
+              esac
+              if $reader "$f" 2>/dev/null | perl -0777 -ne 'exit 1 if /-----BEGIN [A-Z ]*PRIVATE KEY-----\s*[A-Za-z0-9+\/=]{40}/'; then :; else
+                echo "::error::private key material in $f"
+                found=1
+              fi
+            done < <(find "$dir" -type f -print0)
+          done
+          [ "$found" -eq 0 ] || exit 1
+          echo "clean=true" >> "$GITHUB_OUTPUT"
+          echo "no private key material in Playwright artifacts"
       # Failure-only, short retention: a Playwright HTML report/screenshot can carry a typed (fake,
       # per the harness-hygiene rule every tests/e2e/**.spec.ts already follows) credential or a
-      # session cookie, so this is never uploaded on a green run.
+      # session cookie, so this is never uploaded on a green run, nor when the key scan above failed.
       - name: Upload Playwright report
-        if: failure()
+        if: failure() && steps.keyscan.outputs.clean == 'true'
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: playwright-report
