@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-07T01:52:44.300Z",
+  "updatedAt": "2026-10-07T01:52:53.304Z",
   "cursor": {
     "phase": "13",
     "task": "13-19"
@@ -3111,6 +3111,59 @@
           "tier": "standard"
         },
         {
+          "id": "13-22",
+          "title": "Deterministic @sheet-drag re-grab mid-close E2E",
+          "status": "pending",
+          "wave": 8,
+          "dependsOn": [],
+          "tier": "deep",
+          "scope": [
+            "tests/e2e/server-sheet.spec.ts",
+            "packages/ui/src/Sheet.tsx",
+            "packages/ui/src/Sheet.test.tsx",
+            "packages/ui/src/sheet-drag.ts",
+            "packages/ui/src/sheet-drag.test.ts"
+          ],
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "e2e-sheet"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Root cause of the e2e-repeat iteration 11 failure (server-sheet.spec.ts:587, re-grab offset 266 > 200) is identified and written in the commit body: test timing assumption or a real product bug in re-grab tracking",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "The spec drives the mid-close state deterministically (e.g. waits on the panel position or a frame count, not wall-clock); no threshold bump, retry, timeout increase or skip",
+              "proof": "e2e-sheet"
+            },
+            {
+              "id": "A3",
+              "text": "If the product re-grab tracking is wrong, a unit test reproduces it first and the fix keeps 1:1 tracking from the on-screen position",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "server-sheet.spec.ts @sheet-drag passes 30 consecutive runs locally",
+              "proof": "e2e-sheet"
+            }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist",
+            "auth-secrets/secret-logging",
+            "auth-secrets/password-hashing",
+            "randomness/crypto-random",
+            "persistence"
+          ]
+        },
+        {
           "id": "13-19",
           "title": "Phase 13 verification and requirement close-out",
           "scope": [
@@ -3125,7 +3178,8 @@
             "13-16",
             "13-17",
             "13-18",
-            "13-21"
+            "13-21",
+            "13-22"
           ],
           "status": "pending",
           "gates": [

@@ -38,7 +38,8 @@
       "e2e-servers": "pnpm exec playwright test tests/e2e/servers-list.spec.ts tests/e2e/a11y-fallbacks.spec.ts",
       "e2e-deploy": "pnpm exec playwright test tests/e2e/deploy.spec.ts",
       "e2e-deploy-host": "pnpm exec playwright test tests/e2e/deploy-host.spec.ts",
-      "e2e-dod": "pnpm exec playwright test tests/e2e/projects-dod.spec.ts tests/e2e/dod-hardening.spec.ts"
+      "e2e-dod": "pnpm exec playwright test tests/e2e/projects-dod.spec.ts tests/e2e/dod-hardening.spec.ts",
+      "e2e-sheet": "pnpm exec playwright test tests/e2e/server-sheet.spec.ts --grep @sheet-drag"
     },
     "defaultGates": [
       "test",
