@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-07T18:58:02.472Z",
+  "updatedAt": "2026-10-07T18:58:22.253Z",
   "cursor": {
     "phase": "14",
     "task": "14-02"
@@ -3338,7 +3338,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -3958,7 +3958,7 @@
           "dependsOn": [
             "14-11"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
