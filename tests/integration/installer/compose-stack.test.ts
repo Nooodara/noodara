@@ -347,7 +347,7 @@ describe('production docker-compose.yml stack (06-07-PLAN.md)', () => {
       const apiLogConfig = JSON.parse(
         execFileSync(
           'docker',
-          ['inspect', '--format={{json .LogConfig}}', `${PROJECT_NAME}-api-1`],
+          ['inspect', '--format={{json .HostConfig.LogConfig}}', `${PROJECT_NAME}-api-1`],
           { encoding: 'utf8', timeout: CLI_TIMEOUT_MS },
         ).trim(),
       );
