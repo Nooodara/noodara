@@ -10,7 +10,7 @@
   "phases": [
     {
       "id": "11",
-      "title": "Motor de deploy — fundamentos",
+      "title": "Motor de deploy \u2014 fundamentos",
       "goal": "Everything the engine needs to be built RED-first exists and is proven on real infrastructure: spikes resolved (ADR 0008), pure domain, schema, parameterized allowlist templates, streaming exec, git/docker packages, sshd+dockerd fixture and official fixtures.",
       "requirements": [
         "DEP-01",
@@ -469,8 +469,8 @@
     },
     {
       "id": "12",
-      "title": "Motor de deploy — runtime",
-      "goal": "Through the API a person creates project → environment → service (Git, Dockerfile or image, public or private) on a connected server and deploys it in the worker with live build logs, real container state, cancellation that kills the remote process, cleanup on every exit and honest reconciliation; 20 deploys and 20 create/delete cycles leave nothing orphaned.",
+      "title": "Motor de deploy \u2014 runtime",
+      "goal": "Through the API a person creates project \u2192 environment \u2192 service (Git, Dockerfile or image, public or private) on a connected server and deploys it in the worker with live build logs, real container state, cancellation that kills the remote process, cleanup on every exit and honest reconciliation; 20 deploys and 20 create/delete cycles leave nothing orphaned.",
       "requirements": [
         "PROJ-01",
         "PROJ-02",
@@ -1147,7 +1147,7 @@
           "acceptance": [
             {
               "id": "C1",
-              "text": "run-deployment sequences clone→build (or pull)→port preflight→replace container→post-start polls against fake ports, moving status only through the domain state machine; unit-tested per source type",
+              "text": "run-deployment sequences clone\u2192build (or pull)\u2192port preflight\u2192replace container\u2192post-start polls against fake ports, moving status only through the domain state machine; unit-tested per source type",
               "proof": "test"
             },
             {
@@ -1157,7 +1157,7 @@
             },
             {
               "id": "C3",
-              "text": "Deployment store claims QUEUED→PREPARING atomically under a row lock, records commit SHA, and finishes with service status cache, activity event and service.updated / deployment.updated",
+              "text": "Deployment store claims QUEUED\u2192PREPARING atomically under a row lock, records commit SHA, and finishes with service status cache, activity event and service.updated / deployment.updated",
               "proof": "test"
             },
             {
@@ -1228,7 +1228,7 @@
             },
             {
               "id": "A3",
-              "text": "Statuses move only through the domain state machine (QUEUED→PREPARING→BUILDING→DEPLOYING→SUCCESS/FAILED); service status cache recomputed and service.updated / deployment.updated published",
+              "text": "Statuses move only through the domain state machine (QUEUED\u2192PREPARING\u2192BUILDING\u2192DEPLOYING\u2192SUCCESS/FAILED); service status cache recomputed and service.updated / deployment.updated published",
               "proof": "it-runtime-pipeline"
             },
             {
@@ -1374,7 +1374,7 @@
             },
             {
               "id": "A2",
-              "text": "Cancelling a running build: Redis flag (TTL from 12-04) → killSupervisedOperation (kill -s TERM -- \"-$pgid\" under setsid -w, ADR 0008) → confirmed absence in ps → channel destroyed → cleanup → CANCELLED; only the worker transitions",
+              "text": "Cancelling a running build: Redis flag (TTL from 12-04) \u2192 killSupervisedOperation (kill -s TERM -- \"-$pgid\" under setsid -w, ADR 0008) \u2192 confirmed absence in ps \u2192 channel destroyed \u2192 cleanup \u2192 CANCELLED; only the worker transitions",
               "proof": "it-runtime-cancel"
             },
             {
@@ -3262,7 +3262,7 @@
     {
       "id": "14",
       "title": "Hardening y gate de release v0.2",
-      "goal": "v0.1 operators stop paying owed debt (unbounded logs, piling .env backups, a 1.2 GB image, POSIX scanner false positives), the Phase 12/13 security and UI debt is closed, and v0.2.0 ships after a READY gate against roadmap §7.8 on a real VPS.",
+      "goal": "v0.1 operators stop paying owed debt (unbounded logs, piling .env backups, a 1.2 GB image, POSIX scanner false positives), the Phase 12/13 security and UI debt is closed, and v0.2.0 ships after a READY gate against roadmap \u00a77.8 on a real VPS.",
       "requirements": [
         "OPS-01",
         "OPS-02",
@@ -3279,9 +3279,10 @@
           "title": "Compose: log rotation on every production service",
           "scope": [
             "docker-compose.yml",
-            "tests/unit/installer/",
+            "docs/install.md",
+            "install.sh",
             "tests/integration/installer/compose-stack.test.ts",
-            "docs/install.md"
+            "tests/unit/installer/"
           ],
           "wave": 1,
           "dependsOn": [],
@@ -3586,7 +3587,7 @@
           "acceptance": [
             {
               "id": "A1",
-              "text": "packages/domain exports the published host keys for github.com, gitlab.com and bitbucket.org, plus a pure validator/parser for an OpenSSH host key line (host, type, base64 key) with ≥95% branch coverage",
+              "text": "packages/domain exports the published host keys for github.com, gitlab.com and bitbucket.org, plus a pure validator/parser for an OpenSSH host key line (host, type, base64 key) with \u226595% branch coverage",
               "proof": "test"
             },
             {
@@ -4137,7 +4138,7 @@
           "acceptance": [
             {
               "id": "A1",
-              "text": "docs/releases/v0.2-gate.md has one row per roadmap §7.8 criterion with status and evidence from this run (command output under v0.2-gate-logs/), following the noodara-release-gate format",
+              "text": "docs/releases/v0.2-gate.md has one row per roadmap \u00a77.8 criterion with status and evidence from this run (command output under v0.2-gate-logs/), following the noodara-release-gate format",
               "proof": "manual"
             },
             {
@@ -4193,17 +4194,17 @@
             },
             {
               "id": "A2",
-              "text": "On a real VPS: connect → project → environment → deploy from node-api → logs → status → failed build → cancel, recorded criterion by criterion",
+              "text": "On a real VPS: connect \u2192 project \u2192 environment \u2192 deploy from node-api \u2192 logs \u2192 status \u2192 failed build \u2192 cancel, recorded criterion by criterion",
               "proof": "manual"
             },
             {
               "id": "A3",
-              "text": "Real installs on Ubuntu 22.04, on arm64 and on a host with ufw active; memory observed on a 1–2 GB VPS",
+              "text": "Real installs on Ubuntu 22.04, on arm64 and on a host with ufw active; memory observed on a 1\u20132 GB VPS",
               "proof": "manual"
             },
             {
               "id": "A4",
-              "text": "A real upgrade v0.1.0 → v0.2.0-rc.1 and its rollback to v0.1.0, with data intact",
+              "text": "A real upgrade v0.1.0 \u2192 v0.2.0-rc.1 and its rollback to v0.1.0, with data intact",
               "proof": "manual"
             },
             {
@@ -4250,7 +4251,7 @@
           "acceptance": [
             {
               "id": "A1",
-              "text": "v0.2.0 is tagged from the rc.1 commit (or a documented fix-forward), multi-arch images are published, and a short upgrade v0.1.0 → v0.2.0 is recorded",
+              "text": "v0.2.0 is tagged from the rc.1 commit (or a documented fix-forward), multi-arch images are published, and a short upgrade v0.1.0 \u2192 v0.2.0 is recorded",
               "proof": "manual"
             },
             {
@@ -4260,7 +4261,7 @@
             },
             {
               "id": "A3",
-              "text": "OPEN_QUESTIONS #2, #3, #7 and #11 are resolved; #4–6, #9 and #10 are confirmed by the user or kept open with an owner",
+              "text": "OPEN_QUESTIONS #2, #3, #7 and #11 are resolved; #4\u20136, #9 and #10 are confirmed by the user or kept open with an owner",
               "proof": "manual"
             },
             {
@@ -4324,7 +4325,7 @@
             },
             {
               "id": "A4",
-              "text": "packages/domain keeps ≥95% statement/branch coverage on the moved schemas and stays free of I/O imports",
+              "text": "packages/domain keeps \u226595% statement/branch coverage on the moved schemas and stays free of I/O imports",
               "proof": "test"
             },
             {

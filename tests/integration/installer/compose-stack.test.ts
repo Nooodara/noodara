@@ -341,6 +341,21 @@ describe('production docker-compose.yml stack (06-07-PLAN.md)', () => {
       ).trim();
       expect(redisHealth).toBe('healthy');
 
+      // 14-01: All services configure log rotation with json-file driver, verified through
+      // `docker inspect` on a running api container (proof of the anchor applied, not just
+      // present in the compose file).
+      const apiLogConfig = JSON.parse(
+        execFileSync(
+          'docker',
+          ['inspect', '--format={{json .LogConfig}}', `${PROJECT_NAME}-api-1`],
+          { encoding: 'utf8', timeout: CLI_TIMEOUT_MS },
+        ).trim(),
+      );
+      expect(apiLogConfig).toHaveProperty('Type', 'json-file');
+      expect(apiLogConfig).toHaveProperty('Config');
+      expect(apiLogConfig.Config).toHaveProperty('max-size', '50m');
+      expect(apiLogConfig.Config).toHaveProperty('max-file', '3');
+
       // T-06-08: only `web` publishes a host port -- postgres/redis/api/worker/migrate must not,
       // even though api/worker legitimately EXPOSE 3000 in their own Dockerfile (an unpublished
       // "Ports" entry, distinct from an actual host-bound Publisher). Proven two ways: the real,

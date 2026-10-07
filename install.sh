@@ -1536,6 +1536,12 @@ name: noodara
 # needs). These are idle-stack numbers on a development machine, not a load test; they remain
 # subject to real-VPS validation in Plan 06-15.
 
+x-logging: &noodara_logging
+  driver: json-file
+  options:
+    max-size: '50m'
+    max-file: '3'
+
 services:
   postgres:
     image: postgres:17-alpine
@@ -1546,6 +1552,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required -- write /opt/noodara/.env before running docker compose}
     volumes:
       - noodara_postgres_data:/var/lib/postgresql/data
+    logging: *noodara_logging
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 5s
@@ -1577,6 +1584,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required -- write /opt/noodara/.env before running docker compose}
     volumes:
       - noodara_redis_data:/data
+    logging: *noodara_logging
     # T-06-36: `redis-server --requirepass` above already puts the password in ITS OWN argv (an
     # accepted, documented risk -- see this plan's threat model, matching redis's own configuration
     # surface). The healthcheck below does not need to repeat that exposure: `REDISCLI_AUTH` is
@@ -1602,6 +1610,7 @@ services:
       postgres:
         condition: service_healthy
     restart: "no" # Never "always": a one-shot must not auto-restart on its own exit.
+    logging: *noodara_logging
     deploy:
       resources:
         limits:
@@ -1621,6 +1630,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     stop_grace_period: 30s
+    logging: *noodara_logging
     # Node 22's global `fetch`, since node:22-slim has no guaranteed curl/wget. Any 2xx (including
     # GET /health's 200 "degraded" when only redis/the worker are down) is healthy -- only a 503
     # (dead Postgres) is unhealthy, matching apps/control-plane/src/routes/health.ts's own
@@ -1649,6 +1659,7 @@ NOODARA_COMPOSE_EOF_A
       redis:
         condition: service_healthy
     restart: unless-stopped
+    logging: *noodara_logging
     # computeJobLockDurationMs (apps/control-plane/src/queue/job-budget.ts) = connectMs*2 + 2000 +
     # discoveryMs + 30000; with env.ts's own defaults (10000ms connect, 60000ms discovery) that is
     # 112000ms = 112s, and runWorkerShutdown (phase 4 D-25) is given exactly that as its graceful-
@@ -1670,6 +1681,7 @@ NOODARA_COMPOSE_EOF_A
         condition: service_healthy
     restart: unless-stopped
     stop_grace_period: 10s
+    logging: *noodara_logging
     healthcheck:
 NOODARA_COMPOSE_EOF_B
     printf "      test: ['CMD', 'node', '-e', \"fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(%s)=>process.exit(1))\"]\n" "$_noodara_pcf_lp"
