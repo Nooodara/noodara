@@ -65,6 +65,11 @@ export const services = pgTable(
         onDelete: "restrict",
       },
     ),
+    // 14-07: the TOFU-pinned SSH host key of a non-bundled Git host: the known_hosts host
+    // (`host` or `[host]:port`) and its validated known_hosts lines. Public keys, not secrets,
+    // but never part of an API view; set together or not at all.
+    gitHostKeyHost: text("git_host_key_host"),
+    gitHostKey: text("git_host_key"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -85,6 +90,10 @@ export const services = pgTable(
     check(
       "services_source_shape_check",
       sql`(${table.sourceType} = 'git' AND ${table.repositoryUrl} IS NOT NULL AND ${table.branch} IS NOT NULL AND ${table.buildContext} IS NOT NULL AND ${table.dockerfilePath} IS NOT NULL AND ${table.imageRef} IS NULL) OR (${table.sourceType} = 'image' AND ${table.imageRef} IS NOT NULL AND ${table.repositoryUrl} IS NULL AND ${table.branch} IS NULL AND ${table.buildContext} IS NULL AND ${table.dockerfilePath} IS NULL AND ${table.buildTarget} IS NULL)`,
+    ),
+    check(
+      "services_git_host_key_pair_check",
+      sql`(${table.gitHostKeyHost} IS NULL) = (${table.gitHostKey} IS NULL)`,
     ),
     check(
       "services_ports_range_check",

@@ -57,6 +57,13 @@
       "when": 1791389716714,
       "tag": "0007_phase14_git_host_key_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791391684015,
+      "tag": "0008_phase14_service_git_host_key",
+      "breakpoints": true
     }
   ]
 }

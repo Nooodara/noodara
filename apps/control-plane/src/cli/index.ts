@@ -7,10 +7,12 @@ import '../env.js';
 import { Command } from 'commander';
 import { appRedactor } from '../activity/redaction.js';
 import { getDb } from '../db/client.js';
+import { resetGitHostKey } from '../db/git-host-key-store.js';
 import { env } from '../env.js';
 import { createLogger } from '../logger.js';
 import { adminResetCommand } from './admin-reset.js';
 import { secretsRotateCommand } from './secrets-rotate.js';
+import { servicesResetHostKeyCommand } from './services-reset-host-key.js';
 
 /** Never echoes a raw error's message verbatim: routes it through the shared app redactor first,
  *  so a `postgres://user:pass@host` connection string embedded in a driver error can never reach
@@ -70,6 +72,25 @@ secretsCommand
       process.exitCode = exitCode;
     } catch (err) {
       printCliError('secrets rotate', err);
+      process.exitCode = 1;
+    }
+  });
+
+const servicesCommand = program.command('services').description('Service operations');
+servicesCommand
+  .command('reset-host-key')
+  .argument('<serviceId>', 'the service whose pinned Git host key to forget')
+  .description("Forget the SSH host key pinned for a service's Git host (the next deploy pins the current key)")
+  .action(async (serviceId: string) => {
+    try {
+      process.exitCode = await servicesResetHostKeyCommand({
+        serviceId,
+        reset: async (id) => resetGitHostKey(await getDb(), id),
+        out: (line) => process.stdout.write(`${line}\n`),
+        err: (line) => process.stderr.write(`${line}\n`),
+      });
+    } catch (err) {
+      printCliError('services reset-host-key', err);
       process.exitCode = 1;
     }
   });

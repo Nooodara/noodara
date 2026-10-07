@@ -12,6 +12,7 @@ import { DEFAULT_POST_START_POLL_POLICY } from '@noodara/domain/deployment';
 import { createRedactor } from '@noodara/domain/security';
 import type { SshDeploySession, SshPort, SshTimeouts } from '@noodara/ssh';
 import type { Database } from '../db/client.js';
+import { createGitHostKeyStore } from '../db/git-host-key-store.js';
 import type { ServerEventPublisher } from '../events/server-event-publisher.js';
 import { BULLMQ_PREFIX } from '../queue/connect-server-queue.js';
 import { DEPLOY_QUEUE_NAME } from '../queue/deploy-queue.js';
@@ -21,7 +22,7 @@ import { createLoadTarget, type PanelPorts } from './deploy-target.js';
 import { deployWorkerOptions, type DeployJobDeps, type DeployJobLogger, type DeployJobOutcome } from './deploy-worker.js';
 import { createDeploymentStore } from './deployment-store.js';
 import { noopDeploymentLogSink } from './log-sink.js';
-import type { DeployRunLimits } from './run-deployment.js';
+import { runDeployment, type DeployRunLimits } from './run-deployment.js';
 import {
   SERVICE_OPERATION_JOB_NAME,
   type ServiceOperationJobDeps,
@@ -73,6 +74,8 @@ export interface DeployRuntimeDeps {
 
 export function createDeployJobDeps(deps: DeployRuntimeDeps): DeployJobDeps {
   const now = deps.now ?? (() => new Date());
+  // 14-07: a non-bundled SSH Git host is pinned per service in the database (TOFU).
+  const gitHostKeys = createGitHostKeyStore(deps.db);
   return {
     store: createDeploymentStore({ db: deps.db, now, events: deps.events }),
     loadTarget: createLoadTarget({ db: deps.db, masterKeys: deps.masterKeys, panelPorts: deps.panelPorts }),
@@ -89,6 +92,7 @@ export function createDeployJobDeps(deps: DeployRuntimeDeps): DeployJobDeps {
     pollPolicy: DEFAULT_POST_START_POLL_POLICY,
     clock: { now: () => Date.now(), sleep: (ms) => sleep(ms) },
     logger: deps.logger,
+    run: (input) => runDeployment({ ...input, gitHostKeys }),
   };
 }
 

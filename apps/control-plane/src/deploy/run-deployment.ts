@@ -14,6 +14,9 @@
 //   here throws (ERR).
 // - Every name comes from the validated ids; repo values reach argv only as single elements
 //   through the allowlisted builders (H2).
+// - 14-07: a non-bundled SSH Git host is pinned per service (TOFU): the stored key pins later
+//   clones, the first scan is stored with a conditional write, a concurrent loser verifies against
+//   the winner, and a changed key fails GIT_HOST_KEY_MISMATCH; nothing replaces a pin but the CLI.
 import {
   cleanupSetFor,
   classifyCleanupOutcome,
@@ -37,10 +40,15 @@ import {
 } from '@noodara/domain/deployment';
 import { revealSecret, type Redactor, type SecretValue } from '@noodara/domain/security';
 import {
+  bundledGitHostKeysFor,
   deployWorkspaceFor,
+  gitSshEndpoint,
+  sameKnownHostsHost,
   type CommitSha,
   type ContainerPort,
   type DeployWorkspace,
+  type GitHostKey,
+  type GitSshEndpoint,
   type ImageRef,
   type ResourceId,
   type ServiceSource,
@@ -97,6 +105,26 @@ export interface DeploymentProgress {
 
 export type DeployCredential = GitCredential | { readonly kind: 'registry'; readonly registry: RegistryCredential };
 
+/** 14-07: the keys pinned for a service's Git host (`host` is the known_hosts host). */
+export interface PinnedGitHostKeys {
+  readonly host: string;
+  readonly keys: readonly GitHostKey[];
+}
+
+export type GitHostKeyPinResult =
+  | { readonly kind: 'stored' }
+  /** Another attempt pinned this host first; the caller verifies against it, never overwrites. */
+  | { readonly kind: 'existing'; readonly pinned: PinnedGitHostKeys }
+  /** The service row is gone (deleted mid-deploy). */
+  | { readonly kind: 'missing' };
+
+/** The per-service TOFU store of a non-bundled Git host's SSH host keys (the database, in production). */
+export interface GitHostKeyStore {
+  load(serviceId: string): Promise<PinnedGitHostKeys | null>;
+  /** Stores `pinned` only if the service has no key for that host (one atomic, conditional write). */
+  pin(serviceId: string, pinned: PinnedGitHostKeys): Promise<GitHostKeyPinResult>;
+}
+
 export interface DeployClock {
   now(): number;
   sleep(ms: number): Promise<void>;
@@ -120,6 +148,8 @@ export interface RunDeploymentInput {
   readonly sink: DeploymentLogSink;
   readonly clock: DeployClock;
   readonly signal?: AbortSignal;
+  /** 14-07: absent, a non-bundled SSH host is keyscanned on every deploy (nothing is pinned). */
+  readonly gitHostKeys?: GitHostKeyStore;
 }
 
 export interface CleanupReport {
@@ -160,6 +190,35 @@ export const DEPLOY_MESSAGES = Object.freeze({
   CANCEL_UNCONFIRMED:
     'The deployment was cancelled, but Noodara could not confirm that its build stopped on the server. Check the server for a leftover build process, then redeploy.',
 });
+
+/** H3: names the fix, never a key blob (an operator compares fingerprints out of band). */
+export function gitHostKeyMismatchMessage(serviceId: string): string {
+  return `The Git host's SSH host key does not match the key pinned for this service, so the deployment was stopped. Verify the host's key fingerprint with its operator; if the change is expected, run "noodara services reset-host-key ${serviceId}" and redeploy.`;
+}
+
+const PINNED_ON_FIRST_USE_LOG =
+  "Trusted the Git host's SSH host key on first use and pinned it for this service.";
+
+// H3: an OpenSSH public key blob (keyscan output, ssh diagnostics) never reaches the deployment log.
+const HOST_KEY_BLOB_PATTERN = /\b(ssh-ed25519|ecdsa-sha2-nistp(?:256|384|521)|ssh-rsa)(\s+)AAAA[A-Za-z0-9+/]+={0,2}/g;
+
+function scrubHostKeyBlobs(text: string): string {
+  return text.replace(HOST_KEY_BLOB_PATTERN, '$1$2[host key]');
+}
+
+/** The SSH endpoint a clone pins per service: an ssh URL whose host has no bundled published key. */
+function tofuEndpoint(source: ServiceSource): GitSshEndpoint | null {
+  if (source.kind !== 'git') return null;
+  const endpoint = gitSshEndpoint(source.repositoryUrl);
+  if (endpoint === null || bundledGitHostKeysFor(endpoint).length > 0) return null;
+  return endpoint;
+}
+
+/** H1: the loser accepts only keys the winner pinned (a superset scan could smuggle one in). */
+function agreesWith(pinned: PinnedGitHostKeys, endpoint: GitSshEndpoint, scanned: readonly GitHostKey[]): boolean {
+  if (!sameKnownHostsHost(pinned.host, endpoint.knownHostsHost) || scanned.length === 0) return false;
+  return scanned.every((key) => pinned.keys.some((stored) => stored.type === key.type && stored.key === key.key));
+}
 
 const CLEANUP_MAX_TOTAL_BYTES = 65_536;
 
@@ -261,7 +320,7 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
 
   const log = (phase: DeploymentLogPhase, stream: 'stdout' | 'stderr' | 'system', text: string): void => {
     try {
-      input.sink.write({ phase, stream, text: redactor.redact(text), seq: seq++ });
+      input.sink.write({ phase, stream, text: scrubHostKeyBlobs(redactor.redact(text)), seq: seq++ });
     } catch {
       // A sink failure never fails the deployment.
     }
@@ -355,15 +414,30 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     const { source } = input;
     if (source.kind === 'git') {
       ledger = recordResource(ledger, { kind: 'workspace_created' });
-      const cloned = await check(
-        await cloneRepository({
-          ...context('prepare'),
-          workspace,
-          source,
-          credential: gitCredentialOf(input.credential),
-        }),
-        'clone',
-      );
+      const store = input.gitHostKeys;
+      const endpoint = store === undefined ? null : tofuEndpoint(source);
+      // A store that cannot be read fails the attempt (WORKER_CRASHED): never an unpinned rescan.
+      const pinned = endpoint === null || store === undefined ? null : await store.load(serviceId);
+      const pinnedHostKeys =
+        endpoint !== null && pinned !== null && sameKnownHostsHost(pinned.host, endpoint.knownHostsHost) ? pinned.keys : [];
+      const clone = await cloneRepository({
+        ...context('prepare'),
+        workspace,
+        source,
+        credential: gitCredentialOf(input.credential),
+        pinnedHostKeys,
+      });
+      if (endpoint !== null && !clone.ok && clone.kind === 'failed' && clone.code === 'GIT_HOST_KEY_MISMATCH') {
+        failed('GIT_HOST_KEY_MISMATCH', gitHostKeyMismatchMessage(serviceId));
+      }
+      const cloned = await check(clone, 'clone');
+      if (endpoint !== null && store !== undefined && cloned.hostKeySource === 'scanned') {
+        const stored = await store.pin(serviceId, { host: endpoint.knownHostsHost, keys: cloned.hostKeys });
+        if (stored.kind === 'existing' && !agreesWith(stored.pinned, endpoint, cloned.hostKeys)) {
+          failed('GIT_HOST_KEY_MISMATCH', gitHostKeyMismatchMessage(serviceId));
+        }
+        if (stored.kind === 'stored') log('prepare', 'system', PINNED_ON_FIRST_USE_LOG);
+      }
       commitSha = cloned.commitSha;
       await progress.recordCommitSha(cloned.commitSha);
 

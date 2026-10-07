@@ -23,6 +23,7 @@ import {
 import type { ServiceSource } from '@noodara/domain/validators';
 import { writeActivityEvent } from '../activity/write-activity-event.js';
 import type { Database } from '../db/client.js';
+import { gitHostKeyColumnsForUrlChange } from '../db/git-host-key-store.js';
 import { deployments } from '../db/schema/deployments.js';
 import { environments } from '../db/schema/environments.js';
 import { projects } from '../db/schema/projects.js';
@@ -481,6 +482,8 @@ export async function updateService(deps: ServiceServicesDeps, input: UpdateServ
         .set({
           ...(changed.has('name') && edit.name !== undefined ? { name: edit.name } : {}),
           ...(sourceColumns ?? {}),
+          // 14-07 H2: a pinned Git host key never follows the service to another host.
+          ...(sourceColumns === null ? {} : gitHostKeyColumnsForUrlChange(current, sourceColumns.repositoryUrl)),
           ...credentialChanges.columns,
           ...(changed.has('internalPort') && edit.internalPort !== undefined ? { internalPort: edit.internalPort } : {}),
           ...(changed.has('publishedPort') && edit.publishedPort !== undefined ? { publishedPort: edit.publishedPort } : {}),

@@ -4,9 +4,10 @@
 import { randomBytes } from 'node:crypto';
 import type { DeploymentStatus } from '@noodara/domain/deployment';
 import { DEFAULT_POST_START_POLL_POLICY } from '@noodara/domain/deployment';
-import { createRedactor, secretValue, type Redactor } from '@noodara/domain/security';
+import { createRedactor, revealSecret, secretValue, type Redactor } from '@noodara/domain/security';
 import {
   deployWorkspaceFor,
+  parseGitHostKeyLine,
   validateContainerPort,
   validateImageRef,
   validateRegistryHost,
@@ -14,6 +15,7 @@ import {
   validateResourceId,
   validateServiceSource,
   type ContainerPort,
+  type GitHostKey,
   type ResourceId,
   type ServiceSource,
 } from '@noodara/domain/validators';
@@ -28,6 +30,9 @@ import {
   type DeployCredential,
   type DeployRunLimits,
   type DeploymentProgress,
+  type GitHostKeyPinResult,
+  type GitHostKeyStore,
+  type PinnedGitHostKeys,
   type RunDeploymentInput,
 } from './run-deployment.js';
 
@@ -814,5 +819,224 @@ describe('runDeployment: names come only from validated ids (H2)', () => {
         /^(label=)?noodara\.\w+=[0-9a-f-]{36}$/.test(arg);
       expect(ok, arg).toBe(true);
     }
+  });
+});
+
+// 14-07: TOFU pinning of a non-bundled Git host's SSH key per service (A1, H1, H2, H3).
+const GIT_HOST = 'git.example.com';
+const SSH_URL = `git@${GIT_HOST}:acme/api.git`;
+const RESET_HINT = `noodara services reset-host-key ${SERVICE_ID}`;
+const HOST_KEY_CHANGED_STDERR =
+  '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @\nHost key verification failed.\nfatal: Could not read from remote repository.\n';
+
+/** A fresh, structurally valid ssh-ed25519 blob. */
+function ed25519Blob(): string {
+  const u32 = (n: number): Buffer => {
+    const buffer = Buffer.alloc(4);
+    buffer.writeUInt32BE(n);
+    return buffer;
+  };
+  return Buffer.concat([u32(11), Buffer.from('ssh-ed25519'), u32(32), randomBytes(32)]).toString('base64');
+}
+
+function hostKey(blob: string, host = GIT_HOST): GitHostKey {
+  return unwrap(parseGitHostKeyLine(`${host} ssh-ed25519 ${blob}`));
+}
+
+class FakeHostKeyStore implements GitHostKeyStore {
+  readonly pins: PinnedGitHostKeys[] = [];
+  loads = 0;
+  loadError: Error | null = null;
+  pinResult: GitHostKeyPinResult = { kind: 'stored' };
+
+  constructor(public stored: PinnedGitHostKeys | null = null) {}
+
+  load(serviceId: string): Promise<PinnedGitHostKeys | null> {
+    expect(serviceId).toBe(SERVICE_ID);
+    this.loads += 1;
+    if (this.loadError !== null) return Promise.reject(this.loadError);
+    return Promise.resolve(this.stored);
+  }
+
+  pin(serviceId: string, pinned: PinnedGitHostKeys): Promise<GitHostKeyPinResult> {
+    expect(serviceId).toBe(SERVICE_ID);
+    this.pins.push(pinned);
+    return Promise.resolve(this.pinResult);
+  }
+}
+
+function tofuHarness(
+  store: FakeHostKeyStore,
+  options: { url?: string; scripts?: Record<string, Script | Script[]> } = {},
+): Harness & { readonly input: RunDeploymentInput } {
+  const h = harness({
+    source: gitSource({ repositoryUrl: options.url ?? SSH_URL }),
+    ...(options.scripts === undefined ? {} : { scripts: options.scripts }),
+  });
+  return { ...h, input: { ...h.input, gitHostKeys: store } };
+}
+
+function knownHostsWritten(h: Harness): string {
+  const write = h.session.calls.find(
+    (call) => call.key === 'secrets.write_file' && call.command.argv.some((arg) => arg.endsWith('/known_hosts')),
+  );
+  if (write?.options.stdin === undefined) throw new Error('no known_hosts write');
+  return revealSecret(write.options.stdin);
+}
+
+function surfaceOf(h: Harness, outcome: { errorMessage: string | null }): string {
+  return [outcome.errorMessage ?? '', ...h.sink.entries.map((entry) => entry.text)].join('\n');
+}
+
+describe('runDeployment: git host key pinning per service (14-07)', () => {
+  it('A1: the first SSH clone of a non-bundled host pins the scanned key before the build', async () => {
+    const blob = ed25519Blob();
+    const store = new FakeHostKeyStore();
+    const h = tofuHarness(store, { scripts: { 'git.keyscan': { stdout: `${GIT_HOST} ssh-ed25519 ${blob}\n` } } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'SUCCESS' });
+    expect(store.pins).toEqual([{ host: GIT_HOST, keys: [hostKey(blob)] }]);
+    expect(h.session.keys()).toContain('git.keyscan');
+    expect(knownHostsWritten(h)).toBe(`${GIT_HOST} ssh-ed25519 ${blob}\n`);
+  });
+
+  it('A1: a later clone pins the stored key: no keyscan, nothing stored again', async () => {
+    const blob = ed25519Blob();
+    const store = new FakeHostKeyStore({ host: GIT_HOST, keys: [hostKey(blob)] });
+    const h = tofuHarness(store);
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'SUCCESS' });
+    expect(h.session.keys()).not.toContain('git.keyscan');
+    expect(store.pins).toEqual([]);
+    expect(knownHostsWritten(h)).toBe(`${GIT_HOST} ssh-ed25519 ${blob}\n`);
+  });
+
+  it('H1: the loser of a concurrent first clone verifies against the winner and proceeds when they agree', async () => {
+    const blob = ed25519Blob();
+    const store = new FakeHostKeyStore();
+    store.pinResult = { kind: 'existing', pinned: { host: GIT_HOST, keys: [hostKey(blob)] } };
+    const h = tofuHarness(store, { scripts: { 'git.keyscan': { stdout: `${GIT_HOST} ssh-ed25519 ${blob}\n` } } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'SUCCESS' });
+    expect(store.pins).toHaveLength(1);
+  });
+
+  it('H1/H3: a loser that scanned a different key fails GIT_HOST_KEY_MISMATCH before the build, without key material', async () => {
+    const winner = ed25519Blob();
+    const offending = ed25519Blob();
+    const store = new FakeHostKeyStore();
+    store.pinResult = { kind: 'existing', pinned: { host: GIT_HOST, keys: [hostKey(winner)] } };
+    const h = tofuHarness(store, { scripts: { 'git.keyscan': { stdout: `${GIT_HOST} ssh-ed25519 ${offending}\n` } } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'GIT_HOST_KEY_MISMATCH' });
+    expect(outcome.errorMessage).toContain(RESET_HINT);
+    expect(h.session.keys()).not.toContain('supervise:build');
+    expect(h.session.keys()).toContain('fs.remove_deploy_dir');
+    const surface = surfaceOf(h, outcome);
+    expect(surface).not.toContain(winner);
+    expect(surface).not.toContain(offending);
+  });
+
+  it('H1: a superset scan (the pinned key plus another) is not accepted by the loser', async () => {
+    const winner = ed25519Blob();
+    const extra = ed25519Blob();
+    const store = new FakeHostKeyStore();
+    store.pinResult = { kind: 'existing', pinned: { host: GIT_HOST, keys: [hostKey(winner)] } };
+    const h = tofuHarness(store, {
+      scripts: { 'git.keyscan': { stdout: `${GIT_HOST} ssh-ed25519 ${winner}\n${GIT_HOST} ssh-ed25519 ${extra}\n` } },
+    });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'GIT_HOST_KEY_MISMATCH' });
+  });
+
+  it('A2/H3: a rotated host key refused by ssh fails GIT_HOST_KEY_MISMATCH with the reset hint, never auto-replaced', async () => {
+    const pinned = ed25519Blob();
+    const store = new FakeHostKeyStore({ host: GIT_HOST, keys: [hostKey(pinned)] });
+    const h = tofuHarness(store, { scripts: { 'supervise:clone': { exitCode: 128, stderr: HOST_KEY_CHANGED_STDERR } } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'GIT_HOST_KEY_MISMATCH' });
+    expect(outcome.errorMessage).toContain(RESET_HINT);
+    expect(outcome.errorMessage).not.toContain('REMOTE HOST');
+    expect(store.pins).toEqual([]);
+    expect(h.session.keys()).not.toContain('git.keyscan');
+    expect(h.session.keys()).toContain('fs.remove_deploy_dir');
+    expect(surfaceOf(h, outcome)).not.toContain(pinned);
+  });
+
+  it('H2: a pin stored for another host is neither used nor blocking: the new host is scanned and pinned', async () => {
+    const stale = ed25519Blob();
+    const blob = ed25519Blob();
+    const store = new FakeHostKeyStore({ host: 'old.example.com', keys: [hostKey(stale, 'old.example.com')] });
+    const h = tofuHarness(store, { scripts: { 'git.keyscan': { stdout: `${GIT_HOST} ssh-ed25519 ${blob}\n` } } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'SUCCESS' });
+    expect(knownHostsWritten(h)).not.toContain(stale);
+    expect(store.pins).toEqual([{ host: GIT_HOST, keys: [hostKey(blob)] }]);
+  });
+
+  it('H3: keyscan output never reaches the deployment log as a key blob', async () => {
+    const blob = ed25519Blob();
+    const store = new FakeHostKeyStore();
+    const h = tofuHarness(store, { scripts: { 'git.keyscan': { stdout: `${GIT_HOST} ssh-ed25519 ${blob}\n` } } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('SUCCESS');
+    expect(h.sink.entries.map((entry) => entry.text).join('\n')).not.toContain(blob);
+  });
+
+  it('https and bundled-host clones never read or write the store', async () => {
+    for (const url of ['https://github.com/acme/api.git', 'git@github.com:acme/api.git']) {
+      const store = new FakeHostKeyStore();
+      store.loadError = new Error('store must not be read');
+      const h = tofuHarness(store, { url });
+
+      const outcome = await runDeployment(h.input);
+
+      expect(outcome).toMatchObject({ status: 'SUCCESS' });
+      expect(store.loads).toBe(0);
+      expect(store.pins).toEqual([]);
+      expect(h.session.keys()).not.toContain('git.keyscan');
+    }
+  });
+
+  it('a bundled-host mismatch keeps the published-key message (a reset would not help)', async () => {
+    const store = new FakeHostKeyStore();
+    const h = tofuHarness(store, {
+      url: 'git@github.com:acme/api.git',
+      scripts: { 'supervise:clone': { exitCode: 128, stderr: HOST_KEY_CHANGED_STDERR } },
+    });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'GIT_HOST_KEY_MISMATCH' });
+    expect(outcome.errorMessage).not.toContain('reset-host-key');
+  });
+
+  it('fails closed when the store cannot be read: no keyscan, no clone', async () => {
+    const store = new FakeHostKeyStore();
+    store.loadError = new Error('connection to postgres://u:pw@db lost');
+    const h = tofuHarness(store);
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'WORKER_CRASHED' });
+    expect(h.session.keys()).not.toContain('git.keyscan');
+    expect(h.session.keys()).not.toContain('supervise:clone');
+    expect(outcome.errorMessage).not.toContain('pw@');
   });
 });

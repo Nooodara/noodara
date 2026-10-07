@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-07T16:45:01.392Z",
+  "updatedAt": "2026-10-07T16:53:16.331Z",
   "cursor": {
     "phase": "14",
     "task": "14-01"
@@ -3637,16 +3637,19 @@
           "id": "14-07",
           "title": "Git host key pinning: persistence, runtime wiring, reset",
           "scope": [
-            "apps/control-plane/src/db/",
-            "apps/control-plane/src/deploy/run-deployment.ts",
-            "apps/control-plane/src/deploy/run-deployment.test.ts",
-            "apps/control-plane/src/deploy/deploy-runtime.ts",
             "apps/control-plane/src/cli/",
+            "apps/control-plane/src/db/",
+            "apps/control-plane/src/deploy/deploy-runtime.ts",
+            "apps/control-plane/src/deploy/deployment-store.test.ts",
+            "apps/control-plane/src/deploy/run-deployment.test.ts",
+            "apps/control-plane/src/deploy/run-deployment.ts",
+            "apps/control-plane/src/services/service-services.test.ts",
             "apps/control-plane/src/services/service-services.ts",
-            "tests/integration/deploy-engine/runtime-pipeline.test.ts",
-            "tests/integration/deploy-engine/contracts-https-token.test.ts",
             "apps/site/content/docs/reference/error-codes.mdx",
-            "docs/deploy-engine.md"
+            "docs/deploy-engine.md",
+            "tests/integration/db/migrations.test.ts",
+            "tests/integration/deploy-engine/contracts-https-token.test.ts",
+            "tests/integration/deploy-engine/runtime-pipeline.test.ts"
           ],
           "wave": 2,
           "dependsOn": [
@@ -4293,8 +4296,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
-          "tier": "standard",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -4335,7 +4337,8 @@
             "persistence",
             "auth-secrets",
             "randomness"
-          ]
+          ],
+          "tier": "standard"
         }
       ]
     }
