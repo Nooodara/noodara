@@ -215,6 +215,22 @@ describe('NavTree parents with their own page (13-09)', () => {
     expect(screen.getAllByRole('link').filter((link) => link.getAttribute('aria-current') === 'page')).toHaveLength(1);
   });
 
+  // 13-20 A1: cn() is a plain join, so with both text utilities present the built CSS order
+  // (text-ink before text-ink-secondary) decides -- the active item rendered secondary ink on
+  // accent-soft (4.39:1 in light). Exactly one text color per state.
+  it('gives the current item and active-path items one ink color, never also text-ink-secondary', () => {
+    renderUi(<NavTree items={tree()} activeHref="/projects/p1/services/s1" linkComponent={FakeLink} />);
+
+    for (const id of ['service-s1', 'projects', 'project-p1']) {
+      const classes = screen.getByTestId(`nav-tree-item-${id}`).className.split(' ');
+      expect(classes).toContain('text-ink');
+      expect(classes).not.toContain('text-ink-secondary');
+    }
+    const idle = screen.getByTestId('nav-tree-item-servers').className.split(' ');
+    expect(idle).toContain('text-ink-secondary');
+    expect(idle).not.toContain('text-ink');
+  });
+
   it('marks a project page current, never its environment (a #fragment route is not a page)', () => {
     renderUi(<NavTree items={tree()} activeHref="/projects/p1" linkComponent={FakeLink} />);
 

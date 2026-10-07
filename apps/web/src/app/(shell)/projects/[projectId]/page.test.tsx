@@ -102,13 +102,13 @@ function service(id: string, environmentId: string, name: string) {
     environmentId,
     serverId: '55555555-5555-4555-8555-555555555555',
     name,
-    sourceType: 'image',
-    repositoryUrl: null,
-    branch: null,
+    sourceType: 'image' as 'git' | 'image',
+    repositoryUrl: null as string | null,
+    branch: null as string | null,
     buildContext: null,
     dockerfilePath: null,
     buildTarget: null,
-    imageRef: 'nginx:1.27',
+    imageRef: 'nginx:1.27' as string | null,
     internalPort: 80,
     publishedPort: 8080,
     status: 'running',
@@ -172,6 +172,27 @@ describe('Project page (13-10 A1, A2, A3, H1)', () => {
     const staging = screen.getByTestId(`environment-section-${STAGING_ID}`);
     expect(staging).toHaveTextContent('No services in this environment yet.');
     expect(screen.getByRole('heading', { name: 'Billing' })).toBeInTheDocument();
+  });
+
+  // 13-20 A3: ListRow's two truncating spans shrink in proportion to their content, so a
+  // 300-char repository URL squeezed the name "web" down to "w". The source is capped at a share
+  // of the row (container units), leaving the name its room; both truncate with an ellipsis and
+  // keep their full text in a title.
+  it('keeps a service name readable next to a very long repository URL', async () => {
+    const repositoryUrl = `https://github.com/acme/${'x'.repeat(300)}.git`;
+    seed({
+      services: [{ ...service(SERVICE_ID, PROD_ID, 'web'), sourceType: 'git', imageRef: null, repositoryUrl, branch: 'main' }],
+    });
+    renderPage();
+    const row = await screen.findByTestId(`service-row-${SERVICE_ID}`);
+
+    const name = within(row).getByText('web');
+    expect(name).toHaveAttribute('title', 'web');
+    expect(name.parentElement?.className.split(/\s+/)).toContain('truncate');
+
+    const source = within(row).getByTitle(`${repositoryUrl} · main`);
+    expect(source.className.split(/\s+/)).toEqual(expect.arrayContaining(['block', 'truncate', 'max-w-[55cqw]']));
+    expect(row.closest('.\\@container')).not.toBeNull();
   });
 
   it('shows an empty state with one action when there are no environments', async () => {

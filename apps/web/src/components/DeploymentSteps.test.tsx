@@ -138,6 +138,49 @@ describe('DeploymentSteps', () => {
     expect(screen.getByTestId('deployment-step-start').querySelector('.scale-y-0')).not.toBeNull();
   });
 
+  // 13-20 A1: a caption-size status word in the plain semantic color fails AA in light
+  // (--status-error on white is 3.54:1); words use the AA-tuned --status-*-text tokens, the icon
+  // keeps the plain semantic color.
+  it('renders each status word in its AA text token, never the plain semantic color', () => {
+    renderUi(
+      <DeploymentSteps
+        deployment={deployment({
+          status: 'FAILED',
+          errorCode: 'BUILD_FAILED',
+          steps: steps(['pull', 'failed', 800], ['build', 'skipped', null], ['start', 'pending', null], ['verify', 'pending', null]),
+        })}
+      />,
+    );
+    const cases = [
+      ['deployment-step-pull', 'Failed', 'text-status-error-text'],
+      ['deployment-step-build', 'Skipped', 'text-status-idle-text'],
+      ['deployment-step-start', 'Pending', 'text-status-idle-text'],
+    ] as const;
+    for (const [testId, word, token] of cases) {
+      const classes = (within(screen.getByTestId(testId)).getByText(word).getAttribute('class') ?? '').split(/\s+/);
+      expect(classes).toContain(token);
+      expect(classes.filter((name) => /^text-(status-(ok|warn|error|idle)|ink-tertiary)$/.test(name))).toEqual([]);
+    }
+    expect(within(screen.getByTestId('deployment-step-pull')).getByLabelText('Failed').getAttribute('class')).toContain(
+      'text-status-error',
+    );
+  });
+
+  // 13-20 A4: the thread used to span the whole row (inset-y-0 at the icon's center line), so it
+  // ran straight through every step icon. Each segment now starts below its own icon, reaches
+  // just short of the next row's icon, and the last row draws none.
+  it('draws the thread between step icons, never through them', () => {
+    renderUi(<DeploymentSteps deployment={deployment()} />);
+    for (const row of screen.getAllByTestId(/^deployment-step-/)) {
+      const thread = row.querySelector('[data-step-thread]');
+      expect(thread).not.toBeNull();
+      const classes = (thread?.getAttribute('class') ?? '').split(/\s+/);
+      expect(classes).not.toContain('inset-y-0');
+      expect(classes).toEqual(expect.arrayContaining(['top-8.5', '-bottom-2.5', 'group-last/step:hidden']));
+      expect(row.className.split(/\s+/)).toContain('group/step');
+    }
+  });
+
   it('only animates the running indicator behind motion-safe, so reduced motion keeps it still (A4)', () => {
     renderUi(
       <DeploymentSteps

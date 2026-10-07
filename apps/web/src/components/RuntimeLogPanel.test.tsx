@@ -9,6 +9,7 @@ import type {
 import {
   FOLLOW_LIMIT_COPY,
   followEndCopy,
+  NO_CONTAINER_COPY,
   RUNTIME_LOG_FLUSH_MS,
   RUNTIME_LOG_NOT_FOUND_COPY,
   RuntimeLogPanel,
@@ -270,6 +271,41 @@ describe('RuntimeLogPanel', () => {
     await settle();
     expect(followToggle().getAttribute('aria-pressed')).toBe('false');
     expect(screen.getByTestId('runtime-log-notice').textContent).toBe(FOLLOW_LIMIT_COPY);
+  });
+
+  // 13-20 A1: "no container yet" is a state of the service, not a failure -- it reads in neutral
+  // ink; a real failure reads in the AA text token (--status-error is 3.54:1 on white as caption).
+  function noticeClasses(): string[] {
+    return (screen.getByTestId('runtime-log-notice').parentElement?.className ?? '').split(/\s+/);
+  }
+
+  it.each(['CONTAINER_NOT_FOUND', 'SERVICE_NOT_DEPLOYED'])('shows the no-container notice for %s in neutral ink', async (code) => {
+    deployApi.getRuntimeLogs.mockImplementation(() => fail(code));
+    renderUi(<RuntimeLogPanel projectId={PROJECT_ID} serviceId={SERVICE_ID} />);
+    await settle();
+    expect(screen.getByTestId('runtime-log-notice').textContent).toBe(NO_CONTAINER_COPY);
+    expect(noticeClasses()).toContain('text-ink-secondary');
+    expect(noticeClasses().filter((name) => name.startsWith('text-status-'))).toEqual([]);
+  });
+
+  it('keeps the no-container notice neutral when a follow ends with it', async () => {
+    renderUi(<RuntimeLogPanel projectId={PROJECT_ID} serviceId={SERVICE_ID} />);
+    await settle();
+    fireEvent.click(followToggle());
+    act(() => {
+      latest().finish({ ok: false, code: 'CONTAINER_NOT_FOUND', message: 'raw', unauthorized: false });
+    });
+    await settle();
+    expect(screen.getByTestId('runtime-log-notice').textContent).toBe(NO_CONTAINER_COPY);
+    expect(noticeClasses().filter((name) => name.startsWith('text-status-'))).toEqual([]);
+  });
+
+  it('shows a real failure in the AA error text token, never the plain semantic red', async () => {
+    deployApi.getRuntimeLogs.mockImplementation(() => fail('RUNTIME_LOGS_TIMEOUT'));
+    renderUi(<RuntimeLogPanel projectId={PROJECT_ID} serviceId={SERVICE_ID} />);
+    await settle();
+    expect(noticeClasses()).toContain('text-status-error-text');
+    expect(noticeClasses()).not.toContain('text-status-error');
   });
 
   it('aborts on unmount, and 50 open/close cycles leave no live follow or timer', async () => {

@@ -78,4 +78,15 @@ describe('ServiceFacts (13-12 A1)', () => {
 
     expect(screen.getByTestId('service-fact-updated')).toHaveTextContent(/5 min/);
   });
+
+  // 13-20 A4: the row showed the raw ISO string as a caption next to "5 min ago". The visible
+  // text is relative only; the exact instant is carried by <time dateTime> and its tooltip.
+  it('shows Last changed as relative time only, never the raw ISO string', () => {
+    renderUi(<ServiceFacts service={service()} serverName="edge-1" now={NOW} />);
+
+    const row = screen.getByTestId('service-fact-updated');
+    expect(row).toHaveTextContent('Last changed');
+    expect(row.textContent).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+    expect(row.querySelector('time')?.getAttribute('dateTime')).toBe(STAMP);
+  });
 });

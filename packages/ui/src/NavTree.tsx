@@ -55,13 +55,22 @@ export interface NavTreeProps {
 // (D-07).
 // Item height comes from the single --row-height token (D-14: 44px comfortable / 36px compact),
 // not a fixed 44px utility.
+// 13-20: the text color is never part of the base -- cn() is a plain join, so 'text-ink' next to
+// 'text-ink-secondary' lost to CSS source order and the active item kept secondary ink on
+// accent-soft (4.39:1 in light). itemStateClasses() emits exactly one text color per state.
 const ITEM_CLASSES = cn(
-  'flex h-[var(--row-height)] items-center gap-3 rounded-sm px-3 text-callout font-medium text-ink-secondary hover:bg-surface-2 [&>svg]:shrink-0',
+  'flex h-[var(--row-height)] items-center gap-3 rounded-sm px-3 text-callout font-medium hover:bg-surface-2 [&>svg]:shrink-0',
   PRESS_CLASSES,
 );
+const IDLE_ITEM_CLASSES = 'text-ink-secondary';
 const ACTIVE_ITEM_CLASSES = 'bg-accent-soft text-ink';
 // 13-09: the ancestors of the current page read as part of its path -- ink, never a second fill.
 const ACTIVE_PATH_CLASSES = 'text-ink';
+
+function itemStateClasses(current: boolean, onActivePath: boolean): string {
+  if (current) return ACTIVE_ITEM_CLASSES;
+  return onActivePath ? ACTIVE_PATH_CLASSES : IDLE_ITEM_CLASSES;
+}
 // Mobile round 1 adjustment (09-14 checkpoint): the label is visible by default (the <900px
 // bottom-sheet drawer, D-03) and at >=1280px (the expanded sidebar) -- it is hidden only in the
 // 900-1279px icon rail, where the tooltip on the trigger itself carries the label instead. The
@@ -226,7 +235,7 @@ const NavTreeNode = memo(function NavTreeNode({
           className={cn(
             ITEM_CLASSES,
             parent ? 'min-w-0 flex-1' : '',
-            current ? ACTIVE_ITEM_CLASSES : onActivePath ? ACTIVE_PATH_CLASSES : '',
+            itemStateClasses(current, onActivePath),
           )}
         >
           <Icon {...ICON_PROPS} />
@@ -280,7 +289,7 @@ const NavTreeNode = memo(function NavTreeNode({
           <CollapsiblePrimitive.Trigger
             aria-label={item.label}
             data-testid={`nav-tree-item-${item.id}`}
-            className={cn(TRIGGER_CLASSES, onActivePath ? ACTIVE_PATH_CLASSES : '')}
+            className={cn(TRIGGER_CLASSES, itemStateClasses(false, onActivePath))}
           >
             <span className="flex min-w-0 items-center gap-3">
               <Icon {...ICON_PROPS} />

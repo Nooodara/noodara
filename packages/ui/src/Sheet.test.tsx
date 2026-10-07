@@ -240,6 +240,86 @@ describe('Sheet', () => {
     });
   });
 
+  // 13-20 A2: callers drive Sheet controlled, with no DialogPrimitive.Trigger, so Radix's own
+  // restore target (its triggerRef) is null and focus fell to <body> on close. The Sheet must hand
+  // focus back to whatever opened it, however it closes.
+  describe('returns focus to its opener when used controlled without a Trigger', () => {
+    function Harness() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(true);
+            }}
+          >
+            New project
+          </button>
+          <Sheet
+            open={open}
+            onOpenChange={setOpen}
+            title="New project"
+            footer={
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                }}
+              >
+                Cancel
+              </button>
+            }
+          >
+            <input aria-label="Name" />
+          </Sheet>
+        </>
+      );
+    }
+
+    async function openFromKeyboard() {
+      const user = userEvent.setup();
+      renderUi(<Harness />);
+      const opener = screen.getByRole('button', { name: 'New project' });
+      opener.focus();
+      await user.keyboard('{Enter}');
+      await vi.waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      return { user, opener };
+    }
+
+    it('on Escape', async () => {
+      const { user, opener } = await openFromKeyboard();
+      await user.keyboard('{Escape}');
+      await vi.waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(opener).toHaveFocus();
+      });
+    });
+
+    it('on Cancel', async () => {
+      const { user, opener } = await openFromKeyboard();
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+      await vi.waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(opener).toHaveFocus();
+      });
+    });
+
+    it('on an overlay click', async () => {
+      const { user, opener } = await openFromKeyboard();
+      const overlay = document.querySelector<HTMLElement>('[data-sheet-overlay]');
+      expect(overlay).not.toBeNull();
+      if (overlay === null) return;
+      await user.click(overlay);
+      await vi.waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(opener).toHaveFocus();
+      });
+    });
+  });
+
   // D-13 (09-04-PLAN.md Task 2): the drag surface's `drag` prop must follow
   // `useReducedMotionPreference`, not motion/react's own `useReducedMotion` -- disabled entirely
   // when the effective preference is reduced, restricted to the x axis otherwise.

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { LazyMotion, animate as animateMotionValue, m, useMotionValue, type PanInfo } from 'motion/react';
 import { X } from 'lucide-react';
@@ -143,8 +143,31 @@ function decidesToClose(info: PanInfo, panelWidthPx: number): boolean {
   return info.velocity.x > DRAG_CLOSE_VELOCITY_PX_PER_S || info.offset.x > panelWidthPx / 2;
 }
 
+// 13-20 A2: every caller drives Sheet controlled, without a DialogPrimitive.Trigger, so Radix
+// Dialog's own close-focus target (its internal triggerRef) is null and focus fell to <body>.
+// The opener is remembered in a layout effect -- it runs before the portal mounts and before
+// FocusScope's passive effect moves focus into the panel -- and focused again in
+// onCloseAutoFocus, whatever closed the sheet (Escape, Close, a caller's Cancel, overlay click).
+// An opener that is gone by then (e.g. a menu item) leaves Radix's default in place.
+function useReturnFocus(open: boolean): (event: Event) => void {
+  const openerRef = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (!open) return;
+    const active = document.activeElement;
+    openerRef.current = active instanceof HTMLElement && active !== document.body ? active : null;
+  }, [open]);
+  return (event) => {
+    const opener = openerRef.current;
+    openerRef.current = null;
+    if (!opener?.isConnected) return;
+    event.preventDefault();
+    opener.focus();
+  };
+}
+
 export function Sheet({ open, onOpenChange, title, children, footer, 'data-testid': testId }: SheetProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const handleCloseAutoFocus = useReturnFocus(open);
   const { closeSource } = useCloseSource(open, contentRef);
   // D-13 (09-04-PLAN.md Task 2): `useReducedMotionPreference` (not motion/react's own
   // `useReducedMotion`) is the effective preference here -- a forced `html[data-motion]`
@@ -227,12 +250,13 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className={OVERLAY_CLASSES} />
+        <DialogPrimitive.Overlay className={OVERLAY_CLASSES} data-sheet-overlay="" />
         <DialogPrimitive.Content
           ref={contentRef}
           className={cn(PANEL_CLASSES, instantClose && INSTANT_CLOSE_CLASS)}
           data-testid={testId}
           aria-describedby={undefined}
+          onCloseAutoFocus={handleCloseAutoFocus}
         >
           {/* D19: `LazyMotion` scoped to exactly this subtree -- `strict` makes any `motion.*`
               usage anywhere else in the tree throw at runtime instead of silently working. The

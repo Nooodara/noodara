@@ -60,6 +60,16 @@ const TONE_TEXT_CLASSES: Record<Tone, string> = {
   idle: 'text-ink-tertiary',
 };
 
+// 13-20: words and caption lines use the AA-tuned --status-*-text tokens (the Field/RowMenu
+// call-site precedent, WR-C-08): the plain semantic colors are icon/dot colors and fall below
+// 4.5:1 as caption text in light (--status-error on white is 3.54:1).
+const TONE_WORD_CLASSES: Record<Tone, string> = {
+  ok: 'text-status-ok-text',
+  warn: 'text-status-warn-text',
+  error: 'text-status-error-text',
+  idle: 'text-status-idle-text',
+};
+
 // SS4.1's exact five icons (check / triangle / x / minus / clock) -- `not_applicable`/`skipped`
 // share Minus, `pending`/`running` share Clock (distinguished by the pulse, not a sixth icon).
 const STATE_ICON = {
@@ -139,12 +149,19 @@ export function StepRow({ testId, visual, label, word = STATE_WORDS[visual], dur
       data-testid={testId}
       data-severity={visual}
       data-step-row="true"
-      className="relative flex flex-col gap-1.5 border-b border-hairline py-3 last:border-b-0"
+      className="group/step relative flex flex-col gap-1.5 border-b border-hairline py-3 last:border-b-0"
     >
-      {/* Timeline thread (UI-08 D-09, 08-UI-SPEC.md §8.1): a 1px hairline track behind this row's
-          own marker, with an overlaid ink line that fills via `scale-y-*` (transform, never
-          `height`/`top`/`margin`, §9 #11) the instant this step resolves. */}
-      <div aria-hidden="true" className="absolute inset-y-0 left-2 w-px bg-hairline">
+      {/* Timeline thread (UI-08 D-09, 08-UI-SPEC.md §8.1): a 1px hairline track linking this row's
+          marker to the next one, with an overlaid ink line that fills via `scale-y-*` (transform,
+          never `height`/`top`/`margin`, §9 #11) the instant this step resolves. 13-20: it starts
+          4px below this row's icon (py-3 + a 20px headline line: the icon spans 14-30px, so 34px)
+          and stops 4px above the next row's icon (-10px), never crossing either; the last row has
+          no next marker and draws none. */}
+      <div
+        aria-hidden="true"
+        data-step-thread=""
+        className="absolute top-8.5 -bottom-2.5 left-2 w-px bg-hairline group-last/step:hidden"
+      >
         <div
           className={cn(
             'h-full w-full origin-top bg-ink motion-safe:transition-transform motion-safe:duration-[var(--duration-panel)] motion-safe:ease-[var(--ease-out)]',
@@ -169,7 +186,7 @@ export function StepRow({ testId, visual, label, word = STATE_WORDS[visual], dur
             {formatDuration(durationMs)}
           </span>
         )}
-        <span className={cn('text-caption', TONE_TEXT_CLASSES[tone])}>{word}</span>
+        <span className={cn('text-caption', TONE_WORD_CLASSES[tone])}>{word}</span>
       </div>
 
       {children}
@@ -197,7 +214,7 @@ export function DiscoveryStep({ stepId, label, state, checks, sshUser, durationM
       threadFilled={threadFilled}
     >
       {consequenceLines.map((line, index) => (
-        <p key={`${stepId}-consequence-${String(index)}`} className="pl-6 text-caption text-status-warn">
+        <p key={`${stepId}-consequence-${String(index)}`} className="pl-6 text-caption text-status-warn-text">
           {line}
         </p>
       ))}
@@ -222,7 +239,7 @@ export function DiscoveryStep({ stepId, label, state, checks, sshUser, durationM
                       <span data-mono="true" className="text-mono text-ink-secondary">
                         {check.id}
                       </span>
-                      <span className={TONE_TEXT_CLASSES[checkTone]}>{STATE_WORDS[check.state]}</span>
+                      <span className={TONE_WORD_CLASSES[checkTone]}>{STATE_WORDS[check.state]}</span>
                     </div>
                     <span data-mono="true" className="text-mono text-ink-tertiary">
                       {formatCheckDetail(check)}

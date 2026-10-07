@@ -41,6 +41,11 @@ const SERVER_UNREACHABLE_COPY =
 const NETWORK_COPY =
   'Follow stopped because the connection dropped. Check your connection and turn Follow on again.';
 
+// 13-20: a service with no container yet is a state, not a failure -- its notice reads neutral.
+function isFailureNotice(code: DeployApiErrorCode): boolean {
+  return code !== 'CONTAINER_NOT_FOUND' && code !== 'SERVICE_NOT_DEPLOYED';
+}
+
 function failureCopy(code: DeployApiErrorCode): string {
   switch (code) {
     case 'RUNTIME_LOG_FOLLOW_LIMIT_REACHED':
@@ -143,7 +148,7 @@ export function RuntimeLogPanel({ projectId, serviceId }: RuntimeLogPanelProps) 
         return;
       }
       setLoad('ready');
-      setNotice({ text: failureCopy(result.code), error: true });
+      setNotice({ text: failureCopy(result.code), error: isFailureNotice(result.code) });
     });
     return () => {
       disposed = true;
@@ -178,7 +183,7 @@ export function RuntimeLogPanel({ projectId, serviceId }: RuntimeLogPanelProps) 
       flush();
       if (!result.ok && result.unauthorized) void requireSession();
       const text = followEndCopy(result);
-      setNotice(text === null ? null : { text, error: !result.ok });
+      setNotice(text === null ? null : { text, error: !result.ok && isFailureNotice(result.code) });
       followingRef.current = false;
       setFollowing(false);
     });
@@ -242,7 +247,7 @@ export function RuntimeLogPanel({ projectId, serviceId }: RuntimeLogPanelProps) 
           notice === null
             ? 'sr-only'
             : notice.error
-              ? 'px-4 py-2 text-caption text-status-error'
+              ? 'px-4 py-2 text-caption text-status-error-text'
               : 'px-4 py-2 text-caption text-ink-secondary'
         }
       >

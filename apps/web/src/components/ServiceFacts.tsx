@@ -3,7 +3,7 @@
 // 13-12: what a service is and where it runs, as label/value pairs. The status row repeats the
 // derived status with one sentence on what it means (UNKNOWN in particular: the container could
 // not be checked, which is not the same as stopped). Technical values are mono.
-import { formatIso, formatRelativeTime, InsetGroup, LabelValue } from '@noodara/ui';
+import { formatIso, formatRelativeTime, InsetGroup, LabelValue, Tooltip } from '@noodara/ui';
 import type { ServiceView } from '../lib/deploy-api';
 import { serviceStatusPresentation } from '../lib/service-status-copy';
 
@@ -64,12 +64,20 @@ export function ServiceFacts({ service, serverName, now }: ServiceFactsProps) {
           />
         </div>
         <div className="px-4">
-          <LabelValue
-            label="Last changed"
-            value={formatRelativeTime(service.updatedAt, now)}
-            caption={formatIso(service.updatedAt)}
+          {/* 13-20: relative time only, like every timestamp (skill §6); the exact instant is
+              the <time dateTime> and its tooltip, never a raw ISO caption beside the value.
+              Same row geometry and value type as LabelValue, which takes plain text only. */}
+          <div
             data-testid="service-fact-updated"
-          />
+            className="flex items-center justify-between gap-4 py-[var(--row-height-padding-y)]"
+          >
+            <span className="text-caption text-ink-secondary">Last changed</span>
+            <Tooltip content={formatIso(service.updatedAt)}>
+              <time dateTime={service.updatedAt} className="text-callout text-ink">
+                {formatRelativeTime(service.updatedAt, now)}
+              </time>
+            </Tooltip>
+          </div>
         </div>
       </InsetGroup>
     </div>

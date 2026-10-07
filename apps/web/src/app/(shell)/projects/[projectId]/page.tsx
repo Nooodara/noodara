@@ -259,17 +259,22 @@ export default function ProjectPage() {
                     <p className="px-4 py-3 text-callout text-ink-secondary">No services in this environment yet.</p>
                   ) : (
                     services.map((service) => (
-                      <ListRow
-                        key={service.id}
-                        href={serviceHref(project.id, service.id)}
-                        data-testid={`service-row-${service.id}`}
-                        primaryText={<span title={service.name}>{service.name}</span>}
-                        secondary={
-                          <span className="font-mono" title={serviceSource(service)}>
-                            {serviceSource(service)}
-                          </span>
-                        }
-                      />
+                      // 13-20: ListRow's two truncating spans shrink in proportion to their
+                      // content, so a very long source squeezed the name to a letter. The row is a
+                      // size container and the source is capped at 55% of it (cqw), which leaves
+                      // the name its room; both truncate and keep their full text in a title.
+                      <div key={service.id} className="@container">
+                        <ListRow
+                          href={serviceHref(project.id, service.id)}
+                          data-testid={`service-row-${service.id}`}
+                          primaryText={<span title={service.name}>{service.name}</span>}
+                          secondary={
+                            <span className="block max-w-[55cqw] truncate font-mono" title={serviceSource(service)}>
+                              {serviceSource(service)}
+                            </span>
+                          }
+                        />
+                      </div>
                     ))
                   )}
                 </InsetGroup>
