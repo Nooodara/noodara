@@ -37,3 +37,14 @@ export async function getDb(): Promise<Database> {
   }
   return cached.db;
 }
+
+/**
+ * 14-20: ends the default client's pool on shutdown. No-op if `getDb()` never ran; the cache is
+ * cleared first so a repeated call cannot end the pool twice. A close error propagates to the
+ * shutdown sequence, which logs it by class only.
+ */
+export async function closeDb(): Promise<void> {
+  const current = cached;
+  cached = undefined;
+  if (current) await current.pool.end();
+}

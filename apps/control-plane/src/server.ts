@@ -6,7 +6,7 @@ import './env.js';
 import { auth } from './auth/auth.js';
 import { createApiShutdown } from './boot/api-shutdown.js';
 import { bootstrapAdmin } from './boot/bootstrap-admin.js';
-import { getDb } from './db/client.js';
+import { closeDb, getDb } from './db/client.js';
 import { env } from './env.js';
 import { buildApp } from './app.js';
 
@@ -17,7 +17,7 @@ const app = buildApp();
 const SHUTDOWN_TIMEOUT_MS = 20_000;
 const shutdown = createApiShutdown({
   close: () => app.close(),
-  afterClose: [],
+  afterClose: [closeDb],
   timeoutMs: SHUTDOWN_TIMEOUT_MS,
   logger: app.log,
   exit: (code) => {
