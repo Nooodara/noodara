@@ -139,14 +139,6 @@ export const SCOPE_EXCLUSIONS = [
     showOnLanding: true,
   },
   {
-    id: 'deploy-services',
-    statement: 'Noodara does not build or deploy services from the panel in this release.',
-    // Removed once the future "Your first deploy" docs page ships -- see tests/unit/site/landing-claims.test.ts.
-    projectAnchor: 'Projects, Environments, Services, deployments Docker y Git',
-    excludedTerms: ['deploy', 'deploys', 'deployment', 'deployments'],
-    showOnLanding: true,
-  },
-  {
     id: 'observability-ai',
     statement: 'Noodara does not collect metrics or offer AI features in this release.',
     projectAnchor: 'Observabilidad, Infrastructure Graph, AI read-only',

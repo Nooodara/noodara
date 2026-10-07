@@ -59,7 +59,7 @@ describe('content/docs meta.json tree (D-08 four-group sidebar order)', () => {
   it('getting-started/meta.json has the D-08 title and page order', () => {
     const meta = readMetaJson('getting-started', 'meta.json');
     expect(meta.title).toBe('Getting started');
-    expect(meta.pages).toEqual(['install', 'first-login', 'first-server']);
+    expect(meta.pages).toEqual(['install', 'first-login', 'first-server', 'first-deploy']);
   });
 
   it('concepts/meta.json has the D-08 title and page order', () => {

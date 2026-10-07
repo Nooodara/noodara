@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-07T00:15:18.139Z",
+  "updatedAt": "2026-10-07T00:21:01.229Z",
   "cursor": {
     "phase": "13",
     "task": "13-17"
@@ -2879,7 +2879,8 @@
             "tests/e2e/dod-hardening.spec.ts",
             "tests/e2e/projects-dod.spec.ts",
             "tests/e2e/keyboard-motion.spec.ts",
-            "docs/ui-review/"
+            "docs/ui-review/",
+            "tests/e2e/brand.spec.ts"
           ],
           "wave": 7,
           "dependsOn": [
@@ -2926,6 +2927,11 @@
               "id": "H2",
               "text": "Long content stress: a project name of 200 characters, a service with a 300-character repo URL, and a 10,000-line build log render without horizontal page scroll or overlapping at 375 px, in both themes.",
               "proof": "e2e-dod"
+            },
+            {
+              "id": "A5",
+              "text": "brand.spec.ts reflects the Projects nav entry from 13-09 (4 sidebar links) and the full pnpm test:e2e run is green",
+              "proof": "e2e-dod"
             }
           ],
           "waives": [
@@ -2939,13 +2945,14 @@
             "apps/site/content/docs/getting-started/first-deploy.mdx",
             "apps/site/content/docs/getting-started/meta.json",
             "apps/site/src/content/scope.ts",
-            "apps/site/src/content/scope.test.ts"
+            "apps/site/src/content/scope.test.ts",
+            "apps/site/src/lib/docs-tree.test.ts"
           ],
           "wave": 8,
           "dependsOn": [
             "13-16"
           ],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",

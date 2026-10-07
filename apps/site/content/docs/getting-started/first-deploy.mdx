@@ -1,0 +1,68 @@
+---
+title: Your first deploy
+description: Create a project, environment, and service, then deploy a containerized app.
+---
+
+This guide walks the real flow, start to finish: create a project, set up an environment, define a
+service, deploy it from a Git repo or image, and watch it run.
+
+## 1. Create a project
+
+From the projects list, open **New project**. It asks for a name — the way the project appears in
+the panel. Choose **Create project** to register it.
+
+A project groups related services. Every service runs in an environment (like staging or
+production); multiple services can share the same environment on the same server.
+
+## 2. Add an environment
+
+From the project view, open **New environment**. It asks for:
+
+- **Name** — how the environment appears in the project (e.g., staging, production).
+- **Server** — the server where this environment runs.
+
+Choose **Create environment** to register it.
+
+## 3. Define a service
+
+From the environment card, open **New service**. It asks for:
+
+- **Name** — how the service appears in the panel.
+- **Source** — where the app comes from: **Git** (clone a repo), **Dockerfile** (supply a
+  path to build), or **Image** (run a pre-built image).
+- **Container port** — the port your app listens on inside the container.
+- **Published port** — optional; the port exposed on the server. Empty keeps it private.
+
+Choose **Create service** to register it. The service is not yet running.
+
+## 4. Deploy
+
+Once a service is defined, the **Deploy** button appears in its toolbar. Click it to start a
+deployment. Noodara runs it step by step: if the source is Git or Dockerfile, it clones (or
+pulls), builds, then starts the container. Image sources skip the build step and go straight to
+start. Once started, the app is verified as healthy.
+
+Every deployment is logged — see **Logs** next to **Deploy** to read the build output and any
+errors.
+
+## 5. Monitor and redeploy
+
+The service view shows its current status and the **Deployments** history below: every deploy,
+when it ran, what triggered it, and how long it took. Click a deployment row to open its full
+log in the panel on the right.
+
+To deploy again with the latest code or image, click **Deploy** in the service toolbar.
+
+To stop a deployment in progress, click **Cancel deploy**. The cancel only works while the
+container is starting; once running, no cancel is shown.
+
+## Limits in this release
+
+- No environment variables or build arguments: put all configuration into your image at build
+  time or at container startup.
+- Redeployment stops the existing container and starts a new one. This causes brief downtime.
+- Noodara does not automatically restart failed containers, run healthchecks, or roll back
+  deployments.
+
+See [Troubleshooting](/docs/operate/troubleshooting) or the full [error codes
+reference](/docs/reference/error-codes) if something goes wrong.
