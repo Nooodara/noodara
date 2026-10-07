@@ -26,9 +26,15 @@ importers:
       '@noodara/config':
         specifier: workspace:*
         version: link:packages/config
+      '@noodara/docker':
+        specifier: workspace:*
+        version: link:packages/docker
       '@noodara/domain':
         specifier: workspace:*
         version: link:packages/domain
+      '@noodara/git':
+        specifier: workspace:*
+        version: link:packages/git
       '@noodara/ssh':
         specifier: workspace:*
         version: link:packages/ssh

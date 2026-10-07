@@ -36,10 +36,7 @@ import {
   type ValidationResult,
 } from '@noodara/domain/validators';
 import { createSsh2Adapter, type SshDeploySession, type StreamChunk } from '@noodara/ssh';
-// Relative source imports: the root package.json (outside this task's scope) does not declare
-// @noodara/git / @noodara/docker, so a bare specifier would not typecheck under
-// tests/integration/deploy-engine/tsconfig.json. Vitest resolves the same source files either way.
-import { cloneRepository, type GitCredential } from '../../../packages/git/src/index.js';
+import { cloneRepository, type GitCredential } from '@noodara/git';
 import {
   buildImage,
   createContainer,
@@ -56,7 +53,7 @@ import {
   type DockerStepContext,
   type StepLimits,
   type StepResult,
-} from '../../../packages/docker/src/index.js';
+} from '@noodara/docker';
 import {
   DEPLOY_ENGINE_UBUNTU_VERSIONS,
   preloadedRefFor,
