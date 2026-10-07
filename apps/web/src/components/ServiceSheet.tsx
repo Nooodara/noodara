@@ -40,6 +40,8 @@ export interface ServiceSheetProps {
   /** Present: edit this service. Absent: create a new one. */
   readonly service?: ServiceView;
   readonly onSaved?: (service: ServiceView, info: ServiceSavedInfo) => void;
+  /** Create mode only, after the server accepted the service (13-21: the page navigates to it). */
+  readonly onCreated?: (service: ServiceView) => void;
 }
 
 export const V02_LIMIT_COPY =
@@ -51,7 +53,7 @@ export const SERVICE_SAVE_FAILED_COPY = "Couldn't save the service. Check your c
 export const CREATE_ACCESS_COPY =
   'Private repository or registry? Create the service first, then add a token, deploy key or registry password from its settings.';
 
-export function ServiceSheet({ open, onOpenChange, projectId, environmentId, servers, service, onSaved }: ServiceSheetProps) {
+export function ServiceSheet({ open, onOpenChange, projectId, environmentId, servers, service, onSaved, onCreated }: ServiceSheetProps) {
   const formId = useId();
   const editing = service !== undefined;
   const pickable = eligibleServers(servers);
@@ -82,6 +84,7 @@ export function ServiceSheet({ open, onOpenChange, projectId, environmentId, ser
 
   function finish(saved: ServiceView, info: ServiceSavedInfo): void {
     onSaved?.(saved, info);
+    if (!editing) onCreated?.(saved);
     onOpenChange(false);
   }
 

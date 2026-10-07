@@ -18,6 +18,21 @@ export interface ProjectSheetProps {
   readonly onCreated?: (project: ProjectView) => void;
 }
 
+/**
+ * 13-21: after navigating to a new resource the sheet's trigger is gone, so focus would fall to
+ * <body>. Wait (briefly) for the new page's h1 and focus it.
+ */
+export function focusNewPageHeading(title: string, attemptsLeft = 40): void {
+  if (typeof document === 'undefined') return;
+  const heading = Array.from(document.querySelectorAll('h1')).find((h) => h.textContent === title);
+  if (heading) {
+    heading.setAttribute('tabindex', '-1');
+    heading.focus();
+    return;
+  }
+  if (attemptsLeft > 0) setTimeout(() => { focusNewPageHeading(title, attemptsLeft - 1); }, 50);
+}
+
 export const PROJECT_NAME_INVALID_COPY = `Use 1-${String(MAX_PROJECT_NAME_LENGTH)} characters, without control characters.`;
 export const PROJECT_NAME_TAKEN_COPY = 'A project with this name already exists. Choose another name.';
 export const PROJECT_CREATE_FAILED_COPY = "Couldn't create the project. Check your connection and try again.";

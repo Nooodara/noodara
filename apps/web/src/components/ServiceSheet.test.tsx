@@ -83,6 +83,7 @@ function deferred<T>() {
 
 function renderSheet(options: { servers?: ServerView[]; service?: ServiceView } = {}) {
   const onSaved = vi.fn();
+  const onCreated = vi.fn();
   const onOpenChange = vi.fn();
   renderUi(
     <ServiceSheet
@@ -93,9 +94,10 @@ function renderSheet(options: { servers?: ServerView[]; service?: ServiceView } 
       servers={options.servers ?? SERVERS}
       {...(options.service === undefined ? {} : { service: options.service })}
       onSaved={onSaved}
+      onCreated={onCreated}
     />,
   );
-  return { onSaved, onOpenChange, user: userEvent.setup() };
+  return { onSaved, onCreated, onOpenChange, user: userEvent.setup() };
 }
 
 async function fillCreate(user: ReturnType<typeof userEvent.setup>, repositoryUrl = 'https://github.com/acme/web.git') {
@@ -281,6 +283,44 @@ describe('ServiceSheet: create (A1, A4, H2, H3)', () => {
     renderSheet();
     expect(screen.getByTestId('service-sheet-access-hint')).toBeInTheDocument();
     expect(document.querySelector('input[type="password"]')).toBeNull();
+  });
+});
+
+describe('ServiceSheet: onCreated (13-21 A1, A2)', () => {
+  it('calls onCreated with the new service after a successful create', async () => {
+    api.createService.mockResolvedValue({ ok: true, data: SERVICE });
+    const { user, onCreated } = renderSheet();
+    await fillCreate(user);
+    await user.click(screen.getByTestId('service-sheet-submit'));
+    await waitFor(() => {
+      expect(onCreated).toHaveBeenCalledWith(SERVICE);
+    });
+  });
+
+  it('does not call onCreated when the create fails', async () => {
+    api.createService.mockResolvedValue({ ok: false, code: 'NETWORK_ERROR', message: 'x', unauthorized: false });
+    const { user, onCreated, onOpenChange } = renderSheet();
+    await fillCreate(user);
+    await user.click(screen.getByTestId('service-sheet-submit'));
+    expect(await screen.findByText(SERVICE_SAVE_FAILED_COPY)).toBeInTheDocument();
+    expect(onCreated).not.toHaveBeenCalled();
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    expect(screen.getByTestId('service-sheet-name')).toHaveValue('web');
+  });
+
+  it('does not call onCreated when editing', async () => {
+    api.updateService.mockResolvedValue({
+      ok: true,
+      data: { service: { ...SERVICE, name: 'web2' }, requiresRedeploy: false, changedFields: ['name'] },
+    });
+    const { user, onCreated, onSaved } = renderSheet({ service: SERVICE });
+    await user.clear(screen.getByTestId('service-sheet-name'));
+    await user.type(screen.getByTestId('service-sheet-name'), 'web2');
+    await user.click(screen.getByTestId('service-sheet-submit'));
+    await waitFor(() => {
+      expect(onSaved).toHaveBeenCalled();
+    });
+    expect(onCreated).not.toHaveBeenCalled();
   });
 });
 

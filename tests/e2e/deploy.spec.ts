@@ -131,7 +131,7 @@ async function createProjectInUi(page: Page, name: string): Promise<string> {
   await page.getByTestId('project-sheet-name').fill(name);
   await page.getByTestId('project-sheet-submit').click();
   await expect(page.getByTestId('project-sheet')).toBeHidden();
-  await page.getByTestId('projects-list').getByRole('link', { name }).first().click();
+  // 13-21: creating navigates to the new project.
   await expect(page).toHaveURL(/\/projects\/[0-9a-f-]{36}$/);
   const id = new URL(page.url()).pathname.split('/').pop() ?? '';
   created.projects.push({ id, name });
@@ -175,9 +175,10 @@ async function createServiceInUi(
   await page.getByTestId('service-sheet-published-port').fill(String(input.publishedPort));
   await page.getByTestId('service-sheet-submit').click();
   await expect(sheet).toBeHidden();
-  const row = page.locator('[data-testid^="service-row-"]').filter({ hasText: input.name });
-  await expect(row).toBeVisible();
-  return ((await row.getAttribute('data-testid')) ?? '').replace('service-row-', '');
+  // 13-21: creating navigates to the new service.
+  await expect(page).toHaveURL(/\/projects\/[0-9a-f-]{36}\/services\/[0-9a-f-]{36}$/);
+  await expect(page.getByTestId('service-toolbar')).toBeVisible();
+  return new URL(page.url()).pathname.split('/').pop() ?? '';
 }
 
 async function openService(page: Page, projectId: string, serviceId: string): Promise<void> {

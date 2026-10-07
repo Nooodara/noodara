@@ -5,6 +5,8 @@ import ProjectsPage from './page';
 import { notifyProjectsChanged } from '../../../components/ProjectNav';
 import { ShellContext, type ShellContextValue } from '../../../lib/shell-context';
 
+const nav = vi.hoisted(() => ({ push: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: nav.push }) }));
 const deployApi = vi.hoisted(() => ({ listProjects: vi.fn(), createProject: vi.fn() }));
 
 vi.mock('../../../lib/deploy-api', () => ({
@@ -52,6 +54,7 @@ function renderPage() {
 beforeEach(() => {
   deployApi.listProjects.mockReset();
   deployApi.createProject.mockReset();
+  nav.push.mockReset();
 });
 
 describe('Projects page (13-09 A2, A3)', () => {
@@ -142,5 +145,32 @@ describe('Projects page hardening (13-09 H1)', () => {
     renderPage();
     await screen.findByRole('link', { name: /Alpha/ });
     expect(screen.queryByText('Evil')).not.toBeInTheDocument();
+  });
+});
+
+describe('Projects page: navigate after create (13-21 A1-A3)', () => {
+  async function fillAndSubmit(name: string) {
+    deployApi.listProjects.mockReturnValue(listing([]));
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(within(await screen.findByTestId('projects-empty')).getByRole('button', { name: 'New project' }));
+    await user.type(await screen.findByTestId('project-sheet-name'), name);
+    await user.click(screen.getByTestId('project-sheet-submit'));
+  }
+
+  it('navigates to the new project only after the create succeeds', async () => {
+    deployApi.createProject.mockResolvedValue({ ok: true, data: project('11111111-1111-4111-8111-111111111111', 'Shop') });
+    await fillAndSubmit('Shop');
+    await vi.waitFor(() => {
+      expect(nav.push).toHaveBeenCalledWith('/projects/11111111-1111-4111-8111-111111111111');
+    });
+  });
+
+  it('a failed create keeps the sheet open with the input and does not navigate', async () => {
+    deployApi.createProject.mockResolvedValue({ ok: false, code: 'NETWORK_ERROR', message: 'x', unauthorized: false });
+    await fillAndSubmit('Shop');
+    expect(await screen.findByTestId('project-sheet-error')).toBeInTheDocument();
+    expect(screen.getByTestId('project-sheet-name')).toHaveValue('Shop');
+    expect(nav.push).not.toHaveBeenCalled();
   });
 });

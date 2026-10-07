@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderUi, screen, userEvent, waitFor } from '@noodara/ui/testing';
-import { ProjectSheet, PROJECT_CREATE_FAILED_COPY, PROJECT_NAME_TAKEN_COPY } from './ProjectSheet';
+import { focusNewPageHeading, ProjectSheet, PROJECT_CREATE_FAILED_COPY, PROJECT_NAME_TAKEN_COPY } from './ProjectSheet';
 import { subscribeProjectsChanged } from './ProjectNav';
 
 const createProject = vi.hoisted(() => vi.fn());
@@ -141,5 +141,18 @@ describe('ProjectSheet hardening (13-09 H1)', () => {
     await user.type(screen.getByTestId('project-sheet-name'), '<img src=x onerror=alert(1)>');
     expect(screen.getByTestId('project-sheet').querySelector('img')).toBeNull();
     expect(screen.getByTestId('project-sheet-slug')).toHaveTextContent('Slug img-src-x-onerror-alert-1');
+  });
+});
+
+describe('focusNewPageHeading (13-21 A3)', () => {
+  it('focuses the heading with the new resource name once it renders', async () => {
+    focusNewPageHeading('Shop API');
+    const h1 = document.createElement('h1');
+    h1.textContent = 'Shop API';
+    document.body.append(h1);
+    await waitFor(() => {
+      expect(document.activeElement).toBe(h1);
+    });
+    h1.remove();
   });
 });

@@ -3,10 +3,11 @@
 // 13-09: the projects list. Active projects first; archived ones sit in their own group that says
 // they reject deploys. Creating happens in ProjectSheet over this view. The list refetches on
 // stream (re)open and whenever a project changes in this tab (the projects-changed bus).
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Banner, Button, EmptyState, InsetGroup, ListRow, SkeletonRow } from '@noodara/ui';
 import { Toolbar } from '../../../components/Toolbar';
-import { ProjectSheet } from '../../../components/ProjectSheet';
+import { focusNewPageHeading, ProjectSheet } from '../../../components/ProjectSheet';
 import { isRoutableId, projectHref, subscribeProjectsChanged } from '../../../components/ProjectNav';
 import { listProjects, type ProjectView } from '../../../lib/deploy-api';
 import { requireSession } from '../../../lib/require-session';
@@ -45,6 +46,7 @@ function ProjectRow({ project }: { readonly project: ProjectView }) {
 
 export default function ProjectsPage() {
   const { registerResync } = useShellContext();
+  const router = useRouter();
   const [state, setState] = useState<PageState>({ kind: 'loading' });
   const [sheetOpen, setSheetOpen] = useState(false);
   const latestRequest = useRef(0);
@@ -142,7 +144,14 @@ export default function ProjectsPage() {
           </section>
         ) : null}
       </div>
-      <ProjectSheet open={sheetOpen} onOpenChange={setSheetOpen} />
+      <ProjectSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        onCreated={(created) => {
+          router.push(projectHref(created.id));
+          focusNewPageHeading(created.name);
+        }}
+      />
     </>
   );
 }

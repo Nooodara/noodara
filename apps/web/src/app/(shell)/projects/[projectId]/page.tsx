@@ -20,6 +20,7 @@ import {
   subscribeProjectsChanged,
 } from '../../../../components/ProjectNav';
 import { ProjectToolbar } from '../../../../components/ProjectToolbar';
+import { focusNewPageHeading } from '../../../../components/ProjectSheet';
 import { ServiceSheet } from '../../../../components/ServiceSheet';
 import { Toolbar } from '../../../../components/Toolbar';
 import { apiGet, type ServerView } from '../../../../lib/api-client';
@@ -300,6 +301,10 @@ export default function ProjectPage() {
           onSaved={() => {
             fetchProject();
             notifyProjectsChanged();
+          }}
+          onCreated={(created) => {
+            router.push(serviceHref(project.id, created.id));
+            focusNewPageHeading(created.name);
           }}
         />
       ) : null}

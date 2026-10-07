@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-07T01:45:44.548Z",
+  "updatedAt": "2026-10-07T01:52:44.300Z",
   "cursor": {
     "phase": "13",
     "task": "13-19"
@@ -3054,10 +3054,6 @@
         {
           "id": "13-21",
           "title": "Navigate to the new project or service after create",
-          "status": "pending",
-          "wave": 8,
-          "dependsOn": [],
-          "tier": "standard",
           "scope": [
             "apps/web/src/app/(shell)/projects/page.tsx",
             "apps/web/src/app/(shell)/projects/page.test.tsx",
@@ -3070,6 +3066,9 @@
             "tests/e2e/deploy.spec.ts",
             "tests/e2e/projects-dod.spec.ts"
           ],
+          "wave": 8,
+          "dependsOn": [],
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
@@ -3108,7 +3107,8 @@
             "auth-secrets/password-hashing",
             "randomness/crypto-random",
             "persistence"
-          ]
+          ],
+          "tier": "standard"
         },
         {
           "id": "13-19",
