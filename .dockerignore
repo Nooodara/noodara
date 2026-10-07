@@ -24,6 +24,8 @@ test-results
 blob-report
 .env
 .env.*
+**/.env
+**/.env.*
 .planning
 .claude
 docs

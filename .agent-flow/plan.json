@@ -3487,7 +3487,7 @@
             "docs/adr/0003-runtime-entrypoints-and-module-resolution.md",
             ".dockerignore"
           ],
-          "wave": 1,
+          "wave": 2,
           "dependsOn": [
             "14-18"
           ],
@@ -3950,7 +3950,7 @@
             "tests/integration/tsconfig.json",
             "vitest.integration.config.ts"
           ],
-          "wave": 2,
+          "wave": 3,
           "dependsOn": [
             "14-11"
           ],
@@ -4322,6 +4322,11 @@
             {
               "id": "A4",
               "text": "packages/domain keeps \u226595% statement/branch coverage on the moved schemas and stays free of I/O imports",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "Input validation is unchanged by the move: the existing route schema tests (project-schemas, service-schemas, deployment-schemas) pass without weakened assertions, and malformed, unknown-field and oversized bodies are still rejected with the same status codes",
               "proof": "test"
             }
           ],

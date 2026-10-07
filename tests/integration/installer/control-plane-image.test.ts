@@ -11,6 +11,7 @@
 // this same host-gateway mechanism.
 import { randomBytes, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
@@ -31,6 +32,32 @@ const DOCKERFILE_NAME = 'apps/control-plane/Dockerfile';
 const IMAGE_TAG = 'noodara-control-plane:test-06-03';
 const VERSIONED_IMAGE_TAG = 'noodara-control-plane:test-06-03-versioned';
 const VERSIONED_TAG_VALUE = '9.9.9-test';
+
+// 14-05 (H2): the release budget for the control-plane image, checked against the image this run
+// actually built -- never a recorded measurement. Decimal megabytes, matching how `docker images`
+// prints sizes, so the threshold reads the same as the CLI an operator looks at.
+const MAX_IMAGE_SIZE_MB = 600;
+const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1000 * 1000;
+
+// 14-05 (H1): packages that only exist for building, testing or linting. None may reach the
+// runner stage's node_modules (matched against `/app/node_modules/.pnpm/<name>@<version>` dirs).
+const FORBIDDEN_RUNTIME_PACKAGES = [
+  'typescript',
+  'tsx',
+  'turbo',
+  'vitest',
+  'drizzle-kit',
+  'esbuild',
+  'eslint',
+  'prettier',
+  'testcontainers',
+  '@playwright+test',
+  '@types+node',
+  '@noodara+config',
+];
+
+// Build toolchain binaries the runner must not carry (argon2 ships prebuilt bindings).
+const FORBIDDEN_TOOLCHAIN_BINARIES = ['pnpm', 'gcc', 'cc', 'g++', 'make', 'python3', 'node-gyp'];
 
 const HOST_GATEWAY_EXTRA_HOST = { host: 'host.docker.internal', ipAddress: 'host-gateway' };
 
@@ -161,6 +188,51 @@ function removeImage(tag: string): void {
   spawnSync('docker', ['rmi', '-f', tag], { stdio: 'ignore', timeout: 30_000 });
 }
 
+function dockerOrThrow(args: string[], timeoutMs = 60_000): string {
+  const result = spawnSync('docker', args, { encoding: 'utf8', timeout: timeoutMs });
+  if (result.status !== 0) {
+    throw new Error(`docker ${args[0] ?? ''} failed (${String(result.status)}): ${result.stderr}`);
+  }
+  return result.stdout;
+}
+
+/** Runs a POSIX shell script inside the image (entrypoint overridden, removed on exit) and
+ *  returns stdout. Labelled so assertNoStrayTestContainers() would flag a leaked container. */
+function shInImage(imageTag: string, script: string, options: { asRoot?: boolean } = {}): string {
+  const user = options.asRoot === true ? ['--user', '0'] : [];
+  return dockerOrThrow(
+    ['run', '--rm', '--label', 'noodara.test=true', ...user, '--entrypoint', 'sh', imageTag, '-c', script],
+    120_000,
+  );
+}
+
+interface ImageFacts {
+  readonly sizeBytes: number;
+  readonly architecture: string;
+  readonly user: string;
+}
+
+function inspectImage(imageTag: string): ImageFacts {
+  const raw = dockerOrThrow([
+    'image',
+    'inspect',
+    '--format',
+    '{{json .Size}} {{json .Architecture}} {{json .Config.User}}',
+    imageTag,
+  ]).trim();
+  const [size, architecture, user] = raw.split(' ').map((field) => JSON.parse(field) as unknown);
+  return { sizeBytes: Number(size), architecture: String(architecture), user: String(user) };
+}
+
+/** Docker's architecture names (`amd64`, `arm64`) mapped onto Node's `process.arch`. */
+function nodeArchFor(dockerArchitecture: string): string {
+  return dockerArchitecture === 'amd64' ? 'x64' : dockerArchitecture;
+}
+
+function formatMb(bytes: number): string {
+  return `${(bytes / 1000 / 1000).toFixed(1)} MB`;
+}
+
 describe('control-plane production image (06-03-PLAN.md)', () => {
   beforeAll(async () => {
     await GenericContainer.fromDockerfile(REPO_ROOT, DOCKERFILE_NAME).build(IMAGE_TAG, { deleteOnExit: false });
@@ -188,6 +260,88 @@ describe('control-plane production image (06-03-PLAN.md)', () => {
     },
     120_000,
   );
+
+  it(
+    `is smaller than ${String(MAX_IMAGE_SIZE_MB)} MB on the architecture this run built (14-05)`,
+    () => {
+      // With Docker's containerd image store, `.Size` reports the compressed content size until
+      // the image is unpacked for a container; running one first makes it the unpacked size.
+      shInImage(IMAGE_TAG, 'true');
+      const facts = inspectImage(IMAGE_TAG);
+      const measured = `${IMAGE_TAG} (${facts.architecture}) measured ${formatMb(facts.sizeBytes)} ` +
+        `(${String(facts.sizeBytes)} bytes), limit ${formatMb(MAX_IMAGE_SIZE_BYTES)}`;
+      // Recorded on every run, pass or fail, so CI logs carry the size per architecture.
+      console.info(`[control-plane-image] ${measured}`);
+      expect(facts.sizeBytes, measured).toBeGreaterThan(0);
+      expect(facts.sizeBytes < MAX_IMAGE_SIZE_BYTES, measured).toBe(true);
+    },
+    60_000,
+  );
+
+  it(
+    'loads the argon2 native binding on the image architecture (14-05)',
+    () => {
+      const facts = inspectImage(IMAGE_TAG);
+      const out = shInImage(
+        IMAGE_TAG,
+        `node -e "import('argon2').then(async (a) => { const h = await a.hash('probe'); ` +
+          `process.stdout.write(process.arch + ' ' + String(await a.verify(h, 'probe'))); })"`,
+      ).trim();
+      expect(out).toBe(`${nodeArchFor(facts.architecture)} true`);
+    },
+    120_000,
+  );
+
+  it(
+    'runner ships no devDependencies, toolchain, pnpm store, source, source maps or env files (14-05)',
+    () => {
+      expect(inspectImage(IMAGE_TAG).user).toBe('noodara');
+
+      const pnpmDirs = shInImage(IMAGE_TAG, 'ls -1 /app/node_modules/.pnpm').split('\n');
+      const devPackages = pnpmDirs.filter((dir) =>
+        FORBIDDEN_RUNTIME_PACKAGES.some((name) => dir.startsWith(`${name}@`)),
+      );
+      expect(devPackages).toEqual([]);
+
+      const toolchain = shInImage(
+        IMAGE_TAG,
+        `for b in ${FORBIDDEN_TOOLCHAIN_BINARIES.join(' ')}; do command -v "$b" || true; done`,
+      ).trim();
+      expect(toolchain).toBe('');
+
+      // Any file the build left behind that has no business in a runtime image: a pnpm content
+      // store, env/secret files, a .git dir, source maps, TypeScript sources (declarations are
+      // fine) or the app's src/ tree. Scanned as root so no directory (e.g. /root, where a pnpm
+      // store would land) is skipped for lack of permission.
+      const leftovers = shInImage(
+        IMAGE_TAG,
+        [
+          'find / -xdev \\( -path /proc -o -path /sys \\) -prune -o',
+          '\\( -name .pnpm-store -o -path "*/pnpm/store" -o -name ".env" -o -name ".env.*" -o -name .git \\) -print;',
+          'find /app \\( -name "*.map" -o -name "*.tsbuildinfo" \\) -print;',
+          'find /app -path /app/node_modules -prune -o -name "*.ts" ! -name "*.d.ts" -print;',
+          'ls -d /app/apps/control-plane/src 2>/dev/null || true',
+        ].join(' '),
+        { asRoot: true },
+      ).trim();
+      expect(leftovers).toBe('');
+
+      const history = dockerOrThrow(['history', '--no-trunc', '--format', '{{.CreatedBy}}', IMAGE_TAG]);
+      expect(history).not.toMatch(/\.env\b/);
+    },
+    300_000,
+  );
+
+  it('.dockerignore keeps env files, .git and host node_modules out of the build context (14-05)', () => {
+    const lines = readFileSync(path.join(REPO_ROOT, '.dockerignore'), 'utf8')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line !== '' && !line.startsWith('#'));
+    for (const required of ['.git', 'node_modules', '**/node_modules', '.env', '.env.*', '**/.env', '**/.env.*']) {
+      expect(lines, `.dockerignore must exclude ${required}`).toContain(required);
+    }
+    expect(lines.filter((line) => line.startsWith('!'))).toEqual([]);
+  });
 
   it(
     'node dist/db/migrate.js applies pending migrations, then reports 0 applied on a second run',

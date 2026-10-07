@@ -4,7 +4,8 @@
 # (`node dist/server.js`, the default CMD below), `worker` (`command: ["node", "dist/worker.js"]`),
 # a one-shot `migrate` job (`command: ["node", "dist/db/migrate.js"]`) and, interactively, as the
 # `noodara` operator CLI (`docker compose exec api node dist/cli/index.js ...`). No tsx, no source
-# tree ships in the runner stage -- only compiled `dist/` output plus its node_modules tree.
+# tree ships in the runner stage -- only compiled `dist/` output plus a production-only
+# node_modules tree (14-05, ADR 0003 "Runtime image layout").
 #
 # Build context is the REPO ROOT (not this directory): `docker build --file
 # apps/control-plane/Dockerfile --tag <tag> .` from the repo root.
@@ -55,15 +56,43 @@ RUN if [ -n "$NOODARA_IMAGE_VERSION" ]; then \
     fi
 RUN pnpm exec turbo run build --filter=@noodara/control-plane
 
-# ---- runner: non-root, compiled output only ----
+# ---- prod-deps: production-only node_modules in the same pnpm layout the builder used ----
+# 14-05 / ADR 0003. Equivalent of `pnpm deploy --prod` that keeps pnpm's isolated symlink layout
+# (workspace deps linked as ../../packages/<name>), so resolution matches what tsc compiled
+# against; `pnpm deploy` in pnpm 10 would need inject-workspace-packages workspace-wide.
+# - --filter-prod "...": control-plane and its runtime workspace deps only, so @noodara/config's
+#   lint stack (typescript-eslint, typescript) never installs.
+# - --no-optional: drops better-auth's optional peers that the lockfile resolved from elsewhere in
+#   the workspace (next, vitest, drizzle-kit, react) and native accelerators with JS fallbacks
+#   (msgpackr-extract, cpu-features).
+# - Third-party *.map and *.tsbuildinfo files are deleted: never read at runtime.
+# argon2's install script loads its prebuilt binding for this image's architecture; the pnpm store
+# and corepack cache stay behind in this stage.
+FROM node:22-slim AS prod-deps
+RUN corepack enable
+WORKDIR /app
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --frozen-lockfile --prod --no-optional --filter-prod "@noodara/control-plane..." \
+ && find node_modules/.pnpm -type f \( -name '*.map' -o -name '*.tsbuildinfo' \) -delete
+
+# ---- runner: non-root, compiled output plus production node_modules only ----
 FROM node:22-slim AS runner
 WORKDIR /app
 RUN groupadd --system noodara && useradd --system --gid noodara --home-dir /app noodara
-# The WHOLE pruned workspace is copied (not just apps/control-plane/dist) deliberately: pnpm's
-# isolated node_modules is a symlink tree rooted at /app/node_modules/.pnpm, so copying only
-# apps/control-plane/dist would leave every workspace/dependency symlink dangling and the
-# runtime `require`/import resolution broken. A future size optimisation must not undo this.
-COPY --from=builder --chown=noodara:noodara /app /app
+# Layout (ADR 0003): /app/node_modules (prod-only .pnpm tree), each workspace package's
+# package.json + node_modules symlinks from prod-deps, and only the compiled `dist/` of
+# apps/control-plane and the workspace packages it imports from the builder. The workspace
+# symlinks resolve because packages/*/dist land at the same paths the builder compiled them in.
+COPY --from=prod-deps --chown=noodara:noodara /app /app
+COPY --from=builder --chown=noodara:noodara /app/packages/domain/dist /app/packages/domain/dist
+COPY --from=builder --chown=noodara:noodara /app/packages/ssh/dist /app/packages/ssh/dist
+COPY --from=builder --chown=noodara:noodara /app/packages/git/dist /app/packages/git/dist
+COPY --from=builder --chown=noodara:noodara /app/packages/docker/dist /app/packages/docker/dist
+COPY --from=builder --chown=noodara:noodara /app/apps/control-plane/dist /app/apps/control-plane/dist
+# Version-stamped by the builder's NOODARA_IMAGE_VERSION step; read at runtime by
+# src/config-version.ts as dist/../package.json.
+COPY --from=builder --chown=noodara:noodara /app/apps/control-plane/package.json /app/apps/control-plane/package.json
 WORKDIR /app/apps/control-plane
 ENV NODE_ENV=production
 USER noodara

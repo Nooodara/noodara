@@ -137,3 +137,40 @@ CI was unaffected (both workflows set it at their own `env:` block).
 set one — so the integration/boot/E2E harnesses supply it themselves for
 the build they spawn, while the app itself keeps failing fast for anyone
 who runs `pnpm build` directly without exporting it.
+
+## Runtime image layout (14-05)
+
+Hasta la fase 14 el stage `runner` de `apps/control-plane/Dockerfile` copiaba el workspace
+podado completo del builder: devDependencies (tsc, tsx, turbo, vitest, drizzle-kit), el stack de
+lint de `@noodara/config`, fuentes y los peers opcionales que el lockfile resuelve para
+better-auth (next, react). Ahora se arma así:
+
+- Stage `prod-deps`: `pnpm install --frozen-lockfile --prod --no-optional --filter-prod
+  "@noodara/control-plane..."` sobre `out/json` de `turbo prune`. Es el equivalente de
+  `pnpm deploy --prod` que conserva el layout aislado de pnpm (workspace deps enlazadas como
+  `../../packages/<name>`), así la resolución en runtime es la misma contra la que compiló `tsc`.
+  `pnpm deploy` en pnpm 10 exigiría `inject-workspace-packages` en todo el workspace.
+  Se borran los `*.map` y `*.tsbuildinfo` de terceros.
+- Stage `runner`: copia `/app` de `prod-deps` y, del builder, solo `dist/` de
+  `apps/control-plane`, `packages/{domain,ssh,git,docker}` y el `package.json` de control-plane
+  (con la versión estampada por `NOODARA_IMAGE_VERSION`). Usuario `noodara`, sin pnpm, sin
+  toolchain, sin store.
+- `argon2` carga su binding prebuilt de la arquitectura de la imagen (no hace falta compilar).
+
+`.dockerignore` excluye además `**/.env` y `**/.env.*` (antes solo los de la raíz).
+
+Tamaño (`docker image inspect .Size`, límite 600 MB en `MAX_IMAGE_SIZE_MB`):
+
+| Arquitectura | Antes | Después |
+|---|---|---|
+| arm64 | 1235.0 MB | 423.9 MB |
+| amd64 | 1238.0 MB | 404.0 MB |
+
+Medido el 2026-10-07 con Docker Desktop (containerd image store); amd64 vía `--platform
+linux/amd64`. Con ese store `.Size` reporta el tamaño comprimido hasta que la imagen se
+desempaqueta para un contenedor, por eso el test corre uno antes de medir.
+
+`tests/integration/installer/control-plane-image.test.ts` es la prueba: falla si la imagen
+construida en esa corrida pesa 600 MB o más (el mensaje lleva el tamaño medido), arranca las
+cuatro entradas (api, worker, migrate, CLI), verifica argon2 en la arquitectura de la imagen y
+revisa que no queden devDependencies, toolchain, store de pnpm, fuentes, source maps ni `.env`.
