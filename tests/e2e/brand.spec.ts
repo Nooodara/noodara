@@ -138,7 +138,8 @@ test('@brand the below-900px bottom sheet carries no mark, closed or open', asyn
 
   await page.getByTestId('shell-menu-button').click();
   await expect(page.getByTestId('shell-sidebar')).toBeVisible();
-  await expect(page.getByTestId('shell-sidebar').getByRole('link')).toHaveCount(3);
+  // 13-09 added Projects: Servers, Projects, Activity, Settings.
+  await expect(page.getByTestId('shell-sidebar').getByRole('link')).toHaveCount(4);
   await expect(page.getByTestId('brand-monogram')).toBeHidden();
   await expect(page.getByTestId('brand-lockup')).toBeHidden();
   // 08-08 (D-05): the account menu trigger is still the shell's one identity affordance inside
