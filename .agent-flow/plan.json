@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-07T15:12:06.379Z",
+  "updatedAt": "2026-10-07T16:05:36.800Z",
   "cursor": {
-    "phase": null,
-    "task": null
+    "phase": "14",
+    "task": "14-01"
   },
   "phases": [
     {
@@ -3272,7 +3272,7 @@
       "dependsOn": [
         "13"
       ],
-      "status": "pending",
+      "status": "active",
       "tasks": [
         {
           "id": "14-01",
@@ -3285,7 +3285,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -3395,7 +3395,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -3489,7 +3489,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -3546,19 +3546,38 @@
             "packages/domain/src/deployment/",
             "packages/ssh/src/commands/git.ts",
             "packages/ssh/src/commands/git.test.ts",
-            "packages/ssh/src/deploy-templates*",
+            "packages/ssh/src/commands/deploy-allowlist.ts",
+            "packages/ssh/src/commands/deploy-allowlist.test.ts",
+            "packages/ssh/src/commands/index.ts",
+            "packages/ssh/src/index.ts",
+            "packages/ssh/src/git-error-classifier.ts",
+            "packages/ssh/src/git-error-classifier.test.ts",
             "packages/ssh/src/fixtures/",
-            "packages/git/src/"
+            "packages/git/src/",
+            "apps/control-plane/src/db/schema/deployments.ts",
+            "apps/control-plane/drizzle/",
+            "apps/control-plane/src/db/migrations/",
+            "apps/control-plane/src/deploy/run-deployment.ts",
+            "apps/control-plane/src/deploy/run-deployment.test.ts",
+            "apps/web/src/lib/deploy-error-copy.ts",
+            "apps/web/src/lib/deploy-error-copy.test.ts",
+            "tests/integration/deploy-engine/deploy-templates.test.ts",
+            "tests/integration/deploy-engine/engine-primitives.test.ts",
+            "tests/integration/deploy-engine/contracts-https-token.test.ts",
+            "tests/integration/deploy-engine/runtime-pipeline.test.ts",
+            "tests/integration/helpers/"
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
-            "test",
-            "typecheck",
-            "lint",
             "boundaries",
-            "it-deploy-templates"
+            "it-deploy-templates",
+            "it-engine-primitives",
+            "it-https-token",
+            "lint",
+            "test",
+            "typecheck"
           ],
           "acceptance": [
             {
@@ -3573,7 +3592,7 @@
             },
             {
               "id": "A3",
-              "text": "For a host without a bundled or pinned key, an allowlisted ssh-keyscan template with an explicit timeout returns the key to the caller; the clone never starts on an unpinned host",
+              "text": "For a host without a bundled key, an allowlisted ssh-keyscan template with an explicit timeout returns the key and the clone is pinned to it (persisting that key per service for later deploys is 14-07); the clone never starts with accept-new or an unpinned host, and existing deploy-engine integration tests keep passing by supplying their fixture host key",
               "proof": "test"
             },
             {
@@ -3602,7 +3621,12 @@
               "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "persistence",
+            "randomness/crypto-random"
+          ],
           "tier": "deep"
         },
         {
@@ -3761,7 +3785,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -3803,7 +3827,6 @@
           "id": "14-10",
           "title": "Build cache prune policy (D12): age-based, once a day per server",
           "scope": [
-            "packages/ssh/src/deploy-templates*",
             "packages/ssh/src/commands/docker.ts",
             "packages/ssh/src/commands/docker.test.ts",
             "packages/docker/src/",
@@ -3812,7 +3835,13 @@
             "apps/control-plane/src/deploy/deploy-runtime.ts",
             "tests/integration/deploy-engine/runtime-pipeline.test.ts",
             "docs/adr/0009-build-cache-prune-policy.md",
-            "docs/deploy-engine.md"
+            "docs/deploy-engine.md",
+            "packages/ssh/src/commands/docker-deploy.ts",
+            "packages/ssh/src/commands/docker-deploy.test.ts",
+            "packages/ssh/src/commands/deploy-allowlist.ts",
+            "packages/ssh/src/commands/deploy-allowlist.test.ts",
+            "packages/ssh/src/commands/index.ts",
+            "packages/ssh/src/index.ts"
           ],
           "wave": 3,
           "dependsOn": [
@@ -3879,7 +3908,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -3962,7 +3991,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
