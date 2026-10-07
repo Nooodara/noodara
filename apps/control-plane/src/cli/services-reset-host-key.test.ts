@@ -1,7 +1,7 @@
 // 14-07 A3/H4: argument validation and exit codes of `noodara services reset-host-key`. The real
 // database effect (cleared row, activity event, next deploy re-pins) is in runtime-pipeline.
 import { describe, expect, it } from 'vitest';
-import type { ResetGitHostKeyResult } from '../db/git-host-key-store.js';
+import type { ResetGitHostKeyResult } from '../services/service-services.js';
 import { RESET_HOST_KEY_EXIT, servicesResetHostKeyCommand } from './services-reset-host-key.js';
 
 const SERVICE_ID = '7c9e6679-7425-40de-944b-e07fc1f90ae7';

@@ -20,7 +20,17 @@ Transitions: `QUEUED → PREPARING | CANCELLED`; `PREPARING → BUILDING | FAILE
 
 ## Error Codes
 
-Full list in `apps/site/content/docs/reference/error-codes.mdx`. Build-time codes (`BUILD_FAILED`, `BUILD_TIMEOUT`, `BUILD_STALLED`, `CLONE_FAILED`, `REPOSITORY_AUTH_FAILED`, `IMAGE_PULL_FAILED`, `START_FAILED`, `WORKER_CRASHED`) are logged on the deployment, not returned as HTTP errors. HTTP: `DEPLOYMENT_IN_PROGRESS` 409, `DEPLOYMENT_INPUT_INVALID` 422, `DEPLOYMENT_NOT_CANCELLABLE` 409, `CONTAINER_NOT_FOUND` 409, `RUNTIME_LOG_TAIL_INVALID` 422 (`tail` 1-10000), `RUNTIME_LOG_FOLLOW_LIMIT_REACHED` 429, `RUNTIME_LOGS_FAILED` 502, `RUNTIME_LOGS_TIMEOUT` 504, `PORT_IN_USE` 409.
+Full list in `apps/site/content/docs/reference/error-codes.mdx`. Build-time codes (`BUILD_FAILED`, `BUILD_TIMEOUT`, `BUILD_STALLED`, `CLONE_FAILED`, `REPOSITORY_AUTH_FAILED`, `GIT_HOST_KEY_MISMATCH`, `GIT_HOST_KEY_UNAVAILABLE`, `IMAGE_PULL_FAILED`, `START_FAILED`, `WORKER_CRASHED`) are logged on the deployment, not returned as HTTP errors. HTTP: `DEPLOYMENT_IN_PROGRESS` 409, `DEPLOYMENT_INPUT_INVALID` 422, `DEPLOYMENT_NOT_CANCELLABLE` 409, `CONTAINER_NOT_FOUND` 409, `RUNTIME_LOG_TAIL_INVALID` 422 (`tail` 1-10000), `RUNTIME_LOG_FOLLOW_LIMIT_REACHED` 429, `RUNTIME_LOGS_FAILED` 502, `RUNTIME_LOGS_TIMEOUT` 504, `PORT_IN_USE` 409.
+
+## Git Host Keys (14-06, 14-07)
+
+SSH clones run with `StrictHostKeyChecking=yes`. GitHub, GitLab and Bitbucket use bundled keys; any other host is trust-on-first-use, pinned per service.
+
+- Storage: `services.git_host_key_host` + `git_host_key` (migration `0008`, nullable, both or neither; newline-joined known_hosts lines). Lines are re-validated on read; a tampered row pins nothing and the next clone fails closed. Store: `db/git-host-key-store.ts`.
+- First clone: the scanned keys are pinned before the build in one transaction (`SELECT ... FOR UPDATE`, then `UPDATE ... WHERE git_host_key IS NULL OR host IS DISTINCT FROM`). Two concurrent first clones store one key; the loser must match the winner's keys or fails `GIT_HOST_KEY_MISMATCH`.
+- Later clones pass the pin; a rotated key fails `FAILED/GIT_HOST_KEY_MISMATCH` and is never auto-replaced. The message names the reset command; no key blob reaches the message, the build log, events or activity.
+- A repository URL edit to another SSH host (or https, or an image source) clears the pin; the same host keeps it.
+- Reset: `noodara services reset-host-key <serviceId>` (exit 0 cleared or nothing pinned, 1 unknown service, 2 invalid id, no write). Writes a `service.updated` activity event with `changedFields: ['gitHostKey']`; the next deploy pins again.
 
 ## Step Timeline (13-03)
 

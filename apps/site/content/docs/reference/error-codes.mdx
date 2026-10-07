@@ -73,3 +73,14 @@ A stop, restart or remove runs in the background after its `202`, so its failure
 an HTTP error. They appear only in the service's activity: `SERVER_UNREACHABLE`,
 `SERVER_DOCKER_UNAVAILABLE`, `CONTAINER_NOT_FOUND` (the container is gone; redeploy),
 `SERVICE_OPERATION_FAILED` (Docker rejected the operation) or `SERVICE_OPERATION_TIMEOUT`.
+
+A deployment's own failures are recorded on the deployment, not returned as HTTP errors. Two of them
+concern the SSH host key of a Git host:
+
+- `GIT_HOST_KEY_MISMATCH`: the Git host offered a key that does not match the one Noodara trusts for
+  it. GitHub, GitLab and Bitbucket keys ship with Noodara; any other host's key is stored per service
+  on its first SSH clone and checked on every later clone. A changed key is never replaced
+  automatically. If the host really rotated its key, verify the new fingerprint with the host's
+  operator, then run `noodara services reset-host-key <serviceId>` and deploy again: the next clone
+  stores the current key. Changing the service's repository URL to another host also forgets it.
+- `GIT_HOST_KEY_UNAVAILABLE`: the Git host's SSH key could not be read, so nothing was cloned.

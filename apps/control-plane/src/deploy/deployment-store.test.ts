@@ -71,6 +71,8 @@ function serviceRow(overrides: Partial<ServiceRowFull> = {}): ServiceRowFull {
     publishedPort: 8080,
     repositoryCredentialId: null,
     registryCredentialId: null,
+    gitHostKeyHost: null,
+    gitHostKey: null,
     status: 'RUNNING',
     createdAt: CREATED,
     updatedAt: CREATED,

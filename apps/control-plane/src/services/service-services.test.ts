@@ -219,6 +219,8 @@ describe('recordServiceOperation: updatedAt (13-02 A1, H1)', () => {
     publishedPort: null,
     repositoryCredentialId: null,
     registryCredentialId: null,
+    gitHostKeyHost: null,
+    gitHostKey: null,
     status: 'RUNNING',
     createdAt: STORED,
     updatedAt: STORED,

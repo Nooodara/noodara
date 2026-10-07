@@ -2,7 +2,7 @@
 // git_host_key_host + git_host_key). Every stored line is re-validated on read; the first pin is
 // a conditional write under the row lock, so concurrent first clones store exactly one key and
 // the loser verifies against it. A pinned key for the same host is never replaced here: only the
-// operator CLI (resetGitHostKey) forgets it. Key material never goes to an activity event.
+// operator CLI (services/service-services.ts resetGitHostKey) forgets it.
 import { and, eq, isNull, or, sql } from 'drizzle-orm';
 import {
   gitSshEndpoint,
@@ -12,7 +12,6 @@ import {
   validateRepositoryUrl,
   type GitHostKey,
 } from '@noodara/domain/validators';
-import { writeActivityEvent } from '../activity/write-activity-event.js';
 import type { GitHostKeyPinResult, GitHostKeyStore, PinnedGitHostKeys } from '../deploy/run-deployment.js';
 import type { Database } from './client.js';
 import { services } from './schema/services.js';
@@ -22,7 +21,7 @@ export interface GitHostKeyColumns {
   readonly gitHostKey: string | null;
 }
 
-const CLEARED: GitHostKeyColumns = Object.freeze({ gitHostKeyHost: null, gitHostKey: null });
+export const CLEARED_GIT_HOST_KEY_COLUMNS: GitHostKeyColumns = Object.freeze({ gitHostKeyHost: null, gitHostKey: null });
 
 /** The known_hosts host a repository URL pins, or null (https, or not a valid URL). */
 export function knownHostsHostOfUrl(repositoryUrl: string | null): string | null {
@@ -64,7 +63,7 @@ export function gitHostKeyColumnsForUrlChange(
 ): GitHostKeyColumns | Record<string, never> {
   if (current.gitHostKeyHost === null) return {};
   const next = knownHostsHostOfUrl(nextRepositoryUrl);
-  return next !== null && sameKnownHostsHost(next, current.gitHostKeyHost) ? {} : CLEARED;
+  return next !== null && sameKnownHostsHost(next, current.gitHostKeyHost) ? {} : CLEARED_GIT_HOST_KEY_COLUMNS;
 }
 
 export function createGitHostKeyStore(db: Database): GitHostKeyStore {
@@ -113,34 +112,4 @@ export function createGitHostKeyStore(db: Database): GitHostKeyStore {
       });
     },
   };
-}
-
-export type ResetGitHostKeyResult = 'cleared' | 'not_pinned' | 'not_found';
-
-/** A3/H4: forgets a service's pinned key; the activity event names the field, never the key. */
-export async function resetGitHostKey(db: Database, serviceId: string, now: Date = new Date()): Promise<ResetGitHostKeyResult> {
-  return db.transaction(async (tx): Promise<ResetGitHostKeyResult> => {
-    const [row] = await tx
-      .select({ id: services.id, gitHostKey: services.gitHostKey })
-      .from(services)
-      .where(eq(services.id, serviceId))
-      .for('update');
-    if (row === undefined) return 'not_found';
-    if (row.gitHostKey === null) return 'not_pinned';
-    await tx.update(services).set(CLEARED).where(eq(services.id, serviceId));
-    await writeActivityEvent(
-      tx,
-      {
-        actorType: 'system',
-        actorId: null,
-        entityType: 'service',
-        entityId: serviceId,
-        action: 'service.updated',
-        outcome: 'success',
-        metadata: { changedFields: ['gitHostKey'], requiresRedeploy: false },
-      },
-      now,
-    );
-    return 'cleared';
-  });
 }

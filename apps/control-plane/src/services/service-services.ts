@@ -23,7 +23,7 @@ import {
 import type { ServiceSource } from '@noodara/domain/validators';
 import { writeActivityEvent } from '../activity/write-activity-event.js';
 import type { Database } from '../db/client.js';
-import { gitHostKeyColumnsForUrlChange } from '../db/git-host-key-store.js';
+import { CLEARED_GIT_HOST_KEY_COLUMNS, gitHostKeyColumnsForUrlChange } from '../db/git-host-key-store.js';
 import { deployments } from '../db/schema/deployments.js';
 import { environments } from '../db/schema/environments.js';
 import { projects } from '../db/schema/projects.js';
@@ -803,4 +803,35 @@ export function createServiceServices(deps: ServiceServicesDeps): ServiceService
     requestServiceOperation: (input) => requestServiceOperation(deps, input),
     deleteService: (input) => deleteService(deps, input),
   };
+}
+
+// 14-07: lives here (not in db/) because only services/ and activity/ write activity events (ACT-01).
+export type ResetGitHostKeyResult = 'cleared' | 'not_pinned' | 'not_found';
+
+/** A3/H4: forgets a service's pinned key; the activity event names the field, never the key. */
+export async function resetGitHostKey(db: Database, serviceId: string, now: Date = new Date()): Promise<ResetGitHostKeyResult> {
+  return db.transaction(async (tx): Promise<ResetGitHostKeyResult> => {
+    const [row] = await tx
+      .select({ id: services.id, gitHostKey: services.gitHostKey })
+      .from(services)
+      .where(eq(services.id, serviceId))
+      .for('update');
+    if (row === undefined) return 'not_found';
+    if (row.gitHostKey === null) return 'not_pinned';
+    await tx.update(services).set(CLEARED_GIT_HOST_KEY_COLUMNS).where(eq(services.id, serviceId));
+    await writeActivityEvent(
+      tx,
+      {
+        actorType: 'system',
+        actorId: null,
+        entityType: 'service',
+        entityId: serviceId,
+        action: 'service.updated',
+        outcome: 'success',
+        metadata: { changedFields: ['gitHostKey'], requiresRedeploy: false },
+      },
+      now,
+    );
+    return 'cleared';
+  });
 }

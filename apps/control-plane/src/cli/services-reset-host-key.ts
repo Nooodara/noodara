@@ -2,7 +2,7 @@
 // service's Git host, so the next deploy trusts the host's key on first use again. The argument is
 // validated before any database access; an unknown id names nothing else about the database.
 import { validateResourceId } from '@noodara/domain/validators';
-import type { ResetGitHostKeyResult } from '../db/git-host-key-store.js';
+import type { ResetGitHostKeyResult } from '../services/service-services.js';
 
 export interface ServicesResetHostKeyDeps {
   readonly serviceId: string;

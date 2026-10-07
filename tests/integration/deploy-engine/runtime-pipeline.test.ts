@@ -17,7 +17,9 @@ import { deriveDeploymentSteps, type DeploymentStep } from '@noodara/domain/depl
 import { createRedactor, secretValue } from '@noodara/domain/security';
 import { createSsh2Adapter, formatFingerprint } from '@noodara/ssh';
 import {
+  activityEvents,
   credentials,
+  deploymentLogChunks,
   deployments,
   environments,
   projects,
@@ -31,11 +33,13 @@ import { runMigrations } from '../../../apps/control-plane/src/db/migrate.js';
 import { applyMigrationsUpTo } from '../helpers/migrations.js';
 import {
   DEPLOY_ENGINE_UBUNTU_VERSIONS,
+  GIT_HOST_ALIAS,
   preloadedRefFor,
   resolveBaseImages,
   startDeployEngineStack,
   type DeployEngineStack,
 } from '../helpers/deploy-engine.js';
+import { fixtureGitHostKey, wrongGitHostKey } from '../helpers/git-host-key.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../helpers/redis.js';
 
@@ -46,6 +50,9 @@ type DeploymentServicesModule = typeof import('../../../apps/control-plane/src/s
 type DeployQueueModule = typeof import('../../../apps/control-plane/src/queue/deploy-queue.js');
 type ServiceCredentialsModule = typeof import('../../../apps/control-plane/src/services/service-credentials.js');
 type CredentialStoreModule = typeof import('../../../apps/control-plane/src/services/credential-store.js');
+type ServiceServicesModule = typeof import('../../../apps/control-plane/src/services/service-services.js');
+type GitHostKeyStoreModule = typeof import('../../../apps/control-plane/src/db/git-host-key-store.js');
+type ResetHostKeyCliModule = typeof import('../../../apps/control-plane/src/cli/services-reset-host-key.js');
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.resolve(HERE, '../../../fixtures');
@@ -678,6 +685,139 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       expect(await buildProcessGone('noodara-tick')).toBe(true);
     }, CASE_TIMEOUT_MS);
 
+    // 14-07: blobs of the fixture host key; the security case checks none reached a surface.
+    const hostKeyBlobs: string[] = [];
+    const gitHostKeyColumns = async (serviceId: string) => {
+      const [row] = await db()
+        .select({ host: services.gitHostKeyHost, key: services.gitHostKey })
+        .from(services)
+        .where(eq(services.id, serviceId));
+      if (!row) throw new Error('service missing');
+      return row;
+    };
+
+    it('14-07 A1/A2/A3/H3/H4: first clone pins the host key, later clones verify it, a rotated key fails and the CLI reset re-pins', async () => {
+      const fixtureKey = await fixtureGitHostKey(s());
+      const wrongKey = wrongGitHostKey();
+      hostKeyBlobs.push(fixtureKey.key, wrongKey.key);
+      const serviceId = await insertGitService({ repo: REPOS.nodeApi, publishedPort: null });
+      expect(await gitHostKeyColumns(serviceId)).toEqual({ host: null, key: null });
+
+      // A1: first clone of the non-bundled host stores its key (TOFU).
+      const first = await deploy(serviceId);
+      expect({ status: first.status, errorCode: first.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
+      const pinned = await gitHostKeyColumns(serviceId);
+      expect(pinned.host).toBe(GIT_HOST_ALIAS);
+      expect(pinned.key).toContain(fixtureKey.key);
+      await expectWorkspaceGone(first.id);
+
+      // A1: the second clone pins it and leaves the stored key untouched.
+      const second = await deploy(serviceId);
+      expect(second.status).toBe('SUCCESS');
+      expect(await gitHostKeyColumns(serviceId)).toEqual(pinned);
+      await expectWorkspaceGone(second.id);
+
+      // A2/H1: a rotated host key (the stored pin no longer matches the host) fails closed and is
+      // never auto-replaced.
+      const rotated = `${wrongKey.host} ${wrongKey.type} ${wrongKey.key}`;
+      await db().update(services).set({ gitHostKey: rotated }).where(eq(services.id, serviceId));
+      const mismatch = await deploy(serviceId);
+      expect({ status: mismatch.status, errorCode: mismatch.errorCode }).toEqual({
+        status: 'FAILED',
+        errorCode: 'GIT_HOST_KEY_MISMATCH',
+      });
+      expect(mismatch.errorMessage).toContain(`reset-host-key ${serviceId}`);
+      // H3: neither the pinned nor the offered key blob is echoed.
+      expect(mismatch.errorMessage).not.toContain(fixtureKey.key);
+      expect(mismatch.errorMessage).not.toContain(wrongKey.key);
+      expect(await gitHostKeyColumns(serviceId)).toEqual({ host: GIT_HOST_ALIAS, key: rotated });
+      await expectWorkspaceGone(mismatch.id);
+
+      // A3/H4: the operator CLI forgets the pin; the activity event carries no key material.
+      const serviceModule: ServiceServicesModule = await import('../../../apps/control-plane/src/services/service-services.js');
+      const cli: ResetHostKeyCliModule = await import('../../../apps/control-plane/src/cli/services-reset-host-key.js');
+      const lines: string[] = [];
+      const runCli = (id: string) =>
+        cli.servicesResetHostKeyCommand({
+          serviceId: id,
+          reset: (target) => serviceModule.resetGitHostKey(db(), target),
+          out: (line) => lines.push(line),
+          err: (line) => lines.push(line),
+        });
+      const activityBefore = await db().select().from(activityEvents);
+      expect(await runCli(serviceId)).toBe(0);
+      expect(await gitHostKeyColumns(serviceId)).toEqual({ host: null, key: null });
+      const activity = (await db().select().from(activityEvents)).filter(
+        (row) => !activityBefore.some((before) => before.id === row.id),
+      );
+      expect(activity).toHaveLength(1);
+      expect(activity[0]).toMatchObject({ entityType: 'service', entityId: serviceId, action: 'service.updated' });
+      expect(JSON.stringify(activity)).not.toContain(wrongKey.key);
+      expect(JSON.stringify(activity)).not.toContain(fixtureKey.key);
+      // H4: idempotent on no pin, non-zero without a DB write on a bad or unknown id.
+      expect(await runCli(serviceId)).toBe(0);
+      expect(await runCli('not-a-uuid')).toBe(2);
+      expect(await runCli(randomUUID())).toBe(1);
+      expect((await db().select().from(activityEvents)).length).toBe(activityBefore.length + 1);
+      expect(lines.join('\n')).not.toContain(fixtureKey.key);
+
+      // H4: the reset takes effect on the next deploy, which re-pins the host's current key.
+      const repinned = await deploy(serviceId);
+      expect(repinned.status).toBe('SUCCESS');
+      const after = await gitHostKeyColumns(serviceId);
+      expect(after.host).toBe(GIT_HOST_ALIAS);
+      expect(after.key).toContain(fixtureKey.key);
+      await expectWorkspaceGone(repinned.id);
+    }, CASE_TIMEOUT_MS);
+
+    it('14-07 H1: two concurrent first pins of one host store exactly one key; the loser reads the winner', async () => {
+      const storeModule: GitHostKeyStoreModule = await import('../../../apps/control-plane/src/db/git-host-key-store.js');
+      const serviceId = await insertGitService({ repo: REPOS.nodeApi, publishedPort: null });
+      const fixtureKey = await fixtureGitHostKey(s());
+      const wrongKey = wrongGitHostKey();
+      const storeA = storeModule.createGitHostKeyStore(db());
+      const storeB = storeModule.createGitHostKeyStore(db());
+      const results = await Promise.all([
+        storeA.pin(serviceId, { host: GIT_HOST_ALIAS, keys: [fixtureKey] }),
+        storeB.pin(serviceId, { host: GIT_HOST_ALIAS, keys: [wrongKey] }),
+      ]);
+      expect(results.map((result) => result.kind).sort()).toEqual(['existing', 'stored']);
+      const winner = results[0]?.kind === 'stored' ? fixtureKey : wrongKey;
+      const loser = results.find((result) => result.kind === 'existing');
+      expect(loser?.kind === 'existing' ? loser.pinned.keys.map((key) => key.key) : []).toEqual([winner.key]);
+      const stored = await storeA.load(serviceId);
+      expect(stored?.keys.map((key) => key.key)).toEqual([winner.key]);
+      // A later pin for the same host never replaces the stored key.
+      const again = await storeA.pin(serviceId, { host: GIT_HOST_ALIAS, keys: [winner === fixtureKey ? wrongKey : fixtureKey] });
+      expect(again.kind).toBe('existing');
+      expect((await storeA.load(serviceId))?.keys.map((key) => key.key)).toEqual([winner.key]);
+
+      // H2: editing the repository URL keeps the pin on the same host and clears it for another one.
+      const serviceModule: ServiceServicesModule = await import('../../../apps/control-plane/src/services/service-services.js');
+      const api = serviceModule.createServiceServices({
+        db: db(),
+        now: () => new Date(),
+        events: { publish: () => Promise.resolve() },
+        panelPorts: [],
+        masterKeys: () => Promise.resolve({ current: masterKey }),
+      });
+      const edit = (repositoryUrl: string) =>
+        api.updateService({
+          actor: { type: 'system' },
+          projectId,
+          serviceId,
+          fields: { source: { kind: 'git', repositoryUrl, branch: 'main' } },
+        });
+      // Service edits to a git source require BuildKit on the server; the fixture host has it.
+      await db().update(servers).set({ dockerBuildkitAvailable: true }).where(eq(servers.id, serverId));
+      const sameHost = await edit(s().gitRepoUrl(REPOS.multiStage));
+      expect(sameHost).toMatchObject({ ok: true });
+      expect((await gitHostKeyColumns(serviceId)).host).toBe(GIT_HOST_ALIAS);
+      const otherHost = await edit('ssh://git@git.other.example:2222/acme/api.git');
+      expect(otherHost).toMatchObject({ ok: true });
+      expect(await gitHostKeyColumns(serviceId)).toEqual({ host: null, key: null });
+    }, CASE_TIMEOUT_MS);
+
     it('noodara-security: no credential reaches events, logs or deployment rows', async () => {
       const rows = await db().select().from(deployments);
       const surface = JSON.stringify({ events, logged, rows });
@@ -685,6 +825,14 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       expect(surface).not.toContain(s().deployKey.privateKey.split('\n')[1] ?? s().deployKey.privateKey);
       expect(surface).not.toContain(s().ssh.privateKey.split('\n')[1] ?? s().ssh.privateKey);
       expect(surface).not.toContain(masterKey.toString('base64'));
+      // 14-07 H3: no host key blob in events, logs, rows, stored build logs or activity.
+      expect(hostKeyBlobs.length).toBeGreaterThan(0);
+      const keySurface = JSON.stringify({
+        surface,
+        chunks: await db().select().from(deploymentLogChunks),
+        activity: await db().select().from(activityEvents),
+      });
+      for (const blob of hostKeyBlobs) expect(keySurface).not.toContain(blob);
     });
   },
 );
@@ -725,22 +873,13 @@ describe('13-03 H3: step boundaries migrate onto a database with deployments in 
       .values({ projectId: project.id, name: 'production', createdAt: now, updatedAt: now })
       .returning({ id: environments.id });
     if (!environment) throw new Error('environment insert returned no row');
-    const [service] = await db
-      .insert(services)
-      .values({
-        projectId: project.id,
-        environmentId: environment.id,
-        serverId: server.id,
-        name: 'legacy-api',
-        sourceType: 'git',
-        repositoryUrl: 'https://example.com/acme/api.git',
-        branch: 'main',
-        buildContext: '.',
-        dockerfilePath: 'Dockerfile',
-        internalPort: 3000,
-      })
-      .returning({ id: services.id });
-    if (!service) throw new Error('service insert returned no row');
+    // Raw SQL: the pre-0008 services table has no git host key columns for drizzle's insert to name.
+    const service = { id: randomUUID() };
+    await db.execute(sql`
+      insert into services (id, project_id, environment_id, server_id, name, source_type, repository_url, branch,
+                            build_context, dockerfile_path, internal_port, created_at, updated_at)
+      values (${service.id}, ${project.id}, ${environment.id}, ${server.id}, 'legacy-api', 'git',
+              'https://example.com/acme/api.git', 'main', '.', 'Dockerfile', 3000, now(), now())`);
 
     // Raw SQL: the pre-13-03 table has no step columns for drizzle's insert to name.
     const source = JSON.stringify({
@@ -804,5 +943,72 @@ describe('13-03 H3: step boundaries migrate onto a database with deployments in 
     const timeline = deriveDeploymentSteps({ ...finished, sourceType: 'git' });
     expect(timeline).toHaveLength(4);
     expect(timeline.filter((step) => step.state === 'running')).toEqual([]);
+  }, CASE_TIMEOUT_MS);
+});
+
+// 14-07 H2: the git host key columns are additive and nullable. A database at the previous
+// migration with an existing ssh service upgrades cleanly; the service has no pin and the store
+// treats it as a first clone.
+describe('14-07 H2: git host key columns migrate onto a database with existing services', () => {
+  let pg: PostgresFixture | undefined;
+
+  afterAll(async () => {
+    await pg?.stop();
+  }, STACK_TIMEOUT_MS);
+
+  it('applies 0008 over existing services, which load no pinned key', async () => {
+    pg = await startPostgres({ migrate: false });
+    const { db } = pg;
+    await applyMigrationsUpTo(db, '0007_phase14_git_host_key_codes');
+
+    const [credential] = await db
+      .insert(credentials)
+      .values({ type: 'ssh_private_key', encryptedValue: 'not-a-real-ciphertext', keyVersion: KEY_VERSION })
+      .returning({ id: credentials.id });
+    if (!credential) throw new Error('credential insert returned no row');
+    const [server] = await db
+      .insert(servers)
+      .values({ name: 'legacy-host', host: '203.0.113.11', sshPort: 22, sshUser: 'deployer', credentialId: credential.id })
+      .returning({ id: servers.id });
+    if (!server) throw new Error('server insert returned no row');
+    const now = new Date();
+    const [project] = await db
+      .insert(projects)
+      .values({ name: 'Legacy', slug: `legacy-${randomUUID().slice(0, 8)}`, createdAt: now, updatedAt: now })
+      .returning({ id: projects.id });
+    if (!project) throw new Error('project insert returned no row');
+    const [environment] = await db
+      .insert(environments)
+      .values({ projectId: project.id, name: 'production', createdAt: now, updatedAt: now })
+      .returning({ id: environments.id });
+    if (!environment) throw new Error('environment insert returned no row');
+    // Raw SQL: the pre-0008 table has no git host key columns for drizzle's insert to name.
+    const serviceId = randomUUID();
+    await db.execute(sql`
+      insert into services (id, project_id, environment_id, server_id, name, source_type, repository_url, branch,
+                            build_context, dockerfile_path, internal_port, created_at, updated_at)
+      values (${serviceId}, ${project.id}, ${environment.id}, ${server.id}, 'legacy-ssh', 'git',
+              'git@git.example.com:acme/api.git', 'main', '.', 'Dockerfile', 3000, now(), now())`);
+
+    await runMigrations(db);
+
+    const [row] = await db
+      .select({ host: services.gitHostKeyHost, key: services.gitHostKey, name: services.name })
+      .from(services)
+      .where(eq(services.id, serviceId));
+    expect(row).toEqual({ host: null, key: null, name: 'legacy-ssh' });
+
+    process.env.NOODARA_MASTER_KEY ??= randomBytes(32).toString('base64');
+    process.env.BETTER_AUTH_SECRET ??= `runtime-pipeline-${randomUUID()}-${randomUUID()}`;
+    process.env.DATABASE_URL ??= pg.connectionString;
+    process.env.REDIS_URL ??= 'redis://127.0.0.1:6379';
+    process.env.NOODARA_PUBLIC_URL ??= 'http://localhost:3000';
+    const storeModule: GitHostKeyStoreModule = await import('../../../apps/control-plane/src/db/git-host-key-store.js');
+    expect(await storeModule.createGitHostKeyStore(db).load(serviceId)).toBeNull();
+
+    // The pair check rejects a half-written pin.
+    await expect(
+      db.execute(sql`update services set git_host_key_host = 'git.example.com' where id = ${serviceId}`),
+    ).rejects.toThrow();
   }, CASE_TIMEOUT_MS);
 });
