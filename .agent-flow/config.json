@@ -39,7 +39,8 @@
       "e2e-deploy": "pnpm exec playwright test tests/e2e/deploy.spec.ts",
       "e2e-deploy-host": "pnpm exec playwright test tests/e2e/deploy-host.spec.ts",
       "e2e-dod": "pnpm exec playwright test tests/e2e/projects-dod.spec.ts tests/e2e/dod-hardening.spec.ts",
-      "e2e-sheet": "pnpm exec playwright test tests/e2e/server-sheet.spec.ts --grep @sheet-drag"
+      "e2e-sheet": "pnpm exec playwright test tests/e2e/server-sheet.spec.ts --grep @sheet-drag",
+      "it-ssh-contracts": "pnpm exec vitest run --config vitest.integration.config.ts tests/integration/ssh/contracts.test.ts"
     },
     "defaultGates": [
       "test",

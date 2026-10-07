@@ -67,7 +67,7 @@ type ConnectAttempt =
 function attemptConnect(config: ConnectConfig): Promise<ConnectAttempt> {
   return new Promise((resolve) => {
     const client = new Client();
-    const start = Date.now();
+    const start = performance.now();
     let settled = false;
     const settle = (result: ConnectAttempt): void => {
       if (settled) return;
@@ -84,10 +84,10 @@ function attemptConnect(config: ConnectConfig): Promise<ConnectAttempt> {
       resolve(result);
     };
     client.once('ready', () => {
-      settle({ ok: true, client, elapsedMs: Date.now() - start });
+      settle({ ok: true, client, elapsedMs: performance.now() - start });
     });
     client.once('error', (err: unknown) => {
-      settle({ ok: false, err: describeError(err), elapsedMs: Date.now() - start });
+      settle({ ok: false, err: describeError(err), elapsedMs: performance.now() - start });
     });
     client.connect(config);
   });
