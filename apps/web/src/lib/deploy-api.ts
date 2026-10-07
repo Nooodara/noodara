@@ -9,12 +9,7 @@
 // Credentials are write-only (A2): the PUT bodies go out once, are never stored or logged here,
 // and the only credential read returns presence, type and a deploy key's public half.
 
-// @boundaries-ignore type-only import of the route schemas, erased at build
-import type * as ProjectSchemas from "../../../control-plane/src/routes/project-schemas";
-// @boundaries-ignore type-only import of the route schemas, erased at build
-import type * as ServiceSchemas from "../../../control-plane/src/routes/service-schemas";
-// @boundaries-ignore type-only import of the route schemas, erased at build
-import type * as DeploymentSchemas from "../../../control-plane/src/routes/deployment-schemas";
+import type * as ApiContract from "@noodara/domain/api-contract";
 import {
   deployApiGet,
   deployApiSend,
@@ -36,60 +31,60 @@ type Input<S> = S extends { readonly _zod: { readonly input: infer I } }
   ? I
   : never;
 
-export type ProjectView = Output<typeof ProjectSchemas.ProjectViewSchema>;
+export type ProjectView = Output<typeof ApiContract.ProjectViewSchema>;
 export type EnvironmentView = Output<
-  typeof ProjectSchemas.EnvironmentViewSchema
+  typeof ApiContract.EnvironmentViewSchema
 >;
 export type ProjectList = Output<
-  typeof ProjectSchemas.ListProjectsResponseSchema
+  typeof ApiContract.ListProjectsResponseSchema
 >;
 export type EnvironmentList = Output<
-  typeof ProjectSchemas.ListEnvironmentsResponseSchema
+  typeof ApiContract.ListEnvironmentsResponseSchema
 >;
 export type DeleteProjectResult = Output<
-  typeof ProjectSchemas.DeleteProjectResponseSchema
+  typeof ApiContract.DeleteProjectResponseSchema
 >;
 export type CreateProjectBody = Input<
-  typeof ProjectSchemas.CreateProjectBodySchema
+  typeof ApiContract.CreateProjectBodySchema
 >;
 export type UpdateProjectBody = Input<
-  typeof ProjectSchemas.UpdateProjectBodySchema
+  typeof ApiContract.UpdateProjectBodySchema
 >;
 export type CreateEnvironmentBody = Input<
-  typeof ProjectSchemas.CreateEnvironmentBodySchema
+  typeof ApiContract.CreateEnvironmentBodySchema
 >;
 export type UpdateEnvironmentBody = Input<
-  typeof ProjectSchemas.UpdateEnvironmentBodySchema
+  typeof ApiContract.UpdateEnvironmentBodySchema
 >;
 export type DeleteEnvironmentResult = Output<
-  typeof ProjectSchemas.DeleteEnvironmentResponseSchema
+  typeof ApiContract.DeleteEnvironmentResponseSchema
 >;
 
-export type ServiceView = Output<typeof ServiceSchemas.ServiceViewSchema>;
+export type ServiceView = Output<typeof ApiContract.ServiceViewSchema>;
 export type ServiceList = Output<
-  typeof ServiceSchemas.ListServicesResponseSchema
+  typeof ApiContract.ListServicesResponseSchema
 >;
 export type UpdateServiceResult = Output<
-  typeof ServiceSchemas.UpdateServiceResponseSchema
+  typeof ApiContract.UpdateServiceResponseSchema
 >;
 export type CreateServiceBody = Input<
-  typeof ServiceSchemas.CreateServiceBodySchema
+  typeof ApiContract.CreateServiceBodySchema
 >;
 export type UpdateServiceBody = Input<
-  typeof ServiceSchemas.UpdateServiceBodySchema
+  typeof ApiContract.UpdateServiceBodySchema
 >;
 /** Presence, type and a deploy key's public half only: the response has no secret field. */
 export type ServiceCredentials = Output<
-  typeof ServiceSchemas.ServiceCredentialsResponseSchema
+  typeof ApiContract.ServiceCredentialsResponseSchema
 >;
 export type RepositoryCredentialBody = Input<
-  typeof ServiceSchemas.RepositoryCredentialBodySchema
+  typeof ApiContract.RepositoryCredentialBodySchema
 >;
 export type RegistryCredentialBody = Input<
-  typeof ServiceSchemas.RegistryCredentialBodySchema
+  typeof ApiContract.RegistryCredentialBodySchema
 >;
 export type RuntimeLogs = Output<
-  typeof ServiceSchemas.RuntimeLogsResponseSchema
+  typeof ApiContract.RuntimeLogsResponseSchema
 >;
 export type RuntimeLogLine = RuntimeLogs["lines"][number];
 /** The services routes declare these two 2xx bodies inline; they wrap the exported ServiceView. */
@@ -102,16 +97,16 @@ export interface DeleteServiceResult {
 }
 
 export type DeploymentView = Output<
-  typeof DeploymentSchemas.DeploymentViewSchema
+  typeof ApiContract.DeploymentViewSchema
 >;
 export type DeploymentList = Output<
-  typeof DeploymentSchemas.DeploymentListResponseSchema
+  typeof ApiContract.DeploymentListResponseSchema
 >;
 export type DeploymentLogs = Output<
-  typeof DeploymentSchemas.DeploymentLogsResponseSchema
+  typeof ApiContract.DeploymentLogsResponseSchema
 >;
 export type DeploymentLogChunk = Output<
-  typeof DeploymentSchemas.DeploymentLogChunkViewSchema
+  typeof ApiContract.DeploymentLogChunkViewSchema
 >;
 export type DeploymentLogPhase = DeploymentLogChunk["phase"];
 

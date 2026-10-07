@@ -14,6 +14,7 @@
     "./activity": { "types": "./dist/activity/index.d.ts", "default": "./dist/activity/index.js" },
     "./discovery": { "types": "./dist/discovery/index.d.ts", "default": "./dist/discovery/index.js" },
     "./preferences": { "types": "./dist/preferences/index.d.ts", "default": "./dist/preferences/index.js" },
+    "./api-contract": { "types": "./dist/api-contract/index.d.ts", "default": "./dist/api-contract/index.js" },
     "./deployment": { "types": "./dist/deployment/index.d.ts", "default": "./dist/deployment/index.js" }
   },
   "scripts": {

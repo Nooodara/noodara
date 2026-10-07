@@ -11,8 +11,7 @@ import {
   it,
   vi,
 } from "vitest";
-// @boundaries-ignore type-only import of the server error union for the drift check, erased at build
-import type { ServiceErrorCode } from "../../../control-plane/src/routes/http-errors";
+import type { ServiceErrorCode } from "@noodara/domain/api-contract";
 import {
   ALL_DEPLOY_ENGINE_ERROR_CODES,
   ALL_KNOWN_SERVICE_ERROR_CODES,
