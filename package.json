@@ -67,7 +67,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "set-cookie-parser": "3.1.2",
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "testcontainers": "12.1.0",
     "tsx": "4.23.13",
     "turbo": "^2.10.12",
