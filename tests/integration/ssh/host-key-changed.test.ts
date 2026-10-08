@@ -7,6 +7,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createRedactor, secretValue } from '@noodara/domain/security';
 import { createSsh2Adapter, formatFingerprint, type SshTimeouts } from '@noodara/ssh';
+import { pickFixedHostPort } from '../helpers/fixed-host-port.js';
 import {
   assertNoStrayTestContainers,
   readTestKey,
@@ -17,10 +18,6 @@ import {
 
 const UBUNTU_VERSIONS = ['22.04', '24.04'] as const satisfies readonly UbuntuVersion[];
 const TIMEOUTS: SshTimeouts = { connectMs: 20_000, commandMs: 30_000, discoveryMs: 60_000 };
-
-// A high, unlikely port, fixed only because this scenario needs two successive containers
-// reachable at the exact same host:port. Safe under `fileParallelism: false`.
-const FIXED_HOST_PORT = 42_522;
 
 let fixture: SshdFixture | undefined;
 
@@ -33,10 +30,11 @@ afterEach(async () => {
 
 describe.each(UBUNTU_VERSIONS)('TOFU and HOST_KEY_CHANGED (Ubuntu %s)', (ubuntu) => {
   it('captures on first connect, rejects a changed host key twice, and accepts the new key only once pinned (D-06/D-07)', async () => {
+    const hostPort = await pickFixedHostPort();
     const adapter = createSsh2Adapter();
 
     // --- First container: capture the fingerprint, then stop it. ---
-    fixture = await startSshd({ ubuntu, hostPort: FIXED_HOST_PORT });
+    fixture = await startSshd({ ubuntu, hostPort });
     const keyA = await readTestKey(fixture, 'ed25519');
 
     const first = await adapter.connect({
@@ -56,7 +54,7 @@ describe.each(UBUNTU_VERSIONS)('TOFU and HOST_KEY_CHANGED (Ubuntu %s)', (ubuntu)
 
     // --- Second container on the same fixed host:port: fresh host keys per-run (plan 02-02's
     //     entrypoint regenerates them on every start), so this is a genuinely different key. ---
-    fixture = await startSshd({ ubuntu, hostPort: FIXED_HOST_PORT });
+    fixture = await startSshd({ ubuntu, hostPort });
     const keyB = await readTestKey(fixture, 'ed25519');
 
     const mismatch = await adapter.connect({

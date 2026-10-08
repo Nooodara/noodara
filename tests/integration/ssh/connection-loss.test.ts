@@ -7,6 +7,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createRedactor, secretValue } from '@noodara/domain/security';
 import { createSsh2Adapter, type SshTimeouts } from '@noodara/ssh';
+import { pickFixedHostPort } from '../helpers/fixed-host-port.js';
 import {
   assertNoStrayTestContainers,
   readTestKey,
@@ -18,11 +19,6 @@ import {
 
 const UBUNTU_VERSIONS = ['22.04', '24.04'] as const satisfies readonly UbuntuVersion[];
 const TIMEOUTS: SshTimeouts = { connectMs: 20_000, commandMs: 30_000, discoveryMs: 60_000 };
-
-// A different fixed port than host-key-changed.test.ts's, so the two files' fixed-port scenarios
-// can never collide even if test ordering changes. Safe under `fileParallelism: false`
-// (vitest.integration.config.ts) — only one test file's tests run at a time.
-const FIXED_HOST_PORT = 42_533;
 
 const recordedUnhandledRejections: unknown[] = [];
 function onUnhandledRejection(reason: unknown): void {
@@ -133,8 +129,9 @@ describe.each(UBUNTU_VERSIONS)('connection loss (Ubuntu %s)', (ubuntu) => {
 
 describe.each(UBUNTU_VERSIONS)('reconnect (Ubuntu %s)', (ubuntu) => {
   it('a clean close followed by a reconnect succeeds with the same fingerprint, fingerprintCaptured: false', async () => {
+    const hostPort = await pickFixedHostPort();
     const adapter = createSsh2Adapter();
-    fixture = await startSshd({ ubuntu, hostPort: FIXED_HOST_PORT });
+    fixture = await startSshd({ ubuntu, hostPort });
     const key = await readTestKey(fixture, 'ed25519');
 
     const first = await adapter.connect({
@@ -164,8 +161,9 @@ describe.each(UBUNTU_VERSIONS)('reconnect (Ubuntu %s)', (ubuntu) => {
   });
 
   it('a server that failed once is not permanently unusable (PITFALLS.md #8): connect succeeds again after a failed attempt against a stopped container', async () => {
+    const hostPort = await pickFixedHostPort();
     const adapter = createSsh2Adapter();
-    fixture = await startSshd({ ubuntu, hostPort: FIXED_HOST_PORT });
+    fixture = await startSshd({ ubuntu, hostPort });
     const { host: stoppedHost, port: stoppedPort } = fixture;
     await fixture.stop();
     fixture = undefined;
@@ -179,7 +177,7 @@ describe.each(UBUNTU_VERSIONS)('reconnect (Ubuntu %s)', (ubuntu) => {
     });
     expect(failedAttempt.ok).toBe(false);
 
-    fixture = await startSshd({ ubuntu, hostPort: FIXED_HOST_PORT });
+    fixture = await startSshd({ ubuntu, hostPort });
     const key = await readTestKey(fixture, 'ed25519');
 
     const recovered = await adapter.connect({

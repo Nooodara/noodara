@@ -133,11 +133,13 @@ export class BootProcess {
     ]);
   }
 
-  /** Sends SIGTERM to the whole process group, escalating to SIGKILL after a grace period. */
+  /** Sends SIGTERM to the whole process group, escalating to SIGKILL after a grace period. The
+   *  escalation does not depend on the leader having exited: pnpm can exit on SIGTERM while its
+   *  grandchildren (next-server, node) are still alive in the same group. */
   kill(): void {
-    if (this.hasExited) return;
     const pid = this.child.pid;
     if (pid === undefined) return;
+    if (!groupAlive(pid)) return;
 
     try {
       process.kill(-pid, 'SIGTERM');
@@ -146,13 +148,52 @@ export class BootProcess {
     }
 
     setTimeout(() => {
-      if (this.hasExited) return;
       try {
         process.kill(-pid, 'SIGKILL');
       } catch {
         // Group may already be gone.
       }
     }, 5_000).unref();
+  }
+
+  /** SIGTERM the group, wait up to `graceMs` for every member to exit, then SIGKILL the group and
+   *  wait again. Resolves once no process of the group is left; rejects if some survive SIGKILL. */
+  async killGroup(graceMs = 5_000, killMs = 5_000): Promise<void> {
+    const pid = this.child.pid;
+    if (pid === undefined) return;
+    const signal = (sig: NodeJS.Signals): void => {
+      try {
+        process.kill(-pid, sig);
+      } catch {
+        // Group may already be gone.
+      }
+    };
+    const waitGone = async (ms: number): Promise<boolean> => {
+      const deadline = Date.now() + ms;
+      while (groupAlive(pid)) {
+        if (Date.now() >= deadline) return false;
+        await new Promise((resolve) => {
+          setTimeout(resolve, 100);
+        });
+      }
+      return true;
+    };
+    signal('SIGTERM');
+    if (await waitGone(graceMs)) return;
+    signal('SIGKILL');
+    if (!(await waitGone(killMs))) {
+      throw new Error(`process group ${String(pid)} survived SIGKILL`);
+    }
+  }
+}
+
+/** True while any process of group `pid` still exists (signal 0 probes without delivering). */
+function groupAlive(pid: number): boolean {
+  try {
+    process.kill(-pid, 0);
+    return true;
+  } catch (err) {
+    return (err as NodeJS.ErrnoException).code === 'EPERM';
   }
 }
 

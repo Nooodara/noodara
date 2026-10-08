@@ -9,6 +9,7 @@
 // browser `Origin` header satisfies the control plane's Origin guard instead of 403
 // FORBIDDEN_ORIGIN (T-5-41).
 import { execFile } from 'node:child_process';
+import net from 'node:net';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import {
@@ -100,10 +101,31 @@ async function assertContainersGone(ids: readonly string[]): Promise<void> {
   }
 }
 
+/** Fails if anything still listens on the stack's fixed ports (an orphaned next-server/node). */
+async function assertPortsFree(ports: readonly number[]): Promise<void> {
+  const busy: number[] = [];
+  for (const port of ports) {
+    const inUse = await new Promise<boolean>((resolve) => {
+      const probe = net.createServer();
+      probe.once('error', () => {
+        resolve(true);
+      });
+      probe.listen(port, () => {
+        probe.close(() => {
+          resolve(false);
+        });
+      });
+    });
+    if (inUse) busy.push(port);
+  }
+  if (busy.length > 0) {
+    throw new Error(`stopStack: ports still in use after teardown: ${busy.join(', ')}`);
+  }
+}
+
 async function killAndWait(proc: BootProcess, label: string): Promise<void> {
   try {
-    proc.kill();
-    await proc.waitForExit(15_000);
+    await proc.killGroup();
   } catch (err) {
     // One process failing to exit cleanly must never skip stopping the rest — logged, not thrown.
     console.warn(`stopStack: ${label} did not exit cleanly: ${err instanceof Error ? err.message : String(err)}`);
@@ -175,14 +197,7 @@ export async function startStack(): Promise<Stack> {
     });
     await waitForReady(web, WEB_READY_PATTERN, 'the web app', 60_000);
   } catch (err) {
-    api.kill();
-    worker?.kill();
-    web?.kill();
-    await Promise.allSettled([
-      api.waitForExit(10_000),
-      worker?.waitForExit(10_000) ?? Promise.resolve(null),
-      web?.waitForExit(10_000) ?? Promise.resolve(null),
-    ]);
+    await Promise.allSettled([api.killGroup(), worker?.killGroup(), web?.killGroup()]);
     await postgres.stop();
     await redis.stop();
     throw err;
@@ -264,5 +279,6 @@ export async function stopStack(stack: Stack): Promise<void> {
     console.warn(`stopStack: Postgres container did not stop cleanly: ${err instanceof Error ? err.message : String(err)}`);
   }
 
+  await assertPortsFree([WEB_PORT, API_PORT]);
   await assertContainersGone([handle.postgres.container.getId(), handle.redis.container.getId()]);
 }

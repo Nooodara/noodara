@@ -20,6 +20,8 @@ export const RUN_MANIFEST_PATH = path.join(process.cwd(), 'test-results', 'e2e-r
 export interface RunManifest {
   readonly runId: string;
   readonly runDir: string;
+  /** Epoch ms at setup: teardown reaps `noodara.test=true` containers created after this. */
+  readonly startedAtMs: number;
 }
 
 export default async function globalSetup(): Promise<void> {
@@ -31,7 +33,7 @@ export default async function globalSetup(): Promise<void> {
 
   mkdirSync(path.dirname(RUN_MANIFEST_PATH), { recursive: true });
   rmSync(STACK_HANDOFF_PATH, { force: true });
-  const manifest: RunManifest = { runId, runDir };
+  const manifest: RunManifest = { runId, runDir, startedAtMs: Date.now() };
   writeFileSync(RUN_MANIFEST_PATH, JSON.stringify(manifest, null, 2), 'utf8');
 
   try {
