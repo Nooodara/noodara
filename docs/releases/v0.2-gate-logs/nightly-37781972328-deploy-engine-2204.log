@@ -1,0 +1,68 @@
+
+ [31m❯[39m tests/integration/deploy-engine/exec-streaming.test.ts [2m([22m[2m4 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 41074[2mms[22m[39m
+   [31m❯[39m 11-14 / ADR 0008 G1/G2, D-04, criterion 4: streaming exec and confirmed kill, Ubuntu 22.04 [2m(4)[22m
+     [32m✓[39m G1: secrets.write_file through stream stdin lands the exact bytes at 0600[32m 250[2mms[22m[39m
+     [33m[2m✓[22m[39m noisy build: chunks arrive before the build ends, canary only as [REDACTED], 1 MiB cap truncates, abort leaves the group alive, kill confirms absence[33m 18115[2mms[22m[39m
+[31m     [31m×[31m slow build: killSupervisedOperation runs while the stream is open on the same connection, confirms, and the stream then ends non-zero[39m[33m 680[2mms[22m[39m
+     [32m✓[39m SEC: no secret value (canary, stdin file secret) appears in any chunk or tail[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/deploy-engine/runtime-container-logs.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 98433[2mms[22m[39m
+   [32m✓[39m runtime container logs on Ubuntu 22.04 (12-16) [2m(6)[22m
+     [33m[2m✓[22m[39m A1: tail returns the last N lines with timestamps; the default tail returns the whole short log[33m 667[2mms[22m[39m
+     [33m[2m✓[22m[39m A3: ANSI escapes and binary bytes never reach the client[33m 328[2mms[22m[39m
+     [33m[2m✓[22m[39m ERR: a service without a container is CONTAINER_NOT_FOUND (409); an unknown service is 404[33m 457[2mms[22m[39m
+     [33m[2m✓[22m[39m A2: follow streams live lines and ends at the max duration, killing the remote docker logs[33m 4540[2mms[22m[39m
+     [33m[2m✓[22m[39m A2: a client that disconnects ends the follow and the remote docker logs is killed[33m 763[2mms[22m[39m
+ [32m✓[39m tests/integration/deploy-engine/contracts-https-token.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 38677[2mms[22m[39m
+   [32m✓[39m 12-06 / ADR 0008 open item 4: HTTPS-token clone through the askpass slot, Ubuntu 22.04 [2m(3)[22m
+     [33m[2m✓[22m[39m A1/A2: the right token clones over HTTPS via <ws>/secrets/askpass (0700, own slot), no helper persists it, and the workspace removal takes both files[33m 1320[2mms[22m[39m
+     [33m[2m✓[22m[39m A2: a wrong token fails as REPOSITORY_AUTH_FAILED with a curated message[33m 731[2mms[22m[39m
+ [32m✓[39m tests/integration/deploy-engine/harness.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 22780[2mms[22m[39m
+
+   [32m✓[39m deploy-engine harness on Ubuntu 22.04 [2m(6)[22m
+     [33m[2m✓[22m[39m serves the seeded bare repository over SSH to the per-run deploy key[33m 433[2mms[22m[39m
+     [33m[2m✓[22m[39m refuses a key that is not the deploy key[33m 380[2mms[22m[39m
+     [33m[2m✓[22m[39m logs in to the htpasswd registry with --password-stdin and pulls a preloaded base[33m 979[2mms[22m[39m
+     [33m[2m✓[22m[39m resolves every digest-pinned base image through the mirror[33m 692[2mms[22m[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/integration/deploy-engine/exec-streaming.test.ts[2m > [22m11-14 / ADR 0008 G1/G2, D-04, criterion 4: streaming exec and confirmed kill, Ubuntu 22.04[2m > [22mslow build: killSupervisedOperation runs while the stream is open on the same connection, confirms, and the stream then ends non-zero
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/integration/deploy-engine/exec-streaming.test.ts:[2m389:38[22m[39m
+    [90m387|[39m           );
+    [90m388|[39m           expect(started, watched.text().slice(-2_000)).toBe(true);
+    [90m389|[39m           expect(await sleepAlive()).toBe(true);
+    [90m   |[39m                                      [31m^[39m
+    [90m390|[39m
+    [90m391|[39m           const kill = await killSupervisedOperation({
+[90m [2m❯[22m withWorkspace tests/integration/deploy-engine/exec-streaming.test.ts:[2m187:9[22m[39m
+[90m [2m❯[22m tests/integration/deploy-engine/exec-streaming.test.ts:[2m377:7[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Unhandled Errors [49m[22m[31m⎯⎯⎯⎯⎯⎯[39m
+[31m[1m
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mSshExecFailure[22m: The connection to the server was lost while a command was running. This is often transient — the adapter will retry automatically.[39m
+[36m [2m❯[22m Object.onTransportLost packages/ssh/src/ssh2-adapter.ts:[2m256:18[22m[39m
+    [90m254|[39m         commandName,
+    [90m255|[39m         onTransportLost: (failure) => {
+    [90m256|[39m           reject(new SshExecFailure(failure));
+    [90m   |[39m                  [31m^[39m
+    [90m257|[39m         },
+    [90m258|[39m       };
+[90m [2m❯[22m failInFlight packages/ssh/src/ssh2-adapter.ts:[2m229:51[22m[39m
+[90m [2m❯[22m Client.<anonymous> packages/ssh/src/ssh2-adapter.ts:[2m412:7[22m[39m
+[90m [2m❯[22m Client.emit node:events:[2m519:28[22m[39m
+[90m [2m❯[22m Socket.<anonymous> node_modules/.pnpm/ssh2@1.17.0/node_modules/ssh2/lib/client.js:[2m819:12[22m[39m
+[90m [2m❯[22m Socket.emit node:events:[2m519:28[22m[39m
+[90m [2m❯[22m TCP.<anonymous> node:net:[2m347:12[22m[39m
