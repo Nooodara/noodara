@@ -48,8 +48,14 @@ const SLOW_BUILD_DOCKERFILE = readFileSync(path.join(HERE, 'fixtures/slow-build/
 const BASE_FROM_LINE = SLOW_BUILD_DOCKERFILE.split('\n').find((line) => line.startsWith('FROM '));
 const SLOW_BUILD_STARTED = 'NOODARA_SLOW_BUILD_STARTED';
 const NOISY_BUILD_READY = 'NOODARA_NOISY_BUILD_READY';
-/** BuildKit plain progress output line, e.g. `#5 12.345 NOODARA_NOISY_BUILD_READY`. */
-const READY_OUTPUT_LINE = new RegExp(`^#\\d+ \\d+\\.\\d+ ${NOISY_BUILD_READY}$`, 'm');
+/**
+ * BuildKit plain progress output line, e.g. `#5 12.345 NOODARA_NOISY_BUILD_READY`. Only this line
+ * proves the RUN process exists: the step header (`#5 [2/2] RUN echo <marker> ...`) echoes the
+ * marker when the step is scheduled, before its container starts (14-25).
+ */
+const outputLine = (marker: string): RegExp => new RegExp(`^#\\d+ \\d+\\.\\d+ ${marker}$`, 'm');
+const READY_OUTPUT_LINE = outputLine(NOISY_BUILD_READY);
+const SLOW_STARTED_OUTPUT_LINE = outputLine(SLOW_BUILD_STARTED);
 /**
  * ~1.3 MB of build output: above the 1 MiB stream cap, below BuildKit's 2 MiB per-step clip.
  * Printed in bursts with a pause between them: a step printing faster than BuildKit's log speed
@@ -380,9 +386,15 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         const { watched, onChunk } = watch();
         try {
           const streaming = sess().stream(supervise(pidFile, build), bounds({ ...BUILD_BOUNDS, onChunk }));
+          // Awaited below; this only keeps an early assertion failure from resurfacing as an
+          // unhandled CONNECTION_LOST when afterAll closes the session under the abandoned stream.
+          void streaming.catch(() => undefined);
 
+          // 14-25: wait for the RUN step's output, not the marker in its header. On a loaded
+          // runner the header arrives alone, before the step's container starts, and the
+          // sleepAlive check below then ran before `sh -c` existed.
           const started = await pollUntil(
-            () => Promise.resolve(watched.text().includes(SLOW_BUILD_STARTED)),
+            () => Promise.resolve(SLOW_STARTED_OUTPUT_LINE.test(watched.text())),
             180_000,
           );
           expect(started, watched.text().slice(-2_000)).toBe(true);
