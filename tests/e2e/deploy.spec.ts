@@ -186,11 +186,27 @@ async function openService(page: Page, projectId: string, serviceId: string): Pr
   await expect(page.getByTestId('service-toolbar')).toBeVisible();
 }
 
+/**
+ * Opens the service edit sheet from whichever layout the toolbar is in. 14-13: below 960 px of
+ * toolbar width (an open inspector counts, e.g. `?deployment=` after a deploy at 1280 px) Edit
+ * leaves the bar for the overflow menu, so a bare `service-edit` click waits forever there.
+ */
+async function openServiceEdit(page: Page): Promise<void> {
+  await expect(page.getByTestId('service-toolbar')).toBeVisible();
+  const edit = page.getByTestId('service-edit');
+  if ((await edit.count()) > 0) {
+    await edit.click();
+  } else {
+    await page.getByTestId('service-actions-menu').click();
+    await page.getByRole('menu').getByRole('menuitem', { name: 'Edit' }).click();
+  }
+  await expect(page.getByTestId('service-sheet')).toBeVisible();
+}
+
 /** Generates the write-only deploy key in the edit sheet and lets it read the git host. */
 async function grantDeployKey(page: Page, host: DeployHost): Promise<void> {
-  await page.getByTestId('service-edit').click();
+  await openServiceEdit(page);
   const sheet = page.getByTestId('service-sheet');
-  await expect(sheet).toBeVisible();
   await sheet.getByTestId('credential-replace').click();
   const publicKey = (await sheet.getByTestId('deploy-key-public').innerText()).trim();
   await expect(sheet.getByTestId('credential-status')).toHaveText('Configured');
@@ -556,7 +572,7 @@ test.describe('@e2e-deploy critical deploy path', () => {
     await openService(page, projectId, serviceId);
 
     // Entered once, write-only, in the edit sheet.
-    await page.getByTestId('service-edit').click();
+    await openServiceEdit(page);
     const sheet = page.getByTestId('service-sheet');
     await sheet.getByTestId('credential-replace').click();
     await sheet.getByTestId('credential-registry-username').fill(deployHost.registry.username);
@@ -589,7 +605,8 @@ test.describe('@e2e-deploy critical deploy path', () => {
       await expect(watched.getByTestId('deployment-step-pull')).toHaveAttribute('data-severity', 'pass');
       // The pull logged in with the canary: the image runs and answers.
       expect((await deployHost.curlPublishedPort(port, '/')).status).toBe(200);
-      await watched.getByTestId('service-edit').click();
+      // The deploy left the build log open in the inspector (?deployment=): the toolbar is compact.
+      await openServiceEdit(watched);
       await expect(watched.getByTestId('credential-status')).toHaveText('Configured');
       doms.push(await watched.content());
       await watched.keyboard.press('Escape');
