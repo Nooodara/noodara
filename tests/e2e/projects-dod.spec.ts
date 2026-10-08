@@ -658,6 +658,14 @@ function unreachedTabbables(scopeSelector: string | null): string[] {
   return missing;
 }
 
+/** 14-26: the sidebar's Projects branch loads on its own after the page's content. Until it lands,
+ *  Projects is a leaf link; the load turns it into a branch, which mounts a new link, a toggle and
+ *  the project rows. A walk that passes the sidebar first never stamps them. The toggle only
+ *  exists once the load has landed. */
+async function sidebarTreeLoaded(page: Page): Promise<void> {
+  await expect(page.getByTestId('nav-tree-toggle-projects')).toBeVisible();
+}
+
 async function tabWalk(page: Page, maxSteps = 150): Promise<FocusStop[]> {
   // blur() keeps the sequential-focus starting point where focus was (the inspector focuses its
   // close button on open), so park focus on an untabbable marker at the top of <body> instead.
@@ -719,6 +727,14 @@ test.describe('@projects-dod Phase 13 screens', () => {
     await login(page);
   });
 
+  // 14-26: the shell keeps loading after a test's last assertion (the sidebar tree refetches on
+  // every stream resync). A route handler still rewriting one of those responses when the page
+  // closes fails the test with "Response has been disposed" or "route.fetch: Test ended". Errors
+  // thrown during the test body are already reported; this only drops handlers still in flight.
+  test.afterEach(async ({ page }) => {
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+  });
+
   for (const screen of SCREENS) {
     test(`A1 ${screen.name}: text contrast meets the design-system thresholds in light and dark`, async ({ page }) => {
       for (const theme of THEMES) {
@@ -774,6 +790,7 @@ test.describe('@projects-dod Phase 13 screens', () => {
     test(`H1 ${screen.name}: every control is keyboard reachable in document order with a visible focus ring`, async ({ page }) => {
       for (const theme of THEMES) {
         await show(page, screen, theme, 1280);
+        await sidebarTreeLoaded(page);
         const stops = await tabWalk(page);
         expect(stops.length, `${screen.name} [${theme}] has focusable controls`).toBeGreaterThan(3);
         const outOfOrder = stops.filter((stop, index) => index > 0 && stop.order < (stops[index - 1]?.order ?? -1)).map((stop) => stop.where);

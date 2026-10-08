@@ -192,6 +192,14 @@ test('@theme-first-paint no theme flash on reload for dark and light, on /login 
   expect(loginResult.frames[0]).toBe(DARK_CANVAS_RGB);
 
   await login(page);
+  // 14-26: the shell's session store (apps/web/src/lib/session-user.ts `ensureLoaded`) reads
+  // `GET /api/account/preferences` on mount. That response re-issues the mirror cookie, and the
+  // store then calls `applyPreferences(server)`. If the PATCH below lands while that GET is in
+  // flight, the GET's stale `auto` value rewrites the cookie after the PATCH did, and the reload
+  // paints from it (nightly 37807942623). The store emits after both writes, and the emit fills
+  // the account menu trigger, so a non-empty trigger means the load has settled (same signal as
+  // a11y-fallbacks.spec.ts).
+  await expect(page.getByTestId('shell-account-menu-trigger')).toHaveText(/\S/);
   // D-10 (09-10): once signed in, the shared session store reconciles the browser mirror with the
   // server's stored preferences and the SERVER wins. A cookie manufactured by this test is exactly
   // the divergence that reconciliation exists to correct (it would legitimately repaint /servers
