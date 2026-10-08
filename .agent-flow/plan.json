@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-08T06:58:10.231Z",
+  "updatedAt": "2026-10-08T07:00:04.761Z",
   "cursor": {
     "phase": "14",
-    "task": "14-21"
+    "task": "14-23"
   },
   "phases": [
     {
@@ -4496,7 +4496,7 @@
           ],
           "wave": 5,
           "dependsOn": [],
-          "status": "active",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
@@ -4571,12 +4571,13 @@
           "id": "14-23",
           "title": "CI: pnpm audit high findings (sharp, next)",
           "scope": [
-            "package.json",
-            "pnpm-lock.yaml",
-            "pnpm-workspace.yaml",
+            "apps/control-plane/package.json",
             "apps/site/package.json",
             "apps/web/package.json",
-            "apps/control-plane/package.json"
+            "package.json",
+            "packages/ui/package.json",
+            "pnpm-lock.yaml",
+            "pnpm-workspace.yaml"
           ],
           "wave": 5,
           "dependsOn": [],

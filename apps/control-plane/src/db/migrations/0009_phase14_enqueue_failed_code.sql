@@ -1,1 +1,1 @@
-ALTER TYPE "public"."deployment_error_code" ADD VALUE 'ENQUEUE_FAILED';
+ALTER TYPE "public"."deployment_error_code" ADD VALUE IF NOT EXISTS 'ENQUEUE_FAILED';

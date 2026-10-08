@@ -97,9 +97,9 @@ describe('concepts/server.mdx statuses match the domain', () => {
 });
 
 describe('concepts pages carry the right in-context scope notes', () => {
-  it('service.mdx contains both deploy-services and app-config ScopeNotes', () => {
+  it('service.mdx contains the app-config ScopeNote', () => {
     const page = docsPage('concepts/service');
-    expect(page).toMatch(/<ScopeNote id="deploy-services"\s*\/>/);
+    expect(page).not.toMatch(/deploy-services/);
     expect(page).toMatch(/<ScopeNote id="app-config"\s*\/>/);
   });
 
@@ -107,8 +107,8 @@ describe('concepts pages carry the right in-context scope notes', () => {
     expect(docsPage('concepts/environment')).toMatch(/<ScopeNote id="app-config"\s*\/>/);
   });
 
-  it('deployment.mdx contains the deploy-services ScopeNote', () => {
-    expect(docsPage('concepts/deployment')).toMatch(/<ScopeNote id="deploy-services"\s*\/>/);
+  it('deployment.mdx carries no stale deploy-services ScopeNote', () => {
+    expect(docsPage('concepts/deployment')).not.toMatch(/deploy-services/);
   });
 });
 
