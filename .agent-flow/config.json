@@ -48,7 +48,10 @@
       "security-leaks": "pnpm security:scan-leaks",
       "ui-safety": "pnpm check:ui-safety",
       "e2e-full": "pnpm test:e2e",
-      "it-web-image": "pnpm exec vitest run --config vitest.installer.config.ts tests/integration/installer/web-image.test.ts"
+      "it-web-image": "pnpm exec vitest run --config vitest.installer.config.ts tests/integration/installer/web-image.test.ts",
+      "site-build": "pnpm --filter @noodara/site build",
+      "it-db": "pnpm exec vitest run --config vitest.integration.config.ts tests/integration/db",
+      "audit": "pnpm audit --audit-level=high"
     },
     "defaultGates": [
       "test",
