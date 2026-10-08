@@ -1,8 +1,9 @@
 # UX Review — Fase 14 / 14-13: deuda de 375 px
 
 Fecha: 2026-10-07 · Commit: eb1de27 + working tree 14-13 (pasada 2) · Modo: screenshots + código
-Veredicto global: **FLAG** (sin BLOCK)
+Veredicto global: **PASS** (tras 14-19)
 Aprobación humana (A4): **aprobada** por el usuario el 2026-10-07
+Aprobación humana de 14-19 (A3): **aprobada** por el usuario el 2026-10-07 (`stress-project-*`).
 
 Alcance: lista de proyectos, proyecto y servicio, en light y dark, a 375 y 1280 px. Screenshots en este directorio, capturados con `NOODARA_UI_REVIEW_CAPTURE=1 pnpm exec playwright test tests/e2e/projects-dod.spec.ts -g "14-13"` (8/8 verde). `stress-*` usa un nombre de servicio y una URL de repo de 300 caracteres sin cortes.
 
@@ -11,7 +12,7 @@ Alcance: lista de proyectos, proyecto y servicio, en light y dark, a 375 y 1280 
 | Tokens | PASS | Sin hex, rgb ni gradientes en los archivos tocados; un solo acento (Deploy, New project, New environment). Rojo solo en Failed. |
 | Superficie y elevación | PASS | Cards por superficie y hairline; la única sombra es la del menú (`packages/ui/src/RowMenu.tsx:72`, `--shadow-floating`). |
 | Tipografía y jerarquía | PASS | Display a 1280, title a 375 (`ServiceToolbar.tsx`); mono en imagen, repo, puertos. Pesos 400/600. |
-| Layout y espaciado | FLAG | Servicio: toolbar en una fila a 375 y 1280, título con ≥12 caracteres, URL truncada al medio (`stress-service-375-*.png`, `stress-service-1280-*.png`). Proyecto a 375: el título desaparece y "← Projects" / "New environment" parten en dos líneas (`project-375-light.png`; `apps/web/src/components/Toolbar.tsx:117` es `flex-1 truncate` sin mínimo). |
+| Layout y espaciado | PASS | Servicio: toolbar en una fila a 375 y 1280, título con ≥12 caracteres, URL truncada al medio (`stress-service-375-*.png`, `stress-service-1280-*.png`). Proyecto (14-19): toolbar compacta en una fila a 375 con título visible, flecha de 44 px y Edit/Archive/Delete en el menú (`stress-project-375-*.png`, `stress-project-1280-*.png`). `project-375-*.png` son capturas previas a 14-19. |
 | Componentes | PASS | `MiddleTruncate`, `LabelValue truncate="middle"`, `RowMenu`, `Button hitArea` de `packages/ui`; sin reimplementaciones. |
 | Estados | PASS | "Never deployed" y "Failed" con frase; error de deploy con `IMAGE_PULL_FAILED` y qué hacer (`service-375-*.png`). |
 | Progressive disclosure | PASS | A 375 Edit y Logs pasan al menú "⋯"; el primario (Deploy o Cancel) queda visible. URL completa en `title`, texto sr-only y botón de copia. |
