@@ -417,6 +417,42 @@ test('@discovery a page that joins mid-run never shows an unreceived earlier che
   await expect(page.getByTestId('discovery-check-docker_group')).toContainText('Pending');
 });
 
+// 14-24: the deterministic shape of the 364 flake (nightly 37741127947, iteration 5). The checks
+// arrive while the page's own GET /api/servers/:id is still in flight; the first snapshot then
+// lands as CONNECTING and must not count as "entering" a run and wipe what was already received.
+test('@discovery checks received while the first server snapshot is in flight survive that snapshot landing', async ({
+  page,
+}) => {
+  const fixture = buildServerViewFixture({
+    id: '88888888-8888-4888-8888-888888888886',
+    name: 'mid-run-held-snapshot-srv',
+    status: 'CONNECTING',
+  });
+  let releaseServerGet: () => void = () => undefined;
+  const serverGetReleased = new Promise<void>((resolve) => {
+    releaseServerGet = resolve;
+  });
+  await page.route(`**/api/servers/${fixture.id}`, async (route) => {
+    await serverGetReleased;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(fixture) });
+  });
+  await stubDiscoveryRead(page, fixture.id, { collectedAt: null, outcome: null, checks: [], warnings: [] });
+  await installSyntheticServerEvents(page);
+
+  await login(page);
+  await page.goto(`/servers/${fixture.id}`);
+  await expect(page.getByTestId('shell-stream-status')).toHaveCount(0);
+  await expect(page.getByTestId('discovery-step-docker')).toHaveCount(0);
+
+  await dispatchDiscoveryCheck(page, fixture.id, { id: 'docker_version', status: 'pass', detail: 'Docker 27.3.1', durationMs: 12 });
+  await dispatchDiscoveryCheck(page, fixture.id, { id: 'docker_compose_version', status: 'pass', detail: 'v2.29.7', durationMs: 9 });
+  await dispatchDiscoveryCheck(page, fixture.id, { id: 'docker_buildkit', status: 'pass', detail: 'BuildKit is available.', durationMs: 7 });
+  releaseServerGet();
+
+  await expect(page.getByTestId('discovery-step-docker')).toHaveAttribute('data-severity', 'pass');
+  await expect(page.getByTestId('discovery-step-os')).toHaveAttribute('data-severity', 'pending');
+});
+
 test('@discovery a finished run leaves no checks behind for the next run to inherit', async ({ page }) => {
   const fixture = buildServerViewFixture({
     id: '88888888-8888-4888-8888-888888888888',

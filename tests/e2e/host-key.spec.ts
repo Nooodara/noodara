@@ -13,17 +13,12 @@
 // app's own real EventSource instance).
 import { expect, test, type Page, type Request } from '@playwright/test';
 import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './fixtures/stack.js';
+import { pickFixedHostPort } from '../integration/helpers/fixed-host-port.js';
 import { startSshd, type SshdFixture } from '../integration/helpers/ssh.js';
 
-// A high, unlikely port distinct from tests/integration/ssh/host-key-changed.test.ts's 42_522 and
-// connection-loss.test.ts's 42_533 -- Playwright's own config pins `workers: 1`/`fullyParallel:
-// false`, so nothing else in this test run can race this port.
-const FIXED_HOST_PORT = 42_544;
-// A second fixed port, distinct from FIXED_HOST_PORT above, for 05-31-PLAN.md's own real-backend
-// trust-flow test -- both tests stop their containers in a `finally` block before the next test
-// starts (workers: 1/fullyParallel: false), but a dedicated port keeps each test's intent legible
-// on its own and avoids any accidental cross-test coupling through a shared constant.
-const REAL_TRUST_FLOW_HOST_PORT = 42_545;
+// The two real host-key-change tests republish sshd on the same host:port, so each picks its own
+// port per test via pickFixedHostPort(): below every ephemeral range and probed free. A hard-coded
+// 42_544 sat inside Linux's ephemeral range and was held by another socket on the CI runner (14-24).
 
 async function login(page: Page): Promise<void> {
   await page.goto('/login');
@@ -492,7 +487,8 @@ test('@hostkey UF-01/GR-02 regression: editing the host while ERROR/HOST_KEY_CHA
   let sshdB: SshdFixture | undefined;
 
   try {
-    sshdA = await startSshd({ ubuntu: '24.04', hostPort: FIXED_HOST_PORT });
+    const hostPort = await pickFixedHostPort();
+    sshdA = await startSshd({ ubuntu: '24.04', hostPort });
 
     await login(page);
     await page.getByRole('button', { name: 'Add server' }).click();
@@ -526,7 +522,7 @@ test('@hostkey UF-01/GR-02 regression: editing the host while ERROR/HOST_KEY_CHA
     // exact same host:port (the fixture's own entrypoint regenerates host keys every start).
     await sshdA.stop();
     sshdA = undefined;
-    sshdB = await startSshd({ ubuntu: '24.04', hostPort: FIXED_HOST_PORT });
+    sshdB = await startSshd({ ubuntu: '24.04', hostPort });
 
     // Re-run discovery re-verifies the SSH session end to end (connect-and-discover.ts always
     // drives a fresh handshake) -- this genuinely fails with HOST_KEY_CHANGED against the new key.
@@ -594,7 +590,8 @@ test('@hostkey the real trust-fingerprint POST succeeds end to end against the r
   let sshdB: SshdFixture | undefined;
 
   try {
-    sshdA = await startSshd({ ubuntu: '24.04', hostPort: REAL_TRUST_FLOW_HOST_PORT });
+    const hostPort = await pickFixedHostPort();
+    sshdA = await startSshd({ ubuntu: '24.04', hostPort });
 
     await login(page);
     await page.getByRole('button', { name: 'Add server' }).click();
@@ -624,7 +621,7 @@ test('@hostkey the real trust-fingerprint POST succeeds end to end against the r
     // container and start a second, fresh-keyed one on the exact same host:port.
     await sshdA.stop();
     sshdA = undefined;
-    sshdB = await startSshd({ ubuntu: '24.04', hostPort: REAL_TRUST_FLOW_HOST_PORT });
+    sshdB = await startSshd({ ubuntu: '24.04', hostPort });
 
     await page.getByTestId('server-detail-primary-action').click();
     const banner = page.getByTestId('host-key-changed-banner');

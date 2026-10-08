@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-08T07:00:43.479Z",
+  "updatedAt": "2026-10-08T11:17:59.402Z",
   "cursor": {
     "phase": "14",
-    "task": "14-15"
+    "task": "14-24"
   },
   "phases": [
     {
@@ -4615,26 +4615,27 @@
         {
           "id": "14-24",
           "title": "Nightly e2e-repeat: fix flaky discovery, settings density and host-key tests",
-          "tier": "deep",
           "scope": [
-            "tests/e2e/",
             "apps/web/src/",
+            "docs/releases/v0.2-gate-logs/",
             "packages/ui/src/",
-            "tests/integration/helpers/",
             "playwright.config.ts",
             "scripts/e2e-repeat.mjs",
-            "docs/releases/v0.2-gate-logs/"
+            "tests/e2e/",
+            "tests/integration/helpers/",
+            "tests/integration/ssh/"
           ],
           "wave": 5,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
+            "boundaries",
+            "e2e-full",
+            "it-ssh-contracts",
+            "lint",
             "test",
             "typecheck",
-            "lint",
-            "boundaries",
-            "ui-safety",
-            "e2e-full"
+            "ui-safety"
           ],
           "acceptance": [
             {
@@ -4658,7 +4659,8 @@
             "persistence",
             "auth-secrets",
             "randomness"
-          ]
+          ],
+          "tier": "deep"
         }
       ]
     }

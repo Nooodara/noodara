@@ -35,7 +35,7 @@ import { ServerDetailToolbar } from '../../../../components/ServerDetailToolbar'
 import { ServerFacts } from '../../../../components/ServerFacts';
 import { TrustFingerprintDialog } from '../../../../components/TrustFingerprintDialog';
 import { apiGet, type ApiErrorCode, type ServerView } from '../../../../lib/api-client';
-import { reconcileDetailSnapshot } from '../../../../lib/detail-sync';
+import { reconcileDetailSnapshot, shouldResetLiveChecks } from '../../../../lib/detail-sync';
 import { deriveDetailState, derivePrimaryAction } from '../../../../lib/detail-state';
 import { copyForErrorCode, copyForServerErrorCode } from '../../../../lib/error-copy';
 import { dismissFirstTrustNotice, shouldShowFirstTrustNotice } from '../../../../lib/first-trust';
@@ -133,12 +133,10 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         return;
       }
 
-      const previousStatus = heldServerRef.current?.status ?? null;
-      const enteringConnecting = previousStatus !== 'CONNECTING' && next.status === 'CONNECTING';
-      const leavingConnecting = previousStatus === 'CONNECTING' && next.status !== 'CONNECTING';
-      if (enteringConnecting || leavingConnecting) {
-        // A run just started or just ended -- discard whatever live progress belonged to it, from
-        // either direction, so a finished run's checks can never render as the next run's.
+      // A run just started or just ended -- discard whatever live progress belonged to it, from
+      // either direction, so a finished run's checks can never render as the next run's. The
+      // first snapshot is not a transition: checks received while it was in flight are kept.
+      if (shouldResetLiveChecks(heldServerRef.current?.status ?? null, next.status)) {
         setLiveChecks([]);
       }
 

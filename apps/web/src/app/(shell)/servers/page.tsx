@@ -67,7 +67,9 @@ export default function ServersPage() {
     latestRequestRef.current += 1;
     const request = latestRequestRef.current;
     pendingEventsRef.current ??= [];
-    setState({ kind: 'loading' });
+    // First load (or a retry from the error state) shows the skeleton; a resync over a visible
+    // list keeps it on screen until the fresh snapshot lands -- never a blank flash of the rows.
+    setState((prev) => (prev.kind === 'ready' ? prev : { kind: 'loading' }));
 
     void apiGet<ListServersResponse>('/api/servers').then((result) => {
       if (request !== latestRequestRef.current) return; // superseded by a newer snapshot request

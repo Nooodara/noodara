@@ -75,3 +75,14 @@ export function reconcileDetailSnapshot<T extends DetailSnapshotLike>(
 
   return { accept: true };
 }
+
+/**
+ * Whether the detail screen's accumulated `server.discovery_progress` checks must be discarded
+ * when its held server moves from `previous` to `next`: only on an observed transition into or out
+ * of `CONNECTING`. The first snapshot (`previous === null`) is not a transition -- every check
+ * received since mount belongs to the run that snapshot shows, so it is kept (14-24).
+ */
+export function shouldResetLiveChecks(previous: string | null, next: string): boolean {
+  if (previous === null) return false;
+  return (previous === 'CONNECTING') !== (next === 'CONNECTING');
+}

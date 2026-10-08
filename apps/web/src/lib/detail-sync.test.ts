@@ -4,7 +4,7 @@
 // proof for the *bug* this closes is the page-level reproduction in Task 3's E2E specs, plus this
 // plan's SUMMARY quoting the finding it fixes.
 import { describe, expect, it } from 'vitest';
-import { reconcileDetailSnapshot, type DetailSnapshotLike } from './detail-sync';
+import { reconcileDetailSnapshot, shouldResetLiveChecks, type DetailSnapshotLike } from './detail-sync';
 
 interface Fixture extends DetailSnapshotLike {
   readonly id: string;
@@ -143,5 +143,33 @@ describe('reconcileDetailSnapshot', () => {
     };
 
     expect(reconcileDetailSnapshot(input)).toEqual(reconcileDetailSnapshot(input));
+  });
+});
+
+// 14-24: the detail page cleared its live checks on the FIRST snapshot (no held server yet ->
+// CONNECTING counted as "entering"), wiping every `server.discovery_progress` the page received
+// while that GET was in flight (discovery.spec.ts:364 nightly flake, nightly 37741127947).
+describe('shouldResetLiveChecks', () => {
+  it('keeps the checks received since mount when the first snapshot shows a run in flight', () => {
+    expect(shouldResetLiveChecks(null, 'CONNECTING')).toBe(false);
+  });
+
+  it('keeps them when the first snapshot shows no run', () => {
+    expect(shouldResetLiveChecks(null, 'CONNECTED')).toBe(false);
+  });
+
+  it('resets on an observed transition into CONNECTING (a new run starts)', () => {
+    expect(shouldResetLiveChecks('CONNECTED', 'CONNECTING')).toBe(true);
+    expect(shouldResetLiveChecks('ERROR', 'CONNECTING')).toBe(true);
+  });
+
+  it('resets on an observed transition out of CONNECTING (the run ended)', () => {
+    expect(shouldResetLiveChecks('CONNECTING', 'CONNECTED')).toBe(true);
+    expect(shouldResetLiveChecks('CONNECTING', 'ERROR')).toBe(true);
+  });
+
+  it('keeps them while the status does not cross CONNECTING', () => {
+    expect(shouldResetLiveChecks('CONNECTING', 'CONNECTING')).toBe(false);
+    expect(shouldResetLiveChecks('CONNECTED', 'ERROR')).toBe(false);
   });
 });

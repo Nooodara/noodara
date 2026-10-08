@@ -185,4 +185,20 @@ describe('ServersPage snapshot/stream race', () => {
 
     expect(screen.getByText('inserted-then-overwritten')).toBeInTheDocument();
   });
+  // The shape behind settings.spec.ts's "density Compact" flake (nightly 37759024967): the mount
+  // GET landed first, the test saw the row, then the stream's `open` resync put the screen back to
+  // `loading` and the row vanished until the second GET landed. A resync patches a visible list in
+  // place (like the detail screen's hasLoadedRef) -- it never re-skeletonizes it.
+  it('keeps an already visible list on screen while a resync-on-open snapshot is in flight', async () => {
+    const page = renderPage();
+    const server = buildServer({ id: 'a4', name: 'visible-before-resync' });
+    await page.resolveOldestGet([server]);
+    expect(screen.getByText('visible-before-resync')).toBeInTheDocument();
+
+    page.openStream();
+
+    expect(screen.getByText('visible-before-resync')).toBeInTheDocument();
+    await page.resolveOldestGet([server]);
+    expect(screen.getByText('visible-before-resync')).toBeInTheDocument();
+  });
 });
