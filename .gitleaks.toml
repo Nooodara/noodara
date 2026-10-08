@@ -53,6 +53,8 @@ description = "Committed raw gate logs of phase runs: SSH host-key fingerprints 
 paths = [
   '''^\.planning/phases/[^/]+/gate-logs/''',
   '''^\.planning/milestones/[^/]+/[^/]+/gate-logs/''',
+  # v0.2 release gate logs: test-run key fingerprints and setup tokens of throwaway DBs (masked in the current tree).
+  '''^docs/releases/[^/]+-gate-logs/''',
 ]
 
 [[allowlists]]

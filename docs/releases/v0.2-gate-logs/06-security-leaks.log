@@ -104,7 +104,7 @@
 Cached:    7 cached, 7 total
   Time:    19ms >>> FULL TURBO
 
-{"level":40,"time":1791434390113,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"d9d01c5627173d50","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1791434390113,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"<masked>","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
 {"level":30,"time":1791434390141,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","msg":"Server listening at http://127.0.0.1:52856"}
 {"level":30,"time":1791434390151,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
 {"level":30,"time":1791434390226,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":74.67258300000685,"msg":"request completed"}
@@ -287,7 +287,7 @@ Cached:    7 cached, 7 total
 {"level":30,"time":1791434417136,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2i","res":{"statusCode":200},"responseTime":6.006041999993613,"msg":"request completed"}
 {"level":30,"time":1791434417136,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2j","req":{"method":"GET","url":"/api/activity","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
 {"level":30,"time":1791434417142,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2j","res":{"statusCode":200},"responseTime":5.165583999987575,"msg":"request completed"}
-{"level":40,"time":1791434511979,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"4bc5c3e37d5f5b85","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1791434511979,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"<masked>","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
 {"level":30,"time":1791434511994,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","msg":"Server listening at http://127.0.0.1:53028"}
 {"level":30,"time":1791434511996,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
 {"level":30,"time":1791434512058,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":61.522707999974955,"msg":"request completed"}
@@ -470,7 +470,7 @@ Cached:    7 cached, 7 total
 {"level":30,"time":1791434539345,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2i","res":{"statusCode":200},"responseTime":6.0175839999865275,"msg":"request completed"}
 {"level":30,"time":1791434539345,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2j","req":{"method":"GET","url":"/api/activity","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
 {"level":30,"time":1791434539350,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2j","res":{"statusCode":200},"responseTime":4.929459000006318,"msg":"request completed"}
-{"level":40,"time":1791434561388,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"320f779c194f9ba8","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1791434561388,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"<masked>","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
 (node:5559) [FSTWRN004] FastifyWarning: It seems that you are overriding an errorHandler in the same scope, which can lead to subtle bugs. To disable this behavior, set 'allowErrorHandlerOverride' to false. For more information, visit: https://fastify.dev/docs/latest/Reference/Server/#allowerrorhandleroverride
 (Use `node --trace-warnings ...` to show where the warning was created)
 {"level":40,"time":1791434561408,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}

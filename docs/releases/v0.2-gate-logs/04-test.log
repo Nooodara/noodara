@@ -8,7 +8,7 @@
 
  RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
 
-{"level":40,"time":1791434271227,"pid":92940,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"de64602faf957ec4","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1791434271227,"pid":92940,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"<masked>","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
 Not implemented: navigation to another Document
 Not implemented: navigation to another Document
 Not implemented: navigation to another Document
