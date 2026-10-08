@@ -31,6 +31,9 @@ paths = [
   '''^apps/web/src/components/SettingsGroups\.test\.tsx$''',
   '''^apps/web/src/lib/settings-rows\.test\.ts$''',
   '''^apps/control-plane/src/deploy/log-sink\.test\.ts$''',
+  # Phase 13 web redaction tests: a fake AKIA…MNOP access key and a NOODARA_CANARY_ghp_ token.
+  '''^apps/web/src/lib/deploy-error-copy\.test\.ts$''',
+  '''^apps/web/src/lib/build-log\.test\.ts$''',
 ]
 
 [[allowlists]]
