@@ -196,6 +196,7 @@ was removed or flagged suspicious.
 | fumadocs-mdx | fuma-nama/fumadocs | 15.4.5 | `[OK]` | 2026-09-27 |
 | flexsearch | nextapps-de/flexsearch | 0.8.212 | `[OK]` | 2026-09-27 |
 | @types/mdx | DefinitelyTyped/DefinitelyTyped | 2.0.14 | `[OK]` | 2026-09-27 |
+| @axe-core/playwright | dequelabs/axe-core-npm | 4.13.0 | `[OK]` | 2026-10-08 |
 
 The docs search backend is `fumadocs-core/search/flexsearch`'s **static** client
 (`flexsearchStaticClient`), not Orama -- `10-RESEARCH.md`'s "State of the Art" section corrects

@@ -109,6 +109,8 @@ const EXPECTED_PACKAGES = [
   },
   { name: 'lucide-react', expectedOwnerRepo: 'lucide-icons/lucide' },
   { name: '@playwright/test', expectedOwnerRepo: 'microsoft/playwright' },
+  // Phase 13 axe checks in e2e; reviewed and approved by the user 2026-10-08 (Deque, dequelabs/axe-core-npm).
+  { name: '@axe-core/playwright', expectedOwnerRepo: 'dequelabs/axe-core-npm' },
   { name: '@radix-ui/react-dialog', expectedOwnerRepo: 'radix-ui/primitives' },
   { name: '@radix-ui/react-tooltip', expectedOwnerRepo: 'radix-ui/primitives' },
   {
