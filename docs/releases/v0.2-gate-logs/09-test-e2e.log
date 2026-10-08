@@ -1,0 +1,391 @@
+# commit: da5d2fd6ad2cd173ec83c0be2c4e93c0a8bb2cc0
+# date: 2026-10-08T06:00:00Z
+# command: pnpm test:e2e
+
+> noodara@0.2.0 test:e2e /Users/xch4rt/work/myself/noodara/code
+> playwright test
+
+
+> noodara@0.2.0 build /Users/xch4rt/work/myself/noodara/code
+> turbo run build --filter=!@noodara/site
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/config, @noodara/control-plane, @noodara/docker, @noodara/domain, @noodara/git, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 8 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs 3504c793414b09e0
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ssh:build: cache hit, replaying logs f51d29b5cbbf0dce
+@noodara/ui:build: cache hit, replaying logs c4d922c5c602b036
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/git:build: cache hit, replaying logs 7ab856662a219990
+@noodara/docker:build: cache hit, replaying logs 3fde58f6b17bd80a
+@noodara/git:build: 
+@noodara/git:build: > @noodara/git@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/git
+@noodara/git:build: > tsc -p tsconfig.build.json
+@noodara/git:build: 
+@noodara/docker:build: 
+@noodara/docker:build: > @noodara/docker@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/docker
+@noodara/docker:build: > tsc -p tsconfig.build.json
+@noodara/docker:build: 
+@noodara/control-plane:build: cache hit, replaying logs 6880afddda894dd7
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.2.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
+@noodara/web:build: cache hit, replaying logs ee9b5b41db6dcc5d
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.2.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > node scripts/sync-brand-assets.mjs && next build
+@noodara/web:build: 
+@noodara/web:build: sync-brand-assets: no files changed (fully idempotent run).
+@noodara/web:build: sync-brand-assets: 7 file(s) already up to date.
+@noodara/web:build: ▲ Next.js 16.3.6 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 60ms
+@noodara/web:build: 
+@noodara/web:build:   Creating an optimized production build ...
+@noodara/web:build: ✓ Compiled successfully in 809ms
+@noodara/web:build:   Running TypeScript ...
+@noodara/web:build:   Finished TypeScript in 702ms ...
+@noodara/web:build:   Collecting page data using 13 workers ...
+@noodara/web:build:   Generating static pages using 13 workers (0/16) ...
+@noodara/web:build: ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+@noodara/web:build:   Generating static pages using 13 workers (4/16) 
+@noodara/web:build:   Generating static pages using 13 workers (8/16) 
+@noodara/web:build:   Generating static pages using 13 workers (12/16) 
+@noodara/web:build: ✓ Generating static pages using 13 workers (16/16) in 131ms
+@noodara/web:build:   Finalizing page optimization ...
+@noodara/web:build: 
+@noodara/web:build: Route (app)
+@noodara/web:build: ┌ ƒ /
+@noodara/web:build: ├ ƒ /_not-found
+@noodara/web:build: ├ ƒ /[...catchAll]
+@noodara/web:build: ├ ƒ /activity
+@noodara/web:build: ├ ƒ /api/events
+@noodara/web:build: ├ ○ /apple-icon.png
+@noodara/web:build: ├ ○ /icon.svg
+@noodara/web:build: ├ ○ /icon1.png
+@noodara/web:build: ├ ○ /icon2.png
+@noodara/web:build: ├ ƒ /login
+@noodara/web:build: ├ ○ /manifest.webmanifest
+@noodara/web:build: ├ ○ /opengraph-image.png
+@noodara/web:build: ├ ƒ /projects
+@noodara/web:build: ├ ƒ /projects/[projectId]
+@noodara/web:build: ├ ƒ /projects/[projectId]/services/[serviceId]
+@noodara/web:build: ├ ƒ /servers
+@noodara/web:build: ├ ƒ /servers/[id]
+@noodara/web:build: ├ ƒ /settings
+@noodara/web:build: └ ○ /setup
+@noodara/web:build: 
+@noodara/web:build: 
+@noodara/web:build: ƒ Proxy (Middleware)
+@noodara/web:build: 
+@noodara/web:build: ○  (Static)   prerendered as static content
+@noodara/web:build: ƒ  (Dynamic)  server-rendered on demand
+@noodara/web:build: 
+
+ Tasks:    7 successful, 7 total
+Cached:    7 cached, 7 total
+  Time:    70ms >>> FULL TURBO
+
+
+Running 243 tests using 1 worker
+
+  ✓    1 [chromium] › tests/e2e/a11y-fallbacks.spec.ts:87:1 › @a11y-fallbacks with reduced motion emulated, opening the add-server Sheet produces no horizontal translation, via an opacity-only transition (756ms)
+  ✓    2 [chromium] › tests/e2e/a11y-fallbacks.spec.ts:108:1 › @a11y-fallbacks with reduced motion emulated, the delete Dialog opens with no scale -- its computed transform is the centering translate only (581ms)
+  ✓    3 [chromium] › tests/e2e/a11y-fallbacks.spec.ts:132:1 › @a11y-fallbacks with reduced motion emulated, the RowMenu opens with no scale (436ms)
+  ✓    4 [chromium] › tests/e2e/a11y-fallbacks.spec.ts:158:1 › @a11y-fallbacks without emulation, the Sheet panel declares a real transform-based transition (the positive control) (347ms)
+  ✓    5 [chromium] › tests/e2e/a11y-fallbacks.spec.ts:177:1 › @a11y-fallbacks forced reduce motion preference: Sheet opens opacity-only without OS emulation (322ms)
+  ✓    6 [chromium] › tests/e2e/a11y-fallbacks.spec.ts:195:1 › @a11y-fallbacks forced reduce motion preference: Dialog opens without scale (486ms)
+  ✓    7 [chromium] › tests/e2e/a11y-fallbacks.spec.ts:220:1 › @a11y-fallbacks allow motion preference overrides OS reduce: Sheet declares a transform transition (368ms)
+  ✓    8 [chromium] › tests/e2e/a11y-fallbacks.spec.ts:240:1 › @a11y-fallbacks forced reduce motion preference: Sheet drag surface does not move (874ms)
+  ✓    9 [chromium] › tests/e2e/activity.spec.ts:66:1 › @activity a stack whose only activity is the admin sign-in shows one TODAY row and no Load older button (313ms)
+  ✓   10 [chromium] › tests/e2e/activity.spec.ts:89:1 › @activity Load older appends the next page while the previously loaded rows remain, in order (373ms)
+  ✓   11 [chromium] › tests/e2e/activity.spec.ts:163:1 › @activity a failed background refresh keeps every already-loaded row on screen (WR-B-04) (1.3s)
+  ✓   12 [chromium] › tests/e2e/activity.spec.ts:257:1 › @activity a background refresh that returns a full page with no overlap resets to the fresh page instead of showing an unmarked gap (WR-B-05) (1.1s)
+  ✓   13 [chromium] › tests/e2e/activity.spec.ts:331:1 › @activity expanding a server.created row shows exactly the curated pairs and never an unknown metadata key (342ms)
+  ✓   14 [chromium] › tests/e2e/activity.spec.ts:367:1 › @activity a failure item renders its errorCode in a mono element and a success item renders none (307ms)
+  ✓   15 [chromium] › tests/e2e/activity.spec.ts:399:1 › @activity an auth.logout item shows no expand chevron (323ms)
+  ✓   16 [chromium] › tests/e2e/activity.spec.ts:420:1 › @activity an item referencing a deleted server renders the name as plain text with no link (308ms)
+  ✓   17 [chromium] › tests/e2e/activity.spec.ts:441:1 › @activity the loading state shows ten skeleton rows and no spinner; the error state shows the exact banner copy with a working Retry (400ms)
+  ✓   18 [chromium] › tests/e2e/activity.spec.ts:479:1 › @activity no rendered text anywhere on the screen contains a raw JSON object signature (409ms)
+  ✓   19 [chromium] › tests/e2e/activity.spec.ts:526:1 › @activity-entry a real SSE-driven arrival marks only the new row entering, and the scroll offset is unchanged (1.1s)
+  ✓   20 [chromium] › tests/e2e/activity.spec.ts:602:1 › @activity-entry under emulated reduced motion, an arrival applies no visible transition (327ms)
+  ✓   21 [chromium] › tests/e2e/auth.spec.ts:15:1 › @auth /setup with no token renders an empty token field; /setup?token=... pre-fills it (147ms)
+  ✓   22 [chromium] › tests/e2e/auth.spec.ts:23:1 › @auth submitting /setup on a stack that already has an admin renders the single opaque banner (225ms)
+  ✓   23 [chromium] › tests/e2e/auth.spec.ts:34:1 › @auth a wrong password renders the exact invalid-credentials copy and never echoes the submitted email (293ms)
+  ✓   24 [chromium] › tests/e2e/auth.spec.ts:49:1 › @auth an invalid email on the login form renders an inline field error, not a banner (191ms)
+  ✓   25 [chromium] › tests/e2e/auth.spec.ts:59:1 › @auth both screens render without the authenticated shell's navigation landmark (148ms)
+  ✓   26 [chromium] › tests/e2e/auth.spec.ts:70:1 › @auth /login?reason=password-changed shows the password-changed Notice with role status (110ms)
+  ✓   27 [chromium] › tests/e2e/auth.spec.ts:81:1 › @auth /login without the reason param shows no password-changed Notice; ?setup=success is unaffected (155ms)
+  ✓   28 [chromium] › tests/e2e/auth.spec.ts:95:1 › @auth a 403 INVALID_ORIGIN sign-in failure renders the generic banner, never the raw server text (227ms)
+  ✓   29 [chromium] › tests/e2e/auth.spec.ts:116:1 › @auth a 500 with a non-JSON body also renders the generic banner (212ms)
+  ✓   30 [chromium] › tests/e2e/auth.spec.ts:129:1 › @auth wrong credentials (401) and lockout (429) still show their own dedicated copy, not the generic fallback (309ms)
+  ✓   31 [chromium] › tests/e2e/auth.spec.ts:151:1 › @auth both screens render correctly in light and dark themes (147ms)
+  ✓   32 [chromium] › tests/e2e/brand.spec.ts:58:1 › @brand /login renders the lockup and exactly one image named Noodara (137ms)
+  ✓   33 [chromium] › tests/e2e/brand.spec.ts:66:1 › @brand the lockup on /login follows the theme through currentColor (139ms)
+  ✓   34 [chromium] › tests/e2e/brand.spec.ts:82:1 › @brand /setup renders the lockup for an unauthenticated visitor (133ms)
+  ✓   35 [chromium] › tests/e2e/brand.spec.ts:90:1 › @brand the expanded sidebar shows the lockup and hides the monogram at 1440px (341ms)
+  ✓   36 [chromium] › tests/e2e/brand.spec.ts:102:1 › @brand the 64px rail shows the monogram and hides the lockup at 1024px (321ms)
+  ✓   37 [chromium] › tests/e2e/brand.spec.ts:116:1 › @brand the monogram stays visible in the rail in dark theme (311ms)
+  ✓   38 [chromium] › tests/e2e/brand.spec.ts:130:1 › @brand the below-900px bottom sheet carries no mark, closed or open (321ms)
+  ✓   39 [chromium] › tests/e2e/brand.spec.ts:176:3 › brand icons › @brand /login serves the favicon, apple-touch-icon, manifest and OG head tags (126ms)
+  ✓   40 [chromium] › tests/e2e/brand.spec.ts:193:3 › brand icons › @brand every icon, apple-touch-icon, manifest href and og:image are served with 200 (141ms)
+  ✓   41 [chromium] › tests/e2e/brand.spec.ts:239:3 › brand icons › @brand GET /favicon.ico is served with an ico content-type (3ms)
+  ✓   42 [chromium] › tests/e2e/brand.spec.ts:245:3 › brand icons › @brand the manifest JSON parses, carries the real theme colour and every icon src resolves to a correctly-sized PNG (108ms)
+  ✓   43 [chromium] › tests/e2e/canary-ui.spec.ts:53:1 › @canary a per-run password canary and a per-run passphrase canary never reach rendered HTML, console, storage, the URL/history, or any response body across the whole UI flow (3.2s)
+[critical-path] first run: direct DOM mixed resolved/pending snapshot observed (7 snapshots captured), plus 12 distinct SSE frames.
+[critical-path] second run (re-run discovery): direct DOM mixed resolved/pending snapshot observed (7 snapshots captured), plus 12 distinct SSE frames.
+  ✓   44 [chromium] › tests/e2e/critical-path.spec.ts:194:1 › @critical the whole roadmap SS6.6 flow: login -> Servers -> add server -> connect -> live discovery -> detail, against a real sshd container (8.4s)
+  ✓   45 [chromium] › tests/e2e/discovery.spec.ts:125:1 › @discovery a settled run renders the one-line summary that expands to six steps (422ms)
+  ✓   46 [chromium] › tests/e2e/discovery.spec.ts:154:1 › @discovery the Discovery section renders above the stat tiles (366ms)
+  ✓   47 [chromium] › tests/e2e/discovery.spec.ts:180:1 › @discovery expanding a step reveals its checks with mono detail and durationMs (406ms)
+  ✓   48 [chromium] › tests/e2e/discovery.spec.ts:199:1 › @discovery a mid-run page load shows all discovery steps pending/running, the in-progress caption, and none of the previous run (340ms)
+  ✓   49 [chromium] › tests/e2e/discovery.spec.ts:228:1 › @discovery a run whose Docker check failed renders amber with the SS5.5 consequence copy, Connected stays, no error banner (328ms)
+  ✓   50 [chromium] › tests/e2e/discovery.spec.ts:259:1 › @discovery every step exposes its status word in text (345ms)
+  ✓   51 [chromium] › tests/e2e/discovery.spec.ts:273:1 › @discovery Re-run discovery issues POST /discover exactly once and never polls a job endpoint (335ms)
+  ✓   52 [chromium] › tests/e2e/discovery.spec.ts:364:1 › @discovery a page that joins mid-run never shows an unreceived earlier check as resolved, and excludes it from its step (379ms)
+  ✓   53 [chromium] › tests/e2e/discovery.spec.ts:420:1 › @discovery a finished run leaves no checks behind for the next run to inherit (330ms)
+  ✓   54 [chromium] › tests/e2e/discovery.spec.ts:458:1 › @discovery-ring a fully successful settled run focuses the ring to its closed/sharp reading (350ms)
+  ✓   55 [chromium] › tests/e2e/discovery.spec.ts:471:1 › @discovery-ring a run that only ever resolves its first three of six steps leaves the ring at three sixths, never complete (312ms)
+  ✓   56 [chromium] › tests/e2e/discovery.spec.ts:506:1 › @discovery-ring a page that joins mid-run shows an intermediate, non-looping ring value while the run is still in flight (310ms)
+  ✓   57 [chromium] › tests/e2e/discovery.spec.ts:534:1 › @ssh-live a real connect-and-discover run against a real sshd fixture delivers live, time-separated per-check SSE progress into the already-mounted browser page, with no reload (8.1s)
+  ✓   58 [chromium] › tests/e2e/dod-hardening.spec.ts:18:1 › @dod-hardening clicking a copy button with navigator.clipboard removed leaves the page functional and shows no confirmation (403ms)
+  ✓   59 [chromium] › tests/e2e/dod-hardening.spec.ts:56:1 › @dod-hardening the server detail screen still renders its facts when localStorage access throws (359ms)
+  ✓   60 [chromium] › tests/e2e/host-key.spec.ts:154:1 › @hostkey the first-trust notice shows with the fingerprint and the verification command; dismissing hides it, a reload keeps it hidden, and the permanent fingerprint row survives (395ms)
+  ✓   61 [chromium] › tests/e2e/host-key.spec.ts:186:1 › @hostkey a second server in the same browser still shows its own first-trust notice after the first was dismissed (377ms)
+  ✓   62 [chromium] › tests/e2e/host-key.spec.ts:214:1 › @hostkey the HOST_KEY_CHANGED banner shows both fingerprints labelled Trusted/Observed with dates, the verification command and the mono error code, and the generic banner never appears for it (315ms)
+  ✓   63 [chromium] › tests/e2e/host-key.spec.ts:246:1 › @hostkey the trust-new-fingerprint dialog keeps its confirm button disabled until the exact server name is typed, and a near-miss leaves it disabled (367ms)
+  ✓   64 [chromium] › tests/e2e/host-key.spec.ts:284:1 › @host-key the trust-new-fingerprint dialog renders the Trusted/New fingerprints in block-aligned diff mode, marks a difference by weight only, and still gates confirmation on the exact typed name (366ms)
+  ✓   65 [chromium] › tests/e2e/host-key.spec.ts:332:1 › @hostkey confirming with the exact name posts to trust-fingerprint exactly once, carrying the exact fingerprint the dialog displayed; success reflects PENDING with only Connect, and issues no automatic connect request (413ms)
+  ✓   66 [chromium] › tests/e2e/host-key.spec.ts:403:1 › @hostkey a live server.updated event mid-review swaps the pending fingerprint; the dialog still sends what it displayed, a FINGERPRINT_MISMATCH closes it, and the banner re-renders with the new value (399ms)
+  ✓   67 [chromium] › tests/e2e/host-key.spec.ts:486:1 › @hostkey UF-01/GR-02 regression: editing the host while ERROR/HOST_KEY_CHANGED clears the pending fingerprint AND the old host's trusted fingerprint, so the trust affordance disappears and nothing stale is left to promote (15.7s)
+  ✓   68 [chromium] › tests/e2e/host-key.spec.ts:588:1 › @hostkey the real trust-fingerprint POST succeeds end to end against the real backend, carrying the exact fingerprint the dialog displayed (16.0s)
+  ✓   69 [chromium] › tests/e2e/keyboard-motion.spec.ts:64:3 › @keyboard-no-animation Sheet (UI-06/UI-05, real transition -- genuine positive/negative control) › @keyboard-no-animation Escape closes the add-server Sheet near-instantly, with no animated frame (400ms)
+  ✓   70 [chromium] › tests/e2e/keyboard-motion.spec.ts:77:3 › @keyboard-no-animation Sheet (UI-06/UI-05, real transition -- genuine positive/negative control) › @keyboard-no-animation clicking the close button plays the real, non-zero exit transition (positive control) (712ms)
+  ✓   71 [chromium] › tests/e2e/keyboard-motion.spec.ts:104:3 › @keyboard-no-animation Dialog (UI-05, pre-08-14: no real transition to gate yet) › @keyboard-no-animation Escape closes the delete Dialog near-instantly, with no animated frame (486ms)
+  ✓   72 [chromium] › tests/e2e/keyboard-motion.spec.ts:117:3 › @keyboard-no-animation Dialog (UI-05, pre-08-14: no real transition to gate yet) › @keyboard-no-animation clicking Cancel also closes the delete Dialog near-instantly (08-14 adds its real exit transition later) (491ms)
+  ✓   73 [chromium] › tests/e2e/keyboard-motion.spec.ts:141:3 › @keyboard-no-animation RowMenu (UI-05, pre-08-14: no real transition to gate yet) › @keyboard-no-animation Escape closes RowMenu near-instantly, with no animated frame (403ms)
+  ✓   74 [chromium] › tests/e2e/keyboard-motion.spec.ts:152:3 › @keyboard-no-animation RowMenu (UI-05, pre-08-14: no real transition to gate yet) › @keyboard-no-animation an outside pointer click also closes RowMenu near-instantly (08-14 adds its real exit transition later) (443ms)
+  ✓   75 [chromium] › tests/e2e/keyboard-motion.spec.ts:174:3 › @keyboard-no-animation AccountMenu (UI-05, pre-08-14: no real transition to gate yet) › @keyboard-no-animation Escape closes AccountMenu near-instantly, with no animated frame (295ms)
+  ✓   76 [chromium] › tests/e2e/keyboard-motion.spec.ts:183:3 › @keyboard-no-animation AccountMenu (UI-05, pre-08-14: no real transition to gate yet) › @keyboard-no-animation an outside pointer click also closes AccountMenu near-instantly (08-14 adds its real exit transition later) (313ms)
+  ✓   77 [chromium] › tests/e2e/server-detail.spec.ts:114:1 › @detail a PENDING server with no discovery shows the empty state, one Connect action and no error banner (342ms)
+  ✓   78 [chromium] › tests/e2e/server-detail.spec.ts:134:1 › @detail an AUTH_FAILED error with no history shows the SS5.1 copy, the mono code, Retry and the empty state below, with no stat tiles (308ms)
+  ✓   79 [chromium] › tests/e2e/server-detail.spec.ts:157:1 › @detail a CONNECT_TIMEOUT error with a prior discovery shows the banner above stat tiles that stay present and visually dimmed (399ms)
+  ✓   80 [chromium] › tests/e2e/server-detail.spec.ts:201:1 › @detail a CONNECTED server shows four formatted stat tiles and the three label/value groups including the fingerprint copy button (311ms)
+  ✓   81 [chromium] › tests/e2e/server-detail.spec.ts:232:1 › @detail a CONNECTING server shows the primary action disabled (322ms)
+  ✓   82 [chromium] › tests/e2e/server-detail.spec.ts:246:1 › @detail a stubbed 404 shows the not-found copy with a working link back to Servers (387ms)
+  ✓   83 [chromium] › tests/e2e/server-detail.spec.ts:327:1 › @detail a GET resolved after a live server.updated event does not roll the screen back to the older state (356ms)
+  ✓   84 [chromium] › tests/e2e/server-detail.spec.ts:372:1 › @detail a server.deleted event followed by a late-resolving GET leaves the not-found state, not a resurrected server (314ms)
+  ✓   85 [chromium] › tests/e2e/server-detail.spec.ts:406:1 › @detail a server with an UNSUPPORTED_OS warning shows the amber inline note and stays CONNECTED, with no error banner (310ms)
+  ✓   86 [chromium] › tests/e2e/server-sheet.spec.ts:59:1 › @sheet Add server opens the sheet with Name focused, Private key preselected and port/user showing placeholders, not values (310ms)
+  ✓   87 [chromium] › tests/e2e/server-sheet.spec.ts:74:1 › @sheet Choose file fills the private-key textarea from a real file read, and the create request is JSON with the key under credential.privateKey, never multipart (649ms)
+  ✓   88 [chromium] › tests/e2e/server-sheet.spec.ts:119:1 › @sheet Save and connect on a valid form closes the sheet and lands on the server detail page (782ms)
+  ✓   89 [chromium] › tests/e2e/server-sheet.spec.ts:136:1 › @sheet Save without connecting closes the sheet, leaves the new row PENDING and issues no connect request (808ms)
+  ✓   90 [chromium] › tests/e2e/server-sheet.spec.ts:166:1 › @sheet submitting a duplicate name renders the NAME_TAKEN copy under Name and keeps the sheet open with input intact (826ms)
+  ✓   91 [chromium] › tests/e2e/server-sheet.spec.ts:193:1 › @sheet a real-shaped server-rejected VALIDATION_FAILED issue highlights its field inline, with no orphan "Check the highlighted fields" banner (781ms)
+  ✓   92 [chromium] › tests/e2e/server-sheet.spec.ts:239:1 › @sheet a real-shaped server-rejected /sshUser VALIDATION_FAILED issue highlights the SSH user field inline, and the request the sheet actually sent carries the typed sshUser (677ms)
+  ✓   93 [chromium] › tests/e2e/server-sheet.spec.ts:294:1 › @sheet submitting a port of 70000 renders an inline error under the SSH port field and never reaches the server (616ms)
+  ✓   94 [chromium] › tests/e2e/server-sheet.spec.ts:321:1 › @sheet opening Edit shows the credential collapsed to dots plus Replace, with no key text anywhere in the DOM (486ms)
+  ✓   95 [chromium] › tests/e2e/server-sheet.spec.ts:354:1 › @sheet Delete requires the exact name: the confirm button stays disabled until it matches, then deletes the row (524ms)
+  ✓   96 [chromium] › tests/e2e/server-sheet.spec.ts:391:1 › @sheet after the whole create/edit flow, neither storage nor navigation history contains the submitted key or password (1.2s)
+  ✓   97 [chromium] › tests/e2e/server-sheet.spec.ts:501:3 › @sheet-drag drag-to-dismiss (UI-06, brief §7.4) › @sheet-drag dragging right past the closed edge resists progressively -- displacement grows less than the pointer's own movement, and never freezes (837ms)
+  ✓   98 [chromium] › tests/e2e/server-sheet.spec.ts:546:3 › @sheet-drag drag-to-dismiss (UI-06, brief §7.4) › @sheet-drag a short, fast flick closes the sheet even though it travelled less than half the panel width (1.2s)
+  ✓   99 [chromium] › tests/e2e/server-sheet.spec.ts:561:3 › @sheet-drag drag-to-dismiss (UI-06, brief §7.4) › @sheet-drag a slow drag of the same short distance leaves the sheet open (snaps back) (1.7s)
+  ✓  100 [chromium] › tests/e2e/server-sheet.spec.ts:580:3 › @sheet-drag drag-to-dismiss (UI-06, brief §7.4) › @sheet-drag after a fast release the panel keeps moving in the release direction on the next frame, instead of restarting from rest (394ms)
+  ✓  101 [chromium] › tests/e2e/server-sheet.spec.ts:601:3 › @sheet-drag drag-to-dismiss (UI-06, brief §7.4) › @sheet-drag re-grabbing mid-close resumes 1:1 tracking from the panel's current on-screen position (1.1s)
+  ✓  102 [chromium] › tests/e2e/server-sheet.spec.ts:659:3 › @sheet-drag drag-to-dismiss (UI-06, brief §7.4) › @sheet-drag Esc still closes the sheet, unaffected by the new drag surface (332ms)
+  ✓  103 [chromium] › tests/e2e/server-sheet.spec.ts:683:1 › @sheet at a 440x956 mobile viewport, the panel is full width (never overflowing) with every label and the close button fully visible (357ms)
+  ✓  104 [chromium] › tests/e2e/server-sheet.spec.ts:712:1 › @sheet at 1280px, the panel stays capped at exactly 480px, never growing to fill the viewport (341ms)
+  ✓  105 [chromium] › tests/e2e/servers-list.spec.ts:96:1 › @servers on a stack with no servers, the empty state renders its exact title, sentence and exactly one Add server action (261ms)
+  ✓  106 [chromium] › tests/e2e/servers-list.spec.ts:110:1 › @servers a never-resolving /api/servers response renders five skeleton rows and no spinner (247ms)
+  ✓  107 [chromium] › tests/e2e/servers-list.spec.ts:127:1 › @density comfortable rows measure 44px and compact rows 36px with unchanged typography (355ms)
+  ✓  108 [chromium] › tests/e2e/servers-list.spec.ts:159:1 › @servers a 500 INTERNAL_ERROR renders the banner message and mono code, and Retry re-issues the request (277ms)
+  ✓  109 [chromium] › tests/e2e/servers-list.spec.ts:182:1 › @servers two ServerView rows render name, host:port, a matching status pill and an ISO tooltip on the relative last-seen (1.1s)
+  ✓  110 [chromium] › tests/e2e/servers-list.spec.ts:227:1 › @servers activating a row with the keyboard navigates to that server's detail URL (335ms)
+  ✓  111 [chromium] › tests/e2e/servers-list.spec.ts:247:1 › @servers a row's actions menu is absent until opened, then exposes Edit and Delete (365ms)
+  ✓  112 [chromium] › tests/e2e/servers-list.spec.ts:331:1 › @rowmenu at a 440x956 mobile viewport, opening the row menu never clips it and never hides the row's own content (546ms)
+  ✓  113 [chromium] › tests/e2e/servers-list.spec.ts:378:1 › @rowmenu at 375, 440, 900 and 1280 widths the row menu opens unclipped by pointer and by keyboard, and Escape returns focus to the trigger (1.3s)
+  ✓  114 [chromium] › tests/e2e/servers-list.spec.ts:428:1 › @rowmenu opening the row menu by keyboard, moving with ArrowDown/ArrowUp and activating Edit with Enter, closes the menu and hands off to the real edit sheet (365ms)
+  ✓  115 [chromium] › tests/e2e/servers-list.spec.ts:473:1 › @rowmenu the trigger reports aria-expanded="true" while the menu is open and "false" once closed (402ms)
+  ✓  116 [chromium] › tests/e2e/servers-list.spec.ts:504:1 › @rowmenu with touch emulation, the row-menu trigger is visible without any hover (290ms)
+  ✓  117 [chromium] › tests/e2e/servers-list.spec.ts:554:1 › @servers a server created while the list snapshots are still in flight still appears as a row (327ms)
+  ✓  118 [chromium] › tests/e2e/servers-list.spec.ts:628:1 › @scroll-edge the toolbar border-bottom is transparent at scroll-top, visible once scrolled, transparent again back at the top (753ms)
+  ✓  119 [chromium] › tests/e2e/servers-list.spec.ts:679:1 › @stagger the first-load rows carry a 40ms-per-row transitionDelay in DOM order, and stay clickable throughout (299ms)
+  ✓  120 [chromium] › tests/e2e/servers-list.spec.ts:710:1 › @stagger under emulated reduced motion, the first-load rows apply no visible transition (245ms)
+  ✓  121 [chromium] › tests/e2e/servers-list.spec.ts:741:1 › @stagger a long first-load list caps its stagger delay so the last row never waits far longer than an 8-row list would (281ms)
+  ✓  122 [chromium] › tests/e2e/settings.spec.ts:29:1 › @settings the Instance group shows the version and public URL with exactly one copy button, always expanded (524ms)
+  ✓  123 [chromium] › tests/e2e/settings.spec.ts:42:1 › @settings the Advanced group is collapsed on load and expands to exactly five rows, each captioned (378ms)
+  ✓  124 [chromium] › tests/e2e/settings.spec.ts:62:1 › @settings the master key fingerprint renders a short mono digest with no 44-character base64-looking string anywhere (420ms)
+  ✓  125 [chromium] › tests/e2e/settings.spec.ts:81:1 › @settings the SSH timeout rows render seconds, never a raw millisecond count (362ms)
+  ✓  126 [chromium] › tests/e2e/settings.spec.ts:103:1 › @settings the Instance/Advanced groups have zero form controls and no save/apply/edit button (359ms)
+  ✓  127 [chromium] › tests/e2e/settings.spec.ts:121:1 › @settings a 500 shows the exact error banner with the code in mono, and Retry re-issues the request (359ms)
+  ✓  128 [chromium] › tests/e2e/settings.spec.ts:144:1 › @settings the loading state shows skeleton rows and no spinner (330ms)
+  ✓  129 [chromium] › tests/e2e/settings.spec.ts:171:1 › @settings profile edit updates the account menu without reload (1.4s)
+  ✓  130 [chromium] › tests/e2e/settings.spec.ts:212:1 › @settings wrong current password shows the field error (843ms)
+  ✓  131 [chromium] › tests/e2e/settings.spec.ts:230:1 › @settings password change revokes other sessions and keeps this one (16.7s)
+  ✓  132 [chromium] › tests/e2e/settings.spec.ts:280:1 › @settings Instance and Advanced stay read-only (397ms)
+  ✓  133 [chromium] › tests/e2e/settings.spec.ts:417:1 › @settings theme choice persists with no theme flash on reload (852ms)
+  ✓  134 [chromium] › tests/e2e/settings.spec.ts:441:1 › @settings manual theme override wins over the OS (491ms)
+  ✓  135 [chromium] › tests/e2e/settings.spec.ts:457:1 › @settings theme preference follows the account to a second browser (733ms)
+  ✓  136 [chromium] › tests/e2e/settings.spec.ts:486:1 › @settings reduce motion On forces the Sheet fallback (1.1s)
+  ✓  137 [chromium] › tests/e2e/settings.spec.ts:531:1 › @settings density Compact shrinks rows app-wide (660ms)
+  ✓  138 [chromium] › tests/e2e/setup.spec.ts:17:1 › @setup every response carries Referrer-Policy: no-referrer (setup-token-url-hardening todo item 2) (110ms)
+  ✓  139 [chromium] › tests/e2e/setup.spec.ts:31:1 › @setup /setup?token=... strips the token from the URL after mount while the field stays pre-filled (232ms)
+  ✓  140 [chromium] › tests/e2e/setup.spec.ts:49:1 › @setup the server-rendered /setup?token=... document never echoes the token into HTML (127ms)
+  ✓  141 [chromium] › tests/e2e/setup.spec.ts:66:1 › @setup a stubbed 500 from POST /api/setup never renders the invalid-link banner (240ms)
+  ✓  142 [chromium] › tests/e2e/setup.spec.ts:82:1 › @setup a network failure on POST /api/setup renders the reachability message, never the invalid-link banner (215ms)
+  ✓  143 [chromium] › tests/e2e/setup.spec.ts:98:1 › @setup a VALIDATION_FAILED body with a mappable issue renders an inline field error, not a banner (210ms)
+  ✓  144 [chromium] › tests/e2e/shell.spec.ts:60:1 › @shell pressing Tab from page load moves through the skip link, the sidebar items, then the account menu trigger (327ms)
+  ✓  145 [chromium] › tests/e2e/shell.spec.ts:87:1 › @shell every focused sidebar item shows a visible, non-zero focus outline (337ms)
+  ✓  146 [chromium] › tests/e2e/shell.spec.ts:106:1 › @shell activating a sidebar item by keyboard navigates to its route (486ms)
+  ✓  147 [chromium] › tests/e2e/shell.spec.ts:128:1 › @shell the Theme control in Settings sets data-theme and the choice survives a reload (456ms)
+  ✓  148 [chromium] › tests/e2e/shell.spec.ts:157:1 › @shell the sidebar collapses to an icon rail at 1024px and a bottom sheet below 900px (336ms)
+  ✓  149 [chromium] › tests/e2e/shell.spec.ts:180:1 › @shell at a 440x956 mobile viewport, the bottom-sheet drawer shows "Servers"/"Activity"/"Settings" labels next to their icons (313ms)
+  ✓  150 [chromium] › tests/e2e/shell.spec.ts:200:1 › @shell the sidebar has no right-edge border at 1440px (280ms)
+  ✓  151 [chromium] › tests/e2e/shell.spec.ts:220:1 › @shell the sidebar stays pinned to the viewport while the page scrolls, on the server detail screen (360ms)
+  ✓  152 [chromium] › tests/e2e/shell.spec.ts:246:1 › @shell the empty inspector slot resolves once and reserves zero width and no border at every width (348ms)
+  ✓  153 [chromium] › tests/e2e/shell.spec.ts:269:1 › @shell the empty inspector slot does not narrow the content column at 1920px (344ms)
+  ✓  154 [chromium] › tests/e2e/shell.spec.ts:280:1 › @shell the empty inspector slot never renders a Sheet or any full-viewport overlay (294ms)
+  ✓  155 [chromium] › tests/e2e/shell.spec.ts:292:1 › @shell a keyboard-focused leaf at 1024px still shows its tooltip with the leaf label (292ms)
+  ✓  156 [chromium] › tests/e2e/shell.spec.ts:300:1 › @shell signing out through the account menu returns to /login, and a subsequent direct visit to /servers redirects to /login again (390ms)
+  ✓  157 [chromium] › tests/e2e/shell.spec.ts:316:1 › @shell selecting Settings in the account menu closes it and navigates to /settings (410ms)
+  ✓  158 [chromium] › tests/e2e/shell.spec.ts:329:1 › @shell an authenticated visit to the bare origin lands on /servers (291ms)
+  ✓  159 [chromium] › tests/e2e/shell.spec.ts:336:1 › @shell an unauthenticated visit to the bare origin lands on /login (110ms)
+  ✓  160 [chromium] › tests/e2e/shell.spec.ts:354:1 › @shell a session revoked server-side redirects the open tab to /login without a manual reload (16.7s)
+  ✓  161 [chromium] › tests/e2e/shell.spec.ts:393:1 › @sse-live a real SSE frame published mid-connection reaches the browser through the same-origin proxy (350ms)
+  ✓  162 [chromium] › tests/e2e/shell.spec.ts:467:1 › @sse-slots abandoned event streams release their control-plane slot instead of exhausting the cap (477ms)
+  ✓  163 [chromium] › tests/e2e/shell.spec.ts:514:1 › @sse-recover the shell reconnects on its own after its event stream was refused at the connection cap (511ms)
+  ✓  164 [chromium] › tests/e2e/smoke.spec.ts:12:1 › @smoke an unauthenticated visit to /servers ends on /login (111ms)
+  ✓  165 [chromium] › tests/e2e/smoke.spec.ts:17:1 › @smoke an unauthenticated GET /api/servers returns 401 (62ms)
+  ✓  166 [chromium] › tests/e2e/smoke.spec.ts:22:1 › @smoke the login form exposes accessible Email/Password fields and a login-submit control (112ms)
+  ✓  167 [chromium] › tests/e2e/smoke.spec.ts:31:1 › @smoke signing in with the preseeded admin ends on /servers (289ms)
+  ✓  168 [chromium] › tests/e2e/smoke.spec.ts:39:1 › @smoke a wrong password never reveals whether the account exists (176ms)
+  ✓  169 [chromium] › tests/e2e/theme-first-paint.spec.ts:102:1 › @theme-first-paint GET /login with a dark/on/compact cookie renders data-theme, data-motion and data-density on <html> in the raw SSR HTML (7ms)
+  ✓  170 [chromium] › tests/e2e/theme-first-paint.spec.ts:115:1 › @theme-first-paint GET /login with a light/system/comfortable cookie renders data-theme="light" and omits data-motion/data-density (6ms)
+  ✓  171 [chromium] › tests/e2e/theme-first-paint.spec.ts:128:1 › @theme-first-paint GET /login with no cookie omits data-theme from the raw SSR HTML; the bootstrap script resolves it before first paint (112ms)
+  ✓  172 [chromium] › tests/e2e/theme-first-paint.spec.ts:141:1 › @theme-first-paint GET /login with an auto cookie also omits data-theme from the raw SSR HTML (6ms)
+  ✓  173 [chromium] › tests/e2e/theme-first-paint.spec.ts:151:1 › @theme-first-paint a tampered noodara-prefs cookie never yields a data-theme attribute and is never echoed raw into the response body (6ms)
+  ✓  174 [chromium] › tests/e2e/theme-first-paint.spec.ts:168:3 › with JavaScript disabled › @theme-first-paint a dark cookie renders data-theme="dark" on <html> and a dark canvas background with JS disabled (75ms)
+  ✓  175 [chromium] › tests/e2e/theme-first-paint.spec.ts:181:1 › @theme-first-paint no theme flash on reload for dark and light, on /login and on /servers after login (807ms)
+  ✓  176 [chromium] › tests/e2e/theme-first-paint.spec.ts:224:1 › @theme-first-paint no theme flash for a light preference on /login (214ms)
+  ✓  177 [chromium] › tests/e2e/deploy-host.spec.ts:30:3 › @deploy-host e2e deploy host › runs docker info inside the deploy host (92ms)
+  ✓  178 [chromium] › tests/e2e/deploy-host.spec.ts:36:3 › @deploy-host e2e deploy host › exposes ssh data, repo urls and listings (124ms)
+  ✓  179 [chromium] › tests/e2e/deploy-host.spec.ts:50:3 › @deploy-host e2e deploy host › curls a port published inside the deploy host (688ms)
+  ✓  180 [chromium] › tests/e2e/deploy-host.spec.ts:68:3 › @deploy-host e2e deploy host › exec redacts per-run secrets and enforces a per-call timeout (540ms)
+  ✓  181 [chromium] › tests/e2e/deploy-host.spec.ts:81:3 › @deploy-host e2e deploy host › keeps per-run secrets out of serialized handles and inside the run temp dir (2ms)
+  ✓  182 [chromium] › tests/e2e/deploy-host.spec.ts:96:3 › @deploy-host e2e deploy host › labels its resources with the run id so teardown finds them (131ms)
+  ✓  183 [chromium] › tests/e2e/deploy-host.spec.ts:105:3 › @deploy-host e2e deploy host › sweep is run-scoped and idempotent (5.3s)
+  ✓  184 [chromium] › tests/e2e/deploy-host.spec.ts:133:3 › @deploy-host e2e deploy host › fails with a named error when the run environment is missing (1ms)
+  ✓  185 [chromium] › tests/e2e/deploy.spec.ts:384:3 › @e2e-deploy critical deploy path › deploys node-api from the UI with live build logs, then a failing build leaves it untouched (11.1s)
+  ✓  186 [chromium] › tests/e2e/deploy.spec.ts:440:3 › @e2e-deploy critical deploy path › cancels an in-progress build: CANCELLED, no build process and no leftovers on the host (12.1s)
+  ✓  187 [chromium] › tests/e2e/deploy.spec.ts:490:3 › @e2e-deploy critical deploy path › a service of project A requested under project B is not found in the UI and the API (479ms)
+  ✘  188 [chromium] › tests/e2e/deploy.spec.ts:535:3 › @e2e-deploy critical deploy path › keeps a registry password entered in the service form out of the DOM, console, responses and artifacts (37.0s)
+  ✓  189 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 projects: text contrast meets the design-system thresholds in light and dark (615ms)
+  ✓  190 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 projects: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dark (1.7s)
+  ✓  191 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 projects: reduced motion leaves no moving transition or animation (453ms)
+  ✓  192 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 project: text contrast meets the design-system thresholds in light and dark (640ms)
+  ✓  193 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 project: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dark (1.5s)
+  ✓  194 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 project: reduced motion leaves no moving transition or animation (484ms)
+  ✓  195 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 service: text contrast meets the design-system thresholds in light and dark (610ms)
+  ✓  196 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 service: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dark (1.6s)
+  ✓  197 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 service: reduced motion leaves no moving transition or animation (465ms)
+  ✓  198 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 project-sheet: text contrast meets the design-system thresholds in light and dark (1.4s)
+  ✓  199 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 project-sheet: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dark (4.9s)
+  ✓  200 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 project-sheet: reduced motion leaves no moving transition or animation (902ms)
+  ✓  201 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 environment-sheet: text contrast meets the design-system thresholds in light and dark (1.4s)
+  ✓  202 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 environment-sheet: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dark (4.8s)
+  ✓  203 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 environment-sheet: reduced motion leaves no moving transition or animation (903ms)
+  ✓  204 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 service-sheet: text contrast meets the design-system thresholds in light and dark (1.4s)
+  ✓  205 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 service-sheet: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dark (4.7s)
+  ✓  206 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 service-sheet: reduced motion leaves no moving transition or animation (852ms)
+  ✓  207 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 inspector-build-log: text contrast meets the design-system thresholds in light and dark (688ms)
+  ✓  208 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 inspector-build-log: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dark (1.9s)
+  ✓  209 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 inspector-build-log: reduced motion leaves no moving transition or animation (485ms)
+  ✓  210 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 inspector-runtime-logs: text contrast meets the design-system thresholds in light and dark (866ms)
+  ✓  211 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 inspector-runtime-logs: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dark (2.1s)
+  ✓  212 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 inspector-runtime-logs: reduced motion leaves no moving transition or animation (538ms)
+  ✓  213 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 projects: axe reports no serious or critical violation in light and dark (1.0s)
+  ✓  214 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 project: axe reports no serious or critical violation in light and dark (1.1s)
+  ✓  215 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 service: axe reports no serious or critical violation in light and dark (1.2s)
+  ✓  216 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 project-sheet: axe reports no serious or critical violation in light and dark (1.8s)
+  ✓  217 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 environment-sheet: axe reports no serious or critical violation in light and dark (1.9s)
+  ✓  218 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 service-sheet: axe reports no serious or critical violation in light and dark (1.8s)
+  ✓  219 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 inspector-build-log: axe reports no serious or critical violation in light and dark (1.2s)
+  ✓  220 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 inspector-runtime-logs: axe reports no serious or critical violation in light and dark (1.3s)
+  ✓  221 [chromium] › tests/e2e/projects-dod.spec.ts:774:5 › @projects-dod Phase 13 screens › H1 projects: every control is keyboard reachable in document order with a visible focus ring (699ms)
+  ✓  222 [chromium] › tests/e2e/projects-dod.spec.ts:774:5 › @projects-dod Phase 13 screens › H1 project: every control is keyboard reachable in document order with a visible focus ring (664ms)
+  ✓  223 [chromium] › tests/e2e/projects-dod.spec.ts:774:5 › @projects-dod Phase 13 screens › H1 service: every control is keyboard reachable in document order with a visible focus ring (716ms)
+  ✓  224 [chromium] › tests/e2e/projects-dod.spec.ts:774:5 › @projects-dod Phase 13 screens › H1 inspector-build-log: every control is keyboard reachable in document order with a visible focus ring (756ms)
+  ✓  225 [chromium] › tests/e2e/projects-dod.spec.ts:774:5 › @projects-dod Phase 13 screens › H1 inspector-runtime-logs: every control is keyboard reachable in document order with a visible focus ring (977ms)
+  ✓  226 [chromium] › tests/e2e/projects-dod.spec.ts:791:5 › @projects-dod Phase 13 screens › H1 project-sheet: opened from the keyboard, traps focus with a visible ring and restores it on Escape (1.5s)
+  ✓  227 [chromium] › tests/e2e/projects-dod.spec.ts:791:5 › @projects-dod Phase 13 screens › H1 environment-sheet: opened from the keyboard, traps focus with a visible ring and restores it on Escape (1.4s)
+  ✓  228 [chromium] › tests/e2e/projects-dod.spec.ts:791:5 › @projects-dod Phase 13 screens › H1 service-sheet: opened from the keyboard, traps focus with a visible ring and restores it on Escape (1.3s)
+  ✓  229 [chromium] › tests/e2e/projects-dod.spec.ts:828:3 › @projects-dod Phase 13 screens › H1 service, inspector and history convey status with text, not color alone (410ms)
+  ✓  230 [chromium] › tests/e2e/projects-dod.spec.ts:906:7 › @projects-dod Phase 13 screens › H2 long content at 375 px › H2 [light] a 200-character project name, a 300-character repo URL and a 10,000-line build log (1.0s)
+  ✓  231 [chromium] › tests/e2e/projects-dod.spec.ts:906:7 › @projects-dod Phase 13 screens › H2 long content at 375 px › H2 [dark] a 200-character project name, a 300-character repo URL and a 10,000-line build log (1.1s)
+  ✓  232 [chromium] › tests/e2e/projects-dod.spec.ts:1003:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › A1 the service title keeps 12 characters and the toolbar stays on one row at 375 px (714ms)
+  ✓  233 [chromium] › tests/e2e/projects-dod.spec.ts:1042:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › A2 the 300-character repo URL truncates in the middle inside its card, the full value on demand (646ms)
+  ✓  234 [chromium] › tests/e2e/projects-dod.spec.ts:1071:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › A3 the 375 px projects list truncates the description before the project name (627ms)
+  ✓  235 [chromium] › tests/e2e/projects-dod.spec.ts:1089:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › the 375 px status row keeps the status word whole (the caption takes the leftover width) (686ms)
+  ✓  236 [chromium] › tests/e2e/projects-dod.spec.ts:1099:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › H1 the overflow menu is keyboard operable at 375 px: labelled, expanded state, focus trapped, Escape returns focus (703ms)
+  ✓  237 [chromium] › tests/e2e/projects-dod.spec.ts:1127:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › H1 axe reports no serious or critical violation on the three screens at 375 px (2.5s)
+  ✓  238 [chromium] › tests/e2e/projects-dod.spec.ts:1141:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › H2 no horizontal scroll at 375 and 1280 px with a 300-character service name and repo URL (3.1s)
+  ✓  239 [chromium] › tests/e2e/projects-dod.spec.ts:1164:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › H2 the repository URL renders as inert text, never HTML (497ms)
+  ✓  240 [chromium] › tests/e2e/projects-dod.spec.ts:1206:5 › @projects-dod Phase 13 screens › 14-19 project toolbar at 375 px › A1 the project title keeps 12 characters and the toolbar stays on one row at 375 px (675ms)
+  ✓  241 [chromium] › tests/e2e/projects-dod.spec.ts:1257:5 › @projects-dod Phase 13 screens › 14-19 project toolbar at 375 px › A2 the back arrow and the actions menu are keyboard operable with accessible names at 375 px (524ms)
+  ✓  242 [chromium] › tests/e2e/projects-dod.spec.ts:1297:5 › @projects-dod Phase 13 screens › 14-19 project toolbar at 375 px › A2 axe reports no serious or critical violation on the project at 375 px (985ms)
+  ✓  243 [chromium] › tests/e2e/projects-dod.spec.ts:1309:5 › @projects-dod Phase 13 screens › 14-19 project toolbar at 375 px › A2 no horizontal scroll at 375 and 1280 px with a 200-character project name (1.1s)
+
+
+  1) [chromium] › tests/e2e/deploy.spec.ts:535:3 › @e2e-deploy critical deploy path › keeps a registry password entered in the service form out of the DOM, console, responses and artifacts 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByTestId('service-edit')
+
+
+      590 |       // The pull logged in with the canary: the image runs and answers.
+      591 |       expect((await deployHost.curlPublishedPort(port, '/')).status).toBe(200);
+    > 592 |       await watched.getByTestId('service-edit').click();
+          |                                                 ^
+      593 |       await expect(watched.getByTestId('credential-status')).toHaveText('Configured');
+      594 |       doms.push(await watched.content());
+      595 |       await watched.keyboard.press('Escape');
+        at /Users/xch4rt/work/myself/noodara/code/tests/e2e/deploy.spec.ts:592:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/deploy--e2e-deploy-critica-8187f-ole-responses-and-artifacts-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/deploy--e2e-deploy-critica-8187f-ole-responses-and-artifacts-chromium/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/deploy--e2e-deploy-critica-8187f-ole-responses-and-artifacts-chromium/error-context.md
+
+    attachment #4: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/deploy--e2e-deploy-critica-8187f-ole-responses-and-artifacts-chromium/test-failed-3.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/deploy--e2e-deploy-critica-8187f-ole-responses-and-artifacts-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/e2e/deploy.spec.ts:535:3 › @e2e-deploy critical deploy path › keeps a registry password entered in the service form out of the DOM, console, responses and artifacts 
+  242 passed (6.1m)
+ ELIFECYCLE  Command failed with exit code 1.
+# exit: 1
+# duration_s: 366

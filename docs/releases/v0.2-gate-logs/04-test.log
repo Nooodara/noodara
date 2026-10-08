@@ -1,0 +1,22 @@
+# commit: da5d2fd6ad2cd173ec83c0be2c4e93c0a8bb2cc0
+# date: 2026-10-08T04:37:48Z
+# command: pnpm test
+
+> noodara@0.2.0 test /Users/xch4rt/work/myself/noodara/code
+> vitest run
+
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+{"level":40,"time":1791434271227,"pid":92940,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"de64602faf957ec4","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+
+ Test Files  307 passed (307)
+      Tests  6531 passed (6531)
+   Start at  22:37:49
+   Duration  19.75s (tests 38%, environment 26%, import 17%, transform 11%, setup 7%)
+
+# exit: 0
+# duration_s: 21

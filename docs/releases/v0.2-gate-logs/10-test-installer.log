@@ -1,0 +1,338 @@
+# commit: da5d2fd6ad2cd173ec83c0be2c4e93c0a8bb2cc0
+# date: 2026-10-08T06:06:06Z
+# command: pnpm test:installer
+
+> noodara@0.2.0 test:installer /Users/xch4rt/work/myself/noodara/code
+> vitest run --config vitest.installer.config.ts
+
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+
+> noodara@0.2.0 build /Users/xch4rt/work/myself/noodara/code
+> turbo run build --filter=!@noodara/site
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/config, @noodara/control-plane, @noodara/docker, @noodara/domain, @noodara/git, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 8 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs 3504c793414b09e0
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ssh:build: cache hit, replaying logs f51d29b5cbbf0dce
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ui:build: cache hit, replaying logs c4d922c5c602b036
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/git:build: cache hit, replaying logs 7ab856662a219990
+@noodara/git:build: 
+@noodara/git:build: > @noodara/git@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/git
+@noodara/git:build: > tsc -p tsconfig.build.json
+@noodara/git:build: 
+@noodara/docker:build: cache hit, replaying logs 3fde58f6b17bd80a
+@noodara/docker:build: 
+@noodara/docker:build: > @noodara/docker@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/docker
+@noodara/docker:build: > tsc -p tsconfig.build.json
+@noodara/docker:build: 
+@noodara/control-plane:build: cache hit, replaying logs 6880afddda894dd7
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.2.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
+@noodara/web:build: cache hit, replaying logs ee9b5b41db6dcc5d
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.2.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > node scripts/sync-brand-assets.mjs && next build
+@noodara/web:build: 
+@noodara/web:build: sync-brand-assets: no files changed (fully idempotent run).
+@noodara/web:build: sync-brand-assets: 7 file(s) already up to date.
+@noodara/web:build: ▲ Next.js 16.3.6 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 60ms
+@noodara/web:build: 
+@noodara/web:build:   Creating an optimized production build ...
+@noodara/web:build: ✓ Compiled successfully in 809ms
+@noodara/web:build:   Running TypeScript ...
+@noodara/web:build:   Finished TypeScript in 702ms ...
+@noodara/web:build:   Collecting page data using 13 workers ...
+@noodara/web:build:   Generating static pages using 13 workers (0/16) ...
+@noodara/web:build: ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+@noodara/web:build:   Generating static pages using 13 workers (4/16) 
+@noodara/web:build:   Generating static pages using 13 workers (8/16) 
+@noodara/web:build:   Generating static pages using 13 workers (12/16) 
+@noodara/web:build: ✓ Generating static pages using 13 workers (16/16) in 131ms
+@noodara/web:build:   Finalizing page optimization ...
+@noodara/web:build: 
+@noodara/web:build: Route (app)
+@noodara/web:build: ┌ ƒ /
+@noodara/web:build: ├ ƒ /_not-found
+@noodara/web:build: ├ ƒ /[...catchAll]
+@noodara/web:build: ├ ƒ /activity
+@noodara/web:build: ├ ƒ /api/events
+@noodara/web:build: ├ ○ /apple-icon.png
+@noodara/web:build: ├ ○ /icon.svg
+@noodara/web:build: ├ ○ /icon1.png
+@noodara/web:build: ├ ○ /icon2.png
+@noodara/web:build: ├ ƒ /login
+@noodara/web:build: ├ ○ /manifest.webmanifest
+@noodara/web:build: ├ ○ /opengraph-image.png
+@noodara/web:build: ├ ƒ /projects
+@noodara/web:build: ├ ƒ /projects/[projectId]
+@noodara/web:build: ├ ƒ /projects/[projectId]/services/[serviceId]
+@noodara/web:build: ├ ƒ /servers
+@noodara/web:build: ├ ƒ /servers/[id]
+@noodara/web:build: ├ ƒ /settings
+@noodara/web:build: └ ○ /setup
+@noodara/web:build: 
+@noodara/web:build: 
+@noodara/web:build: ƒ Proxy (Middleware)
+@noodara/web:build: 
+@noodara/web:build: ○  (Static)   prerendered as static content
+@noodara/web:build: ƒ  (Dynamic)  server-rendered on demand
+@noodara/web:build: 
+
+ Tasks:    7 successful, 7 total
+Cached:    7 cached, 7 total
+  Time:    77ms >>> FULL TURBO
+
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 6.27kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:22-slim
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 1.27kB done
+#3 DONE 0.0s
+
+#4 [installer 1/6] FROM docker.io/library/node:22-slim@sha256:48e4b67d85f87bd551df43704e24d252f56cc5f8e9718841aace50f19948f0f9
+#4 resolve docker.io/library/node:22-slim@sha256:48e4b67d85f87bd551df43704e24d252f56cc5f8e9718841aace50f19948f0f9 done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 83.40kB 0.1s done
+#5 DONE 0.2s
+
+#6 [pruner 4/6] COPY . .
+#6 CACHED
+
+#7 [builder 4/7] COPY --from=installer /app/ .
+#7 CACHED
+
+#8 [installer 3/6] WORKDIR /app
+#8 CACHED
+
+#9 [installer 2/6] RUN corepack enable
+#9 CACHED
+
+#10 [pruner 6/6] RUN pnpm exec turbo prune @noodara/control-plane --docker
+#10 CACHED
+
+#11 [installer 6/6] RUN pnpm install --frozen-lockfile
+#11 CACHED
+
+#12 [pruner 5/6] RUN pnpm install --frozen-lockfile --ignore-scripts
+#12 CACHED
+
+#13 [installer 4/6] COPY --from=pruner /app/out/json/ .
+#13 CACHED
+
+#14 [installer 5/6] COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+#14 CACHED
+
+#15 [builder 5/7] COPY --from=pruner /app/out/full/ .
+#15 CACHED
+
+#16 [builder 6/7] RUN if [ -n "" ]; then       cd apps/control-plane && pnpm pkg set version="";     fi
+#16 DONE 0.1s
+
+#17 [builder 7/7] RUN pnpm exec turbo run build --filter=@noodara/control-plane
+#17 0.134 ! Corepack is about to download https://registry.npmjs.org/pnpm/-/pnpm-10.34.5.tgz
+#17 2.410 
+#17 2.410 Attention:
+#17 2.410 Turborepo now collects completely anonymous telemetry regarding usage.
+#17 2.410 This information is used to shape the Turborepo roadmap and prioritize features.
+#17 2.410 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+#17 2.410 https://turborepo.dev/docs/telemetry
+#17 2.410 
+#17 2.410 • turbo 2.10.12
+#17 2.446 
+#17 2.446    • Packages in scope: @noodara/control-plane
+#17 2.446    • Running build in 1 packages
+#17 2.446    • Remote caching disabled
+#17 2.446 
+#17 2.484 @noodara/domain:build: cache miss, executing 01f088c76204711d
+#17 2.671 @noodara/domain:build: 
+#17 2.671 @noodara/domain:build: > @noodara/domain@0.2.0 build /app/packages/domain
+#17 2.671 @noodara/domain:build: > tsc -p tsconfig.build.json
+#17 2.671 @noodara/domain:build: 
+#17 3.531 @noodara/ssh:build: cache miss, executing 8616720ff3cb9bad
+#17 3.716 @noodara/ssh:build: 
+#17 3.716 @noodara/ssh:build: > @noodara/ssh@0.2.0 build /app/packages/ssh
+#17 3.716 @noodara/ssh:build: > tsc -p tsconfig.build.json
+#17 3.716 @noodara/ssh:build: 
+#17 4.343 @noodara/git:build: cache miss, executing 620ba820b9606dfa
+#17 4.343 @noodara/docker:build: cache miss, executing 8708a04c39ee6fa9
+#17 4.519 @noodara/git:build: 
+#17 4.519 @noodara/git:build: > @noodara/git@0.2.0 build /app/packages/git
+#17 4.519 @noodara/git:build: > tsc -p tsconfig.build.json
+#17 4.519 @noodara/git:build: 
+#17 4.519 @noodara/docker:build: 
+#17 4.519 @noodara/docker:build: > @noodara/docker@0.2.0 build /app/packages/docker
+#17 4.519 @noodara/docker:build: > tsc -p tsconfig.build.json
+#17 4.519 @noodara/docker:build: 
+#17 4.950 @noodara/control-plane:build: cache miss, executing 3e71a8256cb5b3ad
+#17 5.119 @noodara/control-plane:build: 
+#17 5.119 @noodara/control-plane:build: > @noodara/control-plane@0.2.0 build /app/apps/control-plane
+#17 5.119 @noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+#17 5.119 @noodara/control-plane:build: 
+#17 8.328 @noodara/control-plane:build: copy-migration-assets: copied /app/apps/control-plane/src/db/migrations -> /app/apps/control-plane/dist/db/migrations
+#17 8.341 
+#17 8.341  Tasks:    5 successful, 5 total
+#17 8.341 Cached:    0 cached, 5 total
+#17 8.341   Time:    5.931s 
+#17 8.341 
+#17 DONE 8.4s
+
+#18 [runner  8/11] COPY --from=builder --chown=noodara:noodara /app/packages/docker/dist /app/packages/docker/dist
+#18 CACHED
+
+#19 [runner  7/11] COPY --from=builder --chown=noodara:noodara /app/packages/git/dist /app/packages/git/dist
+#19 CACHED
+
+#20 [prod-deps 6/6] RUN pnpm install --frozen-lockfile --prod --no-optional --filter-prod "@noodara/control-plane..."  && find node_modules/.pnpm -type f ( -name '*.map' -o -name '*.tsbuildinfo' ) -delete
+#20 CACHED
+
+#21 [runner  4/11] COPY --from=prod-deps --chown=noodara:noodara /app /app
+#21 CACHED
+
+#22 [runner  5/11] COPY --from=builder --chown=noodara:noodara /app/packages/domain/dist /app/packages/domain/dist
+#22 CACHED
+
+#23 [runner  6/11] COPY --from=builder --chown=noodara:noodara /app/packages/ssh/dist /app/packages/ssh/dist
+#23 CACHED
+
+#24 [runner  2/11] WORKDIR /app
+#24 CACHED
+
+#25 [runner  3/11] RUN groupadd --system noodara && useradd --system --gid noodara --home-dir /app noodara
+#25 CACHED
+
+#26 [runner  9/11] COPY --from=builder --chown=noodara:noodara /app/apps/control-plane/dist /app/apps/control-plane/dist
+#26 CACHED
+
+#27 [runner 10/11] COPY --from=builder --chown=noodara:noodara /app/apps/control-plane/package.json /app/apps/control-plane/package.json
+#27 DONE 0.0s
+
+#28 [runner 11/11] WORKDIR /app/apps/control-plane
+#28 DONE 0.0s
+
+#29 exporting to image
+#29 exporting layers 0.1s done
+#29 exporting manifest sha256:886b66179af615fe62f0aa704996eb479125548831f14cb4041b530193704b72 done
+#29 exporting config sha256:24f0191e9079bbb6da20dfebc355b559d4de05163954ef93111e960e8cef7f75 0.0s done
+#29 exporting attestation manifest sha256:da22c6c4c307000d72647e59757435b71a4a3b0a6335aeccf91d05c69af79c2b 0.0s done
+#29 exporting manifest list sha256:72d3e70bba344e4ca19d51741d35f6ced5b5fbd468f919ea782d0c3ac85f67d3 done
+#29 naming to docker.io/noodara-test-0607-f145e951/noodara-control-plane:test-0607-f145e951 done
+#29 unpacking to docker.io/noodara-test-0607-f145e951/noodara-control-plane:test-0607-f145e951
+#29 unpacking to docker.io/noodara-test-0607-f145e951/noodara-control-plane:test-0607-f145e951 1.4s done
+#29 DONE 1.6s
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 4.52kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:22-slim
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 1.27kB done
+#3 DONE 0.0s
+
+#4 [pruner 1/6] FROM docker.io/library/node:22-slim@sha256:48e4b67d85f87bd551df43704e24d252f56cc5f8e9718841aace50f19948f0f9
+#4 resolve docker.io/library/node:22-slim@sha256:48e4b67d85f87bd551df43704e24d252f56cc5f8e9718841aace50f19948f0f9 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 83.40kB 0.0s done
+#5 DONE 0.1s
+
+#6 [pruner 5/6] RUN pnpm install --frozen-lockfile --ignore-scripts
+#6 CACHED
+
+#7 [runner 5/6] COPY --from=builder --chown=nodejs:nodejs /app/apps/web/.next/standalone ./
+#7 CACHED
+
+#8 [pruner 6/6] RUN pnpm exec turbo prune @noodara/web --docker
+#8 CACHED
+
+#9 [runner 2/6] WORKDIR /app
+#9 CACHED
+
+#10 [pruner 3/6] WORKDIR /app
+#10 CACHED
+
+#11 [installer 6/6] RUN pnpm install --frozen-lockfile
+#11 CACHED
+
+#12 [builder 4/6] COPY --from=installer /app/ .
+#12 CACHED
+
+#13 [runner 4/6] RUN mkdir .next && chown nodejs:nodejs .next
+#13 CACHED
+
+#14 [pruner 4/6] COPY . .
+#14 CACHED
+
+#15 [builder 5/6] COPY --from=pruner /app/out/full/ .
+#15 CACHED
+
+#16 [pruner 2/6] RUN corepack enable
+#16 CACHED
+
+#17 [installer 4/6] COPY --from=pruner /app/out/json/ .
+#17 CACHED
+
+#18 [installer 5/6] COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+#18 CACHED
+
+#19 [builder 6/6] RUN pnpm exec turbo run build --filter=@noodara/web
+#19 CACHED
+
+#20 [runner 3/6] RUN groupadd --system nodejs && useradd --system --gid nodejs --home-dir /app nodejs
+#20 CACHED
+
+#21 [runner 6/6] COPY --from=builder --chown=nodejs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+#21 CACHED
+
+#22 exporting to image
+#22 exporting layers done
+#22 exporting manifest sha256:f187bf12a37e2ad88a9b7840f1b546e46060e8091c2dbb0c898f6ff2195c463f done
+#22 exporting config sha256:115656af4aa3296f8b7a42877fafec373eeeff48ef29118c5c75fccfc81ab421 done
+#22 exporting attestation manifest sha256:a562b987b6845975a50cfbe17b79d231c75901a5e056e9236e2dce638a1dfc85 done
+#22 exporting manifest list sha256:e4c7ee59aa5c7042c8882d7f738e0fc598fa8fd12de1dd828b706443fd156018 done
+#22 naming to docker.io/noodara-test-0607-f145e951/noodara-web:test-0607-f145e951 done
+#22 unpacking to docker.io/noodara-test-0607-f145e951/noodara-web:test-0607-f145e951
+#22 unpacking to docker.io/noodara-test-0607-f145e951/noodara-web:test-0607-f145e951 0.5s done
+#22 DONE 0.7s
+
+ Test Files  10 passed (10)
+      Tests  56 passed (56)
+   Start at  00:06:07
+   Duration  1467.86s (tests 100%)
+
+# exit: 0
+# duration_s: 1469

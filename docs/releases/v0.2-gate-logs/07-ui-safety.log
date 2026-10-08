@@ -1,0 +1,23 @@
+# commit: da5d2fd6ad2cd173ec83c0be2c4e93c0a8bb2cc0
+# date: 2026-10-08T04:43:11Z
+# command: pnpm check:ui-safety
+
+> noodara@0.2.0 check:ui-safety /Users/xch4rt/work/myself/noodara/code
+> node scripts/check-ui-safety.mjs
+
+OK   exactly one reviewed dangerouslySetInnerHTML per app root layout (T-5-99, T-10-11) (count=2)
+OK   zero JSON.stringify in a component or page file (count=0)
+OK   zero hex colour literals outside packages/ui/tokens.css (count=0)
+OK   zero rgb(/rgba( colour literals outside packages/ui/tokens.css (count=0)
+OK   zero literal `outline: none` CSS declarations, in either a raw CSS/style-tag form or a JS/JSX inline-style object's quoted form (Tailwind's `outline-none` utility class name is a different, unrelated string and is not scanned by this gate) (count=0)
+OK   zero onEscapeKeyDown/onInteractOutside overrides (Radix Dialog/Sheet default behaviour must stay untouched) (count=0)
+OK   zero animate-spin/spinner usage (the skill's full-screen-spinner ban, skeletons only) (count=0)
+OK   zero credentials: 'include' (D-29's same-origin lock, T-5-100) (count=0)
+OK   @noodara/ui/testing imported only from *.test.tsx/*.test.ts files (ADR-0005, T-5-103) (count=0)
+OK   zero shadows outside Sheet/Dialog/RowMenu/AccountMenu (UI-03, brief SS9 #2) (count=0)
+OK   at most three simultaneous backdrop-filter surfaces (UI-10, worst case toolbar + Sheet + one overlay) (count=3)
+OK   zero CSS built-in easing keywords outside var(--ease-*) token references (UI-05, brief §9 #9) (count=0)
+
+check:ui-safety OK -- all repo-wide UI safety gates hold.
+# exit: 0
+# duration_s: 1

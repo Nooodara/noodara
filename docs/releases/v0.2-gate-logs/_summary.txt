@@ -1,0 +1,12 @@
+01-lint rc=0
+02-typecheck rc=0
+03-boundaries rc=0
+04-test rc=0
+05-build rc=0
+06-security-leaks rc=0
+07-ui-safety rc=0
+08-test-integration rc=1
+09-test-e2e rc=1
+10-test-installer rc=0
+11-soak rc=0
+DONE

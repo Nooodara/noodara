@@ -1,0 +1,66 @@
+# commit: d8c41e9
+# date: 2026-10-08T05:43:00Z
+# source: CI run 37728319848 job integration (113151454974), failure excerpt
+2026-10-08T05:16:28.4150380Z [41m[1m FAIL [22m[49m tests/integration/db/migration-hygiene.test.ts[2m > [22mmigration hygiene guard (QA-06, T-1-21)[2m > [22m0007_phase14_git_host_key_codes.sql sta… guards ALTER TYPE ... ADD VALUE with IF NOT EXISTS
+2026-10-08T05:16:28.4155151Z [31m[1mAssertionError[22m: 0007_phase14_git_host_key_codes.sql: ADD VALUE without IF NOT EXISTS: ALTER TYPE "public"."deployment_error_code" ADD VALUE 'GIT_HOST_KEY_MISMATCH' BEFORE 'UNSUPPORTED_REPOSITORY_FEATURE';: expected 'ALTER TYPE "public"."deployment_error…' t
+2026-10-08T05:16:28.4156194Z 
+2026-10-08T05:16:28.4156363Z [32m- Expected:[39m
+2026-10-08T05:16:28.4156787Z /ADD\s+VALUE\s+IF\s+NOT\s+EXISTS\s+'/i
+2026-10-08T05:16:28.4157030Z 
+2026-10-08T05:16:28.4157335Z [31m+ Received:[39m
+2026-10-08T05:16:28.4157893Z "ALTER TYPE \"public\".\"deployment_error_code\" ADD VALUE 'GIT_HOST_KEY_MISMATCH' BEFORE 'UNSUPPORTED_REPOSITORY_FEATURE';"
+2026-10-08T05:16:28.4158304Z 
+2026-10-08T05:16:28.4158746Z [36m [2m❯[22m tests/integration/db/migration-hygiene.test.ts:[2m114:87[22m[39m
+2026-10-08T05:16:28.4186401Z     [90m112|[39m     '$label guards ALTER TYPE ... ADD VALUE with IF NOT EXISTS',
+2026-10-08T05:16:28.4186873Z     [90m113|[39m     ({ fileName, statement }) => {
+2026-10-08T05:16:28.4187362Z     [90m114|[39m       expect(statement, `${fileName}: ADD VALUE without IF NOT EXISTS:…
+2026-10-08T05:16:28.4187922Z     [90m   |[39m                                                                                       [31m^[39m
+2026-10-08T05:16:28.4188354Z     [90m115|[39m         ADD_VALUE_GUARDED,
+2026-10-08T05:16:28.4188633Z     [90m116|[39m       );
+2026-10-08T05:16:28.4188766Z 
+2026-10-08T05:16:28.4188989Z [31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+2026-10-08T05:16:28.4189154Z 
+2026-10-08T05:16:28.4190046Z [41m[1m FAIL [22m[49m tests/integration/db/migration-hygiene.test.ts[2m > [22mmigration hygiene guard (QA-06, T-1-21)[2m > [22m0007_phase14_git_host_key_codes.sql sta… guards ALTER TYPE ... ADD VALUE with IF NOT EXISTS
+2026-10-08T05:16:28.4192104Z [31m[1mAssertionError[22m: 0007_phase14_git_host_key_codes.sql: ADD VALUE without IF NOT EXISTS: ALTER TYPE "public"."deployment_error_code" ADD VALUE 'GIT_HOST_KEY_UNAVAILABLE' BEFORE 'UNSUPPORTED_REPOSITORY_FEATURE';: expected 'ALTER TYPE "public"."deployment_error…
+2026-10-08T05:16:28.4193117Z 
+2026-10-08T05:16:28.4193255Z [32m- Expected:[39m
+2026-10-08T05:16:28.4193512Z /ADD\s+VALUE\s+IF\s+NOT\s+EXISTS\s+'/i
+2026-10-08T05:16:28.4193964Z 
+2026-10-08T05:16:28.4194615Z [31m+ Received:[39m
+2026-10-08T05:16:28.4195290Z "ALTER TYPE \"public\".\"deployment_error_code\" ADD VALUE 'GIT_HOST_KEY_UNAVAILABLE' BEFORE 'UNSUPPORTED_REPOSITORY_FEATURE';"
+2026-10-08T05:16:28.4195685Z 
+2026-10-08T05:16:28.4196018Z [36m [2m❯[22m tests/integration/db/migration-hygiene.test.ts:[2m114:87[22m[39m
+2026-10-08T05:16:28.4196565Z     [90m112|[39m     '$label guards ALTER TYPE ... ADD VALUE with IF NOT EXISTS',
+2026-10-08T05:16:28.4196959Z     [90m113|[39m     ({ fileName, statement }) => {
+2026-10-08T05:16:28.4197404Z     [90m114|[39m       expect(statement, `${fileName}: ADD VALUE without IF NOT EXISTS:…
+2026-10-08T05:16:28.4197907Z     [90m   |[39m                                                                                       [31m^[39m
+2026-10-08T05:16:28.4198264Z     [90m115|[39m         ADD_VALUE_GUARDED,
+2026-10-08T05:16:28.4198575Z     [90m116|[39m       );
+2026-10-08T05:16:28.4198694Z 
+2026-10-08T05:16:28.4198898Z [31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+2026-10-08T05:16:28.4199065Z 
+2026-10-08T05:16:28.4199909Z [41m[1m FAIL [22m[49m tests/integration/db/migration-hygiene.test.ts[2m > [22mmigration hygiene guard (QA-06, T-1-21)[2m > [22m0009_phase14_enqueue_failed_code.sql st… guards ALTER TYPE ... ADD VALUE with IF NOT EXISTS
+2026-10-08T05:16:28.4201636Z [31m[1mAssertionError[22m: 0009_phase14_enqueue_failed_code.sql: ADD VALUE without IF NOT EXISTS: ALTER TYPE "public"."deployment_error_code" ADD VALUE 'ENQUEUE_FAILED';: expected 'ALTER TYPE "public"."deployment_error…' to match /ADD\s+VALUE\s+IF\s+NOT\s+EXISTS\s+'/i
+2026-10-08T05:16:28.4202394Z 
+2026-10-08T05:16:28.4202511Z [32m- Expected:[39m
+2026-10-08T05:16:28.4202740Z /ADD\s+VALUE\s+IF\s+NOT\s+EXISTS\s+'/i
+2026-10-08T05:16:28.4202898Z 
+2026-10-08T05:16:28.4203006Z [31m+ Received:[39m
+2026-10-08T05:16:28.4203353Z "ALTER TYPE \"public\".\"deployment_error_code\" ADD VALUE 'ENQUEUE_FAILED';"
+2026-10-08T05:16:28.4203739Z 
+2026-10-08T05:16:28.4204294Z [36m [2m❯[22m tests/integration/db/migration-hygiene.test.ts:[2m114:87[22m[39m
+2026-10-08T05:16:28.4204790Z     [90m112|[39m     '$label guards ALTER TYPE ... ADD VALUE with IF NOT EXISTS',
+2026-10-08T05:16:28.4205165Z     [90m113|[39m     ({ fileName, statement }) => {
+2026-10-08T05:16:28.4205581Z     [90m114|[39m       expect(statement, `${fileName}: ADD VALUE without IF NOT EXISTS:…
+2026-10-08T05:16:28.4206080Z     [90m   |[39m                                                                                       [31m^[39m
+2026-10-08T05:16:28.4206425Z     [90m115|[39m         ADD_VALUE_GUARDED,
+2026-10-08T05:16:28.4206659Z     [90m116|[39m       );
+2026-10-08T05:16:28.4206774Z 
+2026-10-08T05:16:28.4206957Z [31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+2026-10-08T05:16:28.4207109Z 
+2026-10-08T05:16:28.4207145Z 
+2026-10-08T05:16:28.4207625Z [2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m73 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (75)[39m
+2026-10-08T05:16:28.4210338Z [2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m762 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (766)[39m
+2026-10-08T05:16:28.4210839Z [2m   Start at [22m 04:37:03
+2026-10-08T05:16:28.4213639Z [2m   Duration [22m 2364.45s[2m (tests 99%, import 1%)[22m
+2026-10-08T05:16:28.4224562Z 

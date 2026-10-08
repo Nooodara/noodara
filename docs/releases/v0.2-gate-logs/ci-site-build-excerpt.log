@@ -1,0 +1,34 @@
+# commit: d8c41e9
+# date: 2026-10-08T05:03:41Z
+# source: CI run 37728319848, job site (113151454923), excerpt
+2026-10-08T04:37:25.4804872Z   Collecting page data using 3 workers ...
+2026-10-08T04:37:25.4805166Z   Generating static pages using 3 workers (0/28) ...
+2026-10-08T04:37:25.4805472Z   Generating static pages using 3 workers (7/28) 
+2026-10-08T04:37:25.4805955Z   Generating static pages using 3 workers (14/28) 
+2026-10-08T04:37:25.4806853Z Error occurred prerendering page "/docs/concepts/deployment". Read more: https://nextjs.org/docs/messages/prerender-error
+2026-10-08T04:37:25.4807783Z Error: ScopeNote: unknown exclusion id "deploy-services"
+2026-10-08T04:37:25.4808112Z     at aw (src/components/mdx/ScopeNote.tsx:14:11)
+2026-10-08T04:37:25.4808480Z   12 |   const exclusion = SCOPE_EXCLUSIONS.find((entry) => entry.id === id);
+2026-10-08T04:37:25.4808778Z   13 |   if (!exclusion) {
+2026-10-08T04:37:25.4809082Z > 14 |     throw new Error(`ScopeNote: unknown exclusion id "${id}"`);
+2026-10-08T04:37:25.4809499Z      |           ^
+2026-10-08T04:37:25.4809656Z   15 |   }
+2026-10-08T04:37:25.4809834Z   16 |
+2026-10-08T04:37:25.4810061Z   17 |   return ( {
+2026-10-08T04:37:25.4810350Z   digest: '3588586254'
+2026-10-08T04:37:25.4810691Z }
+2026-10-08T04:37:25.4811458Z Export encountered an error on /docs/[[...slug]]/page: /docs/concepts/deployment, exiting the build.
+2026-10-08T04:37:25.4812595Z ⨯ Next.js build worker exited with code: 1 and signal: null
+2026-10-08T04:37:25.4813716Z  ELIFECYCLE  Command failed with exit code 1.
+2026-10-08T04:37:25.4850737Z ##[error]command (/home/runner/work/noodara/noodara/apps/site) /home/runner/setup-pnpm/node_modules/.bin/pnpm run build exited (1)
+2026-10-08T04:37:25.4857694Z @noodara/site#build:  ERROR  command (/home/runner/work/noodara/noodara/apps/site) /home/runner/setup-pnpm/node_modules/.bin/pnpm run build exited (1)
+2026-10-08T04:37:25.4858369Z  ERROR  run failed: command  exited (1)
+2026-10-08T04:37:25.4858617Z 
+2026-10-08T04:37:25.4858771Z  Tasks:    2 successful, 3 total
+2026-10-08T04:37:25.4859122Z Cached:    0 cached, 3 total
+2026-10-08T04:37:25.4859612Z   Time:    19.094s 
+2026-10-08T04:37:25.4859949Z Failed:    @noodara/site#build
+2026-10-08T04:37:25.4860144Z 
+2026-10-08T04:37:25.4987750Z  ELIFECYCLE  Command failed with exit code 1.
+2026-10-08T04:37:25.5152426Z ##[error]Process completed with exit code 1.
+2026-10-08T04:37:25.5232468Z Post job cleanup.

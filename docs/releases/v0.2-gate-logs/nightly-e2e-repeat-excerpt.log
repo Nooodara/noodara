@@ -1,0 +1,112 @@
+# commit: d8c41e9
+# date: 2026-10-08T05:03:41Z
+# source: Nightly run 37728338741, job e2e-repeat, excerpt
+2026-10-08T04:41:27.0570791Z   ✓  176 [chromium] › tests/e2e/theme-first-paint.spec.ts:224:1 › @theme-first-paint no theme flash for a light preference on /login (280ms)
+2026-10-08T04:42:15.3597986Z   ✓  177 [chromium] › tests/e2e/deploy-host.spec.ts:30:3 › @deploy-host e2e deploy host › runs docker info inside the deploy host (51ms)
+2026-10-08T04:42:15.5282704Z   ✓  178 [chromium] › tests/e2e/deploy-host.spec.ts:36:3 › @deploy-host e2e deploy host › exposes ssh data, repo urls and listings (159ms)
+2026-10-08T04:42:16.9348623Z   ✓  179 [chromium] › tests/e2e/deploy-host.spec.ts:50:3 › @deploy-host e2e deploy host › curls a port published inside the deploy host (1.4s)
+2026-10-08T04:42:17.4863613Z   ✓  180 [chromium] › tests/e2e/deploy-host.spec.ts:68:3 › @deploy-host e2e deploy host › exec redacts per-run secrets and enforces a per-call timeout (545ms)
+2026-10-08T04:42:17.4993991Z   ✓  181 [chromium] › tests/e2e/deploy-host.spec.ts:81:3 › @deploy-host e2e deploy host › keeps per-run secrets out of serialized handles and inside the run temp dir (3ms)
+2026-10-08T04:42:17.5469992Z   ✓  182 [chromium] › tests/e2e/deploy-host.spec.ts:96:3 › @deploy-host e2e deploy host › labels its resources with the run id so teardown finds them (42ms)
+2026-10-08T04:42:18.1257885Z   ✓  183 [chromium] › tests/e2e/deploy-host.spec.ts:105:3 › @deploy-host e2e deploy host › sweep is run-scoped and idempotent (572ms)
+2026-10-08T04:42:18.1341166Z   ✓  184 [chromium] › tests/e2e/deploy-host.spec.ts:133:3 › @deploy-host e2e deploy host › fails with a named error when the run environment is missing (1ms)
+2026-10-08T04:42:35.9825157Z   ✓  185 [chromium] › tests/e2e/deploy.spec.ts:384:3 › @e2e-deploy critical deploy path › deploys node-api from the UI with live build logs, then a failing build leaves it untouched (15.3s)
+2026-10-08T04:42:48.9768697Z   ✓  186 [chromium] › tests/e2e/deploy.spec.ts:440:3 › @e2e-deploy critical deploy path › cancels an in-progress build: CANCELLED, no build process and no leftovers on the host (13.0s)
+2026-10-08T04:42:49.7516309Z   ✓  187 [chromium] › tests/e2e/deploy.spec.ts:490:3 › @e2e-deploy critical deploy path › a service of project A requested under project B is not found in the UI and the API (769ms)
+2026-10-08T04:43:30.6783047Z   ✘  188 [chromium] › tests/e2e/deploy.spec.ts:535:3 › @e2e-deploy critical deploy path › keeps a registry password entered in the service form out of the DOM, console, responses and artifact
+2026-10-08T04:43:44.6075480Z   ✓  189 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 projects: text contrast meets the design-system thresholds in light and dark (987ms)
+2026-10-08T04:43:47.0319277Z   ✓  190 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 projects: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dark (2.4s)
+2026-10-08T04:43:47.7896138Z   ✓  191 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 projects: reduced motion leaves no moving transition or animation (751ms)
+2026-10-08T04:43:48.8440175Z   ✓  192 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 project: text contrast meets the design-system thresholds in light and dark (1.0s)
+2026-10-08T04:43:51.1492897Z   ✓  193 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 project: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dark (2.3s)
+2026-10-08T04:43:51.8259393Z   ✓  194 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 project: reduced motion leaves no moving transition or animation (666ms)
+2026-10-08T04:43:52.7944931Z   ✓  195 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 service: text contrast meets the design-system thresholds in light and dark (963ms)
+2026-10-08T04:43:55.3560725Z   ✓  196 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 service: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dark (2.6s)
+2026-10-08T04:43:56.1095546Z   ✓  197 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 service: reduced motion leaves no moving transition or animation (746ms)
+2026-10-08T04:43:57.8388715Z   ✓  198 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 project-sheet: text contrast meets the design-system thresholds in light and dark (1.7s)
+2026-10-08T04:44:03.3510286Z   ✓  199 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 project-sheet: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dark (5.5
+2026-10-08T04:44:04.4720195Z   ✓  200 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 project-sheet: reduced motion leaves no moving transition or animation (1.1s)
+2026-10-08T04:44:06.1393115Z   ✓  201 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 environment-sheet: text contrast meets the design-system thresholds in light and dark (1.7s)
+2026-10-08T04:44:11.6549781Z   ✓  202 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 environment-sheet: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dark 
+2026-10-08T04:44:12.8118662Z   ✓  203 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 environment-sheet: reduced motion leaves no moving transition or animation (1.1s)
+2026-10-08T04:44:14.5245013Z   ✓  204 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 service-sheet: text contrast meets the design-system thresholds in light and dark (1.7s)
+2026-10-08T04:44:19.7974312Z   ✓  205 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 service-sheet: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dark (5.3
+2026-10-08T04:44:20.9145214Z   ✓  206 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 service-sheet: reduced motion leaves no moving transition or animation (1.1s)
+2026-10-08T04:44:21.9605494Z   ✓  207 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 inspector-build-log: text contrast meets the design-system thresholds in light and dark (1.0s)
+2026-10-08T04:44:24.8840337Z   ✓  208 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 inspector-build-log: no horizontal scroll or clipping at 375/900/1280/1920 px in light and dar
+2026-10-08T04:44:25.6607498Z   ✓  209 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 inspector-build-log: reduced motion leaves no moving transition or animation (771ms)
+2026-10-08T04:44:27.0923045Z   ✓  210 [chromium] › tests/e2e/projects-dod.spec.ts:723:5 › @projects-dod Phase 13 screens › A1 inspector-runtime-logs: text contrast meets the design-system thresholds in light and dark (1.
+2026-10-08T04:44:32.0169711Z   ✓  211 [chromium] › tests/e2e/projects-dod.spec.ts:731:5 › @projects-dod Phase 13 screens › A2 inspector-runtime-logs: no horizontal scroll or clipping at 375/900/1280/1920 px in light and 
+2026-10-08T04:44:32.9808134Z   ✓  212 [chromium] › tests/e2e/projects-dod.spec.ts:745:5 › @projects-dod Phase 13 screens › A3 inspector-runtime-logs: reduced motion leaves no moving transition or animation (956ms)
+2026-10-08T04:44:34.5709277Z   ✓  213 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 projects: axe reports no serious or critical violation in light and dark (1.6s)
+2026-10-08T04:44:36.2322245Z   ✓  214 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 project: axe reports no serious or critical violation in light and dark (1.7s)
+2026-10-08T04:44:38.0449160Z   ✓  215 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 service: axe reports no serious or critical violation in light and dark (1.8s)
+2026-10-08T04:44:40.5608895Z   ✓  216 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 project-sheet: axe reports no serious or critical violation in light and dark (2.5s)
+2026-10-08T04:44:42.9108655Z   ✓  217 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 environment-sheet: axe reports no serious or critical violation in light and dark (2.3s)
+2026-10-08T04:44:45.3378753Z   ✓  218 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 service-sheet: axe reports no serious or critical violation in light and dark (2.4s)
+2026-10-08T04:44:47.2943805Z   ✓  219 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 inspector-build-log: axe reports no serious or critical violation in light and dark (1.9s)
+2026-10-08T04:44:49.6414427Z   ✓  220 [chromium] › tests/e2e/projects-dod.spec.ts:757:5 › @projects-dod Phase 13 screens › H1 inspector-runtime-logs: axe reports no serious or critical violation in light and dark (2.3s)
+2026-10-08T04:44:50.6532871Z   ✓  221 [chromium] › tests/e2e/projects-dod.spec.ts:774:5 › @projects-dod Phase 13 screens › H1 projects: every control is keyboard reachable in document order with a visible focus ring (1.0
+2026-10-08T04:44:51.7719999Z   ✓  222 [chromium] › tests/e2e/projects-dod.spec.ts:774:5 › @projects-dod Phase 13 screens › H1 project: every control is keyboard reachable in document order with a visible focus ring (1.1s
+2026-10-08T04:44:52.8587126Z   ✓  223 [chromium] › tests/e2e/projects-dod.spec.ts:774:5 › @projects-dod Phase 13 screens › H1 service: every control is keyboard reachable in document order with a visible focus ring (1.1s
+2026-10-08T04:44:54.1315873Z   ✓  224 [chromium] › tests/e2e/projects-dod.spec.ts:774:5 › @projects-dod Phase 13 screens › H1 inspector-build-log: every control is keyboard reachable in document order with a visible focu
+2026-10-08T04:44:55.7594170Z   ✓  225 [chromium] › tests/e2e/projects-dod.spec.ts:774:5 › @projects-dod Phase 13 screens › H1 inspector-runtime-logs: every control is keyboard reachable in document order with a visible f
+2026-10-08T04:44:57.7701892Z   ✓  226 [chromium] › tests/e2e/projects-dod.spec.ts:791:5 › @projects-dod Phase 13 screens › H1 project-sheet: opened from the keyboard, traps focus with a visible ring and restores it on Es
+2026-10-08T04:44:59.9214073Z   ✓  227 [chromium] › tests/e2e/projects-dod.spec.ts:791:5 › @projects-dod Phase 13 screens › H1 environment-sheet: opened from the keyboard, traps focus with a visible ring and restores it o
+2026-10-08T04:45:01.8949104Z   ✓  228 [chromium] › tests/e2e/projects-dod.spec.ts:791:5 › @projects-dod Phase 13 screens › H1 service-sheet: opened from the keyboard, traps focus with a visible ring and restores it on Es
+2026-10-08T04:45:02.4922448Z   ✓  229 [chromium] › tests/e2e/projects-dod.spec.ts:828:3 › @projects-dod Phase 13 screens › H1 service, inspector and history convey status with text, not color alone (587ms)
+2026-10-08T04:45:04.2225328Z   ✓  230 [chromium] › tests/e2e/projects-dod.spec.ts:906:7 › @projects-dod Phase 13 screens › H2 long content at 375 px › H2 [light] a 200-character project name, a 300-character repo URL and
+2026-10-08T04:45:05.9209058Z   ✓  231 [chromium] › tests/e2e/projects-dod.spec.ts:906:7 › @projects-dod Phase 13 screens › H2 long content at 375 px › H2 [dark] a 200-character project name, a 300-character repo URL and 
+2026-10-08T04:45:07.0095492Z   ✓  232 [chromium] › tests/e2e/projects-dod.spec.ts:1003:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › A1 the service title keeps 12 characters and the toolbar stays on one row 
+2026-10-08T04:45:08.0446442Z   ✓  233 [chromium] › tests/e2e/projects-dod.spec.ts:1042:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › A2 the 300-character repo URL truncates in the middle inside its card, the
+2026-10-08T04:45:08.8912151Z   ✓  234 [chromium] › tests/e2e/projects-dod.spec.ts:1071:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › A3 the 375 px projects list truncates the description before the project n
+2026-10-08T04:45:09.8950432Z   ✓  235 [chromium] › tests/e2e/projects-dod.spec.ts:1089:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › the 375 px status row keeps the status word whole (the caption takes the l
+2026-10-08T04:45:10.6809192Z   ✓  236 [chromium] › tests/e2e/projects-dod.spec.ts:1099:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › H1 the overflow menu is keyboard operable at 375 px: labelled, expanded st
+2026-10-08T04:45:14.6787641Z   ✓  237 [chromium] › tests/e2e/projects-dod.spec.ts:1127:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › H1 axe reports no serious or critical violation on the three screens at 37
+2026-10-08T04:45:20.1583194Z   ✓  238 [chromium] › tests/e2e/projects-dod.spec.ts:1141:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › H2 no horizontal scroll at 375 and 1280 px with a 300-character service na
+2026-10-08T04:45:20.9430716Z   ✓  239 [chromium] › tests/e2e/projects-dod.spec.ts:1164:5 › @projects-dod Phase 13 screens › 14-13 375 px layout › H2 the repository URL renders as inert text, never HTML (777ms)
+2026-10-08T04:45:22.0930076Z   ✓  240 [chromium] › tests/e2e/projects-dod.spec.ts:1206:5 › @projects-dod Phase 13 screens › 14-19 project toolbar at 375 px › A1 the project title keeps 12 characters and the toolbar stays
+2026-10-08T04:45:23.1668893Z   ✓  241 [chromium] › tests/e2e/projects-dod.spec.ts:1257:5 › @projects-dod Phase 13 screens › 14-19 project toolbar at 375 px › A2 the back arrow and the actions menu are keyboard operable w
+2026-10-08T04:45:24.7245489Z   ✓  242 [chromium] › tests/e2e/projects-dod.spec.ts:1297:5 › @projects-dod Phase 13 screens › 14-19 project toolbar at 375 px › A2 axe reports no serious or critical violation on the project
+2026-10-08T04:45:27.3155645Z   ✓  243 [chromium] › tests/e2e/projects-dod.spec.ts:1309:5 › @projects-dod Phase 13 screens › 14-19 project toolbar at 375 px › A2 no horizontal scroll at 375 and 1280 px with a 200-characte
+2026-10-08T04:45:29.2431411Z 
+2026-10-08T04:45:29.2435674Z 
+2026-10-08T04:45:29.2441822Z   1) [chromium] › tests/e2e/deploy.spec.ts:535:3 › @e2e-deploy critical deploy path › keeps a registry password entered in the service form out of the DOM, console, responses and artifacts 
+2026-10-08T04:45:29.2442518Z 
+2026-10-08T04:45:29.2442712Z     TimeoutError: locator.click: Timeout 30000ms exceeded.
+2026-10-08T04:45:29.2443033Z     Call log:
+2026-10-08T04:45:29.2443355Z       - waiting for getByTestId('service-edit')
+2026-10-08T04:45:29.2443566Z 
+2026-10-08T04:45:29.2443572Z 
+2026-10-08T04:45:29.2443788Z       590 |       // The pull logged in with the canary: the image runs and answers.
+2026-10-08T04:45:29.2444321Z       591 |       expect((await deployHost.curlPublishedPort(port, '/')).status).toBe(200);
+2026-10-08T04:45:29.2444802Z     > 592 |       await watched.getByTestId('service-edit').click();
+2026-10-08T04:45:29.2445178Z           |                                                 ^
+2026-10-08T04:45:29.2445674Z       593 |       await expect(watched.getByTestId('credential-status')).toHaveText('Configured');
+2026-10-08T04:45:29.2445960Z       594 |       doms.push(await watched.content());
+2026-10-08T04:45:29.2446290Z       595 |       await watched.keyboard.press('Escape');
+2026-10-08T04:45:29.2446846Z         at /home/runner/work/noodara/noodara/tests/e2e/deploy.spec.ts:592:49
+2026-10-08T04:45:29.2447117Z 
+2026-10-08T04:45:29.2447891Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-10-08T04:45:29.2448609Z     test-results/deploy--e2e-deploy-critica-8187f-ole-responses-and-artifacts-chromium/test-failed-1.png
+2026-10-08T04:45:29.2449394Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-10-08T04:45:29.2449659Z 
+2026-10-08T04:45:29.2450037Z     attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-10-08T04:45:29.2450982Z     test-results/deploy--e2e-deploy-critica-8187f-ole-responses-and-artifacts-chromium/test-failed-2.png
+2026-10-08T04:45:29.2451744Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-10-08T04:45:29.2452032Z 
+2026-10-08T04:45:29.2452469Z     Error Context: test-results/deploy--e2e-deploy-critica-8187f-ole-responses-and-artifacts-chromium/error-context.md
+2026-10-08T04:45:29.2452945Z 
+2026-10-08T04:45:29.2453280Z     attachment #4: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-10-08T04:45:29.2453695Z     test-results/deploy--e2e-deploy-critica-8187f-ole-responses-and-artifacts-chromium/test-failed-3.png
+2026-10-08T04:45:29.2454139Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-10-08T04:45:29.2454291Z 
+2026-10-08T04:45:29.2454552Z     Error Context: test-results/deploy--e2e-deploy-critica-8187f-ole-responses-and-artifacts-chromium/error-context.md
+2026-10-08T04:45:29.2454839Z 
+2026-10-08T04:45:29.2454891Z   1 failed
+2026-10-08T04:45:29.2455379Z     [chromium] › tests/e2e/deploy.spec.ts:535:3 › @e2e-deploy critical deploy path › keeps a registry password entered in the service form out of the DOM, console, responses and artifacts 
+2026-10-08T04:45:29.2455779Z   242 passed (7.5m)
+2026-10-08T04:45:29.2723949Z  ELIFECYCLE  Command failed with exit code 1.
+2026-10-08T04:45:29.2884623Z 
+2026-10-08T04:45:29.2885228Z e2e-repeat: iteration 1/20 FAILED (exit 1) after 453s total -- stopping, not running the remaining iterations.
+2026-10-08T04:45:29.3000090Z  ELIFECYCLE  Command failed with exit code 1.

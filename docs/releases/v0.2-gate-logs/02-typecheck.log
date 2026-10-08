@@ -1,0 +1,85 @@
+# commit: da5d2fd6ad2cd173ec83c0be2c4e93c0a8bb2cc0
+# date: 2026-10-08T04:37:41Z
+# command: pnpm typecheck
+
+> noodara@0.2.0 typecheck /Users/xch4rt/work/myself/noodara/code
+> turbo run typecheck && tsc -p tests/integration/ssh/tsconfig.json --noEmit && tsc -p tests/integration/deploy-engine/tsconfig.json --noEmit && tsc -p tests/e2e/tsconfig.json --noEmit && tsc -p tests/integration/installer/tsconfig.json --noEmit && tsc -p scripts/brand/tsconfig.json --noEmit && tsc -p scripts/ui/tsconfig.json --noEmit
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/config, @noodara/control-plane, @noodara/docker, @noodara/domain, @noodara/git, @noodara/site, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running typecheck in 9 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs 01f088c76204711d
+@noodara/domain:typecheck: cache hit, replaying logs e0a5973290cb6ce7
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/domain:typecheck: 
+@noodara/domain:typecheck: > @noodara/domain@0.2.0 typecheck /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:typecheck: > tsc --noEmit
+@noodara/domain:typecheck: 
+@noodara/ssh:typecheck: cache hit, replaying logs 6ac6f6ba17c8c423
+@noodara/ui:build: cache hit, replaying logs 7d67ae424611b23c
+@noodara/ssh:typecheck: 
+@noodara/ssh:typecheck: > @noodara/ssh@0.2.0 typecheck /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:typecheck: > tsc --noEmit
+@noodara/ssh:typecheck: 
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/ssh:build: cache hit, replaying logs 8616720ff3cb9bad
+@noodara/ui:typecheck: cache hit, replaying logs 4696293b288e4b33
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ui:typecheck: 
+@noodara/ui:typecheck: > @noodara/ui@0.2.0 typecheck /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:typecheck: > tsc --noEmit
+@noodara/ui:typecheck: 
+@noodara/git:build: cache hit, replaying logs 620ba820b9606dfa
+@noodara/git:build: 
+@noodara/git:build: > @noodara/git@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/git
+@noodara/git:build: > tsc -p tsconfig.build.json
+@noodara/git:build: 
+@noodara/docker:build: cache hit, replaying logs 8708a04c39ee6fa9
+@noodara/docker:build: 
+@noodara/docker:build: > @noodara/docker@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/docker
+@noodara/docker:build: > tsc -p tsconfig.build.json
+@noodara/docker:build: 
+@noodara/web:typecheck: cache hit, replaying logs c32b89da63d7892c
+@noodara/git:typecheck: cache hit, replaying logs e947b595f1aa8c67
+@noodara/site:typecheck: cache hit, replaying logs 50fa5faacd8e40aa
+@noodara/docker:typecheck: cache hit, replaying logs 01d274f3d688fcd7
+@noodara/git:typecheck: 
+@noodara/git:typecheck: > @noodara/git@0.2.0 typecheck /Users/xch4rt/work/myself/noodara/code/packages/git
+@noodara/git:typecheck: > tsc --noEmit
+@noodara/git:typecheck: 
+@noodara/docker:typecheck: 
+@noodara/docker:typecheck: > @noodara/docker@0.2.0 typecheck /Users/xch4rt/work/myself/noodara/code/packages/docker
+@noodara/docker:typecheck: > tsc --noEmit
+@noodara/docker:typecheck: 
+@noodara/web:typecheck: 
+@noodara/web:typecheck: > @noodara/web@0.2.0 typecheck /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:typecheck: > tsc --noEmit
+@noodara/web:typecheck: 
+@noodara/site:typecheck: 
+@noodara/site:typecheck: > @noodara/site@0.2.0 typecheck /Users/xch4rt/work/myself/noodara/code/apps/site
+@noodara/site:typecheck: > tsc --noEmit
+@noodara/site:typecheck: 
+@noodara/control-plane:typecheck: cache hit, replaying logs 451ecd1e7310a6fa
+@noodara/control-plane:typecheck: 
+@noodara/control-plane:typecheck: > @noodara/control-plane@0.2.0 typecheck /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:typecheck: > tsc --noEmit
+@noodara/control-plane:typecheck: 
+
+ Tasks:    13 successful, 13 total
+Cached:    13 cached, 13 total
+  Time:    77ms >>> FULL TURBO
+
+# exit: 0
+# duration_s: 7

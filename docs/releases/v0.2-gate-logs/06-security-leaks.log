@@ -1,0 +1,601 @@
+# commit: da5d2fd6ad2cd173ec83c0be2c4e93c0a8bb2cc0
+# date: 2026-10-08T04:38:09Z
+# command: pnpm security:scan-leaks
+
+> noodara@0.2.0 security:scan-leaks /Users/xch4rt/work/myself/noodara/code
+> vitest run --config vitest.integration.config.ts tests/integration/activity/canary.test.ts tests/integration/activity/canary-full-flow.test.ts tests/integration/activity/canary-http.test.ts tests/integration/activity/canary-account.test.ts tests/integration/activity/canary-deploy.test.ts && playwright test --grep @canary
+
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+
+> noodara@0.2.0 build /Users/xch4rt/work/myself/noodara/code
+> turbo run build --filter=!@noodara/site
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/config, @noodara/control-plane, @noodara/docker, @noodara/domain, @noodara/git, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 8 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs 3504c793414b09e0
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ssh:build: cache hit, replaying logs f51d29b5cbbf0dce
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ui:build: cache hit, replaying logs c4d922c5c602b036
+@noodara/docker:build: cache hit, replaying logs 3fde58f6b17bd80a
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/git:build: cache hit, replaying logs 7ab856662a219990
+@noodara/docker:build: 
+@noodara/docker:build: > @noodara/docker@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/docker
+@noodara/docker:build: > tsc -p tsconfig.build.json
+@noodara/docker:build: 
+@noodara/git:build: 
+@noodara/git:build: > @noodara/git@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/git
+@noodara/git:build: > tsc -p tsconfig.build.json
+@noodara/git:build: 
+@noodara/control-plane:build: cache hit, replaying logs 6880afddda894dd7
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.2.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
+@noodara/web:build: cache hit, replaying logs ee9b5b41db6dcc5d
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.2.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > node scripts/sync-brand-assets.mjs && next build
+@noodara/web:build: 
+@noodara/web:build: sync-brand-assets: no files changed (fully idempotent run).
+@noodara/web:build: sync-brand-assets: 7 file(s) already up to date.
+@noodara/web:build: ▲ Next.js 16.3.6 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 60ms
+@noodara/web:build: 
+@noodara/web:build:   Creating an optimized production build ...
+@noodara/web:build: ✓ Compiled successfully in 809ms
+@noodara/web:build:   Running TypeScript ...
+@noodara/web:build:   Finished TypeScript in 702ms ...
+@noodara/web:build:   Collecting page data using 13 workers ...
+@noodara/web:build:   Generating static pages using 13 workers (0/16) ...
+@noodara/web:build: ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+@noodara/web:build:   Generating static pages using 13 workers (4/16) 
+@noodara/web:build:   Generating static pages using 13 workers (8/16) 
+@noodara/web:build:   Generating static pages using 13 workers (12/16) 
+@noodara/web:build: ✓ Generating static pages using 13 workers (16/16) in 131ms
+@noodara/web:build:   Finalizing page optimization ...
+@noodara/web:build: 
+@noodara/web:build: Route (app)
+@noodara/web:build: ┌ ƒ /
+@noodara/web:build: ├ ƒ /_not-found
+@noodara/web:build: ├ ƒ /[...catchAll]
+@noodara/web:build: ├ ƒ /activity
+@noodara/web:build: ├ ƒ /api/events
+@noodara/web:build: ├ ○ /apple-icon.png
+@noodara/web:build: ├ ○ /icon.svg
+@noodara/web:build: ├ ○ /icon1.png
+@noodara/web:build: ├ ○ /icon2.png
+@noodara/web:build: ├ ƒ /login
+@noodara/web:build: ├ ○ /manifest.webmanifest
+@noodara/web:build: ├ ○ /opengraph-image.png
+@noodara/web:build: ├ ƒ /projects
+@noodara/web:build: ├ ƒ /projects/[projectId]
+@noodara/web:build: ├ ƒ /projects/[projectId]/services/[serviceId]
+@noodara/web:build: ├ ƒ /servers
+@noodara/web:build: ├ ƒ /servers/[id]
+@noodara/web:build: ├ ƒ /settings
+@noodara/web:build: └ ○ /setup
+@noodara/web:build: 
+@noodara/web:build: 
+@noodara/web:build: ƒ Proxy (Middleware)
+@noodara/web:build: 
+@noodara/web:build: ○  (Static)   prerendered as static content
+@noodara/web:build: ƒ  (Dynamic)  server-rendered on demand
+@noodara/web:build: 
+
+ Tasks:    7 successful, 7 total
+Cached:    7 cached, 7 total
+  Time:    19ms >>> FULL TURBO
+
+{"level":40,"time":1791434390113,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"d9d01c5627173d50","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":30,"time":1791434390141,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","msg":"Server listening at http://127.0.0.1:52856"}
+{"level":30,"time":1791434390151,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434390226,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":74.67258300000685,"msg":"request completed"}
+{"level":30,"time":1791434390227,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434390272,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":45.65975000000617,"msg":"request completed"}
+{"level":30,"time":1791434390278,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"GET","url":"/api/events","host":"127.0.0.1:52856","remoteAddress":"127.0.0.1","remotePort":52863},"msg":"incoming request"}
+{"level":30,"time":1791434390283,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434390292,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":201},"responseTime":9.289958000008482,"msg":"request completed"}
+{"level":30,"time":1791434390293,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","req":{"method":"POST","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434390299,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","res":{"statusCode":201},"responseTime":6.262833999993745,"msg":"request completed"}
+{"level":30,"time":1791434390300,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","req":{"method":"POST","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434390314,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","res":{"statusCode":201},"responseTime":13.656000000002678,"msg":"request completed"}
+{"level":30,"time":1791434390314,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","req":{"method":"PUT","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services/01a119cf-7b1f-7db9-9c7e-14073eae4df0/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434390323,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","res":{"statusCode":200},"responseTime":8.947625000000698,"msg":"request completed"}
+{"level":30,"time":1791434390323,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","req":{"method":"POST","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434390331,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","res":{"statusCode":201},"responseTime":7.199292000004789,"msg":"request completed"}
+{"level":30,"time":1791434390331,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","req":{"method":"PUT","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services/01a119cf-7b36-71e2-a57f-f5f1a596a93e/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434390339,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","res":{"statusCode":200},"responseTime":8.03429199999664,"msg":"request completed"}
+{"level":30,"time":1791434390391,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","req":{"method":"POST","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434390402,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","res":{"statusCode":201},"responseTime":10.220290999990539,"msg":"request completed"}
+{"level":30,"time":1791434390402,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","req":{"method":"PUT","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services/01a119cf-7b7a-7f91-80b6-07a881ef37be/credentials/registry","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434390410,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","res":{"statusCode":200},"responseTime":8.193292000010842,"msg":"request completed"}
+{"level":30,"time":1791434390411,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","req":{"method":"POST","url":"/api/services/01a119cf-7b1f-7db9-9c7e-14073eae4df0/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434390429,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","res":{"statusCode":201},"responseTime":18.160166999994544,"msg":"request completed"}
+{"level":30,"time":1791434390429,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-d","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434390435,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-d","res":{"statusCode":200},"responseTime":5.684957999998005,"msg":"request completed"}
+{"level":30,"time":1791434390936,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-e","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434390946,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-e","res":{"statusCode":200},"responseTime":9.66233399999328,"msg":"request completed"}
+{"level":30,"time":1791434391448,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-f","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434391454,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-f","res":{"statusCode":200},"responseTime":5.176124999998137,"msg":"request completed"}
+{"level":30,"time":1791434391956,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-g","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434391962,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-g","res":{"statusCode":200},"responseTime":5.9308750000054715,"msg":"request completed"}
+{"level":30,"time":1791434392463,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-h","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434392473,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-h","res":{"statusCode":200},"responseTime":9.632125000003725,"msg":"request completed"}
+{"level":30,"time":1791434392975,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-i","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434392981,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-i","res":{"statusCode":200},"responseTime":5.288499999995111,"msg":"request completed"}
+{"level":30,"time":1791434393484,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-j","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434393491,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-j","res":{"statusCode":200},"responseTime":6.711790999994264,"msg":"request completed"}
+{"level":30,"time":1791434393992,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-k","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434393998,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-k","res":{"statusCode":200},"responseTime":5.120208000007551,"msg":"request completed"}
+{"level":30,"time":1791434394500,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-l","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434394505,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-l","res":{"statusCode":200},"responseTime":5.135333999991417,"msg":"request completed"}
+{"level":30,"time":1791434395007,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-m","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434395013,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-m","res":{"statusCode":200},"responseTime":6.086708000002545,"msg":"request completed"}
+{"level":30,"time":1791434395516,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-n","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434395527,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-n","res":{"statusCode":200},"responseTime":11.434958000012557,"msg":"request completed"}
+{"level":30,"time":1791434396029,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-o","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434396035,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-o","res":{"statusCode":200},"responseTime":5.343917000005604,"msg":"request completed"}
+{"level":30,"time":1791434396537,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-p","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434396544,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-p","res":{"statusCode":200},"responseTime":6.005250000001979,"msg":"request completed"}
+{"level":30,"time":1791434397045,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-q","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434397051,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-q","res":{"statusCode":200},"responseTime":6.414209000009578,"msg":"request completed"}
+{"level":30,"time":1791434397553,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-r","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434397561,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-r","res":{"statusCode":200},"responseTime":7.1629160000011325,"msg":"request completed"}
+{"level":30,"time":1791434398063,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-s","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434398069,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-s","res":{"statusCode":200},"responseTime":5.222708999994211,"msg":"request completed"}
+{"level":30,"time":1791434398572,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-t","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434398578,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-t","res":{"statusCode":200},"responseTime":5.9487499999959255,"msg":"request completed"}
+{"level":30,"time":1791434399078,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-u","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434399085,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-u","res":{"statusCode":200},"responseTime":6.381582999994862,"msg":"request completed"}
+{"level":30,"time":1791434399588,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-v","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434399592,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-v","res":{"statusCode":200},"responseTime":3.8842080000031274,"msg":"request completed"}
+{"level":30,"time":1791434400095,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-w","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434400102,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-w","res":{"statusCode":200},"responseTime":6.97579099998984,"msg":"request completed"}
+{"level":30,"time":1791434400604,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-x","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434400617,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-x","res":{"statusCode":200},"responseTime":12.205459000004339,"msg":"request completed"}
+{"level":30,"time":1791434401118,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-y","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434401124,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-y","res":{"statusCode":200},"responseTime":6.194958000007318,"msg":"request completed"}
+{"level":30,"time":1791434401625,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-z","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434401630,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-z","res":{"statusCode":200},"responseTime":5.213334000000032,"msg":"request completed"}
+{"level":30,"time":1791434402131,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-10","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434402137,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-10","res":{"statusCode":200},"responseTime":5.0893749999959255,"msg":"request completed"}
+{"level":30,"time":1791434402640,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-11","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434402645,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-11","res":{"statusCode":200},"responseTime":4.813249999991967,"msg":"request completed"}
+{"level":30,"time":1791434402749,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-12","req":{"method":"POST","url":"/api/services/01a119cf-7b36-71e2-a57f-f5f1a596a93e/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434402760,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-12","res":{"statusCode":201},"responseTime":11.121333000002778,"msg":"request completed"}
+{"level":30,"time":1791434402760,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-13","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434402765,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-13","res":{"statusCode":200},"responseTime":4.135834000000614,"msg":"request completed"}
+{"level":30,"time":1791434403267,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-14","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434403273,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-14","res":{"statusCode":200},"responseTime":6.111334000001079,"msg":"request completed"}
+{"level":30,"time":1791434403775,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-15","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434403783,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-15","res":{"statusCode":200},"responseTime":7.6483749999897555,"msg":"request completed"}
+{"level":30,"time":1791434404286,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-16","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434404291,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-16","res":{"statusCode":200},"responseTime":4.9369169999990845,"msg":"request completed"}
+{"level":30,"time":1791434404793,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-17","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434404802,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-17","res":{"statusCode":200},"responseTime":8.396917000005487,"msg":"request completed"}
+{"level":30,"time":1791434405303,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-18","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434405306,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-18","res":{"statusCode":200},"responseTime":2.8629579999978887,"msg":"request completed"}
+{"level":30,"time":1791434405806,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-19","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434405815,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-19","res":{"statusCode":200},"responseTime":7.9412089999968885,"msg":"request completed"}
+{"level":30,"time":1791434406318,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1a","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434406327,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1a","res":{"statusCode":200},"responseTime":9.210917000003974,"msg":"request completed"}
+{"level":30,"time":1791434406830,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1b","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434406834,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1b","res":{"statusCode":200},"responseTime":4.531833999993978,"msg":"request completed"}
+{"level":30,"time":1791434407337,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1c","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434407345,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1c","res":{"statusCode":200},"responseTime":7.528082999997423,"msg":"request completed"}
+{"level":30,"time":1791434407845,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1d","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434407849,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1d","res":{"statusCode":200},"responseTime":4.6330829999933485,"msg":"request completed"}
+{"level":30,"time":1791434408352,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1e","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434408362,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1e","res":{"statusCode":200},"responseTime":10.41120800000499,"msg":"request completed"}
+{"level":30,"time":1791434408866,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1f","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434408875,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1f","res":{"statusCode":200},"responseTime":8.6725829999923,"msg":"request completed"}
+{"level":30,"time":1791434409376,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1g","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434409379,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1g","res":{"statusCode":200},"responseTime":3.239916999998968,"msg":"request completed"}
+{"level":30,"time":1791434409879,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1h","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434409885,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1h","res":{"statusCode":200},"responseTime":5.58574999999837,"msg":"request completed"}
+{"level":30,"time":1791434410385,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1i","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434410391,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1i","res":{"statusCode":200},"responseTime":5.786875000005239,"msg":"request completed"}
+{"level":30,"time":1791434410893,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1j","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434410905,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1j","res":{"statusCode":200},"responseTime":12.055082999999286,"msg":"request completed"}
+{"level":30,"time":1791434411407,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1k","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434411420,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1k","res":{"statusCode":200},"responseTime":13.082208000007086,"msg":"request completed"}
+{"level":30,"time":1791434411922,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1l","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434411928,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1l","res":{"statusCode":200},"responseTime":5.525583000009647,"msg":"request completed"}
+{"level":30,"time":1791434412428,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1m","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434412435,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1m","res":{"statusCode":200},"responseTime":7.315792000008514,"msg":"request completed"}
+{"level":30,"time":1791434412937,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1n","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434412943,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1n","res":{"statusCode":200},"responseTime":6.087209000004805,"msg":"request completed"}
+{"level":30,"time":1791434413210,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1o","req":{"method":"POST","url":"/api/services/01a119cf-7b7a-7f91-80b6-07a881ef37be/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434413220,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1o","res":{"statusCode":201},"responseTime":10.415124999999534,"msg":"request completed"}
+{"level":30,"time":1791434413220,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1p","req":{"method":"GET","url":"/api/deployments/01a119cf-d49f-781f-9a7f-bb7a3837566a","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434413223,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1p","res":{"statusCode":200},"responseTime":2.7899580000084825,"msg":"request completed"}
+{"level":30,"time":1791434413725,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1q","req":{"method":"GET","url":"/api/deployments/01a119cf-d49f-781f-9a7f-bb7a3837566a","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434413730,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1q","res":{"statusCode":200},"responseTime":4.702374999993481,"msg":"request completed"}
+{"level":30,"time":1791434414232,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1r","req":{"method":"GET","url":"/api/deployments/01a119cf-d49f-781f-9a7f-bb7a3837566a","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434414242,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1r","res":{"statusCode":200},"responseTime":9.52995799999917,"msg":"request completed"}
+{"level":30,"time":1791434414743,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1s","req":{"method":"GET","url":"/api/deployments/01a119cf-d49f-781f-9a7f-bb7a3837566a","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434414749,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1s","res":{"statusCode":200},"responseTime":5.572415999995428,"msg":"request completed"}
+{"level":30,"time":1791434415251,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1t","req":{"method":"GET","url":"/api/deployments/01a119cf-d49f-781f-9a7f-bb7a3837566a","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434415255,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1t","res":{"statusCode":200},"responseTime":3.7113329999992857,"msg":"request completed"}
+{"level":30,"time":1791434415757,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1u","req":{"method":"GET","url":"/api/deployments/01a119cf-d49f-781f-9a7f-bb7a3837566a","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434415763,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1u","res":{"statusCode":200},"responseTime":5.896624999993946,"msg":"request completed"}
+{"level":30,"time":1791434416266,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1v","req":{"method":"GET","url":"/api/deployments/01a119cf-d49f-781f-9a7f-bb7a3837566a","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416272,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1v","res":{"statusCode":200},"responseTime":6.156999999991967,"msg":"request completed"}
+{"level":30,"time":1791434416775,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1w","req":{"method":"GET","url":"/api/deployments/01a119cf-d49f-781f-9a7f-bb7a3837566a","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416784,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1w","res":{"statusCode":200},"responseTime":8.392915999997058,"msg":"request completed"}
+{"level":30,"time":1791434416813,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1x","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3/logs?phase=prepare&since=0&limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416825,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1x","res":{"statusCode":200},"responseTime":11.888332999995328,"msg":"request completed"}
+{"level":30,"time":1791434416826,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1y","req":{"method":"GET","url":"/api/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416830,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1y","res":{"statusCode":200},"responseTime":3.586667000010493,"msg":"request completed"}
+{"level":30,"time":1791434416830,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1z","req":{"method":"GET","url":"/api/services/01a119cf-7b1f-7db9-9c7e-14073eae4df0/deployments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416836,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1z","res":{"statusCode":200},"responseTime":5.9646669999929145,"msg":"request completed"}
+{"level":30,"time":1791434416836,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-20","req":{"method":"GET","url":"/api/services/01a119cf-7b1f-7db9-9c7e-14073eae4df0/deployments/01a119cf-7b90-7f32-a308-3a6e699f2fb3","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416840,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-20","res":{"statusCode":200},"responseTime":3.3320420000090962,"msg":"request completed"}
+{"level":30,"time":1791434416840,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-21","req":{"method":"GET","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services/01a119cf-7b1f-7db9-9c7e-14073eae4df0","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416844,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-21","res":{"statusCode":200},"responseTime":3.545957999987877,"msg":"request completed"}
+{"level":30,"time":1791434416844,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-22","req":{"method":"GET","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services/01a119cf-7b1f-7db9-9c7e-14073eae4df0/credentials","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416850,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-22","res":{"statusCode":200},"responseTime":6.172208999996656,"msg":"request completed"}
+{"level":30,"time":1791434416850,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-23","req":{"method":"GET","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services/01a119cf-7b1f-7db9-9c7e-14073eae4df0/logs","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416943,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-23","res":{"statusCode":200},"responseTime":89.61033400001179,"msg":"request completed"}
+{"level":30,"time":1791434416943,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-24","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62/logs?phase=prepare&since=0&limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416946,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-24","res":{"statusCode":200},"responseTime":2.6889999999984866,"msg":"request completed"}
+{"level":30,"time":1791434416946,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-25","req":{"method":"GET","url":"/api/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416948,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-25","res":{"statusCode":200},"responseTime":1.9726249999948777,"msg":"request completed"}
+{"level":30,"time":1791434416948,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-26","req":{"method":"GET","url":"/api/services/01a119cf-7b36-71e2-a57f-f5f1a596a93e/deployments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416951,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-26","res":{"statusCode":200},"responseTime":2.1720420000056038,"msg":"request completed"}
+{"level":30,"time":1791434416951,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-27","req":{"method":"GET","url":"/api/services/01a119cf-7b36-71e2-a57f-f5f1a596a93e/deployments/01a119cf-abc3-7f25-98d1-1382dc4e7c62","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416953,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-27","res":{"statusCode":200},"responseTime":1.9640000000072177,"msg":"request completed"}
+{"level":30,"time":1791434416953,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-28","req":{"method":"GET","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services/01a119cf-7b36-71e2-a57f-f5f1a596a93e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416955,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-28","res":{"statusCode":200},"responseTime":2.05754199999501,"msg":"request completed"}
+{"level":30,"time":1791434416955,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-29","req":{"method":"GET","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services/01a119cf-7b36-71e2-a57f-f5f1a596a93e/credentials","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434416957,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-29","res":{"statusCode":200},"responseTime":1.6759579999925336,"msg":"request completed"}
+{"level":30,"time":1791434416957,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2a","req":{"method":"GET","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services/01a119cf-7b36-71e2-a57f-f5f1a596a93e/logs","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434417029,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2a","res":{"statusCode":200},"responseTime":72.44983300000604,"msg":"request completed"}
+{"level":30,"time":1791434417029,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2b","req":{"method":"GET","url":"/api/deployments/01a119cf-d49f-781f-9a7f-bb7a3837566a/logs?phase=prepare&since=0&limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434417035,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2b","res":{"statusCode":200},"responseTime":5.27166600000055,"msg":"request completed"}
+{"level":30,"time":1791434417036,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2c","req":{"method":"GET","url":"/api/deployments/01a119cf-d49f-781f-9a7f-bb7a3837566a","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434417039,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2c","res":{"statusCode":200},"responseTime":3.5496249999996508,"msg":"request completed"}
+{"level":30,"time":1791434417040,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2d","req":{"method":"GET","url":"/api/services/01a119cf-7b7a-7f91-80b6-07a881ef37be/deployments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434417043,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2d","res":{"statusCode":200},"responseTime":3.0653330000059213,"msg":"request completed"}
+{"level":30,"time":1791434417043,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2e","req":{"method":"GET","url":"/api/services/01a119cf-7b7a-7f91-80b6-07a881ef37be/deployments/01a119cf-d49f-781f-9a7f-bb7a3837566a","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434417046,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2e","res":{"statusCode":200},"responseTime":2.6524999999965075,"msg":"request completed"}
+{"level":30,"time":1791434417046,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2f","req":{"method":"GET","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services/01a119cf-7b7a-7f91-80b6-07a881ef37be","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434417048,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2f","res":{"statusCode":200},"responseTime":2.440499999996973,"msg":"request completed"}
+{"level":30,"time":1791434417048,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2g","req":{"method":"GET","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services/01a119cf-7b7a-7f91-80b6-07a881ef37be/credentials","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434417051,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2g","res":{"statusCode":200},"responseTime":2.7119579999998678,"msg":"request completed"}
+{"level":30,"time":1791434417051,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2h","req":{"method":"GET","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services/01a119cf-7b7a-7f91-80b6-07a881ef37be/logs","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434417129,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2h","res":{"statusCode":200},"responseTime":78.11783299999661,"msg":"request completed"}
+{"level":30,"time":1791434417130,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2i","req":{"method":"GET","url":"/api/projects/01a119cf-7b12-772a-9372-6b762e4a24fa/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434417136,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2i","res":{"statusCode":200},"responseTime":6.006041999993613,"msg":"request completed"}
+{"level":30,"time":1791434417136,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2j","req":{"method":"GET","url":"/api/activity","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434417142,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2j","res":{"statusCode":200},"responseTime":5.165583999987575,"msg":"request completed"}
+{"level":40,"time":1791434511979,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"4bc5c3e37d5f5b85","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":30,"time":1791434511994,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","msg":"Server listening at http://127.0.0.1:53028"}
+{"level":30,"time":1791434511996,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434512058,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":61.522707999974955,"msg":"request completed"}
+{"level":30,"time":1791434512058,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434512101,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":43.27516600000672,"msg":"request completed"}
+{"level":30,"time":1791434512105,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"GET","url":"/api/events","host":"127.0.0.1:53028","remoteAddress":"127.0.0.1","remotePort":53034},"msg":"incoming request"}
+{"level":30,"time":1791434512109,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434512117,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":201},"responseTime":8.805707999999868,"msg":"request completed"}
+{"level":30,"time":1791434512118,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","req":{"method":"POST","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434512126,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","res":{"statusCode":201},"responseTime":8.058624999976018,"msg":"request completed"}
+{"level":30,"time":1791434512126,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","req":{"method":"POST","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434512140,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","res":{"statusCode":201},"responseTime":14.20250000001397,"msg":"request completed"}
+{"level":30,"time":1791434512141,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","req":{"method":"PUT","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services/01a119d1-5700-7431-8481-9d8c26a73fdc/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434512147,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","res":{"statusCode":200},"responseTime":6.025291999976616,"msg":"request completed"}
+{"level":30,"time":1791434512147,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","req":{"method":"POST","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434512152,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","res":{"statusCode":201},"responseTime":5.174416000023484,"msg":"request completed"}
+{"level":30,"time":1791434512152,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","req":{"method":"PUT","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services/01a119d1-5714-705a-8306-6f0960480c94/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434512157,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","res":{"statusCode":200},"responseTime":4.550542000011774,"msg":"request completed"}
+{"level":30,"time":1791434512561,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","req":{"method":"POST","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434512578,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","res":{"statusCode":201},"responseTime":16.536999999982072,"msg":"request completed"}
+{"level":30,"time":1791434512579,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","req":{"method":"PUT","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services/01a119d1-58b9-7852-854a-80e23d61ec3e/credentials/registry","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434512589,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","res":{"statusCode":200},"responseTime":10.058542000013404,"msg":"request completed"}
+{"level":30,"time":1791434512589,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","req":{"method":"POST","url":"/api/services/01a119d1-5700-7431-8481-9d8c26a73fdc/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434512615,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","res":{"statusCode":201},"responseTime":25.60725000000093,"msg":"request completed"}
+{"level":30,"time":1791434512615,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-d","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434512621,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-d","res":{"statusCode":200},"responseTime":5.837375000002794,"msg":"request completed"}
+{"level":30,"time":1791434513121,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-e","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434513143,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-e","res":{"statusCode":200},"responseTime":22.30066700000316,"msg":"request completed"}
+{"level":30,"time":1791434513644,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-f","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434513651,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-f","res":{"statusCode":200},"responseTime":6.687708000012208,"msg":"request completed"}
+{"level":30,"time":1791434514153,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-g","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434514160,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-g","res":{"statusCode":200},"responseTime":7.304375000006985,"msg":"request completed"}
+{"level":30,"time":1791434514662,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-h","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434514667,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-h","res":{"statusCode":200},"responseTime":4.502999999996973,"msg":"request completed"}
+{"level":30,"time":1791434515168,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-i","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434515175,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-i","res":{"statusCode":200},"responseTime":6.9398330000112765,"msg":"request completed"}
+{"level":30,"time":1791434515677,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-j","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434515687,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-j","res":{"statusCode":200},"responseTime":10.108666999993147,"msg":"request completed"}
+{"level":30,"time":1791434516190,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-k","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434516195,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-k","res":{"statusCode":200},"responseTime":5.229124999983469,"msg":"request completed"}
+{"level":30,"time":1791434516696,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-l","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434516703,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-l","res":{"statusCode":200},"responseTime":7.488499999977648,"msg":"request completed"}
+{"level":30,"time":1791434517207,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-m","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434517216,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-m","res":{"statusCode":200},"responseTime":8.861166000016965,"msg":"request completed"}
+{"level":30,"time":1791434517717,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-n","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434517731,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-n","res":{"statusCode":200},"responseTime":13.974958000006154,"msg":"request completed"}
+{"level":30,"time":1791434518233,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-o","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434518242,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-o","res":{"statusCode":200},"responseTime":8.422416999994311,"msg":"request completed"}
+{"level":30,"time":1791434518744,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-p","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434518752,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-p","res":{"statusCode":200},"responseTime":8.413749999977881,"msg":"request completed"}
+{"level":30,"time":1791434519254,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-q","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434519257,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-q","res":{"statusCode":200},"responseTime":2.6747919999761507,"msg":"request completed"}
+{"level":30,"time":1791434519758,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-r","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434519764,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-r","res":{"statusCode":200},"responseTime":5.686916000006022,"msg":"request completed"}
+{"level":30,"time":1791434520266,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-s","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434520273,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-s","res":{"statusCode":200},"responseTime":6.809832999977516,"msg":"request completed"}
+{"level":30,"time":1791434520776,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-t","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434520784,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-t","res":{"statusCode":200},"responseTime":8.10633300000336,"msg":"request completed"}
+{"level":30,"time":1791434521287,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-u","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434521290,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-u","res":{"statusCode":200},"responseTime":2.907707999984268,"msg":"request completed"}
+{"level":30,"time":1791434521792,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-v","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434521799,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-v","res":{"statusCode":200},"responseTime":6.687666000012541,"msg":"request completed"}
+{"level":30,"time":1791434522301,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-w","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434522305,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-w","res":{"statusCode":200},"responseTime":4.7222920000203885,"msg":"request completed"}
+{"level":30,"time":1791434522808,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-x","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434522814,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-x","res":{"statusCode":200},"responseTime":6.496333999995841,"msg":"request completed"}
+{"level":30,"time":1791434523317,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-y","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434523324,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-y","res":{"statusCode":200},"responseTime":6.244959000003291,"msg":"request completed"}
+{"level":30,"time":1791434523826,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-z","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434523832,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-z","res":{"statusCode":200},"responseTime":5.521040999999968,"msg":"request completed"}
+{"level":30,"time":1791434524333,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-10","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434524338,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-10","res":{"statusCode":200},"responseTime":5.172832999989623,"msg":"request completed"}
+{"level":30,"time":1791434524840,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-11","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434524846,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-11","res":{"statusCode":200},"responseTime":5.827791999996407,"msg":"request completed"}
+{"level":30,"time":1791434524878,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-12","req":{"method":"POST","url":"/api/services/01a119d1-5714-705a-8306-6f0960480c94/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434524891,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-12","res":{"statusCode":201},"responseTime":13.330750000022817,"msg":"request completed"}
+{"level":30,"time":1791434524892,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-13","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434524896,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-13","res":{"statusCode":200},"responseTime":4.658708000002662,"msg":"request completed"}
+{"level":30,"time":1791434525399,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-14","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434525404,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-14","res":{"statusCode":200},"responseTime":5.702541999984533,"msg":"request completed"}
+{"level":30,"time":1791434525907,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-15","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434525917,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-15","res":{"statusCode":200},"responseTime":9.540999999997439,"msg":"request completed"}
+{"level":30,"time":1791434526420,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-16","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434526432,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-16","res":{"statusCode":200},"responseTime":10.939500000007683,"msg":"request completed"}
+{"level":30,"time":1791434526935,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-17","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434526940,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-17","res":{"statusCode":200},"responseTime":5.636999999987893,"msg":"request completed"}
+{"level":30,"time":1791434527442,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-18","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434527446,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-18","res":{"statusCode":200},"responseTime":3.5752920000231825,"msg":"request completed"}
+{"level":30,"time":1791434527947,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-19","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434527954,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-19","res":{"statusCode":200},"responseTime":6.456917000003159,"msg":"request completed"}
+{"level":30,"time":1791434528457,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1a","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434528467,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1a","res":{"statusCode":200},"responseTime":9.551292000018293,"msg":"request completed"}
+{"level":30,"time":1791434528969,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1b","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434528974,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1b","res":{"statusCode":200},"responseTime":5.663834000006318,"msg":"request completed"}
+{"level":30,"time":1791434529476,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1c","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434529480,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1c","res":{"statusCode":200},"responseTime":2.988416000007419,"msg":"request completed"}
+{"level":30,"time":1791434529981,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1d","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434529985,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1d","res":{"statusCode":200},"responseTime":4.19383399997605,"msg":"request completed"}
+{"level":30,"time":1791434530488,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1e","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434530498,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1e","res":{"statusCode":200},"responseTime":10.624416999984533,"msg":"request completed"}
+{"level":30,"time":1791434531001,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1f","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434531011,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1f","res":{"statusCode":200},"responseTime":9.175416999991285,"msg":"request completed"}
+{"level":30,"time":1791434531512,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1g","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434531518,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1g","res":{"statusCode":200},"responseTime":6.248334000003524,"msg":"request completed"}
+{"level":30,"time":1791434532021,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1h","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434532026,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1h","res":{"statusCode":200},"responseTime":4.714582999993581,"msg":"request completed"}
+{"level":30,"time":1791434532525,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1i","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434532530,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1i","res":{"statusCode":200},"responseTime":4.344083000003593,"msg":"request completed"}
+{"level":30,"time":1791434533033,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1j","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434533039,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1j","res":{"statusCode":200},"responseTime":5.853375000006054,"msg":"request completed"}
+{"level":30,"time":1791434533541,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1k","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434533550,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1k","res":{"statusCode":200},"responseTime":9.553665999992518,"msg":"request completed"}
+{"level":30,"time":1791434534054,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1l","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434534063,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1l","res":{"statusCode":200},"responseTime":9.02579099999275,"msg":"request completed"}
+{"level":30,"time":1791434534565,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1m","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434534571,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1m","res":{"statusCode":200},"responseTime":5.7593330000236165,"msg":"request completed"}
+{"level":30,"time":1791434535073,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1n","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434535077,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1n","res":{"statusCode":200},"responseTime":3.763208000018494,"msg":"request completed"}
+{"level":30,"time":1791434535334,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1o","req":{"method":"POST","url":"/api/services/01a119d1-58b9-7852-854a-80e23d61ec3e/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434535349,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1o","res":{"statusCode":201},"responseTime":15.268374999985099,"msg":"request completed"}
+{"level":30,"time":1791434535349,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1p","req":{"method":"GET","url":"/api/deployments/01a119d1-b1ae-767f-b1e7-5fc79fdbef0e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434535353,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1p","res":{"statusCode":200},"responseTime":3.763791000004858,"msg":"request completed"}
+{"level":30,"time":1791434535854,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1q","req":{"method":"GET","url":"/api/deployments/01a119d1-b1ae-767f-b1e7-5fc79fdbef0e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434535860,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1q","res":{"statusCode":200},"responseTime":5.702166000002762,"msg":"request completed"}
+{"level":30,"time":1791434536363,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1r","req":{"method":"GET","url":"/api/deployments/01a119d1-b1ae-767f-b1e7-5fc79fdbef0e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434536374,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1r","res":{"statusCode":200},"responseTime":10.751707999996142,"msg":"request completed"}
+{"level":30,"time":1791434536877,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1s","req":{"method":"GET","url":"/api/deployments/01a119d1-b1ae-767f-b1e7-5fc79fdbef0e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434536883,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1s","res":{"statusCode":200},"responseTime":5.359958000015467,"msg":"request completed"}
+{"level":30,"time":1791434537385,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1t","req":{"method":"GET","url":"/api/deployments/01a119d1-b1ae-767f-b1e7-5fc79fdbef0e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434537390,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1t","res":{"statusCode":200},"responseTime":5.32354199999827,"msg":"request completed"}
+{"level":30,"time":1791434537892,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1u","req":{"method":"GET","url":"/api/deployments/01a119d1-b1ae-767f-b1e7-5fc79fdbef0e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434537904,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1u","res":{"statusCode":200},"responseTime":12.248791999998502,"msg":"request completed"}
+{"level":30,"time":1791434538407,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1v","req":{"method":"GET","url":"/api/deployments/01a119d1-b1ae-767f-b1e7-5fc79fdbef0e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434538416,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1v","res":{"statusCode":200},"responseTime":8.343708000000333,"msg":"request completed"}
+{"level":30,"time":1791434538918,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1w","req":{"method":"GET","url":"/api/deployments/01a119d1-b1ae-767f-b1e7-5fc79fdbef0e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434538924,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1w","res":{"statusCode":200},"responseTime":6.50658299998031,"msg":"request completed"}
+{"level":30,"time":1791434539031,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1x","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980/logs?phase=prepare&since=0&limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539043,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1x","res":{"statusCode":200},"responseTime":11.630875000002561,"msg":"request completed"}
+{"level":30,"time":1791434539044,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1y","req":{"method":"GET","url":"/api/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539048,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1y","res":{"statusCode":200},"responseTime":3.2360829999961425,"msg":"request completed"}
+{"level":30,"time":1791434539048,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1z","req":{"method":"GET","url":"/api/services/01a119d1-5700-7431-8481-9d8c26a73fdc/deployments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539052,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1z","res":{"statusCode":200},"responseTime":4.302834000001894,"msg":"request completed"}
+{"level":30,"time":1791434539052,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-20","req":{"method":"GET","url":"/api/services/01a119d1-5700-7431-8481-9d8c26a73fdc/deployments/01a119d1-58d5-7c18-9f4e-54b2ffb20980","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539055,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-20","res":{"statusCode":200},"responseTime":3.1701670000038575,"msg":"request completed"}
+{"level":30,"time":1791434539056,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-21","req":{"method":"GET","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services/01a119d1-5700-7431-8481-9d8c26a73fdc","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539059,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-21","res":{"statusCode":200},"responseTime":3.227207999996608,"msg":"request completed"}
+{"level":30,"time":1791434539059,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-22","req":{"method":"GET","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services/01a119d1-5700-7431-8481-9d8c26a73fdc/credentials","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539062,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-22","res":{"statusCode":200},"responseTime":2.918708000011975,"msg":"request completed"}
+{"level":30,"time":1791434539062,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-23","req":{"method":"GET","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services/01a119d1-5700-7431-8481-9d8c26a73fdc/logs","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539148,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-23","res":{"statusCode":200},"responseTime":85.46929199999431,"msg":"request completed"}
+{"level":30,"time":1791434539148,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-24","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d/logs?phase=prepare&since=0&limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539153,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-24","res":{"statusCode":200},"responseTime":4.57279199999175,"msg":"request completed"}
+{"level":30,"time":1791434539154,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-25","req":{"method":"GET","url":"/api/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539158,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-25","res":{"statusCode":200},"responseTime":4.60899999999674,"msg":"request completed"}
+{"level":30,"time":1791434539159,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-26","req":{"method":"GET","url":"/api/services/01a119d1-5714-705a-8306-6f0960480c94/deployments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539162,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-26","res":{"statusCode":200},"responseTime":3.0202080000017304,"msg":"request completed"}
+{"level":30,"time":1791434539162,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-27","req":{"method":"GET","url":"/api/services/01a119d1-5714-705a-8306-6f0960480c94/deployments/01a119d1-88d4-7e79-944c-9bc7f541361d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539164,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-27","res":{"statusCode":200},"responseTime":2.2935830000205897,"msg":"request completed"}
+{"level":30,"time":1791434539164,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-28","req":{"method":"GET","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services/01a119d1-5714-705a-8306-6f0960480c94","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539167,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-28","res":{"statusCode":200},"responseTime":2.1095830000122078,"msg":"request completed"}
+{"level":30,"time":1791434539167,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-29","req":{"method":"GET","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services/01a119d1-5714-705a-8306-6f0960480c94/credentials","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539168,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-29","res":{"statusCode":200},"responseTime":1.480916000000434,"msg":"request completed"}
+{"level":30,"time":1791434539168,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2a","req":{"method":"GET","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services/01a119d1-5714-705a-8306-6f0960480c94/logs","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539244,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2a","res":{"statusCode":200},"responseTime":75.47016699999222,"msg":"request completed"}
+{"level":30,"time":1791434539244,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2b","req":{"method":"GET","url":"/api/deployments/01a119d1-b1ae-767f-b1e7-5fc79fdbef0e/logs?phase=prepare&since=0&limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539247,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2b","res":{"statusCode":200},"responseTime":2.979250000003958,"msg":"request completed"}
+{"level":30,"time":1791434539248,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2c","req":{"method":"GET","url":"/api/deployments/01a119d1-b1ae-767f-b1e7-5fc79fdbef0e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539250,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2c","res":{"statusCode":200},"responseTime":2.2757090000086464,"msg":"request completed"}
+{"level":30,"time":1791434539250,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2d","req":{"method":"GET","url":"/api/services/01a119d1-58b9-7852-854a-80e23d61ec3e/deployments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539253,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2d","res":{"statusCode":200},"responseTime":2.8189999999885913,"msg":"request completed"}
+{"level":30,"time":1791434539253,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2e","req":{"method":"GET","url":"/api/services/01a119d1-58b9-7852-854a-80e23d61ec3e/deployments/01a119d1-b1ae-767f-b1e7-5fc79fdbef0e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539255,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2e","res":{"statusCode":200},"responseTime":2.1903330000059213,"msg":"request completed"}
+{"level":30,"time":1791434539256,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2f","req":{"method":"GET","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services/01a119d1-58b9-7852-854a-80e23d61ec3e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539258,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2f","res":{"statusCode":200},"responseTime":2.3486249999841675,"msg":"request completed"}
+{"level":30,"time":1791434539258,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2g","req":{"method":"GET","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services/01a119d1-58b9-7852-854a-80e23d61ec3e/credentials","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539260,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2g","res":{"statusCode":200},"responseTime":2.1158329999889247,"msg":"request completed"}
+{"level":30,"time":1791434539260,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2h","req":{"method":"GET","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services/01a119d1-58b9-7852-854a-80e23d61ec3e/logs","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539338,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2h","res":{"statusCode":200},"responseTime":78.07733300002292,"msg":"request completed"}
+{"level":30,"time":1791434539339,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2i","req":{"method":"GET","url":"/api/projects/01a119d1-56f3-78e7-acbb-505b7c447200/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539345,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2i","res":{"statusCode":200},"responseTime":6.0175839999865275,"msg":"request completed"}
+{"level":30,"time":1791434539345,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2j","req":{"method":"GET","url":"/api/activity","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434539350,"pid":3696,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2j","res":{"statusCode":200},"responseTime":4.929459000006318,"msg":"request completed"}
+{"level":40,"time":1791434561388,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"320f779c194f9ba8","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+(node:5559) [FSTWRN004] FastifyWarning: It seems that you are overriding an errorHandler in the same scope, which can lead to subtle bugs. To disable this behavior, set 'allowErrorHandlerOverride' to false. For more information, visit: https://fastify.dev/docs/latest/Reference/Server/#allowerrorhandleroverride
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"level":40,"time":1791434561408,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1791434561460,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1791434561561,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1791434561712,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1791434561913,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1791434562164,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1791434562466,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1791434562819,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1791434563221,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1791434563408,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1791434563409,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"GET","url":"/__canary/throw","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1791434563412,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":500},"responseTime":3.287042000000838,"msg":"request completed"}
+{"level":40,"time":1791434563673,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1791434564178,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1791434564734,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1791434565339,"pid":5559,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+
+ Test Files  5 passed (5)
+      Tests  8 passed (8)
+   Start at  22:38:10
+   Duration  289.30s (tests 99%, import 1%)
+
+
+> noodara@0.2.0 build /Users/xch4rt/work/myself/noodara/code
+> turbo run build --filter=!@noodara/site
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/config, @noodara/control-plane, @noodara/docker, @noodara/domain, @noodara/git, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 8 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs 3504c793414b09e0
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ssh:build: cache hit, replaying logs f51d29b5cbbf0dce
+@noodara/ui:build: cache hit, replaying logs c4d922c5c602b036
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/git:build: cache hit, replaying logs 7ab856662a219990
+@noodara/docker:build: cache hit, replaying logs 3fde58f6b17bd80a
+@noodara/git:build: 
+@noodara/git:build: > @noodara/git@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/git
+@noodara/git:build: > tsc -p tsconfig.build.json
+@noodara/git:build: 
+@noodara/docker:build: 
+@noodara/docker:build: > @noodara/docker@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/docker
+@noodara/docker:build: > tsc -p tsconfig.build.json
+@noodara/docker:build: 
+@noodara/control-plane:build: cache hit, replaying logs 6880afddda894dd7
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.2.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
+@noodara/web:build: cache hit, replaying logs ee9b5b41db6dcc5d
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.2.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > node scripts/sync-brand-assets.mjs && next build
+@noodara/web:build: 
+@noodara/web:build: sync-brand-assets: no files changed (fully idempotent run).
+@noodara/web:build: sync-brand-assets: 7 file(s) already up to date.
+@noodara/web:build: ▲ Next.js 16.3.6 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 60ms
+@noodara/web:build: 
+@noodara/web:build:   Creating an optimized production build ...
+@noodara/web:build: ✓ Compiled successfully in 809ms
+@noodara/web:build:   Running TypeScript ...
+@noodara/web:build:   Finished TypeScript in 702ms ...
+@noodara/web:build:   Collecting page data using 13 workers ...
+@noodara/web:build:   Generating static pages using 13 workers (0/16) ...
+@noodara/web:build: ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+@noodara/web:build:   Generating static pages using 13 workers (4/16) 
+@noodara/web:build:   Generating static pages using 13 workers (8/16) 
+@noodara/web:build:   Generating static pages using 13 workers (12/16) 
+@noodara/web:build: ✓ Generating static pages using 13 workers (16/16) in 131ms
+@noodara/web:build:   Finalizing page optimization ...
+@noodara/web:build: 
+@noodara/web:build: Route (app)
+@noodara/web:build: ┌ ƒ /
+@noodara/web:build: ├ ƒ /_not-found
+@noodara/web:build: ├ ƒ /[...catchAll]
+@noodara/web:build: ├ ƒ /activity
+@noodara/web:build: ├ ƒ /api/events
+@noodara/web:build: ├ ○ /apple-icon.png
+@noodara/web:build: ├ ○ /icon.svg
+@noodara/web:build: ├ ○ /icon1.png
+@noodara/web:build: ├ ○ /icon2.png
+@noodara/web:build: ├ ƒ /login
+@noodara/web:build: ├ ○ /manifest.webmanifest
+@noodara/web:build: ├ ○ /opengraph-image.png
+@noodara/web:build: ├ ƒ /projects
+@noodara/web:build: ├ ƒ /projects/[projectId]
+@noodara/web:build: ├ ƒ /projects/[projectId]/services/[serviceId]
+@noodara/web:build: ├ ƒ /servers
+@noodara/web:build: ├ ƒ /servers/[id]
+@noodara/web:build: ├ ƒ /settings
+@noodara/web:build: └ ○ /setup
+@noodara/web:build: 
+@noodara/web:build: 
+@noodara/web:build: ƒ Proxy (Middleware)
+@noodara/web:build: 
+@noodara/web:build: ○  (Static)   prerendered as static content
+@noodara/web:build: ƒ  (Dynamic)  server-rendered on demand
+@noodara/web:build: 
+
+ Tasks:    7 successful, 7 total
+Cached:    7 cached, 7 total
+  Time:    47ms >>> FULL TURBO
+
+
+Running 1 test using 1 worker
+
+  ✓  1 [chromium] › tests/e2e/canary-ui.spec.ts:53:1 › @canary a per-run password canary and a per-run passphrase canary never reach rendered HTML, console, storage, the URL/history, or any response body across the whole UI flow (3.8s)
+
+  1 passed (12.0s)
+# exit: 0
+# duration_s: 302
