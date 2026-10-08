@@ -30,6 +30,15 @@ async function login(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/servers$/);
 }
 
+/** 14-26: holds the shell's live stream (`/api/events`) for a test that fakes the whole list.
+ *  The stack is shared with earlier specs, and their servers keep changing (server-detail.spec.ts
+ *  leaves one CONNECTING until its SSH timeout flips it to UNREACHABLE). A live `server.updated`
+ *  for an id the faked list lacks is inserted as a row (server-store.ts), so the faked state stops
+ *  being the only one on screen. Same technique the @stagger tests below use. */
+async function holdLiveStream(page: Page): Promise<void> {
+  await page.route('**/api/events', () => undefined);
+}
+
 interface ServerViewFixture {
   readonly id: string;
   readonly name: string;
@@ -99,6 +108,7 @@ test('@servers on a stack with no servers, the empty state renders its exact tit
   await page.route('**/api/servers', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }) }),
   );
+  await holdLiveStream(page);
 
   await login(page);
 
@@ -112,6 +122,7 @@ test('@servers a never-resolving /api/servers response renders five skeleton row
   // like a real, still-in-flight fetch. No `waitForTimeout`: the skeleton assertions below use
   // Playwright's own auto-retrying `expect`, waiting on the rendered state rather than a clock.
   await page.route('**/api/servers', () => undefined);
+  await holdLiveStream(page);
 
   await login(page);
 
@@ -203,6 +214,7 @@ test('@servers two ServerView rows render name, host:port, a matching status pil
   await page.route('**/api/servers', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [alpha, beta] }) }),
   );
+  await holdLiveStream(page);
 
   await login(page);
 
@@ -639,6 +651,7 @@ test('@scroll-edge the toolbar border-bottom is transparent at scroll-top, visib
   await page.route('**/api/servers', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items }) }),
   );
+  await holdLiveStream(page);
 
   await page.setViewportSize({ width: 1024, height: 400 });
   await login(page);
