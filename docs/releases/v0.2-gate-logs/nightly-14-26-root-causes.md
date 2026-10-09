@@ -118,3 +118,16 @@ Proof:
 ## Full suite under the same load
 
 See the table below (filled in from the 5 consecutive runs).
+
+### Loop pass 4 (after 6caccd3): 5/5 green
+
+`pnpm test:e2e` 5 consecutive times, 28 busybox busy-loop containers (`noodara.stress=14-26`)
+running throughout, 25-min watchdog per run (never fired). Zero failed, flaky or interrupted.
+
+| Run | Start-end | Result | Duration |
+|---|---|---|---|
+| 1 | 11:38-11:53 | 244 passed | 15.1m |
+| 2 | 11:53-12:04 | 244 passed | 11.2m |
+| 3 | 12:04-12:15 | 244 passed | 11.2m |
+| 4 | 12:15-12:28 | 244 passed | 12.3m |
+| 5 | 12:28-12:41 | 244 passed | 12.9m |
