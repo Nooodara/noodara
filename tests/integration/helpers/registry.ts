@@ -19,6 +19,10 @@ export const MIRROR_UPSTREAM = 'https://mirror.gcr.io';
 export const MIRROR_FALLBACK_UPSTREAM = 'https://registry-1.docker.io';
 
 const REGISTRY_STARTUP_TIMEOUT_MS = 120_000;
+/** Pull of REGISTRY_IMAGE + startup. withStartupTimeout does not cover the pull, this does. */
+export const REGISTRY_START_DEADLINE_MS = 240_000;
+/** Where the host daemon pulls REGISTRY_IMAGE from. */
+const REGISTRY_IMAGE_SOURCE = 'docker.io';
 const UPSTREAM_PROBE_TIMEOUT_MS = 10_000;
 
 export interface RegistryCredentials {
@@ -59,7 +63,7 @@ export async function startAuthRegistry(
   network: string,
   htpasswdEntry: string,
 ): Promise<StartedRegistry> {
-  const container = await registryContainer(network, REGISTRY_ALIAS)
+  const registry = registryContainer(network, REGISTRY_ALIAS)
     .withEnvironment({
       REGISTRY_AUTH: 'htpasswd',
       REGISTRY_AUTH_HTPASSWD_REALM: 'noodara-test',
@@ -67,9 +71,49 @@ export async function startAuthRegistry(
     })
     .withCopyContentToContainer([
       { content: `${htpasswdEntry.trim()}\n`, target: '/auth/htpasswd', mode: 0o644 },
-    ])
-    .start();
+    ]);
+  const container = await startWithin(
+    () => registry.start(),
+    REGISTRY_START_DEADLINE_MS,
+    REGISTRY_IMAGE_SOURCE,
+  );
   return { container, host: `${REGISTRY_ALIAS}:${String(REGISTRY_PORT)}` };
+}
+
+/**
+ * Bounds `start()` (image pull + startup). On timeout it rejects naming the image and the registry
+ * it is pulled from; a container that still comes up afterwards is stopped, not leaked.
+ */
+export function startWithin<T extends { stop(): Promise<unknown> }>(
+  start: () => Promise<T>,
+  timeoutMs: number,
+  sourceRegistry: string,
+): Promise<T> {
+  const image = REGISTRY_IMAGE.split('@')[0] ?? REGISTRY_IMAGE;
+  let timedOut = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const started = start();
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      timedOut = true;
+      reject(
+        new Error(
+          `registry helper: starting ${image} (pulled from ${sourceRegistry}) timed out after ` +
+            `${String(timeoutMs)}ms; is ${sourceRegistry} reachable from the Docker host?`,
+        ),
+      );
+    }, timeoutMs);
+    timer.unref?.();
+  });
+  started.then(
+    async (container) => {
+      if (timedOut) await container.stop().catch(() => undefined);
+    },
+    () => undefined,
+  );
+  return Promise.race([started, deadline]).finally(() => {
+    clearTimeout(timer);
+  });
 }
 
 /** True when the upstream answers the registry API root at all (401 counts: it is alive). */
@@ -84,17 +128,32 @@ async function upstreamReachable(url: string): Promise<boolean> {
   }
 }
 
-export async function startBaseImageMirror(network: string): Promise<StartedMirror> {
-  const upstream = (await upstreamReachable(MIRROR_UPSTREAM))
-    ? MIRROR_UPSTREAM
-    : MIRROR_FALLBACK_UPSTREAM;
-  if (upstream !== MIRROR_UPSTREAM) {
+/** Probes the preferred upstream, then the G7 fallback; throws fast when neither answers. */
+export async function selectMirrorUpstream(
+  probe: (url: string) => Promise<boolean> = upstreamReachable,
+): Promise<string> {
+  if (await probe(MIRROR_UPSTREAM)) return MIRROR_UPSTREAM;
+  if (await probe(MIRROR_FALLBACK_UPSTREAM)) {
     console.warn(
-      `deploy-engine: ${MIRROR_UPSTREAM} unreachable, base-image mirror falls back to ${upstream} (G7)`,
+      `deploy-engine: ${MIRROR_UPSTREAM} unreachable, base-image mirror falls back to ${MIRROR_FALLBACK_UPSTREAM} (G7)`,
     );
+    return MIRROR_FALLBACK_UPSTREAM;
   }
-  const container = await registryContainer(network, MIRROR_ALIAS)
-    .withEnvironment({ REGISTRY_PROXY_REMOTEURL: upstream })
-    .start();
+  throw new Error(
+    `deploy-engine: base-image upstreams unreachable: ${MIRROR_UPSTREAM} and ${MIRROR_FALLBACK_UPSTREAM} ` +
+      `(no answer on /v2/ within ${String(UPSTREAM_PROBE_TIMEOUT_MS)}ms each)`,
+  );
+}
+
+export async function startBaseImageMirror(network: string): Promise<StartedMirror> {
+  const upstream = await selectMirrorUpstream();
+  const mirror = registryContainer(network, MIRROR_ALIAS).withEnvironment({
+    REGISTRY_PROXY_REMOTEURL: upstream,
+  });
+  const container = await startWithin(
+    () => mirror.start(),
+    REGISTRY_START_DEADLINE_MS,
+    REGISTRY_IMAGE_SOURCE,
+  );
   return { container, host: `${MIRROR_ALIAS}:${String(REGISTRY_PORT)}`, upstream };
 }

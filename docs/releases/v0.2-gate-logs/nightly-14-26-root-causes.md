@@ -82,7 +82,8 @@ Not a test race. The deploy host is a worker-scoped fixture, and `deploy-host.sp
 - Playwright starts a new worker, and a new deploy host, after each failure. The log has `https://mirror.gcr.io unreachable, base-image mirror falls back to https://registry-1.docker.io` twice, after each failed test: the host could not reach the image registry at that time. The next attempt then hung inside the 25-minute startup timeout, which is the 34-minute stall.
 - The run was killed, so the startup error itself was not printed.
 - The same spec on the same machine: idle 8/8 (1.1 min), and under the same load 8/8 (6 min, most of it startup).
-- Decision: an environment failure (network to the registry), not a flake. No code change. The 5-run loop below now caps every run at 25 minutes and records the error if it happens again.
+- Decision: an environment failure (network to the registry), not a flake. The 5-run loop below caps every run at 25 minutes and records the error if it happens again.
+- Hardening (`tests/integration/helpers/registry.ts`, `deploy-engine.ts`): the fallback `registry-1.docker.io` is now probed too, and with no upstream reachable startup fails at once naming both. Each `registry:2` start (pull + startup) has a 240 s deadline whose error names the image and `docker.io`; a container that comes up late is stopped. The base-image pulls share one 10-minute budget instead of 3 x 10 minutes per image, and their errors name the mirror upstream. Unit-tested in `registry.test.ts` (7/7, RED first); `deploy-host.spec.ts` idle 8/8.
 
 ## shell.spec.ts, Theme control survives a reload: `page.waitForResponse` timeout (loop pass 4, run 1)
 
@@ -96,7 +97,7 @@ Proof:
 - Deterministic RED: a temporary 3 s delay on `GET /api/account/preferences` after the reload. 2 of 2 failed with the nightly signature.
 - GREEN: the same delay with the fix: 8/8 under load. Without the probe, `shell.spec.ts --repeat-each=3` under load: 60/60. The probe is removed.
 
-## keyboard-motion.spec.ts:77, Sheet positive control: `elapsedMs` 41, expected > 150 (loop pass 4, run 1). OPEN: product bug
+## keyboard-motion.spec.ts:77, Sheet positive control: `elapsedMs` 41, expected > 150 (loop pass 4, run 1). FIXED: product bug
 
 Root cause: the Sheet has no exit transition. The test only passed because of Playwright's click timing.
 - Load repro: `-g "positive control" --repeat-each=15`, 3 of 15 failed (41, 44, 99 ms).
@@ -104,7 +105,15 @@ Root cause: the Sheet has no exit transition. The test only passed because of Pl
 - So the measured 250 to 370 ms is `click()` waiting for the Close button to be stable while the entry slide-in runs. When the entry has finished before the click, the click takes about 45 ms and the test fails.
 - The negative control (Escape under 150 ms) passes for the same reason: every close is instant.
 
-Not fixed here. The real fix is a product change in `packages/ui/src/Sheet.tsx`: keep the panel mounted until its exit transition ends (or use a CSS keyframe exit that Presence waits for), keep `!duration-0` instant for keyboard, keep the reduced-motion opacity path. It needs the UX review. A test-only change would just weaken a check that is currently false.
+Fix (product, `packages/ui/src/Sheet.tsx` + `packages/ui/theme.css`): the exit is now a CSS keyframe animation, which Presence waits for.
+- Motion allowed: `sheet-exit` slides out over `--duration-sheet`. Reduced motion (UI-10): `sheet-fade-exit`, opacity only. The overlay fades.
+- Keyboard close stays instant: `!animate-none` on panel and overlay (was `!duration-0`), latched during render so Presence sees `animation-name: none` in its own layout effect.
+- The dead transition checks in `a11y-fallbacks.spec.ts` now sample the live exit per frame (`closeSheetAndSampleExit`), including the `data-motion="allow"` override test.
+
+Proof:
+- Unit RED/GREEN: `Sheet.test.tsx` "Sheet exit animation", 4/4 RED against the old Sheet, 23/23 GREEN.
+- Under the same load: `keyboard-motion.spec.ts:77 --repeat-each=8` 8/8; the whole file `--repeat-each=4` 32/32 (Escape still under 150 ms).
+- Idle: `server-sheet.spec.ts` 19/19, `projects-dod.spec.ts` + `dod-hardening.spec.ts` 57/57, `a11y-fallbacks.spec.ts` 8/8.
 
 ## Full suite under the same load
 

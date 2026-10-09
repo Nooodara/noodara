@@ -524,18 +524,29 @@ export async function startDeployEngineStack(
 
     // Preload the auth registry with every digest-pinned base, pulled through the mirror.
     const baseImages = resolveBaseImages();
+    // One shared budget for every base pull and retry, so a dead upstream cannot eat the caller's
+    // whole startup timeout (3 attempts x IMAGE_TRANSFER_TIMEOUT_MS per image otherwise).
+    const pullDeadline = Date.now() + IMAGE_TRANSFER_TIMEOUT_MS;
     for (const baseImage of baseImages) {
       // A pull-through cache can hand back a half-written blob on a cold fetch ("unexpected commit
       // digest"); the digest pin makes a retry safe, so one transient failure is retried twice.
       for (let attempt = 1; ; attempt += 1) {
+        const remainingMs = pullDeadline - Date.now();
+        if (remainingMs <= 0) {
+          throw new Error(
+            `deploy-engine: base-image pulls through ${mirror.upstream} exceeded ` +
+              `${String(IMAGE_TRANSFER_TIMEOUT_MS)}ms (at ${baseImage})`,
+          );
+        }
         const pulled = await exec(['docker', 'pull', '--quiet', baseImage], {
           user: 'deployer',
-          timeoutMs: IMAGE_TRANSFER_TIMEOUT_MS,
+          timeoutMs: remainingMs,
         });
         if (pulled.exitCode === 0) break;
         if (attempt >= 3) {
           throw new Error(
-            `deploy-engine: docker pull exited ${String(pulled.exitCode)}: ${pulled.stderr.trim()}`,
+            `deploy-engine: docker pull via ${mirror.upstream} exited ${String(pulled.exitCode)}: ` +
+              pulled.stderr.trim(),
           );
         }
       }

@@ -247,8 +247,9 @@ test('@a11y-fallbacks forced reduce motion preference: Dialog opens without scal
 });
 
 // The positive control for the override direction itself: OS reduce is emulated, but the forced
-// `data-motion="allow"` attribute must win, restoring the real transform-based transition.
-test('@a11y-fallbacks allow motion preference overrides OS reduce: Sheet declares a transform transition', async ({
+// `data-motion="allow"` attribute must win, restoring the real slide-out. (14-26: observed as the
+// live exit animation; the panel no longer declares a transition, which Presence never waited for.)
+test('@a11y-fallbacks allow motion preference overrides OS reduce: closing the Sheet runs its slide-out animation', async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -258,12 +259,8 @@ test('@a11y-fallbacks allow motion preference overrides OS reduce: Sheet declare
   await page.getByRole('button', { name: 'Add server' }).click();
   await expect(page.getByTestId('server-sheet')).toBeVisible();
 
-  const panel = page.getByTestId('server-sheet');
-  const transitionProperty = await panel.evaluate((el) => getComputedStyle(el).transitionProperty);
-  expect(transitionProperty).toContain('transform');
-
-  const transitionDuration = await panel.evaluate((el) => getComputedStyle(el).transitionDuration);
-  expect(transitionDuration).not.toBe('0s');
+  const exit = await closeSheetAndSampleExit(page);
+  expect(exit.animations).toEqual(['sheet-exit']);
 });
 
 // D-13 (09-04-PLAN.md Task 2): the Sheet's JS gesture check (not just the CSS fallback) must
