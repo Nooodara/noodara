@@ -31,8 +31,7 @@ const PANEL_WIDTH_PX = 480;
 
 // A deliberately small settle-in offset for the drag surface's own entry flourish (see the
 // `useEffect` in `Sheet` that consumes this) -- large enough to be perceptible, small enough to
-// never look like a second, competing slide-in against the outer CSS transition already carrying
-// the actual 480px distance.
+// never look like a full slide-in (the outer panel mounts already open; only its exit animates).
 const ENTRY_SETTLE_OFFSET_PX = 8;
 
 export interface SheetProps {
@@ -47,7 +46,8 @@ export interface SheetProps {
 // Translucent --surface-1 (skill SS2.3's "Translucent" elevation level) at the opacity/blur pair
 // the skill names for sidebar/toolbar/sheets -- no bespoke token, the same treatment those
 // surfaces already use.
-const OVERLAY_CLASSES = 'fixed inset-0 z-40 bg-canvas/72';
+// 14-26: the overlay fades out with the panel (opacity only, so the same under reduced motion).
+const OVERLAY_CLASSES = 'fixed inset-0 z-40 bg-canvas/72 data-[state=closed]:animate-sheet-fade-exit';
 
 // UI-03 (08-06-PLAN.md Task 1, 08-UI-SPEC.md SS5.1/5.2): `--shadow-floating` applies to exactly
 // four components -- Sheet, Dialog, RowMenu, AccountMenu (scripts/check-ui-safety.mjs's
@@ -65,16 +65,11 @@ const OVERLAY_CLASSES = 'fixed inset-0 z-40 bg-canvas/72';
 // the strong token and the background is pushed toward fully opaque too, both real boundaries a
 // low-contrast border/translucent panel could otherwise erase (T-08-18/T-08-19).
 //
-// UI-10 (08-06-PLAN.md Task 3, 08-UI-SPEC.md SS10) -- the reduced-motion alternative: the whole
-// `data-[state=*]:translate-x-*` pair now sits inside `motion-safe:` alongside the transition
-// itself, so under `prefers-reduced-motion: reduce` the panel never translates at all, at any
-// point; `motion-reduce:transition-opacity`/`motion-reduce:duration-[var(--duration-panel)]`
-// (paired with `motion-reduce:data-[state=closed]:opacity-0`, open needing no explicit class since
-// full opacity is the element's own default) replace the slide with a short opacity crossfade --
-// no translate, no scale, no spring, matching every other transition in the redesign's motion
-// table (08-UI-SPEC.md SS10's own worked comment block). Verified end to end (real browser,
-// `page.emulateMedia`) by `tests/e2e/a11y-fallbacks.spec.ts`'s `@a11y-fallbacks` tests -- jsdom
-// cannot resolve `prefers-reduced-motion` at all.
+// 14-26: the exit is a keyframe animation (theme.css `--animate-sheet-*`), not a transition.
+// Radix Presence keeps a closing node mounted only while a CSS animation runs; with the old
+// transition the panel left the DOM a few ms after any close. Motion allowed: slide out over
+// --duration-sheet. Reduced motion (UI-10): an opacity fade only, no translate. Verified in a real
+// browser by tests/e2e/a11y-fallbacks.spec.ts and keyboard-motion.spec.ts.
 const PANEL_CLASSES = cn(
   'fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-[480px] flex-col',
   'rounded-l-lg border-l border-hairline bg-surface-elevated/72 backdrop-blur-xl backdrop-saturate-[1.8]',
@@ -82,19 +77,15 @@ const PANEL_CLASSES = cn(
   '[@media(prefers-reduced-transparency:reduce)]:bg-surface-elevated',
   '[@media(prefers-reduced-transparency:reduce)]:[backdrop-filter:none]',
   'contrast-more:border-hairline-strong contrast-more:bg-surface-elevated',
-  'motion-safe:transition-transform motion-safe:duration-[var(--duration-sheet)] motion-safe:ease-[var(--ease-standard)]',
-  'motion-safe:data-[state=open]:translate-x-0 motion-safe:data-[state=closed]:translate-x-full',
-  'motion-reduce:transition-opacity motion-reduce:duration-[var(--duration-panel)] motion-reduce:data-[state=closed]:opacity-0',
+  'motion-safe:data-[state=closed]:animate-sheet-exit',
+  'motion-reduce:data-[state=closed]:animate-sheet-fade-exit',
 );
 
-// 08-12-PLAN.md Task 2 (brief §9 #10, 08-UI-SPEC.md §7.3): appended to `PANEL_CLASSES` only while
-// the in-flight close is keyboard-initiated (`useCloseSource`, owned by 08-04). `!duration-0`
-// overrides the `motion-safe:duration-[var(--duration-sheet)]`/`motion-reduce:duration-[var(--
-// duration-panel)]` pair above (Tailwind's `!` important-modifier wins the specificity fight
-// against those un-flagged utilities), so Radix's own CSS-transition-duration-based exit
-// deferral sees a zero duration and unmounts the panel immediately -- no `onEscapeKeyDown`
-// override, no second keydown listener, the existing `check:ui-safety` gate for both stays green.
-const INSTANT_CLOSE_CLASS = '!duration-0';
+// 08-12-PLAN.md Task 2 (brief §9 #10, 08-UI-SPEC.md §7.3): appended to the panel and overlay only
+// while the close is keyboard-initiated (`useCloseSource`, owned by 08-04). `!animate-none` beats
+// the exit animations above, so Presence sees `animation-name: none` and unmounts at once -- no
+// `onEscapeKeyDown` override, no second keydown listener.
+const INSTANT_CLOSE_CLASS = '!animate-none';
 
 const DRAG_SURFACE_CLASSES = 'flex h-full w-full flex-col';
 
@@ -157,29 +148,24 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
   // conditionally continue in the release direction instead of snapping back, so `handleDragEnd`
   // below drives this value with the standalone `animate()` function instead.
   const x = useMotionValue(0);
-  // Latched, not derived inline: by the time this Sheet re-renders with `open === false`,
-  // `useCloseSource`'s own capture-phase keydown listener (08-04) has already run for the same
-  // event, so `closeSource()` already reports 'keyboard' -- this effect just carries that one
-  // read into a piece of render state the className below can react to for the rest of this
-  // close's CSS-transition lifetime (see INSTANT_CLOSE_CLASS above).
+  // 14-26: latched during the render where `open` flips (React's "adjust state on prop change"
+  // pattern), not in an effect. Presence decides in its own layout effect, which runs before any
+  // effect of this component, so the class must already be in the DOM that render commits.
+  // `useCloseSource`'s capture-phase keydown listener (08-04) has run by then.
   const [instantClose, setInstantClose] = useState(false);
+  const [latchedOpen, setLatchedOpen] = useState(open);
+  if (latchedOpen !== open) {
+    setLatchedOpen(open);
+    setInstantClose(!open && closeSource() === 'keyboard');
+  }
   // 13-22: 'closing' while the release-to-close animation runs, so a re-grab mid-close tracks the
   // pointer 1:1 from the panel's on-screen position instead of Motion's elastic pulling it back
   // toward rest (see dragElasticFor). Reset whenever the sheet opens.
   const [dragPhase, setDragPhase] = useState<SheetDragPhase>('resting');
 
-  useEffect(() => {
-    if (!open) {
-      setInstantClose(closeSource() === 'keyboard');
-    }
-  }, [open, closeSource]);
-
-  // 08-UI-SPEC.md §7.2's durations table: "Sheet entry: translateX + spring: SPRING.drawer". The
-  // outer `DialogPrimitive.Content`'s own unchanged CSS transition is what visibly slides the
-  // panel in (this stays untouched to avoid a doubled transform across the two nested elements);
-  // this small settle-in on the drag surface itself is a second, subtle layer riding on top of
-  // that CSS slide, so SPRING.drawer genuinely governs part of what's on screen during entry, not
-  // just a token named in a comment. Imperative (`animate()` in an effect), not the declarative
+  // 08-UI-SPEC.md §7.2's durations table: "Sheet entry: translateX + spring: SPRING.drawer". Radix
+  // mounts the outer `DialogPrimitive.Content` already open (no entry keyframe there, 14-26), so
+  // this small settle-in on the drag surface is the entry motion SPRING.drawer governs. Imperative (`animate()` in an effect), not the declarative
   // `animate` prop -- a persistent declarative target on `x` is exactly what fought the
   // momentum-handoff animation in `handleDragEnd` (see the comment on `x` above).
   useEffect(() => {
@@ -200,10 +186,10 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
     if (decidesToClose(release, panelWidthPx)) {
       // Brief §7.4 steps 7-8: project momentum forward and hand its velocity off as the closing
       // spring's own initial velocity -- SPRING.momentum (UI-SPEC's own "only when the gesture
-      // itself carried momentum" comment) is the one case that constant exists for. The DOM
-      // node's own CSS-transition-based exit (owned by the outer `DialogPrimitive.Content`,
-      // untouched) still governs when Radix actually removes it; `onOpenChange(false)` is only
-      // called once this handoff animation finishes, not before, so the two never race.
+      // itself carried momentum" comment) is the one case that constant exists for. The outer
+      // `DialogPrimitive.Content`'s exit animation (14-26) still governs when Radix removes it;
+      // `onOpenChange(false)` is only called once this handoff animation finishes, so the two
+      // never race (the outer slide then runs off-screen while the overlay fades).
       //
       // The velocity is clamped (handoffVelocity): a near-zero time between the last two pointer
       // samples can produce a non-finite value that leaves the spring's promise never resolving.
@@ -225,7 +211,10 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className={OVERLAY_CLASSES} data-sheet-overlay="" />
+        <DialogPrimitive.Overlay
+          className={cn(OVERLAY_CLASSES, instantClose && INSTANT_CLOSE_CLASS)}
+          data-sheet-overlay=""
+        />
         <DialogPrimitive.Content
           ref={contentRef}
           className={cn(PANEL_CLASSES, instantClose && INSTANT_CLOSE_CLASS)}
@@ -243,7 +232,7 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
               className={DRAG_SURFACE_CLASSES}
               // Task 3 (08-12-PLAN.md, UI-06 §7.4): the only DOM node whose `transform` actually
               // moves during a drag -- the outer `DialogPrimitive.Content` above owns the
-              // open/closed CSS-transition position, this inner surface owns the live gesture
+              // open/closed position and exit animation, this inner surface owns the live gesture
               // offset on top of it. A dedicated testid (not reusing `data-testid`, which stays
               // on the semantic dialog element per every existing test/consumer) is how the E2E
               // suite locates exactly this node without depending on Motion's own DOM shape.

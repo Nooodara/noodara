@@ -91,6 +91,30 @@
   --radius-md: var(--r-md);
   --radius-lg: var(--r-lg);
   --radius-pill: var(--r-pill);
+
+  /* --- Exit animations (14-26) ---------------------------------------------------------------
+     Keyframes, not transitions: Radix Presence keeps a closing element mounted only while a CSS
+     animation runs. `forwards` holds the last frame until Presence unmounts the node. */
+  --animate-sheet-exit: sheet-exit var(--duration-sheet) var(--ease-standard) forwards;
+  --animate-sheet-fade-exit: sheet-fade-exit var(--duration-panel) var(--ease-standard) forwards;
+
+  @keyframes sheet-exit {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes sheet-fade-exit {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
 }
 
 /* --- Motion variants (D-13, 09-04-PLAN.md Task 1) ---------------------------------------------

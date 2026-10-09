@@ -23,6 +23,9 @@
 // transition genuinely IS declared (so the reduced-motion test isn't just describing an
 // always-inert component) -- the "positive control" the plan calls for is satisfied by proving the
 // standard path uses a real, distinct mechanism, not by catching it mid-flight.
+//
+// 14-26: that no longer holds for the Sheet's exit. It is now a keyframe animation that Presence
+// keeps the panel mounted for, so the Sheet tests below observe the real exit frame by frame.
 import { expect, test, type Page } from '@playwright/test';
 import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './fixtures/stack.js';
 
@@ -75,6 +78,42 @@ function decomposeTransform(transform: string): Matrix {
   };
 }
 
+interface ExitSamples {
+  readonly animations: readonly string[];
+  readonly translateXs: readonly number[];
+}
+
+/** 14-26: closes the add-server Sheet with its Close button and samples the panel on every frame
+ *  until it leaves the DOM: the CSS animations it ran and its computed transforms. Presence keeps
+ *  the panel mounted while its exit animation runs, so at least one frame sees it. The sampler
+ *  starts before the click (CDP messages run in order). */
+async function closeSheetAndSampleExit(page: Page): Promise<ExitSamples> {
+  const panel = page.getByTestId('server-sheet');
+  const handle = await panel.elementHandle();
+  const sampling = handle.evaluate(
+    (el) =>
+      new Promise<{ animations: string[]; transforms: string[] }>((resolve) => {
+        const animations = new Set<string>();
+        const transforms: string[] = [];
+        const tick = (): void => {
+          if (!el.isConnected) {
+            resolve({ animations: [...animations], transforms });
+            return;
+          }
+          for (const animation of el.getAnimations()) {
+            if (animation instanceof CSSAnimation) animations.add(animation.animationName);
+          }
+          transforms.push(getComputedStyle(el).transform);
+          requestAnimationFrame(tick);
+        };
+        tick();
+      }),
+  );
+  await panel.getByRole('button', { name: 'Close' }).click();
+  const { animations, transforms } = await sampling;
+  return { animations, translateXs: transforms.map((t) => decomposeTransform(t).translateX) };
+}
+
 async function seedServer(page: Page, name: string): Promise<void> {
   const created = await page.request.post('/api/servers', {
     data: { name, host: `${name}.example.test`, credential: { type: 'ssh_password', password: 'diagnostic-only' } },
@@ -84,7 +123,7 @@ async function seedServer(page: Page, name: string): Promise<void> {
   expect(created.status()).toBe(201);
 }
 
-test('@a11y-fallbacks with reduced motion emulated, opening the add-server Sheet produces no horizontal translation, via an opacity-only transition', async ({
+test('@a11y-fallbacks with reduced motion emulated, the add-server Sheet opens and closes with no horizontal translation, via an opacity-only exit', async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -97,12 +136,10 @@ test('@a11y-fallbacks with reduced motion emulated, opening the add-server Sheet
   const transform = await panel.evaluate((el) => getComputedStyle(el).transform);
   expect(decomposeTransform(transform).translateX).toBe(0);
 
-  // The mechanism proof: under reduced motion, `motion-safe:transition-transform` never applies
-  // (the whole point of the `motion-safe:` gate), so the transform-based transition is entirely
-  // absent -- replaced by `motion-reduce:transition-opacity`.
-  const transitionProperty = await panel.evaluate((el) => getComputedStyle(el).transitionProperty);
-  expect(transitionProperty).not.toContain('transform');
-  expect(transitionProperty).toContain('opacity');
+  // The exit itself: the opacity fade runs, the slide never does, and no frame translates.
+  const exit = await closeSheetAndSampleExit(page);
+  expect(exit.animations).toEqual(['sheet-fade-exit']);
+  expect(exit.translateXs.every((x) => x === 0)).toBe(true);
 });
 
 test('@a11y-fallbacks with reduced motion emulated, the delete Dialog opens with no scale -- its computed transform is the centering translate only', async ({
@@ -150,12 +187,10 @@ test('@a11y-fallbacks with reduced motion emulated, the RowMenu opens with no sc
 });
 
 // The positive control (08-06-PLAN.md Task 3's own "so the test cannot pass by the animation
-// being broken outright"): without any emulation, the Sheet panel genuinely declares a real,
-// transform-based transition -- proving the reduced-motion test above is measuring a real
-// alternative to a real mechanism, not passing merely because the Sheet's transition was broken
-// or absent outright. See this file's own header comment for why the proof is the CSS mechanism,
-// not a caught mid-animation frame.
-test('@a11y-fallbacks without emulation, the Sheet panel declares a real transform-based transition (the positive control)', async ({
+// being broken outright"): without any emulation, closing the Sheet really runs its slide-out
+// (14-26: a keyframe animation Presence waits for, observed live, not a declared transition that
+// never played) -- so the reduced-motion tests are measuring a real alternative.
+test('@a11y-fallbacks without emulation, closing the Sheet runs its slide-out animation (the positive control)', async ({
   page,
 }) => {
   await login(page);
@@ -163,18 +198,14 @@ test('@a11y-fallbacks without emulation, the Sheet panel declares a real transfo
   await page.getByRole('button', { name: 'Add server' }).click();
   await expect(page.getByTestId('server-sheet')).toBeVisible();
 
-  const panel = page.getByTestId('server-sheet');
-  const transitionProperty = await panel.evaluate((el) => getComputedStyle(el).transitionProperty);
-  expect(transitionProperty).toContain('transform');
-
-  const transitionDuration = await panel.evaluate((el) => getComputedStyle(el).transitionDuration);
-  expect(transitionDuration).not.toBe('0s');
+  const exit = await closeSheetAndSampleExit(page);
+  expect(exit.animations).toEqual(['sheet-exit']);
 });
 
 // D-13 (09-04-PLAN.md Task 1): a forced `data-motion="reduce"` on `<html>` must drive the exact
 // same fallback as the OS `prefers-reduced-motion: reduce` media query above -- no OS emulation at
 // all here, only the attribute the Settings preference control (09-12) will eventually write.
-test('@a11y-fallbacks forced reduce motion preference: Sheet opens opacity-only without OS emulation', async ({
+test('@a11y-fallbacks forced reduce motion preference: Sheet opens and closes opacity-only without OS emulation', async ({
   page,
 }) => {
   await login(page);
@@ -187,9 +218,9 @@ test('@a11y-fallbacks forced reduce motion preference: Sheet opens opacity-only 
   const transform = await panel.evaluate((el) => getComputedStyle(el).transform);
   expect(decomposeTransform(transform).translateX).toBe(0);
 
-  const transitionProperty = await panel.evaluate((el) => getComputedStyle(el).transitionProperty);
-  expect(transitionProperty).not.toContain('transform');
-  expect(transitionProperty).toContain('opacity');
+  const exit = await closeSheetAndSampleExit(page);
+  expect(exit.animations).toEqual(['sheet-fade-exit']);
+  expect(exit.translateXs.every((x) => x === 0)).toBe(true);
 });
 
 test('@a11y-fallbacks forced reduce motion preference: Dialog opens without scale', async ({ page }) => {

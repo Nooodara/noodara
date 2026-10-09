@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-08T16:18:30.842Z",
+  "updatedAt": "2026-10-08T17:05:39.787Z",
   "cursor": {
     "phase": "14",
-    "task": "14-15"
+    "task": "14-26"
   },
   "phases": [
     {
@@ -4707,19 +4707,19 @@
         {
           "id": "14-26",
           "title": "Nightly e2e-repeat: theme-first-paint flake and a load-stress hunt for the rest",
-          "tier": "deep",
           "scope": [
-            "tests/e2e/",
             "apps/web/src/",
+            "docs/releases/v0.2-gate-logs/",
             "packages/ui/src/",
-            "tests/integration/helpers/",
+            "packages/ui/theme.css",
             "playwright.config.ts",
             "scripts/e2e-repeat.mjs",
-            "docs/releases/v0.2-gate-logs/"
+            "tests/e2e/",
+            "tests/integration/helpers/"
           ],
           "wave": 5,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -4745,7 +4745,8 @@
             "persistence",
             "auth-secrets",
             "randomness"
-          ]
+          ],
+          "tier": "deep"
         }
       ]
     }

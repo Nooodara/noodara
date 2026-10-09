@@ -434,3 +434,97 @@ describe('Sheet re-grab mid-close', () => {
     expect(xAfterRegrab).toBeCloseTo(xAtGrab + 10, 0);
   });
 });
+
+// 14-26: Radix Presence (@radix-ui/react-presence) keeps a closing element mounted only while a CSS
+// *animation* runs (it reads `animation-name`, never `transition-*`), so the old transition-based
+// exit never played: the panel left the DOM a few ms after a pointer close. jsdom compiles no
+// Tailwind, so this suite installs a stand-in stylesheet for the panel's exit utility (keyed on the
+// class token, never on the dialog role) and drives Presence the way a real browser would: the
+// panel must stay mounted in data-state="closed" until its exit animation ends. A keyboard close
+// carries the instant override, so the stand-in rule does not match and the panel goes at once.
+describe('Sheet exit animation', () => {
+  let styleEl: HTMLStyleElement;
+
+  beforeEach(() => {
+    styleEl = document.createElement('style');
+    styleEl.textContent =
+      '[class*="animate-sheet-exit"][data-state="closed"]:not([class*="!animate-none"]) { animation-name: sheet-exit; }';
+    document.head.appendChild(styleEl);
+    // A browser's getComputedStyle() is live; jsdom's is a snapshot. Presence keeps the object it
+    // read at mount and reads `animationName` from it again at close, so give it a live view.
+    const snapshot = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      (element, pseudo) =>
+        new Proxy({} as CSSStyleDeclaration, {
+          get: (_target, property) => {
+            const current = snapshot(element, pseudo);
+            const value: unknown = Reflect.get(current, property);
+            return typeof value === 'function' ? (value as (...args: unknown[]) => unknown).bind(current) : value;
+          },
+        }),
+    );
+  });
+
+  afterEach(() => {
+    styleEl.remove();
+    vi.restoreAllMocks();
+  });
+
+  function Harness() {
+    const [open, setOpen] = useState(true);
+    return (
+      <Sheet open={open} onOpenChange={setOpen} title="Add server">
+        <p>Sheet body content</p>
+      </Sheet>
+    );
+  }
+
+  function endAnimation(element: Element, animationName: string): void {
+    const event = new Event('animationend', { bubbles: true });
+    Object.assign(event, { animationName });
+    element.dispatchEvent(event);
+  }
+
+  it('stays mounted in data-state="closed" until its exit animation ends after a pointer close', async () => {
+    const user = userEvent.setup();
+    renderUi(<Harness />);
+    const panel = screen.getByRole('dialog');
+
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+
+    expect(panel).toBeInTheDocument();
+    expect(panel).toHaveAttribute('data-state', 'closed');
+    endAnimation(panel, 'sheet-exit');
+    await vi.waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  it('slides out when motion is allowed and fades out under reduced motion', () => {
+    renderUi(<Harness />);
+
+    const panel = screen.getByRole('dialog');
+
+    expect(panel.className).toContain('motion-safe:data-[state=closed]:animate-sheet-exit');
+    expect(panel.className).toContain('motion-reduce:data-[state=closed]:animate-sheet-fade-exit');
+  });
+
+  it('fades the overlay out with the panel', () => {
+    renderUi(<Harness />);
+
+    const overlay = document.querySelector('[data-sheet-overlay]');
+
+    expect(overlay?.className).toContain('data-[state=closed]:animate-sheet-fade-exit');
+  });
+
+  it('unmounts at once, with no exit animation, when the close was keyboard-initiated', async () => {
+    const user = userEvent.setup();
+    renderUi(<Harness />);
+    const panel = screen.getByRole('dialog');
+
+    await user.keyboard('{Escape}');
+
+    expect(panel).not.toBeInTheDocument();
+    expect(panel.className).toContain('!animate-none');
+  });
+});

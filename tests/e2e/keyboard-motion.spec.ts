@@ -9,7 +9,7 @@
 // contract at the component level -- Dialog.test.tsx/RowMenu.test.tsx/AccountMenu.test.tsx/
 // Sheet.test.tsx -- this spec proves the *rendered* result a real browser's CSS engine produces,
 // which no jsdom assertion can). A keyboard-initiated close carries the zero-duration override
-// (`!duration-0`, packages/ui/src/{Dialog,RowMenu,AccountMenu}.tsx / Sheet.tsx's own
+// (`!duration-0` in packages/ui/src/{Dialog,RowMenu,AccountMenu}.tsx; `!animate-none`, Sheet.tsx's
 // `INSTANT_CLOSE_CLASS`) and must disappear near-instantly; a pointer-initiated close must not.
 //
 // Honest scope note (see this plan's own SUMMARY.md "Rules not satisfied"): only `Sheet` (08-12)
@@ -84,8 +84,9 @@ test.describe('@keyboard-no-animation Sheet (UI-06/UI-05, real transition -- gen
 
     const elapsedMs = await msUntilGone(sheet, () => page.getByRole('button', { name: 'Close' }).click());
 
-    // --duration-sheet is 320ms (packages/ui/tokens.css) -- comfortably above the instant-close
-    // ceiling, with headroom for CI scheduling jitter on either side.
+    // The slide-out keyframe runs --duration-sheet, 320ms (packages/ui/tokens.css), and Presence
+    // keeps the panel mounted until it ends -- comfortably above the instant-close ceiling. (14-26:
+    // before, Presence ignored the transition and this passed only on click()'s stability wait.)
     expect(elapsedMs).toBeGreaterThan(INSTANT_CLOSE_CEILING_MS);
   });
 });
