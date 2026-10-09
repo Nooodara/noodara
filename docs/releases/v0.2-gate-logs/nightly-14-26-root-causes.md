@@ -54,6 +54,58 @@ Proof:
 - Deterministic RED: a temporary probe created a real server while the empty list was on screen. 2 of 2 runs failed with the same `No servers yet` not found.
 - GREEN: the same probe with the stream held: 2/2 passed. The whole spec with the fix: 34/34 (`--repeat-each=2`). The probe is removed.
 
+## server-detail.spec.ts, late-resolving GET after `server.deleted`: `route.fetch: Test ended` (servers-list GREEN run)
+
+Found while re-checking the servers-list fix: `server-detail.spec.ts` + `servers-list.spec.ts`, `--repeat-each=8` under load, 1 of 208 failed.
+
+Root cause: two bugs in the test's GET gate (`gateGets` / `waitForGetResponses`). The page issues two GETs on mount.
+- `gateGets` counted a GET when intercepted, not when its `route.fetch()` returned. If the first fetch returned while the second was still in flight, `captured` resolved early.
+- `waitForGetResponses` ran `Promise.all` over `page.waitForResponse` calls, and every one of them resolves on the same first response. It waited for one response, not two.
+- So the test could release the gate, see the first response, pass its (already true) assertions and end while the second handler was still in `route.fetch()`. Under load that fetch is slow enough to outlive the test.
+
+Fix (test only, assertions unchanged):
+- `captured` resolves once `minCaptures` snapshots have actually been read.
+- `release()` waits until every held GET is fulfilled, then unroutes, so a later resync GET never enters a handler.
+- `trackGetResponses` counts distinct responses, and the test waits for as many as were released.
+
+Proof:
+- Deterministic RED: a temporary 3 s delay before the second held GET's `route.fetch()`. The delete test failed 1 of 2 with the same `route.fetch: Test ended`.
+- GREEN: the same delay with the fix: 8/8 (both late-GET tests, `--repeat-each=4`, under load). Without the probe, the two specs `--repeat-each=8` under load: 208/208. The probe is removed.
+
+## servers-list.spec.ts empty state, re-checked
+
+`server-detail.spec.ts` + `servers-list.spec.ts` `--repeat-each=8` under load (the order that polluted it before): 208/208 with both fixes.
+
+## deploy-host.spec.ts:30 and :36 failing in 1-4 ms (stalled loop, pass 3)
+
+Not a test race. The deploy host is a worker-scoped fixture, and `deploy-host.spec.ts` is the first spec in the run that needs it. Playwright does not count worker-fixture time in a test's duration, so "1 ms" means the deploy host failed to start, not that the test body failed.
+- Playwright starts a new worker, and a new deploy host, after each failure. The log has `https://mirror.gcr.io unreachable, base-image mirror falls back to https://registry-1.docker.io` twice, after each failed test: the host could not reach the image registry at that time. The next attempt then hung inside the 25-minute startup timeout, which is the 34-minute stall.
+- The run was killed, so the startup error itself was not printed.
+- The same spec on the same machine: idle 8/8 (1.1 min), and under the same load 8/8 (6 min, most of it startup).
+- Decision: an environment failure (network to the registry), not a flake. No code change. The 5-run loop below now caps every run at 25 minutes and records the error if it happens again.
+
+## shell.spec.ts, Theme control survives a reload: `page.waitForResponse` timeout (loop pass 4, run 1)
+
+Root cause: two test races on the shared preferences store.
+- After the reload, `data-theme` comes from the mirror cookie before the shell store's `GET /api/account/preferences` lands. Until then the control shows `DEFAULT_PREFERENCES` (Auto). The test clicked Auto in that window: no change, no PATCH, and the restore wait timed out.
+- With that fixed, a second race showed: `data-theme` flips optimistically before the PATCH is sent, so a reload right after Light could cancel it. The server kept Dark (1 of 4 with the probe below).
+
+Fix (test only): `chooseTheme()` clicks and waits for the PATCH answer. The test waits for the account menu trigger (store loaded) before the first click, and for Light checked after the reload before restoring Auto. Light checked after the reload is a stronger check than before: the server's stored value, not only the cookie.
+
+Proof:
+- Deterministic RED: a temporary 3 s delay on `GET /api/account/preferences` after the reload. 2 of 2 failed with the nightly signature.
+- GREEN: the same delay with the fix: 8/8 under load. Without the probe, `shell.spec.ts --repeat-each=3` under load: 60/60. The probe is removed.
+
+## keyboard-motion.spec.ts:77, Sheet positive control: `elapsedMs` 41, expected > 150 (loop pass 4, run 1). OPEN: product bug
+
+Root cause: the Sheet has no exit transition. The test only passed because of Playwright's click timing.
+- Load repro: `-g "positive control" --repeat-each=15`, 3 of 15 failed (41, 44, 99 ms).
+- In-browser probe (MutationObserver, 10 runs under load): the panel leaves the DOM 6 to 10 ms after `pointerdown`, every run. It never reaches `data-state="closed"`. Its computed `transition-duration` is 0.32 s, but Radix `Presence` (`@radix-ui/react-presence` 1.1.10) defers unmount only for CSS animations (`animationName`), never for transitions.
+- So the measured 250 to 370 ms is `click()` waiting for the Close button to be stable while the entry slide-in runs. When the entry has finished before the click, the click takes about 45 ms and the test fails.
+- The negative control (Escape under 150 ms) passes for the same reason: every close is instant.
+
+Not fixed here. The real fix is a product change in `packages/ui/src/Sheet.tsx`: keep the panel mounted until its exit transition ends (or use a CSS keyframe exit that Presence waits for), keep `!duration-0` instant for keyboard, keep the reduced-motion opacity path. It needs the UX review. A test-only change would just weaken a check that is currently false.
+
 ## Full suite under the same load
 
 See the table below (filled in from the 5 consecutive runs).

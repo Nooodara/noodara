@@ -125,29 +125,46 @@ test('@shell activating a sidebar item by keyboard navigates to its route', asyn
 // Settings' Appearance group now exposes an explicit Auto/Light/Dark `SegmentedControl`, same
 // data-theme/reload-survival contract as before, reached by selecting a specific segment rather
 // than cycling.
+/** Picks a theme and waits for its PATCH to be answered. data-theme flips optimistically before
+ *  the PATCH is sent, so without this a reload right after could cancel it, or two PATCHes could
+ *  reach the server out of order. */
+async function chooseTheme(page: Page, name: 'Auto' | 'Light' | 'Dark'): Promise<void> {
+  const patched = page.waitForResponse(
+    (response) => response.url().includes('/api/account/preferences') && response.request().method() === 'PATCH',
+  );
+  await page.getByTestId('settings-theme-control').getByRole('radio', { name }).click();
+  expect((await patched).ok()).toBe(true);
+}
+
 test('@shell the Theme control in Settings sets data-theme and the choice survives a reload', async ({ page }) => {
   await login(page);
 
   await page.goto('/settings');
-  await page.getByTestId('settings-theme-control').getByRole('radio', { name: 'Dark' }).click();
+  // The control renders DEFAULT_PREFERENCES until the shell store's GET /api/account/preferences
+  // lands; a non-empty account menu trigger means it has (same signal as theme-first-paint.spec.ts).
+  await expect(page.getByTestId('shell-account-menu-trigger')).toHaveText(/\S/);
+  await chooseTheme(page, 'Dark');
   await expect.poll(() => focusedTheme(page)).toBe('dark');
 
-  await page.getByTestId('settings-theme-control').getByRole('radio', { name: 'Light' }).click();
+  await chooseTheme(page, 'Light');
   await expect.poll(() => focusedTheme(page)).toBe('light');
 
   await page.reload();
   await expect.poll(() => focusedTheme(page)).toBe('light');
+  // data-theme comes from the mirror cookie before the store loads; until then the control still
+  // shows the default Auto, and clicking Auto below would send no PATCH. Light checked means the
+  // server's stored choice has reached the control.
+  await expect(page.getByTestId('settings-theme-control').getByRole('radio', { name: 'Light' })).toHaveAttribute(
+    'data-state',
+    'checked',
+  );
 
   // Unlike the old ThemeToggle (localStorage/cookie only), this control's write path really PATCHes
   // /api/account/preferences (D-09) -- it persists on the shared E2E admin user for the lifetime of
   // this stack. Restore the default ('auto', DEFAULT_PREFERENCES) so this test leaves no state for
   // sibling spec files (e.g. theme-first-paint.spec.ts's cookie-driven no-flash assertions) that
   // assume this account still carries its original preferences.
-  const restorePatch = page.waitForResponse(
-    (response) => response.url().includes('/api/account/preferences') && response.request().method() === 'PATCH',
-  );
-  await page.getByTestId('settings-theme-control').getByRole('radio', { name: 'Auto' }).click();
-  await restorePatch;
+  await chooseTheme(page, 'Auto');
   await expect(page.getByTestId('settings-theme-control').getByRole('radio', { name: 'Auto' })).toHaveAttribute(
     'data-state',
     'checked',
