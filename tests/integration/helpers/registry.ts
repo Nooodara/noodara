@@ -3,26 +3,31 @@
 //   startBaseImageMirror G7: unauthenticated pull-through cache configured as the nested dockerd's
 //                        registry-mirrors, so digest-pinned docker.io bases resolve without anonymous
 //                        Docker Hub pulls. Content-addressed: a digest ref cannot be substituted.
-import { randomBytes, randomUUID } from 'node:crypto';
-import { GenericContainer, Wait, type StartedTestContainer } from 'testcontainers';
+import { randomBytes, randomUUID } from "node:crypto";
+import { startLabelledContainer } from "./container-start.js";
+import {
+  GenericContainer,
+  Wait,
+  type StartedTestContainer,
+} from "testcontainers";
 
 /** registry:2 resolved with `docker buildx imagetools inspect registry:2` on 2026-09-29. */
 export const REGISTRY_IMAGE =
-  'registry:2@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373';
+  "registry:2@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373";
 
-export const REGISTRY_ALIAS = 'registry.noodara-test.internal';
-export const MIRROR_ALIAS = 'mirror.noodara-test.internal';
+export const REGISTRY_ALIAS = "registry.noodara-test.internal";
+export const MIRROR_ALIAS = "mirror.noodara-test.internal";
 export const REGISTRY_PORT = 5000;
 
 /** Preferred upstream (no Docker Hub rate limit) and the documented G7 fallback. */
-export const MIRROR_UPSTREAM = 'https://mirror.gcr.io';
-export const MIRROR_FALLBACK_UPSTREAM = 'https://registry-1.docker.io';
+export const MIRROR_UPSTREAM = "https://mirror.gcr.io";
+export const MIRROR_FALLBACK_UPSTREAM = "https://registry-1.docker.io";
 
 const REGISTRY_STARTUP_TIMEOUT_MS = 120_000;
 /** Pull of REGISTRY_IMAGE + startup. withStartupTimeout does not cover the pull, this does. */
 export const REGISTRY_START_DEADLINE_MS = 240_000;
 /** Where the host daemon pulls REGISTRY_IMAGE from. */
-const REGISTRY_IMAGE_SOURCE = 'docker.io';
+const REGISTRY_IMAGE_SOURCE = "docker.io";
 const UPSTREAM_PROBE_TIMEOUT_MS = 10_000;
 
 export interface RegistryCredentials {
@@ -43,15 +48,15 @@ export interface StartedMirror extends StartedRegistry {
 /** Fresh random credentials per run; never a committed literal. */
 export function generateRegistryCredentials(): RegistryCredentials {
   return {
-    username: `noodara-${randomBytes(4).toString('hex')}`,
-    password: randomBytes(24).toString('base64url'),
+    username: `noodara-${randomBytes(4).toString("hex")}`,
+    password: randomBytes(24).toString("base64url"),
   };
 }
 
 function registryContainer(network: string, alias: string): GenericContainer {
   return new GenericContainer(REGISTRY_IMAGE)
-    .withName(`noodara-${alias.split('.')[0] ?? 'registry'}-${randomUUID()}`)
-    .withLabels({ 'noodara.test': 'true' })
+    .withName(`noodara-${alias.split(".")[0] ?? "registry"}-${randomUUID()}`)
+    .withLabels({ "noodara.test": "true" })
     .withNetworkMode(network)
     .withNetworkAliases(alias)
     .withWaitStrategy(Wait.forLogMessage(/listening on/))
@@ -65,15 +70,22 @@ export async function startAuthRegistry(
 ): Promise<StartedRegistry> {
   const registry = registryContainer(network, REGISTRY_ALIAS)
     .withEnvironment({
-      REGISTRY_AUTH: 'htpasswd',
-      REGISTRY_AUTH_HTPASSWD_REALM: 'noodara-test',
-      REGISTRY_AUTH_HTPASSWD_PATH: '/auth/htpasswd',
+      REGISTRY_AUTH: "htpasswd",
+      REGISTRY_AUTH_HTPASSWD_REALM: "noodara-test",
+      REGISTRY_AUTH_HTPASSWD_PATH: "/auth/htpasswd",
     })
     .withCopyContentToContainer([
-      { content: `${htpasswdEntry.trim()}\n`, target: '/auth/htpasswd', mode: 0o644 },
+      {
+        content: `${htpasswdEntry.trim()}\n`,
+        target: "/auth/htpasswd",
+        mode: 0o644,
+      },
     ]);
   const container = await startWithin(
-    () => registry.start(),
+    () =>
+      startLabelledContainer(REGISTRY_IMAGE, (labels) =>
+        registry.withLabels(labels).start(),
+      ),
     REGISTRY_START_DEADLINE_MS,
     REGISTRY_IMAGE_SOURCE,
   );
@@ -89,7 +101,7 @@ export function startWithin<T extends { stop(): Promise<unknown> }>(
   timeoutMs: number,
   sourceRegistry: string,
 ): Promise<T> {
-  const image = REGISTRY_IMAGE.split('@')[0] ?? REGISTRY_IMAGE;
+  const image = REGISTRY_IMAGE.split("@")[0] ?? REGISTRY_IMAGE;
   let timedOut = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const started = start();
@@ -145,15 +157,24 @@ export async function selectMirrorUpstream(
   );
 }
 
-export async function startBaseImageMirror(network: string): Promise<StartedMirror> {
+export async function startBaseImageMirror(
+  network: string,
+): Promise<StartedMirror> {
   const upstream = await selectMirrorUpstream();
   const mirror = registryContainer(network, MIRROR_ALIAS).withEnvironment({
     REGISTRY_PROXY_REMOTEURL: upstream,
   });
   const container = await startWithin(
-    () => mirror.start(),
+    () =>
+      startLabelledContainer(REGISTRY_IMAGE, (labels) =>
+        mirror.withLabels(labels).start(),
+      ),
     REGISTRY_START_DEADLINE_MS,
     REGISTRY_IMAGE_SOURCE,
   );
-  return { container, host: `${MIRROR_ALIAS}:${String(REGISTRY_PORT)}`, upstream };
+  return {
+    container,
+    host: `${MIRROR_ALIAS}:${String(REGISTRY_PORT)}`,
+    upstream,
+  };
 }

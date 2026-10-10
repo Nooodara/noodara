@@ -3,26 +3,27 @@
 // 'true' })`, readiness gated by a real wait strategy (never a fixed sleep), and an idempotent
 // `stop()`. No test file under tests/integration/ssh/**.test.ts imports `testcontainers` directly
 // after this lands — everything a scenario needs goes through this module.
-import { execFileSync } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   GenericContainer,
   Wait,
   getContainerRuntimeClient,
   type StartedTestContainer,
-} from 'testcontainers';
-import { expect } from 'vitest';
-import { startWithPortBindingRetry } from './port-binding-retry.js';
+} from "testcontainers";
+import { expect } from "vitest";
+import { startLabelledContainer } from "./container-start.js";
+import { startWithPortBindingRetry } from "./port-binding-retry.js";
 
 // Resolved from this file's own location, matching how tests/integration/helpers/migrations.ts
 // resolves the migrations folder — never process.cwd(), so this module works regardless of which
 // directory a caller runs Vitest from.
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const IMAGES_CONTEXT = path.resolve(HERE, '../images');
+const IMAGES_CONTEXT = path.resolve(HERE, "../images");
 
-export type UbuntuVersion = '22.04' | '24.04';
+export type UbuntuVersion = "22.04" | "24.04";
 
 export interface StartSshdOptions {
   readonly ubuntu: UbuntuVersion;
@@ -49,7 +50,8 @@ export interface SshdFixture {
 /** The names `readTestKey` accepts — matches the keys tests/integration/images/sshd-common's
  *  build-time (ed25519/rsa3072/ecdsa/ed25519_unauthorized) and start-time (ed25519_locked,
  *  D-02) key generation produce under /keys. */
-export type TestKeyName = 'ed25519' | 'rsa3072' | 'ecdsa' | 'ed25519_unauthorized' | 'ed25519_locked';
+export type TestKeyName =
+  "ed25519" | "rsa3072" | "ecdsa" | "ed25519_unauthorized" | "ed25519_locked";
 
 /**
  * Builds (or reuses Docker's layer cache for) the project-owned sshd image for `ubuntu`, starts
@@ -57,14 +59,22 @@ export type TestKeyName = 'ed25519' | 'rsa3072' | 'ecdsa' | 'ed25519_unauthorize
  * fixed sleep. Returns the generated per-run password/passphrase so the caller can hand them to
  * the adapter under test without either value ever being a repository literal.
  */
-export async function startSshd(options: StartSshdOptions): Promise<SshdFixture> {
+export async function startSshd(
+  options: StartSshdOptions,
+): Promise<SshdFixture> {
   const { ubuntu, dockerCli = false, slowDf = false, hostPort } = options;
 
   const password = randomUUID();
   const keyPassphrase = randomUUID();
 
-  const image = await GenericContainer.fromDockerfile(IMAGES_CONTEXT, `sshd-ubuntu-${ubuntu}/Dockerfile`)
-    .withBuildArgs({ WITH_DOCKER_CLI: String(dockerCli), WITH_SLOW_DF: String(slowDf) })
+  const image = await GenericContainer.fromDockerfile(
+    IMAGES_CONTEXT,
+    `sshd-ubuntu-${ubuntu}/Dockerfile`,
+  )
+    .withBuildArgs({
+      WITH_DOCKER_CLI: String(dockerCli),
+      WITH_SLOW_DF: String(slowDf),
+    })
     .build();
 
   // A name of our own so a container Docker CREATED but could not START (a host-port binding race,
@@ -74,14 +84,22 @@ export async function startSshd(options: StartSshdOptions): Promise<SshdFixture>
   const containerName = `noodara-sshd-${ubuntu}-${randomUUID()}`;
   const container = image
     .withName(containerName)
-    .withLabels({ 'noodara.test': 'true' })
-    .withEnvironment({ SSH_TEST_PASSWORD: password, SSH_TEST_KEY_PASSPHRASE: keyPassphrase })
-    .withExposedPorts(hostPort === undefined ? 22 : { container: 22, host: hostPort })
+    .withLabels({ "noodara.test": "true" })
+    .withEnvironment({
+      SSH_TEST_PASSWORD: password,
+      SSH_TEST_KEY_PASSPHRASE: keyPassphrase,
+    })
+    .withExposedPorts(
+      hostPort === undefined ? 22 : { container: 22, host: hostPort },
+    )
     .withWaitStrategy(Wait.forLogMessage(/Server listening on .* port 22/));
 
   const removeCreatedContainer = (): void => {
     try {
-      execFileSync('docker', ['rm', '-f', containerName], { stdio: 'ignore', timeout: 30_000 });
+      execFileSync("docker", ["rm", "-f", containerName], {
+        stdio: "ignore",
+        timeout: 30_000,
+      });
     } catch {
       // Nothing to remove -- Docker never got as far as creating it.
     }
@@ -91,11 +109,17 @@ export async function startSshd(options: StartSshdOptions): Promise<SshdFixture>
   try {
     // Only a FIXED host port can race a just-stopped container's mapping; a random port never
     // collides, so it gets exactly one attempt like before.
-    started = await startWithPortBindingRetry(() => container.start(), {
-      attempts: hostPort === undefined ? 1 : 5,
-      delayMs: 1000,
-      onFailedAttempt: removeCreatedContainer,
-    });
+    started = await startWithPortBindingRetry(
+      () =>
+        startLabelledContainer("sshd-ubuntu", (labels) =>
+          container.withLabels(labels).start(),
+        ),
+      {
+        attempts: hostPort === undefined ? 1 : 5,
+        delayMs: 1000,
+        onFailedAttempt: removeCreatedContainer,
+      },
+    );
   } catch (error: unknown) {
     removeCreatedContainer();
     throw error;
@@ -123,8 +147,11 @@ export async function startSshd(options: StartSshdOptions): Promise<SshdFixture>
  * Throws a clear error on a non-zero exec exit code, so a missing fixture key fails loudly rather
  * than producing an empty string that later looks like a parse bug.
  */
-export async function readTestKey(fixture: SshdFixture, name: TestKeyName): Promise<string> {
-  const result = await fixture.container.exec(['cat', `/keys/${name}`]);
+export async function readTestKey(
+  fixture: SshdFixture,
+  name: TestKeyName,
+): Promise<string> {
+  const result = await fixture.container.exec(["cat", `/keys/${name}`]);
   if (result.exitCode !== 0) {
     throw new Error(
       `readTestKey: 'cat /keys/${name}' exited ${String(result.exitCode)}: ${result.stderr}`,
@@ -139,8 +166,15 @@ export async function readTestKey(fixture: SshdFixture, name: TestKeyName): Prom
  * short form `ssh-keygen` uses in its host-key filenames (`ed25519`, `ecdsa`, `rsa`), not the full
  * SSH algorithm name.
  */
-export async function hostKeyFingerprint(fixture: SshdFixture, keyType: string): Promise<string> {
-  const result = await fixture.container.exec(['ssh-keygen', '-lf', `/etc/ssh/ssh_host_${keyType}_key.pub`]);
+export async function hostKeyFingerprint(
+  fixture: SshdFixture,
+  keyType: string,
+): Promise<string> {
+  const result = await fixture.container.exec([
+    "ssh-keygen",
+    "-lf",
+    `/etc/ssh/ssh_host_${keyType}_key.pub`,
+  ]);
   if (result.exitCode !== 0) {
     throw new Error(
       `hostKeyFingerprint: 'ssh-keygen -lf' for ${keyType} exited ${String(result.exitCode)}: ${result.stderr}`,
@@ -178,12 +212,13 @@ export interface BlackholeListener {
  * `readyTimeout` (±~1-2ms), never a fast reset.
  */
 export async function startBlackholeListener(): Promise<BlackholeListener> {
-  const container = await new GenericContainer('alpine:3.21')
-    .withLabels({ 'noodara.test': 'true' })
+  const blackhole = new GenericContainer("alpine:3.21")
     .withExposedPorts(9000)
-    .withCommand(['nc', '-lk', '-p', '9000', '-e', '/bin/sleep', 'infinity'])
-    .withWaitStrategy(Wait.forListeningPorts())
-    .start();
+    .withCommand(["nc", "-lk", "-p", "9000", "-e", "/bin/sleep", "infinity"])
+    .withWaitStrategy(Wait.forListeningPorts());
+  const container = await startLabelledContainer("alpine:3.21", (labels) =>
+    blackhole.withLabels(labels).start(),
+  );
 
   let stopped = false;
   const stop = async (): Promise<void> => {
@@ -192,7 +227,11 @@ export async function startBlackholeListener(): Promise<BlackholeListener> {
     await container.stop();
   };
 
-  return { host: container.getHost(), port: container.getMappedPort(9000), stop };
+  return {
+    host: container.getHost(),
+    port: container.getMappedPort(9000),
+    stop,
+  };
 }
 
 /**
@@ -204,9 +243,16 @@ export async function startBlackholeListener(): Promise<BlackholeListener> {
  * sent yet, so a subsequent `stop()` (or connection kill) lands mid-exec deterministically, with
  * roughly 19 seconds of margin before the shim would otherwise degrade into a slow success.
  */
-export async function waitForSlowCommandStart(fixture: SshdFixture, maxAttempts = 30): Promise<void> {
+export async function waitForSlowCommandStart(
+  fixture: SshdFixture,
+  maxAttempts = 30,
+): Promise<void> {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const result = await fixture.container.exec(['test', '-f', '/tmp/noodara-slow-df-started']);
+    const result = await fixture.container.exec([
+      "test",
+      "-f",
+      "/tmp/noodara-slow-df-started",
+    ]);
     if (result.exitCode === 0) return;
   }
   throw new Error(
@@ -226,6 +272,8 @@ export async function waitForSlowCommandStart(fixture: SshdFixture, maxAttempts 
 export async function assertNoStrayTestContainers(): Promise<void> {
   const client = await getContainerRuntimeClient();
   const containers = await client.container.list();
-  const stray = containers.filter((container) => container.Labels['noodara.test'] === 'true');
+  const stray = containers.filter(
+    (container) => container.Labels["noodara.test"] === "true",
+  );
   expect(stray).toHaveLength(0);
 }

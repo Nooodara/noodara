@@ -3,28 +3,34 @@
 // Noodara images can be injected and executed. Modeled directly on
 // tests/integration/helpers/ssh.ts's own shape: `.withLabels({ 'noodara.test': 'true' })`, a real
 // log-based wait strategy (never a fixed sleep), and an idempotent `stop()`.
-import { execFileSync } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
-import { mkdtempSync, rmSync, statSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { GenericContainer, Wait, type ExecOptions, type StartedTestContainer } from 'testcontainers';
+import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { mkdtempSync, rmSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { startLabelledContainer } from "./container-start.js";
+import {
+  GenericContainer,
+  Wait,
+  type ExecOptions,
+  type StartedTestContainer,
+} from "testcontainers";
 
 // Resolved from this file's own location, never process.cwd() -- mirrors ssh.ts's IMAGES_CONTEXT
 // resolution and control-plane-image.test.ts/web-image.test.ts's REPO_ROOT resolution, so this
 // module works regardless of which directory a caller runs Vitest from.
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const IMAGES_CONTEXT = path.resolve(HERE, '../images');
-const REPO_ROOT = path.resolve(HERE, '../../..');
-const INSTALL_SH_PATH = path.join(REPO_ROOT, 'install.sh');
+const IMAGES_CONTEXT = path.resolve(HERE, "../images");
+const REPO_ROOT = path.resolve(HERE, "../../..");
+const INSTALL_SH_PATH = path.join(REPO_ROOT, "install.sh");
 
 /** The literal readiness line tests/integration/images/installer-dind-common/entrypoint.sh prints
  *  once its (possibly absent, see withDocker: false) nested dockerd is ready -- a single exported
  *  constant so the entrypoint script and this module's wait strategy can never drift apart. */
-export const NOODARA_DIND_READY_LINE = 'NOODARA_DIND_READY';
+export const NOODARA_DIND_READY_LINE = "NOODARA_DIND_READY";
 
-export type InstallerDindUbuntu = '22.04' | '24.04';
+export type InstallerDindUbuntu = "22.04" | "24.04";
 
 export interface StartInstallerDindOptions {
   readonly ubuntu: InstallerDindUbuntu;
@@ -78,15 +84,24 @@ export interface LoadLocalImagesResult {
 export interface InstallerDindFixture {
   readonly container: StartedTestContainer;
   /** Runs an arbitrary command inside the fixture, bounded by an explicit timeout. */
-  exec(command: string[], options?: InstallerDindExecOptions): Promise<ExecResultLike>;
+  exec(
+    command: string[],
+    options?: InstallerDindExecOptions,
+  ): Promise<ExecResultLike>;
   /** Copies the real repo-root install.sh in and executes it as a real file under `/bin/sh`
    *  (never bash, never piped through stdin) with the given environment -- D-18 layer 2's own
    *  whole point is a realistic install.sh invocation, so install.log paths and $0-style
    *  behaviour stay realistic. */
-  runInstallSh(env?: Record<string, string>, options?: InstallerDindExecOptions): Promise<ExecResultLike>;
+  runInstallSh(
+    env?: Record<string, string>,
+    options?: InstallerDindExecOptions,
+  ): Promise<ExecResultLike>;
   /** `docker save`s the given host-local tags, copies the tar in, and `docker load`s it into the
    *  nested daemon -- D-19, no registry involved. */
-  loadLocalImages(tags: string[], options?: { timeoutMs?: number }): Promise<LoadLocalImagesResult>;
+  loadLocalImages(
+    tags: string[],
+    options?: { timeoutMs?: number },
+  ): Promise<LoadLocalImagesResult>;
   /** Safe to call more than once. Also removes this fixture's own `/var/lib/docker` volume. */
   stop: () => Promise<void>;
 }
@@ -103,11 +118,17 @@ const HOST_CLI_TIMEOUT_MS = 120_000;
  *  `.build()` accept none (hard_rule #7). Rejecting here only stops THIS module from waiting
  *  forever -- it cannot cancel a command already running server-side inside the container, an
  *  honestly-documented limitation of wrapping a library that offers no cancellation hook. */
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string,
+): Promise<T> {
   let timer: ReturnType<typeof setTimeout>;
   const timeout = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
-      reject(new Error(`installer-dind: ${label} timed out after ${String(ms)}ms`));
+      reject(
+        new Error(`installer-dind: ${label} timed out after ${String(ms)}ms`),
+      );
     }, ms);
     timer.unref();
   });
@@ -117,9 +138,9 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 }
 
 function removeVolume(volumeName: string): void {
-  execFileSync('docker', ['volume', 'rm', '-f', volumeName], {
+  execFileSync("docker", ["volume", "rm", "-f", volumeName], {
     timeout: HOST_CLI_TIMEOUT_MS,
-    stdio: 'ignore',
+    stdio: "ignore",
   });
 }
 
@@ -131,7 +152,9 @@ function removeVolume(volumeName: string): void {
  * the host's own Docker storage, never a bind mount outside a mkdtemp dir) so a genuinely separate
  * nested daemon never touches the host's real Docker (T-06-47/hard_rule #7).
  */
-export async function startInstallerDind(options: StartInstallerDindOptions): Promise<InstallerDindFixture> {
+export async function startInstallerDind(
+  options: StartInstallerDindOptions,
+): Promise<InstallerDindFixture> {
   const {
     ubuntu,
     withDocker = true,
@@ -141,19 +164,31 @@ export async function startInstallerDind(options: StartInstallerDindOptions): Pr
   } = options;
 
   const ownsVolume = reuseDockerVolume === undefined;
-  const volumeName = reuseDockerVolume ?? `noodara-dind-${ubuntu.replace('.', '')}-${randomUUID()}`;
+  const volumeName =
+    reuseDockerVolume ??
+    `noodara-dind-${ubuntu.replace(".", "")}-${randomUUID()}`;
   if (ownsVolume) {
-    execFileSync('docker', ['volume', 'create', '--label', 'noodara.test=true', volumeName], {
-      timeout: HOST_CLI_TIMEOUT_MS,
-      stdio: 'ignore',
-    });
+    execFileSync(
+      "docker",
+      ["volume", "create", "--label", "noodara.test=true", volumeName],
+      {
+        timeout: HOST_CLI_TIMEOUT_MS,
+        stdio: "ignore",
+      },
+    );
   }
 
   let image;
   try {
     image = await withTimeout(
-      GenericContainer.fromDockerfile(IMAGES_CONTEXT, `installer-dind-ubuntu-${ubuntu}/Dockerfile`)
-        .withBuildArgs({ WITH_DOCKER: String(withDocker), WITH_SNAP_DOCKER: String(withSnapDocker) })
+      GenericContainer.fromDockerfile(
+        IMAGES_CONTEXT,
+        `installer-dind-ubuntu-${ubuntu}/Dockerfile`,
+      )
+        .withBuildArgs({
+          WITH_DOCKER: String(withDocker),
+          WITH_SNAP_DOCKER: String(withSnapDocker),
+        })
         .build(),
       startupTimeoutMs,
       `build installer-dind-ubuntu-${ubuntu}`,
@@ -164,20 +199,23 @@ export async function startInstallerDind(options: StartInstallerDindOptions): Pr
   }
 
   const container = image
-    .withLabels({ 'noodara.test': 'true' })
+    .withLabels({ "noodara.test": "true" })
     // A nested dockerd requires privileged mode (T-06-47) -- there is no meaningful alternative
     // for testing a host installer's own Docker-Engine-installation and docker-compose-driving
     // behavior. Bounded exposure: project-owned image, this repo's own test suite only, no
     // untrusted input, always stopped by the idempotent stop() below plus the noodara.test=true
     // stray-container gate.
     .withPrivilegedMode()
-    .withBindMounts([{ source: volumeName, target: '/var/lib/docker' }])
+    .withBindMounts([{ source: volumeName, target: "/var/lib/docker" }])
     .withWaitStrategy(Wait.forLogMessage(NOODARA_DIND_READY_LINE))
     .withStartupTimeout(startupTimeoutMs);
 
   let started: StartedTestContainer;
   try {
-    started = await container.start();
+    started = await startLabelledContainer(
+      `installer-dind-ubuntu-${ubuntu}`,
+      (labels) => container.withLabels(labels).start(),
+    );
   } catch (error) {
     // The container never reached running -- without this, a volume this fixture itself created
     // would leak silently (hard_rule #7's own multi-GB leak warning). A reused (not owned) volume
@@ -194,7 +232,10 @@ export async function startInstallerDind(options: StartInstallerDindOptions): Pr
     if (ownsVolume) removeVolume(volumeName);
   };
 
-  const exec = async (command: string[], execOptions: InstallerDindExecOptions = {}): Promise<ExecResultLike> => {
+  const exec = async (
+    command: string[],
+    execOptions: InstallerDindExecOptions = {},
+  ): Promise<ExecResultLike> => {
     const { env, user, timeoutMs = DEFAULT_EXEC_TIMEOUT_MS } = execOptions;
     // Built conditionally (rather than `{ env, user }` directly) because this repo's
     // `exactOptionalPropertyTypes: true` rejects explicitly assigning `undefined` to an optional
@@ -205,44 +246,59 @@ export async function startInstallerDind(options: StartInstallerDindOptions): Pr
     const result = await withTimeout(
       started.exec(command, dockerodeOptions),
       timeoutMs,
-      `exec ${command.join(' ')}`,
+      `exec ${command.join(" ")}`,
     );
-    return { stdout: result.stdout, stderr: result.stderr, exitCode: result.exitCode };
+    return {
+      stdout: result.stdout,
+      stderr: result.stderr,
+      exitCode: result.exitCode,
+    };
   };
 
   const runInstallSh = async (
     env: Record<string, string> = {},
     runOptions: InstallerDindExecOptions = {},
   ): Promise<ExecResultLike> => {
-    const containerPath = '/opt/noodara-install-under-test.sh';
-    await started.copyFilesToContainer([{ source: INSTALL_SH_PATH, target: containerPath, mode: 0o755 }]);
+    const containerPath = "/opt/noodara-install-under-test.sh";
+    await started.copyFilesToContainer([
+      { source: INSTALL_SH_PATH, target: containerPath, mode: 0o755 },
+    ]);
     const { timeoutMs = DEFAULT_INSTALL_SH_TIMEOUT_MS, user } = runOptions;
     const execOptions: InstallerDindExecOptions = { env, timeoutMs };
-    return exec(['/bin/sh', containerPath], user === undefined ? execOptions : { ...execOptions, user });
+    return exec(
+      ["/bin/sh", containerPath],
+      user === undefined ? execOptions : { ...execOptions, user },
+    );
   };
 
   const loadLocalImages = async (
     tags: string[],
     loadOptions: { timeoutMs?: number } = {},
   ): Promise<LoadLocalImagesResult> => {
-    const tmpDir = mkdtempSync(path.join(tmpdir(), 'noodara-dind-images-'));
-    const tarPath = path.join(tmpDir, 'images.tar');
+    const tmpDir = mkdtempSync(path.join(tmpdir(), "noodara-dind-images-"));
+    const tarPath = path.join(tmpDir, "images.tar");
     try {
       const saveStart = Date.now();
-      execFileSync('docker', ['save', '-o', tarPath, ...tags], { timeout: HOST_CLI_TIMEOUT_MS });
+      execFileSync("docker", ["save", "-o", tarPath, ...tags], {
+        timeout: HOST_CLI_TIMEOUT_MS,
+      });
       const saveDurationMs = Date.now() - saveStart;
       const tarBytes = statSync(tarPath).size;
 
-      const containerTarPath = '/tmp/noodara-images.tar';
-      await started.copyFilesToContainer([{ source: tarPath, target: containerTarPath }]);
+      const containerTarPath = "/tmp/noodara-images.tar";
+      await started.copyFilesToContainer([
+        { source: tarPath, target: containerTarPath },
+      ]);
 
       const loadStart = Date.now();
-      const result = await exec(['docker', 'load', '-i', containerTarPath], {
+      const result = await exec(["docker", "load", "-i", containerTarPath], {
         timeoutMs: loadOptions.timeoutMs ?? DEFAULT_LOAD_TIMEOUT_MS,
       });
       const loadDurationMs = Date.now() - loadStart;
       if (result.exitCode !== 0) {
-        throw new Error(`installer-dind: docker load failed (exit ${String(result.exitCode)}): ${result.stderr}`);
+        throw new Error(
+          `installer-dind: docker load failed (exit ${String(result.exitCode)}): ${result.stderr}`,
+        );
       }
       return { tarBytes, saveDurationMs, loadDurationMs };
     } finally {
