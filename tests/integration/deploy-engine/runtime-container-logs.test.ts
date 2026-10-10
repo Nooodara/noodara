@@ -16,6 +16,7 @@ import { createSsh2Adapter, type HostFingerprint } from '@noodara/ssh';
 import type { ContainerLogs } from '../../../apps/control-plane/src/services/container-logs.js';
 import type { ServiceServices } from '../../../apps/control-plane/src/services/service-services.js';
 import { DEPLOY_ENGINE_UBUNTU_VERSIONS, startDeployEngineStack, type DeployEngineStack } from '../helpers/deploy-engine.js';
+import { runTeardown, settleWithin } from '../helpers/teardown.js';
 
 type ContainerLogsModule = typeof import('../../../apps/control-plane/src/services/container-logs.js');
 type ServicesRoutesModule = typeof import('../../../apps/control-plane/src/routes/services.js');
@@ -32,7 +33,7 @@ interface TestServer {
   close(): Promise<void>;
   readonly server: { address(): AddressInfo | string | null };
 }
-type FastifyFactory = () => TestServer;
+type FastifyFactory = (options?: { forceCloseConnections?: boolean }) => TestServer;
 interface ZodProviderModule {
   readonly validatorCompiler: unknown;
   readonly serializerCompiler: unknown;
@@ -47,6 +48,10 @@ async function importFromControlPlane<T>(specifier: string): Promise<T> {
 
 const STACK_TIMEOUT_MS = 900_000;
 const CASE_TIMEOUT_MS = 120_000;
+// Teardown budget (14-27), well inside STACK_TIMEOUT_MS: pending start 240 s + 3 x 60 s + stop 300 s.
+const PENDING_START_WAIT_MS = 240_000;
+const TEARDOWN_STEP_TIMEOUT_MS = 60_000;
+const STACK_STOP_TIMEOUT_MS = 300_000;
 const FOLLOW_MAX_MS = 4_000;
 const KILL_CONFIRM_MS = 15_000;
 const RUN_ROOT = '/opt/noodara-deploy';
@@ -86,6 +91,7 @@ function parseFrames(body: string): Frame[] {
 }
 
 describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('runtime container logs on Ubuntu %s (12-16)', (ubuntu) => {
+  let stackStart: Promise<DeployEngineStack> | undefined;
   let stack: DeployEngineStack | undefined;
   let app: TestServer | undefined;
   let logs: ContainerLogs | undefined;
@@ -123,7 +129,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('runtime container logs on Ubuntu %
   }
 
   beforeAll(async () => {
-    stack = await startDeployEngineStack({ ubuntu });
+    stackStart = startDeployEngineStack({ ubuntu });
+    stack = await stackStart;
 
     process.env.NOODARA_MASTER_KEY = randomBytes(32).toString('base64');
     process.env.BETTER_AUTH_SECRET = `runtime-container-logs-${randomUUID()}-${randomUUID()}`;
@@ -187,7 +194,9 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('runtime container logs on Ubuntu %
     } as unknown as ServiceServices;
     const fastify = await importFromControlPlane<{ default: FastifyFactory }>('fastify');
     const zodProvider = await importFromControlPlane<ZodProviderModule>('@fastify/type-provider-zod');
-    const instance = fastify.default();
+    // 14-27: app.close() hung on every run (gate 14-15: 900 s afterAll timeout, leaking the stack)
+    // waiting on a connection the default 'idle' policy does not close; destroy them all on close.
+    const instance = fastify.default({ forceCloseConnections: true });
     instance.setValidatorCompiler(zodProvider.validatorCompiler);
     instance.setSerializerCompiler(zodProvider.serializerCompiler);
     instance.decorateRequest('actor', null);
@@ -214,13 +223,29 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('runtime container logs on Ubuntu %
     }
   }, STACK_TIMEOUT_MS);
 
+  // 14-27: bounded steps, so a hung logs.closeAll()/app.close() can no longer keep the hook from
+  // reaching stack.stop() (gate 14-15 leaked this stack that way); a start still pending when
+  // beforeAll timed out is awaited briefly and stopped too.
   afterAll(async () => {
-    await logs?.closeAll();
-    await app?.close();
-    for (const name of startedContainers) {
-      await root(['docker', 'rm', '-f', name]).catch(() => undefined);
-    }
-    await stack?.stop();
+    const started = stack ?? (await settleWithin(stackStart, PENDING_START_WAIT_MS));
+    await runTeardown(
+      `runtime container logs (Ubuntu ${ubuntu})`,
+      [
+        { name: 'logs.closeAll', run: () => logs?.closeAll() },
+        { name: 'app.close', run: () => app?.close() },
+        {
+          name: 'remove service containers',
+          run: async () => {
+            if (started === undefined) return;
+            for (const name of startedContainers) {
+              await started.exec(['docker', 'rm', '-f', name], { user: 'root' }).catch(() => undefined);
+            }
+          },
+        },
+        { name: 'stack.stop', run: () => started?.stop(), timeoutMs: STACK_STOP_TIMEOUT_MS },
+      ],
+      { stepTimeoutMs: TEARDOWN_STEP_TIMEOUT_MS },
+    );
   }, STACK_TIMEOUT_MS);
 
   it('A1: tail returns the last N lines with timestamps; the default tail returns the whole short log', async () => {

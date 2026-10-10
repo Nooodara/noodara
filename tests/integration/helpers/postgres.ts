@@ -42,7 +42,14 @@ export async function startPostgres(options: StartPostgresOptions = {}): Promise
   const { db, pool } = createDb(connectionString);
 
   if (migrate) {
-    await runMigrations(db);
+    try {
+      await runMigrations(db);
+    } catch (error) {
+      // 14-27: the caller never gets a handle, so stop the container here or it leaks.
+      await pool.end().catch(() => undefined);
+      await container.stop().catch(() => undefined);
+      throw error;
+    }
   }
 
   let stopped = false;

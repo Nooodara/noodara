@@ -8,7 +8,8 @@ import { assertNoLeakedTestResources, snapshotTestResources } from './test-resou
 
 const baseline = await snapshotTestResources();
 
-afterAll(async (suite) => {
+// Vitest 5 parses the first hook argument as a fixture pattern; the suite is the second.
+afterAll(async ({}, suite) => {
   const file = 'filepath' in suite ? path.relative(process.cwd(), suite.filepath) : suite.name;
   await assertNoLeakedTestResources(file, baseline, { settleMs: 2_000 });
 }, 180_000);

@@ -36,6 +36,7 @@ import {
 } from '../helpers/deploy-engine.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../helpers/redis.js';
+import { runTeardown, settleWithin } from '../helpers/teardown.js';
 
 type DeployRuntimeModule = typeof import('../../../apps/control-plane/src/deploy/deploy-runtime.js');
 type DeployWorkerModule = typeof import('../../../apps/control-plane/src/deploy/deploy-worker.js');
@@ -53,6 +54,12 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.resolve(HERE, '../../../fixtures');
 const STACK_TIMEOUT_MS = 900_000;
 const CASE_TIMEOUT_MS = 600_000;
+// Teardown budget (14-27), inside STACK_TIMEOUT_MS: pending starts 240 s (in parallel) +
+// 4 x 30 s closes + 2 x 60 s fixture stops + 300 s stack stop + 30 s temp dir = 810 s.
+const PENDING_START_WAIT_MS = 240_000;
+const TEARDOWN_STEP_TIMEOUT_MS = 30_000;
+const FIXTURE_STOP_TIMEOUT_MS = 60_000;
+const STACK_STOP_TIMEOUT_MS = 300_000;
 const WAIT_MS = 300_000;
 const POLL_MS = 500;
 const WORKSPACE_ROOT = '/opt/noodara-deploy';
@@ -98,6 +105,9 @@ interface LoggedLine {
 describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
   '12-14b / A1-A4: service operations and deletion on real infrastructure, Ubuntu %s',
   (ubuntu) => {
+    let starts:
+      | { stack: Promise<DeployEngineStack>; postgres: Promise<PostgresFixture>; redis: Promise<RedisFixture> }
+      | undefined;
     let stack: DeployEngineStack | undefined;
     let postgres: PostgresFixture | undefined;
     let redis: RedisFixture | undefined;
@@ -378,8 +388,12 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     });
 
     beforeAll(async () => {
-      const [stackStarted, pgStarted, redisStarted] = await Promise.all([
-        (async () => {
+      // 14-27: allSettled, not Promise.all -- when one start rejected, Promise.all left the
+      // others' containers running and unassigned (gate 14-15 leaked 2 x postgres + redis).
+      // Every fulfilled start is assigned before the first failure is rethrown, and the start
+      // promises are kept so afterAll can still stop a start this hook timed out on.
+      starts = {
+        stack: (async () => {
           const base = nodeBaseOf(resolveBaseImages());
           tempRoot = mkdtempSync(path.join(tmpdir(), 'noodara-runtime-service-ops-'));
           return startDeployEngineStack({
@@ -390,12 +404,24 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
             ],
           });
         })(),
-        startPostgres(),
-        startRedis(),
+        postgres: startPostgres(),
+        redis: startRedis(),
+      };
+      const [stackResult, pgResult, redisResult] = await Promise.allSettled([
+        starts.stack,
+        starts.postgres,
+        starts.redis,
       ]);
-      stack = stackStarted;
-      postgres = pgStarted;
-      redis = redisStarted;
+      if (stackResult.status === 'rejected' || pgResult.status === 'rejected' || redisResult.status === 'rejected') {
+        if (stackResult.status === 'fulfilled') stack = stackResult.value;
+        if (pgResult.status === 'fulfilled') postgres = pgResult.value;
+        if (redisResult.status === 'fulfilled') redis = redisResult.value;
+        const failed = [stackResult, pgResult, redisResult].find((result) => result.status === 'rejected');
+        throw failed?.reason;
+      }
+      stack = stackResult.value;
+      postgres = pgResult.value;
+      redis = redisResult.value;
 
       process.env.NOODARA_MASTER_KEY = masterKey.toString('base64');
       process.env.BETTER_AUTH_SECRET = `runtime-service-ops-${randomUUID()}-${randomUUID()}`;
@@ -514,16 +540,38 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       baseline = await settledFootprint();
     }, STACK_TIMEOUT_MS);
 
+    // 14-27: bounded steps, so one hung close can no longer keep the containers from stopping.
     afterAll(async () => {
-      await worker?.close();
-      await operationQueue?.close();
-      await queue?.close();
-      workerConnection?.disconnect();
-      queueConnection?.disconnect();
-      await redis?.stop();
-      await postgres?.stop();
-      await stack?.stop();
-      if (tempRoot !== undefined) rmSync(tempRoot, { recursive: true, force: true });
+      const [startedStack, startedPostgres, startedRedis] = await Promise.all([
+        stack ?? settleWithin(starts?.stack, PENDING_START_WAIT_MS),
+        postgres ?? settleWithin(starts?.postgres, PENDING_START_WAIT_MS),
+        redis ?? settleWithin(starts?.redis, PENDING_START_WAIT_MS),
+      ]);
+      await runTeardown(
+        `runtime service ops (Ubuntu ${ubuntu})`,
+        [
+          { name: 'worker.close', run: () => worker?.close() },
+          { name: 'operationQueue.close', run: () => operationQueue?.close() },
+          { name: 'queue.close', run: () => queue?.close() },
+          {
+            name: 'redis connections.disconnect',
+            run: () => {
+              workerConnection?.disconnect();
+              queueConnection?.disconnect();
+            },
+          },
+          { name: 'redis.stop', run: () => startedRedis?.stop(), timeoutMs: FIXTURE_STOP_TIMEOUT_MS },
+          { name: 'postgres.stop', run: () => startedPostgres?.stop(), timeoutMs: FIXTURE_STOP_TIMEOUT_MS },
+          { name: 'stack.stop', run: () => startedStack?.stop(), timeoutMs: STACK_STOP_TIMEOUT_MS },
+          {
+            name: 'remove temp dir',
+            run: () => {
+              if (tempRoot !== undefined) rmSync(tempRoot, { recursive: true, force: true });
+            },
+          },
+        ],
+        { stepTimeoutMs: TEARDOWN_STEP_TIMEOUT_MS },
+      );
     }, STACK_TIMEOUT_MS);
 
     let opsProjectId = '';
