@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-09T18:48:23.066Z",
+  "updatedAt": "2026-10-10T03:08:48.302Z",
   "cursor": {
     "phase": "14",
-    "task": "14-15"
+    "task": "14-27"
   },
   "phases": [
     {
@@ -4752,19 +4752,20 @@
         {
           "id": "14-27",
           "title": "Test harness: containers leaked from one session survive the gate run (Ryuk did not reap)",
-          "tier": "deep",
           "scope": [
-            "tests/integration/helpers/",
-            "tests/integration/global-setup.ts",
-            "tests/e2e/",
-            "vitest.integration.config.ts",
-            "vitest.installer.config.ts",
+            "docs/releases/v0.2-gate-logs/",
             "playwright.config.ts",
-            "docs/releases/v0.2-gate-logs/"
+            "tests/e2e/",
+            "tests/integration/deploy-engine/runtime-container-logs.test.ts",
+            "tests/integration/deploy-engine/runtime-service-ops.test.ts",
+            "tests/integration/global-setup.ts",
+            "tests/integration/helpers/",
+            "vitest.installer.config.ts",
+            "vitest.integration.config.ts"
           ],
           "wave": 5,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -4789,7 +4790,8 @@
             "persistence",
             "auth-secrets",
             "randomness"
-          ]
+          ],
+          "tier": "deep"
         }
       ]
     }
