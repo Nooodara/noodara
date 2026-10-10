@@ -14,6 +14,12 @@ import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../helpers/redis.js';
 import { startTestApp, type TestAppFixture } from '../helpers/app.js';
 import { buildFakeSshPort } from '../services/helpers/service-fixture.js';
+import { runTeardown } from '../helpers/teardown.js';
+import {
+  assertNoLeakedTestResources,
+  snapshotTestResources,
+  type TestResourceSnapshot,
+} from '../helpers/test-resources.js';
 
 const ADMIN_EMAIL = 'admin@noodara.test';
 const ADMIN_PASSWORD = 'correct horse battery staple';
@@ -30,31 +36,50 @@ const noopLogger = {
 let fixture: TestAppFixture | undefined;
 let redis: RedisFixture | undefined;
 let standalonePostgres: PostgresFixture | undefined;
+let standaloneApp: FastifyInstance | undefined;
 let stopWorker: (() => Promise<void>) | undefined;
+let baseline: TestResourceSnapshot | undefined;
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetModules();
+  // 14-28: per-test baseline, so a container one test leaks is removed by that test's own
+  // afterEach and fails only that test. The old check asserted "zero noodara.test containers on
+  // the host" without removing any, so one leaked postgres (a start that timed out on its port
+  // binding, gate 14-15 run 2) failed the afterEach of every later test in the file.
+  baseline = await snapshotTestResources();
 });
 
-afterEach(async () => {
+afterEach(async ({ task }) => {
   // The SSE_LIMIT_REACHED test sets this directly on process.env (vi.resetModules() does not
   // touch process.env) — cleared unconditionally so a later test in this file never inherits it.
   delete process.env.NOODARA_SSE_MAX_CONNECTIONS;
 
-  await stopWorker?.();
+  const worker = stopWorker;
+  const app = fixture;
+  const pg = standalonePostgres;
+  const looseApp = standaloneApp;
+  const cache = redis;
+  const since = baseline;
   stopWorker = undefined;
-  await fixture?.stop();
   fixture = undefined;
-  await standalonePostgres?.stop();
   standalonePostgres = undefined;
-  await redis?.stop();
+  standaloneApp = undefined;
   redis = undefined;
+  baseline = undefined;
 
-  const { getContainerRuntimeClient } = await import('testcontainers');
-  const client = await getContainerRuntimeClient();
-  const containers = await client.container.list();
-  const stray = containers.filter((c) => c.Labels['noodara.test'] === 'true');
-  expect(stray).toHaveLength(0);
+  // Bounded steps (14-27 helper): one that hangs or throws never keeps the next from stopping
+  // what it started; the leak check runs last and removes anything still left.
+  await runTeardown(`events-sse: ${task.name}`, [
+    { name: 'worker.stop', run: () => worker?.(), timeoutMs: 30_000 },
+    { name: 'standaloneApp.close', run: () => looseApp?.close(), timeoutMs: 15_000 },
+    { name: 'app.stop', run: () => app?.stop(), timeoutMs: 60_000 },
+    { name: 'standalonePostgres.stop', run: () => pg?.stop(), timeoutMs: 60_000 },
+    { name: 'redis.stop', run: () => cache?.stop(), timeoutMs: 60_000 },
+    {
+      name: 'leak check',
+      run: () => (since ? assertNoLeakedTestResources(`events-sse: ${task.name}`, since) : undefined),
+    },
+  ]);
 });
 
 function uniqueName(suffix: string): string {
@@ -133,8 +158,15 @@ async function startAppWithHeartbeat(redisUrl: string, sseHeartbeatMs?: number):
   process.env.REDIS_URL = redisUrl;
   process.env.NOODARA_PUBLIC_URL = 'http://localhost:3000';
 
-  const { buildApp } = await import('../../../apps/control-plane/src/app.js');
-  const app = buildApp(sseHeartbeatMs !== undefined ? { sseHeartbeatMs } : {});
+  let app: FastifyInstance;
+  try {
+    const { buildApp } = await import('../../../apps/control-plane/src/app.js');
+    app = buildApp(sseHeartbeatMs !== undefined ? { sseHeartbeatMs } : {});
+  } catch (error) {
+    // 14-28: the caller never gets a handle, so stop the container here or it leaks.
+    await postgres.stop().catch(() => undefined);
+    throw error;
+  }
 
   let stopped = false;
   const stop = async (): Promise<void> => {
@@ -542,6 +574,7 @@ describe('GET /api/events (D-01, D-05, D-06, D-07, D-25, D-27, SERV-06)', () => 
 
     const { buildApp } = await import('../../../apps/control-plane/src/app.js');
     const app = buildApp({ sseHeartbeatMs: 200 });
+    standaloneApp = app; // closed by afterEach even when an assertion below fails
 
     await createAdmin(app, standalonePostgres.db);
     const cookie = await signIn(app);

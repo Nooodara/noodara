@@ -1,4 +1,5 @@
 import { RedisContainer, type StartedRedisContainer } from '@testcontainers/redis';
+import { startLabelledContainer } from './container-start.js';
 
 export interface RedisFixture {
   container: StartedRedisContainer;
@@ -15,7 +16,11 @@ export interface RedisFixture {
  * silently across runs.
  */
 export async function startRedis(): Promise<RedisFixture> {
-  const container = await new RedisContainer('redis:7-alpine').withLabels({ 'noodara.test': 'true' }).start();
+  // 14-28: a start that times out waiting for its port binding is removed and retried a bounded
+  // number of times instead of leaking a running container (container-start.ts).
+  const container = await startLabelledContainer('redis:7-alpine', (labels) =>
+    new RedisContainer('redis:7-alpine').withLabels(labels).start(),
+  );
 
   const connectionUrl = container.getConnectionUrl();
 

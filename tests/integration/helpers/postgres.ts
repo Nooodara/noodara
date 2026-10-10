@@ -1,6 +1,7 @@
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { createDb, type Database } from '../../../apps/control-plane/src/db/client.js';
 import { runMigrations } from '../../../apps/control-plane/src/db/migrate.js';
+import { startLabelledContainer } from './container-start.js';
 
 export interface PostgresFixture {
   container: StartedPostgreSqlContainer;
@@ -32,11 +33,12 @@ export interface StartPostgresOptions {
 export async function startPostgres(options: StartPostgresOptions = {}): Promise<PostgresFixture> {
   const { migrate = true } = options;
 
-  const container = await new PostgreSqlContainer('postgres:17-alpine')
-    // Labelled so the suite-level cleanup assertion (noodara-tdd skill §5) can find any stray
-    // container left behind by a crashed run.
-    .withLabels({ 'noodara.test': 'true' })
-    .start();
+  // Labelled (noodara.test=true) so the suite-level cleanup assertion (noodara-tdd skill §5) can
+  // find any stray container left behind by a crashed run; 14-28: a start that times out waiting
+  // for its port binding is removed and retried a bounded number of times (container-start.ts).
+  const container = await startLabelledContainer('postgres:17-alpine', (labels) =>
+    new PostgreSqlContainer('postgres:17-alpine').withLabels(labels).start(),
+  );
 
   const connectionString = container.getConnectionUri();
   const { db, pool } = createDb(connectionString);

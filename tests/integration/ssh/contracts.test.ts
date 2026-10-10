@@ -477,7 +477,12 @@ describe('Task 3: ssh2 error-shape table (SERV-07, A5)', () => {
     if (!attempt.ok) {
       expect(['client-timeout', 'client-socket']).toContain(attempt.err.level);
       if (attempt.err.level === 'client-timeout') {
-        expect(attempt.elapsedMs).toBeGreaterThanOrEqual(configuredTimeout);
+        // 14-28: libuv schedules timers against its loop clock, kept in whole milliseconds (floored)
+        // and cached per loop iteration, while performance.now() is sub-millisecond. A 5000 ms
+        // readyTimeout can therefore fire up to 1 ms early as measured here (gate 14-15 run 2:
+        // 4999.82 ms). The tolerance is that clock's resolution, nothing more: still a real ~5 s wait.
+        const LIBUV_TIMER_RESOLUTION_MS = 1;
+        expect(attempt.elapsedMs).toBeGreaterThanOrEqual(configuredTimeout - LIBUV_TIMER_RESOLUTION_MS);
         expect(attempt.elapsedMs).toBeLessThan(configuredTimeout + 5000);
       } else {
         expect(['ENOTFOUND', 'EAI_AGAIN']).toContain(attempt.err.code);
