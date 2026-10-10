@@ -13,13 +13,18 @@
 //     before any containers or databases are started. This distinguishes between another process
 //     and a stale Noodara test stack, avoiding orphaned infrastructure.
 //
+// (d) Leak guard (14-27): fail before anything starts when an earlier run left `noodara.test`
+//     resources, and return a teardown that removes whatever this run added and fails loudly
+//     naming it -- Ryuk is shared across processes and cannot be relied on (helpers/test-resources.ts).
+//
 // Uses the exact same `buildWorkspace()` helper `boot-command.test.ts`'s Test 4 restores `dist`
 // with after deliberately deleting it, so there is exactly one definition of "build the
 // workspace" and the two paths can never drift apart.
 import { buildWorkspace } from './helpers/boot-process.js';
 import { checkPort } from './helpers/port-checker.js';
+import { assertNoLeakedTestResources, assertNoTestResources, snapshotTestResources } from './helpers/test-resources.js';
 
-export default async function globalSetup(): Promise<void> {
+export default async function globalSetup(): Promise<() => Promise<void>> {
   // Precheck: port 3000 availability (Task 14-11 — OPEN_QUESTIONS #3).
   // This runs before any Docker containers or databases are started.
   const portCheck = await checkPort(3000);
@@ -34,5 +39,12 @@ export default async function globalSetup(): Promise<void> {
     process.exit(1);
   }
 
+  await assertNoTestResources('vitest globalSetup');
+  const baseline = await snapshotTestResources();
+
   buildWorkspace();
+
+  return async () => {
+    await assertNoLeakedTestResources('this vitest run', baseline, { settleMs: 2_000 });
+  };
 }

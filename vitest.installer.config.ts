@@ -28,5 +28,8 @@ export default defineConfig({
     // prevent.
     passWithNoTests: false,
     globalSetup: ['tests/integration/global-setup.ts'],
+    // 14-27: each file removes the noodara.test resources it added and fails if it left any;
+    // Ryuk is shared across processes and cannot be relied on per suite (see the helper).
+    setupFiles: ['tests/integration/helpers/leak-guard-setup.ts'],
   },
 });
