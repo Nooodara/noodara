@@ -33,6 +33,7 @@ import {
 } from '../helpers/deploy-engine.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../helpers/redis.js';
+import { runTeardown, settleWithin } from '../helpers/teardown.js';
 
 type DeployRuntimeModule = typeof import('../../../apps/control-plane/src/deploy/deploy-runtime.js');
 type DeployWorkerModule = typeof import('../../../apps/control-plane/src/deploy/deploy-worker.js');
@@ -42,6 +43,11 @@ type CredentialStoreModule = typeof import('../../../apps/control-plane/src/serv
 type DeployQueue = import('../../../apps/control-plane/src/queue/deploy-queue.js').DeployQueue;
 
 const STACK_TIMEOUT_MS = 900_000;
+// Teardown budget (14-27), inside STACK_TIMEOUT_MS: pending start 180 s + steps x 30 s + db/redis 2 x 60 s + stack stop 300 s.
+const PENDING_START_WAIT_MS = 180_000;
+const TEARDOWN_STEP_TIMEOUT_MS = 30_000;
+const FIXTURE_STOP_TIMEOUT_MS = 60_000;
+const STACK_STOP_TIMEOUT_MS = 300_000;
 const CASE_TIMEOUT_MS = 600_000;
 const WAIT_MS = 300_000;
 const POLL_MS = 500;
@@ -110,6 +116,9 @@ interface LoggedLine {
 
 describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-crash sweep on real infrastructure, Ubuntu %s', (ubuntu) => {
   let stack: DeployEngineStack | undefined;
+  let stackStart: Promise<DeployEngineStack> | undefined;
+  let pgStart: Promise<PostgresFixture> | undefined;
+  let redisStart: Promise<RedisFixture> | undefined;
   let postgres: PostgresFixture | undefined;
   let redis: RedisFixture | undefined;
   let queueConnection: Redis | undefined;
@@ -243,15 +252,14 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
   };
 
   beforeAll(async () => {
-    const [stackStarted, pgStarted, redisStarted] = await Promise.all([
-      (async () => {
+    stackStart = (async () => {
         tempRoot = mkdtempSync(path.join(tmpdir(), 'noodara-runtime-cancel-'));
         const slowDir = writeSlowRepo(tempRoot, nodeBaseOf(resolveBaseImages()));
         return startDeployEngineStack({ ubuntu, seedRepositories: [{ name: SLOW_REPO, sourceDir: slowDir }] });
-      })(),
-      startPostgres(),
-      startRedis(),
-    ]);
+      })();
+    pgStart = startPostgres();
+    redisStart = startRedis();
+    const [stackStarted, pgStarted, redisStarted] = await Promise.all([stackStart, pgStart, redisStart]);
     stack = stackStarted;
     postgres = pgStarted;
     redis = redisStarted;
@@ -416,14 +424,25 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
   }, STACK_TIMEOUT_MS);
 
   afterAll(async () => {
-    await worker?.close();
-    await deployQueue?.close();
-    workerConnection?.disconnect();
-    queueConnection?.disconnect();
-    await redis?.stop();
-    await postgres?.stop();
-    await stack?.stop();
-    if (tempRoot !== undefined) rmSync(tempRoot, { recursive: true, force: true });
+    // 14-27: bounded steps; a start still pending when beforeAll timed out is awaited briefly and stopped too.
+    const [stk, pg, rd] = await Promise.all([
+      stack ?? settleWithin(stackStart, PENDING_START_WAIT_MS),
+      postgres ?? settleWithin(pgStart, PENDING_START_WAIT_MS),
+      redis ?? settleWithin(redisStart, PENDING_START_WAIT_MS),
+    ]);
+    await runTeardown(
+      `runtime cancel (Ubuntu ${ubuntu})`,
+      [
+        { name: 'worker.close', run: () => worker?.close() },
+        { name: 'deployQueue.close', run: () => deployQueue?.close() },
+        { name: 'disconnect redis connections', run: () => { workerConnection?.disconnect(); queueConnection?.disconnect(); } },
+        { name: 'redis.stop', run: () => rd?.stop(), timeoutMs: FIXTURE_STOP_TIMEOUT_MS },
+        { name: 'postgres.stop', run: () => pg?.stop(), timeoutMs: FIXTURE_STOP_TIMEOUT_MS },
+        { name: 'stack.stop', run: () => stk?.stop(), timeoutMs: STACK_STOP_TIMEOUT_MS },
+        { name: 'remove temp dir', run: () => { if (tempRoot !== undefined) rmSync(tempRoot, { recursive: true, force: true }); } },
+      ],
+      { stepTimeoutMs: TEARDOWN_STEP_TIMEOUT_MS },
+    );
   }, STACK_TIMEOUT_MS);
 
   it('A1: cancelling a QUEUED deployment removes its job and ends CANCELLED without any remote command', async () => {

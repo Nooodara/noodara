@@ -42,6 +42,7 @@ import {
 import { fixtureGitHostKey, wrongGitHostKey } from '../helpers/git-host-key.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../helpers/redis.js';
+import { runTeardown, settleWithin } from '../helpers/teardown.js';
 
 type DeploymentStoreModule = typeof import('../../../apps/control-plane/src/deploy/deployment-store.js');
 type BuildCachePruneModule = typeof import('../../../apps/control-plane/src/deploy/build-cache-prune.js');
@@ -58,6 +59,11 @@ type ResetHostKeyCliModule = typeof import('../../../apps/control-plane/src/cli/
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.resolve(HERE, '../../../fixtures');
 const STACK_TIMEOUT_MS = 900_000;
+// Teardown budget (14-27), inside STACK_TIMEOUT_MS: pending start 180 s + steps x 30 s + db/redis 2 x 60 s + stack stop 300 s.
+const PENDING_START_WAIT_MS = 180_000;
+const TEARDOWN_STEP_TIMEOUT_MS = 30_000;
+const FIXTURE_STOP_TIMEOUT_MS = 60_000;
+const STACK_STOP_TIMEOUT_MS = 300_000;
 const CASE_TIMEOUT_MS = 600_000;
 const TERMINAL_WAIT_MS = 300_000;
 const POLL_MS = 500;
@@ -130,6 +136,9 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
   '12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu %s',
   (ubuntu) => {
     let stack: DeployEngineStack | undefined;
+    let stackStart: Promise<DeployEngineStack> | undefined;
+    let pgStart: Promise<PostgresFixture> | undefined;
+    let redisStart: Promise<RedisFixture> | undefined;
     let postgres: PostgresFixture | undefined;
     let redis: RedisFixture | undefined;
     let queueConnection: Redis | undefined;
@@ -304,8 +313,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     };
 
     beforeAll(async () => {
-      const [stackStarted, pgStarted, redisStarted] = await Promise.all([
-        (async () => {
+      stackStart = (async () => {
           const base = nodeBaseOf(resolveBaseImages());
           tempRoot = mkdtempSync(path.join(tmpdir(), 'noodara-runtime-pipeline-'));
           const temp = writeTempRepos(tempRoot, base);
@@ -319,10 +327,10 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
               { name: REPOS.chatty, sourceDir: temp.chatty },
             ],
           });
-        })(),
-        startPostgres(),
-        startRedis(),
-      ]);
+        })();
+      pgStart = startPostgres();
+      redisStart = startRedis();
+      const [stackStarted, pgStarted, redisStarted] = await Promise.all([stackStart, pgStart, redisStart]);
       stack = stackStarted;
       postgres = pgStarted;
       redis = redisStarted;
@@ -469,15 +477,25 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     }, STACK_TIMEOUT_MS);
 
     afterAll(async () => {
-      await worker?.close();
-      await queue?.close();
-      workerConnection?.disconnect();
-      pruneConnection?.disconnect();
-      queueConnection?.disconnect();
-      await redis?.stop();
-      await postgres?.stop();
-      await stack?.stop();
-      if (tempRoot !== undefined) rmSync(tempRoot, { recursive: true, force: true });
+      // 14-27: bounded steps; a start still pending when beforeAll timed out is awaited briefly and stopped too.
+      const [stk, pg, rd] = await Promise.all([
+        stack ?? settleWithin(stackStart, PENDING_START_WAIT_MS),
+        postgres ?? settleWithin(pgStart, PENDING_START_WAIT_MS),
+        redis ?? settleWithin(redisStart, PENDING_START_WAIT_MS),
+      ]);
+      await runTeardown(
+        `runtime pipeline (Ubuntu ${ubuntu})`,
+        [
+          { name: 'worker.close', run: () => worker?.close() },
+          { name: 'queue.close', run: () => queue?.close() },
+          { name: 'disconnect redis connections', run: () => { workerConnection?.disconnect(); pruneConnection?.disconnect(); queueConnection?.disconnect(); } },
+          { name: 'redis.stop', run: () => rd?.stop(), timeoutMs: FIXTURE_STOP_TIMEOUT_MS },
+          { name: 'postgres.stop', run: () => pg?.stop(), timeoutMs: FIXTURE_STOP_TIMEOUT_MS },
+          { name: 'stack.stop', run: () => stk?.stop(), timeoutMs: STACK_STOP_TIMEOUT_MS },
+          { name: 'remove temp dir', run: () => { if (tempRoot !== undefined) rmSync(tempRoot, { recursive: true, force: true }); } },
+        ],
+        { stepTimeoutMs: TEARDOWN_STEP_TIMEOUT_MS },
+      );
     }, STACK_TIMEOUT_MS);
 
     let appServiceId = '';

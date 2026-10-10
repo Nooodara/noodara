@@ -16,6 +16,7 @@ import { createQueueRedisConnection } from '../../../apps/control-plane/src/redi
 import { issueToken } from '../../../apps/control-plane/src/services/setup-token-repository.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../helpers/redis.js';
+import { runTeardown, settleWithin } from '../helpers/teardown.js';
 
 // 12-10: `POST /api/services/:serviceId/deploy` and the deployment reads against the real HTTP
 // surface, a migrated Postgres and a real Redis/BullMQ queue. No worker runs here, so every job
@@ -35,6 +36,15 @@ let inspectConnection: Redis;
 let deployQueue: DeployQueue;
 let inspector: Queue;
 let app: FastifyInstance;
+// 14-27: the starts, kept so a failed or timed-out beforeAll still stops what did start.
+let postgresStart: Promise<PostgresFixture> | undefined;
+let redisStart: Promise<RedisFixture> | undefined;
+
+/** Widens a possibly never-assigned module binding, so teardown can skip what did not start. */
+const maybe = <T>(value: T): T | undefined => value;
+const PENDING_START_WAIT_MS = 60_000;
+const TEARDOWN_STEP_TIMEOUT_MS = 30_000;
+const FIXTURE_STOP_TIMEOUT_MS = 60_000;
 let cookie: string;
 /** Loaded after `setTestEnv`: deployment-services pulls in env.ts through the activity redactor. */
 let viewFields: readonly string[];
@@ -139,7 +149,9 @@ async function rowsFor(serviceId: string) {
 }
 
 beforeAll(async () => {
-  [postgres, redis] = await Promise.all([startPostgres(), startRedis()]);
+  postgresStart = startPostgres();
+  redisStart = startRedis();
+  [postgres, redis] = await Promise.all([postgresStart, redisStart]);
   setTestEnv(postgres.connectionString, redis.connectionUrl);
   queueConnection = createQueueRedisConnection(redis.connectionUrl);
   inspectConnection = createQueueRedisConnection(redis.connectionUrl);
@@ -152,14 +164,29 @@ beforeAll(async () => {
 }, 120_000);
 
 afterAll(async () => {
-  await app.close();
-  await inspector.close().catch(() => undefined);
-  await deployQueue.close().catch(() => undefined);
-  queueConnection.disconnect();
-  inspectConnection.disconnect();
-  await redis.stop();
-  await postgres.stop();
-});
+  const [pg, rd] = await Promise.all([
+    settleWithin(postgresStart, PENDING_START_WAIT_MS),
+    settleWithin(redisStart, PENDING_START_WAIT_MS),
+  ]);
+  await runTeardown(
+    'deploy queue',
+    [
+      { name: 'app.close', run: () => maybe(app)?.close() },
+      { name: 'inspector.close', run: () => maybe(inspector)?.close().catch(() => undefined) },
+      { name: 'deployQueue.close', run: () => maybe(deployQueue)?.close().catch(() => undefined) },
+      {
+        name: 'disconnect redis connections',
+        run: () => {
+          maybe(queueConnection)?.disconnect();
+          maybe(inspectConnection)?.disconnect();
+        },
+      },
+      { name: 'redis.stop', run: () => rd?.stop(), timeoutMs: FIXTURE_STOP_TIMEOUT_MS },
+      { name: 'postgres.stop', run: () => pg?.stop(), timeoutMs: FIXTURE_STOP_TIMEOUT_MS },
+    ],
+    { stepTimeoutMs: TEARDOWN_STEP_TIMEOUT_MS },
+  );
+}, 240_000);
 
 beforeEach(() => {
   published.length = 0;

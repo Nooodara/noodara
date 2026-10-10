@@ -38,6 +38,7 @@ import {
 } from '../helpers/deploy-engine.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../helpers/redis.js';
+import { runTeardown, settleWithin } from '../helpers/teardown.js';
 
 type DeployRuntimeModule = typeof import('../../../apps/control-plane/src/deploy/deploy-runtime.js');
 type DeployWorkerModule = typeof import('../../../apps/control-plane/src/deploy/deploy-worker.js');
@@ -57,6 +58,11 @@ const FIXTURES_DIR = path.resolve(HERE, '../../../fixtures');
 const ITERATIONS = 20;
 const DEPLOY_MAX_MS = 300_000;
 const STACK_TIMEOUT_MS = 900_000;
+// Teardown budget (14-27), inside STACK_TIMEOUT_MS: pending start 180 s + steps x 30 s + db/redis 2 x 60 s + stack stop 300 s.
+const PENDING_START_WAIT_MS = 180_000;
+const TEARDOWN_STEP_TIMEOUT_MS = 30_000;
+const FIXTURE_STOP_TIMEOUT_MS = 60_000;
+const STACK_STOP_TIMEOUT_MS = 300_000;
 /** Worst case is every iteration hitting the deploy max; a healthy run takes a few minutes. */
 const SOAK_CASE_TIMEOUT_MS = 3_600_000;
 /** Past the worker's own deploy max, so an over-long deploy is measured instead of abandoned. */
@@ -145,6 +151,9 @@ interface SoakArtifact {
 describe.skipIf(!SOAK_ENABLED)('12-18 / QA-08 soak: 20 deploys and 20 create/delete cycles', () => {
   describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('Ubuntu %s', (ubuntu) => {
     let stack: DeployEngineStack | undefined;
+    let stackStart: Promise<DeployEngineStack> | undefined;
+    let pgStart: Promise<PostgresFixture> | undefined;
+    let redisStart: Promise<RedisFixture> | undefined;
     let postgres: PostgresFixture | undefined;
     let redis: RedisFixture | undefined;
     let queueConnection: Redis | undefined;
@@ -389,14 +398,13 @@ describe.skipIf(!SOAK_ENABLED)('12-18 / QA-08 soak: 20 deploys and 20 create/del
     };
 
     beforeAll(async () => {
-      const [stackStarted, pgStarted, redisStarted] = await Promise.all([
-        startDeployEngineStack({
+      stackStart = startDeployEngineStack({
           ubuntu,
           seedRepositories: [{ name: NODE_API, sourceDir: path.join(FIXTURES_DIR, 'node-api') }],
-        }),
-        startPostgres(),
-        startRedis(),
-      ]);
+        });
+      pgStart = startPostgres();
+      redisStart = startRedis();
+      const [stackStarted, pgStarted, redisStarted] = await Promise.all([stackStart, pgStart, redisStart]);
       stack = stackStarted;
       postgres = pgStarted;
       redis = redisStarted;
@@ -521,14 +529,25 @@ describe.skipIf(!SOAK_ENABLED)('12-18 / QA-08 soak: 20 deploys and 20 create/del
           `[soak] Ubuntu ${ubuntu}: artifact ${artifactPath} summary ${JSON.stringify(artifact.summary)}\n`,
         );
       }
-      await worker?.close();
-      await operationQueue?.close();
-      await queue?.close();
-      workerConnection?.disconnect();
-      queueConnection?.disconnect();
-      await redis?.stop();
-      await postgres?.stop();
-      await stack?.stop();
+      // 14-27: bounded steps; a start still pending when beforeAll timed out is awaited briefly and stopped too.
+      const [stk, pg, rd] = await Promise.all([
+        stack ?? settleWithin(stackStart, PENDING_START_WAIT_MS),
+        postgres ?? settleWithin(pgStart, PENDING_START_WAIT_MS),
+        redis ?? settleWithin(redisStart, PENDING_START_WAIT_MS),
+      ]);
+      await runTeardown(
+        `runtime soak (Ubuntu ${ubuntu})`,
+        [
+          { name: 'worker.close', run: () => worker?.close() },
+          { name: 'operationQueue.close', run: () => operationQueue?.close() },
+          { name: 'queue.close', run: () => queue?.close() },
+          { name: 'disconnect redis connections', run: () => { workerConnection?.disconnect(); queueConnection?.disconnect(); } },
+          { name: 'redis.stop', run: () => rd?.stop(), timeoutMs: FIXTURE_STOP_TIMEOUT_MS },
+          { name: 'postgres.stop', run: () => pg?.stop(), timeoutMs: FIXTURE_STOP_TIMEOUT_MS },
+          { name: 'stack.stop', run: () => stk?.stop(), timeoutMs: STACK_STOP_TIMEOUT_MS },
+        ],
+        { stepTimeoutMs: TEARDOWN_STEP_TIMEOUT_MS },
+      );
     }, STACK_TIMEOUT_MS);
 
     it(
