@@ -19,3 +19,4 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-10-07: 14-02 installer runs 5/6 fail because the api ignores SIGTERM (node as PID 1, no handler since phase 06): every `compose down`/recreate waits the 30 s stop_grace_period and kills it. Fix = graceful shutdown in server.ts (task 14-20), not a bigger timeout. 14-02 waits for it.
 - 2026-10-07: User approved the 14-19 project toolbar screenshots (`stress-project-*`) and authorized publishing to GitHub (`Nooodara/noodara`) for the 14-15 nightly run.
 - 2026-10-08: User reviewed and approved `@axe-core/playwright@4.13.0` (dequelabs/axe-core-npm, Deque maintainers) for the supply-chain allowlist in `scripts/check-package-provenance.mjs`.
+- 2026-10-11: `v0.2.0-rc.1` tagged on `48038ce` at the user's request; `release.yml` run 38160392096 green; multi-arch images published, GitHub prerelease, `latest` stays `v0.1.0`. Human UAT tracked in `docs/releases/v0.2-HUMAN-UAT.md`.
