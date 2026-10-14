@@ -452,7 +452,15 @@ async function readDragSurfaceX(page: Page): Promise<number> {
   }, DRAG_SURFACE_TESTID);
 }
 
+/** 14-32: Motion attaches the drag gesture only once LazyMotion's lazy `domMax` chunk has loaded.
+ *  A press before that is ignored (nightly 38530970865). The Sheet renders `data-drag-ready` in
+ *  the same commit that attaches the gesture, so every drag waits for it before pressing. */
+async function waitForDragReady(page: Page): Promise<void> {
+  await expect(page.getByTestId(DRAG_SURFACE_TESTID)).toHaveAttribute('data-drag-ready', '');
+}
+
 async function dragSurfaceCenter(page: Page): Promise<{ x: number; y: number }> {
+  await waitForDragReady(page);
   const box = await page.getByTestId(DRAG_SURFACE_TESTID).boundingBox();
   if (box === null) {
     throw new Error('dragSurfaceCenter: the drag surface has no bounding box -- is the Sheet open?');
@@ -512,7 +520,9 @@ test.describe('@sheet-drag drag-to-dismiss (UI-06, brief §7.4)', () => {
     const pointerDeltas = [40, 80, 120, 160, 200];
     for (const pointerDelta of pointerDeltas) {
       await page.mouse.move(start.x + pointerDelta, start.y, { steps: 4 });
-      await page.waitForTimeout(30);
+      // 14-32: frames, not a 30ms sleep -- Motion writes the transform on its next render, which a
+      // loaded CI runner can delay past any fixed wall-clock wait.
+      await nextAnimationFrames(page, 2);
       samples.push(await readDragSurfaceX(page));
     }
 
@@ -609,6 +619,7 @@ test.describe('@sheet-drag drag-to-dismiss (UI-06, brief §7.4)', () => {
     // no control. Taken from the viewport, not the panel's box: that box can still carry the
     // entry slide's offset and put the point off screen, where the grab would silently miss.
     const viewport = page.viewportSize();
+    await waitForDragReady(page);
     const rest = await page.getByTestId(DRAG_SURFACE_TESTID).boundingBox();
     if (viewport === null || rest === null) throw new Error('no viewport or drag surface box -- is the Sheet open?');
     const grab = { x: viewport.width - 8, y: rest.y + 8 };

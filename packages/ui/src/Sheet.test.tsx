@@ -370,7 +370,8 @@ describe('Sheet drag readiness', () => {
   const pointerdownTargets = new WeakSet<EventTarget>();
 
   beforeEach(() => {
-    const original = EventTarget.prototype.addEventListener;
+    const original = Object.getOwnPropertyDescriptor(EventTarget.prototype, 'addEventListener')
+      ?.value as EventTarget['addEventListener'];
     vi.spyOn(EventTarget.prototype, 'addEventListener').mockImplementation(function (
       this: EventTarget,
       type: string,
