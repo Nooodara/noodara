@@ -138,6 +138,17 @@ const DESTRUCTIVE_ITEM_CLASSES = 'text-status-error-text';
 // UI-07) composes into `CONTENT_CLASSES`.
 const INSTANT_CLOSE_CLASS = '!duration-0';
 
+// 14-34: Radix returns focus to the trigger from a timer after the content unmounts. Under load
+// that timer landed after the user had moved on (a sheet opened by Edit had closed and the back
+// arrow was focused), stole focus, and the next Enter reopened this menu. Focus outside the closed
+// content is the user's: keep it, and restore to the trigger only when focus was lost.
+function keepFocusThatMovedOn(event: Event): void {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement) || active === document.body) return;
+  if (event.target instanceof Node && event.target.contains(active)) return;
+  event.preventDefault();
+}
+
 // RowMenu (skill SS4.4, 05-UI-SPEC.md Component Inventory, D-09; 08-UI-SPEC.md SS6, 08-04-PLAN.md
 // Task 2) -- the per-row "..." action menu, revealed on hover/focus of its row (never a permanent
 // column) and never itself a bare, unlabelled icon. No approved Radix primitive (dialog, tooltip,
@@ -224,6 +235,7 @@ export function RowMenu({ items, triggerLabel, reveal = 'hover', 'data-testid': 
           style={{ ...menuStyle(position), ...(opensUpward ? CONTENT_TRANSFORM_ORIGIN_STYLE_BOTTOM : CONTENT_TRANSFORM_ORIGIN_STYLE) }}
           onKeyDown={handleContentKeyDown}
           onOpenAutoFocus={handleOpenAutoFocus}
+          onCloseAutoFocus={keepFocusThatMovedOn}
         >
           {items.map((item, index) => (
             <button

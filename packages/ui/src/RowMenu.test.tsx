@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { PRESS_CLASSES } from './press.js';
 import { RowMenu } from './RowMenu.js';
-import { renderUi, screen, userEvent } from './testing/render.js';
+import { fireEvent, renderUi, screen, userEvent } from './testing/render.js';
 import { useFloatingMenu } from './use-floating-menu.js';
 
 // Mocks only the returned `closeSource` reading -- every other field (open state, roving focus,
@@ -126,6 +126,29 @@ describe('RowMenu', () => {
     expect(onEdit).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('menuitem')).toBeNull();
     expect(trigger).toHaveFocus();
+  });
+
+  // 14-34: Radix restores focus to the trigger from a timer after the content unmounts. Under load
+  // that timer ran after the user had moved on (a sheet opened by the item closed, the back arrow
+  // focused), stole focus, and the next Enter reopened the menu. `fireEvent` closes synchronously,
+  // with the restore timer still pending, like a busy browser.
+  it('never takes focus back from a control the user focused after the menu closed', async () => {
+    const user = userEvent.setup();
+    renderUi(
+      <div>
+        <button type="button">Back</button>
+        <RowMenu items={buildItems(vi.fn(), vi.fn())} triggerLabel="Actions for Alpha" />
+      </div>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Actions for Alpha' }));
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit' }));
+    expect(screen.queryByRole('menuitem')).toBeNull();
+    const back = screen.getByRole('button', { name: 'Back' });
+    back.focus();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(back).toHaveFocus();
   });
 
   it('aria-expanded reflects open state', async () => {

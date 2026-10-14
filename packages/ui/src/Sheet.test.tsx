@@ -25,7 +25,7 @@ vi.mock('motion/react', async (importOriginal) => {
 
 import { Sheet } from './Sheet.js';
 import { RUBBER_BAND_LIMIT_PX, rubberBand } from './sheet-drag.js';
-import { renderUi, screen, userEvent } from './testing/render.js';
+import { fireEvent, renderUi, screen, userEvent } from './testing/render.js';
 
 // D-13 (09-04-PLAN.md Task 2): Sheet's drag gesture must follow the same attribute-aware
 // preference as everything else -- jsdom has no matchMedia, so every test that renders Sheet
@@ -306,6 +306,32 @@ describe('Sheet', () => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(opener).toHaveFocus();
       });
+    });
+
+    // 14-34: Radix restores focus from a timer after the panel unmounts. A control the user
+    // focused in between keeps its focus; the opener is the target only while focus is lost.
+    // `fireEvent` closes synchronously, with that timer still pending, like a busy browser.
+    it('but never takes focus back from a control the user focused after the close', async () => {
+      const user = userEvent.setup();
+      renderUi(
+        <>
+          <button type="button">Back</button>
+          <Harness />
+        </>,
+      );
+      screen.getByRole('button', { name: 'New project' }).focus();
+      await user.keyboard('{Enter}');
+      await vi.waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      const back = screen.getByRole('button', { name: 'Back' });
+      back.focus();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      expect(back).toHaveFocus();
     });
 
     it('on an overlay click', async () => {

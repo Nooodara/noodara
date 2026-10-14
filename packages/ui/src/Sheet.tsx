@@ -124,6 +124,14 @@ const FOOTER_CLASSES = 'flex items-center justify-end gap-2 border-t border-hair
 // FocusScope's passive effect moves focus into the panel -- and focused again in
 // onCloseAutoFocus, whatever closed the sheet (Escape, Close, a caller's Cancel, overlay click).
 // An opener that is gone by then (e.g. a menu item) leaves Radix's default in place.
+// 14-34: Radix runs this from a timer after the panel unmounts, which under load lands after the
+// user has already focused something else. Focus outside the closed panel is the user's: keep it.
+function focusMovedOn(event: Event): boolean {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement) || active === document.body) return false;
+  return !(event.target instanceof Node && event.target.contains(active));
+}
+
 function useReturnFocus(open: boolean): (event: Event) => void {
   const openerRef = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
@@ -134,6 +142,10 @@ function useReturnFocus(open: boolean): (event: Event) => void {
   return (event) => {
     const opener = openerRef.current;
     openerRef.current = null;
+    if (focusMovedOn(event)) {
+      event.preventDefault();
+      return;
+    }
     if (!opener?.isConnected) return;
     event.preventDefault();
     opener.focus();
