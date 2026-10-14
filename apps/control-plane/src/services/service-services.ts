@@ -188,6 +188,22 @@ function buildkitUnavailable(): Failure<'SERVER_BUILDKIT_UNAVAILABLE'> {
   };
 }
 
+function buildkitUnknown(): Failure<'SERVER_BUILDKIT_UNKNOWN'> {
+  return {
+    ok: false,
+    code: 'SERVER_BUILDKIT_UNKNOWN',
+    message: 'BuildKit support on this server is unknown (it was discovered before v0.2); re-run discovery and try again',
+  };
+}
+
+/** ADR 0008 G3: false is a definite no; null (never detected, e.g. discovered under v0.1) asks for a re-discovery. */
+export function buildkitGuard(
+  available: boolean | null,
+): Failure<'SERVER_BUILDKIT_UNAVAILABLE'> | Failure<'SERVER_BUILDKIT_UNKNOWN'> | null {
+  if (available === true) return null;
+  return available === false ? buildkitUnavailable() : buildkitUnknown();
+}
+
 function actorFields(actor: ServiceActor): { actorType: 'user' | 'system'; actorId: string | null } {
   return { actorType: actor.type, actorId: actor.type === 'user' ? actor.id : null };
 }
@@ -316,6 +332,7 @@ export type CreateServiceFailureCode =
   | 'SERVER_NOT_CONNECTED'
   | 'SERVER_DOCKER_UNAVAILABLE'
   | 'SERVER_BUILDKIT_UNAVAILABLE'
+  | 'SERVER_BUILDKIT_UNKNOWN'
   | 'SERVICE_NAME_TAKEN'
   | 'PORT_IN_USE';
 
@@ -354,8 +371,10 @@ export async function createService(deps: ServiceServicesDeps, input: CreateServ
       if (server.dockerInstalled !== true) {
         return { ok: false, code: 'SERVER_DOCKER_UNAVAILABLE', message: 'Docker is not installed on this server' };
       }
-      // ADR 0008 G3: unknown (null) BuildKit support is treated as unavailable.
-      if (fields.source.kind === 'git' && server.dockerBuildkitAvailable !== true) return buildkitUnavailable();
+      if (fields.source.kind === 'git') {
+        const buildkit = buildkitGuard(server.dockerBuildkitAvailable);
+        if (buildkit) return buildkit;
+      }
 
       if (await serviceNameInUse(tx, environment.id, fields.name)) return nameTaken(fields.name);
       const portFailure = await checkPublishedPort(tx, deps, server.id, serviceId, fields.publishedPort);
@@ -422,6 +441,7 @@ export type UpdateServiceFailureCode =
   | 'SERVICE_INPUT_INVALID'
   | 'NOT_FOUND'
   | 'SERVER_BUILDKIT_UNAVAILABLE'
+  | 'SERVER_BUILDKIT_UNKNOWN'
   | 'SERVICE_NAME_TAKEN'
   | 'PORT_IN_USE';
 
@@ -459,8 +479,9 @@ export async function updateService(deps: ServiceServicesDeps, input: UpdateServ
       if (classification.kind === 'none') {
         return { ok: true, service: await viewOf(tx, current), requiresRedeploy: false, changedFields: [] };
       }
-      if (changed.has('source') && edit.source?.kind === 'git' && server.dockerBuildkitAvailable !== true) {
-        return buildkitUnavailable();
+      if (changed.has('source') && edit.source?.kind === 'git') {
+        const buildkit = buildkitGuard(server.dockerBuildkitAvailable);
+        if (buildkit) return buildkit;
       }
       if (changed.has('name') && edit.name !== undefined && (await serviceNameInUse(tx, current.environmentId, edit.name, current.id))) {
         return nameTaken(edit.name);

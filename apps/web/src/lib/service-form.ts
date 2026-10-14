@@ -267,6 +267,8 @@ export const PORT_IN_USE_COPY =
   'This port is already published on the server. Choose another published port, or leave it empty to keep the service unpublished.';
 export const DOCKER_UNAVAILABLE_COPY =
   "Docker isn't available on this server. Install Docker, then run discovery again from the server page.";
+export const BUILDKIT_UNKNOWN_COPY =
+  "Noodara hasn't checked BuildKit on this server yet. Re-run discovery from the server page, then try again.";
 export const BUILDKIT_UNAVAILABLE_COPY =
   "This server's Docker can't build with BuildKit. Enable BuildKit (Docker 23 or later) or use the Image source.";
 export const CREDENTIAL_MISMATCH_COPY =
@@ -282,6 +284,8 @@ export function mapServiceFailure(failure: ApiFailure<DeployApiErrorCode>): Serv
       return { publishedPort: PORT_IN_USE_COPY };
     case 'SERVER_DOCKER_UNAVAILABLE':
       return { serverId: DOCKER_UNAVAILABLE_COPY };
+    case 'SERVER_BUILDKIT_UNKNOWN':
+      return { source: BUILDKIT_UNKNOWN_COPY };
     case 'SERVER_BUILDKIT_UNAVAILABLE':
       return { source: BUILDKIT_UNAVAILABLE_COPY };
     case 'CREDENTIAL_SOURCE_MISMATCH':

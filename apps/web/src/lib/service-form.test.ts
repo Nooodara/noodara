@@ -3,6 +3,7 @@ import type { ApiFailure, DeployApiErrorCode, ServerView } from './api-client';
 import type { ServiceView } from './deploy-api';
 import {
   BUILDKIT_UNAVAILABLE_COPY,
+  BUILDKIT_UNKNOWN_COPY,
   PORT_IN_USE_COPY,
   SERVER_REQUIRED_COPY,
   SERVICE_NAME_TAKEN_COPY,
@@ -215,6 +216,7 @@ describe('service-form: server failures (A1, H3)', () => {
   it('maps PORT_IN_USE, BUILDKIT and name conflicts to fields with a hint', () => {
     expect(mapServiceFailure(failure('PORT_IN_USE'))).toEqual({ publishedPort: PORT_IN_USE_COPY });
     expect(mapServiceFailure(failure('SERVER_BUILDKIT_UNAVAILABLE'))).toEqual({ source: BUILDKIT_UNAVAILABLE_COPY });
+    expect(mapServiceFailure(failure('SERVER_BUILDKIT_UNKNOWN'))).toEqual({ source: BUILDKIT_UNKNOWN_COPY });
     expect(mapServiceFailure(failure('SERVICE_NAME_TAKEN'))).toEqual({ name: SERVICE_NAME_TAKEN_COPY });
     expect(mapServiceFailure(failure('SERVER_DOCKER_UNAVAILABLE'))?.serverId).toMatch(/Install Docker/);
     expect(mapServiceFailure(failure('CREDENTIAL_SOURCE_MISMATCH'))?.source).toMatch(/credential/);

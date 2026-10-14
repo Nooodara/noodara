@@ -2246,6 +2246,59 @@ noodara_write_log() {
   chmod 600 "$_noodara_wl_path" 2>/dev/null || true
 }
 
+# True (0) when version $1 is strictly older than $2. Compares MAJOR.MINOR.PATCH numerically, then
+# semver prerelease rules: a prerelease is older than its release; prerelease identifiers compare
+# numerically when both numeric, else lexically. Any leading "v" is ignored.
+noodara_version_older() {
+  _noodara_vo_a=${1#v}
+  _noodara_vo_b=${2#v}
+  _noodara_vo_a_core=${_noodara_vo_a%%-*}
+  _noodara_vo_b_core=${_noodara_vo_b%%-*}
+  _noodara_vo_a_pre=""
+  _noodara_vo_b_pre=""
+  case "$_noodara_vo_a" in *-*) _noodara_vo_a_pre=${_noodara_vo_a#*-} ;; esac
+  case "$_noodara_vo_b" in *-*) _noodara_vo_b_pre=${_noodara_vo_b#*-} ;; esac
+
+  _noodara_vo_i=1
+  while [ "$_noodara_vo_i" -le 3 ]; do
+    _noodara_vo_x=$(printf '%s' "$_noodara_vo_a_core" | cut -d. -f"$_noodara_vo_i")
+    _noodara_vo_y=$(printf '%s' "$_noodara_vo_b_core" | cut -d. -f"$_noodara_vo_i")
+    _noodara_vo_x=${_noodara_vo_x:-0}
+    _noodara_vo_y=${_noodara_vo_y:-0}
+    case "$_noodara_vo_x$_noodara_vo_y" in *[!0-9]*) return 1 ;; esac
+    if [ "$_noodara_vo_x" -lt "$_noodara_vo_y" ]; then return 0; fi
+    if [ "$_noodara_vo_x" -gt "$_noodara_vo_y" ]; then return 1; fi
+    _noodara_vo_i=$((_noodara_vo_i + 1))
+  done
+
+  # Equal cores: a prerelease sorts before the plain release.
+  if [ -n "$_noodara_vo_a_pre" ] && [ -z "$_noodara_vo_b_pre" ]; then return 0; fi
+  if [ -z "$_noodara_vo_a_pre" ] || [ -z "$_noodara_vo_b_pre" ]; then return 1; fi
+
+  _noodara_vo_i=1
+  while [ "$_noodara_vo_i" -le 8 ]; do
+    _noodara_vo_x=$(printf '%s' "$_noodara_vo_a_pre" | cut -d. -f"$_noodara_vo_i")
+    _noodara_vo_y=$(printf '%s' "$_noodara_vo_b_pre" | cut -d. -f"$_noodara_vo_i")
+    if [ -z "$_noodara_vo_x" ] && [ -z "$_noodara_vo_y" ]; then return 1; fi
+    if [ -z "$_noodara_vo_x" ]; then return 0; fi
+    if [ -z "$_noodara_vo_y" ]; then return 1; fi
+    case "$_noodara_vo_x$_noodara_vo_y" in
+      *[!0-9]*)
+        if [ "$_noodara_vo_x" != "$_noodara_vo_y" ]; then
+          if [ "$(printf '%s\n%s\n' "$_noodara_vo_x" "$_noodara_vo_y" | LC_ALL=C sort | head -n 1)" = "$_noodara_vo_x" ]; then return 0; fi
+          return 1
+        fi
+        ;;
+      *)
+        if [ "$_noodara_vo_x" -lt "$_noodara_vo_y" ]; then return 0; fi
+        if [ "$_noodara_vo_x" -gt "$_noodara_vo_y" ]; then return 1; fi
+        ;;
+    esac
+    _noodara_vo_i=$((_noodara_vo_i + 1))
+  done
+  return 1
+}
+
 # The single place the headline operator-facing output is produced (06-CONTEXT.md D-05/D-13,
 # INST-04/INST-05): the panel URL, the token or the admin-exists/admin-created line, the ufw
 # advisory, the HTTP caveat, and the upgrade rollback hint. A short, calm block -- no ASCII art, no
@@ -2307,7 +2360,11 @@ noodara_print_summary() {
   _noodara_ps_previous=$(noodara_env_get_value "$_noodara_ps_env_path" NOODARA_PREVIOUS_VERSION)
   if [ -n "$_noodara_ps_previous" ] && [ "$_noodara_ps_previous" != "$_noodara_ps_version" ]; then
     noodara_note ""
-    noodara_note "Upgraded from ${_noodara_ps_previous} to ${_noodara_ps_version}. To go back: re-run this installer with NOODARA_VERSION=${_noodara_ps_previous}."
+    if noodara_version_older "$_noodara_ps_version" "$_noodara_ps_previous"; then
+      noodara_note "Rolled back from ${_noodara_ps_previous} to ${_noodara_ps_version}. To go forward: re-run this installer with NOODARA_VERSION=${_noodara_ps_previous}."
+    else
+      noodara_note "Upgraded from ${_noodara_ps_previous} to ${_noodara_ps_version}. To go back: re-run this installer with NOODARA_VERSION=${_noodara_ps_previous}."
+    fi
   fi
 }
 

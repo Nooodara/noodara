@@ -4,6 +4,7 @@ import type { ServerEvent, ServerEventPublisher } from '../events/server-event-p
 import type { services as servicesTable } from '../db/schema/services.js';
 import {
   createServiceServices,
+  buildkitGuard,
   editableFieldsFromRow,
   panelPortsFromEnv,
   recordServiceOperation,
@@ -284,5 +285,22 @@ describe('recordServiceOperation: updatedAt (13-02 A1, H1)', () => {
     const second = await record(fake.db, new Date(STORED.getTime() - 1_000));
     expect(first?.updatedAt).toBe('2026-10-05T10:00:00.001Z');
     expect(second?.updatedAt).toBe('2026-10-05T10:00:00.002Z');
+  });
+});
+
+describe('buildkitGuard', () => {
+  it('passes when BuildKit is available', () => {
+    expect(buildkitGuard(true)).toBeNull();
+  });
+
+  it('keeps SERVER_BUILDKIT_UNAVAILABLE when BuildKit is known to be missing', () => {
+    expect(buildkitGuard(false)).toMatchObject({ ok: false, code: 'SERVER_BUILDKIT_UNAVAILABLE' });
+  });
+
+  it('asks to re-run discovery when BuildKit support is unknown (NULL after a v0.1 upgrade)', () => {
+    const failure = buildkitGuard(null);
+
+    expect(failure).toMatchObject({ ok: false, code: 'SERVER_BUILDKIT_UNKNOWN' });
+    expect(failure?.message.toLowerCase()).toContain('discovery');
   });
 });

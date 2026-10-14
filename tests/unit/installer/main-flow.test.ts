@@ -1711,6 +1711,27 @@ describe.each(posixInterpreters())('install.sh noodara_print_summary (%s)', (int
     expect(result.stdout).toContain('NOODARA_VERSION=1.0.0');
   });
 
+  it.each([
+    ['0.2.0-rc.1', '0.1.0', 'Rolled back from 0.2.0-rc.1 to 0.1.0'],
+    ['0.2.0', '0.1.0', 'Rolled back from 0.2.0 to 0.1.0'],
+    ['0.2.0-rc.1', '0.2.0', 'Upgraded from 0.2.0-rc.1 to 0.2.0'],
+    ['0.1.0', '0.2.0-rc.1', 'Upgraded from 0.1.0 to 0.2.0-rc.1'],
+    ['0.2.0-rc.2', '0.2.0-rc.1', 'Rolled back from 0.2.0-rc.2 to 0.2.0-rc.1'],
+    ['0.9.0', '0.10.0', 'Upgraded from 0.9.0 to 0.10.0'],
+  ])('words a move %s -> %s correctly', (previous, current, expected) => {
+    const installDir = mkdtempSync(join(tmpdir(), 'noodara-summary-'));
+    const envPath = join(installDir, '.env');
+    writeFileSync(envPath, `NOODARA_VERSION=${current}\nNOODARA_PREVIOUS_VERSION=${previous}\n`, 'utf8');
+    const snippet = [
+      'docker() { case "$*" in "compose logs api") printf "no bootstrap needed\\n"; return 0 ;; esac; return 0; }',
+      `noodara_print_summary "https://panel.example.com" "${envPath}" "${current}"`,
+    ].join('\n');
+
+    const result = runInstallerShell(interpreter, snippet, { env: { NOODARA_INSTALL_DIR: installDir } });
+
+    expect(result.stdout).toContain(expected);
+  });
+
   it('omits the upgrade rollback hint on a same-version, no-op re-run', () => {
     const installDir = mkdtempSync(join(tmpdir(), 'noodara-summary-'));
     const envPath = join(installDir, '.env');
