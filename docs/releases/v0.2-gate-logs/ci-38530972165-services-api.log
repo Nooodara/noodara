@@ -1,0 +1,30 @@
+     ✓ refuses an image service on a server without Docker 21ms
+     ✓ refuses an image service on a server whose Docker was never detected 22ms
+     ✓ refuses a Dockerfile service when BuildKit is disabled, but takes an image service (G3) 31ms
+     × refuses a Dockerfile service when BuildKit is unknown, but takes an image service (G3) 25ms
+     ✓ answers 404 for an unknown server, project or service and refuses a duplicate name 44ms
+     ✓ derives status from the latest deployment, never from the cached column alone (A3) 46ms
+   ✓ published ports (A2) (3)
+     ✓ is off by default and refuses a port held by another service on the same server 61ms
+     ✓ refuses the panel's own port at create and at edit 38ms
+     ✓ refuses an edit onto another service's port and frees a port once unpublished 51ms
+   ✓ edit (A3, A5) (3)
+     ✓ flags requiresRedeploy for a source change but not for a rename, and records each edit 43ms
+     ✓ refuses switching to a Dockerfile source on a server without BuildKit 22ms
+     ✓ refuses a rename onto a sibling name 30ms
+   ✓ cross-project ownership (A4) (1)
+     ✓ answers another project's service and environment exactly like missing ones 42ms
+   ✓ hostile input (H1) (4)
+     ✓ maps malformed JSON, oversized and non-object bodies to explicit 4xx 19ms
+     ✓ applies the 12-01 validators server-side and names each violation in a 422 61ms
+--
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/projects/services-api.test.ts > create and read (A1, A3) > refuses a Dockerfile service when BuildKit is unknown, but takes an image service (G3)
+AssertionError: expected 'SERVER_BUILDKIT_UNKNOWN' to be 'SERVER_BUILDKIT_UNAVAILABLE' // Object.is equality
+
+Expected: "SERVER_BUILDKIT_UNAVAILABLE"
+Received: "SERVER_BUILDKIT_UNKNOWN"
+
+ ❯ tests/integration/projects/services-api.test.ts:245:28

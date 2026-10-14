@@ -1,0 +1,23 @@
+
+
+  1) [chromium] › tests/e2e/server-sheet.spec.ts:580:3 › @sheet-drag drag-to-dismiss (UI-06, brief §7.4) › @sheet-drag after a fast release the panel keeps moving in the release direction on the next frame, instead of restarting from rest 
+
+    Error: expect(received).toBeGreaterThanOrEqual(expected)
+
+    Expected: >= 2.54519
+    Received:    1.6506
+
+      596 |     await page.waitForTimeout(16);
+      597 |     const xOneFrameAfterRelease = await readDragSurfaceX(page);
+    > 598 |     expect(xOneFrameAfterRelease).toBeGreaterThanOrEqual(xAtRelease);
+          |                                   ^
+      599 |   });
+      600 |
+      601 |   test('@sheet-drag re-grabbing mid-close resumes 1:1 tracking from the panel\'s current on-screen position', async ({
+        at /home/runner/work/noodara/noodara/tests/e2e/server-sheet.spec.ts:598:35
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/server-sheet--sheet-drag-d-04b89-ead-of-restarting-from-rest-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/server-sheet--sheet-drag-d-04b89-ead-of-restarting-from-rest-chromium/error-context.md
