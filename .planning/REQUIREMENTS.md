@@ -90,10 +90,10 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Hardening y deuda de v0.1 (OPS)
 
-- [ ] **OPS-01**: Los servicios del `docker-compose.yml` de producción rotan logs (`logging` con `max-size`/`max-file`) y el instalador poda los `.env.bak-*` dejando los N más recientes; ambos con tests.
-- [ ] **OPS-02**: La imagen de control-plane deja de embarcar el workspace completo (objetivo: por debajo de 600 MB) sin romper la resolución de módulos, verificado por el test de imagen existente.
-- [ ] **OPS-03**: `check-posix-sh` reconoce `$(( ))`, `[[:space:]]`, `$'` en comentarios y `((` en heredocs sin falsos positivos, y los workarounds de `install.sh` se retiran.
-- [ ] **OPS-04**: La deuda humana de v0.1 se cierra con evidencia: instalación real en Ubuntu 22.04, en arm64 y con ufw activo; un upgrade real entre dos releases publicadas y su rollback; memoria observada en un VPS de 1–2 GB.
+- [x] **OPS-01**: Los servicios del `docker-compose.yml` de producción rotan logs (`logging` con `max-size`/`max-file`) y el instalador poda los `.env.bak-*` dejando los N más recientes; ambos con tests.
+- [x] **OPS-02**: La imagen de control-plane deja de embarcar el workspace completo (objetivo: por debajo de 600 MB) sin romper la resolución de módulos, verificado por el test de imagen existente.
+- [x] **OPS-03**: `check-posix-sh` reconoce `$(( ))`, `[[:space:]]`, `$'` en comentarios y `((` en heredocs sin falsos positivos, y los workarounds de `install.sh` se retiran.
+- [x] **OPS-04**: La deuda humana de v0.1 se cierra con evidencia: instalación real en Ubuntu 22.04, en arm64 y con ufw activo; un upgrade real entre dos releases publicadas y su rollback; memoria observada en un VPS de 1–2 GB. _Completo con deuda aceptada (DECISIONS 2026-10-14): VPS público real, Ubuntu 22.04, arm64, ufw y 1–2 GB quedan UNVERIFIED; evidencia en `docs/releases/v0.2-HUMAN-UAT.md`._
 
 ### Calidad (QA)
 
@@ -208,10 +208,10 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | LOG-04 | Phase 13 | Complete |
 | REC-02 | Phase 13 | Complete |
 | QA-09 | Phase 13 | Complete |
-| OPS-01 | Phase 14 | Pending |
-| OPS-02 | Phase 14 | Pending |
-| OPS-03 | Phase 14 | Pending |
-| OPS-04 | Phase 14 | Pending |
+| OPS-01 | Phase 14 | Complete |
+| OPS-02 | Phase 14 | Complete |
+| OPS-03 | Phase 14 | Complete |
+| OPS-04 | Phase 14 | Complete (deuda aceptada) |
 
 **Coverage:**
 - v1 requirements: 60 total

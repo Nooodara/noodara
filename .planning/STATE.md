@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
-status: ready_to_plan
-stopped_at: Phase 13 complete — ready to plan Phase 14
-last_updated: 2026-10-07T12:00:00.000Z
-last_activity: 2026-10-07 -- Phase 13 closed (24/24 tasks, tier-1 review pass after 1 fail round; integration full, e2e repeat 20/20, UI screenshots approved)
+status: milestone_complete
+stopped_at: v0.2 complete (v0.2.0 published) — next: plan v0.3 (Reliable Deployment Engine)
+last_updated: 2026-10-14T12:00:00.000Z
+last_activity: 2026-10-14 -- Phase 14 closed; v0.2.0 published (multi-arch), human gate closed with accepted debt
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 72
   completed_plans: 72
-  percent: 88
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** Phase 13 — UI de Projects & Services y E2E de deploy
+**Current focus:** v0.3 — Reliable Deployment Engine (por planificar)
 
 ## Current Position
 
-Phase: 13 complete
+Phase: 14 complete (milestone v0.2 complete)
 Plan: —
-Status: Ready to plan Phase 14
-Last activity: 2026-10-06
+Status: Ready to plan v0.3
+Last activity: 2026-10-14
 
-Progress: [██████░░░░] 62%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
