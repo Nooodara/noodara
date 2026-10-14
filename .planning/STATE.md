@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Projects & Services
-status: milestone_complete
-stopped_at: v0.2 complete (v0.2.0 published) — next: plan v0.3 (Reliable Deployment Engine)
+status: phase_15_pending
+stopped_at: Phase 14 closed (tier-1 pass); v0.2.0 published — open: Phase 15 real-host verification (OPS-05, owner: user); next: plan v0.3
 last_updated: 2026-10-14T12:00:00.000Z
-last_activity: 2026-10-14 -- Phase 14 closes on a passing tier-1 review (task 14-17 stays active until then); v0.2.0 published (multi-arch), human gate closed with accepted debt (five real-host checks deferred to OPS-05, owner: user)
+last_activity: 2026-10-14 -- Phase 14 closed on the 4th tier-1 review (pass); v0.2.0 published (multi-arch), human gate closed with accepted debt (five real-host checks deferred to OPS-05, owner: user)
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 8
   total_plans: 72
   completed_plans: 72
