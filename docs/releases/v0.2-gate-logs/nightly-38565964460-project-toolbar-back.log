@@ -1,0 +1,41 @@
+2026-10-14T13:04:35.1239159Z   1) [chromium] › tests/e2e/projects-dod.spec.ts:1274:5 › @projects-dod Phase 13 screens › 14-19 project toolbar at 375 px › A2 the back arrow and the actions menu are keyboard operable with accessible names at 375 px 
+2026-10-14T13:04:35.1239898Z 
+2026-10-14T13:04:35.1240082Z     Error: expect(page).toHaveURL(expected) failed
+2026-10-14T13:04:35.1240290Z 
+2026-10-14T13:04:35.1240474Z     Expected pattern: /\/projects$/
+2026-10-14T13:04:35.1240922Z     Received string:  "http://localhost:3000/projects/01a13a81-84c0-709e-9480-12a2fa9cd1e4"
+2026-10-14T13:04:35.1248101Z     Timeout: 15000ms
+2026-10-14T13:04:35.1248250Z 
+2026-10-14T13:04:35.1248331Z     Call log:
+2026-10-14T13:04:35.1248649Z       - Expect "toHaveURL" with timeout 15000ms
+2026-10-14T13:04:35.1249242Z         34 × locator resolved to <html lang="en" data-theme="dark">…</html>
+2026-10-14T13:04:35.1249829Z            - unexpected value "http://localhost:3000/projects/01a13a81-84c0-709e-9480-12a2fa9cd1e4"
+2026-10-14T13:04:35.1250150Z 
+2026-10-14T13:04:35.1250156Z 
+2026-10-14T13:04:35.1250273Z       1309 |       await back.focus();
+2026-10-14T13:04:35.1250585Z       1310 |       await page.keyboard.press('Enter');
+2026-10-14T13:04:35.1250943Z     > 1311 |       await expect(page).toHaveURL(/\/projects$/);
+2026-10-14T13:04:35.1251264Z            |                          ^
+2026-10-14T13:04:35.1251495Z       1312 |     });
+2026-10-14T13:04:35.1251686Z       1313 |
+2026-10-14T13:04:35.1252132Z       1314 |     test('A2 axe reports no serious or critical violation on the project at 375 px', async ({ page }) => {
+2026-10-14T13:04:35.1252757Z         at /home/runner/work/noodara/noodara/tests/e2e/projects-dod.spec.ts:1311:26
+2026-10-14T13:04:35.1253371Z 
+2026-10-14T13:04:35.1253804Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-10-14T13:04:35.1254496Z     test-results/projects-dod--projects-dod-65461--accessible-names-at-375-px-chromium/test-failed-1.png
+2026-10-14T13:04:35.1255215Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-10-14T13:04:35.1255471Z 
+2026-10-14T13:04:35.1255821Z     Error Context: test-results/projects-dod--projects-dod-65461--accessible-names-at-375-px-chromium/error-context.md
+2026-10-14T13:04:35.1256097Z 
+2026-10-14T13:04:35.1256316Z     attachment #3: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-10-14T13:04:35.1256724Z     test-results/projects-dod--projects-dod-65461--accessible-names-at-375-px-chromium/test-failed-2.png
+2026-10-14T13:04:35.1257157Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-10-14T13:04:35.1257479Z 
+2026-10-14T13:04:35.1257829Z     Error Context: test-results/projects-dod--projects-dod-65461--accessible-names-at-375-px-chromium/error-context.md
+2026-10-14T13:04:35.1258264Z 
+2026-10-14T13:04:35.1258569Z   1 failed
+2026-10-14T13:04:35.1259509Z     [chromium] › tests/e2e/projects-dod.spec.ts:1274:5 › @projects-dod Phase 13 screens › 14-19 project toolbar at 375 px › A2 the back arrow and the actions menu are keyboard operable with accessible names at 375 px 
+2026-10-14T13:04:35.1260225Z   243 passed (6.4m)
+2026-10-14T13:04:35.1549568Z  ELIFECYCLE  Command failed with exit code 1.
+2026-10-14T13:04:35.1706621Z 
+2026-10-14T13:04:35.1707309Z e2e-repeat: iteration 3/20 FAILED (exit 1) after 1226s total -- stopping, not running the remaining iterations.
