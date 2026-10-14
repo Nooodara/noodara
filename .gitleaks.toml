@@ -27,6 +27,8 @@ condition = "OR"
 paths = [
   '''^tests/unit/installer/main-flow\.test\.ts$''',
   '''^tests/unit/installer/env-file\.test\.ts$''',
+  # 14-29: same synthetic .env fixture values as main-flow.test.ts.
+  '''^tests/unit/installer/compose-version-env\.test\.ts$''',
   '''^packages/ui/src/Input\.test\.tsx$''',
   '''^apps/web/src/components/SettingsGroups\.test\.tsx$''',
   '''^apps/web/src/lib/settings-rows\.test\.ts$''',
