@@ -5,7 +5,8 @@
 // lives in the message (D-09). GIT_HOST_KEY_* (14-06): the Git host's SSH key did not match the
 // pinned key, or no key could be pinned (ssh-keyscan failed); the clone never runs unpinned.
 // ENQUEUE_FAILED (14-08): the deploy job never reached the queue; the worker's stale-QUEUED sweep
-// fails the row so the service is not locked forever.
+// fails the row so the service is not locked forever. WORKSPACE_UNAVAILABLE (14-30): the deploy
+// workspace under the SSH user's home could not be created or written (not a repository problem).
 
 export const DEPLOYMENT_ERROR_CODES = Object.freeze([
   'REPOSITORY_AUTH_FAILED',
@@ -31,6 +32,7 @@ export const DEPLOYMENT_ERROR_CODES = Object.freeze([
   'BUILD_STALLED',
   'WORKER_CRASHED',
   'ENQUEUE_FAILED',
+  'WORKSPACE_UNAVAILABLE',
 ] as const);
 
 export type DeploymentErrorCode = (typeof DEPLOYMENT_ERROR_CODES)[number];

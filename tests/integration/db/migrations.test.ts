@@ -209,6 +209,7 @@ describe('migrations applied from scratch (QA-06)', () => {
       '0007_phase14_git_host_key_codes',
       '0008_phase14_service_git_host_key',
       '0009_phase14_enqueue_failed_code',
+      '0010_phase14_workspace_unavailable_code',
     ]);
   });
 

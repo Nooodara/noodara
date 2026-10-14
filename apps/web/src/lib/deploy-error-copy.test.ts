@@ -32,6 +32,14 @@ describe('deploymentErrorCopy', () => {
     expect(copy.recovery).not.toMatch(/redis|postgres/i);
   });
 
+  it('WORKSPACE_UNAVAILABLE (14-30) points at the SSH user\'s home directory, not the repository or deploy key', () => {
+    const copy = deploymentErrorCopy('WORKSPACE_UNAVAILABLE');
+    expect(copy.title).toBe('Deploy workspace unavailable');
+    expect(copy.recovery).toMatch(/home directory/);
+    expect(copy.recovery).toMatch(/SSH user/);
+    expect(copy.recovery).not.toMatch(/repository URL|deploy key/i);
+  });
+
   it('gives every code its own title', () => {
     const titles = DEPLOYMENT_ERROR_CODES.map((code) => deploymentErrorCopy(code).title);
     expect(new Set(titles).size).toBe(titles.length);

@@ -54,7 +54,12 @@ export interface DeployWorkspace {
 const MAX_IMAGE_REF_LENGTH = 255;
 const MAX_REGISTRY_HOST_LENGTH = 255;
 const MAX_RELATIVE_PATH_LENGTH = 255;
-const DEPLOY_WORKSPACE_ROOT = '/opt/noodara-deploy/';
+/**
+ * 14-30 (UAT finding 3): relative to the SSH user's home, where sshd starts every command, so a
+ * non-root user in the docker group needs no host setup. Never absolute: a root-owned base such as
+ * the rc.1 `/opt/noodara-deploy` cannot be created by that user.
+ */
+export const DEPLOY_WORKSPACE_BASE = '.noodara/deploy';
 
 // distribution/reference grammar.
 const PATH_COMPONENT_PATTERN = /^[a-z0-9]+(?:(?:[._]|__|[-]+)[a-z0-9]+)*$/;
@@ -233,7 +238,7 @@ export function deploymentImageRefFor(
 
 export function deployWorkspaceFor(deploymentId: string): ValidationResult<DeployWorkspace> {
   if (!isResourceId(deploymentId)) return resourceIdFailure();
-  const root = `${DEPLOY_WORKSPACE_ROOT}${deploymentId}`;
+  const root = `${DEPLOY_WORKSPACE_BASE}/${deploymentId}`;
   const secretsDir = `${root}/secrets`;
   const runDir = `${root}/run`;
   return ok({

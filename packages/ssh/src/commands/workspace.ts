@@ -20,14 +20,15 @@ export const ASKPASS_SCRIPT_CONTENT = [
   '',
 ].join('\n');
 
+// 14-30: relative to the SSH user's home (DEPLOY_WORKSPACE_BASE); sshd starts commands there.
 const WORKSPACE_ROOT_PATTERN =
-  /^\/opt\/noodara-deploy\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  /^\.noodara\/deploy\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 function assertWorkspaceRoot(workspace: DeployWorkspace): string {
   // Defense in depth for `rm -rf`: the type already requires deployWorkspaceFor's output.
   const root: unknown = (workspace as Partial<DeployWorkspace> | undefined)?.root;
   if (typeof root !== 'string' || !WORKSPACE_ROOT_PATTERN.test(root)) {
-    throw new Error('Refusing a workspace root outside /opt/noodara-deploy/<uuid>');
+    throw new Error('Refusing a workspace root outside .noodara/deploy/<uuid>');
   }
   return root;
 }

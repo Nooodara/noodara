@@ -185,6 +185,33 @@ describe('classifyDockerError text rules', () => {
     expect(result.code).toBe('DISK_FULL');
   });
 
+  it.each([
+    ['pull', "mkdir: cannot create directory '.noodara': Permission denied\n"],
+    ['pull', "mkdir: cannot create directory '/opt/noodara-deploy': Permission denied\n"],
+    ['build', 'sh: 1: cannot create .noodara/deploy/0192f0c4-7b2a-7c3e-9a1b-2c3d4e5f6a7b/run/build.pid: Permission denied\n'],
+    ['login', 'mkdir .noodara/deploy/0192f0c4-7b2a-7c3e-9a1b-2c3d4e5f6a7b/secrets/docker: cannot create directory: Permission denied\nmkdir: cannot create directory \u2018.noodara/deploy\u2019: Permission denied\n'],
+  ] as const)('classifies a %s workspace write failure as WORKSPACE_UNAVAILABLE (14-30)', (operation, stderr) => {
+    const result = classifyDockerError(
+      { operation, failure: failure(stderr) },
+      { redactor: createRedactor() },
+    );
+
+    expect(result.code).toBe('WORKSPACE_UNAVAILABLE');
+    expect(result.message).toMatch(/home directory/);
+  });
+
+  it("keeps a build step's own permission error BUILD_FAILED (no Noodara workspace in the text)", () => {
+    const stderr =
+      "#6 0.2 mkdir: cannot create directory '/app/data': Permission denied\n#6 ERROR: process \"/bin/sh -c mkdir /app/data\" did not complete successfully: exit code: 1\n";
+
+    const result = classifyDockerError(
+      { operation: 'build', failure: failure(stderr) },
+      { redactor: createRedactor() },
+    );
+
+    expect(result.code).toBe('BUILD_FAILED');
+  });
+
   it('does not treat a build log line containing "not found" as IMAGE_NOT_FOUND', () => {
     const stderr =
       '#5 0.1 /bin/sh: foo: not found\n#5 ERROR: process "/bin/sh -c foo" did not complete successfully: exit code: 127\n';
@@ -342,6 +369,7 @@ describe('DOCKER_ERROR_CLASSIFICATION_RULES', () => {
       'docker-unavailable',
       'buildkit-unavailable',
       'disk-full',
+      'workspace-unavailable',
       'registry-auth-failed',
       'image-not-found',
       'dockerfile-not-found',

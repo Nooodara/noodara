@@ -6,6 +6,8 @@ import type { DeploymentErrorCode } from '@noodara/domain/deployment';
 import {
   safeField,
   safeStderr,
+  WORKSPACE_UNAVAILABLE_MESSAGE,
+  WORKSPACE_UNAVAILABLE_PATTERN,
   type ClassifyDeploymentContext,
   type DeploymentClassificationRule,
   type DeploymentFailureClassification,
@@ -64,7 +66,8 @@ function buildFailedMessage(input: unknown): string {
 }
 
 /**
- * Ordered, frozen rule table: daemon unreachable, BuildKit missing, disk full, auth, not found,
+ * Ordered, frozen rule table: daemon unreachable, BuildKit missing, disk full, workspace, auth,
+ * not found,
  * Dockerfile missing, port in use, build step failure, then per-operation fallbacks. Every
  * fallback is a visible named entry; the last one matches everything.
  */
@@ -90,6 +93,13 @@ export const DOCKER_ERROR_CLASSIFICATION_RULES: readonly DeploymentClassificatio
       matches: (input) => stderrMatches(input, DISK_FULL_PATTERN),
       message: () =>
         'The server ran out of disk space. Free disk space on the server (for example unused Docker images), then redeploy.',
+    },
+    {
+      // 14-30: a workspace write (prepare, pidfile, docker config) failed before Docker ran.
+      name: 'workspace-unavailable',
+      code: 'WORKSPACE_UNAVAILABLE',
+      matches: (input) => stderrMatches(input, WORKSPACE_UNAVAILABLE_PATTERN),
+      message: () => WORKSPACE_UNAVAILABLE_MESSAGE,
     },
     {
       name: 'registry-auth-failed',

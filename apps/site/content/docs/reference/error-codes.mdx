@@ -91,3 +91,8 @@ unreachable at that moment), so nothing ran and the service is unchanged. The wo
 deployment `FAILED` once it has waited past the stale-queue threshold (default 2 minutes) with no
 queue job, which frees the service for a new deploy. Check that Redis and Postgres are
 reachable, then deploy again.
+
+`WORKSPACE_UNAVAILABLE`: the deploy workspace could not be created or written. Each deployment works
+in `~/.noodara/deploy/<deploymentId>` under the SSH user's home directory, so a non-root user in the
+`docker` group needs no other setup. Make sure that user has a home directory it can write to (and
+that `~/.noodara` is a directory, not a file), then deploy again.

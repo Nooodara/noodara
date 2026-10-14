@@ -102,6 +102,11 @@ export const DEPLOYMENT_ERROR_COPY: Readonly<Record<DeploymentErrorCode, Deploym
     title: 'Deploy never started',
     recovery: 'The deployment could not be queued, so nothing ran and the service is unchanged. Deploy again.',
   },
+  WORKSPACE_UNAVAILABLE: {
+    title: 'Deploy workspace unavailable',
+    recovery:
+      "Noodara could not write ~/.noodara/deploy on the server. Make sure the SSH user has a home directory it can write to, then deploy again.",
+  },
 });
 
 /** Shown for a code this build of the UI does not know (a newer server) or no code at all. */

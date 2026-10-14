@@ -7,6 +7,7 @@ import {
   type DeployRepoPath,
   type DockerfilePath,
   containerNameFor,
+  DEPLOY_WORKSPACE_BASE,
   deployWorkspaceFor,
   deploymentImageRefFor,
   networkNameFor,
@@ -238,9 +239,9 @@ describe('deterministic names', () => {
 });
 
 describe('deployWorkspaceFor', () => {
-  it('lays out the workspace under /opt/noodara-deploy/<deploymentId>', () => {
+  it("lays out the workspace under .noodara/deploy/<deploymentId>, relative to the SSH user's home", () => {
     const result = deployWorkspaceFor(DEPLOYMENT_ID);
-    const root = `/opt/noodara-deploy/${DEPLOYMENT_ID}`;
+    const root = `.noodara/deploy/${DEPLOYMENT_ID}`;
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -282,10 +283,22 @@ describe('deployWorkspaceFor', () => {
 
     expect(result.value.secretsDir.startsWith(`${result.value.repo}/`)).toBe(false);
   });
+
+  it('never needs a root-owned directory: no path is absolute (14-30, UAT finding 3)', () => {
+    const result = deployWorkspaceFor(DEPLOYMENT_ID);
+    if (!result.ok) throw new Error('expected ok');
+    const ws = result.value;
+
+    expect(DEPLOY_WORKSPACE_BASE).toBe('.noodara/deploy');
+    for (const path of [ws.root, ws.repo, ws.secretsDir, ws.runDir, ws.dockerConfigDir]) {
+      expect(path.startsWith('/')).toBe(false);
+      expect(path.startsWith(`${DEPLOY_WORKSPACE_BASE}/${DEPLOYMENT_ID}`)).toBe(true);
+    }
+  });
 });
 
 describe('resolveRepoBuildPaths', () => {
-  const repo = `/opt/noodara-deploy/${DEPLOYMENT_ID}/repo` as DeployRepoPath;
+  const repo = `.noodara/deploy/${DEPLOYMENT_ID}/repo` as DeployRepoPath;
 
   it("maps '.' to the repository root", () => {
     const paths = resolveRepoBuildPaths(

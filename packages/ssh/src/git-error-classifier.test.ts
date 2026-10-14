@@ -201,6 +201,53 @@ describe('classifyGitError text rules', () => {
   });
 });
 
+// 14-30 (UAT finding 3): the workspace step's own failures, as coreutils, dash and git print them
+// (curly quotes under a UTF-8 locale, ASCII quotes under C). Never CLONE_FAILED's repository advice.
+const WORKSPACE_STDERR = [
+  "mkdir: cannot create directory '/opt/noodara-deploy': Permission denied\n",
+  'mkdir: cannot create directory \u2018.noodara\u2019: Permission denied\n',
+  "mkdir: cannot create directory '.noodara/deploy': Read-only file system\n",
+  "mkdir: cannot create directory '.noodara/deploy/0192f0c4-7b2a-7c3e-9a1b-2c3d4e5f6a7b': Not a directory\n",
+  'sh: 1: cannot create .noodara/deploy/0192f0c4-7b2a-7c3e-9a1b-2c3d4e5f6a7b/secrets/deploy_key: Permission denied\n',
+  "fatal: could not create work tree dir '.noodara/deploy/0192f0c4-7b2a-7c3e-9a1b-2c3d4e5f6a7b/repo': Permission denied\n",
+  "fatal: could not create leading directories of '.noodara/deploy/0192f0c4-7b2a-7c3e-9a1b-2c3d4e5f6a7b/repo': Disk quota exceeded\n",
+];
+
+describe('classifyGitError workspace rule (14-30)', () => {
+  it.each(WORKSPACE_STDERR)('classifies %j as WORKSPACE_UNAVAILABLE', (stderr) => {
+    const result = classifyGitError(cloneFailure({ exitCode: 1, stderr, stdoutTail: '' }), {
+      redactor: createRedactor(),
+    });
+
+    expect(result.code).toBe('WORKSPACE_UNAVAILABLE');
+    expect(result.message).toMatch(/home directory/);
+    expect(result.message).not.toMatch(/repository URL|deploy key/i);
+    expect(result.message).not.toContain('noodara-deploy');
+  });
+
+  it.each([
+    "fatal: could not create work tree dir '/srv/app': Permission denied\n",
+    "mkdir: cannot create directory '/app/data': Permission denied\n",
+    'remote: mkdir .noodara failed\nfatal: something new happened\n',
+  ])('leaves %j, which names no Noodara workspace, to the other rules', (stderr) => {
+    const result = classifyGitError(cloneFailure({ exitCode: 128, stderr, stdoutTail: '' }), {
+      redactor: createRedactor(),
+    });
+
+    expect(result.code).toBe('CLONE_FAILED');
+  });
+
+  it('keeps DISK_FULL ahead of it: a full disk is not a permissions problem', () => {
+    const stderr = "mkdir: cannot create directory '.noodara/deploy/x': No space left on device\n";
+
+    const result = classifyGitError(cloneFailure({ exitCode: 1, stderr, stdoutTail: '' }), {
+      redactor: createRedactor(),
+    });
+
+    expect(result.code).toBe('DISK_FULL');
+  });
+});
+
 describe('classifyGitError feature probe rule (D-09)', () => {
   it('classifies an lfs probe as UNSUPPORTED_REPOSITORY_FEATURE', () => {
     const input: GitFailureInput = {

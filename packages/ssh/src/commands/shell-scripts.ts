@@ -20,7 +20,11 @@ export const SHELL_SCRIPTS = Object.freeze({
     'submodules=0',
     'lfs=0',
     "if [ -e .gitmodules ] || git ls-files -s | grep -q '^160000 '; then submodules=1; fi",
-    "if git grep -q -I -F -e filter=lfs -- '*.gitattributes' || git grep -q -I -F -e 'version https://git-lfs.github.com/spec/v1'; then lfs=1; fi",
+    // 14-30: real evidence only, so a repo that merely quotes the pointer header is not LFS: a
+    // `filter=lfs` attribute on a non-comment line of a .gitattributes, or a file whose first line
+    // is exactly the pointer header (`-h -n` prints `<lineno>:<line>`; `grep -x` matches it whole).
+    "if git grep -h -I --no-color -F -e filter=lfs -- .gitattributes '*/.gitattributes' | grep -q -x -E -e '[[:space:]]*[^#[:space:]].*[[:space:]]filter=lfs([[:space:]].*)?'; then lfs=1; fi",
+    "if git grep -h -n -I --no-color -F -e 'version https://git-lfs.github.com/spec/v1' | grep -q -x -F -e '1:version https://git-lfs.github.com/spec/v1'; then lfs=1; fi",
     'echo "submodules=$submodules"',
     'echo "lfs=$lfs"',
   ].join('\n'),

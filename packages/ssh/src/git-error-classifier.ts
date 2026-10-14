@@ -96,6 +96,15 @@ const REPOSITORY_NOT_FOUND_PATTERN =
   /does not appear to be a git repository|ERROR: Repository not found\.|remote: Repository not found\./;
 const BRANCH_NOT_FOUND_PATTERN = /Remote branch \S+ not found in upstream origin/;
 const DISK_FULL_PATTERN = /No space left on device/;
+// 14-30: coreutils mkdir, dash redirects and git refusing a path inside a Noodara workspace (the
+// home-relative `.noodara/deploy` or the rc.1 `/opt/noodara-deploy`). The path must be ours, so a
+// Dockerfile step's own permission error is never mistaken for it.
+export const WORKSPACE_UNAVAILABLE_PATTERN =
+  /(?:cannot create(?: directory)?|could not create (?:work tree dir|leading directories of)) \S*?(?:\.noodara|noodara-deploy)\b[^\n]*: (?:Permission denied|Read-only file system|Not a directory|File exists|Disk quota exceeded)/;
+
+export const WORKSPACE_UNAVAILABLE_MESSAGE =
+  "The deploy workspace could not be created in the SSH user's home directory (~/.noodara/deploy). Make sure the SSH user has a home directory it can write to, then redeploy.";
+
 const HOST_KEY_MISMATCH_PATTERN =
   /REMOTE HOST IDENTIFICATION HAS CHANGED!|Host key verification failed\.|host key is known for \S+ and you have requested strict checking/;
 
@@ -118,6 +127,13 @@ export const GIT_ERROR_CLASSIFICATION_RULES: readonly DeploymentClassificationRu
       matches: (input) => stderrMatches(input, DISK_FULL_PATTERN),
       message: () =>
         'The server ran out of disk space while fetching the repository. Free disk space on the server, then redeploy.',
+    },
+    {
+      // 14-30: the workspace step, before any network access; an infrastructure cause.
+      name: 'workspace-unavailable',
+      code: 'WORKSPACE_UNAVAILABLE',
+      matches: (input) => stderrMatches(input, WORKSPACE_UNAVAILABLE_PATTERN),
+      message: () => WORKSPACE_UNAVAILABLE_MESSAGE,
     },
     {
       // 14-06: StrictHostKeyChecking=yes refused the host (changed key, or no pinned key of the

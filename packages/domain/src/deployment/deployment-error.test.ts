@@ -27,12 +27,13 @@ describe('DEPLOYMENT_ERROR_CODES', () => {
       'BUILD_STALLED',
       'WORKER_CRASHED',
       'ENQUEUE_FAILED',
+      'WORKSPACE_UNAVAILABLE',
     ]);
   });
 
-  it('has 23 codes and no duplicates', () => {
-    expect(DEPLOYMENT_ERROR_CODES.length).toBe(23);
-    expect(new Set(DEPLOYMENT_ERROR_CODES).size).toBe(23);
+  it('has 24 codes and no duplicates', () => {
+    expect(DEPLOYMENT_ERROR_CODES.length).toBe(24);
+    expect(new Set(DEPLOYMENT_ERROR_CODES).size).toBe(24);
   });
 
   it('is frozen', () => {

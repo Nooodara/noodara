@@ -16,7 +16,7 @@ const SERVICE_ID = 'c6f053d9-77ca-4ea6-86df-105f47c7d9fb';
 const DEPLOYMENT_ID = 'ca11b80a-9630-49f9-90f2-06a316ab8698';
 const PREVIOUS_DEPLOYMENT_ID = '0b5e6c1d-2f3a-4b5c-8d9e-0f1a2b3c4d5e';
 
-const WORKSPACE = `/opt/noodara-deploy/${DEPLOYMENT_ID}`;
+const WORKSPACE = `.noodara/deploy/${DEPLOYMENT_ID}`;
 const IMAGE = `noodara/${SERVICE_ID}:${DEPLOYMENT_ID}`;
 const PREVIOUS_IMAGE = `noodara/${SERVICE_ID}:${PREVIOUS_DEPLOYMENT_ID}`;
 const NETWORK = `noodara-net-${SERVICE_ID}`;

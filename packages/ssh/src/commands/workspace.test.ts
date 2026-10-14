@@ -76,8 +76,26 @@ describe('removeDeployDir', () => {
     expect(() => removeDeployDir('/')).toThrow();
   });
 
-  it.each(['/', '/opt/noodara-deploy', '/opt/noodara-deploy/', '/home/deployer', ws.repo])(
-    'refuses a force-cast root %j outside /opt/noodara-deploy/<uuid> (defense in depth for rm -rf)',
+  it('removes the home-relative root (14-30): never an absolute path', () => {
+    expect(ws.root).toMatch(/^\.noodara\/deploy\/[0-9a-f-]{36}$/);
+    expect(removeDeployDir(ws).argv.at(-1)).toBe(ws.root);
+  });
+
+  it.each([
+    '/',
+    '.',
+    '',
+    '.noodara',
+    '.noodara/deploy',
+    '.noodara/deploy/',
+    `.noodara/deploy/${ws.root.slice(-36)}/..`,
+    `./.noodara/deploy/${ws.root.slice(-36)}`,
+    `/opt/noodara-deploy/${ws.root.slice(-36)}`,
+    `/home/deployer/.noodara/deploy/${ws.root.slice(-36)}`,
+    '/home/deployer',
+    ws.repo,
+  ])(
+    'refuses a force-cast root %j outside .noodara/deploy/<uuid> (defense in depth for rm -rf)',
     (root) => {
       expect(() => removeDeployDir({ ...ws, root: root as never })).toThrow(/workspace root/);
     },
@@ -146,7 +164,7 @@ describe('askpassFileFor (A1: the askpass helper has its own secret slot)', () =
   });
 
   it.each([
-    { label: 'a root outside /opt/noodara-deploy/<uuid>', forged: { ...ws, root: '/tmp/x' } },
+    { label: 'a root outside .noodara/deploy/<uuid>', forged: { ...ws, root: '/tmp/x' } },
     { label: 'a secretsDir that is not <root>/secrets', forged: { ...ws, secretsDir: '/usr/local/bin' } },
   ])('refuses a forged workspace: $label (git executes this path)', ({ forged }) => {
     expect(() => askpassFileFor(forged as unknown as DeployWorkspace)).toThrow(/workspace/);

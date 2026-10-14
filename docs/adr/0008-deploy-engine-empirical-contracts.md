@@ -49,7 +49,7 @@ measured on an amd64 Linux runner (see Open items).
 |---|---|
 | Any secret file (deploy key, known_hosts, token) | exec stdin to `sh -c 'umask 077 && cat > "$0"' <path>`; path is a positional parameter, content never in argv |
 | Registry credentials | `docker --config <ws>/secrets/docker login --username <u> --password-stdin <registry>`; per-deployment config dir, never `~/.docker` |
-| Workspace | `sh -c 'umask 077 && mkdir -p "$0/secrets" "$0/run"' /opt/noodara-deploy/<deploymentId>`; removed with `rm -rf` after the deployment |
+| Workspace | `sh -c 'umask 077 && mkdir -p "$0/secrets" "$0/run"' .noodara/deploy/<deploymentId>`, relative to the SSH user's home (sshd starts every command there; 14-30, was `/opt/noodara-deploy` until rc.1, which a non-root docker-group user cannot create); removed with `rm -rf` after the deployment |
 
 Enforced by: `G1 / ADR 0008: stdin to \`umask 077 && cat > <path>\` lands byte-identical, 0600, ...`,
 `G1 / ADR 0008: a deploy key delivered over stdin clones through GIT_SSH_COMMAND ...`,
@@ -70,6 +70,12 @@ Enforced by: `G1 / ADR 0008: stdin to \`umask 077 && cat > <path>\` lands byte-i
 **Surprise:** SFTP raw `open(mode 0o666)` lands at **664**: sftp-server runs with umask 002
 (pam_umask, user-private groups). `createWriteStream({ mode: 0o600 })` only reaches 600 because
 ssh2 follows the open with `fchmod`.
+
+**Workspace failures (14-30):** a workspace that cannot be created or written (`mkdir: cannot
+create directory ...`, dash's `cannot create <path>`, git's `could not create work tree dir`) is
+`WORKSPACE_UNAVAILABLE`, by the same text rule in both classifiers, only when the path is a Noodara
+workspace (`.noodara/...` or `noodara-deploy`), so a Dockerfile step's own permission error stays
+`BUILD_FAILED`. Measured live in `deploy-engine/workspace-non-root.test.ts`.
 
 **Surprise:** git exits 128 for all four failure classes on both versions. `classifyGitError`
 (11-11) must key on stderr markers (captured in `packages/ssh/src/fixtures/deploy-errors/`),
