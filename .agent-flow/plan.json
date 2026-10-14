@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-14T17:51:36.361Z",
+  "updatedAt": "2026-10-14T22:23:21.946Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -5331,9 +5331,25 @@
               "id": "A5",
               "text": "ADR 0010 status is Accepted",
               "proof": "adr-0010-accepted"
+            },
+            {
+              "id": "H1",
+              "text": "The ADR records the measured probe cost and a hard output/time cap per probe, and states that the probe never sends the service's secrets or env and never follows redirects to a different host",
+              "proof": "manual"
+            },
+            {
+              "id": "H2",
+              "text": "The HTTP probe never follows redirects (a 3xx is a status result compared against expected statuses), only uses http:// to the container address chosen in the ADR, and sends no cookies, credentials or cache headers",
+              "proof": "it-contracts-v03"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "auth-secrets/secret-logging",
+            "http-api/redirect-cache",
+            "http-api/url-scheme-allowlist",
+            "auth-secrets/password-hashing"
+          ],
           "tier": "deep"
         },
         {
@@ -5391,9 +5407,22 @@
               "id": "A6",
               "text": "The domain-model skill §4 documents the v0.3 table and points to ADR 0010",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "A property test walks random transition sequences through transitionDeployment and asserts no sequence leaves a terminal state, reaches ROLLED_BACK without passing ROLLING_BACK, or reaches SUCCESS without passing HEALTHCHECK (except trigger rollback after its own HEALTHCHECK)",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Every status, trigger, error code and log phase tuple has a test that fails when a value exists in the domain but not in the DB enum list or the api-contract enum (no drift)",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "randomness/crypto-random"
+          ],
           "tier": "deep"
         },
         {
@@ -5441,6 +5470,16 @@
             {
               "id": "A5",
               "text": "The probe-output parser from ADR 0010 is total: garbage, truncated or oversized output becomes a failed observation, never an exception",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Healthcheck validator rejects non-integer, NaN, negative and fractional numerics, non-http status codes in expectedStatuses, and strips nothing silently: unknown fields give a named error; paths over a max length (e.g. 256) are rejected",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "decideHealthcheck is pure and deterministic: the same (policy,state,observation) always returns the same decision and the retry delay never exceeds the remaining budget; an observation after the budget is exhausted yields HEALTHCHECK_TIMEOUT, never another retry",
               "proof": "test"
             }
           ],
@@ -5492,9 +5531,26 @@
               "id": "A4",
               "text": "Idempotency keys are 1–255 visible ASCII; requestFingerprint is stable under key order and differs for any semantic change",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "selectRollbackTarget never returns a deployment whose status is not SUCCESS or whose runtime_config is null/unparseable, and returns a named reason (not an exception) for empty history and for a history containing only the current deployment",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "requestFingerprint hashes with SHA-256 over a canonical serialization, is collision-safe across field boundaries (a=\"b\",c=\"\" differs from a=\"\",c=\"b\"), and the idempotency key validator rejects empty, over-255, control chars and whitespace-only keys",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "RuntimeConfigSnapshot parsing never echoes unknown or secret-looking values in its error messages and enforces bounded string lengths on image ref",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/secret-logging"
+          ],
           "tier": "standard"
         },
         {
@@ -5534,6 +5590,16 @@
             {
               "id": "A4",
               "text": "Delivery outcomes are a closed vocabulary shared with the schema; the module imports no I/O (purity test green)",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "matchPush normalizes repository URL comparison case-insensitively on host and strips trailing .git and slash, and treats refs/heads/<branch> comparison as exact (a branch named with a prefix of the configured one does not match); non-40-hex or uppercase SHAs are rejected",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Webhook payload schemas cap string lengths and array sizes (commits array, repository fields) so an oversized but valid JSON payload cannot allocate unbounded memory in parse",
               "proof": "test"
             }
           ],
@@ -5588,9 +5654,30 @@
               "id": "A5",
               "text": "The one-active partial unique index is recreated from the new non-terminal set; migration applies from scratch and from the v0.2.0 schema with existing rows unchanged",
               "proof": "it-db"
+            },
+            {
+              "id": "H1",
+              "text": "Migration 0011 is additive and idempotent: running it twice is a no-op, it takes no long ACCESS EXCLUSIVE lock on a populated deployments table (nullable columns without rewriting defaults), and a down/forward test on a DB with 10k deployment rows completes within a documented bound",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "ALTER TYPE ADD VALUE statements are not wrapped in a transaction that then uses the new value in the same migration, and the test applies the migration on the exact PostgreSQL 16 version used in production",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "The webhook hook id column and idempotency (service_id, idempotency_key) unique constraints are enforced at DB level and a concurrent double insert yields exactly one row (constraint violation surfaces as a typed error, not a 500)",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "persistence/atomic-write",
+            "persistence/missing-file-boot",
+            "auth-secrets/password-hashing",
+            "auth-secrets/secret-logging",
+            "randomness/crypto-random"
+          ],
           "tier": "deep"
         }
       ]
@@ -5656,9 +5743,23 @@
               "id": "A4",
               "text": "Probe output is capped to a fixed byte budget and never includes the response body beyond it",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Probe and rename templates run under the existing supervised timeout wrapper with a hard max duration so a hung endpoint cannot hold the SSH channel past the probe budget; the -prev rename refuses to overwrite an existing noodara-<serviceId>-prev (explicit named error, not silent removal of another version)",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Probe output redaction: the probe stdout/stderr passes the Redactor and a canary placed in the container's response body never appears in logs, activity or the log phase beyond the status line",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot"
+          ],
           "tier": "deep"
         },
         {
@@ -5712,9 +5813,24 @@
               "id": "A5",
               "text": "Integration on 24.04: HTTP pass, wrong status, timeout, TCP pass; services without config keep the v0.2 result (runtime-pipeline green)",
               "proof": "it-runtime-pipeline"
+            },
+            {
+              "id": "H1",
+              "text": "The ledger cleanup set for FAILED, CANCELLED, timeout and WORKER_CRASHED never contains the -prev container or the previous deployment's image, and executing cleanup twice is idempotent (second run no error); proven with fake ports for every exit path in HEALTHCHECK",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "The window between stopping the previous container and starting the new one is bounded: if the new container fails to start after the old was renamed to -prev, the failure path restores -prev even when auto_rollback is off (no silent downtime without a restore attempt), with a test per case",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot"
+          ],
           "tier": "deep"
         },
         {
@@ -5764,9 +5880,22 @@
               "id": "A5",
               "text": "After rollback success and rollback failure the ledger cleanup leaves no orphan containers, images beyond retention, networks or workspaces",
               "proof": "it-rollback"
+            },
+            {
+              "id": "H1",
+              "text": "If the rollback restore itself fails (rename or start error, SSH drop), the deployment ends FAILED/ROLLBACK_FAILED within the rollback budget, never stays in ROLLING_BACK, and the worker does not retry the rollback recursively (single attempt, tested)",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "A rollback triggered by a deployment that was itself CANCELLED or timed out in BUILDING never fires (auto-rollback applies only to DEPLOYING/HEALTHCHECK failures), tested per source state",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot"
+          ],
           "tier": "deep"
         },
         {
@@ -5806,6 +5935,11 @@
               "id": "A3",
               "text": "Integration: after five deploys with retention 3, exactly the running image and three previous known-good images remain",
               "proof": "it-rollback"
+            },
+            {
+              "id": "H1",
+              "text": "Image retention runs under the same per-service serialization as deployments so it cannot race with an in-flight deploy or manual rollback and remove an image that a PREPARING rollback target needs; image removal only targets images with the noodara/<serviceId> repository and managed label",
+              "proof": "test"
             }
           ],
           "waives": [],
@@ -5863,9 +5997,22 @@
               "id": "A5",
               "text": "Route body cap and zod validation on every new input; no field of the response carries a credential",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Manual rollback concurrent requests (two parallel POSTs, with and without Idempotency-Key) yield exactly one 202 and one 409 DEPLOYMENT_IN_PROGRESS or the replayed original; rollback targets whose image is missing on the server are re-validated in the worker (not only at the API) and end FAILED/ROLLBACK_TARGET_UNAVAILABLE without touching the running container",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "The history endpoint caps page size, rejects malformed cursors/limits with 4xx, and scopes rows to the service in the path (foreign service id returns 404)",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "auth-secrets/secret-logging"
+          ],
           "tier": "deep"
         },
         {
@@ -5913,9 +6060,21 @@
               "id": "A4",
               "text": "Every terminal state reached in these tests is reachable through transitionDeployment only (no direct status writes)",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Cancel racing with the HEALTHCHECK-to-SUCCESS transition and with the DEPLOYING-to-ROLLING_BACK transition leaves exactly one terminal state and exactly one running container; proven by a race test using the row lock",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "The boot sweep is idempotent and safe when run by two workers at once (row lock / claim) and when the server is unreachable: the row is left for the next sweep with a warning, never marked terminal while the remote state is unknown",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap"
+          ],
           "tier": "deep"
         }
       ]
@@ -5977,9 +6136,29 @@
               "id": "A4",
               "text": "Image-source services get 422; the action requires a session and is an activity event",
               "proof": "it-webhooks"
+            },
+            {
+              "id": "H1",
+              "text": "Webhook secret and hook id come from crypto.randomBytes (no Math.random), the hook id is not derivable from service id, and rotation is atomic: a concurrent delivery during rotate is verified against exactly one of old or new secret, never neither or both",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Enable is idempotent while already enabled (does not silently rotate the secret, named 409 or returns without secret) and disable invalidates the hook id so a later delivery gets the same 401 as an unknown id",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "The payload URL is built only from the configured public origin (http or https, validated at boot), never from the request Host or X-Forwarded-* headers; the enable/rotate/disable routes have a body cap and zod validation",
+              "proof": "it-webhooks"
             }
           ],
-          "waives": [],
+          "waives": [
+            "persistence/missing-file-boot",
+            "auth-secrets/password-hashing",
+            "auth-secrets/secret-logging",
+            "http-api/url-scheme-allowlist"
+          ],
           "tier": "deep"
         },
         {
@@ -6032,9 +6211,26 @@
               "id": "A5",
               "text": "Neither payload, signature nor secret is logged; error responses carry no internal ids",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "HMAC verification compares equal-length buffers (length mismatch is rejected without throwing from timingSafeEqual), uses the raw bytes exactly as received (no re-serialization), and a signature check against a rotated-out secret fails; rate-limit counters are bounded in memory (no unbounded per-IP map growth)",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Delivery dedupe is race-safe: two concurrent identical X-GitHub-Delivery requests create exactly one deployment (unique constraint on hook+delivery id) and both answer 2xx with the same deployment id; a missing X-GitHub-Delivery header is rejected 400 after signature verification",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "The receiver never triggers on a service whose project is archived, whose source is image, or whose webhook is disabled, recording a named outcome; a failure to enqueue after the delivery row is written marks the deployment FAILED with a named code rather than leaving QUEUED without a job",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/secret-logging"
+          ],
           "tier": "deep"
         },
         {
@@ -6082,9 +6278,16 @@
               "id": "A4",
               "text": "Manual deploys without a requested SHA keep the v0.2 behaviour (runtime-pipeline green)",
               "proof": "it-runtime-pipeline"
+            },
+            {
+              "id": "H1",
+              "text": "A requested SHA is passed through the validated 40-hex branded type and never interpolated; a hostile value (leading '-', non-hex, 41 chars, short SHA) is rejected before any remote command, and fetch-by-SHA failure for servers disallowing it falls back or fails with COMMIT_NOT_FOUND per ADR 0010, tested against the real bare repo",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap"
+          ],
           "tier": "deep"
         },
         {
@@ -6124,6 +6327,16 @@
               "id": "A3",
               "text": "A pending SHA equal to the SHA just deployed is dropped with outcome already_deployed",
               "proof": "it-webhooks"
+            },
+            {
+              "id": "H1",
+              "text": "Coalescing is race-safe under concurrent pushes: N parallel pushes while a deploy is active result in exactly one pending trigger (the newest by receipt order), all older deliveries marked superseded, and exactly one follow-up deployment",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "If the follow-up enqueue from a pending trigger fails, the pending trigger is retained (not lost) and retried on the next terminal event or sweep; the drain is also executed on the worker-crash sweep path",
+              "proof": "test"
             }
           ],
           "waives": [],
@@ -6177,9 +6390,22 @@
               "id": "A4",
               "text": "The BullMQ lock and stalled settings stay derived from NOODARA_DEPLOY_MAX_MS (D15) with a test",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Idempotency records expire after 24 h and are cleaned by a bounded job; the stored fingerprint contains no request secrets; an Idempotency-Key longer than 255 or with invalid characters returns 4xx without creating a deployment",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "A re-delivered BullMQ job for a row in PREPARING/BUILDING/DEPLOYING follows the ADR resume rule without a second noodara-<serviceId> container, and a job for a terminal row exits without any remote command, proven by a fake-port call count",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "auth-secrets/secret-logging"
+          ],
           "tier": "deep"
         }
       ]
@@ -6237,9 +6463,20 @@
               "id": "A3",
               "text": "Existing deploy E2E stays green",
               "proof": "e2e-deploy"
+            },
+            {
+              "id": "H1",
+              "text": "Unknown or future status/error-code values from the API render a generic fallback pill and message instead of throwing; user-facing copy never includes raw remote stderr",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap",
+            "persistence/atomic-write",
+            "persistence/missing-file-boot",
+            "persistence/concurrent-writes"
+          ],
           "tier": "standard"
         },
         {
@@ -6282,7 +6519,9 @@
               "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap"
+          ],
           "tier": "standard"
         },
         {
@@ -6322,9 +6561,31 @@
               "id": "A3",
               "text": "Recent deliveries list outcome, short SHA, time and a link to the deployment; GET /api/services/:id/webhook/deliveries is paginated and returns no payload",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "The webhook secret is held only in component state (not localStorage, URL, query cache or logs/console), is cleared on unmount and on rotate/disable, and the copy buttons announce success accessibly",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Deliveries list renders outcome, SHA and ids as text only and tolerates unknown outcomes with a fallback row; the payload URL is built from the server-provided origin and validated hook id only",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "GET /api/services/:id/webhook/deliveries validates limit and cursor with zod, caps the page size and rejects malformed cursors with 400",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/url-scheme-allowlist",
+            "persistence/atomic-write",
+            "persistence/missing-file-boot",
+            "persistence/concurrent-writes",
+            "auth-secrets/secret-logging"
+          ],
           "tier": "standard"
         },
         {
@@ -6363,9 +6624,17 @@
               "id": "A3",
               "text": "The rollback request sends an Idempotency-Key so a double click creates one deployment",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Rollback dialog confirm button is disabled while the request is in flight and the Idempotency-Key is generated with crypto.randomUUID once per dialog open and reused on retry; a 409 DEPLOYMENT_IN_PROGRESS shows actionable copy",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap"
+          ],
           "tier": "standard"
         },
         {
@@ -6409,9 +6678,17 @@
               "id": "A4",
               "text": "Redelivering the same X-GitHub-Delivery adds no history row",
               "proof": "e2e-engine"
+            },
+            {
+              "id": "H1",
+              "text": "E2E signed-push helper computes the HMAC over the exact bytes sent and tests a wrong-signature push (401, no history row) and a ping, so the negative auth path is exercised through the real stack; E2E stack is fresh per run and the secret is a per-run random value",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "randomness/crypto-random"
+          ],
           "tier": "deep"
         },
         {
@@ -6500,6 +6777,11 @@
               "id": "A2",
               "text": "Missing scenarios (dependency failure, Docker build failure on both versions) are added; the whole deploy-engine suite is green with NOODARA_TEST_UBUNTU=all",
               "proof": "it-deploy-engine-all"
+            },
+            {
+              "id": "H1",
+              "text": "The scenario map test also fails when a mapped test is skipped (it.skip/todo) or when a scenario lacks coverage on either Ubuntu version",
+              "proof": "test"
             }
           ],
           "waives": [],
@@ -6540,6 +6822,11 @@
               "id": "A3",
               "text": "nightly.yml runs the cycles suite and fails on any orphan",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "The cycles suite records per-iteration duration and docker system df to a CI artifact, asserts no iteration exceeds NOODARA_DEPLOY_MAX_MS, and asserts Postgres row counts for deployment_log_chunks and webhook_deliveries match the requests issued (no lost or duplicated records)",
+              "proof": "test"
             }
           ],
           "waives": [],
@@ -6576,9 +6863,24 @@
               "id": "A2",
               "text": "The leak canary seeds a webhook secret and a signature and finds neither in HTTP, SSE, logs, activity or docker inspect",
               "proof": "security-leaks"
+            },
+            {
+              "id": "H1",
+              "text": "The security review checks webhook receiver abuse cases with tests: replayed valid signed payload with a new delivery id for an already deployed SHA yields already_deployed, oversized/slow bodies are rejected, and a signature timing test shows no early-exit on prefix match; findings table lists severity, status and mitigation",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "pnpm audit reports no critical and only documented high vulnerabilities for new dependencies added in v0.3, and the leak canary also seeds the Idempotency-Key and rollback request bodies and finds no credential in idempotency storage",
+              "proof": "manual"
             }
           ],
-          "waives": [],
+          "waives": [
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot",
+            "auth-secrets/password-hashing",
+            "auth-secrets/secret-logging"
+          ],
           "tier": "deep"
         },
         {
@@ -6616,6 +6918,11 @@
               "id": "A2",
               "text": "it-full, e2e-full, site build, audit and migration hygiene green on that commit; CI and nightly green",
               "proof": "it-full"
+            },
+            {
+              "id": "H1",
+              "text": "The gate document lists each §8.10 criterion with a link to the exact test or log and the commit SHA, and a criterion without evidence forces NOT READY; the gate commit equals the commit that CI and nightly ran on",
+              "proof": "manual"
             }
           ],
           "waives": [],
@@ -6650,9 +6957,18 @@
               "id": "A2",
               "text": "v0.3.0 tagged only after the user's approval; release.yml green with multi-arch images",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "The v0.2.0 to v0.3 upgrade check verifies migration 0011 on a database with real v0.2 deployments and services, that existing services default to container healthcheck, and that the documented downgrade/rollback path restores service without data loss",
+              "proof": "manual"
             }
           ],
-          "waives": [],
+          "waives": [
+            "persistence/atomic-write",
+            "persistence/missing-file-boot",
+            "persistence/concurrent-writes"
+          ],
           "tier": "deep"
         }
       ]
