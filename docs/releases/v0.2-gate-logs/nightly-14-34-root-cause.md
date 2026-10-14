@@ -45,4 +45,11 @@ después de cada paso.
 
 ## Verificación
 
-Ver tabla de cierre abajo.
+| Comprobación | Resultado |
+|---|---|
+| `pnpm test`, `pnpm typecheck`, `pnpm lint` | verdes |
+| e2e-dod en reposo (`projects-dod` + `dod-hardening`) | 57/57 |
+| e2e-sheet (`server-sheet.spec.ts`) | 19/19 |
+| A2 flecha atrás + menú, `--repeat-each=20` en reposo | 20/20 |
+| RED determinista con el fix | 3/3 (corrida del executor previo; el probe ya no existe) |
+
