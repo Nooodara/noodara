@@ -1,0 +1,10 @@
+services: [('node-api', 'RUNNING')]
+deployment history: [('CANCELLED', None), ('FAILED', 'BUILD_FAILED'), ('SUCCESS', None), ('FAILED', 'DOCKERFILE_NOT_FOUND')]
+== docker stats (rc.2, 1 server, 1 service)
+noodara-web-1 54.77MiB / 256MiB
+noodara-api-1 63.28MiB / 256MiB
+noodara-worker-1 47.23MiB / 256MiB
+noodara-01a13b65-6563-7fe7-aae6-5921f760d13a 14.79MiB / 5.792GiB
+noodara-postgres-1 44.64MiB / 512MiB
+noodara-redis-1 10.05MiB / 96MiB
+host used MB: 1206 of 5930

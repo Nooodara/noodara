@@ -1,0 +1,37 @@
+2026-10-14T17:14:34Z
+Noodara installer
+Checking system requirements...
+System requirements satisfied.
+Docker Engine and the Compose plugin are already installed; nothing to do.
+Starting services...
+ Container noodara-postgres-1 Running 
+ Container noodara-redis-1 Running 
+ Container noodara-migrate-1 Recreate 
+ Container noodara-migrate-1 Recreated 
+ Container noodara-api-1 Recreate 
+ Container noodara-worker-1 Recreate 
+ Container noodara-worker-1 Recreated 
+ Container noodara-api-1 Recreated 
+ Container noodara-web-1 Recreate 
+ Container noodara-web-1 Recreated 
+ Container noodara-postgres-1 Healthy 
+ Container noodara-migrate-1 Starting 
+ Container noodara-migrate-1 Started 
+ Container noodara-redis-1 Healthy 
+ Container noodara-redis-1 Healthy 
+ Container noodara-migrate-1 Exited 
+ Container noodara-api-1 Starting 
+ Container noodara-migrate-1 Exited 
+ Container noodara-worker-1 Starting 
+ Container noodara-api-1 Started 
+ Container noodara-worker-1 Started 
+ Container noodara-api-1 Healthy 
+ Container noodara-web-1 Starting 
+ Container noodara-web-1 Started 
+All services are healthy.
+Noodara is running.
+Panel: http://<vps-ip>:3000
+An admin account already exists.
+WARNING: the panel is served over plain HTTP -- traffic, including the session cookie, is unencrypted until v0.4's TLS proxy (or your own) is in front. See docs/install.md.
+Rolled back from 0.2.0-rc.2 to 0.1.0. To go forward: re-run this installer with NOODARA_VERSION=0.2.0-rc.2.
+rc=0
