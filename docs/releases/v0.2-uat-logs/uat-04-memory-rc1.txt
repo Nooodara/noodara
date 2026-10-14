@@ -1,0 +1,7 @@
+== docker stats (v0.2.0-rc.1, 1 server, 2 services)
+noodara-web-1 70.5MiB / 256MiB 0.00%
+noodara-worker-1 56.99MiB / 256MiB 0.01%
+noodara-api-1 75.52MiB / 256MiB 0.02%
+noodara-postgres-1 25.07MiB / 512MiB 3.26%
+noodara-redis-1 9.602MiB / 96MiB 0.66%
+host used MB: 1210 of 5930
