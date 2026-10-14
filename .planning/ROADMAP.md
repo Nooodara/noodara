@@ -37,6 +37,7 @@ Full phase details, plans and success criteria: [milestones/v0.1-ROADMAP.md](mil
 - [x] **Phase 12: Motor de deploy — runtime** - Cola, worker, cancelación con kill confirmado, limpieza en toda salida, reconciliación, API y SSE; 20 deploys y 20 ciclos sin huérfanos. (completed 2026-10-05)
 - [x] **Phase 13: UI de Projects & Services y E2E de deploy** - Jerarquía, creación de servicio, deploy narrado, logs en vivo en el inspector y el E2E crítico contra fixtures reales.
 - [x] **Phase 14: Hardening y gate de release v0.2** - Rotación de logs, poda de backups, imagen < 600 MB, `check-posix-sh` sin falsos positivos, deuda humana de v0.1 cerrada, `v0.2.0`. (completed 2026-10-14 — `v0.2.0` publicado con imágenes multi-arch; gate NOT READY por la regla estricta: VPS público, 22.04, arm64, ufw y 1–2 GB sin verificar, diferidos a OPS-05 (owner: usuario, v0.2.1 o inicio de v0.3))
+- [ ] **Phase 15: Verificación en host real (OPS-05)** - Deuda de v0.2 aceptada por el usuario: install y deploy de v0.2 en un VPS público real, Ubuntu 22.04, arm64, ufw activo y 1–2 GB. Requiere hosts reales; owner: usuario.
 
 ## Decisions carried from research
 

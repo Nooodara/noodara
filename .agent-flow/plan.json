@@ -4237,22 +4237,6 @@
               "proof": "manual"
             },
             {
-              "id": "A2",
-              "text": "On a real VPS: connect \u2192 project \u2192 environment \u2192 deploy from node-api \u2192 logs \u2192 status \u2192 failed build \u2192 cancel, recorded criterion by criterion",
-              "proof": "manual",
-              "status": "deferred",
-              "deferredTo": "OPS-05",
-              "note": "Unmet on a real public VPS; user-accepted debt (DECISIONS 2026-10-14). Verified only on an Ubuntu 24.04 amd64 WSL2 host with rc.2 (docs/releases/v0.2-HUMAN-UAT.md). Tracked as requirement OPS-05, owner: user."
-            },
-            {
-              "id": "A3",
-              "text": "Real installs on Ubuntu 22.04, on arm64 and on a host with ufw active; memory observed on a 1\u20132 GB VPS",
-              "proof": "manual",
-              "status": "deferred",
-              "deferredTo": "OPS-05",
-              "note": "Unmet on a real public VPS; user-accepted debt (DECISIONS 2026-10-14). Verified only on an Ubuntu 24.04 amd64 WSL2 host with rc.2 (docs/releases/v0.2-HUMAN-UAT.md). Tracked as requirement OPS-05, owner: user."
-            },
-            {
               "id": "A4",
               "text": "A real upgrade v0.1.0 \u2192 v0.2.0-rc.1 and its rollback to v0.1.0, with data intact",
               "proof": "manual"
@@ -4273,7 +4257,8 @@
             "http-api/input-validation",
             "persistence/atomic-write",
             "persistence/missing-file-boot"
-          ]
+          ],
+          "note": "A2/A3 moved to phase 15 (OPS-05) by user decision 2026-10-14; phase 14 verified them only on an Ubuntu 24.04 amd64 WSL2 host with rc.2."
         },
         {
           "id": "14-17",
@@ -5233,6 +5218,60 @@
             "randomness"
           ],
           "tier": "deep"
+        }
+      ]
+    },
+    {
+      "id": "15",
+      "title": "Verificaci\u00f3n en host real (OPS-05)",
+      "goal": "Close the v0.2 real-host debt: run the v0.2 install and deploy flow on a real public VPS, on Ubuntu 22.04, on arm64, with ufw active and on a 1\u20132 GB machine, and record the evidence in the v0.2 gate.",
+      "requirements": [
+        "OPS-05"
+      ],
+      "dependsOn": [
+        "14"
+      ],
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "15-01",
+          "title": "Real-host v0.2 verification (public VPS, 22.04, arm64, ufw, 1\u20132 GB)",
+          "tier": "deep",
+          "scope": [
+            "docs/releases/v0.2-HUMAN-UAT.md",
+            "docs/releases/v0.2-gate.md",
+            "docs/releases/v0.2-uat-logs/",
+            ".planning/REQUIREMENTS.md",
+            ".planning/ROADMAP.md",
+            ".planning/STATE.md"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "On a real VPS: connect \u2192 project \u2192 environment \u2192 deploy from node-api \u2192 logs \u2192 status \u2192 failed build \u2192 cancel, recorded criterion by criterion",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "Real installs on Ubuntu 22.04, on arm64 and on a host with ufw active; memory observed on a 1\u20132 GB VPS",
+              "proof": "manual"
+            }
+          ],
+          "waives": [
+            "http-api",
+            "persistence",
+            "auth-secrets",
+            "randomness"
+          ]
         }
       ]
     }
