@@ -1,0 +1,55 @@
+2026-10-14T05:31:50Z
+Noodara installer
+Checking system requirements...
+System requirements satisfied.
+Docker Engine and the Compose plugin are already installed; nothing to do.
+The stack is not healthy; starting it.
+Starting services...
+ Network noodara_default Creating 
+ Volume noodara_noodara_postgres_data Creating 
+ Volume noodara_noodara_redis_data Creating 
+ Volume noodara_noodara_postgres_data Creating 
+ Volume noodara_noodara_redis_data Creating 
+ Network noodara_default Creating 
+ Volume noodara_noodara_postgres_data Created 
+ Volume noodara_noodara_postgres_data Created 
+ Volume noodara_noodara_redis_data Created 
+ Volume noodara_noodara_redis_data Created 
+ Network noodara_default Created 
+ Network noodara_default Created 
+ Container noodara-postgres-1 Creating 
+ Container noodara-redis-1 Creating 
+ Container noodara-postgres-1 Created 
+ Container noodara-migrate-1 Creating 
+ Container noodara-redis-1 Created 
+ Container noodara-migrate-1 Created 
+ Container noodara-worker-1 Creating 
+ Container noodara-api-1 Creating 
+ Container noodara-api-1 Created 
+ Container noodara-web-1 Creating 
+ Container noodara-worker-1 Created 
+ Container noodara-web-1 Created 
+ Container noodara-postgres-1 Starting 
+ Container noodara-redis-1 Starting 
+ Container noodara-postgres-1 Started 
+ Container noodara-redis-1 Started 
+ Container noodara-postgres-1 Healthy 
+ Container noodara-migrate-1 Starting 
+ Container noodara-migrate-1 Started 
+ Container noodara-redis-1 Healthy 
+ Container noodara-redis-1 Healthy 
+ Container noodara-migrate-1 Exited 
+ Container noodara-migrate-1 Exited 
+ Container noodara-worker-1 Starting 
+ Container noodara-api-1 Starting 
+ Container noodara-worker-1 Started 
+ Container noodara-api-1 Started 
+ Container noodara-api-1 Healthy 
+ Container noodara-web-1 Starting 
+ Container noodara-web-1 Started 
+All services are healthy.
+Noodara is running.
+Panel: http://<vps-ip>:3000
+Admin account created from the supplied NOODARA_ADMIN_EMAIL/NOODARA_ADMIN_PASSWORD.
+WARNING: the panel is served over plain HTTP -- traffic, including the session cookie, is unencrypted until v0.4's TLS proxy (or your own) is in front. See docs/install.md.
+rc=0

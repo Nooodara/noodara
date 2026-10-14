@@ -1,0 +1,13 @@
+2026-10-14T05:31:29Z
+Noodara installer
+Checking system requirements...
+System requirements satisfied.
+Docker Engine and the Compose plugin are already installed; nothing to do.
+ Image ghcr.io/nooodara/noodara-web:v0.1.0 Error failed to resolve reference "ghcr.io/nooodara/noodara-web:v0.1.0": ghcr.io/nooodara/noodara-web:v0.1.0: not found
+ Image postgres:17-alpine Interrupted 
+ Image redis:7-alpine Interrupted 
+ Image ghcr.io/nooodara/noodara-control-plane:v0.1.0 Interrupted 
+Error response from daemon: failed to resolve reference "ghcr.io/nooodara/noodara-web:v0.1.0": ghcr.io/nooodara/noodara-web:v0.1.0: not found
+Error response from daemon: failed to resolve reference "ghcr.io/nooodara/noodara-web:v0.1.0": ghcr.io/nooodara/noodara-web:v0.1.0: not found
+noodara: Failed to pull images. Check network connectivity and the resolved image tags, then re-run this installer.
+rc=50
