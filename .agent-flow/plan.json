@@ -5273,6 +5273,1389 @@
           "tier": "deep"
         }
       ]
+    },
+    {
+      "id": "16",
+      "title": "Motor confiable — contratos, dominio y esquema",
+      "goal": "Resolve the v0.3 remote contracts with evidence (ADR 0010) and land the pure domain (ten-state machine at 100% branch coverage, healthcheck, rollback, retention, webhook decisions) plus the additive schema, without changing runtime behaviour.",
+      "requirements": [
+        "ENG-01",
+        "HC-01"
+      ],
+      "dependsOn": [
+        "14"
+      ],
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "16-01",
+          "title": "Spike + ADR 0010: healthcheck probes, previous-container preservation, worker-retry resume",
+          "scope": [
+            "docs/adr/0010-reliable-deploy-contracts.md",
+            "tests/integration/deploy-engine/contracts-v03.test.ts",
+            "tests/integration/helpers/deploy-engine.ts"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "adr-0010-accepted",
+            "it-contracts-v03"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "HTTP and TCP probe mechanism chosen with evidence on Ubuntu 22.04 and 24.04: how the server reaches the container (container IP on noodara-net-<serviceId> from the host, published port, or probe container), curl/bash availability measured on stock images, and a fallback when curl is missing; no image is pulled implicitly",
+              "proof": "it-contracts-v03"
+            },
+            {
+              "id": "A2",
+              "text": "Previous-container contract measured: a stopped container renamed to noodara-<serviceId>-prev frees the name, releases its published host port so the new container binds it, and restarting it restores that port",
+              "proof": "it-contracts-v03"
+            },
+            {
+              "id": "A3",
+              "text": "Worker-retry resume rule chosen and justified: which steps are safe to re-run after a crash mid-step (clone into an existing workspace, build with the same tag, create when the container exists) and whether a retried job resumes or fails and re-enqueues",
+              "proof": "manual"
+            },
+            {
+              "id": "A4",
+              "text": "State-machine shape fixed in the ADR with rejected alternatives: auto-rollback edges, manual rollback as a new row that skips BUILDING, cancellability per state, and the time budget of healthcheck and rollback inside NOODARA_DEPLOY_MAX_MS",
+              "proof": "manual"
+            },
+            {
+              "id": "A5",
+              "text": "ADR 0010 status is Accepted",
+              "proof": "adr-0010-accepted"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "16-02",
+          "title": "Domain: ten-state deployment machine, triggers, error codes, 100% branch gate",
+          "scope": [
+            "packages/domain/src/deployment/deployment-state.ts",
+            "packages/domain/src/deployment/deployment-state.test.ts",
+            "packages/domain/src/deployment/deployment-error.ts",
+            "packages/domain/src/deployment/deployment-error.test.ts",
+            "packages/domain/src/deployment/index.ts",
+            "vitest.state-machine.config.ts",
+            "package.json",
+            ".claude/skills/noodara-domain-model/SKILL.md"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "16-01"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "coverage-state-machine"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "DEPLOYMENT_STATUSES has the ten roadmap states; transitions follow ADR 0010 (baseline: DEPLOYING→HEALTHCHECK|ROLLING_BACK|FAILED|CANCELLED, HEALTHCHECK→SUCCESS|ROLLING_BACK|FAILED|CANCELLED, ROLLING_BACK→ROLLED_BACK|FAILED; DEPLOYING→SUCCESS removed); SUCCESS, FAILED, ROLLED_BACK and CANCELLED are terminal",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Every one of the 100 ordered pairs is asserted; the trigger-gated edge PREPARING→DEPLOYING is allowed only for trigger rollback and rejected for every other trigger",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Named tests for roadmap §8.7: every valid and invalid transition (BUILDING→SUCCESS, FAILED→SUCCESS, CANCELLED→DEPLOYING by name), terminal states, cancellation, rollback transitions and retry (re-applying an already applied edge is reported as such, not as a new transition)",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "coverage-state-machine fails below 100% statements, branches, functions and lines for deployment-state.ts",
+              "proof": "coverage-state-machine"
+            },
+            {
+              "id": "A5",
+              "text": "NON_TERMINAL includes HEALTHCHECK and ROLLING_BACK; triggers add webhook and rollback; log phases add healthcheck and rollback; error codes add HEALTHCHECK_FAILED, HEALTHCHECK_TIMEOUT, ROLLBACK_FAILED, ROLLBACK_TARGET_UNAVAILABLE, COMMIT_NOT_FOUND, each with a tested actionable message",
+              "proof": "test"
+            },
+            {
+              "id": "A6",
+              "text": "The domain-model skill §4 documents the v0.3 table and points to ADR 0010",
+              "proof": "manual"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "16-03",
+          "title": "Domain: healthcheck config, budget and pure decision",
+          "scope": [
+            "packages/domain/src/deployment/healthcheck.ts",
+            "packages/domain/src/deployment/healthcheck.test.ts",
+            "packages/domain/src/deployment/index.ts",
+            "packages/domain/src/api-contract/service-schemas.ts",
+            "packages/domain/src/api-contract/api-contract.test.ts"
+          ],
+          "wave": 3,
+          "dependsOn": [
+            "16-02"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "HealthcheckConfig is a discriminated union http | tcp | container; the validator rejects a path without a leading slash or with '..', whitespace, control or shell characters, ports outside 1–65535, and timeout, interval, retries, start period and expected statuses outside documented bounds",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "healthcheckBudgetMs(config) is bounded and a config whose budget exceeds the deploy maximum is rejected with a named error",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "A null config resolves to the container check with the v0.2 post-start poll behaviour (test pins equivalence with post-start-polls)",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "decideHealthcheck(policy, state, observation) returns pass, retry with delay, HEALTHCHECK_FAILED (wrong status, refused, container exited) or HEALTHCHECK_TIMEOUT; every branch tested, ≥95% branch coverage",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "The probe-output parser from ADR 0010 is total: garbage, truncated or oversized output becomes a failed observation, never an exception",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "standard"
+        },
+        {
+          "id": "16-04",
+          "title": "Domain: rollback target, image retention, runtime snapshot, idempotency key",
+          "scope": [
+            "packages/domain/src/deployment/rollback.ts",
+            "packages/domain/src/deployment/rollback.test.ts",
+            "packages/domain/src/deployment/image-retention.ts",
+            "packages/domain/src/deployment/image-retention.test.ts",
+            "packages/domain/src/deployment/runtime-config.ts",
+            "packages/domain/src/deployment/runtime-config.test.ts",
+            "packages/domain/src/deployment/idempotency.ts",
+            "packages/domain/src/deployment/idempotency.test.ts",
+            "packages/domain/src/deployment/index.ts"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "16-03"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "selectRollbackTarget(history, retainedImages, explicitTarget?) returns the latest known-good (SUCCESS) deployment other than the current one, or a named reason: none, image_pruned, not_known_good, same_as_current, other_service",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "imageRetention(history, running, N) never selects the running image or the image of a non-terminal deployment for deletion and keeps N previous known-good images (N bounded 1–10, default 3)",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "RuntimeConfigSnapshot v1 (image ref, internal port, published port, healthcheck) parses strictly, rejects unknown versions, and has no field that can hold a secret (type-level test)",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Idempotency keys are 1–255 visible ASCII; requestFingerprint is stable under key order and differs for any semantic change",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "standard"
+        },
+        {
+          "id": "16-05",
+          "title": "Domain: GitHub push matching, delivery and coalescing decisions",
+          "scope": [
+            "packages/domain/src/webhook/",
+            "packages/domain/src/index.ts"
+          ],
+          "wave": 5,
+          "dependsOn": [
+            "16-04"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Zod schemas parse the minimal push and ping payloads with bounded strings; unknown fields are ignored, missing required ones rejected",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "matchPush(service, event, payload) ignores unsupported events, tags, deletions, the zero SHA and other branches, rejects a repository that is not the service's (https and ssh URL forms normalized), and returns the 40-hex pushed SHA otherwise",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "decideDelivery(existing, active, pending) is table-tested: duplicate, deploy now, coalesce (replace pending, previous pending superseded), drop when pending SHA equals the deployed SHA",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Delivery outcomes are a closed vocabulary shared with the schema; the module imports no I/O (purity test green)",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "16-06",
+          "title": "Schema: migration 0011 for v0.3 (enums, deployment traceability, service config, webhook deliveries)",
+          "scope": [
+            "apps/control-plane/src/db/schema/deployments.ts",
+            "apps/control-plane/src/db/schema/services.ts",
+            "apps/control-plane/src/db/schema/webhook-deliveries.ts",
+            "apps/control-plane/src/db/schema/index.ts",
+            "apps/control-plane/src/db/migrations/",
+            "tests/integration/db/"
+          ],
+          "wave": 6,
+          "dependsOn": [
+            "16-05"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-db"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Status, trigger, error-code and log-phase enums grow with ALTER TYPE ... ADD VALUE IF NOT EXISTS, derived from the domain tuples",
+              "proof": "it-db"
+            },
+            {
+              "id": "A2",
+              "text": "deployments gains nullable image_ref, rollback_of_deployment_id (FK set null), webhook_delivery_id, idempotency_key + request_fingerprint (unique per service when set), runtime_config jsonb, healthcheck_started_at, rollback_started_at",
+              "proof": "it-db"
+            },
+            {
+              "id": "A3",
+              "text": "services gains healthcheck jsonb (null = container), auto_rollback default true, image_retention default 3, webhook hook id (unique, random) with an encrypted-secret credential FK that cascades, and pending-trigger columns",
+              "proof": "it-db"
+            },
+            {
+              "id": "A4",
+              "text": "webhook_deliveries stores delivery id (unique per hook), event, outcome, pushed SHA, deployment FK, received_at; no payload or signature column",
+              "proof": "it-db"
+            },
+            {
+              "id": "A5",
+              "text": "The one-active partial unique index is recreated from the new non-terminal set; migration applies from scratch and from the v0.2.0 schema with existing rows unchanged",
+              "proof": "it-db"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        }
+      ]
+    },
+    {
+      "id": "17",
+      "title": "Healthchecks y recuperación en el runtime",
+      "goal": "Deployments keep the previous container until the new one passes its healthcheck, roll back automatically on failure, support manual rollback to a retained known-good image, and stay consistent under cancel, crash and network loss in every new state.",
+      "requirements": [
+        "ENG-02",
+        "ENG-04",
+        "ENG-05",
+        "HC-02",
+        "RBK-01",
+        "RBK-02",
+        "RBK-03"
+      ],
+      "dependsOn": [
+        "16"
+      ],
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "17-01",
+          "title": "SSH templates: healthcheck probes, rename/restore previous container, per-service image listing",
+          "scope": [
+            "packages/ssh/src/commands/docker-deploy.ts",
+            "packages/ssh/src/commands/docker-deploy.test.ts",
+            "packages/ssh/src/commands/deploy-allowlist.ts",
+            "packages/ssh/src/commands/deploy-allowlist.test.ts",
+            "packages/ssh/src/commands/index.ts",
+            "packages/ssh/src/index.ts",
+            "packages/docker/src/",
+            "tests/integration/deploy-engine/deploy-templates.test.ts"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-deploy-templates"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Allowlisted templates per ADR 0010: HTTP probe, TCP probe, rename to and from noodara-<serviceId>-prev, start/stop/remove of the -prev container, list and remove the service's own images; every argument comes from validated ids or domain-validated config through escapeShellArg",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Allowlist tests reject any other shape, including a probe path with shell metacharacters",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Against real dockerd on 22.04 and 24.04: probe on a listening port, a closed port, a wrong status and a hung endpoint (timeout honoured); rename/restore keeps the published port",
+              "proof": "it-deploy-templates"
+            },
+            {
+              "id": "A4",
+              "text": "Probe output is capped to a fixed byte budget and never includes the response body beyond it",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "17-02",
+          "title": "Runtime: keep the previous container and run the HEALTHCHECK step",
+          "scope": [
+            "apps/control-plane/src/deploy/run-deployment.ts",
+            "apps/control-plane/src/deploy/run-deployment.test.ts",
+            "apps/control-plane/src/deploy/deployment-store.ts",
+            "apps/control-plane/src/deploy/deployment-store.test.ts",
+            "packages/domain/src/deployment/resource-ledger.ts",
+            "packages/domain/src/deployment/resource-ledger.test.ts",
+            "tests/integration/deploy-engine/runtime-healthcheck.test.ts",
+            "fixtures/unhealthy-api/"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "17-01"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-healthcheck",
+            "it-runtime-pipeline"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Replacement stops the previous container and renames it to -prev instead of removing it; -prev is removed only after the new container passes its healthcheck",
+              "proof": "it-healthcheck"
+            },
+            {
+              "id": "A2",
+              "text": "DEPLOYING→HEALTHCHECK after start, healthcheck_started_at written in the same update as the edge; the check follows the service config through decideHealthcheck; output goes to the healthcheck log phase through the redactor",
+              "proof": "it-healthcheck"
+            },
+            {
+              "id": "A3",
+              "text": "Failures end with HEALTHCHECK_FAILED or HEALTHCHECK_TIMEOUT and a fixed actionable message; the runtime_config snapshot and image_ref are stored on the deployment",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "fixtures/unhealthy-api builds a container that runs but answers 500 on its health path (context < 1 MiB)",
+              "proof": "it-healthcheck"
+            },
+            {
+              "id": "A5",
+              "text": "Integration on 24.04: HTTP pass, wrong status, timeout, TCP pass; services without config keep the v0.2 result (runtime-pipeline green)",
+              "proof": "it-runtime-pipeline"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "17-03",
+          "title": "Runtime: automatic rollback (ROLLING_BACK → ROLLED_BACK | FAILED)",
+          "scope": [
+            "apps/control-plane/src/deploy/run-deployment.ts",
+            "apps/control-plane/src/deploy/run-deployment.test.ts",
+            "apps/control-plane/src/deploy/deployment-store.ts",
+            "apps/control-plane/src/activity/",
+            "tests/integration/deploy-engine/runtime-rollback.test.ts"
+          ],
+          "wave": 3,
+          "dependsOn": [
+            "17-02"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-rollback"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "A start or healthcheck failure with a -prev container and auto_rollback on enters ROLLING_BACK: the failed container is removed, -prev renamed back and started, and checked with the previous deployment's snapshot",
+              "proof": "it-rollback"
+            },
+            {
+              "id": "A2",
+              "text": "ROLLED_BACK only after that check passes, keeping the original error code and a message that names the restored version; otherwise FAILED with ROLLBACK_FAILED",
+              "proof": "it-rollback"
+            },
+            {
+              "id": "A3",
+              "text": "No -prev (first deploy) or auto_rollback off ends FAILED with the new container stopped and the previous image retained for manual rollback",
+              "proof": "it-rollback"
+            },
+            {
+              "id": "A4",
+              "text": "Rollback has its own bounded budget inside NOODARA_DEPLOY_MAX_MS; rollback start and result are activity events without sensitive metadata",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "After rollback success and rollback failure the ledger cleanup leaves no orphan containers, images beyond retention, networks or workspaces",
+              "proof": "it-rollback"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "17-04",
+          "title": "Runtime: image retention after SUCCESS and ROLLED_BACK",
+          "scope": [
+            "apps/control-plane/src/deploy/image-retention.ts",
+            "apps/control-plane/src/deploy/image-retention.test.ts",
+            "apps/control-plane/src/deploy/deploy-worker.ts",
+            "apps/control-plane/src/deploy/deploy-worker.test.ts",
+            "tests/integration/deploy-engine/runtime-retention.test.ts"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "17-03"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-rollback"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "After a terminal SUCCESS or ROLLED_BACK, the service's images outside the imageRetention keep set are removed; the running image is never removed",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "A failed image removal is logged and reported, never changes the deployment result",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Integration: after five deploys with retention 3, exactly the running image and three previous known-good images remain",
+              "proof": "it-rollback"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "17-05",
+          "title": "Manual rollback: API, worker path without build, traceable history",
+          "scope": [
+            "apps/control-plane/src/routes/deployments.ts",
+            "apps/control-plane/src/routes/deployment-schemas.ts",
+            "apps/control-plane/src/routes/deployment-schemas.test.ts",
+            "apps/control-plane/src/services/deployment-services.ts",
+            "apps/control-plane/src/services/deployment-services.test.ts",
+            "apps/control-plane/src/deploy/run-deployment.ts",
+            "apps/control-plane/src/deploy/deploy-worker.ts",
+            "packages/domain/src/api-contract/deployment-schemas.ts",
+            "tests/integration/routes/",
+            "tests/integration/deploy-engine/runtime-manual-rollback.test.ts"
+          ],
+          "wave": 5,
+          "dependsOn": [
+            "17-04"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-rollback"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "POST /api/services/:id/rollback with an optional targetDeploymentId creates a deployment with trigger rollback and rollback_of set; the default target comes from selectRollbackTarget",
+              "proof": "it-rollback"
+            },
+            {
+              "id": "A2",
+              "text": "409 DEPLOYMENT_IN_PROGRESS while one is active; 422 ROLLBACK_TARGET_UNAVAILABLE with the reason; a target from another service is a 404 with no existence leak",
+              "proof": "it-rollback"
+            },
+            {
+              "id": "A3",
+              "text": "The worker goes PREPARING→DEPLOYING without clone or build, checks the image is on the server, restores the target's runtime config and passes HEALTHCHECK before SUCCESS; a failure rolls back to the version running before the manual rollback",
+              "proof": "it-rollback"
+            },
+            {
+              "id": "A4",
+              "text": "GET history is cursor-paginated and returns trigger, actor or delivery id, commit, image, previous and rollback_of for every row (ENG-02)",
+              "proof": "it-rollback"
+            },
+            {
+              "id": "A5",
+              "text": "Route body cap and zod validation on every new input; no field of the response carries a credential",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "17-06",
+          "title": "Cancel and crash recovery in HEALTHCHECK and ROLLING_BACK; network-loss faults",
+          "scope": [
+            "apps/control-plane/src/deploy/cancel-deployment.ts",
+            "apps/control-plane/src/deploy/cancel-deployment.test.ts",
+            "apps/control-plane/src/deploy/deploy-sweep.ts",
+            "apps/control-plane/src/deploy/deploy-sweep.test.ts",
+            "apps/control-plane/src/deploy/run-deployment.ts",
+            "tests/integration/deploy-engine/runtime-cancel.test.ts",
+            "tests/integration/deploy-engine/runtime-faults.test.ts"
+          ],
+          "wave": 6,
+          "dependsOn": [
+            "17-05"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-runtime-cancel",
+            "it-faults"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Cancel during HEALTHCHECK removes the new container, restores -prev and ends CANCELLED; cancel during ROLLING_BACK is rejected with a named 409 and the rollback completes",
+              "proof": "it-runtime-cancel"
+            },
+            {
+              "id": "A2",
+              "text": "The boot sweep recovers rows in HEALTHCHECK or ROLLING_BACK: -prev is restored when present and the row ends FAILED/WORKER_CRASHED with a message saying so; the per-service container is never removed when it is the only version",
+              "proof": "it-faults"
+            },
+            {
+              "id": "A3",
+              "text": "runtime-faults covers container crash during healthcheck, SSH network interruption during healthcheck and during rollback (sshd paused), and worker kill in HEALTHCHECK; each ends in one valid terminal state with no orphan",
+              "proof": "it-faults"
+            },
+            {
+              "id": "A4",
+              "text": "Every terminal state reached in these tests is reachable through transitionDeployment only (no direct status writes)",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        }
+      ]
+    },
+    {
+      "id": "18",
+      "title": "Webhooks de GitHub e idempotencia",
+      "goal": "A signed GitHub push deploys exactly the pushed SHA once, duplicates and redeliveries never duplicate work, pushes during an active deploy coalesce, and API and worker retries are idempotent.",
+      "requirements": [
+        "ENG-03",
+        "HOOK-01",
+        "HOOK-02",
+        "HOOK-03"
+      ],
+      "dependsOn": [
+        "17"
+      ],
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "18-01",
+          "title": "Webhook enable/rotate/disable with an encrypted secret shown once",
+          "scope": [
+            "apps/control-plane/src/services/webhook-config.ts",
+            "apps/control-plane/src/services/webhook-config.test.ts",
+            "apps/control-plane/src/routes/services.ts",
+            "apps/control-plane/src/routes/service-schemas.ts",
+            "apps/control-plane/src/routes/service-schemas.test.ts",
+            "packages/domain/src/api-contract/service-schemas.ts",
+            "tests/integration/webhooks/config.test.ts"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-webhooks"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Enabling generates a 32-byte secret and a ≥128-bit random hook id from a CSPRNG; the response carries the payload URL and the secret once; GET never returns the secret",
+              "proof": "it-webhooks"
+            },
+            {
+              "id": "A2",
+              "text": "Rotate replaces the secret (old one rejected immediately); disable and service delete remove the credential row",
+              "proof": "it-webhooks"
+            },
+            {
+              "id": "A3",
+              "text": "The secret is encrypted with the existing credential store and never appears in logs, activity metadata, errors or later responses (leak canary covers it)",
+              "proof": "it-webhooks"
+            },
+            {
+              "id": "A4",
+              "text": "Image-source services get 422; the action requires a session and is an activity event",
+              "proof": "it-webhooks"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "18-02",
+          "title": "Webhook receiver: raw-body HMAC, caps, rate limit, event validation, delivery dedupe",
+          "scope": [
+            "apps/control-plane/src/routes/webhooks.ts",
+            "apps/control-plane/src/routes/webhooks.test.ts",
+            "apps/control-plane/src/app.ts",
+            "apps/control-plane/src/services/webhook-ingest.ts",
+            "apps/control-plane/src/services/webhook-ingest.test.ts",
+            "apps/control-plane/src/auth/origin-guard.ts",
+            "apps/control-plane/src/auth/origin-guard.test.ts",
+            "tests/integration/webhooks/receiver.test.ts"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "18-01"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-webhooks"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "POST /webhooks/github/:hookId sits outside session auth and the origin guard, keeps the raw body, caps it at 1 MiB (413) and accepts only application/json (415)",
+              "proof": "it-webhooks"
+            },
+            {
+              "id": "A2",
+              "text": "X-Hub-Signature-256 is verified with timingSafeEqual over the raw bytes before JSON parsing; missing, malformed or wrong signatures and unknown hook ids get the same 401 body",
+              "proof": "it-webhooks"
+            },
+            {
+              "id": "A3",
+              "text": "Per-hook and per-IP rate limit returns 429; ping answers 200 and is recorded; ignored events answer 200 with their outcome",
+              "proof": "it-webhooks"
+            },
+            {
+              "id": "A4",
+              "text": "A matching push creates a webhook deployment (triggered_by github:<delivery>, requested SHA) in the same transaction as the delivery row; a repeated X-GitHub-Delivery returns the original deployment id and creates nothing",
+              "proof": "it-webhooks"
+            },
+            {
+              "id": "A5",
+              "text": "Neither payload, signature nor secret is logged; error responses carry no internal ids",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "18-03",
+          "title": "Deploy the exact pushed SHA (shallow fetch by SHA)",
+          "scope": [
+            "packages/ssh/src/commands/git.ts",
+            "packages/ssh/src/commands/git.test.ts",
+            "packages/git/src/",
+            "packages/domain/src/validators/",
+            "apps/control-plane/src/deploy/run-deployment.ts",
+            "tests/integration/deploy-engine/deploy-templates.test.ts",
+            "tests/integration/deploy-engine/runtime-webhook-sha.test.ts"
+          ],
+          "wave": 3,
+          "dependsOn": [
+            "18-02"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-deploy-templates",
+            "it-runtime-pipeline"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "With a requested SHA (validated 40-hex) the clone checks out exactly it, fetching it shallowly when the branch head moved; argv carries the SHA as one validated element",
+              "proof": "it-deploy-templates"
+            },
+            {
+              "id": "A2",
+              "text": "A SHA that the remote no longer has ends FAILED with COMMIT_NOT_FOUND and an actionable message",
+              "proof": "it-deploy-templates"
+            },
+            {
+              "id": "A3",
+              "text": "The recorded commit_sha equals the requested SHA on 22.04 and 24.04 with a fixture repo whose branch moved past it",
+              "proof": "it-deploy-templates"
+            },
+            {
+              "id": "A4",
+              "text": "Manual deploys without a requested SHA keep the v0.2 behaviour (runtime-pipeline green)",
+              "proof": "it-runtime-pipeline"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "18-04",
+          "title": "Coalesce pushes during an active deployment",
+          "scope": [
+            "apps/control-plane/src/services/webhook-ingest.ts",
+            "apps/control-plane/src/services/webhook-ingest.test.ts",
+            "apps/control-plane/src/deploy/deploy-worker.ts",
+            "apps/control-plane/src/deploy/deploy-worker.test.ts",
+            "tests/integration/webhooks/coalesce.test.ts"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "18-03"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-webhooks"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "A push while a deployment is active is stored as the service's pending trigger; a newer push replaces it and marks the older delivery superseded; the response is 202 coalesced",
+              "proof": "it-webhooks"
+            },
+            {
+              "id": "A2",
+              "text": "When the active deployment reaches any terminal state the worker claims the pending trigger atomically and enqueues exactly one webhook deployment, also under concurrent terminal events",
+              "proof": "it-webhooks"
+            },
+            {
+              "id": "A3",
+              "text": "A pending SHA equal to the SHA just deployed is dropped with outcome already_deployed",
+              "proof": "it-webhooks"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "18-05",
+          "title": "Idempotency-Key on deploy/redeploy/rollback and idempotent worker retry",
+          "scope": [
+            "apps/control-plane/src/routes/deployments.ts",
+            "apps/control-plane/src/routes/services.ts",
+            "apps/control-plane/src/services/deployment-services.ts",
+            "apps/control-plane/src/services/deployment-services.test.ts",
+            "apps/control-plane/src/queue/deploy-queue.ts",
+            "apps/control-plane/src/queue/deploy-queue.test.ts",
+            "apps/control-plane/src/deploy/deploy-worker.ts",
+            "apps/control-plane/src/deploy/run-deployment.ts",
+            "tests/integration/queue/idempotency.test.ts",
+            "tests/integration/deploy-engine/runtime-faults.test.ts"
+          ],
+          "wave": 5,
+          "dependsOn": [
+            "18-04"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-idempotency",
+            "it-faults"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Same Idempotency-Key and same request fingerprint within 24 h replays the original deployment; a different body gets 422 IDEMPOTENCY_KEY_REUSED; concurrent requests with one key create one row",
+              "proof": "it-idempotency"
+            },
+            {
+              "id": "A2",
+              "text": "Deploy jobs retry per ADR 0010; a retried job follows the ADR resume rule and never runs on a row that already reached a terminal state",
+              "proof": "it-idempotency"
+            },
+            {
+              "id": "A3",
+              "text": "Killing the worker during BUILDING and during DEPLOYING then letting the job retry leaves exactly one noodara-<serviceId> container, one deployment row per attempt and no orphan",
+              "proof": "it-faults"
+            },
+            {
+              "id": "A4",
+              "text": "The BullMQ lock and stalled settings stay derived from NOODARA_DEPLOY_MAX_MS (D15) with a test",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        }
+      ]
+    },
+    {
+      "id": "19",
+      "title": "UI de motor confiable, E2E y docs",
+      "goal": "The user configures healthchecks, auto-rollback and the GitHub webhook, follows healthcheck and rollback in the deploy narration, reads a traceable history and rolls back from it, with the roadmap E2E paths and docs.",
+      "requirements": [
+        "UI-13",
+        "DOCS-03",
+        "QA-12"
+      ],
+      "dependsOn": [
+        "18"
+      ],
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "19-01",
+          "title": "Narration and status for HEALTHCHECK, ROLLING_BACK and ROLLED_BACK",
+          "scope": [
+            "apps/web/src/components/DeploymentSteps.tsx",
+            "apps/web/src/components/DeploymentSteps.test.tsx",
+            "apps/web/src/lib/deploy-api.ts",
+            "apps/web/src/lib/deploy-api.test.ts",
+            "apps/web/src/lib/deploy-store.ts",
+            "apps/web/src/lib/deploy-store.test.ts",
+            "apps/web/src/lib/deploy-error-copy.ts",
+            "apps/web/src/lib/deploy-error-copy.test.ts",
+            "packages/ui/src/"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "e2e-deploy"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Steps read clone or pull, build, start, healthcheck and, when it happened, rollback, each with duration and state; ROLLED_BACK names the restored commit",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Every new error code has copy with a recovery action; status pills for the new states use only semantic infrastructure colours per noodara-ux-apple",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Existing deploy E2E stays green",
+              "proof": "e2e-deploy"
+            }
+          ],
+          "waives": [],
+          "tier": "standard"
+        },
+        {
+          "id": "19-02",
+          "title": "Healthcheck and auto-rollback settings in the service sheet",
+          "scope": [
+            "apps/web/src/components/ServiceSheet.tsx",
+            "apps/web/src/components/ServiceSheet.test.tsx",
+            "apps/web/src/components/HealthcheckFields.tsx",
+            "apps/web/src/components/HealthcheckFields.test.tsx",
+            "apps/web/src/lib/healthcheck-form.ts",
+            "apps/web/src/lib/healthcheck-form.test.ts",
+            "apps/web/src/lib/deploy-api.ts"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "19-01"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Default shows 'Container is running'; choosing HTTP or TCP reveals only its fields (progressive disclosure)",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Client validation uses the shared domain schema and shows the same named errors as the API",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Saving says the change applies on the next deploy; auto-rollback is a labelled switch, on by default",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "standard"
+        },
+        {
+          "id": "19-03",
+          "title": "Webhook panel: enable, secret once, rotate, disable, recent deliveries",
+          "scope": [
+            "apps/web/src/components/WebhookPanel.tsx",
+            "apps/web/src/components/WebhookPanel.test.tsx",
+            "apps/web/src/lib/webhook-api.ts",
+            "apps/web/src/lib/webhook-api.test.ts",
+            "apps/web/src/app/(shell)/@inspector/projects/",
+            "apps/control-plane/src/routes/services.ts"
+          ],
+          "wave": 3,
+          "dependsOn": [
+            "19-02"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Enable shows the payload URL and the secret once with copy buttons and a plain statement that it will not be shown again; the secret leaves the DOM when the panel closes",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Rotate and disable ask for confirmation; image-source services do not show the panel",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Recent deliveries list outcome, short SHA, time and a link to the deployment; GET /api/services/:id/webhook/deliveries is paginated and returns no payload",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "standard"
+        },
+        {
+          "id": "19-04",
+          "title": "Traceable history and manual rollback from it",
+          "scope": [
+            "apps/web/src/components/DeploymentHistory.tsx",
+            "apps/web/src/components/DeploymentHistory.test.tsx",
+            "apps/web/src/components/RollbackDialog.tsx",
+            "apps/web/src/components/RollbackDialog.test.tsx",
+            "apps/web/src/lib/deploy-api.ts"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "19-03"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Rows show trigger and actor (you, GitHub push, rollback of, automatic), short commit, duration and status; detail on demand",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Rollback is offered on known-good rows with a retained image; the dialog names the target commit; a pruned image disables it with the reason",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "The rollback request sends an Idempotency-Key so a double click creates one deployment",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "standard"
+        },
+        {
+          "id": "19-05",
+          "title": "E2E: webhook happy path, failure path, rollback path, duplicate delivery",
+          "scope": [
+            "tests/e2e/engine-happy.spec.ts",
+            "tests/e2e/engine-failure.spec.ts",
+            "tests/e2e/engine-rollback.spec.ts",
+            "tests/e2e/fixtures/"
+          ],
+          "wave": 5,
+          "dependsOn": [
+            "19-04"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "e2e-engine"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Happy path: a signed push posted by the test helper to the hook URL shows QUEUED … HEALTHCHECK → SUCCESS in the UI and the published port answers with the new version",
+              "proof": "e2e-engine"
+            },
+            {
+              "id": "A2",
+              "text": "Failure path: a push of the unhealthy fixture ends ROLLED_BACK and the good version answers on the published port at every sample except the documented replacement window",
+              "proof": "e2e-engine"
+            },
+            {
+              "id": "A3",
+              "text": "Rollback path: a bad deployment ends FAILED or ROLLED_BACK, then a manual rollback from the history ends SUCCESS with the previous commit healthy",
+              "proof": "e2e-engine"
+            },
+            {
+              "id": "A4",
+              "text": "Redelivering the same X-GitHub-Delivery adds no history row",
+              "proof": "e2e-engine"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "19-06",
+          "title": "Docs (healthchecks, webhooks, rollback) and UX review",
+          "scope": [
+            "apps/site/content/docs/",
+            "apps/site/src/",
+            "tests/unit/site/",
+            "docs/ui-review/phase-19/"
+          ],
+          "wave": 6,
+          "dependsOn": [
+            "19-05"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "site-build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Pages for healthchecks, GitHub webhooks (setup, public URL requirement, coalescing, redelivery) and rollback (retention, replacement downtime until v0.4)",
+              "proof": "site-build"
+            },
+            {
+              "id": "A2",
+              "text": "The docs accuracy test covers the new error codes, defaults and bounds",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "noodara-ux-review report has no BLOCK; screenshots at 375 and 1280 px in both themes approved by a human",
+              "proof": "manual"
+            }
+          ],
+          "waives": [],
+          "tier": "standard"
+        }
+      ]
+    },
+    {
+      "id": "20",
+      "title": "Hardening, stress y gate de release v0.3",
+      "goal": "Prove v0.3's acceptance criteria: the full integration matrix, 100 deploy/rollback cycles without corruption or orphans, a security review, the release gate and v0.3.0.",
+      "requirements": [
+        "QA-11",
+        "QA-13",
+        "QA-14"
+      ],
+      "dependsOn": [
+        "19"
+      ],
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "20-01",
+          "title": "Integration matrix of roadmap §8.8 complete on both Ubuntu versions",
+          "scope": [
+            "tests/integration/deploy-engine/",
+            "tests/integration/webhooks/",
+            "docs/releases/v0.3-scenarios.md"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-deploy-engine-all",
+            "it-webhooks"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "docs/releases/v0.3-scenarios.md maps each of the twelve §8.8 scenarios to one named test; a unit test fails if a mapped test name is missing",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Missing scenarios (dependency failure, Docker build failure on both versions) are added; the whole deploy-engine suite is green with NOODARA_TEST_UBUNTU=all",
+              "proof": "it-deploy-engine-all"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "20-02",
+          "title": "Stress: 100 deploy/rollback cycles, zero orphans, zero lost records; nightly",
+          "scope": [
+            "tests/integration/deploy-engine/cycles.test.ts",
+            "tests/integration/helpers/",
+            ".github/workflows/nightly.yml"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "20-01"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-cycles"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "100 cycles alternating good deploy, unhealthy deploy with automatic rollback and manual rollback end with one row per request, every row terminal, and every status sequence valid when replayed through transitionDeployment",
+              "proof": "it-cycles"
+            },
+            {
+              "id": "A2",
+              "text": "Afterwards: one service container, images equal to the retention set, no extra networks, workspaces or -prev containers, docker system df stable within a documented bound",
+              "proof": "it-cycles"
+            },
+            {
+              "id": "A3",
+              "text": "nightly.yml runs the cycles suite and fails on any orphan",
+              "proof": "manual"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "20-03",
+          "title": "Security review of webhooks, secrets and new shell templates",
+          "scope": [
+            "scripts/",
+            "docs/security/v0.3-review.md",
+            "tests/integration/activity/"
+          ],
+          "wave": 3,
+          "dependsOn": [
+            "20-02"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "security-leaks",
+            "it-canary-deploy"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "noodara-security checklist applied to receiver, secret lifecycle, probe and rename templates and idempotency storage, findings fixed or recorded with mitigation in docs/security/v0.3-review.md",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "The leak canary seeds a webhook secret and a signature and finds neither in HTTP, SSE, logs, activity or docker inspect",
+              "proof": "security-leaks"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "20-04",
+          "title": "Release gate v0.3 evidence",
+          "scope": [
+            "docs/releases/v0.3-gate.md",
+            ".planning/REQUIREMENTS.md",
+            ".planning/ROADMAP.md",
+            ".planning/STATE.md"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "20-03"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-full",
+            "e2e-full",
+            "site-build",
+            "audit",
+            "it-db"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "docs/releases/v0.3-gate.md gives READY / NOT READY with evidence for every §8.10 criterion, pinned to a commit",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "it-full, e2e-full, site build, audit and migration hygiene green on that commit; CI and nightly green",
+              "proof": "it-full"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "20-05",
+          "title": "Human gate and publish v0.3.0",
+          "scope": [
+            "docs/releases/v0.3-HUMAN-UAT.md",
+            "docs/releases/v0.3-gate.md",
+            ".planning/STATE.md"
+          ],
+          "wave": 5,
+          "dependsOn": [
+            "20-04"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "A human runs push → deploy → bad push → automatic rollback → manual rollback on a real install and an upgrade v0.2.0 → v0.3 with its rollback; evidence recorded",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "v0.3.0 tagged only after the user's approval; release.yml green with multi-arch images",
+              "proof": "manual"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        }
+      ]
     }
   ]
 }

@@ -4,6 +4,7 @@
 
 - ✅ **v0.1 Foundation** — Phases 1-6 (shipped 2026-09-22) — [archive](milestones/v0.1-ROADMAP.md), [requirements](milestones/v0.1-REQUIREMENTS.md), [release gate](../docs/releases/v0.1-gate.md)
 - 🚧 **v0.2 Projects & Services** — Phases 7-14 (in progress, roadmap created 2026-09-22) — requisitos en `REQUIREMENTS.md`, research en `research/SUMMARY.md`, alcance en `docs/roadmap-v0.1-v0.5.md` §7
+- 📋 **v0.3 Reliable Deployment Engine** — Phases 16-20 (planned 2026-10-14) — requisitos ENG/HC/RBK/HOOK en `REQUIREMENTS.md`, alcance en `docs/roadmap-v0.1-v0.5.md` §8; Phase 15 (OPS-05) sigue abierta y no la bloquea
 
 ## Phases
 
@@ -38,6 +39,16 @@ Full phase details, plans and success criteria: [milestones/v0.1-ROADMAP.md](mil
 - [x] **Phase 13: UI de Projects & Services y E2E de deploy** - Jerarquía, creación de servicio, deploy narrado, logs en vivo en el inspector y el E2E crítico contra fixtures reales.
 - [x] **Phase 14: Hardening y gate de release v0.2** - Rotación de logs, poda de backups, imagen < 600 MB, `check-posix-sh` sin falsos positivos, deuda humana de v0.1 cerrada, `v0.2.0`. (completed 2026-10-14 — `v0.2.0` publicado con imágenes multi-arch; gate NOT READY por la regla estricta: VPS público, 22.04, arm64, ufw y 1–2 GB sin verificar, diferidos a OPS-05 (owner: usuario, v0.2.1 o inicio de v0.3))
 - [ ] **Phase 15: Verificación en host real (OPS-05)** - Deuda de v0.2 aceptada por el usuario: install y deploy de v0.2 en un VPS público real, Ubuntu 22.04, arm64, ufw activo y 1–2 GB. Requiere hosts reales; owner: usuario.
+
+### v0.3 Reliable Deployment Engine (Phases 16-20)
+
+**Overview.** Convierte el deploy de v0.2 en un motor reproducible, auditable e idempotente, de adentro hacia afuera como v0.2: contratos remotos con evidencia (ADR 0010) y dominio puro → runtime (healthcheck, conservación del contenedor previo, rollback automático y manual, retención de imágenes, cancel/crash en los estados nuevos) → webhooks de GitHub e idempotencia → UI, E2E y docs → stress de 100 ciclos y gate. La fuente de verdad de tareas y criterios es `.agent-flow/plan.json`.
+
+- [ ] **Phase 16: Motor confiable — contratos, dominio y esquema** - ADR 0010 (probes, `-prev`, reintento del worker), state machine de diez estados al 100% de branch coverage, healthcheck, rollback, retención, decisiones de webhook, migración 0011.
+- [ ] **Phase 17: Healthchecks y recuperación en el runtime** - `HEALTHCHECK`, contenedor previo conservado hasta pasar el check, `ROLLING_BACK → ROLLED_BACK`, retención de imágenes, rollback manual, cancel y caída en los estados nuevos.
+- [ ] **Phase 18: Webhooks de GitHub e idempotencia** - Secreto por servicio, receptor HMAC sobre cuerpo crudo, dedupe por delivery, deploy del SHA exacto, coalescencia de pushes, `Idempotency-Key` y reintento idempotente del worker.
+- [ ] **Phase 19: UI de motor confiable, E2E y docs** - Narración de healthcheck/rollback, ajustes de healthcheck, panel de webhook, historial trazable con rollback, E2E happy/failure/rollback, docs y revisión UX.
+- [ ] **Phase 20: Hardening, stress y gate de release v0.3** - Matriz §8.8 completa, 100 ciclos deploy/rollback sin huérfanos, revisión de seguridad, gate y `v0.3.0`.
 
 ## Decisions carried from research
 
@@ -433,6 +444,7 @@ Las features cierran en orden 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. 
 |---|---|---|---|---|
 | v0.1 Foundation | 6 | 109/109 | Complete | 2026-09-22 |
 | v0.2 Projects & Services | 8 | 0/TBD | In progress | |
+| v0.3 Reliable Deployment Engine | 5 | 0/28 | Planned | |
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|

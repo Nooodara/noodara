@@ -103,13 +103,51 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **QA-09**: El E2E crítico cubre proyecto → environment → servicio desde `node-api` → deploy con logs en vivo → servicio alcanzable por el puerto publicado → build fallido con `failing-build` y error accionable → cancelación en curso sin huérfanos.
 - [x] **QA-10**: Los cuatro spikes de la investigación (transferencia de secretos sin argv, kill remoto confirmado, BuildKit por defecto en Docker 23+, estabilidad del JSON de `docker ps`) se resuelven con evidencia antes de implementar el motor, y los números por defecto (flush, topes de logs, intervalo de reconciliación, timeouts) se miden y se registran como en v0.1.
 
+## v0.3 Requirements — Reliable Deployment Engine
+
+Planificados 2026-10-14 (fases 16–20). Fuente: `docs/roadmap-v0.1-v0.5.md` §8. Sustituyen a DEPL-01. Las categorías existentes (UI, DOCS, QA) continúan su numeración.
+
+### Motor (ENG)
+
+- [ ] **ENG-01**: La state machine de Deployment tiene los diez estados del roadmap (`QUEUED PREPARING BUILDING DEPLOYING HEALTHCHECK SUCCESS FAILED ROLLING_BACK ROLLED_BACK CANCELLED`), centralizada en `packages/domain`, con cada par ordenado testeado y 100% de branch coverage forzado por un gate.
+- [ ] **ENG-02**: Cada deployment conserva trazabilidad completa e inmutable: trigger (`manual | redeploy | webhook | rollback`), actor o delivery de webhook, commit, imagen, deployment previo, deployment del que es rollback y snapshot de la configuración de runtime; el historial se lista paginado por API.
+- [ ] **ENG-03**: Deploy, redeploy y rollback por API aceptan `Idempotency-Key`; la misma clave devuelve el mismo deployment y un reintento del job del worker nunca crea contenedores ni filas duplicadas.
+- [ ] **ENG-04**: La cancelación y la recuperación tras caída del worker dejan la infraestructura consistente desde cualquier estado no terminal, incluidos `HEALTHCHECK` y `ROLLING_BACK`: nunca queda el servicio sin versión cuando había una healthy.
+- [ ] **ENG-05**: Un deployment fallido nunca reemplaza una versión healthy sin mecanismo de recuperación: el contenedor anterior se conserva (detenido) hasta que el nuevo pasa el healthcheck.
+
+### Healthchecks (HC)
+
+- [ ] **HC-01**: Cada servicio configura un healthcheck `http`, `tcp` o `container` (path, port, timeout, interval, retries, expected status, start period) validado en `packages/domain` con límites acotados; los servicios de v0.2 sin configuración usan `container` y conservan su comportamiento.
+- [ ] **HC-02**: El healthcheck se ejecuta desde el servidor del usuario según ADR 0010, con timeouts explícitos, resultado narrado en los logs del deployment y fallos de vocabulario cerrado (`HEALTHCHECK_FAILED`, `HEALTHCHECK_TIMEOUT`).
+
+### Rollback (RBK)
+
+- [ ] **RBK-01**: Si el arranque o el healthcheck fallan y existe una versión anterior, el deployment pasa a `ROLLING_BACK`, restaura el contenedor anterior y solo termina `ROLLED_BACK` cuando su healthcheck pasa; si no, `FAILED` con `ROLLBACK_FAILED`. Activable por servicio (por defecto activo).
+- [ ] **RBK-02**: El usuario hace rollback manual a un deployment anterior known-good cuya imagen sigue en el servidor: un deployment nuevo con trigger `rollback`, sin build, que restaura su configuración de runtime y pasa el healthcheck antes de `SUCCESS`.
+- [ ] **RBK-03**: Una política de retención mantiene la imagen actual y las N anteriores known-good por servicio (N configurable, acotado); un objetivo cuya imagen ya no existe se rechaza con `ROLLBACK_TARGET_UNAVAILABLE`.
+
+### Webhooks (HOOK)
+
+- [ ] **HOOK-01**: Cada servicio Git puede activar un webhook de GitHub con un secreto generado por Noodara, cifrado at-rest, mostrado una sola vez, rotable y eliminado con el servicio; la URL del webhook no expone ids internos adivinables.
+- [ ] **HOOK-02**: El receptor verifica la firma HMAC-SHA256 en tiempo constante sobre el cuerpo crudo antes de parsearlo, con tope de tamaño y rate limit; acepta `push` y `ping`, valida el evento, ignora tags, borrados y ramas que no coinciden, y despliega exactamente el SHA empujado.
+- [ ] **HOOK-03**: Una entrega duplicada o reentregada (mismo `X-GitHub-Delivery`) nunca crea otro deployment; los pushes que llegan con un deployment activo se coalescen en uno pendiente con el último SHA; cada entrega queda registrada con su resultado y es visible en la UI.
+
+### UI, docs y calidad
+
+- [ ] **UI-13**: La UI configura healthcheck y auto-rollback, activa y rota el webhook, narra los pasos de healthcheck y rollback, muestra el historial con su trazabilidad y lanza el rollback manual con confirmación, todo dentro del design system y aprobado por `noodara-ux-review` y un humano en ambos temas.
+- [ ] **DOCS-03**: El sitio documenta healthchecks, webhooks de GitHub y rollback (con sus límites de v0.3) y el test de exactitud cubre sus códigos de error y defaults.
+- [ ] **QA-11**: La suite de integración simula, contra sshd+dockerd reales: deploy exitoso, fallo de clone, fallo de dependencias/build, fallo de `docker build`, crash del contenedor, timeout y status incorrecto del healthcheck, interrupción de red, webhook duplicado, reintento del worker, rollback exitoso y rollback fallido.
+- [ ] **QA-12**: Los E2E cubren happy path (push firmado → webhook → `QUEUED … HEALTHCHECK → SUCCESS`), failure path (commit roto → la versión buena sigue sirviendo) y rollback path (`FAILED` → rollback → versión previa healthy → `ROLLED_BACK`).
+- [ ] **QA-13**: 100 ciclos deploy/rollback sin corrupción de estado, cero contenedores huérfanos y cero deployment records perdidos, en un gate de stress y en nightly.
+- [ ] **QA-14**: Gate de release v0.3 con evidencia por criterio de `docs/roadmap-v0.1-v0.5.md` §8.10, CI y nightly verdes, y `v0.3.0` publicado.
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
 
 ### Deployment Engine (v0.3)
 
-- **DEPL-01**: State machine determinística completa (HEALTHCHECK, ROLLED_BACK), webhooks de Git con idempotencia, healthchecks configurables, rollback a un deployment anterior con historial inmutable.
+- ~~**DEPL-01**~~: sustituido por ENG/HC/RBK/HOOK (v0.3 Requirements, 2026-10-14).
 
 ### Domains & Secrets (v0.4)
 
@@ -214,11 +252,31 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | OPS-03 | Phase 14 | Complete |
 | OPS-04 | Phase 14 | Complete (host real → OPS-05) |
 | OPS-05 | Phase 15 | Pending (owner: usuario) |
+| ENG-01 | Phase 16 | Pending |
+| ENG-02 | Phase 16 | Pending |
+| HC-01 | Phase 16 | Pending |
+| ENG-05 | Phase 17 | Pending |
+| ENG-04 | Phase 17 | Pending |
+| HC-02 | Phase 17 | Pending |
+| RBK-01 | Phase 17 | Pending |
+| RBK-02 | Phase 17 | Pending |
+| RBK-03 | Phase 17 | Pending |
+| ENG-03 | Phase 18 | Pending |
+| HOOK-01 | Phase 18 | Pending |
+| HOOK-02 | Phase 18 | Pending |
+| HOOK-03 | Phase 18 | Pending |
+| UI-13 | Phase 19 | Pending |
+| DOCS-03 | Phase 19 | Pending |
+| QA-12 | Phase 19 | Pending |
+| QA-11 | Phase 20 | Pending |
+| QA-13 | Phase 20 | Pending |
+| QA-14 | Phase 20 | Pending |
 
 **Coverage:**
 - v1 requirements: 61 total
 - Mapped to phases: 60 (Phase 7: 3 · Phase 8: 10 · Phase 9: 5 · Phase 10: 5 · Phase 11: 6 · Phase 12: 24 · Phase 13: 3 · Phase 14: 4)
 - Phase 15: 1 (OPS-05, añadido 2026-10-14 tras la revisión de la fase 14)
+- v0.3 requirements: 19 total, mapped to Phases 16–20 (16: 3 · 17: 6 · 18: 4 · 19: 3 · 20: 3)
 - Unmapped: 0 ✓
 
 ---

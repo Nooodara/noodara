@@ -51,7 +51,17 @@
       "it-web-image": "pnpm exec vitest run --config vitest.installer.config.ts tests/integration/installer/web-image.test.ts",
       "site-build": "pnpm --filter @noodara/site build",
       "it-db": "pnpm exec vitest run --config vitest.integration.config.ts tests/integration/db",
-      "audit": "pnpm audit --audit-level=high"
+      "audit": "pnpm audit --audit-level=high",
+      "adr-0010-accepted": "grep -A2 \"## Status\" docs/adr/0010-reliable-deploy-contracts.md | grep -q \"Accepted\"",
+      "it-contracts-v03": "NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/contracts-v03.test.ts",
+      "coverage-state-machine": "pnpm exec vitest run --config vitest.state-machine.config.ts --coverage",
+      "it-healthcheck": "NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/runtime-healthcheck.test.ts",
+      "it-rollback": "NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/runtime-rollback.test.ts tests/integration/deploy-engine/runtime-retention.test.ts tests/integration/deploy-engine/runtime-manual-rollback.test.ts",
+      "it-faults": "NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/runtime-faults.test.ts",
+      "it-webhooks": "pnpm exec vitest run --config vitest.integration.config.ts tests/integration/webhooks",
+      "it-idempotency": "pnpm exec vitest run --config vitest.integration.config.ts tests/integration/queue/idempotency.test.ts",
+      "it-cycles": "NOODARA_STRESS=1 NOODARA_TEST_UBUNTU=24.04 pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/cycles.test.ts",
+      "e2e-engine": "pnpm exec playwright test tests/e2e/engine-happy.spec.ts tests/e2e/engine-failure.spec.ts tests/e2e/engine-rollback.spec.ts"
     },
     "defaultGates": [
       "test",
