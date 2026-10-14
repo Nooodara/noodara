@@ -17,6 +17,8 @@ Or with `sudo` (the variable must go after `sudo`, same as on the [Install](/doc
 curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sudo NOODARA_VERSION=<previous-version> sh
 ```
 
+Pin the version without a leading `v` (for example `NOODARA_VERSION=0.1.0`); that form works with every installer release, and this installer also accepts a leading `v`.
+
 The previous version is the one the installer names in that message — it is also recorded in
 `/opt/noodara/.env` for later reference. A failed upgrade never rolls back on its own, and it never
 touches your data volumes or your existing `.env` beyond what the upgrade attempt itself already

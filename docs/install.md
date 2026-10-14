@@ -12,7 +12,7 @@ curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | 
 - [Supported variables](https://noodara.com/docs/reference/variables)
 - [Troubleshooting](https://noodara.com/docs/operate/troubleshooting)
 
-**Release candidates**: the default install resolves the latest stable release. A release candidate (`vX.Y.Z-rc.N`) is a GitHub prerelease and is installed only when you pin it with `NOODARA_VERSION`.
+**Release candidates**: the default install resolves the latest stable release. A release candidate (`X.Y.Z-rc.N`) is a GitHub prerelease and is installed only when you pin it with `NOODARA_VERSION` (for example `NOODARA_VERSION=0.2.0-rc.1`). Pin without a leading `v`: that form works with every installer version, and this installer also accepts a leading `v`.
 
 **Logs**: All services use the `json-file` driver with automatic rotation: 50 MB max per file, 3 files retained (150 MB per service total). Location: `/var/lib/docker/containers/*/` on the host.
 
