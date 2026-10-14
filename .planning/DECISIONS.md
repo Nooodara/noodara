@@ -23,3 +23,4 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-10-14: 14-31 executor reported it did not write tests RED first (TDD rule broken); tests exist and pass. Flag for the phase tier-1 review.
 - 2026-10-14: User chose progressive (Apple-style rubber-band) overscroll resistance for the Sheet over the current linear 0.15 (task 14-33, before rc.2).
 - 2026-10-14: 14-33 wires the rubber band through Motion's internal `_dragX` (pinned motion@13.4.1, D19). A motion upgrade must re-verify the Sheet drag specs.
+- 2026-10-14: CI 10/10 and Nightly 7/7 (e2e-repeat 20/20, installer green on re-run) on d828db4; tagging v0.2.0-rc.2 on it for the second human UAT.
