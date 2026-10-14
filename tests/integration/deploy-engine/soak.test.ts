@@ -68,7 +68,7 @@ const SOAK_CASE_TIMEOUT_MS = 3_600_000;
 /** Past the worker's own deploy max, so an over-long deploy is measured instead of abandoned. */
 const WAIT_MS = DEPLOY_MAX_MS + 60_000;
 const POLL_MS = 500;
-const WORKSPACE_ROOT = '/opt/noodara-deploy';
+const WORKSPACE_ROOT = '/home/deployer/.noodara/deploy';
 const PORTS = { deploys: 13_240, cycles: 13_241 } as const;
 const KEY_VERSION = 1;
 const TERMINAL = new Set(['SUCCESS', 'FAILED', 'CANCELLED']);
@@ -230,6 +230,8 @@ describe.skipIf(!SOAK_ENABLED)('12-18 / QA-08 soak: 20 deploys and 20 create/del
     const networkExists = (name: string) => exists(['docker', 'network', 'inspect', name]);
     const containerExists = (name: string) => exists(['docker', 'container', 'inspect', name]);
     const pathGone = async (target: string): Promise<boolean> => !(await exists(['test', '-e', target]));
+    // 14-30: the base persists once any workspace was made, so this proves the path checked is real.
+    const workspaceBaseExists = async (): Promise<boolean> => exists(['test', '-d', WORKSPACE_ROOT]);
     const serviceImages = async (serviceId: string): Promise<string> =>
       rootOut(['docker', 'image', 'ls', '--filter', `reference=noodara/${serviceId}`, '--format', '{{.Repository}}:{{.Tag}}']);
     const workspaceListing = async (): Promise<string> =>
@@ -370,6 +372,7 @@ describe.skipIf(!SOAK_ENABLED)('12-18 / QA-08 soak: 20 deploys and 20 create/del
       expect(await containerExists(`noodara-${service.id}`)).toBe(false);
       expect(await networkExists(`noodara-net-${service.id}`)).toBe(false);
       expect(await serviceImages(service.id)).toBe('');
+      expect(await workspaceBaseExists(), 'workspace base missing: the check below would be vacuous').toBe(true);
       for (const deploymentId of deploymentIds) {
         expect(await pathGone(`${WORKSPACE_ROOT}/${deploymentId}`)).toBe(true);
       }

@@ -67,7 +67,7 @@ const STACK_STOP_TIMEOUT_MS = 300_000;
 const CASE_TIMEOUT_MS = 600_000;
 const TERMINAL_WAIT_MS = 300_000;
 const POLL_MS = 500;
-const WORKSPACE_ROOT = '/opt/noodara-deploy';
+const WORKSPACE_ROOT = '/home/deployer/.noodara/deploy';
 const PORTS = { app: 13_210, squatted: 13_211, image: 13_212 } as const;
 const KEY_VERSION = 1;
 const DEPLOY_MAX_MS = 300_000;
@@ -179,6 +179,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     const networkExists = (name: string) => exists(['docker', 'network', 'inspect', name]);
     const containerExists = (name: string) => exists(['docker', 'container', 'inspect', name]);
     const pathGone = async (target: string): Promise<boolean> => !(await exists(['test', '-e', target]));
+    // 14-30: the base persists once any workspace was made, so this proves the path checked is real.
+    const workspaceBaseExists = async (): Promise<boolean> => exists(['test', '-d', WORKSPACE_ROOT]);
     const layersOf = async (argv: readonly string[]): Promise<string[]> =>
       JSON.parse(await rootOut([...argv, '--format', '{{json .RootFS.Layers}}'])) as string[];
     const containerImageLayers = async (container: string): Promise<string[]> => {
@@ -309,6 +311,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
 
     /** A1/A5: workspace, its secrets and the registry --config dir are gone on every exit. */
     const expectWorkspaceGone = async (deploymentId: string): Promise<void> => {
+      expect(await workspaceBaseExists(), 'workspace base missing: the check below would be vacuous').toBe(true);
       expect(await pathGone(`${WORKSPACE_ROOT}/${deploymentId}`)).toBe(true);
     };
 

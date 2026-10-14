@@ -31,7 +31,7 @@ const READINESS_TIMEOUT_MS = 60_000;
 const DEFAULT_EXEC_TIMEOUT_MS = 60_000;
 const HOST_DOCKER_TIMEOUT_MS = 60_000;
 const RUN_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const WORKSPACES_ROOT = '/opt/noodara-deploy';
+const WORKSPACES_ROOT = '/home/deployer/.noodara/deploy';
 const REDACTED = '<redacted>';
 const PUBLIC_KEY_LINE = /^ssh-(ed25519|rsa) [A-Za-z0-9+/]+={0,3}( [^\r\n]*)?$/;
 const PEM_PRIVATE_KEY = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(-----END [A-Z ]*PRIVATE KEY-----|$)/g;

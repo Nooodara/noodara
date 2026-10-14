@@ -51,7 +51,7 @@ const STACK_STOP_TIMEOUT_MS = 300_000;
 const CASE_TIMEOUT_MS = 600_000;
 const WAIT_MS = 300_000;
 const POLL_MS = 500;
-const WORKSPACE_ROOT = '/opt/noodara-deploy';
+const WORKSPACE_ROOT = '/home/deployer/.noodara/deploy';
 const KEY_VERSION = 1;
 const DEPLOY_MAX_MS = 300_000;
 const TERMINAL = new Set(['SUCCESS', 'FAILED', 'CANCELLED']);
@@ -166,6 +166,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
   const networkExists = (name: string) => exists(['docker', 'network', 'inspect', name]);
   const containerExists = (name: string) => exists(['docker', 'container', 'inspect', name]);
   const pathGone = async (target: string): Promise<boolean> => !(await exists(['test', '-e', target]));
+  // 14-30: the base persists once any workspace was made, so this proves the path checked is real.
+  const workspaceBaseExists = async (): Promise<boolean> => exists(['test', '-d', WORKSPACE_ROOT]);
   const markerRunning = async (): Promise<boolean> =>
     (await rootOut(['sh', '-c', 'ps -eww -o args= | grep -F -- "$0" | grep -v grep || true', SLOW_MARKER])) !== '';
   const dockerFootprint = async (): Promise<string> =>
@@ -248,6 +250,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
   const expectNoDeploymentResources = async (serviceId: string, deploymentId: string): Promise<void> => {
     expect(await imageExists(`noodara/${serviceId}:${deploymentId}`)).toBe(false);
     expect(await networkExists(`noodara-net-${serviceId}`)).toBe(false);
+    expect(await workspaceBaseExists(), 'workspace base missing: the check below would be vacuous').toBe(true);
     expect(await pathGone(`${WORKSPACE_ROOT}/${deploymentId}`)).toBe(true);
   };
 
@@ -587,6 +590,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
       await sweep.cleanup;
       await waitFor('the orphaned build to stop', async () => !(await markerRunning()), 60_000);
       expect(await imageExists(`noodara/${serviceId}:${deploymentId}`)).toBe(false);
+      expect(await workspaceBaseExists()).toBe(true);
       expect(await pathGone(`${WORKSPACE_ROOT}/${deploymentId}`)).toBe(true);
       // Never the per-service container.
       expect(await rootOut(['docker', 'container', 'inspect', serviceContainer, '--format', '{{.Id}}'])).toBe(serviceContainerId);

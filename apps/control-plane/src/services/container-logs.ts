@@ -1,7 +1,7 @@
 // 12-16: runtime container logs on demand (LOG-03, ROADMAP D8). Two shapes, one allowlisted template:
 // - tail: `docker logs --tail N --timestamps` as a plain bounded command;
 // - follow: the same with `--follow`, run under `setsid -w` with a pidfile in a throwaway run dir
-//   (/opt/noodara-deploy/<uuid>/run/logs.pid). Closing the channel never stops it (ADR 0008), so
+//   (~/.noodara/deploy/<uuid>/run/logs.pid). Closing the channel never stops it (ADR 0008), so
 //   every end (max duration, client gone, output cap, shutdown, dropped connection) goes through
 //   killSupervisedOperation, retried once on a fresh connection, and the run dir is removed only
 //   once the group is confirmed absent.

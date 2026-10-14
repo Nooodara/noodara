@@ -67,7 +67,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.resolve(HERE, '../../../fixtures');
 const STACK_TIMEOUT_MS = 900_000;
 const STEP_TEST_TIMEOUT_MS = 300_000;
-const WORKSPACE_ROOT = '/opt/noodara-deploy';
+const WORKSPACE_ROOT = '/home/deployer/.noodara/deploy';
 const PUBLISHED_PORT = 13_100;
 const INTERNAL_PORT = 3_000;
 const INSPECT_ATTEMPTS = 5;
@@ -601,7 +601,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       }
     });
 
-    it('happy path teardown (D-14, T-11-48): the wrappers leave no noodara.managed container, network or image and no /opt/noodara-deploy/<id>', async () => {
+    it('happy path teardown (D-14, T-11-48): the wrappers leave no noodara.managed container, network or image and no ~/.noodara/deploy/<id>', async () => {
       if (firstImage === undefined) throw new Error('happy path did not build an image');
       const ctx = context();
       const teardownAt = Date.now();
@@ -627,6 +627,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         expect(await rootOut(['docker', 'network', 'ls', '-q', '--filter', `label=${label}`])).toBe('');
         expect(await rootOut(['docker', 'images', '-q', '--filter', `label=${label}`])).toBe('');
       }
+      await rootOk(['test', '-d', WORKSPACE_ROOT]);
       expect(await rootOut(['find', WORKSPACE_ROOT, '-mindepth', '1', '-maxdepth', '1'])).toBe('');
       expect(await pathGone(first.workspace.root)).toBe(true);
     }, STEP_TEST_TIMEOUT_MS);

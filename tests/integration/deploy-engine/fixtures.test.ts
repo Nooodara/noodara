@@ -24,7 +24,7 @@ const DEPLOY_ERRORS_DIR = path.resolve(HERE, '../../../packages/ssh/src/fixtures
 const CAPTURE_FIXTURES = process.env['NOODARA_CAPTURE_FIXTURES'] === '1';
 const STACK_TIMEOUT_MS = 900_000;
 const SSH_COMMAND_TIMEOUT_MS = 300_000;
-const WORKSPACE_ROOT = '/opt/noodara-deploy';
+const WORKSPACE_ROOT = '/home/deployer/.noodara/deploy';
 /** D-13 budget for an official fixture's build context. */
 const MAX_CONTEXT_BYTES = 1_048_576;
 const OFFICIAL_FIXTURES = ['node-api', 'static-app', 'failing-build'] as const;

@@ -54,7 +54,7 @@ const TEARDOWN_STEP_TIMEOUT_MS = 60_000;
 const STACK_STOP_TIMEOUT_MS = 300_000;
 const FOLLOW_MAX_MS = 4_000;
 const KILL_CONFIRM_MS = 15_000;
-const RUN_ROOT = '/opt/noodara-deploy';
+const RUN_ROOT = '/home/deployer/.noodara/deploy';
 const USER_ID = 'runtime-logs-user';
 const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 // eslint-disable-next-line no-control-regex -- the point is to prove none reach the client

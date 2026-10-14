@@ -19,7 +19,7 @@ const OTHER_SERVER_ID = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
 const USER_ID = 'user-1';
 const CONTAINER = `noodara-${SERVICE_ID}`;
 const STREAM_ID = '3f2b8c1e-9d4a-4f6b-8a2c-1e5d7f9b0c3a';
-const WORKSPACE = `/opt/noodara-deploy/${STREAM_ID}`;
+const WORKSPACE = `.noodara/deploy/${STREAM_ID}`;
 const PID_FILE = `${WORKSPACE}/run/logs.pid`;
 const RAW = 'permission denied for user root password=hunter2 at /var/lib/docker';
 const TS = '2026-10-05T10:00:00.123456789Z';

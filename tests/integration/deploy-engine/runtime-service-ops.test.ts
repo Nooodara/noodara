@@ -62,7 +62,7 @@ const FIXTURE_STOP_TIMEOUT_MS = 60_000;
 const STACK_STOP_TIMEOUT_MS = 300_000;
 const WAIT_MS = 300_000;
 const POLL_MS = 500;
-const WORKSPACE_ROOT = '/opt/noodara-deploy';
+const WORKSPACE_ROOT = '/home/deployer/.noodara/deploy';
 const PORTS = { ops: 13_220, project: 13_221 } as const;
 const KEY_VERSION = 1;
 const DEPLOY_MAX_MS = 300_000;
@@ -164,6 +164,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     const networkExists = (name: string) => exists(['docker', 'network', 'inspect', name]);
     const containerExists = (name: string) => exists(['docker', 'container', 'inspect', name]);
     const pathGone = async (target: string): Promise<boolean> => !(await exists(['test', '-e', target]));
+    // 14-30: the base persists once any workspace was made, so this proves the path checked is real.
+    const workspaceBaseExists = async (): Promise<boolean> => exists(['test', '-d', WORKSPACE_ROOT]);
     const inspectContainer = async (name: string, template: string): Promise<string> =>
       rootOut(['docker', 'container', 'inspect', name, '--format', template]);
     const serviceImages = async (serviceId: string): Promise<string> =>
@@ -362,6 +364,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       expect(await containerExists(`noodara-${serviceId}`)).toBe(false);
       expect(await networkExists(`noodara-net-${serviceId}`)).toBe(false);
       expect(await serviceImages(serviceId)).toBe('');
+      expect(await workspaceBaseExists(), 'workspace base missing: the check below would be vacuous').toBe(true);
       for (const deploymentId of deploymentIds) {
         expect(await pathGone(`${WORKSPACE_ROOT}/${deploymentId}`)).toBe(true);
       }

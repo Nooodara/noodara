@@ -45,6 +45,8 @@ export const GIT_HTTPS_HOST_ALIAS = 'git-https.noodara-test.internal';
 /** The user name the askpass helper answers (ASKPASS_SCRIPT_CONTENT). */
 export const GIT_HTTPS_USERNAME = 'x-access-token';
 export const DEPLOY_HOST_READY_LINE = 'NOODARA_DEPLOY_HOST_READY';
+/** Home of the fixture SSH user; deploy workspaces live under `.noodara/deploy` in it (14-30). */
+export const DEPLOYER_HOME = '/home/deployer';
 
 /** Used until 11-04 lands fixtures/*\/Dockerfile. Index digests resolved on 2026-09-29. */
 const DEFAULT_BASE_IMAGES = [
@@ -463,6 +465,12 @@ export async function startDeployEngineStack(
     ): Promise<StackExecResult> => {
       const execOptions: Partial<ExecOptions> = {};
       if (opts.user !== undefined) execOptions.user = opts.user;
+      // 14-30: workspaces are relative to the SSH user's home (sshd starts commands there), so
+      // root/deployer execs start in deployer's home too: a relative workspace path then names the
+      // real directory instead of a missing one under `/` (which would make "gone" checks vacuous).
+      if (opts.user === undefined || opts.user === 'root' || opts.user === 'deployer') {
+        execOptions.workingDir = DEPLOYER_HOME;
+      }
       if (opts.env !== undefined) execOptions.env = opts.env;
       const result = await withTimeout(
         host.exec([...command], execOptions),

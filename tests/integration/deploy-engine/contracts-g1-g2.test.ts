@@ -26,7 +26,7 @@ const DEPLOY_ERRORS_DIR = path.resolve(HERE, '../../../packages/ssh/src/fixtures
 const CAPTURE_FIXTURES = process.env['NOODARA_CAPTURE_FIXTURES'] === '1';
 const STACK_TIMEOUT_MS = 900_000;
 const SSH_COMMAND_TIMEOUT_MS = 180_000;
-const WORKSPACE_ROOT = '/opt/noodara-deploy';
+const WORKSPACE_ROOT = '/home/deployer/.noodara/deploy';
 
 /**
  * Measured, not assumed: the umask sftp-server applies to a raw open(mode 0666). Ubuntu's
@@ -500,7 +500,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       // Needles travel on stdin (grep -f /dev/stdin), never argv. Exit 1 = no match anywhere.
       const leftovers = await run(
         c(),
-        'sudo -n grep -rlF -f /dev/stdin /home/deployer /root /tmp /opt/noodara-deploy',
+        'sudo -n grep -rlF -f /dev/stdin /home/deployer /root /tmp',
         `${password}\n${auth}\n`,
       );
 
