@@ -351,8 +351,13 @@ noodara_docker_binary_present() {
 
 # Checks the `compose` plugin subcommand specifically -- never a standalone, no-longer-supported
 # v1 `docker-compose` binary.
+# Runs before any version is resolved, so it gets the same scrubbed environment noodara_compose
+# gives every other compose call (14-29), minus a target version.
 noodara_compose_present() {
-  docker compose version >/dev/null 2>&1
+  (
+    unset NOODARA_VERSION NOODARA_IMAGE_PREFIX NOODARA_PORT POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB REDIS_PASSWORD
+    docker compose version
+  ) >/dev/null 2>&1
 }
 
 # Every apt-get invocation below goes through this one helper: DEBIAN_FRONTEND is non-interactive,
@@ -1068,22 +1073,30 @@ noodara_set_env_value() {
 # is already present are safe no-ops, so a caller may pass the full current variable set every
 # time without special-casing "what changed".
 noodara_merge_env() {
-  path="$1"
-  version="$2"
+  _noodara_me_path="$1"
+  _noodara_me_version="$2"
   shift 2
 
-  noodara_backup_env "$path" >/dev/null
+  noodara_merge_env_keys "$_noodara_me_path" "$@"
+  noodara_set_env_value "$_noodara_me_path" NOODARA_VERSION "$_noodara_me_version"
+  noodara_secure_env_file "$_noodara_me_path"
+}
 
-  noodara_set_env_value "$path" NOODARA_VERSION "$version"
+# The version-free half of noodara_merge_env (14-29): one backup, then the additive appends.
+# noodara_main runs this before the pull (Compose needs every interpolated key in .env) and
+# writes NOODARA_VERSION only once the new images are pulled.
+noodara_merge_env_keys() {
+  _noodara_mek_path="$1"
+  shift
+
+  noodara_backup_env "$_noodara_mek_path" >/dev/null
 
   while [ "$#" -ge 2 ]; do
-    key="$1"
-    value="$2"
-    noodara_env_append_if_missing "$path" "$key" "$value"
+    noodara_env_append_if_missing "$_noodara_mek_path" "$1" "$2"
     shift 2
   done
 
-  noodara_secure_env_file "$path"
+  noodara_secure_env_file "$_noodara_mek_path"
 }
 
 # Version, public URL and image-prefix resolution (06-CONTEXT.md D-04/D-07/D-19, INST-01): the
@@ -1764,6 +1777,47 @@ NOODARA_COMPOSE_EOF_A
 # Compose's own default project-directory/.env resolution needs nothing more, matching Plan
 # 06-07's own compose-stack.test.ts convention).
 
+# The single seam every `docker compose` call goes through (14-29). Compose gives the shell
+# environment precedence over .env, so an operator's exported NOODARA_VERSION=v0.2.0-rc.1 used to
+# beat .env's normalized 0.2.0-rc.1 and the pull asked for a tag that does not exist (exit 50).
+# NOODARA_VERSION is exported as the normalized target noodara_main resolved
+# (_noodara_compose_version) rather than unset, because the pull must run before .env names the new
+# version -- an interrupted or failed pull then leaves .env on the version still running. Every
+# other key the compose file interpolates is unset so .env wins, as the re-run warnings promise.
+# Without a target (a direct call outside noodara_main), NOODARA_VERSION is unset too.
+noodara_compose() {
+  (
+    cd "$NOODARA_INSTALL_DIR" || exit 1
+    unset NOODARA_IMAGE_PREFIX NOODARA_PORT POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB REDIS_PASSWORD
+    if [ -n "${_noodara_compose_version:-}" ]; then
+      NOODARA_VERSION="$_noodara_compose_version"
+      export NOODARA_VERSION
+    else
+      unset NOODARA_VERSION
+    fi
+    docker compose "$@"
+  )
+}
+
+# Puts NOODARA_VERSION/NOODARA_PREVIOUS_VERSION back to their pre-run values when an upgrade's
+# `up -d` fails before the new version is running (14-29). Armed by noodara_main only after it
+# wrote a version change (_noodara_restore_version). Best effort: a failed restore warns and never
+# masks the caller's own exit code.
+noodara_restore_env_version() {
+  [ -n "${_noodara_restore_version:-}" ] || return 0
+  _noodara_rev_path="${NOODARA_INSTALL_DIR}/${NOODARA_ENV_FILE}"
+  if (
+    noodara_set_env_value "$_noodara_rev_path" NOODARA_VERSION "$_noodara_restore_version"
+    noodara_set_env_value "$_noodara_rev_path" NOODARA_PREVIOUS_VERSION "${_noodara_restore_previous:-}"
+    noodara_secure_env_file "$_noodara_rev_path"
+  ); then
+    noodara_note ".env restored to NOODARA_VERSION=${_noodara_restore_version} (the upgrade did not start)."
+    noodara_write_log "Upgrade failed to start: .env restored to the previous NOODARA_VERSION"
+  else
+    noodara_warn "Could not restore NOODARA_VERSION in ${_noodara_rev_path}; set it back to ${_noodara_restore_version} by hand."
+  fi
+}
+
 # Extracts the value of `field` from the JSON object whose "Service" field equals `svc`, out of
 # `docker compose ps[--format json]`'s stdout on stdin -- without jq (D-18 layer 1 has no such
 # dependency). Tracks curly-brace DEPTH character-by-character rather than splitting on every "}"
@@ -1821,7 +1875,7 @@ noodara_compose_json_field_for_service() {
 # The live Health status ("healthy"/"unhealthy"/"starting"/empty) for a running service, from
 # `docker compose ps` (running containers only).
 noodara_service_health() {
-  (cd "$NOODARA_INSTALL_DIR" && docker compose ps --format json) | noodara_compose_json_field_for_service "$1" Health
+  noodara_compose ps --format json | noodara_compose_json_field_for_service "$1" Health
 }
 
 # Post-execution fix (orchestrator audit Finding E, 06-09 follow-up): a single, immediate health
@@ -1849,13 +1903,13 @@ noodara_stack_healthy_now() {
 # health-check in the first place", which noodara_compose_up's own Finding F fix (below) needs to
 # know BEFORE ever deciding whether polling for health makes any sense at all.
 noodara_service_state() {
-  (cd "$NOODARA_INSTALL_DIR" && docker compose ps -a --format json) | noodara_compose_json_field_for_service "$1" State
+  noodara_compose ps -a --format json | noodara_compose_json_field_for_service "$1" State
 }
 
 # The exit code of a (possibly already-exited) service, from `docker compose ps -a` (`-a` so a
 # one-shot like `migrate` that has already exited is still reported, not just running containers).
 noodara_service_exit_code() {
-  (cd "$NOODARA_INSTALL_DIR" && docker compose ps -a --format json) | noodara_compose_json_field_for_service "$1" ExitCode
+  noodara_compose ps -a --format json | noodara_compose_json_field_for_service "$1" ExitCode
 }
 
 # True (exit 0) only when the `migrate` one-shot's own recorded exit code is present and non-zero
@@ -1890,7 +1944,7 @@ noodara_pull_images() {
     return 0
   fi
   noodara_step "Pulling images..."
-  if ! (cd "$NOODARA_INSTALL_DIR" && docker compose pull); then
+  if ! noodara_compose pull; then
     noodara_fail image-pull-failed "Failed to pull images. Check network connectivity and the resolved image tags, then re-run this installer."
   fi
 }
@@ -1934,10 +1988,11 @@ noodara_pull_images() {
 noodara_compose_up() {
   _noodara_cu_context="${1:-}"
   noodara_step "Starting services..."
-  if ! (cd "$NOODARA_INSTALL_DIR" && docker compose up -d); then
+  if ! noodara_compose up -d; then
     if noodara_migrate_did_fail; then
-      _noodara_cu_tail=$(cd "$NOODARA_INSTALL_DIR" && docker compose logs --tail 50 migrate 2>&1 | noodara_redact_diagnostic_text)
+      _noodara_cu_tail=$(noodara_compose logs --tail 50 migrate 2>&1 | noodara_redact_diagnostic_text)
       printf '%s\n' "$_noodara_cu_tail" >&2
+      noodara_restore_env_version
       noodara_fail migrations-failed "Database migrations failed. See the migrate service log tail above. Data and secrets are untouched."
     fi
 
@@ -1959,7 +2014,7 @@ noodara_compose_up() {
       _noodara_cu_not_ready=1
     fi
     if [ "$_noodara_cu_not_ready" = "1" ]; then
-      _noodara_cu_ps=$(cd "$NOODARA_INSTALL_DIR" && docker compose ps -a 2>&1 | noodara_redact_diagnostic_text)
+      _noodara_cu_ps=$(noodara_compose ps -a 2>&1 | noodara_redact_diagnostic_text)
       printf '%s\n' "$_noodara_cu_ps" >&2
 
       _noodara_cu_message="Failed to start services with docker compose up -d -- see Compose's own error and the service state above. Data and secrets are untouched."
@@ -1970,6 +2025,7 @@ noodara_compose_up() {
           _noodara_cu_message="${_noodara_cu_message} To go back, re-run this installer with NOODARA_VERSION=${_noodara_cu_previous}."
         fi
       fi
+      noodara_restore_env_version
       noodara_fail compose-up-failed "$_noodara_cu_message"
     fi
 
@@ -2037,7 +2093,7 @@ noodara_wait_for_health() {
       _noodara_wfh_bad=web
     fi
   fi
-  _noodara_wfh_tail=$(cd "$NOODARA_INSTALL_DIR" && docker compose logs --tail 50 "$_noodara_wfh_bad" 2>&1 | noodara_redact_diagnostic_text)
+  _noodara_wfh_tail=$(noodara_compose logs --tail 50 "$_noodara_wfh_bad" 2>&1 | noodara_redact_diagnostic_text)
   printf '%s\n' "$_noodara_wfh_tail" >&2
 
   if [ "$_noodara_wfh_context" = "repair" ]; then
@@ -2070,7 +2126,7 @@ noodara_wait_for_health() {
 # all) when no such line exists: this installer never fabricates, reprints a stale, or prints a
 # placeholder token -- the caller (noodara_print_summary) prints the admin-exists message instead.
 noodara_read_setup_token() {
-  _noodara_rst_logs=$(cd "$NOODARA_INSTALL_DIR" && docker compose logs api 2>&1) || return 1
+  _noodara_rst_logs=$(noodara_compose logs api 2>&1) || return 1
   _noodara_rst_token=$(printf '%s\n' "$_noodara_rst_logs" | sed -n 's/.*NOODARA_SETUP_TOKEN=\(.*\)/\1/p' | tail -n 1 | tr -d '\r')
   if [ -z "$_noodara_rst_token" ]; then
     return 1
@@ -2119,7 +2175,7 @@ noodara_read_setup_token() {
 # printed, exactly as before this fix.
 noodara_probe_admin_exists() {
   _noodara_pae_script='fetch("http://127.0.0.1:3000/api/setup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({token:"noodara-installer-admin-probe-0000000000000000",email:"noodara-installer-probe@example.invalid",password:"Noodara-Installer-Probe-Not-A-Real-Password-000"}),signal:AbortSignal.timeout(5000)}).then(function(r){process.stdout.write(r.status===404?"exists\n":r.status===400?"missing\n":"unknown\n");process.exit(0);}).catch(function(){process.stdout.write("unknown\n");process.exit(0);});'
-  _noodara_pae_out=$(cd "$NOODARA_INSTALL_DIR" && docker compose exec -T api node -e "$_noodara_pae_script" 2>/dev/null) || _noodara_pae_out=""
+  _noodara_pae_out=$(noodara_compose exec -T api node -e "$_noodara_pae_script" 2>/dev/null) || _noodara_pae_out=""
   case "$_noodara_pae_out" in
     *exists*)
       printf 'exists\n'
@@ -2292,9 +2348,12 @@ noodara_main() {
 
   _noodara_main_env_path="${NOODARA_INSTALL_DIR}/${NOODARA_ENV_FILE}"
   _noodara_main_version=$(noodara_resolve_version)
+  # 14-29: every compose call runs with this normalized value, never the operator's raw pin.
+  _noodara_compose_version="$_noodara_main_version"
   _noodara_main_image_prefix=$(noodara_resolve_image_prefix)
   _noodara_main_is_noop=0
   _noodara_main_is_repair=0
+  _noodara_main_write_version=0
 
   if [ "$_noodara_main_was_installed" = "1" ]; then
     # Finding B: .env always wins on a re-run -- read directly, never re-resolved.
@@ -2347,14 +2406,16 @@ noodara_main() {
         noodara_write_log "Re-run: already on version ${_noodara_main_version} but the stack was not healthy -- repairing (D-09/Finding E)"
       fi
     else
-      if [ -n "$_noodara_main_previous_version" ] && [ "$_noodara_main_previous_version" != "$_noodara_main_version" ]; then
-        noodara_set_env_value "$_noodara_main_env_path" NOODARA_PREVIOUS_VERSION "$_noodara_main_previous_version"
-      fi
-      noodara_merge_env "$_noodara_main_env_path" "$_noodara_main_version" \
+      # 14-29 (A2): back up and append missing keys now (Compose needs them to pull), but leave
+      # NOODARA_VERSION/NOODARA_PREVIOUS_VERSION alone until the new images are pulled, so a
+      # failed or interrupted pull never leaves .env naming a version that is not running.
+      _noodara_main_old_previous=$(noodara_env_get_value "$_noodara_main_env_path" NOODARA_PREVIOUS_VERSION)
+      noodara_merge_env_keys "$_noodara_main_env_path" \
         NOODARA_IMAGE_PREFIX "$_noodara_main_image_prefix" \
         NOODARA_PORT "$_noodara_main_port" \
         NOODARA_PUBLIC_URL "$_noodara_main_public_url"
-      noodara_write_log "Upgrade: merged .env, preserved existing secrets (NOODARA_VERSION, NOODARA_IMAGE_PREFIX, NOODARA_PORT, NOODARA_PUBLIC_URL updated)"
+      _noodara_main_write_version=1
+      noodara_write_log "Upgrade: backed up .env, preserved existing secrets, appended missing keys (NOODARA_VERSION is written after the pull)"
     fi
   else
     _noodara_main_port=$(noodara_resolve_port)
@@ -2377,6 +2438,19 @@ noodara_main() {
   else
     noodara_pull_images
     noodara_write_log "Images pulled (or skipped via NOODARA_INTERNAL_IMAGE_PREFIX)"
+    if [ "$_noodara_main_write_version" = "1" ]; then
+      if [ -n "$_noodara_main_previous_version" ] && [ "$_noodara_main_previous_version" != "$_noodara_main_version" ]; then
+        noodara_set_env_value "$_noodara_main_env_path" NOODARA_PREVIOUS_VERSION "$_noodara_main_previous_version"
+        # Armed for noodara_compose_up: an `up -d` that fails before the new version runs puts
+        # these back. A health-check failure (exit 53) does not -- Compose already started the
+        # new version, so .env keeps naming it.
+        _noodara_restore_version="$_noodara_main_previous_version"
+        _noodara_restore_previous="$_noodara_main_old_previous"
+      fi
+      noodara_set_env_value "$_noodara_main_env_path" NOODARA_VERSION "$_noodara_main_version"
+      noodara_secure_env_file "$_noodara_main_env_path"
+      noodara_write_log "Upgrade: NOODARA_VERSION written to .env after the pull"
+    fi
     if [ "$_noodara_main_is_repair" = "1" ]; then
       # Finding E / Finding F: no version change happened on this path -- neither noodara_compose_up's
       # own immediate-failure diagnostic nor noodara_wait_for_health's own timeout diagnostic must

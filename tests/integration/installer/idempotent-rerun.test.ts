@@ -351,7 +351,9 @@ describe("idempotent re-run, upgrade, no-op, repair and failed-upgrade (06-12-PL
       const run = await currentFixture().runInstallSh(
         {
           NOODARA_INTERNAL_IMAGE_PREFIX: currentImages().imagePrefix,
-          NOODARA_VERSION: v2Version,
+          // 14-29: the real-host UAT upgrade failed exactly here -- a v-prefixed pin exported
+          // raw into Compose. Images exist only as :<v2Version>.
+          NOODARA_VERSION: `v${v2Version}`,
           NOODARA_PUBLIC_URL: `http://127.0.0.1:${String(FIXTURE_PANEL_PORT)}`,
           NOODARA_PORT: String(FIXTURE_PANEL_PORT),
         },

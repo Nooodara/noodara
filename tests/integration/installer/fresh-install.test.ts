@@ -74,7 +74,9 @@ describe.each(UBUNTU_VERSIONS)('fresh install on Ubuntu %s (06-11-PLAN.md Task 1
       const run = await fixture.runInstallSh(
         {
           NOODARA_INTERNAL_IMAGE_PREFIX: builtImages.imagePrefix,
-          NOODARA_VERSION: builtImages.version,
+          // 14-29: pinned v-prefixed, as the docs allow. The images exist only as :<version>, so
+          // a compose call that still saw the raw exported pin would look for :v<version> and fail.
+          NOODARA_VERSION: `v${builtImages.version}`,
           NOODARA_PUBLIC_URL: `http://127.0.0.1:${String(FIXTURE_PANEL_PORT)}`,
           NOODARA_PORT: String(FIXTURE_PANEL_PORT),
         },
@@ -88,6 +90,7 @@ describe.each(UBUNTU_VERSIONS)('fresh install on Ubuntu %s (06-11-PLAN.md Task 1
       // read for the canary) is 600 -- all root-owned.
       const envRaw = await readFixtureFile(fixture, ENV_PATH);
       const env = parseEnvFile(envRaw);
+      expect(env.NOODARA_VERSION, 'pin v<version> installs <version>').toBe(builtImages.version);
       expect(await statFixturePath(fixture, ENV_PATH)).toBe('600 root:root');
       expect(await statFixturePath(fixture, INSTALL_DIR)).toBe('700 root:root');
       await readFixtureFile(fixture, COMPOSE_PATH); // exists, throws otherwise
