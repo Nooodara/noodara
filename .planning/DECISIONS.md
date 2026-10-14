@@ -21,3 +21,4 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-10-08: User reviewed and approved `@axe-core/playwright@4.13.0` (dequelabs/axe-core-npm, Deque maintainers) for the supply-chain allowlist in `scripts/check-package-provenance.mjs`.
 - 2026-10-11: `v0.2.0-rc.1` tagged on `48038ce` at the user's request; `release.yml` run 38160392096 green; multi-arch images published, GitHub prerelease, `latest` stays `v0.1.0`. Human UAT tracked in `docs/releases/v0.2-HUMAN-UAT.md`.
 - 2026-10-14: 14-31 executor reported it did not write tests RED first (TDD rule broken); tests exist and pass. Flag for the phase tier-1 review.
+- 2026-10-14: User chose progressive (Apple-style rubber-band) overscroll resistance for the Sheet over the current linear 0.15 (task 14-33, before rc.2).
