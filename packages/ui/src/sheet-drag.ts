@@ -9,26 +9,68 @@ export const DRAG_CLOSE_VELOCITY_PX_PER_S = 110;
 // pointer samples can produce a non-finite velocity that leaves the spring never settling.
 export const MAX_HANDOFF_VELOCITY_PX_PER_S = 8000;
 
-// Resistance while the panel is open: progressive, never a hard stop (brief §7.4 step 5).
-export const DRAG_ELASTIC_AT_REST = 0.15;
+// 14-33 (user decision 2026-10-14): overscroll resists progressively, Apple-style rubber band
+// `(1 - 1/(x*c/d + 1)) * d` -- slope `c` at the first touch, flattening towards the bound `d`,
+// never a hard stop (brief §7.4 step 5). Replaces the linear 0.15 elastic.
+export const RUBBER_BAND_COEFFICIENT = 0.55;
+export const RUBBER_BAND_LIMIT_PX = 120;
 
-/** `resting`: open, or springing back open. `closing`: the release-to-close animation runs. */
-export type SheetDragPhase = 'resting' | 'closing';
+/** Panel displacement for a pull of `pullPx` past the edge (signed, odd, bounded by `limitPx`). */
+export function rubberBand(
+  pullPx: number,
+  limitPx: number = RUBBER_BAND_LIMIT_PX,
+  coefficient: number = RUBBER_BAND_COEFFICIENT,
+): number {
+  const pull = Math.abs(pullPx);
+  if (pull === 0) return 0;
+  return Math.sign(pullPx) * (1 - 1 / ((pull * coefficient) / limitPx + 1)) * limitPx;
+}
 
-export type SheetDragElastic =
-  number | { readonly left: number; readonly right: number };
+// The inverse diverges at the bound; displacements are clamped just short of it.
+const INVERSE_CEILING = 0.999;
+
+/** The pull that produces `displacementPx` (inverse of `rubberBand`). */
+export function rubberBandInverse(
+  displacementPx: number,
+  limitPx: number = RUBBER_BAND_LIMIT_PX,
+  coefficient: number = RUBBER_BAND_COEFFICIENT,
+): number {
+  const displacement = Math.min(Math.abs(displacementPx), INVERSE_CEILING * limitPx);
+  if (displacement === 0) return 0;
+  return Math.sign(displacementPx) * (limitPx / coefficient) * (displacement / (limitPx - displacement));
+}
 
 /**
- * Motion's `dragElastic` for the drag surface. Motion takes the value at grab time as the drag
- * origin and applies the elastic to the absolute position (`0 + elastic * (origin + offset)` past
- * the `{0, 0}` constraints). At rest that is the resistance curve; mid-close it would pull a
- * panel grabbed at 300px back to ~45px. While closing, the right side is therefore unconstrained
- * (elastic 1), so a re-grab tracks the pointer 1:1 from where the panel sits on screen.
+ * `resting`: open (or springing back from a resting pull). `closing`: the release-to-close
+ * animation runs. `returning`: springing back to rest after a re-grab mid-close.
  */
-export function dragElasticFor(phase: SheetDragPhase): SheetDragElastic {
-  return phase === 'closing'
-    ? { left: DRAG_ELASTIC_AT_REST, right: 1 }
-    : DRAG_ELASTIC_AT_REST;
+export type SheetDragPhase = 'resting' | 'closing' | 'returning';
+
+/**
+ * Sheet hands Motion a raw drag value (pointer-driven, 1:1) and renders the panel at this offset.
+ * Resting, both sides rubber-band. Closing or returning, the close side is 1:1 so a re-grab
+ * tracks the pointer from where the panel sits on screen; past the open edge it still resists.
+ */
+export function panelOffsetFor(dragPx: number, phase: SheetDragPhase): number {
+  return phase !== 'resting' && dragPx > 0 ? dragPx : rubberBand(dragPx);
+}
+
+/** Inverse of `panelOffsetFor`: the raw drag value that renders the panel at `panelPx`. */
+export function dragOffsetFor(panelPx: number, phase: SheetDragPhase): number {
+  return phase !== 'resting' && panelPx > 0 ? panelPx : rubberBandInverse(panelPx);
+}
+
+/** The phase for a release that springs back to rest instead of closing. */
+export function snapBackPhase(phase: SheetDragPhase): SheetDragPhase {
+  return phase === 'resting' ? 'resting' : 'returning';
+}
+
+/**
+ * A returning panel becomes resting once it is back at or left of rest, where both mappings
+ * render the same offset (so the switch never moves it). Closing stays closing until it ends.
+ */
+export function settledPhase(phase: SheetDragPhase, dragPx: number): SheetDragPhase {
+  return phase === 'returning' && dragPx <= 0 ? 'resting' : phase;
 }
 
 export interface SheetDragRelease {

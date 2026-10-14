@@ -42,7 +42,7 @@ Carrera de muestreo en el test, no el exit con keyframes de 14-26.
 | Carga + throttle 10, x20 (fast-release, el test del nightly: 20/20) | 99/120: resistencia 0/20, flick 19/20 |
 | Idle: `server-sheet`, `keyboard-motion`, `a11y-fallbacks` | 35/35 passed |
 
-## Hallazgo aparte (no corregido aquí)
+## Hallazgo aparte (resuelto en 14-33, ver abajo)
 
 El test "resists progressively" pasa por una carrera. `DRAG_ELASTIC_AT_REST` es lineal (0.15), así que
 cada paso de 40 px suma 6 px. La aserción `increments[0] > increments.at(-1)` solo se cumple porque el
@@ -51,3 +51,23 @@ Con throttle 10 el spring ya terminó al presionar y las muestras son `[6, 12, 1
 mismo en cualquier runner que tarde más que el spring entre `data-drag-ready` y el press. Arreglarlo
 exige decidir el producto: una curva de resistencia realmente progresiva (brief §7.4 paso 5), o
 asumir el elástico lineal y cambiar la aserción.
+
+## 14-33 — resolución
+
+Decisión del usuario (2026-10-14): resistencia progresiva estilo Apple, `(1 - 1/(x*c/d + 1)) * d`.
+
+- `packages/ui/src/sheet-drag.ts`: `rubberBand` (c=0.55, d=120 px; cero en cero, monótona, sublineal,
+  acotada) y su inversa; `panelOffsetFor`/`dragOffsetFor` por fase (`resting` | `closing` | `returning`).
+- `Sheet.tsx`: `dragElastic` de Motion es lineal, así que el gesto mueve un valor crudo (`_dragX`, sin
+  constraints) y el panel se pinta en `x = panelOffsetFor(dragX, fase)`. Momentum, cierre y snap-back
+  animan el valor crudo, así que el press sigue congelando el panel (Motion para la animación del valor
+  arrastrado). Al cerrar se rebasa 1:1 sin salto; el re-grab sigue 1:1. Reduced motion: sin drag, igual que antes.
+- e2e "resists progressively": espera 5 frames seguidos en reposo (spring de entrada terminado), afirma
+  0 al presionar, incrementos estrictamente decrecientes y último < 0.75 × primero.
+
+| Prueba | Resultado |
+|---|---|
+| Mutante lineal 0.15 (unit de componente y e2e) | falla (incrementos 6, 6, …) |
+| Carga (28 busy-loops `noodara.stress=14-33`) + throttle 10, `@sheet-drag` x20 | 120/120 |
+| Carga sola, x20 | 120/120 |
+| Idle: `server-sheet`, `keyboard-motion`, `a11y-fallbacks` | 35/35 |

@@ -6,7 +6,15 @@ import { X } from 'lucide-react';
 import { Button } from './Button.js';
 import { cn } from './cn.js';
 import { SPRING, toMotionSpring } from './motion-tokens.js';
-import { decidesToClose, dragElasticFor, handoffVelocity, type SheetDragPhase } from './sheet-drag.js';
+import {
+  decidesToClose,
+  dragOffsetFor,
+  handoffVelocity,
+  panelOffsetFor,
+  settledPhase,
+  snapBackPhase,
+  type SheetDragPhase,
+} from './sheet-drag.js';
 import { useCloseSource } from './use-close-source.js';
 import { useReducedMotionPreference } from './use-reduced-motion-preference.js';
 
@@ -18,7 +26,7 @@ import { useReducedMotionPreference } from './use-reduced-motion-preference.js';
 const loadFeatures = () => import('./motion-features.js').then((res) => res.default);
 type DragFeatures = Awaited<ReturnType<typeof loadFeatures>>;
 
-// Release thresholds, the handoff clamp and the drag elastic live in ./sheet-drag.ts (pure).
+// Release thresholds, the handoff clamp and the rubber band live in ./sheet-drag.ts (pure).
 
 // Mobile round 1 adjustment (09-14 checkpoint): the panel is no longer a fixed 480px -- on a
 // narrow viewport (e.g. a 440px-wide phone) it is full width, capped at 480px on wider ones
@@ -147,8 +155,13 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
   // costura entre arrastrar y animar") needs the CLOSING animation to start from the release
   // point carrying the release velocity -- a declarative `animate={{ x: 0 }}` target has no way to
   // conditionally continue in the release direction instead of snapping back, so `handleDragEnd`
-  // below drives this value with the standalone `animate()` function instead.
+  // below drives it (through `dragX`) with the standalone `animate()` function instead.
   const x = useMotionValue(0);
+  // 14-33: Motion's `dragElastic` is linear, so the gesture no longer drives `x` directly. Drag
+  // (via `_dragX`), its momentum and every animation below move this raw value; the listener
+  // renders `x = panelOffsetFor(dragX, phase)`, the rubber band at rest. Motion stops animations
+  // on the dragged value at pointerdown, so a grab still freezes the panel where it is.
+  const dragX = useMotionValue(0);
   // 14-26: latched during the render where `open` flips (React's "adjust state on prop change"
   // pattern), not in an effect. Presence decides in its own layout effect, which runs before any
   // effect of this component, so the class must already be in the DOM that render commits.
@@ -159,10 +172,19 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
     setLatchedOpen(open);
     setInstantClose(!open && closeSource() === 'keyboard');
   }
-  // 13-22: 'closing' while the release-to-close animation runs, so a re-grab mid-close tracks the
-  // pointer 1:1 from the panel's on-screen position instead of Motion's elastic pulling it back
-  // toward rest (see dragElasticFor). Reset whenever the sheet opens.
-  const [dragPhase, setDragPhase] = useState<SheetDragPhase>('resting');
+  // 13-22: 'closing' while the release-to-close animation runs (and 'returning' while a re-grab
+  // springs back), so a re-grab tracks the pointer 1:1 from the panel's on-screen position instead
+  // of the rubber band pulling it back toward rest. Reset whenever the sheet opens. A ref: no
+  // render depends on it, only the mapping below.
+  const dragPhaseRef = useRef<SheetDragPhase>('resting');
+  useEffect(
+    () =>
+      dragX.on('change', (latest) => {
+        dragPhaseRef.current = settledPhase(dragPhaseRef.current, latest);
+        x.set(panelOffsetFor(latest, dragPhaseRef.current));
+      }),
+    [dragX, x],
+  );
   // 14-32: Motion attaches the drag gesture only once the lazy `domMax` chunk has loaded; a grab
   // before that is silently ignored. Holding the loaded bundle here and handing it to LazyMotion
   // synchronously puts `data-drag-ready` in the same commit whose layout effect attaches the
@@ -186,11 +208,11 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
   // momentum-handoff animation in `handleDragEnd` (see the comment on `x` above).
   useEffect(() => {
     if (open) {
-      setDragPhase('resting');
-      x.set(ENTRY_SETTLE_OFFSET_PX);
-      void animateMotionValue(x, 0, toMotionSpring(SPRING.drawer));
+      dragPhaseRef.current = 'resting';
+      dragX.set(dragOffsetFor(ENTRY_SETTLE_OFFSET_PX, 'resting'));
+      void animateMotionValue(dragX, 0, toMotionSpring(SPRING.drawer));
     }
-  }, [open, x]);
+  }, [open, dragX]);
 
   function handleDragEnd(_event: PointerEvent | MouseEvent | TouchEvent, info: PanInfo): void {
     // Mobile round 1 adjustment (09-14 checkpoint): read the panel's own real width off its DOM
@@ -209,9 +231,13 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
       //
       // The velocity is clamped (handoffVelocity): a near-zero time between the last two pointer
       // samples can produce a non-finite value that leaves the spring's promise never resolving.
-      setDragPhase('closing');
+      //
+      // Rebased first: the closing mapping is 1:1, so the raw value takes the panel's on-screen
+      // offset and the panel does not move at the switch.
+      dragPhaseRef.current = 'closing';
+      dragX.set(dragOffsetFor(release.panelX, 'closing'));
       const closingSpring = toMotionSpring(SPRING.momentum, { velocity: handoffVelocity(info.velocity.x) });
-      void animateMotionValue(x, panelWidthPx, closingSpring).then(() => {
+      void animateMotionValue(dragX, panelWidthPx, closingSpring).then(() => {
         onOpenChange(false);
       });
     } else {
@@ -219,8 +245,9 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
       // no overshoot (SPRING.default's own comment): this is deliberately not SPRING.momentum,
       // per UI-SPEC's token table reserving that spring for a release that actually carries the
       // gesture through to a close.
-      setDragPhase('resting');
-      void animateMotionValue(x, 0, toMotionSpring(SPRING.default));
+      // From a re-grab mid-close it springs back 1:1 ('returning') and turns resting at rest.
+      dragPhaseRef.current = snapBackPhase(dragPhaseRef.current);
+      void animateMotionValue(dragX, 0, toMotionSpring(SPRING.default));
     }
   }
 
@@ -258,13 +285,13 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
               // `animate` prop): a persistent `animate={{ x: ... }}` target would re-assert
               // itself the instant `onDragEnd` finishes, fighting the momentum-handoff animation
               // `handleDragEnd` starts below (found empirically -- this is exactly the failure
-              // mode Task 3's own "handoff" Playwright test caught). The drag gesture and this
-              // component's own two explicit `animate()` calls (close-with-momentum / snap-back)
-              // are the only things that ever move this value.
+              // mode Task 3's own "handoff" Playwright test caught). Only `dragX` moves it (the
+              // drag gesture and the entry / close / snap-back `animate()` calls), through the
+              // rubber band.
               style={{ x }}
               drag={dragEnabled ? 'x' : false}
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={dragElasticFor(dragPhase)}
+              // 14-33: unconstrained raw value; the resistance is the rubber band on `x` above.
+              _dragX={dragX}
               dragMomentum
               onDragEnd={handleDragEnd}
             >

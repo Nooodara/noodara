@@ -24,6 +24,7 @@ vi.mock('motion/react', async (importOriginal) => {
 });
 
 import { Sheet } from './Sheet.js';
+import { RUBBER_BAND_LIMIT_PX, rubberBand } from './sheet-drag.js';
 import { renderUi, screen, userEvent } from './testing/render.js';
 
 // D-13 (09-04-PLAN.md Task 2): Sheet's drag gesture must follow the same attribute-aware
@@ -428,10 +429,10 @@ describe('Sheet drag readiness', () => {
   });
 });
 
-// 13-22: re-grab tracking during the close animation, driven through real Motion drag with
+// 13-22 / 14-33: re-grab mid-close and overscroll resistance, driven through real Motion drag with
 // dispatched pointer events. jsdom lays nothing out, so the panel width falls back to 480px and
 // the drag constraints resolve to {0, 0} exactly as in the browser.
-describe('Sheet re-grab mid-close', () => {
+describe('Sheet drag through real Motion', () => {
   function readX(el: Element): number {
     const match = /translateX\(([-\d.]+)px\)/.exec((el as HTMLElement).style.transform);
     return match?.[1] !== undefined ? Number.parseFloat(match[1]) : 0;
@@ -496,6 +497,59 @@ describe('Sheet re-grab mid-close', () => {
     pointer(window, 'pointerup', 110);
 
     expect(xAfterRegrab).toBeCloseTo(xAtGrab + 10, 0);
+  });
+
+  // 14-33: overscroll from a settled panel follows the rubber band (sheet-drag.ts), not a linear
+  // elastic -- a linear 0.15 would put the panel at 6, 12, 18... for these pulls.
+  async function settledSurface(): Promise<HTMLElement> {
+    renderUi(
+      <Sheet open onOpenChange={vi.fn()} title="Add server" data-testid="sheet">
+        <p>Sheet body content</p>
+      </Sheet>,
+    );
+    const surface = await vi.waitFor(() => {
+      const el = document.querySelector('[data-testid="sheet-drag-surface"][data-drag-ready]');
+      expect(el).not.toBeNull();
+      return el as HTMLElement;
+    });
+    await vi.waitFor(async () => {
+      expect(readX(surface)).toBe(0);
+      await nextFrames(3);
+      expect(readX(surface)).toBe(0);
+    });
+    return surface;
+  }
+
+  it('resists a rightward pull progressively from a settled panel, along the rubber band', async () => {
+    const surface = await settledSurface();
+
+    pointer(surface, 'pointerdown', 100);
+    const samples: number[] = [];
+    for (const pull of [40, 80, 120, 160, 200]) {
+      pointer(window, 'pointermove', 100 + pull);
+      await nextFrames(2);
+      samples.push(readX(surface));
+    }
+    pointer(window, 'pointerup', 300);
+
+    [40, 80, 120, 160, 200].forEach((pull, i) => {
+      expect(samples[i]).toBeCloseTo(rubberBand(pull), 1);
+    });
+    const increments = samples.map((sample, i) => sample - (samples[i - 1] ?? 0));
+    expect(increments.at(-1)).toBeLessThan((increments[0] ?? 0) * 0.5);
+  });
+
+  it('resists a leftward pull with the same bounded curve', async () => {
+    const surface = await settledSurface();
+
+    pointer(surface, 'pointerdown', 300);
+    pointer(window, 'pointermove', 100);
+    await nextFrames(2);
+    const xPulledLeft = readX(surface);
+    pointer(window, 'pointerup', 100);
+
+    expect(xPulledLeft).toBeCloseTo(-rubberBand(200), 1);
+    expect(xPulledLeft).toBeGreaterThan(-RUBBER_BAND_LIMIT_PX);
   });
 });
 

@@ -505,6 +505,26 @@ async function nextAnimationFrames(page: Page, count: number): Promise<void> {
   }, count);
 }
 
+/** 14-33: resolves once the drag surface has sat at rest (translateX 0) for several consecutive
+ *  frames, i.e. the entry spring has finished. Counted in frames, never wall-clock time. */
+async function waitForDragSurfaceSettled(page: Page): Promise<void> {
+  await page.evaluate(async (testid) => {
+    const SETTLED_FRAMES = 5;
+    let atRest = 0;
+    while (atRest < SETTLED_FRAMES) {
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+      const el = document.querySelector<HTMLElement>(`[data-testid="${testid}"]`);
+      const match = el === null ? null : /translateX\(([-\d.]+)px\)/.exec(el.style.transform);
+      const x = match?.[1] !== undefined ? Number.parseFloat(match[1]) : 0;
+      atRest = el !== null && x === 0 ? atRest + 1 : 0;
+    }
+  }, DRAG_SURFACE_TESTID);
+}
+
 test.describe('@sheet-drag drag-to-dismiss (UI-06, brief §7.4)', () => {
   test('@sheet-drag dragging right past the closed edge resists progressively -- displacement grows less than the pointer\'s own movement, and never freezes', async ({
     page,
@@ -512,9 +532,15 @@ test.describe('@sheet-drag drag-to-dismiss (UI-06, brief §7.4)', () => {
     await login(page);
     await openCreateSheet(page);
 
+    // 14-33: from a settled panel. A grab during the entry spring took its residue as the origin
+    // and let even a linear elastic look progressive (nightly-14-32-root-cause.md).
     const start = await dragSurfaceCenter(page);
+    await waitForDragSurfaceSettled(page);
     await page.mouse.move(start.x, start.y);
     await page.mouse.down();
+    await nextAnimationFrames(page, 2);
+    const atPress = await readDragSurfaceX(page);
+    expect(atPress).toBe(0);
 
     const samples: number[] = [];
     const pointerDeltas = [40, 80, 120, 160, 200];
@@ -533,23 +559,15 @@ test.describe('@sheet-drag drag-to-dismiss (UI-06, brief §7.4)', () => {
     for (let i = 1; i < samples.length; i += 1) {
       expect(samples[i]).toBeGreaterThan(samples[i - 1] ?? 0);
     }
-    // ... but each successive equal-sized pointer step (40px) never produces a LARGER incremental
-    // displacement than the previous one -- progressive resistance, per `dragElastic`'s own
-    // resistance curve (brief §7.4 step 5's "resistencia progresiva, nunca un tope duro"). The
-    // curve asymptotes at large offsets, so consecutive increments can tie at pixel resolution
-    // (never grow) rather than strictly shrink on every single step.
-    const increments = samples.map((sample, i) => sample - (samples[i - 1] ?? 0));
-    // A 1px tolerance absorbs pixel-rounding noise at the curve's flattest (largest-offset) end,
-    // where two consecutive increments can land on the same rounded pixel value.
-    const ROUNDING_TOLERANCE_PX = 1;
+    // ... each equal 40px pointer step moves the panel less than the one before (rubber band,
+    // brief §7.4 step 5) ...
+    const increments = samples.map((sample, i) => sample - (samples[i - 1] ?? atPress));
     for (let i = 1; i < increments.length; i += 1) {
-      expect(increments[i]).toBeLessThanOrEqual((increments[i - 1] ?? Number.POSITIVE_INFINITY) + ROUNDING_TOLERANCE_PX);
+      expect(increments[i]).toBeLessThan(increments[i - 1] ?? Number.POSITIVE_INFINITY);
     }
-    // The first increment is strictly larger than the last -- the resistance curve has genuinely
-    // flattened, not merely held flat throughout.
-    expect(increments[0]).toBeGreaterThan(increments.at(-1) ?? 0);
-    // And the panel never tracks 1:1 with the raw pointer distance once past the edge -- the
-    // final sample is well short of the 200px the pointer itself travelled.
+    // ... and the curve has genuinely flattened: a linear elastic keeps every increment equal.
+    expect(increments.at(-1)).toBeLessThan((increments[0] ?? 0) * 0.75);
+    // The panel never tracks 1:1 with the raw pointer distance once past the edge.
     expect(samples.at(-1)).toBeLessThan(200);
   });
 
