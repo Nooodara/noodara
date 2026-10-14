@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-14T06:32:46.133Z",
+  "updatedAt": "2026-10-14T06:49:09.513Z",
   "cursor": {
     "phase": "14",
-    "task": "14-16"
+    "task": "14-30"
   },
   "phases": [
     {
@@ -4902,26 +4902,32 @@
         {
           "id": "14-30",
           "title": "Deploy on a non-root SSH user: workspace location, error classification, LFS false positive",
-          "tier": "deep",
           "scope": [
-            "packages/domain/src/validators/",
-            "packages/domain/src/deployment/",
-            "packages/ssh/src/",
-            "packages/git/src/",
-            "packages/docker/src/",
+            "apps/control-plane/src/db/migrations/",
+            "apps/control-plane/src/db/schema/deployments.ts",
             "apps/control-plane/src/deploy/",
-            "apps/web/src/lib/deploy-error-copy.ts",
+            "apps/control-plane/src/services/container-logs.test.ts",
+            "apps/control-plane/src/services/container-logs.ts",
+            "apps/site/content/docs/",
             "apps/web/src/lib/deploy-error-copy.test.ts",
+            "apps/web/src/lib/deploy-error-copy.ts",
+            "docs/adr/0008-deploy-engine-empirical-contracts.md",
+            "docs/deploy-engine.md",
+            "packages/docker/src/",
+            "packages/domain/src/deployment/",
+            "packages/domain/src/validators/",
+            "packages/git/src/",
+            "packages/ssh/src/",
+            "tests/e2e/fixtures/deploy-host.ts",
+            "tests/integration/activity/canary-deploy.test.ts",
+            "tests/integration/db/migrations.test.ts",
             "tests/integration/deploy-engine/",
             "tests/integration/helpers/",
-            "tests/integration/images/",
-            "docs/deploy-engine.md",
-            "apps/site/content/docs/",
-            "docs/adr/0008-deploy-engine-empirical-contracts.md"
+            "tests/integration/images/"
           ],
           "wave": 5,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -4951,12 +4957,12 @@
             "persistence",
             "auth-secrets",
             "randomness"
-          ]
+          ],
+          "tier": "deep"
         },
         {
           "id": "14-31",
           "title": "Upgrade path: unknown BuildKit after v0.1 discovery, rollback wording",
-          "tier": "standard",
           "scope": [
             "apps/control-plane/src/services/service-services.ts",
             "apps/control-plane/src/services/service-services.test.ts",
@@ -4971,7 +4977,7 @@
           ],
           "wave": 5,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -4996,7 +5002,8 @@
             "persistence",
             "auth-secrets",
             "randomness"
-          ]
+          ],
+          "tier": "standard"
         }
       ]
     }
