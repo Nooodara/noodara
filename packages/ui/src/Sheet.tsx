@@ -16,6 +16,7 @@ import { useReducedMotionPreference } from './use-reduced-motion-preference.js';
 // smaller one, is required) is never in the initial page payload, only fetched once a Sheet is
 // about to render (T-08-33).
 const loadFeatures = () => import('./motion-features.js').then((res) => res.default);
+type DragFeatures = Awaited<ReturnType<typeof loadFeatures>>;
 
 // Release thresholds, the handoff clamp and the drag elastic live in ./sheet-drag.ts (pure).
 
@@ -162,6 +163,21 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
   // pointer 1:1 from the panel's on-screen position instead of Motion's elastic pulling it back
   // toward rest (see dragElasticFor). Reset whenever the sheet opens.
   const [dragPhase, setDragPhase] = useState<SheetDragPhase>('resting');
+  // 14-32: Motion attaches the drag gesture only once the lazy `domMax` chunk has loaded; a grab
+  // before that is silently ignored. Holding the loaded bundle here and handing it to LazyMotion
+  // synchronously puts `data-drag-ready` in the same commit whose layout effect attaches the
+  // gesture, so the attribute is never visible before a grab would be honoured.
+  const [dragFeatures, setDragFeatures] = useState<DragFeatures | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    void loadFeatures().then((loaded) => {
+      if (mounted) setDragFeatures(loaded);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+  const dragEnabled = !prefersReducedMotion;
 
   // 08-UI-SPEC.md §7.2's durations table: "Sheet entry: translateX + spring: SPRING.drawer". Radix
   // mounts the outer `DialogPrimitive.Content` already open (no entry keyframe there, 14-26), so
@@ -227,7 +243,7 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
               drag surface is a child of `DialogPrimitive.Content`, not a replacement for it:
               Content itself (the element above, carrying `role="dialog"`, the focus trap, Esc
               and outside-click) is completely untouched by this change (T-08-34). */}
-          <LazyMotion features={loadFeatures} strict>
+          <LazyMotion features={dragFeatures ?? loadFeatures} strict>
             <m.div
               className={DRAG_SURFACE_CLASSES}
               // Task 3 (08-12-PLAN.md, UI-06 §7.4): the only DOM node whose `transform` actually
@@ -237,6 +253,7 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
               // on the semantic dialog element per every existing test/consumer) is how the E2E
               // suite locates exactly this node without depending on Motion's own DOM shape.
               data-testid={testId !== undefined ? `${testId}-drag-surface` : undefined}
+              data-drag-ready={dragFeatures !== null && dragEnabled ? '' : undefined}
               // `x` is an externally-owned `MotionValue` (`style={{ x }}`, not the declarative
               // `animate` prop): a persistent `animate={{ x: ... }}` target would re-assert
               // itself the instant `onDragEnd` finishes, fighting the momentum-handoff animation
@@ -245,7 +262,7 @@ export function Sheet({ open, onOpenChange, title, children, footer, 'data-testi
               // component's own two explicit `animate()` calls (close-with-momentum / snap-back)
               // are the only things that ever move this value.
               style={{ x }}
-              drag={prefersReducedMotion ? false : 'x'}
+              drag={dragEnabled ? 'x' : false}
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={dragElasticFor(dragPhase)}
               dragMomentum

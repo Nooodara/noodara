@@ -232,9 +232,10 @@ describe('create and read (A1, A3)', () => {
   });
 
   it.each([
-    ['disabled', false],
-    ['unknown', null],
-  ] as const)('refuses a Dockerfile service when BuildKit is %s, but takes an image service (G3)', async (_label, buildkit) => {
+    ['disabled', false, 'SERVER_BUILDKIT_UNAVAILABLE'],
+    // 14-31: NULL means discovery predates BuildKit detection, so the API asks to re-run it.
+    ['unknown', null, 'SERVER_BUILDKIT_UNKNOWN'],
+  ] as const)('refuses a Dockerfile service when BuildKit is %s, but takes an image service (G3)', async (_label, buildkit, code) => {
     const { projectId, environmentId } = await newProject();
     const serverId = await newServer({ dockerBuildkitAvailable: buildkit });
     const git = await call('POST', `/api/projects/${projectId}/services`, {
@@ -242,7 +243,7 @@ describe('create and read (A1, A3)', () => {
       source: gitSource(),
     });
     expect(git.statusCode).toBe(409);
-    expect(git.body.error).toBe('SERVER_BUILDKIT_UNAVAILABLE');
+    expect(git.body.error).toBe(code);
     await createService(projectId, imageBody(environmentId, serverId));
   });
 

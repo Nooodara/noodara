@@ -364,6 +364,69 @@ describe('Sheet', () => {
   });
 });
 
+// 14-32: the drag gesture only exists once LazyMotion's lazy `domMax` chunk has loaded. A grab
+// before that is ignored, so the surface says when a grab will be honoured.
+describe('Sheet drag readiness', () => {
+  const pointerdownTargets = new WeakSet<EventTarget>();
+
+  beforeEach(() => {
+    const original = EventTarget.prototype.addEventListener;
+    vi.spyOn(EventTarget.prototype, 'addEventListener').mockImplementation(function (
+      this: EventTarget,
+      type: string,
+      listener: EventListenerOrEventListenerObject | null,
+      options?: boolean | AddEventListenerOptions,
+    ) {
+      if (type === 'pointerdown') pointerdownTargets.add(this);
+      original.call(this, type, listener, options);
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function renderSheet() {
+    renderUi(
+      <Sheet open onOpenChange={vi.fn()} title="Add server" data-testid="sheet">
+        <p>Sheet body content</p>
+      </Sheet>,
+    );
+    return screen.getByTestId('sheet-drag-surface');
+  }
+
+  it('is not ready on the first render, and never ready before the drag gesture listens for a grab', async () => {
+    const readyWithoutListener: boolean[] = [];
+    const observer = new MutationObserver(() => {
+      const surface = document.querySelector('[data-testid="sheet-drag-surface"]');
+      if (surface?.hasAttribute('data-drag-ready') === true) readyWithoutListener.push(!pointerdownTargets.has(surface));
+    });
+    observer.observe(document.body, { subtree: true, childList: true, attributes: true });
+
+    const surface = renderSheet();
+    expect(surface).not.toHaveAttribute('data-drag-ready');
+
+    await vi.waitFor(() => {
+      expect(surface).toHaveAttribute('data-drag-ready');
+    });
+    observer.disconnect();
+    expect(readyWithoutListener.length).toBeGreaterThan(0);
+    expect(readyWithoutListener).not.toContain(true);
+  });
+
+  it('is never ready under reduced motion, where the surface does not drag', async () => {
+    stubMatchMedia(true);
+
+    const surface = renderSheet();
+
+    await vi.waitFor(() => {
+      expect(surface.getAttribute('style')).toContain('transform');
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(surface).not.toHaveAttribute('data-drag-ready');
+  });
+});
+
 // 13-22: re-grab tracking during the close animation, driven through real Motion drag with
 // dispatched pointer events. jsdom lays nothing out, so the panel width falls back to 480px and
 // the drag constraints resolve to {0, 0} exactly as in the browser.
