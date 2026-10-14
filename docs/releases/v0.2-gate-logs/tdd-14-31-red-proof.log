@@ -1,0 +1,212 @@
+# 14-31 retroactive RED proof (14-35 A4), captured 2026-10-14.
+# Worktree: git worktree add --detach <worktree> 7e9d18c^   (= b7a2b30, code before the 14-31 fix)
+# Copied in ONLY the four test files as of 7e9d18c (git show 7e9d18c:<file>):
+#   apps/control-plane/src/routes/http-errors.test.ts
+#   apps/control-plane/src/services/service-services.test.ts
+#   apps/web/src/lib/service-form.test.ts
+#   tests/unit/installer/main-flow.test.ts
+# Then the worktree was removed (git worktree remove --force). Expected: every new test fails
+# because the behaviour is missing (no SERVER_BUILDKIT_UNKNOWN mapping, no buildkitGuard, no
+# BUILDKIT_UNKNOWN_COPY, rollback worded "Upgraded"); the 3 upgrade cases keep passing.
+
+$ vitest run apps/control-plane/src/routes/http-errors.test.ts apps/control-plane/src/services/service-services.test.ts apps/web/src/lib/service-form.test.ts
+
+ RUN  v5.0.0 <worktree>/noodara/code
+
+ ❯ |apps| apps/control-plane/src/routes/http-errors.test.ts (62 tests | 1 failed) 10ms
+   ❯ SERVICE_ERROR_STATUS / mapServiceCodeToStatus (D-16) (48)
+     × maps SERVER_BUILDKIT_UNKNOWN to 409 3ms
+ ❯ |apps| apps/web/src/lib/service-form.test.ts (30 tests | 1 failed) 7ms
+   ❯ service-form: server failures (A1, H3) (3)
+     × maps PORT_IN_USE, BUILDKIT and name conflicts to fields with a hint 2ms
+ ❯ |apps| apps/control-plane/src/services/service-services.test.ts (22 tests | 3 failed) 7ms
+   ❯ buildkitGuard (3)
+     × passes when BuildKit is available 1ms
+     × keeps SERVER_BUILDKIT_UNAVAILABLE when BuildKit is known to be missing 0ms
+     × asks to re-run discovery when BuildKit support is unknown (NULL after a v0.1 upgrade) 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |apps| apps/control-plane/src/routes/http-errors.test.ts > SERVICE_ERROR_STATUS / mapServiceCodeToStatus (D-16) > maps SERVER_BUILDKIT_UNKNOWN to 409
+AssertionError: expected 500 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 500
+
+ ❯ apps/control-plane/src/routes/http-errors.test.ts:104:42
+    102|     ['RUNTIME_LOGS_TIMEOUT', 504],
+    103|   ] satisfies [ServiceErrorCode, number][])('maps %s to %d', (code, st…
+    104|     expect(mapServiceCodeToStatus(code)).toBe(status);
+       |                                          ^
+    105|   });
+    106|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  |apps| apps/control-plane/src/services/service-services.test.ts > buildkitGuard > passes when BuildKit is available
+TypeError: buildkitGuard is not a function
+ ❯ apps/control-plane/src/services/service-services.test.ts:293:12
+    291| describe('buildkitGuard', () => {
+    292|   it('passes when BuildKit is available', () => {
+    293|     expect(buildkitGuard(true)).toBeNull();
+       |            ^
+    294|   });
+    295|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  |apps| apps/control-plane/src/services/service-services.test.ts > buildkitGuard > keeps SERVER_BUILDKIT_UNAVAILABLE when BuildKit is known to be missing
+TypeError: buildkitGuard is not a function
+ ❯ apps/control-plane/src/services/service-services.test.ts:297:12
+    295|
+    296|   it('keeps SERVER_BUILDKIT_UNAVAILABLE when BuildKit is known to be m…
+    297|     expect(buildkitGuard(false)).toMatchObject({ ok: false, code: 'SER…
+       |            ^
+    298|   });
+    299|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  |apps| apps/control-plane/src/services/service-services.test.ts > buildkitGuard > asks to re-run discovery when BuildKit support is unknown (NULL after a v0.1 upgrade)
+TypeError: buildkitGuard is not a function
+ ❯ apps/control-plane/src/services/service-services.test.ts:301:21
+    299|
+    300|   it('asks to re-run discovery when BuildKit support is unknown (NULL …
+    301|     const failure = buildkitGuard(null);
+       |                     ^
+    302|
+    303|     expect(failure).toMatchObject({ ok: false, code: 'SERVER_BUILDKIT_…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  |apps| apps/web/src/lib/service-form.test.ts > service-form: server failures (A1, H3) > maps PORT_IN_USE, BUILDKIT and name conflicts to fields with a hint
+AssertionError: expected null to deeply equal { source: undefined }
+
+- Expected:
+{
+  "source": undefined,
+}
+
++ Received:
+null
+
+ ❯ apps/web/src/lib/service-form.test.ts:219:67
+    217|     expect(mapServiceFailure(failure('PORT_IN_USE'))).toEqual({ publis…
+    218|     expect(mapServiceFailure(failure('SERVER_BUILDKIT_UNAVAILABLE'))).…
+    219|     expect(mapServiceFailure(failure('SERVER_BUILDKIT_UNKNOWN'))).toEq…
+       |                                                                   ^
+    220|     expect(mapServiceFailure(failure('SERVICE_NAME_TAKEN'))).toEqual({…
+    221|     expect(mapServiceFailure(failure('SERVER_DOCKER_UNAVAILABLE'))?.se…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  3 failed (3)
+      Tests  5 failed | 109 passed (114)
+   Start at  11:42:17
+   Duration  436ms (import 50%, transform 46%, tests 4%, worker 1%)
+
+
+$ vitest run tests/unit/installer/main-flow.test.ts -t "words a move"
+
+ RUN  v5.0.0 <worktree>/noodara/code
+
+ ❯ |root| tests/unit/installer/main-flow.test.ts (168 tests | 6 failed | 156 skipped) 145ms
+   ❯ install.sh noodara_print_summary (/bin/sh) (12)
+     × words a move 0.2.0-rc.1 -> 0.1.0 correctly 20ms
+     × words a move 0.2.0 -> 0.1.0 correctly 15ms
+     × words a move 0.2.0-rc.2 -> 0.2.0-rc.1 correctly 14ms
+   ❯ install.sh noodara_print_summary (/bin/dash) (12)
+     × words a move 0.2.0-rc.1 -> 0.1.0 correctly 9ms
+     × words a move 0.2.0 -> 0.1.0 correctly 9ms
+     × words a move 0.2.0-rc.2 -> 0.2.0-rc.1 correctly 9ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |root| tests/unit/installer/main-flow.test.ts > install.sh noodara_print_summary (/bin/sh) > words a move 0.2.0-rc.1 -> 0.1.0 correctly
+ FAIL  |root| tests/unit/installer/main-flow.test.ts > install.sh noodara_print_summary (/bin/dash) > words a move 0.2.0-rc.1 -> 0.1.0 correctly
+AssertionError: expected '\nNoodara is running.\nPanel: https:/…' to contain 'Rolled back from 0.2.0-rc.1 to 0.1.0'
+
+- Expected
++ Received
+
+- Rolled back from 0.2.0-rc.1 to 0.1.0
++
++ Noodara is running.
++ Panel: https://panel.example.com
++ An admin account already exists.
++
++ Upgraded from 0.2.0-rc.1 to 0.1.0. To go back: re-run this installer with NOODARA_VERSION=0.2.0-rc.1.
++
+
+ ❯ tests/unit/installer/main-flow.test.ts:1732:27
+    1730|     const result = runInstallerShell(interpreter, snippet, { env: { NO…
+    1731|
+    1732|     expect(result.stdout).toContain(expected);
+       |                           ^
+    1733|   });
+    1734|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  |root| tests/unit/installer/main-flow.test.ts > install.sh noodara_print_summary (/bin/sh) > words a move 0.2.0 -> 0.1.0 correctly
+ FAIL  |root| tests/unit/installer/main-flow.test.ts > install.sh noodara_print_summary (/bin/dash) > words a move 0.2.0 -> 0.1.0 correctly
+AssertionError: expected '\nNoodara is running.\nPanel: https:/…' to contain 'Rolled back from 0.2.0 to 0.1.0'
+
+- Expected
++ Received
+
+- Rolled back from 0.2.0 to 0.1.0
++
++ Noodara is running.
++ Panel: https://panel.example.com
++ An admin account already exists.
++
++ Upgraded from 0.2.0 to 0.1.0. To go back: re-run this installer with NOODARA_VERSION=0.2.0.
++
+
+ ❯ tests/unit/installer/main-flow.test.ts:1732:27
+    1730|     const result = runInstallerShell(interpreter, snippet, { env: { NO…
+    1731|
+    1732|     expect(result.stdout).toContain(expected);
+       |                           ^
+    1733|   });
+    1734|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  |root| tests/unit/installer/main-flow.test.ts > install.sh noodara_print_summary (/bin/sh) > words a move 0.2.0-rc.2 -> 0.2.0-rc.1 correctly
+ FAIL  |root| tests/unit/installer/main-flow.test.ts > install.sh noodara_print_summary (/bin/dash) > words a move 0.2.0-rc.2 -> 0.2.0-rc.1 correctly
+AssertionError: expected '\nNoodara is running.\nPanel: https:/…' to contain 'Rolled back from 0.2.0-rc.2 to 0.2.0-…'
+
+- Expected
++ Received
+
+- Rolled back from 0.2.0-rc.2 to 0.2.0-rc.1
++
++ Noodara is running.
++ Panel: https://panel.example.com
++ An admin account already exists.
++
++ Upgraded from 0.2.0-rc.2 to 0.2.0-rc.1. To go back: re-run this installer with NOODARA_VERSION=0.2.0-rc.2.
++
+
+ ❯ tests/unit/installer/main-flow.test.ts:1732:27
+    1730|     const result = runInstallerShell(interpreter, snippet, { env: { NO…
+    1731|
+    1732|     expect(result.stdout).toContain(expected);
+       |                           ^
+    1733|   });
+    1734|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 6 passed | 156 skipped (168)
+   Start at  11:42:17
+   Duration  284ms (tests 63%, import 21%, transform 15%, worker 1%)
+

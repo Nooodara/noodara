@@ -1,0 +1,37 @@
+# captured 2026-10-14T17:41:36Z; runs on d828db46bf7f5edb7b87f72ed32248788251d244 (= v0.2.0 = v0.2.0-rc.2)
+$ gh run list --repo Nooodara/noodara --commit d828db46bf7f5edb7b87f72ed32248788251d244 --json databaseId,workflowName,conclusion,event,attempt
+38606580357	Release	push	attempt 1	success
+38603523696	Release	push	attempt 1	success
+38577823485	Nightly	workflow_dispatch	attempt 2	success
+38577823879	Publish site	push	attempt 1	success
+38577823569	CI	push	attempt 1	success
+
+$ gh run view 38577823569 --repo Nooodara/noodara --json jobs (name, conclusion, duration)
+site	success	2026-10-14T14:08:14Z	2026-10-14T14:08:56Z
+unit	success	2026-10-14T14:08:14Z	2026-10-14T14:10:51Z
+boundaries	success	2026-10-14T14:08:15Z	2026-10-14T14:08:32Z
+e2e	success	2026-10-14T14:08:15Z	2026-10-14T14:17:07Z
+typecheck	success	2026-10-14T14:08:15Z	2026-10-14T14:09:23Z
+installer	success	2026-10-14T14:08:15Z	2026-10-14T14:31:24Z
+boot-smoke	success	2026-10-14T14:08:15Z	2026-10-14T14:10:09Z
+integration	success	2026-10-14T14:08:15Z	2026-10-14T14:53:57Z
+security	success	2026-10-14T14:08:15Z	2026-10-14T14:14:56Z
+lint	success	2026-10-14T14:08:15Z	2026-10-14T14:09:31Z
+
+$ gh run view 38577823485 --repo Nooodara/noodara --json jobs (name, conclusion, duration)
+installer	success	2026-10-14T16:38:33Z	2026-10-14T17:03:19Z
+e2e-repeat	success	2026-10-14T14:08:16Z	2026-10-14T16:37:44Z
+stress-connections	success	2026-10-14T14:08:16Z	2026-10-14T14:09:59Z
+deploy-engine (24.04)	success	2026-10-14T14:08:16Z	2026-10-14T14:24:29Z
+deploy-engine (22.04)	success	2026-10-14T14:08:16Z	2026-10-14T14:23:01Z
+canary	success	2026-10-14T14:08:16Z	2026-10-14T14:14:19Z
+soak	success	2026-10-14T14:08:16Z	2026-10-14T14:20:22Z
+
+$ gh run view 38577823485 --attempt 1 --repo Nooodara/noodara --json jobs (attempt 1)
+stress-connections	success
+deploy-engine (22.04)	success
+installer	failure
+e2e-repeat	success
+canary	success
+soak	success
+deploy-engine (24.04)	success

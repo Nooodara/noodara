@@ -3,7 +3,7 @@
 // Noodara images can be injected and executed. Modeled directly on
 // tests/integration/helpers/ssh.ts's own shape: `.withLabels({ 'noodara.test': 'true' })`, a real
 // log-based wait strategy (never a fixed sleep), and an idempotent `stop()`.
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -137,6 +137,193 @@ function withTimeout<T>(
   });
 }
 
+/** What to build: the same inputs for the testcontainers build and its diagnostic rebuild. */
+export interface DindImageBuildSpec {
+  readonly context: string;
+  readonly dockerfile: string;
+  readonly buildArgs: Readonly<Record<string, string>>;
+  readonly label: string;
+}
+
+/** Result of the diagnostic rebuild. `exitCode` is null when it did not finish (timeout, spawn
+ *  error); `error` then says why. */
+export interface DindBuildDiagnosis {
+  readonly exitCode: number | null;
+  readonly output: string;
+  readonly error?: string;
+}
+
+/** Seam for the image build (OPEN_QUESTIONS #13): `build` is the real testcontainers build,
+ *  `diagnose` re-runs the same build with its output captured. */
+export interface DindImageBuilder {
+  build(spec: DindImageBuildSpec): Promise<GenericContainer>;
+  diagnose(spec: DindImageBuildSpec, timeoutMs: number): Promise<DindBuildDiagnosis>;
+}
+
+/** A failed image build, with the diagnostic rebuild's output. `reproduced` is true when the
+ *  rebuild failed too (a real build error), false when it succeeded (the first failure was
+ *  transient) and undefined when the rebuild did not finish. */
+export class InstallerDindBuildError extends Error {
+  readonly reproduced: boolean | undefined;
+  readonly diagnosis: DindBuildDiagnosis;
+
+  constructor(message: string, reproduced: boolean | undefined, diagnosis: DindBuildDiagnosis, cause: unknown) {
+    super(message, { cause });
+    this.name = "InstallerDindBuildError";
+    this.reproduced = reproduced;
+    this.diagnosis = diagnosis;
+  }
+}
+
+const DEFAULT_DIAGNOSE_TIMEOUT_MS = 300_000;
+const DIAGNOSIS_TAIL_LINES = 60;
+const DIAGNOSIS_MAX_LINE_CHARS = 500;
+// The diagnostic rebuild keeps at most this much output in memory; only the tail is reported.
+const DIAGNOSIS_MAX_BUFFER_CHARS = 1_000_000;
+
+function outputTail(output: string): string {
+  const lines = output.split("\n").filter((line) => line.trim() !== "");
+  return lines
+    .slice(-DIAGNOSIS_TAIL_LINES)
+    .map((line) =>
+      line.length > DIAGNOSIS_MAX_LINE_CHARS
+        ? `${line.slice(0, DIAGNOSIS_MAX_LINE_CHARS)}…`
+        : line,
+    )
+    .join("\n");
+}
+
+function describeDiagnosis(diagnosis: DindBuildDiagnosis): {
+  reproduced: boolean | undefined;
+  verdict: string;
+} {
+  if (diagnosis.exitCode === null) {
+    return {
+      reproduced: undefined,
+      verdict: `the diagnostic rebuild did not finish (${diagnosis.error ?? "unknown error"})`,
+    };
+  }
+  if (diagnosis.exitCode === 0) {
+    return {
+      reproduced: false,
+      verdict:
+        "the diagnostic rebuild succeeded, so the first failure was transient (registry, apt or network)",
+    };
+  }
+  return {
+    reproduced: true,
+    verdict: `the diagnostic rebuild also failed (exit ${String(diagnosis.exitCode)}), so the build itself is broken`,
+  };
+}
+
+/**
+ * Builds the image through `builder.build`, bounded by `timeoutMs`. testcontainers only reports
+ * "Failed to build image" and drops the build stream, so on any failure this re-runs the same
+ * build through `builder.diagnose` (bounded by `diagnoseTimeoutMs`) and throws an
+ * `InstallerDindBuildError` with the tail of that output and whether the failure reproduced.
+ * The rebuilt image is never used: a transient failure still fails the test, visibly.
+ */
+export async function buildInstallerDindImage(
+  spec: DindImageBuildSpec,
+  options: {
+    readonly builder?: DindImageBuilder;
+    readonly timeoutMs: number;
+    readonly diagnoseTimeoutMs?: number;
+  },
+): Promise<GenericContainer> {
+  const {
+    builder = dockerImageBuilder,
+    timeoutMs,
+    diagnoseTimeoutMs = DEFAULT_DIAGNOSE_TIMEOUT_MS,
+  } = options;
+  try {
+    return await withTimeout(builder.build(spec), timeoutMs, `build ${spec.label}`);
+  } catch (error) {
+    let diagnosis: DindBuildDiagnosis;
+    try {
+      diagnosis = await builder.diagnose(spec, diagnoseTimeoutMs);
+    } catch (diagnoseError) {
+      diagnosis = {
+        exitCode: null,
+        output: "",
+        error: diagnoseError instanceof Error ? diagnoseError.message : String(diagnoseError),
+      };
+    }
+    const original = error instanceof Error ? error.message : String(error);
+    const { reproduced, verdict } = describeDiagnosis(diagnosis);
+    const tail = outputTail(diagnosis.output);
+    throw new InstallerDindBuildError(
+      `installer-dind: build ${spec.label} failed (${original}); ${verdict}.` +
+        `\nLast lines of the diagnostic docker build output:\n${tail === "" ? "(no output)" : tail}`,
+      reproduced,
+      diagnosis,
+      error,
+    );
+  }
+}
+
+function runDiagnosticBuild(
+  spec: DindImageBuildSpec,
+  timeoutMs: number,
+): Promise<DindBuildDiagnosis> {
+  const tag = `noodara-test/installer-dind-diagnose:${randomUUID()}`;
+  const args = ["build", "--file", path.join(spec.context, spec.dockerfile), "--tag", tag, "--label", "noodara.test=true"];
+  for (const [key, value] of Object.entries(spec.buildArgs)) {
+    args.push("--build-arg", `${key}=${value}`);
+  }
+  args.push(spec.context);
+
+  return new Promise<DindBuildDiagnosis>((resolve) => {
+    let output = "";
+    let settled = false;
+    const append = (chunk: Buffer): void => {
+      output += chunk.toString("utf8");
+      if (output.length > DIAGNOSIS_MAX_BUFFER_CHARS) {
+        output = output.slice(-DIAGNOSIS_MAX_BUFFER_CHARS);
+      }
+    };
+    const finish = (diagnosis: DindBuildDiagnosis): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      // Best effort: the diagnostic image is never used.
+      try {
+        execFileSync("docker", ["image", "rm", "-f", tag], { timeout: HOST_CLI_TIMEOUT_MS, stdio: "ignore" });
+      } catch {
+        // The tag does not exist when the build failed.
+      }
+      resolve(diagnosis);
+    };
+    // DOCKER_BUILDKIT=0 selects the classic builder, the same one testcontainers' build API uses,
+    // so the rebuild reuses its layer cache and reproduces its behaviour.
+    const child = spawn("docker", args, {
+      env: { ...process.env, DOCKER_BUILDKIT: "0" },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const timer = setTimeout(() => {
+      child.kill("SIGKILL");
+      finish({ exitCode: null, output, error: `timed out after ${String(timeoutMs)}ms` });
+    }, timeoutMs);
+    timer.unref();
+    child.stdout.on("data", append);
+    child.stderr.on("data", append);
+    child.on("error", (error) => {
+      finish({ exitCode: null, output, error: error.message });
+    });
+    child.on("close", (code) => {
+      finish(code === null ? { exitCode: null, output, error: "killed by a signal" } : { exitCode: code, output });
+    });
+  });
+}
+
+const dockerImageBuilder: DindImageBuilder = {
+  build: (spec) =>
+    GenericContainer.fromDockerfile(spec.context, spec.dockerfile)
+      .withBuildArgs({ ...spec.buildArgs })
+      .build(),
+  diagnose: runDiagnosticBuild,
+};
+
 function removeVolume(volumeName: string): void {
   execFileSync("docker", ["volume", "rm", "-f", volumeName], {
     timeout: HOST_CLI_TIMEOUT_MS,
@@ -180,18 +367,17 @@ export async function startInstallerDind(
 
   let image;
   try {
-    image = await withTimeout(
-      GenericContainer.fromDockerfile(
-        IMAGES_CONTEXT,
-        `installer-dind-ubuntu-${ubuntu}/Dockerfile`,
-      )
-        .withBuildArgs({
+    image = await buildInstallerDindImage(
+      {
+        context: IMAGES_CONTEXT,
+        dockerfile: `installer-dind-ubuntu-${ubuntu}/Dockerfile`,
+        buildArgs: {
           WITH_DOCKER: String(withDocker),
           WITH_SNAP_DOCKER: String(withSnapDocker),
-        })
-        .build(),
-      startupTimeoutMs,
-      `build installer-dind-ubuntu-${ubuntu}`,
+        },
+        label: `installer-dind-ubuntu-${ubuntu}`,
+      },
+      { timeoutMs: startupTimeoutMs },
     );
   } catch (error) {
     if (ownsVolume) removeVolume(volumeName);

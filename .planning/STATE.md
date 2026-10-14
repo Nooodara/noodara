@@ -5,7 +5,7 @@ milestone_name: Projects & Services
 status: milestone_complete
 stopped_at: v0.2 complete (v0.2.0 published) — next: plan v0.3 (Reliable Deployment Engine)
 last_updated: 2026-10-14T12:00:00.000Z
-last_activity: 2026-10-14 -- Phase 14 closed; v0.2.0 published (multi-arch), human gate closed with accepted debt
+last_activity: 2026-10-14 -- Phase 14 closed; v0.2.0 published (multi-arch), human gate closed with accepted debt (five real-host checks deferred to OPS-05, owner: user)
 progress:
   total_phases: 8
   completed_phases: 8

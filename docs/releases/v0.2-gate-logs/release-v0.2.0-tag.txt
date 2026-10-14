@@ -1,0 +1,32 @@
+# captured 2026-10-14T17:41:17Z from the local monorepo (no remote); repo Nooodara/noodara
+$ gh release view v0.2.0 --repo Nooodara/noodara --json tagName,targetCommitish,createdAt,publishedAt,url,isPrerelease,isDraft
+{"createdAt":"2026-10-14T17:25:47Z","isDraft":false,"isPrerelease":false,"publishedAt":"2026-10-14T17:28:57Z","tagName":"v0.2.0","targetCommitish":"main","url":"https://github.com/Nooodara/noodara/releases/tag/v0.2.0"}
+
+$ gh api repos/Nooodara/noodara/releases/latest --jq .tag_name   # isLatest
+v0.2.0
+
+$ gh api repos/Nooodara/noodara/git/ref/tags/v0.2.0
+{"ref":"refs/tags/v0.2.0","node_id":"REF_kwDOUksyFrByZWZzL3RhZ3MvdjAuMi4w","url":"https://api.github.com/repos/Nooodara/noodara/git/refs/tags/v0.2.0","object":{"sha":"a4f4c5ff82e39e3b70a8b6dd5f4f1770b42aaf56","type":"tag","url":"https://api.github.com/repos/Nooodara/noodara/git/tags/a4f4c5ff82e39e3b70a8b6dd5f4f1770b42aaf56"}}
+$ gh api repos/Nooodara/noodara/git/tags/a4f4c5ff82e39e3b70a8b6dd5f4f1770b42aaf56 --jq '{tag,object}'   # annotated tag -> commit
+{"object":{"sha":"d828db46bf7f5edb7b87f72ed32248788251d244","type":"commit","url":"https://api.github.com/repos/Nooodara/noodara/git/commits/d828db46bf7f5edb7b87f72ed32248788251d244"},"tag":"v0.2.0"}
+
+$ gh api repos/Nooodara/noodara/git/ref/tags/v0.2.0-rc.2
+{"ref":"refs/tags/v0.2.0-rc.2","node_id":"REF_kwDOUksyFrVyZWZzL3RhZ3MvdjAuMi4wLXJjLjI","url":"https://api.github.com/repos/Nooodara/noodara/git/refs/tags/v0.2.0-rc.2","object":{"sha":"e607afaa8697f38bf08dbc198f0f889edaaeb69b","type":"tag","url":"https://api.github.com/repos/Nooodara/noodara/git/tags/e607afaa8697f38bf08dbc198f0f889edaaeb69b"}}
+$ gh api repos/Nooodara/noodara/git/tags/e607afaa8697f38bf08dbc198f0f889edaaeb69b --jq '{tag,object}'   # annotated tag -> commit
+{"object":{"sha":"d828db46bf7f5edb7b87f72ed32248788251d244","type":"commit","url":"https://api.github.com/repos/Nooodara/noodara/git/commits/d828db46bf7f5edb7b87f72ed32248788251d244"},"tag":"v0.2.0-rc.2"}
+
+$ gh run view 38606580357 --repo Nooodara/noodara --json name,headSha,conclusion,event,headBranch,url,createdAt
+{"conclusion":"success","createdAt":"2026-10-14T17:25:51Z","event":"push","headBranch":"v0.2.0","headSha":"d828db46bf7f5edb7b87f72ed32248788251d244","name":"Release","url":"https://github.com/Nooodara/noodara/actions/runs/38606580357"}
+
+
+$ gh run view 38606580357 --repo Nooodara/noodara --json jobs --jq ".jobs[] | [.name,.conclusion] | @tsv"
+prepare	success
+build (noodara-control-plane, arm64)	success
+build (noodara-web, amd64)	success
+build (noodara-control-plane, amd64)	success
+build (noodara-web, arm64)	success
+manifest (noodara-web)	success
+manifest (noodara-control-plane)	success
+verify (noodara-control-plane)	success
+verify (noodara-web)	success
+release	success

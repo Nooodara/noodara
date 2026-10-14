@@ -36,7 +36,7 @@ Full phase details, plans and success criteria: [milestones/v0.1-ROADMAP.md](mil
 - [x] **Phase 11: Motor de deploy — fundamentos** - Spikes resueltos, dominio y esquema de Project/Environment/Service/Deployment, plantillas parametrizadas, exec en streaming, fixture sshd+dockerd y fixtures oficiales. (completed 2026-10-05)
 - [x] **Phase 12: Motor de deploy — runtime** - Cola, worker, cancelación con kill confirmado, limpieza en toda salida, reconciliación, API y SSE; 20 deploys y 20 ciclos sin huérfanos. (completed 2026-10-05)
 - [x] **Phase 13: UI de Projects & Services y E2E de deploy** - Jerarquía, creación de servicio, deploy narrado, logs en vivo en el inspector y el E2E crítico contra fixtures reales.
-- [x] **Phase 14: Hardening y gate de release v0.2** - Rotación de logs, poda de backups, imagen < 600 MB, `check-posix-sh` sin falsos positivos, deuda humana de v0.1 cerrada, `v0.2.0`. (completed 2026-10-14 — `v0.2.0` publicado con imágenes multi-arch; VPS público, 22.04, arm64, ufw y 1–2 GB quedan como deuda aceptada)
+- [x] **Phase 14: Hardening y gate de release v0.2** - Rotación de logs, poda de backups, imagen < 600 MB, `check-posix-sh` sin falsos positivos, deuda humana de v0.1 cerrada, `v0.2.0`. (completed 2026-10-14 — `v0.2.0` publicado con imágenes multi-arch; gate NOT READY por la regla estricta: VPS público, 22.04, arm64, ufw y 1–2 GB sin verificar, diferidos a OPS-05 (owner: usuario, v0.2.1 o inicio de v0.3))
 
 ## Decisions carried from research
 
@@ -403,7 +403,7 @@ Plans:
 
 **Goal**: Los operadores de v0.1 dejan de pagar la deuda que se les debía (logs que crecen sin límite, backups de `.env` que se acumulan, una imagen de 1.2 GB, falsos positivos en el scanner POSIX), la deuda de verificación humana de v0.1 queda cerrada con evidencia real, y el gate de v0.2 se corre contra roadmap §7.8 en un VPS real antes de publicar `v0.2.0`.
 **Depends on**: Phases 7-13 (el gate siempre acumula todas las fases del milestone)
-**Requirements**: OPS-01, OPS-02, OPS-03, OPS-04
+**Requirements**: OPS-01, OPS-02, OPS-03, OPS-04 (las verificaciones en host real de los criterios 4 y 5 pasan a OPS-05, diferido; DECISIONS 2026-10-14)
 **Research flag**: light — técnicas de reducción de la imagen del control plane (multi-stage + `pnpm deploy --prod`) pueden merecer una verificación Context7 corta; el resto es la práctica de la skill `noodara-release-gate` y la checklist "Looks done but isn't" de PITFALLS.
 **Success Criteria** (what must be TRUE):
 
