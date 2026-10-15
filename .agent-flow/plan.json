@@ -6134,7 +6134,13 @@
             "apps/control-plane/src/deploy/deploy-worker.test.ts",
             "packages/docker/src/runtime-operations.ts",
             "packages/docker/src/runtime-operations.test.ts",
-            "packages/docker/src/index.ts"
+            "packages/docker/src/index.ts",
+            "packages/ssh/src/commands/docker-deploy.ts",
+            "packages/ssh/src/commands/docker-deploy.test.ts",
+            "packages/ssh/src/commands/deploy-allowlist.ts",
+            "packages/ssh/src/commands/deploy-allowlist.test.ts",
+            "packages/ssh/src/index.ts",
+            "tests/integration/deploy-engine/deploy-templates.test.ts"
           ],
           "wave": 6,
           "dependsOn": [
