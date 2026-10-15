@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-15T00:43:25.234Z",
+  "updatedAt": "2026-10-15T00:43:35.094Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -5363,19 +5363,33 @@
             "packages/domain/src/deployment/index.ts",
             "vitest.state-machine.config.ts",
             "package.json",
-            ".claude/skills/noodara-domain-model/SKILL.md"
+            ".claude/skills/noodara-domain-model/SKILL.md",
+            "packages/domain/src/deployment/deployment-steps.ts",
+            "packages/domain/src/deployment/deployment-steps.test.ts",
+            "packages/domain/src/deployment/repository-features.test.ts",
+            "apps/web/src/lib/deploy-error-copy.ts",
+            "apps/web/src/lib/deploy-error-copy.test.ts",
+            "apps/web/src/lib/service-status-copy.ts",
+            "apps/web/src/lib/service-status-copy.test.ts",
+            "apps/web/src/lib/build-log.ts",
+            "apps/web/src/lib/build-log.test.ts",
+            "apps/control-plane/src/deploy/run-deployment.ts",
+            "apps/control-plane/src/deploy/run-deployment.test.ts",
+            "apps/control-plane/src/deploy/deployment-store.ts",
+            "apps/control-plane/src/deploy/deployment-store.test.ts"
           ],
           "wave": 2,
           "dependsOn": [
             "16-01"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
             "lint",
             "boundaries",
-            "coverage-state-machine"
+            "coverage-state-machine",
+            "it-runtime-pipeline"
           ],
           "acceptance": [
             {
@@ -5417,11 +5431,19 @@
               "id": "H2",
               "text": "Every status, trigger, error code and log phase tuple has a test that fails when a value exists in the domain but not in the DB enum list or the api-contract enum (no drift)",
               "proof": "test"
+            },
+            {
+              "id": "A7",
+              "text": "Consumers stay behaviour-compatible: the runtime ends a deploy DEPLOYING→HEALTHCHECK→SUCCESS using the existing post-start polls as the container check (verify step = HEALTHCHECK); deployment-steps and the web lookup tables handle every new state, trigger, phase and code with minimal copy (final copy in 19-01); runtime-pipeline integration stays green",
+              "proof": "it-runtime-pipeline"
             }
           ],
           "waives": [
             "http-api/body-cap",
-            "randomness/crypto-random"
+            "randomness/crypto-random",
+            "persistence/atomic-write",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot"
           ],
           "tier": "deep"
         },
