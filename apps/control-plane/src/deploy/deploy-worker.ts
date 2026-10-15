@@ -15,6 +15,9 @@
 //   once and resolves (never throws), so BullMQ (`attempts: 1`, `maxStalledCount: 0`) never runs
 //   the job, or its rollback, again. 17-07: the rollback itself runs inside runDeployment (one
 //   attempt); the loaded target carries autoRollback, previousSuccess and the event recorder.
+// - 17-04: after a SUCCESS or ROLLED_BACK run, image retention runs on the still-open session and
+//   *before* the terminal write, so it stays under the service's one-active-deployment slot (H1).
+//   It never throws into the handler and never changes the recorded outcome (A2).
 import type { DeploymentErrorCode, PostStartPollPolicy } from '@noodara/domain/deployment';
 import type { Redactor } from '@noodara/domain/security';
 import type { SshDeploySession } from '@noodara/ssh';
@@ -22,6 +25,7 @@ import { computeDeployJobLockDurationMs } from '../queue/deploy-job-budget.js';
 import { parseDeployServiceJobPayload } from '../queue/deploy-job-payload.js';
 import type { DeploymentStore, FinishDeploymentInput } from './deployment-store.js';
 import type { DeployCancelWatch } from './cancel-flag.js';
+import type { ImageRetentionRunner } from './image-retention.js';
 import type { DeploymentLogSink } from './log-sink.js';
 import {
   DEPLOY_MESSAGES,
@@ -101,6 +105,8 @@ export interface DeployJobDeps {
     watch(deploymentId: string): DeployCancelWatch;
     clear(deploymentId: string): Promise<void>;
   };
+  /** 17-04: image retention after SUCCESS / ROLLED_BACK; absent, no image is ever removed. */
+  readonly retention?: ImageRetentionRunner;
 }
 
 export type DeployJobOutcome =
@@ -162,6 +168,15 @@ export function createDeployJobHandler(deps: DeployJobDeps): (data: unknown, sig
       await close();
     } catch (error) {
       logger.warn({ deploymentId, errorKind: errorKind(error) }, `deploy ${what} failed to close`);
+    }
+  };
+
+  /** A2: retention is best effort; a throw is logged by class and the outcome stands. */
+  const retainImages = async (retention: ImageRetentionRunner, input: Parameters<ImageRetentionRunner>[0]): Promise<void> => {
+    try {
+      await retention(input);
+    } catch (error) {
+      logger.warn({ deploymentId: input.deploymentId, errorKind: errorKind(error) }, 'image retention failed; the deployment result stands');
     }
   };
 
@@ -246,6 +261,17 @@ export function createDeployJobHandler(deps: DeployJobDeps): (data: unknown, sig
             outcome = result.status;
             if (result.warning !== undefined) {
               logger.warn({ deploymentId, warning: result.warning }, 'deploy cancel could not confirm the remote process stopped');
+            }
+            if ((result.status === 'SUCCESS' || result.status === 'ROLLED_BACK') && deps.retention !== undefined) {
+              await retainImages(deps.retention, {
+                serviceId: loaded.target.serviceId,
+                deploymentId: loaded.target.deploymentId,
+                outcome: result.status,
+                previousSuccessId: loaded.target.previousSuccess?.id ?? null,
+                session: connected.session,
+                redactor,
+                ...(runSignal === undefined ? {} : { signal: runSignal }),
+              });
             }
           }
         }

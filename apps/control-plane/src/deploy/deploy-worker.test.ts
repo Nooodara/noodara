@@ -383,3 +383,133 @@ describe('deploy job handler: cancel (12-13 A1, A2, H2)', () => {
     expect(JSON.stringify(h.logs)).not.toContain('pw@db');
   });
 });
+
+describe('deploy job handler: image retention (17-04)', () => {
+  const PREVIOUS_ID = '0192f1a4-7b3c-7d2e-8f00-00000000aaaa';
+  const TARGET_WITH_PREVIOUS = {
+    ...TARGET,
+    previousSuccess: { id: PREVIOUS_ID, runtimeConfig: null },
+  } as unknown as DeployTarget;
+  const ROLLED_BACK: DeploymentOutcome = {
+    ...SUCCESS,
+    status: 'ROLLED_BACK',
+    errorCode: 'HEALTHCHECK_FAILED',
+    errorMessage: 'rolled back',
+  };
+  const report = { outcome: 'done' as const, kept: [], removed: [], failed: [] };
+
+  /** Records the order of retention, session close and the terminal write. */
+  function ordered(outcome: DeploymentOutcome, retention?: DeployJobDeps['retention']) {
+    const order: string[] = [];
+    const retentionFn =
+      retention ??
+      vi.fn(() => {
+        order.push('retention');
+        return Promise.resolve(report);
+      });
+    const run = vi.fn((_input: RunDeploymentInput) => Promise.resolve(outcome));
+    const h = harness({
+      loadTarget: vi.fn(() => Promise.resolve({ ok: true as const, target: TARGET_WITH_PREVIOUS, serverId: SERVER_ID })),
+      run,
+      retention: retentionFn,
+    });
+    vi.mocked(h.deps.store.finish).mockImplementation((_id, input) => {
+      order.push(`finish:${input.status}`);
+      h.finished.push(input);
+      return Promise.resolve(null);
+    });
+    h.sessionClose.mockImplementation(() => {
+      order.push('close');
+      return Promise.resolve();
+    });
+    return { ...h, order, run, retention: retentionFn };
+  }
+
+  it('A1/H1: after SUCCESS runs on the open session before the terminal write', async () => {
+    const h = ordered(SUCCESS);
+
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'SUCCESS' });
+
+    expect(h.order).toEqual(['retention', 'close', 'finish:SUCCESS']);
+    expect(h.retention).toHaveBeenCalledWith(
+      expect.objectContaining({
+        serviceId: SERVICE_ID,
+        deploymentId: DEPLOYMENT_ID,
+        outcome: 'SUCCESS',
+        previousSuccessId: PREVIOUS_ID,
+        session: h.session,
+      }),
+    );
+  });
+
+  it('A1: after ROLLED_BACK runs with the restored deployment as the running one', async () => {
+    const h = ordered(ROLLED_BACK);
+
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'ROLLED_BACK' });
+
+    expect(h.order).toEqual(['retention', 'close', 'finish:ROLLED_BACK']);
+    expect(h.retention).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'ROLLED_BACK', previousSuccessId: PREVIOUS_ID }));
+  });
+
+  it('passes the same redactor the pipeline used', async () => {
+    const h = ordered(SUCCESS);
+
+    await h.handle(PAYLOAD);
+
+    const [call] = vi.mocked(h.retention).mock.calls;
+    const [runCall] = h.run.mock.calls;
+    expect(call?.[0].redactor).toBeDefined();
+    expect(call?.[0].redactor).toBe(runCall?.[0].redactor);
+  });
+
+  it.each([
+    ['FAILED', { ...SUCCESS, status: 'FAILED', errorCode: 'BUILD_FAILED', errorMessage: 'x' }],
+    ['CANCELLED', { ...SUCCESS, status: 'CANCELLED' }],
+  ] as const)('never runs after %s', async (_name, outcome) => {
+    const h = ordered(outcome);
+
+    await h.handle(PAYLOAD);
+
+    expect(h.retention).not.toHaveBeenCalled();
+  });
+
+  it('never runs when the run did not happen (connect failure)', async () => {
+    const retention = vi.fn(() => Promise.resolve(report));
+    const h = harness({ connect: () => Promise.resolve({ ok: false as const, code: 'SERVER_UNREACHABLE' as const }), retention });
+
+    await h.handle(PAYLOAD);
+
+    expect(retention).not.toHaveBeenCalled();
+  });
+
+  it('A2: a retention that throws is logged by class only and the outcome stands', async () => {
+    const retention = vi.fn(() => Promise.reject(new TypeError('ssh: postgres://noodara:pw@db stderr')));
+    const h = ordered(SUCCESS, retention);
+
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'SUCCESS' });
+
+    expect(h.finished).toEqual([expect.objectContaining({ status: 'SUCCESS', errorCode: null })]);
+    expect(h.logs.some((log) => log.level === 'warn' && log.fields.errorKind === 'TypeError')).toBe(true);
+    expect(JSON.stringify(h.logs)).not.toContain('pw@db');
+  });
+
+  it('A2: a report with failed removals never changes the recorded result', async () => {
+    const retention = vi.fn(() =>
+      Promise.resolve({ ...report, failed: [{ imageRef: `noodara/${SERVICE_ID}:x`, kind: 'in_use' }] }),
+    );
+    const h = ordered(ROLLED_BACK, retention);
+
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'ROLLED_BACK' });
+
+    expect(h.finished).toEqual([
+      expect.objectContaining({ status: 'ROLLED_BACK', errorCode: 'HEALTHCHECK_FAILED', errorMessage: 'rolled back' }),
+    ]);
+  });
+
+  it('without a retention port no image is ever touched (the outcome is unchanged)', async () => {
+    const h = harness();
+
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'SUCCESS' });
+    expect(h.finished).toHaveLength(1);
+  });
+});
