@@ -21,6 +21,11 @@ describe("selectRollbackTarget", () => {
     const r = selectRollbackTarget(ctx(h), retained);
     expect(r.ok && r.target.id).toBe("1");
   });
+  it("returns a SUCCESS deployment whose service has no published port", () => {
+    const noPort = { ...rc("img2"), publishedPort: null };
+    const r = selectRollbackTarget(ctx([c("1", 1), c("2", 2, { runtimeConfig: noPort }), c("3", 3)]), retained);
+    expect(r.ok && r.target.id).toBe("2");
+  });
   it("names reasons for empty and only-current history", () => {
     expect(selectRollbackTarget(ctx([]), retained)).toEqual({ ok: false, reason: "none" });
     expect(selectRollbackTarget(ctx([c("3", 3)]), retained)).toEqual({ ok: false, reason: "none" });

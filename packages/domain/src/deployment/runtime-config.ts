@@ -8,7 +8,7 @@ export interface RuntimeConfigSnapshot {
   readonly version: 1;
   readonly imageRef: string;
   readonly internalPort: number;
-  readonly publishedPort: number;
+  readonly publishedPort: number | null;
   readonly healthcheck: HealthcheckConfig;
 }
 
@@ -42,8 +42,8 @@ export function parseRuntimeConfigSnapshot(
   ) {
     return fail(INVALID, "Runtime config imageRef is invalid");
   }
-  if (!isPort(o.internalPort) || !isPort(o.publishedPort)) {
-    return fail(INVALID, "Runtime config ports must be integers from 1 to 65535");
+  if (!isPort(o.internalPort) || (o.publishedPort !== null && !isPort(o.publishedPort))) {
+    return fail(INVALID, "Runtime config ports must be integers from 1 to 65535 (publishedPort may be null)");
   }
   const hc = validateHealthcheckConfig(o.healthcheck);
   if (!hc.ok) {

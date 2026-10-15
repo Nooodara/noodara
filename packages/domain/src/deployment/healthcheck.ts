@@ -125,6 +125,9 @@ export function validateHealthcheckConfig(
   if (path.split(/[/?]/).includes("..")) {
     return bad("Healthcheck path must not contain ..");
   }
+  if (o.expectedStatuses === null) {
+    return bad("Healthcheck expectedStatuses must not be null; omit it for the default");
+  }
   const statuses = o.expectedStatuses ?? DEFAULT_EXPECTED_STATUSES;
   if (
     !Array.isArray(statuses) ||

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_POST_START_POLL_POLICY,
   DEFAULT_CONTAINER_HEALTHCHECK,
+  postStartPollDelays,
   decideHealthcheck,
   healthcheckBudgetMs,
   healthcheckPolicy,
@@ -164,6 +165,31 @@ describe("resolveHealthcheck (A3)", () => {
     const r = resolveHealthcheck(http as HealthcheckConfig);
     expect(r.config).toBe(http);
     expect(r.postStart).toBeNull();
+  });
+});
+
+describe("default container healthcheck vs post-start polls (A3)", () => {
+  it("pins both budgets numerically so they cannot drift apart silently", () => {
+    const d = DEFAULT_CONTAINER_HEALTHCHECK;
+    expect(d).toMatchObject({ retries: 5, intervalS: 1, probeTimeoutS: 5, startPeriodS: 0 });
+    expect(healthcheckBudgetMs(d)).toBe(30_000);
+    const p = DEFAULT_POST_START_POLL_POLICY;
+    expect(p).toMatchObject({ maxPolls: 5, initialDelayMs: 1000, maxDelayMs: 8000, stablePolls: 2 });
+    const pollMs = postStartPollDelays(p).reduce((a, b) => a + b, 0);
+    expect(pollMs).toBe(23_000);
+    // the container budget covers the poll waits plus a 7 s allowance for inspect round-trips
+    expect(healthcheckBudgetMs(d) - pollMs).toBe(7_000);
+  });
+});
+
+describe("expectedStatuses null (A2)", () => {
+  it("rejects an explicit null with a named error; absent keeps the default", () => {
+    const r = validateHealthcheckConfig({ ...http, expectedStatuses: null });
+    expect(r.ok).toBe(false);
+    expect(code(r)).toBe("HEALTHCHECK_CONFIG_INVALID");
+    expect(!r.ok && r.message).toMatch(/expectedStatuses/);
+    const { expectedStatuses: _e, ...rest } = http;
+    expect(validateHealthcheckConfig(rest).ok).toBe(true);
   });
 });
 

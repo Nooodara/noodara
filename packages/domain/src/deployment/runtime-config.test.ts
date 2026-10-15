@@ -36,6 +36,13 @@ describe("parseRuntimeConfigSnapshot v1", () => {
       expect(parseRuntimeConfigSnapshot({ ...valid, ...patch }).ok).toBe(false);
     }
   });
+  it("accepts a null publishedPort (service without a published port)", () => {
+    const r = parseRuntimeConfigSnapshot({ ...valid, publishedPort: null });
+    expect(r.ok && r.value.publishedPort).toBeNull();
+    for (const publishedPort of [0, 65536, undefined]) {
+      expect(parseRuntimeConfigSnapshot({ ...valid, publishedPort }).ok).toBe(false);
+    }
+  });
   it("bounds and validates the image ref", () => {
     for (const imageRef of ["", "x".repeat(256), "a b", "a\nb", "a;rm", 5]) {
       expect(parseRuntimeConfigSnapshot({ ...valid, imageRef }).ok).toBe(false);
