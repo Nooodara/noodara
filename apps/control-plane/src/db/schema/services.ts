@@ -84,13 +84,14 @@ export const services = pgTable(
     imageRetention: integer("image_retention")
       .notNull()
       .default(DEFAULT_IMAGE_RETENTION),
-    // Opaque random id in the public webhook URL, set together with the encrypted HMAC secret
-    // (credentials envelope). The FK cascades: the secret credential exists only for this
-    // service's hook, so no service row can outlive it pointing at a missing secret.
+    // Opaque random id in the public webhook URL and its encrypted HMAC secret (a
+    // 'webhook_secret' credential). SET NULL: deleting a credential never deletes a service; a
+    // hook id left without a secret fails closed. Service deletion removes the credential like
+    // the other service credentials (deleteCredentialRows after the service row).
     webhookHookId: text("webhook_hook_id"),
     webhookSecretCredentialId: uuid("webhook_secret_credential_id").references(
       () => credentials.id,
-      { onDelete: "cascade" },
+      { onDelete: "set null" },
     ),
     // The single coalesced push waiting for the active deployment to end (16-05, latest wins).
     pendingTriggerDeliveryId: text("pending_trigger_delivery_id"),
@@ -128,7 +129,7 @@ export const services = pgTable(
     ),
     check(
       "services_webhook_pair_check",
-      sql`(${table.webhookHookId} IS NULL) = (${table.webhookSecretCredentialId} IS NULL)`,
+      sql`${table.webhookSecretCredentialId} IS NULL OR ${table.webhookHookId} IS NOT NULL`,
     ),
     check(
       "services_pending_trigger_check",

@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { sql, TransactionRollbackError } from 'drizzle-orm';
+import { eq, inArray, sql, TransactionRollbackError } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { NON_TERMINAL_DEPLOYMENT_STATUSES } from '@noodara/domain/deployment';
 import { WEBHOOK_DELIVERY_OUTCOMES } from '@noodara/domain';
 import type { Database } from '../../../apps/control-plane/src/db/client.js';
 import { MIGRATIONS_FOLDER, runMigrations } from '../../../apps/control-plane/src/db/migrate.js';
+import { credentials, services } from '../../../apps/control-plane/src/db/schema/index.js';
 import { applyMigrationsUpTo, readJournal } from '../helpers/migrations.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
 
@@ -26,6 +27,8 @@ const SHIPPED_HASHES: Record<string, string> = {
   [MIGRATION_0011]: '54259ff265db24a44cdb5152452886dfe0737963e93ec083b8324770f418482a',
   [MIGRATION_0012]: 'd2e9a992da40b565756cb1b61553c3bacc2fc3b4746c85cae859cc4d5b21b819',
 };
+const WEBHOOK_SECRET_TYPE = 'webhook_secret';
+const WEBHOOK_SECRET_ADD_VALUE = `ALTER TYPE "public"."credential_type" ADD VALUE IF NOT EXISTS '${WEBHOOK_SECRET_TYPE}';`;
 const MIGRATION_BOUND_MS = 10_000;
 const BULK_ROWS = 10_000;
 const SHA = 'a'.repeat(40);
@@ -83,7 +86,13 @@ async function columnsOf(db: Database, table: string): Promise<Map<string, Colum
 function statementsOf(tag: string): string[] {
   return readFileSync(`${MIGRATIONS_FOLDER}/${tag}.sql`, 'utf8')
     .split('--> statement-breakpoint')
-    .map((statement) => statement.trim())
+    .map((statement) =>
+      statement
+        .split('\n')
+        .filter((line) => !line.trim().startsWith('--'))
+        .join('\n')
+        .trim(),
+    )
     .filter((statement) => statement.length > 0);
 }
 
@@ -127,6 +136,13 @@ async function insertCredential(db: Database): Promise<string> {
   return id;
 }
 
+// A counter, not random bits: (host, ssh_port) is unique and random ports collide across seeds.
+let sshPortSeed = 20_000;
+function nextSshPort(): number {
+  sshPortSeed += 1;
+  return sshPortSeed;
+}
+
 async function seedService(db: Database): Promise<string> {
   const credentialId = await insertCredential(db);
   const serverId = uuidv7();
@@ -136,7 +152,7 @@ async function seedService(db: Database): Promise<string> {
   const suffix = serviceId.slice(-8);
   await db.execute(sql`
     insert into servers (id, name, host, ssh_port, ssh_user, credential_id)
-    values (${serverId}, ${`srv-${suffix}`}, '10.3.0.1', ${20_000 + Number.parseInt(suffix.slice(-3), 16)},
+    values (${serverId}, ${`srv-${suffix}`}, '10.3.0.1', ${nextSshPort()},
       'root', ${credentialId})
   `);
   await db.execute(
@@ -232,8 +248,16 @@ describe('migration 0013 files (16-06 A1, H2)', () => {
     expect(createHash('sha256').update(contents).digest('hex')).toBe(hash);
   });
 
-  it('0013 only adds columns, tables, constraints and indexes (no type, enum or drop)', () => {
+  it('0013 adds credential_type webhook_secret with IF NOT EXISTS and never uses it (A1, H2)', () => {
     const statements = statementsOf(MIGRATION_0013);
+    const addValue = statements.filter((statement) => /\bADD\s+VALUE\b/i.test(statement));
+    expect(addValue).toEqual([WEBHOOK_SECRET_ADD_VALUE]);
+    const others = statements.filter((statement) => statement !== WEBHOOK_SECRET_ADD_VALUE);
+    expect(others.filter((statement) => statement.includes(`'${WEBHOOK_SECRET_TYPE}'`))).toEqual([]);
+  });
+
+  it('0013 otherwise only adds columns, tables, constraints and indexes (no type, enum or drop)', () => {
+    const statements = statementsOf(MIGRATION_0013).filter((statement) => statement !== WEBHOOK_SECRET_ADD_VALUE);
     expect(statements.length).toBeGreaterThan(0);
     for (const statement of statements) {
       const body = statement
@@ -426,7 +450,7 @@ describe('migration 0013 on a fresh database (16-06 A2-A4, H3)', () => {
     );
   });
 
-  it('the webhook hook id is unique, random-shaped and paired with its secret credential', async () => {
+  it('the webhook hook id is unique and random-shaped', async () => {
     const first = await seedService(db());
     const second = await seedService(db());
     const shared = hookId();
@@ -434,21 +458,51 @@ describe('migration 0013 on a fresh database (16-06 A2-A4, H3)', () => {
 
     await expectSqlError(enableWebhook(db(), second, shared), '23505', 'services_webhook_hook_id_unique_idx');
     await expectSqlError(enableWebhook(db(), second, 'short'), '23514', 'services_webhook_hook_id_shape_check');
+  });
+
+  it('credential_type gains webhook_secret for the encrypted HMAC secret (A1)', async () => {
+    const result = await db().execute<{ value: string }>(
+      sql`select unnest(enum_range(null::credential_type))::text as value`,
+    );
+    expect(result.rows.map((row) => row.value)).toContain(WEBHOOK_SECRET_TYPE);
+  });
+
+  it('deleting the webhook secret credential never deletes the service: the FK sets null (A3)', async () => {
+    const serviceId = await seedService(db());
+    const shared = hookId();
+    const credentialId = await enableWebhook(db(), serviceId, shared);
+
+    await db().execute(sql`delete from credentials where id = ${credentialId}`);
+
+    const result = await db().execute<{ hook: string | null; credential: string | null }>(sql`
+      select webhook_hook_id as hook, webhook_secret_credential_id as credential
+      from services where id = ${serviceId}
+    `);
+    expect(result.rows).toEqual([{ hook: shared, credential: null }]);
+  });
+
+  it('a secret credential without a hook id is rejected (A3)', async () => {
+    const serviceId = await seedService(db());
+    const credentialId = await insertCredential(db());
     await expectSqlError(
-      db().execute(sql`update services set webhook_hook_id = ${hookId()} where id = ${second}`),
+      db().execute(sql`update services set webhook_secret_credential_id = ${credentialId} where id = ${serviceId}`),
       '23514',
       'services_webhook_pair_check',
     );
   });
 
-  it('deleting the webhook secret credential cascades to the service that owns it', async () => {
+  it('deleting a service removes its webhook credential through the service-credential path (A3)', async () => {
     const serviceId = await seedService(db());
     const credentialId = await enableWebhook(db(), serviceId, hookId());
 
-    await db().execute(sql`delete from credentials where id = ${credentialId}`);
+    // deleteService (D-17): the service row first, then deleteCredentialRows on its credential ids.
+    await db().transaction(async (tx) => {
+      await tx.delete(services).where(eq(services.id, serviceId));
+      await tx.delete(credentials).where(inArray(credentials.id, [credentialId]));
+    });
 
     expect(
-      await countRows(db(), sql`select count(*)::int as count from services where id = ${serviceId}`),
+      await countRows(db(), sql`select count(*)::int as count from credentials where id = ${credentialId}`),
     ).toBe(0);
   });
 

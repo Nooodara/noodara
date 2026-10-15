@@ -290,6 +290,7 @@ describe('migration 0005 defensive guards (T-11-15)', () => {
       'git_deploy_key',
       'git_https_token',
       'registry_password',
+      'webhook_secret', // 0013 (16-06)
     ]);
   });
 });

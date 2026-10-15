@@ -1839,7 +1839,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "set null",
           "onUpdate": "no action"
         },
         "services_environment_project_fk": {
@@ -1876,7 +1876,7 @@
         },
         "services_webhook_pair_check": {
           "name": "services_webhook_pair_check",
-          "value": "(\"services\".\"webhook_hook_id\" IS NULL) = (\"services\".\"webhook_secret_credential_id\" IS NULL)"
+          "value": "\"services\".\"webhook_secret_credential_id\" IS NULL OR \"services\".\"webhook_hook_id\" IS NOT NULL"
         },
         "services_pending_trigger_check": {
           "name": "services_pending_trigger_check",
@@ -2068,7 +2068,8 @@
         "ssh_password",
         "git_deploy_key",
         "git_https_token",
-        "registry_password"
+        "registry_password",
+        "webhook_secret"
       ]
     },
     "public.deployment_log_phase": {

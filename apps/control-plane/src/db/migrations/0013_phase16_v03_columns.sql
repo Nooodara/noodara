@@ -1,6 +1,9 @@
 -- 16-06: v0.3 columns and the webhook_deliveries table only (0011/0012 own the enum values and
 -- the one-active index). Deployments columns are nullable without defaults and the services
 -- defaults are constants, so no table is rewritten; every statement is guarded for a re-run.
+-- 'webhook_secret' is never used here: the migrator runs pending migrations in one transaction.
+ALTER TYPE "public"."credential_type" ADD VALUE IF NOT EXISTS 'webhook_secret';
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "webhook_deliveries" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"service_id" uuid NOT NULL,
@@ -76,7 +79,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "services" ADD CONSTRAINT "services_webhook_secret_credential_id_credentials_id_fk" FOREIGN KEY ("webhook_secret_credential_id") REFERENCES "public"."credentials"("id") ON DELETE cascade ON UPDATE no action;
+ ALTER TABLE "services" ADD CONSTRAINT "services_webhook_secret_credential_id_credentials_id_fk" FOREIGN KEY ("webhook_secret_credential_id") REFERENCES "public"."credentials"("id") ON DELETE set null ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -104,7 +107,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "services" ADD CONSTRAINT "services_webhook_pair_check" CHECK (("services"."webhook_hook_id" IS NULL) = ("services"."webhook_secret_credential_id" IS NULL));
+ ALTER TABLE "services" ADD CONSTRAINT "services_webhook_pair_check" CHECK ("services"."webhook_secret_credential_id" IS NULL OR "services"."webhook_hook_id" IS NOT NULL);
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;

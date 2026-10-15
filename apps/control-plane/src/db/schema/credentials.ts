@@ -16,6 +16,8 @@ export const credentialTypeEnum = pgEnum('credential_type', [
   'git_deploy_key',
   'git_https_token',
   'registry_password',
+  // 16-06: the HMAC secret of a service's push webhook (migration 0013, same rule as above).
+  'webhook_secret',
 ]);
 
 export const credentials = pgTable('credentials', {
