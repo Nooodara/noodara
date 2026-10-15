@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-15T19:14:32.306Z",
+  "updatedAt": "2026-10-15T19:14:36.979Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -6065,13 +6065,20 @@
             "apps/control-plane/src/deploy/image-retention.test.ts",
             "apps/control-plane/src/deploy/deploy-worker.ts",
             "apps/control-plane/src/deploy/deploy-worker.test.ts",
-            "tests/integration/deploy-engine/runtime-retention.test.ts"
+            "tests/integration/deploy-engine/runtime-retention.test.ts",
+            "apps/control-plane/src/deploy/run-deployment.ts",
+            "apps/control-plane/src/deploy/run-deployment.test.ts",
+            "packages/domain/src/deployment/resource-ledger.ts",
+            "packages/domain/src/deployment/resource-ledger.test.ts",
+            "apps/control-plane/src/deploy/deploy-runtime.ts",
+            "apps/control-plane/src/deploy/deploy-runtime.test.ts",
+            "tests/integration/deploy-engine/runtime-pipeline.test.ts"
           ],
           "wave": 5,
           "dependsOn": [
             "17-07"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
