@@ -5867,7 +5867,9 @@
             "packages/domain/src/deployment/resource-ledger.ts",
             "packages/domain/src/deployment/resource-ledger.test.ts",
             "tests/integration/deploy-engine/runtime-healthcheck.test.ts",
-            "fixtures/unhealthy-api/"
+            "fixtures/unhealthy-api/",
+            "apps/control-plane/src/deploy/deploy-target.ts",
+            "apps/control-plane/src/deploy/deploy-target.test.ts"
           ],
           "wave": 2,
           "dependsOn": [
