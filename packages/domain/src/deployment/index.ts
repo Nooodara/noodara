@@ -13,3 +13,7 @@ export * from './log-sanitize.js';
 export * from './deployment-steps.js';
 export * from './stale-queued.js';
 export * from './healthcheck.js';
+export * from './rollback.js';
+export * from './image-retention.js';
+export * from './runtime-config.js';
+export * from './idempotency.js';
