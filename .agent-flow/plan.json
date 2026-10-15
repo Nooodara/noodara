@@ -5725,6 +5725,53 @@
             "randomness/crypto-random"
           ],
           "tier": "deep"
+        },
+        {
+          "id": "16-07",
+          "title": "Phase 16 review fixes: nullable published port in the runtime snapshot, healthcheck edge cases",
+          "scope": [
+            "packages/domain/src/deployment/runtime-config.ts",
+            "packages/domain/src/deployment/runtime-config.test.ts",
+            "packages/domain/src/deployment/rollback.ts",
+            "packages/domain/src/deployment/rollback.test.ts",
+            "packages/domain/src/deployment/healthcheck.ts",
+            "packages/domain/src/deployment/healthcheck.test.ts"
+          ],
+          "wave": 7,
+          "dependsOn": [
+            "16-06"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "RuntimeConfigSnapshot accepts publishedPort null (service without a published port) and still rejects out-of-range ports; selectRollbackTarget returns such a SUCCESS deployment as a valid target (tests for both)",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "validateHealthcheckConfig rejects an explicit expectedStatuses: null with a named error instead of silently using the default; absent stays the default",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "A test compares numerically that the default container healthcheck's budget equals the v0.2 post-start poll budget",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "http-api",
+            "persistence",
+            "auth-secrets",
+            "randomness"
+          ],
+          "tier": "standard"
         }
       ]
     },
@@ -6446,6 +6493,11 @@
               "id": "H2",
               "text": "A re-delivered BullMQ job for a row in PREPARING/BUILDING/DEPLOYING follows the ADR resume rule without a second noodara-<serviceId> container, and a job for a terminal row exits without any remote command, proven by a fake-port call count",
               "proof": "test"
+            },
+            {
+              "id": "H9",
+              "text": "A unique-constraint violation on (service_id, idempotency_key) or on the webhook hook id maps to a typed API error (replay or 409), never a 500 (follow-up of 16-06 H3)",
+              "proof": "it-idempotency"
             }
           ],
           "waives": [
