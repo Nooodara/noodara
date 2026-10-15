@@ -52,6 +52,9 @@ nothing else — no internal detail is ever attached to it.
 | `SERVICE_CREDENTIAL_INVALID` | 422 | A credential field failed validation; `reason` names the rule. The submitted value is never echoed back. |
 | `SERVER_HAS_SERVICES` | 409 | The server still runs services; `blockingServices` lists them. Move or delete them first. |
 | `DEPLOYMENT_IN_PROGRESS` | 409 | The service already has a deployment in progress; wait for it to finish or cancel it. |
+| `ROLLBACK_TARGET_UNAVAILABLE` | 422 | The rollback target has no usable image on the server; pick another deployment. |
+| `IDEMPOTENCY_KEY_INVALID` | 400 | The `Idempotency-Key` header is malformed. |
+| `IDEMPOTENCY_KEY_REUSED` | 422 | The `Idempotency-Key` was already used with a different request. |
 | `PROJECT_ARCHIVED` | 409 | The project is archived; unarchive it to deploy its services. |
 | `DEPLOYMENT_INPUT_INVALID` | 422 | The deploy request carried a field it does not accept; the body must be empty or `{}`. |
 | `DEPLOYMENT_NOT_CANCELLABLE` | 409 | The deployment already ended; only a queued or running deployment can be cancelled. |
