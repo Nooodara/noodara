@@ -25,6 +25,7 @@ import { createDeployConnect, loadDeployServerFromDb } from './deploy-connect.js
 import { createLoadTarget, type PanelPorts } from './deploy-target.js';
 import { deployWorkerOptions, type DeployJobDeps, type DeployJobLogger, type DeployJobOutcome } from './deploy-worker.js';
 import { createDeploymentStore } from './deployment-store.js';
+import { createImageRetention, loadRetentionHistoryFromDb } from './image-retention.js';
 import { noopDeploymentLogSink } from './log-sink.js';
 import { runDeployment, type DeployRunLimits } from './run-deployment.js';
 import {
@@ -128,6 +129,8 @@ export function createDeployJobDeps(deps: DeployRuntimeDeps): DeployJobDeps {
     pollPolicy: DEFAULT_POST_START_POLL_POLICY,
     clock: { now: () => Date.now(), sleep: (ms) => sleep(ms) },
     logger: deps.logger,
+    // 17-04: runs on the open session before the row turns terminal, so it never races a deploy.
+    retention: createImageRetention({ load: loadRetentionHistoryFromDb(deps.db), logger: deps.logger }),
     run: async (input) => {
       const serverId = serverByDeployment.get(input.deploymentId);
       serverByDeployment.delete(input.deploymentId);

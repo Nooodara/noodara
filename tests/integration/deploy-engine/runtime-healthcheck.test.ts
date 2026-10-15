@@ -299,7 +299,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('17-02: runtime healthcheck on real
     );
   }, STACK_TIMEOUT_MS);
 
-  it('HTTP pass: the redeploy keeps -prev until the check passed, then removes it and its image', async () => {
+  it('HTTP pass: the redeploy keeps -prev until the check passed, then removes it; its image is kept by image retention', async () => {
     const serviceId = await insertService(REPOS.healthy, httpCheck('/health'));
     try {
       const first = await deploy(serviceId);
@@ -317,12 +317,13 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('17-02: runtime healthcheck on real
       expect(log).toMatch(/Healthcheck attempt \d+: HTTP 200/);
       expect(log).toContain('Healthcheck passed.');
       expect(log).not.toMatch(IP_PATTERN);
-      // A1: the previous container and its image are gone only because the check passed.
+      // A1: the previous container is gone only because the check passed.
       expect(await containerExists(`noodara-${serviceId}-prev`)).toBe(false);
       expect(await containerField(`noodara-${serviceId}`, '{{.State.Status}} {{.Config.Image}}')).toBe(
         `running noodara/${serviceId}:${second.id}`,
       );
-      expect(await imageExists(`noodara/${serviceId}:${first.id}`)).toBe(false);
+      // 17-04: the replaced image is a known-good rollback target kept by image retention.
+      expect(await imageExists(`noodara/${serviceId}:${first.id}`)).toBe(true);
     } finally {
       await removeServiceContainers(serviceId);
     }

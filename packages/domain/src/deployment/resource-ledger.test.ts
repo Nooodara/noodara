@@ -171,13 +171,12 @@ describe('cleanupSetFor', () => {
     ]);
   });
 
-  it('on SUCCESS of a redeploy also removes the image of the replaced container', () => {
+  it('on SUCCESS of a redeploy keeps the image of the replaced container for image retention (17-04)', () => {
     const set = cleanupSetFor(ledger(...REDEPLOY), 'SUCCESS');
 
     expect(set).toEqual([
       { kind: 'secrets_file', path: `${WORKSPACE}/secrets/docker` },
       { kind: 'workspace', path: WORKSPACE },
-      { kind: 'image', ref: PREVIOUS_IMAGE },
     ]);
   });
 
@@ -230,7 +229,7 @@ describe('cleanupSetFor', () => {
   );
 
   it.each(FAILED_EXITS)(
-    'on %s the superseded image is never removed: only SUCCESS drops it (17-02 H1)',
+    'on %s the superseded image is never removed (17-02 H1; image retention owns it, 17-04)',
     (exit) => {
       const l = ledger(
         { kind: 'workspace_created' },
@@ -454,9 +453,9 @@ describe('kept previous container (17-02 H1)', () => {
     }
   });
 
-  it('on SUCCESS after the -prev container was removed drops the superseded image', () => {
+  it('on SUCCESS after the -prev container was removed keeps the superseded image for retention (17-04)', () => {
     const set = cleanupSetFor(ledger(...KEPT, { kind: 'previous_container_removed', imageRef: PREVIOUS_IMAGE }), 'SUCCESS');
-    expect(set).toContainEqual({ kind: 'image', ref: PREVIOUS_IMAGE });
+    expect(set.some((r) => r.kind === 'image')).toBe(false);
   });
 
   it.each(NON_SUCCESS_EXITS)('executing the %s cleanup twice is idempotent and keeps the previous image', (exit) => {

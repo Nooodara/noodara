@@ -4,13 +4,13 @@
 // - The per-service container `noodara-<serviceId>` is never in any cleanup set: once an attempt
 //   has created it (fixed name, stop-then-start, OPEN_QUESTIONS #5) it IS the service's container
 //   and a failed start keeps it for diagnosis; before that the previous one still runs.
-// - The per-attempt image goes only when no container of this attempt uses it; the image of a
-//   container this attempt removed goes, but only when it is `noodara/<serviceId>:<uuid>`.
+// - The per-attempt image goes only when no container of this attempt uses it. The image of a
+//   container this attempt replaced is never in a cleanup set: after SUCCESS it is a known-good
+//   rollback target and image retention (17-04) decides whether it stays.
 // - The network goes only when this attempt created it and attached nothing to it.
 // - WORKER_CRASHED: the in-job ledger is lost, so the set uses only the deterministic names.
 // - 17-02 (H1): the previous container is kept as `noodara-<serviceId>-prev` until the new one
-//   passes its healthcheck. Its image is the restore target, so no exit but SUCCESS ever lists
-//   it, and the superseded image goes only on SUCCESS.
+//   passes its healthcheck. Its image is the restore target, so no exit ever lists it.
 // Removals are never forced, so a second run (or an in-use image) is a no-op, never an error.
 
 import type { CommandOutput } from '../discovery/docker-version.js';
@@ -163,9 +163,6 @@ export function cleanupSetFor(
   const failed = exit !== 'SUCCESS';
   if (failed && ledger.imageCreated && !ledger.containerCreated) {
     set.push({ kind: 'image', ref: ledger.names.image });
-  }
-  if (!failed && ledger.replacedImage !== null) {
-    set.push({ kind: 'image', ref: ledger.replacedImage });
   }
   if (failed && ledger.networkCreatedByAttempt && !ledger.containerCreated) {
     set.push({ kind: 'network', name: ledger.names.network });

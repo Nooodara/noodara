@@ -886,11 +886,8 @@ function cleanupCommand(resource: CleanupResource, workspace: DeployWorkspace, l
     case 'workspace':
       return removeDeployDir(workspace);
     case 'image':
-      if (resource.ref === ledger.names.image) return dockerImageRemove(ledger.names.image);
-      if (ledger.replacedImage !== null && resource.ref === ledger.replacedImage) {
-        return dockerImageRemove(ledger.replacedImage);
-      }
-      return null;
+      // Only the attempt's own image; superseded images belong to image retention (17-04).
+      return resource.ref === ledger.names.image ? dockerImageRemove(ledger.names.image) : null;
     case 'network':
       return dockerNetworkRemove(ledger.names.network);
     case 'secrets_file':

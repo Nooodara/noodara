@@ -506,7 +506,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     let secondContainerId = '';
     let secondImage = '';
 
-    it('A1/A2/A3/A5: a git deploy clones, builds, replaces the container and removes the superseded image', async () => {
+    it('A1/A2/A3/A5: a git deploy clones, builds, replaces the container and keeps the superseded image for retention', async () => {
       appServiceId = await insertGitService({ repo: REPOS.nodeApi, publishedPort: PORTS.app });
       const container = `noodara-${appServiceId}`;
       const network = `noodara-net-${appServiceId}`;
@@ -571,8 +571,9 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       secondContainerId = await inspectContainer(container, '{{.Id}}');
       expect(secondContainerId).not.toBe(firstContainerId);
       expect(await inspectContainer(container, '{{.Config.Image}}')).toBe(secondImage);
-      // A5: the superseded own image is gone once the new container runs; identity by layers, not .Id.
-      expect(await imageExists(firstImage)).toBe(false);
+      // 17-04: the superseded image is a known-good rollback target inside the default retention (3);
+      // the running container uses the new image (identity by layers, not .Id).
+      expect(await imageExists(firstImage)).toBe(true);
       expect(await containerImageLayers(container)).toEqual(await layersOf(['docker', 'image', 'inspect', secondImage]));
       expectStatusPath(second.id, ['BUILDING', 'DEPLOYING', 'HEALTHCHECK', 'SUCCESS']);
       await expectWorkspaceGone(second.id);

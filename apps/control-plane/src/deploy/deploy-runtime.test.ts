@@ -168,6 +168,20 @@ describe('createDeployJobDeps', () => {
     expect(deps.sinkFor('d')).toBe(noopDeploymentLogSink);
     expect(deps.createRedactor()).not.toBe(deps.createRedactor());
   });
+
+  it('wires image retention so it runs after SUCCESS and ROLLED_BACK (17-04)', () => {
+    const deps = createDeployJobDeps({
+      db: {} as Database,
+      events: noopServerEventPublisher,
+      ssh: { connect: vi.fn() },
+      timeouts: { connectMs: 1, commandMs: 1, discoveryMs: 1 },
+      masterKeys: () => Promise.reject(new Error('unused')),
+      panelPorts: [],
+      config: { deployMaxMs: 600_000, idleMs: 120_000, logMaxBytes: 1_000_000, logLineMaxBytes: 16_384 },
+      logger,
+    });
+    expect(typeof deps.retention).toBe('function');
+  });
 });
 
 describe('src/worker.ts wiring (W1)', () => {

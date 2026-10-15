@@ -344,7 +344,7 @@ describe('runDeployment: git source (C1)', () => {
     expect(h.session.keys()).not.toContain('supervise:clone');
   });
 
-  it('replaces the previous container only after the build, and removes the superseded own image last', async () => {
+  it('replaces the previous container only after the build, and keeps the superseded image for retention (17-04)', async () => {
     const previous = psLine({ name: CONTAINER, image: OLD_IMAGE, ports: '0.0.0.0:13100->3000/tcp' });
     const h = harness({
       scripts: {
@@ -370,10 +370,10 @@ describe('runDeployment: git source (C1)', () => {
       'docker.inspect',
       'docker.remove_prev',
       'fs.remove_deploy_dir',
-      'docker.image_remove',
     ]);
     expect(h.session.argv('docker.stop')).toContain(CONTAINER);
-    expect(h.session.argv('docker.image_remove')).toContain(OLD_IMAGE);
+    // 17-04: the superseded image is a known-good rollback target; image retention decides.
+    expect(keys).not.toContain('docker.image_remove');
     // The network existed already: it was not this attempt's to remove.
     expect(keys).not.toContain('docker.network_remove');
   });
@@ -688,10 +688,20 @@ describe('runDeployment: timeouts and cleanup in finally (C2)', () => {
     });
     const outcome = await runDeployment(h.input);
     expect(outcome.status).toBe('SUCCESS');
-    expect(outcome.cleanup).toEqual([
-      { resource: 'workspace', outcome: 'failed' },
-      { resource: 'image', outcome: 'in_use' },
-    ]);
+    // 17-04: the superseded image is not in the SUCCESS cleanup set; retention owns it.
+    expect(outcome.cleanup).toEqual([{ resource: 'workspace', outcome: 'failed' }]);
+  });
+
+  it('reports an in-use attempt image on a failed exit without throwing', async () => {
+    const h = harness({
+      scripts: {
+        'docker.create': { exitCode: 1, stderr: 'Error response from daemon: boom' },
+        'docker.image_remove': { exitCode: 1, stderr: IMAGE_IN_USE_STDERR },
+      },
+    });
+    const outcome = await runDeployment(h.input);
+    expect(outcome.status).toBe('FAILED');
+    expect(outcome.cleanup).toContainEqual({ resource: 'image', outcome: 'in_use' });
   });
 });
 
@@ -1169,8 +1179,8 @@ describe('runDeployment: HEALTHCHECK step (17-02 A1, A2, A3)', () => {
     expect(log).toContain('Healthcheck passed.');
     // A2: the probe target never reaches the log.
     expect(logText(h)).not.toContain(SERVICE_IP);
-    // The superseded image goes only on SUCCESS, after -prev was removed.
-    expect(h.session.argv('docker.image_remove')).toContain(OLD_IMAGE);
+    // 17-04: even on SUCCESS the superseded image stays; image retention owns it.
+    expect(keys).not.toContain('docker.image_remove');
   });
 
   it('TCP pass: an open port passes the check', async () => {
