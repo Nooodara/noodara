@@ -3,10 +3,22 @@
 // WORKER_CRASHED). Credentials are decrypted here and leave only as SecretValue.
 import { randomBytes } from 'node:crypto';
 import { inspect } from 'node:util';
+import { PgDialect } from 'drizzle-orm/pg-core';
+import type { SQL } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { revealSecret, secretValue } from '@noodara/domain/security';
+import type { Database } from '../db/client.js';
+import { credentials } from '../db/schema/credentials.js';
+import { deployments } from '../db/schema/deployments.js';
+import { services } from '../db/schema/services.js';
 import { encodeServiceCredential } from '../services/service-credentials.js';
-import { DeployTargetError, resolveDeployTarget, sourceFromSnapshot, type DeployTargetRows } from './deploy-target.js';
+import {
+  createLoadTarget,
+  DeployTargetError,
+  resolveDeployTarget,
+  sourceFromSnapshot,
+  type DeployTargetRows,
+} from './deploy-target.js';
 
 const masterKeys = { current: randomBytes(32) };
 const key = { key: masterKeys.current, version: 1 };
@@ -262,5 +274,166 @@ describe('resolveDeployTarget', () => {
     expect(() =>
       resolveDeployTarget(rows({ deployment: { id: 'not-a-uuid', serviceId: SERVICE_ID, source: gitSnapshot } }), masterKeys, PANEL),
     ).toThrow(DeployTargetError);
+  });
+});
+
+const PREVIOUS_ID = '0190a3c4-5555-7aaa-8bbb-000000000005';
+const runtimeConfig = {
+  version: 1,
+  imageRef: `noodara/${SERVICE_ID}:${PREVIOUS_ID}`,
+  internalPort: 3000,
+  publishedPort: 8080,
+  healthcheck: { type: 'container', probeTimeoutS: 5, intervalS: 2, retries: 3, startPeriodS: 0 },
+};
+
+describe('resolveDeployTarget: rollback inputs (17-03 P4)', () => {
+  it('defaults autoRollback to true and previousSuccess to null when the rows carry neither', () => {
+    const result = resolveDeployTarget(rows(), masterKeys, PANEL);
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.target.autoRollback).toBe(true);
+    expect(result.target.previousSuccess).toBeNull();
+  });
+
+  it('carries services.autoRollback false', () => {
+    const base = rows();
+    const result = resolveDeployTarget({ ...base, service: { ...base.service, autoRollback: false } }, masterKeys, PANEL);
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.target.autoRollback).toBe(false);
+  });
+
+  it('carries the previous SUCCESS deployment as {id, runtimeConfig} with a validated snapshot', () => {
+    const result = resolveDeployTarget(rows({ previousSuccess: { id: PREVIOUS_ID, runtimeConfig } }), masterKeys, PANEL);
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.target.previousSuccess).toEqual({ id: PREVIOUS_ID, runtimeConfig });
+  });
+
+  it.each([
+    ['a null snapshot (a v0.2 deployment)', null],
+    ['an unsupported version', { ...runtimeConfig, version: 2 }],
+    ['an unknown field', { ...runtimeConfig, env: { TOKEN: 'canary' } }],
+    ['an invalid image ref', { ...runtimeConfig, imageRef: '--evil' }],
+    ['not an object', 'evil'],
+  ])('gives runtimeConfig null for %s, never an error', (_label, snapshot) => {
+    const result = resolveDeployTarget(rows({ previousSuccess: { id: PREVIOUS_ID, runtimeConfig: snapshot } }), masterKeys, PANEL);
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.target.previousSuccess).toEqual({ id: PREVIOUS_ID, runtimeConfig: null });
+  });
+
+  it('never offers the current deployment as its own previous success', () => {
+    const result = resolveDeployTarget(rows({ previousSuccess: { id: DEPLOYMENT_ID, runtimeConfig } }), masterKeys, PANEL);
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.target.previousSuccess).toBeNull();
+  });
+
+  it('a previous success id that is not a UUID is a corrupt row', () => {
+    expect(() =>
+      resolveDeployTarget(rows({ previousSuccess: { id: 'not-a-uuid', runtimeConfig } }), masterKeys, PANEL),
+    ).toThrow(DeployTargetError);
+  });
+});
+
+interface LoadQuery {
+  readonly table: unknown;
+  readonly fields: Record<string, unknown> | undefined;
+  readonly calls: { method: string; args: unknown[] }[];
+}
+
+/** A recording select-only fake: each `select()` chain answers from `answers` by table. */
+function loadDb(answers: { deployments: unknown[][]; services: unknown[][] }) {
+  const queries: LoadQuery[] = [];
+  const queues = { deployments: [...answers.deployments], services: [...answers.services] };
+  const respond = (query: LoadQuery): unknown[] => {
+    if (query.table === deployments) return queues.deployments.shift() ?? [];
+    if (query.table === services) return queues.services.shift() ?? [];
+    if (query.table === credentials) return [];
+    return [];
+  };
+  const db = {
+    select: (fields?: Record<string, unknown>) => {
+      const query: LoadQuery = { table: undefined, fields, calls: [] };
+      queries.push(query);
+      const chain: unknown = new Proxy(
+        {},
+        {
+          get(_target, prop) {
+            if (prop === 'then') {
+              return (resolve: (v: unknown) => void) => {
+                resolve(respond(query));
+              };
+            }
+            return (...args: unknown[]) => {
+              if (prop === 'from') (query as { table: unknown }).table = args[0];
+              query.calls.push({ method: String(prop), args });
+              return chain;
+            };
+          },
+        },
+      );
+      return chain;
+    },
+  };
+  return { db: db as unknown as Database, queries };
+}
+
+const render = (fragment: unknown): { sql: string; params: unknown[] } => new PgDialect().sqlToQuery(fragment as SQL);
+const argOf = (query: LoadQuery | undefined, method: string): unknown[] =>
+  query?.calls.find((call) => call.method === method)?.args ?? [];
+
+describe('createLoadTarget: rollback inputs (17-03 P4)', () => {
+  const deploymentRow = { id: DEPLOYMENT_ID, serviceId: SERVICE_ID, source: gitSnapshot };
+  const serviceRowOf = (autoRollback: boolean) => ({
+    id: SERVICE_ID,
+    serverId: SERVER_ID,
+    repositoryCredentialId: null,
+    registryCredentialId: null,
+    healthcheck: null,
+    autoRollback,
+  });
+  const load = (fake: ReturnType<typeof loadDb>) =>
+    createLoadTarget({ db: fake.db, masterKeys: () => Promise.resolve(masterKeys), panelPorts: PANEL })({
+      id: DEPLOYMENT_ID,
+      serviceId: SERVICE_ID,
+    });
+
+  it('loads services.autoRollback and the latest SUCCESS deployment of the service other than this one', async () => {
+    const fake = loadDb({
+      deployments: [[deploymentRow], [{ id: PREVIOUS_ID, runtimeConfig }]],
+      services: [[serviceRowOf(false)], []],
+    });
+
+    const result = await load(fake);
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.target.autoRollback).toBe(false);
+    expect(result.target.previousSuccess).toEqual({ id: PREVIOUS_ID, runtimeConfig });
+
+    const serviceQuery = fake.queries.find((q) => q.table === services);
+    expect(serviceQuery?.fields).toHaveProperty('autoRollback', services.autoRollback);
+
+    const previousQuery = fake.queries.filter((q) => q.table === deployments)[1];
+    expect(previousQuery?.fields).toEqual({ id: deployments.id, runtimeConfig: deployments.runtimeConfig });
+    const where = render(argOf(previousQuery, 'where')[0]);
+    expect(where.sql).toBe('("deployments"."service_id" = $1 and "deployments"."status" = $2 and "deployments"."id" <> $3)');
+    expect(where.params).toEqual([SERVICE_ID, 'SUCCESS', DEPLOYMENT_ID]);
+    const order = argOf(previousQuery, 'orderBy').map((fragment) => render(fragment).sql);
+    expect(order).toEqual(['"deployments"."created_at" desc', '"deployments"."id" desc']);
+    expect(argOf(previousQuery, 'limit')).toEqual([1]);
+  });
+
+  it('gives previousSuccess null when the service has no other SUCCESS deployment', async () => {
+    const fake = loadDb({ deployments: [[deploymentRow], []], services: [[serviceRowOf(true)], []] });
+    const result = await load(fake);
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.target.autoRollback).toBe(true);
+    expect(result.target.previousSuccess).toBeNull();
+  });
+
+  it('gives runtimeConfig null when the previous SUCCESS snapshot does not validate', async () => {
+    const fake = loadDb({
+      deployments: [[deploymentRow], [{ id: PREVIOUS_ID, runtimeConfig: { version: 1, imageRef: '--evil' } }]],
+      services: [[serviceRowOf(true)], []],
+    });
+    const result = await load(fake);
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.target.previousSuccess).toEqual({ id: PREVIOUS_ID, runtimeConfig: null });
   });
 });

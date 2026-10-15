@@ -111,6 +111,61 @@ describe('deploy job handler: happy path', () => {
   });
 });
 
+describe('deploy job handler: ROLLED_BACK is terminal (17-03 P3)', () => {
+  const ROLLED_BACK = {
+    ...SUCCESS,
+    status: 'ROLLED_BACK',
+    errorCode: 'HEALTHCHECK_FAILED',
+    errorMessage: 'The healthcheck failed, so the previous version was restored.',
+  } as const;
+
+  it('records ROLLED_BACK once with its error code and message and reports it as the job outcome', async () => {
+    const h = harness({ run: vi.fn(() => Promise.resolve(ROLLED_BACK)) });
+
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'ROLLED_BACK' });
+
+    expect(h.finished).toEqual([
+      {
+        status: 'ROLLED_BACK',
+        errorCode: 'HEALTHCHECK_FAILED',
+        errorMessage: ROLLED_BACK.errorMessage,
+        commitSha: null,
+        container: { kind: 'running' },
+      },
+    ]);
+    expect(h.sessionClose).toHaveBeenCalledOnce();
+    expect(h.sinkClose).toHaveBeenCalledOnce();
+    expect(JSON.stringify(h.logs)).not.toContain(ROLLED_BACK.errorMessage);
+  });
+
+  it('never retries a ROLLED_BACK job: a re-delivery runs nothing and records nothing', async () => {
+    const run = vi.fn(() => Promise.resolve(ROLLED_BACK));
+    const h = harness({ run });
+
+    const first = await h.handle(PAYLOAD);
+    const second = await h.handle(PAYLOAD);
+
+    expect(first).toEqual({ outcome: 'ROLLED_BACK' });
+    expect(second).toEqual({ outcome: 'ALREADY_CLAIMED' });
+    expect(run).toHaveBeenCalledOnce();
+    expect(h.deps.connect).toHaveBeenCalledOnce();
+    expect(h.finished).toHaveLength(1);
+  });
+
+  it('resolves instead of throwing when ROLLED_BACK cannot be recorded, so BullMQ never retries it', async () => {
+    const h = harness({
+      run: () => Promise.resolve(ROLLED_BACK),
+      store: {
+        claim: () => Promise.resolve(claimedRow()),
+        progress: () => ({ advance: () => Promise.resolve(), recordCommitSha: () => Promise.resolve() }),
+        finish: () => Promise.reject(new Error(RAW_REMOTE)),
+      },
+    });
+    await expect(h.handle(PAYLOAD)).resolves.toEqual({ outcome: 'WORKER_CRASHED' });
+    expect(JSON.stringify(h.logs)).not.toContain('postgres://');
+  });
+});
+
 describe('deploy job handler: idempotent against stall and retry (H1)', () => {
   it('a re-delivered (stalled) job for a deployment already past QUEUED runs no remote command', async () => {
     const h = harness();

@@ -103,9 +103,16 @@ export const SERVICE_ACTIONS = [
 
 export type ServiceAction = (typeof SERVICE_ACTIONS)[number];
 
-/** `deployment.finished` covers SUCCESS, FAILED (incl. WORKER_CRASHED) and CANCELLED; the final
- *  status is `metadata.status`, the failure code is the event's `errorCode`. */
-export const DEPLOYMENT_ACTIONS = ['deployment.queued', 'deployment.cancel_requested', 'deployment.finished'] as const;
+/** `deployment.finished` covers SUCCESS, FAILED (incl. WORKER_CRASHED), ROLLED_BACK and CANCELLED;
+ *  the final status is `metadata.status`, the failure code is the event's `errorCode`.
+ *  `deployment.rollback_started` (17-03) marks the entry into ROLLING_BACK; its metadata names the
+ *  deployment being restored (`targetDeploymentId`), never an image reference. */
+export const DEPLOYMENT_ACTIONS = [
+  'deployment.queued',
+  'deployment.cancel_requested',
+  'deployment.rollback_started',
+  'deployment.finished',
+] as const;
 
 export type DeploymentAction = (typeof DEPLOYMENT_ACTIONS)[number];
 
@@ -151,6 +158,7 @@ export const DEPLOY_ENGINE_METADATA_KEY_KINDS: Readonly<Record<string, DeployEng
   serverId: 'id',
   serviceId: 'id',
   deploymentId: 'id',
+  targetDeploymentId: 'id',
   commitSha: 'id',
   sourceType: 'code',
   trigger: 'code',
@@ -184,6 +192,7 @@ export const DEPLOY_ENGINE_ACTION_METADATA_KEYS: Readonly<Record<DeployEngineAct
     'service.container_changed': ['serverId', 'previousStatus', 'observedState'],
     'deployment.queued': ['serviceId', 'trigger'],
     'deployment.cancel_requested': ['serviceId', 'status'],
+    'deployment.rollback_started': ['deploymentId', 'serviceId', 'targetDeploymentId'],
     'deployment.finished': ['serviceId', 'status', 'durationMs', 'commitSha'],
   });
 

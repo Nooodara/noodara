@@ -77,8 +77,13 @@ describe('deploy engine action tuples', () => {
     ]);
   });
 
-  it('DEPLOYMENT_ACTIONS covers queued, cancel requested and finished', () => {
-    expect([...DEPLOYMENT_ACTIONS]).toEqual(['deployment.queued', 'deployment.cancel_requested', 'deployment.finished']);
+  it('DEPLOYMENT_ACTIONS covers queued, cancel requested, rollback started and finished', () => {
+    expect([...DEPLOYMENT_ACTIONS]).toEqual([
+      'deployment.queued',
+      'deployment.cancel_requested',
+      'deployment.rollback_started',
+      'deployment.finished',
+    ]);
   });
 
   it('DEPLOY_ENGINE_ACTIONS is the concatenation of the four groups with no duplicates', () => {
@@ -178,6 +183,45 @@ describe('buildActivityEvent for deploy engine actions (A1)', () => {
     );
     expect(event.errorCode).toBe('BUILD_FAILED');
     expect(event.metadata).toEqual({ serviceId: 'svc-1', status: 'FAILED', durationMs: 4200, commitSha: 'a'.repeat(40) });
+  });
+
+  it('builds a system deployment.rollback_started event naming only ids (17-03 P1)', () => {
+    const event = build(
+      'deployment.rollback_started',
+      { deploymentId: 'dep-2', serviceId: 'svc-1', targetDeploymentId: 'dep-1' },
+      { entityId: 'dep-2', actorType: 'system', actorId: null },
+    );
+    expect(event.action).toBe('deployment.rollback_started');
+    expect(event.entityType).toBe('deployment');
+    expect(event.metadata).toEqual({ deploymentId: 'dep-2', serviceId: 'svc-1', targetDeploymentId: 'dep-1' });
+  });
+
+  it('deployment.rollback_started allowlists exactly the deployment, service and target ids (17-03 P1)', () => {
+    expect(DEPLOY_ENGINE_ACTION_METADATA_KEYS['deployment.rollback_started']).toEqual([
+      'deploymentId',
+      'serviceId',
+      'targetDeploymentId',
+    ]);
+    expect(DEPLOY_ENGINE_METADATA_KEY_KINDS.targetDeploymentId).toBe('id');
+  });
+
+  it.each([
+    ['imageRef', 'registry.example.com/acme/web:1.2'],
+    ['runtimeConfig', { version: 1 }],
+    ['errorMessage', 'The healthcheck failed.'],
+    ['status', 'ROLLING_BACK'],
+    ['commitSha', 'a'.repeat(40)],
+  ])('deployment.rollback_started rejects %s in metadata (17-03 P1)', (key, value) => {
+    expect(() => build('deployment.rollback_started', { serviceId: 'svc-1', [key]: value })).toThrow(SensitiveMetadataError);
+  });
+
+  it('deployment.rollback_started rejects a target id outside the id charset (17-03 P1)', () => {
+    expect(() =>
+      build('deployment.rollback_started', { targetDeploymentId: 'registry.example.com/acme/web:1.2' }),
+    ).toThrow(SensitiveMetadataError);
+    expect(() => build('deployment.rollback_started', { targetDeploymentId: 'dep-1' }, { entityType: 'service' })).toThrow(
+      InvalidActivityActionError,
+    );
   });
 
   it('accepts an empty metadata object (every allowlisted key is optional)', () => {
@@ -292,6 +336,7 @@ describe('deploy engine metadata cannot carry secrets (A1)', () => {
       serverId: 's',
       serviceId: 'svc',
       deploymentId: 'd',
+      targetDeploymentId: 't',
       sourceType: 'git',
       trigger: 'manual',
       status: 'SUCCESS',

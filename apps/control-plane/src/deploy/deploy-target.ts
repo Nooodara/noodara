@@ -7,8 +7,16 @@
 //   only ever offered to the registry the image is pulled from.
 // - 17-02: the service's healthcheck config (services.healthcheck) is validated here; null keeps
 //   the v0.2 post-start polls. A stored value that does not validate is a corrupt row.
-import { and, eq, inArray, isNotNull, ne } from 'drizzle-orm';
-import { validateHealthcheckConfig, type HealthcheckConfig } from '@noodara/domain/deployment';
+// - 17-03: the rollback inputs ride along: services.autoRollback (absent = true) and the
+//   service's latest SUCCESS deployment other than this one, as {id, runtimeConfig}. A stored
+//   snapshot that does not validate gives runtimeConfig null (that deployment cannot be
+//   restarted from it), never an error: the deploy itself must still run.
+import { and, desc, eq, inArray, isNotNull, ne } from 'drizzle-orm';
+import {
+  parseRuntimeConfigSnapshot,
+  validateHealthcheckConfig,
+  type HealthcheckConfig,
+} from '@noodara/domain/deployment';
 import {
   validateContainerPort,
   validateRegistryHost,
@@ -29,7 +37,12 @@ import {
   repositoryCredentialFits,
   type DecodedServiceCredential,
 } from '../services/service-credentials.js';
-import type { DeployJobFailureCode, DeployTarget, LoadTargetResult } from './deploy-worker.js';
+import type {
+  DeployJobFailureCode,
+  DeployTarget,
+  LoadTargetResult,
+  PreviousSuccessDeployment,
+} from './deploy-worker.js';
 import type { DeployCredential } from './run-deployment.js';
 
 export class DeployTargetError extends Error {
@@ -54,7 +67,11 @@ export interface DeployTargetRows {
     readonly registryCredentialId: string | null;
     /** services.healthcheck; null or absent = the default container check (v0.2 behaviour). */
     readonly healthcheck?: unknown;
+    /** services.autoRollback; absent = true (the column default). */
+    readonly autoRollback?: boolean;
   };
+  /** 17-03: the service's latest SUCCESS deployment other than this one; null or absent = none. */
+  readonly previousSuccess?: { readonly id: string; readonly runtimeConfig: unknown } | null;
   /** The row `service.repositoryCredentialId` points at, or null when absent. */
   readonly repositoryCredential: CredentialRowShape | null;
   /** The row `service.registryCredentialId` points at, or null when absent. */
@@ -121,6 +138,13 @@ function healthcheckOf(stored: unknown): HealthcheckConfig | null {
   const checked = validateHealthcheckConfig(stored);
   if (!checked.ok) throw new DeployTargetError();
   return checked.value;
+}
+
+function previousSuccessOf(rows: DeployTargetRows, deploymentId: ResourceId): PreviousSuccessDeployment | null {
+  const previous = rows.previousSuccess;
+  if (previous === null || previous === undefined || previous.id === deploymentId) return null;
+  const snapshot = parseRuntimeConfigSnapshot(previous.runtimeConfig);
+  return { id: resourceId(previous.id), runtimeConfig: snapshot.ok ? snapshot.value : null };
 }
 
 function resourceId(id: string): ResourceId {
@@ -200,6 +224,8 @@ export function resolveDeployTarget(rows: DeployTargetRows, masterKeys: MasterKe
       otherServices: rows.otherServices,
       panelPorts,
       healthcheck,
+      autoRollback: rows.service.autoRollback ?? true,
+      previousSuccess: previousSuccessOf(rows, deploymentId),
     },
   };
 }
@@ -228,6 +254,7 @@ export function createLoadTarget(
         repositoryCredentialId: services.repositoryCredentialId,
         registryCredentialId: services.registryCredentialId,
         healthcheck: services.healthcheck,
+        autoRollback: services.autoRollback,
       })
       .from(services)
       .where(eq(services.id, deployment.serviceId))
@@ -252,6 +279,20 @@ export function createLoadTarget(
     const rowFor = (credentialId: string | null): CredentialRowShape | null =>
       credentialId === null ? null : (credentialRows.find((row) => row.id === credentialId) ?? null);
 
+    // Newest first; the id breaks a createdAt tie so the pick is deterministic.
+    const [previousSuccess] = await deps.db
+      .select({ id: deployments.id, runtimeConfig: deployments.runtimeConfig })
+      .from(deployments)
+      .where(
+        and(
+          eq(deployments.serviceId, deployment.serviceId),
+          eq(deployments.status, 'SUCCESS'),
+          ne(deployments.id, deployment.id),
+        ),
+      )
+      .orderBy(desc(deployments.createdAt), desc(deployments.id))
+      .limit(1);
+
     const otherServices = await deps.db
       .select({ serviceId: services.id, publishedPort: services.publishedPort })
       .from(services)
@@ -264,6 +305,7 @@ export function createLoadTarget(
         repositoryCredential: rowFor(service.repositoryCredentialId),
         registryCredential: rowFor(service.registryCredentialId),
         otherServices,
+        previousSuccess: previousSuccess ?? null,
       },
       await deps.masterKeys(),
       deps.panelPorts,

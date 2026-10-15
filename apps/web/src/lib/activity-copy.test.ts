@@ -333,6 +333,38 @@ describe('deploy engine copy', () => {
     expect(text(sentenceFor(buildItem({ action: 'constructor' }), notFoundLookup))).not.toContain('constructor');
   });
 
+  it('renders deployment.rollback_started with the restored deployment as its only detail (17-03 P1)', () => {
+    const item = buildItem({
+      action: 'deployment.rollback_started',
+      entityType: 'deployment',
+      entityId: 'dep-2',
+      outcome: 'success',
+      metadata: {
+        deploymentId: '0192f1a4-7b3c-7d2e-8f00-00000000cccc',
+        serviceId: 'svc-1',
+        targetDeploymentId: '0192f1a4-7b3c-7d2e-8f00-00000000aaaa',
+        imageRef: 'registry.example.com/acme/web:1.2',
+      },
+    });
+    const s = sentenceFor(item, notFoundLookup, lookups);
+    expect(s.before).toBe('Deployment of ');
+    expect(s.after).toBe(' is rolling back to the previous version');
+    expect(curatedDetailFor(item)).toEqual([{ label: 'Restoring', value: '0192f1a4', mono: true }]);
+    expect(text(s)).not.toContain('registry.example.com');
+  });
+
+  it('names a ROLLED_BACK deployment.finished as restored, not only failed (17-03)', () => {
+    const item = buildItem({
+      action: 'deployment.finished',
+      entityType: 'deployment',
+      outcome: 'failure',
+      errorCode: 'HEALTHCHECK_FAILED',
+      metadata: { serviceId: 'svc-1', status: 'ROLLED_BACK' },
+    });
+    expect(sentenceFor(item, notFoundLookup, lookups).after).toBe(' failed and the previous version was restored');
+    expect(curatedDetailFor(item).map((e) => e.value)).toEqual(['ROLLED_BACK', 'HEALTHCHECK_FAILED']);
+  });
+
   it('renders curated details as text and shortens commit sha', () => {
     const d = curatedDetailFor(
       buildItem({

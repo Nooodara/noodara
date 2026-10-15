@@ -11,6 +11,9 @@
 // - finish: terminal status, timings, error code/message, the services.status cache (D5), the
 //   `deployment.finished` activity event in the same transaction, then deployment.updated and
 //   service.updated after commit. Idempotent: an already terminal row is left alone.
+//   17-03: ROLLED_BACK is reached only through `transitionDeployment` (from ROLLING_BACK) and
+//   keeps the original error code and message, like FAILED. The ROLLING_BACK edge stamps
+//   rollbackStartedAt in its own UPDATE.
 // - requestCancel (12-13): under the same row lock a QUEUED row ends CANCELLED here (the worker's
 //   claim then finds nothing to run); a running row is only reported, its worker does the
 //   transition. Terminal rows are reported, never touched (H1).
@@ -57,7 +60,8 @@ export interface DeploymentStoreDeps {
 }
 
 export interface FinishDeploymentInput {
-  readonly status: 'SUCCESS' | 'FAILED' | 'CANCELLED';
+  /** ROLLED_BACK (17-03) is only valid from ROLLING_BACK; the domain transition rejects any other. */
+  readonly status: 'SUCCESS' | 'FAILED' | 'ROLLED_BACK' | 'CANCELLED';
   readonly errorCode: DeploymentErrorCode | null;
   readonly errorMessage: string | null;
   readonly commitSha: CommitSha | null;
@@ -197,7 +201,8 @@ async function finishLockedRow(
   const status = transitionDeployment(row.status, input.status);
   const now = deps.now();
   const durationMs = Math.max(0, now.getTime() - (row.startedAt ?? row.createdAt).getTime());
-  const failed = status === 'FAILED';
+  // A ROLLED_BACK attempt still failed: it keeps the code and message that triggered the rollback.
+  const failed = status === 'FAILED' || status === 'ROLLED_BACK';
   const errorCode: DeploymentErrorCode | null = failed ? (input.errorCode ?? 'WORKER_CRASHED') : null;
   const errorMessage = failed
     ? capMessage(input.errorCode === null || input.errorMessage === null ? DEPLOY_MESSAGES.WORKER_CRASHED : input.errorMessage)
@@ -291,6 +296,7 @@ export function createDeploymentStore(deps: DeploymentStoreDeps): DeploymentStor
                 ...boundaryOf(from, next, now),
                 ...snapshot,
                 ...(next === 'HEALTHCHECK' ? { healthcheckStartedAt: now } : {}),
+                ...(next === 'ROLLING_BACK' ? { rollbackStartedAt: now } : {}),
               })
               .where(and(eq(deployments.id, deploymentId), eq(deployments.status, from)))
               .returning();

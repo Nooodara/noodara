@@ -340,6 +340,21 @@ describe('deployment store: step boundaries (13-03 A2, H1)', () => {
     expect(h.setOf(at(updates, 1))).toMatchObject({ status: 'DEPLOYING', runtimeConfig: snapshot, imageRef: snapshot.imageRef });
   });
 
+  it('HEALTHCHECK -> ROLLING_BACK stamps rollback_started_at in the edge UPDATE; other edges never write it (17-03 P2)', async () => {
+    const h = harness({
+      deployment: deploymentRow({ status: 'DEPLOYING', startedAt: STARTED, buildingStartedAt: STARTED, deployingStartedAt: STARTED }),
+      service: serviceRow(),
+    });
+    const progress = h.store.progress(DEPLOYMENT_ID);
+    await progress.advance('DEPLOYING', 'HEALTHCHECK');
+    await progress.advance('HEALTHCHECK', 'ROLLING_BACK');
+    const updates = h.ops.filter((op) => op.root === 'update');
+    expect(updates).toHaveLength(2);
+    expect(h.setOf(at(updates, 0))).not.toHaveProperty('rollbackStartedAt');
+    expect(h.setOf(at(updates, 1))).toMatchObject({ status: 'ROLLING_BACK', rollbackStartedAt: NOW });
+    expect(h.published.at(-1)).toMatchObject({ type: 'deployment.updated', deployment: { status: 'ROLLING_BACK' } });
+  });
+
   it.each(['SUCCESS', 'FAILED', 'CANCELLED', 'BUILDING'] as const)('never enters HEALTHCHECK from a %s row', async (status) => {
     const h = harness({ deployment: deploymentRow({ status, startedAt: STARTED }), service: serviceRow() });
     await expect(h.store.progress(DEPLOYMENT_ID).advance('DEPLOYING', 'HEALTHCHECK')).rejects.toBeInstanceOf(DeploymentConflictError);
@@ -462,6 +477,88 @@ describe('deployment store: finish (C3, ERR)', () => {
     await expect(h.store.finish(DEPLOYMENT_ID, finishInput())).rejects.toThrow(/Invalid deployment transition: DEPLOYING -> SUCCESS/);
     expect(h.state.deployment?.status).toBe('DEPLOYING');
     expect(h.published).toEqual([]);
+  });
+
+  it('ends ROLLED_BACK from ROLLING_BACK keeping the original error code and message (17-03 P2)', async () => {
+    const h = harness({
+      deployment: deploymentRow({ status: 'ROLLING_BACK', startedAt: STARTED, commitSha: SHA }),
+      service: serviceRow({ status: 'DEPLOYING' }),
+    });
+    const message = 'The healthcheck failed, so the previous version was restored.';
+
+    const view = await h.store.finish(
+      DEPLOYMENT_ID,
+      finishInput({ status: 'ROLLED_BACK', errorCode: 'HEALTHCHECK_FAILED', errorMessage: message, commitSha: null }),
+    );
+
+    expect(view).toMatchObject({ status: 'ROLLED_BACK', errorCode: 'HEALTHCHECK_FAILED', errorMessage: message, commitSha: SHA });
+    expect(h.state.deployment).toMatchObject({ status: 'ROLLED_BACK', completedAt: NOW, durationMs: 58_000 });
+    // The restored container runs, so the service is RUNNING again.
+    expect(h.state.service?.status).toBe('RUNNING');
+    const values = h.ops.find((op) => op.table === activityEvents)?.calls.find((c) => c.method === 'values')?.args[0];
+    expect(values).toMatchObject({
+      action: 'deployment.finished',
+      outcome: 'failure',
+      errorCode: 'HEALTHCHECK_FAILED',
+      metadata: { serviceId: SERVICE_ID, status: 'ROLLED_BACK' },
+    });
+    expect(JSON.stringify(values)).not.toContain(message);
+    expect(h.published[0]).toMatchObject({ type: 'deployment.updated', deployment: { status: 'ROLLED_BACK', errorCode: 'HEALTHCHECK_FAILED' } });
+  });
+
+  it('a ROLLED_BACK outcome without a code is stored as WORKER_CRASHED, never without one (17-03 P2)', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'ROLLING_BACK', startedAt: STARTED }), service: serviceRow() });
+    await h.store.finish(DEPLOYMENT_ID, finishInput({ status: 'ROLLED_BACK', errorCode: null, errorMessage: null }));
+    expect(h.state.deployment).toMatchObject({
+      status: 'ROLLED_BACK',
+      errorCode: 'WORKER_CRASHED',
+      errorMessage: DEPLOY_MESSAGES.WORKER_CRASHED,
+    });
+  });
+
+  it('caps the stored error message of a ROLLED_BACK deployment (17-03 P2)', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'ROLLING_BACK', startedAt: STARTED }), service: serviceRow() });
+    await h.store.finish(DEPLOYMENT_ID, finishInput({ status: 'ROLLED_BACK', errorCode: 'START_FAILED', errorMessage: 'x'.repeat(5000) }));
+    expect(h.state.deployment?.errorMessage?.length).toBeLessThanOrEqual(1024);
+    expect(h.state.deployment?.errorCode).toBe('START_FAILED');
+  });
+
+  it('a failed restore ends FAILED from ROLLING_BACK with its code and message (17-03 P2)', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'ROLLING_BACK', startedAt: STARTED }), service: serviceRow() });
+    await h.store.finish(
+      DEPLOYMENT_ID,
+      finishInput({ status: 'FAILED', errorCode: 'ROLLBACK_FAILED', errorMessage: 'The previous version could not be restored.', container: null }),
+    );
+    expect(h.state.deployment).toMatchObject({
+      status: 'FAILED',
+      errorCode: 'ROLLBACK_FAILED',
+      errorMessage: 'The previous version could not be restored.',
+    });
+  });
+
+  it.each(['PREPARING', 'BUILDING', 'DEPLOYING', 'HEALTHCHECK'] as const)(
+    'refuses ROLLED_BACK from %s: only the ROLLING_BACK edge reaches it (17-03 P2)',
+    async (status) => {
+      const h = harness({ deployment: deploymentRow({ status, startedAt: STARTED }), service: serviceRow() });
+      await expect(
+        h.store.finish(DEPLOYMENT_ID, finishInput({ status: 'ROLLED_BACK', errorCode: 'HEALTHCHECK_FAILED', errorMessage: 'x' })),
+      ).rejects.toThrow(new RegExp(`Invalid deployment transition: ${status} -> ROLLED_BACK`));
+      expect(h.state.deployment?.status).toBe(status);
+      expect(h.ops.filter((op) => op.root !== 'select')).toEqual([]);
+      expect(h.published).toEqual([]);
+    },
+  );
+
+  it('refuses ROLLED_BACK on a QUEUED row and leaves a terminal row alone (17-03 P2)', async () => {
+    const queued = harness({ deployment: deploymentRow({ status: 'QUEUED' }), service: serviceRow() });
+    await expect(
+      queued.store.finish(DEPLOYMENT_ID, finishInput({ status: 'ROLLED_BACK', errorCode: 'HEALTHCHECK_FAILED', errorMessage: 'x' })),
+    ).rejects.toThrow(/Invalid deployment transition: QUEUED -> ROLLED_BACK/);
+    const terminal = harness({ deployment: deploymentRow({ status: 'ROLLED_BACK' }), service: serviceRow() });
+    expect(
+      await terminal.store.finish(DEPLOYMENT_ID, finishInput({ status: 'ROLLED_BACK', errorCode: 'HEALTHCHECK_FAILED', errorMessage: 'x' })),
+    ).toBeNull();
+    expect(terminal.published).toEqual([]);
   });
 
   it('publishes nothing when the transaction fails', async () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { secretValue } from '../security/secret-value.js';
 import {
   ACCOUNT_ACTIONS,
+  ALL_ACTIVITY_ACTIONS,
   AUTH_ACTIONS,
   InvalidActivityActionError,
   SERVER_ACTIONS,
@@ -442,6 +443,40 @@ describe('account actions (SET-02/SET-03, D-08)', () => {
           action: 'account.name_changed',
           outcome: 'success',
           metadata: { name: 'Ada', token: 'x' },
+        },
+        NOW,
+      ),
+    ).toThrow(SensitiveMetadataError);
+  });
+});
+
+describe('deployment.rollback_started (17-03 P1)', () => {
+  it('is a closed-vocabulary action buildActivityEvent accepts', () => {
+    expect(ALL_ACTIVITY_ACTIONS).toContain('deployment.rollback_started');
+    const event = buildActivityEvent(
+      {
+        actorType: 'system',
+        entityType: 'deployment',
+        entityId: 'dep-2',
+        action: 'deployment.rollback_started',
+        outcome: 'success',
+        metadata: { deploymentId: 'dep-2', serviceId: 'svc-1', targetDeploymentId: 'dep-1' },
+      },
+      NOW,
+    );
+    expect(event).toMatchObject({ action: 'deployment.rollback_started', actorId: null, occurredAt: NOW });
+  });
+
+  it('rejects a secret-shaped key even next to the allowlisted ids', () => {
+    expect(() =>
+      buildActivityEvent(
+        {
+          actorType: 'system',
+          entityType: 'deployment',
+          entityId: 'dep-2',
+          action: 'deployment.rollback_started',
+          outcome: 'success',
+          metadata: { serviceId: 'svc-1', token: 'ghp_canary' },
         },
         NOW,
       ),

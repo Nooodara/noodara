@@ -350,6 +350,12 @@ function commitEntry(item: ActivityItem): CuratedDetailEntry | undefined {
   return sha === undefined ? undefined : { label: 'Commit', value: sha.slice(0, 7), mono: true };
 }
 
+/** 17-03: the deployment a rollback restores, shortened like a commit (ids are UUIDs). */
+function restoringEntry(item: ActivityItem): CuratedDetailEntry | undefined {
+  const target = stringField(item.metadata, 'targetDeploymentId');
+  return target === undefined ? undefined : { label: 'Restoring', value: target.slice(0, 8), mono: true };
+}
+
 function countEntry(item: ActivityItem, key: string, label: string): CuratedDetailEntry | undefined {
   const count = numberField(item.metadata, key);
   if (count === undefined || count < 0 || !Number.isInteger(count)) return undefined;
@@ -557,11 +563,18 @@ const DEPLOY_ENGINE_COPY = {
     sentence: (item, _s, l) => deploymentSentence(`${actorLabel(item)} requested to cancel the deployment of `, '', item, l),
     curatedDetail: (item) => compact([statusEntry(item)]),
   },
+  'deployment.rollback_started': {
+    sentence: (item, _s, l) => deploymentSentence('Deployment of ', ' is rolling back to the previous version', item, l),
+    curatedDetail: (item) => compact([restoringEntry(item)]),
+  },
   'deployment.finished': {
-    sentence: (item, _s, l) =>
-      item.outcome === 'success'
-        ? deploymentSentence('Deployment of ', ' finished', item, l)
-        : deploymentSentence('Deployment of ', ' failed', item, l),
+    sentence: (item, _s, l) => {
+      if (item.outcome === 'success') return deploymentSentence('Deployment of ', ' finished', item, l);
+      if (stringField(item.metadata, 'status') === 'ROLLED_BACK') {
+        return deploymentSentence('Deployment of ', ' failed and the previous version was restored', item, l);
+      }
+      return deploymentSentence('Deployment of ', ' failed', item, l);
+    },
     curatedDetail: (item) =>
       compact([statusEntry(item), durationEntry(item), commitEntry(item), item.outcome === 'failure' ? errorEntry(item) : undefined]),
   },

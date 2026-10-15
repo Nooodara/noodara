@@ -11,8 +11,12 @@
 //   aborts the run. Seen before the connection, it ends CANCELLED without any remote command;
 //   inside the pipeline, runDeployment kills and confirms (A2, H2). Only this handler moves a
 //   claimed row. The watch stops and the flag is cleared on every exit.
-import type { DeploymentErrorCode, PostStartPollPolicy } from '@noodara/domain/deployment';
+// - 17-03: ROLLED_BACK is a terminal outcome like SUCCESS/FAILED/CANCELLED. The handler records it
+//   once and resolves (never throws), so BullMQ (`attempts: 1`, `maxStalledCount: 0`) never runs
+//   the job, or its rollback, again.
+import type { DeploymentErrorCode, PostStartPollPolicy, RuntimeConfigSnapshot } from '@noodara/domain/deployment';
 import type { Redactor } from '@noodara/domain/security';
+import type { ResourceId } from '@noodara/domain/validators';
 import type { SshDeploySession } from '@noodara/ssh';
 import { computeDeployJobLockDurationMs } from '../queue/deploy-job-budget.js';
 import { parseDeployServiceJobPayload } from '../queue/deploy-job-payload.js';
@@ -28,11 +32,32 @@ import {
   type RunDeploymentInput,
 } from './run-deployment.js';
 
+/** 17-03: the service's latest SUCCESS deployment other than the one being run. `runtimeConfig`
+ *  is null when its stored snapshot does not validate (it cannot be restarted from it). */
+export interface PreviousSuccessDeployment {
+  readonly id: ResourceId;
+  readonly runtimeConfig: RuntimeConfigSnapshot | null;
+}
+
+/** 17-03: what an automatic rollback needs; loaded with the target, read by the pipeline (17-07). */
+export interface DeployRollbackInputs {
+  /** services.autoRollback; true when the column was never set. */
+  readonly autoRollback: boolean;
+  /** null when the service never had another SUCCESS deployment. */
+  readonly previousSuccess: PreviousSuccessDeployment | null;
+}
+
 /** Everything the pipeline needs that comes from the database (ids, source, ports, credential). */
 export type DeployTarget = Omit<
   RunDeploymentInput,
   'session' | 'redactor' | 'limits' | 'pollPolicy' | 'progress' | 'sink' | 'clock' | 'signal'
->;
+> &
+  DeployRollbackInputs;
+
+/** The pipeline's result as the worker records it; ROLLED_BACK is terminal (17-03). */
+export type DeployRunOutcome = Omit<DeploymentOutcome, 'status'> & {
+  readonly status: DeploymentOutcome['status'] | 'ROLLED_BACK';
+};
 
 /** The closed codes a failure before the pipeline can end with. */
 export type DeployJobFailureCode = Extract<
@@ -70,7 +95,7 @@ export interface DeployJobDeps {
   readonly loadTarget: (deployment: { readonly id: string; readonly serviceId: string }) => Promise<LoadTargetResult>;
   /** Opens the deploy session; the redactor is the run's, so server secrets are masked too. */
   readonly connect: (serverId: string, redactor: Redactor, signal: AbortSignal | undefined) => Promise<ConnectResult>;
-  readonly run?: (input: RunDeploymentInput) => Promise<DeploymentOutcome>;
+  readonly run?: (input: RunDeploymentInput) => Promise<DeployRunOutcome>;
   readonly createRedactor: () => Redactor;
   readonly sinkFor: (deploymentId: string) => DeploymentLogSink;
   readonly limits: DeployRunLimits;
@@ -90,6 +115,7 @@ export type DeployJobOutcome =
   | 'ALREADY_CLAIMED'
   | 'SUCCESS'
   | 'FAILED'
+  | 'ROLLED_BACK'
   | 'CANCELLED'
   | 'WORKER_CRASHED';
 
