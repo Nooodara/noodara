@@ -507,6 +507,7 @@ export async function deleteProject(
         id: services.id,
         repositoryCredentialId: services.repositoryCredentialId,
         registryCredentialId: services.registryCredentialId,
+        webhookSecretCredentialId: services.webhookSecretCredentialId,
       })
       .from(services)
       .where(eq(services.projectId, current.id))
@@ -514,7 +515,7 @@ export async function deleteProject(
     // A deploy claimed after the cleanup owns new remote resources: refuse rather than leak them.
     if (await hasRunningDeployment(tx, serviceRows.map((row) => row.id))) return runningDeployment;
     const credentialIds = serviceRows
-      .flatMap((row) => [row.repositoryCredentialId, row.registryCredentialId])
+      .flatMap((row) => [row.repositoryCredentialId, row.registryCredentialId, row.webhookSecretCredentialId])
       .filter((id): id is string => id !== null);
 
     const now = deps.now();

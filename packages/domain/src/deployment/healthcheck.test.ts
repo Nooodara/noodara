@@ -74,6 +74,43 @@ describe("validateHealthcheckConfig (A1, H1)", () => {
       "HEALTHCHECK_CONFIG_INVALID",
     );
   });
+  // 16-03 A1: one case per shell metacharacter, whitespace and control character.
+  it.each([
+    "&",
+    "*",
+    "!",
+    ";",
+    "$",
+    "`",
+    "|",
+    "<",
+    ">",
+    "(",
+    ")",
+    "{",
+    "}",
+    "[",
+    "]",
+    "'",
+    '"',
+    "\\",
+    " ",
+    "\t",
+    "\n",
+    "\r",
+    "\u0000",
+    "\u001b",
+    "\u007f",
+  ])("rejects the path character %j", (char) => {
+    expect(
+      code(validateHealthcheckConfig({ ...http, path: `/a${char}b` })),
+    ).toBe("HEALTHCHECK_CONFIG_INVALID");
+  });
+  it("keeps URL-legit path characters", () => {
+    const path = "/api/v1/health?full=1,2?x=a:b@c+d-e.f_g~h%20/";
+    const r = validateHealthcheckConfig({ ...http, path });
+    expect(r.ok && r.value.type === "http" && r.value.path).toBe(path);
+  });
   it("names an unknown field instead of stripping it", () => {
     const r = validateHealthcheckConfig({ ...http, cmd: "id" });
     expect(r.ok).toBe(false);

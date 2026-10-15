@@ -49,7 +49,9 @@ export const DEFAULT_CONTAINER_HEALTHCHECK: HealthcheckConfig = Object.freeze({
   startPeriodS: 0,
 });
 
-const SAFE_PATH = /^\/[A-Za-z0-9\-._~/%?=&+,:@!*]*$/;
+// 16-03 A1: URL path/query characters only; every shell metacharacter (& * ! ; $ ` | < > ( ) { }
+// [ ] ' " \), whitespace and control character is rejected.
+const SAFE_PATH = /^\/[A-Za-z0-9\-._~/%?=+,:@]*$/;
 const COMMON_KEYS = [
   "type",
   "probeTimeoutS",

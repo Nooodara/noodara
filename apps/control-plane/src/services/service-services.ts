@@ -770,7 +770,11 @@ export async function deleteService(deps: ServiceServicesDeps, input: DeleteServ
       deps.now(),
     );
     await tx.delete(services).where(eq(services.id, current.id));
-    await deleteCredentialRows(tx, [current.repositoryCredentialId, current.registryCredentialId]);
+    await deleteCredentialRows(tx, [
+      current.repositoryCredentialId,
+      current.registryCredentialId,
+      current.webhookSecretCredentialId,
+    ]);
     return { ok: true, serviceId: current.id };
   });
   if (result.ok) await publishServerEvent(deps.events, { type: 'service.deleted', id: result.serviceId });

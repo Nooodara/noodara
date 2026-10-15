@@ -1,13 +1,13 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { eq, inArray, sql, TransactionRollbackError } from 'drizzle-orm';
+import { sql, TransactionRollbackError } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { NON_TERMINAL_DEPLOYMENT_STATUSES } from '@noodara/domain/deployment';
 import { WEBHOOK_DELIVERY_OUTCOMES } from '@noodara/domain';
 import type { Database } from '../../../apps/control-plane/src/db/client.js';
 import { MIGRATIONS_FOLDER, runMigrations } from '../../../apps/control-plane/src/db/migrate.js';
-import { credentials, services } from '../../../apps/control-plane/src/db/schema/index.js';
+import { noopServerEventPublisher } from '../../../apps/control-plane/src/events/server-event-publisher.js';
 import { applyMigrationsUpTo, readJournal } from '../helpers/migrations.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
 
@@ -215,6 +215,32 @@ async function enableWebhook(db: Database, serviceId: string, hookId: string): P
   return credentialId;
 }
 
+type ServiceServicesModule = typeof import('../../../apps/control-plane/src/services/service-services.js');
+type ProjectServicesModule = typeof import('../../../apps/control-plane/src/services/project-services.js');
+
+/** The service modules read env.ts at import, so they load only after a valid env is set. */
+async function loadDeletePaths(
+  connectionString: string,
+): Promise<{ deleteService: ServiceServicesModule['deleteService']; deleteProject: ProjectServicesModule['deleteProject'] }> {
+  process.env.NOODARA_MASTER_KEY ??= randomBytes(32).toString('base64');
+  process.env.BETTER_AUTH_SECRET ??= `migration-0013-${randomUUID()}-${randomUUID()}`;
+  process.env.DATABASE_URL ??= connectionString;
+  process.env.REDIS_URL ??= 'redis://localhost:6379';
+  process.env.NOODARA_PUBLIC_URL ??= 'http://localhost:3000';
+  const serviceModule: ServiceServicesModule = await import('../../../apps/control-plane/src/services/service-services.js');
+  const projectModule: ProjectServicesModule = await import('../../../apps/control-plane/src/services/project-services.js');
+  return { deleteService: serviceModule.deleteService, deleteProject: projectModule.deleteProject };
+}
+
+async function serviceScope(db: Database, serviceId: string): Promise<{ projectId: string; name: string }> {
+  const result = await db.execute<{ projectId: string; name: string }>(
+    sql`select project_id as "projectId", name from services where id = ${serviceId}`,
+  );
+  const row = result.rows[0];
+  if (!row) throw new Error(`service ${serviceId} not seeded`);
+  return row;
+}
+
 async function countRows(db: Database, query: ReturnType<typeof sql>): Promise<number> {
   const result = await db.execute<{ count: number }>(query);
   return result.rows[0]?.count ?? -1;
@@ -287,6 +313,10 @@ describe('migration 0013 on a fresh database (16-06 A2-A4, H3)', () => {
   const db = (): Database => {
     if (fixture === undefined) throw new Error('fixture not started');
     return fixture.db;
+  };
+  const connectionString = (): string => {
+    if (fixture === undefined) throw new Error('fixture not started');
+    return fixture.connectionString;
   };
 
   beforeAll(async () => {
@@ -491,16 +521,39 @@ describe('migration 0013 on a fresh database (16-06 A2-A4, H3)', () => {
     );
   });
 
-  it('deleting a service removes its webhook credential through the service-credential path (A3)', async () => {
+  it('deleteService removes the webhook secret credential with the service (A3)', async () => {
     const serviceId = await seedService(db());
     const credentialId = await enableWebhook(db(), serviceId, hookId());
+    const scope = await serviceScope(db(), serviceId);
+    const { deleteService } = await loadDeletePaths(connectionString());
 
-    // deleteService (D-17): the service row first, then deleteCredentialRows on its credential ids.
-    await db().transaction(async (tx) => {
-      await tx.delete(services).where(eq(services.id, serviceId));
-      await tx.delete(credentials).where(inArray(credentials.id, [credentialId]));
-    });
+    const result = await deleteService(
+      { db: db(), now: () => new Date(), events: noopServerEventPublisher, panelPorts: [] },
+      { actor: { type: 'system' }, projectId: scope.projectId, serviceId, confirmName: scope.name },
+    );
 
+    expect(result).toEqual({ ok: true, serviceId });
+    expect(await countRows(db(), sql`select count(*)::int as count from services where id = ${serviceId}`)).toBe(0);
+    expect(
+      await countRows(db(), sql`select count(*)::int as count from credentials where id = ${credentialId}`),
+    ).toBe(0);
+  });
+
+  it('deleteProject removes the webhook secret credential of every service it deletes (A3)', async () => {
+    const serviceId = await seedService(db());
+    const credentialId = await enableWebhook(db(), serviceId, hookId());
+    const scope = await serviceScope(db(), serviceId);
+    await db().execute(sql`update projects set archived_at = now() where id = ${scope.projectId}`);
+    const project = await db().execute<{ name: string }>(sql`select name from projects where id = ${scope.projectId}`);
+    const { deleteProject } = await loadDeletePaths(connectionString());
+
+    const result = await deleteProject(
+      { db: db(), now: () => new Date() },
+      { actor: { type: 'system' }, projectId: scope.projectId, confirmName: project.rows[0]?.name ?? '' },
+    );
+
+    expect(result).toEqual({ ok: true, projectId: scope.projectId });
+    expect(await countRows(db(), sql`select count(*)::int as count from services where id = ${serviceId}`)).toBe(0);
     expect(
       await countRows(db(), sql`select count(*)::int as count from credentials where id = ${credentialId}`),
     ).toBe(0);
