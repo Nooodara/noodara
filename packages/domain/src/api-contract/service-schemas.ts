@@ -2,19 +2,48 @@
 // purpose: only the shape of the envelope is checked here, and every service field (including an
 // unknown one such as `buildArgs` or `env`) reaches `@noodara/domain`'s validators, which reject
 // it by name as a 422 (H1). The route body cap bounds the work before them.
-import { z } from 'zod';
-import { SERVICE_STATUSES } from '../deployment/index.js';
+import { z } from "zod";
+import { SERVICE_STATUSES } from "../deployment/index.js";
 
 /** Route-level body cap: a service body is a handful of short strings and two ports. */
 export const SERVICE_ROUTE_BODY_LIMIT_BYTES = 16 * 1024;
 
-export const ServiceParamsSchema = z.object({ projectId: z.uuid(), serviceId: z.uuid() });
+export const ServiceParamsSchema = z.object({
+  projectId: z.uuid(),
+  serviceId: z.uuid(),
+});
 
 /** `environmentId` picks the target; the rest goes to `validateServiceCreateInput` untouched. */
-export const CreateServiceBodySchema = z.looseObject({ environmentId: z.uuid() });
+export const CreateServiceBodySchema = z.looseObject({
+  environmentId: z.uuid(),
+});
 
 /** Every key goes to `validateServiceEditInput`, which also rejects `serverId` (no moves). */
 export const UpdateServiceBodySchema = z.looseObject({});
+
+const HealthcheckTimingShape = {
+  probeTimeoutS: z.number().int(),
+  intervalS: z.number().int(),
+  retries: z.number().int(),
+  startPeriodS: z.number().int(),
+};
+
+/** Shape of a stored healthcheck (16-03); bounds are enforced by `validateHealthcheckConfig`. */
+export const HealthcheckConfigSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("http"),
+    path: z.string(),
+    port: z.number().int(),
+    expectedStatuses: z.array(z.number().int()),
+    ...HealthcheckTimingShape,
+  }),
+  z.object({
+    type: z.literal("tcp"),
+    port: z.number().int(),
+    ...HealthcheckTimingShape,
+  }),
+  z.object({ type: z.literal("container"), ...HealthcheckTimingShape }),
+]);
 
 export const ServiceViewSchema = z.object({
   id: z.uuid(),
@@ -22,7 +51,7 @@ export const ServiceViewSchema = z.object({
   environmentId: z.uuid(),
   serverId: z.uuid(),
   name: z.string(),
-  sourceType: z.enum(['git', 'image']),
+  sourceType: z.enum(["git", "image"]),
   repositoryUrl: z.string().nullable(),
   branch: z.string().nullable(),
   buildContext: z.string().nullable(),
@@ -36,7 +65,9 @@ export const ServiceViewSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const ListServicesResponseSchema = z.object({ items: z.array(ServiceViewSchema) });
+export const ListServicesResponseSchema = z.object({
+  items: z.array(ServiceViewSchema),
+});
 
 export const UpdateServiceResponseSchema = z.object({
   service: ServiceViewSchema,
@@ -46,7 +77,7 @@ export const UpdateServiceResponseSchema = z.object({
 
 /** 422 for a domain validation failure: `reason` is the validator's own code. */
 export const ServiceInputErrorBodySchema = z.object({
-  error: z.literal('SERVICE_INPUT_INVALID'),
+  error: z.literal("SERVICE_INPUT_INVALID"),
   message: z.string(),
   reason: z.string(),
 });
@@ -56,9 +87,9 @@ export const ServiceInputErrorBodySchema = z.object({
 // bounded by the service's validators (fixed messages that never quote the value, H3).
 // ---------------------------------------------------------------------------------------------
 
-export const RepositoryCredentialBodySchema = z.discriminatedUnion('kind', [
-  z.strictObject({ kind: z.literal('deploy_key') }),
-  z.strictObject({ kind: z.literal('https_token'), token: z.string() }),
+export const RepositoryCredentialBodySchema = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("deploy_key") }),
+  z.strictObject({ kind: z.literal("https_token"), token: z.string() }),
 ]);
 
 export const RegistryCredentialBodySchema = z.strictObject({
@@ -68,7 +99,7 @@ export const RegistryCredentialBodySchema = z.strictObject({
 });
 
 const CredentialSummarySchema = z.object({
-  type: z.enum(['git_deploy_key', 'git_https_token', 'registry_password']),
+  type: z.enum(["git_deploy_key", "git_https_token", "registry_password"]),
   /** The deploy key's public half; `null` for every other type. */
   publicKey: z.string().nullable(),
 });
@@ -81,7 +112,7 @@ export const ServiceCredentialsResponseSchema = z.object({
 
 /** 422 for a credential that failed validation: `reason` names the rule, never the value. */
 export const ServiceCredentialErrorBodySchema = z.object({
-  error: z.literal('SERVICE_CREDENTIAL_INVALID'),
+  error: z.literal("SERVICE_CREDENTIAL_INVALID"),
   message: z.string(),
   reason: z.string(),
 });
@@ -93,7 +124,7 @@ export const RuntimeLogsQuerySchema = z.object({
 });
 
 const RuntimeLogLineSchema = z.object({
-  stream: z.enum(['stdout', 'stderr']),
+  stream: z.enum(["stdout", "stderr"]),
   timestamp: z.string().nullable(),
   text: z.string(),
 });

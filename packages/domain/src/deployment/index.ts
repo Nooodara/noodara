@@ -12,3 +12,4 @@ export * from './log-chunker.js';
 export * from './log-sanitize.js';
 export * from './deployment-steps.js';
 export * from './stale-queued.js';
+export * from './healthcheck.js';
