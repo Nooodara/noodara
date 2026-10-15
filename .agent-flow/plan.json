@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-15T01:34:04.019Z",
+  "updatedAt": "2026-10-15T01:34:04.182Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -5649,13 +5649,17 @@
             "apps/control-plane/src/db/schema/webhook-deliveries.ts",
             "apps/control-plane/src/db/schema/index.ts",
             "apps/control-plane/src/db/migrations/",
-            "tests/integration/db/"
+            "tests/integration/db/",
+            "apps/control-plane/src/deploy/deployment-store.test.ts",
+            "apps/control-plane/src/services/deployment-services.test.ts",
+            "apps/control-plane/src/services/service-services.test.ts",
+            "apps/control-plane/src/db/schema/credentials.ts"
           ],
           "wave": 6,
           "dependsOn": [
             "16-05"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -5666,7 +5670,7 @@
           "acceptance": [
             {
               "id": "A1",
-              "text": "The enum values and index recreation from 16-02 (migrations 0011/0012) are untouched; this task's migration (0013) only adds columns and tables",
+              "text": "The enum values and index recreation from 16-02 (migrations 0011/0012) are untouched; this task's migration (0013) only adds columns and tables; it may also add the credential_type value 'webhook_secret' with ADD VALUE IF NOT EXISTS (not used in the same transaction)",
               "proof": "it-db"
             },
             {
@@ -5676,7 +5680,7 @@
             },
             {
               "id": "A3",
-              "text": "services gains healthcheck jsonb (null = container), auto_rollback default true, image_retention default 3, webhook hook id (unique, random) with an encrypted-secret credential FK that cascades, and pending-trigger columns",
+              "text": "services gains healthcheck jsonb (null = container), auto_rollback default true, image_retention default 3, webhook hook id (unique, random) with a webhook_secret_credential_id FK to credentials that is ON DELETE SET NULL (deleting a credential never deletes a service); deleting a service deletes its webhook credential through the same path as its other credentials, and pending-trigger columns",
               "proof": "it-db"
             },
             {
