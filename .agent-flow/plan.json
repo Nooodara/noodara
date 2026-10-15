@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-15T00:43:35.094Z",
+  "updatedAt": "2026-10-15T01:16:13.992Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -5381,13 +5381,14 @@
             "apps/control-plane/src/db/schema/deployments.ts",
             "apps/control-plane/src/db/schema/deployment-log-chunks.ts",
             "tests/integration/db/",
-            "apps/control-plane/src/deploy/deploy-worker.test.ts"
+            "apps/control-plane/src/deploy/deploy-worker.test.ts",
+            "tests/integration/deploy-engine/runtime-pipeline.test.ts"
           ],
           "wave": 2,
           "dependsOn": [
             "16-01"
           ],
-          "status": "active",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",

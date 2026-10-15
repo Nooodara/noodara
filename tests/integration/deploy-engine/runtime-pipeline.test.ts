@@ -534,7 +534,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       expect(logConfig.Config['max-file']).toBeTruthy();
       expect(await rootOut(['curl', '-fsS', `http://127.0.0.1:${String(PORTS.app)}/health`])).toBe('ok');
       // A3: every edge through the state machine, the cache recomputed and published.
-      expectStatusPath(first.id, ['BUILDING', 'DEPLOYING', 'SUCCESS']);
+      expectStatusPath(first.id, ['BUILDING', 'DEPLOYING', 'HEALTHCHECK', 'SUCCESS']);
       // 13-03 A4: four ordered steps, each with a duration, chained boundary to boundary.
       const steps = stepsOf(first);
       expect(steps.map((step) => [step.name, step.state])).toEqual([
@@ -574,7 +574,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       // A5: the superseded own image is gone once the new container runs; identity by layers, not .Id.
       expect(await imageExists(firstImage)).toBe(false);
       expect(await containerImageLayers(container)).toEqual(await layersOf(['docker', 'image', 'inspect', secondImage]));
-      expectStatusPath(second.id, ['BUILDING', 'DEPLOYING', 'SUCCESS']);
+      expectStatusPath(second.id, ['BUILDING', 'DEPLOYING', 'HEALTHCHECK', 'SUCCESS']);
       await expectWorkspaceGone(second.id);
     }, CASE_TIMEOUT_MS);
 
@@ -667,7 +667,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       const done = await deploy(serviceId);
       expect({ status: done.status, errorCode: done.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
       expect(done.commitSha).toBeNull();
-      expectStatusPath(done.id, ['BUILDING', 'DEPLOYING', 'SUCCESS']);
+      expectStatusPath(done.id, ['BUILDING', 'DEPLOYING', 'HEALTHCHECK', 'SUCCESS']);
       // 13-03: an image source pulls and skips the build.
       expect(stepsOf(done).map((step) => [step.name, step.state])).toEqual([
         ['pull', 'success'],
