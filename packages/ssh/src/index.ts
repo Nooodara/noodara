@@ -46,7 +46,13 @@ export type {
   StreamOptions,
   StreamResult,
 } from './ssh-port.js';
-export type { DeployCommandName, RemoteCommand } from './commands/index.js';
+export type {
+  ContainerIp,
+  DeployCommandName,
+  HttpHealthcheckConfig,
+  RemoteCommand,
+  TcpHealthcheckConfig,
+} from './commands/index.js';
 export {
   ASKPASS_SCRIPT_CONTENT,
   DEPLOY_COMMAND_NAMES,
@@ -79,6 +85,23 @@ export {
   supervise,
   writeAskpassFile,
   writeSecretFile,
+  // 17-01 (ADR 0010): probes, the -prev container and per-service images. PROBE_SCRIPTS stays
+  // internal like SHELL_SCRIPTS.
+  PREV_STEP_TIMEOUT_SECONDS,
+  PROBE_OUTPUT_MAX_BYTES,
+  dockerInspectNetworks,
+  dockerListServiceImages,
+  dockerNetworkConnect,
+  dockerRemovePrevious,
+  dockerRemoveServiceImage,
+  dockerRenameFromPrevious,
+  dockerRenameToPrevious,
+  dockerStartPrevious,
+  dockerStopPrevious,
+  previousContainerNameFor,
+  probeHttp,
+  probeTcp,
+  validateContainerIp,
 } from './commands/index.js';
 export { classifyGitError } from './git-error-classifier.js';
 export { classifyDockerError } from './docker-error-classifier.js';

@@ -8,7 +8,26 @@ import {
   DEPLOY_COMMAND_NAMES,
   type DeployCommandName,
 } from "./deploy-allowlist.js";
-import { dockerLogs } from "./docker-deploy.js";
+import {
+  validateHealthcheckConfig,
+  type HealthcheckConfig,
+} from "@noodara/domain/deployment";
+import {
+  dockerInspectNetworks,
+  dockerLogs,
+  dockerNetworkConnect,
+  dockerRemovePrevious,
+  dockerRenameFromPrevious,
+  dockerRenameToPrevious,
+  dockerStartPrevious,
+  dockerStopPrevious,
+  probeHttp,
+  probeTcp,
+  validateContainerIp,
+  PREV_STEP_TIMEOUT_SECONDS,
+  type HttpHealthcheckConfig,
+  type TcpHealthcheckConfig,
+} from "./docker-deploy.js";
 import {
   createRemoteCommand,
   renderRemoteCommand,
@@ -49,6 +68,17 @@ const EXPECTED_DEPLOY_COMMAND_NAMES: readonly DeployCommandName[] = [
   "docker.ps",
   "docker.kill",
   "docker.builder_prune",
+  "docker.inspect_networks",
+  "docker.network_connect",
+  "docker.rename_to_prev",
+  "docker.rename_from_prev",
+  "docker.start_prev",
+  "docker.stop_prev",
+  "docker.remove_prev",
+  "docker.image_list_service",
+  "docker.image_remove_service",
+  "probe.http",
+  "probe.tcp",
 ];
 
 // ADR 0008 text, copied by hand. G1: secret file and workspace; G2: launcher and group kill.
@@ -73,9 +103,9 @@ const ALLOWED_PARAMETERS = new Set([
 ]);
 
 describe("DEPLOY_COMMAND_NAMES", () => {
-  it("is exactly the 29 expected names, in order", () => {
+  it("is exactly the 40 expected names, in order", () => {
     expect(DEPLOY_COMMAND_NAMES).toEqual(EXPECTED_DEPLOY_COMMAND_NAMES);
-    expect(DEPLOY_COMMAND_NAMES).toHaveLength(29);
+    expect(DEPLOY_COMMAND_NAMES).toHaveLength(40);
   });
 
   it("is frozen", () => {
@@ -275,4 +305,92 @@ describe("supervised docker.logs --follow (12-16, ADR 0008 G2)", () => {
       ),
     ).toThrow(/cannot run under process.supervise/);
   });
+});
+
+describe("17-01 H1: probe and -prev templates carry their own hard time cap", () => {
+  const id = "0f0e0d0c-0b0a-4908-8706-050403020100";
+  const sid = containerNameFor(id);
+  const ip = validateContainerIp("172.18.0.2");
+  const ws = deployWorkspaceFor(id);
+  if (!sid.ok || !ip.ok || !ws.ok) throw new Error("fixtures must be valid");
+  const serviceId = id as Parameters<typeof dockerRenameToPrevious>[0];
+  const pidFile = ws.value.pidFile("build");
+
+  function config(fields: Record<string, unknown>): HealthcheckConfig {
+    const result = validateHealthcheckConfig({
+      probeTimeoutS: 7,
+      intervalS: 5,
+      retries: 3,
+      startPeriodS: 0,
+      ...fields,
+    });
+    if (!result.ok) throw new Error("fixture config must be valid");
+    return result.value;
+  }
+
+  const probes = [
+    probeHttp({
+      ip: ip.value,
+      config: config({
+        type: "http",
+        path: "/health",
+        port: 3000,
+      }) as HttpHealthcheckConfig,
+    }),
+    probeTcp({
+      ip: ip.value,
+      config: config({ type: "tcp", port: 5432 }) as TcpHealthcheckConfig,
+    }),
+  ];
+  const prevSteps = [
+    dockerRenameToPrevious(serviceId),
+    dockerRenameFromPrevious(serviceId),
+    dockerStartPrevious(serviceId),
+    dockerRemovePrevious(serviceId),
+    dockerNetworkConnect(serviceId),
+    dockerInspectNetworks({ serviceId, container: "previous" }),
+  ];
+
+  it.each(probes.map((c) => [c.name, c] as const))(
+    "%s runs `timeout -k 1 <probeTimeoutS>` under an empty env, before bash",
+    (_, command) => {
+      expect(command.argv.slice(0, 7)).toEqual([
+        "env",
+        "-i",
+        "PATH=/usr/bin:/bin",
+        "timeout",
+        "-k",
+        "1",
+        "7",
+      ]);
+    },
+  );
+
+  it.each(prevSteps.map((c) => [c.name, c] as const))(
+    "%s starts with `timeout -k 1 <fixed step budget>`",
+    (_, command) => {
+      expect(command.argv.slice(0, 4)).toEqual([
+        "timeout",
+        "-k",
+        "1",
+        String(PREV_STEP_TIMEOUT_SECONDS),
+      ]);
+    },
+  );
+
+  it("docker.stop_prev adds its stop timeout to the step budget", () => {
+    expect(
+      dockerStopPrevious({ serviceId, timeoutSeconds: 20 }).argv.slice(0, 4),
+    ).toEqual(["timeout", "-k", "1", String(20 + PREV_STEP_TIMEOUT_SECONDS)]);
+  });
+
+  it.each([...probes, ...prevSteps].map((c) => [c.name, c] as const))(
+    "%s is bounded, so it never runs under process.supervise",
+    (_, command) => {
+      expect(command.supervisable).toBe(false);
+      expect(() => supervise(pidFile, command)).toThrow(
+        /cannot run under process.supervise/,
+      );
+    },
+  );
 });

@@ -735,6 +735,23 @@ describe('@noodara/ssh public surface (T-2-42)', () => {
     'dockerPs',
     'dockerKill',
     'dockerBuilderPrune',
+    // 17-01 (ADR 0010): probes, the -prev container and per-service images; PROBE_SCRIPTS stays
+    // internal like SHELL_SCRIPTS.
+    'PREV_STEP_TIMEOUT_SECONDS',
+    'PROBE_OUTPUT_MAX_BYTES',
+    'dockerInspectNetworks',
+    'dockerListServiceImages',
+    'dockerNetworkConnect',
+    'dockerRemovePrevious',
+    'dockerRemoveServiceImage',
+    'dockerRenameFromPrevious',
+    'dockerRenameToPrevious',
+    'dockerStartPrevious',
+    'dockerStopPrevious',
+    'previousContainerNameFor',
+    'probeHttp',
+    'probeTcp',
+    'validateContainerIp',
   ] as const;
 
   it('exports exactly the deliberate public surface, no internal module leaking through', async () => {

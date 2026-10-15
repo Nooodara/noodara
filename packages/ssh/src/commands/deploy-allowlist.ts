@@ -31,6 +31,18 @@ export const DEPLOY_COMMAND_NAMES = Object.freeze([
   'docker.ps',
   'docker.kill',
   'docker.builder_prune',
+  // 17-01 (ADR 0010): the -prev container, per-service images and healthcheck probes.
+  'docker.inspect_networks',
+  'docker.network_connect',
+  'docker.rename_to_prev',
+  'docker.rename_from_prev',
+  'docker.start_prev',
+  'docker.stop_prev',
+  'docker.remove_prev',
+  'docker.image_list_service',
+  'docker.image_remove_service',
+  'probe.http',
+  'probe.tcp',
 ] as const);
 
 export type DeployCommandName = (typeof DEPLOY_COMMAND_NAMES)[number];

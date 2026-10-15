@@ -103,14 +103,15 @@ export interface StopContainerInput extends ServiceRef {
   readonly timeoutSeconds: number;
 }
 
-type DockerOperation = Parameters<typeof classifyDockerError>[0]['operation'];
+// Internal helpers shared with runtime-operations.ts; index.ts never re-exports them.
+export type DockerOperation = Parameters<typeof classifyDockerError>[0]['operation'];
 type Completed = Extract<StepOutcome, { kind: 'completed' }>;
 
 // `docker network create` on an existing name (Docker 24-29 daemon wording).
 const NETWORK_EXISTS_PATTERN = /network with name \S+ already exists/;
 
 /** `withSignal: false` for cleanup that must run even after the caller aborted. */
-function stepContext(context: DockerStepContext, withSignal = true): StepContext {
+export function stepContext(context: DockerStepContext, withSignal = true): StepContext {
   return {
     session: context.session,
     limits: context.limits,
@@ -119,7 +120,7 @@ function stepContext(context: DockerStepContext, withSignal = true): StepContext
   };
 }
 
-function classify(
+export function classify(
   context: DockerStepContext,
   operation: DockerOperation,
   result: StreamResult,
@@ -164,7 +165,7 @@ async function observe<T>(
   return read(outcome);
 }
 
-function done<T>(value: T, result: StreamResult): StepResult<T> {
+export function done<T>(value: T, result: StreamResult): StepResult<T> {
   return { ok: true, value, result };
 }
 

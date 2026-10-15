@@ -24,6 +24,7 @@ import {
   type ResourceId,
   type ValidationResult,
 } from '@noodara/domain/validators';
+import { validateHealthcheckConfig } from '@noodara/domain/deployment';
 import { describe, expect, it } from 'vitest';
 import { ADVERSARIAL_VALUES, shellWords } from '../testing/shell-round-trip.js';
 import * as commands from './index.js';
@@ -45,6 +46,25 @@ import {
   dockerRestart,
   dockerStart,
   dockerStop,
+  dockerInspectNetworks,
+  dockerListServiceImages,
+  dockerNetworkConnect,
+  dockerRemovePrevious,
+  dockerRemoveServiceImage,
+  dockerRenameFromPrevious,
+  dockerRenameToPrevious,
+  dockerStartPrevious,
+  dockerStopPrevious,
+  previousContainerNameFor,
+  probeHttp,
+  probeTcp,
+  validateContainerIp,
+  PREV_STEP_TIMEOUT_SECONDS,
+  PROBE_OUTPUT_MAX_BYTES,
+  PROBE_SCRIPTS,
+  type ContainerIp,
+  type HttpHealthcheckConfig,
+  type TcpHealthcheckConfig,
 } from './docker-deploy.js';
 import { renderRemoteCommand, type RemoteCommand } from './remote-command.js';
 
@@ -429,6 +449,21 @@ function everyDockerCommand(values: {
   ];
 }
 
+/** 17-01: every service-scoped docker.* template, derived from a service id only. */
+function everyServiceScopedDockerCommand(id: ResourceId): RemoteCommand[] {
+  return [
+    dockerInspectNetworks({ serviceId: id, container: 'current' }),
+    dockerNetworkConnect(id),
+    dockerRenameToPrevious(id),
+    dockerRenameFromPrevious(id),
+    dockerStartPrevious(id),
+    dockerStopPrevious({ serviceId: id, timeoutSeconds: 10 }),
+    dockerRemovePrevious(id),
+    dockerListServiceImages(id),
+    dockerRemoveServiceImage({ serviceId: id, deploymentId }),
+  ];
+}
+
 const FORBIDDEN_EXACT = new Set(['-e', '-v', '--pid', '--volume', '--mount', '--privileged']);
 const FORBIDDEN_PREFIXES = [
   '--build-arg',
@@ -459,7 +494,7 @@ describe('forbidden-flag guard (DEP-08, D13, T-11-36)', () => {
     path: contextPath,
     target,
     id: serviceId,
-  });
+  }).concat(everyServiceScopedDockerCommand(serviceId));
 
   it('covers every docker.* deploy template', () => {
     const names = new Set(representative.map((command) => command.name));
@@ -685,9 +720,9 @@ describe('probeHttp / probeTcp (ADR 0010 A1/H1)', () => {
   });
 
   it('keeps a validated path with a query string as one literal word', () => {
-    const command = probeHttp({ ip, config: httpConfig({ path: '/healthz?full=1&x=%20' }) });
+    const command = probeHttp({ ip, config: httpConfig({ path: '/healthz?full=1,x=%20+y=@' }) });
 
-    expect(command.argv.at(-1)).toBe('/healthz?full=1&x=%20');
+    expect(command.argv.at(-1)).toBe('/healthz?full=1,x=%20+y=@');
     expect(shellWords(renderRemoteCommand(command))).toEqual(command.argv);
   });
 
