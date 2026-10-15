@@ -5931,13 +5931,15 @@
         },
         {
           "id": "17-03",
-          "title": "Runtime: automatic rollback (ROLLING_BACK → ROLLED_BACK | FAILED)",
+          "title": "Rollback plumbing: activity action, ROLLED_BACK in store and worker, rollback inputs in deploy-target",
           "scope": [
-            "apps/control-plane/src/deploy/run-deployment.ts",
-            "apps/control-plane/src/deploy/run-deployment.test.ts",
+            "packages/domain/src/activity/activity-event.ts",
+            "packages/domain/src/activity/activity-event.test.ts",
+            "packages/domain/src/activity/deploy-engine-actions.test.ts",
+            "apps/web/src/lib/activity-copy.ts",
+            "apps/web/src/lib/activity-copy.test.ts",
             "apps/control-plane/src/deploy/deployment-store.ts",
-            "apps/control-plane/src/activity/",
-            "tests/integration/deploy-engine/runtime-rollback.test.ts",
+            "apps/control-plane/src/deploy/deployment-store.test.ts",
             "apps/control-plane/src/deploy/deploy-worker.ts",
             "apps/control-plane/src/deploy/deploy-worker.test.ts",
             "apps/control-plane/src/deploy/deploy-target.ts",
@@ -5952,7 +5954,59 @@
             "test",
             "typecheck",
             "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "P1",
+              "text": "deployment.rollback_started is a closed-vocabulary deployment action: buildActivityEvent accepts it with only non-sensitive metadata (deploymentId, serviceId, target deploymentId) and the web activity copy has an entry for it",
+              "proof": "test"
+            },
+            {
+              "id": "P2",
+              "text": "The deployment store finishes a deployment as ROLLED_BACK only through the domain transition from ROLLING_BACK, and keeps the error code and message for both FAILED and ROLLED_BACK",
+              "proof": "test"
+            },
+            {
+              "id": "P3",
+              "text": "The worker's job outcome includes ROLLED_BACK, treats it as terminal and never retries it",
+              "proof": "test"
+            },
+            {
+              "id": "P4",
+              "text": "deploy-target loads services.autoRollback (default true) and the service's latest SUCCESS deployment other than the current one as {id, runtimeConfig}; an invalid snapshot gives runtimeConfig null and no previous success gives null",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "17-07",
+          "title": "Runtime: automatic rollback (ROLLING_BACK → ROLLED_BACK | FAILED)",
+          "scope": [
+            "apps/control-plane/src/deploy/run-deployment.ts",
+            "apps/control-plane/src/deploy/run-deployment.test.ts",
+            "apps/control-plane/src/activity/",
+            "apps/control-plane/src/deploy/deploy-target.ts",
+            "apps/control-plane/src/deploy/deploy-worker.ts",
+            "tests/integration/deploy-engine/runtime-rollback.test.ts",
+            "tests/integration/deploy-engine/runtime-healthcheck.test.ts"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "17-03"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
             "boundaries",
+            "it-healthcheck",
             "it-rollback"
           ],
           "acceptance": [
@@ -5990,6 +6044,11 @@
               "id": "H2",
               "text": "A rollback triggered by a deployment that was itself CANCELLED or timed out in BUILDING never fires (auto-rollback applies only to DEPLOYING/HEALTHCHECK failures), tested per source state",
               "proof": "test"
+            },
+            {
+              "id": "A6",
+              "text": "runtime-healthcheck integration cases that expect FAILED set autoRollback:false and still pass",
+              "proof": "it-healthcheck"
             }
           ],
           "waives": [
@@ -6008,9 +6067,9 @@
             "apps/control-plane/src/deploy/deploy-worker.test.ts",
             "tests/integration/deploy-engine/runtime-retention.test.ts"
           ],
-          "wave": 4,
+          "wave": 5,
           "dependsOn": [
-            "17-03"
+            "17-07"
           ],
           "status": "pending",
           "gates": [
@@ -6060,7 +6119,7 @@
             "tests/integration/routes/",
             "tests/integration/deploy-engine/runtime-manual-rollback.test.ts"
           ],
-          "wave": 5,
+          "wave": 6,
           "dependsOn": [
             "17-04"
           ],
@@ -6127,7 +6186,7 @@
             "tests/integration/deploy-engine/runtime-cancel.test.ts",
             "tests/integration/deploy-engine/runtime-faults.test.ts"
           ],
-          "wave": 6,
+          "wave": 7,
           "dependsOn": [
             "17-05"
           ],
