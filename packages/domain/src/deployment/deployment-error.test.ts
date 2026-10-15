@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { DEPLOYMENT_ERROR_CODES, isDeploymentErrorCode } from './deployment-error.js';
+import {
+  DEPLOYMENT_ERROR_CODES,
+  V03_DEPLOYMENT_ERROR_CODES,
+  V03_DEPLOYMENT_ERROR_MESSAGES,
+  isDeploymentErrorCode,
+} from './deployment-error.js';
 
 describe('DEPLOYMENT_ERROR_CODES', () => {
   it('is the closed vocabulary, in order (the pg enum is derived from it)', () => {
@@ -28,12 +33,17 @@ describe('DEPLOYMENT_ERROR_CODES', () => {
       'WORKER_CRASHED',
       'ENQUEUE_FAILED',
       'WORKSPACE_UNAVAILABLE',
+      'HEALTHCHECK_FAILED',
+      'HEALTHCHECK_TIMEOUT',
+      'ROLLBACK_FAILED',
+      'ROLLBACK_TARGET_UNAVAILABLE',
+      'COMMIT_NOT_FOUND',
     ]);
   });
 
-  it('has 24 codes and no duplicates', () => {
-    expect(DEPLOYMENT_ERROR_CODES.length).toBe(24);
-    expect(new Set(DEPLOYMENT_ERROR_CODES).size).toBe(24);
+  it('has 29 codes and no duplicates', () => {
+    expect(DEPLOYMENT_ERROR_CODES.length).toBe(29);
+    expect(new Set(DEPLOYMENT_ERROR_CODES).size).toBe(29);
   });
 
   it('is frozen', () => {
@@ -51,5 +61,43 @@ describe('isDeploymentErrorCode', () => {
 
   it.each(['build_failed', '', 'AUTH_FAILED', 'TIMEOUT', ' BUILD_FAILED'])('rejects %j', (value) => {
     expect(isDeploymentErrorCode(value)).toBe(false);
+  });
+});
+
+describe('v0.3 error codes (16-02)', () => {
+  it('adds the healthcheck, rollback and commit codes at the end (plain ADD VALUE)', () => {
+    expect([...V03_DEPLOYMENT_ERROR_CODES]).toEqual([
+      'HEALTHCHECK_FAILED',
+      'HEALTHCHECK_TIMEOUT',
+      'ROLLBACK_FAILED',
+      'ROLLBACK_TARGET_UNAVAILABLE',
+      'COMMIT_NOT_FOUND',
+    ]);
+    expect(DEPLOYMENT_ERROR_CODES.slice(-5)).toEqual([...V03_DEPLOYMENT_ERROR_CODES]);
+    expect(Object.isFrozen(V03_DEPLOYMENT_ERROR_CODES)).toBe(true);
+    expect(Object.isFrozen(V03_DEPLOYMENT_ERROR_MESSAGES)).toBe(true);
+  });
+
+  it('every v0.3 code has exactly one message', () => {
+    expect(Object.keys(V03_DEPLOYMENT_ERROR_MESSAGES).sort()).toEqual(
+      [...V03_DEPLOYMENT_ERROR_CODES].sort(),
+    );
+  });
+
+  it.each(V03_DEPLOYMENT_ERROR_CODES)('%s has an actionable message without remote detail', (code) => {
+    const message = V03_DEPLOYMENT_ERROR_MESSAGES[code];
+    expect(isDeploymentErrorCode(code)).toBe(true);
+    // Actionable: states what happened, then what to do next.
+    expect(message).toMatch(/^[A-Z].+\. .+\.$/);
+    expect(message).toMatch(/\b(Check|deploy|Deploy|redeploy|raise)\b/);
+    // No infrastructure detail: no IPs, container names, paths, exit codes or code names.
+    expect(message).not.toMatch(/\d+\.\d+\.\d+\.\d+/);
+    expect(message).not.toMatch(/noodara-|-prev|\/|exit \d+|[A-Z]{2,}_[A-Z]+/);
+    expect(message.length).toBeLessThanOrEqual(160);
+  });
+
+  it('messages are distinct', () => {
+    const messages = Object.values(V03_DEPLOYMENT_ERROR_MESSAGES);
+    expect(new Set(messages).size).toBe(messages.length);
   });
 });
