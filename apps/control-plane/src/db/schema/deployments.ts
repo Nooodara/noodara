@@ -16,7 +16,7 @@ import {
   DEPLOYMENT_ERROR_CODES,
   DEPLOYMENT_STATUSES,
   DEPLOYMENT_TRIGGERS,
-  NON_TERMINAL_DEPLOYMENT_STATUSES,
+  type DeploymentStatus,
 } from "@noodara/domain/deployment";
 import { services } from "./services.js";
 
@@ -31,10 +31,12 @@ export const deploymentErrorCodeEnum = pgEnum("deployment_error_code", [
   ...DEPLOYMENT_ERROR_CODES,
 ]);
 
-// Compile-time constant tuple, never input: safe to inline as SQL literals.
-const nonTerminalStatusList = sql.raw(
-  NON_TERMINAL_DEPLOYMENT_STATUSES.map((status) => `'${status}'`).join(", "),
-);
+// The DB sort order partitions the enum: every non-terminal status sorts before this one, every
+// terminal one at or after it (migration 0011 adds HEALTHCHECK/ROLLING_BACK BEFORE 'SUCCESS').
+// A literal IN list cannot name values added in the same migrator transaction (55P04), so the
+// one-active predicate is `status < 'SUCCESS'`; tests/integration/db proves it equals NON_TERMINAL.
+const FIRST_TERMINAL_STATUS: DeploymentStatus = "SUCCESS";
+const firstTerminalStatus = sql.raw(`'${FIRST_TERMINAL_STATUS}'`);
 
 // Append-only attempts: a redeploy is a new row. ROADMAP D16: at most one non-terminal
 // deployment per service, enforced by the partial unique index. v0.3 columns ship nullable (D4).
@@ -78,7 +80,7 @@ export const deployments = pgTable(
   (table) => [
     uniqueIndex("deployments_service_active_unique_idx")
       .on(table.serviceId)
-      .where(sql`${table.status} IN (${nonTerminalStatusList})`),
+      .where(sql`${table.status} < ${firstTerminalStatus}`),
     index("deployments_service_created_at_idx").on(
       table.serviceId,
       table.createdAt.desc(),

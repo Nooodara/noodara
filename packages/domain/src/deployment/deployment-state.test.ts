@@ -488,21 +488,6 @@ function dbEnumValues(typeName: string): Set<string> {
   return values;
 }
 
-// Values this task adds to the domain whose `ADD VALUE` migration lands in 16-06 (migration 0011).
-// The test asserts this list is EXACTLY what the migrations still miss, so 16-06 must empty it.
-const PENDING_MIGRATION_0011: Readonly<Record<string, readonly string[]>> = {
-  deployment_status: ['HEALTHCHECK', 'ROLLING_BACK', 'ROLLED_BACK'],
-  deployment_trigger: ['webhook', 'rollback'],
-  deployment_log_phase: ['healthcheck', 'rollback'],
-  deployment_error_code: [
-    'HEALTHCHECK_FAILED',
-    'HEALTHCHECK_TIMEOUT',
-    'ROLLBACK_FAILED',
-    'ROLLBACK_TARGET_UNAVAILABLE',
-    'COMMIT_NOT_FOUND',
-  ],
-};
-
 describe('H2: no drift between domain, api-contract and DB enums', () => {
   const statusShape = DeploymentViewSchema.shape;
   const tuples = [
@@ -521,12 +506,12 @@ describe('H2: no drift between domain, api-contract and DB enums', () => {
   });
 
   it.each(tuples)(
-    '%s: every domain value exists in the DB enum (or is pending migration 0011)',
+    '%s: the DB enum holds exactly the domain values',
     (typeName, domain) => {
       const db = dbEnumValues(typeName);
       expect(db.size).toBeGreaterThan(0);
       const missing = domain.filter((value: string) => !db.has(value));
-      expect(missing).toEqual(PENDING_MIGRATION_0011[typeName] ?? []);
+      expect(missing).toEqual([]);
       const domainSet: ReadonlySet<string> = new Set(domain);
       expect([...db].filter((value) => !domainSet.has(value))).toEqual([]);
     },

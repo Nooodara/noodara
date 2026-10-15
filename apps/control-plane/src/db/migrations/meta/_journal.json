@@ -78,6 +78,20 @@
       "when": 1791961021130,
       "tag": "0010_phase14_workspace_unavailable_code",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792026245627,
+      "tag": "0011_phase16_v03_enum_values",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792026245628,
+      "tag": "0012_phase16_active_deployment_index",
+      "breakpoints": true
     }
   ]
 }
