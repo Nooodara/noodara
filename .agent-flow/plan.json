@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-15T21:29:31.062Z",
+  "updatedAt": "2026-10-15T21:29:37.900Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -6213,13 +6213,23 @@
             "apps/control-plane/src/deploy/deploy-sweep.test.ts",
             "apps/control-plane/src/deploy/run-deployment.ts",
             "tests/integration/deploy-engine/runtime-cancel.test.ts",
-            "tests/integration/deploy-engine/runtime-faults.test.ts"
+            "tests/integration/deploy-engine/runtime-faults.test.ts",
+            "packages/domain/src/api-contract/http-errors.ts",
+            "apps/control-plane/src/routes/http-errors.test.ts",
+            "apps/web/src/lib/api-client.ts",
+            "apps/web/src/lib/api-client.test.ts",
+            "apps/web/src/lib/service-status-copy.ts",
+            "apps/control-plane/src/deploy/deployment-store.ts",
+            "apps/control-plane/src/deploy/deployment-store.test.ts",
+            "apps/control-plane/src/deploy/run-deployment.test.ts",
+            "apps/site/content/docs/reference/error-codes.mdx",
+            "docs/deploy-engine.md"
           ],
           "wave": 7,
           "dependsOn": [
             "17-05"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
