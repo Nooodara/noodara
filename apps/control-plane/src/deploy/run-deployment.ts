@@ -22,12 +22,18 @@
 //   cannot be created or started, `-prev` is restored right away (H2). The HEALTHCHECK step follows
 //   the service's config through `decideHealthcheck`; no config keeps the v0.2 post-start polls.
 //   A failed healthcheck keeps `-prev` stopped for the rollback (17-03).
+// - 17-07: a DEPLOYING or HEALTHCHECK failure with a kept `-prev` and auto_rollback on enters
+//   ROLLING_BACK: the new container is removed, `-prev` restored and checked with the previous
+//   deployment's snapshot inside its own budget (reserved out of NOODARA_DEPLOY_MAX_MS). Pass ends
+//   ROLLED_BACK with the original code; anything else ends FAILED/ROLLBACK_FAILED. One attempt,
+//   never retried. Without a rollback the new container is stopped and `-prev` kept (A3).
 import {
   cleanupSetFor,
   classifyCleanupOutcome,
   createResourceLedger,
   decideHealthcheck,
   decidePostStartPoll,
+  DEFAULT_CONTAINER_HEALTHCHECK,
   healthcheckPolicy,
   preflightPublishedPort,
   recordResource,
@@ -112,6 +118,23 @@ export interface DeployRunLimits {
   readonly killPollMs: number;
   /** Per cleanup command; cleanup runs after the deadline too. */
   readonly cleanupStepMs: number;
+  /** 17-07: the automatic rollback's budget, reserved inside deployMaxMs (capped at a quarter). */
+  readonly rollbackMaxMs?: number;
+}
+
+export const DEFAULT_ROLLBACK_MAX_MS = 120_000;
+
+/** 17-07 (A4): the rollback's own budget; always inside deployMaxMs, never more than a quarter. */
+export function rollbackBudgetMs(limits: Pick<DeployRunLimits, 'deployMaxMs' | 'rollbackMaxMs'>): number {
+  const wanted = limits.rollbackMaxMs ?? DEFAULT_ROLLBACK_MAX_MS;
+  return Math.max(0, Math.min(wanted, Math.floor(limits.deployMaxMs / 4)));
+}
+
+/** 17-03: the service's latest SUCCESS deployment other than the one being run. `runtimeConfig`
+ *  is null when its stored snapshot does not validate (it cannot be checked from it). */
+export interface PreviousSuccessDeployment {
+  readonly id: ResourceId;
+  readonly runtimeConfig: RuntimeConfigSnapshot | null;
 }
 
 /** 17-02 (A3): written in the same UPDATE as the edge that carries it. */
@@ -177,6 +200,12 @@ export interface RunDeploymentInput {
   readonly gitHostKeys?: GitHostKeyStore;
   /** 17-02: the service's healthcheck; null or absent keeps the v0.2 post-start polls. */
   readonly healthcheck?: HealthcheckConfig | null;
+  /** 17-07: services.autoRollback; absent = no automatic rollback. */
+  readonly autoRollback?: boolean;
+  /** 17-07: whose snapshot checks the restored `-prev`; null or absent = the container check. */
+  readonly previousSuccess?: PreviousSuccessDeployment | null;
+  /** 17-07 (A4): records the `deployment.rollback_started` event; a failure never stops the rollback. */
+  readonly recordRollbackStarted?: (targetDeploymentId: ResourceId | null) => Promise<void>;
 }
 
 export interface CleanupReport {
@@ -185,7 +214,8 @@ export interface CleanupReport {
 }
 
 export interface DeploymentOutcome {
-  readonly status: 'SUCCESS' | 'FAILED' | 'CANCELLED';
+  /** ROLLED_BACK (17-07): the attempt failed and the previous version was restored and checked. */
+  readonly status: 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'ROLLED_BACK';
   readonly errorCode: DeploymentErrorCode | null;
   /** Fixed, actionable text; never raw remote output. */
   readonly errorMessage: string | null;
@@ -249,14 +279,25 @@ function agreesWith(pinned: PinnedGitHostKeys, endpoint: GitSshEndpoint, scanned
 
 const CLEANUP_MAX_TOTAL_BYTES = 65_536;
 
+type FailedEnd = {
+  readonly status: 'FAILED';
+  readonly code: DeploymentErrorCode;
+  readonly message: string;
+  readonly warning?: DeploymentWarning;
+};
+
 type End =
-  | {
-      readonly status: 'FAILED';
-      readonly code: DeploymentErrorCode;
-      readonly message: string;
-      readonly warning?: DeploymentWarning;
-    }
+  | FailedEnd
+  | { readonly status: 'ROLLED_BACK'; readonly code: DeploymentErrorCode; readonly message: string }
   | { readonly status: 'CANCELLED' };
+
+/** H2: only a failure after the swap began may roll back; never a cancel or a BUILDING timeout. */
+const ROLLBACK_SOURCE_STATUSES: readonly DeploymentStatus[] = ['DEPLOYING', 'HEALTHCHECK'];
+
+function rolledBackMessage(original: string, target: PreviousSuccessDeployment | null): string {
+  const version = target === null ? 'The previous version' : `The previous version (deployment ${target.id})`;
+  return `${original} ${version} was restored automatically.`;
+}
 
 /** Internal control flow: ends the attempt with a known outcome. Never escapes runDeployment. */
 class DeployStop extends Error {
@@ -342,9 +383,14 @@ const PREVIOUS_RESTORED_LOG = 'The new container could not start, so the previou
 const PREVIOUS_NOT_RESTORED_LOG = 'The new container could not start and the previous version could not be restored.';
 const CURRENT_RESTARTED_LOG = 'The running version could not be replaced, so it was started again.';
 const PREVIOUS_NOT_REMOVED_LOG = 'The previous container could not be removed after the healthcheck passed; it stays stopped.';
+const ROLLBACK_STARTED_LOG = 'Rolling back: restoring the previous version.';
+const ROLLBACK_PASSED_LOG = 'The previous version was restored and passed its healthcheck.';
+const ROLLBACK_FAILED_LOG = 'The previous version could not be restored.';
+const NEW_STOPPED_LOG = 'The new container was stopped; the previous version is kept for a manual rollback.';
 
 function exitFor(end: End | null): DeploymentExit {
   if (end === null) return 'SUCCESS';
+  if (end.status === 'ROLLED_BACK') return 'FAILED';
   if (end.status === 'CANCELLED' || end.warning !== undefined) return 'CANCELLED';
   return end.code === 'BUILD_TIMEOUT' || end.code === 'BUILD_STALLED' ? 'TIMEOUT' : 'FAILED';
 }
@@ -358,7 +404,10 @@ function derive<T>(result: { ok: true; value: T } | { ok: false }): T {
 export async function runDeployment(input: RunDeploymentInput): Promise<DeploymentOutcome> {
   const { session, redactor, serviceId, deploymentId, limits, clock, progress } = input;
   const startedAt = clock.now();
-  const deadline = startedAt + limits.deployMaxMs;
+  const autoRollback = input.autoRollback === true;
+  const rollbackBudget = autoRollback ? rollbackBudgetMs(limits) : 0;
+  // A4: with auto_rollback the main steps leave the rollback budget free inside deployMaxMs.
+  let deadline = startedAt + limits.deployMaxMs - rollbackBudget;
   const workspace: DeployWorkspace = derive(deployWorkspaceFor(deploymentId));
   let ledger: ResourceLedger = derive(createResourceLedger(serviceId, deploymentId));
   let status: DeploymentStatus = 'PREPARING';
@@ -366,6 +415,12 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
   let container: ContainerObservation | null = null;
   let containerTouched = false;
   let containerCreated = false;
+  // The container kept as `-prev`: the restore target until the new one passes its healthcheck.
+  let kept: ObservedContainer | null = null;
+  // A failed swap already put `-prev` back under the service's name (17-02 H2).
+  let swapRecovered = false;
+  // The new container is gone from the server, so the ledger may clean its image (A5).
+  let newRemoved = false;
   let seq = 0;
 
   const secrets = credentialSecrets(input.credential).map((secret) => revealSecret(secret));
@@ -583,8 +638,6 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
 
     cancellable = false;
     const stop = { serviceId, timeoutSeconds: limits.stopTimeoutSeconds };
-    // The container kept as `-prev`: the restore target until the new one passes its healthcheck.
-    let kept: ObservedContainer | null = null;
     const currentRuns = current?.state === 'running';
     if (stale !== null) {
       // A `-prev` left by an earlier attempt: the running current one supersedes it; otherwise it
@@ -638,9 +691,11 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
         await check(await startContainer(context('deploy'), { serviceId }), null);
       },
       async () => {
-        // H2: never leave the service down without a restore attempt, auto_rollback or not.
-        if (kept === null) return;
-        await recover(() => removeContainer(recoveryContext(), { serviceId }));
+        // H2: never leave the service down without a restore attempt. With auto_rollback the
+        // ROLLING_BACK step restores `-prev` (and checks it) once the attempt has its end.
+        if (kept === null || autoRollback) return;
+        swapRecovered = true;
+        if ((await recover(() => removeContainer(recoveryContext(), { serviceId }))) || !containerCreated) newRemoved = true;
         const restored = await recover(() => restorePrevious(recoveryContext(), { serviceId }));
         container = restored ? { kind: 'running' } : { kind: 'unknown' };
         log('deploy', 'system', restored ? PREVIOUS_RESTORED_LOG : PREVIOUS_NOT_RESTORED_LOG);
@@ -695,6 +750,82 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     }
   };
 
+  /** The rollback's probe loop on the restored container; throws a DeployStop when it fails. */
+  let restoredObservation: HealthcheckObservation | null = null;
+  const checkRestored = async (config: HealthcheckConfig): Promise<void> => {
+    const policy = healthcheckPolicy(config);
+    let state = { elapsedMs: 0, failures: 0 };
+    for (let attempt = 1; ; attempt += 1) {
+      const observation = await probe(config);
+      restoredObservation = observation;
+      log('rollback', 'system', healthcheckLine(attempt, observation));
+      const step = decideHealthcheck(policy, state, observation);
+      state = step.state;
+      const { decision } = step;
+      if (decision.kind === 'pass') return;
+      if (decision.kind === 'failed' || decision.kind === 'timeout') {
+        failed('ROLLBACK_FAILED', '');
+      }
+      const remaining = deadline - clock.now();
+      if (remaining <= 0) failed('ROLLBACK_FAILED', '');
+      await clock.sleep(Math.min(decision.delayMs, remaining));
+    }
+  };
+
+  /** 17-07: one rollback attempt; it never throws and never leaves the status at ROLLING_BACK. */
+  const rollback = async (original: FailedEnd): Promise<End> => {
+    const target = input.previousSuccess ?? null;
+    try {
+      await advance('ROLLING_BACK');
+    } catch {
+      // The edge was not recorded: no rollback, but the service is not left down (17-02 H2).
+      swapRecovered = true;
+      if ((await recover(() => removeContainer(recoveryContext(), { serviceId }))) || !containerCreated) newRemoved = true;
+      const restored = await recover(() => restorePrevious(recoveryContext(), { serviceId }));
+      container = restored ? { kind: 'running' } : { kind: 'unknown' };
+      log('deploy', 'system', restored ? PREVIOUS_RESTORED_LOG : PREVIOUS_NOT_RESTORED_LOG);
+      return original;
+    }
+    log('rollback', 'system', ROLLBACK_STARTED_LOG);
+    try {
+      await input.recordRollbackStarted?.(target === null ? null : target.id);
+    } catch {
+      // A4: the activity row is best effort; the restore matters more.
+    }
+    // A4: its own budget, never past the attempt's NOODARA_DEPLOY_MAX_MS.
+    deadline = Math.min(clock.now() + rollbackBudget, startedAt + limits.deployMaxMs);
+    let restored = false;
+    try {
+      const removed = await removeContainer(context('rollback'), { serviceId });
+      if (removed.ok || !containerCreated) newRemoved = true;
+      const back = await restorePrevious(context('rollback'), { serviceId });
+      if (!back.ok) failed('ROLLBACK_FAILED', '');
+      restored = true;
+      const config = target?.runtimeConfig?.healthcheck ?? DEFAULT_CONTAINER_HEALTHCHECK;
+      await checkRestored(config);
+      container = { kind: 'running' };
+      log('rollback', 'system', ROLLBACK_PASSED_LOG);
+      return { status: 'ROLLED_BACK', code: original.code, message: rolledBackMessage(original.message, target) };
+    } catch {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      const exited = restoredObservation?.kind === 'exited';
+      container = restored ? (exited ? { kind: 'stopped', exitCode: null } : { kind: 'running' }) : { kind: 'unknown' };
+      log('rollback', 'system', ROLLBACK_FAILED_LOG);
+      return { status: 'FAILED', code: 'ROLLBACK_FAILED', message: V03_DEPLOYMENT_ERROR_MESSAGES.ROLLBACK_FAILED };
+    }
+  };
+
+  /** A3: without a rollback the new container does not keep serving a failed version. */
+  const stopNew = async (): Promise<void> => {
+    const stopped = await recover(() =>
+      stopContainer(recoveryContext(), { serviceId, timeoutSeconds: limits.stopTimeoutSeconds }),
+    );
+    if (!stopped) return;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (container?.kind !== 'stopped') container = { kind: 'stopped', exitCode: null };
+    log('deploy', 'system', NEW_STOPPED_LOG);
+  };
+
   let end: End | null = null;
   try {
     await pipeline();
@@ -710,12 +841,25 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       container = unreachable ? { kind: 'unknown' } : containerCreated ? { kind: 'stopped', exitCode: null } : { kind: 'absent' };
     }
+    if (end.status === 'FAILED' && end.warning === undefined) {
+      // H2: `status` is where the failure happened; a cancel or a BUILDING timeout never gets here.
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (autoRollback && kept !== null && ROLLBACK_SOURCE_STATUSES.includes(status)) {
+        end = await rollback(end);
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      } else if (containerCreated && !swapRecovered) {
+        await stopNew();
+      }
+    }
   }
 
-  // Cleanup runs on every exit; it never throws (the outcome is already decided).
+  // Cleanup runs on every exit; it never throws (the outcome is already decided). A removed new
+  // container no longer pins its image or network (A5).
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  const cleanupLedger: ResourceLedger = newRemoved ? { ...ledger, containerCreated: false } : ledger;
   let cleanup: CleanupReport[] = [];
   try {
-    cleanup = await runLedgerCleanup(session, limits, workspace, ledger, exitFor(end));
+    cleanup = await runLedgerCleanup(session, limits, workspace, cleanupLedger, exitFor(end));
   } finally {
     secrets.forEach((raw) => {
       redactor.release(raw);
@@ -729,13 +873,13 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     return { status: 'CANCELLED', errorCode: null, errorMessage: null, commitSha, container, cleanup };
   }
   return {
-    status: 'FAILED',
+    status: end.status,
     errorCode: end.code,
     errorMessage: redactor.redact(end.message),
     commitSha,
     container,
     cleanup,
-    ...(end.warning === undefined ? {} : { warning: end.warning }),
+    ...(end.status === 'FAILED' && end.warning !== undefined ? { warning: end.warning } : {}),
   };
 }
 

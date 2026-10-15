@@ -13,10 +13,10 @@
 //   claimed row. The watch stops and the flag is cleared on every exit.
 // - 17-03: ROLLED_BACK is a terminal outcome like SUCCESS/FAILED/CANCELLED. The handler records it
 //   once and resolves (never throws), so BullMQ (`attempts: 1`, `maxStalledCount: 0`) never runs
-//   the job, or its rollback, again.
-import type { DeploymentErrorCode, PostStartPollPolicy, RuntimeConfigSnapshot } from '@noodara/domain/deployment';
+//   the job, or its rollback, again. 17-07: the rollback itself runs inside runDeployment (one
+//   attempt); the loaded target carries autoRollback, previousSuccess and the event recorder.
+import type { DeploymentErrorCode, PostStartPollPolicy } from '@noodara/domain/deployment';
 import type { Redactor } from '@noodara/domain/security';
-import type { ResourceId } from '@noodara/domain/validators';
 import type { SshDeploySession } from '@noodara/ssh';
 import { computeDeployJobLockDurationMs } from '../queue/deploy-job-budget.js';
 import { parseDeployServiceJobPayload } from '../queue/deploy-job-payload.js';
@@ -29,15 +29,11 @@ import {
   type DeployClock,
   type DeployRunLimits,
   type DeploymentOutcome,
+  type PreviousSuccessDeployment,
   type RunDeploymentInput,
 } from './run-deployment.js';
 
-/** 17-03: the service's latest SUCCESS deployment other than the one being run. `runtimeConfig`
- *  is null when its stored snapshot does not validate (it cannot be restarted from it). */
-export interface PreviousSuccessDeployment {
-  readonly id: ResourceId;
-  readonly runtimeConfig: RuntimeConfigSnapshot | null;
-}
+export type { PreviousSuccessDeployment } from './run-deployment.js';
 
 /** 17-03: what an automatic rollback needs; loaded with the target, read by the pipeline (17-07). */
 export interface DeployRollbackInputs {
@@ -55,9 +51,7 @@ export type DeployTarget = Omit<
   DeployRollbackInputs;
 
 /** The pipeline's result as the worker records it; ROLLED_BACK is terminal (17-03). */
-export type DeployRunOutcome = Omit<DeploymentOutcome, 'status'> & {
-  readonly status: DeploymentOutcome['status'] | 'ROLLED_BACK';
-};
+export type DeployRunOutcome = DeploymentOutcome;
 
 /** The closed codes a failure before the pipeline can end with. */
 export type DeployJobFailureCode = Extract<

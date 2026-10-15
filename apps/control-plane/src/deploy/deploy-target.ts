@@ -11,6 +11,8 @@
 //   service's latest SUCCESS deployment other than this one, as {id, runtimeConfig}. A stored
 //   snapshot that does not validate gives runtimeConfig null (that deployment cannot be
 //   restarted from it), never an error: the deploy itself must still run.
+// - 17-07: `createLoadTarget` also hands the pipeline `recordRollbackStarted`, which writes the
+//   `deployment.rollback_started` activity event (ids only) through src/activity/.
 import { and, desc, eq, inArray, isNotNull, ne } from 'drizzle-orm';
 import {
   parseRuntimeConfigSnapshot,
@@ -26,6 +28,7 @@ import {
   type ResourceId,
   type ServiceSource,
 } from '@noodara/domain/validators';
+import { writeDeploymentRollbackStartedEvent } from '../activity/index.js';
 import type { Database } from '../db/client.js';
 import { credentials } from '../db/schema/credentials.js';
 import { deployments } from '../db/schema/deployments.js';
@@ -298,7 +301,7 @@ export function createLoadTarget(
       .from(services)
       .where(and(eq(services.serverId, service.serverId), ne(services.id, service.id), isNotNull(services.publishedPort)));
 
-    return resolveDeployTarget(
+    const resolved = resolveDeployTarget(
       {
         deployment,
         service,
@@ -310,5 +313,11 @@ export function createLoadTarget(
       await deps.masterKeys(),
       deps.panelPorts,
     );
+    if (!resolved.ok) return resolved;
+    const { deploymentId, serviceId } = resolved.target;
+    const recordRollbackStarted = async (targetDeploymentId: string | null): Promise<void> => {
+      await writeDeploymentRollbackStartedEvent(deps.db, { deploymentId, serviceId, targetDeploymentId });
+    };
+    return { ...resolved, target: { ...resolved.target, recordRollbackStarted } };
   };
 }

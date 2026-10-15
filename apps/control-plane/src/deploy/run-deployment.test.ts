@@ -32,7 +32,9 @@ import type { DeploymentLogEntry, DeploymentLogSink } from './log-sink.js';
 import {
   CANCEL_UNCONFIRMED,
   CANCEL_UNCONFIRMED_ERROR_CODE,
+  DEFAULT_ROLLBACK_MAX_MS,
   DEPLOY_MESSAGES,
+  rollbackBudgetMs,
   runDeployment,
   runLedgerCleanup,
   type AdvanceRecord,
@@ -255,6 +257,8 @@ function harness(options: {
   signal?: AbortSignal;
   limits?: Partial<DeployRunLimits>;
   healthcheck?: HealthcheckConfig | null;
+  /** 17-07: rollback inputs and other overrides, spread last. */
+  extra?: Partial<RunDeploymentInput>;
 }): Harness {
   const redactor = createRedactor();
   const session = new FakeSession(options.scripts, options.leakySession === true ? null : redactor);
@@ -286,6 +290,7 @@ function harness(options: {
     },
     ...(options.signal === undefined ? {} : { signal: options.signal }),
     ...(options.healthcheck === undefined ? {} : { healthcheck: options.healthcheck }),
+    ...options.extra,
   };
   return { session, progress, sink, redactor, sleeps, input };
 }
@@ -515,7 +520,9 @@ describe('runDeployment: deploy phase failures (C1, ERR)', () => {
   });
 
   it('a transport failure becomes SERVER_UNREACHABLE and never throws', async () => {
-    const h = harness({ scripts: { 'docker.start': { reject: new Error('socket hang up 10.0.0.5:22 stderr: secret') } } });
+    const dropped = { reject: new Error('socket hang up 10.0.0.5:22 stderr: secret') };
+    // The session is gone: the A3 stop of the new container (17-07) fails the same way.
+    const h = harness({ scripts: { 'docker.start': dropped, 'docker.stop': dropped } });
     const outcome = await runDeployment(h.input);
     expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'SERVER_UNREACHABLE' });
     expect(outcome.errorMessage).not.toContain('socket hang up');
@@ -1181,11 +1188,12 @@ describe('runDeployment: HEALTHCHECK step (17-02 A1, A2, A3)', () => {
 
     const outcome = await runDeployment(h.input);
 
+    // 17-07 A3: without auto_rollback the failed new container is stopped, -prev kept.
     expect(outcome).toMatchObject({
       status: 'FAILED',
       errorCode: 'HEALTHCHECK_FAILED',
       errorMessage: V03_DEPLOYMENT_ERROR_MESSAGES.HEALTHCHECK_FAILED,
-      container: { kind: 'running' },
+      container: { kind: 'stopped' },
     });
     expect(h.session.keys().filter((k) => k === 'probe.http')).toHaveLength(2);
     expectPreviousUntouched(h);
@@ -1414,5 +1422,276 @@ describe('runDeployment: a failed swap restores the previous version (17-02 H2)'
     expect(h.session.keys()).not.toContain('docker.rename_to_prev');
     expect(h.session.keys()).toContain('docker.rename_from_prev');
     expectPreviousUntouched(h);
+  });
+});
+
+// 17-07: the automatic rollback (ROLLING_BACK -> ROLLED_BACK | FAILED).
+const PREVIOUS_ID: ResourceId = unwrap(validateResourceId(OLD_DEPLOYMENT_ID));
+const PREVIOUS_SNAPSHOT = {
+  version: 1 as const,
+  imageRef: unwrap(validateImageRef(OLD_IMAGE)),
+  internalPort: PORT_3000,
+  publishedPort: PORT_13100,
+  healthcheck: TCP_CHECK,
+};
+const RESTORE_KEYS = ['docker.remove', 'docker.rename_from_prev', 'docker.inspect_networks', 'docker.start'];
+const HTTP_500 = { stdout: 'NOODARA_PROBE http 500\n' };
+
+function rollbackHarness(
+  scripts: Record<string, Script | Script[]>,
+  options: { autoRollback?: boolean; snapshot?: typeof PREVIOUS_SNAPSHOT | null; healthcheck?: HealthcheckConfig | null } = {},
+): Harness & { readonly events: (ResourceId | null)[] } {
+  const events: (ResourceId | null)[] = [];
+  const h = harness({
+    healthcheck: options.healthcheck === undefined ? HTTP_CHECK : options.healthcheck,
+    scripts,
+    extra: {
+      autoRollback: options.autoRollback ?? true,
+      previousSuccess: { id: PREVIOUS_ID, runtimeConfig: options.snapshot === undefined ? PREVIOUS_SNAPSHOT : options.snapshot },
+      recordRollbackStarted: (target) => {
+        events.push(target);
+        return Promise.resolve();
+      },
+    },
+  });
+  return { ...h, events };
+}
+
+function afterKey(h: Harness, key: string): string[] {
+  const keys = h.session.keys();
+  return keys.slice(keys.indexOf(key));
+}
+
+describe('runDeployment: automatic rollback (17-07 A1, A2)', () => {
+  it('a failed healthcheck rolls back: new container removed, -prev restored and checked with the previous snapshot', async () => {
+    const h = rollbackHarness(probing(HTTP_500, { 'probe.tcp': { stdout: 'NOODARA_PROBE open\n' } }));
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'ROLLED_BACK', errorCode: 'HEALTHCHECK_FAILED', container: { kind: 'running' } });
+    expect(outcome.errorMessage).toContain(V03_DEPLOYMENT_ERROR_MESSAGES.HEALTHCHECK_FAILED);
+    expect(outcome.errorMessage).toContain(`deployment ${OLD_DEPLOYMENT_ID}`);
+    expect(h.progress.advances.slice(-2)).toEqual([
+      ['DEPLOYING', 'HEALTHCHECK'],
+      ['HEALTHCHECK', 'ROLLING_BACK'],
+    ]);
+    const keys = h.session.keys();
+    const from = keys.indexOf('docker.remove');
+    expect(from).toBeGreaterThan(keys.lastIndexOf('probe.http'));
+    expect(keys.slice(from, from + 4)).toEqual(RESTORE_KEYS);
+    // The previous deployment's snapshot (TCP) checks the restored container, not the new HTTP check.
+    expect(keys.indexOf('probe.tcp')).toBeGreaterThan(from);
+    expect(h.events).toEqual([PREVIOUS_ID]);
+    const log = logText(h, 'rollback');
+    expect(log).toContain('Healthcheck attempt 1: port open');
+    expect(log).toContain('The previous version was restored and passed its healthcheck.');
+    expectPreviousUntouched(h);
+    // A5: the removed new container no longer pins the new image; the restored one keeps its own.
+    expect(h.session.argv('docker.image_remove')).toContain(BUILT_IMAGE);
+  });
+
+  it('a start failure rolls back from DEPLOYING (the swap guard leaves the restore to the rollback)', async () => {
+    const h = rollbackHarness(
+      probing(HTTP_500, { 'docker.start': [{ exitCode: 1, stderr: GENERIC_DAEMON_ERROR }, { exitCode: 0 }], 'probe.tcp': { stdout: 'NOODARA_PROBE open\n' } }),
+    );
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('ROLLED_BACK');
+    expect(outcome.errorCode).not.toBe('ROLLBACK_FAILED');
+    expect(h.progress.advances.at(-1)).toEqual(['DEPLOYING', 'ROLLING_BACK']);
+    expect(h.session.keys().filter((k) => k === 'docker.rename_from_prev')).toHaveLength(1);
+    expect(afterKey(h, 'docker.remove').slice(0, 4)).toEqual(RESTORE_KEYS);
+    expect(logText(h)).not.toContain(PREVIOUS_RESTORED);
+  });
+
+  it('a previous deployment without a usable snapshot is checked with the container default', async () => {
+    const h = rollbackHarness(probing(HTTP_500), { snapshot: null });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('ROLLED_BACK');
+    expect(h.session.keys()).not.toContain('probe.tcp');
+    expect(logText(h, 'rollback')).toContain('container running');
+  });
+
+  it('a restored version that fails its own check ends FAILED/ROLLBACK_FAILED', async () => {
+    const h = rollbackHarness(probing(HTTP_500, { 'probe.tcp': { exitCode: 1, stdout: 'NOODARA_PROBE refused\n' } }));
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({
+      status: 'FAILED',
+      errorCode: 'ROLLBACK_FAILED',
+      errorMessage: V03_DEPLOYMENT_ERROR_MESSAGES.ROLLBACK_FAILED,
+    });
+    expect(h.progress.advances.at(-1)).toEqual(['HEALTHCHECK', 'ROLLING_BACK']);
+    expect(logText(h, 'rollback')).toContain('The previous version could not be restored.');
+  });
+});
+
+describe('runDeployment: a failed restore ends FAILED once, never retried (17-07 H1)', () => {
+  it.each([
+    ['rename', { 'docker.rename_from_prev': { exitCode: 1, stderr: GENERIC_DAEMON_ERROR } }],
+    ['start', { 'docker.start': [{ exitCode: 0 }, { exitCode: 1, stderr: GENERIC_DAEMON_ERROR }] }],
+    ['SSH drop', { 'docker.rename_from_prev': { reject: new Error('socket hang up') } }],
+  ] as const)('a %s error during the restore ends ROLLBACK_FAILED after one attempt', async (_step, extra) => {
+    const h = rollbackHarness(probing(HTTP_500, extra));
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'ROLLBACK_FAILED' });
+    expect(h.progress.advances.filter(([, to]) => to === 'ROLLING_BACK')).toHaveLength(1);
+    expect(h.session.keys().filter((k) => k === 'docker.rename_from_prev')).toHaveLength(1);
+    expect(h.events).toHaveLength(1);
+  });
+
+  it('a rollback event that cannot be recorded does not stop the restore', async () => {
+    const h = rollbackHarness(probing(HTTP_500, { 'probe.tcp': { stdout: 'NOODARA_PROBE open\n' } }));
+    const input = { ...h.input, recordRollbackStarted: () => Promise.reject(new Error('db down')) };
+
+    const outcome = await runDeployment(input);
+
+    expect(outcome.status).toBe('ROLLED_BACK');
+  });
+
+  it('a ROLLING_BACK edge that cannot be recorded ends FAILED with the original code and still restores -prev', async () => {
+    const h = rollbackHarness(probing(HTTP_500));
+    h.progress.failOn = 'ROLLING_BACK';
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'HEALTHCHECK_FAILED', container: { kind: 'running' } });
+    expect(h.session.keys()).toContain('docker.rename_from_prev');
+    expect(h.events).toEqual([]);
+  });
+
+  it('a restored check that never passes ends within the rollback budget', async () => {
+    let now = 0;
+    let rollingBackAt: number | null = null;
+    const h = rollbackHarness(
+      probing(HTTP_500, { 'probe.tcp': { outcome: 'timed_out', exitCode: null } }),
+      {
+        snapshot: {
+          ...PREVIOUS_SNAPSHOT,
+          healthcheck: unwrap(validateHealthcheckConfig({ type: 'tcp', port: 3000, probeTimeoutS: 5, intervalS: 30, retries: 10, startPeriodS: 0 })),
+        },
+      },
+    );
+    const limits = { ...LIMITS, deployMaxMs: 400_000, rollbackMaxMs: 60_000 };
+    const progress: DeploymentProgress = {
+      advance: (from, to, record) => {
+        if (to === 'ROLLING_BACK') rollingBackAt = now;
+        return h.progress.advance(from, to, record);
+      },
+      recordCommitSha: (sha) => h.progress.recordCommitSha(sha),
+    };
+    const clock = {
+      now: () => now,
+      sleep: (ms: number) => {
+        now += ms;
+        return Promise.resolve();
+      },
+    };
+
+    const outcome = await runDeployment({ ...h.input, limits, progress, clock });
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'ROLLBACK_FAILED' });
+    expect(rollingBackAt).not.toBeNull();
+    expect(now - (rollingBackAt ?? 0)).toBeLessThanOrEqual(60_000);
+    expect(now).toBeLessThanOrEqual(limits.deployMaxMs);
+  });
+});
+
+describe('runDeployment: the rollback budget (17-07 A4)', () => {
+  it('is the configured budget capped at a quarter of NOODARA_DEPLOY_MAX_MS', () => {
+    expect(rollbackBudgetMs({ deployMaxMs: 1_800_000 })).toBe(DEFAULT_ROLLBACK_MAX_MS);
+    expect(rollbackBudgetMs({ deployMaxMs: 1_800_000, rollbackMaxMs: 30_000 })).toBe(30_000);
+    expect(rollbackBudgetMs({ deployMaxMs: 200_000 })).toBe(50_000);
+    expect(rollbackBudgetMs({ deployMaxMs: 200_000, rollbackMaxMs: -1 })).toBe(0);
+  });
+
+  it('with auto_rollback the main steps leave the rollback budget free; rollback steps stay inside it', async () => {
+    const h = rollbackHarness(probing(HTTP_500, { 'probe.tcp': { stdout: 'NOODARA_PROBE open\n' } }));
+    const limits = { ...LIMITS, rollbackMaxMs: 60_000 };
+
+    await runDeployment({ ...h.input, limits });
+
+    const keys = h.session.keys();
+    const rollbackFrom = keys.indexOf('docker.remove');
+    const budgets = h.session.calls.map((call) => call.options.maxDurationMs);
+    const main = budgets.slice(0, rollbackFrom).filter((_, index) => keys[index] !== 'probe.http');
+    expect(Math.max(...main)).toBeLessThanOrEqual(LIMITS.deployMaxMs - 60_000);
+    const rollback = h.session.calls
+      .slice(rollbackFrom)
+      .filter((call) => !['fs.remove_deploy_dir', 'docker.image_remove', 'docker.network_remove'].includes(call.key));
+    rollback.forEach((call) => {
+      expect(call.options.maxDurationMs).toBeLessThanOrEqual(60_000);
+    });
+  });
+});
+
+describe('runDeployment: when no rollback fires (17-07 A3, H2)', () => {
+  it('auto_rollback off: FAILED, the new container is stopped and -prev kept for a manual rollback', async () => {
+    const h = rollbackHarness(probing(HTTP_500), { autoRollback: false });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'HEALTHCHECK_FAILED', container: { kind: 'stopped' } });
+    expect(h.progress.advances.map(([, to]) => to)).not.toContain('ROLLING_BACK');
+    expect(afterKey(h, 'probe.http')).toContain('docker.stop');
+    expect(h.session.keys()).not.toContain('docker.rename_from_prev');
+    expect(h.events).toEqual([]);
+    expect(logText(h, 'deploy')).toContain('The new container was stopped');
+    expectPreviousUntouched(h);
+  });
+
+  it('first deploy (no -prev): FAILED with the new container stopped, nothing to roll back to', async () => {
+    const h = rollbackHarness({ 'probe.http': HTTP_500, 'docker.inspect_networks': { stdout: NETWORKS_ATTACHED } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'HEALTHCHECK_FAILED', container: { kind: 'stopped' } });
+    expect(h.progress.advances.map(([, to]) => to)).not.toContain('ROLLING_BACK');
+    expect(afterKey(h, 'probe.http')).toContain('docker.stop');
+    expect(h.events).toEqual([]);
+  });
+
+  it('a BUILDING timeout never rolls back', async () => {
+    const h = rollbackHarness(probing(HTTP_500, { 'supervise:build': { outcome: 'timed_out', exitCode: null } }));
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'BUILD_TIMEOUT' });
+    expect(h.progress.advances.map(([, to]) => to)).not.toContain('ROLLING_BACK');
+    expect(h.session.keys()).not.toContain('docker.rename_from_prev');
+    expect(h.session.keys()).not.toContain('docker.stop');
+    expect(h.events).toEqual([]);
+  });
+
+  it('a cancelled deployment never rolls back', async () => {
+    const controller = new AbortController();
+    const h = rollbackHarness(probing(HTTP_500));
+    h.session.onStream = (key) => {
+      if (key === 'supervise:build') controller.abort();
+    };
+
+    const outcome = await runDeployment({ ...h.input, signal: controller.signal });
+
+    expect(outcome.status).toBe('CANCELLED');
+    expect(h.progress.advances.map(([, to]) => to)).not.toContain('ROLLING_BACK');
+    expect(h.session.keys()).not.toContain('docker.rename_from_prev');
+    expect(h.events).toEqual([]);
+  });
+
+  it('a DEPLOYING failure before the swap (port in use) has nothing kept and never rolls back', async () => {
+    const taken = psLine({ name: 'other', image: 'nginx', ports: '0.0.0.0:13100->80/tcp', serviceId: OTHER_SERVICE_ID });
+    const h = rollbackHarness({ ...PREVIOUS_SCRIPTS, 'docker.ps': { stdout: `${taken}\n` } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'PORT_IN_USE' });
+    expect(h.progress.advances.map(([, to]) => to)).not.toContain('ROLLING_BACK');
+    expect(h.events).toEqual([]);
   });
 });
