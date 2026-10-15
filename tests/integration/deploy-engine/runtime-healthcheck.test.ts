@@ -5,6 +5,8 @@
 // - Wrong status: fixtures/unhealthy-api answers 500 on /healthz; the attempt ends HEALTHCHECK_FAILED
 //   and `-prev` stays stopped with the previous image (the 17-03 rollback target).
 // - Timeout: a probe that never gets an answer ends HEALTHCHECK_TIMEOUT.
+// 17-07 / A6: the cases that expect FAILED turn auto_rollback off (the rollback itself is covered by
+// runtime-rollback.test.ts); with it off the failed new container is stopped (17-07 A3).
 // - TCP pass: the same unhealthy container passes a TCP check (the port is open).
 import { randomBytes, randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -106,7 +108,11 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('17-02: runtime healthcheck on real
       .map((entry) => entry.text)
       .join('\n');
 
-  const insertService = async (repo: string, healthcheck: HealthcheckConfig | null): Promise<string> => {
+  const insertService = async (
+    repo: string,
+    healthcheck: HealthcheckConfig | null,
+    options: { autoRollback?: boolean } = {},
+  ): Promise<string> => {
     const serviceCredentials = await import('../../../apps/control-plane/src/services/service-credentials.js');
     const encoded = serviceCredentials.encodeServiceCredential(
       {
@@ -134,6 +140,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('17-02: runtime healthcheck on real
         publishedPort: null,
         repositoryCredentialId: credentialId,
         healthcheck,
+        autoRollback: options.autoRollback ?? true,
       })
       .returning({ id: services.id });
     if (!row) throw new Error('service insert returned no row');
@@ -322,7 +329,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('17-02: runtime healthcheck on real
   }, CASE_TIMEOUT_MS);
 
   it('wrong status: unhealthy-api ends HEALTHCHECK_FAILED and -prev stays stopped with the previous image', async () => {
-    const serviceId = await insertService(REPOS.healthy, httpCheck('/health'));
+    const serviceId = await insertService(REPOS.healthy, httpCheck('/health'), { autoRollback: false });
     try {
       const first = await deploy(serviceId);
       expect(first.status).toBe('SUCCESS');
@@ -342,15 +349,17 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('17-02: runtime healthcheck on real
         `exited noodara/${serviceId}:${first.id}`,
       );
       expect(await imageExists(`noodara/${serviceId}:${first.id}`)).toBe(true);
-      // A4: the unhealthy container itself runs; only its health path fails.
-      expect(await containerField(`noodara-${serviceId}`, '{{.State.Status}}')).toBe('running');
+      // 17-07 A3: with auto_rollback off the failed new container is stopped, not removed.
+      expect(await containerField(`noodara-${serviceId}`, '{{.State.Status}} {{.Config.Image}}')).toBe(
+        `exited noodara/${serviceId}:${second.id}`,
+      );
     } finally {
       await removeServiceContainers(serviceId);
     }
   }, CASE_TIMEOUT_MS);
 
   it('timeout: a health path that never answers ends HEALTHCHECK_TIMEOUT', async () => {
-    const serviceId = await insertService(REPOS.unhealthy, TIMEOUT_CHECK);
+    const serviceId = await insertService(REPOS.unhealthy, TIMEOUT_CHECK, { autoRollback: false });
     try {
       const row = await deploy(serviceId);
 

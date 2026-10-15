@@ -279,12 +279,12 @@ function agreesWith(pinned: PinnedGitHostKeys, endpoint: GitSshEndpoint, scanned
 
 const CLEANUP_MAX_TOTAL_BYTES = 65_536;
 
-type FailedEnd = {
+interface FailedEnd {
   readonly status: 'FAILED';
   readonly code: DeploymentErrorCode;
   readonly message: string;
   readonly warning?: DeploymentWarning;
-};
+}
 
 type End =
   | FailedEnd
@@ -807,7 +807,6 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
       log('rollback', 'system', ROLLBACK_PASSED_LOG);
       return { status: 'ROLLED_BACK', code: original.code, message: rolledBackMessage(original.message, target) };
     } catch {
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const exited = restoredObservation?.kind === 'exited';
       container = restored ? (exited ? { kind: 'stopped', exitCode: null } : { kind: 'running' }) : { kind: 'unknown' };
       log('rollback', 'system', ROLLBACK_FAILED_LOG);
@@ -821,7 +820,6 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
       stopContainer(recoveryContext(), { serviceId, timeoutSeconds: limits.stopTimeoutSeconds }),
     );
     if (!stopped) return;
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (container?.kind !== 'stopped') container = { kind: 'stopped', exitCode: null };
     log('deploy', 'system', NEW_STOPPED_LOG);
   };

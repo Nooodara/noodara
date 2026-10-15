@@ -1535,7 +1535,7 @@ describe('runDeployment: a failed restore ends FAILED once, never retried (17-07
     ['rename', { 'docker.rename_from_prev': { exitCode: 1, stderr: GENERIC_DAEMON_ERROR } }],
     ['start', { 'docker.start': [{ exitCode: 0 }, { exitCode: 1, stderr: GENERIC_DAEMON_ERROR }] }],
     ['SSH drop', { 'docker.rename_from_prev': { reject: new Error('socket hang up') } }],
-  ] as const)('a %s error during the restore ends ROLLBACK_FAILED after one attempt', async (_step, extra) => {
+  ] satisfies [string, Record<string, Script | Script[]>][])('a %s error during the restore ends ROLLBACK_FAILED after one attempt', async (_step, extra) => {
     const h = rollbackHarness(probing(HTTP_500, extra));
 
     const outcome = await runDeployment(h.input);
@@ -1597,8 +1597,10 @@ describe('runDeployment: a failed restore ends FAILED once, never retried (17-07
     const outcome = await runDeployment({ ...h.input, limits, progress, clock });
 
     expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'ROLLBACK_FAILED' });
-    expect(rollingBackAt).not.toBeNull();
-    expect(now - (rollingBackAt ?? 0)).toBeLessThanOrEqual(60_000);
+    // Assigned inside the progress closure; TS narrows the `let` to its initial null here.
+    const enteredAt = rollingBackAt as number | null;
+    expect(enteredAt).not.toBeNull();
+    expect(now - (enteredAt ?? 0)).toBeLessThanOrEqual(60_000);
     expect(now).toBeLessThanOrEqual(limits.deployMaxMs);
   });
 });
