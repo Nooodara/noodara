@@ -6144,7 +6144,9 @@
             "packages/ssh/src/run-discovery.test.ts",
             "packages/docker/src/docker-operations.test.ts",
             "apps/web/src/lib/api-client.ts",
-            "apps/web/src/lib/api-client.test.ts"
+            "apps/web/src/lib/api-client.test.ts",
+            "docs/deploy-engine.md",
+            "apps/site/content/docs/reference/error-codes.mdx"
           ],
           "wave": 6,
           "dependsOn": [

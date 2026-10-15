@@ -368,3 +368,57 @@ describe('POST /api/services/:serviceId/rollback (17-05 A1/A2/A5/H1)', () => {
     expect(response.body).not.toContain('k-canary');
   });
 });
+
+describe('GET /api/services/:serviceId/deployments (17-05 H2)', () => {
+  const URL = `/api/services/${SERVICE_ID}/deployments`;
+  let app: FastifyInstance | null = null;
+
+  afterEach(async () => {
+    await app?.close();
+    app = null;
+  });
+
+  async function build(listDeployments: DeploymentServices['listDeployments']): Promise<FastifyInstance> {
+    const instance = Fastify();
+    instance.setValidatorCompiler(validatorCompiler);
+    instance.setSerializerCompiler(serializerCompiler);
+    instance.setErrorHandler((error, _request, reply) => {
+      if (hasZodFastifySchemaValidationErrors(error)) {
+        void reply.code(400).send(toValidationErrorBody(error.validation));
+        return;
+      }
+      void reply.code(500).send({ error: 'INTERNAL_ERROR', message: 'error' });
+    });
+    instance.decorate('getDeploymentServices', () => Promise.resolve({ listDeployments } as unknown as DeploymentServices));
+    instance.decorateRequest('actor', null);
+    await instance.register(deploymentsRoutes, { cancelDeployment: vi.fn(), readStepStamps: () => Promise.resolve(new Map()) });
+    await instance.ready();
+    app = instance;
+    return instance;
+  }
+
+  it.each([
+    ['a limit over the cap', `${URL}?limit=${String(DEPLOYMENT_LIST_MAX_LIMIT + 1)}`],
+    ['a zero limit', `${URL}?limit=0`],
+    ['a malformed cursor', `${URL}?cursor=not-a-cursor`],
+    ['an unknown query key', `${URL}?offset=10`],
+  ])('rejects %s with 400 and never reads the history', async (_label, url) => {
+    const list = vi.fn<DeploymentServices['listDeployments']>();
+    const instance = await build(list);
+
+    const response = await instance.inject({ method: 'GET', url });
+
+    expect(response.statusCode).toBe(400);
+    expect(list).not.toHaveBeenCalled();
+  });
+
+  it('scopes the rows to the service in the path: an unknown or foreign service is 404', async () => {
+    const list = vi.fn<DeploymentServices['listDeployments']>(() => Promise.resolve(null));
+    const instance = await build(list);
+
+    const response = await instance.inject({ method: 'GET', url: `${URL}?limit=5` });
+
+    expect(response.statusCode).toBe(404);
+    expect(list).toHaveBeenCalledWith(SERVICE_ID, { limit: 5 });
+  });
+});

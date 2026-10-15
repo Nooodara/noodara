@@ -76,7 +76,10 @@ export type DeployEngineErrorCode =
   | "RUNTIME_LOG_TAIL_INVALID"
   | "RUNTIME_LOG_FOLLOW_LIMIT_REACHED"
   | "RUNTIME_LOGS_FAILED"
-  | "RUNTIME_LOGS_TIMEOUT";
+  | "RUNTIME_LOGS_TIMEOUT"
+  | "ROLLBACK_TARGET_UNAVAILABLE"
+  | "IDEMPOTENCY_KEY_INVALID"
+  | "IDEMPOTENCY_KEY_REUSED";
 
 export type DeployApiErrorCode = ApiErrorCode | DeployEngineErrorCode;
 
@@ -243,6 +246,9 @@ const DEPLOY_ENGINE_ERROR_CODE_MARKER = Object.freeze({
   RUNTIME_LOG_FOLLOW_LIMIT_REACHED: true,
   RUNTIME_LOGS_FAILED: true,
   RUNTIME_LOGS_TIMEOUT: true,
+  ROLLBACK_TARGET_UNAVAILABLE: true,
+  IDEMPOTENCY_KEY_INVALID: true,
+  IDEMPOTENCY_KEY_REUSED: true,
 } satisfies Record<DeployEngineErrorCode, true>);
 
 const KNOWN_SERVICE_ERROR_CODES: ReadonlySet<string> = new Set(

@@ -7,6 +7,7 @@ import { and, desc, eq, inArray, lt, or } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 import {
+  DEFAULT_IMAGE_RETENTION,
   imageRetention,
   NON_TERMINAL_DEPLOYMENT_STATUSES,
   requestFingerprint,
@@ -258,7 +259,6 @@ async function insertQueuedRow(
   service: ServiceRow,
   actor: ServiceActor,
   values: QueuedValues,
-  metadata: Record<string, unknown> = {},
 ): Promise<InsertResult> {
   const now = deps.now();
   const [row] = await tx
@@ -293,7 +293,7 @@ async function insertQueuedRow(
       entityId: row.id,
       action: 'deployment.queued',
       outcome: 'success',
-      metadata: { serviceId: service.id, trigger: row.trigger, ...metadata },
+      metadata: { serviceId: service.id, trigger: row.trigger },
     },
     now,
   );
@@ -423,7 +423,7 @@ export function planRollback(input: RollbackPlanInput): RollbackPlan {
     reason: 'none',
     message: `Deployment "${targetId}" not found`,
   });
-  if (explicit !== undefined && (explicit.row === null || explicit.row.serviceId !== input.serviceId)) {
+  if (explicit !== undefined && explicit.row?.serviceId !== input.serviceId) {
     return notFound(explicit.id);
   }
   const [current] = input.successes;
@@ -551,9 +551,14 @@ async function insertRollbackDeployment(
       .limit(1);
     explicit = { id: input.targetDeploymentId, row: targetRow ?? null };
   }
+  const [retentionRow] = await tx
+    .select({ retention: services.imageRetention })
+    .from(services)
+    .where(eq(services.id, service.id))
+    .limit(1);
   const plan = planRollback({
     serviceId: service.id,
-    retention: service.imageRetention,
+    retention: retentionRow?.retention ?? DEFAULT_IMAGE_RETENTION,
     successes,
     ...(explicit === undefined ? {} : { explicit }),
   });
@@ -575,7 +580,6 @@ async function insertRollbackDeployment(
       previousDeploymentId: current.id,
       ...(input.idempotencyKey === undefined ? {} : { idempotencyKey: input.idempotencyKey, requestFingerprint: fingerprint }),
     },
-    { rollbackOfDeploymentId: target.id },
   );
   if (!inserted.ok) return { kind: 'failed', failure: inserted };
   return { kind: 'inserted', deployment: inserted.deployment, service: inserted.service, activityEventId: inserted.activityEventId };
