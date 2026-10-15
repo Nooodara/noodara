@@ -93,6 +93,20 @@ describe('foldBuildLog: order and duplicates (A1)', () => {
     expect(state.resync).toBeNull();
   });
 
+  it('orders the v0.3 healthcheck and rollback phases after deploy (16-02 A7)', () => {
+    const state = fold([
+      page({ phase: 'prepare', since: 0 }, [
+        { phase: 'prepare', seq: 1, text: 'p1 ' },
+        { phase: 'deploy', seq: 1, text: 'd1 ' },
+        { phase: 'healthcheck', seq: 1, text: 'h1 ' },
+        { phase: 'rollback', seq: 1, text: 'r1' },
+      ]),
+    ]);
+    expect(buildLogText(state)).toBe('p1 d1 h1 r1');
+    expect(state.segments.map((segment) => segment.phase)).toEqual(['prepare', 'deploy', 'healthcheck', 'rollback']);
+    expect(state.phaseBytes).toEqual({ prepare: 3, build: 0, deploy: 3, healthcheck: 3, rollback: 2 });
+  });
+
   it('drops duplicates from SSE and overlapping pages', () => {
     const state = fold([
       event('prepare', 1, 'a'),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEPLOYMENT_STATUSES, SERVICE_STATUSES } from '@noodara/domain';
+import { DEPLOYMENT_STATUSES, DEPLOYMENT_TRIGGERS, SERVICE_STATUSES } from '@noodara/domain';
 import {
   DEPLOYMENT_IN_PROGRESS_COPY,
   DEPLOYMENT_NOT_CANCELLABLE_COPY,
@@ -76,6 +76,15 @@ describe('deployment presentation (13-12 A4)', () => {
     });
   });
 
+  it('presents the v0.3 states and triggers (16-02 A7, minimal copy until 19-01)', () => {
+    expect(deploymentStatusPresentation('HEALTHCHECK')).toEqual({ word: 'Health check', tone: 'warn', pulsing: true });
+    expect(deploymentStatusPresentation('ROLLING_BACK')).toEqual({ word: 'Rolling back', tone: 'warn', pulsing: true });
+    expect(deploymentStatusPresentation('ROLLED_BACK')).toEqual({ word: 'Rolled back', tone: 'error', pulsing: false });
+    for (const trigger of DEPLOYMENT_TRIGGERS) expect(triggerWord(trigger)).not.toBe(trigger);
+    expect(triggerWord('webhook')).toBe('Webhook');
+    expect(triggerWord('rollback')).toBe('Rollback');
+  });
+
   it('keeps an unknown status or trigger as plain text', () => {
     expect(deploymentStatusPresentation('WEIRD')).toEqual({
       word: 'WEIRD',
@@ -108,8 +117,11 @@ describe('deployment presentation (13-12 A4)', () => {
 
 describe('cancel and recovery copy (13-12 A3, A5, H1)', () => {
   it('allows cancel only for a queued or running deployment', () => {
-    for (const status of ['QUEUED', 'PREPARING', 'BUILDING', 'DEPLOYING']) expect(isCancellable(status)).toBe(true);
-    for (const status of ['SUCCESS', 'FAILED', 'CANCELLED', 'nope']) expect(isCancellable(status)).toBe(false);
+    for (const status of ['QUEUED', 'PREPARING', 'BUILDING', 'DEPLOYING', 'HEALTHCHECK']) expect(isCancellable(status)).toBe(true);
+    // ROLLING_BACK is not cancellable: a half restore can leave no running version (ADR 0010).
+    for (const status of ['SUCCESS', 'FAILED', 'CANCELLED', 'ROLLING_BACK', 'ROLLED_BACK', 'nope']) {
+      expect(isCancellable(status)).toBe(false);
+    }
   });
 
   it('gives fixed recovery copy and a generic fallback', () => {

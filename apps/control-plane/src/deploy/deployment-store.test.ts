@@ -11,6 +11,7 @@ import {
   createDeploymentStore,
   DeploymentConflictError,
   ENQUEUE_FAILED_MESSAGE,
+  IN_FLIGHT_STATUSES,
   type FinishDeploymentInput,
 } from './deployment-store.js';
 import { DEPLOY_MESSAGES } from './run-deployment.js';
@@ -279,34 +280,25 @@ describe('deployment store: step boundaries (13-03 A2, H1)', () => {
     expect(stepsOf(h.state.deployment)).toEqual(['success', 'success', 'running', 'pending']);
   });
 
-  it('enters verify with one conditional UPDATE while DEPLOYING and publishes it', async () => {
-    const h = harness({ deployment: deploymentRow({ status: 'DEPLOYING', startedAt: STARTED }), service: serviceRow() });
-    await h.store.progress(DEPLOYMENT_ID).enterVerify();
+  it('DEPLOYING -> HEALTHCHECK writes the verify boundary in the same status UPDATE and publishes it (16-02 A7)', async () => {
+    const h = harness({
+      deployment: deploymentRow({ status: 'DEPLOYING', startedAt: STARTED, buildingStartedAt: STARTED, deployingStartedAt: STARTED }),
+      service: serviceRow(),
+    });
+    await h.store.progress(DEPLOYMENT_ID).advance('DEPLOYING', 'HEALTHCHECK');
     const updates = h.ops.filter((op) => op.root === 'update');
     expect(updates).toHaveLength(1);
-    expect(h.setOf(at(updates, 0))).toMatchObject({ verifyingStartedAt: NOW });
-    expect(h.setOf(at(updates, 0))).not.toHaveProperty('status');
+    expect(h.setOf(at(updates, 0))).toMatchObject({ status: 'HEALTHCHECK', verifyingStartedAt: NOW });
+    expect(h.setOf(at(updates, 0))).not.toHaveProperty('deployingStartedAt');
     expect(updates[0]?.inTx).toBe(true);
-    expect(h.published.at(-1)).toMatchObject({ type: 'deployment.updated', deployment: { status: 'DEPLOYING' } });
+    expect(h.published.at(-1)).toMatchObject({ type: 'deployment.updated', deployment: { status: 'HEALTHCHECK' } });
     expect(stepsOf(h.state.deployment)).toEqual(['success', 'success', 'success', 'running']);
   });
 
-  it.each(['SUCCESS', 'FAILED', 'CANCELLED', 'BUILDING'] as const)('never enters verify on a %s row', async (status) => {
+  it.each(['SUCCESS', 'FAILED', 'CANCELLED', 'BUILDING'] as const)('never enters HEALTHCHECK from a %s row', async (status) => {
     const h = harness({ deployment: deploymentRow({ status, startedAt: STARTED }), service: serviceRow() });
-    await h.store.progress(DEPLOYMENT_ID).enterVerify();
+    await expect(h.store.progress(DEPLOYMENT_ID).advance('DEPLOYING', 'HEALTHCHECK')).rejects.toBeInstanceOf(DeploymentConflictError);
     expect(h.ops.filter((op) => op.root === 'update')).toEqual([]);
-    expect(h.published).toEqual([]);
-  });
-
-  it('enters verify once', async () => {
-    const h = harness({ deployment: deploymentRow({ status: 'DEPLOYING', verifyingStartedAt: STARTED }), service: serviceRow() });
-    await h.store.progress(DEPLOYMENT_ID).enterVerify();
-    expect(h.ops.filter((op) => op.root === 'update')).toEqual([]);
-  });
-
-  it('a missing row records nothing', async () => {
-    const h = harness({ deployment: null, service: null });
-    await h.store.progress(DEPLOYMENT_ID).enterVerify();
     expect(h.published).toEqual([]);
   });
 
@@ -318,7 +310,7 @@ describe('deployment store: step boundaries (13-03 A2, H1)', () => {
     const progress = h.store.progress(DEPLOYMENT_ID);
     const cancelled = await h.store.finish(DEPLOYMENT_ID, finishInput({ status: 'CANCELLED', container: null }));
     const succeeded = await h.store.finish(DEPLOYMENT_ID, finishInput());
-    await progress.enterVerify();
+    await expect(progress.advance('DEPLOYING', 'HEALTHCHECK')).rejects.toBeInstanceOf(DeploymentConflictError);
 
     expect(cancelled?.status).toBe('CANCELLED');
     expect(succeeded).toBeNull();
@@ -330,7 +322,7 @@ describe('deployment store: step boundaries (13-03 A2, H1)', () => {
 
 describe('deployment store: finish (C3, ERR)', () => {
   it('ends SUCCESS with duration, service status cache, activity event and both events', async () => {
-    const h = harness({ deployment: deploymentRow({ status: 'DEPLOYING', startedAt: STARTED }), service: serviceRow({ status: 'NEVER_DEPLOYED' }) });
+    const h = harness({ deployment: deploymentRow({ status: 'HEALTHCHECK', startedAt: STARTED }), service: serviceRow({ status: 'NEVER_DEPLOYED' }) });
 
     const view = await h.store.finish(DEPLOYMENT_ID, finishInput());
 
@@ -420,8 +412,15 @@ describe('deployment store: finish (C3, ERR)', () => {
     expect(h.state.deployment?.errorMessage?.length).toBeLessThanOrEqual(1024);
   });
 
+  it('refuses SUCCESS from DEPLOYING: every success passes HEALTHCHECK (16-02 A7)', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'DEPLOYING', startedAt: STARTED }), service: serviceRow() });
+    await expect(h.store.finish(DEPLOYMENT_ID, finishInput())).rejects.toThrow(/Invalid deployment transition: DEPLOYING -> SUCCESS/);
+    expect(h.state.deployment?.status).toBe('DEPLOYING');
+    expect(h.published).toEqual([]);
+  });
+
   it('publishes nothing when the transaction fails', async () => {
-    const h = harness({ deployment: deploymentRow({ status: 'DEPLOYING', startedAt: STARTED }), service: serviceRow(), failActivity: true });
+    const h = harness({ deployment: deploymentRow({ status: 'HEALTHCHECK', startedAt: STARTED }), service: serviceRow(), failActivity: true });
     await expect(h.store.finish(DEPLOYMENT_ID, finishInput())).rejects.toThrow();
     expect(h.published).toEqual([]);
   });
@@ -450,6 +449,7 @@ describe('deployment store: updatedAt on events (13-02 A1, H1)', () => {
     await progress.advance('PREPARING', 'BUILDING');
     await progress.recordCommitSha(SHA);
     await progress.advance('BUILDING', 'DEPLOYING');
+    await progress.advance('DEPLOYING', 'HEALTHCHECK');
     await h.store.finish(DEPLOYMENT_ID, finishInput());
 
     const deploymentTimes = h.published.filter((e) => e.type === 'deployment.updated').map(updatedAtOf);
@@ -459,6 +459,7 @@ describe('deployment store: updatedAt on events (13-02 A1, H1)', () => {
       '2026-10-05T10:01:00.002Z',
       '2026-10-05T10:01:00.004Z',
       '2026-10-05T10:01:00.005Z',
+      '2026-10-05T10:01:00.006Z',
     ]);
     expect(serviceTimes).toEqual(['2026-10-05T10:01:00.001Z']);
   });
@@ -571,6 +572,10 @@ describe('deployment store: cancel (12-13 A1, H1, H2)', () => {
     await h.store.inFlight();
     const op = h.ops[0];
     expect(op?.calls.map((c) => c.method)).toEqual(['from', 'innerJoin', 'where']);
+  });
+
+  it('the worker-crash sweep sees every claimed non-terminal status, HEALTHCHECK and ROLLING_BACK included (16-02 A7)', () => {
+    expect(IN_FLIGHT_STATUSES).toEqual(['PREPARING', 'BUILDING', 'DEPLOYING', 'HEALTHCHECK', 'ROLLING_BACK']);
   });
 });
 

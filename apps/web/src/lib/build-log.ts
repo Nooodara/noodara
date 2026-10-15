@@ -108,7 +108,7 @@ const PHASE_SET: ReadonlySet<string> = new Set(DEPLOYMENT_LOG_PHASES);
 const MIB = 1024 * 1024;
 
 function zeroBytes(): Record<DeploymentLogPhase, number> {
-  return { prepare: 0, build: 0, deploy: 0 };
+  return { prepare: 0, build: 0, deploy: 0, healthcheck: 0, rollback: 0 };
 }
 
 export function createBuildLogState(

@@ -42,6 +42,11 @@ export const DEPLOYMENT_ERROR_COPY: Readonly<Record<DeploymentErrorCode, Deploym
     title: 'Clone failed',
     recovery: 'Check the build log for the Git error, then deploy again.',
   },
+  // 16-02: minimal v0.3 copy; the final words land with 19-01.
+  COMMIT_NOT_FOUND: {
+    title: 'Commit not found',
+    recovery: 'Check that the commit still exists on the configured branch, then deploy again.',
+  },
   DOCKERFILE_NOT_FOUND: {
     title: 'Dockerfile not found',
     recovery: 'Add a Dockerfile at the configured path or change the Dockerfile path in the service settings.',
@@ -77,6 +82,22 @@ export const DEPLOYMENT_ERROR_COPY: Readonly<Record<DeploymentErrorCode, Deploym
   START_FAILED: {
     title: 'Container failed to start',
     recovery: 'Check the runtime logs and the container start command, then deploy again.',
+  },
+  HEALTHCHECK_FAILED: {
+    title: 'Health check failed',
+    recovery: 'Check the runtime logs and the health check settings of the service, then deploy again.',
+  },
+  HEALTHCHECK_TIMEOUT: {
+    title: 'Health check timed out',
+    recovery: 'Check that the app becomes healthy within the health check timeout, or raise the timeout, then deploy again.',
+  },
+  ROLLBACK_FAILED: {
+    title: 'Rollback failed',
+    recovery: 'The previous version could not be restored. Check the server and the runtime logs, then deploy again.',
+  },
+  ROLLBACK_TARGET_UNAVAILABLE: {
+    title: 'Rollback target unavailable',
+    recovery: 'The image of that deployment is no longer on the server. Choose another successful deployment or deploy again.',
   },
   DOCKER_UNAVAILABLE: {
     title: 'Docker unavailable',

@@ -117,7 +117,7 @@ describe('unsupportedRepositoryFeatureError', () => {
 
 describe('@noodara/domain/deployment subpath', () => {
   it('re-exports the deployment module surface', () => {
-    expect(deploymentSubpath.DEPLOYMENT_STATUSES).toHaveLength(7);
+    expect(deploymentSubpath.DEPLOYMENT_STATUSES).toHaveLength(10);
     expect(typeof deploymentSubpath.transitionDeployment).toBe('function');
     expect(typeof deploymentSubpath.deriveServiceStatus).toBe('function');
     expect(typeof deploymentSubpath.isDeploymentErrorCode).toBe('function');

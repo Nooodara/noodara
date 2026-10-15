@@ -25,6 +25,14 @@ describe('deploymentErrorCopy', () => {
     expect(Object.keys(DEPLOYMENT_ERROR_COPY).sort()).toEqual([...DEPLOYMENT_ERROR_CODES].sort());
   });
 
+  it('the v0.3 codes (16-02 A7) have their own titles', () => {
+    expect(deploymentErrorCopy('HEALTHCHECK_FAILED').title).toBe('Health check failed');
+    expect(deploymentErrorCopy('HEALTHCHECK_TIMEOUT').title).toBe('Health check timed out');
+    expect(deploymentErrorCopy('ROLLBACK_FAILED').title).toBe('Rollback failed');
+    expect(deploymentErrorCopy('ROLLBACK_TARGET_UNAVAILABLE').title).toBe('Rollback target unavailable');
+    expect(deploymentErrorCopy('COMMIT_NOT_FOUND').title).toBe('Commit not found');
+  });
+
   it('ENQUEUE_FAILED (14-08) tells the user nothing ran and to deploy again', () => {
     const copy = deploymentErrorCopy('ENQUEUE_FAILED');
     expect(copy.title).toBe('Deploy never started');

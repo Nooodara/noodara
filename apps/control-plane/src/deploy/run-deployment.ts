@@ -97,9 +97,8 @@ export interface DeployRunLimits {
 
 /** Persists each status edge as it happens (the store, in production). */
 export interface DeploymentProgress {
+  /** 16-02: DEPLOYING -> HEALTHCHECK is the verify step boundary (the post-start polls begin). */
   advance(from: DeploymentStatus, to: DeploymentStatus): Promise<void>;
-  /** The start -> verify step boundary (13-03): the container started, post-start polls begin. */
-  enterVerify(): Promise<void>;
   recordCommitSha(sha: CommitSha): Promise<void>;
 }
 
@@ -492,8 +491,8 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     ledger = recordResource(ledger, { kind: 'container_created' });
     await check(await startContainer(context('deploy'), { serviceId }), null);
 
-    // verify
-    await progress.enterVerify();
+    // verify: the post-start polls are the HEALTHCHECK step; the worker's finish ends SUCCESS.
+    await advance('HEALTHCHECK');
     let { delayMs, state } = startPostStartPolls(input.pollPolicy);
     for (;;) {
       await clock.sleep(delayMs);

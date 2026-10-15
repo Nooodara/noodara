@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { DEPLOYMENT_ERROR_CODES, type DeploymentErrorCode } from './deployment-error.js';
-import { DEPLOYMENT_STATUSES, type DeploymentStatus } from './deployment-state.js';
+import { DEPLOYMENT_STATUSES, isTerminalDeploymentStatus } from './deployment-state.js';
 import {
   DEPLOYMENT_STEP_STATES,
-  canEnterVerifyStep,
   deriveDeploymentSteps,
   stepBoundaryOfTransition,
   type DeploymentSourceType,
@@ -214,11 +213,12 @@ describe('deriveDeploymentSteps', () => {
                 if ((s.state === 'pending' || s.state === 'skipped') && s.startedAt !== null) violations.push(`${label}: ${s.name} started`);
                 if (s.state === 'running' && s.completedAt !== null) violations.push(`${label}: ${s.name} completed`);
               }
-              const terminal = status === 'SUCCESS' || status === 'FAILED' || status === 'CANCELLED';
+              // ROLLING_BACK restores the previous container: the attempt's own steps are over.
+              const ended = status === 'ROLLING_BACK' || isTerminalDeploymentStatus(status);
               const running = steps.filter((s) => s.state === 'running').length;
-              if (running !== (terminal || status === 'QUEUED' ? 0 : 1)) violations.push(`${label}: ${String(running)} running`);
-              const ended = steps.filter((s) => s.state === 'failed' || s.state === 'cancelled').length;
-              if (ended > 1) violations.push(`${label}: ${String(ended)} ended`);
+              if (running !== (ended || status === 'QUEUED' ? 0 : 1)) violations.push(`${label}: ${String(running)} running`);
+              const stopped = steps.filter((s) => s.state === 'failed' || s.state === 'cancelled').length;
+              if (stopped > 1) violations.push(`${label}: ${String(stopped)} ended`);
               if (status === 'SUCCESS' && !steps.every((s) => s.state === 'success' || s.state === 'skipped')) {
                 violations.push(`${label}: success with unfinished step`);
               }
@@ -234,7 +234,7 @@ describe('deriveDeploymentSteps', () => {
 });
 
 describe('stepBoundaryOfTransition', () => {
-  it('writes the build and deploy boundaries with their status edges only', () => {
+  it('writes the build, deploy and verify boundaries with their status edges only', () => {
     const table: Record<string, string | null> = {};
     for (const from of DEPLOYMENT_STATUSES) {
       for (const to of DEPLOYMENT_STATUSES) {
@@ -242,7 +242,16 @@ describe('stepBoundaryOfTransition', () => {
         if (boundary !== null) table[`${from}->${to}`] = boundary;
       }
     }
-    expect(table).toEqual({ 'PREPARING->BUILDING': 'buildingStartedAt', 'BUILDING->DEPLOYING': 'deployingStartedAt' });
+    expect(table).toEqual({
+      'PREPARING->BUILDING': 'buildingStartedAt',
+      'BUILDING->DEPLOYING': 'deployingStartedAt',
+      'DEPLOYING->HEALTHCHECK': 'verifyingStartedAt',
+    });
+  });
+
+  it('the rollback-only PREPARING -> DEPLOYING edge writes the deploy boundary for trigger rollback only', () => {
+    expect(stepBoundaryOfTransition('PREPARING', 'DEPLOYING', 'rollback')).toBe('deployingStartedAt');
+    expect(stepBoundaryOfTransition('PREPARING', 'DEPLOYING', 'manual')).toBeNull();
   });
 
   it('an invalid edge has no boundary', () => {
@@ -251,9 +260,47 @@ describe('stepBoundaryOfTransition', () => {
   });
 });
 
-describe('canEnterVerifyStep', () => {
-  it('only while DEPLOYING', () => {
-    const allowed = DEPLOYMENT_STATUSES.filter((status: DeploymentStatus) => canEnterVerifyStep(status));
-    expect(allowed).toEqual(['DEPLOYING']);
+describe('v0.3 states (16-02 A7)', () => {
+  it('HEALTHCHECK is the verify step: three successful steps, verify running', () => {
+    const healthcheck = input({ status: 'HEALTHCHECK', ...FULL, completedAt: null });
+    expect(states(healthcheck)).toEqual(['success', 'success', 'success', 'running']);
+    expect(deriveDeploymentSteps(healthcheck)[3]).toEqual({
+      name: 'verify',
+      state: 'running',
+      startedAt: at(22),
+      completedAt: null,
+      durationMs: null,
+    });
+    expect(states(input({ status: 'HEALTHCHECK', startedAt: at(0) }))).toEqual(['success', 'success', 'success', 'running']);
+  });
+
+  it('ROLLING_BACK and ROLLED_BACK mark the step that failed, with none running', () => {
+    for (const status of ['ROLLING_BACK', 'ROLLED_BACK'] as const) {
+      expect(states(input({ status, errorCode: 'HEALTHCHECK_FAILED', ...FULL }))).toEqual(['success', 'success', 'success', 'failed']);
+      expect(states(input({ status, errorCode: 'START_FAILED', ...FULL, verifyingStartedAt: null }))).toEqual([
+        'success',
+        'success',
+        'failed',
+        'pending',
+      ]);
+    }
+  });
+
+  it('maps the v0.3 error codes of rows without boundaries to their step', () => {
+    expect(states(input({ status: 'FAILED', errorCode: 'COMMIT_NOT_FOUND', startedAt: at(0) }))).toEqual([
+      'failed',
+      'pending',
+      'pending',
+      'pending',
+    ]);
+    for (const errorCode of ['HEALTHCHECK_FAILED', 'HEALTHCHECK_TIMEOUT'] as const) {
+      expect(states(input({ status: 'FAILED', errorCode, startedAt: at(0) }))).toEqual(['success', 'success', 'success', 'failed']);
+      expect(states(input({ sourceType: 'image', status: 'FAILED', errorCode, startedAt: at(0) }))).toEqual([
+        'success',
+        'skipped',
+        'success',
+        'failed',
+      ]);
+    }
   });
 });

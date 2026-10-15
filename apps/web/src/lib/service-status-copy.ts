@@ -1,7 +1,7 @@
 // 13-12: words, tones and recovery copy for the service view. The service status shown is always
 // the one the API derived (deriveServiceStatus on the server, ROADMAP D5); nothing here computes a
 // status from local data. UNKNOWN says plainly what it means: the container could not be observed.
-import { isTerminalDeploymentStatus, type DeploymentStatus, type DeploymentTrigger, type ServiceStatus } from '@noodara/domain';
+import { canTransitionDeployment, type DeploymentStatus, type DeploymentTrigger, type ServiceStatus } from '@noodara/domain';
 import { PLACEHOLDER, type Tone } from '@noodara/ui';
 import type { DeployApiErrorCode } from './api-client';
 
@@ -71,8 +71,12 @@ const DEPLOYMENT_STATUS_PRESENTATION = {
   PREPARING: { word: 'Preparing', tone: 'warn', pulsing: true },
   BUILDING: { word: 'Building', tone: 'warn', pulsing: true },
   DEPLOYING: { word: 'Deploying', tone: 'warn', pulsing: true },
+  // 16-02: minimal v0.3 copy; the final words land with 19-01.
+  HEALTHCHECK: { word: 'Health check', tone: 'warn', pulsing: true },
   SUCCESS: { word: 'Success', tone: 'ok', pulsing: false },
   FAILED: { word: 'Failed', tone: 'error', pulsing: false },
+  ROLLING_BACK: { word: 'Rolling back', tone: 'warn', pulsing: true },
+  ROLLED_BACK: { word: 'Rolled back', tone: 'error', pulsing: false },
   CANCELLED: { word: 'Cancelled', tone: 'idle', pulsing: false },
 } as const satisfies Record<DeploymentStatus, StatusPresentation>;
 
@@ -85,6 +89,8 @@ export function deploymentStatusPresentation(status: string): StatusPresentation
 const TRIGGER_WORDS = {
   manual: 'Manual',
   redeploy: 'Redeploy',
+  webhook: 'Webhook',
+  rollback: 'Rollback',
 } as const satisfies Record<DeploymentTrigger, string>;
 
 /** The trigger's word; an unrecognized value is shown as-is (React renders it as inert text). */
@@ -111,9 +117,9 @@ export function formatDuration(ms: number | null): string {
   return rest === 0 ? `${String(hours)}h` : `${String(hours)}h ${String(rest)}m`;
 }
 
-/** Same rule as the cancel route: only a queued or running deployment can be cancelled. */
+/** The state machine's rule: a status with an edge to CANCELLED (never ROLLING_BACK, never terminal). */
 export function isCancellable(status: string): boolean {
-  return Object.hasOwn(DEPLOYMENT_STATUS_PRESENTATION, status) && !isTerminalDeploymentStatus(status as DeploymentStatus);
+  return Object.hasOwn(DEPLOYMENT_STATUS_PRESENTATION, status) && canTransitionDeployment(status as DeploymentStatus, 'CANCELLED');
 }
 
 export const PROJECT_ARCHIVED_DEPLOY_COPY = 'This project is archived. Unarchive it to deploy this service.';

@@ -1,9 +1,10 @@
-// 13-03: the deployment step timeline (clone|pull, build, start, verify). Pure and total: every
+// 13-03: the deployment step timeline (clone|pull, build, start, verify). 16-02: HEALTHCHECK is
+// the verify step (DEPLOYING -> HEALTHCHECK writes its boundary). Pure and total: every
 // status x source x error code x timestamp combination yields exactly four steps in fixed order.
 // Step *states* come from the status (plus, once terminal, which boundary the attempt reached);
 // timestamps only add times. So a terminal deployment never shows a running step, and a row from
 // before the step columns existed (all boundaries null) still gets a valid timeline.
-import { canTransitionDeployment, type DeploymentStatus } from './deployment-state.js';
+import { canTransitionDeployment, type DeploymentStatus, type DeploymentTrigger } from './deployment-state.js';
 import type { DeploymentErrorCode } from './deployment-error.js';
 
 export const DEPLOYMENT_STEP_NAMES = Object.freeze(['clone', 'pull', 'build', 'start', 'verify'] as const);
@@ -53,16 +54,16 @@ export interface DeploymentStep {
  * The boundary column a status edge writes in the same UPDATE as the status. QUEUED -> PREPARING
  * writes `startedAt` and terminal edges write `completedAt`, as before 13-03; other edges none.
  */
-export function stepBoundaryOfTransition(from: DeploymentStatus, to: DeploymentStatus): DeploymentStepBoundary | null {
-  if (!canTransitionDeployment(from, to)) return null;
+export function stepBoundaryOfTransition(
+  from: DeploymentStatus,
+  to: DeploymentStatus,
+  trigger?: DeploymentTrigger,
+): DeploymentStepBoundary | null {
+  if (!canTransitionDeployment(from, to, trigger)) return null;
   if (to === 'BUILDING') return 'buildingStartedAt';
   if (to === 'DEPLOYING') return 'deployingStartedAt';
+  if (to === 'HEALTHCHECK') return 'verifyingStartedAt';
   return null;
-}
-
-/** The start -> verify boundary is not a status edge; it may be written only while DEPLOYING. */
-export function canEnterVerifyStep(status: DeploymentStatus): boolean {
-  return status === 'DEPLOYING';
 }
 
 const STEP_COUNT = 4;
@@ -80,6 +81,7 @@ const GIT_FAILURE_STEP: Partial<Record<DeploymentErrorCode, number>> = {
   GIT_HOST_KEY_UNAVAILABLE: 0,
   UNSUPPORTED_REPOSITORY_FEATURE: 0,
   CLONE_FAILED: 0,
+  COMMIT_NOT_FOUND: 0,
   DOCKERFILE_NOT_FOUND: 1,
   BUILDKIT_UNAVAILABLE: 1,
   BUILD_FAILED: 1,
@@ -87,6 +89,8 @@ const GIT_FAILURE_STEP: Partial<Record<DeploymentErrorCode, number>> = {
   BUILD_STALLED: 1,
   PORT_IN_USE: 2,
   START_FAILED: 3,
+  HEALTHCHECK_FAILED: 3,
+  HEALTHCHECK_TIMEOUT: 3,
 };
 
 const IMAGE_FAILURE_STEP: Partial<Record<DeploymentErrorCode, number>> = {
@@ -95,6 +99,8 @@ const IMAGE_FAILURE_STEP: Partial<Record<DeploymentErrorCode, number>> = {
   IMAGE_PULL_FAILED: 0,
   PORT_IN_USE: 2,
   START_FAILED: 3,
+  HEALTHCHECK_FAILED: 3,
+  HEALTHCHECK_TIMEOUT: 3,
 };
 
 function validDate(value: Date | null): Date | null {
@@ -123,11 +129,16 @@ function reachedStep(input: DeploymentStepsInput): number {
       // An image source pulls while BUILDING.
       return git ? 1 : 0;
     case 'DEPLOYING':
+      // A v0.2 row still in flight at upgrade wrote verify while DEPLOYING.
       return validDate(input.verifyingStartedAt) !== null ? 3 : 2;
+    case 'HEALTHCHECK':
+      return 3;
     case 'SUCCESS':
       return DONE;
     case 'FAILED':
     case 'CANCELLED':
+    case 'ROLLING_BACK':
+    case 'ROLLED_BACK':
       return terminalReachedStep(input);
   }
 }
@@ -160,8 +171,13 @@ export function deriveDeploymentSteps(input: DeploymentStepsInput): DeploymentSt
   const starts = stepStarts(input);
   const completedAt = validDate(input.completedAt);
   const reached = reachedStep(input);
+  // ROLLING_BACK restores the previous container: the attempt's own failed step is over.
   const terminalState: DeploymentStepState =
-    input.status === 'FAILED' ? 'failed' : input.status === 'CANCELLED' ? 'cancelled' : 'running';
+    input.status === 'CANCELLED'
+      ? 'cancelled'
+      : input.status === 'FAILED' || input.status === 'ROLLING_BACK' || input.status === 'ROLLED_BACK'
+        ? 'failed'
+        : 'running';
 
   // A step ends where the next step that runs begins; the last one ends with the deployment.
   const endOf = (index: number): Date | null => {

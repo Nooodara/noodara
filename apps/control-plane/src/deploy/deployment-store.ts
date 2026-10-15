@@ -3,9 +3,9 @@
 //   (a BullMQ re-delivery of a job already past QUEUED) returns null, so the caller runs nothing.
 // - progress: every edge goes through `transitionDeployment` and an UPDATE on the expected status
 //   under the row lock; a row that moved underneath is a conflict, never a silent overwrite.
-//   13-03: the edge's step boundary (`stepBoundaryOfTransition`) is set in that same UPDATE, and
-//   the start -> verify boundary is one conditional UPDATE allowed only while DEPLOYING, so a
-//   terminal row never gains a boundary after its status.
+//   13-03: the edge's step boundary (`stepBoundaryOfTransition`) is set in that same UPDATE
+//   (16-02: DEPLOYING -> HEALTHCHECK writes the verify boundary), so a terminal row never gains
+//   a boundary after its status.
 // - updatedAt (13-02 H1): every write moves it strictly forward (`nextUpdatedAt` on the locked
 //   row), and the events carry that value.
 // - finish: terminal status, timings, error code/message, the services.status cache (D5), the
@@ -21,10 +21,10 @@
 // Error messages are the pipeline's fixed texts (never raw remote output), capped here again.
 import { and, asc, eq, inArray, lte } from 'drizzle-orm';
 import {
-  canEnterVerifyStep,
   deriveServiceStatus,
   InvalidDeploymentTransitionError,
   isTerminalDeploymentStatus,
+  NON_TERMINAL_DEPLOYMENT_STATUSES,
   stepBoundaryOfTransition,
   transitionDeployment,
   type ContainerObservation,
@@ -83,7 +83,8 @@ export interface InFlightDeployment {
   readonly status: DeploymentStatus;
 }
 
-const IN_FLIGHT_STATUSES = ['PREPARING', 'BUILDING', 'DEPLOYING'] as const;
+/** Claimed and not finished: what the worker-crash sweep looks at (QUEUED has no worker yet). */
+export const IN_FLIGHT_STATUSES: readonly DeploymentStatus[] = NON_TERMINAL_DEPLOYMENT_STATUSES.filter((status) => status !== 'QUEUED');
 
 /** A QUEUED deployment old enough for the stale-QUEUED sweep to look at its job. */
 export interface StaleQueuedDeployment {
@@ -286,21 +287,6 @@ export function createDeploymentStore(deps: DeploymentStoreDeps): DeploymentStor
           });
           if (!row) throw new DeploymentConflictError(deploymentId, from);
           await publishDeployment(deps, row);
-        },
-        async enterVerify() {
-          const row = await deps.db.transaction(async (tx) => {
-            const [current] = await tx.select().from(deployments).where(eq(deployments.id, deploymentId)).for('update');
-            if (!current || !canEnterVerifyStep(current.status) || current.verifyingStartedAt !== null) return null;
-            const now = deps.now();
-            const [updated] = await tx
-              .update(deployments)
-              .set({ verifyingStartedAt: now, updatedAt: nextUpdatedAt(current.updatedAt, now) })
-              .where(and(eq(deployments.id, deploymentId), eq(deployments.status, current.status)))
-              .returning();
-            return updated ?? null;
-          });
-          // Not DEPLOYING any more (finished elsewhere): nothing to record, the status explains it.
-          if (row) await publishDeployment(deps, row);
         },
         async recordCommitSha(sha) {
           await deps.db.transaction(async (tx) => {
