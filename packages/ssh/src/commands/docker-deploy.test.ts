@@ -516,3 +516,380 @@ describe('commands barrel', () => {
     expect(commands).not.toHaveProperty('createRemoteCommand');
   });
 });
+
+// --- 17-01 (ADR 0010): healthcheck probes, the -prev container and per-service images ----------
+
+// ADR 0010 A1/H1/H2 text, copied by hand from contracts-v03.test.ts. Changing a probe script must
+// update the contract test, the ADR and this copy in the same plan.
+const DOLLAR_SIGN = String.fromCharCode(36);
+const ADR_0010_HTTP_PROBE = [
+  '{ exec 3<>"/dev/tcp/$1/$2"; } 2>/dev/null || { echo "NOODARA_PROBE refused"; exit 0; }',
+  String.raw`printf 'GET %s HTTP/1.0\r\nHost: %s:%s\r\nUser-Agent: noodara-healthcheck/1\r\nAccept: */*\r\nConnection: close\r\n\r\n' "$3" "$1" "$2" >&3 2>/dev/null || { echo "NOODARA_PROBE error"; exit 0; }`,
+  'IFS= read -r -n 64 line <&3 || [ -n "$line" ] || { echo "NOODARA_PROBE empty"; exit 0; }',
+  `line=${DOLLAR_SIGN}{line%$'\\r'}`,
+  'case $line in',
+  `  "HTTP/1."[01]" "[1-5][0-9][0-9]|"HTTP/1."[01]" "[1-5][0-9][0-9]" "*) echo "NOODARA_PROBE http ${DOLLAR_SIGN}{line:9:3}" ;;`,
+  '  *) echo "NOODARA_PROBE malformed" ;;',
+  'esac',
+].join('\n');
+const ADR_0010_TCP_PROBE =
+  '{ exec 3<>"/dev/tcp/$1/$2"; } 2>/dev/null && echo "NOODARA_PROBE open" || echo "NOODARA_PROBE refused"';
+const PROBE_WRAPPER = (seconds: number): string[] => [
+  'env',
+  '-i',
+  'PATH=/usr/bin:/bin',
+  'timeout',
+  '-k',
+  '1',
+  String(seconds),
+  'bash',
+  '--noprofile',
+  '--norc',
+  '-c',
+];
+
+const ip = valid(validateContainerIp('172.18.0.2'));
+const PREV = `noodara-${SERVICE_ID_TEXT}-prev`;
+
+function httpConfig(fields: Record<string, unknown> = {}): HttpHealthcheckConfig {
+  const config = valid(
+    validateHealthcheckConfig({
+      type: 'http',
+      path: '/health',
+      port: 3000,
+      probeTimeoutS: 5,
+      intervalS: 5,
+      retries: 3,
+      startPeriodS: 0,
+      ...fields,
+    }),
+  );
+  if (config.type !== 'http') throw new Error('fixture must be an http healthcheck');
+  return config;
+}
+
+function tcpConfig(fields: Record<string, unknown> = {}): TcpHealthcheckConfig {
+  const config = valid(
+    validateHealthcheckConfig({
+      type: 'tcp',
+      port: 5432,
+      probeTimeoutS: 2,
+      intervalS: 5,
+      retries: 3,
+      startPeriodS: 0,
+      ...fields,
+    }),
+  );
+  if (config.type !== 'tcp') throw new Error('fixture must be a tcp healthcheck');
+  return config;
+}
+
+describe('validateContainerIp (ADR 0010 A1: the IP read from docker inspect)', () => {
+  it.each(['172.18.0.2', '10.0.0.5', '192.168.255.254', '1.2.3.4'])('accepts %s', (value) => {
+    expect(validateContainerIp(value)).toEqual({ ok: true, value });
+  });
+
+  it.each([
+    '',
+    '0.0.0.0',
+    '127.0.0.1',
+    '224.0.0.1',
+    '255.255.255.255',
+    '172.18.0.256',
+    '172.18.0',
+    '172.018.0.2',
+    ' 172.18.0.2',
+    '172.18.0.2\n',
+    'fe80::1',
+    'localhost',
+    '172.18.0.2; id',
+  ])('rejects %j with CONTAINER_IP_INVALID', (value) => {
+    expect(validateContainerIp(value)).toMatchObject({ ok: false, code: 'CONTAINER_IP_INVALID' });
+  });
+});
+
+describe('PROBE_SCRIPTS (ADR 0010 A1/H1/H2)', () => {
+  it('is frozen and equals the ADR 0010 contract text', () => {
+    expect(Object.isFrozen(PROBE_SCRIPTS)).toBe(true);
+    expect(Object.keys(PROBE_SCRIPTS).sort()).toEqual(['http', 'tcp']);
+    expect(PROBE_SCRIPTS.http).toBe(ADR_0010_HTTP_PROBE);
+    expect(PROBE_SCRIPTS.tcp).toBe(ADR_0010_TCP_PROBE);
+  });
+
+  it('reads at most 64 bytes (the status line) and never echoes the line itself (A4, H2)', () => {
+    expect(PROBE_SCRIPTS.http).toContain('read -r -n 64 line');
+    // Only fixed words and the three status digits ever reach stdout.
+    const echoes = [...PROBE_SCRIPTS.http.matchAll(/echo "([^"]*)"/g)].map((m) => m[1]);
+    expect(echoes).toEqual([
+      'NOODARA_PROBE refused',
+      'NOODARA_PROBE error',
+      'NOODARA_PROBE empty',
+      `NOODARA_PROBE http ${DOLLAR_SIGN}{line:9:3}`,
+      'NOODARA_PROBE malformed',
+    ]);
+    expect(PROBE_SCRIPTS.http).not.toMatch(/\bcat\b|\bcurl\b|\bwget\b|Location/);
+  });
+
+  it.each(Object.entries(PROBE_SCRIPTS))(
+    '%s references only $1-$3 and its own local, never command substitution or a backtick',
+    (_, script) => {
+      expect(script.includes(`${DOLLAR_SIGN}(`)).toBe(false);
+      expect(script.includes(String.fromCharCode(96))).toBe(false);
+      const names = [...script.matchAll(/[$]\{?([A-Za-z_][A-Za-z0-9_]*|[0-9@*#?$!-])/g)].map(
+        (m) => m[1],
+      );
+      for (const name of names) expect(['1', '2', '3', 'line'], name).toContain(name);
+    },
+  );
+});
+
+describe('probeHttp / probeTcp (ADR 0010 A1/H1)', () => {
+  it('http: the env -i + timeout + bash --noprofile --norc wrapper, then ip, port and path as positionals', () => {
+    const command = probeHttp({ ip, config: httpConfig() });
+
+    expect(command.name).toBe('probe.http');
+    expect(command.stdin).toBe('none');
+    expect(command.supervisable).toBe(false);
+    expect(command.argv).toEqual([
+      ...PROBE_WRAPPER(5),
+      PROBE_SCRIPTS.http,
+      'noodara-probe',
+      '172.18.0.2',
+      '3000',
+      '/health',
+    ]);
+    expect(shellWords(renderRemoteCommand(command))).toEqual(command.argv);
+  });
+
+  it('tcp: the same wrapper, ip and port only', () => {
+    const command = probeTcp({ ip, config: tcpConfig() });
+
+    expect(command.name).toBe('probe.tcp');
+    expect(command.argv).toEqual([
+      ...PROBE_WRAPPER(2),
+      PROBE_SCRIPTS.tcp,
+      'noodara-probe',
+      '172.18.0.2',
+      '5432',
+    ]);
+  });
+
+  it('the hard cap is the probe timeout itself (1-30 s), with a 1 s kill grace', () => {
+    expect(probeHttp({ ip, config: httpConfig({ probeTimeoutS: 1 }) }).argv.slice(3, 7)).toEqual([
+      'timeout',
+      '-k',
+      '1',
+      '1',
+    ]);
+    expect(probeTcp({ ip, config: tcpConfig({ probeTimeoutS: 30 }) }).argv[6]).toBe('30');
+  });
+
+  it('keeps a validated path with a query string as one literal word', () => {
+    const command = probeHttp({ ip, config: httpConfig({ path: '/healthz?full=1&x=%20' }) });
+
+    expect(command.argv.at(-1)).toBe('/healthz?full=1&x=%20');
+    expect(shellWords(renderRemoteCommand(command))).toEqual(command.argv);
+  });
+
+  it('exports the probe output budget (A4): 1 KiB', () => {
+    expect(PROBE_OUTPUT_MAX_BYTES).toBe(1024);
+  });
+});
+
+describe('probe templates reject every other shape (A2)', () => {
+  const base = httpConfig();
+  const PATHS = [
+    '/health;id',
+    '/health && id',
+    '/health|id',
+    `/${DOLLAR_SIGN}(id)`,
+    `/${String.fromCharCode(96)}id${String.fromCharCode(96)}`,
+    `/${DOLLAR_SIGN}{HOME}`,
+    "/a'b",
+    '/a"b',
+    '/a b',
+    '/a\nb',
+    '/a\rb',
+    '/a\\b',
+    '/a>b',
+    '/a<b',
+    '/a*',
+    'health',
+    'http://evil/health',
+    '/../etc',
+    '',
+  ];
+
+  it.each(PATHS)('a force-cast path %j throws before any command exists', (path) => {
+    expect(() => probeHttp({ ip, config: { ...base, path } })).toThrow(RangeError);
+  });
+
+  it.each(ADVERSARIAL_VALUES)('a force-cast ip %j throws', (value) => {
+    expect(() => probeHttp({ ip: value as ContainerIp, config: base })).toThrow(RangeError);
+    expect(() => probeTcp({ ip: value as ContainerIp, config: tcpConfig() })).toThrow(RangeError);
+  });
+
+  it.each([
+    ['probeTimeoutS 0', { probeTimeoutS: 0 }],
+    ['probeTimeoutS 31', { probeTimeoutS: 31 }],
+    ['probeTimeoutS 1.5', { probeTimeoutS: 1.5 }],
+    ['port 0', { port: 0 }],
+    ['port 65536', { port: 65536 }],
+    ['port as a string', { port: '3000; id' }],
+    ['an unknown key', { headers: { Cookie: 'x' } }],
+    ['another type', { type: 'tcp' }],
+  ] as const)('an http config with %s throws', (_label, fields) => {
+    expect(() =>
+      probeHttp({ ip, config: { ...base, ...fields } as unknown as HttpHealthcheckConfig }),
+    ).toThrow(RangeError);
+  });
+
+  it('a tcp builder refuses an http config and vice versa', () => {
+    expect(() => probeTcp({ ip, config: base as unknown as TcpHealthcheckConfig })).toThrow(
+      RangeError,
+    );
+    expect(() =>
+      probeHttp({ ip, config: tcpConfig() as unknown as HttpHealthcheckConfig }),
+    ).toThrow(RangeError);
+  });
+});
+
+describe('the -prev container (ADR 0010 A2, H1)', () => {
+  const BOUND = ['timeout', '-k', '1', String(PREV_STEP_TIMEOUT_SECONDS)];
+
+  it('previousContainerNameFor derives noodara-<serviceId>-prev', () => {
+    expect(previousContainerNameFor(serviceId)).toBe(PREV);
+  });
+
+  it.each([
+    [
+      'docker.rename_to_prev',
+      () => dockerRenameToPrevious(serviceId),
+      [...BOUND, 'docker', 'rename', '--', container, PREV],
+    ],
+    [
+      'docker.rename_from_prev',
+      () => dockerRenameFromPrevious(serviceId),
+      [...BOUND, 'docker', 'rename', '--', PREV, container],
+    ],
+    [
+      'docker.start_prev',
+      () => dockerStartPrevious(serviceId),
+      [...BOUND, 'docker', 'start', '--', PREV],
+    ],
+    [
+      'docker.remove_prev',
+      () => dockerRemovePrevious(serviceId),
+      [...BOUND, 'docker', 'rm', '--', PREV],
+    ],
+    [
+      'docker.network_connect',
+      () => dockerNetworkConnect(serviceId),
+      [...BOUND, 'docker', 'network', 'connect', '--', network, container],
+    ],
+    [
+      'docker.inspect_networks',
+      () => dockerInspectNetworks({ serviceId, container: 'current' }),
+      [
+        ...BOUND,
+        'docker',
+        'inspect',
+        '--type',
+        'container',
+        '--format',
+        '{{json .NetworkSettings.Networks}}',
+        '--',
+        container,
+      ],
+    ],
+  ] as const)('%s has the exact bounded argv', (name, build, argv) => {
+    const command = build();
+
+    expect(command.name).toBe(name);
+    expect(command.stdin).toBe('none');
+    expect(command.supervisable).toBe(false);
+    expect(command.argv).toEqual(argv);
+    expect(shellWords(renderRemoteCommand(command))).toEqual(command.argv);
+  });
+
+  it('docker.inspect_networks can target the -prev container', () => {
+    expect(dockerInspectNetworks({ serviceId, container: 'previous' }).argv.at(-1)).toBe(PREV);
+  });
+
+  it('docker.stop_prev bounds the stop timeout plus the fixed step budget', () => {
+    expect(dockerStopPrevious({ serviceId, timeoutSeconds: 10 }).argv).toEqual([
+      'timeout',
+      '-k',
+      '1',
+      String(10 + PREV_STEP_TIMEOUT_SECONDS),
+      'docker',
+      'stop',
+      '--timeout',
+      '10',
+      '--',
+      PREV,
+    ]);
+    expect(() => dockerStopPrevious({ serviceId, timeoutSeconds: 301 })).toThrow(RangeError);
+    expect(() => dockerStopPrevious({ serviceId, timeoutSeconds: -1 })).toThrow(RangeError);
+  });
+
+  it('H1: no -prev template can overwrite or silently remove another version', () => {
+    const all = [
+      dockerRenameToPrevious(serviceId),
+      dockerRenameFromPrevious(serviceId),
+      dockerStartPrevious(serviceId),
+      dockerStopPrevious({ serviceId, timeoutSeconds: 10 }),
+      dockerRemovePrevious(serviceId),
+    ];
+    for (const command of all) {
+      expect(command.argv).not.toContain('--force');
+      expect(command.argv).not.toContain('-f');
+    }
+    // Only docker.remove_prev removes, and only the -prev name.
+    const removing = all.filter((command) => command.argv.includes('rm'));
+    expect(removing.map((command) => command.argv.at(-1))).toEqual([PREV]);
+  });
+
+  it.each(ADVERSARIAL_VALUES)('a force-cast serviceId %j throws before any command exists', (value) => {
+    const id = value as ResourceId;
+    expect(() => dockerRenameToPrevious(id)).toThrow(RangeError);
+    expect(() => dockerRenameFromPrevious(id)).toThrow(RangeError);
+    expect(() => dockerStartPrevious(id)).toThrow(RangeError);
+    expect(() => dockerStopPrevious({ serviceId: id, timeoutSeconds: 5 })).toThrow(RangeError);
+    expect(() => dockerRemovePrevious(id)).toThrow(RangeError);
+    expect(() => dockerNetworkConnect(id)).toThrow(RangeError);
+    expect(() => dockerInspectNetworks({ serviceId: id, container: 'previous' })).toThrow(
+      RangeError,
+    );
+    expect(() => dockerListServiceImages(id)).toThrow(RangeError);
+    expect(() => dockerRemoveServiceImage({ serviceId: id, deploymentId })).toThrow(RangeError);
+    expect(() => dockerRemoveServiceImage({ serviceId, deploymentId: id })).toThrow(RangeError);
+  });
+});
+
+describe("the service's own images (17-01, retention)", () => {
+  it('docker.image_list_service lists only noodara/<serviceId> images carrying its label, as NDJSON', () => {
+    const command = dockerListServiceImages(serviceId);
+
+    expect(command.name).toBe('docker.image_list_service');
+    expect(command.argv).toEqual([
+      'docker',
+      'image',
+      'ls',
+      '--no-trunc',
+      '--filter',
+      `reference=noodara/${SERVICE_ID_TEXT}`,
+      '--filter',
+      `label=noodara.service_id=${SERVICE_ID_TEXT}`,
+      '--format',
+      '{{json .}}',
+    ]);
+  });
+
+  it('docker.image_remove_service removes only noodara/<serviceId>:<deploymentId>, never forced', () => {
+    const command = dockerRemoveServiceImage({ serviceId, deploymentId });
+
+    expect(command.name).toBe('docker.image_remove_service');
+    expect(command.argv).toEqual(['docker', 'image', 'rm', '--', image]);
+  });
+});
