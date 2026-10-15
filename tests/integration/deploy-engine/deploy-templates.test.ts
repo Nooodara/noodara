@@ -23,10 +23,17 @@ import {
   dockerNetworkRemove,
   dockerPs,
   dockerPull,
+  dockerInspectNetworks,
+  dockerNetworkConnect,
   dockerRemove,
+  dockerRemovePrevious,
+  dockerRenameFromPrevious,
+  dockerRenameToPrevious,
   dockerRestart,
   dockerStart,
+  dockerStartPrevious,
   dockerStop,
+  dockerStopPrevious,
   gitCheckout,
   gitClone,
   gitHeadSha,
@@ -39,9 +46,18 @@ import {
   renderRemoteCommand,
   supervise,
   writeAskpassFile,
+  previousContainerNameFor,
+  probeHttp,
+  probeTcp,
+  validateContainerIp,
   writeSecretFile,
   ASKPASS_SCRIPT_CONTENT,
+  PROBE_OUTPUT_MAX_BYTES,
+  PROBE_SCRIPTS,
+  type ContainerIp,
+  type HttpHealthcheckConfig,
   type RemoteCommand,
+  type TcpHealthcheckConfig,
 } from '@noodara/ssh/testing/deploy-templates';
 import {
   containerNameFor,
@@ -66,6 +82,12 @@ import {
   type GitHostKey,
   type ValidationResult,
 } from '@noodara/domain/validators';
+import {
+  parseProbeOutput,
+  validateHealthcheckConfig,
+  type HealthcheckConfig,
+  type HealthcheckObservation,
+} from '@noodara/domain/deployment';
 import { createRedactor } from '@noodara/domain/security';
 import { classifyGitError } from '@noodara/ssh';
 import {
@@ -88,6 +110,24 @@ const DEPLOY_ERRORS_DIR = path.resolve(HERE, '../../../packages/ssh/src/fixtures
 const CAPTURE_FIXTURES = process.env['NOODARA_CAPTURE_FIXTURES'] === '1';
 const STACK_TIMEOUT_MS = 900_000;
 const SSH_COMMAND_TIMEOUT_MS = 180_000;
+// 17-01: test-only probe target (node base, no pull), same shape as contracts-v03.test.ts.
+const TARGET_PORT = 8080;
+const CLOSED_PORT = 9;
+const PUBLISHED_PORT = 18081;
+const TARGET_SERVER_JS = String.raw`
+const http = require('http');
+const status = Number(process.env.HEALTH_STATUS || '200');
+const canary = process.env.BODY_CANARY || '';
+process.on('SIGTERM', () => process.exit(0));
+http.createServer((req, res) => {
+  const url = req.url || '';
+  if (url === '/health') { res.writeHead(status, { 'content-type': 'text/plain' }); res.end('ok ' + canary + '\n'); return; }
+  if (url.startsWith('/status/')) { res.writeHead(Number(url.slice(8))); res.end(canary); return; }
+  if (url === '/hang') return;
+  if (url === '/big') { res.writeHead(200); res.end(canary.repeat(20000)); return; }
+  res.writeHead(404); res.end();
+}).listen(${String(TARGET_PORT)}, '0.0.0.0');
+`;
 // Test setup only: the slow-build Dockerfile goes under the (not cloned) repo dir.
 const WRITE_DOCKERFILE = `sh -c 'umask 077 && mkdir -p "$0" && cat > "$0/Dockerfile"'`;
 
@@ -606,6 +646,266 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         expect(modes.split('\n')).toEqual(['600 deployer', '700 deployer']);
         expect(tokenSha.split(' ')[0]).toBe(sha256(tokenCanary));
         expect(askpassSha.split(' ')[0]).toBe(sha256(ASKPASS_SCRIPT_CONTENT));
+      });
+    });
+
+    // --- 17-01 / ADR 0010 A3: probe and -prev templates against the real dockerd ---------------
+    describe('17-01 / ADR 0010: healthcheck probe and -prev templates', () => {
+      const bodyCanary = `noodara-canary-${randomBytes(32).toString('base64url')}`;
+      const serviceText = randomUUID();
+      const serviceId = valid(validateResourceId(serviceText));
+      const container = valid(containerNameFor(serviceText));
+      const previous = previousContainerNameFor(serviceId);
+      const network = valid(networkNameFor(serviceText));
+      const deploymentA = randomUUID();
+      const timing = { probeTimeoutS: 2, intervalS: 1, retries: 1, startPeriodS: 0 } as const;
+
+      const http = (path: string, probeTimeoutS = 2): HealthcheckConfig =>
+        valid(
+          validateHealthcheckConfig({
+            ...timing,
+            probeTimeoutS,
+            type: 'http',
+            path,
+            port: TARGET_PORT,
+            expectedStatuses: [200],
+          }),
+        );
+      const tcp = (port: number): HealthcheckConfig =>
+        valid(validateHealthcheckConfig({ ...timing, type: 'tcp', port }));
+      const asHttp = (config: HealthcheckConfig): HttpHealthcheckConfig => {
+        if (config.type !== 'http') throw new Error('expected an http config');
+        return config;
+      };
+      const asTcp = (config: HealthcheckConfig): TcpHealthcheckConfig => {
+        if (config.type !== 'tcp') throw new Error('expected a tcp config');
+        return config;
+      };
+
+      /** The IP on noodara-net-<serviceId>, read through the template under test. */
+      const ipOf = async (which: 'current' | 'previous'): Promise<ContainerIp> => {
+        const networks = JSON.parse(
+          await mustRun(dockerInspectNetworks({ serviceId, container: which })),
+        ) as Record<string, { IPAddress?: string }>;
+        return valid(validateContainerIp(networks[network]?.IPAddress ?? ''));
+      };
+      const probe = async (
+        command: RemoteCommand,
+      ): Promise<{ result: RunResult; observation: HealthcheckObservation; ms: number }> => {
+        const startedAt = performance.now();
+        const result = await run(command);
+        return {
+          result,
+          observation: parseProbeOutput(result.stdout),
+          ms: performance.now() - startedAt,
+        };
+      };
+      const httpProbe = async (path: string, probeTimeoutS = 2) =>
+        probe(probeHttp({ ip: await ipOf('current'), config: asHttp(http(path, probeTimeoutS)) }));
+      /** Root-side truth on the published host port, never the template under test. */
+      const onPublishedPort = async (): Promise<HealthcheckObservation> => {
+        const result = await s().exec([
+          'bash',
+          '--noprofile',
+          '--norc',
+          '-c',
+          PROBE_SCRIPTS.http,
+          'noodara-probe',
+          '127.0.0.1',
+          String(PUBLISHED_PORT),
+          '/health',
+        ]);
+        return parseProbeOutput(result.stdout);
+      };
+      const runTarget = async (deploymentId: string, healthStatus: number): Promise<void> => {
+        const node = s().baseImages.find((image) => image.startsWith('node:'));
+        if (node === undefined) throw new Error('node base image not preloaded');
+        const result = await s().exec([
+          'docker',
+          'run',
+          '--detach',
+          '--pull',
+          'never',
+          '--name',
+          container,
+          '--network',
+          network,
+          '--restart',
+          'unless-stopped',
+          '--label',
+          'noodara.managed=true',
+          '--label',
+          `noodara.service_id=${serviceText}`,
+          '--label',
+          `noodara.deployment_id=${deploymentId}`,
+          '--env',
+          `HEALTH_STATUS=${String(healthStatus)}`,
+          '--env',
+          `BODY_CANARY=${bodyCanary}`,
+          '--publish',
+          `${String(PUBLISHED_PORT)}:${String(TARGET_PORT)}`,
+          '--',
+          node,
+          'node',
+          '-e',
+          TARGET_SERVER_JS,
+        ]);
+        expect(result.exitCode, result.stderr).toBe(0);
+      };
+      const answers = async (status: number): Promise<boolean> =>
+        pollUntil(async () => {
+          const published = await onPublishedPort();
+          return published.kind === 'http' && published.status === status;
+        }, 30_000);
+
+      beforeAll(async () => {
+        await mustRun(dockerNetworkCreate({ network, serviceId }));
+        await runTarget(deploymentA, 200);
+        expect(await answers(200), 'version A answering').toBe(true);
+      }, STACK_TIMEOUT_MS);
+
+      afterAll(async () => {
+        await s().exec(['docker', 'rm', '--force', '--', container, previous]);
+        await s().exec(['docker', 'network', 'rm', '--', network]);
+      }, STACK_TIMEOUT_MS);
+
+      it('A3: probe.http on a listening port reports the status line only, never the body (A4/H2)', async () => {
+        const health = await httpProbe('/health');
+        const big = await httpProbe('/big');
+
+        expect(health.result.exitCode).toBe(0);
+        expect(health.observation).toEqual({ kind: 'http', status: 200 });
+        expect(health.result.stdout).toBe('NOODARA_PROBE http 200\n');
+        expect(big.observation).toEqual({ kind: 'http', status: 200 });
+        expect(Buffer.byteLength(big.result.stdout + big.result.stderr)).toBeLessThanOrEqual(
+          PROBE_OUTPUT_MAX_BYTES,
+        );
+        for (const output of [health.result, big.result]) {
+          expect(`${output.stdout}${output.stderr}`).not.toContain(bodyCanary);
+        }
+      });
+
+      it('A3: probe.tcp reports open on the listening port and refused on a closed one; probe.http on a closed port is refused', async () => {
+        const ip = await ipOf('current');
+        const open = await probe(probeTcp({ ip, config: asTcp(tcp(TARGET_PORT)) }));
+        const closed = await probe(probeTcp({ ip, config: asTcp(tcp(CLOSED_PORT)) }));
+        const closedHttp = await probe(
+          probeHttp({
+            ip,
+            config: asHttp(
+              valid(
+                validateHealthcheckConfig({
+                  ...timing,
+                  type: 'http',
+                  path: '/health',
+                  port: CLOSED_PORT,
+                }),
+              ),
+            ),
+          }),
+        );
+
+        expect(open.observation).toEqual({ kind: 'open' });
+        expect(closed.observation).toEqual({ kind: 'refused' });
+        expect(closedHttp.observation).toEqual({ kind: 'refused' });
+        expect([open, closed, closedHttp].map((p) => p.result.exitCode)).toEqual([0, 0, 0]);
+      });
+
+      it('A3: probe.http on a wrong status reports that status (the caller decides it failed)', async () => {
+        const wrong = await httpProbe('/status/503');
+
+        expect(wrong.result.exitCode).toBe(0);
+        expect(wrong.observation).toEqual({ kind: 'http', status: 503 });
+        expect(wrong.result.stdout).not.toContain(bodyCanary);
+      });
+
+      it('A3/H1: probe.http on a hung endpoint is killed by the timeout wrapper within its budget (exit 124)', async () => {
+        const hung = await httpProbe('/hang', 2);
+
+        expect(hung.result.exitCode).toBe(124);
+        expect(hung.observation).toEqual({ kind: 'error' });
+        expect(hung.ms).toBeGreaterThanOrEqual(1_900);
+        // probeTimeoutS + the 1 s kill grace + SSH round trips.
+        expect(hung.ms).toBeLessThan(6_000);
+        expect(`${hung.result.stdout}${hung.result.stderr}`).not.toContain(bodyCanary);
+      });
+
+      it('A3/H1: rename to -prev frees the name and port, a second rename is refused (never overwrites), restore keeps the published port', async () => {
+        await mustRun(dockerStop({ container, timeoutSeconds: 10 }));
+        await mustRun(dockerRenameToPrevious(serviceId));
+        expect(await onPublishedPort()).toEqual({ kind: 'refused' });
+
+        // Version B takes the name and the published port.
+        await runTarget(randomUUID(), 202);
+        expect(await answers(202), 'version B answering').toBe(true);
+
+        // H1: -prev exists, so a rename onto it is a Conflict and -prev is left alone.
+        await mustRun(dockerStop({ container, timeoutSeconds: 10 }));
+        const conflict = await run(dockerRenameToPrevious(serviceId));
+        expect(conflict.exitCode).not.toBe(0);
+        expect(conflict.stderr).toMatch(/Conflict|already in use/);
+        const kept = await rootOut([
+          'docker',
+          'inspect',
+          '--type',
+          'container',
+          '--format',
+          '{{index .Config.Labels "noodara.deployment_id"}}',
+          '--',
+          previous,
+        ]);
+        expect(kept).toBe(deploymentA);
+
+        // ADR 0010 A2 restore: remove the new container, rename -prev back, start it.
+        await mustRun(dockerRemove(container));
+        await mustRun(dockerRenameFromPrevious(serviceId));
+        const networks = JSON.parse(
+          await mustRun(dockerInspectNetworks({ serviceId, container: 'current' })),
+        ) as Record<string, unknown>;
+        expect(Object.keys(networks)).toEqual([network]);
+        await mustRun(dockerStart(container));
+
+        expect(await answers(200), 'version A restored').toBe(true);
+        const port = await rootOut(['docker', 'port', '--', container]);
+        expect(port).toContain(`:${String(PUBLISHED_PORT)}`);
+        const healthy = await httpProbe('/health');
+        expect(healthy.observation).toEqual({ kind: 'http', status: 200 });
+      });
+
+      it('A3: -prev start, stop and remove act on -prev only; a detached stopped container re-attaches with network_connect', async () => {
+        await mustRun(dockerStop({ container, timeoutSeconds: 10 }));
+        await mustRun(dockerRenameToPrevious(serviceId));
+
+        await mustRun(dockerStartPrevious(serviceId));
+        expect(await answers(200), '-prev answering on the published port').toBe(true);
+        const prevIp = await ipOf('previous');
+        const prevProbe = await probe(probeHttp({ ip: prevIp, config: asHttp(http('/health')) }));
+        expect(prevProbe.observation).toEqual({ kind: 'http', status: 200 });
+
+        await mustRun(dockerStopPrevious({ serviceId, timeoutSeconds: 10 }));
+        expect(await onPublishedPort()).toEqual({ kind: 'refused' });
+
+        // ADR 0010 A2: a detached, stopped container is re-attached by network_connect.
+        await mustRun(dockerRenameFromPrevious(serviceId));
+        const networksOf = async (): Promise<string[]> =>
+          Object.keys(
+            JSON.parse(
+              await mustRun(dockerInspectNetworks({ serviceId, container: 'current' })),
+            ) as Record<string, unknown>,
+          );
+        await s().exec(['docker', 'network', 'disconnect', '--', network, container]);
+        expect(await networksOf()).toEqual([]);
+        await mustRun(dockerNetworkConnect(serviceId));
+        expect(await networksOf()).toEqual([network]);
+
+        await mustRun(dockerRenameToPrevious(serviceId));
+        await mustRun(dockerRemovePrevious(serviceId));
+        const left = await s().exec(['docker', 'inspect', '--type', 'container', '--', previous]);
+        expect(left.exitCode).not.toBe(0);
+      });
+
+      it('H2: the response-body canary never reached any probe or template output', () => {
+        expect(transcript.join('\n')).not.toContain(bodyCanary);
       });
     });
 

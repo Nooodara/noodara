@@ -869,15 +869,23 @@ describe('@noodara/docker package boundary', () => {
       'ensureNetwork',
       'inspectContainerState',
       'listManagedContainers',
+      'listServiceImages',
+      'probeContainerHealth',
       'pruneBuilderCache',
       'pullImage',
       'removeContainer',
       'removeImage',
       'removeNetwork',
+      'removePrevious',
+      'removeServiceImage',
       'removeWorkspace',
+      'renameToPrevious',
       'restartContainer',
+      'restorePrevious',
       'startContainer',
+      'startPrevious',
       'stopContainer',
+      'stopPrevious',
     ]);
   });
 });

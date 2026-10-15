@@ -11,7 +11,7 @@ import {
 import {
   containerNameFor,
   deploymentImageRefFor,
-  isResourceId,
+  validateResourceId,
   networkNameFor,
   type ContainerName,
   type ImageRef,
@@ -36,10 +36,8 @@ import {
   probeTcp,
   validateContainerIp,
   type ContainerIp,
-  type HttpHealthcheckConfig,
   type RemoteCommand,
   type StreamResult,
-  type TcpHealthcheckConfig,
 } from '@noodara/ssh';
 import {
   classify,
@@ -99,7 +97,8 @@ const PROBE_EXEC_MARGIN_MS = 5_000;
 const NO_SUCH_CONTAINER = /No such container/i;
 const NO_SUCH_IMAGE = /No such image/i;
 const NAME_IN_USE = /Conflict\. The container name .* is already in use/;
-const IMAGE_IN_USE_PATTERN = /(unable to remove repository reference|image is being used|is using its referenced image)/i;
+const IMAGE_IN_USE_PATTERN =
+  /(unable to remove repository reference|image is being used|is using its referenced image)/i;
 const TIMED_OUT: StepResult<never> = { ok: false, kind: 'interrupted', outcome: 'timed_out' };
 
 function derived<T>(result: ValidationResult<T>): T {
@@ -141,7 +140,8 @@ function networkAddress(stdout: string, network: string): NetworkAddress {
   } catch {
     return { kind: 'invalid' };
   }
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return { kind: 'invalid' };
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
+    return { kind: 'invalid' };
   if (!Object.hasOwn(parsed, network)) return { kind: 'detached' };
   const entry = (parsed as Record<string, unknown>)[network];
   if (typeof entry !== 'object' || entry === null) return { kind: 'invalid' };
@@ -181,7 +181,8 @@ export async function probeContainerHealth(
   const state = await runStep(stepContext(silent), dockerInspectState(container));
   if (state.kind !== 'completed') return notCompleted(state);
   if (state.result.exitCode !== 0) {
-    if (NO_SUCH_CONTAINER.test(state.result.stderrTail)) return observed({ kind: 'exited' }, state.result);
+    if (NO_SUCH_CONTAINER.test(state.result.stderrTail))
+      return observed({ kind: 'exited' }, state.result);
     return classify(silent, 'inspect', state.result);
   }
   const parsedState = state.result.truncated
@@ -211,8 +212,8 @@ export async function probeContainerHealth(
 
   const command =
     input.config.type === 'http'
-      ? probeHttp({ ip: address.ip, config: input.config as HttpHealthcheckConfig })
-      : probeTcp({ ip: address.ip, config: input.config as TcpHealthcheckConfig });
+      ? probeHttp({ ip: address.ip, config: input.config })
+      : probeTcp({ ip: address.ip, config: input.config });
   const budgetMs = input.config.probeTimeoutS * 1000 + PROBE_EXEC_MARGIN_MS;
   const probe = await runStep(
     {
@@ -268,7 +269,8 @@ export async function renameToPrevious(
       ok: false,
       kind: 'previous_exists',
       name,
-      message: 'A previous version of this service is still kept on the server. It must be restored or removed first.',
+      message:
+        'A previous version of this service is still kept on the server. It must be restored or removed first.',
     };
   }
   return classify(context, 'start', result);
@@ -317,15 +319,20 @@ export async function restorePrevious(
     dockerInspectNetworks({ serviceId: input.serviceId, container: 'current' }),
     ({ result, stdout }) => {
       if (result.exitCode !== 0) return null;
-      const address = result.truncated ? ({ kind: 'invalid' } as const) : networkAddress(stdout, network);
+      const address = result.truncated
+        ? ({ kind: 'invalid' } as const)
+        : networkAddress(stdout, network);
       if (address.kind === 'invalid') return rollbackFailed();
       return done(address.kind !== 'detached', result);
     },
   );
   if (!attached.ok) return attached;
   if (!attached.value) {
-    const connected = await bounded(context, 'network', dockerNetworkConnect(input.serviceId), ({ result }) =>
-      result.exitCode === 0 ? done(true, result) : null,
+    const connected = await bounded(
+      context,
+      'network',
+      dockerNetworkConnect(input.serviceId),
+      ({ result }) => (result.exitCode === 0 ? done(true, result) : null),
     );
     if (!connected.ok) return connected;
   }
@@ -351,8 +358,13 @@ export function stopPrevious(
   input: StopContainerInput,
 ): Promise<StepResult<ContainerName>> {
   const name = previousContainerNameFor(input.serviceId);
-  const command = dockerStopPrevious({ serviceId: input.serviceId, timeoutSeconds: input.timeoutSeconds });
-  return bounded(context, 'stop', command, ({ result }) => (result.exitCode === 0 ? done(name, result) : null));
+  const command = dockerStopPrevious({
+    serviceId: input.serviceId,
+    timeoutSeconds: input.timeoutSeconds,
+  });
+  return bounded(context, 'stop', command, ({ result }) =>
+    result.exitCode === 0 ? done(name, result) : null,
+  );
 }
 
 /** Only `-prev`, never forced; an already absent `-prev` is success (idempotent cleanup). */
@@ -381,11 +393,13 @@ function parseServiceImages(stdout: string, serviceId: ResourceId): ServiceImage
       return { kind: 'unparseable', reason: 'An image list line was not an object' };
     }
     const { Repository, Tag, ID, CreatedAt } = row as Record<string, unknown>;
-    if (Repository !== repository || typeof Tag !== 'string' || !isResourceId(Tag)) continue;
+    if (Repository !== repository || typeof Tag !== 'string') continue;
+    const tag = validateResourceId(Tag);
+    if (!tag.ok) continue;
     if (typeof ID !== 'string' || typeof CreatedAt !== 'string') {
       return { kind: 'unparseable', reason: 'An image list line had no ID or CreatedAt' };
     }
-    images.push({ deploymentId: Tag as ResourceId, imageId: ID, createdAt: CreatedAt });
+    images.push({ deploymentId: tag.value, imageId: ID, createdAt: CreatedAt });
   }
   return { kind: 'ok', images };
 }
@@ -395,13 +409,18 @@ export function listServiceImages(
   context: DockerStepContext,
   input: ServiceRef,
 ): Promise<StepResult<ServiceImagesResult>> {
-  return bounded(quiet(context), 'inspect', dockerListServiceImages(input.serviceId), ({ result, stdout }) => {
-    if (result.exitCode !== 0) return null;
-    const images: ServiceImagesResult = result.truncated
-      ? { kind: 'unparseable', reason: 'The image list was truncated' }
-      : parseServiceImages(stdout, input.serviceId);
-    return done(images, result);
-  });
+  return bounded(
+    quiet(context),
+    'inspect',
+    dockerListServiceImages(input.serviceId),
+    ({ result, stdout }) => {
+      if (result.exitCode !== 0) return null;
+      const images: ServiceImagesResult = result.truncated
+        ? { kind: 'unparseable', reason: 'The image list was truncated' }
+        : parseServiceImages(stdout, input.serviceId);
+      return done(images, result);
+    },
+  );
 }
 
 /** Never forced: an image in use is `in_use`; an already removed image is success. */
