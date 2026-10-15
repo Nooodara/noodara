@@ -100,6 +100,24 @@ describe('cancelDeployment', () => {
     expect(h.deps.flags.request).not.toHaveBeenCalled();
   });
 
+  it('a deployment that is ROLLING_BACK is a named 409 ROLLBACK_IN_PROGRESS: no flag, no event (17-06 A1)', async () => {
+    const h = harness({ kind: 'running', deployment: view('ROLLING_BACK') });
+
+    const result = await h.cancel(DEPLOYMENT_ID, ACTOR);
+
+    expect(result).toMatchObject({ ok: false, code: 'ROLLBACK_IN_PROGRESS' });
+    expect(result.ok ? '' : result.message).toMatch(/rolling back/i);
+    expect(h.deps.flags.request).not.toHaveBeenCalled();
+    expect(h.deps.store.recordCancelRequested).not.toHaveBeenCalled();
+  });
+
+  it('a deployment in HEALTHCHECK is cancellable: the flag is raised (17-06 A1)', async () => {
+    const h = harness({ kind: 'running', deployment: view('HEALTHCHECK') });
+
+    expect(await h.cancel(DEPLOYMENT_ID, ACTOR)).toMatchObject({ ok: true });
+    expect(h.deps.flags.request).toHaveBeenCalledWith(DEPLOYMENT_ID);
+  });
+
   it('a missing deployment is NOT_FOUND; a Redis that cannot take the flag is QUEUE_UNAVAILABLE (ERR)', async () => {
     expect(await harness({ kind: 'missing' }).cancel(DEPLOYMENT_ID, ACTOR)).toMatchObject({ ok: false, code: 'NOT_FOUND' });
     const down = harness({ kind: 'running', deployment: view('DEPLOYING') }, 'unavailable');
@@ -160,6 +178,7 @@ describe('POST /api/deployments/:deploymentId/cancel', () => {
   it.each([
     ['NOT_FOUND', 404],
     ['DEPLOYMENT_NOT_CANCELLABLE', 409],
+    ['ROLLBACK_IN_PROGRESS', 409],
     ['QUEUE_UNAVAILABLE', 503],
   ] as const)('maps %s to %i with a closed error body', async (code, status) => {
     const instance = await build(() => Promise.resolve({ ok: false, code, message: 'fixed text' }));

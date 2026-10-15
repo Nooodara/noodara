@@ -126,6 +126,8 @@ export const PROJECT_ARCHIVED_DEPLOY_COPY = 'This project is archived. Unarchive
 export const DEPLOYMENT_IN_PROGRESS_COPY =
   'A deployment is already running for this service. Wait for it to finish or cancel it, then deploy again.';
 export const DEPLOYMENT_NOT_CANCELLABLE_COPY = 'This deployment already finished, so there is nothing to cancel.';
+export const ROLLBACK_IN_PROGRESS_COPY =
+  "This deployment is rolling back to the previous version and can't be cancelled. Wait for the rollback to finish.";
 export const SERVICE_NOT_DEPLOYED_COPY = 'This service has no container yet. Deploy it first.';
 export const SERVICE_OPERATION_IN_PROGRESS_COPY = 'Another operation is running on this service. Try again once it finishes.';
 export const SERVER_UNREACHABLE_COPY = "Noodara couldn't reach the server. Check that it is online and try again.";
@@ -136,6 +138,7 @@ const RECOVERY_COPY: Partial<Record<DeployApiErrorCode, string>> = {
   PROJECT_ARCHIVED: PROJECT_ARCHIVED_DEPLOY_COPY,
   DEPLOYMENT_IN_PROGRESS: DEPLOYMENT_IN_PROGRESS_COPY,
   DEPLOYMENT_NOT_CANCELLABLE: DEPLOYMENT_NOT_CANCELLABLE_COPY,
+  ROLLBACK_IN_PROGRESS: ROLLBACK_IN_PROGRESS_COPY,
   SERVICE_NOT_DEPLOYED: SERVICE_NOT_DEPLOYED_COPY,
   SERVICE_OPERATION_IN_PROGRESS: SERVICE_OPERATION_IN_PROGRESS_COPY,
   SERVER_UNREACHABLE: SERVER_UNREACHABLE_COPY,
@@ -148,5 +151,10 @@ export function serviceActionCopy(code: DeployApiErrorCode): string {
 
 /** Codes that mean "the state moved under you": the view refetches instead of reporting a fault. */
 export function isStateRaceCode(code: DeployApiErrorCode): boolean {
-  return code === 'DEPLOYMENT_IN_PROGRESS' || code === 'DEPLOYMENT_NOT_CANCELLABLE' || code === 'SERVICE_OPERATION_IN_PROGRESS';
+  return (
+    code === 'DEPLOYMENT_IN_PROGRESS' ||
+    code === 'DEPLOYMENT_NOT_CANCELLABLE' ||
+    code === 'ROLLBACK_IN_PROGRESS' ||
+    code === 'SERVICE_OPERATION_IN_PROGRESS'
+  );
 }

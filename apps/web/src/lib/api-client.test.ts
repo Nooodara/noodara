@@ -413,6 +413,16 @@ describe("apiGet/apiSend 13-05 additions", () => {
     expect(deploy).toMatchObject({ ok: false, code: "DEPLOYMENT_IN_PROGRESS" });
   });
 
+  it("keeps a 409 ROLLBACK_IN_PROGRESS on the deploy calls, never degrading it (17-06 A1)", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(409, { error: "ROLLBACK_IN_PROGRESS", message: "Rolling back." }),
+    );
+    const result = await deployApiSend("POST", "/api/deployments/d/cancel", {});
+
+    expect(result).toMatchObject({ ok: false, code: "ROLLBACK_IN_PROGRESS" });
+    expect(ALL_DEPLOY_ENGINE_ERROR_CODES).toContain("ROLLBACK_IN_PROGRESS");
+  });
+
   it("resolves a 401 without a recognised body to UNAUTHORIZED, fetching once", async () => {
     fetchMock.mockResolvedValueOnce(
       new Response("gateway says no", { status: 401 }),

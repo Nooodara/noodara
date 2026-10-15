@@ -4,15 +4,26 @@
 // - H1: a terminal deployment is a named 409; a second cancel while the flag is up is a no-op
 //   that answers the same 202; a cancel racing the worker's own finish leaves one terminal state
 //   (the store's finish is idempotent and the worker clears the flag on every exit).
+// - 17-06 (ADR 0010): a ROLLING_BACK row is a named 409 ROLLBACK_IN_PROGRESS, decided under the
+//   store's row lock by the domain rule; no flag is raised, so the rollback always completes. A
+//   cancel accepted while the row was still DEPLOYING is ignored by the worker once it rolls back.
 // - ERR: a Redis that cannot take the flag is QUEUE_UNAVAILABLE (503), never a 500; job removal
 //   and the activity event are best effort and only logged by error class name.
+import { deploymentCancelRejection } from '@noodara/domain/deployment';
 import type { DeploymentView } from '../services/deployment-services.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
 import type { DeployQueue } from '../queue/deploy-queue.js';
 import type { DeployCancelFlags } from './cancel-flag.js';
 import type { DeploymentStore } from './deployment-store.js';
 
-export type CancelDeploymentFailureCode = 'NOT_FOUND' | 'DEPLOYMENT_NOT_CANCELLABLE' | 'QUEUE_UNAVAILABLE';
+export type CancelDeploymentFailureCode =
+  | 'NOT_FOUND'
+  | 'DEPLOYMENT_NOT_CANCELLABLE'
+  | 'ROLLBACK_IN_PROGRESS'
+  | 'QUEUE_UNAVAILABLE';
+
+export const ROLLBACK_IN_PROGRESS_MESSAGE =
+  'This deployment is rolling back to the previous version and cannot be cancelled. Wait for the rollback to finish.';
 
 export type CancelDeploymentResult =
   | { readonly ok: true; readonly deployment: DeploymentView }
@@ -56,6 +67,9 @@ export function createCancelDeployment(deps: CancelDeploymentDeps): CancelDeploy
         }
         return { ok: true, deployment: result.deployment };
       case 'running': {
+        if (deploymentCancelRejection(result.deployment.status) === 'ROLLBACK_IN_PROGRESS') {
+          return { ok: false, code: 'ROLLBACK_IN_PROGRESS', message: ROLLBACK_IN_PROGRESS_MESSAGE };
+        }
         const flag = await deps.flags.request(deploymentId);
         if (flag === 'unavailable') {
           return {

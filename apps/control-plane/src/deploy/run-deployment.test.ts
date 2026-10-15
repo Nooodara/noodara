@@ -635,7 +635,7 @@ describe('runDeployment: timeouts and cleanup in finally (C2)', () => {
     expect(h.session.keys().at(-1)).toBe('fs.remove_deploy_dir');
   });
 
-  it('a cancel after the container swap started is ignored: the attempt ends SUCCESS (H1)', async () => {
+  it('a cancel during the swap is deferred: the swap runs uncancelled, then the attempt ends CANCELLED at HEALTHCHECK (17-06 A1)', async () => {
     const controller = new AbortController();
     const h = harness({ signal: controller.signal });
     h.session.onStream = (key) => {
@@ -644,9 +644,13 @@ describe('runDeployment: timeouts and cleanup in finally (C2)', () => {
 
     const result = await runDeployment(h.input);
 
-    expect(result).toMatchObject({ status: 'SUCCESS', container: { kind: 'running' } });
-    const createIndex = h.session.calls.findIndex((call) => call.key === 'docker.create');
-    for (const call of h.session.calls.slice(createIndex + 1)) {
+    // The only version is stopped, never removed (no -prev to restore).
+    expect(result).toMatchObject({ status: 'CANCELLED', container: { kind: 'stopped' } });
+    expect(h.progress.advances.at(-1)).toEqual(['DEPLOYING', 'HEALTHCHECK']);
+    const keys = h.session.keys();
+    expect(keys.slice(keys.indexOf('docker.create'), keys.indexOf('docker.create') + 3)).toEqual(['docker.create', 'docker.start', 'docker.stop']);
+    expect(keys).not.toContain('docker.remove');
+    for (const call of h.session.calls.slice(keys.indexOf('docker.create'))) {
       expect(call.options.signal).toBeUndefined();
     }
   });
@@ -1255,7 +1259,7 @@ describe('runDeployment: the kept container across every HEALTHCHECK exit (17-02
     expectPreviousUntouched(h);
   });
 
-  it('a cancel during the check is ignored once the swap started: the attempt still decides on health', async () => {
+  it('a cancel during the check removes the new container, restores -prev and ends CANCELLED (17-06 A1)', async () => {
     const controller = new AbortController();
     const h = harness({
       healthcheck: HTTP_CHECK,
@@ -1268,8 +1272,58 @@ describe('runDeployment: the kept container across every HEALTHCHECK exit (17-02
 
     const outcome = await runDeployment(h.input);
 
-    expect(outcome.status).not.toBe('SUCCESS');
+    expect(outcome).toMatchObject({ status: 'CANCELLED', errorCode: null, container: { kind: 'running' } });
+    expect(h.progress.advances.at(-1)).toEqual(['DEPLOYING', 'HEALTHCHECK']);
+    const keys = h.session.keys();
+    // One probe ran with the signal; the next one was never sent.
+    expect(keys.filter((k) => k === 'probe.http')).toHaveLength(1);
+    expect(h.session.calls.find((call) => call.key === 'probe.http')?.options.signal).toBe(controller.signal);
+    const from = keys.indexOf('docker.remove');
+    expect(from).toBeGreaterThan(keys.indexOf('probe.http'));
+    expect(keys.slice(from, from + 4)).toEqual(['docker.remove', 'docker.rename_from_prev', 'docker.inspect_networks', 'docker.start']);
+    for (const call of h.session.calls.slice(from)) expect(call.options.signal).toBeUndefined();
+    expect(logText(h)).toContain('The deployment was cancelled during the healthcheck, so the previous version was restored.');
     expectPreviousUntouched(h);
+    // The removed new container no longer pins the new image.
+    expect(h.session.argv('docker.image_remove')).toContain(BUILT_IMAGE);
+  });
+
+  it('a cancel during the check with no -prev stops the only version and never removes it (17-06 A1)', async () => {
+    const controller = new AbortController();
+    const h = harness({ healthcheck: HTTP_CHECK, signal: controller.signal, scripts: { 'probe.http': { stdout: 'NOODARA_PROBE http 500\n' } } });
+    h.session.onStream = (key) => {
+      if (key === 'probe.http') controller.abort();
+    };
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'CANCELLED', container: { kind: 'stopped' } });
+    const keys = h.session.keys();
+    expect(keys.slice(keys.indexOf('probe.http') + 1)).toContain('docker.stop');
+    expect(keys).not.toContain('docker.remove');
+    expect(keys).not.toContain('docker.rename_from_prev');
+  });
+
+  it('a cancel racing the passing probe ends SUCCESS with exactly one running container (17-06 H1)', async () => {
+    const controller = new AbortController();
+    const h = harness({
+      healthcheck: HTTP_CHECK,
+      signal: controller.signal,
+      scripts: probing({ stdout: 'NOODARA_PROBE http 200\n' }),
+    });
+    h.session.onStream = (key) => {
+      if (key === 'probe.http') controller.abort();
+    };
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'SUCCESS', container: { kind: 'running' } });
+    const keys = h.session.keys();
+    // The superseded version is removed; the new one is never removed or stopped.
+    expect(keys.slice(keys.indexOf('probe.http'))).toContain('docker.remove_prev');
+    expect(keys).not.toContain('docker.remove');
+    expect(keys).not.toContain('docker.rename_from_prev');
+    expect(keys.slice(keys.indexOf('probe.http'))).not.toContain('docker.stop');
   });
 
   it.each(['FAILED', 'CANCELLED', 'TIMEOUT', 'WORKER_CRASHED'] as const satisfies readonly DeploymentExit[])(
@@ -1827,5 +1881,56 @@ describe('runDeployment: manual rollback (17-05 A3, H1)', () => {
     expect(afterKey(h, 'docker.remove').slice(0, 4)).toEqual(RESTORE_KEYS);
     expect(h.events).toEqual([PREVIOUS_ID]);
     expectPreviousUntouched(h);
+  });
+});
+
+describe('runDeployment: ROLLING_BACK is not cancellable (17-06 A1, H1)', () => {
+  it('a cancel racing DEPLOYING -> ROLLING_BACK is ignored: the rollback completes uncancelled with one running container', async () => {
+    const controller = new AbortController();
+    const base = rollbackHarness(
+      probing(HTTP_500, { 'docker.start': [{ exitCode: 1, stderr: GENERIC_DAEMON_ERROR }, { exitCode: 0 }], 'probe.tcp': { stdout: 'NOODARA_PROBE open\n' } }),
+    );
+    const h = { ...base, input: { ...base.input, signal: controller.signal } };
+    h.session.onStream = (key) => {
+      if (key === 'docker.start') controller.abort();
+    };
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'ROLLED_BACK', container: { kind: 'running' } });
+    expect(h.progress.advances.at(-1)).toEqual(['DEPLOYING', 'ROLLING_BACK']);
+    const from = h.session.keys().indexOf('docker.remove');
+    expect(h.session.keys().slice(from, from + 4)).toEqual(RESTORE_KEYS);
+    for (const call of h.session.calls.slice(from)) expect(call.options.signal).toBeUndefined();
+  });
+
+  it('a cancel during the rollback probe is ignored: the restored version is still checked', async () => {
+    const controller = new AbortController();
+    const base = rollbackHarness(probing(HTTP_500, { 'probe.tcp': { stdout: 'NOODARA_PROBE open\n' } }));
+    const h = { ...base, input: { ...base.input, signal: controller.signal } };
+    h.session.onStream = (key) => {
+      if (key === 'docker.rename_from_prev') controller.abort();
+    };
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'ROLLED_BACK', errorCode: 'HEALTHCHECK_FAILED' });
+    expect(h.session.keys()).toContain('probe.tcp');
+  });
+
+  it('a cancel during the check with auto_rollback on cancels without entering ROLLING_BACK and restores -prev', async () => {
+    const controller = new AbortController();
+    const base = rollbackHarness(probing(HTTP_500));
+    const h = { ...base, input: { ...base.input, signal: controller.signal } };
+    h.session.onStream = (key) => {
+      if (key === 'probe.http') controller.abort();
+    };
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'CANCELLED', container: { kind: 'running' } });
+    expect(h.progress.advances.map(([, to]) => to)).not.toContain('ROLLING_BACK');
+    expect(h.events).toEqual([]);
+    expect(afterKey(h, 'docker.remove').slice(0, 4)).toEqual(RESTORE_KEYS);
   });
 });
