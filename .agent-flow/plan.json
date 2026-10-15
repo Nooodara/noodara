@@ -5653,7 +5653,13 @@
             "apps/control-plane/src/deploy/deployment-store.test.ts",
             "apps/control-plane/src/services/deployment-services.test.ts",
             "apps/control-plane/src/services/service-services.test.ts",
-            "apps/control-plane/src/db/schema/credentials.ts"
+            "apps/control-plane/src/db/schema/credentials.ts",
+            "apps/control-plane/src/services/service-services.ts",
+            "apps/control-plane/src/services/project-services.ts",
+            "apps/control-plane/src/services/project-services.test.ts",
+            "packages/domain/src/deployment/healthcheck.ts",
+            "packages/domain/src/deployment/healthcheck.test.ts",
+            "tests/integration/projects/"
           ],
           "wave": 6,
           "dependsOn": [
@@ -5665,7 +5671,9 @@
             "typecheck",
             "lint",
             "boundaries",
-            "it-db"
+            "it-db",
+            "it-projects",
+            "it-runtime-pipeline"
           ],
           "acceptance": [
             {
@@ -6142,9 +6150,7 @@
             "apps/control-plane/src/routes/service-schemas.ts",
             "apps/control-plane/src/routes/service-schemas.test.ts",
             "packages/domain/src/api-contract/service-schemas.ts",
-            "tests/integration/webhooks/config.test.ts",
-            "apps/control-plane/src/services/service-services.ts",
-            "apps/control-plane/src/services/project-services.ts"
+            "tests/integration/webhooks/config.test.ts"
           ],
           "wave": 1,
           "dependsOn": [],
@@ -6190,11 +6196,6 @@
             {
               "id": "H3",
               "text": "The payload URL is built only from the configured public origin (http or https, validated at boot), never from the request Host or X-Forwarded-* headers; the enable/rotate/disable routes have a body cap and zod validation",
-              "proof": "it-webhooks"
-            },
-            {
-              "id": "H4",
-              "text": "deleteService and deleteProject pass webhookSecretCredentialId to deleteCredentialRows, so deleting a service or its project removes the webhook credential row (integration test asserts no orphan credential)",
               "proof": "it-webhooks"
             }
           ],
