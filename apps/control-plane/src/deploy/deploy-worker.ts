@@ -18,8 +18,17 @@
 // - 17-04: after a SUCCESS or ROLLED_BACK run, image retention runs on the still-open session and
 //   *before* the terminal write, so it stays under the service's one-active-deployment slot (H1).
 //   It never throws into the handler and never changes the recorded outcome (A2).
-import type { DeploymentErrorCode, PostStartPollPolicy } from '@noodara/domain/deployment';
+// - 17-05: a claimed `rollback` row carries its target and that target's runtime snapshot. A row
+//   whose snapshot or target id does not validate ends FAILED/ROLLBACK_TARGET_UNAVAILABLE before
+//   any connection; after a rollback SUCCESS retention sees the restored target as running.
+import {
+  parseRuntimeConfigSnapshot,
+  V03_DEPLOYMENT_ERROR_MESSAGES,
+  type DeploymentErrorCode,
+  type PostStartPollPolicy,
+} from '@noodara/domain/deployment';
 import type { Redactor } from '@noodara/domain/security';
+import { validateResourceId } from '@noodara/domain/validators';
 import type { SshDeploySession } from '@noodara/ssh';
 import { computeDeployJobLockDurationMs } from '../queue/deploy-job-budget.js';
 import { parseDeployServiceJobPayload } from '../queue/deploy-job-payload.js';
@@ -33,6 +42,7 @@ import {
   type DeployClock,
   type DeployRunLimits,
   type DeploymentOutcome,
+  type ManualRollbackTarget,
   type PreviousSuccessDeployment,
   type RunDeploymentInput,
 } from './run-deployment.js';
@@ -154,6 +164,27 @@ function failedWith(code: DeployJobFailureCode): FinishDeploymentInput {
   return { status: 'FAILED', errorCode: code, errorMessage: DEPLOY_JOB_MESSAGES[code], commitSha: null, container: null };
 }
 
+const rollbackTargetUnavailable: FinishDeploymentInput = Object.freeze({
+  status: 'FAILED',
+  errorCode: 'ROLLBACK_TARGET_UNAVAILABLE',
+  errorMessage: V03_DEPLOYMENT_ERROR_MESSAGES.ROLLBACK_TARGET_UNAVAILABLE,
+  commitSha: null,
+  container: null,
+});
+
+/** 17-05: the claimed row's rollback target; undefined for other triggers, null when unusable. */
+function rollbackTargetOf(row: {
+  readonly trigger: string;
+  readonly rollbackOfDeploymentId: string | null;
+  readonly runtimeConfig: unknown;
+}): ManualRollbackTarget | null | undefined {
+  if (row.trigger !== 'rollback') return undefined;
+  const id = validateResourceId(row.rollbackOfDeploymentId ?? '');
+  const snapshot = parseRuntimeConfigSnapshot(row.runtimeConfig);
+  if (!id.ok || !snapshot.ok) return null;
+  return { id: id.value, runtimeConfig: snapshot.value };
+}
+
 /** Only the error's class name: its message can carry a host, a URL or a secret. */
 function errorKind(error: unknown): string {
   return error instanceof Error ? error.name : typeof error;
@@ -215,9 +246,14 @@ export function createDeployJobHandler(deps: DeployJobDeps): (data: unknown, sig
     let finish: FinishDeploymentInput;
     let outcome: DeployJobOutcome;
     try {
+      const rollbackTarget = rollbackTargetOf(claimed);
       if (claimed.serviceId !== serviceId) {
         logger.error({ deploymentId }, 'deploy job serviceId does not match its deployment');
         finish = crashed;
+        outcome = 'FAILED';
+      } else if (rollbackTarget === null) {
+        logger.warn({ deploymentId }, 'rollback deployment has no usable target snapshot');
+        finish = rollbackTargetUnavailable;
         outcome = 'FAILED';
       } else {
         const loaded = await deps.loadTarget({ id: claimed.id, serviceId: claimed.serviceId });
@@ -249,6 +285,7 @@ export function createDeployJobHandler(deps: DeployJobDeps): (data: unknown, sig
               sink,
               clock: deps.clock,
               ...(runSignal === undefined ? {} : { signal: runSignal }),
+              ...(rollbackTarget === undefined ? {} : { rollbackTarget }),
             });
             finish = {
               status: result.status,
@@ -265,7 +302,9 @@ export function createDeployJobHandler(deps: DeployJobDeps): (data: unknown, sig
             if ((result.status === 'SUCCESS' || result.status === 'ROLLED_BACK') && deps.retention !== undefined) {
               await retainImages(deps.retention, {
                 serviceId: loaded.target.serviceId,
-                deploymentId: loaded.target.deploymentId,
+                // 17-05: after a rollback SUCCESS the restored target's image is the running one.
+                deploymentId:
+                  rollbackTarget !== undefined && result.status === 'SUCCESS' ? rollbackTarget.id : loaded.target.deploymentId,
                 outcome: result.status,
                 previousSuccessId: loaded.target.previousSuccess?.id ?? null,
                 session: connected.session,

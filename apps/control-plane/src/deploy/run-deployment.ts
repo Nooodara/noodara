@@ -63,6 +63,8 @@ import {
   deployWorkspaceFor,
   gitSshEndpoint,
   sameKnownHostsHost,
+  validateContainerPort,
+  validateImageRef,
   type CommitSha,
   type ContainerPort,
   type DeployWorkspace,
@@ -78,6 +80,7 @@ import {
   createContainer,
   ensureNetwork,
   inspectContainerState,
+  inspectImagePresent,
   listManagedContainers,
   probeContainerHealth,
   pullImage,
@@ -206,6 +209,15 @@ export interface RunDeploymentInput {
   readonly previousSuccess?: PreviousSuccessDeployment | null;
   /** 17-07 (A4): records the `deployment.rollback_started` event; a failure never stops the rollback. */
   readonly recordRollbackStarted?: (targetDeploymentId: ResourceId | null) => Promise<void>;
+  /** 17-05: a manual rollback re-runs this retained deployment (no clone, no build) with its
+   *  snapshot; a failure always rolls back to the version that ran before. */
+  readonly rollbackTarget?: ManualRollbackTarget;
+}
+
+/** 17-05: the deployment a manual rollback restores, and the runtime config it ran with. */
+export interface ManualRollbackTarget {
+  readonly id: ResourceId;
+  readonly runtimeConfig: RuntimeConfigSnapshot;
 }
 
 export interface CleanupReport {
@@ -396,6 +408,17 @@ function exitFor(end: End | null): DeploymentExit {
 }
 
 /** Branded ids always produce a ledger and a workspace; a failure is a caller bug. */
+/** 17-05: the snapshot's values as validated names; null when any of them does not validate. */
+function manualRuntimeOf(
+  snapshot: RuntimeConfigSnapshot,
+): { readonly image: ImageRef; readonly internalPort: ContainerPort; readonly publishedPort: ContainerPort | null } | null {
+  const image = validateImageRef(snapshot.imageRef);
+  const internalPort = validateContainerPort(snapshot.internalPort);
+  const publishedPort = snapshot.publishedPort === null ? null : validateContainerPort(snapshot.publishedPort);
+  if (!image.ok || !internalPort.ok || (publishedPort !== null && !publishedPort.ok)) return null;
+  return { image: image.value, internalPort: internalPort.value, publishedPort: publishedPort === null ? null : publishedPort.value };
+}
+
 function derive<T>(result: { ok: true; value: T } | { ok: false }): T {
   if (!result.ok) throw new TypeError('Invalid resource id for a deployment');
   return result.value;
@@ -404,7 +427,12 @@ function derive<T>(result: { ok: true; value: T } | { ok: false }): T {
 export async function runDeployment(input: RunDeploymentInput): Promise<DeploymentOutcome> {
   const { session, redactor, serviceId, deploymentId, limits, clock, progress } = input;
   const startedAt = clock.now();
-  const autoRollback = input.autoRollback === true;
+  const manual = input.rollbackTarget ?? null;
+  // 17-05 A3: a manual rollback always restores the version it replaces when it fails.
+  const autoRollback = input.autoRollback === true || manual !== null;
+  const manualRuntime = manual === null ? null : manualRuntimeOf(manual.runtimeConfig);
+  const internalPort = manualRuntime === null ? input.internalPort : manualRuntime.internalPort;
+  const publishedPort = manualRuntime === null ? input.publishedPort : manualRuntime.publishedPort;
   const rollbackBudget = autoRollback ? rollbackBudgetMs(limits) : 0;
   // A4: with auto_rollback the main steps leave the rollback budget free inside deployMaxMs.
   let deadline = startedAt + limits.deployMaxMs - rollbackBudget;
@@ -505,7 +533,8 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
   };
 
   const advance = async (to: DeploymentStatus, record?: AdvanceRecord): Promise<void> => {
-    const next = transitionDeployment(status, to);
+    // 17-05: PREPARING -> DEPLOYING is an edge only a `rollback` deployment may take.
+    const next = transitionDeployment(status, to, manual === null ? undefined : 'rollback');
     await (record === undefined ? progress.advance(status, next) : progress.advance(status, next, record));
     status = next;
   };
@@ -566,7 +595,15 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     // prepare
     let image: ImageRef;
     const { source } = input;
-    if (source.kind === 'git') {
+    if (manual !== null) {
+      // 17-05 H1: re-checked here, not only at the API; nothing is touched when it is gone.
+      if (manualRuntime === null) {
+        failed('ROLLBACK_TARGET_UNAVAILABLE', V03_DEPLOYMENT_ERROR_MESSAGES.ROLLBACK_TARGET_UNAVAILABLE);
+      }
+      image = manualRuntime.image;
+      const present = await check(await inspectImagePresent(context(null), { image }), null);
+      if (!present) failed('ROLLBACK_TARGET_UNAVAILABLE', V03_DEPLOYMENT_ERROR_MESSAGES.ROLLBACK_TARGET_UNAVAILABLE);
+    } else if (source.kind === 'git') {
       ledger = recordResource(ledger, { kind: 'workspace_created' });
       const store = input.gitHostKeys;
       const endpoint = store === undefined ? null : tofuEndpoint(source);
@@ -608,13 +645,13 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     }
 
     // deploy
-    const resolved = resolveHealthcheck(input.healthcheck ?? null);
+    const resolved = resolveHealthcheck(manual === null ? (input.healthcheck ?? null) : manual.runtimeConfig.healthcheck);
     await advance('DEPLOYING', {
       runtimeConfig: {
         version: 1,
         imageRef: image,
-        internalPort: input.internalPort,
-        publishedPort: input.publishedPort,
+        internalPort,
+        publishedPort,
         healthcheck: resolved.config,
       },
     });
@@ -622,7 +659,7 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     if (ps.kind !== 'ok') failed('DOCKER_UNAVAILABLE', DEPLOY_MESSAGES.DOCKER_PS_UNREADABLE);
     const preflight = preflightPublishedPort({
       serviceId,
-      publishedPort: input.publishedPort,
+      publishedPort,
       otherServices: input.otherServices,
       panelPorts: input.panelPorts,
       containers: ps.containers,
@@ -681,8 +718,8 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
             serviceId,
             deploymentId,
             image,
-            internalPort: input.internalPort,
-            publishedPort: input.publishedPort,
+            internalPort,
+            publishedPort,
           }),
           null,
         );

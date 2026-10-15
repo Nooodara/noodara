@@ -6142,7 +6142,9 @@
             "packages/ssh/src/index.ts",
             "tests/integration/deploy-engine/deploy-templates.test.ts",
             "packages/ssh/src/run-discovery.test.ts",
-            "packages/docker/src/docker-operations.test.ts"
+            "packages/docker/src/docker-operations.test.ts",
+            "apps/web/src/lib/api-client.ts",
+            "apps/web/src/lib/api-client.test.ts"
           ],
           "wave": 6,
           "dependsOn": [

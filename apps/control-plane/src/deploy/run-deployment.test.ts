@@ -1707,3 +1707,125 @@ describe('runDeployment: when no rollback fires (17-07 A3, H2)', () => {
     expect(h.events).toEqual([]);
   });
 });
+
+// 17-05: a manual rollback re-runs a retained image: no clone, no build, its own snapshot.
+const ROLLBACK_TARGET_ID: ResourceId = unwrap(validateResourceId('1b2c3d4e-5f60-4a7b-8c9d-0e1f2a3b4c5d'));
+const ROLLBACK_TARGET_IMAGE = `noodara/${SERVICE_ID}:${ROLLBACK_TARGET_ID}`;
+const ROLLBACK_TARGET_SNAPSHOT = {
+  version: 1 as const,
+  imageRef: unwrap(validateImageRef(ROLLBACK_TARGET_IMAGE)),
+  internalPort: PORT_3000,
+  publishedPort: PORT_13100,
+  healthcheck: HTTP_CHECK,
+};
+const IMAGE_PRESENT = { stdout: `sha256:${'c'.repeat(64)}\n` };
+
+function manualRollbackHarness(scripts: Record<string, Script | Script[]>): Harness & { readonly events: (ResourceId | null)[] } {
+  const events: (ResourceId | null)[] = [];
+  const h = harness({
+    // The service's own settings differ from the target's snapshot; the snapshot wins.
+    healthcheck: null,
+    publishedPort: null,
+    scripts: { 'docker.image_inspect': IMAGE_PRESENT, ...scripts },
+    extra: {
+      autoRollback: false,
+      previousSuccess: { id: PREVIOUS_ID, runtimeConfig: PREVIOUS_SNAPSHOT },
+      rollbackTarget: { id: ROLLBACK_TARGET_ID, runtimeConfig: ROLLBACK_TARGET_SNAPSHOT },
+      recordRollbackStarted: (target) => {
+        events.push(target);
+        return Promise.resolve();
+      },
+    },
+  });
+  return { ...h, events };
+}
+
+describe('runDeployment: manual rollback (17-05 A3, H1)', () => {
+  it('skips clone and build, checks the image, restores the target snapshot and passes HEALTHCHECK', async () => {
+    const h = manualRollbackHarness(probing({ stdout: 'NOODARA_PROBE http 200\n' }));
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'SUCCESS', errorCode: null, container: { kind: 'running' } });
+    const keys = h.session.keys();
+    expect(keys[0]).toBe('docker.image_inspect');
+    expect(h.session.argv('docker.image_inspect')).toContain(ROLLBACK_TARGET_IMAGE);
+    expect(keys.filter((k) => k.startsWith('supervise:') || k.startsWith('git.'))).toEqual([]);
+    expect(h.progress.advances).toEqual([
+      ['PREPARING', 'DEPLOYING'],
+      ['DEPLOYING', 'HEALTHCHECK'],
+    ]);
+    expect(h.progress.records).toEqual([{ to: 'DEPLOYING', record: { runtimeConfig: ROLLBACK_TARGET_SNAPSHOT } }]);
+    const create = h.session.argv('docker.create');
+    expect(create).toContain(ROLLBACK_TARGET_IMAGE);
+    expect(create.join(' ')).toContain('13100');
+    // The target's HTTP check, not the service's (absent) one.
+    expect(keys).toContain('probe.http');
+    // The retained image belongs to retention; the superseded one is kept for it too.
+    h.session.calls
+      .filter((call) => call.key === 'docker.image_remove')
+      .forEach((call) => {
+        expect(call.command.argv).not.toContain(ROLLBACK_TARGET_IMAGE);
+        expect(call.command.argv).not.toContain(OLD_IMAGE);
+      });
+  });
+
+  it('a missing image ends FAILED/ROLLBACK_TARGET_UNAVAILABLE before touching any container (H1)', async () => {
+    const h = manualRollbackHarness({
+      ...PREVIOUS_SCRIPTS,
+      'docker.image_inspect': { exitCode: 1, stderr: `Error response from daemon: No such image: ${ROLLBACK_TARGET_IMAGE}\n` },
+    });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({
+      status: 'FAILED',
+      errorCode: 'ROLLBACK_TARGET_UNAVAILABLE',
+      errorMessage: V03_DEPLOYMENT_ERROR_MESSAGES.ROLLBACK_TARGET_UNAVAILABLE,
+      container: null,
+    });
+    expect(h.progress.advances).toEqual([]);
+    const keys = h.session.keys();
+    expect(keys.filter((k) => k.startsWith('docker.') && k !== 'docker.image_inspect' && k !== 'docker.image_remove')).toEqual([]);
+    h.session.calls
+      .filter((call) => call.key === 'docker.image_remove')
+      .forEach((call) => {
+        expect(call.command.argv).not.toContain(ROLLBACK_TARGET_IMAGE);
+      });
+    expect(h.events).toEqual([]);
+  });
+
+  it('a snapshot whose image ref does not validate ends ROLLBACK_TARGET_UNAVAILABLE with no remote command', async () => {
+    const h = manualRollbackHarness({});
+    const input: RunDeploymentInput = {
+      ...h.input,
+      rollbackTarget: { id: ROLLBACK_TARGET_ID, runtimeConfig: { ...ROLLBACK_TARGET_SNAPSHOT, imageRef: 'UPPER/Case:1' } },
+    };
+
+    const outcome = await runDeployment(input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'ROLLBACK_TARGET_UNAVAILABLE' });
+    expect(h.session.keys().filter((k) => k.startsWith('docker.'))).toEqual([]);
+  });
+
+  it('an unreadable daemon at the image check ends with the classified code, nothing touched', async () => {
+    const h = manualRollbackHarness({ 'docker.image_inspect': { exitCode: 1, stderr: DAEMON_DOWN_STDERR } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'DOCKER_UNAVAILABLE' });
+    expect(h.session.keys()).not.toContain('docker.ps');
+  });
+
+  it('a failed healthcheck rolls back to the version running before, even with auto_rollback off (A3)', async () => {
+    const h = manualRollbackHarness(probing(HTTP_500, { 'probe.tcp': { stdout: 'NOODARA_PROBE open\n' } }));
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'ROLLED_BACK', errorCode: 'HEALTHCHECK_FAILED', container: { kind: 'running' } });
+    expect(h.progress.advances.at(-1)).toEqual(['HEALTHCHECK', 'ROLLING_BACK']);
+    expect(afterKey(h, 'docker.remove').slice(0, 4)).toEqual(RESTORE_KEYS);
+    expect(h.events).toEqual([PREVIOUS_ID]);
+    expectPreviousUntouched(h);
+  });
+});

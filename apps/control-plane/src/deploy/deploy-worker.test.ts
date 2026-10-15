@@ -513,3 +513,97 @@ describe('deploy job handler: image retention (17-04)', () => {
     expect(h.finished).toHaveLength(1);
   });
 });
+
+describe('deploy job handler: manual rollback (17-05 A3, H1)', () => {
+  const ROLLBACK_OF = '0192f1a4-7b3c-7d2e-8f00-00000000eeee';
+  const PREVIOUS_ID = '0192f1a4-7b3c-7d2e-8f00-00000000aaaa';
+  const SNAPSHOT = {
+    version: 1,
+    imageRef: `noodara/${SERVICE_ID}:${ROLLBACK_OF}`,
+    internalPort: 3000,
+    publishedPort: 13100,
+    healthcheck: { type: 'tcp', port: 3000, probeTimeoutS: 2, intervalS: 1, retries: 2, startPeriodS: 0 },
+  };
+  const rollbackRow = (fields: Record<string, unknown> = {}): DeploymentRow =>
+    ({
+      id: DEPLOYMENT_ID,
+      serviceId: SERVICE_ID,
+      status: 'PREPARING',
+      trigger: 'rollback',
+      rollbackOfDeploymentId: ROLLBACK_OF,
+      runtimeConfig: SNAPSHOT,
+      ...fields,
+    }) as unknown as DeploymentRow;
+  const report = { outcome: 'done' as const, kept: [], removed: [], failed: [] };
+
+  function rollbackHarness(row: DeploymentRow, outcome: DeploymentOutcome = SUCCESS) {
+    const retention = vi.fn(() => Promise.resolve(report));
+    const h = harness({
+      loadTarget: vi.fn(() =>
+        Promise.resolve({
+          ok: true as const,
+          target: { ...TARGET, previousSuccess: { id: PREVIOUS_ID, runtimeConfig: null } } as unknown as DeployTarget,
+          serverId: SERVER_ID,
+        }),
+      ),
+      run: vi.fn((input: RunDeploymentInput) => {
+        h.runInputs.push(input);
+        return Promise.resolve(outcome);
+      }),
+      retention,
+    });
+    vi.mocked(h.deps.store.claim).mockResolvedValueOnce(row);
+    return { ...h, retention };
+  }
+
+  it('passes the claimed target and its parsed snapshot to the pipeline', async () => {
+    const h = rollbackHarness(rollbackRow());
+
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'SUCCESS' });
+
+    expect(h.runInputs[0]?.rollbackTarget).toEqual({ id: ROLLBACK_OF, runtimeConfig: SNAPSHOT });
+  });
+
+  it('a non-rollback deployment carries no rollback target', async () => {
+    const h = rollbackHarness(rollbackRow({ trigger: 'manual', rollbackOfDeploymentId: null, runtimeConfig: null }));
+
+    await h.handle(PAYLOAD);
+
+    expect(h.runInputs[0]).not.toHaveProperty('rollbackTarget');
+  });
+
+  it.each([
+    ['an invalid snapshot', { runtimeConfig: { ...SNAPSHOT, env: { TOKEN: 'ghp_canary' } } }],
+    ['no snapshot', { runtimeConfig: null }],
+    ['no target id', { rollbackOfDeploymentId: null }],
+  ])('%s ends FAILED/ROLLBACK_TARGET_UNAVAILABLE without connecting (H1)', async (_label, fields) => {
+    const h = rollbackHarness(rollbackRow(fields));
+
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'FAILED' });
+
+    expect(h.deps.connect).not.toHaveBeenCalled();
+    expect(h.runInputs).toEqual([]);
+    expect(h.finished).toEqual([
+      expect.objectContaining({ status: 'FAILED', errorCode: 'ROLLBACK_TARGET_UNAVAILABLE', container: null }),
+    ]);
+    expect(JSON.stringify([h.finished, h.logs])).not.toContain('ghp_canary');
+  });
+
+  it('retention after a rollback SUCCESS treats the restored target as the running image', async () => {
+    const h = rollbackHarness(rollbackRow());
+
+    await h.handle(PAYLOAD);
+
+    expect(h.retention).toHaveBeenCalledWith(
+      expect.objectContaining({ deploymentId: ROLLBACK_OF, outcome: 'SUCCESS', previousSuccessId: PREVIOUS_ID }),
+    );
+  });
+
+  it('retention after a rollback that was itself rolled back keeps the attempt id', async () => {
+    const h = rollbackHarness(rollbackRow(), { ...SUCCESS, status: 'ROLLED_BACK', errorCode: 'HEALTHCHECK_FAILED', errorMessage: 'x' });
+
+    await h.handle(PAYLOAD);
+
+    expect(h.retention).toHaveBeenCalledWith(expect.objectContaining({ deploymentId: DEPLOYMENT_ID, outcome: 'ROLLED_BACK' }));
+  });
+});

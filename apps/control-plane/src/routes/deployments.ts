@@ -6,6 +6,9 @@
 // 12-13: `POST /api/deployments/:id/cancel` ends a QUEUED deployment or flags a running one for its
 // worker (202 either way); a terminal deployment is a named 409.
 // 13-03: the three GET views carry `steps[]` (clone|pull, build, start, verify).
+// 17-05: `POST /api/services/:id/rollback` queues a `rollback` deployment of a retained version (202);
+// an optional `Idempotency-Key` header replays the original answer (`Idempotency-Replayed: true`).
+import { validateIdempotencyKey } from '@noodara/domain/deployment';
 import type { ZodTypeProvider } from '@fastify/type-provider-zod';
 import type { FastifyPluginCallback, FastifyReply } from 'fastify';
 import { z } from 'zod';
@@ -32,6 +35,7 @@ import {
   DeploymentViewSchema,
   DeploymentWithStepsViewSchema,
   ServiceDeploymentParamsSchema,
+  RollbackBodySchema,
   ServiceIdParamSchema,
   unknownDeployFields,
 } from './deployment-schemas.js';
@@ -116,6 +120,51 @@ const deploymentsRoutes: FastifyPluginCallback<DeploymentsRoutesOptions> = (fast
         return;
       }
       await reply.code(201).send(result.deployment);
+    },
+  });
+
+  app.route({
+    method: 'POST',
+    url: '/api/services/:serviceId/rollback',
+    bodyLimit: DEPLOYMENT_ROUTE_BODY_LIMIT_BYTES,
+    schema: {
+      params: ServiceIdParamSchema,
+      body: RollbackBodySchema,
+      response: {
+        202: DeploymentViewSchema,
+        ...READ_ERRORS,
+        409: ErrorBodySchema,
+        422: ErrorBodySchema,
+        503: ErrorBodySchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const rawKey = request.headers['idempotency-key'];
+      let idempotencyKey: string | undefined;
+      if (rawKey !== undefined) {
+        // H1: a repeated header arrives as an array and is refused like any malformed key.
+        const key = validateIdempotencyKey(rawKey);
+        if (!key.ok) {
+          await sendFailure(reply, { code: 'IDEMPOTENCY_KEY_INVALID', message: key.message });
+          return;
+        }
+        idempotencyKey = key.value;
+      }
+      const targetDeploymentId = request.body?.targetDeploymentId;
+      const deploymentServices = await fastify.getDeploymentServices();
+      const result = await deploymentServices.triggerRollback({
+        actor,
+        serviceId: request.params.serviceId,
+        ...(targetDeploymentId === undefined ? {} : { targetDeploymentId }),
+        ...(idempotencyKey === undefined ? {} : { idempotencyKey }),
+      });
+      if (!result.ok) {
+        await sendFailure(reply, result);
+        return;
+      }
+      if (result.replayed) void reply.header('idempotency-replayed', 'true');
+      await reply.code(202).send(result.deployment);
     },
   });
 
