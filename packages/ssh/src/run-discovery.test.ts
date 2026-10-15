@@ -722,6 +722,7 @@ describe('@noodara/ssh public surface (T-2-42)', () => {
     'dockerLogout',
     'dockerPull',
     'dockerBuild',
+    'dockerImageInspect',
     'dockerImageRemove',
     'dockerNetworkCreate',
     'dockerNetworkRemove',

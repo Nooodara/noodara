@@ -60,7 +60,10 @@ export type ServiceErrorCode =
   | "RUNTIME_LOG_TAIL_INVALID"
   | "RUNTIME_LOG_FOLLOW_LIMIT_REACHED"
   | "RUNTIME_LOGS_FAILED"
-  | "RUNTIME_LOGS_TIMEOUT";
+  | "RUNTIME_LOGS_TIMEOUT"
+  | "ROLLBACK_TARGET_UNAVAILABLE"
+  | "IDEMPOTENCY_KEY_INVALID"
+  | "IDEMPOTENCY_KEY_REUSED";
 
 export const SERVICE_ERROR_STATUS = Object.freeze({
   VALIDATION_FAILED: 400,
@@ -125,6 +128,11 @@ export const SERVICE_ERROR_STATUS = Object.freeze({
   RUNTIME_LOG_FOLLOW_LIMIT_REACHED: 429,
   RUNTIME_LOGS_FAILED: 502,
   RUNTIME_LOGS_TIMEOUT: 504,
+  // 17-05: manual rollback. A target that cannot be restored is a valid request the state refuses
+  // (422 with the reason); a malformed Idempotency-Key is a 400, a key reused for another request 422.
+  ROLLBACK_TARGET_UNAVAILABLE: 422,
+  IDEMPOTENCY_KEY_INVALID: 400,
+  IDEMPOTENCY_KEY_REUSED: 422,
 } satisfies Record<ServiceErrorCode, number>);
 
 const UNKNOWN_CODE_STATUS = 500;

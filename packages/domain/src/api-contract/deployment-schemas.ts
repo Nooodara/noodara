@@ -34,6 +34,12 @@ export function unknownDeployFields(body: DeployBody): string[] {
   return body === undefined || body === null ? [] : Object.keys(body);
 }
 
+/** 17-05: the manual rollback body. Strict: an unknown key or a non-uuid target is a 400. */
+export const RollbackBodySchema = z
+  .strictObject({ targetDeploymentId: z.uuid().optional() })
+  .nullish();
+export type RollbackBody = z.infer<typeof RollbackBodySchema>;
+
 export const DeploymentListQuerySchema = z
   .object({
     limit: z.coerce
@@ -67,6 +73,11 @@ export const DeploymentViewSchema = z.object({
   source: DeploymentSourceViewSchema,
   commitSha: z.string().nullable(),
   previousDeploymentId: z.uuid().nullable(),
+  // 17-05 (A4): history traceability. Optional in the schema only so older clients' fixtures
+  // still type-check; the control plane always sends them (null when unset).
+  rollbackOfDeploymentId: z.uuid().nullable().optional(),
+  imageRef: z.string().nullable().optional(),
+  webhookDeliveryId: z.uuid().nullable().optional(),
   startedAt: z.string().nullable(),
   completedAt: z.string().nullable(),
   durationMs: z.number().int().nullable(),

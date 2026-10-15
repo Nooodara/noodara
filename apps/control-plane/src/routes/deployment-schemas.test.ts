@@ -8,6 +8,7 @@ import {
   DeploymentListResponseSchema,
   DeploymentViewSchema,
   DeploymentWithStepsViewSchema,
+  RollbackBodySchema,
   ServiceDeploymentParamsSchema,
   unknownDeployFields,
 } from './deployment-schemas.js';
@@ -34,6 +35,9 @@ const VIEW = {
   },
   commitSha: null,
   previousDeploymentId: null,
+  rollbackOfDeploymentId: null,
+  imageRef: null,
+  webhookDeliveryId: null,
   startedAt: null,
   completedAt: null,
   durationMs: null,
@@ -141,5 +145,52 @@ describe('DeploymentWithStepsViewSchema (13-03 A3)', () => {
 
   it('the plain view (POST responses) has no steps key', () => {
     expect(Object.keys(DeploymentViewSchema.shape)).not.toContain('steps');
+  });
+});
+
+describe('rollback request body (17-05 A5)', () => {
+  it('accepts no body, an empty object or a uuid target', () => {
+    expect(RollbackBodySchema.parse(undefined)).toBeUndefined();
+    expect(RollbackBodySchema.parse(null)).toBeNull();
+    expect(RollbackBodySchema.parse({})).toEqual({});
+    expect(RollbackBodySchema.parse({ targetDeploymentId: DEPLOYMENT_ID })).toEqual({ targetDeploymentId: DEPLOYMENT_ID });
+  });
+
+  it.each([
+    ['a non-uuid target', { targetDeploymentId: '../x' }],
+    ['a numeric target', { targetDeploymentId: 7 }],
+    ['an unknown field', { targetDeploymentId: DEPLOYMENT_ID, force: true }],
+    ['a string body', 'rollback'],
+    ['an array body', [DEPLOYMENT_ID]],
+  ])('rejects %s', (_label, body) => {
+    expect(RollbackBodySchema.safeParse(body).success).toBe(false);
+  });
+});
+
+describe('history view (17-05 A4)', () => {
+  it('carries trigger, actor, delivery, commit, image, previous and rollback_of', () => {
+    const parsed = DeploymentViewSchema.parse({
+      ...VIEW,
+      trigger: 'rollback',
+      previousDeploymentId: SERVICE_ID,
+      rollbackOfDeploymentId: DEPLOYMENT_ID,
+      imageRef: 'noodara/x:y',
+    });
+    expect(parsed).toMatchObject({
+      trigger: 'rollback',
+      triggeredBy: VIEW.triggeredBy,
+      webhookDeliveryId: null,
+      commitSha: null,
+      imageRef: 'noodara/x:y',
+      previousDeploymentId: SERVICE_ID,
+      rollbackOfDeploymentId: DEPLOYMENT_ID,
+    });
+  });
+
+  it('never carries the idempotency key or fingerprint', () => {
+    const parsed = DeploymentViewSchema.parse({ ...VIEW, idempotencyKey: 'k-canary', requestFingerprint: 'f'.repeat(64) });
+    expect(JSON.stringify(parsed)).not.toContain('k-canary');
+    expect(Object.keys(DeploymentViewSchema.shape)).not.toContain('idempotencyKey');
+    expect(Object.keys(DeploymentViewSchema.shape)).not.toContain('runtimeConfig');
   });
 });

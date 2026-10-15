@@ -100,6 +100,9 @@ describe('SERVICE_ERROR_STATUS / mapServiceCodeToStatus (D-16)', () => {
     ['RUNTIME_LOG_FOLLOW_LIMIT_REACHED', 429],
     ['RUNTIME_LOGS_FAILED', 502],
     ['RUNTIME_LOGS_TIMEOUT', 504],
+    ['ROLLBACK_TARGET_UNAVAILABLE', 422],
+    ['IDEMPOTENCY_KEY_INVALID', 400],
+    ['IDEMPOTENCY_KEY_REUSED', 422],
   ] satisfies [ServiceErrorCode, number][])('maps %s to %d', (code, status) => {
     expect(mapServiceCodeToStatus(code)).toBe(status);
   });

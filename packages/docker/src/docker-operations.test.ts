@@ -868,6 +868,7 @@ describe('@noodara/docker package boundary', () => {
       'createContainer',
       'ensureNetwork',
       'inspectContainerState',
+      'inspectImagePresent',
       'listManagedContainers',
       'listServiceImages',
       'probeContainerHealth',
