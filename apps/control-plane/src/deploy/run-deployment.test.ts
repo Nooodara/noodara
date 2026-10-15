@@ -1290,7 +1290,11 @@ describe('runDeployment: the kept container across every HEALTHCHECK exit (17-02
 
   it('a cancel during the check with no -prev stops the only version and never removes it (17-06 A1)', async () => {
     const controller = new AbortController();
-    const h = harness({ healthcheck: HTTP_CHECK, signal: controller.signal, scripts: { 'probe.http': { stdout: 'NOODARA_PROBE http 500\n' } } });
+    const h = harness({
+      healthcheck: HTTP_CHECK,
+      signal: controller.signal,
+      scripts: { 'docker.inspect_networks': { stdout: NETWORKS_ATTACHED }, 'probe.http': { stdout: 'NOODARA_PROBE http 500\n' } },
+    });
     h.session.onStream = (key) => {
       if (key === 'probe.http') controller.abort();
     };

@@ -21,6 +21,10 @@
 //   FAILED/ENQUEUE_FAILED under the same row lock, with a conditional UPDATE on status 'QUEUED',
 //   so a worker's concurrent claim and a second sweep both leave it alone. Only this path may fail
 //   an unclaimed row; `finish` refuses one.
+// - sweepRuntime (17-06 A2, H2): the crash sweep's claim on a HEALTHCHECK or ROLLING_BACK row:
+//   SELECT ... FOR UPDATE SKIP LOCKED (a second sweep skips a row the first holds), the remote
+//   recovery runs under that lock, and the row ends FAILED/WORKER_CRASHED in the same transaction.
+//   A row that moved, or whose remote state is unknown (recover returns null), is left as it is.
 // Error messages are the pipeline's fixed texts (never raw remote output), capped here again.
 import { and, asc, eq, inArray, lte } from 'drizzle-orm';
 import {
@@ -104,6 +108,21 @@ export interface StaleQueuedDeployment {
 export const ENQUEUE_FAILED_MESSAGE =
   'The deployment never reached the job queue, so it was never started. Check that Redis and Postgres are reachable, then deploy again.';
 
+/** 17-06: what the crash sweep did on the server; the row ends FAILED/WORKER_CRASHED with it. */
+export interface RuntimeSweepRecovery {
+  readonly message: string;
+  readonly container: ContainerObservation | null;
+}
+
+export type RuntimeSweepResult =
+  /** Locked by another sweep (SKIP LOCKED), or gone. */
+  | { readonly kind: 'busy' }
+  /** No longer at the expected status: finished or moved by its owner meanwhile. */
+  | { readonly kind: 'moved'; readonly status: DeploymentStatus }
+  /** The remote state is unknown: the row is left for the next sweep (H2). */
+  | { readonly kind: 'left' }
+  | { readonly kind: 'finished'; readonly deployment: DeploymentView };
+
 export interface DeploymentStore {
   /** QUEUED -> PREPARING, or null when the row is missing or already past QUEUED (H1). */
   claim(deploymentId: string): Promise<DeploymentRow | null>;
@@ -118,6 +137,12 @@ export interface DeploymentStore {
   staleQueued(cutoff: Date, limit: number): Promise<StaleQueuedDeployment[]>;
   /** QUEUED -> FAILED/ENQUEUE_FAILED; null when the row is missing, newer than `cutoff` or no longer QUEUED. */
   failStaleQueued(deploymentId: string, cutoff: Date): Promise<DeploymentView | null>;
+  /** 17-06: runs `recover` under the row lock of a row still at `expected`; see the header. */
+  sweepRuntime(
+    deploymentId: string,
+    expected: 'HEALTHCHECK' | 'ROLLING_BACK',
+    recover: () => Promise<RuntimeSweepRecovery | null>,
+  ): Promise<RuntimeSweepResult>;
 }
 
 /** The row was not at the status the worker expected (cancelled or finished elsewhere). */
@@ -269,6 +294,34 @@ async function cancelRow(tx: Transaction, deps: DeploymentStoreDeps, deploymentI
   return { kind: 'cancelled', finished };
 }
 
+type SweepRow =
+  | { readonly kind: 'busy' | 'left' }
+  | { readonly kind: 'moved'; readonly status: DeploymentStatus }
+  | { readonly kind: 'finished'; readonly finished: Finished };
+
+async function sweepRuntimeRow(
+  tx: Transaction,
+  deps: DeploymentStoreDeps,
+  deploymentId: string,
+  expected: DeploymentStatus,
+  recover: () => Promise<RuntimeSweepRecovery | null>,
+): Promise<SweepRow> {
+  const [row] = await tx.select().from(deployments).where(eq(deployments.id, deploymentId)).for('update', { skipLocked: true });
+  if (!row) return { kind: 'busy' };
+  if (row.status !== expected) return { kind: 'moved', status: row.status };
+  const recovery = await recover();
+  if (recovery === null) return { kind: 'left' };
+  const finished = await finishLockedRow(tx, deps, row, {
+    status: 'FAILED',
+    errorCode: 'WORKER_CRASHED',
+    errorMessage: recovery.message,
+    commitSha: null,
+    container: recovery.container,
+  });
+  if (!finished) throw new Error('sweepRuntime: the locked row could not be finished');
+  return { kind: 'finished', finished };
+}
+
 async function publishFinished(deps: DeploymentStoreDeps, finished: Finished): Promise<void> {
   await publishDeployment(deps, finished.deployment);
   if (finished.service) await publishServerEvent(deps.events, buildServiceUpdatedEvent(finished.service));
@@ -388,6 +441,13 @@ export function createDeploymentStore(deps: DeploymentStoreDeps): DeploymentStor
       if (!finished) return null;
       await publishFinished(deps, finished);
       return toDeploymentView(finished.deployment);
+    },
+
+    async sweepRuntime(deploymentId, expected, recover) {
+      const result = await deps.db.transaction((tx) => sweepRuntimeRow(tx, deps, deploymentId, expected, recover));
+      if (result.kind !== 'finished') return result;
+      await publishFinished(deps, result.finished);
+      return { kind: 'finished', deployment: toDeploymentView(result.finished.deployment) };
     },
   };
 }

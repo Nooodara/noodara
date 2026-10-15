@@ -111,7 +111,14 @@ interface Op {
 
 /** A recording, thenable query-builder fake: every chain is one op; awaiting it answers from the
  *  in-memory rows. Conditional updates can be forced to match nothing with `updateMisses`. */
-function fakeDb(state: { deployment: DeploymentRow | null; service: ServiceRowFull | null; updateMisses?: boolean; failActivity?: boolean }) {
+function fakeDb(state: {
+  deployment: DeploymentRow | null;
+  service: ServiceRowFull | null;
+  updateMisses?: boolean;
+  failActivity?: boolean;
+  /** Another transaction holds the deployment row: SKIP LOCKED reads see no row. */
+  locked?: boolean;
+}) {
   const ops: Op[] = [];
   let inTx = false;
   const tableOf = (op: Op): unknown => op.table ?? op.calls.find((c) => c.method === 'from')?.args[0];
@@ -124,7 +131,13 @@ function fakeDb(state: { deployment: DeploymentRow | null; service: ServiceRowFu
       return [{ id: 'activity-1' }];
     }
     if (table === deployments) {
-      if (op.root === 'select') return state.deployment ? [state.deployment] : [];
+      if (op.root === 'select') {
+        const skipLocked = op.calls.some(
+          (c) => c.method === 'for' && (c.args[1] as { skipLocked?: boolean } | undefined)?.skipLocked === true,
+        );
+        if (skipLocked && state.locked) return [];
+        return state.deployment ? [state.deployment] : [];
+      }
       if (op.root === 'update') {
         if (state.updateMisses || !state.deployment) return [];
         state.deployment = { ...state.deployment, ...setOf(op) };
@@ -747,6 +760,121 @@ describe('deployment store: cancel (12-13 A1, H1, H2)', () => {
 
   it('the worker-crash sweep sees every claimed non-terminal status, HEALTHCHECK and ROLLING_BACK included (16-02 A7)', () => {
     expect(IN_FLIGHT_STATUSES).toEqual(['PREPARING', 'BUILDING', 'DEPLOYING', 'HEALTHCHECK', 'ROLLING_BACK']);
+  });
+});
+
+describe('deployment store: runtime sweep claim (17-06 A2, H1, H2)', () => {
+  const RESTORED = { message: 'restored', container: { kind: 'running' } } as const;
+
+  it.each(['HEALTHCHECK', 'ROLLING_BACK'] as const)(
+    'a %s row is locked with SKIP LOCKED, recovered inside the lock and ends FAILED/WORKER_CRASHED with the given message',
+    async (status) => {
+      const h = harness({ deployment: deploymentRow({ status, startedAt: STARTED }), service: serviceRow({ status: 'DEPLOYING' }) });
+      const seen: string[] = [];
+
+      const result = await h.store.sweepRuntime(DEPLOYMENT_ID, status, () => {
+        seen.push(h.ops.at(-1)?.inTx === true ? 'in-tx' : 'outside');
+        return Promise.resolve(RESTORED);
+      });
+
+      expect(result).toMatchObject({ kind: 'finished', deployment: { status: 'FAILED', errorCode: 'WORKER_CRASHED', errorMessage: 'restored' } });
+      expect(seen).toEqual(['in-tx']);
+      const lock = h.ops[0];
+      expect(lock?.inTx).toBe(true);
+      expect(lock?.calls).toContainEqual({ method: 'for', args: ['update', { skipLocked: true }] });
+      expect(h.state.service?.status).toBe('RUNNING');
+      expect(h.published.map((event) => event.type)).toEqual(['deployment.updated', 'service.updated']);
+    },
+  );
+
+  it('a row locked by another sweep is reported busy and nothing runs (H2)', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'HEALTHCHECK' }), service: serviceRow(), locked: true });
+    let ran = false;
+
+    const result = await h.store.sweepRuntime(DEPLOYMENT_ID, 'HEALTHCHECK', () => {
+      ran = true;
+      return Promise.resolve(RESTORED);
+    });
+
+    expect(result).toEqual({ kind: 'busy' });
+    expect(ran).toBe(false);
+    expect(h.ops.filter((op) => op.root !== 'select')).toEqual([]);
+    expect(h.published).toEqual([]);
+  });
+
+  it.each(['SUCCESS', 'ROLLED_BACK', 'FAILED', 'DEPLOYING'] as const)(
+    'a row that moved to %s is reported moved and never recovered (idempotent, H2)',
+    async (status) => {
+      const h = harness({ deployment: deploymentRow({ status }), service: serviceRow() });
+      let ran = false;
+
+      const result = await h.store.sweepRuntime(DEPLOYMENT_ID, 'HEALTHCHECK', () => {
+        ran = true;
+        return Promise.resolve(RESTORED);
+      });
+
+      expect(result).toEqual({ kind: 'moved', status });
+      expect(ran).toBe(false);
+      expect(h.ops.filter((op) => op.root !== 'select')).toEqual([]);
+    },
+  );
+
+  it('an unknown remote state leaves the row untouched for the next sweep (H2)', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'ROLLING_BACK' }), service: serviceRow() });
+
+    const result = await h.store.sweepRuntime(DEPLOYMENT_ID, 'ROLLING_BACK', () => Promise.resolve(null));
+
+    expect(result).toEqual({ kind: 'left' });
+    expect(h.state.deployment?.status).toBe('ROLLING_BACK');
+    expect(h.ops.filter((op) => op.root !== 'select')).toEqual([]);
+    expect(h.published).toEqual([]);
+  });
+
+  it('a second sweep of the same row after the first finished it is reported moved (H2)', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'HEALTHCHECK', startedAt: STARTED }), service: serviceRow() });
+    await h.store.sweepRuntime(DEPLOYMENT_ID, 'HEALTHCHECK', () => Promise.resolve(RESTORED));
+
+    const again = await h.store.sweepRuntime(DEPLOYMENT_ID, 'HEALTHCHECK', () => Promise.resolve(RESTORED));
+
+    expect(again).toEqual({ kind: 'moved', status: 'FAILED' });
+    expect(h.published.filter((event) => event.type === 'deployment.updated')).toHaveLength(1);
+  });
+
+  it('a missing row is reported busy', async () => {
+    const h = harness({ deployment: null, service: null });
+    expect(await h.store.sweepRuntime(DEPLOYMENT_ID, 'HEALTHCHECK', () => Promise.resolve(RESTORED))).toEqual({ kind: 'busy' });
+  });
+});
+
+describe('deployment store: cancel races at the runtime edges (17-06 H1)', () => {
+  const ACTOR = { type: 'user', id: '0192f1a4-7b3c-7d2e-8f00-00000000dddd' } as const;
+
+  it.each(['HEALTHCHECK', 'ROLLING_BACK'] as const)('a cancel on a %s row is only reported running; its worker decides', async (status) => {
+    const h = harness({ deployment: deploymentRow({ status, startedAt: STARTED }), service: serviceRow() });
+
+    const result = await h.store.requestCancel(DEPLOYMENT_ID, ACTOR);
+
+    expect(result).toMatchObject({ kind: 'running', deployment: { status } });
+    expect(h.ops.filter((op) => op.root !== 'select')).toEqual([]);
+  });
+
+  it('HEALTHCHECK -> SUCCESS wins under the row lock: a late CANCELLED finish matches nothing, one terminal state', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'HEALTHCHECK', startedAt: STARTED }), service: serviceRow() });
+
+    const success = await h.store.finish(DEPLOYMENT_ID, finishInput({ status: 'SUCCESS', container: { kind: 'running' } }));
+    const cancelled = await h.store.finish(DEPLOYMENT_ID, finishInput({ status: 'CANCELLED', commitSha: null }));
+
+    expect(success).toMatchObject({ status: 'SUCCESS' });
+    expect(cancelled).toBeNull();
+    expect(h.state.deployment?.status).toBe('SUCCESS');
+    expect(h.published.filter((event) => event.type === 'deployment.updated')).toHaveLength(1);
+  });
+
+  it('ROLLING_BACK never ends CANCELLED: the domain rejects the edge', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'ROLLING_BACK', startedAt: STARTED }), service: serviceRow() });
+
+    await expect(h.store.finish(DEPLOYMENT_ID, finishInput({ status: 'CANCELLED', commitSha: null }))).rejects.toThrow();
+    expect(h.state.deployment?.status).toBe('ROLLING_BACK');
   });
 });
 

@@ -1,7 +1,7 @@
 // 12-13 (A4): the startup sweep ends crashed deployments and cleans only per-deployment resources.
 import { createRedactor } from '@noodara/domain/security';
 import { deployWorkspaceFor, validateResourceId } from '@noodara/domain/validators';
-import type { RemoteCommand, SshDeploySession, StreamResult } from '@noodara/ssh';
+import type { RemoteCommand, SshDeploySession, StreamOptions, StreamResult } from '@noodara/ssh';
 import { describe, expect, it, vi } from 'vitest';
 import {
   createDeployJobLookup,
@@ -11,7 +11,13 @@ import {
   type DeploySweepDeps,
   type StaleQueuedSweepDeps,
 } from './deploy-sweep.js';
-import type { FinishDeploymentInput, InFlightDeployment, StaleQueuedDeployment } from './deployment-store.js';
+import type {
+  FinishDeploymentInput,
+  InFlightDeployment,
+  RuntimeSweepRecovery,
+  RuntimeSweepResult,
+  StaleQueuedDeployment,
+} from './deployment-store.js';
 import { DEPLOY_MESSAGES } from './run-deployment.js';
 
 const SERVICE_ID = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
@@ -63,6 +69,7 @@ function harness(rows: InFlightDeployment[], overrides: Partial<DeploySweepDeps>
         finished.push([id, input]);
         return Promise.resolve({ id } as never);
       }),
+      sweepRuntime: noRuntimeSweep,
     },
     connect: vi.fn(() => Promise.resolve({ ok: true as const, session: remote.session, close })),
     createRedactor,
@@ -76,6 +83,8 @@ function harness(rows: InFlightDeployment[], overrides: Partial<DeploySweepDeps>
   };
   return { deps, finished, logs, remote, close };
 }
+
+const noRuntimeSweep = (): Promise<RuntimeSweepResult> => Promise.reject(new Error('unused'));
 
 const row = (overrides: Partial<InFlightDeployment> = {}): InFlightDeployment => ({
   deploymentId: DEPLOYMENT_ID,
@@ -126,7 +135,7 @@ describe('sweepCrashedDeployments (A4)', () => {
 
   it('skips a row that turned terminal meanwhile: no cleanup of resources it does not own', async () => {
     const h = harness([row()], {
-      store: { inFlight: () => Promise.resolve([row()]), finish: () => Promise.resolve(null) },
+      store: { inFlight: () => Promise.resolve([row()]), finish: () => Promise.resolve(null), sweepRuntime: noRuntimeSweep },
     });
 
     const result = await sweepCrashedDeployments(h.deps);
@@ -137,12 +146,12 @@ describe('sweepCrashedDeployments (A4)', () => {
   });
 
   it('never throws: an unreachable database, server or a failing finish is logged by kind only', async () => {
-    const down = harness([], { store: { inFlight: () => Promise.reject(new Error(RAW)), finish: () => Promise.resolve(null) } });
+    const down = harness([], { store: { inFlight: () => Promise.reject(new Error(RAW)), finish: () => Promise.resolve(null), sweepRuntime: noRuntimeSweep } });
     await expect(sweepCrashedDeployments(down.deps)).resolves.toMatchObject({ swept: [] });
 
     const failing = harness([row()], {
       connect: () => Promise.reject(new Error(RAW)),
-      store: { inFlight: () => Promise.resolve([row(), row({ deploymentId: OTHER_DEPLOYMENT_ID })]), finish: vi.fn().mockRejectedValueOnce(new Error(RAW)).mockResolvedValue({}) },
+      store: { inFlight: () => Promise.resolve([row(), row({ deploymentId: OTHER_DEPLOYMENT_ID })]), finish: vi.fn().mockRejectedValueOnce(new Error(RAW)).mockResolvedValue({}), sweepRuntime: noRuntimeSweep },
     });
     const result = await sweepCrashedDeployments(failing.deps);
     await expect(result.cleanup).resolves.toBeUndefined();
@@ -163,6 +172,220 @@ describe('sweepCrashedDeployments (A4)', () => {
 
     expect(h.logs.filter((log) => log.message.includes('could not confirm'))).toHaveLength(3);
     expect(remote.commands.at(-1)?.name).toBe('docker.image_remove');
+  });
+});
+
+describe('sweepCrashedDeployments: HEALTHCHECK and ROLLING_BACK rows (17-06 A2, H2)', () => {
+  const CONTAINER = `noodara-${SERVICE_ID}`;
+  const PREVIOUS = `noodara-${SERVICE_ID}-prev`;
+  const NETWORK = `noodara-net-${SERVICE_ID}`;
+
+  const psLine = (name: string, state = 'running'): string =>
+    JSON.stringify({
+      ID: 'b'.repeat(64),
+      Image: `noodara/${SERVICE_ID}:old`,
+      Names: name,
+      State: state,
+      Status: 'Up',
+      Labels: `noodara.managed=true,noodara.service_id=${SERVICE_ID}`,
+      Ports: '',
+    });
+
+  interface Reply {
+    readonly outcome?: StreamResult['outcome'];
+    readonly exitCode?: number;
+    readonly stdout?: string;
+    readonly stderr?: string;
+  }
+
+  /** A scripted server: `docker.ps` lists `containers`; every other command answers from `replies`. */
+  function scriptedSession(containers: string[], replies: Record<string, Reply> = {}) {
+    const commands: RemoteCommand[] = [];
+    const session = {
+      exec: () => Promise.reject(new Error('unused')),
+      close: () => Promise.resolve(),
+      stream: (command: RemoteCommand, options: StreamOptions): Promise<StreamResult> => {
+        commands.push(command);
+        const reply: Reply =
+          replies[command.name] ??
+          (command.name === 'docker.ps'
+            ? { stdout: containers.map((name) => psLine(name)).join('\n') + '\n' }
+            : command.name === 'docker.inspect_networks'
+              ? { stdout: `${JSON.stringify({ [NETWORK]: { IPAddress: '172.30.0.2' } })}\n` }
+              : command.name === 'process.group_alive'
+                ? { exitCode: 1 }
+                : {});
+        if (reply.stdout !== undefined) options.onChunk({ stream: 'stdout', text: reply.stdout, seq: 0, truncatedLine: false });
+        if (reply.stderr !== undefined) options.onChunk({ stream: 'stderr', text: reply.stderr, seq: 1, truncatedLine: false });
+        return Promise.resolve({
+          commandName: command.name,
+          outcome: reply.outcome ?? 'completed',
+          exitCode: reply.outcome === undefined || reply.outcome === 'completed' ? (reply.exitCode ?? 0) : null,
+          exitSignal: null,
+          durationMs: 1,
+          totalBytes: 0,
+          truncated: false,
+          stdoutTail: reply.stdout ?? '',
+          stderrTail: reply.stderr ?? '',
+        });
+      },
+    } as unknown as SshDeploySession;
+    return { session, commands };
+  }
+
+  /** Mirrors the store: a row still at `expected` runs `recover` once under its lock. */
+  function runtimeHarness(status: 'HEALTHCHECK' | 'ROLLING_BACK', remote: ReturnType<typeof scriptedSession>, overrides: Partial<DeploySweepDeps> = {}) {
+    const recoveries: RuntimeSweepRecovery[] = [];
+    let current: string = status;
+    const sweepRuntime = vi.fn(async (_id: string, expected: string, recover: () => Promise<RuntimeSweepRecovery | null>): Promise<RuntimeSweepResult> => {
+      if (current !== expected) return { kind: 'moved', status: current as never };
+      const recovery = await recover();
+      if (recovery === null) return { kind: 'left' };
+      recoveries.push(recovery);
+      current = 'FAILED';
+      return { kind: 'finished', deployment: { id: DEPLOYMENT_ID, status: 'FAILED' } as never };
+    });
+    const h = harness([row({ status })], {
+      connect: vi.fn(() => Promise.resolve({ ok: true as const, session: remote.session, close: () => Promise.resolve() })),
+      ...overrides,
+    });
+    const deps: DeploySweepDeps = { ...h.deps, store: { ...h.deps.store, sweepRuntime }, ...overrides };
+    return { ...h, deps, recoveries, sweepRuntime, status: () => current };
+  }
+
+  const names = (remote: ReturnType<typeof scriptedSession>): string[] => remote.commands.map((command) => command.name);
+
+  it.each(['HEALTHCHECK', 'ROLLING_BACK'] as const)(
+    'a %s row is not finished before the remote recovery: -prev is restored and the row ends WORKER_CRASHED saying so',
+    async (status) => {
+      const remote = scriptedSession([CONTAINER, PREVIOUS]);
+      const h = runtimeHarness(status, remote);
+
+      const result = await sweepCrashedDeployments(h.deps);
+      expect(h.finished).toEqual([]);
+      expect(result.swept).toEqual([]);
+      await result.cleanup;
+
+      expect(h.sweepRuntime).toHaveBeenCalledWith(DEPLOYMENT_ID, status, expect.any(Function));
+      const order = names(remote);
+      const from = order.indexOf('docker.remove');
+      expect(from).toBeGreaterThan(order.indexOf('docker.ps'));
+      expect(order.slice(from, from + 2)).toEqual(['docker.remove', 'docker.rename_from_prev']);
+      expect(order).toContain('docker.start');
+      expect(h.recoveries).toEqual([{ message: DEPLOY_MESSAGES.WORKER_CRASHED_RESTORED, container: { kind: 'running' } }]);
+      // The deployment's own leftovers still go.
+      expect(order).toContain('fs.remove_deploy_dir');
+      // Only the new container is force-removed; `-prev` and images never are.
+      const forced = remote.commands.filter((command) => command.argv.includes('--force') || command.argv.includes('-f'));
+      expect(forced.map((command) => [command.name, command.argv.at(-1)])).toEqual([['docker.remove', CONTAINER]]);
+    },
+  );
+
+  it('the per-service container is never removed when it is the only version (A2)', async () => {
+    const remote = scriptedSession([CONTAINER]);
+    const h = runtimeHarness('HEALTHCHECK', remote);
+
+    await (await sweepCrashedDeployments(h.deps)).cleanup;
+
+    expect(names(remote)).not.toContain('docker.remove');
+    expect(names(remote)).not.toContain('docker.rename_from_prev');
+    expect(names(remote)).not.toContain('docker.stop');
+    expect(h.recoveries).toEqual([{ message: DEPLOY_MESSAGES.WORKER_CRASHED_NO_PREVIOUS, container: { kind: 'running' } }]);
+  });
+
+  it('a rollback that already removed the new container only renames -prev back', async () => {
+    const remote = scriptedSession([PREVIOUS]);
+    const h = runtimeHarness('ROLLING_BACK', remote);
+
+    await (await sweepCrashedDeployments(h.deps)).cleanup;
+
+    expect(names(remote)).not.toContain('docker.remove');
+    expect(names(remote)).toContain('docker.rename_from_prev');
+    expect(h.recoveries[0]?.message).toBe(DEPLOY_MESSAGES.WORKER_CRASHED_RESTORED);
+  });
+
+  it('a restore Docker refuses ends the row WORKER_CRASHED saying it was not restored', async () => {
+    const remote = scriptedSession([CONTAINER, PREVIOUS], {
+      'docker.rename_from_prev': { exitCode: 1, stderr: 'Error response from daemon: something went wrong\n' },
+    });
+    const h = runtimeHarness('HEALTHCHECK', remote);
+
+    await (await sweepCrashedDeployments(h.deps)).cleanup;
+
+    expect(h.recoveries).toEqual([{ message: DEPLOY_MESSAGES.WORKER_CRASHED_NOT_RESTORED, container: { kind: 'unknown' } }]);
+  });
+
+  it('an unreachable server leaves the row for the next sweep with a warning, never terminal (H2)', async () => {
+    const remote = scriptedSession([CONTAINER, PREVIOUS]);
+    const h = runtimeHarness('HEALTHCHECK', remote, {
+      connect: vi.fn(() => Promise.resolve({ ok: false as const, code: 'SERVER_UNREACHABLE' as const })),
+    });
+
+    await (await sweepCrashedDeployments(h.deps)).cleanup;
+
+    expect(h.sweepRuntime).not.toHaveBeenCalled();
+    expect(h.status()).toBe('HEALTHCHECK');
+    expect(h.logs.some((log) => log.level === 'warn' && log.fields.deploymentId === DEPLOYMENT_ID && log.message.includes('next sweep'))).toBe(true);
+  });
+
+  it.each([
+    ['docker ps times out', { 'docker.ps': { outcome: 'timed_out' } }],
+    ['docker ps sees no daemon', { 'docker.ps': { exitCode: 1, stderr: 'Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?\n' } }],
+    ['the connection drops during the restore', { 'docker.rename_from_prev': { outcome: 'idle_timeout' } }],
+  ] as const)('%s: the remote state is unknown, so the row is left for the next sweep (H2)', async (_label, replies) => {
+    const remote = scriptedSession([CONTAINER, PREVIOUS], replies);
+    const h = runtimeHarness('ROLLING_BACK', remote);
+
+    await (await sweepCrashedDeployments(h.deps)).cleanup;
+
+    expect(h.recoveries).toEqual([]);
+    expect(h.status()).toBe('ROLLING_BACK');
+    expect(h.logs.some((log) => log.level === 'warn' && log.message.includes('next sweep'))).toBe(true);
+    // Nothing of the deployment is cleaned while its row is still open.
+    expect(names(remote)).not.toContain('fs.remove_deploy_dir');
+  });
+
+  it('is idempotent: a second sweep of a finished row touches nothing on the server (H2)', async () => {
+    const remote = scriptedSession([CONTAINER, PREVIOUS]);
+    const h = runtimeHarness('HEALTHCHECK', remote);
+    await (await sweepCrashedDeployments(h.deps)).cleanup;
+    const before = remote.commands.length;
+
+    await (await sweepCrashedDeployments(h.deps)).cleanup;
+
+    expect(remote.commands.slice(before).map((command) => command.name)).toEqual([]);
+    expect(h.recoveries).toHaveLength(1);
+  });
+
+  it('two sweeps at once restore once: the row lock serialises them (H2)', async () => {
+    const remote = scriptedSession([CONTAINER, PREVIOUS]);
+    const h = runtimeHarness('HEALTHCHECK', remote);
+    // SKIP LOCKED: while the first sweep holds the row, the second one sees it busy.
+    let holder: Promise<unknown> | null = null;
+    const locked = h.sweepRuntime.getMockImplementation();
+    if (locked === undefined) throw new Error('fixture');
+    h.sweepRuntime.mockImplementation((id, expected, recover) => {
+      if (holder !== null) return Promise.resolve({ kind: 'busy' });
+      const run = locked(id, expected, recover);
+      holder = run;
+      return run;
+    });
+
+    await Promise.all([(await sweepCrashedDeployments(h.deps)).cleanup, (await sweepCrashedDeployments(h.deps)).cleanup]);
+
+    expect(h.recoveries).toHaveLength(1);
+    expect(names(remote).filter((name) => name === 'docker.rename_from_prev')).toHaveLength(1);
+  });
+
+  it('a recovery that throws is logged by kind only and the row stays open', async () => {
+    const remote = scriptedSession([CONTAINER, PREVIOUS]);
+    const h = runtimeHarness('HEALTHCHECK', remote);
+    h.sweepRuntime.mockRejectedValueOnce(new Error(RAW));
+
+    await expect((await sweepCrashedDeployments(h.deps)).cleanup).resolves.toBeUndefined();
+
+    expect(JSON.stringify(h.logs)).not.toContain('pw@db');
+    expect(h.logs.some((log) => log.fields.errorKind === 'Error')).toBe(true);
   });
 });
 

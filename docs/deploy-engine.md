@@ -34,6 +34,12 @@ If the API's enqueue and its undo both fail (Redis and Postgres down), the row s
 - The write locks the row and updates `WHERE status = 'QUEUED'`, so a concurrent claim, a second sweep or a second worker leaves one event.
 - At most 50 rows per sweep; the message is fixed and carries no Redis/Postgres error text.
 
+## Cancel and Crash Recovery at Runtime (17-06)
+
+- Cancel: the swap (stop, rename to `-prev`, create, start) is never cancelled. A cancel seen during `HEALTHCHECK` removes the new container, restores `-prev` and ends `CANCELLED`; with no `-prev` the only version is stopped, never removed. A cancel racing the passed check loses (`SUCCESS`). `ROLLING_BACK` is never cancelled: the API answers `ROLLBACK_IN_PROGRESS` 409 and the rollback completes.
+- Boot sweep: `PREPARING|BUILDING|DEPLOYING` rows end `FAILED/WORKER_CRASHED` up front. `HEALTHCHECK|ROLLING_BACK` rows end in the background, under `SELECT ... FOR UPDATE SKIP LOCKED` (a second sweep skips the row): with `-prev` present the new container is removed and `-prev` restored; without it nothing is touched. The message says which (restored, no previous version, not restored).
+- Unknown remote state (server unreachable, Docker down, interrupted step): the row stays open with a warning for the next sweep, never terminal.
+
 ## Git Host Keys (14-06, 14-07)
 
 SSH clones run with `StrictHostKeyChecking=yes`. GitHub, GitLab and Bitbucket use bundled keys; any other host is trust-on-first-use, pinned per service.

@@ -7,6 +7,14 @@
 // are never touched: an image still used by the container is refused by Docker, never forced.
 // Nothing here throws; only error class names are logged.
 //
+// 17-06 (A2, H2): a HEALTHCHECK or ROLLING_BACK row is not ended up front: the swap may have left
+// the service on the new container with `-prev` stopped. In the background the sweep connects
+// first (unreachable: warn, leave the row for the next sweep), then under the store's SKIP LOCKED
+// row claim reads `docker ps`: with `-prev` present it removes the new container (when present)
+// and restores `-prev`; without it nothing is touched (the only version is never removed). The row
+// ends FAILED/WORKER_CRASHED with a message saying which. An interrupted step, an unreachable
+// server or Docker down mean the remote state is unknown: the row stays open, never terminal.
+//
 // 14-08: `sweepStaleQueuedDeployments` runs at worker startup and on every reconcile tick. A QUEUED
 // deployment older than NOODARA_DEPLOY_QUEUED_STALE_MS whose BullMQ job is confirmed absent (the
 // API's enqueue and its undo both failed) ends FAILED/ENQUEUE_FAILED, releasing the service's
@@ -16,6 +24,7 @@ import {
   createResourceLedger,
   decideStaleQueued,
   staleQueuedCutoff,
+  type ContainerObservation,
   type ResourceLedger,
   type StaleQueuedJob,
 } from '@noodara/domain/deployment';
@@ -25,15 +34,28 @@ import {
   DEPLOYMENT_SUPERVISED_OPERATIONS,
   validateResourceId,
   type DeployWorkspace,
+  type ResourceId,
 } from '@noodara/domain/validators';
-import { killSupervisedOperation } from '@noodara/ssh';
+import {
+  listManagedContainers,
+  removeContainer,
+  restorePrevious,
+  type DockerStepContext,
+} from '@noodara/docker';
+import { killSupervisedOperation, previousContainerNameFor, type SshDeploySession } from '@noodara/ssh';
 import type { DeployJobDeps, DeployJobLogger } from './deploy-worker.js';
 import { jobIdForDeployment } from '../queue/deploy-queue.js';
-import type { DeploymentStore, FinishDeploymentInput, InFlightDeployment, StaleQueuedDeployment } from './deployment-store.js';
+import type {
+  DeploymentStore,
+  FinishDeploymentInput,
+  InFlightDeployment,
+  RuntimeSweepRecovery,
+  StaleQueuedDeployment,
+} from './deployment-store.js';
 import { DEPLOY_MESSAGES, runLedgerCleanup, type DeployRunLimits } from './run-deployment.js';
 
 export interface DeploySweepDeps {
-  readonly store: Pick<DeploymentStore, 'inFlight' | 'finish'>;
+  readonly store: Pick<DeploymentStore, 'inFlight' | 'finish' | 'sweepRuntime'>;
   readonly connect: DeployJobDeps['connect'];
   readonly createRedactor: () => Redactor;
   readonly limits: Pick<DeployRunLimits, 'killConfirmMs' | 'killPollMs' | 'cleanupStepMs' | 'maxLineBytes'>;
@@ -41,7 +63,7 @@ export interface DeploySweepDeps {
 }
 
 export interface DeploySweepResult {
-  /** Deployments this sweep ended WORKER_CRASHED. */
+  /** Deployments this sweep ended WORKER_CRASHED up front (HEALTHCHECK/ROLLING_BACK end in `cleanup`). */
   readonly swept: readonly string[];
   /** The background remote cleanup; never rejects. */
   readonly cleanup: Promise<void>;
@@ -61,6 +83,7 @@ function errorKind(error: unknown): string {
 
 interface CleanupTarget {
   readonly row: InFlightDeployment;
+  readonly serviceId: ResourceId;
   readonly workspace: DeployWorkspace;
   readonly ledger: ResourceLedger;
 }
@@ -72,20 +95,104 @@ function cleanupTargetOf(row: InFlightDeployment): CleanupTarget | null {
   const workspace = deployWorkspaceFor(deploymentId.value);
   const ledger = createResourceLedger(serviceId.value, deploymentId.value);
   if (!workspace.ok || !ledger.ok) return null;
-  return { row, workspace: workspace.value, ledger: ledger.value };
+  return { row, serviceId: serviceId.value, workspace: workspace.value, ledger: ledger.value };
+}
+
+const RUNTIME_STATUSES = ['HEALTHCHECK', 'ROLLING_BACK'] as const;
+type RuntimeStatus = (typeof RUNTIME_STATUSES)[number];
+
+function runtimeStatusOf(row: InFlightDeployment): RuntimeStatus | null {
+  return RUNTIME_STATUSES.find((status) => status === row.status) ?? null;
+}
+
+/** Bounded by the per-command cleanup limit; never cancelled. */
+const RECOVERY_MAX_TOTAL_BYTES = 1_048_576;
+
+type StepOutcome = { readonly ok: true } | { readonly ok: false; readonly kind: string; readonly code?: string };
+
+/** H2: an interrupted step, an unreachable server or Docker down leave the remote state unknown. */
+function remoteUnknown(result: StepOutcome): boolean {
+  if (result.ok) return false;
+  return result.kind === 'interrupted' || result.code === 'SERVER_UNREACHABLE' || result.code === 'DOCKER_UNAVAILABLE';
+}
+
+/** 17-06 A2: puts `-prev` back when it exists; null when the remote state is unknown. Never throws. */
+async function restoreRuntime(
+  deps: DeploySweepDeps,
+  session: SshDeploySession,
+  redactor: ReturnType<DeploySweepDeps['createRedactor']>,
+  target: CleanupTarget,
+): Promise<RuntimeSweepRecovery | null> {
+  const context: DockerStepContext = {
+    session,
+    redactor,
+    limits: {
+      maxDurationMs: deps.limits.cleanupStepMs,
+      idleTimeoutMs: deps.limits.cleanupStepMs,
+      maxTotalBytes: RECOVERY_MAX_TOTAL_BYTES,
+      maxLineBytes: deps.limits.maxLineBytes,
+    },
+  };
+  const { serviceId } = target;
+  const notRestored: RuntimeSweepRecovery = { message: DEPLOY_MESSAGES.WORKER_CRASHED_NOT_RESTORED, container: { kind: 'unknown' } };
+  try {
+    const ps = await listManagedContainers(context);
+    if (!ps.ok || ps.value.kind !== 'ok') return null;
+    const current = ps.value.containers.find((observed) => observed.name === target.ledger.names.container);
+    const previousName = previousContainerNameFor(serviceId);
+    if (!ps.value.containers.some((observed) => observed.name === previousName)) {
+      // The only version (or one a rollback already restored) stays exactly as it is.
+      const container: ContainerObservation =
+        current === undefined
+          ? { kind: 'absent' }
+          : current.state === 'running'
+            ? { kind: 'running' }
+            : { kind: 'stopped', exitCode: current.exitCode };
+      return { message: DEPLOY_MESSAGES.WORKER_CRASHED_NO_PREVIOUS, container };
+    }
+    if (current !== undefined) {
+      const removed = await removeContainer(context, { serviceId });
+      if (remoteUnknown(removed)) return null;
+      if (!removed.ok) return notRestored;
+    }
+    const restored = await restorePrevious(context, { serviceId });
+    if (remoteUnknown(restored)) return null;
+    if (!restored.ok) return notRestored;
+    return { message: DEPLOY_MESSAGES.WORKER_CRASHED_RESTORED, container: { kind: 'running' } };
+  } catch {
+    return null;
+  }
 }
 
 async function cleanUp(deps: DeploySweepDeps, target: CleanupTarget): Promise<void> {
   const { deploymentId, serverId } = target.row;
+  const runtime = runtimeStatusOf(target.row);
   const redactor = deps.createRedactor();
   let close: (() => Promise<void>) | null = null;
   try {
     const connected = await deps.connect(serverId, redactor, undefined);
     if (!connected.ok) {
+      if (runtime !== null) {
+        deps.logger.warn({ deploymentId, code: connected.code }, 'deploy sweep could not reach the server; the deployment is left for the next sweep');
+        return;
+      }
       deps.logger.warn({ deploymentId, code: connected.code }, 'deploy sweep could not reach the server to clean up');
       return;
     }
     close = connected.close;
+    if (runtime !== null) {
+      const session = connected.session;
+      const swept = await deps.store.sweepRuntime(deploymentId, runtime, () => restoreRuntime(deps, session, redactor, target));
+      if (swept.kind === 'left') {
+        deps.logger.warn({ deploymentId, previousStatus: runtime }, 'deploy sweep could not read the server state; the deployment is left for the next sweep');
+        return;
+      }
+      if (swept.kind !== 'finished') {
+        deps.logger.info({ deploymentId, result: swept.kind }, 'deploy sweep left a deployment another worker or sweep owns');
+        return;
+      }
+      deps.logger.warn({ deploymentId, previousStatus: runtime }, 'deploy sweep ended a crashed deployment');
+    }
     // Deployment operations only: a runtime log follow is never a deployment's leftover.
     for (const op of DEPLOYMENT_SUPERVISED_OPERATIONS) {
       const killed = await killSupervisedOperation({
@@ -125,6 +232,12 @@ export async function sweepCrashedDeployments(deps: DeploySweepDeps): Promise<De
   const swept: string[] = [];
   const targets: CleanupTarget[] = [];
   for (const row of rows) {
+    if (runtimeStatusOf(row) !== null) {
+      // 17-06: ended in the background, once its remote state is known.
+      const target = cleanupTargetOf(row);
+      if (target !== null) targets.push(target);
+      continue;
+    }
     try {
       // null: the row turned terminal meanwhile; its resources are not this sweep's.
       if ((await deps.store.finish(row.deploymentId, workerCrashed)) === null) continue;

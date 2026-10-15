@@ -258,6 +258,13 @@ export const DEPLOY_MESSAGES = Object.freeze({
     'Noodara could not read the container list from Docker on the server. Check that Docker is running and healthy, then redeploy.',
   CANCEL_UNCONFIRMED:
     'The deployment was cancelled, but Noodara could not confirm that its build stopped on the server. Check the server for a leftover build process, then redeploy.',
+  // 17-06 A2: the crash sweep of a HEALTHCHECK or ROLLING_BACK row says what it did on the server.
+  WORKER_CRASHED_RESTORED:
+    'The deploy worker stopped during the healthcheck or rollback. The previous version was restored; redeploy when ready.',
+  WORKER_CRASHED_NO_PREVIOUS:
+    'The deploy worker stopped during the healthcheck or rollback. There was no previous version to restore, so the service container was left as it is. Check it, then redeploy.',
+  WORKER_CRASHED_NOT_RESTORED:
+    'The deploy worker stopped during the healthcheck or rollback, and the previous version could not be restored. Check the containers on the server, then redeploy.',
 });
 
 /** H3: names the fix, never a key blob (an operator compares fingerprints out of band). */
@@ -399,6 +406,9 @@ const ROLLBACK_STARTED_LOG = 'Rolling back: restoring the previous version.';
 const ROLLBACK_PASSED_LOG = 'The previous version was restored and passed its healthcheck.';
 const ROLLBACK_FAILED_LOG = 'The previous version could not be restored.';
 const NEW_STOPPED_LOG = 'The new container was stopped; the previous version is kept for a manual rollback.';
+const CANCEL_RESTORED_LOG = 'The deployment was cancelled during the healthcheck, so the previous version was restored.';
+const CANCEL_NOT_RESTORED_LOG = 'The deployment was cancelled during the healthcheck and the previous version could not be restored.';
+const CANCEL_STOPPED_LOG = 'The deployment was cancelled during the healthcheck, so the new container was stopped.';
 
 function exitFor(end: End | null): DeploymentExit {
   if (end === null) return 'SUCCESS';
@@ -476,9 +486,9 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     };
   };
 
-  // A2: a cancel seen between steps ends the attempt before the next remote command. Once the
-  // container swap starts the attempt runs to its end (H1): a half-done swap is worse than a
-  // late cancel, and the row still ends in exactly one terminal state.
+  // A2: a cancel seen between steps ends the attempt before the next remote command. The container
+  // swap is never cancelled (a half-done swap is worse than a late cancel); HEALTHCHECK is again
+  // (17-06 A1), and from the passed check or ROLLING_BACK on the attempt runs to its end (H1).
   let cancellable = true;
   const context = (phase: DeploymentLogPhase | null): DockerStepContext => {
     const signal = cancellable ? input.signal : undefined;
@@ -741,6 +751,7 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
 
     // verify: the HEALTHCHECK step; the worker's finish ends SUCCESS.
     await advance('HEALTHCHECK');
+    cancellable = true;
     if (resolved.postStart !== null) {
       // v0.2: no healthcheck config, the post-start polls decide.
       let { delayMs, state } = startPostStartPolls(input.pollPolicy);
@@ -775,6 +786,8 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
       }
       log('healthcheck', 'system', HEALTHCHECK_PASSED_LOG);
     }
+    // 17-06 H1: a cancel racing the passed check loses; the attempt ends SUCCESS.
+    cancellable = false;
     container = { kind: 'running' };
     // Only now is the superseded version no longer the service's last good one.
     const superseded: ObservedContainer | null = kept;
@@ -812,6 +825,8 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
   /** 17-07: one rollback attempt; it never throws and never leaves the status at ROLLING_BACK. */
   const rollback = async (original: FailedEnd): Promise<End> => {
     const target = input.previousSuccess ?? null;
+    // 17-06 A1: ROLLING_BACK is never cancelled; the restore always runs to its end.
+    cancellable = false;
     try {
       await advance('ROLLING_BACK');
     } catch {
@@ -852,14 +867,29 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
   };
 
   /** A3: without a rollback the new container does not keep serving a failed version. */
-  const stopNew = async (): Promise<void> => {
+  const stopNew = async (message: string = NEW_STOPPED_LOG): Promise<void> => {
     const stopped = await recover(() =>
       stopContainer(recoveryContext(), { serviceId, timeoutSeconds: limits.stopTimeoutSeconds }),
     );
     if (!stopped) return;
     if (container?.kind !== 'stopped') container = { kind: 'stopped', exitCode: null };
-    log('deploy', 'system', NEW_STOPPED_LOG);
+    log('deploy', 'system', message);
   };
+
+  /** 17-06 A1: a cancel during HEALTHCHECK puts `-prev` back; the only version is only stopped. */
+  const undoCancelledSwap = async (): Promise<void> => {
+    if (kept === null) {
+      await stopNew(CANCEL_STOPPED_LOG);
+      return;
+    }
+    swapRecovered = true;
+    if ((await recover(() => removeContainer(recoveryContext(), { serviceId }))) || !containerCreated) newRemoved = true;
+    const restored = await recover(() => restorePrevious(recoveryContext(), { serviceId }));
+    container = restored ? { kind: 'running' } : { kind: 'unknown' };
+    log('healthcheck', 'system', restored ? CANCEL_RESTORED_LOG : CANCEL_NOT_RESTORED_LOG);
+  };
+  // A closure, so TS does not narrow `status` to its initial value inside the catch block.
+  const inHealthcheck = (): boolean => status === 'HEALTHCHECK';
 
   let end: End | null = null;
   try {
@@ -885,6 +915,8 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
       } else if (containerCreated && !swapRecovered) {
         await stopNew();
       }
+    } else if (end.status === 'CANCELLED' && inHealthcheck()) {
+      await undoCancelledSwap();
     }
   }
 
