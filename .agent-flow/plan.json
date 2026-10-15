@@ -5376,7 +5376,12 @@
             "apps/control-plane/src/deploy/run-deployment.ts",
             "apps/control-plane/src/deploy/run-deployment.test.ts",
             "apps/control-plane/src/deploy/deployment-store.ts",
-            "apps/control-plane/src/deploy/deployment-store.test.ts"
+            "apps/control-plane/src/deploy/deployment-store.test.ts",
+            "apps/control-plane/src/db/migrations/",
+            "apps/control-plane/src/db/schema/deployments.ts",
+            "apps/control-plane/src/db/schema/deployment-log-chunks.ts",
+            "tests/integration/db/",
+            "apps/control-plane/src/deploy/deploy-worker.test.ts"
           ],
           "wave": 2,
           "dependsOn": [
@@ -5389,7 +5394,8 @@
             "lint",
             "boundaries",
             "coverage-state-machine",
-            "it-runtime-pipeline"
+            "it-runtime-pipeline",
+            "it-db"
           ],
           "acceptance": [
             {
@@ -5436,6 +5442,11 @@
               "id": "A7",
               "text": "Consumers stay behaviour-compatible: the runtime ends a deploy DEPLOYING→HEALTHCHECK→SUCCESS using the existing post-start polls as the container check (verify step = HEALTHCHECK); deployment-steps and the web lookup tables handle every new state, trigger, phase and code with minimal copy (final copy in 19-01); runtime-pipeline integration stays green",
               "proof": "it-runtime-pipeline"
+            },
+            {
+              "id": "A8",
+              "text": "Migration 0011 adds the new status, trigger, error-code and log-phase values with ALTER TYPE ... ADD VALUE IF NOT EXISTS (derived from the domain tuples), and a separate migration 0012 recreates the one-active partial unique index from the new non-terminal set; both apply from scratch and from the v0.2.0 schema with rows unchanged",
+              "proof": "it-db"
             }
           ],
           "waives": [
@@ -5630,7 +5641,7 @@
         },
         {
           "id": "16-06",
-          "title": "Schema: migration 0011 for v0.3 (enums, deployment traceability, service config, webhook deliveries)",
+          "title": "Schema: v0.3 columns (deployment traceability, service config, webhook deliveries)",
           "scope": [
             "apps/control-plane/src/db/schema/deployments.ts",
             "apps/control-plane/src/db/schema/services.ts",
@@ -5654,7 +5665,7 @@
           "acceptance": [
             {
               "id": "A1",
-              "text": "Status, trigger, error-code and log-phase enums grow with ALTER TYPE ... ADD VALUE IF NOT EXISTS, derived from the domain tuples",
+              "text": "The enum values and index recreation from 16-02 (migrations 0011/0012) are untouched; this task's migration (0013) only adds columns and tables",
               "proof": "it-db"
             },
             {
@@ -5674,12 +5685,12 @@
             },
             {
               "id": "A5",
-              "text": "The one-active partial unique index is recreated from the new non-terminal set; migration applies from scratch and from the v0.2.0 schema with existing rows unchanged",
+              "text": "The new migration applies from scratch and from the v0.2.0 schema with existing rows unchanged, and the one-active index from 0012 still rejects a second active deployment",
               "proof": "it-db"
             },
             {
               "id": "H1",
-              "text": "Migration 0011 is additive and idempotent: running it twice is a no-op, it takes no long ACCESS EXCLUSIVE lock on a populated deployments table (nullable columns without rewriting defaults), and a down/forward test on a DB with 10k deployment rows completes within a documented bound",
+              "text": "Migrations 0011-0013 are additive and idempotent: running it twice is a no-op, it takes no long ACCESS EXCLUSIVE lock on a populated deployments table (nullable columns without rewriting defaults), and a down/forward test on a DB with 10k deployment rows completes within a documented bound",
               "proof": "test"
             },
             {
@@ -6982,7 +6993,7 @@
             },
             {
               "id": "H1",
-              "text": "The v0.2.0 to v0.3 upgrade check verifies migration 0011 on a database with real v0.2 deployments and services, that existing services default to container healthcheck, and that the documented downgrade/rollback path restores service without data loss",
+              "text": "The v0.2.0 to v0.3 upgrade check verifies the v0.3 migrations (0011-0013) on a database with real v0.2 deployments and services, that existing services default to container healthcheck, and that the documented downgrade/rollback path restores service without data loss",
               "proof": "manual"
             }
           ],
