@@ -27,6 +27,8 @@ import {
   CANCEL_UNCONFIRMED_ERROR_CODE,
   DEPLOY_MESSAGES,
   runDeployment,
+  runLedgerCleanup,
+  type AdvanceRecord,
   type DeployCredential,
   type DeployRunLimits,
   type DeploymentProgress,
@@ -192,12 +194,14 @@ class FakeSession implements SshDeploySession {
 
 class RecordingProgress implements DeploymentProgress {
   readonly advances: [DeploymentStatus, DeploymentStatus][] = [];
+  readonly records: { readonly to: DeploymentStatus; readonly record: AdvanceRecord }[] = [];
   readonly shas: string[] = [];
   failOn: DeploymentStatus | null = null;
 
-  advance(from: DeploymentStatus, to: DeploymentStatus): Promise<void> {
+  advance(from: DeploymentStatus, to: DeploymentStatus, record?: AdvanceRecord): Promise<void> {
     if (to === this.failOn) return Promise.reject(new Error('connection to postgres://u:pw@db lost'));
     this.advances.push([from, to]);
+    if (record !== undefined) this.records.push({ to, record });
     return Promise.resolve();
   }
 
@@ -344,11 +348,13 @@ describe('runDeployment: git source (C1)', () => {
       'docker.ps',
       'docker.network_create',
       'docker.stop',
-      'docker.remove',
+      // 17-02 A1: the previous container is kept as -prev, removed only after the check passed.
+      'docker.rename_to_prev',
       'docker.create',
       'docker.start',
       'docker.inspect',
       'docker.inspect',
+      'docker.remove_prev',
       'fs.remove_deploy_dir',
       'docker.image_remove',
     ]);
@@ -817,7 +823,7 @@ describe('runDeployment: names come only from validated ids (H2)', () => {
     const h = harness({ scripts: { 'docker.ps': { stdout: `${previous}\n` } } });
     await runDeployment(h.input);
     const named = h.session.allArgv().filter((arg) => arg.includes(SERVICE_ID) || arg.includes(DEPLOYMENT_ID));
-    const allowed = new Set([CONTAINER, NETWORK, BUILT_IMAGE, OLD_IMAGE]);
+    const allowed = new Set([CONTAINER, `${CONTAINER}-prev`, NETWORK, BUILT_IMAGE, OLD_IMAGE]);
     for (const arg of named) {
       const ok =
         allowed.has(arg) ||

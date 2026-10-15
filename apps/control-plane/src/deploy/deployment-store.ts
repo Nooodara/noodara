@@ -271,8 +271,13 @@ export function createDeploymentStore(deps: DeploymentStoreDeps): DeploymentStor
 
     progress(deploymentId) {
       return {
-        async advance(from, to) {
+        async advance(from, to, record) {
           const next = transitionDeployment(from, to);
+          // 17-02 (A2/A3): the healthcheck start and the runtime snapshot land in the edge's UPDATE.
+          const snapshot =
+            record?.runtimeConfig === undefined
+              ? {}
+              : { runtimeConfig: record.runtimeConfig, imageRef: record.runtimeConfig.imageRef };
           // Under the row lock, so the new updatedAt is computed from the stored one (H1).
           const row = await deps.db.transaction(async (tx) => {
             const [current] = await tx.select().from(deployments).where(eq(deployments.id, deploymentId)).for('update');
@@ -280,7 +285,13 @@ export function createDeploymentStore(deps: DeploymentStoreDeps): DeploymentStor
             const now = deps.now();
             const [updated] = await tx
               .update(deployments)
-              .set({ status: next, updatedAt: nextUpdatedAt(current.updatedAt, now), ...boundaryOf(from, next, now) })
+              .set({
+                status: next,
+                updatedAt: nextUpdatedAt(current.updatedAt, now),
+                ...boundaryOf(from, next, now),
+                ...snapshot,
+                ...(next === 'HEALTHCHECK' ? { healthcheckStartedAt: now } : {}),
+              })
               .where(and(eq(deployments.id, deploymentId), eq(deployments.status, from)))
               .returning();
             return updated ?? null;

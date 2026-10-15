@@ -97,6 +97,33 @@ describe('resolveDeployTarget', () => {
     expect(result.target.otherServices).toEqual(rows().otherServices);
     expect(result.target.panelPorts).toEqual(PANEL);
     expect(result.target.source.kind).toBe('git');
+    // 17-02: no stored healthcheck keeps the v0.2 post-start polls.
+    expect(result.target.healthcheck).toBeNull();
+  });
+
+  it('carries the service healthcheck config into the target (17-02 A2)', () => {
+    const healthcheck = {
+      type: 'http',
+      path: '/healthz',
+      port: 3000,
+      expectedStatuses: [200],
+      probeTimeoutS: 2,
+      intervalS: 1,
+      retries: 3,
+      startPeriodS: 0,
+    };
+    const base = rows();
+    const result = resolveDeployTarget({ ...base, service: { ...base.service, healthcheck } }, masterKeys, PANEL);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.target.healthcheck).toMatchObject({ type: 'http', path: '/healthz', port: 3000 });
+  });
+
+  it('a stored healthcheck that does not validate throws a fixed-message DeployTargetError', () => {
+    const base = rows();
+    const corrupt = { ...base, service: { ...base.service, healthcheck: { type: 'http', path: 'evil', port: -1 } } };
+    expect(() => resolveDeployTarget(corrupt, masterKeys, PANEL)).toThrow(DeployTargetError);
+    expect(() => resolveDeployTarget(corrupt, masterKeys, PANEL)).not.toThrow(/evil/);
   });
 
   it('decrypts a deploy key into a SecretValue that never prints', () => {

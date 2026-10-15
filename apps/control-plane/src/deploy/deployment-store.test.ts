@@ -311,6 +311,35 @@ describe('deployment store: step boundaries (13-03 A2, H1)', () => {
     expect(stepsOf(h.state.deployment)).toEqual(['success', 'success', 'success', 'running']);
   });
 
+  it('DEPLOYING -> HEALTHCHECK writes healthcheck_started_at in the same UPDATE as the edge (17-02 A2)', async () => {
+    const h = harness({
+      deployment: deploymentRow({ status: 'DEPLOYING', startedAt: STARTED, buildingStartedAt: STARTED, deployingStartedAt: STARTED }),
+      service: serviceRow(),
+    });
+    await h.store.progress(DEPLOYMENT_ID).advance('DEPLOYING', 'HEALTHCHECK');
+    const updates = h.ops.filter((op) => op.root === 'update');
+    expect(updates).toHaveLength(1);
+    expect(h.setOf(at(updates, 0))).toMatchObject({ status: 'HEALTHCHECK', healthcheckStartedAt: NOW });
+  });
+
+  it('records the runtime config snapshot and image_ref in the edge UPDATE; other edges never write them (17-02 A3)', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'PREPARING', startedAt: STARTED }), service: serviceRow() });
+    const progress = h.store.progress(DEPLOYMENT_ID);
+    await progress.advance('PREPARING', 'BUILDING');
+    const snapshot = {
+      version: 1 as const,
+      imageRef: `noodara/${SERVICE_ID}:${DEPLOYMENT_ID}`,
+      internalPort: 3000,
+      publishedPort: null,
+      healthcheck: { type: 'container' as const, probeTimeoutS: 5, intervalS: 2, retries: 3, startPeriodS: 0 },
+    };
+    await progress.advance('BUILDING', 'DEPLOYING', { runtimeConfig: snapshot });
+    const updates = h.ops.filter((op) => op.root === 'update');
+    expect(h.setOf(at(updates, 0))).not.toHaveProperty('runtimeConfig');
+    expect(h.setOf(at(updates, 0))).not.toHaveProperty('healthcheckStartedAt');
+    expect(h.setOf(at(updates, 1))).toMatchObject({ status: 'DEPLOYING', runtimeConfig: snapshot, imageRef: snapshot.imageRef });
+  });
+
   it.each(['SUCCESS', 'FAILED', 'CANCELLED', 'BUILDING'] as const)('never enters HEALTHCHECK from a %s row', async (status) => {
     const h = harness({ deployment: deploymentRow({ status, startedAt: STARTED }), service: serviceRow() });
     await expect(h.store.progress(DEPLOYMENT_ID).advance('DEPLOYING', 'HEALTHCHECK')).rejects.toBeInstanceOf(DeploymentConflictError);

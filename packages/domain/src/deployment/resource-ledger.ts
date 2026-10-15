@@ -8,6 +8,9 @@
 //   container this attempt removed goes, but only when it is `noodara/<serviceId>:<uuid>`.
 // - The network goes only when this attempt created it and attached nothing to it.
 // - WORKER_CRASHED: the in-job ledger is lost, so the set uses only the deterministic names.
+// - 17-02 (H1): the previous container is kept as `noodara-<serviceId>-prev` until the new one
+//   passes its healthcheck. Its image is the restore target, so no exit but SUCCESS ever lists
+//   it, and the superseded image goes only on SUCCESS.
 // Removals are never forced, so a second run (or an in-use image) is a no-op, never an error.
 
 import type { CommandOutput } from '../discovery/docker-version.js';
@@ -50,6 +53,8 @@ export interface ResourceLedger {
   readonly containerCreated: boolean;
   /** Image of the per-service container this attempt removed, when it is this service's own. */
   readonly replacedImage: ImageRef | null;
+  /** Image of the container kept as `-prev` (the restore target); never cleaned up on failure. */
+  readonly previousImage: string | null;
 }
 
 export type LedgerEvent =
@@ -59,6 +64,8 @@ export type LedgerEvent =
   /** Only when the network did not exist before this attempt. */
   | { readonly kind: 'network_created' }
   | { readonly kind: 'container_created' }
+  /** 17-02: the previous container was stopped and kept as `-prev` (not removed). */
+  | { readonly kind: 'previous_container_kept'; readonly imageRef: string | null }
   | { readonly kind: 'previous_container_removed'; readonly imageRef: string | null };
 
 export type CleanupResource =
@@ -97,6 +104,7 @@ export function createResourceLedger(
     networkCreatedByAttempt: false,
     containerCreated: false,
     replacedImage: null,
+    previousImage: null,
   });
 }
 
@@ -130,6 +138,8 @@ export function recordResource(ledger: ResourceLedger, event: LedgerEvent): Reso
       return { ...ledger, networkCreatedByAttempt: true };
     case 'container_created':
       return { ...ledger, containerCreated: true };
+    case 'previous_container_kept':
+      return { ...ledger, previousImage: event.imageRef };
     case 'previous_container_removed':
       return { ...ledger, replacedImage: ownReplacedImage(ledger, event.imageRef) };
   }
@@ -143,7 +153,7 @@ export function cleanupSetFor(
   const workspace: CleanupResource = { kind: 'workspace', path: ledger.names.workspace };
   if (exit === 'WORKER_CRASHED') {
     // `rm -rf` of the workspace also takes its secrets; an image still in use is refused.
-    return [workspace, { kind: 'image', ref: ledger.names.image }];
+    return keepPrevious(ledger, [workspace, { kind: 'image', ref: ledger.names.image }]);
   }
 
   const set: CleanupResource[] = [
@@ -154,13 +164,19 @@ export function cleanupSetFor(
   if (failed && ledger.imageCreated && !ledger.containerCreated) {
     set.push({ kind: 'image', ref: ledger.names.image });
   }
-  if (ledger.replacedImage !== null) {
+  if (!failed && ledger.replacedImage !== null) {
     set.push({ kind: 'image', ref: ledger.replacedImage });
   }
   if (failed && ledger.networkCreatedByAttempt && !ledger.containerCreated) {
     set.push({ kind: 'network', name: ledger.names.network });
   }
-  return set;
+  return failed ? keepPrevious(ledger, set) : set;
+}
+
+/** H1: the kept previous image is the restore target; a failed exit never lists it. */
+function keepPrevious(ledger: ResourceLedger, set: readonly CleanupResource[]): readonly CleanupResource[] {
+  const kept = [ledger.previousImage, ledger.replacedImage].filter((ref): ref is string => ref !== null);
+  return set.filter((resource) => resource.kind !== 'image' || !kept.includes(resource.ref));
 }
 
 const IMAGE_ABSENT = /No such image/i;

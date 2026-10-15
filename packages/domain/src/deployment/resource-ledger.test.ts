@@ -79,6 +79,7 @@ describe('createResourceLedger', () => {
     expect(l.networkCreatedByAttempt).toBe(false);
     expect(l.containerCreated).toBe(false);
     expect(l.replacedImage).toBeNull();
+    expect(l.previousImage).toBeNull();
   });
 
   it.each([
@@ -145,6 +146,7 @@ describe('recordResource', () => {
     const l = ledger({ kind: 'previous_container_removed', imageRef });
 
     expect(l.replacedImage).toBeNull();
+    expect(l.previousImage).toBeNull();
   });
 });
 
@@ -228,7 +230,7 @@ describe('cleanupSetFor', () => {
   );
 
   it.each(FAILED_EXITS)(
-    'on %s after the old container was removed but before the new one existed drops both images',
+    'on %s the superseded image is never removed: only SUCCESS drops it (17-02 H1)',
     (exit) => {
       const l = ledger(
         { kind: 'workspace_created' },
@@ -241,7 +243,6 @@ describe('cleanupSetFor', () => {
       expect(set).toEqual([
         { kind: 'workspace', path: WORKSPACE },
         { kind: 'image', ref: IMAGE },
-        { kind: 'image', ref: PREVIOUS_IMAGE },
       ]);
     },
   );
@@ -413,4 +414,63 @@ describe('cleanup idempotency (H1)', () => {
       );
     },
   );
+});
+
+describe('kept previous container (17-02 H1)', () => {
+  const NON_SUCCESS_EXITS = [
+    'FAILED',
+    'CANCELLED',
+    'TIMEOUT',
+    'WORKER_CRASHED',
+  ] as const satisfies readonly DeploymentExit[];
+
+  /** A redeploy that kept the old container as `-prev` and reached HEALTHCHECK. */
+  const KEPT: LedgerEvent[] = [
+    { kind: 'workspace_created' },
+    { kind: 'secrets_file_written', name: 'deploy_key' },
+    { kind: 'image_created' },
+    { kind: 'previous_container_kept', imageRef: PREVIOUS_IMAGE },
+    { kind: 'container_created' },
+  ];
+  const mentionsPrevious = (set: readonly CleanupResource[]) =>
+    set.some((r) => JSON.stringify(r).includes(PREVIOUS_IMAGE) || JSON.stringify(r).includes(`${CONTAINER}-prev`));
+
+  it('records the image of the kept previous container', () => {
+    expect(ledger(...KEPT).previousImage).toBe(PREVIOUS_IMAGE);
+    expect(ledger(...KEPT).replacedImage).toBeNull();
+  });
+
+  it.each(NON_SUCCESS_EXITS)('on %s never lists the -prev container or the previous image', (exit) => {
+    const sets = [
+      cleanupSetFor(ledger(...KEPT), exit),
+      // A kept container whose new replacement never got created (create/start failed).
+      cleanupSetFor(ledger({ kind: 'workspace_created' }, { kind: 'image_created' }, { kind: 'previous_container_kept', imageRef: PREVIOUS_IMAGE }), exit),
+      // Even a stray removal record never makes a failed exit drop the restore target.
+      cleanupSetFor(ledger(...KEPT, { kind: 'previous_container_removed', imageRef: PREVIOUS_IMAGE }), exit),
+    ];
+    for (const set of sets) {
+      expect(mentionsPrevious(set)).toBe(false);
+      expect(containsContainer(set)).toBe(false);
+    }
+  });
+
+  it('on SUCCESS after the -prev container was removed drops the superseded image', () => {
+    const set = cleanupSetFor(ledger(...KEPT, { kind: 'previous_container_removed', imageRef: PREVIOUS_IMAGE }), 'SUCCESS');
+    expect(set).toContainEqual({ kind: 'image', ref: PREVIOUS_IMAGE });
+  });
+
+  it.each(NON_SUCCESS_EXITS)('executing the %s cleanup twice is idempotent and keeps the previous image', (exit) => {
+    const present = new Set([WORKSPACE, `${WORKSPACE}/secrets/deploy_key`, IMAGE, PREVIOUS_IMAGE]);
+    const run = (r: CleanupResource) => {
+      const k = r.kind === 'image' ? r.ref : r.kind === 'network' ? r.name : r.path;
+      if (present.delete(k) || r.kind !== 'image') return { stdout: '', stderr: '', exitCode: 0 };
+      return { stdout: '', stderr: `Error response from daemon: No such image: ${k}`, exitCode: 1 };
+    };
+    const l = ledger(...KEPT);
+    const first = cleanupSetFor(l, exit).map((r) => classifyCleanupOutcome(r, run(r)));
+    const second = cleanupSetFor(l, exit).map((r) => classifyCleanupOutcome(r, run(r)));
+    expect(first.every(isCleanupSettled)).toBe(true);
+    expect(second.every(isCleanupSettled)).toBe(true);
+    expect(present.has(PREVIOUS_IMAGE)).toBe(true);
+  });
 });

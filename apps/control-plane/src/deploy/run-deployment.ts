@@ -17,15 +17,24 @@
 // - 14-07: a non-bundled SSH Git host is pinned per service (TOFU): the stored key pins later
 //   clones, the first scan is stored with a conditional write, a concurrent loser verifies against
 //   the winner, and a changed key fails GIT_HOST_KEY_MISMATCH; nothing replaces a pin but the CLI.
+// - 17-02 (ADR 0010): the previous container is stopped and kept as `noodara-<serviceId>-prev`
+//   (not removed) and removed only after the new one passes its healthcheck. If the new container
+//   cannot be created or started, `-prev` is restored right away (H2). The HEALTHCHECK step follows
+//   the service's config through `decideHealthcheck`; no config keeps the v0.2 post-start polls.
+//   A failed healthcheck keeps `-prev` stopped for the rollback (17-03).
 import {
   cleanupSetFor,
   classifyCleanupOutcome,
   createResourceLedger,
+  decideHealthcheck,
   decidePostStartPoll,
+  healthcheckPolicy,
   preflightPublishedPort,
   recordResource,
+  resolveHealthcheck,
   startPostStartPolls,
   transitionDeployment,
+  V03_DEPLOYMENT_ERROR_MESSAGES,
   type CleanupOutcome,
   type CleanupResource,
   type ContainerObservation,
@@ -33,10 +42,14 @@ import {
   type DeploymentExit,
   type DeploymentLogPhase,
   type DeploymentStatus,
+  type HealthcheckConfig,
+  type HealthcheckObservation,
+  type ObservedContainer,
   type PortPreflightResult,
   type PostStartObservation,
   type PostStartPollPolicy,
   type ResourceLedger,
+  type RuntimeConfigSnapshot,
 } from '@noodara/domain/deployment';
 import { revealSecret, type Redactor, type SecretValue } from '@noodara/domain/security';
 import {
@@ -60,10 +73,15 @@ import {
   ensureNetwork,
   inspectContainerState,
   listManagedContainers,
+  probeContainerHealth,
   pullImage,
   removeContainer,
+  removePrevious,
+  renameToPrevious,
+  restorePrevious,
   startContainer,
   stopContainer,
+  stopPrevious,
   type DockerStepContext,
   type RegistryCredential,
   type StepLimits,
@@ -74,6 +92,7 @@ import {
   dockerImageRemove,
   dockerNetworkRemove,
   killSupervisedOperation,
+  previousContainerNameFor,
   removeDeployDir,
   type RemoteCommand,
   type SshDeploySession,
@@ -95,10 +114,17 @@ export interface DeployRunLimits {
   readonly cleanupStepMs: number;
 }
 
+/** 17-02 (A3): written in the same UPDATE as the edge that carries it. */
+export interface AdvanceRecord {
+  readonly runtimeConfig?: RuntimeConfigSnapshot;
+}
+
 /** Persists each status edge as it happens (the store, in production). */
 export interface DeploymentProgress {
-  /** 16-02: DEPLOYING -> HEALTHCHECK is the verify step boundary (the post-start polls begin). */
-  advance(from: DeploymentStatus, to: DeploymentStatus): Promise<void>;
+  /** 16-02: DEPLOYING -> HEALTHCHECK is the verify step boundary (the post-start polls begin).
+   *  17-02: that edge also stamps healthcheck_started_at; BUILDING -> DEPLOYING carries the
+   *  runtime config snapshot and image_ref. */
+  advance(from: DeploymentStatus, to: DeploymentStatus, record?: AdvanceRecord): Promise<void>;
   recordCommitSha(sha: CommitSha): Promise<void>;
 }
 
@@ -149,6 +175,8 @@ export interface RunDeploymentInput {
   readonly signal?: AbortSignal;
   /** 14-07: absent, a non-bundled SSH host is keyscanned on every deploy (nothing is pinned). */
   readonly gitHostKeys?: GitHostKeyStore;
+  /** 17-02: the service's healthcheck; null or absent keeps the v0.2 post-start polls. */
+  readonly healthcheck?: HealthcheckConfig | null;
 }
 
 export interface CleanupReport {
@@ -286,6 +314,35 @@ function startFailedMessage(reason: string, exitCode: number | null, oomKilled: 
   }
 }
 
+/** A fixed line per observation: never probe output, IPs or container names (A2). */
+function healthcheckLine(attempt: number, observation: HealthcheckObservation): string {
+  const prefix = `Healthcheck attempt ${String(attempt)}:`;
+  switch (observation.kind) {
+    case 'http':
+      return `${prefix} HTTP ${String(observation.status)}`;
+    case 'open':
+      return `${prefix} port open`;
+    case 'running':
+      return `${prefix} container running`;
+    case 'refused':
+      return `${prefix} connection refused`;
+    case 'timeout':
+      return `${prefix} no answer before the probe timeout`;
+    case 'exited':
+      return `${prefix} the container is not running`;
+    case 'empty':
+    case 'malformed':
+    case 'error':
+      return `${prefix} no valid answer`;
+  }
+}
+
+const HEALTHCHECK_PASSED_LOG = 'Healthcheck passed.';
+const PREVIOUS_RESTORED_LOG = 'The new container could not start, so the previous version was restored.';
+const PREVIOUS_NOT_RESTORED_LOG = 'The new container could not start and the previous version could not be restored.';
+const CURRENT_RESTARTED_LOG = 'The running version could not be replaced, so it was started again.';
+const PREVIOUS_NOT_REMOVED_LOG = 'The previous container could not be removed after the healthcheck passed; it stays stopped.';
+
 function exitFor(end: End | null): DeploymentExit {
   if (end === null) return 'SUCCESS';
   if (end.status === 'CANCELLED' || end.warning !== undefined) return 'CANCELLED';
@@ -392,10 +449,53 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     }
   };
 
-  const advance = async (to: DeploymentStatus): Promise<void> => {
+  const advance = async (to: DeploymentStatus, record?: AdvanceRecord): Promise<void> => {
     const next = transitionDeployment(status, to);
-    await progress.advance(status, next);
+    await (record === undefined ? progress.advance(status, next) : progress.advance(status, next, record));
     status = next;
+  };
+
+  /** H2: recovery steps run after the deadline too, bounded per command, never cancelled. */
+  const recoveryContext = (): DockerStepContext => ({
+    session,
+    redactor,
+    limits: {
+      maxDurationMs: limits.cleanupStepMs,
+      idleTimeoutMs: limits.cleanupStepMs,
+      maxTotalBytes: CLEANUP_MAX_TOTAL_BYTES,
+      maxLineBytes: limits.maxLineBytes,
+    },
+    onChunk: (chunk: StreamChunk) => {
+      log('deploy', chunk.stream, chunk.text);
+    },
+  });
+
+  /** A recovery step's outcome; it never throws (the attempt already has its end). */
+  const recover = async (step: () => Promise<{ readonly ok: boolean }>): Promise<boolean> => {
+    try {
+      return (await step()).ok;
+    } catch {
+      return false;
+    }
+  };
+
+  /** Runs `body`; a stop that escapes it first gets `onStop` (which never throws). */
+  const guarded = async (body: () => Promise<void>, onStop: () => Promise<void>): Promise<void> => {
+    try {
+      await body();
+    } catch (error) {
+      await onStop();
+      throw error;
+    }
+  };
+
+  const probe = async (config: HealthcheckConfig): Promise<HealthcheckObservation> => {
+    const result = await probeContainerHealth(context(null), { serviceId, config });
+    if (result.ok || result.kind === 'interrupted') return check(result, null);
+    if (result.code === 'DOCKER_UNAVAILABLE' || result.code === 'SERVER_UNREACHABLE') {
+      failed(result.code, result.message);
+    }
+    return { kind: 'error' };
   };
 
   const observe = async (): Promise<PostStartObservation> => {
@@ -453,7 +553,16 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     }
 
     // deploy
-    await advance('DEPLOYING');
+    const resolved = resolveHealthcheck(input.healthcheck ?? null);
+    await advance('DEPLOYING', {
+      runtimeConfig: {
+        version: 1,
+        imageRef: image,
+        internalPort: input.internalPort,
+        publishedPort: input.publishedPort,
+        healthcheck: resolved.config,
+      },
+    });
     const ps = await check(await listManagedContainers(context(null)), null);
     if (ps.kind !== 'ok') failed('DOCKER_UNAVAILABLE', DEPLOY_MESSAGES.DOCKER_PS_UNREADABLE);
     const preflight = preflightPublishedPort({
@@ -464,53 +573,125 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
       containers: ps.containers,
     });
     if (!preflight.ok) failed('PORT_IN_USE', portMessage(preflight));
-    const previous = ps.containers.find((observed) => observed.name === ledger.names.container) ?? null;
+    const current = ps.containers.find((observed) => observed.name === ledger.names.container) ?? null;
+    const previousName = previousContainerNameFor(serviceId);
+    const stale = ps.containers.find((observed) => observed.name === previousName) ?? null;
 
     const network = await ensureNetwork(context(null), { serviceId });
     await check(network, null);
     if (network.ok && network.result.exitCode === 0) ledger = recordResource(ledger, { kind: 'network_created' });
 
     cancellable = false;
-    if (previous !== null) {
+    const stop = { serviceId, timeoutSeconds: limits.stopTimeoutSeconds };
+    // The container kept as `-prev`: the restore target until the new one passes its healthcheck.
+    let kept: ObservedContainer | null = null;
+    const currentRuns = current?.state === 'running';
+    if (stale !== null) {
+      // A `-prev` left by an earlier attempt: the running current one supersedes it; otherwise it
+      // is still the last version known to run, so it stays the restore target.
       containerTouched = true;
-      await check(await stopContainer(context('deploy'), { serviceId, timeoutSeconds: limits.stopTimeoutSeconds }), null);
-      await check(await removeContainer(context('deploy'), { serviceId }), null);
-    }
-    containerTouched = true;
-    await check(
-      await createContainer(context('deploy'), {
-        serviceId,
-        deploymentId,
-        image,
-        internalPort: input.internalPort,
-        publishedPort: input.publishedPort,
-      }),
-      null,
-    );
-    containerCreated = true;
-    ledger = recordResource(ledger, { kind: 'container_created' });
-    await check(await startContainer(context('deploy'), { serviceId }), null);
-
-    // verify: the post-start polls are the HEALTHCHECK step; the worker's finish ends SUCCESS.
-    await advance('HEALTHCHECK');
-    let { delayMs, state } = startPostStartPolls(input.pollPolicy);
-    for (;;) {
-      await clock.sleep(delayMs);
-      const step = decidePostStartPoll(input.pollPolicy, state, await observe());
-      state = step.state;
-      const { decision } = step;
-      if (decision.kind === 'success') break;
-      if (decision.kind === 'start_failed') {
-        container =
-          decision.reason === 'missing' ? { kind: 'absent' } : { kind: 'stopped', exitCode: decision.exitCode };
-        failed('START_FAILED', startFailedMessage(decision.reason, decision.exitCode, decision.oomKilled));
+      if (currentRuns) {
+        await check(await stopPrevious(context('deploy'), stop), null);
+        await check(await removePrevious(context('deploy'), { serviceId }), null);
+      } else {
+        if (current !== null) await check(await removeContainer(context('deploy'), { serviceId }), null);
+        await check(await stopPrevious(context('deploy'), stop), null);
+        kept = stale;
+        ledger = recordResource(ledger, { kind: 'previous_container_kept', imageRef: stale.image });
       }
-      delayMs = decision.delayMs;
+    }
+    if (current !== null && (stale === null || currentRuns)) {
+      containerTouched = true;
+      await guarded(
+        async () => {
+          await check(await stopContainer(context('deploy'), stop), null);
+          const renamed = await renameToPrevious(context('deploy'), { serviceId });
+          if (!renamed.ok && renamed.kind === 'previous_exists') failed('START_FAILED', renamed.message);
+          await check(renamed, null);
+        },
+        async () => {
+          // H2: the running version was not replaced; it is started again before the attempt ends.
+          const restarted = await recover(() => startContainer(recoveryContext(), { serviceId }));
+          container = restarted ? { kind: 'running' } : { kind: 'unknown' };
+          if (restarted) log('deploy', 'system', CURRENT_RESTARTED_LOG);
+        },
+      );
+      kept = current;
+      ledger = recordResource(ledger, { kind: 'previous_container_kept', imageRef: current.image });
+    }
+
+    containerTouched = true;
+    await guarded(
+      async () => {
+        await check(
+          await createContainer(context('deploy'), {
+            serviceId,
+            deploymentId,
+            image,
+            internalPort: input.internalPort,
+            publishedPort: input.publishedPort,
+          }),
+          null,
+        );
+        containerCreated = true;
+        ledger = recordResource(ledger, { kind: 'container_created' });
+        await check(await startContainer(context('deploy'), { serviceId }), null);
+      },
+      async () => {
+        // H2: never leave the service down without a restore attempt, auto_rollback or not.
+        if (kept === null) return;
+        await recover(() => removeContainer(recoveryContext(), { serviceId }));
+        const restored = await recover(() => restorePrevious(recoveryContext(), { serviceId }));
+        container = restored ? { kind: 'running' } : { kind: 'unknown' };
+        log('deploy', 'system', restored ? PREVIOUS_RESTORED_LOG : PREVIOUS_NOT_RESTORED_LOG);
+      },
+    );
+
+    // verify: the HEALTHCHECK step; the worker's finish ends SUCCESS.
+    await advance('HEALTHCHECK');
+    if (resolved.postStart !== null) {
+      // v0.2: no healthcheck config, the post-start polls decide.
+      let { delayMs, state } = startPostStartPolls(input.pollPolicy);
+      for (;;) {
+        await clock.sleep(delayMs);
+        const step = decidePostStartPoll(input.pollPolicy, state, await observe());
+        state = step.state;
+        const { decision } = step;
+        if (decision.kind === 'success') break;
+        if (decision.kind === 'start_failed') {
+          container =
+            decision.reason === 'missing' ? { kind: 'absent' } : { kind: 'stopped', exitCode: decision.exitCode };
+          failed('START_FAILED', startFailedMessage(decision.reason, decision.exitCode, decision.oomKilled));
+        }
+        delayMs = decision.delayMs;
+      }
+    } else {
+      const policy = healthcheckPolicy(resolved.config);
+      let state = { elapsedMs: 0, failures: 0 };
+      for (let attempt = 1; ; attempt += 1) {
+        const observation = await probe(resolved.config);
+        log('healthcheck', 'system', healthcheckLine(attempt, observation));
+        const step = decideHealthcheck(policy, state, observation);
+        state = step.state;
+        const { decision } = step;
+        if (decision.kind === 'pass') break;
+        if (decision.kind === 'failed' || decision.kind === 'timeout') {
+          container = observation.kind === 'exited' ? { kind: 'stopped', exitCode: null } : { kind: 'running' };
+          failed(decision.code, V03_DEPLOYMENT_ERROR_MESSAGES[decision.code]);
+        }
+        await clock.sleep(decision.delayMs);
+      }
+      log('healthcheck', 'system', HEALTHCHECK_PASSED_LOG);
     }
     container = { kind: 'running' };
-    // Only now is the superseded image no longer the service's last good one.
-    if (previous !== null) {
-      ledger = recordResource(ledger, { kind: 'previous_container_removed', imageRef: previous.image });
+    // Only now is the superseded version no longer the service's last good one.
+    const superseded: ObservedContainer | null = kept;
+    if (superseded !== null) {
+      if (await recover(() => removePrevious(recoveryContext(), { serviceId }))) {
+        ledger = recordResource(ledger, { kind: 'previous_container_removed', imageRef: superseded.image });
+      } else {
+        log('deploy', 'system', PREVIOUS_NOT_REMOVED_LOG);
+      }
     }
   };
 

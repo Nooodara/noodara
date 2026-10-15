@@ -5,7 +5,10 @@
 //   echoed into the message.
 // - SEC: credentials are decrypted here and leave only as SecretValue. A registry password is
 //   only ever offered to the registry the image is pulled from.
+// - 17-02: the service's healthcheck config (services.healthcheck) is validated here; null keeps
+//   the v0.2 post-start polls. A stored value that does not validate is a corrupt row.
 import { and, eq, inArray, isNotNull, ne } from 'drizzle-orm';
+import { validateHealthcheckConfig, type HealthcheckConfig } from '@noodara/domain/deployment';
 import {
   validateContainerPort,
   validateRegistryHost,
@@ -49,6 +52,8 @@ export interface DeployTargetRows {
     readonly serverId: string;
     readonly repositoryCredentialId: string | null;
     readonly registryCredentialId: string | null;
+    /** services.healthcheck; null or absent = the default container check (v0.2 behaviour). */
+    readonly healthcheck?: unknown;
   };
   /** The row `service.repositoryCredentialId` points at, or null when absent. */
   readonly repositoryCredential: CredentialRowShape | null;
@@ -111,6 +116,13 @@ function snapshotOf(snapshot: unknown): SnapshotShape {
   return { source, internalPort: internalPort.value, publishedPort };
 }
 
+function healthcheckOf(stored: unknown): HealthcheckConfig | null {
+  if (stored === null || stored === undefined) return null;
+  const checked = validateHealthcheckConfig(stored);
+  if (!checked.ok) throw new DeployTargetError();
+  return checked.value;
+}
+
 function resourceId(id: string): ResourceId {
   const checked = validateResourceId(id);
   if (!checked.ok) throw new DeployTargetError();
@@ -167,6 +179,7 @@ export function resolveDeployTarget(rows: DeployTargetRows, masterKeys: MasterKe
   const serviceId = resourceId(rows.deployment.serviceId);
   if (rows.service.id !== serviceId) throw new DeployTargetError();
   const { source, internalPort, publishedPort } = snapshotOf(rows.deployment.source);
+  const healthcheck = healthcheckOf(rows.service.healthcheck);
 
   const credential =
     source.kind === 'git'
@@ -186,6 +199,7 @@ export function resolveDeployTarget(rows: DeployTargetRows, masterKeys: MasterKe
       credential: credential.credential,
       otherServices: rows.otherServices,
       panelPorts,
+      healthcheck,
     },
   };
 }
@@ -213,6 +227,7 @@ export function createLoadTarget(
         serverId: services.serverId,
         repositoryCredentialId: services.repositoryCredentialId,
         registryCredentialId: services.registryCredentialId,
+        healthcheck: services.healthcheck,
       })
       .from(services)
       .where(eq(services.id, deployment.serviceId))
