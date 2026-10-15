@@ -8,8 +8,8 @@ import {
   DEPLOYMENT_STEP_NAMES,
   DEPLOYMENT_STEP_STATES,
   DEPLOYMENT_TRIGGERS,
-} from '../deployment/index.js';
-import { z } from 'zod';
+} from "../deployment/index.js";
+import { z } from "zod";
 
 /** A deploy request carries nothing; 1 KiB is plenty for `{}` and rejects anything larger (413). */
 export const DEPLOYMENT_ROUTE_BODY_LIMIT_BYTES = 1024;
@@ -19,7 +19,10 @@ export const DEPLOYMENT_LIST_MAX_LIMIT = 100;
 const MAX_CURSOR_LENGTH = 512;
 
 export const ServiceIdParamSchema = z.object({ serviceId: z.uuid() });
-export const ServiceDeploymentParamsSchema = z.object({ serviceId: z.uuid(), deploymentId: z.uuid() });
+export const ServiceDeploymentParamsSchema = z.object({
+  serviceId: z.uuid(),
+  deploymentId: z.uuid(),
+});
 export const DeploymentIdParamSchema = z.object({ deploymentId: z.uuid() });
 
 /** Fastify hands a body-less POST to validation as `null`, so both null and undefined mean "no body". */
@@ -33,13 +36,18 @@ export function unknownDeployFields(body: DeployBody): string[] {
 
 export const DeploymentListQuerySchema = z
   .object({
-    limit: z.coerce.number().int().min(1).max(DEPLOYMENT_LIST_MAX_LIMIT).default(DEPLOYMENT_LIST_DEFAULT_LIMIT),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(DEPLOYMENT_LIST_MAX_LIMIT)
+      .default(DEPLOYMENT_LIST_DEFAULT_LIMIT),
     cursor: z.string().min(1).max(MAX_CURSOR_LENGTH).optional(),
   })
   .strict();
 
 export const DeploymentSourceViewSchema = z.object({
-  sourceType: z.enum(['git', 'image']),
+  sourceType: z.enum(["git", "image"]),
   repositoryUrl: z.string().nullable(),
   branch: z.string().nullable(),
   buildContext: z.string().nullable(),
@@ -96,14 +104,19 @@ const MAX_LOG_SEQ = 2_147_483_647;
 
 export const DeploymentLogsQuerySchema = z
   .object({
-    phase: z.enum(DEPLOYMENT_LOG_PHASES).default('prepare'),
+    phase: z.enum(DEPLOYMENT_LOG_PHASES).default("prepare"),
     since: z
       .string()
-      .regex(/^\d{1,10}$/, 'since must be a non-negative integer')
+      .regex(/^\d{1,10}$/, "since must be a non-negative integer")
       .transform(Number)
       .pipe(z.number().int().min(0).max(MAX_LOG_SEQ))
       .default(0),
-    limit: z.coerce.number().int().min(1).max(DEPLOYMENT_LOGS_MAX_LIMIT).default(DEPLOYMENT_LOGS_DEFAULT_LIMIT),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(DEPLOYMENT_LOGS_MAX_LIMIT)
+      .default(DEPLOYMENT_LOGS_DEFAULT_LIMIT),
   })
   .strict();
 

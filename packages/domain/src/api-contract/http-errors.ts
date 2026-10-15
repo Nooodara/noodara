@@ -9,58 +9,58 @@
 // `...FailureCode` union declared anywhere under `services/*.ts` has a matching key here — that
 // scan is what "statically exhaustive" actually cashes out to (a compile-time contract alone
 // cannot catch a service that forgets to route a new code through this same union type).
-import { z } from 'zod';
+import { z } from "zod";
 
 export type ServiceErrorCode =
-  | 'VALIDATION_FAILED'
-  | 'INVALID_CREDENTIAL'
-  | 'UNAUTHORIZED'
-  | 'FORBIDDEN_ORIGIN'
-  | 'NOT_FOUND'
-  | 'NAME_TAKEN'
-  | 'HOST_TAKEN'
-  | 'SERVER_BUSY'
-  | 'ALREADY_CONNECTING'
-  | 'SERVER_NOT_CONNECTED'
-  | 'NO_PENDING_FINGERPRINT'
-  | 'FINGERPRINT_MISMATCH'
-  | 'SERVER_NOT_TRUSTABLE'
-  | 'CONFIRMATION_MISMATCH'
-  | 'QUEUE_UNAVAILABLE'
-  | 'SSE_LIMIT_REACHED'
-  | 'INTERNAL_ERROR'
-  | 'EMAIL_DOMAIN_UNRESOLVABLE'
-  | 'EMAIL_DOMAIN_CHECK_UNAVAILABLE'
-  | 'REAUTH_LOCKED'
-  | 'SESSION_REVOKED_PASSWORD_CHANGED'
-  | 'PROJECT_NAME_TAKEN'
-  | 'ENVIRONMENT_NAME_TAKEN'
-  | 'PROJECT_NOT_ARCHIVED'
-  | 'DELETE_CONFIRMATION_MISMATCH'
-  | 'ENVIRONMENT_NOT_EMPTY'
-  | 'SERVICE_INPUT_INVALID'
-  | 'SERVICE_NAME_TAKEN'
-  | 'PORT_IN_USE'
-  | 'SERVER_DOCKER_UNAVAILABLE'
-  | 'SERVER_BUILDKIT_UNAVAILABLE'
-  | 'SERVER_BUILDKIT_UNKNOWN'
-  | 'CREDENTIAL_SOURCE_MISMATCH'
-  | 'SERVICE_CREDENTIAL_INVALID'
-  | 'SERVER_HAS_SERVICES'
-  | 'DEPLOYMENT_IN_PROGRESS'
-  | 'PROJECT_ARCHIVED'
-  | 'DEPLOYMENT_INPUT_INVALID'
-  | 'DEPLOYMENT_NOT_CANCELLABLE'
-  | 'SERVICE_OPERATION_INVALID'
-  | 'SERVICE_NOT_DEPLOYED'
-  | 'SERVICE_OPERATION_IN_PROGRESS'
-  | 'SERVER_UNREACHABLE'
-  | 'SERVICE_CLEANUP_FAILED'
-  | 'CONTAINER_NOT_FOUND'
-  | 'RUNTIME_LOG_TAIL_INVALID'
-  | 'RUNTIME_LOG_FOLLOW_LIMIT_REACHED'
-  | 'RUNTIME_LOGS_FAILED'
-  | 'RUNTIME_LOGS_TIMEOUT';
+  | "VALIDATION_FAILED"
+  | "INVALID_CREDENTIAL"
+  | "UNAUTHORIZED"
+  | "FORBIDDEN_ORIGIN"
+  | "NOT_FOUND"
+  | "NAME_TAKEN"
+  | "HOST_TAKEN"
+  | "SERVER_BUSY"
+  | "ALREADY_CONNECTING"
+  | "SERVER_NOT_CONNECTED"
+  | "NO_PENDING_FINGERPRINT"
+  | "FINGERPRINT_MISMATCH"
+  | "SERVER_NOT_TRUSTABLE"
+  | "CONFIRMATION_MISMATCH"
+  | "QUEUE_UNAVAILABLE"
+  | "SSE_LIMIT_REACHED"
+  | "INTERNAL_ERROR"
+  | "EMAIL_DOMAIN_UNRESOLVABLE"
+  | "EMAIL_DOMAIN_CHECK_UNAVAILABLE"
+  | "REAUTH_LOCKED"
+  | "SESSION_REVOKED_PASSWORD_CHANGED"
+  | "PROJECT_NAME_TAKEN"
+  | "ENVIRONMENT_NAME_TAKEN"
+  | "PROJECT_NOT_ARCHIVED"
+  | "DELETE_CONFIRMATION_MISMATCH"
+  | "ENVIRONMENT_NOT_EMPTY"
+  | "SERVICE_INPUT_INVALID"
+  | "SERVICE_NAME_TAKEN"
+  | "PORT_IN_USE"
+  | "SERVER_DOCKER_UNAVAILABLE"
+  | "SERVER_BUILDKIT_UNAVAILABLE"
+  | "SERVER_BUILDKIT_UNKNOWN"
+  | "CREDENTIAL_SOURCE_MISMATCH"
+  | "SERVICE_CREDENTIAL_INVALID"
+  | "SERVER_HAS_SERVICES"
+  | "DEPLOYMENT_IN_PROGRESS"
+  | "PROJECT_ARCHIVED"
+  | "DEPLOYMENT_INPUT_INVALID"
+  | "DEPLOYMENT_NOT_CANCELLABLE"
+  | "SERVICE_OPERATION_INVALID"
+  | "SERVICE_NOT_DEPLOYED"
+  | "SERVICE_OPERATION_IN_PROGRESS"
+  | "SERVER_UNREACHABLE"
+  | "SERVICE_CLEANUP_FAILED"
+  | "CONTAINER_NOT_FOUND"
+  | "RUNTIME_LOG_TAIL_INVALID"
+  | "RUNTIME_LOG_FOLLOW_LIMIT_REACHED"
+  | "RUNTIME_LOGS_FAILED"
+  | "RUNTIME_LOGS_TIMEOUT";
 
 export const SERVICE_ERROR_STATUS = Object.freeze({
   VALIDATION_FAILED: 400,
@@ -138,15 +138,26 @@ export function mapServiceCodeToStatus(code: string): number {
 
 /** D-16's error body shape, built field by field — never a spread of an `Error` instance, which
  *  could otherwise leak a `stack` or `cause` property onto the wire. */
-export function toErrorBody(code: string, message: string): { error: string; message: string } {
+export function toErrorBody(
+  code: string,
+  message: string,
+): { error: string; message: string } {
   return { error: code, message };
 }
 
-const CLIENT_REQUEST_ERRORS: Readonly<Record<number, { error: string; message: string }>> = Object.freeze({
-  413: { error: 'PAYLOAD_TOO_LARGE', message: 'Request body is too large' },
-  415: { error: 'UNSUPPORTED_MEDIA_TYPE', message: 'Request content type is not supported' },
+const CLIENT_REQUEST_ERRORS: Readonly<
+  Record<number, { error: string; message: string }>
+> = Object.freeze({
+  413: { error: "PAYLOAD_TOO_LARGE", message: "Request body is too large" },
+  415: {
+    error: "UNSUPPORTED_MEDIA_TYPE",
+    message: "Request content type is not supported",
+  },
 });
-const MALFORMED_REQUEST = { error: 'MALFORMED_REQUEST', message: 'Request could not be parsed' };
+const MALFORMED_REQUEST = {
+  error: "MALFORMED_REQUEST",
+  message: "Request could not be parsed",
+};
 
 /**
  * A Fastify-owned request error (`FST_*` code with a 4xx status: malformed or empty JSON, an
@@ -160,15 +171,20 @@ export function toClientRequestError(error: {
   readonly message?: unknown;
 }): { status: number; body: { error: string; message: string } } | null {
   const { code, statusCode } = error;
-  if (typeof code !== 'string' || !code.startsWith('FST_')) return null;
-  if (typeof statusCode !== 'number' || !Number.isInteger(statusCode) || statusCode < 400 || statusCode > 499) {
+  if (typeof code !== "string" || !code.startsWith("FST_")) return null;
+  if (
+    typeof statusCode !== "number" ||
+    !Number.isInteger(statusCode) ||
+    statusCode < 400 ||
+    statusCode > 499
+  ) {
     return null;
   }
   const known = CLIENT_REQUEST_ERRORS[statusCode] ?? MALFORMED_REQUEST;
   return { status: statusCode, body: toErrorBody(known.error, known.message) };
 }
 
-const VALIDATION_ERROR_MESSAGE = 'Request does not match the schema';
+const VALIDATION_ERROR_MESSAGE = "Request does not match the schema";
 
 interface RawValidationIssue {
   readonly instancePath?: string;
@@ -177,9 +193,9 @@ interface RawValidationIssue {
 }
 
 function normalizeIssuePath(issue: RawValidationIssue): string {
-  if (typeof issue.instancePath === 'string') return issue.instancePath;
-  if (Array.isArray(issue.path)) return issue.path.join('.');
-  return '';
+  if (typeof issue.instancePath === "string") return issue.instancePath;
+  if (Array.isArray(issue.path)) return issue.path.join(".");
+  return "";
 }
 
 /** Normalises Fastify's `@fastify/type-provider-zod` validation issues (AJV-shaped:
@@ -193,9 +209,11 @@ function normalizeIssuePath(issue: RawValidationIssue): string {
  *  own service code instead of the fixed `'VALIDATION_FAILED'` literal — every existing caller
  *  (the global schema-validation handler, `activity.ts`'s cursor check) omits it and keeps the
  *  original behaviour unchanged. */
-export function toValidationErrorBody<Code extends string = 'VALIDATION_FAILED'>(
+export function toValidationErrorBody<
+  Code extends string = "VALIDATION_FAILED",
+>(
   issues: readonly RawValidationIssue[],
-  code: Code = 'VALIDATION_FAILED' as Code,
+  code: Code = "VALIDATION_FAILED" as Code,
 ): {
   error: Code;
   message: string;
@@ -206,7 +224,7 @@ export function toValidationErrorBody<Code extends string = 'VALIDATION_FAILED'>
     message: VALIDATION_ERROR_MESSAGE,
     issues: issues.map((issue) => ({
       path: normalizeIssuePath(issue),
-      message: typeof issue.message === 'string' ? issue.message : '',
+      message: typeof issue.message === "string" ? issue.message : "",
     })),
   };
 }
@@ -219,7 +237,7 @@ export const ErrorBodySchema = z.object({
 });
 
 export const ValidationErrorBodySchema = z.object({
-  error: z.literal('VALIDATION_FAILED'),
+  error: z.literal("VALIDATION_FAILED"),
   message: z.string(),
   issues: z.array(z.object({ path: z.string(), message: z.string() })),
 });
