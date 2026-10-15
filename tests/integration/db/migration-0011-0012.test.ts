@@ -134,8 +134,11 @@ describe('migrations 0011/0012 on a fresh database (16-02 A8)', () => {
     await expectNoStrayContainers();
   });
 
-  it('the journal ends with 0011 then 0012', () => {
-    expect(readJournal().slice(-2)).toEqual([MIGRATION_0011, MIGRATION_0012]);
+  it('the journal holds 0011 immediately followed by 0012', () => {
+    const journal = readJournal();
+    const at = journal.indexOf(MIGRATION_0011);
+    expect(at).toBeGreaterThan(-1);
+    expect(journal[at + 1]).toBe(MIGRATION_0012);
   });
 
   it.each(ENUM_TUPLES)('%s holds exactly the domain tuple values', async (typeName, domain) => {
@@ -238,7 +241,11 @@ describe('migrations 0011/0012 upgrading the v0.2.0 schema (16-02 A8)', () => {
     // The production path: 0011 and 0012 run together in drizzle's single transaction.
     await runMigrations(db);
 
-    expect(await snapshotRows(db)).toEqual(before);
+    // Later migrations (0013) may add columns; every pre-existing column value is unchanged.
+    const after = await snapshotRows(db);
+    expect(after).toEqual(
+      before.map((rows) => (rows as object[]).map((row) => expect.objectContaining(row))),
+    );
     for (const [typeName, domain] of ENUM_TUPLES) {
       expect([...(await enumValues(db, typeName))].sort()).toEqual([...domain].sort());
     }

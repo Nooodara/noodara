@@ -1,8 +1,10 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   foreignKey,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -11,7 +13,13 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { uuidv7 } from "uuidv7";
-import { SERVICE_STATUSES } from "@noodara/domain/deployment";
+import {
+  DEFAULT_IMAGE_RETENTION,
+  MAX_IMAGE_RETENTION,
+  MIN_IMAGE_RETENTION,
+  SERVICE_STATUSES,
+  type HealthcheckConfig,
+} from "@noodara/domain/deployment";
 import { SERVICE_SOURCE_TYPES } from "@noodara/domain/validators";
 import { credentials } from "./credentials.js";
 import { environments } from "./environments.js";
@@ -70,6 +78,24 @@ export const services = pgTable(
     // but never part of an API view; set together or not at all.
     gitHostKeyHost: text("git_host_key_host"),
     gitHostKey: text("git_host_key"),
+    // 16-06 (migration 0013). null = the default container healthcheck (ADR 0010).
+    healthcheck: jsonb("healthcheck").$type<HealthcheckConfig>(),
+    autoRollback: boolean("auto_rollback").notNull().default(true),
+    imageRetention: integer("image_retention")
+      .notNull()
+      .default(DEFAULT_IMAGE_RETENTION),
+    // Opaque random id in the public webhook URL, set together with the encrypted HMAC secret
+    // (credentials envelope). The FK cascades: the secret credential exists only for this
+    // service's hook, so no service row can outlive it pointing at a missing secret.
+    webhookHookId: text("webhook_hook_id"),
+    webhookSecretCredentialId: uuid("webhook_secret_credential_id").references(
+      () => credentials.id,
+      { onDelete: "cascade" },
+    ),
+    // The single coalesced push waiting for the active deployment to end (16-05, latest wins).
+    pendingTriggerDeliveryId: text("pending_trigger_delivery_id"),
+    pendingTriggerSha: text("pending_trigger_sha"),
+    pendingTriggerAt: timestamp("pending_trigger_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -94,6 +120,29 @@ export const services = pgTable(
     check(
       "services_git_host_key_pair_check",
       sql`(${table.gitHostKeyHost} IS NULL) = (${table.gitHostKey} IS NULL)`,
+    ),
+    uniqueIndex("services_webhook_hook_id_unique_idx").on(table.webhookHookId),
+    check(
+      "services_webhook_hook_id_shape_check",
+      sql`${table.webhookHookId} IS NULL OR ${table.webhookHookId} ~ '^[A-Za-z0-9_-]{22,64}$'`,
+    ),
+    check(
+      "services_webhook_pair_check",
+      sql`(${table.webhookHookId} IS NULL) = (${table.webhookSecretCredentialId} IS NULL)`,
+    ),
+    check(
+      "services_pending_trigger_check",
+      sql`(${table.pendingTriggerDeliveryId} IS NULL AND ${table.pendingTriggerSha} IS NULL AND ${table.pendingTriggerAt} IS NULL) OR (${table.pendingTriggerDeliveryId} IS NOT NULL AND ${table.pendingTriggerAt} IS NOT NULL AND ${table.pendingTriggerSha} IS NOT NULL AND ${table.pendingTriggerSha} ~ '^[0-9a-f]{40}$')`,
+    ),
+    check(
+      "services_image_retention_range_check",
+      sql.raw(
+        `"image_retention" BETWEEN ${String(MIN_IMAGE_RETENTION)} AND ${String(MAX_IMAGE_RETENTION)}`,
+      ),
+    ),
+    check(
+      "services_healthcheck_object_check",
+      sql`${table.healthcheck} IS NULL OR jsonb_typeof(${table.healthcheck}) = 'object'`,
     ),
     check(
       "services_ports_range_check",

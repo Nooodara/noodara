@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  check,
   index,
   integer,
   jsonb,
@@ -17,8 +18,10 @@ import {
   DEPLOYMENT_STATUSES,
   DEPLOYMENT_TRIGGERS,
   type DeploymentStatus,
+  type RuntimeConfigSnapshot,
 } from "@noodara/domain/deployment";
 import { services } from "./services.js";
+import { webhookDeliveries } from "./webhook-deliveries.js";
 
 // Enums derived from the domain tuples (DEP-01) so DB and TS unions cannot drift.
 export const deploymentStatusEnum = pgEnum("deployment_status", [
@@ -70,6 +73,29 @@ export const deployments = pgTable(
     durationMs: integer("duration_ms"),
     errorCode: deploymentErrorCodeEnum("error_code"),
     errorMessage: text("error_message"),
+    // 16-06 (migration 0013) v0.3 traceability. Every column is nullable without a default, so the
+    // ALTER on a populated table is metadata-only: no heap rewrite, only a brief ACCESS EXCLUSIVE
+    // lock (bound: forward and rollback on 10k rows < 10 s, tests/integration/db/migration-0013).
+    // The image this attempt ran (rollback target, image retention).
+    imageRef: text("image_ref"),
+    // Manual rollback: the deployment whose retained image this attempt restores.
+    rollbackOfDeploymentId: uuid("rollback_of_deployment_id").references(
+      (): AnyPgColumn => deployments.id,
+      { onDelete: "set null" },
+    ),
+    webhookDeliveryId: uuid("webhook_delivery_id").references(
+      (): AnyPgColumn => webhookDeliveries.id,
+      { onDelete: "set null" },
+    ),
+    // Idempotency-Key header and the sha256 of the canonical request it was first used with.
+    idempotencyKey: text("idempotency_key"),
+    requestFingerprint: text("request_fingerprint"),
+    // Snapshot of the container runtime config at deploy time; never contains secret values.
+    runtimeConfig: jsonb("runtime_config").$type<RuntimeConfigSnapshot>(),
+    healthcheckStartedAt: timestamp("healthcheck_started_at", {
+      withTimezone: true,
+    }),
+    rollbackStartedAt: timestamp("rollback_started_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -84,6 +110,17 @@ export const deployments = pgTable(
     index("deployments_service_created_at_idx").on(
       table.serviceId,
       table.createdAt.desc(),
+    ),
+    uniqueIndex("deployments_service_idempotency_key_unique_idx")
+      .on(table.serviceId, table.idempotencyKey)
+      .where(sql`${table.idempotencyKey} IS NOT NULL`),
+    check(
+      "deployments_idempotency_pair_check",
+      sql`(${table.idempotencyKey} IS NULL AND ${table.requestFingerprint} IS NULL) OR (${table.idempotencyKey} IS NOT NULL AND ${table.requestFingerprint} IS NOT NULL AND char_length(${table.idempotencyKey}) BETWEEN 1 AND 255 AND ${table.requestFingerprint} ~ '^[0-9a-f]{64}$')`,
+    ),
+    check(
+      "deployments_runtime_config_object_check",
+      sql`${table.runtimeConfig} IS NULL OR jsonb_typeof(${table.runtimeConfig}) = 'object'`,
     ),
   ],
 );

@@ -31,6 +31,7 @@ const EXPECTED_TABLES = [
   'services',
   'deployments',
   'deployment_log_chunks',
+  'webhook_deliveries',
 ];
 
 const EXPECTED_ENUMS = [
@@ -212,6 +213,7 @@ describe('migrations applied from scratch (QA-06)', () => {
       '0010_phase14_workspace_unavailable_code',
       '0011_phase16_v03_enum_values',
       '0012_phase16_active_deployment_index',
+      '0013_phase16_v03_columns',
     ]);
   });
 

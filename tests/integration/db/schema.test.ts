@@ -18,6 +18,7 @@ const EXPECTED_TABLES = [
   'services',
   'deployments',
   'deployment_log_chunks',
+  'webhook_deliveries',
 ];
 
 const EXPECTED_ENUMS = [
