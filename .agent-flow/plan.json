@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-15T06:39:43.688Z",
+  "updatedAt": "2026-10-15T15:21:17.068Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -5791,7 +5791,7 @@
       "dependsOn": [
         "16"
       ],
-      "status": "pending",
+      "status": "active",
       "tasks": [
         {
           "id": "17-01",
@@ -5803,12 +5803,13 @@
             "packages/ssh/src/commands/deploy-allowlist.test.ts",
             "packages/ssh/src/commands/index.ts",
             "packages/ssh/src/index.ts",
+            "packages/ssh/src/run-discovery.test.ts",
             "packages/docker/src/",
             "tests/integration/deploy-engine/deploy-templates.test.ts"
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
