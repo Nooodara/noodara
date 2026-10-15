@@ -89,6 +89,8 @@ export {
   // internal like SHELL_SCRIPTS.
   PREV_STEP_TIMEOUT_SECONDS,
   PROBE_OUTPUT_MAX_BYTES,
+  // 17-05: the manual rollback image check.
+  dockerImageInspect,
   dockerInspectNetworks,
   dockerListServiceImages,
   dockerNetworkConnect,

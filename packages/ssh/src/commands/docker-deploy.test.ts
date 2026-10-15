@@ -9,6 +9,7 @@ import {
   validateContainerPort,
   validateDockerObjectId,
   validateDockerfilePath,
+  validateImageRef,
   validateRegistryHost,
   validateRegistryUsername,
   validateResourceId,
@@ -31,6 +32,7 @@ import * as commands from './index.js';
 import {
   dockerBuild,
   dockerCreate,
+  dockerImageInspect,
   dockerImageRemove,
   dockerInspectState,
   dockerBuilderPrune,
@@ -494,7 +496,7 @@ describe('forbidden-flag guard (DEP-08, D13, T-11-36)', () => {
     path: contextPath,
     target,
     id: serviceId,
-  }).concat(everyServiceScopedDockerCommand(serviceId));
+  }).concat(everyServiceScopedDockerCommand(serviceId), [dockerImageInspect(image)]);
 
   it('covers every docker.* deploy template', () => {
     const names = new Set(representative.map((command) => command.name));
@@ -926,5 +928,53 @@ describe("the service's own images (17-01, retention)", () => {
 
     expect(command.name).toBe('docker.image_remove_service');
     expect(command.argv).toEqual(['docker', 'image', 'rm', '--', image]);
+  });
+});
+
+describe('docker.image_inspect (17-05: a rollback target must still be on the server)', () => {
+  const BOUND = ['timeout', '-k', '1', String(PREV_STEP_TIMEOUT_SECONDS)];
+
+  it('prints only the image id, bounded by the fixed step budget, with `--` before the ref', () => {
+    const command = dockerImageInspect(image);
+
+    expect(command.name).toBe('docker.image_inspect');
+    expect(command.stdin).toBe('none');
+    expect(command.supervisable).toBe(false);
+    expect(command.argv).toEqual([
+      ...BOUND,
+      'docker',
+      'image',
+      'inspect',
+      '--format',
+      '{{.Id}}',
+      '--',
+      image,
+    ]);
+    expect(shellWords(renderRemoteCommand(command))).toEqual(command.argv);
+  });
+
+  it('accepts any valid image ref (a pulled image source), not only noodara/<serviceId>', () => {
+    const pulled = valid(validateImageRef('ghcr.io/acme/api:1.2.3'));
+
+    expect(dockerImageInspect(pulled).argv.at(-1)).toBe('ghcr.io/acme/api:1.2.3');
+  });
+
+  it('never forces, removes or pulls anything', () => {
+    const argv = dockerImageInspect(image).argv;
+
+    for (const token of ['--force', '-f', 'rm', 'pull', 'run', 'create']) {
+      expect(argv).not.toContain(token);
+    }
+  });
+
+  it.each([...ADVERSARIAL_VALUES, '', '--help', 'nginx', '-rf:1'])(
+    'a force-cast image %j throws before any command exists',
+    (value) => {
+      expect(() => dockerImageInspect(value as ImageRef)).toThrow(RangeError);
+    },
+  );
+
+  it('is re-exported from the commands barrel', () => {
+    expect(commands).toHaveProperty('dockerImageInspect');
   });
 });

@@ -261,6 +261,35 @@ describe('deployment store: progress (C1)', () => {
     expect(h.published).toEqual([]);
   });
 
+  it('17-05: a rollback row takes the trigger-gated PREPARING -> DEPLOYING edge (no build) with its step boundary', async () => {
+    const h = harness({
+      deployment: deploymentRow({ status: 'PREPARING', trigger: 'rollback', startedAt: STARTED }),
+      service: serviceRow(),
+    });
+
+    await h.store.progress(DEPLOYMENT_ID).advance('PREPARING', 'DEPLOYING');
+
+    const updates = h.ops.filter((op) => op.root === 'update');
+    const [update] = updates;
+    if (update === undefined) throw new Error('no status update');
+    expect(updates).toHaveLength(1);
+    expect(h.setOf(update)).toMatchObject({ status: 'DEPLOYING', deployingStartedAt: NOW });
+    expect(h.state.deployment?.status).toBe('DEPLOYING');
+    expect(h.published.at(-1)).toMatchObject({ type: 'deployment.updated', deployment: { status: 'DEPLOYING' } });
+  });
+
+  it.each(['manual', 'redeploy', 'webhook'] as const)(
+    '17-05: a %s row cannot skip BUILDING; the gated edge is refused under the lock and nothing is written',
+    async (trigger) => {
+      const h = harness({ deployment: deploymentRow({ status: 'PREPARING', trigger, startedAt: STARTED }), service: serviceRow() });
+
+      await expect(h.store.progress(DEPLOYMENT_ID).advance('PREPARING', 'DEPLOYING')).rejects.toThrow(/Invalid deployment transition/);
+      expect(h.ops.filter((op) => op.root === 'update')).toEqual([]);
+      expect(h.state.deployment?.status).toBe('PREPARING');
+      expect(h.published).toEqual([]);
+    },
+  );
+
   it('records the commit SHA', async () => {
     const h = harness({ deployment: deploymentRow({ status: 'PREPARING' }), service: serviceRow() });
     await h.store.progress(DEPLOYMENT_ID).recordCommitSha(SHA);

@@ -14,6 +14,7 @@ import type { ClientChannel } from '@noodara/ssh/testing';
 import {
   dockerBuild,
   dockerCreate,
+  dockerImageInspect,
   dockerImageRemove,
   dockerInspectState,
   dockerLogin,
@@ -629,6 +630,20 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         .split('\n')
         .filter((line) => line.includes(container));
       expect(left).toEqual([]);
+    });
+
+    it('17-05: docker.image_inspect prints the id of a present image and reports a missing one as No such image', async () => {
+      const base = s().baseImages.find((image) => image.startsWith('nginx:'));
+      if (base === undefined) throw new Error('nginx base image not preloaded');
+      const missing = valid(deploymentImageRefFor(randomUUID(), randomUUID()));
+
+      const present = await run(dockerImageInspect(valid(validateImageRef(base))));
+      const absent = await run(dockerImageInspect(missing));
+
+      expect(present.exitCode).toBe(0);
+      expect(present.stdout.trim()).toMatch(/^sha256:[0-9a-f]{64}$/);
+      expect(absent.exitCode).toBe(1);
+      expect(absent.stderr).toMatch(/No such image/i);
     });
 
     it('SEC: an https token reaches its 0600 file over stdin only, and the askpass helper is 0700 without it', async () => {

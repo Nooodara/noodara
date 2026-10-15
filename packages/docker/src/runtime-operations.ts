@@ -19,6 +19,7 @@ import {
   type ValidationResult,
 } from '@noodara/domain/validators';
 import {
+  dockerImageInspect,
   dockerInspectNetworks,
   dockerInspectState,
   dockerListServiceImages,
@@ -402,6 +403,22 @@ function parseServiceImages(stdout: string, serviceId: ResourceId): ServiceImage
     images.push({ deploymentId: tag.value, imageId: ID, createdAt: CreatedAt });
   }
   return { kind: 'ok', images };
+}
+
+/**
+ * 17-05: whether `image` is still on the server (a rollback target is never rebuilt or pulled).
+ * A missing image is `false`; a daemon failure or the step cap is an error, never "missing".
+ * Quiet: the check never writes to the deployment log. A force-cast ref rejects (RangeError).
+ */
+export async function inspectImagePresent(
+  context: DockerStepContext,
+  input: { readonly image: ImageRef },
+): Promise<StepResult<boolean>> {
+  const command = dockerImageInspect(input.image);
+  return bounded(quiet(context), 'inspect', command, ({ result }) => {
+    if (result.exitCode === 0) return done(true, result);
+    return NO_SUCH_IMAGE.test(result.stderrTail) ? done(false, result) : null;
+  });
 }
 
 /** Retention input: this service's `noodara/<serviceId>:<deploymentId>` images only. */

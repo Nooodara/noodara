@@ -43,6 +43,8 @@ export const DEPLOY_COMMAND_NAMES = Object.freeze([
   'docker.image_remove_service',
   'probe.http',
   'probe.tcp',
+  // 17-05: manual rollback checks the target image is still on the server.
+  'docker.image_inspect',
 ] as const);
 
 export type DeployCommandName = (typeof DEPLOY_COMMAND_NAMES)[number];

@@ -24,6 +24,8 @@
 // Error messages are the pipeline's fixed texts (never raw remote output), capped here again.
 import { and, asc, eq, inArray, lte } from 'drizzle-orm';
 import {
+  canTransitionDeployment,
+  DEPLOYMENT_TRIGGERS,
   deriveServiceStatus,
   InvalidDeploymentTransitionError,
   isTerminalDeploymentStatus,
@@ -34,6 +36,7 @@ import {
   type DeploymentErrorCode,
   type DeploymentStatus,
   type DeploymentStepBoundary,
+  type DeploymentTrigger,
 } from '@noodara/domain/deployment';
 import type { CommitSha } from '@noodara/domain/validators';
 import type { Database } from '../db/client.js';
@@ -136,8 +139,13 @@ function capMessage(message: string): string {
   return message.length <= MAX_ERROR_MESSAGE_LENGTH ? message : `${message.slice(0, MAX_ERROR_MESSAGE_LENGTH - 1)}…`;
 }
 
-function boundaryOf(from: DeploymentStatus, to: DeploymentStatus, now: Date): Partial<Record<DeploymentStepBoundary, Date>> {
-  const boundary = stepBoundaryOfTransition(from, to);
+function boundaryOf(
+  from: DeploymentStatus,
+  to: DeploymentStatus,
+  now: Date,
+  trigger?: DeploymentTrigger,
+): Partial<Record<DeploymentStepBoundary, Date>> {
+  const boundary = stepBoundaryOfTransition(from, to, trigger);
   return boundary === null ? {} : { [boundary]: now };
 }
 
@@ -277,7 +285,11 @@ export function createDeploymentStore(deps: DeploymentStoreDeps): DeploymentStor
     progress(deploymentId) {
       return {
         async advance(from, to, record) {
-          const next = transitionDeployment(from, to);
+          // Edges no trigger allows are refused before touching the database; a trigger-gated
+          // edge (17-05: PREPARING -> DEPLOYING for 'rollback') is checked against the locked row.
+          if (!DEPLOYMENT_TRIGGERS.some((trigger) => canTransitionDeployment(from, to, trigger))) {
+            throw new InvalidDeploymentTransitionError(from, to);
+          }
           // 17-02 (A2/A3): the healthcheck start and the runtime snapshot land in the edge's UPDATE.
           const snapshot =
             record?.runtimeConfig === undefined
@@ -287,13 +299,14 @@ export function createDeploymentStore(deps: DeploymentStoreDeps): DeploymentStor
           const row = await deps.db.transaction(async (tx) => {
             const [current] = await tx.select().from(deployments).where(eq(deployments.id, deploymentId)).for('update');
             if (current?.status !== from) return null;
+            const next = transitionDeployment(from, to, current.trigger);
             const now = deps.now();
             const [updated] = await tx
               .update(deployments)
               .set({
                 status: next,
                 updatedAt: nextUpdatedAt(current.updatedAt, now),
-                ...boundaryOf(from, next, now),
+                ...boundaryOf(from, next, now, current.trigger),
                 ...snapshot,
                 ...(next === 'HEALTHCHECK' ? { healthcheckStartedAt: now } : {}),
                 ...(next === 'ROLLING_BACK' ? { rollbackStartedAt: now } : {}),

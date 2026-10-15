@@ -3,6 +3,7 @@ import { ADVERSARIAL_VALUES, shellWords } from "../testing/shell-round-trip.js";
 import {
   containerNameFor,
   deployWorkspaceFor,
+  validateImageRef,
 } from "@noodara/domain/validators";
 import {
   DEPLOY_COMMAND_NAMES,
@@ -13,6 +14,7 @@ import {
   type HealthcheckConfig,
 } from "@noodara/domain/deployment";
 import {
+  dockerImageInspect,
   dockerInspectNetworks,
   dockerLogs,
   dockerNetworkConnect,
@@ -79,6 +81,8 @@ const EXPECTED_DEPLOY_COMMAND_NAMES: readonly DeployCommandName[] = [
   "docker.image_remove_service",
   "probe.http",
   "probe.tcp",
+  // 17-05: manual rollback checks the target image is still on the server.
+  "docker.image_inspect",
 ];
 
 // ADR 0008 text, copied by hand. G1: secret file and workspace; G2: launcher and group kill.
@@ -103,9 +107,9 @@ const ALLOWED_PARAMETERS = new Set([
 ]);
 
 describe("DEPLOY_COMMAND_NAMES", () => {
-  it("is exactly the 40 expected names, in order", () => {
+  it("is exactly the 41 expected names, in order", () => {
     expect(DEPLOY_COMMAND_NAMES).toEqual(EXPECTED_DEPLOY_COMMAND_NAMES);
-    expect(DEPLOY_COMMAND_NAMES).toHaveLength(40);
+    expect(DEPLOY_COMMAND_NAMES).toHaveLength(41);
   });
 
   it("is frozen", () => {
@@ -315,6 +319,8 @@ describe("17-01 H1: probe and -prev templates carry their own hard time cap", ()
   if (!sid.ok || !ip.ok || !ws.ok) throw new Error("fixtures must be valid");
   const serviceId = id as Parameters<typeof dockerRenameToPrevious>[0];
   const pidFile = ws.value.pidFile("build");
+  const image = validateImageRef("ghcr.io/acme/api:1.2.3");
+  if (!image.ok) throw new Error("fixture image must be valid");
 
   function config(fields: Record<string, unknown>): HealthcheckConfig {
     const result = validateHealthcheckConfig({
@@ -349,6 +355,8 @@ describe("17-01 H1: probe and -prev templates carry their own hard time cap", ()
     dockerRemovePrevious(serviceId),
     dockerNetworkConnect(serviceId),
     dockerInspectNetworks({ serviceId, container: "previous" }),
+    // 17-05: the rollback image check shares the fixed step budget.
+    dockerImageInspect(image.value),
   ];
 
   it.each(probes.map((c) => [c.name, c] as const))(

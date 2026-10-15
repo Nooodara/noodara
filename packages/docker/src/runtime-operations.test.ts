@@ -4,7 +4,7 @@
 import { randomBytes } from 'node:crypto';
 import { validateHealthcheckConfig, type HealthcheckConfig } from '@noodara/domain/deployment';
 import { createRedactor, type Redactor } from '@noodara/domain/security';
-import { validateResourceId, type ResourceId } from '@noodara/domain/validators';
+import { validateImageRef, validateResourceId, type ImageRef, type ResourceId } from '@noodara/domain/validators';
 import {
   PROBE_OUTPUT_MAX_BYTES,
   type DeployCommandName,
@@ -18,6 +18,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import type { DockerStepContext } from './docker-operations.js';
 import {
+  inspectImagePresent,
   listServiceImages,
   probeContainerHealth,
   removePrevious,
@@ -609,5 +610,75 @@ describe("listServiceImages / removeServiceImage (the service's own images)", ()
     expect(
       await removeServiceImage(context, { serviceId: SERVICE_ID, deploymentId: DEPLOYMENT_ID }),
     ).toMatchObject({ ok: true, value: IMAGE });
+  });
+});
+
+describe('inspectImagePresent (17-05: a rollback target must still be on the server)', () => {
+  const PULLED: ImageRef = unwrap(validateImageRef('ghcr.io/acme/api:1.2.3'));
+  const IMAGE_REF: ImageRef = unwrap(validateImageRef(IMAGE));
+
+  it('a present image is true, checked with docker.image_inspect on exactly that ref', async () => {
+    const { session, context } = setup({ 'docker.image_inspect': { stdout: `sha256:${'a'.repeat(64)}\n` } });
+
+    expect(await inspectImagePresent(context, { image: IMAGE_REF })).toMatchObject({ ok: true, value: true });
+    expect(session.names()).toEqual(['docker.image_inspect']);
+    expect(session.call('docker.image_inspect').command.argv.at(-1)).toBe(IMAGE);
+  });
+
+  it('works for a pulled image source too', async () => {
+    const { session, context } = setup({});
+
+    expect(await inspectImagePresent(context, { image: PULLED })).toMatchObject({ ok: true, value: true });
+    expect(session.call('docker.image_inspect').command.argv.at(-1)).toBe('ghcr.io/acme/api:1.2.3');
+  });
+
+  it.each([
+    ['daemon wording', NO_SUCH_IMAGE],
+    ['CLI wording', `Error: No such image: ${IMAGE}\n`],
+  ] as const)('a missing image (%s) is false, not a failure', async (_label, stderr) => {
+    const { context } = setup({ 'docker.image_inspect': { exitCode: 1, stderr } });
+
+    expect(await inspectImagePresent(context, { image: IMAGE_REF })).toMatchObject({ ok: true, value: false });
+  });
+
+  it('a daemon failure is classified, never read as missing', async () => {
+    const { context } = setup({ 'docker.image_inspect': { exitCode: 1, stderr: DAEMON_DOWN } });
+
+    expect(await inspectImagePresent(context, { image: IMAGE_REF })).toMatchObject({
+      ok: false,
+      kind: 'failed',
+      code: 'DOCKER_UNAVAILABLE',
+    });
+  });
+
+  it.each([124, 137])('exit %i is interrupted (timed_out), never read as missing', async (exitCode) => {
+    const { context } = setup({ 'docker.image_inspect': { exitCode } });
+
+    expect(await inspectImagePresent(context, { image: IMAGE_REF })).toEqual({
+      ok: false,
+      kind: 'interrupted',
+      outcome: 'timed_out',
+    });
+  });
+
+  it('a stream that did not complete is interrupted', async () => {
+    const { context } = setup({ 'docker.image_inspect': { outcome: 'timed_out', exitCode: null } });
+
+    expect(await inspectImagePresent(context, { image: IMAGE_REF })).toMatchObject({ ok: false, kind: 'interrupted' });
+  });
+
+  it('is quiet: inspect output never reaches onChunk (the deployment log)', async () => {
+    const { chunks, context } = setup({ 'docker.image_inspect': { stdout: `sha256:${'b'.repeat(64)}\n` } });
+
+    await inspectImagePresent(context, { image: IMAGE_REF });
+
+    expect(chunks).toEqual([]);
+  });
+
+  it('a force-cast image ref throws before any command runs', async () => {
+    const { session, context } = setup({});
+
+    await expect(inspectImagePresent(context, { image: 'x; rm -rf /' as ImageRef })).rejects.toThrow(RangeError);
+    expect(session.calls).toEqual([]);
   });
 });

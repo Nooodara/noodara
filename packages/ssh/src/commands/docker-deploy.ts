@@ -10,6 +10,7 @@ import {
   containerNameFor,
   deploymentImageRefFor,
   networkNameFor,
+  validateImageRef,
   validateResourceId,
   type BuildTarget,
   type ContainerName,
@@ -588,6 +589,27 @@ export function dockerInspectNetworks(input: {
     "{{json .NetworkSettings.Networks}}",
     "--",
     input.container === "previous" ? names.previous : names.current,
+  ]);
+}
+
+/**
+ * 17-05: a rollback target's image must still be on the server. Prints only the image id; a
+ * missing image is Docker's "No such image" (exit 1). Reads only, bounded like the -prev steps,
+ * and re-validates the ref so a force-cast value never reaches a command line.
+ */
+export function dockerImageInspect(image: ImageRef): RemoteCommand {
+  const checked = validateImageRef(image);
+  if (!checked.ok) {
+    throw new RangeError("docker.image_inspect needs a valid image reference");
+  }
+  return bounded("docker.image_inspect", PREV_STEP_TIMEOUT_SECONDS, [
+    "docker",
+    "image",
+    "inspect",
+    "--format",
+    "{{.Id}}",
+    "--",
+    checked.value,
   ]);
 }
 

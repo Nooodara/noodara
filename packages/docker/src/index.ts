@@ -24,6 +24,7 @@ export type {
   StopContainerInput,
 } from './docker-operations.js';
 export {
+  inspectImagePresent,
   listServiceImages,
   probeContainerHealth,
   removePrevious,
