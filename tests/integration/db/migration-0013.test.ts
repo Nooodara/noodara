@@ -757,6 +757,12 @@ describe('migrations 0011-0013 upgrading the v0.2.0 schema (16-06 A5, H2)', () =
 describe('migration 0013 on 10k deployment rows (16-06 H1)', () => {
   let fixture: PostgresFixture | undefined;
 
+  // Container boot is not part of the H1 bound: started here so the test budget covers only the
+  // seeding and the timed migration runs, and afterAll always holds the handle it must stop.
+  beforeAll(async () => {
+    fixture = await startPostgres({ migrate: false });
+  });
+
   afterAll(async () => {
     await fixture?.stop();
     fixture = undefined;
@@ -766,7 +772,7 @@ describe('migration 0013 on 10k deployment rows (16-06 H1)', () => {
   it(
     'goes down (rolled back) and forward within the documented bound without rewriting either table',
     async () => {
-      fixture = await startPostgres({ migrate: false });
+      if (fixture === undefined) throw new Error('postgres fixture did not start');
       const { db } = fixture;
       await applyMigrationsUpTo(db, MIGRATION_0012);
       const serviceId = await seedService(db);
