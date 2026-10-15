@@ -2,8 +2,15 @@
 // The fake keys scripts by command name; `process.supervise` is keyed by the supervised op
 // (`supervise:clone|build|pull`) read from its pidfile argument.
 import { randomBytes } from 'node:crypto';
-import type { DeploymentStatus } from '@noodara/domain/deployment';
-import { DEFAULT_POST_START_POLL_POLICY } from '@noodara/domain/deployment';
+import type { DeploymentExit, DeploymentStatus, HealthcheckConfig } from '@noodara/domain/deployment';
+import {
+  createResourceLedger,
+  DEFAULT_POST_START_POLL_POLICY,
+  isCleanupSettled,
+  recordResource,
+  V03_DEPLOYMENT_ERROR_MESSAGES,
+  validateHealthcheckConfig,
+} from '@noodara/domain/deployment';
 import { createRedactor, revealSecret, secretValue, type Redactor } from '@noodara/domain/security';
 import {
   deployWorkspaceFor,
@@ -247,6 +254,7 @@ function harness(options: {
   leakySession?: boolean;
   signal?: AbortSignal;
   limits?: Partial<DeployRunLimits>;
+  healthcheck?: HealthcheckConfig | null;
 }): Harness {
   const redactor = createRedactor();
   const session = new FakeSession(options.scripts, options.leakySession === true ? null : redactor);
@@ -277,6 +285,7 @@ function harness(options: {
       },
     },
     ...(options.signal === undefined ? {} : { signal: options.signal }),
+    ...(options.healthcheck === undefined ? {} : { healthcheck: options.healthcheck }),
   };
   return { session, progress, sink, redactor, sleeps, input };
 }
@@ -1051,5 +1060,359 @@ describe('runDeployment: git host key pinning per service (14-07)', () => {
     expect(h.session.keys()).not.toContain('git.keyscan');
     expect(h.session.keys()).not.toContain('supervise:clone');
     expect(outcome.errorMessage).not.toContain('pw@');
+  });
+});
+
+// 17-02: the kept `-prev` container, the HEALTHCHECK step and the restore on a failed swap.
+const SERVICE_IP = '172.18.0.5';
+const NETWORKS_ATTACHED = `${JSON.stringify({ [NETWORK]: { IPAddress: SERVICE_IP } })}\n`;
+const GENERIC_DAEMON_ERROR = 'Error response from daemon: something went wrong\n';
+const NO_SUCH_IMAGE = `Error response from daemon: No such image: ${OLD_IMAGE}\n`;
+const PREVIOUS_RESTORED = 'The new container could not start, so the previous version was restored.';
+const CURRENT_RESTARTED = 'The running version could not be replaced, so it was started again.';
+
+const TIMING = { probeTimeoutS: 2, intervalS: 1, retries: 2, startPeriodS: 0 };
+const HTTP_CHECK: HealthcheckConfig = unwrap(
+  validateHealthcheckConfig({ type: 'http', path: '/healthz', port: 3000, expectedStatuses: [200], ...TIMING }),
+);
+const TCP_CHECK: HealthcheckConfig = unwrap(validateHealthcheckConfig({ type: 'tcp', port: 3000, ...TIMING }));
+
+const PREVIOUS_SCRIPTS: Record<string, Script | Script[]> = {
+  'docker.ps': { stdout: `${psLine({ name: CONTAINER, image: OLD_IMAGE, ports: '0.0.0.0:13100->3000/tcp' })}\n` },
+  'docker.network_create': { exitCode: 1, stderr: NETWORK_EXISTS_STDERR },
+  'docker.inspect_networks': { stdout: NETWORKS_ATTACHED },
+};
+
+function probing(probe: Script | Script[], extra: Record<string, Script | Script[]> = {}): Record<string, Script | Script[]> {
+  return { ...PREVIOUS_SCRIPTS, 'probe.http': probe, 'probe.tcp': probe, ...extra };
+}
+
+function logText(h: Harness, phase?: string): string {
+  return h.sink.entries
+    .filter((entry) => phase === undefined || entry.phase === phase)
+    .map((entry) => entry.text)
+    .join('\n');
+}
+
+/** H1: nothing after the swap ever removes the kept container or its image on a failed exit. */
+function expectPreviousUntouched(h: Harness): void {
+  const keys = h.session.keys();
+  expect(keys).not.toContain('docker.remove_prev');
+  h.session.calls
+    .filter((call) => call.key === 'docker.image_remove')
+    .forEach((call) => {
+      expect(call.command.argv).not.toContain(OLD_IMAGE);
+    });
+  expect(h.session.allArgv().some((arg) => arg.includes(`${CONTAINER}-prev`) && arg.includes('rm'))).toBe(false);
+}
+
+describe('runDeployment: runtime config snapshot (17-02 A3)', () => {
+  it('stores the runtime config and image ref on the BUILDING -> DEPLOYING edge', async () => {
+    const h = harness({ healthcheck: HTTP_CHECK, scripts: probing({ stdout: 'NOODARA_PROBE http 200\n' }) });
+
+    await runDeployment(h.input);
+
+    expect(h.progress.records).toEqual([
+      {
+        to: 'DEPLOYING',
+        record: {
+          runtimeConfig: {
+            version: 1,
+            imageRef: BUILT_IMAGE,
+            internalPort: 3000,
+            publishedPort: 13100,
+            healthcheck: HTTP_CHECK,
+          },
+        },
+      },
+    ]);
+  });
+
+  it('a service without healthcheck snapshots the container default and keeps the v0.2 polls', async () => {
+    const h = harness({});
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('SUCCESS');
+    const snapshot = h.progress.records[0]?.record.runtimeConfig;
+    expect(snapshot?.healthcheck.type).toBe('container');
+    expect(h.session.keys()).not.toContain('probe.http');
+    expect(h.session.keys()).not.toContain('probe.tcp');
+  });
+});
+
+describe('runDeployment: HEALTHCHECK step (17-02 A1, A2, A3)', () => {
+  it('HTTP pass: logs fixed lines in the healthcheck phase and removes -prev only after the pass', async () => {
+    const h = harness({
+      healthcheck: HTTP_CHECK,
+      scripts: probing([{ stdout: 'NOODARA_PROBE http 500\n' }, { stdout: 'NOODARA_PROBE http 200\n' }]),
+    });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'SUCCESS', container: { kind: 'running' } });
+    expect(h.progress.advances.at(-1)).toEqual(['DEPLOYING', 'HEALTHCHECK']);
+    const keys = h.session.keys();
+    expect(keys.indexOf('docker.rename_to_prev')).toBeLessThan(keys.indexOf('docker.create'));
+    expect(keys.lastIndexOf('probe.http')).toBeLessThan(keys.indexOf('docker.remove_prev'));
+    expect(h.session.argv('probe.http').join(' ')).toContain(SERVICE_IP);
+    const log = logText(h, 'healthcheck');
+    expect(log).toContain('Healthcheck attempt 1: HTTP 500');
+    expect(log).toContain('Healthcheck attempt 2: HTTP 200');
+    expect(log).toContain('Healthcheck passed.');
+    // A2: the probe target never reaches the log.
+    expect(logText(h)).not.toContain(SERVICE_IP);
+    // The superseded image goes only on SUCCESS, after -prev was removed.
+    expect(h.session.argv('docker.image_remove')).toContain(OLD_IMAGE);
+  });
+
+  it('TCP pass: an open port passes the check', async () => {
+    const h = harness({ healthcheck: TCP_CHECK, scripts: probing({ stdout: 'NOODARA_PROBE open\n' }) });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('SUCCESS');
+    expect(h.session.keys()).toContain('probe.tcp');
+    expect(logText(h, 'healthcheck')).toContain('Healthcheck attempt 1: port open');
+  });
+
+  it('wrong status: ends HEALTHCHECK_FAILED with the fixed message and keeps -prev and its image', async () => {
+    const h = harness({ healthcheck: HTTP_CHECK, scripts: probing({ stdout: 'NOODARA_PROBE http 500\n' }) });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({
+      status: 'FAILED',
+      errorCode: 'HEALTHCHECK_FAILED',
+      errorMessage: V03_DEPLOYMENT_ERROR_MESSAGES.HEALTHCHECK_FAILED,
+      container: { kind: 'running' },
+    });
+    expect(h.session.keys().filter((k) => k === 'probe.http')).toHaveLength(2);
+    expectPreviousUntouched(h);
+  });
+
+  it('timeout: probes that never answer end HEALTHCHECK_TIMEOUT with the fixed message', async () => {
+    const h = harness({ healthcheck: HTTP_CHECK, scripts: probing({ outcome: 'timed_out', exitCode: null }) });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({
+      status: 'FAILED',
+      errorCode: 'HEALTHCHECK_TIMEOUT',
+      errorMessage: V03_DEPLOYMENT_ERROR_MESSAGES.HEALTHCHECK_TIMEOUT,
+    });
+    expect(logText(h, 'healthcheck')).toContain('no answer before the probe timeout');
+    expectPreviousUntouched(h);
+  });
+
+  it('a container that exits during the check ends HEALTHCHECK_FAILED without probing', async () => {
+    const h = harness({
+      healthcheck: HTTP_CHECK,
+      scripts: probing({ stdout: 'NOODARA_PROBE http 200\n' }, { 'docker.inspect': { stdout: inspectJson('exited', undefined, 1) } }),
+    });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'HEALTHCHECK_FAILED', container: { kind: 'stopped' } });
+    expect(h.session.keys()).not.toContain('probe.http');
+    expectPreviousUntouched(h);
+  });
+});
+
+describe('runDeployment: the kept container across every HEALTHCHECK exit (17-02 H1)', () => {
+  it.each([
+    ['HEALTHCHECK_FAILED', probing({ stdout: 'NOODARA_PROBE http 500\n' }), null],
+    ['HEALTHCHECK_TIMEOUT', probing({ outcome: 'timed_out', exitCode: null }), null],
+    ['SERVER_UNREACHABLE', probing({ reject: new Error('socket hang up') }), null],
+    ['DOCKER_UNAVAILABLE', probing({}, { 'docker.inspect': { exitCode: 1, stderr: DAEMON_DOWN_STDERR } }), null],
+    ['WORKER_CRASHED', probing({ stdout: 'NOODARA_PROBE http 200\n' }), 'HEALTHCHECK'],
+  ] as const)('%s never removes -prev or the previous image', async (code, scripts, failOn) => {
+    const h = harness({ healthcheck: HTTP_CHECK, scripts });
+    h.progress.failOn = failOn;
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: code });
+    expect(h.session.keys()).toContain('docker.rename_to_prev');
+    expectPreviousUntouched(h);
+  });
+
+  it('a cancel during the check is ignored once the swap started: the attempt still decides on health', async () => {
+    const controller = new AbortController();
+    const h = harness({
+      healthcheck: HTTP_CHECK,
+      signal: controller.signal,
+      scripts: probing({ stdout: 'NOODARA_PROBE http 500\n' }),
+    });
+    h.session.onStream = (key) => {
+      if (key === 'probe.http') controller.abort();
+    };
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).not.toBe('SUCCESS');
+    expectPreviousUntouched(h);
+  });
+
+  it.each(['FAILED', 'CANCELLED', 'TIMEOUT', 'WORKER_CRASHED'] as const satisfies readonly DeploymentExit[])(
+    'running the %s ledger cleanup twice is idempotent and never targets -prev or its image',
+    async (exit) => {
+      const ledger = [
+        { kind: 'workspace_created' },
+        { kind: 'image_created' },
+        { kind: 'previous_container_kept', imageRef: OLD_IMAGE },
+        { kind: 'container_created' },
+      ] as const;
+      const built = ledger.reduce(recordResource, unwrap(createResourceLedger(SERVICE_ID, DEPLOYMENT_ID)));
+      const session = new FakeSession({
+        'docker.image_remove': [{ exitCode: 0 }, { exitCode: 1, stderr: NO_SUCH_IMAGE.replace(OLD_IMAGE, BUILT_IMAGE) }],
+      });
+
+      const first = await runLedgerCleanup(session, LIMITS, WORKSPACE, built, exit);
+      const second = await runLedgerCleanup(session, LIMITS, WORKSPACE, built, exit);
+
+      expect(first.every((report) => isCleanupSettled(report.outcome))).toBe(true);
+      expect(second.every((report) => isCleanupSettled(report.outcome))).toBe(true);
+      expect(second.map((report) => report.resource)).toEqual(first.map((report) => report.resource));
+      expect(session.allArgv()).not.toContain(OLD_IMAGE);
+      expect(session.allArgv().some((arg) => arg.endsWith('-prev'))).toBe(false);
+    },
+  );
+});
+
+describe('runDeployment: a failed swap restores the previous version (17-02 H2)', () => {
+  it('create fails after the rename: the new container is removed and -prev restored', async () => {
+    const h = harness({
+      scripts: { ...PREVIOUS_SCRIPTS, 'docker.create': { exitCode: 1, stderr: GENERIC_DAEMON_ERROR } },
+    });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('FAILED');
+    expect(outcome.errorCode).not.toBe('ROLLBACK_FAILED');
+    expect(outcome.container).toEqual({ kind: 'running' });
+    const keys = h.session.keys();
+    expect(keys.slice(keys.indexOf('docker.create'), keys.indexOf('docker.create') + 5)).toEqual([
+      'docker.create',
+      'docker.remove',
+      'docker.rename_from_prev',
+      'docker.inspect_networks',
+      'docker.start',
+    ]);
+    expect(keys).not.toContain('docker.network_connect');
+    expect(logText(h, 'deploy')).toContain(PREVIOUS_RESTORED);
+    expectPreviousUntouched(h);
+  });
+
+  it('start fails after the rename: -prev is restored (re-attached when detached) and started', async () => {
+    const h = harness({
+      scripts: {
+        ...PREVIOUS_SCRIPTS,
+        'docker.inspect_networks': { stdout: '{}\n' },
+        'docker.start': [{ exitCode: 1, stderr: GENERIC_DAEMON_ERROR }, { exitCode: 0 }],
+      },
+    });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('FAILED');
+    expect(outcome.container).toEqual({ kind: 'running' });
+    const keys = h.session.keys();
+    const from = keys.indexOf('docker.start');
+    expect(keys.slice(from, from + 6)).toEqual([
+      'docker.start',
+      'docker.remove',
+      'docker.rename_from_prev',
+      'docker.inspect_networks',
+      'docker.network_connect',
+      'docker.start',
+    ]);
+    expect(h.progress.advances.map(([, to]) => to)).not.toContain('HEALTHCHECK');
+    expect(logText(h, 'deploy')).toContain(PREVIOUS_RESTORED);
+    expectPreviousUntouched(h);
+  });
+
+  it('a restore that fails too is reported, never thrown, and keeps the original error code', async () => {
+    const h = harness({
+      scripts: {
+        ...PREVIOUS_SCRIPTS,
+        'docker.create': { exitCode: 1, stderr: GENERIC_DAEMON_ERROR },
+        'docker.rename_from_prev': { exitCode: 1, stderr: GENERIC_DAEMON_ERROR },
+      },
+    });
+    const baseline = harness({
+      scripts: { ...PREVIOUS_SCRIPTS, 'docker.create': { exitCode: 1, stderr: GENERIC_DAEMON_ERROR } },
+    });
+
+    const outcome = await runDeployment(h.input);
+    const expected = await runDeployment(baseline.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: expected.errorCode, container: { kind: 'unknown' } });
+    expect(logText(h, 'deploy')).toContain('the previous version could not be restored');
+  });
+
+  it.each([
+    ['stop', { 'docker.stop': { exitCode: 1, stderr: GENERIC_DAEMON_ERROR } }],
+    ['rename', { 'docker.rename_to_prev': { exitCode: 1, stderr: GENERIC_DAEMON_ERROR } }],
+  ] as const)('a %s failure before the new container exists starts the current one again', async (_step, scripts) => {
+    const h = harness({ scripts: { ...PREVIOUS_SCRIPTS, ...scripts } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('FAILED');
+    expect(outcome.container).toEqual({ kind: 'running' });
+    const keys = h.session.keys();
+    expect(keys).not.toContain('docker.create');
+    expect(keys).toContain('docker.start');
+    expect(h.session.argv('docker.start')).toContain(CONTAINER);
+    expect(logText(h, 'deploy')).toContain(CURRENT_RESTARTED);
+    expectPreviousUntouched(h);
+  });
+
+  it('a -prev that already exists blocks the rename with START_FAILED and the current one runs again', async () => {
+    const h = harness({
+      scripts: {
+        ...PREVIOUS_SCRIPTS,
+        'docker.rename_to_prev': {
+          exitCode: 1,
+          stderr: `Error response from daemon: Conflict. The container name "/${CONTAINER}-prev" is already in use by container "abc".\n`,
+        },
+      },
+    });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: 'START_FAILED', container: { kind: 'running' } });
+    expect(h.session.keys()).not.toContain('docker.create');
+  });
+
+  it('a stale -prev beside a running current one is replaced by the current one', async () => {
+    const stale = psLine({ name: `${CONTAINER}-prev`, image: `noodara/${SERVICE_ID}:older`, state: 'exited' });
+    const current = psLine({ name: CONTAINER, image: OLD_IMAGE, ports: '0.0.0.0:13100->3000/tcp' });
+    const h = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'docker.ps': { stdout: `${stale}\n${current}\n` } } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('SUCCESS');
+    const keys = h.session.keys();
+    expect(keys.indexOf('docker.remove_prev')).toBeLessThan(keys.indexOf('docker.rename_to_prev'));
+  });
+
+  it('a stale -prev with no running current one stays the restore target', async () => {
+    const stale = psLine({ name: `${CONTAINER}-prev`, image: OLD_IMAGE, state: 'exited' });
+    const h = harness({
+      scripts: {
+        ...PREVIOUS_SCRIPTS,
+        'docker.ps': { stdout: `${stale}\n` },
+        'docker.start': [{ exitCode: 1, stderr: GENERIC_DAEMON_ERROR }, { exitCode: 0 }],
+      },
+    });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', container: { kind: 'running' } });
+    expect(h.session.keys()).not.toContain('docker.rename_to_prev');
+    expect(h.session.keys()).toContain('docker.rename_from_prev');
+    expectPreviousUntouched(h);
   });
 });
