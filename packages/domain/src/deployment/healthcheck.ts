@@ -41,13 +41,27 @@ export const DEFAULT_EXPECTED_STATUSES: readonly number[] = Object.freeze(
   Array.from({ length: 200 }, (_, i) => 200 + i),
 );
 
-export const DEFAULT_CONTAINER_HEALTHCHECK: HealthcheckConfig = Object.freeze({
-  type: "container",
-  probeTimeoutS: 5,
-  intervalS: 1,
-  retries: 5,
-  startPeriodS: 0,
-});
+// Derived from the v0.2 post-start poll policy so both budgets are equal by construction:
+// retries * (interval + probeTimeout) is fixed at maxPolls * 2 s, startPeriod takes the rest.
+function defaultContainerHealthcheck(policy: PostStartPollPolicy): HealthcheckConfig {
+  const pollsS = Math.ceil(
+    Array.from({ length: policy.maxPolls }, (_, i) =>
+      Math.min(policy.initialDelayMs * 2 ** i, policy.maxDelayMs),
+    ).reduce((a, b) => a + b, 0) / 1000,
+  );
+  const intervalS = 1;
+  const probeTimeoutS = 1;
+  return Object.freeze({
+    type: "container",
+    probeTimeoutS,
+    intervalS,
+    retries: policy.maxPolls,
+    startPeriodS: pollsS - policy.maxPolls * (intervalS + probeTimeoutS),
+  });
+}
+
+export const DEFAULT_CONTAINER_HEALTHCHECK: HealthcheckConfig =
+  defaultContainerHealthcheck(DEFAULT_POST_START_POLL_POLICY);
 
 // 16-03 A1: URL path/query characters only; every shell metacharacter (& * ! ; $ ` | < > ( ) { }
 // [ ] ' " \), whitespace and control character is rejected.

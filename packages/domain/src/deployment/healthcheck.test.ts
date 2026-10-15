@@ -169,16 +169,11 @@ describe("resolveHealthcheck (A3)", () => {
 });
 
 describe("default container healthcheck vs post-start polls (A3)", () => {
-  it("pins both budgets numerically so they cannot drift apart silently", () => {
-    const d = DEFAULT_CONTAINER_HEALTHCHECK;
-    expect(d).toMatchObject({ retries: 5, intervalS: 1, probeTimeoutS: 5, startPeriodS: 0 });
-    expect(healthcheckBudgetMs(d)).toBe(30_000);
-    const p = DEFAULT_POST_START_POLL_POLICY;
-    expect(p).toMatchObject({ maxPolls: 5, initialDelayMs: 1000, maxDelayMs: 8000, stablePolls: 2 });
-    const pollMs = postStartPollDelays(p).reduce((a, b) => a + b, 0);
+  it("the default container budget equals the post-start poll budget", () => {
+    const pollMs = postStartPollDelays(DEFAULT_POST_START_POLL_POLICY).reduce((a, b) => a + b, 0);
     expect(pollMs).toBe(23_000);
-    // the container budget covers the poll waits plus a 7 s allowance for inspect round-trips
-    expect(healthcheckBudgetMs(d) - pollMs).toBe(7_000);
+    expect(healthcheckBudgetMs(DEFAULT_CONTAINER_HEALTHCHECK)).toBe(pollMs);
+    expect(validateHealthcheckConfig(DEFAULT_CONTAINER_HEALTHCHECK).ok).toBe(true);
   });
 });
 
