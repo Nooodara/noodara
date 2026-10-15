@@ -5,13 +5,18 @@
 // - A4: a worker that dies mid-build (emulated in-process: its SSH connection drops and it never
 //   runs another step) leaves a BUILDING row; the startup sweep ends it FAILED/WORKER_CRASHED and
 //   cleans the per-deployment resources, never the per-service container.
+// - 17-06 A1: a cancel during HEALTHCHECK removes the new container and puts `-prev` back under the
+//   service name (CANCELLED); a cancel during ROLLING_BACK is the named 409 ROLLBACK_IN_PROGRESS and
+//   the rollback runs to ROLLED_BACK.
 import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { eq } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import type { HealthcheckConfig } from '@noodara/domain/deployment';
 import { createRedactor, secretValue } from '@noodara/domain/security';
 import { createSsh2Adapter, formatFingerprint } from '@noodara/ssh';
 import {
@@ -23,7 +28,8 @@ import {
   services,
 } from '../../../apps/control-plane/src/db/schema/index.js';
 import type { ServerEvent } from '../../../apps/control-plane/src/events/server-event-publisher.js';
-import type { CancelDeployment } from '../../../apps/control-plane/src/deploy/cancel-deployment.js';
+import type { CancelDeployment, CancelDeploymentResult } from '../../../apps/control-plane/src/deploy/cancel-deployment.js';
+import { mapServiceCodeToStatus } from '../../../apps/control-plane/src/routes/http-errors.js';
 import type { DeployJobDeps } from '../../../apps/control-plane/src/deploy/deploy-worker.js';
 import {
   DEPLOY_ENGINE_UBUNTU_VERSIONS,
@@ -54,8 +60,21 @@ const POLL_MS = 500;
 const WORKSPACE_ROOT = '/home/deployer/.noodara/deploy';
 const KEY_VERSION = 1;
 const DEPLOY_MAX_MS = 300_000;
-const TERMINAL = new Set(['SUCCESS', 'FAILED', 'CANCELLED']);
+const TERMINAL = new Set(['SUCCESS', 'FAILED', 'CANCELLED', 'ROLLED_BACK']);
 const SLOW_REPO = 'slow-build';
+const FIXTURES_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../fixtures');
+const REPOS = { healthy: 'node-api', unhealthy: 'unhealthy-api' } as const;
+/** 17-06: HTTP healthcheck; `startPeriodS` stretches a failing check so a cancel lands inside it. */
+const httpCheck = (checkPath: string, startPeriodS = 10): HealthcheckConfig => ({
+  type: 'http',
+  path: checkPath,
+  port: 3000,
+  expectedStatuses: [200],
+  probeTimeoutS: 2,
+  intervalS: 1,
+  retries: 3,
+  startPeriodS,
+});
 /** Bound on BuildKit cache growth per cancelled build (the measured orphan record is ~8 kB, ADR 0008). */
 const MAX_CACHE_GROWTH_PER_CANCEL = 64_000;
 /** The ps marker of the slow build's RUN step: unique to this file. */
@@ -136,6 +155,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
 
   const masterKey = randomBytes(32);
   const events: ServerEvent[] = [];
+  /** 17-06: called on every published event, so a test can act the moment a status is recorded. */
+  let onEvent: ((event: ServerEvent) => void) | null = null;
   const logged: LoggedLine[] = [];
   let connects = 0;
   let projectId = '';
@@ -213,7 +234,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
       event.type === 'deployment.updated' && event.deployment.id === deploymentId ? [event.deployment.status] : [],
     );
 
-  const insertSlowService = async (): Promise<string> => {
+  const insertService = async (repo: string, healthcheck: HealthcheckConfig | null): Promise<string> => {
     const serviceCredentials = await import('../../../apps/control-plane/src/services/service-credentials.js');
     const encoded = serviceCredentials.encodeServiceCredential(
       {
@@ -230,9 +251,9 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
         projectId,
         environmentId,
         serverId,
-        name: `slow-${randomUUID().slice(0, 8)}`,
+        name: `cancel-${randomUUID().slice(0, 8)}`,
         sourceType: 'git',
-        repositoryUrl: s().gitRepoUrl(SLOW_REPO),
+        repositoryUrl: s().gitRepoUrl(repo),
         branch: 'main',
         buildContext: '.',
         dockerfilePath: 'Dockerfile',
@@ -240,11 +261,13 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
         internalPort: 3000,
         publishedPort: null,
         repositoryCredentialId: credentialId,
+        healthcheck,
       })
       .returning({ id: services.id });
     if (!row) throw new Error('service insert returned no row');
     return row.id;
   };
+  const insertSlowService = (): Promise<string> => insertService(SLOW_REPO, null);
 
   /** A1/A3: nothing the deployment created is left on the server. */
   const expectNoDeploymentResources = async (serviceId: string, deploymentId: string): Promise<void> => {
@@ -258,7 +281,14 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
     stackStart = (async () => {
         tempRoot = mkdtempSync(path.join(tmpdir(), 'noodara-runtime-cancel-'));
         const slowDir = writeSlowRepo(tempRoot, nodeBaseOf(resolveBaseImages()));
-        return startDeployEngineStack({ ubuntu, seedRepositories: [{ name: SLOW_REPO, sourceDir: slowDir }] });
+        return startDeployEngineStack({
+          ubuntu,
+          seedRepositories: [
+            { name: SLOW_REPO, sourceDir: slowDir },
+            { name: REPOS.healthy, sourceDir: path.join(FIXTURES_DIR, 'node-api') },
+            { name: REPOS.unhealthy, sourceDir: path.join(FIXTURES_DIR, 'unhealthy-api') },
+          ],
+        });
       })();
     pgStart = startPostgres();
     redisStart = startRedis();
@@ -342,6 +372,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
     const recordingEvents = {
       publish(event: ServerEvent): Promise<void> {
         events.push(event);
+        onEvent?.(event);
         return Promise.resolve();
       },
     };
@@ -596,6 +627,99 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
       expect(await rootOut(['docker', 'container', 'inspect', serviceContainer, '--format', '{{.Id}}'])).toBe(serviceContainerId);
     } finally {
       await root(['docker', 'rm', '-f', serviceContainerId]);
+    }
+  }, CASE_TIMEOUT_MS);
+
+  const containerField = (name: string, format: string) =>
+    rootOut(['docker', 'container', 'inspect', '--format', format, name]);
+  /** No orphan: the service's only managed container is the one under its name. */
+  const serviceContainers = async (serviceId: string): Promise<string[]> =>
+    (await rootOut(['docker', 'ps', '-a', '--filter', 'label=noodara.managed=true', '--format', '{{.Names}}']))
+      .split('\n')
+      .filter((name) => name.startsWith(`noodara-${serviceId}`))
+      .sort();
+  const updateService = async (serviceId: string, repo: string, healthcheck: HealthcheckConfig): Promise<void> => {
+    await db()
+      .update(services)
+      .set({ repositoryUrl: s().gitRepoUrl(repo), healthcheck })
+      .where(eq(services.id, serviceId));
+  };
+  /** A healthy first deploy through the worker, then the service points at unhealthy-api. */
+  const deployThenBreak = async (serviceId: string, startPeriodS: number) => {
+    if (triggerDeploy === undefined || startWorker === undefined) throw new Error('runtime not started');
+    startWorker();
+    const first = await waitStatus(await triggerDeploy(serviceId), (status) => TERMINAL.has(status));
+    expect({ status: first.status, errorCode: first.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
+    await updateService(serviceId, REPOS.unhealthy, httpCheck('/healthz', startPeriodS));
+    return first;
+  };
+
+  it('17-06 A1: a cancel during HEALTHCHECK removes the new container, restores -prev and ends CANCELLED', async () => {
+    if (triggerDeploy === undefined) throw new Error('runtime not started');
+    const serviceId = await insertService(REPOS.healthy, httpCheck('/health'));
+    try {
+      const first = await deployThenBreak(serviceId, 120);
+      const deploymentId = await triggerDeploy(serviceId);
+      await waitStatus(deploymentId, (status) => status === 'HEALTHCHECK');
+      // The swap is done: the new version runs under the service name, the previous one is kept.
+      expect(await containerField(`noodara-${serviceId}`, '{{.Config.Image}}')).toBe(`noodara/${serviceId}:${deploymentId}`);
+      expect(await containerExists(`noodara-${serviceId}-prev`)).toBe(true);
+
+      const result = await cancel(deploymentId);
+      // Only the worker moves a claimed row: the API answers 202 with the row as it was.
+      expect(result).toMatchObject({ ok: true, deployment: { id: deploymentId, status: 'HEALTHCHECK' } });
+
+      const row = await waitStatus(deploymentId, (status) => TERMINAL.has(status));
+      expect({ status: row.status, errorCode: row.errorCode }).toEqual({ status: 'CANCELLED', errorCode: null });
+      expect(deploymentStatuses(deploymentId).filter((status) => TERMINAL.has(status))).toEqual(['CANCELLED']);
+      expect(deploymentStatuses(deploymentId)).toContain('HEALTHCHECK');
+      // The previous version is back under the service name and running; nothing else is left.
+      expect(await containerField(`noodara-${serviceId}`, '{{.State.Status}} {{.Config.Image}}')).toBe(
+        `running noodara/${serviceId}:${first.id}`,
+      );
+      expect(await serviceContainers(serviceId)).toEqual([`noodara-${serviceId}`]);
+      expect(await imageExists(`noodara/${serviceId}:${deploymentId}`)).toBe(false);
+      expect(await imageExists(`noodara/${serviceId}:${first.id}`)).toBe(true);
+      expect(await workspaceBaseExists()).toBe(true);
+      expect(await pathGone(`${WORKSPACE_ROOT}/${deploymentId}`)).toBe(true);
+      expect(JSON.stringify(logged)).not.toContain('CANCEL_UNCONFIRMED');
+    } finally {
+      await root(['docker', 'rm', '-f', `noodara-${serviceId}`, `noodara-${serviceId}-prev`]);
+    }
+  }, CASE_TIMEOUT_MS);
+
+  it('17-06 A1: a cancel during ROLLING_BACK is a named 409 ROLLBACK_IN_PROGRESS and the rollback completes', async () => {
+    if (triggerDeploy === undefined) throw new Error('runtime not started');
+    const serviceId = await insertService(REPOS.healthy, httpCheck('/health'));
+    try {
+      const first = await deployThenBreak(serviceId, 5);
+      const deploymentId = await triggerDeploy(serviceId);
+      // The cancel goes out the moment the store records ROLLING_BACK (before any restore step).
+      let rejected: Promise<CancelDeploymentResult> | undefined;
+      onEvent = (event) => {
+        if (event.type !== 'deployment.updated' || event.deployment.id !== deploymentId) return;
+        if (event.deployment.status === 'ROLLING_BACK') rejected ??= cancel(deploymentId);
+      };
+      const row = await waitStatus(deploymentId, (status) => TERMINAL.has(status));
+      onEvent = null;
+
+      if (rejected === undefined) throw new Error('ROLLING_BACK was never published');
+      const result = await rejected;
+      expect(result).toMatchObject({ ok: false, code: 'ROLLBACK_IN_PROGRESS' });
+      if (!result.ok) expect(mapServiceCodeToStatus(result.code)).toBe(409);
+      // The rollback ran to its end: the previous version is restored and checked.
+      expect({ status: row.status, errorCode: row.errorCode }).toEqual({ status: 'ROLLED_BACK', errorCode: 'HEALTHCHECK_FAILED' });
+      expect(deploymentStatuses(deploymentId).filter((status) => TERMINAL.has(status))).toEqual(['ROLLED_BACK']);
+      expect(await containerField(`noodara-${serviceId}`, '{{.State.Status}} {{.Config.Image}}')).toBe(
+        `running noodara/${serviceId}:${first.id}`,
+      );
+      expect(await serviceContainers(serviceId)).toEqual([`noodara-${serviceId}`]);
+      expect(await pathGone(`${WORKSPACE_ROOT}/${deploymentId}`)).toBe(true);
+      // No cancel flag was raised, so a later cancel is the terminal 409.
+      expect(await cancel(deploymentId)).toMatchObject({ ok: false, code: 'DEPLOYMENT_NOT_CANCELLABLE' });
+    } finally {
+      onEvent = null;
+      await root(['docker', 'rm', '-f', `noodara-${serviceId}`, `noodara-${serviceId}-prev`]);
     }
   }, CASE_TIMEOUT_MS);
 
