@@ -403,6 +403,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       );
       expect(container).toBe(`noodara-${serviceId}`);
       expectOk('start', record(await timed(timings, 'startMs', () => startContainer(ctx, { serviceId }))));
+      first.to('HEALTHCHECK');
 
       const runningAt = Date.now();
       let running = false;

@@ -226,6 +226,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         }),
       );
       expectOk('start', await startContainer(ctx(), { serviceId }));
+      run.to('HEALTHCHECK');
       let running = false;
       for (let attempt = 0; attempt < INSPECT_ATTEMPTS && !running; attempt += 1) {
         if (attempt > 0) await delay(INSPECT_BACKOFF_MS);
