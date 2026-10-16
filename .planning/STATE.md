@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.2
-milestone_name: Projects & Services
-status: phase_15_pending
-stopped_at: Phase 14 closed (tier-1 pass); v0.2.0 published — open: Phase 15 real-host verification (OPS-05, owner: user); next: plan v0.3
-last_updated: 2026-10-14T12:00:00.000Z
-last_activity: 2026-10-14 -- Phase 14 closed on the 4th tier-1 review (pass); v0.2.0 published (multi-arch), human gate closed with accepted debt (five real-host checks deferred to OPS-05, owner: user)
+milestone: v0.3
+milestone_name: Reliable Deployment Engine
+status: phase_18_next
+stopped_at: Phase 17 closed (tier-1 pass); full integration fixed (af7c935); next: Phase 18 webhooks; Phase 15 (OPS-05) still open, owner user
+last_updated: 2026-10-16T09:30:00.000Z
+last_activity: 2026-10-16 -- Phase 17 closed (17-04 retention, 17-05 manual rollback + docker.image_inspect, 17-06 cancel/crash recovery); review pass
 progress:
   total_phases: 9
   completed_phases: 8
@@ -21,16 +21,18 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** v0.3 — Reliable Deployment Engine (por planificar)
+**Current focus:** v0.3 — Reliable Deployment Engine (fases 16-17 cerradas; siguiente fase 18)
 
 ## Current Position
 
-Phase: 14 complete (milestone v0.2 complete)
-Plan: —
-Status: Ready to plan v0.3
-Last activity: 2026-10-14
+Phase: 17 complete (v0.3: 16 y 17 cerradas; 18-20 pendientes; 15/OPS-05 abierta, owner usuario)
+Plan: siguiente 18-01 (`agent-flow next` apunta a 15-01; despachar 18-01 con `--task`)
+Status: Ready for phase 18
+Last activity: 2026-10-16
 
-Progress: [██████████] 100%
+Verificación al cierre de 17: unit 7602/7602, typecheck, lint, boundaries verdes sin caché. `pnpm test:integration` completo: 10 fallos por tests legados (engine-primitives, workspace-non-root) que hacían DEPLOYING→SUCCESS sin HEALTHCHECK; corregido en af7c935 y verificado 22/22 en esas suites; la suite completa no se re-corrió.
+
+Deuda conocida (review fase 17, menor): tras un rollback manual la imagen en ejecución no está en el keep set de retención (solo la protege Docker al negarse a borrar una imagen en uso); `docker.image_inspect` pendiente de security review formal en 20-03.
 
 ## Performance Metrics
 
