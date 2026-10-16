@@ -64,7 +64,10 @@ export type ServiceErrorCode =
   | "RUNTIME_LOGS_TIMEOUT"
   | "ROLLBACK_TARGET_UNAVAILABLE"
   | "IDEMPOTENCY_KEY_INVALID"
-  | "IDEMPOTENCY_KEY_REUSED";
+  | "IDEMPOTENCY_KEY_REUSED"
+  | "WEBHOOK_SOURCE_NOT_GIT"
+  | "WEBHOOK_ALREADY_ENABLED"
+  | "WEBHOOK_NOT_ENABLED";
 
 export const SERVICE_ERROR_STATUS = Object.freeze({
   VALIDATION_FAILED: 400,
@@ -137,6 +140,11 @@ export const SERVICE_ERROR_STATUS = Object.freeze({
   ROLLBACK_TARGET_UNAVAILABLE: 422,
   IDEMPOTENCY_KEY_INVALID: 400,
   IDEMPOTENCY_KEY_REUSED: 422,
+  // 18-01: webhooks. An image-source service cannot have one (422); enabling twice or rotating a
+  // disabled webhook is a state conflict (409).
+  WEBHOOK_SOURCE_NOT_GIT: 422,
+  WEBHOOK_ALREADY_ENABLED: 409,
+  WEBHOOK_NOT_ENABLED: 409,
 } satisfies Record<ServiceErrorCode, number>);
 
 const UNKNOWN_CODE_STATUS = 500;

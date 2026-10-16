@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-15T22:16:07.349Z",
+  "updatedAt": "2026-10-16T23:58:50.580Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -6290,7 +6290,7 @@
       "dependsOn": [
         "17"
       ],
-      "status": "pending",
+      "status": "active",
       "tasks": [
         {
           "id": "18-01",
@@ -6302,11 +6302,15 @@
             "apps/control-plane/src/routes/service-schemas.ts",
             "apps/control-plane/src/routes/service-schemas.test.ts",
             "packages/domain/src/api-contract/service-schemas.ts",
-            "tests/integration/webhooks/config.test.ts"
+            "tests/integration/webhooks/config.test.ts",
+            "packages/domain/src/api-contract/http-errors.ts",
+            "docs/deploy-engine.md",
+            "apps/web/src/lib/api-client.ts",
+            "apps/site/content/docs/reference/error-codes.mdx"
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",

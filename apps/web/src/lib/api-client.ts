@@ -80,7 +80,10 @@ export type DeployEngineErrorCode =
   | "RUNTIME_LOGS_TIMEOUT"
   | "ROLLBACK_TARGET_UNAVAILABLE"
   | "IDEMPOTENCY_KEY_INVALID"
-  | "IDEMPOTENCY_KEY_REUSED";
+  | "IDEMPOTENCY_KEY_REUSED"
+  | "WEBHOOK_SOURCE_NOT_GIT"
+  | "WEBHOOK_ALREADY_ENABLED"
+  | "WEBHOOK_NOT_ENABLED";
 
 export type DeployApiErrorCode = ApiErrorCode | DeployEngineErrorCode;
 
@@ -251,6 +254,9 @@ const DEPLOY_ENGINE_ERROR_CODE_MARKER = Object.freeze({
   ROLLBACK_TARGET_UNAVAILABLE: true,
   IDEMPOTENCY_KEY_INVALID: true,
   IDEMPOTENCY_KEY_REUSED: true,
+  WEBHOOK_SOURCE_NOT_GIT: true,
+  WEBHOOK_ALREADY_ENABLED: true,
+  WEBHOOK_NOT_ENABLED: true,
 } satisfies Record<DeployEngineErrorCode, true>);
 
 const KNOWN_SERVICE_ERROR_CODES: ReadonlySet<string> = new Set(

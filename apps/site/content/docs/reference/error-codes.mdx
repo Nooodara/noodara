@@ -55,6 +55,9 @@ nothing else — no internal detail is ever attached to it.
 | `ROLLBACK_TARGET_UNAVAILABLE` | 422 | The rollback target has no usable image on the server; pick another deployment. |
 | `IDEMPOTENCY_KEY_INVALID` | 400 | The `Idempotency-Key` header is malformed. |
 | `IDEMPOTENCY_KEY_REUSED` | 422 | The `Idempotency-Key` was already used with a different request. |
+| `WEBHOOK_SOURCE_NOT_GIT` | 422 | Webhooks only apply to services built from a Git repository; image-source services cannot enable one. |
+| `WEBHOOK_ALREADY_ENABLED` | 409 | The webhook is already enabled; rotate its secret instead of enabling it again. |
+| `WEBHOOK_NOT_ENABLED` | 409 | The service has no webhook enabled; enable it first. |
 | `PROJECT_ARCHIVED` | 409 | The project is archived; unarchive it to deploy its services. |
 | `DEPLOYMENT_INPUT_INVALID` | 422 | The deploy request carried a field it does not accept; the body must be empty or `{}`. |
 | `DEPLOYMENT_NOT_CANCELLABLE` | 409 | The deployment already ended; only a queued or running deployment can be cancelled. |
