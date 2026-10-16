@@ -30,7 +30,7 @@ Plan: siguiente 18-01 (`agent-flow next` apunta a 15-01; despachar 18-01 con `--
 Status: Ready for phase 18
 Last activity: 2026-10-16
 
-Verificación al cierre de 17: unit 7602/7602, typecheck, lint, boundaries verdes sin caché. `pnpm test:integration` completo: 10 fallos por tests legados (engine-primitives, workspace-non-root) que hacían DEPLOYING→SUCCESS sin HEALTHCHECK; corregido en af7c935 y verificado 22/22 en esas suites; la suite completa no se re-corrió.
+Verificación al cierre de 17: unit 7602/7602, typecheck, lint, boundaries verdes sin caché. `pnpm test:integration` completo: 10 fallos por tests legados (engine-primitives, workspace-non-root) que hacían DEPLOYING→SUCCESS sin HEALTHCHECK; corregido en af7c935; re-corrida completa 2026-10-16 verde: 103 archivos / 1234 tests pasan, 5 skipped (los mismos de antes), sin contenedores noodara.test residuales.
 
 Deuda conocida (review fase 17, menor): tras un rollback manual la imagen en ejecución no está en el keep set de retención (solo la protege Docker al negarse a borrar una imagen en uso); `docker.image_inspect` pendiente de security review formal en 20-03.
 
