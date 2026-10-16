@@ -133,3 +133,35 @@ export const RuntimeLogsResponseSchema = z.object({
   lines: z.array(RuntimeLogLineSchema),
   truncated: z.boolean(),
 });
+
+// ---------------------------------------------------------------------------------------------
+// Push webhook (18-01): enable / rotate / disable. The secret is in the enable and rotate
+// responses only, once; the read view carries `enabled` and the payload URL.
+// ---------------------------------------------------------------------------------------------
+
+/** The webhook actions take no input: an absent body or `{}`, anything else is a 400. */
+export const WEBHOOK_ROUTE_BODY_LIMIT_BYTES = 1024;
+
+/** Fastify hands a body-less POST/DELETE to validation as `null`, so null and undefined both mean "no body". */
+export const WebhookActionBodySchema = z.strictObject({}).nullish();
+
+export const WebhookViewSchema = z.object({
+  enabled: z.boolean(),
+  payloadUrl: z.string().nullable(),
+});
+
+export const WebhookSecretResponseSchema = z.object({
+  enabled: z.literal(true),
+  payloadUrl: z.string(),
+  /** Hex HMAC secret, shown once: no later response returns it. */
+  secret: z.string(),
+});
+
+/** Webhook state conflicts and the image-source refusal (A4, H2). */
+export const WEBHOOK_ERROR_STATUS = Object.freeze({
+  WEBHOOK_SOURCE_NOT_GIT: 422,
+  WEBHOOK_ALREADY_ENABLED: 409,
+  WEBHOOK_NOT_ENABLED: 409,
+} as const);
+
+export type WebhookErrorCode = keyof typeof WEBHOOK_ERROR_STATUS;

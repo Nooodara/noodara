@@ -8,6 +8,11 @@ import {
   ServiceViewSchema,
   UpdateServiceBodySchema,
   UpdateServiceResponseSchema,
+  WEBHOOK_ERROR_STATUS,
+  WEBHOOK_ROUTE_BODY_LIMIT_BYTES,
+  WebhookActionBodySchema,
+  WebhookSecretResponseSchema,
+  WebhookViewSchema,
 } from './service-schemas.js';
 
 const PROJECT_ID = '0192f1a4-7b3c-7d2e-8f00-0123456789ab';
@@ -87,5 +92,35 @@ describe('service responses', () => {
         reason: 'REPOSITORY_URL_UNSUPPORTED_SCHEME',
       }).success,
     ).toBe(true);
+  });
+});
+
+describe('webhook schemas (18-01)', () => {
+  it('accepts an absent or empty action body and rejects any field (H3)', () => {
+    expect(WebhookActionBodySchema.safeParse(undefined).success).toBe(true);
+    expect(WebhookActionBodySchema.safeParse(null).success).toBe(true);
+    expect(WebhookActionBodySchema.safeParse({}).success).toBe(true);
+    expect(WebhookActionBodySchema.safeParse({ secret: 'mine' }).success).toBe(false);
+    expect(WebhookActionBodySchema.safeParse('x').success).toBe(false);
+    expect(WEBHOOK_ROUTE_BODY_LIMIT_BYTES).toBeLessThanOrEqual(SERVICE_ROUTE_BODY_LIMIT_BYTES);
+  });
+
+  it('never serializes a secret in the read view (A1)', () => {
+    const view = WebhookViewSchema.parse({ enabled: true, payloadUrl: 'https://n.example/webhooks/github/abc', secret: 's3cr3t' });
+    expect(view).toStrictEqual({ enabled: true, payloadUrl: 'https://n.example/webhooks/github/abc' });
+    expect(WebhookViewSchema.parse({ enabled: false, payloadUrl: null })).toStrictEqual({ enabled: false, payloadUrl: null });
+  });
+
+  it('carries the secret only in the enable/rotate response', () => {
+    expect(WebhookSecretResponseSchema.safeParse({ enabled: true, payloadUrl: 'u', secret: 'ab' }).success).toBe(true);
+    expect(WebhookSecretResponseSchema.safeParse({ enabled: false, payloadUrl: 'u', secret: 'ab' }).success).toBe(false);
+  });
+
+  it('maps the webhook codes to 422 (image source) and 409 (state conflicts) (A4, H2)', () => {
+    expect(WEBHOOK_ERROR_STATUS).toStrictEqual({
+      WEBHOOK_SOURCE_NOT_GIT: 422,
+      WEBHOOK_ALREADY_ENABLED: 409,
+      WEBHOOK_NOT_ENABLED: 409,
+    });
   });
 });

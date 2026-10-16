@@ -5,11 +5,23 @@
 import type { ZodTypeProvider } from '@fastify/type-provider-zod';
 import type { FastifyPluginCallback, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { revealSecret } from '@noodara/domain/security';
+import { getDb } from '../db/client.js';
 import { SERVICE_OPERATIONS } from '../deploy/service-ops.js';
+import { env } from '../env.js';
 import type { ContainerLogLine, ContainerLogs } from '../services/container-logs.js';
-import type { ServiceCredentialsResult } from '../services/service-credentials.js';
+import { masterKeysFromEnvironment, type ServiceCredentialsResult } from '../services/service-credentials.js';
 import type { ServiceServices } from '../services/service-services.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
+import {
+  disableWebhook,
+  enableWebhook,
+  getWebhookConfig,
+  rotateWebhookSecret,
+  webhookPublicOrigin,
+  type WebhookConfigDeps,
+  type WebhookSecretResult,
+} from '../services/webhook-config.js';
 import { DeploymentViewSchema } from './deployment-schemas.js';
 import { exceedsBackpressureBudget } from './events.js';
 import {
@@ -36,6 +48,11 @@ import {
   ServiceViewSchema,
   UpdateServiceBodySchema,
   UpdateServiceResponseSchema,
+  WEBHOOK_ERROR_STATUS,
+  WEBHOOK_ROUTE_BODY_LIMIT_BYTES,
+  WebhookActionBodySchema,
+  WebhookSecretResponseSchema,
+  WebhookViewSchema,
 } from './service-schemas.js';
 
 declare module 'fastify' {
@@ -102,6 +119,16 @@ const OPERATION_ERRORS = {
 
 const servicesRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
+
+  // 18-01 H3: the webhook payload URL comes from the configured public origin only, checked here
+  // so a bad NOODARA_PUBLIC_URL fails the boot rather than the first enable.
+  let publicOrigin: string;
+  try {
+    publicOrigin = webhookPublicOrigin(env.NOODARA_PUBLIC_URL);
+  } catch (error) {
+    done(error as Error);
+    return;
+  }
 
   app.route({
     method: 'POST',
@@ -517,6 +544,115 @@ const servicesRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
       },
     });
   }
+
+  // -------------------------------------------------------------------------------------------
+  // Push webhook (18-01): the secret is in the enable and rotate responses only (no-store), never
+  // in a read, a log line or an activity event. Errors carry a code and a fixed message.
+  // -------------------------------------------------------------------------------------------
+
+  const webhookUrl = '/api/projects/:projectId/services/:serviceId/webhook';
+  const webhookMasterKeys = masterKeysFromEnvironment();
+  const WEBHOOK_ERRORS = { ...MUTATION_ERRORS, 422: ErrorBodySchema };
+
+  async function webhookDeps(): Promise<WebhookConfigDeps> {
+    return { db: await getDb(), now: () => new Date(), masterKeys: webhookMasterKeys, publicOrigin };
+  }
+
+  async function sendWebhookFailure(reply: FastifyReply, failure: { readonly code: string; readonly message: string }): Promise<void> {
+    const table: Readonly<Record<string, number>> = WEBHOOK_ERROR_STATUS;
+    const status = table[failure.code] ?? mapServiceCodeToStatus(failure.code);
+    await reply.code(status).send(toErrorBody(failure.code, failure.message));
+  }
+
+  async function sendWebhookSecret(reply: FastifyReply, result: WebhookSecretResult): Promise<void> {
+    if (!result.ok) {
+      await sendWebhookFailure(reply, result);
+      return;
+    }
+    const { payloadUrl, secret } = result.webhook;
+    await reply.header('cache-control', 'no-store').send({ enabled: true, payloadUrl, secret: revealSecret(secret) });
+  }
+
+  app.route({
+    method: 'GET',
+    url: webhookUrl,
+    schema: {
+      params: ServiceParamsSchema,
+      response: { 200: WebhookViewSchema, 400: BadRequestSchema, 401: ErrorBodySchema, 404: ErrorBodySchema },
+    },
+    handler: async (request, reply) => {
+      const view = await getWebhookConfig(await webhookDeps(), request.params.projectId, request.params.serviceId);
+      if (!view) {
+        await sendWebhookFailure(reply, { code: 'NOT_FOUND', message: `Service "${request.params.serviceId}" not found` });
+        return;
+      }
+      await reply.send(view);
+    },
+  });
+
+  app.route({
+    method: 'POST',
+    url: webhookUrl,
+    bodyLimit: WEBHOOK_ROUTE_BODY_LIMIT_BYTES,
+    schema: {
+      params: ServiceParamsSchema,
+      body: WebhookActionBodySchema,
+      response: { 200: WebhookSecretResponseSchema, ...WEBHOOK_ERRORS },
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const result = await enableWebhook(await webhookDeps(), {
+        actor,
+        projectId: request.params.projectId,
+        serviceId: request.params.serviceId,
+      });
+      await sendWebhookSecret(reply, result);
+    },
+  });
+
+  app.route({
+    method: 'POST',
+    url: `${webhookUrl}/rotate`,
+    bodyLimit: WEBHOOK_ROUTE_BODY_LIMIT_BYTES,
+    schema: {
+      params: ServiceParamsSchema,
+      body: WebhookActionBodySchema,
+      response: { 200: WebhookSecretResponseSchema, ...WEBHOOK_ERRORS },
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const result = await rotateWebhookSecret(await webhookDeps(), {
+        actor,
+        projectId: request.params.projectId,
+        serviceId: request.params.serviceId,
+      });
+      await sendWebhookSecret(reply, result);
+    },
+  });
+
+  app.route({
+    method: 'DELETE',
+    url: webhookUrl,
+    bodyLimit: WEBHOOK_ROUTE_BODY_LIMIT_BYTES,
+    schema: {
+      params: ServiceParamsSchema,
+      body: WebhookActionBodySchema,
+      response: { 200: WebhookViewSchema, ...WEBHOOK_ERRORS },
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const result = await disableWebhook(await webhookDeps(), {
+        actor,
+        projectId: request.params.projectId,
+        serviceId: request.params.serviceId,
+      });
+      if (!result.ok) {
+        await sendWebhookFailure(reply, result);
+        return;
+      }
+      await reply.send(result.webhook);
+    },
+  });
 
   done();
 };
