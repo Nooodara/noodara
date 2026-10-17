@@ -4,9 +4,12 @@
 // from the path or is checked against the path's project by the service (A4).
 import type { ZodTypeProvider } from '@fastify/type-provider-zod';
 import type { FastifyPluginCallback, FastifyReply } from 'fastify';
+import { and, desc, eq, lt, or } from 'drizzle-orm';
 import { z } from 'zod';
 import { revealSecret } from '@noodara/domain/security';
 import { getDb } from '../db/client.js';
+import { services } from '../db/schema/services.js';
+import { webhookDeliveries } from '../db/schema/webhook-deliveries.js';
 import { SERVICE_OPERATIONS } from '../deploy/service-ops.js';
 import { env } from '../env.js';
 import type { ContainerLogLine, ContainerLogs } from '../services/container-logs.js';
@@ -117,6 +120,53 @@ const OPERATION_ERRORS = {
   502: ErrorBodySchema,
   503: ErrorBodySchema,
 };
+
+// ---------------------------------------------------------------------------------------------
+// Recent deliveries (19-03): keyset pagination over (received_at, id) newest first. The cursor is
+// opaque base64url JSON, validated before it reaches a query; a malformed one is a 400. The
+// payload and the signature are never stored, so no response can carry them.
+// ---------------------------------------------------------------------------------------------
+
+export const WEBHOOK_DELIVERIES_DEFAULT_LIMIT = 20;
+export const WEBHOOK_DELIVERIES_MAX_LIMIT = 50;
+const MAX_CURSOR_LENGTH = 128;
+
+export const WebhookDeliveriesQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(WEBHOOK_DELIVERIES_MAX_LIMIT).default(WEBHOOK_DELIVERIES_DEFAULT_LIMIT),
+  cursor: z.string().min(1).max(MAX_CURSOR_LENGTH).optional(),
+});
+
+const CursorSchema = z.strictObject({ t: z.iso.datetime({ offset: true }), id: z.uuid() });
+
+export function encodeDeliveriesCursor(receivedAt: Date, id: string): string {
+  return Buffer.from(JSON.stringify({ t: receivedAt.toISOString(), id })).toString('base64url');
+}
+
+/** Null for anything that is not a cursor this module issued. */
+export function decodeDeliveriesCursor(cursor: string): { readonly receivedAt: Date; readonly id: string } | null {
+  if (!/^[A-Za-z0-9_-]+$/.test(cursor)) return null;
+  try {
+    const parsed = CursorSchema.safeParse(JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')));
+    return parsed.success ? { receivedAt: new Date(parsed.data.t), id: parsed.data.id } : null;
+  } catch {
+    return null;
+  }
+}
+
+const WebhookDeliveriesResponseSchema = z.object({
+  deliveries: z.array(
+    z.object({
+      id: z.string(),
+      deliveryId: z.string(),
+      event: z.string(),
+      outcome: z.string(),
+      pushedSha: z.string().nullable(),
+      deploymentId: z.string().nullable(),
+      receivedAt: z.string(),
+    }),
+  ),
+  nextCursor: z.string().nullable(),
+});
 
 const servicesRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
@@ -664,6 +714,66 @@ const servicesRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         return;
       }
       await reply.send(result.webhook);
+    },
+  });
+
+  app.route({
+    method: 'GET',
+    url: `${webhookUrl}/deliveries`,
+    schema: {
+      params: ServiceParamsSchema,
+      querystring: WebhookDeliveriesQuerySchema,
+      response: { 200: WebhookDeliveriesResponseSchema, 400: BadRequestSchema, 401: ErrorBodySchema, 404: ErrorBodySchema },
+    },
+    handler: async (request, reply) => {
+      const { projectId, serviceId } = request.params;
+      const { limit, cursor } = request.query;
+      const after = cursor === undefined ? null : decodeDeliveriesCursor(cursor);
+      if (cursor !== undefined && after === null) {
+        await reply.code(400).send(toErrorBody('VALIDATION_FAILED', 'The cursor is not valid'));
+        return;
+      }
+      const db = await getDb();
+      const [owner] = await db
+        .select({ id: services.id })
+        .from(services)
+        .where(and(eq(services.id, serviceId), eq(services.projectId, projectId)))
+        .limit(1);
+      if (!owner) {
+        await sendWebhookFailure(reply, { code: 'NOT_FOUND', message: `Service "${serviceId}" not found` });
+        return;
+      }
+      const scope = eq(webhookDeliveries.serviceId, serviceId);
+      const rows = await db
+        .select({
+          id: webhookDeliveries.id,
+          deliveryId: webhookDeliveries.deliveryId,
+          event: webhookDeliveries.event,
+          outcome: webhookDeliveries.outcome,
+          pushedSha: webhookDeliveries.pushedSha,
+          deploymentId: webhookDeliveries.deploymentId,
+          receivedAt: webhookDeliveries.receivedAt,
+        })
+        .from(webhookDeliveries)
+        .where(
+          after === null
+            ? scope
+            : and(
+                scope,
+                or(
+                  lt(webhookDeliveries.receivedAt, after.receivedAt),
+                  and(eq(webhookDeliveries.receivedAt, after.receivedAt), lt(webhookDeliveries.id, after.id)),
+                ),
+              ),
+        )
+        .orderBy(desc(webhookDeliveries.receivedAt), desc(webhookDeliveries.id))
+        .limit(limit + 1);
+      const page = rows.slice(0, limit);
+      const last = page[page.length - 1];
+      await reply.send({
+        deliveries: page.map((row) => ({ ...row, receivedAt: row.receivedAt.toISOString() })),
+        nextCursor: rows.length > limit && last ? encodeDeliveriesCursor(last.receivedAt, last.id) : null,
+      });
     },
   });
 

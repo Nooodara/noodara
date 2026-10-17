@@ -33,6 +33,13 @@ vi.mock('../../../../../../../components/BuildLogPanel', () => ({
   ),
   BUILD_LOG_NOT_FOUND_COPY: 'This deployment no longer exists or does not belong to this service.',
 }));
+const svc = vi.hoisted(() => ({ sourceType: 'git' }));
+vi.mock('../../../../../../../lib/deploy-api', () => ({
+  getService: () => Promise.resolve({ ok: true, data: { sourceType: svc.sourceType } }),
+}));
+vi.mock('../../../../../../../components/WebhookPanel', () => ({
+  WebhookPanel: (props: { sourceType: string }) => <p data-testid="stub-webhook">{props.sourceType}</p>,
+}));
 vi.mock('../../../../../../../components/RuntimeLogPanel', () => ({
   RuntimeLogPanel: (props: { projectId: string; serviceId: string }) => (
     <p data-testid="stub-runtime-log">{`${props.projectId}/${props.serviceId}`}</p>
@@ -106,5 +113,20 @@ describe('service inspector slot', () => {
     renderUi(<ServiceInspectorPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Close inspector' }));
     expect(nav.replace).toHaveBeenCalledWith(PATH, { scroll: false });
+  });
+
+  it('opens the webhook panel from ?webhook=1 for a Git service only', async () => {
+    nav.search = 'webhook=1';
+    svc.sourceType = 'git';
+    renderUi(<ServiceInspectorPage />);
+    expect(await screen.findByTestId('stub-webhook')).toBeTruthy();
+  });
+
+  it('renders nothing for ?webhook=1 on an image service', async () => {
+    nav.search = 'webhook=1';
+    svc.sourceType = 'image';
+    const { container } = renderUi(<ServiceInspectorPage />);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(container.innerHTML).toBe('');
   });
 });
