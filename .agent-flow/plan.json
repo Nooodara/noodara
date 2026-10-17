@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-17T04:24:45.314Z",
+  "updatedAt": "2026-10-17T04:24:50.199Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -6812,13 +6812,18 @@
             "apps/web/src/components/DeploymentHistory.test.tsx",
             "apps/web/src/components/RollbackDialog.tsx",
             "apps/web/src/components/RollbackDialog.test.tsx",
-            "apps/web/src/lib/deploy-api.ts"
+            "apps/web/src/lib/deploy-api.ts",
+            "apps/web/src/lib/api-client.ts",
+            "apps/web/src/lib/api-client.test.ts",
+            "packages/domain/src/api-contract/deployment-schemas.ts",
+            "apps/control-plane/src/services/deployment-services.ts",
+            "apps/control-plane/src/services/deployment-services.test.ts"
           ],
           "wave": 4,
           "dependsOn": [
             "19-03"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -6845,10 +6850,63 @@
               "id": "H1",
               "text": "Rollback dialog confirm button is disabled while the request is in flight and the Idempotency-Key is generated with crypto.randomUUID once per dialog open and reused on retry; a 409 DEPLOYMENT_IN_PROGRESS shows actionable copy",
               "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "api-client accepts an optional Idempotency-Key per request (tested); DeploymentView exposes an optional imageRetained boolean computed by the server from the same retention rule planRollback uses",
+              "proof": "test"
             }
           ],
           "waives": [
             "http-api/input-validation",
+            "http-api/body-cap"
+          ],
+          "tier": "standard"
+        },
+        {
+          "id": "19-07",
+          "title": "Service API accepts healthcheck and auto-rollback; webhook panel entry point",
+          "scope": [
+            "packages/domain/src/api-contract/service-schemas.ts",
+            "apps/control-plane/src/routes/services.ts",
+            "apps/control-plane/src/routes/services.test.ts",
+            "apps/control-plane/src/services/service-services.ts",
+            "apps/control-plane/src/services/service-services.test.ts",
+            "apps/control-plane/src/services/service-view.ts",
+            "apps/control-plane/src/services/service-view.test.ts",
+            "apps/web/src/app/(shell)/projects/[projectId]/services/[serviceId]/page.tsx",
+            "apps/web/src/app/(shell)/projects/[projectId]/services/[serviceId]/page.test.tsx",
+            "docs/deploy-engine.md"
+          ],
+          "wave": 5,
+          "dependsOn": [
+            "19-04"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Service create and edit accept optional healthcheck and autoRollback, validated with the shared domain schema (validateHealthcheckConfig); invalid input returns 400 with the same named errors the UI shows",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "ServiceView returns the stored healthcheck and autoRollback (auto-rollback defaults to on), so the service sheet round-trips what it saved and the next deploy uses it",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Git-source service pages show a 'Push webhook' control that opens the inspector panel (?webhook=1); image-source services do not show it",
+              "proof": "test"
+            }
+          ],
+          "waives": [
             "http-api/body-cap"
           ],
           "tier": "standard"
@@ -6862,9 +6920,9 @@
             "tests/e2e/engine-rollback.spec.ts",
             "tests/e2e/fixtures/"
           ],
-          "wave": 5,
+          "wave": 6,
           "dependsOn": [
-            "19-04"
+            "19-07"
           ],
           "status": "pending",
           "gates": [
@@ -6916,7 +6974,7 @@
             "tests/unit/site/",
             "docs/ui-review/phase-19/"
           ],
-          "wave": 6,
+          "wave": 7,
           "dependsOn": [
             "19-05"
           ],
