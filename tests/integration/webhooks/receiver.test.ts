@@ -30,17 +30,22 @@ let cookie: string;
 let logRecords: () => unknown[];
 const stubBroadcaster = { start: () => Promise.resolve(), stop: () => Promise.resolve(), closeAll: () => Promise.resolve() };
 const enqueued: DeployServiceJobPayload[] = [];
-let enqueueMode: 'ok' | 'unavailable' | 'throw' = 'ok';
+// 'claimed': the job landed and a worker took the row out of QUEUED, but enqueue still reports failure.
+let enqueueMode: 'ok' | 'unavailable' | 'throw' | 'claimed' = 'ok';
 const issuedSecrets: string[] = [];
 const signatures: string[] = [];
 const errorBodies: string[] = [];
 
 const queue: DeployQueue = {
-  enqueue(payload): Promise<DeployEnqueueResult> {
+  async enqueue(payload): Promise<DeployEnqueueResult> {
     enqueued.push(payload);
-    if (enqueueMode === 'throw') return Promise.reject(new Error('redis down'));
-    if (enqueueMode === 'unavailable') return Promise.resolve({ ok: false, code: 'QUEUE_UNAVAILABLE', message: 'down' });
-    return Promise.resolve({ ok: true, jobId: payload.deploymentId });
+    if (enqueueMode === 'claimed') {
+      await postgres.db.update(deployments).set({ status: 'PREPARING' }).where(eq(deployments.id, payload.deploymentId));
+      throw new Error('ack lost');
+    }
+    if (enqueueMode === 'throw') throw new Error('redis down');
+    if (enqueueMode === 'unavailable') return { ok: false, code: 'QUEUE_UNAVAILABLE', message: 'down' };
+    return { ok: true, jobId: payload.deploymentId };
   },
   removeJob: () => Promise.resolve(false),
   isJobPending: () => Promise.resolve(false),
@@ -410,6 +415,79 @@ describe('never triggers (H3)', () => {
     const [deployment] = await deploymentsOf(hook.serviceId);
     expect(deployment).toMatchObject({ status: 'FAILED', errorCode: 'ENQUEUE_FAILED', trigger: 'webhook' });
     expect((await deliveriesOf(hook.serviceId)).map((row) => row.outcome)).toStrictEqual(['deployed']);
+  });
+
+  it('an enqueue that reports failure after a worker already claimed the job answers 202, not 503', async () => {
+    const hook = await hookedService();
+    enqueueMode = 'claimed';
+    let res: Awaited<ReturnType<typeof deliver>>;
+    try {
+      res = await deliver(hook.hookId, pushBody(newSha()), hook.secret);
+    } finally {
+      enqueueMode = 'ok';
+    }
+    const [deployment] = await deploymentsOf(hook.serviceId);
+    expect(res.statusCode).toBe(202);
+    expect(res.body).toStrictEqual({ outcome: 'deployed', deploymentId: deployment?.id });
+    expect(deployment).toMatchObject({ status: 'PREPARING', errorCode: null });
+  });
+
+  it('a redelivery of a delivery whose deployment ended ENQUEUE_FAILED retries it with a new deployment', async () => {
+    const hook = await hookedService();
+    const sha = newSha();
+    const body = pushBody(sha);
+    const delivery = randomUUID();
+    enqueueMode = 'unavailable';
+    try {
+      expect((await deliver(hook.hookId, body, hook.secret, { delivery })).statusCode).toBe(503);
+    } finally {
+      enqueueMode = 'ok';
+    }
+    const [failed] = await deploymentsOf(hook.serviceId);
+    expect(failed).toMatchObject({ status: 'FAILED', errorCode: 'ENQUEUE_FAILED' });
+
+    const before = enqueued.length;
+    const retry = await deliver(hook.hookId, body, hook.secret, { delivery });
+    expect(retry.statusCode).toBe(202);
+    expect(retry.body).toStrictEqual({ outcome: 'deployed', deploymentId: expect.any(String) });
+    expect(retry.body.deploymentId).not.toBe(failed?.id);
+    const retried = (await deploymentsOf(hook.serviceId)).find((row) => row.id === retry.body.deploymentId);
+    expect(retried).toMatchObject({ status: 'QUEUED', trigger: 'webhook', triggeredBy: `github:${delivery}`, commitSha: sha });
+    expect(enqueued.slice(before).map((payload) => payload.deploymentId)).toStrictEqual([retry.body.deploymentId]);
+    const rows = await deliveriesOf(hook.serviceId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ outcome: 'deployed', deploymentId: retry.body.deploymentId });
+    expect(retried?.webhookDeliveryId).toBe(rows[0]?.id);
+
+    // Once the retry is queued, a further redelivery is a plain duplicate again.
+    const again = await deliver(hook.hookId, body, hook.secret, { delivery });
+    expect(again.statusCode).toBe(202);
+    expect(again.body).toStrictEqual({ outcome: 'deployed', deploymentId: retry.body.deploymentId, duplicate: true });
+    expect(await deploymentsOf(hook.serviceId)).toHaveLength(2);
+    expect(enqueued.length).toBe(before + 1);
+  });
+
+  it('a redelivery after ENQUEUE_FAILED is superseded once a newer push deployed, and deploys nothing', async () => {
+    const hook = await hookedService();
+    const oldBody = pushBody(newSha());
+    const delivery = randomUUID();
+    enqueueMode = 'unavailable';
+    try {
+      expect((await deliver(hook.hookId, oldBody, hook.secret, { delivery })).statusCode).toBe(503);
+    } finally {
+      enqueueMode = 'ok';
+    }
+    const newer = await deliver(hook.hookId, pushBody(newSha()), hook.secret);
+    expect(newer.statusCode).toBe(202);
+
+    const before = enqueued.length;
+    const stale = await deliver(hook.hookId, oldBody, hook.secret, { delivery });
+    expect(stale.statusCode).toBe(200);
+    expect(stale.body).toStrictEqual({ outcome: 'superseded', duplicate: true });
+    expect(await deploymentsOf(hook.serviceId)).toHaveLength(2);
+    expect(enqueued.length).toBe(before);
+    const row = (await deliveriesOf(hook.serviceId)).find((candidate) => candidate.deliveryId === delivery);
+    expect(row).toMatchObject({ outcome: 'superseded', deploymentId: null });
   });
 });
 

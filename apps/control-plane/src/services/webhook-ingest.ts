@@ -9,11 +9,12 @@
 // webhook deployment. The service lock serialises concurrent deliveries of one hook, and the unique
 // index (service_id, delivery_id) is the backstop, so a repeated X-GitHub-Delivery creates nothing
 // and answers with the original deployment id (A4, H2). A failed enqueue after the commit ends the
-// deployment FAILED/ENQUEUE_FAILED instead of leaving it QUEUED without a job (H3).
+// deployment FAILED/ENQUEUE_FAILED instead of leaving it QUEUED without a job (H3); redelivering
+// that delivery retries it unless a newer push or deployment exists (then it is `superseded`).
 //
 // Nothing here logs the payload, the signature header or the secret (A5).
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { and, desc, eq, inArray, isNotNull, isNull, notExists, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, isNotNull, isNull, notExists, sql } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { NON_TERMINAL_DEPLOYMENT_STATUSES } from '@noodara/domain/deployment';
 import { revealSecret } from '@noodara/domain/security';
@@ -313,6 +314,32 @@ async function deploymentState(tx: Transaction, serviceId: string) {
   };
 }
 
+/**
+ * H3: what a repeated X-GitHub-Delivery does. A redelivery whose deployment ended ENQUEUE_FAILED is
+ * the advertised recovery from a 503 and runs again, unless a newer push or deployment of the
+ * service exists (replaying it would deploy an older commit); any other repeat is a duplicate.
+ */
+async function redeliveryKind(
+  tx: Transaction,
+  service: { readonly id: string; readonly pendingTriggerDeliveryId: string | null },
+  existing: { readonly deliveryId: string; readonly deploymentId: string | null },
+): Promise<'duplicate' | 'retry' | 'superseded'> {
+  if (existing.deploymentId === null) return 'duplicate';
+  const [linked] = await tx
+    .select({ status: deployments.status, errorCode: deployments.errorCode, createdAt: deployments.createdAt })
+    .from(deployments)
+    .where(eq(deployments.id, existing.deploymentId))
+    .limit(1);
+  if (linked?.status !== 'FAILED' || linked.errorCode !== 'ENQUEUE_FAILED') return 'duplicate';
+  if (service.pendingTriggerDeliveryId !== null && service.pendingTriggerDeliveryId !== existing.deliveryId) return 'superseded';
+  const [newer] = await tx
+    .select({ id: deployments.id })
+    .from(deployments)
+    .where(and(eq(deployments.serviceId, service.id), gt(deployments.createdAt, linked.createdAt)))
+    .limit(1);
+  return newer ? 'superseded' : 'retry';
+}
+
 async function recordInTransaction(
   tx: Transaction,
   deps: WebhookIngestDeps,
@@ -327,17 +354,34 @@ async function recordInTransaction(
   const { service, projectArchived } = snapshot;
 
   const [existing] = await tx
-    .select({ outcome: webhookDeliveries.outcome, deploymentId: webhookDeliveries.deploymentId })
+    .select({ id: webhookDeliveries.id, outcome: webhookDeliveries.outcome, deploymentId: webhookDeliveries.deploymentId })
     .from(webhookDeliveries)
     .where(and(eq(webhookDeliveries.serviceId, service.id), eq(webhookDeliveries.deliveryId, input.deliveryId)))
     .limit(1);
+  let retriedRowId: string | null = null;
   if (existing) {
-    const status = existing.deploymentId !== null ? 202 : (RECORD_STATUS[existing.outcome] ?? 200);
-    return { kind: 'recorded', status, outcome: existing.outcome, deploymentId: existing.deploymentId, duplicate: true };
+    const kind = await redeliveryKind(tx, service, { deliveryId: input.deliveryId, deploymentId: existing.deploymentId });
+    if (kind === 'superseded') {
+      await tx.update(webhookDeliveries).set({ outcome: 'superseded', deploymentId: null }).where(eq(webhookDeliveries.id, existing.id));
+      return { kind: 'recorded', status: 200, outcome: 'superseded', deploymentId: null, duplicate: true };
+    }
+    if (kind === 'duplicate') {
+      const status = existing.deploymentId !== null ? 202 : (RECORD_STATUS[existing.outcome] ?? 200);
+      return { kind: 'recorded', status, outcome: existing.outcome, deploymentId: existing.deploymentId, duplicate: true };
+    }
+    // Processed again on the same delivery row.
+    retriedRowId = existing.id;
   }
 
   const now = deps.now();
   const insertDelivery = async (outcome: WebhookDeliveryOutcome, pushedSha: string | null) => {
+    if (retriedRowId !== null) {
+      await tx
+        .update(webhookDeliveries)
+        .set({ outcome, pushedSha, deploymentId: null })
+        .where(eq(webhookDeliveries.id, retriedRowId));
+      return retriedRowId;
+    }
     const [row] = await tx
       .insert(webhookDeliveries)
       .values({ id: uuidv7(), serviceId: service.id, deliveryId: input.deliveryId, event: input.event, outcome, pushedSha, receivedAt: now })
@@ -491,19 +535,24 @@ async function enqueueCreated(
   } catch {
     enqueued = false;
   }
+  if (!enqueued) {
+    let failed: unknown;
+    try {
+      failed = await deps.failUnqueued(deployment.id, deps.now());
+    } catch {
+      // The stale-QUEUED sweep ends it ENQUEUE_FAILED later. Never log the error (driver text).
+      deps.logger.error({ deploymentId: deployment.id }, 'webhook deployment enqueue failed and could not be marked failed');
+      return false;
+    }
+    // null: the row already left QUEUED, so a worker claimed it (the enqueue did land).
+    enqueued = failed === null;
+  }
   if (enqueued) {
     await publishServerEvent(deps.events, buildDeploymentUpdatedEvent(deployment));
     await publishServerEvent(deps.events, buildServiceUpdatedEvent(service));
     return true;
   }
-  try {
-    await deps.failUnqueued(deployment.id, deps.now());
-    deps.logger.warn({ deploymentId: deployment.id }, 'webhook deployment enqueue failed; deployment ended ENQUEUE_FAILED');
-  } catch {
-    // The stale-QUEUED sweep ends it ENQUEUE_FAILED later. Never log the error (driver text).
-    deps.logger.error({ deploymentId: deployment.id }, 'webhook deployment enqueue failed and could not be marked failed');
-    return false;
-  }
+  deps.logger.warn({ deploymentId: deployment.id }, 'webhook deployment enqueue failed; deployment ended ENQUEUE_FAILED');
   // 18-04 (A2): ENQUEUE_FAILED is a terminal event too; a push coalesced meanwhile must not strand.
   await drainQuietly(deps, deployment.serviceId);
   return false;
