@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-17T02:13:57.061Z",
+  "updatedAt": "2026-10-17T02:28:25.385Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -6507,13 +6507,15 @@
             "apps/control-plane/src/services/webhook-ingest.test.ts",
             "apps/control-plane/src/deploy/deploy-worker.ts",
             "apps/control-plane/src/deploy/deploy-worker.test.ts",
-            "tests/integration/webhooks/coalesce.test.ts"
+            "tests/integration/webhooks/coalesce.test.ts",
+            "apps/control-plane/src/worker.ts",
+            "apps/control-plane/src/reconcile/reconcile-wiring.ts"
           ],
           "wave": 4,
           "dependsOn": [
             "18-03"
           ],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",

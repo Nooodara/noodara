@@ -1,6 +1,7 @@
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
+import { Redis } from 'ioredis';
 import parseSetCookie from 'set-cookie-parser';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createRedactor, revealSecret } from '@noodara/domain/security';
@@ -17,6 +18,7 @@ import type { DeployEnqueueResult, DeployQueue } from '../../../apps/control-pla
 import { issueToken } from '../../../apps/control-plane/src/services/setup-token-repository.js';
 import type { PendingTriggerDrainDeps } from '../../../apps/control-plane/src/services/webhook-ingest.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
+import { startRedis, type RedisFixture } from '../helpers/redis.js';
 
 // 18-04: a push during an active deployment takes the service's single pending slot (latest wins)
 // and runs once that deployment ends, from the deploy worker or the sweep. Real HTTP surface and a
@@ -457,5 +459,70 @@ describe('race safety and retention (H1, H2)', () => {
     // A service whose deployment is still active is left for its own terminal event.
     expect(await deploymentsOf(busy.hook.serviceId)).toHaveLength(1);
     expect((await pendingOf(busy.hook.serviceId))?.deliveryId).not.toBeNull();
+  });
+});
+
+describe('worker wiring: the stale-QUEUED sweep drains pending triggers (H2)', () => {
+  let redis: RedisFixture | undefined;
+  let connection: Redis | undefined;
+
+  beforeAll(async () => {
+    redis = await startRedis();
+    connection = new Redis(redis.connectionUrl, { maxRetriesPerRequest: null });
+  });
+
+  afterAll(async () => {
+    connection?.disconnect();
+    await redis?.stop();
+  });
+
+  it('a follow-up left QUEUED by a lost enqueue is ended by the sweep and retried on the same pass', async () => {
+    const { createWorkerReconcileTick } = await import('../../../apps/control-plane/src/reconcile/reconcile-wiring.js');
+    const { hook, activeId } = await activeService();
+    const shaB = newSha();
+    const b = await push(hook, shaB);
+    await endDeployment(activeId, 'FAILED');
+
+    // The enqueue throws and the follow-up cannot be marked failed: it stays QUEUED, the slot stays.
+    enqueueMode = 'throw';
+    try {
+      const lost = await drainPendingTrigger({ ...drainDeps(), failUnqueued: () => Promise.reject(new Error('db down')) }, hook.serviceId);
+      expect(lost.kind).toBe('enqueue_failed');
+    } finally {
+      enqueueMode = 'ok';
+    }
+    const [stranded] = (await deploymentsOf(hook.serviceId)).filter((row) => row.id !== activeId);
+    expect(stranded).toMatchObject({ status: 'QUEUED', commitSha: shaB });
+    expect(await pendingOf(hook.serviceId)).toStrictEqual({ deliveryId: b.delivery, sha: shaB });
+    // Busy behind its own QUEUED follow-up, the drain alone does nothing.
+    expect(await drainPendingTrigger(drainDeps(), hook.serviceId)).toStrictEqual({ kind: 'busy' });
+
+    if (connection === undefined) throw new Error('redis not started');
+    const reconcile = createWorkerReconcileTick({
+      db: postgres.db,
+      connect: () => Promise.reject(new Error('unused')),
+      createRedactor,
+      events: noopServerEventPublisher,
+      logger: silent,
+      commandMs: 5_000,
+      queueConnection: connection,
+      now: () => new Date(Date.now() + 60_000),
+      staleQueued: { thresholdMs: 1_000 },
+      drainPendingTriggers: () => drainAllPendingTriggers(drainDeps()),
+    });
+    try {
+      const swept = await reconcile.sweepStaleQueued();
+      expect(swept.failed).toContain(stranded?.id);
+    } finally {
+      await reconcile.close();
+    }
+
+    const rows = await deploymentsOf(hook.serviceId);
+    expect(rows.find((row) => row.id === stranded?.id)).toMatchObject({ status: 'FAILED', errorCode: 'ENQUEUE_FAILED' });
+    const retried = rows.filter((row) => row.id !== activeId && row.id !== stranded?.id);
+    expect(retried).toHaveLength(1);
+    expect(retried[0]).toMatchObject({ status: 'QUEUED', commitSha: shaB });
+    expect(enqueued.map((payload) => payload.deploymentId)).toContain(retried[0]?.id);
+    expect(await pendingOf(hook.serviceId)).toStrictEqual({ deliveryId: null, sha: null });
   });
 });

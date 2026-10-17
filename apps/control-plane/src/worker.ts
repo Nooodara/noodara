@@ -22,6 +22,7 @@ import { createLogger } from './logger.js';
 import { startWorkerReconcile } from './reconcile/reconcile-wiring.js';
 import { computeDeployCancelKeyTtlMs } from './queue/deploy-job-budget.js';
 import { computeJobLockDurationMs } from './queue/job-budget.js';
+import { createDeployQueue } from './queue/deploy-queue.js';
 import { createConnectServerQueue } from './queue/connect-server-queue.js';
 import { createWorker, sweepAbandonedConnections } from './queue/connect-server-worker.js';
 import { startWorkerHeartbeat } from './queue/worker-heartbeat.js';
@@ -32,6 +33,11 @@ import {
   createWorkerRedisConnection,
 } from './redis/connections.js';
 import { resolveServerServicesDeps } from './services/server-service-deps.js';
+import {
+  drainAllPendingTriggers,
+  drainQuietly,
+  type PendingTriggerDrainDeps,
+} from './services/webhook-ingest.js';
 import { createServerServices } from './services/server-services.js';
 import { loadServiceOperationTarget, panelPortsFromEnv, recordServiceOperation } from './services/service-services.js';
 
@@ -121,8 +127,9 @@ async function main(): Promise<void> {
   });
   // 12-13 (A4): before taking jobs, a deployment still mid-flight was left by a crashed worker. Its
   // row ends FAILED/WORKER_CRASHED now; remote cleanup runs in the background and never blocks boot.
+  const deploymentStore = createDeploymentStore({ db, now: () => new Date(), events: eventPublisher });
   const deploySweep = await sweepCrashedDeployments({
-    store: createDeploymentStore({ db, now: () => new Date(), events: eventPublisher }),
+    store: deploymentStore,
     connect: deployJobDeps.connect,
     createRedactor: deployJobDeps.createRedactor,
     limits: deployJobDeps.limits,
@@ -130,6 +137,20 @@ async function main(): Promise<void> {
   });
   logger.info({ sweptCount: deploySweep.swept.length }, 'worker startup sweep for crashed deployments complete');
   void deploySweep.cleanup;
+  // 18-04 (A2, H2): a push coalesced behind a deployment runs once that deployment ends: after each
+  // deploy job, after the crash sweep (its rows will never run a job) and after every stale-QUEUED
+  // sweep. The follow-up is enqueued on the shared `deployments` queue.
+  const pendingTriggerQueue = createDeployQueue({ connection: queueConnection });
+  const pendingTriggerDrain: PendingTriggerDrainDeps = {
+    db,
+    now: () => new Date(),
+    events: eventPublisher,
+    queue: pendingTriggerQueue,
+    failUnqueued: (deploymentId, cutoff) => deploymentStore.failStaleQueued(deploymentId, cutoff),
+    logger,
+  };
+  const startupDrain = await drainAllPendingTriggers(pendingTriggerDrain);
+  logger.info({ drainedCount: startupDrain.length }, 'worker startup drain of pending webhook triggers complete');
   // 12-14: stop / restart / remove share the deploy worker; the outcome is recorded through the
   // services helpers (activity + status cache), never written from src/deploy.
   const serviceOperationHandler = createServiceOperationJobHandler(
@@ -144,6 +165,7 @@ async function main(): Promise<void> {
     handler: createDeployJobHandler({
       ...deployJobDeps,
       sinkFor: deployLogSinkFor,
+      drainPendingTrigger: (serviceId) => drainQuietly(pendingTriggerDrain, serviceId),
       cancel: {
         watch: (deploymentId) => watchDeployCancel({ flags: deployCancelFlags, deploymentId }),
         clear: (deploymentId) => deployCancelFlags.clear(deploymentId),
@@ -180,6 +202,7 @@ async function main(): Promise<void> {
     // 14-08: a QUEUED deployment whose job never reached the queue ends ENQUEUE_FAILED, once at
     // startup and on every tick.
     staleQueued: { thresholdMs: env.NOODARA_DEPLOY_QUEUED_STALE_MS },
+    drainPendingTriggers: () => drainAllPendingTriggers(pendingTriggerDrain),
   });
 
   // The literal "Worker ready" is the boot smoke test's deterministic stdout marker, mirroring
@@ -204,7 +227,7 @@ async function main(): Promise<void> {
         Promise.all([handle.close(), deployHandle.close(), logRetention.stop(), reconcile.close()]).then(() => undefined),
       graceMs: lockDurationMs,
       stopHeartbeat,
-      closeQueue: () => queue.close(),
+      closeQueue: () => Promise.all([queue.close(), pendingTriggerQueue.close()]).then(() => undefined),
       disconnect: [
         () => {
           workerConnection.disconnect();

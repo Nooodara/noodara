@@ -2,6 +2,8 @@
 // fixture proves the same composition the worker runs.
 // 14-08: the stale-QUEUED sweep rides along: once when the loop starts (the worker's startup
 // sweep) and before every reconcile tick, reading deploy jobs through the same queue lookup.
+// 18-04 (H2): pending webhook triggers drain after every stale-QUEUED sweep, so a follow-up whose
+// enqueue failed (and that the sweep just ended ENQUEUE_FAILED) is retried on the same pass.
 import { Queue, type ConnectionOptions } from 'bullmq';
 import type { Database } from '../db/client.js';
 import {
@@ -39,6 +41,8 @@ export interface WorkerReconcileDeps {
   readonly now?: () => Date;
   /** NOODARA_DEPLOY_QUEUED_STALE_MS; omitted, no stale-QUEUED sweep runs. */
   readonly staleQueued?: { readonly thresholdMs: number; readonly batchLimit?: number };
+  /** 18-04 (H2): drains every service's pending webhook trigger; runs after each stale-QUEUED sweep. */
+  readonly drainPendingTriggers?: () => Promise<unknown>;
 }
 
 export interface WorkerReconcileTickSummary extends ReconcileTickSummary {
@@ -50,7 +54,7 @@ const NO_STALE_SWEEP: StaleQueuedSweepResult = Object.freeze({ failed: [], unkno
 
 export interface WorkerReconcileTick {
   readonly tick: () => Promise<WorkerReconcileTickSummary>;
-  /** The stale-QUEUED sweep alone; never rejects. */
+  /** The stale-QUEUED sweep, then the pending-trigger drain; never rejects. */
   readonly sweepStaleQueued: () => Promise<StaleQueuedSweepResult>;
   /** Closes the queue lookup the tick reads service-operation jobs through. */
   close(): Promise<void>;
@@ -66,17 +70,29 @@ export function createWorkerReconcileTick(
   const staleQueued = deps.staleQueued;
   const store = createDeploymentStore({ db: deps.db, now, events: deps.events });
   const jobLookup = createDeployJobLookup(deployQueue);
-  const sweepStaleQueued = (): Promise<StaleQueuedSweepResult> =>
-    staleQueued === undefined
-      ? Promise.resolve(NO_STALE_SWEEP)
-      : sweepStaleQueuedDeployments({
-          store,
-          jobLookup,
-          thresholdMs: staleQueued.thresholdMs,
-          ...(staleQueued.batchLimit === undefined ? {} : { batchLimit: staleQueued.batchLimit }),
-          now,
-          logger: deps.logger,
-        });
+  const drainPendingTriggers = deps.drainPendingTriggers;
+  const sweepStaleQueued = async (): Promise<StaleQueuedSweepResult> => {
+    const result =
+      staleQueued === undefined
+        ? NO_STALE_SWEEP
+        : await sweepStaleQueuedDeployments({
+            store,
+            jobLookup,
+            thresholdMs: staleQueued.thresholdMs,
+            ...(staleQueued.batchLimit === undefined ? {} : { batchLimit: staleQueued.batchLimit }),
+            now,
+            logger: deps.logger,
+          });
+    if (drainPendingTriggers !== undefined) {
+      try {
+        await drainPendingTriggers();
+      } catch (error) {
+        // The slots stay; the next tick or terminal event drains them.
+        deps.logger.warn({ errorKind: error instanceof Error ? error.name : typeof error }, 'pending webhook trigger drain failed');
+      }
+    }
+    return result;
+  };
   const reconcileTick = createReconcileTick({
     listServers: () => listReconcileServers(deps.db),
     loadServices: (serverId) => loadReconcileServices(deps.db, serverId),
