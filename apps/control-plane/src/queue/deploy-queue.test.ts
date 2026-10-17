@@ -234,7 +234,8 @@ describe('re-delivered deploy job (18-05 A2, H2, ADR 0010 A3)', () => {
 
       await expect(w.handle(PAYLOAD)).resolves.toEqual({ outcome: 'CRASH_RECOVERED' });
 
-      expect(w.finished).toEqual([{ id: PAYLOAD.deploymentId, input: expect.objectContaining({ status: 'FAILED', errorCode: 'WORKER_CRASHED' }) }]);
+      expect(w.finished.map((call) => call.id)).toEqual([PAYLOAD.deploymentId]);
+      expect(w.finished[0]?.input).toMatchObject({ status: 'FAILED', errorCode: 'WORKER_CRASHED' });
       expect(w.run).toHaveBeenCalledTimes(0);
       expect(w.loadTarget).toHaveBeenCalledTimes(0);
       // Only the cleanup connection (no `docker create`/`start`: no second noodara-<serviceId>).

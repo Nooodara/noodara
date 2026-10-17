@@ -7,6 +7,8 @@
 // - worker kill in HEALTHCHECK: the worker freezes and drops its connection; the sweep first finds
 //   the server unreachable (sshd paused) and leaves the row, then restores -prev -> FAILED/
 //   WORKER_CRASHED; with no -prev the only version is left exactly as it is.
+// - 18-05: worker kill in BUILDING / DEPLOYING, then the same job is re-delivered: it recovers the
+//   row (FAILED/WORKER_CRASHED) without re-running a step, and the next attempt deploys cleanly.
 // Every case: one terminal state, only `noodara-<svc>` left among the service's containers.
 import { randomBytes, randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -539,15 +541,15 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('17-06: runtime faults on real infr
     }
   }, CASE_TIMEOUT_MS);
 
-  /** A worker that dies the moment the store records HEALTHCHECK: it never sends another command. */
-  const crashInHealthcheck = async (serviceId: string): Promise<string> => {
+  /** A worker that dies the moment the store records `status`: it never sends another command. */
+  const crashIn = async (serviceId: string, status: DeploymentStatus): Promise<string> => {
     if (workerModule === undefined || createRow === undefined) throw new Error('runtime not started');
     const deploymentId = await createRow(serviceId);
     let crashed = false;
     const isCrashed = (): boolean => crashed;
     const closes: (() => Promise<void>)[] = [];
     onEvent = (event) => {
-      if (event.type === 'deployment.updated' && event.deployment.id === deploymentId && event.deployment.status === 'HEALTHCHECK') {
+      if (event.type === 'deployment.updated' && event.deployment.id === deploymentId && event.deployment.status === status) {
         crashed = true;
       }
     };
@@ -562,12 +564,13 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('17-06: runtime faults on real infr
       },
     });
     void doomed({ deploymentId, serviceId, actor: ACTOR, requestedAt: new Date().toISOString() });
-    await waitFor('the worker to die in HEALTHCHECK', () => Promise.resolve(crashed));
+    await waitFor(`the worker to die in ${status}`, () => Promise.resolve(crashed));
     onEvent = null;
     await Promise.all(closes.map((close) => close().catch(() => undefined)));
-    expect((await deploymentRow(deploymentId)).status).toBe('HEALTHCHECK');
+    expect((await deploymentRow(deploymentId)).status).toBe(status);
     return deploymentId;
   };
+  const crashInHealthcheck = (serviceId: string): Promise<string> => crashIn(serviceId, 'HEALTHCHECK');
 
   const sweep = async () => {
     const sweepModule = await import('../../../apps/control-plane/src/deploy/deploy-sweep.js');
@@ -647,6 +650,43 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('17-06: runtime faults on real infr
       await removeServiceContainers(serviceId);
     }
   }, CASE_TIMEOUT_MS);
+
+  // 18-05 A3/H2: the same job re-delivered after a worker kill follows the ADR 0010 resume rule:
+  // it recovers the crashed row (FAILED/WORKER_CRASHED) without re-running a step, a further
+  // delivery is a no-op, and the next attempt deploys on a clean service.
+  it.each(['BUILDING', 'DEPLOYING'] as const)(
+    'worker kill in %s, then the job retries: one noodara-<svc>, one row per attempt, no orphan',
+    async (status) => {
+      if (handler === undefined) throw new Error('runtime not started');
+      const serviceId = await insertService(REPOS.healthy, httpCheck('/health'));
+      try {
+        const first = await healthyFirst(serviceId);
+        const deploymentId = await crashIn(serviceId, status);
+        const job = { deploymentId, serviceId, actor: ACTOR, requestedAt: new Date().toISOString() };
+
+        await expect(handler(job)).resolves.toEqual({ outcome: 'CRASH_RECOVERED' });
+        const row = await deploymentRow(deploymentId);
+        expect({ status: row.status, errorCode: row.errorCode }).toEqual({ status: 'FAILED', errorCode: 'WORKER_CRASHED' });
+        await expectOnlyRunning(serviceId, first.id);
+        await expectWorkspaceGone(deploymentId);
+        expect(await exists(['docker', 'image', 'inspect', `noodara/${serviceId}:${deploymentId}`])).toBe(false);
+
+        // A further delivery finds the row terminal: nothing runs, nothing changes.
+        await expect(handler(job)).resolves.toEqual({ outcome: 'ALREADY_CLAIMED' });
+        expect((await deploymentRow(deploymentId)).status).toBe('FAILED');
+
+        const next = await deploy(serviceId);
+        expect({ status: next.status, errorCode: next.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
+        await expectOnlyRunning(serviceId, next.id);
+        await expectWorkspaceGone(next.id);
+        const rows = await db().select({ id: deployments.id }).from(deployments).where(eq(deployments.serviceId, serviceId));
+        expect(rows.map((r) => r.id).sort()).toEqual([first.id, deploymentId, next.id].sort());
+      } finally {
+        await removeServiceContainers(serviceId);
+      }
+    },
+    CASE_TIMEOUT_MS,
+  );
 
   it('noodara-security: no credential reaches events, logs or deployment rows', async () => {
     const rows = await db().select().from(deployments);

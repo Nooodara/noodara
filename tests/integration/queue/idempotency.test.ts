@@ -233,9 +233,9 @@ describe('Idempotency-Key replay (A1)', () => {
     const asRollback = await call('POST', `/api/services/${svc.serviceId}/rollback`, {}, key);
 
     expect(asRedeploy.statusCode).toBe(422);
-    expect(asRedeploy.body.code).toBe('IDEMPOTENCY_KEY_REUSED');
+    expect(asRedeploy.body.error).toBe('IDEMPOTENCY_KEY_REUSED');
     expect(asRollback.statusCode).toBe(422);
-    expect(asRollback.body.code).toBe('IDEMPOTENCY_KEY_REUSED');
+    expect(asRollback.body.error).toBe('IDEMPOTENCY_KEY_REUSED');
     expect(await rowsFor(svc.serviceId)).toHaveLength(1);
   });
 
@@ -267,7 +267,7 @@ describe('Idempotency-Key replay (A1)', () => {
     const answers = await Promise.all(Array.from({ length: 4 }, (_, n) => deploy(svc, `k${n.toString()}-${short()}`)));
 
     expect(answers.map((answer) => answer.statusCode).sort()).toStrictEqual([201, 409, 409, 409]);
-    expect(answers.filter((answer) => answer.statusCode === 409).every((answer) => answer.body.code === 'DEPLOYMENT_IN_PROGRESS')).toBe(true);
+    expect(answers.filter((answer) => answer.statusCode === 409).every((answer) => answer.body.error === 'DEPLOYMENT_IN_PROGRESS')).toBe(true);
     expect(await rowsFor(svc.serviceId)).toHaveLength(1);
   });
 });
@@ -282,9 +282,9 @@ describe('Idempotency-Key validation, storage and expiry (H1)', () => {
     const viaDeploy = await deploy(svc, key);
     const viaRedeploy = await redeploy(svc, key);
     expect(viaDeploy.statusCode).toBe(400);
-    expect(viaDeploy.body.code).toBe('IDEMPOTENCY_KEY_INVALID');
+    expect(viaDeploy.body.error).toBe('IDEMPOTENCY_KEY_INVALID');
     expect(viaRedeploy.statusCode).toBe(400);
-    expect(viaRedeploy.body.code).toBe('IDEMPOTENCY_KEY_INVALID');
+    expect(viaRedeploy.body.error).toBe('IDEMPOTENCY_KEY_INVALID');
     expect(await rowsFor(svc.serviceId)).toHaveLength(0);
   });
 
@@ -435,7 +435,7 @@ describe('webhook hook-id and delivery uniqueness (H9)', () => {
     const secret = String(enabled.body.secret);
     const hookId = String(enabled.body.payloadUrl).split('/webhooks/github/')[1] ?? '';
     const sha = randomBytes(20).toString('hex');
-    const body = `{"ref":"refs/heads/main","after":"${sha}","deleted":false,"repository":{"clone_url":"https://github.com/acme/api.git"},"head_commit":{"id":"${sha}"}}`;
+    const body = `{"ref":"refs/heads/main","after":"${sha}","deleted":false,"repository":{"clone_url":"https://github.com/acme/api.git","ssh_url":"git@github.com:acme/api.git"},"head_commit":{"id":"${sha}"}}`;
     const signature = `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`;
     const delivery = randomUUID();
     const send = () =>
