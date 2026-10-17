@@ -239,6 +239,59 @@ describe('DeploymentSteps', () => {
     expect(document.body.textContent).not.toContain('RAW-SERVER-MESSAGE');
   });
 
+  it('adds a running Rollback row while ROLLING_BACK (A1)', () => {
+    renderUi(
+      <DeploymentSteps
+        deployment={deployment({
+          status: 'ROLLING_BACK',
+          errorCode: 'HEALTHCHECK_FAILED',
+          steps: steps(['clone', 'success', 420], ['build', 'success', 12_300], ['start', 'success', 900], ['verify', 'failed', 2100]),
+        })}
+      />,
+    );
+    const row = screen.getByTestId('deployment-step-rollback');
+    expect(row.getAttribute('data-severity')).toBe('running');
+    expect(within(screen.getByTestId('deployment-step-verify')).getByText('Health check')).toBeTruthy();
+  });
+
+  it('names the restored commit once ROLLED_BACK (A1)', async () => {
+    const PREVIOUS = '99999999-9999-4999-8999-999999999999';
+    deployApi.getDeployment.mockReturnValue(ok(deployment({ id: PREVIOUS, commitSha: 'abcdef1234567890' })));
+    renderUi(
+      <DeploymentSteps
+        deployment={deployment({
+          status: 'ROLLED_BACK',
+          errorCode: 'HEALTHCHECK_TIMEOUT',
+          previousDeploymentId: PREVIOUS,
+          steps: steps(['clone', 'success', 420], ['build', 'success', 12_300], ['start', 'success', 900], ['verify', 'failed', 2100]),
+        })}
+      />,
+    );
+    expect(screen.getByTestId('deployment-step-rollback').getAttribute('data-severity')).toBe('pass');
+    await waitFor(() => {
+      expect(screen.getByTestId('deployment-rollback-commit').textContent).toContain('abcdef1');
+    });
+    expect(screen.getByTestId('deployment-error')).toBeTruthy();
+  });
+
+  it('shows a failed Rollback row for ROLLBACK_FAILED and none for a plain failure', () => {
+    const { unmount } = renderUi(<DeploymentSteps deployment={deployment({ status: 'FAILED', errorCode: 'ROLLBACK_FAILED' })} />);
+    expect(screen.getByTestId('deployment-step-rollback').getAttribute('data-severity')).toBe('fail');
+    unmount();
+    renderUi(<DeploymentSteps deployment={deployment({ status: 'FAILED', errorCode: 'BUILD_FAILED' })} />);
+    expect(screen.queryByTestId('deployment-step-rollback')).toBeNull();
+  });
+
+  it('renders unknown step names, states and statuses without throwing (H1)', () => {
+    const odd = deployment({
+      status: 'QUANTUM' as never,
+      steps: [{ name: 'teleport' as never, state: 'hovering' as never, startedAt: null, completedAt: null, durationMs: null }],
+    });
+    renderUi(<DeploymentSteps deployment={odd} />);
+    expect(screen.getByTestId('deployment-step-teleport')).toBeTruthy();
+    expect(screen.queryByText(/QUANTUM/)).toBeNull();
+  });
+
   it('shows no error block for a successful deploy', () => {
     renderUi(<DeploymentSteps deployment={deployment({ errorMessage: RAW_MESSAGE })} />);
     expect(screen.queryByTestId('deployment-error')).toBeNull();

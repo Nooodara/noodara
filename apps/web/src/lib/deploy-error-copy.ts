@@ -42,7 +42,6 @@ export const DEPLOYMENT_ERROR_COPY: Readonly<Record<DeploymentErrorCode, Deploym
     title: 'Clone failed',
     recovery: 'Check the build log for the Git error, then deploy again.',
   },
-  // 16-02: minimal v0.3 copy; the final words land with 19-01.
   COMMIT_NOT_FOUND: {
     title: 'Commit not found',
     recovery: 'Check that the commit still exists on the configured branch, then deploy again.',

@@ -15,6 +15,7 @@ import {
 import { Banner } from '@noodara/ui';
 import { getDeployment, type DeploymentView } from '../lib/deploy-api';
 import { deploymentErrorCopy, guardLogTail } from '../lib/deploy-error-copy';
+import { shortSha } from '../lib/service-status-copy';
 import type { CheckState } from '../lib/discovery-progress';
 import { requireSession } from '../lib/require-session';
 import type { SyncStream } from '../lib/use-server-events';
@@ -43,7 +44,7 @@ export const DEPLOYMENT_STEP_LABELS = Object.freeze({
   pull: 'Pull image',
   build: 'Build',
   start: 'Start',
-  verify: 'Verify',
+  verify: 'Health check',
 } as const satisfies Record<DeploymentStepName, string>);
 
 const STEP_WORDS = {
@@ -65,6 +66,40 @@ const STEP_VISUAL = {
   skipped: 'skipped',
 } as const satisfies Record<DeploymentStepState, CheckState>;
 
+const ROLLBACK_LABEL = 'Rollback';
+const ROLLBACK_STATUSES: ReadonlySet<string> = new Set(['ROLLING_BACK', 'ROLLED_BACK']);
+
+/** The rollback row, only when a rollback happened (or was attempted and failed). */
+function rollbackRow(
+  deployment: DeploymentWithSteps,
+  restoredCommit: string | null,
+): { visual: CheckState; word: string; detail: string | null } | null {
+  if (deployment.status === 'ROLLING_BACK') return { visual: 'running', word: 'Running', detail: null };
+  if (deployment.status === 'ROLLED_BACK') {
+    const detail = restoredCommit === null || restoredCommit === '' ? null : `Restored commit ${shortSha(restoredCommit)}`;
+    return { visual: 'pass', word: 'Restored', detail };
+  }
+  if (deployment.errorCode === 'ROLLBACK_FAILED') return { visual: 'fail', word: 'Failed', detail: null };
+  return null;
+}
+
+/** The commit a ROLLED_BACK deployment restored: the previous deployment's commit, fetched once. */
+function useRestoredCommit(deployment: DeploymentWithSteps): string | null {
+  const previousId = deployment.status === 'ROLLED_BACK' ? deployment.previousDeploymentId : null;
+  const [restored, setRestored] = useState<{ id: string; sha: string | null } | null>(null);
+  useEffect(() => {
+    if (previousId === null) return;
+    let live = true;
+    void getDeployment(previousId).then((result) => {
+      if (live && result.ok) setRestored({ id: previousId, sha: result.data.commitSha });
+    });
+    return () => {
+      live = false;
+    };
+  }, [previousId]);
+  return previousId !== null && restored?.id === previousId ? restored.sha : null;
+}
+
 const UNRESOLVED_STEP_STATES: ReadonlySet<DeploymentStepState> = new Set(['pending', 'running']);
 
 export interface DeploymentStepsProps {
@@ -74,7 +109,9 @@ export interface DeploymentStepsProps {
 }
 
 export function DeploymentSteps({ deployment, logTail = null }: DeploymentStepsProps) {
-  const failed = deployment.status === 'FAILED' || deployment.errorCode !== null;
+  const restoredCommit = useRestoredCommit(deployment);
+  const rollback = rollbackRow(deployment, restoredCommit);
+  const failed = deployment.status === 'FAILED' || deployment.errorCode !== null || ROLLBACK_STATUSES.has(deployment.status);
   const copy = deploymentErrorCopy(deployment.errorCode);
   const knownCode = deployment.errorCode !== null && isDeploymentErrorCode(deployment.errorCode) ? deployment.errorCode : undefined;
   const tailLines = failed ? guardLogTail(logTail) : [];
@@ -86,13 +123,29 @@ export function DeploymentSteps({ deployment, logTail = null }: DeploymentStepsP
           <StepRow
             key={step.name}
             testId={`deployment-step-${step.name}`}
-            visual={STEP_VISUAL[step.state]}
-            label={DEPLOYMENT_STEP_LABELS[step.name]}
-            word={STEP_WORDS[step.state]}
+            visual={Object.hasOwn(STEP_VISUAL, step.state) ? STEP_VISUAL[step.state] : 'skipped'}
+            label={Object.hasOwn(DEPLOYMENT_STEP_LABELS, step.name) ? DEPLOYMENT_STEP_LABELS[step.name] : 'Step'}
+            word={Object.hasOwn(STEP_WORDS, step.state) ? STEP_WORDS[step.state] : 'Unknown'}
             durationMs={step.state === 'skipped' ? null : step.durationMs}
             threadFilled={!UNRESOLVED_STEP_STATES.has(step.state)}
           />
         ))}
+        {rollback === null ? null : (
+          <StepRow
+            testId="deployment-step-rollback"
+            visual={rollback.visual}
+            label={ROLLBACK_LABEL}
+            word={rollback.word}
+            durationMs={null}
+            threadFilled={rollback.visual !== 'running'}
+          >
+            {rollback.detail === null ? null : (
+              <p data-testid="deployment-rollback-commit" className="pl-6 font-mono text-mono text-ink-secondary">
+                {rollback.detail}
+              </p>
+            )}
+          </StepRow>
+        )}
       </div>
       {failed ? (
         <Banner message={copy.title} {...(knownCode === undefined ? {} : { errorCode: knownCode })} data-testid="deployment-error">
