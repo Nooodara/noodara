@@ -1,0 +1,7 @@
+{
+  "phase": "18",
+  "signature": "75249ee8f54e0d6b85ac0f48b9c2dfb965b40bb333065c4722f74ea88ca4f361",
+  "verdict": "pass",
+  "notes": "Phase 18 meets every acceptance criterion: CSPRNG hook id and secret, atomic rotate, HMAC with timingSafeEqual over the raw body, 1 MiB/415/429 caps, race-safe dedupe and coalescing, exact-SHA fetch with fallback and COMMIT_NOT_FOUND, Idempotency-Key with 24 h TTL, ADR 0010 A3 re-delivery recovery; typecheck, lint, boundaries, 7737 unit tests and it-webhooks + it-idempotency (66 tests) all green. | findings: non-blocking: tests/integration/deploy-engine/runtime-webhook-sha.test.ts is listed in 18-03 scope but does not exist; on 22.04/24.04 (it-deploy-templates) 18-03 A3 checks cloneRepository's commitSha, and the persisted commit_sha is checked only by the run-deployment unit test; non-blocking: expireIdempotencyKeys runs only as a bounded best-effort pass after each keyed request, not on a schedule; expired keys are still ignored by lookup and released on reuse, so the behavior is correct; non-blocking: the webhook secret canary lives in tests/integration/webhooks/config.test.ts and receiver.test.ts, not in the pnpm security:scan-leaks gate; non-blocking: 18-02 H3 says a delivery to a disabled webhook records a named outcome, but it answers the shared 401 and records nothing, as 18-01 H2 requires (disable clears the hook id, so nothing can be attributed)",
+  "at": "2026-10-17T03:21:38.816Z"
+}
