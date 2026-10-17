@@ -388,3 +388,76 @@ describe('ServiceSheet: edit (A5)', () => {
     expect(api.updateService.mock.calls[0]?.[2]).toEqual({ internalPort: 8080 });
   });
 });
+
+describe('ServiceSheet: healthcheck and auto-rollback (19-02)', () => {
+  it('shows the default check and sends no healthcheck on create (A1)', async () => {
+    api.createService.mockResolvedValue({ ok: true, data: SERVICE });
+    const { user } = renderSheet();
+    expect(screen.getByRole('radio', { name: /Container is running/ })).toBeChecked();
+    expect(screen.queryByTestId('healthcheck-probe-fields')).not.toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Roll back automatically' })).toBeChecked();
+    await fillCreate(user);
+    await user.click(screen.getByTestId('service-sheet-submit'));
+    await waitFor(() => {
+      expect(api.createService).toHaveBeenCalledTimes(1);
+    });
+    const body = api.createService.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(body).not.toHaveProperty('healthcheck');
+    expect(body).not.toHaveProperty('autoRollback');
+  });
+
+  it('blocks an invalid HTTP path with the domain error (A2)', async () => {
+    const { user } = renderSheet();
+    await fillCreate(user);
+    await user.click(screen.getByRole('radio', { name: /HTTP request/ }));
+    await user.clear(screen.getByTestId('healthcheck-path'));
+    await user.type(screen.getByTestId('healthcheck-path'), 'health');
+    await user.click(screen.getByTestId('service-sheet-submit'));
+    expect(screen.getByText(/Healthcheck path must start with \//)).toBeInTheDocument();
+    expect(api.createService).not.toHaveBeenCalled();
+  });
+
+  it('create sends an HTTP check and auto-rollback off', async () => {
+    api.createService.mockResolvedValue({ ok: true, data: SERVICE });
+    const { user } = renderSheet();
+    await fillCreate(user);
+    await user.click(screen.getByRole('radio', { name: /HTTP request/ }));
+    await user.clear(screen.getByTestId('healthcheck-path'));
+    await user.type(screen.getByTestId('healthcheck-path'), '/health');
+    await user.click(screen.getByRole('switch', { name: 'Roll back automatically' }));
+    await user.click(screen.getByTestId('service-sheet-submit'));
+    await waitFor(() => {
+      expect(api.createService).toHaveBeenCalledTimes(1);
+    });
+    expect(api.createService.mock.calls[0]?.[1]).toMatchObject({
+      autoRollback: false,
+      healthcheck: { type: 'http', path: '/health', port: 3000 },
+    });
+  });
+
+  it('editing only the settings saves them and says they apply on the next deploy (A3)', async () => {
+    api.updateService.mockResolvedValue({ ok: true, data: { service: SERVICE, requiresRedeploy: false, changedFields: [] } });
+    const { user, onSaved } = renderSheet({ service: SERVICE });
+    await user.click(screen.getByRole('switch', { name: 'Roll back automatically' }));
+    expect(screen.getByTestId('service-sheet-redeploy')).toHaveTextContent(/next deploy/);
+    await user.click(screen.getByTestId('service-sheet-submit'));
+    await waitFor(() => {
+      expect(api.updateService).toHaveBeenCalledWith(PROJECT_ID, SERVICE.id, { autoRollback: false });
+    });
+    expect(onSaved).toHaveBeenCalledWith(SERVICE, { requiresRedeploy: true });
+  });
+
+  it('shows a server healthcheck rejection under the healthcheck', async () => {
+    api.createService.mockResolvedValue({
+      ok: false,
+      code: 'SERVICE_INPUT_INVALID',
+      reason: 'HEALTHCHECK_BUDGET_EXCEEDED',
+      message: 'Healthcheck needs up to 700 s',
+    });
+    const { user } = renderSheet();
+    await fillCreate(user);
+    await user.click(screen.getByRole('radio', { name: /TCP connection/ }));
+    await user.click(screen.getByTestId('service-sheet-submit'));
+    expect(await screen.findByTestId('healthcheck-error')).toHaveTextContent('Healthcheck needs up to 700 s.');
+  });
+});

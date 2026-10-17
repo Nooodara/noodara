@@ -22,6 +22,17 @@ import {
   type ServiceFormField,
   type ServiceFormValues,
 } from '../lib/service-form';
+import {
+  buildSettingsBody,
+  emptyHealthcheckForm,
+  healthcheckFormFromView,
+  mapHealthcheckFailure,
+  SETTINGS_NEXT_DEPLOY_COPY,
+  type HealthcheckFormErrors,
+  type HealthcheckFormField,
+  type HealthcheckFormValues,
+} from '../lib/healthcheck-form';
+import { HealthcheckFields } from './HealthcheckFields';
 import { SourceCredentialFields } from './SourceCredentialFields';
 import { SourceFields } from './SourceFields';
 
@@ -59,6 +70,8 @@ export function ServiceSheet({ open, onOpenChange, projectId, environmentId, ser
   const pickable = eligibleServers(servers);
   const [values, setValues] = useState<ServiceFormValues>(() => (service ? serviceFormFromView(service) : emptyServiceForm()));
   const [errors, setErrors] = useState<ServiceFormErrors>({});
+  const [health, setHealth] = useState<HealthcheckFormValues>(() => (service ? healthcheckFormFromView(service) : emptyHealthcheckForm()));
+  const [healthErrors, setHealthErrors] = useState<HealthcheckFormErrors>({});
   const [failure, setFailure] = useState<{ readonly code: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const inFlight = useRef(false);
@@ -67,12 +80,24 @@ export function ServiceSheet({ open, onOpenChange, projectId, environmentId, ser
   useEffect(() => {
     if (!open) return;
     setValues(service ? serviceFormFromView(service) : emptyServiceForm(onlyServerId ?? ''));
+    setHealth(service ? healthcheckFormFromView(service) : emptyHealthcheckForm());
+    setHealthErrors({});
     setErrors({});
     setFailure(null);
     // Reset only when the sheet opens or the edited service changes, not on every server event.
   }, [open, service?.id]);
 
   const preview = service ? previewEdit(service, values) : null;
+  const containerPort = Number(values.internalPort.trim()) || 3000;
+  const settingsPreview = service ? buildSettingsBody(service, health, containerPort) : null;
+  const settingsChanged = settingsPreview?.ok === true && settingsPreview.changed;
+
+  function changeHealth(patch: Partial<HealthcheckFormValues>, field: HealthcheckFormField): void {
+    setHealth((previous) => ({ ...previous, ...patch }));
+    setHealthErrors((previous) =>
+      Object.fromEntries(Object.entries(previous).filter(([key]) => key !== field && key !== 'healthcheck')),
+    );
+  }
 
   function change(patch: Partial<ServiceFormValues>, field: ServiceFormField): void {
     setValues((previous) => ({ ...previous, ...patch }));
@@ -91,28 +116,31 @@ export function ServiceSheet({ open, onOpenChange, projectId, environmentId, ser
   async function submit(): Promise<void> {
     if (inFlight.current) return;
     const plan = service ? buildEditBody(service, values) : buildCreateBody(values);
-    if (!plan.ok) {
-      setErrors(plan.errors);
+    const settings = buildSettingsBody(service ?? null, health, containerPort);
+    if (!plan.ok || !settings.ok) {
+      setErrors(plan.ok ? {} : plan.errors);
+      setHealthErrors(settings.ok ? {} : settings.errors);
       return;
     }
-    if (service && 'classification' in plan.body && plan.body.classification.kind === 'none') {
+    if (service && 'classification' in plan.body && plan.body.classification.kind === 'none' && !settings.changed) {
       onOpenChange(false);
       return;
     }
     inFlight.current = true;
     setSubmitting(true);
     setErrors({});
+    setHealthErrors({});
     setFailure(null);
     const result =
       service && 'classification' in plan.body
-        ? await updateService(projectId, service.id, plan.body.body)
-        : await createService(projectId, { environmentId, ...plan.body });
+        ? await updateService(projectId, service.id, { ...plan.body.body, ...settings.body })
+        : await createService(projectId, { environmentId, ...plan.body, ...settings.body });
     inFlight.current = false;
     setSubmitting(false);
 
     if (result.ok) {
       if ('requiresRedeploy' in result.data) {
-        finish(result.data.service, { requiresRedeploy: result.data.requiresRedeploy });
+        finish(result.data.service, { requiresRedeploy: result.data.requiresRedeploy || settings.changed });
       } else {
         finish(result.data, { requiresRedeploy: false });
       }
@@ -120,6 +148,11 @@ export function ServiceSheet({ open, onOpenChange, projectId, environmentId, ser
     }
     if (result.unauthorized) {
       void requireSession();
+      return;
+    }
+    const healthMapped = mapHealthcheckFailure(result);
+    if (healthMapped !== null) {
+      setHealthErrors(healthMapped);
       return;
     }
     const mapped = mapServiceFailure(result);
@@ -268,7 +301,13 @@ export function ServiceSheet({ open, onOpenChange, projectId, environmentId, ser
             </Field>
           </div>
 
-          {preview?.kind === 'redeploy' ? <Notice message={REDEPLOY_NEEDED_COPY} data-testid="service-sheet-redeploy" /> : null}
+          <HealthcheckFields values={health} errors={healthErrors} onChange={changeHealth} />
+
+          {preview?.kind === 'redeploy' ? (
+            <Notice message={REDEPLOY_NEEDED_COPY} data-testid="service-sheet-redeploy" />
+          ) : settingsChanged ? (
+            <Notice message={SETTINGS_NEXT_DEPLOY_COPY} data-testid="service-sheet-redeploy" />
+          ) : null}
 
           <p className="text-caption text-ink-tertiary" data-testid="service-sheet-limit">
             {V02_LIMIT_COPY}

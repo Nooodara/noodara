@@ -9,6 +9,7 @@
 // Credentials are write-only (A2): the PUT bodies go out once, are never stored or logged here,
 // and the only credential read returns presence, type and a deploy key's public half.
 
+import type { HealthcheckConfig } from "@noodara/domain";
 import type * as ApiContract from "@noodara/domain/api-contract";
 import {
   deployApiGet,
@@ -60,7 +61,14 @@ export type DeleteEnvironmentResult = Output<
   typeof ApiContract.DeleteEnvironmentResponseSchema
 >;
 
-export type ServiceView = Output<typeof ApiContract.ServiceViewSchema>;
+/** 19-02: the reliability settings ride on the service. Absent until the API returns them:
+ *  `healthcheck` null/absent = the default container check, `autoRollback` absent = on. */
+export interface ServiceReliabilitySettings {
+  readonly healthcheck?: HealthcheckConfig | null;
+  readonly autoRollback?: boolean;
+}
+export type ServiceView = Output<typeof ApiContract.ServiceViewSchema> &
+  ServiceReliabilitySettings;
 export type ServiceList = Output<
   typeof ApiContract.ListServicesResponseSchema
 >;
@@ -72,7 +80,8 @@ export type CreateServiceBody = Input<
 >;
 export type UpdateServiceBody = Input<
   typeof ApiContract.UpdateServiceBodySchema
->;
+> &
+  ServiceReliabilitySettings;
 /** Presence, type and a deploy key's public half only: the response has no secret field. */
 export type ServiceCredentials = Output<
   typeof ApiContract.ServiceCredentialsResponseSchema
