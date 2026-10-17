@@ -75,6 +75,7 @@ export {
   dockerStop,
   gitCheckout,
   gitClone,
+  gitFetch,
   gitHeadSha,
   gitKeyscan,
   gitProbeFeatures,

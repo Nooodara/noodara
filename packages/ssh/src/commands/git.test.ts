@@ -17,7 +17,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gitSshEndpoint, type GitSshEndpoint } from '@noodara/domain/validators';
-import { gitCheckout, gitClone, gitHeadSha, gitKeyscan, gitProbeFeatures } from './git.js';
+import { gitCheckout, gitClone, gitFetch, gitHeadSha, gitKeyscan, gitProbeFeatures } from './git.js';
 import { renderRemoteCommand } from './remote-command.js';
 import { SHELL_SCRIPTS } from './shell-scripts.js';
 
@@ -195,6 +195,87 @@ describe('gitClone', () => {
       ]);
     },
   );
+});
+
+const FETCH_PREAMBLE = [...GIT_PREAMBLE.slice(0, GIT_PREAMBLE.indexOf('clone')), '-C', ws.repo, 'fetch'];
+
+describe('gitFetch (18-03)', () => {
+  const deployKey = {
+    kind: 'deploy_key',
+    keyFile: ws.secretFile('deploy_key'),
+    knownHostsFile: ws.secretFile('known_hosts'),
+  } as const;
+  const sshEnv = `GIT_SSH_COMMAND=ssh -i '${ws.secretsDir}/deploy_key' -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile='${ws.secretsDir}/known_hosts'`;
+
+  it('commit: fetches exactly the SHA, shallowly, as one argv element after origin', () => {
+    const command = gitFetch({ repo: ws.repo, auth: deployKey, mode: { kind: 'commit', sha } });
+
+    expect(command.name).toBe('git.fetch_commit');
+    expect(command.stdin).toBe('none');
+    expect(command.supervisable).toBe(true);
+    expect(command.argv).toEqual([
+      'env',
+      sshEnv,
+      'GIT_TERMINAL_PROMPT=0',
+      ...FETCH_PREAMBLE,
+      '--depth',
+      '1',
+      '--no-tags',
+      '--no-recurse-submodules',
+      'origin',
+      sha,
+    ]);
+    expect(command.argv.filter((word) => word.includes(sha))).toEqual([sha]);
+  });
+
+  it('unshallow: deepens the cloned branch with the same hardened preamble', () => {
+    const command = gitFetch({ repo: ws.repo, auth: deployKey, mode: { kind: 'unshallow' } });
+
+    expect(command.name).toBe('git.fetch_unshallow');
+    expect(command.supervisable).toBe(true);
+    expect(command.argv).toEqual([
+      'env',
+      sshEnv,
+      'GIT_TERMINAL_PROMPT=0',
+      ...FETCH_PREAMBLE,
+      '--unshallow',
+      '--no-tags',
+      '--no-recurse-submodules',
+      'origin',
+    ]);
+  });
+
+  it('https_token: same askpass env as the clone, never the token', () => {
+    const command = gitFetch({
+      repo: ws.repo,
+      auth: { kind: 'https_token', workspace: ws },
+      mode: { kind: 'commit', sha },
+    });
+
+    expect(command.argv.slice(0, 4)).toEqual([
+      'env',
+      `GIT_ASKPASS=${ws.secretsDir}/askpass`,
+      `NOODARA_ASKPASS_TOKEN_FILE=${ws.secretsDir}/https_token`,
+      'GIT_TERMINAL_PROMPT=0',
+    ]);
+  });
+
+  it.each(['-oProxyCommand=x', '0123456789abcdef0123456789abcdef0123456', 'g'.repeat(40), 'a'.repeat(41), 'abc1234'])(
+    'H1: the hostile SHA %j never validates, so it can never reach the builder',
+    (value) => {
+      expect(validateCommitSha(value).ok).toBe(false);
+    },
+  );
+
+  it.each(ADVERSARIAL_VALUES)('round-trips a force-cast adversarial value %j as literal words', (value) => {
+    const command = gitFetch({
+      repo: value as DeployRepoPath,
+      auth: { kind: 'none' },
+      mode: { kind: 'commit', sha: value as CommitSha },
+    });
+
+    expect(shellWords(renderRemoteCommand(command))).toEqual(command.argv);
+  });
 });
 
 describe('gitCheckout', () => {

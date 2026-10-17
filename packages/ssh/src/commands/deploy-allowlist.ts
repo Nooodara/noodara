@@ -45,6 +45,9 @@ export const DEPLOY_COMMAND_NAMES = Object.freeze([
   'probe.tcp',
   // 17-05: manual rollback checks the target image is still on the server.
   'docker.image_inspect',
+  // 18-03: deploy the exact pushed SHA (fetch it shallowly; unshallow fallback).
+  'git.fetch_commit',
+  'git.fetch_unshallow',
 ] as const);
 
 export type DeployCommandName = (typeof DEPLOY_COMMAND_NAMES)[number];

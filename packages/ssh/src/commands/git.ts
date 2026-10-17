@@ -62,24 +62,31 @@ function authEnv(auth: GitCloneAuth): string[] {
   }
 }
 
+/** env + the hardened git preamble shared by every network operation (clone and fetch). */
+function gitNetworkPreamble(auth: GitCloneAuth): ['env', ...string[]] {
+  return [
+    'env',
+    ...authEnv(auth),
+    'GIT_TERMINAL_PROMPT=0',
+    'git',
+    '-c',
+    'protocol.allow=never',
+    '-c',
+    'protocol.https.allow=always',
+    '-c',
+    'protocol.ssh.allow=always',
+    '-c',
+    'core.hooksPath=/dev/null',
+    '-c',
+    'credential.helper=',
+  ];
+}
+
 export function gitClone(input: GitCloneInput): RemoteCommand {
   return createRemoteCommand({
     name: 'git.clone',
     argv: [
-      'env',
-      ...authEnv(input.auth),
-      'GIT_TERMINAL_PROMPT=0',
-      'git',
-      '-c',
-      'protocol.allow=never',
-      '-c',
-      'protocol.https.allow=always',
-      '-c',
-      'protocol.ssh.allow=always',
-      '-c',
-      'core.hooksPath=/dev/null',
-      '-c',
-      'credential.helper=',
+      ...gitNetworkPreamble(input.auth),
       'clone',
       '--depth',
       '1',
@@ -90,6 +97,48 @@ export function gitClone(input: GitCloneInput): RemoteCommand {
       input.url,
       input.target,
     ],
+    stdin: 'none',
+    supervisable: true,
+  });
+}
+
+/**
+ * 18-03: `commit` fetches exactly one requested commit, shallowly, from the clone's origin (the
+ * SHA is a validated 40-hex CommitSha, one argv element). `unshallow` is the fallback for a remote
+ * that refuses to serve an unadvertised object: it deepens the cloned branch's history so the
+ * commit can be checked out if it is still reachable from it.
+ */
+export type GitFetchMode =
+  | { readonly kind: 'commit'; readonly sha: CommitSha }
+  | { readonly kind: 'unshallow' };
+
+export interface GitFetchInput {
+  readonly repo: DeployRepoPath;
+  readonly auth: GitCloneAuth;
+  readonly mode: GitFetchMode;
+}
+
+export function gitFetch(input: GitFetchInput): RemoteCommand {
+  const preamble: ['env', ...string[]] = [...gitNetworkPreamble(input.auth), '-C', input.repo, 'fetch'];
+  if (input.mode.kind === 'commit') {
+    return createRemoteCommand({
+      name: 'git.fetch_commit',
+      argv: [
+        ...preamble,
+        '--depth',
+        '1',
+        '--no-tags',
+        '--no-recurse-submodules',
+        'origin',
+        input.mode.sha,
+      ],
+      stdin: 'none',
+      supervisable: true,
+    });
+  }
+  return createRemoteCommand({
+    name: 'git.fetch_unshallow',
+    argv: [...preamble, '--unshallow', '--no-tags', '--no-recurse-submodules', 'origin'],
     stdin: 'none',
     supervisable: true,
   });

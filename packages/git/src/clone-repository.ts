@@ -1,9 +1,12 @@
 // cloneRepository (11-15, DEP-08, D-09, D14, ADR 0008 G1): prepare the workspace, write the
 // credential over stdin, run a supervised shallow clone, read the head SHA, probe for LFS and
-// submodules. Every remote command comes from an @noodara/ssh builder; secrets reach the server
+// submodules. 18-03: with a requested SHA the clone ends detached at exactly that commit (fetched
+// shallowly by SHA, or after deepening the branch when the remote refuses unadvertised objects);
+// a SHA the remote no longer has is COMMIT_NOT_FOUND. Every remote command comes from an @noodara/ssh builder; secrets reach the server
 // only on stdin and are registered with the session's redactor for the whole call.
 import {
   parseRepositoryFeatureProbe,
+  V03_DEPLOYMENT_ERROR_MESSAGES,
   type RepositoryFeatureProbeResult,
 } from '@noodara/domain/deployment';
 import { secretValue, type Redactor, type SecretValue } from '@noodara/domain/security';
@@ -23,7 +26,9 @@ import {
 import {
   ASKPASS_SCRIPT_CONTENT,
   classifyGitError,
+  gitCheckout,
   gitClone,
+  gitFetch,
   gitHeadSha,
   gitKeyscan,
   gitProbeFeatures,
@@ -57,6 +62,11 @@ export interface CloneRepositoryInput {
    * Only keys for the URL's own `host` / `[host]:port` are used; bundled published keys win.
    */
   readonly pinnedHostKeys?: readonly GitHostKey[];
+  /**
+   * 18-03: the exact commit to deploy (a webhook push), already a validated 40-hex CommitSha.
+   * Absent keeps the v0.2 behaviour: the branch head at clone time.
+   */
+  readonly requestedSha?: CommitSha;
   readonly limits: StepLimits;
   readonly signal?: AbortSignal;
   /** Redacted output of every step, for the deployment log. */
@@ -265,6 +275,85 @@ async function scanHostKeys(
   return resolved({ keys, source: 'scanned' });
 }
 
+/**
+ * git checkout's text for an object the repository does not have (2.34 on 22.04, 2.43 on 24.04 and
+ * newer); exit 128 is shared by every failure, so only the text tells it apart (ADR 0008 G1).
+ */
+const MISSING_COMMIT_PATTERN =
+  /unable to read tree|reference is not a tree|invalid reference|not a commit|bad object/;
+/** `fetch --unshallow` on a repository that already has its whole history: nothing to deepen. */
+const ALREADY_COMPLETE_MARKER = '--unshallow on a complete repository';
+
+function commitNotFound(): StepResult<never> {
+  return {
+    ok: false,
+    kind: 'failed',
+    code: 'COMMIT_NOT_FOUND',
+    message: V03_DEPLOYMENT_ERROR_MESSAGES.COMMIT_NOT_FOUND,
+  };
+}
+
+type Checked = { readonly ok: true } | StepFailure;
+const CHECKED: Checked = { ok: true };
+
+/**
+ * 18-03 (A1/A2/H1): fetch the requested commit by SHA; a refusal that is not an infrastructure
+ * cause (auth, host key, unreachable host, disk, workspace) falls back to deepening the cloned
+ * branch. Then detach at the SHA and re-read HEAD: anything but the exact SHA fails the step.
+ */
+async function checkoutRequested(
+  context: StepContext,
+  input: CloneRepositoryInput,
+  auth: GitCloneAuthOf,
+  requested: CommitSha,
+): Promise<Checked> {
+  const { redactor, workspace } = input;
+  const fetched = await runStep(
+    context,
+    supervise(
+      workspace.pidFile('clone'),
+      gitFetch({ repo: workspace.repo, auth, mode: { kind: 'commit', sha: requested } }),
+    ),
+  );
+  if (fetched.kind !== 'completed') return notCompleted(fetched);
+  if (fetched.result.exitCode !== 0) {
+    const refused = classifyCommand(redactor, 'clone', fetched.result);
+    if (refused.ok || refused.kind !== 'failed' || refused.code !== 'CLONE_FAILED') return refused;
+    const deepened = await runStep(
+      context,
+      supervise(
+        workspace.pidFile('clone'),
+        gitFetch({ repo: workspace.repo, auth, mode: { kind: 'unshallow' } }),
+      ),
+    );
+    if (deepened.kind !== 'completed') return notCompleted(deepened);
+    if (
+      deepened.result.exitCode !== 0 &&
+      !deepened.result.stderrTail.includes(ALREADY_COMPLETE_MARKER)
+    ) {
+      return classifyCommand(redactor, 'clone', deepened.result);
+    }
+  }
+
+  const checkedOut = await runStep(context, gitCheckout(workspace.repo, requested));
+  if (checkedOut.kind !== 'completed') return notCompleted(checkedOut);
+  if (checkedOut.result.exitCode !== 0) {
+    return MISSING_COMMIT_PATTERN.test(checkedOut.result.stderrTail)
+      ? commitNotFound()
+      : classifyCommand(redactor, 'checkout', checkedOut.result);
+  }
+
+  const head = await runStep(context, gitHeadSha(workspace.repo));
+  if (head.kind !== 'completed') return notCompleted(head);
+  if (head.result.exitCode !== 0) return classifyCommand(redactor, 'rev_parse', head.result);
+  if (head.result.truncated || head.stdout.trim() !== requested) {
+    return classifyCommand(redactor, 'rev_parse', head.result, null);
+  }
+  return CHECKED;
+}
+
+type GitCloneAuthOf = CredentialPlan['auth'];
+
 export async function cloneRepository(
   input: CloneRepositoryInput,
 ): Promise<StepResult<ClonedRepository>> {
@@ -311,6 +400,14 @@ export async function cloneRepository(
     const sha = head.result.truncated ? undefined : validateCommitSha(head.stdout.trim());
     if (!sha?.ok) return classifyCommand(redactor, 'rev_parse', head.result, null);
 
+    // 18-03: the branch head moved past the pushed commit; deploy exactly the requested one.
+    const requested = input.requestedSha;
+    if (requested !== undefined && sha.value !== requested) {
+      const checked = await checkoutRequested(context, input, plan.auth, requested);
+      if (!checked.ok) return checked;
+    }
+    const commitSha = requested ?? sha.value;
+
     const probed = await runStep(context, gitProbeFeatures(workspace.repo));
     if (probed.kind !== 'completed') return notCompleted(probed);
     const probe = readProbe(probed);
@@ -319,7 +416,7 @@ export async function cloneRepository(
     return {
       ok: true,
       value: {
-        commitSha: sha.value,
+        commitSha,
         hostKeys: hostKeys.value.keys,
         hostKeySource: hostKeys.value.source,
       },

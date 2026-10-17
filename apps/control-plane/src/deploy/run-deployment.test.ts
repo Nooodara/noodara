@@ -15,6 +15,7 @@ import { createRedactor, revealSecret, secretValue, type Redactor } from '@nooda
 import {
   deployWorkspaceFor,
   parseGitHostKeyLine,
+  validateCommitSha,
   validateContainerPort,
   validateImageRef,
   validateRegistryHost,
@@ -1936,5 +1937,71 @@ describe('runDeployment: ROLLING_BACK is not cancellable (17-06 A1, H1)', () => 
     expect(h.progress.advances.map(([, to]) => to)).not.toContain('ROLLING_BACK');
     expect(h.events).toEqual([]);
     expect(afterKey(h, 'docker.remove').slice(0, 4)).toEqual(RESTORE_KEYS);
+  });
+});
+
+describe('runDeployment: requested SHA (18-03)', () => {
+  const PUSHED = unwrap(validateCommitSha('c'.repeat(40)));
+
+  it('fetches and deploys exactly the requested SHA when the branch head moved (A1, A3)', async () => {
+    const h = harness({
+      scripts: { 'git.head_sha': [{ stdout: `${SHA}\n` }, { stdout: `${PUSHED}\n` }] },
+      extra: { requestedSha: PUSHED },
+    });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'SUCCESS', commitSha: PUSHED });
+    expect(h.progress.shas).toEqual([PUSHED]);
+    expect(h.session.keys().slice(0, 7)).toEqual([
+      'fs.prepare_workspace',
+      'supervise:clone',
+      'git.head_sha',
+      'supervise:clone',
+      'git.checkout',
+      'git.head_sha',
+      'git.probe_features',
+    ]);
+    const fetch = h.session.argv('supervise:clone', 1);
+    expect(fetch.slice(fetch.indexOf('fetch'))).toEqual([
+      'fetch',
+      '--depth',
+      '1',
+      '--no-tags',
+      '--no-recurse-submodules',
+      'origin',
+      PUSHED,
+    ]);
+  });
+
+  it('ends FAILED with COMMIT_NOT_FOUND when the remote no longer has the SHA (A2)', async () => {
+    const h = harness({
+      scripts: {
+        'supervise:clone': [{}, { exitCode: 128, stderr: `fatal: remote error: upload-pack: not our ref ${PUSHED}\n` }, {}],
+        'git.checkout': { exitCode: 128, stderr: `fatal: unable to read tree (${PUSHED})\n` },
+      },
+      extra: { requestedSha: PUSHED },
+    });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({
+      status: 'FAILED',
+      errorCode: 'COMMIT_NOT_FOUND',
+      errorMessage: V03_DEPLOYMENT_ERROR_MESSAGES.COMMIT_NOT_FOUND,
+      commitSha: null,
+    });
+    expect(h.progress.shas).toEqual([]);
+    expect(h.session.keys()).not.toContain('supervise:build');
+  });
+
+  it('without a requested SHA keeps the v0.2 clone: no fetch, no checkout (A4)', async () => {
+    const h = harness({ extra: { requestedSha: null } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'SUCCESS', commitSha: SHA });
+    expect(h.session.keys()).not.toContain('git.checkout');
+    expect(h.session.keys().filter((key) => key === 'supervise:clone')).toHaveLength(1);
   });
 });

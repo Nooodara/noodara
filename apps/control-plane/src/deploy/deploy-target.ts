@@ -13,6 +13,8 @@
 //   restarted from it), never an error: the deploy itself must still run.
 // - 17-07: `createLoadTarget` also hands the pipeline `recordRollbackStarted`, which writes the
 //   `deployment.rollback_started` activity event (ids only) through src/activity/.
+// - 18-03: deployments.commit_sha set before the run (a webhook push) is the exact commit to
+//   deploy: it rides along as `requestedSha`, re-validated as 40-hex (corrupt = caller bug).
 import { and, desc, eq, inArray, isNotNull, ne } from 'drizzle-orm';
 import {
   parseRuntimeConfigSnapshot,
@@ -20,11 +22,13 @@ import {
   type HealthcheckConfig,
 } from '@noodara/domain/deployment';
 import {
+  validateCommitSha,
   validateContainerPort,
   validateRegistryHost,
   validateRegistryUsername,
   validateResourceId,
   validateServiceSource,
+  type CommitSha,
   type ResourceId,
   type ServiceSource,
 } from '@noodara/domain/validators';
@@ -62,7 +66,13 @@ export interface CredentialRowShape {
 }
 
 export interface DeployTargetRows {
-  readonly deployment: { readonly id: string; readonly serviceId: string; readonly source: unknown };
+  readonly deployment: {
+    readonly id: string;
+    readonly serviceId: string;
+    readonly source: unknown;
+    /** 18-03: deployments.commit_sha at load time; null or absent = deploy the branch head. */
+    readonly commitSha?: string | null;
+  };
   readonly service: {
     readonly id: string;
     readonly serverId: string;
@@ -201,12 +211,21 @@ function registryCredential(rows: DeployTargetRows, imageRef: string, masterKeys
   };
 }
 
+/** 18-03: a stored SHA that is not 40-hex is a corrupt row, never passed on to git. */
+function requestedShaOf(stored: string | null | undefined): CommitSha | null {
+  if (stored === null || stored === undefined) return null;
+  const checked = validateCommitSha(stored);
+  if (!checked.ok) throw new DeployTargetError();
+  return checked.value;
+}
+
 export function resolveDeployTarget(rows: DeployTargetRows, masterKeys: MasterKeys, panelPorts: PanelPorts): LoadTargetResult {
   const deploymentId = resourceId(rows.deployment.id);
   const serviceId = resourceId(rows.deployment.serviceId);
   if (rows.service.id !== serviceId) throw new DeployTargetError();
   const { source, internalPort, publishedPort } = snapshotOf(rows.deployment.source);
   const healthcheck = healthcheckOf(rows.service.healthcheck);
+  const requestedSha = requestedShaOf(rows.deployment.commitSha);
 
   const credential =
     source.kind === 'git'
@@ -229,6 +248,7 @@ export function resolveDeployTarget(rows: DeployTargetRows, masterKeys: MasterKe
       healthcheck,
       autoRollback: rows.service.autoRollback ?? true,
       previousSuccess: previousSuccessOf(rows, deploymentId),
+      requestedSha,
     },
   };
 }
@@ -245,7 +265,12 @@ export function createLoadTarget(
 ): (deployment: { readonly id: string; readonly serviceId: string }) => Promise<LoadTargetResult> {
   return async ({ id }) => {
     const [deployment] = await deps.db
-      .select({ id: deployments.id, serviceId: deployments.serviceId, source: deployments.source })
+      .select({
+        id: deployments.id,
+        serviceId: deployments.serviceId,
+        source: deployments.source,
+        commitSha: deployments.commitSha,
+      })
       .from(deployments)
       .where(eq(deployments.id, id))
       .limit(1);

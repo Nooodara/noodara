@@ -212,6 +212,8 @@ export interface RunDeploymentInput {
   /** 17-05: a manual rollback re-runs this retained deployment (no clone, no build) with its
    *  snapshot; a failure always rolls back to the version that ran before. */
   readonly rollbackTarget?: ManualRollbackTarget;
+  /** 18-03: the exact commit to deploy (webhook push); null or absent = the branch head (v0.2). */
+  readonly requestedSha?: CommitSha | null;
 }
 
 /** 17-05: the deployment a manual rollback restores, and the runtime config it ran with. */
@@ -627,6 +629,7 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
         source,
         credential: gitCredentialOf(input.credential),
         pinnedHostKeys,
+        ...(input.requestedSha === undefined || input.requestedSha === null ? {} : { requestedSha: input.requestedSha }),
       });
       if (endpoint !== null && !clone.ok && clone.kind === 'failed' && clone.code === 'GIT_HOST_KEY_MISMATCH') {
         failed('GIT_HOST_KEY_MISMATCH', gitHostKeyMismatchMessage(serviceId));

@@ -437,3 +437,66 @@ describe('createLoadTarget: rollback inputs (17-03 P4)', () => {
     expect(result.target.previousSuccess).toEqual({ id: PREVIOUS_ID, runtimeConfig: null });
   });
 });
+
+describe('resolveDeployTarget: requested SHA (18-03)', () => {
+  const PUSHED = '0123456789abcdef0123456789abcdef01234567';
+  const withSha = (commitSha: string | null | undefined): DeployTargetRows => {
+    const base = rows();
+    return commitSha === undefined ? base : { ...base, deployment: { ...base.deployment, commitSha } };
+  };
+
+  it('a manual deploy (no stored SHA) keeps the v0.2 behaviour: requestedSha null', () => {
+    for (const value of [null, undefined]) {
+      const result = resolveDeployTarget(withSha(value), masterKeys, PANEL);
+      if (!result.ok) throw new Error('expected ok');
+      expect(result.target.requestedSha).toBeNull();
+    }
+  });
+
+  it('carries the stored webhook SHA as the validated requestedSha (A1)', () => {
+    const result = resolveDeployTarget(withSha(PUSHED), masterKeys, PANEL);
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.target.requestedSha).toBe(PUSHED);
+  });
+
+  it.each(['-oProxyCommand=x', `${PUSHED}a`, PUSHED.slice(0, 7), 'g'.repeat(40), PUSHED.toUpperCase(), ''])(
+    'a stored SHA %j that is not 40 lowercase hex is a corrupt row, never echoed (H1)',
+    (value) => {
+      expect(() => resolveDeployTarget(withSha(value), masterKeys, PANEL)).toThrow(DeployTargetError);
+      if (value.length > 0) {
+        expect(() => resolveDeployTarget(withSha(value), masterKeys, PANEL)).not.toThrow(value);
+      }
+    },
+  );
+});
+
+describe('createLoadTarget: requested SHA (18-03)', () => {
+  it('selects deployments.commit_sha and hands it on as requestedSha', async () => {
+    const pushed = 'f'.repeat(40);
+    const fake = loadDb({
+      deployments: [[{ id: DEPLOYMENT_ID, serviceId: SERVICE_ID, source: gitSnapshot, commitSha: pushed }], []],
+      services: [
+        [
+          {
+            id: SERVICE_ID,
+            serverId: SERVER_ID,
+            repositoryCredentialId: null,
+            registryCredentialId: null,
+            healthcheck: null,
+            autoRollback: true,
+          },
+        ],
+        [],
+      ],
+    });
+
+    const result = await createLoadTarget({ db: fake.db, masterKeys: () => Promise.resolve(masterKeys), panelPorts: PANEL })({
+      id: DEPLOYMENT_ID,
+      serviceId: SERVICE_ID,
+    });
+
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.target.requestedSha).toBe(pushed);
+    expect(fake.queries.find((q) => q.table === deployments)?.fields).toHaveProperty('commitSha', deployments.commitSha);
+  });
+});

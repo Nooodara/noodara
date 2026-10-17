@@ -5,6 +5,7 @@ import { randomBytes } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { V03_DEPLOYMENT_ERROR_MESSAGES } from '@noodara/domain/deployment';
 import { createRedactor, revealSecret, secretValue, type Redactor } from '@noodara/domain/security';
 import {
   bundledGitHostKeysFor,
@@ -13,6 +14,7 @@ import {
   knownHostsContent,
   parseGitHostKeyLine,
   validateServiceSource,
+  type CommitSha,
   type DeployWorkspace,
   type GitHostKey,
   type GitSshEndpoint,
@@ -71,12 +73,16 @@ const DEFAULT_SCRIPTS: Partial<Record<DeployCommandName, Script>> = {
   'git.probe_features': { stdout: 'submodules=0\nlfs=0\n' },
 };
 
+/** An array is consumed in call order (supervised steps all share `process.supervise`). */
+type Scripts = Partial<Record<DeployCommandName, Script | readonly Script[]>>;
+
 class RecordingSession implements SshDeploySession {
   readonly calls: Call[] = [];
+  private readonly seen = new Map<DeployCommandName, number>();
 
   constructor(
     private readonly redactor: Redactor,
-    private readonly scripts: Partial<Record<DeployCommandName, Script>> = {},
+    private readonly scripts: Scripts = {},
     private readonly watched: readonly string[] = [],
   ) {}
 
@@ -95,7 +101,11 @@ class RecordingSession implements SshDeploySession {
       stdin: options.stdin === undefined ? undefined : revealSecret(options.stdin),
       redactedAtCall: this.watched.filter((value) => this.redactor.redact(value) !== value),
     });
-    const script = this.scripts[command.name] ?? DEFAULT_SCRIPTS[command.name] ?? {};
+    const index = this.seen.get(command.name) ?? 0;
+    this.seen.set(command.name, index + 1);
+    const scripted = this.scripts[command.name];
+    const picked = Array.isArray(scripted) ? (scripted as readonly Script[])[index] : (scripted as Script | undefined);
+    const script = picked ?? DEFAULT_SCRIPTS[command.name] ?? {};
     if (script.reject !== undefined) return Promise.reject(script.reject);
     const stdout = this.redactor.redact(script.stdout ?? '');
     const stderr = this.redactor.redact(script.stderr ?? '');
@@ -623,6 +633,211 @@ describe('cloneRepository host key pinning (14-06)', () => {
       value: { hostKeys: [], hostKeySource: 'none' },
     });
     expect(session.names()).not.toContain('git.keyscan');
+  });
+});
+
+describe('cloneRepository with a requested SHA (18-03)', () => {
+  const REQUESTED = 'b'.repeat(40);
+  const requestedSha = REQUESTED as CommitSha;
+  const BRANCH_MOVED: Scripts = {
+    'git.head_sha': [{ stdout: `${SHA}\n` }, { stdout: `${REQUESTED}\n` }],
+  };
+  const UNADVERTISED_STDERR =
+    'fatal: Server does not allow request for unadvertised object bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n';
+  const NOT_OUR_REF_STDERR = `fatal: remote error: upload-pack: not our ref ${REQUESTED}\n`;
+
+  function supervisedArgv(session: RecordingSession, index: number): readonly string[] {
+    return session.call('process.supervise', index).command.argv;
+  }
+
+  it('keeps the clone as is when the branch head already is the requested SHA', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, { 'git.head_sha': { stdout: `${REQUESTED}\n` } });
+
+    const result = await run(session, redactor, { kind: 'none' }, { requestedSha });
+
+    expect(result).toMatchObject({ ok: true, value: { commitSha: REQUESTED } });
+    expect(session.names()).toEqual([
+      'fs.prepare_workspace',
+      'secrets.write_file',
+      'process.supervise',
+      'git.head_sha',
+      'git.probe_features',
+    ]);
+  });
+
+  it('fetches exactly the requested SHA shallowly, supervised, then detaches at it (A1)', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, BRANCH_MOVED);
+    const ws = workspace();
+
+    const result = await run(session, redactor, { kind: 'none' }, { requestedSha });
+
+    expect(result).toMatchObject({ ok: true, value: { commitSha: REQUESTED } });
+    expect(session.names()).toEqual([
+      'fs.prepare_workspace',
+      'secrets.write_file',
+      'process.supervise',
+      'git.head_sha',
+      'process.supervise',
+      'git.checkout',
+      'git.head_sha',
+      'git.probe_features',
+    ]);
+    const fetch = supervisedArgv(session, 1);
+    expect(fetch).toContain(ws.pidFile('clone'));
+    expect(fetch.slice(fetch.indexOf('fetch'))).toEqual([
+      'fetch',
+      '--depth',
+      '1',
+      '--no-tags',
+      '--no-recurse-submodules',
+      'origin',
+      REQUESTED,
+    ]);
+    expect(fetch.filter((word) => word.includes(REQUESTED))).toEqual([REQUESTED]);
+    expect(session.call('git.checkout').command.argv).toEqual(['git', '-C', ws.repo, 'checkout', '--detach', REQUESTED, '--']);
+  });
+
+  it('reuses the clone auth for the fetch: deploy key and pinned known_hosts', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, BRANCH_MOVED);
+    const ws = workspace();
+
+    await run(session, redactor, { kind: 'deploy_key', privateKey: secretValue(canaryKey(), 'ssh_private_key') }, { requestedSha });
+
+    const sshCommand = supervisedArgv(session, 1).find((token) => token.startsWith('GIT_SSH_COMMAND='));
+    expect(sshCommand).toContain(ws.secretFile('deploy_key'));
+    expect(sshCommand).toContain('StrictHostKeyChecking=yes');
+  });
+
+  it.each([UNADVERTISED_STDERR, NOT_OUR_REF_STDERR])(
+    'falls back to deepening the branch when the remote refuses the SHA (H1): %j',
+    async (stderr) => {
+      const redactor = createRedactor();
+      const session = new RecordingSession(redactor, {
+        ...BRANCH_MOVED,
+        'process.supervise': [{}, { exitCode: 128, stderr }, {}],
+      });
+
+      const result = await run(session, redactor, { kind: 'none' }, { requestedSha });
+
+      expect(result).toMatchObject({ ok: true, value: { commitSha: REQUESTED } });
+      const unshallow = supervisedArgv(session, 2);
+      expect(unshallow.slice(unshallow.indexOf('fetch'))).toEqual([
+        'fetch',
+        '--unshallow',
+        '--no-tags',
+        '--no-recurse-submodules',
+        'origin',
+      ]);
+      expect(session.names().slice(-3)).toEqual(['git.checkout', 'git.head_sha', 'git.probe_features']);
+    },
+  );
+
+  it.each([
+    'fatal: unable to read tree (bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb)\n',
+    `fatal: reference is not a tree: ${'b'.repeat(40)}\n`,
+  ])('ends COMMIT_NOT_FOUND with the actionable message when the remote no longer has it (A2): %j', async (stderr) => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, {
+      ...BRANCH_MOVED,
+      'process.supervise': [{}, { exitCode: 128, stderr: NOT_OUR_REF_STDERR }, {}],
+      'git.checkout': { exitCode: 128, stderr },
+    });
+
+    const result = await run(session, redactor, { kind: 'none' }, { requestedSha });
+
+    expect(result).toEqual({
+      ok: false,
+      kind: 'failed',
+      code: 'COMMIT_NOT_FOUND',
+      message: V03_DEPLOYMENT_ERROR_MESSAGES.COMMIT_NOT_FOUND,
+    });
+    expect(session.names()).not.toContain('git.probe_features');
+  });
+
+  it('stops on an infrastructure failure of the fetch without deepening (auth)', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, {
+      ...BRANCH_MOVED,
+      'process.supervise': [{}, { exitCode: 128, stderr: AUTH_FAILED_STDERR }],
+    });
+
+    const result = await run(session, redactor, { kind: 'none' }, { requestedSha });
+
+    expect(result).toMatchObject({ ok: false, kind: 'failed', code: 'REPOSITORY_AUTH_FAILED' });
+    expect(session.names().filter((name) => name === 'process.supervise')).toHaveLength(2);
+    expect(session.names()).not.toContain('git.checkout');
+  });
+
+  it('classifies a failed unshallow instead of guessing a missing commit', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, {
+      ...BRANCH_MOVED,
+      'process.supervise': [
+        {},
+        { exitCode: 128, stderr: UNADVERTISED_STDERR },
+        { exitCode: 128, stderr: 'fatal: write error: No space left on device\n' },
+      ],
+    });
+
+    const result = await run(session, redactor, { kind: 'none' }, { requestedSha });
+
+    expect(result).toMatchObject({ ok: false, kind: 'failed', code: 'DISK_FULL' });
+    expect(session.names()).not.toContain('git.checkout');
+  });
+
+  it('checks out anyway when the repository is already complete', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, {
+      ...BRANCH_MOVED,
+      'process.supervise': [
+        {},
+        { exitCode: 128, stderr: UNADVERTISED_STDERR },
+        { exitCode: 128, stderr: 'fatal: --unshallow on a complete repository does not make sense\n' },
+      ],
+    });
+
+    const result = await run(session, redactor, { kind: 'none' }, { requestedSha });
+
+    expect(result).toMatchObject({ ok: true, value: { commitSha: REQUESTED } });
+  });
+
+  it('fails when HEAD is not the requested SHA after the checkout', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, {
+      'git.head_sha': [{ stdout: `${SHA}\n` }, { stdout: `${SHA}\n` }],
+    });
+
+    const result = await run(session, redactor, { kind: 'none' }, { requestedSha });
+
+    expect(result).toMatchObject({ ok: false, kind: 'failed', code: 'CLONE_FAILED' });
+    expect(session.names()).not.toContain('git.probe_features');
+  });
+
+  it('classifies any other checkout failure, not as a missing commit', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, {
+      ...BRANCH_MOVED,
+      'git.checkout': { exitCode: 128, stderr: 'fatal: Unable to create index.lock: No space left on device\n' },
+    });
+
+    const result = await run(session, redactor, { kind: 'none' }, { requestedSha });
+
+    expect(result).toMatchObject({ ok: false, kind: 'failed', code: 'DISK_FULL' });
+  });
+
+  it('reports a cancelled fetch as interrupted', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor, {
+      ...BRANCH_MOVED,
+      'process.supervise': [{}, { outcome: 'aborted', exitCode: null }],
+    });
+
+    const result = await run(session, redactor, { kind: 'none' }, { requestedSha });
+
+    expect(result).toEqual({ ok: false, kind: 'interrupted', outcome: 'aborted' });
   });
 });
 

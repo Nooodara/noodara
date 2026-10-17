@@ -37,6 +37,7 @@ import {
   dockerStopPrevious,
   gitCheckout,
   gitClone,
+  gitFetch,
   gitHeadSha,
   gitKeyscan,
   gitProbeFeatures,
@@ -79,18 +80,21 @@ import {
   validateRegistryUsername,
   validateRepositoryUrl,
   validateResourceId,
+  validateServiceSource,
   type DeployWorkspace,
   type GitHostKey,
   type ValidationResult,
 } from '@noodara/domain/validators';
 import {
   parseProbeOutput,
+  V03_DEPLOYMENT_ERROR_MESSAGES,
   validateHealthcheckConfig,
   type HealthcheckConfig,
   type HealthcheckObservation,
 } from '@noodara/domain/deployment';
-import { createRedactor } from '@noodara/domain/security';
-import { classifyGitError } from '@noodara/ssh';
+import { createRedactor, secretValue } from '@noodara/domain/security';
+import { classifyGitError, createSsh2Adapter, type SshDeploySession } from '@noodara/ssh';
+import { cloneRepository, type StepLimits } from '@noodara/git';
 import {
   DEPLOY_ENGINE_UBUNTU_VERSIONS,
   preloadedRefFor,
@@ -128,6 +132,34 @@ http.createServer((req, res) => {
   if (url === '/big') { res.writeHead(200); res.end(canary.repeat(20000)); return; }
   res.writeHead(404); res.end();
 }).listen(${String(TARGET_PORT)}, '0.0.0.0');
+`;
+// 18-03: repositories whose main moves past the pushed commit after seeding (see MOVE_BRANCH).
+const SHA_REPOS = { direct: 'sha-direct', fallback: 'sha-fallback', forced: 'sha-forced' } as const;
+const CLONE_LIMITS: StepLimits = {
+  maxDurationMs: 120_000,
+  idleTimeoutMs: 60_000,
+  maxTotalBytes: 4 * 1024 * 1024,
+  maxLineBytes: 16_384,
+};
+// Test setup only, run as the bare repo's owner (`git`). $1: `moved` adds a commit after the
+// pushed one; `forced` pushes a commit then force-pushes it away. $2 = 1 lets the server answer
+// a want for any reachable SHA (GitHub-like); 0 keeps git's default, which refuses unadvertised
+// objects over protocol v0. Prints the SHA the test requests.
+const MOVE_BRANCH = `set -eu
+bare=/srv/git/$0.git; mode=$1; allow=$2
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+git clone -q "$bare" "$work/w"
+cd "$work/w"
+commit() { git -c user.name='Noodara Test' -c user.email=test@noodara.invalid -c commit.gpgsign=false commit -q --allow-empty -m "$1"; }
+if [ "$mode" = forced ]; then
+  commit gone; requested=$(git rev-parse HEAD); git push -q origin HEAD:main
+  git reset -q --hard HEAD~1; commit moved; git push -q -f origin HEAD:main
+else
+  requested=$(git rev-parse HEAD); commit moved; git push -q origin HEAD:main
+fi
+if [ "$allow" = 1 ]; then git -C "$bare" config uploadpack.allowReachableSHA1InWant true; fi
+echo "$requested"
 `;
 // Test setup only: the slow-build Dockerfile goes under the (not cloned) repo dir.
 const WRITE_DOCKERFILE = `sh -c 'umask 077 && mkdir -p "$0" && cat > "$0/Dockerfile"'`;
@@ -311,6 +343,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
             withGitmodules: true,
             withLfsPointer: true,
           },
+          ...Object.values(SHA_REPOS).map((name) => ({ name, sourceDir: NODE_API_FIXTURE })),
         ],
       });
       client = await connect(stack);
@@ -922,6 +955,127 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       it('H2: the response-body canary never reached any probe or template output', () => {
         expect(transcript.join('\n')).not.toContain(bodyCanary);
       });
+    });
+
+    describe('18-03: deploy the exact pushed SHA when the branch moved past it', () => {
+      let session: SshDeploySession | undefined;
+      const redactor = createRedactor();
+      const requested: Partial<Record<keyof typeof SHA_REPOS, string>> = {};
+
+      const moveBranch = async (repo: keyof typeof SHA_REPOS, mode: 'moved' | 'forced', allow: boolean) => {
+        const result = await s().exec(['sh', '-c', MOVE_BRANCH, SHA_REPOS[repo], mode, allow ? '1' : '0'], {
+          user: 'git',
+        });
+        expect(result.exitCode, result.stderr).toBe(0);
+        requested[repo] = result.stdout.trim().split('\n').at(-1) ?? '';
+      };
+      const shaOf = (repo: keyof typeof SHA_REPOS) => valid(validateCommitSha(requested[repo] ?? ''));
+      const deployerGit = async (ws: DeployWorkspace, args: readonly string[]): Promise<string> => {
+        const result = await s().exec(['git', '-C', ws.repo, ...args], { user: 'deployer' });
+        expect(result.exitCode, result.stderr).toBe(0);
+        return result.stdout.trim();
+      };
+      const cloneAt = async (ws: DeployWorkspace, repo: keyof typeof SHA_REPOS, chunks: string[]) => {
+        if (session === undefined) throw new Error('session not connected');
+        const source = valid(
+          validateServiceSource({ kind: 'git', repositoryUrl: s().gitRepoUrl(SHA_REPOS[repo]), branch: 'main' }),
+        );
+        if (source.kind !== 'git') throw new Error('expected a git source');
+        return cloneRepository({
+          session,
+          redactor,
+          workspace: ws,
+          source,
+          credential: { kind: 'deploy_key', privateKey: secretValue(s().deployKey.privateKey, 'ssh_private_key') },
+          pinnedHostKeys: [await fixtureGitHostKey(s())],
+          requestedSha: shaOf(repo),
+          limits: CLONE_LIMITS,
+          onChunk: (chunk) => {
+            transcript.push(chunk.text);
+            chunks.push(chunk.text);
+          },
+        });
+      };
+
+      beforeAll(async () => {
+        await moveBranch('direct', 'moved', true);
+        await moveBranch('fallback', 'moved', false);
+        await moveBranch('forced', 'forced', true);
+        const outcome = await createSsh2Adapter().connect({
+          target: { host: s().ssh.host, port: s().ssh.port, user: s().ssh.user },
+          credential: { kind: 'private_key', privateKey: secretValue(s().ssh.privateKey, 'ssh_private_key') },
+          timeouts: { connectMs: 20_000, commandMs: 60_000, discoveryMs: 120_000 },
+          trustedFingerprint: null,
+          redactor,
+        });
+        if (!outcome.ok) throw new Error(`connect failed: ${outcome.errorCode}`);
+        session = outcome.session;
+      }, STACK_TIMEOUT_MS);
+
+      afterAll(async () => {
+        await session?.close();
+      });
+
+      it('A1/A3: fetches the requested SHA shallowly by SHA and records exactly it', async () => {
+        await withWorkspace(async (ws) => {
+          const chunks: string[] = [];
+          const result = await cloneAt(ws, 'direct', chunks);
+
+          expect(result, chunks.join('')).toMatchObject({ ok: true, value: { commitSha: requested.direct } });
+          expect(await deployerGit(ws, ['rev-parse', 'HEAD'])).toBe(requested.direct);
+          // Fetched by SHA, never deepened: the clone is still shallow.
+          expect(await deployerGit(ws, ['rev-parse', '--is-shallow-repository'])).toBe('true');
+        });
+      }, SSH_COMMAND_TIMEOUT_MS);
+
+      it('H1: a server that refuses unadvertised objects falls back to deepening the branch', async () => {
+        await withWorkspace(async (ws) => {
+          // The template alone, against the real bare repo: the server refuses the want.
+          await mustRun(await cloneCommand(ws, SHA_REPOS.fallback, [await fixtureGitHostKey(s())]));
+          const auth = {
+            kind: 'deploy_key',
+            keyFile: ws.secretFile('deploy_key'),
+            knownHostsFile: ws.secretFile('known_hosts'),
+          } as const;
+          const refused = await run(gitFetch({ repo: ws.repo, auth, mode: { kind: 'commit', sha: shaOf('fallback') } }));
+          expect(refused.exitCode).toBe(128);
+          expect(refused.stderr).toMatch(/unadvertised object|not our ref/);
+          expect(
+            classifyGitError(
+              {
+                kind: 'command',
+                operation: 'clone',
+                failure: { exitCode: refused.exitCode, stderr: refused.stderr, stdoutTail: refused.stdout },
+              },
+              { redactor: createRedactor() },
+            ).code,
+          ).toBe('CLONE_FAILED');
+        });
+
+        await withWorkspace(async (ws) => {
+          const chunks: string[] = [];
+          const result = await cloneAt(ws, 'fallback', chunks);
+
+          expect(result, chunks.join('')).toMatchObject({ ok: true, value: { commitSha: requested.fallback } });
+          expect(await deployerGit(ws, ['rev-parse', 'HEAD'])).toBe(requested.fallback);
+          expect(await deployerGit(ws, ['rev-parse', '--is-shallow-repository'])).toBe('false');
+        });
+      }, SSH_COMMAND_TIMEOUT_MS);
+
+      it('A2: a SHA force-pushed away from the remote ends COMMIT_NOT_FOUND with the actionable message', async () => {
+        await withWorkspace(async (ws) => {
+          const chunks: string[] = [];
+          const result = await cloneAt(ws, 'forced', chunks);
+
+          expect(result, chunks.join('')).toEqual({
+            ok: false,
+            kind: 'failed',
+            code: 'COMMIT_NOT_FOUND',
+            message: V03_DEPLOYMENT_ERROR_MESSAGES.COMMIT_NOT_FOUND,
+          });
+          expect(await deployerGit(ws, ['rev-parse', 'HEAD'])).not.toBe(requested.forced);
+        });
+      }, SSH_COMMAND_TIMEOUT_MS);
     });
 
     // Runs last: the transcript then holds every command line and output of this suite.
