@@ -43,6 +43,7 @@ import authRoutes from './routes/auth.js';
 import healthRoutes from './routes/health.js';
 import { toClientRequestError, toErrorBody, toValidationErrorBody } from './routes/http-errors.js';
 import setupRoutes from './routes/setup.js';
+import { createWebhookRoutes } from './routes/webhooks.js';
 import {
   createContainerLogs,
   DEFAULT_CONTAINER_LOGS_LIMITS,
@@ -55,6 +56,12 @@ import { createServerServices, type ServerServices } from './services/server-ser
 import { createDeploymentServices, type DeploymentServices } from './services/deployment-services.js';
 import { masterKeysFromEnvironment } from './services/service-credentials.js';
 import { createServiceServices, panelPortsFromEnv, type ServiceServices } from './services/service-services.js';
+import {
+  createWebhookIngest,
+  createWebhookRateLimiter,
+  type WebhookIngest,
+  type WebhookRateLimits,
+} from './services/webhook-ingest.js';
 
 export interface BuildAppDeps {
   logger?: FastifyInstance['log'];
@@ -85,6 +92,10 @@ export interface BuildAppDeps {
    *  `createDnsChecker()` (a bounded, real `node:dns/promises` lookup); a test substitutes a
    *  hand-built fake (ADR 0004). */
   dnsChecker?: DnsChecker;
+  /** 18-02: the GitHub receiver; built lazily from `getDb()` and the deploy queue when not injected. */
+  webhookIngest?: WebhookIngest;
+  /** 18-02: receiver rate limits; defaults to `DEFAULT_WEBHOOK_RATE_LIMITS`. */
+  webhookRateLimits?: WebhookRateLimits;
 }
 
 /**
@@ -330,6 +341,41 @@ function createDeploymentServicesResolver(
           logger,
         }),
       )
+      .catch((error: unknown) => {
+        cached = undefined;
+        throw error;
+      });
+    return cached;
+  };
+}
+
+/** 18-02: same lazy shape for the webhook receiver. A failed enqueue ends the webhook deployment
+ *  through the deployment store (FAILED/ENQUEUE_FAILED). */
+function createWebhookIngestResolver(
+  deps: BuildAppDeps,
+  eventPublisher: ServerEventPublisher,
+  getDeployQueue: () => DeployQueue,
+  logger: FastifyBaseLogger,
+): () => Promise<WebhookIngest> {
+  let cached: Promise<WebhookIngest> | undefined;
+  return () => {
+    if (deps.webhookIngest !== undefined) {
+      return Promise.resolve(deps.webhookIngest);
+    }
+    cached ??= getDb()
+      .then((db) => {
+        const now = (): Date => new Date();
+        const store = createDeploymentStore({ db, now, events: eventPublisher });
+        return createWebhookIngest({
+          db,
+          now,
+          events: eventPublisher,
+          queue: { enqueue: (payload) => getDeployQueue().enqueue(payload) },
+          masterKeys: masterKeysFromEnvironment(),
+          failUnqueued: (deploymentId, cutoff) => store.failStaleQueued(deploymentId, cutoff),
+          logger,
+        });
+      })
       .catch((error: unknown) => {
         cached = undefined;
         throw error;
@@ -585,6 +631,13 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   app.register(healthRoutes);
   app.register(authRoutes);
   app.register(setupRoutes);
+  // 18-02: also a sibling of `apiScope`: GitHub carries no session or Origin; the HMAC is the auth.
+  app.register(
+    createWebhookRoutes({
+      getIngest: createWebhookIngestResolver(deps, eventPublisher, getDeployQueue, app.log),
+      rateLimiter: createWebhookRateLimiter(deps.webhookRateLimits),
+    }),
+  );
   app.register(apiScope, {
     broadcaster,
     dnsChecker: deps.dnsChecker ?? createDnsChecker(),
