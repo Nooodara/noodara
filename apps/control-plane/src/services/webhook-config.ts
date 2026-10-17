@@ -21,6 +21,9 @@ import type { MasterKeys, ServiceActor } from './server-service-deps.js';
 export const WEBHOOK_SECRET_BYTES = 32;
 /** Hook id size: 192 bits, base64url (32 characters, inside the column's 22..64 check). */
 export const WEBHOOK_HOOK_ID_BYTES = 24;
+/** Fresh hook ids drawn when the unique index reports a collision before enable gives up (18-05 H9). */
+export const WEBHOOK_HOOK_ID_ATTEMPTS = 3;
+const HOOK_ID_UNIQUE_INDEX = 'services_webhook_hook_id_unique_idx';
 /** The receiver path (18-02); the hook id is its only variable part. */
 export const WEBHOOK_PATH_PREFIX = '/webhooks/github/';
 
@@ -122,7 +125,12 @@ interface Failure<Code extends string> {
   readonly message: string;
 }
 
-export type WebhookFailureCode = 'NOT_FOUND' | 'WEBHOOK_SOURCE_NOT_GIT' | 'WEBHOOK_ALREADY_ENABLED' | 'WEBHOOK_NOT_ENABLED';
+export type WebhookFailureCode =
+  | 'NOT_FOUND'
+  | 'WEBHOOK_SOURCE_NOT_GIT'
+  | 'WEBHOOK_ALREADY_ENABLED'
+  | 'WEBHOOK_NOT_ENABLED'
+  | 'WEBHOOK_HOOK_ID_CONFLICT';
 
 export type WebhookSecretResult = { readonly ok: true; readonly webhook: WebhookSecretView } | Failure<WebhookFailureCode>;
 
@@ -176,6 +184,49 @@ const NOT_ENABLED: Failure<'WEBHOOK_NOT_ENABLED'> = Object.freeze({
   code: 'WEBHOOK_NOT_ENABLED',
   message: 'The webhook is not enabled',
 });
+
+const HOOK_ID_CONFLICT: Failure<'WEBHOOK_HOOK_ID_CONFLICT'> = Object.freeze({
+  ok: false,
+  code: 'WEBHOOK_HOOK_ID_CONFLICT',
+  message: 'Could not allocate a unique webhook URL; try again',
+});
+
+/** drizzle wraps the `pg` error; `.code`/`.constraint` live on `cause` (see service-services.ts). */
+function isHookIdCollision(error: unknown): boolean {
+  const cause = (error as { cause?: { code?: string; constraint?: string } } | undefined)?.cause;
+  return cause?.code === '23505' && cause.constraint === HOOK_ID_UNIQUE_INDEX;
+}
+
+/** Thrown inside the enable transaction to roll back the credential row when no id was free. */
+class HookIdExhaustedError extends Error {
+  constructor() {
+    super('webhook-config: no free hook id');
+    this.name = 'HookIdExhaustedError';
+  }
+}
+
+/**
+ * Points the service at a fresh hook id and the new credential. Each attempt runs in a savepoint,
+ * so a unique violation on the hook-id index aborts only that attempt and the next one draws a new
+ * id. Any other error propagates unchanged.
+ */
+async function claimHookId(tx: Transaction, serviceId: string, credentialId: string, random: RandomBytes): Promise<string> {
+  for (let attempt = 0; attempt < WEBHOOK_HOOK_ID_ATTEMPTS; attempt += 1) {
+    const hookId = generateHookId(random);
+    try {
+      await tx.transaction(async (savepoint) => {
+        await savepoint
+          .update(services)
+          .set({ webhookHookId: hookId, webhookSecretCredentialId: credentialId })
+          .where(eq(services.id, serviceId));
+      });
+      return hookId;
+    } catch (error) {
+      if (!isHookIdCollision(error)) throw error;
+    }
+  }
+  throw new HookIdExhaustedError();
+}
 
 export async function getWebhookConfig(
   deps: Pick<WebhookConfigDeps, 'db' | 'publicOrigin'>,
@@ -239,28 +290,31 @@ async function recordChange(
 
 /**
  * Enables the webhook of a Git service. A second enable is a named 409 and never rotates the
- * secret behind the user's back (H2). A hook id left without a secret is replaced.
+ * secret behind the user's back (H2). A hook id left without a secret is replaced. A hook id that
+ * collides on the unique index is redrawn; if every attempt collides the whole enable rolls back
+ * and answers the typed WEBHOOK_HOOK_ID_CONFLICT (409), never a 500 (18-05 H9).
  */
 export async function enableWebhook(deps: WebhookConfigDeps, target: WebhookTarget): Promise<WebhookSecretResult> {
   const random = deps.randomBytes ?? cryptoRandomBytes;
-  return deps.db.transaction(async (tx): Promise<WebhookSecretResult> => {
-    const service = await lockService(tx, target);
-    if (!service) return notFound(target.serviceId);
-    if (service.sourceType !== 'git') return SOURCE_NOT_GIT;
-    if (isEnabled(service)) return ALREADY_ENABLED;
+  try {
+    return await deps.db.transaction(async (tx): Promise<WebhookSecretResult> => {
+      const service = await lockService(tx, target);
+      if (!service) return notFound(target.serviceId);
+      if (service.sourceType !== 'git') return SOURCE_NOT_GIT;
+      if (isEnabled(service)) return ALREADY_ENABLED;
 
-    const now = deps.now();
-    const hookId = generateHookId(random);
-    const secret = generateWebhookSecret(random);
-    const credentialId = await insertSecret(tx, deps, secret, now);
-    await tx
-      .update(services)
-      .set({ webhookHookId: hookId, webhookSecretCredentialId: credentialId })
-      .where(eq(services.id, service.id));
-    await deleteSecret(tx, service.webhookSecretCredentialId);
-    await recordChange(tx, target, service.id, 'webhook', false, now);
-    return { ok: true, webhook: { enabled: true, payloadUrl: webhookPayloadUrl(deps.publicOrigin, hookId), secret } };
-  });
+      const now = deps.now();
+      const secret = generateWebhookSecret(random);
+      const credentialId = await insertSecret(tx, deps, secret, now);
+      const hookId = await claimHookId(tx, service.id, credentialId, random);
+      await deleteSecret(tx, service.webhookSecretCredentialId);
+      await recordChange(tx, target, service.id, 'webhook', false, now);
+      return { ok: true, webhook: { enabled: true, payloadUrl: webhookPayloadUrl(deps.publicOrigin, hookId), secret } };
+    });
+  } catch (error) {
+    if (error instanceof HookIdExhaustedError) return HOOK_ID_CONFLICT;
+    throw error;
+  }
 }
 
 /**

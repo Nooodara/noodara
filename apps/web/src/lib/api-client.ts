@@ -83,7 +83,10 @@ export type DeployEngineErrorCode =
   | "IDEMPOTENCY_KEY_REUSED"
   | "WEBHOOK_SOURCE_NOT_GIT"
   | "WEBHOOK_ALREADY_ENABLED"
-  | "WEBHOOK_NOT_ENABLED";
+  | "WEBHOOK_NOT_ENABLED"
+  | "WEBHOOK_HOOK_ID_CONFLICT"
+  | "WEBHOOK_DELIVERY_REJECTED"
+  | "RATE_LIMITED";
 
 export type DeployApiErrorCode = ApiErrorCode | DeployEngineErrorCode;
 
@@ -257,6 +260,9 @@ const DEPLOY_ENGINE_ERROR_CODE_MARKER = Object.freeze({
   WEBHOOK_SOURCE_NOT_GIT: true,
   WEBHOOK_ALREADY_ENABLED: true,
   WEBHOOK_NOT_ENABLED: true,
+  WEBHOOK_HOOK_ID_CONFLICT: true,
+  WEBHOOK_DELIVERY_REJECTED: true,
+  RATE_LIMITED: true,
 } satisfies Record<DeployEngineErrorCode, true>);
 
 const KNOWN_SERVICE_ERROR_CODES: ReadonlySet<string> = new Set(

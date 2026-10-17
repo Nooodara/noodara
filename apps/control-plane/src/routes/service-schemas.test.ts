@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SERVICE_VIEW_FIELDS } from '../services/service-view.js';
+import { mapServiceCodeToStatus } from './http-errors.js';
 import {
   CreateServiceBodySchema,
   SERVICE_ROUTE_BODY_LIMIT_BYTES,
@@ -116,11 +117,20 @@ describe('webhook schemas (18-01)', () => {
     expect(WebhookSecretResponseSchema.safeParse({ enabled: false, payloadUrl: 'u', secret: 'ab' }).success).toBe(false);
   });
 
-  it('maps the webhook codes to 422 (image source) and 409 (state conflicts) (A4, H2)', () => {
+  it('maps the webhook codes to 422 (image source) and 409 (state conflicts) (A4, H2, 18-05 H9)', () => {
     expect(WEBHOOK_ERROR_STATUS).toStrictEqual({
       WEBHOOK_SOURCE_NOT_GIT: 422,
       WEBHOOK_ALREADY_ENABLED: 409,
       WEBHOOK_NOT_ENABLED: 409,
+      WEBHOOK_HOOK_ID_CONFLICT: 409,
     });
+    for (const [code, status] of Object.entries(WEBHOOK_ERROR_STATUS)) {
+      expect(mapServiceCodeToStatus(code), code).toBe(status);
+    }
+  });
+
+  it('keeps the receiver codes in the shared status contract (18-02)', () => {
+    expect(mapServiceCodeToStatus('WEBHOOK_DELIVERY_REJECTED')).toBe(422);
+    expect(mapServiceCodeToStatus('RATE_LIMITED')).toBe(429);
   });
 });

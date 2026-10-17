@@ -67,7 +67,10 @@ export type ServiceErrorCode =
   | "IDEMPOTENCY_KEY_REUSED"
   | "WEBHOOK_SOURCE_NOT_GIT"
   | "WEBHOOK_ALREADY_ENABLED"
-  | "WEBHOOK_NOT_ENABLED";
+  | "WEBHOOK_NOT_ENABLED"
+  | "WEBHOOK_HOOK_ID_CONFLICT"
+  | "WEBHOOK_DELIVERY_REJECTED"
+  | "RATE_LIMITED";
 
 export const SERVICE_ERROR_STATUS = Object.freeze({
   VALIDATION_FAILED: 400,
@@ -145,6 +148,12 @@ export const SERVICE_ERROR_STATUS = Object.freeze({
   WEBHOOK_SOURCE_NOT_GIT: 422,
   WEBHOOK_ALREADY_ENABLED: 409,
   WEBHOOK_NOT_ENABLED: 409,
+  // 18-05 H9: every drawn hook id collided on the unique index; nothing was written, retry.
+  WEBHOOK_HOOK_ID_CONFLICT: 409,
+  // 18-02: the GitHub receiver. A signed delivery the service refuses (wrong repo or branch, a
+  // disabled or non-Git service) is 422 with its outcome; too many deliveries is 429.
+  WEBHOOK_DELIVERY_REJECTED: 422,
+  RATE_LIMITED: 429,
 } satisfies Record<ServiceErrorCode, number>);
 
 const UNKNOWN_CODE_STATUS = 500;

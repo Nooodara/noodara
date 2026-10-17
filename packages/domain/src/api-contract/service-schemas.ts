@@ -157,11 +157,13 @@ export const WebhookSecretResponseSchema = z.object({
   secret: z.string(),
 });
 
-/** Webhook state conflicts and the image-source refusal (A4, H2). */
+/** Webhook state conflicts and the image-source refusal (A4, H2). A hook id that keeps colliding
+ *  on the unique index is a retryable conflict (18-05 H9). */
 export const WEBHOOK_ERROR_STATUS = Object.freeze({
   WEBHOOK_SOURCE_NOT_GIT: 422,
   WEBHOOK_ALREADY_ENABLED: 409,
   WEBHOOK_NOT_ENABLED: 409,
+  WEBHOOK_HOOK_ID_CONFLICT: 409,
 } as const);
 
 export type WebhookErrorCode = keyof typeof WEBHOOK_ERROR_STATUS;

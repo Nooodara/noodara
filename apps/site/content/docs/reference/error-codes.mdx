@@ -58,6 +58,9 @@ nothing else — no internal detail is ever attached to it.
 | `WEBHOOK_SOURCE_NOT_GIT` | 422 | Webhooks only apply to services built from a Git repository; image-source services cannot enable one. |
 | `WEBHOOK_ALREADY_ENABLED` | 409 | The webhook is already enabled; rotate its secret instead of enabling it again. |
 | `WEBHOOK_NOT_ENABLED` | 409 | The service has no webhook enabled; enable it first. |
+| `WEBHOOK_HOOK_ID_CONFLICT` | 409 | No unique webhook URL could be allocated; nothing was changed. Enable the webhook again. |
+| `WEBHOOK_DELIVERY_REJECTED` | 422 | Webhook receiver (`POST /webhooks/github/:hookId`): the signed delivery was recorded but cannot be deployed; `outcome` says why, such as a push to another branch or repository. |
+| `RATE_LIMITED` | 429 | Webhook receiver: too many deliveries for this hook id or source; retry after the `Retry-After` header. |
 | `PROJECT_ARCHIVED` | 409 | The project is archived; unarchive it to deploy its services. |
 | `DEPLOYMENT_INPUT_INVALID` | 422 | The deploy request carried a field it does not accept; the body must be empty or `{}`. |
 | `DEPLOYMENT_NOT_CANCELLABLE` | 409 | The deployment already ended; only a queued or running deployment can be cancelled. |
@@ -98,6 +101,9 @@ unreachable at that moment), so nothing ran and the service is unchanged. The wo
 deployment `FAILED` once it has waited past the stale-queue threshold (default 2 minutes) with no
 queue job, which frees the service for a new deploy. Check that Redis and Postgres are
 reachable, then deploy again.
+
+`COMMIT_NOT_FOUND`: the commit a push or redeploy asked for is not in the repository, even after a
+full fetch. The branch was most likely force-pushed past it; push again or deploy the branch head.
 
 `WORKSPACE_UNAVAILABLE`: the deploy workspace could not be created or written. Each deployment works
 in `~/.noodara/deploy/<deploymentId>` under the SSH user's home directory, so a non-root user in the

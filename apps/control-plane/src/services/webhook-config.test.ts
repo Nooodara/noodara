@@ -15,6 +15,7 @@ import {
   getWebhookConfig,
   resolveWebhookSecret,
   rotateWebhookSecret,
+  WEBHOOK_HOOK_ID_ATTEMPTS,
   WEBHOOK_HOOK_ID_BYTES,
   WEBHOOK_SECRET_BYTES,
   WebhookOriginError,
@@ -76,6 +77,8 @@ function fakeDb(service: ServiceRow | null) {
   const ops: string[] = [];
   let nextId = 0;
   let duringUpdate: (() => Promise<void>) | undefined;
+  /** Hook ids another service already holds: claiming one throws drizzle's wrapped 23505. */
+  const takenHookIds = new Map<string, string>();
 
   function handle(read: () => State, inTx: boolean): unknown {
     const query = (kind: string, table: unknown) => {
@@ -119,7 +122,12 @@ function fakeDb(service: ServiceRow | null) {
         }
         if (kind === 'update' && table === services) {
           ops.push(`${scope}:update:services`);
-          if (state.service) Object.assign(state.service, name('set')?.args[0]);
+          const set = name('set')?.args[0] as Partial<ServiceRow> | undefined;
+          const constraint = set?.webhookHookId ? takenHookIds.get(set.webhookHookId) : undefined;
+          if (constraint !== undefined) {
+            throw Object.assign(new Error('Failed query: update "services"'), { cause: { code: '23505', constraint } });
+          }
+          if (state.service) Object.assign(state.service, set);
           if (inTx && duringUpdate) await duringUpdate();
           return [];
         }
@@ -155,10 +163,14 @@ function fakeDb(service: ServiceRow | null) {
       insert: (table: unknown) => query('insert', table),
       update: (table: unknown) => query('update', table),
       delete: (table: unknown) => query('delete', table),
+      // Top level: a snapshot transaction. Inside one: a savepoint over the enclosing draft.
       transaction: async <T>(fn: (tx: unknown) => Promise<T>): Promise<T> => {
-        const draft = clone(committed);
+        if (inTx) ops.push('tx:savepoint');
+        const base = read();
+        const draft = clone(base);
         const result = await fn(handle(() => draft, true));
-        committed = draft;
+        if (inTx) Object.assign(base, draft);
+        else committed = draft;
         return result;
       },
     };
@@ -170,6 +182,9 @@ function fakeDb(service: ServiceRow | null) {
     state: () => committed,
     setDuringUpdate(fn: (() => Promise<void>) | undefined) {
       duringUpdate = fn;
+    },
+    takeHookId(hookId: string, constraint = 'services_webhook_hook_id_unique_idx') {
+      takenHookIds.set(hookId, constraint);
     },
   };
 }
@@ -339,6 +354,63 @@ describe('enableWebhook (A1, A3, A4, H2)', () => {
     const result = await enableWebhook(depsFor(fake.db), TARGET);
     expect(result.ok).toBe(true);
     expect(fake.state().service?.webhookHookId).not.toBe('x'.repeat(32));
+  });
+});
+
+/** A random source whose hook-id draws (24 bytes) come from `hookIdFills` in order, then repeat the last. */
+function scriptedRandom(hookIdFills: number[]): { random: RandomBytes; hookIds: () => string[] } {
+  const drawn: string[] = [];
+  let index = 0;
+  const random: RandomBytes = (size) => {
+    if (size !== WEBHOOK_HOOK_ID_BYTES) return randomBytes(size);
+    const fill = hookIdFills[Math.min(index, hookIdFills.length - 1)] ?? 0;
+    index += 1;
+    const bytes = Buffer.alloc(size, fill);
+    drawn.push(bytes.toString('base64url'));
+    return bytes;
+  };
+  return { random, hookIds: () => drawn };
+}
+
+describe('enableWebhook hook-id collisions (18-05 H9)', () => {
+  const idOf = (fill: number) => Buffer.alloc(WEBHOOK_HOOK_ID_BYTES, fill).toString('base64url');
+
+  it('draws a fresh hook id and enables when the first one is already taken', async () => {
+    const fake = fakeDb(gitService());
+    fake.takeHookId(idOf(0x01));
+    const scripted = scriptedRandom([0x01, 0x02]);
+    const result = await enableWebhook(depsFor(fake.db, scripted.random), TARGET);
+    if (!result.ok) throw new Error(result.code);
+    expect(scripted.hookIds()).toEqual([idOf(0x01), idOf(0x02)]);
+    expect(fake.state().service?.webhookHookId).toBe(idOf(0x02));
+    expect(result.webhook.payloadUrl).toBe(webhookPayloadUrl(ORIGIN, idOf(0x02)));
+    expect(storedSecret(fake)).toBe(revealSecret(result.webhook.secret));
+    expect(fake.state().credentials.size).toBe(1);
+    expect(fake.state().activity).toHaveLength(1);
+    expect(fake.ops).toContain('tx:savepoint');
+  });
+
+  it('answers a typed WEBHOOK_HOOK_ID_CONFLICT after every attempt collides and writes nothing', async () => {
+    const fake = fakeDb(gitService());
+    fake.takeHookId(idOf(0x07));
+    const scripted = scriptedRandom([0x07]);
+    const result = await enableWebhook(depsFor(fake.db, scripted.random), TARGET);
+    expect(result).toMatchObject({ ok: false, code: 'WEBHOOK_HOOK_ID_CONFLICT' });
+    expect(scripted.hookIds()).toHaveLength(WEBHOOK_HOOK_ID_ATTEMPTS);
+    expect(WEBHOOK_HOOK_ID_ATTEMPTS).toBeGreaterThan(1);
+    expect(JSON.stringify(result)).not.toContain(idOf(0x07));
+    expect(fake.state().service).toMatchObject({ webhookHookId: null, webhookSecretCredentialId: null });
+    expect(fake.state().credentials.size).toBe(0);
+    expect(fake.state().activity).toHaveLength(0);
+  });
+
+  it('rethrows a unique violation on any other constraint', async () => {
+    const fake = fakeDb(gitService());
+    fake.takeHookId(idOf(0x03), 'services_some_other_unique_idx');
+    const scripted = scriptedRandom([0x03, 0x04]);
+    await expect(enableWebhook(depsFor(fake.db, scripted.random), TARGET)).rejects.toThrow('Failed query');
+    expect(scripted.hookIds()).toHaveLength(1);
+    expect(fake.state().credentials.size).toBe(0);
   });
 });
 

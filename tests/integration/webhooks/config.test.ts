@@ -316,6 +316,70 @@ describe('rotate and disable (A2, H1, H2)', () => {
   });
 });
 
+describe('hook-id collisions (18-05 H9)', () => {
+  async function enableWithHookIds(fx: Fixture, serviceId: string, hookIds: readonly string[]) {
+    const { enableWebhook, WEBHOOK_HOOK_ID_BYTES } = await import('../../../apps/control-plane/src/services/webhook-config.js');
+    let draws = 0;
+    const result = await enableWebhook(
+      {
+        db: postgres.db,
+        now: () => new Date(),
+        masterKeys: () => Promise.resolve(masterKeys),
+        publicOrigin: new URL(PUBLIC_URL).origin,
+        randomBytes: (size) => {
+          if (size !== WEBHOOK_HOOK_ID_BYTES) return randomBytes(size);
+          const hookId = hookIds[Math.min(draws, hookIds.length - 1)] ?? '';
+          draws += 1;
+          return Buffer.from(hookId, 'base64url');
+        },
+      },
+      { actor: { type: 'system' }, projectId: fx.projectId, serviceId },
+    );
+    return { result, draws };
+  }
+
+  async function webhookCredentialCount(): Promise<number> {
+    return (await postgres.db.select({ id: credentials.id }).from(credentials).where(eq(credentials.type, 'webhook_secret'))).length;
+  }
+
+  it('redraws a hook id that collides on the unique index instead of failing', async () => {
+    const fx = await newFixture();
+    const holder = await newService(fx, GIT_SOURCE);
+    expect((await call('POST', webhookUrl(fx, holder.id))).statusCode).toBe(200);
+    const taken = String((await webhookRow(holder.id))?.hookId);
+    const fresh = randomBytes(24).toString('base64url');
+    const service = await newService(fx, GIT_SOURCE);
+
+    const { result, draws } = await enableWithHookIds(fx, service.id, [taken, fresh]);
+    expect(result.ok).toBe(true);
+    expect(draws).toBe(2);
+    expect((await webhookRow(service.id))?.hookId).toBe(fresh);
+    expect((await webhookRow(holder.id))?.hookId).toBe(taken);
+    if (result.ok) issuedSecrets.push(revealSecret(result.webhook.secret));
+  });
+
+  it('answers 409 WEBHOOK_HOOK_ID_CONFLICT when every draw collides and leaves no credential behind', async () => {
+    const fx = await newFixture();
+    const holder = await newService(fx, GIT_SOURCE);
+    await call('POST', webhookUrl(fx, holder.id));
+    const taken = String((await webhookRow(holder.id))?.hookId);
+    const service = await newService(fx, GIT_SOURCE);
+    const before = await webhookCredentialCount();
+
+    const { result } = await enableWithHookIds(fx, service.id, [taken]);
+    expect(result).toMatchObject({ ok: false, code: 'WEBHOOK_HOOK_ID_CONFLICT' });
+    if (!result.ok) {
+      const { mapServiceCodeToStatus } = await import('../../../apps/control-plane/src/routes/http-errors.js');
+      expect(mapServiceCodeToStatus(result.code)).toBe(409);
+    }
+    expect(await webhookRow(service.id)).toStrictEqual({ hookId: null, credentialId: null });
+    expect(await webhookCredentialCount()).toBe(before);
+    expect(await webhookEvents(service.id)).toHaveLength(0);
+    // The connection is still usable: a normal enable afterwards succeeds.
+    expect((await call('POST', webhookUrl(fx, service.id))).statusCode).toBe(200);
+  });
+});
+
 describe('guards and activity (A4)', () => {
   it('refuses an image-source service with 422 WEBHOOK_SOURCE_NOT_GIT', async () => {
     const fx = await newFixture();
