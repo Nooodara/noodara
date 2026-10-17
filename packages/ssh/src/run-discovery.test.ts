@@ -715,6 +715,7 @@ describe('@noodara/ssh public surface (T-2-42)', () => {
     'groupAlive',
     'gitClone',
     'gitCheckout',
+    'gitFetch',
     'gitHeadSha',
     'gitKeyscan',
     'gitProbeFeatures',

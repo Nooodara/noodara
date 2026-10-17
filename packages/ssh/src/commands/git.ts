@@ -119,7 +119,14 @@ export interface GitFetchInput {
 }
 
 export function gitFetch(input: GitFetchInput): RemoteCommand {
-  const preamble: ['env', ...string[]] = [...gitNetworkPreamble(input.auth), '-C', input.repo, 'fetch'];
+  // --git-dir, never -C: the key, known_hosts and askpass paths are relative to the login directory,
+  // and -C would chdir into the repo before git spawns ssh or the askpass helper. fetch needs no
+  // work tree, so git keeps the caller's cwd.
+  const preamble: ['env', ...string[]] = [
+    ...gitNetworkPreamble(input.auth),
+    `--git-dir=${input.repo}/.git`,
+    'fetch',
+  ];
   if (input.mode.kind === 'commit') {
     return createRemoteCommand({
       name: 'git.fetch_commit',

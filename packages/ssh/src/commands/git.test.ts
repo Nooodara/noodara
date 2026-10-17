@@ -197,7 +197,13 @@ describe('gitClone', () => {
   );
 });
 
-const FETCH_PREAMBLE = [...GIT_PREAMBLE.slice(0, GIT_PREAMBLE.indexOf('clone')), '-C', ws.repo, 'fetch'];
+// --git-dir, never -C: the workspace secret paths are relative to the login directory, and -C
+// would chdir into the repo before git spawns ssh or the askpass helper.
+const FETCH_PREAMBLE = [
+  ...GIT_PREAMBLE.slice(0, GIT_PREAMBLE.indexOf('clone')),
+  `--git-dir=${ws.repo}/.git`,
+  'fetch',
+];
 
 describe('gitFetch (18-03)', () => {
   const deployKey = {
@@ -227,6 +233,20 @@ describe('gitFetch (18-03)', () => {
     ]);
     expect(command.argv.filter((word) => word.includes(sha))).toEqual([sha]);
   });
+
+  it.each([
+    ['commit', { kind: 'commit', sha }],
+    ['unshallow', { kind: 'unshallow' }],
+  ] as const)(
+    '%s: never changes directory, so relative key, known_hosts and askpass paths still resolve',
+    (_label, mode) => {
+      for (const auth of [deployKey, { kind: 'https_token', workspace: ws } as const]) {
+        const { argv } = gitFetch({ repo: ws.repo, auth, mode });
+        expect(argv).not.toContain('-C');
+        expect(argv).toContain(`--git-dir=${ws.repo}/.git`);
+      }
+    },
+  );
 
   it('unshallow: deepens the cloned branch with the same hardened preamble', () => {
     const command = gitFetch({ repo: ws.repo, auth: deployKey, mode: { kind: 'unshallow' } });

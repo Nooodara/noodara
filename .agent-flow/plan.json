@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-17T00:13:03.623Z",
+  "updatedAt": "2026-10-17T02:13:57.061Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -6445,13 +6445,20 @@
             "packages/domain/src/validators/",
             "apps/control-plane/src/deploy/run-deployment.ts",
             "tests/integration/deploy-engine/deploy-templates.test.ts",
-            "tests/integration/deploy-engine/runtime-webhook-sha.test.ts"
+            "tests/integration/deploy-engine/runtime-webhook-sha.test.ts",
+            "packages/ssh/src/commands/deploy-allowlist.ts",
+            "packages/ssh/src/commands/deploy-allowlist.test.ts",
+            "apps/control-plane/src/deploy/deploy-target.ts",
+            "packages/ssh/src/index.ts",
+            "apps/control-plane/src/deploy/deploy-target.test.ts",
+            "apps/control-plane/src/deploy/run-deployment.test.ts",
+            "packages/ssh/src/run-discovery.test.ts"
           ],
           "wave": 3,
           "dependsOn": [
             "18-02"
           ],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",

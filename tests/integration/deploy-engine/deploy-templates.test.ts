@@ -1038,7 +1038,9 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
             knownHostsFile: ws.secretFile('known_hosts'),
           } as const;
           const refused = await run(gitFetch({ repo: ws.repo, auth, mode: { kind: 'commit', sha: shaOf('fallback') } }));
-          expect(refused.exitCode).toBe(128);
+          // git exits 1 ("error: Server does not allow request...") or 128 depending on the protocol
+          // version; callers classify stderr, never the code (ADR 0008 G1).
+          expect(refused.exitCode, refused.stderr).not.toBe(0);
           expect(refused.stderr).toMatch(/unadvertised object|not our ref/);
           expect(
             classifyGitError(
