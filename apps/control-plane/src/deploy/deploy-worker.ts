@@ -21,6 +21,10 @@
 // - 17-05: a claimed `rollback` row carries its target and that target's runtime snapshot. A row
 //   whose snapshot or target id does not validate ends FAILED/ROLLBACK_TARGET_UNAVAILABLE before
 //   any connection; after a rollback SUCCESS retention sees the restored target as running.
+// - 18-05 (ADR 0010 A3, H2): a re-delivered job whose claim fails never re-runs a step. A row this
+//   process is still running is left alone; a row in flight elsewhere (PREPARING..ROLLING_BACK) runs
+//   the crash recovery shared with the boot sweep (restore `-prev` if present, end FAILED /
+//   WORKER_CRASHED, clean its workspace); a terminal or missing row exits without a remote command.
 import {
   parseRuntimeConfigSnapshot,
   V03_DEPLOYMENT_ERROR_MESSAGES,
@@ -31,6 +35,7 @@ import type { Redactor } from '@noodara/domain/security';
 import { validateResourceId } from '@noodara/domain/validators';
 import type { SshDeploySession } from '@noodara/ssh';
 import { computeDeployJobLockDurationMs } from '../queue/deploy-job-budget.js';
+import { sweepCrashedDeployments } from './deploy-sweep.js';
 import { parseDeployServiceJobPayload } from '../queue/deploy-job-payload.js';
 import type { DeploymentStore, FinishDeploymentInput } from './deployment-store.js';
 import type { DeployCancelWatch } from './cancel-flag.js';
@@ -98,7 +103,8 @@ export interface DeployJobLogger {
 }
 
 export interface DeployJobDeps {
-  readonly store: Pick<DeploymentStore, 'claim' | 'progress' | 'finish'>;
+  /** 18-05: with `inFlight` and `sweepRuntime` a re-delivered job of a crashed run recovers it (A3). */
+  readonly store: Pick<DeploymentStore, 'claim' | 'progress' | 'finish'> & Partial<Pick<DeploymentStore, 'inFlight' | 'sweepRuntime'>>;
   /** Reads the claimed deployment's service, server and decrypted credential. */
   readonly loadTarget: (deployment: { readonly id: string; readonly serviceId: string }) => Promise<LoadTargetResult>;
   /** Opens the deploy session; the redactor is the run's, so server secrets are masked too. */
@@ -129,6 +135,7 @@ export type DeployJobOutcome =
   | 'INVALID_PAYLOAD'
   | 'CLAIM_FAILED'
   | 'ALREADY_CLAIMED'
+  | 'CRASH_RECOVERED'
   | 'SUCCESS'
   | 'FAILED'
   | 'ROLLED_BACK'
@@ -228,6 +235,45 @@ export function createDeployJobHandler(deps: DeployJobDeps): (data: unknown, sig
     }
   };
 
+  /** Deployments this process is running: a duplicate delivery never recovers a live run. */
+  const running = new Set<string>();
+
+  /** ADR 0010 A3: the claim failed; recover a crashed run, or exit with no remote command. */
+  const recoverUnclaimed = async (deploymentId: string, serviceId: string): Promise<{ outcome: DeployJobOutcome; serviceId: string }> => {
+    const { inFlight, sweepRuntime } = deps.store;
+    if (running.has(deploymentId) || inFlight === undefined || sweepRuntime === undefined) {
+      logger.info({ deploymentId }, 'deploy job skipped: deployment is no longer QUEUED');
+      return { outcome: 'ALREADY_CLAIMED', serviceId };
+    }
+    let own;
+    try {
+      own = (await inFlight()).filter((row) => row.deploymentId === deploymentId);
+    } catch (error) {
+      logger.error({ deploymentId, errorKind: errorKind(error) }, 'deploy job could not read its deployment state');
+      return { outcome: 'CLAIM_FAILED', serviceId };
+    }
+    const [row] = own;
+    if (row === undefined) {
+      // Terminal (or missing): nothing to run and nothing to clean.
+      logger.info({ deploymentId }, 'deploy job skipped: deployment is no longer QUEUED');
+      return { outcome: 'ALREADY_CLAIMED', serviceId };
+    }
+    logger.warn({ deploymentId, previousStatus: row.status }, 'deploy job re-delivered for a crashed deployment; recovering it');
+    const recovered = await sweepCrashedDeployments({
+      store: {
+        inFlight: () => Promise.resolve(own),
+        finish: (id, input) => deps.store.finish(id, input),
+        sweepRuntime: (id, expected, recover) => sweepRuntime(id, expected, recover),
+      },
+      connect: deps.connect,
+      createRedactor: deps.createRedactor,
+      limits: deps.limits,
+      logger,
+    });
+    await recovered.cleanup;
+    return { outcome: 'CRASH_RECOVERED', serviceId: row.serviceId };
+  };
+
   return async (data, signal) => {
     const parsed = parseDeployServiceJobPayload(data);
     if (!parsed.ok) {
@@ -255,9 +301,22 @@ export function createDeployJobHandler(deps: DeployJobDeps): (data: unknown, sig
     }
     if (claimed === null) {
       // A QUEUED deployment cancelled before its job ran is a terminal event too.
-      logger.info({ deploymentId }, 'deploy job skipped: deployment is no longer QUEUED');
-      return { outcome: 'ALREADY_CLAIMED', serviceId };
+      return recoverUnclaimed(deploymentId, serviceId);
     }
+    running.add(deploymentId);
+    try {
+      return await runClaimed(claimed, deploymentId, serviceId, signal);
+    } finally {
+      running.delete(deploymentId);
+    }
+  }
+
+  async function runClaimed(
+    claimed: NonNullable<Awaited<ReturnType<DeployJobDeps['store']['claim']>>>,
+    deploymentId: string,
+    serviceId: string,
+    signal: AbortSignal | undefined,
+  ): Promise<{ outcome: DeployJobOutcome; serviceId: string }> {
 
     let watch: DeployCancelWatch | null = null;
     try {

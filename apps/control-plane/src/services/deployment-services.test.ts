@@ -1,10 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
+import { requestFingerprint } from '@noodara/domain/deployment';
 import type { Database } from '../db/client.js';
 import type { ServerEvent } from '../events/server-event-publisher.js';
 import type { DeployEnqueueResult } from '../queue/deploy-queue.js';
 import {
   DEPLOYMENT_VIEW_FIELDS,
   planRollback,
+  deployFingerprint,
+  expireIdempotencyKeys,
+  IDEMPOTENCY_EXPIRY_BATCH_LIMIT,
+  IDEMPOTENCY_KEY_TTL_MS,
+  idempotencyCutoff,
   rollbackFingerprint,
   sourceSnapshotFromService,
   toDeploymentView,
@@ -109,7 +115,7 @@ function harness(options: {
 }
 
 const inserted = () =>
-  Promise.resolve({ ok: true, deployment: toDeploymentView(row()), service: SERVICE_VIEW, activityEventId: 'evt-1' });
+  Promise.resolve({ kind: 'inserted', deployment: toDeploymentView(row()), service: SERVICE_VIEW, activityEventId: 'evt-1' });
 
 describe('toDeploymentView', () => {
   it('builds the allowlisted wire view with ISO timestamps', () => {
@@ -150,7 +156,7 @@ describe('triggerDeploy', () => {
 
     const result = await triggerDeploy(h.deps, { actor: ACTOR, serviceId: SERVICE_ID });
 
-    expect(result).toEqual({ ok: true, deployment: toDeploymentView(row()) });
+    expect(result).toEqual({ ok: true, replayed: false, deployment: toDeploymentView(row()) });
     expect(h.enqueue).toHaveBeenCalledWith({
       deploymentId: DEPLOYMENT_ID,
       serviceId: SERVICE_ID,
@@ -168,7 +174,7 @@ describe('triggerDeploy', () => {
 
   it('passes a guard failure through without enqueuing', async () => {
     const h = harness({
-      transactions: [() => Promise.resolve({ ok: false, code: 'PROJECT_ARCHIVED', message: 'archived' })],
+      transactions: [() => Promise.resolve({ kind: 'failed', failure: { ok: false, code: 'PROJECT_ARCHIVED', message: 'archived' } })],
     });
 
     const result = await triggerDeploy(h.deps, { actor: ACTOR, serviceId: SERVICE_ID });
@@ -216,7 +222,7 @@ describe('triggerDeploy', () => {
 
       const result = await triggerDeploy(h.deps, { actor: ACTOR, serviceId: SERVICE_ID });
 
-      expect(result).toEqual({ ok: true, deployment: moved });
+      expect(result).toEqual({ ok: true, replayed: false, deployment: moved });
     });
 
     it('answers QUEUE_UNAVAILABLE when the row vanished meanwhile (service deleted)', async () => {
@@ -460,5 +466,119 @@ describe('triggerRollback (17-05 A1, A2, H1)', () => {
       code: 'QUEUE_UNAVAILABLE',
     });
     expect(h.published).toEqual([]);
+  });
+});
+
+describe('triggerDeploy Idempotency-Key (18-05 A1, H1, H9)', () => {
+  const violation = (constraint: string) => Object.assign(new Error('Failed query'), { cause: { code: '23505', constraint } });
+
+  it('replays the original deployment for a reused key and request, without enqueuing again', async () => {
+    const original = toDeploymentView(row({ status: 'BUILDING' }));
+    const h = harness({ transactions: [() => Promise.resolve({ kind: 'replay', deployment: original })] });
+
+    const result = await triggerDeploy(h.deps, { actor: ACTOR, serviceId: SERVICE_ID, idempotencyKey: 'k-1' });
+
+    expect(result).toEqual({ ok: true, replayed: true, deployment: original });
+    expect(h.enqueue).not.toHaveBeenCalled();
+    expect(h.published).toEqual([]);
+  });
+
+  it('answers IDEMPOTENCY_KEY_REUSED when the key was used for another request', async () => {
+    const reused = { ok: false, code: 'IDEMPOTENCY_KEY_REUSED', message: 'm' } as const;
+    const h = harness({ transactions: [() => Promise.resolve({ kind: 'failed', failure: reused })] });
+
+    await expect(triggerDeploy(h.deps, { actor: ACTOR, serviceId: SERVICE_ID, idempotencyKey: 'k-1' })).resolves.toEqual(reused);
+    expect(h.enqueue).not.toHaveBeenCalled();
+  });
+
+  it.each(['deployments_service_active_unique_idx', 'deployments_service_idempotency_key_unique_idx'])(
+    'H9: replays the concurrent winner on %s instead of a 500',
+    async (constraint) => {
+      const original = toDeploymentView(row());
+      const h = harness({
+        transactions: [() => Promise.reject(violation(constraint)), () => Promise.resolve({ kind: 'replay', deployment: original })],
+      });
+
+      const result = await triggerDeploy(h.deps, { actor: ACTOR, serviceId: SERVICE_ID, idempotencyKey: 'k-1' });
+
+      expect(result).toEqual({ ok: true, replayed: true, deployment: original });
+      expect(h.enqueue).not.toHaveBeenCalled();
+    },
+  );
+
+  it('H9: answers DEPLOYMENT_IN_PROGRESS when the winner of a key race is gone or used another key', async () => {
+    const h = harness({
+      transactions: [
+        () => Promise.reject(violation('deployments_service_idempotency_key_unique_idx')),
+        () => Promise.resolve({ kind: 'absent' }),
+      ],
+    });
+    await expect(triggerDeploy(h.deps, { actor: ACTOR, serviceId: SERVICE_ID, idempotencyKey: 'k-1' })).resolves.toMatchObject({
+      ok: false,
+      code: 'DEPLOYMENT_IN_PROGRESS',
+    });
+  });
+
+  it('runs one bounded expiry pass after a keyed request and survives its failure', async () => {
+    const h = harness({ transactions: [inserted, () => Promise.reject(new Error('postgres://u:pw@db down'))] });
+
+    const result = await triggerDeploy(h.deps, { actor: ACTOR, serviceId: SERVICE_ID, idempotencyKey: 'k-1' });
+
+    expect(result).toMatchObject({ ok: true, replayed: false });
+    expect(h.transaction).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(h.logger.warn.mock.calls)).not.toContain('pw@db');
+  });
+
+  it('runs no expiry pass for an unkeyed request', async () => {
+    const h = harness({ transactions: [inserted] });
+    await triggerDeploy(h.deps, { actor: ACTOR, serviceId: SERVICE_ID });
+    expect(h.transaction).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('deployFingerprint (18-05 H1)', () => {
+  it('is a SHA-256 hex of the action and service only, stable and distinct per action', () => {
+    expect(deployFingerprint('deploy', SERVICE_ID)).toMatch(/^[0-9a-f]{64}$/);
+    expect(deployFingerprint('deploy', SERVICE_ID)).toBe(deployFingerprint('deploy', SERVICE_ID));
+    expect(deployFingerprint('redeploy', SERVICE_ID)).not.toBe(deployFingerprint('deploy', SERVICE_ID));
+    expect(deployFingerprint('deploy', SERVICE_ID)).not.toBe(rollbackFingerprint(SERVICE_ID, undefined));
+  });
+
+  it('is the hash of { action, serviceId } only: no actor, key, body or secret is stored', () => {
+    expect(deployFingerprint('deploy', SERVICE_ID)).toBe(requestFingerprint({ action: 'deploy', serviceId: SERVICE_ID }));
+  });
+});
+
+describe('idempotency expiry (18-05 H1)', () => {
+  it('keeps a key for exactly 24 h', () => {
+    expect(IDEMPOTENCY_KEY_TTL_MS).toBe(24 * 60 * 60 * 1000);
+    expect(idempotencyCutoff(NOW).toISOString()).toBe('2026-10-03T12:00:00.000Z');
+  });
+
+  function expiryDb(ids: string[]) {
+    const limit = vi.fn();
+    const forLock = vi.fn(() => Promise.resolve(ids.map((value) => ({ id: value }))));
+    const set = vi.fn(() => ({ where: () => Promise.resolve() }));
+    const tx = {
+      select: () => ({ from: () => ({ where: () => ({ orderBy: () => ({ limit: (n: number) => (limit(n), { for: forLock }) }) }) }) }),
+      update: () => ({ set }),
+    };
+    const db = { transaction: (fn: (t: unknown) => Promise<number>) => fn(tx) } as unknown as Database;
+    return { db, limit, forLock, set };
+  }
+
+  it('releases at most the batch limit, skipping locked rows, and nulls key and fingerprint', async () => {
+    const f = expiryDb([id(1), id(2)]);
+    await expect(expireIdempotencyKeys({ db: f.db, now: () => NOW }, 10_000)).resolves.toBe(2);
+    expect(f.limit).toHaveBeenCalledWith(IDEMPOTENCY_EXPIRY_BATCH_LIMIT);
+    expect(f.forLock).toHaveBeenCalledWith('update', { skipLocked: true });
+    expect(f.set).toHaveBeenCalledWith({ idempotencyKey: null, requestFingerprint: null });
+  });
+
+  it('writes nothing when no key expired', async () => {
+    const f = expiryDb([]);
+    await expect(expireIdempotencyKeys({ db: f.db, now: () => NOW }, 0)).resolves.toBe(0);
+    expect(f.limit).toHaveBeenCalledWith(1);
+    expect(f.set).not.toHaveBeenCalled();
   });
 });

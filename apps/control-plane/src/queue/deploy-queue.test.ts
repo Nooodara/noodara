@@ -1,4 +1,15 @@
 import { describe, expect, it, vi, type Mock } from 'vitest';
+import type { PostStartPollPolicy } from '@noodara/domain/deployment';
+import { createRedactor } from '@noodara/domain/security';
+import { createDeployJobHandler, deployWorkerOptions, type DeployJobDeps } from '../deploy/deploy-worker.js';
+import type { FinishDeploymentInput, InFlightDeployment } from '../deploy/deployment-store.js';
+import type { RunDeploymentInput } from '../deploy/run-deployment.js';
+import type { DeploymentRow, DeploymentView } from '../services/deployment-services.js';
+import {
+  computeDeployJobLockDurationMs,
+  DEPLOY_MAX_MS_DEFAULT,
+  DEPLOY_MAX_MS_RANGE,
+} from './deploy-job-budget.js';
 import type { DeployServiceJobPayload } from './deploy-job-payload.js';
 import {
   createDeployQueue,
@@ -7,6 +18,9 @@ import {
   jobIdForDeployment,
   type DeployBullQueue,
 } from './deploy-queue.js';
+
+const SERVER_ID = '0192f1a4-7b3c-7d2e-8f00-000000000003';
+const OTHER_DEPLOYMENT_ID = '0192f1a4-7b3c-7d2e-8f00-000000000004';
 
 const PAYLOAD: DeployServiceJobPayload = {
   deploymentId: '0192f1a4-7b3c-7d2e-8f00-000000000001',
@@ -140,5 +154,108 @@ describe('createDeployQueue.removeJob / isJobPending', () => {
     const queue = fakeQueue();
     await createDeployQueue({ queue }).close();
     expect(queue.close).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// 18-05: worker retry contract (ADR 0010 A3) and BullMQ settings derived from deployMaxMs (D15)
+// ---------------------------------------------------------------------------------------------
+
+describe('deploy worker settings (18-05 A4, D15)', () => {
+  it.each([DEPLOY_MAX_MS_RANGE.min, DEPLOY_MAX_MS_DEFAULT, DEPLOY_MAX_MS_RANGE.max])(
+    'derives the lock from NOODARA_DEPLOY_MAX_MS=%i and never lets a stalled job run twice',
+    (deployMaxMs) => {
+      const options = deployWorkerOptions({ deployMaxMs, concurrency: 2 });
+      expect(options.lockDuration).toBe(computeDeployJobLockDurationMs(deployMaxMs));
+      expect(options.lockDuration).toBeGreaterThan(deployMaxMs);
+      expect(options.maxStalledCount).toBe(0);
+      expect(options.concurrency).toBe(2);
+    },
+  );
+
+  it('a longer deploy budget yields a longer lock', () => {
+    expect(deployWorkerOptions({ deployMaxMs: 600_000, concurrency: 1 }).lockDuration).toBeLessThan(
+      deployWorkerOptions({ deployMaxMs: 1_200_000, concurrency: 1 }).lockDuration,
+    );
+  });
+
+  it('enqueues with a single attempt (no automatic re-enqueue)', async () => {
+    const bull = fakeQueue();
+    await createDeployQueue({ queue: bull as unknown as DeployBullQueue }).enqueue(PAYLOAD);
+    expect(bull.add.mock.calls[0]?.[2]).toMatchObject({ attempts: 1 });
+  });
+});
+
+describe('re-delivered deploy job (18-05 A2, H2, ADR 0010 A3)', () => {
+  function worker(inFlight: InFlightDeployment[], claim: () => Promise<DeploymentRow | null> = () => Promise.resolve(null)) {
+    const finished: { id: string; input: FinishDeploymentInput }[] = [];
+    const connect = vi.fn(() => Promise.resolve({ ok: false as const, code: 'SERVER_UNREACHABLE' as const }));
+    const run = vi.fn(() => Promise.reject(new Error('a step must never re-run')));
+    const loadTarget = vi.fn(() => Promise.reject(new Error('never loaded')));
+    const deps: DeployJobDeps = {
+      store: {
+        claim: vi.fn(claim),
+        progress: () => ({ advance: () => Promise.resolve(), recordCommitSha: () => Promise.resolve() }),
+        finish: vi.fn((id: string, input: FinishDeploymentInput) => {
+          finished.push({ id, input });
+          return Promise.resolve({ id } as unknown as DeploymentView);
+        }),
+        inFlight: vi.fn(() => Promise.resolve(inFlight)),
+        sweepRuntime: vi.fn(() => Promise.resolve({ kind: 'left' as const })),
+      },
+      loadTarget,
+      connect,
+      run,
+      createRedactor,
+      sinkFor: () => ({ write: vi.fn(), close: () => Promise.resolve() }),
+      limits: {} as RunDeploymentInput['limits'],
+      pollPolicy: {} as PostStartPollPolicy,
+      clock: { now: () => 0, sleep: () => Promise.resolve() },
+      logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+    };
+    return { deps, handle: createDeployJobHandler(deps), finished, connect, run, loadTarget };
+  }
+
+  it('exits on a terminal row without any remote command', async () => {
+    const w = worker([]);
+    await expect(w.handle(PAYLOAD)).resolves.toEqual({ outcome: 'ALREADY_CLAIMED' });
+    expect(w.connect).toHaveBeenCalledTimes(0);
+    expect(w.run).toHaveBeenCalledTimes(0);
+    expect(w.finished).toEqual([]);
+  });
+
+  it.each(['PREPARING', 'BUILDING', 'DEPLOYING'] as const)(
+    'recovers a %s row left by a crashed worker: ends it WORKER_CRASHED and never re-runs a step',
+    async (status) => {
+      const w = worker([
+        { deploymentId: PAYLOAD.deploymentId, serviceId: PAYLOAD.serviceId, serverId: SERVER_ID, status },
+        { deploymentId: OTHER_DEPLOYMENT_ID, serviceId: PAYLOAD.serviceId, serverId: SERVER_ID, status: 'BUILDING' },
+      ]);
+
+      await expect(w.handle(PAYLOAD)).resolves.toEqual({ outcome: 'CRASH_RECOVERED' });
+
+      expect(w.finished).toEqual([{ id: PAYLOAD.deploymentId, input: expect.objectContaining({ status: 'FAILED', errorCode: 'WORKER_CRASHED' }) }]);
+      expect(w.run).toHaveBeenCalledTimes(0);
+      expect(w.loadTarget).toHaveBeenCalledTimes(0);
+      // Only the cleanup connection (no `docker create`/`start`: no second noodara-<serviceId>).
+      expect(w.connect).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('leaves alone a row this process is still running (duplicate delivery)', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const claims = [{ id: PAYLOAD.deploymentId, serviceId: PAYLOAD.serviceId, status: 'PREPARING' } as unknown as DeploymentRow, null];
+    const w = worker(
+      [{ deploymentId: PAYLOAD.deploymentId, serviceId: PAYLOAD.serviceId, serverId: SERVER_ID, status: 'PREPARING' }],
+      () => Promise.resolve(claims.shift() ?? null),
+    );
+    w.loadTarget.mockImplementationOnce(() => gate.then(() => ({ ok: false as const, code: 'SERVER_UNREACHABLE' as const })) as never);
+
+    const first = w.handle(PAYLOAD);
+    await expect(w.handle(PAYLOAD)).resolves.toEqual({ outcome: 'ALREADY_CLAIMED' });
+    expect(w.deps.store.inFlight).not.toHaveBeenCalled();
+    release();
+    await expect(first).resolves.toEqual({ outcome: 'FAILED' });
   });
 });

@@ -8,6 +8,7 @@
 // 13-03: the three GET views carry `steps[]` (clone|pull, build, start, verify).
 // 17-05: `POST /api/services/:id/rollback` queues a `rollback` deployment of a retained version (202);
 // an optional `Idempotency-Key` header replays the original answer (`Idempotency-Replayed: true`).
+// 18-05: deploy and redeploy take the same header (24 h; another request with the key is a 422).
 import { validateIdempotencyKey } from '@noodara/domain/deployment';
 import type { ZodTypeProvider } from '@fastify/type-provider-zod';
 import type { FastifyPluginCallback, FastifyReply } from 'fastify';
@@ -69,6 +70,20 @@ async function sendFailure(reply: FastifyReply, failure: { readonly code: string
 
 const READ_ERRORS = { 400: BadRequestSchema, 401: ErrorBodySchema, 404: ErrorBodySchema };
 
+export type IdempotencyKeyHeader =
+  | { readonly ok: true; readonly key: string | undefined }
+  | { readonly ok: false; readonly code: 'IDEMPOTENCY_KEY_INVALID'; readonly message: string };
+
+/** H1 (17-05, 18-05): the optional `Idempotency-Key` header; a repeated header arrives as an array and
+ *  is refused like any malformed key (over 255 or non-visible-ASCII characters). */
+export function parseIdempotencyKeyHeader(headers: Readonly<Record<string, unknown>>): IdempotencyKeyHeader {
+  const raw = headers['idempotency-key'];
+  if (raw === undefined) return { ok: true, key: undefined };
+  const key = validateIdempotencyKey(raw);
+  if (!key.ok) return { ok: false, code: 'IDEMPOTENCY_KEY_INVALID', message: key.message };
+  return { ok: true, key: key.value };
+}
+
 export interface DeploymentsRoutesOptions {
   /** Injectable for route tests; defaults to the Postgres reader. */
   readonly readLogs?: DeploymentLogReader;
@@ -113,12 +128,23 @@ const deploymentsRoutes: FastifyPluginCallback<DeploymentsRoutesOptions> = (fast
         await sendFailure(reply, { code: 'DEPLOYMENT_INPUT_INVALID', message: 'The deploy request accepts no fields' });
         return;
       }
+      const header = parseIdempotencyKeyHeader(request.headers);
+      if (!header.ok) {
+        await sendFailure(reply, header);
+        return;
+      }
       const deploymentServices = await fastify.getDeploymentServices();
-      const result = await deploymentServices.triggerDeploy({ actor, serviceId: request.params.serviceId });
+      const result = await deploymentServices.triggerDeploy({
+        actor,
+        serviceId: request.params.serviceId,
+        action: 'deploy',
+        ...(header.key === undefined ? {} : { idempotencyKey: header.key }),
+      });
       if (!result.ok) {
         await sendFailure(reply, result);
         return;
       }
+      if (result.replayed) void reply.header('idempotency-replayed', 'true');
       await reply.code(201).send(result.deployment);
     },
   });
@@ -140,17 +166,12 @@ const deploymentsRoutes: FastifyPluginCallback<DeploymentsRoutesOptions> = (fast
     },
     handler: async (request, reply) => {
       const actor = requireActor(request.actor);
-      const rawKey = request.headers['idempotency-key'];
-      let idempotencyKey: string | undefined;
-      if (rawKey !== undefined) {
-        // H1: a repeated header arrives as an array and is refused like any malformed key.
-        const key = validateIdempotencyKey(rawKey);
-        if (!key.ok) {
-          await sendFailure(reply, { code: 'IDEMPOTENCY_KEY_INVALID', message: key.message });
-          return;
-        }
-        idempotencyKey = key.value;
+      const header = parseIdempotencyKeyHeader(request.headers);
+      if (!header.ok) {
+        await sendFailure(reply, header);
+        return;
       }
+      const idempotencyKey = header.key;
       const targetDeploymentId = request.body?.targetDeploymentId;
       const deploymentServices = await fastify.getDeploymentServices();
       const result = await deploymentServices.triggerRollback({

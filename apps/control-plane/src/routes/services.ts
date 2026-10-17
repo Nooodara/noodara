@@ -23,6 +23,7 @@ import {
   type WebhookSecretResult,
 } from '../services/webhook-config.js';
 import { DeploymentViewSchema } from './deployment-schemas.js';
+import { parseIdempotencyKeyHeader } from './deployments.js';
 import { exceedsBackpressureBudget } from './events.js';
 import {
   ErrorBodySchema,
@@ -267,17 +268,29 @@ const servicesRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
     handler: async (request, reply) => {
       const actor = requireActor(request.actor);
       if (!(await parseOperationBody(reply, EmptyBodySchema, request.body)).ok) return;
+      // 18-05: checked before any read, so a malformed key never creates a deployment.
+      const header = parseIdempotencyKeyHeader(request.headers);
+      if (!header.ok) {
+        await sendFailure(reply, header);
+        return;
+      }
       // Scoped to the path's project first: another project's service reads as missing (A4).
       const service = await (await fastify.getServiceServices()).getService(request.params.projectId, request.params.serviceId);
       if (!service) {
         await sendFailure(reply, { code: 'NOT_FOUND', message: `Service "${request.params.serviceId}" not found` });
         return;
       }
-      const result = await (await fastify.getDeploymentServices()).triggerDeploy({ actor, serviceId: service.id });
+      const result = await (await fastify.getDeploymentServices()).triggerDeploy({
+        actor,
+        serviceId: service.id,
+        action: 'redeploy',
+        ...(header.key === undefined ? {} : { idempotencyKey: header.key }),
+      });
       if (!result.ok) {
         await sendFailure(reply, result);
         return;
       }
+      if (result.replayed) void reply.header('idempotency-replayed', 'true');
       await reply.code(201).send(result.deployment);
     },
   });

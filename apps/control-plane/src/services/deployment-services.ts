@@ -3,7 +3,7 @@
 // `deployments_service_active_unique_idx` is the single source of truth for "one active deploy
 // per service" (A2). If the enqueue fails the insert is undone, so no deployment stays QUEUED
 // without a job (H1). Views are allowlisted: ids, statuses and the source snapshot, never secrets.
-import { and, desc, eq, inArray, lt, or } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNotNull, lt, or } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 import {
@@ -185,9 +185,13 @@ export type TriggerDeployFailureCode =
   | 'PROJECT_ARCHIVED'
   | 'SERVER_NOT_CONNECTED'
   | 'DEPLOYMENT_IN_PROGRESS'
-  | 'QUEUE_UNAVAILABLE';
+  | 'QUEUE_UNAVAILABLE'
+  | 'IDEMPOTENCY_KEY_REUSED';
 
-export type TriggerDeployResult = { readonly ok: true; readonly deployment: DeploymentView } | Failure<TriggerDeployFailureCode>;
+/** `replayed`: an Idempotency-Key matched an earlier request and its deployment is answered again. */
+export type TriggerDeployResult =
+  | { readonly ok: true; readonly deployment: DeploymentView; readonly replayed: boolean }
+  | Failure<TriggerDeployFailureCode>;
 
 const inProgress = (): Failure<'DEPLOYMENT_IN_PROGRESS'> => ({
   ok: false,
@@ -208,12 +212,140 @@ function uniqueViolationConstraint(error: unknown): string | undefined {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Idempotency-Key (18-05)
+// ---------------------------------------------------------------------------------------------
+
+/** H1: an Idempotency-Key answers for 24 h; after that it is released and creates a new deployment. */
+export const IDEMPOTENCY_KEY_TTL_MS = 24 * 60 * 60 * 1000;
+/** H1: the most keys one expiry pass releases. */
+export const IDEMPOTENCY_EXPIRY_BATCH_LIMIT = 100;
+
+export function idempotencyCutoff(now: Date): Date {
+  return new Date(now.getTime() - IDEMPOTENCY_KEY_TTL_MS);
+}
+
+export type DeployAction = 'deploy' | 'redeploy';
+
+/** H1: the fingerprint holds the action and the service only: no body, actor, key or secret. */
+export function deployFingerprint(action: DeployAction, serviceId: string): string {
+  return requestFingerprint({ action, serviceId });
+}
+
+const keyReused = (): Failure<'IDEMPOTENCY_KEY_REUSED'> => ({
+  ok: false,
+  code: 'IDEMPOTENCY_KEY_REUSED',
+  message: 'This Idempotency-Key was already used for a different request',
+});
+
+type LookupResult =
+  | { readonly kind: 'absent' }
+  | { readonly kind: 'replay'; readonly deployment: DeploymentView }
+  | { readonly kind: 'failed'; readonly failure: Failure<'IDEMPOTENCY_KEY_REUSED'> };
+
+interface IdempotencyRequest {
+  readonly key: string;
+  readonly fingerprint: string;
+  readonly cutoff: Date;
+}
+
+/** The row a live Idempotency-Key already created: replayed when the request matches, refused otherwise. */
+async function lookupIdempotent(
+  tx: Pick<Transaction, 'select'>,
+  serviceId: string,
+  request: IdempotencyRequest,
+): Promise<LookupResult> {
+  const [existing] = await tx
+    .select()
+    .from(deployments)
+    .where(
+      and(
+        eq(deployments.serviceId, serviceId),
+        eq(deployments.idempotencyKey, request.key),
+        gte(deployments.createdAt, request.cutoff),
+      ),
+    )
+    .limit(1);
+  if (!existing) return { kind: 'absent' };
+  if (existing.requestFingerprint !== request.fingerprint) return { kind: 'failed', failure: keyReused() };
+  return { kind: 'replay', deployment: toDeploymentView(existing) };
+}
+
+/** An expired key still holds the unique index; it is released before the key is used again. */
+async function releaseExpiredKey(tx: Transaction, serviceId: string, request: IdempotencyRequest): Promise<void> {
+  await tx
+    .update(deployments)
+    .set({ idempotencyKey: null, requestFingerprint: null })
+    .where(
+      and(
+        eq(deployments.serviceId, serviceId),
+        eq(deployments.idempotencyKey, request.key),
+        lt(deployments.createdAt, request.cutoff),
+      ),
+    );
+}
+
+/** H1: the bounded expiry job. Releases at most `limit` keys older than 24 h; returns how many. */
+export async function expireIdempotencyKeys(
+  deps: Pick<DeploymentServicesDeps, 'db' | 'now'>,
+  limit: number = IDEMPOTENCY_EXPIRY_BATCH_LIMIT,
+): Promise<number> {
+  const bounded = Math.max(1, Math.min(Math.trunc(limit), IDEMPOTENCY_EXPIRY_BATCH_LIMIT));
+  const cutoff = idempotencyCutoff(deps.now());
+  return deps.db.transaction(async (tx) => {
+    const rows = await tx
+      .select({ id: deployments.id })
+      .from(deployments)
+      .where(and(isNotNull(deployments.idempotencyKey), lt(deployments.createdAt, cutoff)))
+      .orderBy(asc(deployments.createdAt), asc(deployments.id))
+      .limit(bounded)
+      .for('update', { skipLocked: true });
+    if (rows.length === 0) return 0;
+    await tx
+      .update(deployments)
+      .set({ idempotencyKey: null, requestFingerprint: null })
+      .where(inArray(deployments.id, rows.map((row) => row.id)));
+    return rows.length;
+  });
+}
+
+/** Runs one bounded expiry pass after a keyed request; a failure never fails the request. */
+async function expireKeysBestEffort(deps: DeploymentServicesDeps): Promise<void> {
+  try {
+    await expireIdempotencyKeys(deps);
+  } catch {
+    // Never log the error itself: a driver message can carry a connection string.
+    deps.logger.warn({}, 'idempotency key expiry pass failed');
+  }
+}
+
+function idempotencyRequest(deps: DeploymentServicesDeps, key: string | undefined, fingerprint: string): IdempotencyRequest | undefined {
+  return key === undefined ? undefined : { key, fingerprint, cutoff: idempotencyCutoff(deps.now()) };
+}
+
+/** H9: a unique violation of a keyed request is answered by the winner's row, never a 500. */
+async function resolveKeyedRace(
+  deps: DeploymentServicesDeps,
+  error: unknown,
+  serviceId: string,
+  request: IdempotencyRequest | undefined,
+): Promise<LookupResult> {
+  const constraint = uniqueViolationConstraint(error);
+  if (constraint !== ACTIVE_DEPLOYMENT_CONSTRAINT && constraint !== IDEMPOTENCY_KEY_CONSTRAINT) throw error;
+  if (request === undefined) return { kind: 'absent' };
+  return deps.db.transaction((tx) => lookupIdempotent(tx, serviceId, request));
+}
+
+// ---------------------------------------------------------------------------------------------
 // Trigger
 // ---------------------------------------------------------------------------------------------
 
 export interface TriggerDeployInput {
   readonly actor: ServiceActor;
   readonly serviceId: string;
+  /** Part of the idempotency fingerprint only; defaults to 'deploy'. */
+  readonly action?: DeployAction;
+  /** Already validated by the route (validateIdempotencyKey). */
+  readonly idempotencyKey?: string;
 }
 
 type InsertResult =
@@ -305,10 +437,38 @@ async function insertQueuedRow(
   };
 }
 
-async function insertQueuedDeployment(tx: Transaction, deps: DeploymentServicesDeps, input: TriggerDeployInput): Promise<InsertResult> {
+type DeployTxResult =
+  | ({ readonly kind: 'inserted' } & Omit<Inserted, 'ok'>)
+  | LookupResult
+  | { readonly kind: 'failed'; readonly failure: Failure<TriggerDeployFailureCode> };
+
+async function insertQueuedDeployment(
+  tx: Transaction,
+  deps: DeploymentServicesDeps,
+  input: TriggerDeployInput,
+  request: IdempotencyRequest | undefined,
+): Promise<DeployTxResult> {
   const guard = await guardDeployableService(tx, input.serviceId);
-  if (!guard.ok) return guard;
-  return insertQueuedRow(tx, deps, guard.service, input.actor, { trigger: 'manual', source: sourceSnapshotFromService(guard.service) });
+  if (!guard.ok) {
+    // A replay answers even if the server dropped since; a missing service never replays.
+    if (guard.code !== 'NOT_FOUND' && request !== undefined) {
+      const replay = await lookupIdempotent(tx, input.serviceId, request);
+      if (replay.kind !== 'absent') return replay;
+    }
+    return { kind: 'failed', failure: guard };
+  }
+  if (request !== undefined) {
+    const replay = await lookupIdempotent(tx, guard.service.id, request);
+    if (replay.kind !== 'absent') return replay;
+    await releaseExpiredKey(tx, guard.service.id, request);
+  }
+  const inserted = await insertQueuedRow(tx, deps, guard.service, input.actor, {
+    trigger: 'manual',
+    source: sourceSnapshotFromService(guard.service),
+    ...(request === undefined ? {} : { idempotencyKey: request.key, requestFingerprint: request.fingerprint }),
+  });
+  if (!inserted.ok) return { kind: 'failed', failure: inserted };
+  return { kind: 'inserted', deployment: inserted.deployment, service: inserted.service, activityEventId: inserted.activityEventId };
 }
 
 /** Undoes the insert only while the row is still QUEUED; a row the worker already moved stays. */
@@ -356,16 +516,28 @@ async function enqueueInserted(
   return { ok: true, deployment };
 }
 
+/** A1: queues a manual deploy; with an Idempotency-Key a repeat within 24 h replays the original. */
 export async function triggerDeploy(deps: DeploymentServicesDeps, input: TriggerDeployInput): Promise<TriggerDeployResult> {
-  let inserted: InsertResult;
+  const request = idempotencyRequest(deps, input.idempotencyKey, deployFingerprint(input.action ?? 'deploy', input.serviceId));
+  let result: DeployTxResult;
   try {
-    inserted = await deps.db.transaction((tx) => insertQueuedDeployment(tx, deps, input));
+    result = await deps.db.transaction((tx) => insertQueuedDeployment(tx, deps, input, request));
   } catch (error) {
-    if (uniqueViolationConstraint(error) === ACTIVE_DEPLOYMENT_CONSTRAINT) return inProgress();
-    throw error;
+    result = await resolveKeyedRace(deps, error, input.serviceId, request);
   }
-  if (!inserted.ok) return inserted;
-  return enqueueInserted(deps, inserted, input.actor);
+  if (request !== undefined) await expireKeysBestEffort(deps);
+  switch (result.kind) {
+    case 'absent':
+      return inProgress();
+    case 'failed':
+      return result.failure;
+    case 'replay':
+      return { ok: true, deployment: result.deployment, replayed: true };
+    case 'inserted': {
+      const enqueued = await enqueueInserted(deps, { ok: true, ...result }, input.actor);
+      return enqueued.ok ? { ...enqueued, replayed: false } : enqueued;
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -480,52 +652,29 @@ export type TriggerRollbackResult =
 
 type RollbackTxResult =
   | ({ readonly kind: 'inserted' } & Omit<Inserted, 'ok'>)
-  | { readonly kind: 'replay'; readonly deployment: DeploymentView }
-  | { readonly kind: 'failed'; readonly failure: Failure<TriggerRollbackFailureCode> }
-  | { readonly kind: 'absent' };
-
-const keyReused = (): Failure<'IDEMPOTENCY_KEY_REUSED'> => ({
-  ok: false,
-  code: 'IDEMPOTENCY_KEY_REUSED',
-  message: 'This Idempotency-Key was already used for a different request',
-});
-
-/** The row an Idempotency-Key already created: replayed when the request matches, refused otherwise. */
-async function lookupIdempotent(
-  tx: Pick<Transaction, 'select'>,
-  serviceId: string,
-  key: string,
-  fingerprint: string,
-): Promise<RollbackTxResult> {
-  const [existing] = await tx
-    .select()
-    .from(deployments)
-    .where(and(eq(deployments.serviceId, serviceId), eq(deployments.idempotencyKey, key)))
-    .limit(1);
-  if (!existing) return { kind: 'absent' };
-  if (existing.requestFingerprint !== fingerprint) return { kind: 'failed', failure: keyReused() };
-  return { kind: 'replay', deployment: toDeploymentView(existing) };
-}
+  | LookupResult
+  | { readonly kind: 'failed'; readonly failure: Failure<TriggerRollbackFailureCode> };
 
 async function insertRollbackDeployment(
   tx: Transaction,
   deps: DeploymentServicesDeps,
   input: TriggerRollbackInput,
-  fingerprint: string,
+  request: IdempotencyRequest | undefined,
 ): Promise<RollbackTxResult> {
   const guard = await guardDeployableService(tx, input.serviceId);
   if (!guard.ok) {
     // A replay answers even if the server dropped since; a missing service never replays.
-    if (guard.code !== 'NOT_FOUND' && input.idempotencyKey !== undefined) {
-      const replay = await lookupIdempotent(tx, input.serviceId, input.idempotencyKey, fingerprint);
+    if (guard.code !== 'NOT_FOUND' && request !== undefined) {
+      const replay = await lookupIdempotent(tx, input.serviceId, request);
       if (replay.kind !== 'absent') return replay;
     }
     return { kind: 'failed', failure: guard };
   }
   const { service } = guard;
-  if (input.idempotencyKey !== undefined) {
-    const replay = await lookupIdempotent(tx, service.id, input.idempotencyKey, fingerprint);
+  if (request !== undefined) {
+    const replay = await lookupIdempotent(tx, service.id, request);
     if (replay.kind !== 'absent') return replay;
+    await releaseExpiredKey(tx, service.id, request);
   }
   // A2: one active deployment per service; the unique index still decides a race.
   const [active] = await tx
@@ -578,7 +727,7 @@ async function insertRollbackDeployment(
       runtimeConfig: target.runtimeConfig,
       rollbackOfDeploymentId: target.id,
       previousDeploymentId: current.id,
-      ...(input.idempotencyKey === undefined ? {} : { idempotencyKey: input.idempotencyKey, requestFingerprint: fingerprint }),
+      ...(request === undefined ? {} : { idempotencyKey: request.key, requestFingerprint: request.fingerprint }),
     },
   );
   if (!inserted.ok) return { kind: 'failed', failure: inserted };
@@ -587,18 +736,15 @@ async function insertRollbackDeployment(
 
 /** A1/A2/H1: queues a `rollback` deployment of a retained known-good version. */
 export async function triggerRollback(deps: DeploymentServicesDeps, input: TriggerRollbackInput): Promise<TriggerRollbackResult> {
-  const fingerprint = rollbackFingerprint(input.serviceId, input.targetDeploymentId);
+  const request = idempotencyRequest(deps, input.idempotencyKey, rollbackFingerprint(input.serviceId, input.targetDeploymentId));
   let result: RollbackTxResult;
   try {
-    result = await deps.db.transaction((tx) => insertRollbackDeployment(tx, deps, input, fingerprint));
+    result = await deps.db.transaction((tx) => insertRollbackDeployment(tx, deps, input, request));
   } catch (error) {
-    const constraint = uniqueViolationConstraint(error);
-    if (constraint !== ACTIVE_DEPLOYMENT_CONSTRAINT && constraint !== IDEMPOTENCY_KEY_CONSTRAINT) throw error;
     // H1: a concurrent request won the race; with the same key and request it is replayed.
-    const key = input.idempotencyKey;
-    if (key === undefined) return inProgress();
-    result = await deps.db.transaction((tx) => lookupIdempotent(tx, input.serviceId, key, fingerprint));
+    result = await resolveKeyedRace(deps, error, input.serviceId, request);
   }
+  if (request !== undefined) await expireKeysBestEffort(deps);
   switch (result.kind) {
     case 'absent':
       return inProgress();
@@ -748,6 +894,8 @@ export async function getServiceDeployment(
 export interface DeploymentServices {
   triggerDeploy(input: TriggerDeployInput): Promise<TriggerDeployResult>;
   triggerRollback(input: TriggerRollbackInput): Promise<TriggerRollbackResult>;
+  /** H1: one bounded pass releasing Idempotency-Keys older than 24 h. */
+  expireIdempotencyKeys(limit?: number): Promise<number>;
   listDeployments(serviceId: string, input: ListDeploymentsInput): Promise<DeploymentPage | null>;
   getDeployment(deploymentId: string): Promise<DeploymentView | null>;
   getServiceDeployment(serviceId: string, deploymentId: string): Promise<DeploymentView | null>;
@@ -757,6 +905,7 @@ export function createDeploymentServices(deps: DeploymentServicesDeps): Deployme
   return {
     triggerDeploy: (input) => triggerDeploy(deps, input),
     triggerRollback: (input) => triggerRollback(deps, input),
+    expireIdempotencyKeys: (limit) => expireIdempotencyKeys(deps, limit),
     listDeployments: (serviceId, input) => listDeployments(deps, serviceId, input),
     getDeployment: (deploymentId) => getDeployment(deps, deploymentId),
     getServiceDeployment: (serviceId, deploymentId) => getServiceDeployment(deps, serviceId, deploymentId),
