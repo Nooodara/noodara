@@ -13,11 +13,11 @@
 //
 // Nothing here logs the payload, the signature header or the secret (A5).
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, isNull, notExists, sql } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { NON_TERMINAL_DEPLOYMENT_STATUSES } from '@noodara/domain/deployment';
 import { revealSecret } from '@noodara/domain/security';
-import { decideDelivery, matchPush, type WebhookDeliveryOutcome } from '@noodara/domain';
+import { decideDelivery, decidePendingTrigger, matchPush, type WebhookDeliveryOutcome } from '@noodara/domain';
 import { writeActivityEvent } from '../activity/write-activity-event.js';
 import type { Database } from '../db/client.js';
 import { deployments } from '../db/schema/deployments.js';
@@ -371,14 +371,22 @@ async function recordInTransaction(
   if (decision.kind === 'duplicate') throw new Error('webhook-ingest: duplicate decided without an existing delivery');
 
   if (decision.supersededDeliveryId !== null) {
+    // A pending delivery a drain already turned into a deployment keeps its `deployed` outcome.
     await tx
       .update(webhookDeliveries)
       .set({ outcome: 'superseded' })
-      .where(and(eq(webhookDeliveries.serviceId, service.id), eq(webhookDeliveries.deliveryId, decision.supersededDeliveryId)));
+      .where(
+        and(
+          eq(webhookDeliveries.serviceId, service.id),
+          eq(webhookDeliveries.deliveryId, decision.supersededDeliveryId),
+          isNull(webhookDeliveries.deploymentId),
+        ),
+      );
   }
 
   if (decision.kind === 'coalesce') {
-    // The single pending slot (latest wins); draining it when the active deployment ends is 18-04.
+    // 18-04 (A1, H1): the single pending slot, latest wins under the service lock; the drain below
+    // runs it when the active deployment ends.
     await tx
       .update(services)
       .set({ pendingTriggerDeliveryId: input.deliveryId, pendingTriggerSha: decision.sha, pendingTriggerAt: now })
@@ -494,8 +502,264 @@ async function enqueueCreated(
   } catch {
     // The stale-QUEUED sweep ends it ENQUEUE_FAILED later. Never log the error (driver text).
     deps.logger.error({ deploymentId: deployment.id }, 'webhook deployment enqueue failed and could not be marked failed');
+    return false;
   }
+  // 18-04 (A2): ENQUEUE_FAILED is a terminal event too; a push coalesced meanwhile must not strand.
+  await drainQuietly(deps, deployment.serviceId);
   return false;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Pending trigger drain (18-04)
+// ---------------------------------------------------------------------------------------------
+//
+// Runs whenever a deployment may have ended (after every deploy job, after an ingest enqueue
+// failure, after the crash and stale-QUEUED sweeps). Self-guarding: under the service lock it does
+// nothing while any deployment of the service is non-terminal, so a spurious call is harmless and
+// concurrent terminal events create exactly one follow-up (A2).
+//
+// The pending slot is cleared only once the follow-up's job is enqueued (H2). Until then the
+// delivery row links the follow-up deployment; a later drain treats a pending delivery linked to a
+// deployment that did not end ENQUEUE_FAILED as consumed and only clears the slot, so neither a
+// lost enqueue nor a lost clear ever deploys twice or drops the push.
+
+export type PendingTriggerDrainDeps = Pick<WebhookIngestDeps, 'db' | 'now' | 'events' | 'queue' | 'failUnqueued' | 'logger'>;
+
+export type PendingTriggerDrainResult =
+  | { readonly kind: 'none' }
+  /** A deployment of the service is still non-terminal; its own end drains the slot. */
+  | { readonly kind: 'busy' }
+  | { readonly kind: 'dropped'; readonly outcome: WebhookDeliveryOutcome }
+  | { readonly kind: 'enqueued'; readonly deploymentId: string }
+  /** The slot is retained; the next terminal event or sweep retries it. */
+  | { readonly kind: 'enqueue_failed'; readonly deploymentId: string };
+
+type DrainClaim =
+  | Exclude<PendingTriggerDrainResult, { kind: 'enqueued' } | { kind: 'enqueue_failed' }>
+  | {
+      readonly kind: 'created';
+      readonly pendingDeliveryId: string;
+      readonly deliveryRowId: string;
+      readonly deployment: DeploymentView;
+      readonly service: ServiceView;
+    };
+
+const NONE = Object.freeze({ kind: 'none' } as const);
+const BUSY = Object.freeze({ kind: 'busy' } as const);
+
+async function clearPending(tx: Transaction, serviceId: string, deliveryId: string): Promise<void> {
+  await tx
+    .update(services)
+    .set({ pendingTriggerDeliveryId: null, pendingTriggerSha: null, pendingTriggerAt: null })
+    .where(and(eq(services.id, serviceId), eq(services.pendingTriggerDeliveryId, deliveryId)));
+}
+
+async function claimPendingInTransaction(tx: Transaction, deps: PendingTriggerDrainDeps, serviceId: string): Promise<DrainClaim> {
+  const snapshot = await serviceSnapshot(tx, serviceId);
+  if (snapshot === null) return NONE;
+  const { service, projectArchived } = snapshot;
+  if (service.pendingTriggerDeliveryId === null || service.pendingTriggerSha === null) return NONE;
+  const pending = { deliveryId: service.pendingTriggerDeliveryId, sha: service.pendingTriggerSha };
+
+  const state = await deploymentState(tx, service.id);
+  if (state.active !== null) return BUSY;
+
+  const [delivery] = await tx
+    .select({ id: webhookDeliveries.id, deploymentId: webhookDeliveries.deploymentId })
+    .from(webhookDeliveries)
+    .where(and(eq(webhookDeliveries.serviceId, service.id), eq(webhookDeliveries.deliveryId, pending.deliveryId)))
+    .limit(1);
+  if (!delivery) {
+    await clearPending(tx, service.id, pending.deliveryId);
+    return NONE;
+  }
+  if (delivery.deploymentId !== null) {
+    const [linked] = await tx
+      .select({ status: deployments.status, errorCode: deployments.errorCode })
+      .from(deployments)
+      .where(eq(deployments.id, delivery.deploymentId))
+      .limit(1);
+    const enqueueFailed = linked?.status === 'FAILED' && linked.errorCode === 'ENQUEUE_FAILED';
+    if (linked !== undefined && !enqueueFailed) {
+      // Already ran (its enqueue succeeded but the slot was never cleared).
+      await clearPending(tx, service.id, pending.deliveryId);
+      return NONE;
+    }
+  }
+
+  const now = deps.now();
+  const drop = async (outcome: WebhookDeliveryOutcome): Promise<DrainClaim> => {
+    await tx.update(webhookDeliveries).set({ outcome, deploymentId: null }).where(eq(webhookDeliveries.id, delivery.id));
+    await clearPending(tx, service.id, pending.deliveryId);
+    return { kind: 'dropped', outcome };
+  };
+  // Never deploy what a push could not deploy now (H3 of 18-02).
+  if (service.sourceType !== 'git' || service.repositoryUrl === null || service.branch === null) return drop('source_not_git');
+  if (projectArchived) return drop('project_archived');
+  const decision = decidePendingTrigger(pending, state.deployedSha);
+  if (decision.kind === 'none') return NONE;
+  if (decision.kind === 'drop') return drop(decision.outcome);
+
+  const [row] = await tx
+    .insert(deployments)
+    .values({
+      id: uuidv7(),
+      serviceId: service.id,
+      status: 'QUEUED',
+      trigger: 'webhook',
+      triggeredBy: `github:${pending.deliveryId}`,
+      source: sourceSnapshotFromService(service),
+      commitSha: decision.sha,
+      webhookDeliveryId: delivery.id,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning();
+  if (!row) throw new Error('webhook-ingest: follow-up deployment insert returned no row');
+  await tx.update(webhookDeliveries).set({ outcome: 'deployed', deploymentId: row.id }).where(eq(webhookDeliveries.id, delivery.id));
+  const [touched] = await tx
+    .update(services)
+    .set({ updatedAt: nextUpdatedAtSql(services.updatedAt, now) })
+    .where(eq(services.id, service.id))
+    .returning();
+  if (!touched) throw new Error('webhook-ingest: service touch returned no row');
+  await writeActivityEvent(
+    tx,
+    {
+      actorType: 'system',
+      actorId: null,
+      entityType: 'deployment',
+      entityId: row.id,
+      action: 'deployment.queued',
+      outcome: 'success',
+      metadata: { serviceId: service.id, trigger: row.trigger },
+    },
+    now,
+  );
+  return {
+    kind: 'created',
+    pendingDeliveryId: pending.deliveryId,
+    deliveryRowId: delivery.id,
+    deployment: toDeploymentView(row),
+    service: toServiceView(touched, { status: row.status }),
+  };
+}
+
+async function claimPending(deps: PendingTriggerDrainDeps, serviceId: string): Promise<DrainClaim> {
+  try {
+    return await deps.db.transaction((tx) => claimPendingInTransaction(tx, deps, serviceId));
+  } catch (error) {
+    // A manual deploy took the active slot between our read and insert: its end drains the slot.
+    if (uniqueViolationConstraint(error) === ACTIVE_DEPLOYMENT_CONSTRAINT) return BUSY;
+    throw error;
+  }
+}
+
+/**
+ * Runs or drops the service's pending trigger once no deployment of it is active. Throws only on a
+ * database error before anything is enqueued (callers log by class); the slot then stays for a
+ * later drain.
+ */
+export async function drainPendingTrigger(deps: PendingTriggerDrainDeps, serviceId: string): Promise<PendingTriggerDrainResult> {
+  const claim = await claimPending(deps, serviceId);
+  if (claim.kind !== 'created') {
+    if (claim.kind === 'dropped') deps.logger.info({ serviceId, outcome: claim.outcome }, 'pending webhook trigger dropped');
+    return claim;
+  }
+  const { deployment } = claim;
+  let enqueued = false;
+  try {
+    const result = await deps.queue.enqueue({
+      deploymentId: deployment.id,
+      serviceId: deployment.serviceId,
+      actor: { type: 'system' },
+      requestedAt: deployment.createdAt,
+    });
+    enqueued = result.ok;
+  } catch {
+    enqueued = false;
+  }
+
+  if (!enqueued) {
+    // H2: the slot is untouched; end the follow-up ENQUEUE_FAILED so the next drain retries it.
+    let failed: unknown = undefined;
+    try {
+      failed = await deps.failUnqueued(deployment.id, deps.now());
+    } catch {
+      // Still QUEUED: the stale-QUEUED sweep ends it ENQUEUE_FAILED; the slot still holds the push.
+      deps.logger.error({ deploymentId: deployment.id }, 'pending webhook follow-up enqueue failed and could not be marked failed');
+    }
+    // null: the row already left QUEUED, so a worker claimed it (the enqueue did land).
+    enqueued = failed === null;
+    if (!enqueued) {
+      if (failed !== undefined) {
+        try {
+          await deps.db
+            .update(webhookDeliveries)
+            .set({ outcome: 'coalesced', deploymentId: null })
+            .where(and(eq(webhookDeliveries.id, claim.deliveryRowId), eq(webhookDeliveries.deploymentId, deployment.id)));
+        } catch {
+          // The next drain sees the link to an ENQUEUE_FAILED deployment and retries all the same.
+        }
+      }
+      deps.logger.warn({ serviceId, deploymentId: deployment.id }, 'pending webhook follow-up enqueue failed; the trigger is retained');
+      return { kind: 'enqueue_failed', deploymentId: deployment.id };
+    }
+  }
+
+  try {
+    await deps.db.transaction((tx) => clearPending(tx, serviceId, claim.pendingDeliveryId));
+  } catch {
+    // The next drain sees the delivery linked to a live deployment and only clears the slot.
+    deps.logger.warn({ serviceId, deploymentId: deployment.id }, 'pending webhook trigger could not be cleared after enqueue');
+  }
+  await publishServerEvent(deps.events, buildDeploymentUpdatedEvent(deployment));
+  await publishServerEvent(deps.events, buildServiceUpdatedEvent(claim.service));
+  deps.logger.info({ serviceId, deploymentId: deployment.id }, 'pending webhook trigger enqueued');
+  return { kind: 'enqueued', deploymentId: deployment.id };
+}
+
+/** H2: the sweep path. Drains every service that holds a pending trigger and has no active deployment. */
+export async function drainAllPendingTriggers(deps: PendingTriggerDrainDeps): Promise<readonly PendingTriggerDrainResult[]> {
+  let candidates: { id: string }[];
+  try {
+    candidates = await deps.db
+      .select({ id: services.id })
+      .from(services)
+      .where(
+        and(
+          isNotNull(services.pendingTriggerDeliveryId),
+          notExists(
+            deps.db
+              .select({ one: sql`1` })
+              .from(deployments)
+              .where(and(eq(deployments.serviceId, services.id), inArray(deployments.status, [...NON_TERMINAL_DEPLOYMENT_STATUSES]))),
+          ),
+        ),
+      );
+  } catch (error) {
+    deps.logger.error({ errorKind: error instanceof Error ? error.name : typeof error }, 'pending webhook trigger sweep could not list services');
+    return [];
+  }
+  const results: PendingTriggerDrainResult[] = [];
+  for (const candidate of candidates) {
+    const result = await drainQuietly(deps, candidate.id);
+    if (result !== null) results.push(result);
+  }
+  return results;
+}
+
+/** Never throws: a drain that fails on the database leaves the slot for the next terminal event or sweep. */
+export async function drainQuietly(deps: PendingTriggerDrainDeps, serviceId: string): Promise<PendingTriggerDrainResult | null> {
+  try {
+    return await drainPendingTrigger(deps, serviceId);
+  } catch (error) {
+    deps.logger.error(
+      { serviceId, errorKind: error instanceof Error ? error.name : typeof error },
+      'pending webhook trigger could not be drained',
+    );
+    return null;
+  }
 }
 
 function headerValid(value: string | undefined, pattern: RegExp): value is string {

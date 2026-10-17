@@ -117,6 +117,12 @@ export interface DeployJobDeps {
   };
   /** 17-04: image retention after SUCCESS / ROLLED_BACK; absent, no image is ever removed. */
   readonly retention?: ImageRetentionRunner;
+  /**
+   * 18-04 (A2, H2): runs the service's coalesced webhook push once its deployment ends. Called after
+   * every job with a valid payload (the drain itself waits while a deployment is still active);
+   * absent, a pending trigger waits for the sweep.
+   */
+  readonly drainPendingTrigger?: (serviceId: string) => Promise<unknown>;
 }
 
 export type DeployJobOutcome =
@@ -211,6 +217,17 @@ export function createDeployJobHandler(deps: DeployJobDeps): (data: unknown, sig
     }
   };
 
+  /** 18-04: never throws and never changes the job's outcome; a failed drain waits for the sweep. */
+  const drainPending = async (deploymentId: string, serviceId: string): Promise<void> => {
+    const drain = deps.drainPendingTrigger;
+    if (drain === undefined) return;
+    try {
+      await drain(serviceId);
+    } catch (error) {
+      logger.warn({ deploymentId, errorKind: errorKind(error) }, 'deploy job could not drain the pending webhook trigger');
+    }
+  };
+
   return async (data, signal) => {
     const parsed = parseDeployServiceJobPayload(data);
     if (!parsed.ok) {
@@ -218,17 +235,28 @@ export function createDeployJobHandler(deps: DeployJobDeps): (data: unknown, sig
       return { outcome: 'INVALID_PAYLOAD' };
     }
     const { deploymentId, serviceId } = parsed.payload;
+    const handled = await handle(deploymentId, serviceId, signal);
+    // The deployment's own service (a mismatched payload never drains a foreign service).
+    await drainPending(deploymentId, handled.serviceId);
+    return { outcome: handled.outcome };
+  };
 
+  async function handle(
+    deploymentId: string,
+    serviceId: string,
+    signal: AbortSignal | undefined,
+  ): Promise<{ outcome: DeployJobOutcome; serviceId: string }> {
     let claimed;
     try {
       claimed = await deps.store.claim(deploymentId);
     } catch (error) {
       logger.error({ deploymentId, errorKind: errorKind(error) }, 'deploy job could not claim its deployment');
-      return { outcome: 'CLAIM_FAILED' };
+      return { outcome: 'CLAIM_FAILED', serviceId };
     }
     if (claimed === null) {
+      // A QUEUED deployment cancelled before its job ran is a terminal event too.
       logger.info({ deploymentId }, 'deploy job skipped: deployment is no longer QUEUED');
-      return { outcome: 'ALREADY_CLAIMED' };
+      return { outcome: 'ALREADY_CLAIMED', serviceId };
     }
 
     let watch: DeployCancelWatch | null = null;
@@ -330,13 +358,13 @@ export function createDeployJobHandler(deps: DeployJobDeps): (data: unknown, sig
     } catch (error) {
       // The row stays non-terminal; the startup sweep ends it as WORKER_CRASHED.
       logger.error({ deploymentId, errorKind: errorKind(error) }, 'deploy job could not record its outcome');
-      return { outcome: 'WORKER_CRASHED' };
+      return { outcome: 'WORKER_CRASHED', serviceId: claimed.serviceId };
     } finally {
       const cancel = deps.cancel;
       if (cancel !== undefined) {
         await closeQuietly('cancel flag', deploymentId, () => cancel.clear(deploymentId));
       }
     }
-    return { outcome };
-  };
+    return { outcome, serviceId: claimed.serviceId };
+  }
 }

@@ -607,3 +607,80 @@ describe('deploy job handler: manual rollback (17-05 A3, H1)', () => {
     expect(h.retention).toHaveBeenCalledWith(expect.objectContaining({ deploymentId: DEPLOYMENT_ID, outcome: 'ROLLED_BACK' }));
   });
 });
+
+describe('deploy job handler: pending webhook trigger drain (18-04 A2, H2)', () => {
+  const OTHER_SERVICE_ID = '0192f1a4-7b3c-7d2e-8f00-00000000eeee';
+
+  it('drains the service only after the terminal write, for every terminal outcome', async () => {
+    for (const status of ['SUCCESS', 'FAILED', 'ROLLED_BACK', 'CANCELLED'] as const) {
+      const order: string[] = [];
+      const drainPendingTrigger = vi.fn((serviceId: string) => {
+        order.push(`drain:${serviceId}`);
+        return Promise.resolve();
+      });
+      const h = harness({
+        drainPendingTrigger,
+        run: () => Promise.resolve({ ...SUCCESS, status, errorCode: null, errorMessage: null }),
+      });
+      vi.mocked(h.deps.store.finish).mockImplementation((_id, input) => {
+        order.push(`finish:${input.status}`);
+        return Promise.resolve(null);
+      });
+
+      expect(await h.handle(PAYLOAD)).toEqual({ outcome: status });
+      expect(order).toEqual([`finish:${status}`, `drain:${SERVICE_ID}`]);
+    }
+  });
+
+  it('drains after a failure before the pipeline and after a crash', async () => {
+    const unreachable = harness({
+      drainPendingTrigger: vi.fn(() => Promise.resolve()),
+      connect: () => Promise.resolve({ ok: false as const, code: 'SERVER_UNREACHABLE' as const }),
+    });
+    expect(await unreachable.handle(PAYLOAD)).toEqual({ outcome: 'FAILED' });
+    expect(unreachable.deps.drainPendingTrigger).toHaveBeenCalledExactlyOnceWith(SERVICE_ID);
+
+    const crashed = harness({
+      drainPendingTrigger: vi.fn(() => Promise.resolve()),
+      run: () => Promise.reject(new Error(RAW_REMOTE)),
+    });
+    expect(await crashed.handle(PAYLOAD)).toEqual({ outcome: 'WORKER_CRASHED' });
+    expect(crashed.deps.drainPendingTrigger).toHaveBeenCalledExactlyOnceWith(SERVICE_ID);
+  });
+
+  it('drains when the deployment already left QUEUED (cancelled before its job ran)', async () => {
+    const h = harness({ drainPendingTrigger: vi.fn(() => Promise.resolve()) });
+    vi.mocked(h.deps.store.claim).mockResolvedValueOnce(null);
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'ALREADY_CLAIMED' });
+    expect(h.deps.drainPendingTrigger).toHaveBeenCalledExactlyOnceWith(SERVICE_ID);
+  });
+
+  it('drains the deployment own service when the payload names another one', async () => {
+    const h = harness({ drainPendingTrigger: vi.fn(() => Promise.resolve()) });
+    expect(await h.handle({ ...PAYLOAD, serviceId: OTHER_SERVICE_ID })).toEqual({ outcome: 'FAILED' });
+    expect(h.deps.drainPendingTrigger).toHaveBeenCalledExactlyOnceWith(SERVICE_ID);
+  });
+
+  it('H2: a drain that throws is logged by class only and never changes the outcome', async () => {
+    const h = harness({ drainPendingTrigger: vi.fn(() => Promise.reject(new TypeError(RAW_REMOTE))) });
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'SUCCESS' });
+    const warned = h.logs.find((log) => log.message.includes('pending webhook trigger'));
+    expect(warned).toMatchObject({ level: 'warn', fields: { deploymentId: DEPLOYMENT_ID, errorKind: 'TypeError' } });
+    expect(JSON.stringify(h.logs)).not.toContain(RAW_REMOTE);
+  });
+
+  it('drains even when the terminal write fails (the drain waits while the row is still active)', async () => {
+    const h = harness({ drainPendingTrigger: vi.fn(() => Promise.resolve()) });
+    vi.mocked(h.deps.store.finish).mockRejectedValueOnce(new Error('db down'));
+    expect(await h.handle(PAYLOAD)).toEqual({ outcome: 'WORKER_CRASHED' });
+    expect(h.deps.drainPendingTrigger).toHaveBeenCalledExactlyOnceWith(SERVICE_ID);
+  });
+
+  it('never drains an invalid payload, and works without a drain port', async () => {
+    const drainPendingTrigger = vi.fn(() => Promise.resolve());
+    const h = harness({ drainPendingTrigger });
+    expect(await h.handle({ nope: true })).toEqual({ outcome: 'INVALID_PAYLOAD' });
+    expect(drainPendingTrigger).not.toHaveBeenCalled();
+    expect(await harness().handle(PAYLOAD)).toEqual({ outcome: 'SUCCESS' });
+  });
+});

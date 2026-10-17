@@ -1,11 +1,15 @@
 import { createHmac } from 'node:crypto';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   classifyDelivery,
   createFixedWindowLimiter,
   createWebhookRateLimiter,
+  drainAllPendingTriggers,
+  drainPendingTrigger,
+  drainQuietly,
   verifyGithubSignature,
   type DeliveryServiceState,
+  type PendingTriggerDrainDeps,
 } from './webhook-ingest.js';
 
 const SECRET = 'a'.repeat(64);
@@ -146,5 +150,63 @@ describe('classifyDelivery', () => {
       kind: 'record',
       outcome: 'project_archived',
     });
+  });
+});
+
+describe('pending trigger drain guards (18-04 A2, H2)', () => {
+  const SERVICE_ID = '0192f1a4-7b3c-7d2e-8f00-00000000bbbb';
+  const DRIVER_TEXT = 'connect ECONNREFUSED postgres://noodara:pw@db:5432';
+
+  function depsWith(db: unknown) {
+    const logs: { level: string; fields: Record<string, unknown>; message: string }[] = [];
+    const deps = {
+      db,
+      now: () => new Date('2026-10-16T10:00:00.000Z'),
+      events: { publish: vi.fn() },
+      queue: { enqueue: vi.fn() },
+      failUnqueued: vi.fn(),
+      logger: {
+        info: (fields: Record<string, unknown>, message: string) => void logs.push({ level: 'info', fields, message }),
+        warn: (fields: Record<string, unknown>, message: string) => void logs.push({ level: 'warn', fields, message }),
+        error: (fields: Record<string, unknown>, message: string) => void logs.push({ level: 'error', fields, message }),
+      },
+    } as unknown as PendingTriggerDrainDeps;
+    return { deps, logs };
+  }
+
+  it('a manual deploy winning the active slot mid-claim is busy, never an error', async () => {
+    const lost = Object.assign(new Error('insert failed'), {
+      cause: { code: '23505', constraint: 'deployments_service_active_unique_idx' },
+    });
+    const { deps } = depsWith({ transaction: () => Promise.reject(lost) });
+    expect(await drainPendingTrigger(deps, SERVICE_ID)).toStrictEqual({ kind: 'busy' });
+    expect(deps.queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('a database error before anything is enqueued propagates from drainPendingTrigger', async () => {
+    const { deps } = depsWith({ transaction: () => Promise.reject(new Error(DRIVER_TEXT)) });
+    await expect(drainPendingTrigger(deps, SERVICE_ID)).rejects.toThrow();
+    expect(deps.queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('drainQuietly never throws and logs the error class only', async () => {
+    const { deps, logs } = depsWith({ transaction: () => Promise.reject(new TypeError(DRIVER_TEXT)) });
+    expect(await drainQuietly(deps, SERVICE_ID)).toBeNull();
+    expect(logs).toStrictEqual([
+      { level: 'error', fields: { serviceId: SERVICE_ID, errorKind: 'TypeError' }, message: 'pending webhook trigger could not be drained' },
+    ]);
+    expect(JSON.stringify(logs)).not.toContain(DRIVER_TEXT);
+  });
+
+  it('the sweep returns no results when the candidate query fails, without leaking driver text', async () => {
+    const failing = {
+      select: () => {
+        throw new Error(DRIVER_TEXT);
+      },
+    };
+    const { deps, logs } = depsWith(failing);
+    expect(await drainAllPendingTriggers(deps)).toStrictEqual([]);
+    expect(logs[0]).toMatchObject({ level: 'error', fields: { errorKind: 'Error' } });
+    expect(JSON.stringify(logs)).not.toContain(DRIVER_TEXT);
   });
 });
