@@ -3,7 +3,7 @@
 > Generated from `.agent-flow/plan.json` by `agent-flow plan render`. Edit the plan, not this file.
 
 **Milestone:** v0.2
-**Progress:** 120/128 tasks (94%), 7/10 phases
+**Progress:** 122/128 tasks (95%), 8/10 phases
 
 ## Phase 11: Motor de deploy — fundamentos — done
 **Goal:** Everything the engine needs to be built RED-first exists and is proven on real infrastructure: spikes resolved (ADR 0008), pure domain, schema, parameterized allowlist templates, streaming exec, git/docker packages, sshd+dockerd fixture and official fixtures.
@@ -717,7 +717,7 @@
   - H2 [test]: A re-delivered BullMQ job for a row in PREPARING/BUILDING/DEPLOYING follows the ADR resume rule without a second noodara-<serviceId> container, and a job for a terminal row exits without any remote command, proven by a fake-port call count
   - H9 [it-idempotency]: A unique-constraint violation on (service_id, idempotency_key) or on the webhook hook id maps to a typed API error (replay or 409), never a 500 (follow-up of 16-06 H3)
 
-## Phase 19: UI de motor confiable, E2E y docs — active
+## Phase 19: UI de motor confiable, E2E y docs — done
 **Goal:** The user configures healthchecks, auto-rollback and the GitHub webhook, follows healthcheck and rollback in the deploy narration, reads a traceable history and rolls back from it, with the roadmap E2E paths and docs.
 **Requirements:** UI-13, DOCS-03, QA-12
 **Depends on:** 18
@@ -754,11 +754,11 @@
   - A3 [e2e-engine]: Rollback path: a bad deployment ends FAILED or ROLLED_BACK, then a manual rollback from the history ends SUCCESS with the previous commit healthy
   - A4 [e2e-engine]: Redelivering the same X-GitHub-Delivery adds no history row
   - H1 [test]: E2E signed-push helper computes the HMAC over the exact bytes sent and tests a wrong-signature push (401, no history row) and a ping, so the negative auth path is exercised through the real stack; E2E stack is fresh per run and the secret is a per-run random value
-- [ ] 19-06 (wave 7) Docs (healthchecks, webhooks, rollback) and UX review — active
+- [x] 19-06 (wave 7) Docs (healthchecks, webhooks, rollback) and UX review — done
   - A1 [site-build]: Pages for healthchecks, GitHub webhooks (setup, public URL requirement, coalescing, redelivery) and rollback (retention, replacement downtime until v0.4)
   - A2 [test]: The docs accuracy test covers the new error codes, defaults and bounds
   - A3 [manual]: noodara-ux-review report has no BLOCK; screenshots at 375 and 1280 px in both themes approved by a human
-- [ ] 19-08 (wave 8) Phase 19 review fixes: healthcheck error shape, deliveries route test, rollback step duration, dialog focus — pending
+- [x] 19-08 (wave 8) Phase 19 review fixes: healthcheck error shape, deliveries route test, rollback step duration, dialog focus — done
   - A1 [test]: healthchecks.mdx and error-codes.mdx describe the error a client actually receives for an out-of-bounds healthcheck through POST/PATCH (400 VALIDATION_FAILED with issues, unless the API is changed to match the docs); the docs accuracy test asserts the status and code pairing, not just that the string appears
   - A2 [test]: mapHealthcheckFailure maps the real API rejection shape for an invalid healthcheck to the named field error; the ServiceSheet test mocks that real response shape and asserts the named error, not the generic save-failed banner
   - A3 [test]: A DB-backed integration test for GET /api/projects/:projectId/services/:serviceId/webhook/deliveries covers a 400 on a malformed cursor, keyset paging, per-service scoping (no rows of another service) and the absence of payload fields
