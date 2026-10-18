@@ -2,7 +2,7 @@
 
 Fecha: 2026-10-18 · Commit: 4be032e · Modo: screenshots + código
 Veredicto global: **FLAG** (sin BLOCK)
-Aprobación humana (A3): **pendiente**
+Aprobación humana (A3): **aprobada** por el usuario (2026-10-18)
 
 Alcance: servicio con historial y rollback, diálogo de rollback, ajustes de healthcheck y rollback
 automático en el sheet de servicio, panel de webhook. Capturas en este directorio (375 y 1280 px, dark y

@@ -7005,6 +7005,77 @@
           ],
           "waives": [],
           "tier": "standard"
+        },
+        {
+          "id": "19-08",
+          "title": "Phase 19 review fixes: healthcheck error shape, deliveries route test, rollback step duration, dialog focus",
+          "scope": [
+            "apps/site/content/docs/operate/healthchecks.mdx",
+            "apps/site/content/docs/reference/error-codes.mdx",
+            "tests/unit/site/reliable-engine-docs-accuracy.test.ts",
+            "apps/web/src/lib/healthcheck-form.ts",
+            "apps/web/src/lib/healthcheck-form.test.ts",
+            "apps/web/src/components/ServiceSheet.tsx",
+            "apps/web/src/components/ServiceSheet.test.tsx",
+            "tests/integration/webhooks/deliveries.test.ts",
+            "apps/web/src/components/DeploymentSteps.tsx",
+            "apps/web/src/components/DeploymentSteps.test.tsx",
+            "apps/web/src/components/RollbackDialog.tsx",
+            "apps/web/src/components/RollbackDialog.test.tsx",
+            "apps/web/src/components/WebhookPanel.test.tsx",
+            "docs/ui-review/phase-19/REPORT.md"
+          ],
+          "wave": 8,
+          "dependsOn": [
+            "19-06"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-webhooks",
+            "site-build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "healthchecks.mdx and error-codes.mdx describe the error a client actually receives for an out-of-bounds healthcheck through POST/PATCH (400 VALIDATION_FAILED with issues, unless the API is changed to match the docs); the docs accuracy test asserts the status and code pairing, not just that the string appears",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "mapHealthcheckFailure maps the real API rejection shape for an invalid healthcheck to the named field error; the ServiceSheet test mocks that real response shape and asserts the named error, not the generic save-failed banner",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "A DB-backed integration test for GET /api/projects/:projectId/services/:serviceId/webhook/deliveries covers a 400 on a malformed cursor, keyset paging, per-service scoping (no rows of another service) and the absence of payload fields",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "The Rollback row in DeploymentSteps shows a duration when start/end are known (test)",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "RollbackDialog traps focus while open and restores focus to the trigger on close (test)",
+              "proof": "test"
+            },
+            {
+              "id": "A6",
+              "text": "A WebhookPanel test asserts the shown-once secret never reaches localStorage, sessionStorage, the URL or console output",
+              "proof": "test"
+            },
+            {
+              "id": "A7",
+              "text": "docs/ui-review/phase-19/REPORT.md records A3 human approval given by the user on 2026-10-18",
+              "proof": "manual"
+            }
+          ],
+          "tier": "standard"
         }
       ]
     },

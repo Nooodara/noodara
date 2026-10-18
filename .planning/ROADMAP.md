@@ -3,7 +3,7 @@
 > Generated from `.agent-flow/plan.json` by `agent-flow plan render`. Edit the plan, not this file.
 
 **Milestone:** v0.2
-**Progress:** 117/127 tasks (92%), 7/10 phases
+**Progress:** 120/128 tasks (94%), 7/10 phases
 
 ## Phase 11: Motor de deploy — fundamentos — done
 **Goal:** Everything the engine needs to be built RED-first exists and is proven on real infrastructure: spikes resolved (ADR 0008), pure domain, schema, parameterized allowlist templates, streaming exec, git/docker packages, sshd+dockerd fixture and official fixtures.
@@ -738,26 +738,34 @@
   - H1 [test]: The webhook secret is held only in component state (not localStorage, URL, query cache or logs/console), is cleared on unmount and on rotate/disable, and the copy buttons announce success accessibly
   - H2 [test]: Deliveries list renders outcome, SHA and ids as text only and tolerates unknown outcomes with a fallback row; the payload URL is built from the server-provided origin and validated hook id only
   - H3 [test]: GET /api/services/:id/webhook/deliveries validates limit and cursor with zod, caps the page size and rejects malformed cursors with 400
-- [ ] 19-04 (wave 4) Traceable history and manual rollback from it — active
+- [x] 19-04 (wave 4) Traceable history and manual rollback from it — done
   - A1 [test]: Rows show trigger and actor (you, GitHub push, rollback of, automatic), short commit, duration and status; detail on demand
   - A2 [test]: Rollback is offered on known-good rows with a retained image; the dialog names the target commit; a pruned image disables it with the reason
   - A3 [test]: The rollback request sends an Idempotency-Key so a double click creates one deployment
   - H1 [test]: Rollback dialog confirm button is disabled while the request is in flight and the Idempotency-Key is generated with crypto.randomUUID once per dialog open and reused on retry; a 409 DEPLOYMENT_IN_PROGRESS shows actionable copy
   - H2 [test]: api-client accepts an optional Idempotency-Key per request (tested); DeploymentView exposes an optional imageRetained boolean computed by the server from the same retention rule planRollback uses
-- [ ] 19-07 (wave 5) Service API accepts healthcheck and auto-rollback; webhook panel entry point — pending
+- [x] 19-07 (wave 5) Service API accepts healthcheck and auto-rollback; webhook panel entry point — done
   - A1 [test]: Service create and edit accept optional healthcheck and autoRollback, validated with the shared domain schema (validateHealthcheckConfig); invalid input returns 400 with the same named errors the UI shows
   - A2 [test]: ServiceView returns the stored healthcheck and autoRollback (auto-rollback defaults to on), so the service sheet round-trips what it saved and the next deploy uses it
   - A3 [test]: Git-source service pages show a 'Push webhook' control that opens the inspector panel (?webhook=1); image-source services do not show it
-- [ ] 19-05 (wave 6) E2E: webhook happy path, failure path, rollback path, duplicate delivery — pending
+- [x] 19-05 (wave 6) E2E: webhook happy path, failure path, rollback path, duplicate delivery — done
   - A1 [e2e-engine]: Happy path: a signed push posted by the test helper to the hook URL shows QUEUED … HEALTHCHECK → SUCCESS in the UI and the published port answers with the new version
   - A2 [e2e-engine]: Failure path: a push of the unhealthy fixture ends ROLLED_BACK and the good version answers on the published port at every sample except the documented replacement window
   - A3 [e2e-engine]: Rollback path: a bad deployment ends FAILED or ROLLED_BACK, then a manual rollback from the history ends SUCCESS with the previous commit healthy
   - A4 [e2e-engine]: Redelivering the same X-GitHub-Delivery adds no history row
   - H1 [test]: E2E signed-push helper computes the HMAC over the exact bytes sent and tests a wrong-signature push (401, no history row) and a ping, so the negative auth path is exercised through the real stack; E2E stack is fresh per run and the secret is a per-run random value
-- [ ] 19-06 (wave 7) Docs (healthchecks, webhooks, rollback) and UX review — pending
+- [ ] 19-06 (wave 7) Docs (healthchecks, webhooks, rollback) and UX review — active
   - A1 [site-build]: Pages for healthchecks, GitHub webhooks (setup, public URL requirement, coalescing, redelivery) and rollback (retention, replacement downtime until v0.4)
   - A2 [test]: The docs accuracy test covers the new error codes, defaults and bounds
   - A3 [manual]: noodara-ux-review report has no BLOCK; screenshots at 375 and 1280 px in both themes approved by a human
+- [ ] 19-08 (wave 8) Phase 19 review fixes: healthcheck error shape, deliveries route test, rollback step duration, dialog focus — pending
+  - A1 [test]: healthchecks.mdx and error-codes.mdx describe the error a client actually receives for an out-of-bounds healthcheck through POST/PATCH (400 VALIDATION_FAILED with issues, unless the API is changed to match the docs); the docs accuracy test asserts the status and code pairing, not just that the string appears
+  - A2 [test]: mapHealthcheckFailure maps the real API rejection shape for an invalid healthcheck to the named field error; the ServiceSheet test mocks that real response shape and asserts the named error, not the generic save-failed banner
+  - A3 [test]: A DB-backed integration test for GET /api/projects/:projectId/services/:serviceId/webhook/deliveries covers a 400 on a malformed cursor, keyset paging, per-service scoping (no rows of another service) and the absence of payload fields
+  - A4 [test]: The Rollback row in DeploymentSteps shows a duration when start/end are known (test)
+  - A5 [test]: RollbackDialog traps focus while open and restores focus to the trigger on close (test)
+  - A6 [test]: A WebhookPanel test asserts the shown-once secret never reaches localStorage, sessionStorage, the URL or console output
+  - A7 [manual]: docs/ui-review/phase-19/REPORT.md records A3 human approval given by the user on 2026-10-18
 
 ## Phase 20: Hardening, stress y gate de release v0.3 — pending
 **Goal:** Prove v0.3's acceptance criteria: the full integration matrix, 100 deploy/rollback cycles without corruption or orphans, a security review, the release gate and v0.3.0.
