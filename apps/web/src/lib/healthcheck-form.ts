@@ -182,8 +182,16 @@ export function buildSettingsBody(
   return { ok: true, body, changed: Object.keys(body).length > 0 };
 }
 
-/** Field errors for a server rejection of the healthcheck; null when it is about something else. */
+/** Field errors for a server rejection of the healthcheck; null when it is about something else.
+ *  The route schema answers 400 VALIDATION_FAILED with an issue at `/healthcheck`; the service's
+ *  own 422 SERVICE_INPUT_INVALID with a HEALTHCHECK_ reason is mapped the same way. */
 export function mapHealthcheckFailure(failure: ApiFailure<DeployApiErrorCode>): HealthcheckFormErrors | null {
+  if (failure.code === 'VALIDATION_FAILED') {
+    const issue = (failure.issues ?? []).find((entry) => entry.path === '/healthcheck' || entry.path.startsWith('/healthcheck/'));
+    if (issue === undefined) return null;
+    const message = issue.message.trim() === '' ? 'The server rejected this healthcheck.' : sentence(issue.message);
+    return { [fieldOf(message)]: message };
+  }
   if (failure.code !== 'SERVICE_INPUT_INVALID' || !(failure.reason ?? '').startsWith('HEALTHCHECK_')) return null;
   const message = failure.message.trim() === '' ? 'The server rejected this healthcheck.' : sentence(failure.message);
   return { [fieldOf(message)]: message };

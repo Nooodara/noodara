@@ -58,6 +58,45 @@ export function RollbackDialog({ open, onOpenChange, serviceId, target, onRolled
     };
   }, [open, onOpenChange]);
 
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const shown = open && target !== null;
+
+  // Focus moves into the dialog on open, Tab wraps inside it, and focus returns to the trigger on close.
+  useEffect(() => {
+    if (!shown) return undefined;
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusables = (): HTMLElement[] =>
+      Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') ?? []);
+    (focusables()[0] ?? dialogRef.current)?.focus();
+    const onTab = (event: KeyboardEvent): void => {
+      if (event.key !== 'Tab') return;
+      const items = focusables();
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (first === undefined || last === undefined) {
+        event.preventDefault();
+        dialogRef.current?.focus();
+        return;
+      }
+      const active = document.activeElement;
+      if (!(dialogRef.current?.contains(active) ?? false)) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onTab);
+    return () => {
+      document.removeEventListener('keydown', onTab);
+      if (trigger?.isConnected === true) trigger.focus();
+    };
+  }, [shown]);
+
   if (!open || target === null) return null;
 
   const sha = target.commitSha === null ? null : shortSha(target.commitSha);
@@ -94,6 +133,8 @@ export function RollbackDialog({ open, onOpenChange, serviceId, target, onRolled
     <div data-testid="rollback-dialog-root">
       <div className="fixed inset-0 z-40 bg-canvas/72" aria-hidden="true" />
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

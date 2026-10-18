@@ -69,17 +69,32 @@ const STEP_VISUAL = {
 const ROLLBACK_LABEL = 'Rollback';
 const ROLLBACK_STATUSES: ReadonlySet<string> = new Set(['ROLLING_BACK', 'ROLLED_BACK']);
 
+/** The rollback ran after the last step finished and ended with the deployment: the gap between them. */
+function rollbackDuration(deployment: DeploymentWithSteps): number | null {
+  if (deployment.completedAt === null) return null;
+  const end = Date.parse(deployment.completedAt);
+  let start = Number.NaN;
+  for (const step of deployment.steps) {
+    if (step.completedAt === null) continue;
+    const at = Date.parse(step.completedAt);
+    if (!Number.isNaN(at) && !(at <= start)) start = at;
+  }
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return null;
+  return end - start;
+}
+
 /** The rollback row, only when a rollback happened (or was attempted and failed). */
 function rollbackRow(
   deployment: DeploymentWithSteps,
   restoredCommit: string | null,
-): { visual: CheckState; word: string; detail: string | null } | null {
-  if (deployment.status === 'ROLLING_BACK') return { visual: 'running', word: 'Running', detail: null };
+): { visual: CheckState; word: string; detail: string | null; durationMs: number | null } | null {
+  const durationMs = rollbackDuration(deployment);
+  if (deployment.status === 'ROLLING_BACK') return { visual: 'running', word: 'Running', detail: null, durationMs: null };
   if (deployment.status === 'ROLLED_BACK') {
     const detail = restoredCommit === null || restoredCommit === '' ? null : `Restored commit ${shortSha(restoredCommit)}`;
-    return { visual: 'pass', word: 'Restored', detail };
+    return { visual: 'pass', word: 'Restored', detail, durationMs };
   }
-  if (deployment.errorCode === 'ROLLBACK_FAILED') return { visual: 'fail', word: 'Failed', detail: null };
+  if (deployment.errorCode === 'ROLLBACK_FAILED') return { visual: 'fail', word: 'Failed', detail: null, durationMs };
   return null;
 }
 
@@ -136,7 +151,7 @@ export function DeploymentSteps({ deployment, logTail = null }: DeploymentStepsP
             visual={rollback.visual}
             label={ROLLBACK_LABEL}
             word={rollback.word}
-            durationMs={null}
+            durationMs={rollback.durationMs}
             threadFilled={rollback.visual !== 'running'}
           >
             {rollback.detail === null ? null : (

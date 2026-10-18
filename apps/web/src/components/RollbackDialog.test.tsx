@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderUi, screen, userEvent, waitFor } from '@noodara/ui/testing';
 import type { DeploymentView } from '../lib/deploy-api';
@@ -97,5 +98,31 @@ describe('RollbackDialog', () => {
     });
     const keys = api.rollbackService.mock.calls.map((call) => (call as string[])[2]);
     expect(keys[0]).not.toBe(keys[1]);
+  });
+
+  it('traps focus while open and restores it to the trigger on close (A5)', async () => {
+    function Harness() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button type="button" data-testid="trigger" onClick={() => { setOpen(true); }}>Open</button>
+          <RollbackDialog open={open} onOpenChange={setOpen} serviceId={SERVICE_ID} target={target} onRolledBack={vi.fn()} />
+        </>
+      );
+    }
+    renderUi(<Harness />);
+    const trigger = screen.getByTestId('trigger');
+    await userEvent.click(trigger);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    for (let i = 0; i < 5; i += 1) {
+      await userEvent.tab();
+      expect(dialog.contains(document.activeElement)).toBe(true);
+    }
+    await userEvent.tab({ shift: true });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
   });
 });

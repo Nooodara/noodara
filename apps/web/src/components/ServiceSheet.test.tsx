@@ -460,4 +460,20 @@ describe('ServiceSheet: healthcheck and auto-rollback (19-02)', () => {
     await user.click(screen.getByTestId('service-sheet-submit'));
     expect(await screen.findByTestId('healthcheck-error')).toHaveTextContent('Healthcheck needs up to 700 s.');
   });
+
+  it('shows the real 400 VALIDATION_FAILED healthcheck rejection as the named error, not the save banner', async () => {
+    api.createService.mockResolvedValue({
+      ok: false,
+      code: 'VALIDATION_FAILED',
+      message: 'Request does not match the schema',
+      issues: [{ path: '/healthcheck', message: 'Healthcheck needs up to 700 s' }],
+      unauthorized: false,
+    });
+    const { user } = renderSheet();
+    await fillCreate(user);
+    await user.click(screen.getByRole('radio', { name: /TCP connection/ }));
+    await user.click(screen.getByTestId('service-sheet-submit'));
+    expect(await screen.findByTestId('healthcheck-error')).toHaveTextContent('Healthcheck needs up to 700 s.');
+    expect(screen.queryByTestId('service-sheet-error')).not.toBeInTheDocument();
+  });
 });

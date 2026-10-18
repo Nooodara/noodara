@@ -34,8 +34,8 @@ The panel keeps the default timing; the service API accepts custom timing. Every
 Failures during the start period do not count. The total time budget is
 `start period + retries x (interval + probe timeout)`; when it runs out the deployment ends with
 `HEALTHCHECK_TIMEOUT`. Keep it under 600 seconds, and within half of the deployment time limit.
-A setting outside the bounds above is rejected with `SERVICE_INPUT_INVALID` and reason
-`HEALTHCHECK_CONFIG_INVALID`.
+A setting outside the bounds above is rejected with HTTP 400 `VALIDATION_FAILED`; its `issues`
+entry at `/healthcheck` says which rule failed.
 
 ## Outcomes
 

@@ -57,9 +57,15 @@ describe('healthchecks.mdx', () => {
   });
 
   it('documents the real error codes', () => {
-    for (const code of ['HEALTHCHECK_FAILED', 'HEALTHCHECK_TIMEOUT', 'HEALTHCHECK_CONFIG_INVALID']) {
+    for (const code of ['HEALTHCHECK_FAILED', 'HEALTHCHECK_TIMEOUT']) {
       expect(text).toContain(code);
     }
+  });
+
+  it('pairs an out-of-bounds healthcheck with 400 VALIDATION_FAILED, not the unreachable 422 code', () => {
+    expect(text).toMatch(/HTTP 400 `VALIDATION_FAILED`/);
+    expect(text).not.toContain('HEALTHCHECK_CONFIG_INVALID');
+    expect(text).not.toMatch(/rejected with `SERVICE_INPUT_INVALID`/);
   });
 });
 
@@ -98,8 +104,14 @@ describe('service-rollback.mdx', () => {
 describe('error-codes.mdx', () => {
   const text = readFileSync('apps/site/content/docs/reference/error-codes.mdx', 'utf8');
   it('lists the healthcheck failure codes', () => {
-    for (const code of ['HEALTHCHECK_FAILED', 'HEALTHCHECK_TIMEOUT', 'HEALTHCHECK_CONFIG_INVALID']) {
+    for (const code of ['HEALTHCHECK_FAILED', 'HEALTHCHECK_TIMEOUT']) {
       expect(text).toContain(code);
     }
+  });
+
+  it('pairs an out-of-bounds healthcheck with 400 VALIDATION_FAILED', () => {
+    expect(text).toMatch(/\| `VALIDATION_FAILED` \| 400 \|/);
+    expect(text).toMatch(/outside its bounds is rejected up front as HTTP 400 `VALIDATION_FAILED`/);
+    expect(text).not.toContain('HEALTHCHECK_CONFIG_INVALID');
   });
 });

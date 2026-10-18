@@ -59,6 +59,20 @@ describe('healthcheck-form (19-02)', () => {
     expect(buildSettingsBody(view, { ...back, kind: 'container' }, 3000)).toMatchObject({ body: { healthcheck: null } });
   });
 
+  it('maps the real 400 VALIDATION_FAILED shape to the named field', () => {
+    const failure = {
+      ok: false,
+      code: 'VALIDATION_FAILED',
+      message: 'Request does not match the schema',
+      issues: [{ path: '/healthcheck', message: 'Healthcheck path must start with /' }],
+      unauthorized: false,
+    } as never;
+    expect(mapHealthcheckFailure(failure)).toEqual({ path: 'Healthcheck path must start with /.' });
+    expect(
+      mapHealthcheckFailure({ ok: false, code: 'VALIDATION_FAILED', message: 'x', issues: [{ path: '/name', message: 'Required' }], unauthorized: false } as never),
+    ).toBeNull();
+  });
+
   it('maps a server healthcheck rejection and ignores other failures', () => {
     const failure = { ok: false, code: 'SERVICE_INPUT_INVALID', reason: 'HEALTHCHECK_BUDGET_EXCEEDED', message: 'Healthcheck needs up to 700 s' } as never;
     expect(mapHealthcheckFailure(failure)).toEqual({ healthcheck: 'Healthcheck needs up to 700 s.' });

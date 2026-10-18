@@ -79,6 +79,18 @@ describe('WebhookPanel', () => {
     expect(log).not.toHaveBeenCalled();
   });
 
+  it('never writes the shown-once secret to storage, the URL or the console (A6)', async () => {
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((m) => vi.spyOn(console, m));
+    const user = userEvent.setup();
+    renderUi(panel());
+    await user.click(await screen.findByRole('button', { name: 'Enable webhook' }));
+    await screen.findByText(SECRET);
+    expect(JSON.stringify(Object.entries(localStorage))).not.toContain(SECRET);
+    expect(JSON.stringify(Object.entries(sessionStorage))).not.toContain(SECRET);
+    expect(window.location.href).not.toContain(SECRET);
+    for (const spy of spies) expect(JSON.stringify(spy.mock.calls)).not.toContain(SECRET);
+  });
+
   it('announces a successful copy in a live region', async () => {
     const writeText = vi.fn(() => Promise.resolve());
     const user = userEvent.setup();

@@ -274,6 +274,22 @@ describe('DeploymentSteps', () => {
     expect(screen.getByTestId('deployment-error')).toBeTruthy();
   });
 
+  it('shows the rollback duration when the steps and the deployment end are known (A4)', () => {
+    const base = steps(['clone', 'success', 420], ['build', 'success', 12_300], ['start', 'success', 900], ['verify', 'failed', 2100]);
+    const verify = base.map((step) => (step.name === 'verify' ? { ...step, completedAt: '2026-10-06T00:00:10.000Z' } : step));
+    renderUi(
+      <DeploymentSteps
+        deployment={deployment({
+          status: 'ROLLED_BACK',
+          errorCode: 'HEALTHCHECK_TIMEOUT',
+          completedAt: '2026-10-06T00:00:14.000Z',
+          steps: verify,
+        })}
+      />,
+    );
+    expect(within(screen.getByTestId('deployment-step-rollback')).getByText('4.0s')).toBeTruthy();
+  });
+
   it('shows a failed Rollback row for ROLLBACK_FAILED and none for a plain failure', () => {
     const { unmount } = renderUi(<DeploymentSteps deployment={deployment({ status: 'FAILED', errorCode: 'ROLLBACK_FAILED' })} />);
     expect(screen.getByTestId('deployment-step-rollback').getAttribute('data-severity')).toBe('fail');

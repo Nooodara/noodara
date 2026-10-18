@@ -99,8 +99,8 @@ concern the SSH host key of a Git host:
 `HEALTHCHECK_FAILED` and `HEALTHCHECK_TIMEOUT`: the new version did not pass its
 [healthcheck](/docs/operate/healthchecks), either by failing until the retries ran out or by
 exceeding the time budget. With automatic rollback on, the previous version is restored.
-A healthcheck setting outside its bounds is rejected up front as `SERVICE_INPUT_INVALID` with reason
-`HEALTHCHECK_CONFIG_INVALID`.
+A healthcheck setting outside its bounds is rejected up front as HTTP 400 `VALIDATION_FAILED`, with
+an `issues` entry at `/healthcheck`.
 
 `ENQUEUE_FAILED`: the deployment was accepted but never reached the job queue (Redis or Postgres was
 unreachable at that moment), so nothing ran and the service is unchanged. The worker ends such a
