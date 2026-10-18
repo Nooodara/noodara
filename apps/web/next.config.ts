@@ -47,6 +47,11 @@ const nextConfig: NextConfig = {
         source: '/api/:path*',
         destination: `${apiOrigin}/api/:path*`,
       },
+      // GitHub posts pushes to the payload URL the UI shows (<public origin>/webhooks/github/<id>).
+      {
+        source: '/webhooks/:path*',
+        destination: `${apiOrigin}/webhooks/:path*`,
+      },
     ];
   },
 

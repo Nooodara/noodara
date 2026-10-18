@@ -64,8 +64,9 @@ export const config = {
   // real bug by 07-09 Task 3's own E2E RED run: without these five exclusions, every one of those
   // routes 302-redirected to /login (200 text/html once a request client follows the redirect),
   // so the "favicon in the tab" review (D-14, Pitfall 2) would have shown Chrome's default globe
-  // icon on every unauthenticated page.
+  // icon on every unauthenticated page. `webhooks` is excluded so GitHub's unauthenticated push
+  // deliveries reach the control plane through next.config.ts's rewrite.
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|icon.svg|icon1.png|icon2.png|apple-icon.png|opengraph-image.png|manifest.webmanifest|login|setup).*)',
+    '/((?!api|webhooks|_next/static|_next/image|favicon.ico|icon.svg|icon1.png|icon2.png|apple-icon.png|opengraph-image.png|manifest.webmanifest|login|setup).*)',
   ],
 };
