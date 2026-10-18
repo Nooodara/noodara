@@ -5,7 +5,7 @@
 // test -e). Images are compared by RootFS.Layers, never `.Id` (ADR 0008).
 // App modules are imported dynamically after a valid test env is written: several of them import
 // env.ts, which fail-fasts at import time (INST-06).
-import { randomBytes, randomUUID } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -14,7 +14,7 @@ import { eq, sql } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { deriveDeploymentSteps, type DeploymentStep } from '@noodara/domain/deployment';
-import { createRedactor, secretValue } from '@noodara/domain/security';
+import { createRedactor, revealSecret, secretValue } from '@noodara/domain/security';
 import { createSsh2Adapter, formatFingerprint } from '@noodara/ssh';
 import {
   activityEvents,
@@ -55,6 +55,8 @@ type CredentialStoreModule = typeof import('../../../apps/control-plane/src/serv
 type ServiceServicesModule = typeof import('../../../apps/control-plane/src/services/service-services.js');
 type GitHostKeyStoreModule = typeof import('../../../apps/control-plane/src/db/git-host-key-store.js');
 type ResetHostKeyCliModule = typeof import('../../../apps/control-plane/src/cli/services-reset-host-key.js');
+type WebhookConfigModule = typeof import('../../../apps/control-plane/src/services/webhook-config.js');
+type WebhookIngestModule = typeof import('../../../apps/control-plane/src/services/webhook-ingest.js');
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.resolve(HERE, '../../../fixtures');
@@ -79,7 +81,12 @@ const REPOS = {
   multiStage: 'multi-stage',
   silent: 'silent-build',
   chatty: 'chatty-build',
+  // 20-01 (roadmap §8.8): a dependency install and a Dockerfile instruction that fail, and a repository never seeded.
+  dependencyFailure: 'dependency-failure',
+  dockerBuildFailure: 'docker-build-failure',
+  missing: 'does-not-exist',
 } as const;
+const PUBLIC_ORIGIN = 'http://localhost:3000';
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -91,12 +98,16 @@ function nodeBaseOf(baseImages: readonly string[]): string {
   return base;
 }
 
-/** Temp build contexts the fixtures/ directory does not carry: a named target, a silent and a chatty build. */
-function writeTempRepos(root: string, nodeBase: string): Record<'multiStage' | 'silent' | 'chatty', string> {
-  const write = (name: string, dockerfile: string): string => {
+type TempRepo = 'multiStage' | 'silent' | 'chatty' | 'dependencyFailure' | 'dockerBuildFailure';
+
+/** Temp build contexts the fixtures/ directory does not carry: a named target, a silent and a chatty
+ *  build, a dependency install that cannot resolve and a COPY of a file the context lacks. */
+function writeTempRepos(root: string, nodeBase: string): Record<TempRepo, string> {
+  const write = (name: string, dockerfile: string, files: Readonly<Record<string, string>> = {}): string => {
     const dir = path.join(root, name);
     mkdirSync(dir, { recursive: true });
     writeFileSync(path.join(dir, 'Dockerfile'), dockerfile);
+    for (const [file, content] of Object.entries(files)) writeFileSync(path.join(dir, file), content);
     return dir;
   };
   return {
@@ -122,6 +133,31 @@ function writeTempRepos(root: string, nodeBase: string): Record<'multiStage' | '
         'RUN i=0; while [ "$i" -lt 600 ]; do echo "noodara-tick $i"; i=$((i+1)); sleep 0.5; done',
         '',
       ].join('\n'),
+    ),
+    // `--offline` keeps it deterministic without registry access: a `file:` dependency whose
+    // directory is not in the context fails the install step.
+    dependencyFailure: write(
+      REPOS.dependencyFailure,
+      [
+        `FROM ${nodeBase}`,
+        'WORKDIR /app',
+        'COPY package.json ./',
+        'RUN npm install --offline --no-audit --no-fund',
+        'CMD ["node","-e","setInterval(() => {}, 1000)"]',
+        '',
+      ].join('\n'),
+      {
+        'package.json': `${JSON.stringify(
+          { name: 'dependency-failure', version: '1.0.0', private: true, dependencies: { 'noodara-missing-dependency': 'file:./vendor/missing' } },
+          null,
+          2,
+        )}\n`,
+      },
+    ),
+    // The builder itself fails (no RUN step runs): the context has no such file.
+    dockerBuildFailure: write(
+      REPOS.dockerBuildFailure,
+      [`FROM ${nodeBase}`, 'WORKDIR /app', 'COPY noodara-missing-file.txt ./', 'CMD ["node","-e","setInterval(() => {}, 1000)"]', ''].join('\n'),
     ),
   };
 }
@@ -150,6 +186,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     let tempRoot: string | undefined;
     let triggerDeploy: ((serviceId: string) => Promise<string>) | undefined;
     let serviceCredentials: ServiceCredentialsModule | undefined;
+    let webhookConfig: WebhookConfigModule | undefined;
+    let webhookIngest: ReturnType<WebhookIngestModule['createWebhookIngest']> | undefined;
 
     const masterKey = randomBytes(32);
     const events: ServerEvent[] = [];
@@ -272,10 +310,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       deriveDeploymentSteps({ ...row, sourceType: (row.source as { sourceType: 'git' | 'image' }).sourceType });
     const stepStates = (row: typeof deployments.$inferSelect): string[] => stepsOf(row).map((step) => step.state);
 
-    /** Triggers through the real API service path and waits for the worker to finish the row. */
-    const deploy = async (serviceId: string) => {
-      if (triggerDeploy === undefined) throw new Error('runtime not started');
-      const deploymentId = await triggerDeploy(serviceId);
+    const waitTerminal = async (deploymentId: string) => {
       const deadline = Date.now() + TERMINAL_WAIT_MS;
       for (;;) {
         const row = await deploymentRow(deploymentId);
@@ -283,6 +318,12 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         if (Date.now() > deadline) throw new Error(`deployment ${deploymentId} stuck in ${row.status}`);
         await delay(POLL_MS);
       }
+    };
+
+    /** Triggers through the real API service path and waits for the worker to finish the row. */
+    const deploy = async (serviceId: string) => {
+      if (triggerDeploy === undefined) throw new Error('runtime not started');
+      return waitTerminal(await triggerDeploy(serviceId));
     };
 
     const deploymentStatuses = (deploymentId: string): string[] =>
@@ -328,6 +369,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
               { name: REPOS.multiStage, sourceDir: temp.multiStage },
               { name: REPOS.silent, sourceDir: temp.silent },
               { name: REPOS.chatty, sourceDir: temp.chatty },
+              { name: REPOS.dependencyFailure, sourceDir: temp.dependencyFailure },
+              { name: REPOS.dockerBuildFailure, sourceDir: temp.dockerBuildFailure },
             ],
           });
         })();
@@ -477,6 +520,20 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         if (!result.ok) throw new Error(`triggerDeploy failed: ${result.code}`);
         return result.deployment.id;
       };
+      // 20-01: the receiver's ingest (src/app.ts wiring) over the real queue, worker and database.
+      webhookConfig = await import('../../../apps/control-plane/src/services/webhook-config.js');
+      const ingestModule: WebhookIngestModule = await import('../../../apps/control-plane/src/services/webhook-ingest.js');
+      const storeModule: DeploymentStoreModule = await import('../../../apps/control-plane/src/deploy/deployment-store.js');
+      const store = storeModule.createDeploymentStore({ db: db(), now: () => new Date(), events: recordingEvents });
+      webhookIngest = ingestModule.createWebhookIngest({
+        db: db(),
+        now: () => new Date(),
+        events: recordingEvents,
+        queue: deployQueue,
+        masterKeys: () => Promise.resolve({ current: masterKey }),
+        failUnqueued: (deploymentId, cutoff) => store.failStaleQueued(deploymentId, cutoff),
+        logger,
+      });
     }, STACK_TIMEOUT_MS);
 
     afterAll(async () => {
@@ -621,6 +678,112 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
           .set({ repositoryUrl: s().gitRepoUrl(REPOS.nodeApi) })
           .where(eq(services.id, appServiceId));
       }
+    }, CASE_TIMEOUT_MS);
+
+    /** 20-01: redeploys the app service from `repo`, then points it back at node-api. */
+    const failedRedeploy = async (repo: string) => {
+      expect(appServiceId).not.toBe('');
+      await db().update(services).set({ repositoryUrl: s().gitRepoUrl(repo) }).where(eq(services.id, appServiceId));
+      try {
+        return await deploy(appServiceId);
+      } finally {
+        await db().update(services).set({ repositoryUrl: s().gitRepoUrl(REPOS.nodeApi) }).where(eq(services.id, appServiceId));
+      }
+    };
+
+    /** 20-01: the version that was running keeps serving; the failed attempt left no image or workspace. */
+    const expectRunningUntouched = async (failedId: string): Promise<void> => {
+      const container = `noodara-${appServiceId}`;
+      expect(await inspectContainer(container, '{{.Id}}')).toBe(secondContainerId);
+      expect(await inspectContainer(container, '{{.State.Running}}')).toBe('true');
+      expect(await imageExists(secondImage)).toBe(true);
+      expect(await imageExists(`noodara/${appServiceId}:${failedId}`)).toBe(false);
+      expect(await rootOut(['curl', '-fsS', `http://127.0.0.1:${String(PORTS.app)}/health`])).toBe('ok');
+      expect(await serviceStatus(appServiceId)).toBe('RUNNING');
+      await expectWorkspaceGone(failedId);
+    };
+
+    it('§8.8 git clone failure: a missing repository ends FAILED/REPOSITORY_NOT_FOUND at the clone step and the running container stays', async () => {
+      const failed = await failedRedeploy(REPOS.missing);
+      expect({ status: failed.status, errorCode: failed.errorCode }).toEqual({ status: 'FAILED', errorCode: 'REPOSITORY_NOT_FOUND' });
+      expectStatusPath(failed.id, ['FAILED']);
+      expect(stepStates(failed)).toEqual(['failed', 'pending', 'pending', 'pending']);
+      expect(failed.buildingStartedAt).toBeNull();
+      expect(failed.commitSha).toBeNull();
+      await expectRunningUntouched(failed.id);
+    }, CASE_TIMEOUT_MS);
+
+    it('§8.8 dependency failure: an npm install that cannot resolve a dependency ends FAILED/BUILD_FAILED and the running container stays', async () => {
+      const failed = await failedRedeploy(REPOS.dependencyFailure);
+      expect({ status: failed.status, errorCode: failed.errorCode }).toEqual({ status: 'FAILED', errorCode: 'BUILD_FAILED' });
+      expectStatusPath(failed.id, ['BUILDING', 'FAILED']);
+      expect(stepStates(failed)).toEqual(['success', 'failed', 'pending', 'pending']);
+      expect(failed.commitSha).toMatch(/^[0-9a-f]{40}$/);
+      expect(failed.deployingStartedAt).toBeNull();
+      // The failing step is the install (RUN), not the COPY before it.
+      expect(failed.errorMessage).toMatch(/exit code|build/i);
+      expect(failed.errorMessage).not.toContain('noodara-missing-dependency');
+      await expectRunningUntouched(failed.id);
+    }, CASE_TIMEOUT_MS);
+
+    it('§8.8 Docker build failure: a COPY of a missing file ends FAILED/BUILD_FAILED and the running container stays', async () => {
+      const failed = await failedRedeploy(REPOS.dockerBuildFailure);
+      expect({ status: failed.status, errorCode: failed.errorCode }).toEqual({ status: 'FAILED', errorCode: 'BUILD_FAILED' });
+      expectStatusPath(failed.id, ['BUILDING', 'FAILED']);
+      expect(stepStates(failed)).toEqual(['success', 'failed', 'pending', 'pending']);
+      expect(failed.deployingStartedAt).toBeNull();
+      expect(failed.errorMessage).not.toContain('noodara-missing-file.txt');
+      await expectRunningUntouched(failed.id);
+    }, CASE_TIMEOUT_MS);
+
+    it('§8.8 duplicate webhook: the same push delivered twice at once and again after SUCCESS deploys once on the server', async () => {
+      if (webhookConfig === undefined || webhookIngest === undefined) throw new Error('runtime not started');
+      const ingest = webhookIngest;
+      const serviceId = await insertGitService({ repo: REPOS.nodeApi, publishedPort: null });
+      const enabled = await webhookConfig.enableWebhook(
+        { db: db(), now: () => new Date(), masterKeys: () => Promise.resolve({ current: masterKey }), publicOrigin: PUBLIC_ORIGIN },
+        { actor: { type: 'system' }, projectId, serviceId },
+      );
+      if (!enabled.ok) throw new Error(`enableWebhook failed: ${enabled.code}`);
+      const hookId = enabled.webhook.payloadUrl.slice(`${PUBLIC_ORIGIN}${webhookConfig.WEBHOOK_PATH_PREFIX}`.length);
+      const secret = revealSecret(enabled.webhook.secret);
+      const sha = (await s().exec(['git', '-C', `/srv/git/${REPOS.nodeApi}.git`, 'rev-parse', 'main'], { user: 'git' })).stdout.trim();
+      const repositoryUrl = s().gitRepoUrl(REPOS.nodeApi);
+      const rawBody = Buffer.from(
+        JSON.stringify({
+          ref: 'refs/heads/main',
+          after: sha,
+          deleted: false,
+          repository: { clone_url: repositoryUrl, ssh_url: repositoryUrl },
+          head_commit: { id: sha },
+        }),
+      );
+      const signature = `sha256=${createHmac('sha256', secret).update(rawBody).digest('hex')}`;
+      const deliveryId = randomUUID();
+      const deliver = () => ingest.ingest({ hookId, signature, deliveryId, event: 'push', rawBody });
+
+      const recorded = (await Promise.all([deliver(), deliver()])).map((answer) => {
+        if (answer.kind !== 'recorded') throw new Error(`delivery not recorded: ${answer.kind}`);
+        return answer;
+      });
+      const deploymentId = recorded[0]?.deploymentId ?? null;
+      if (deploymentId === null) throw new Error('the push created no deployment');
+      expect(recorded.map((answer) => answer.deploymentId)).toEqual([deploymentId, deploymentId]);
+      expect(recorded.map((answer) => answer.duplicate).sort()).toEqual([false, true]);
+
+      const done = await waitTerminal(deploymentId);
+      expect({ status: done.status, errorCode: done.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
+      expect(done.trigger).toBe('webhook');
+      expect(done.commitSha).toBe(sha);
+
+      // A GitHub redelivery after the deploy finished is still the same delivery: nothing new runs.
+      expect(await deliver()).toMatchObject({ kind: 'recorded', deploymentId, duplicate: true });
+      const rows = await db().select({ id: deployments.id }).from(deployments).where(eq(deployments.serviceId, serviceId));
+      expect(rows.map((row) => row.id)).toEqual([deploymentId]);
+      const names = await rootOut(['docker', 'ps', '--all', '--filter', `label=noodara.service_id=${serviceId}`, '--format', '{{.Names}}']);
+      expect(names.split('\n')).toEqual([`noodara-${serviceId}`]);
+      expect(await inspectContainer(`noodara-${serviceId}`, '{{.Config.Image}}')).toBe(`noodara/${serviceId}:${deploymentId}`);
+      await expectWorkspaceGone(deploymentId);
     }, CASE_TIMEOUT_MS);
 
     it('A2: the port preflight reads the real docker ps and fails PORT_IN_USE before touching any container', async () => {
