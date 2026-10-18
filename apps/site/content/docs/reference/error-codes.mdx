@@ -96,6 +96,12 @@ concern the SSH host key of a Git host:
   stores the current key. Changing the service's repository URL to another host also forgets it.
 - `GIT_HOST_KEY_UNAVAILABLE`: the Git host's SSH key could not be read, so nothing was cloned.
 
+`HEALTHCHECK_FAILED` and `HEALTHCHECK_TIMEOUT`: the new version did not pass its
+[healthcheck](/docs/operate/healthchecks), either by failing until the retries ran out or by
+exceeding the time budget. With automatic rollback on, the previous version is restored.
+A healthcheck setting outside its bounds is rejected up front as `SERVICE_INPUT_INVALID` with reason
+`HEALTHCHECK_CONFIG_INVALID`.
+
 `ENQUEUE_FAILED`: the deployment was accepted but never reached the job queue (Redis or Postgres was
 unreachable at that moment), so nothing ran and the service is unchanged. The worker ends such a
 deployment `FAILED` once it has waited past the stale-queue threshold (default 2 minutes) with no

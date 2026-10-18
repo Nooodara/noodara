@@ -1,4 +1,4 @@
 {
   "title": "Operate",
-  "pages": ["upgrade", "rollback", "backups", "troubleshooting"]
+  "pages": ["upgrade", "healthchecks", "webhooks", "service-rollback", "rollback", "backups", "troubleshooting"]
 }

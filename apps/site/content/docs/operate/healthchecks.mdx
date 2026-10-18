@@ -1,0 +1,46 @@
+---
+title: Healthchecks
+description: How a deployment decides the new version is healthy, and what the settings mean.
+---
+
+After Noodara starts the new container, the deployment enters the **HEALTHCHECK** step. It passes
+only when the check passes within its time budget. Choose the check in the service settings under
+**Healthcheck**. Changes apply on the next deploy.
+
+## Check types
+
+| Type | Passes when |
+|---|---|
+| **Container is running** | The container stays up. This is the default. |
+| **HTTP request** | A path on a port answers with an expected status. |
+| **TCP connection** | A port accepts connections. |
+
+For an HTTP check the path must start with `/`, use only URL-safe characters, contain no `..` and be
+at most 256 characters long. The port is a whole number from 1 to 65535; leave it empty to use the
+container port. **Expected status** defaults to every status from 200 to 399, and accepts 1 to 300
+statuses between 100 and 599.
+
+## Timing and bounds
+
+The panel keeps the default timing; the service API accepts custom timing. Every value is a whole number of seconds (or tries) inside these bounds.
+
+| Setting | Minimum | Maximum |
+|---|---|---|
+| Probe timeout | 1 | 30 |
+| Interval | 1 | 60 |
+| Retries | 1 | 30 |
+| Start period | 0 | 300 |
+
+Failures during the start period do not count. The total time budget is
+`start period + retries x (interval + probe timeout)`; when it runs out the deployment ends with
+`HEALTHCHECK_TIMEOUT`. Keep it under 600 seconds, and within half of the deployment time limit.
+A setting outside the bounds above is rejected with `SERVICE_INPUT_INVALID` and reason
+`HEALTHCHECK_CONFIG_INVALID`.
+
+## Outcomes
+
+- `HEALTHCHECK_FAILED`: the check kept failing until the retries ran out, or the container exited.
+- `HEALTHCHECK_TIMEOUT`: the time budget ran out.
+
+Both mark the deployment failed. With **Roll back automatically** on (the default), Noodara then
+restores the previous version; see [Roll back a service](/docs/operate/service-rollback).

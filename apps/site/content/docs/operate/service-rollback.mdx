@@ -1,0 +1,35 @@
+---
+title: Roll back a service
+description: Return a service to a previous version, automatically or from its history.
+---
+
+A rollback runs a version Noodara kept before. Nothing is rebuilt, so it is fast and does not depend
+on the Git host or the registry being reachable.
+
+## Automatic rollback
+
+With **Roll back automatically** on (the default), a deploy that fails its
+[healthcheck](/docs/operate/healthchecks) restores the previous version. The failed attempt ends as
+**ROLLED_BACK** and the service keeps serving the earlier version. Turn the setting off to leave the
+failed deploy in place for inspection.
+
+## Manual rollback
+
+In the service's deployment history, choose **Roll back** on an earlier deployment and confirm. A
+rollback is itself a recorded deployment, so the history stays traceable. If the target's image is no
+longer on the server the request fails with `ROLLBACK_TARGET_UNAVAILABLE`; pick another deployment.
+A deployment that is rolling back cannot be cancelled (`ROLLBACK_IN_PROGRESS`).
+
+## Retention
+
+Noodara keeps the image of the running version, any deployment in flight and the previous known-good
+versions. The default is 3 previous versions per service, within a range of 1 to 10. Older images are
+removed after a successful deploy, so only retained versions can be rolled back to.
+
+## Downtime
+
+Until v0.4 (Traefik and domains), a rollback replaces the container: the current one is stopped and
+the retained image is started under the same name. Expect a short interruption, the same as a
+redeploy. Zero-downtime switching arrives with the reverse proxy.
+
+To go back to an earlier Noodara release instead, see [Rollback](/docs/operate/rollback).

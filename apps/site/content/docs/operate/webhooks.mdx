@@ -1,0 +1,46 @@
+---
+title: GitHub webhooks
+description: Deploy a service on every push to its branch.
+---
+
+A push webhook deploys the exact commit that was pushed. It is available for services built from a
+Git repository; image-source services cannot enable one (`WEBHOOK_SOURCE_NOT_GIT`).
+
+## Set up
+
+1. In the service, open **Push webhook** and enable it. Noodara shows the **Payload URL** and the
+   **Secret** once. Copy the secret now; it cannot be shown again, only rotated.
+2. In the GitHub repository, add a webhook with that payload URL and secret.
+3. Set the content type to `application/json` and select the push event.
+
+Rotate the secret or disable the webhook from the same panel. Rotating invalidates the old secret
+immediately.
+
+## The URL must be public
+
+GitHub delivers from the internet, so the Noodara URL must be reachable from GitHub. Noodara does not
+provide a tunnel or relay. A panel on a private network or `localhost` receives nothing.
+
+## What happens to a delivery
+
+Every delivery is verified with its HMAC-SHA256 signature over the raw body. Unknown hooks, disabled
+hooks and bad signatures all get the same `401`. The body is capped at 1 MiB, and a hook accepts at
+most 60 deliveries per minute (300 per minute per source address); beyond that the response is
+`RATE_LIMITED` with a `Retry-After` header.
+
+A valid delivery is recorded with an outcome, shown in the deliveries list:
+
+- **Deployed**: an idle service starts a deployment of the pushed commit.
+- **Queued behind a running deploy**: a push during an active deployment waits in a single pending
+  slot. If several pushes arrive meanwhile, only the latest runs; the earlier ones show
+  **Superseded by a newer push**.
+- **Already deployed**: the commit is already running.
+- Ignored events, tags, other branches and branch deletions are recorded and deploy nothing. A push
+  for another repository is rejected with `WEBHOOK_DELIVERY_REJECTED`.
+
+## Redelivery
+
+Redelivering from GitHub is safe: a repeated `X-GitHub-Delivery` id creates nothing and answers with
+the original deployment. If the first attempt was accepted but never reached the job queue
+(`ENQUEUE_FAILED`), redelivering retries it, unless a newer push or deployment exists, in which case
+it shows as superseded.
