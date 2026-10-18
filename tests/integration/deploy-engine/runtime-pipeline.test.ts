@@ -134,8 +134,8 @@ function writeTempRepos(root: string, nodeBase: string): Record<TempRepo, string
         '',
       ].join('\n'),
     ),
-    // `--offline` keeps it deterministic without registry access: a `file:` dependency whose
-    // directory is not in the context fails the install step.
+    // `--offline` keeps it deterministic without registry access: a registry dependency that is
+    // not in the (empty) npm cache cannot resolve, so the install step fails with ENOTCACHED.
     dependencyFailure: write(
       REPOS.dependencyFailure,
       [
@@ -148,7 +148,7 @@ function writeTempRepos(root: string, nodeBase: string): Record<TempRepo, string
       ].join('\n'),
       {
         'package.json': `${JSON.stringify(
-          { name: 'dependency-failure', version: '1.0.0', private: true, dependencies: { 'noodara-missing-dependency': 'file:./vendor/missing' } },
+          { name: 'dependency-failure', version: '1.0.0', private: true, dependencies: { 'noodara-missing-dependency': '1.0.0' } },
           null,
           2,
         )}\n`,
