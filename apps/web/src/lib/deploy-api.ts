@@ -418,6 +418,18 @@ export function deployService(
   return send("POST", apiPath`/api/services/${serviceId}/deploy`);
 }
 
+/** 202 with the queued `rollback` deployment. The caller supplies one Idempotency-Key per dialog open,
+ *  so a double click or a retry resolves to the same deployment. */
+export function rollbackService(
+  serviceId: string,
+  targetDeploymentId: string,
+  idempotencyKey: string,
+): Promise<ApiResult<DeploymentView>> {
+  const path = apiPath`/api/services/${serviceId}/rollback`;
+  if (path === null) return Promise.resolve(invalidIdFailure());
+  return deployApiSend<DeploymentView>("POST", path, { targetDeploymentId }, { idempotencyKey });
+}
+
 export interface DeploymentListQuery {
   readonly limit?: number;
   readonly cursor?: string;

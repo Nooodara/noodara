@@ -11,9 +11,10 @@ const OTHER_SERVICE_ID = '88888888-8888-4888-8888-888888888888';
 const NOW = new Date('2026-10-06T12:00:00.000Z');
 const SHA = '0123456789abcdef0123456789abcdef01234567';
 
-const deployApi = vi.hoisted(() => ({ listDeployments: vi.fn() }));
+const deployApi = vi.hoisted(() => ({ listDeployments: vi.fn(), rollbackService: vi.fn() }));
 vi.mock('../lib/deploy-api', () => ({
   listDeployments: (id: string, query: unknown) => deployApi.listDeployments(id, query) as unknown,
+  rollbackService: (...args: unknown[]) => deployApi.rollbackService(...args) as unknown,
 }));
 vi.mock('../lib/require-session', () => ({ requireSession: () => undefined }));
 
@@ -112,6 +113,7 @@ function rowIds(): string[] {
 
 beforeEach(() => {
   deployApi.listDeployments.mockReset();
+  deployApi.rollbackService.mockReset();
 });
 
 describe('mergeDeployments', () => {
@@ -313,5 +315,68 @@ describe('DeploymentHistory hardening (13-12 H2)', () => {
     expect(row.querySelector('img')).toBeNull();
     expect(row.querySelector('[data-testid="deployment-trigger"]')).toHaveTextContent(markup);
     expect(row.querySelector('[data-testid="deployment-sha"]')).toHaveTextContent(markup.slice(0, 7));
+  });
+});
+
+describe('DeploymentHistory traceability and rollback (19-04 A1, A2, A3)', () => {
+  it('shows who started each row: you, GitHub push, rollback of a commit, automatic', async () => {
+    const OLD_SHA = 'fedcba9876543210fedcba9876543210fedcba98';
+    deployApi.listDeployments.mockReturnValue(
+      page([
+        deployment(1, { trigger: 'webhook', triggeredBy: null }),
+        deployment(2, { trigger: 'rollback', triggeredBy: 'u1', rollbackOfDeploymentId: id(4) }),
+        deployment(3, { trigger: 'manual', triggeredBy: 'u1' }),
+        deployment(4, { trigger: 'manual', triggeredBy: null, commitSha: OLD_SHA }),
+        deployment(5, { trigger: 'rollback', triggeredBy: null, rollbackOfDeploymentId: id(4) }),
+      ]),
+    );
+    renderHistory(10);
+
+    const actor = async (n: number) =>
+      (await screen.findByTestId(`deployment-row-${id(n)}`)).querySelector('[data-testid="deployment-actor"]');
+    expect(await actor(1)).toHaveTextContent('GitHub push');
+    expect(await actor(2)).toHaveTextContent('Rollback of fedcba9');
+    expect(await actor(3)).toHaveTextContent('You');
+    expect(await actor(4)).toHaveTextContent('Automatic');
+    expect(await actor(5)).toHaveTextContent('Automatic rollback of fedcba9');
+  });
+
+  it('offers rollback on retained known-good rows, not on the running version, and disables a pruned one with the reason', async () => {
+    deployApi.listDeployments.mockReturnValue(
+      page([
+        deployment(1, { imageRetained: true, imageRef: 'img:1' }),
+        deployment(2, { imageRetained: true, imageRef: 'img:2' }),
+        deployment(3, { imageRetained: false, imageRef: 'img:3' }),
+        deployment(4, { status: 'FAILED', imageRetained: false }),
+      ]),
+    );
+    renderHistory(10);
+    await screen.findByTestId(`deployment-row-${id(1)}`);
+
+    expect(screen.queryByTestId(`deployment-rollback-${id(1)}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`deployment-rollback-${id(2)}`)).toBeEnabled();
+    expect(screen.getByTestId(`deployment-rollback-${id(3)}`)).toBeDisabled();
+    expect(screen.getByTestId(`deployment-rollback-reason-${id(3)}`)).toHaveTextContent(/no longer retained/i);
+    expect(screen.queryByTestId(`deployment-rollback-${id(4)}`)).not.toBeInTheDocument();
+  });
+
+  it('opens the dialog naming the target commit and sends the rollback with an idempotency key', async () => {
+    deployApi.listDeployments.mockReturnValue(
+      page([deployment(1, { imageRetained: true, imageRef: 'img:1' }), deployment(2, { imageRetained: true, imageRef: 'img:2', commitSha: 'abcdef0123456789' })]),
+    );
+    deployApi.rollbackService.mockResolvedValue({
+      ok: true,
+      data: deployment(0, { trigger: 'rollback', status: 'QUEUED', rollbackOfDeploymentId: id(2) }),
+    });
+    const { user } = renderHistory(10);
+
+    await user.click(await screen.findByTestId(`deployment-rollback-${id(2)}`));
+    expect(screen.getByRole('dialog')).toHaveTextContent('abcdef0');
+    await user.click(screen.getByTestId('rollback-confirm'));
+
+    await waitFor(() => {
+      expect(deployApi.rollbackService).toHaveBeenCalledWith(SERVICE_ID, id(2), expect.stringMatching(/^[0-9a-f-]{36}$/));
+    });
+    expect(await screen.findByTestId(`deployment-row-${id(0)}`)).toHaveAttribute('data-status', 'QUEUED');
   });
 });

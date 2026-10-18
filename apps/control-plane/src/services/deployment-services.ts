@@ -85,6 +85,8 @@ export interface DeploymentView {
   readonly rollbackOfDeploymentId?: string | null;
   readonly imageRef?: string | null;
   readonly webhookDeliveryId?: string | null;
+  /** 19-04 (H2): list views only; true when this row's image is still retained (planRollback's rule). */
+  readonly imageRetained?: boolean;
   readonly startedAt: string | null;
   readonly completedAt: string | null;
   readonly durationMs: number | null;
@@ -107,6 +109,7 @@ export const DEPLOYMENT_VIEW_FIELDS = Object.freeze([
   'rollbackOfDeploymentId',
   'imageRef',
   'webhookDeliveryId',
+  'imageRetained',
   'startedAt',
   'completedAt',
   'durationMs',
@@ -834,6 +837,30 @@ export interface DeploymentPage {
   readonly nextCursor: string | null;
 }
 
+/** 19-04 (H2): the image refs planRollback treats as retained (same imageRetention call and inputs). */
+async function retainedImageRefs(deps: Pick<DeploymentServicesDeps, 'db'>, serviceId: string): Promise<ReadonlySet<string>> {
+  const successes = await deps.db
+    .select()
+    .from(deployments)
+    .where(and(eq(deployments.serviceId, serviceId), eq(deployments.status, 'SUCCESS')))
+    .orderBy(desc(deployments.createdAt), desc(deployments.id))
+    .limit(ROLLBACK_HISTORY_LIMIT);
+  const [current] = successes;
+  if (current === undefined) return new Set();
+  const [retentionRow] = await deps.db
+    .select({ retention: services.imageRetention })
+    .from(services)
+    .where(eq(services.id, serviceId))
+    .limit(1);
+  return new Set(
+    imageRetention(
+      successes.map((row) => ({ id: row.id, status: row.status, imageRef: row.imageRef, createdAt: row.createdAt.getTime() })),
+      current.imageRef,
+      retentionRow?.retention ?? DEFAULT_IMAGE_RETENTION,
+    ).keep,
+  );
+}
+
 /** Newest first, keyset on (createdAt, id). `null` when the service does not exist. */
 export async function listDeployments(
   deps: Pick<DeploymentServicesDeps, 'db'>,
@@ -862,8 +889,12 @@ export async function listDeployments(
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
   const last = page.at(-1);
+  const retained = await retainedImageRefs(deps, serviceId);
   return {
-    items: page.map(toDeploymentView),
+    items: page.map((row) => ({
+      ...toDeploymentView(row),
+      imageRetained: row.status === 'SUCCESS' && row.imageRef !== null && retained.has(row.imageRef),
+    })),
     nextCursor: hasMore && last ? encodeActivityCursor({ occurredAt: last.createdAt, id: last.id }) : null,
   };
 }

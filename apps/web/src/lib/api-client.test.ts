@@ -203,6 +203,18 @@ describe("apiGet/apiSend", () => {
     expect(result.code).toBe("SERVER_NOT_TRUSTABLE");
   });
 
+  it("sends an optional Idempotency-Key header and omits it by default", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+
+    await apiSend("POST", "/api/x", {}, { idempotencyKey: "key-1" });
+    await apiSend("POST", "/api/x", {});
+
+    const withKey = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    const without = fetchMock.mock.calls[1]?.[1]?.headers as Record<string, string>;
+    expect(withKey["Idempotency-Key"]).toBe("key-1");
+    expect(without).not.toHaveProperty("Idempotency-Key");
+  });
+
   // T-5G-31-02: the drift guard. `ALL_KNOWN_SERVICE_ERROR_CODES` is derived from the same
   // exhaustiveness-checked marker `isKnownServiceErrorCode` reads at runtime (see api-client.ts) --
   // this proves every member of `ApiErrorCode` (minus NETWORK_ERROR) really is recognised as a known

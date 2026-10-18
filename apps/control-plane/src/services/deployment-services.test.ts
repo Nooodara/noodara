@@ -11,6 +11,7 @@ import {
   IDEMPOTENCY_EXPIRY_BATCH_LIMIT,
   IDEMPOTENCY_KEY_TTL_MS,
   idempotencyCutoff,
+  listDeployments,
   rollbackFingerprint,
   sourceSnapshotFromService,
   toDeploymentView,
@@ -120,7 +121,8 @@ const inserted = () =>
 describe('toDeploymentView', () => {
   it('builds the allowlisted wire view with ISO timestamps', () => {
     const view = toDeploymentView(row({ startedAt: NOW, errorCode: 'BUILD_FAILED' }));
-    expect(Object.keys(view)).toEqual([...DEPLOYMENT_VIEW_FIELDS]);
+    // imageRetained is list-only (19-04): listDeployments adds it, toDeploymentView never does.
+    expect(Object.keys(view)).toEqual(DEPLOYMENT_VIEW_FIELDS.filter((field) => field !== 'imageRetained'));
     expect(view.createdAt).toBe(NOW.toISOString());
     expect(view.startedAt).toBe(NOW.toISOString());
     expect(view.completedAt).toBeNull();
@@ -580,5 +582,33 @@ describe('idempotency expiry (18-05 H1)', () => {
     await expect(expireIdempotencyKeys({ db: f.db, now: () => NOW }, 0)).resolves.toBe(0);
     expect(f.limit).toHaveBeenCalledWith(1);
     expect(f.set).not.toHaveBeenCalled();
+  });
+});
+
+describe('listDeployments imageRetained (19-04 H2)', () => {
+  /** A db whose n-th select() resolves to results[n]; every chain method returns the chain. */
+  function fakeDb(results: unknown[][]): Pick<Database, 'select'> {
+    let call = 0;
+    const select = (): unknown => {
+      const result = results[call++] ?? [];
+      const chain: Record<string, unknown> = {};
+      for (const method of ['from', 'where', 'orderBy', 'limit']) chain[method] = () => chain;
+      chain.then = (resolve: (value: unknown) => unknown) => resolve(result);
+      return chain;
+    };
+    return { select } as unknown as Pick<Database, 'select'>;
+  }
+
+  it('flags only successful rows whose image planRollback would still retain', async () => {
+    const at = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000);
+    const a = row({ id: id(1), status: 'SUCCESS', imageRef: 'img:a', createdAt: at(1) });
+    const b = row({ id: id(2), status: 'SUCCESS', imageRef: 'img:b', createdAt: at(2) });
+    const c = row({ id: id(3), status: 'SUCCESS', imageRef: 'img:c', createdAt: at(3) });
+    const failed = row({ id: id(4), status: 'FAILED', imageRef: 'img:b', createdAt: at(4) });
+    const db = fakeDb([[{ id: SERVICE_ID }], [a, b, c, failed], [a, b, c], [{ retention: 1 }]]);
+
+    const page = await listDeployments({ db } as Pick<DeploymentServicesDeps, 'db'>, SERVICE_ID, { limit: 10 });
+
+    expect(page?.items.map((item) => item.imageRetained)).toEqual([true, true, false, false]);
   });
 });

@@ -19,11 +19,31 @@ import { deploymentStatusPresentation, formatDuration, shortSha, triggerWord } f
 import type { SyncStream } from '../lib/use-server-events';
 import { deploymentInspectorHref } from '../app/(shell)/@inspector/inspector-route';
 import { TonePill } from './ServiceToolbar';
+import { RollbackDialog } from './RollbackDialog';
 
 export const DEPLOYMENT_PAGE_SIZE = 20;
 export const HISTORY_EMPTY_COPY = 'No deployments yet. Deploy the service to see its history here.';
 export const HISTORY_LOAD_FAILED_COPY = "Couldn't load the deployment history. Check your connection and try again.";
 export const HISTORY_MORE_FAILED_COPY = "Couldn't load older deployments. Try again.";
+export const IMAGE_PRUNED_COPY = 'Image no longer retained on the server';
+
+/** 19-04: who or what started a row: you, a GitHub push, a rollback of an earlier version, or the engine. */
+export function actorLabel(row: DeploymentView, rows: readonly DeploymentView[]): string {
+  if (row.trigger === 'webhook') return 'GitHub push';
+  if (row.trigger === 'rollback') {
+    const of = row.rollbackOfDeploymentId == null ? undefined : rows.find((other) => other.id === row.rollbackOfDeploymentId);
+    const target = of === undefined ? 'an earlier version' : shortSha(of.commitSha);
+    return row.triggeredBy === null ? `Automatic rollback of ${target}` : `Rollback of ${target}`;
+  }
+  return row.triggeredBy === null ? 'Automatic' : 'You';
+}
+
+/** The newest successful row is the running version: nothing to roll back to. */
+function isRunningVersion(row: DeploymentView, rows: readonly DeploymentView[]): boolean {
+  const current = rows.find((other) => other.status === 'SUCCESS');
+  if (current === undefined) return false;
+  return current.id === row.id || (row.imageRef != null && row.imageRef === current.imageRef);
+}
 
 function stamp(value: string): number {
   const parsed = Date.parse(value);
@@ -226,7 +246,8 @@ export interface DeploymentHistoryProps {
 const SKELETON_ROWS = 3;
 
 export function DeploymentHistory({ history, now }: DeploymentHistoryProps) {
-  const { rows, loaded, loadFailed, hasMore, loadingMore, moreFailed, loadMore } = history;
+  const { rows, loaded, loadFailed, hasMore, loadingMore, moreFailed, loadMore, upsert } = history;
+  const [rollbackTarget, setRollbackTarget] = useState<DeploymentView | null>(null);
 
   let body;
   if (!loaded && loadFailed) {
@@ -246,30 +267,57 @@ export function DeploymentHistory({ history, now }: DeploymentHistoryProps) {
   } else {
     body = rows.map((row) => {
       const status = deploymentStatusPresentation(row.status);
+      const rollbackOffered =
+        row.status === 'SUCCESS' && row.imageRetained !== undefined && !isRunningVersion(row, rows);
       return (
-        <Link
-          key={row.id}
-          href={deploymentInspectorHref(row.id)}
-          scroll={false}
-          data-testid={`deployment-row-${row.id}`}
-          data-status={row.status}
-          className="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-callout outline-none hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
-        >
-          <span className="sr-only">Open build log: </span>
-          <TonePill presentation={status} data-testid="deployment-status" />
-          <span data-testid="deployment-trigger" className="text-ink">
-            {triggerWord(row.trigger)}
-          </span>
-          <span data-testid="deployment-sha" className="font-mono text-ink-secondary" title={row.commitSha ?? undefined}>
-            {shortSha(row.commitSha)}
-          </span>
-          <span data-testid="deployment-duration" className="font-mono tabular-nums text-ink-secondary">
-            {formatDuration(row.durationMs)}
-          </span>
-          <span className="ml-auto text-caption text-ink-secondary">
-            <RelativeTime value={row.createdAt} now={now} data-testid="deployment-time" />
-          </span>
-        </Link>
+        <div key={row.id} className="flex items-center gap-2 pr-4">
+          <Link
+            href={deploymentInspectorHref(row.id)}
+            scroll={false}
+            data-testid={`deployment-row-${row.id}`}
+            data-status={row.status}
+            className="flex min-h-11 flex-1 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-callout outline-none hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+          >
+            <span className="sr-only">Open build log: </span>
+            <TonePill presentation={status} data-testid="deployment-status" />
+            <span data-testid="deployment-trigger" className="text-ink">
+              {triggerWord(row.trigger)}
+            </span>
+            <span data-testid="deployment-actor" className="text-ink-secondary">
+              {actorLabel(row, rows)}
+            </span>
+            <span data-testid="deployment-sha" className="font-mono text-ink-secondary" title={row.commitSha ?? undefined}>
+              {shortSha(row.commitSha)}
+            </span>
+            <span data-testid="deployment-duration" className="font-mono tabular-nums text-ink-secondary">
+              {formatDuration(row.durationMs)}
+            </span>
+            <span className="ml-auto text-caption text-ink-secondary">
+              <RelativeTime value={row.createdAt} now={now} data-testid="deployment-time" />
+            </span>
+          </Link>
+          {rollbackOffered ? (
+            <div className="flex flex-col items-end gap-1">
+              <Button
+                type="button"
+                variant="secondary"
+                data-testid={`deployment-rollback-${row.id}`}
+                disabled={row.imageRetained !== true}
+                {...(row.imageRetained === true ? {} : { 'aria-describedby': `rollback-reason-${row.id}` })}
+                onClick={() => {
+                  setRollbackTarget(row);
+                }}
+              >
+                Roll back
+              </Button>
+              {row.imageRetained === true ? null : (
+                <span id={`rollback-reason-${row.id}`} data-testid={`deployment-rollback-reason-${row.id}`} className="text-caption text-ink-secondary">
+                  {IMAGE_PRUNED_COPY}
+                </span>
+              )}
+            </div>
+          ) : null}
+        </div>
       );
     });
   }
@@ -299,6 +347,15 @@ export function DeploymentHistory({ history, now }: DeploymentHistoryProps) {
           </Button>
         </div>
       ) : null}
+      <RollbackDialog
+        open={rollbackTarget !== null}
+        onOpenChange={(next) => {
+          if (!next) setRollbackTarget(null);
+        }}
+        serviceId={rollbackTarget?.serviceId ?? ''}
+        target={rollbackTarget}
+        onRolledBack={upsert}
+      />
     </section>
   );
 }

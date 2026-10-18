@@ -78,6 +78,8 @@ export const DeploymentViewSchema = z.object({
   rollbackOfDeploymentId: z.uuid().nullable().optional(),
   imageRef: z.string().nullable().optional(),
   webhookDeliveryId: z.uuid().nullable().optional(),
+  // 19-04 (H2): list views only; the server computes it from the rollback retention rule.
+  imageRetained: z.boolean().optional(),
   startedAt: z.string().nullable(),
   completedAt: z.string().nullable(),
   durationMs: z.number().int().nullable(),

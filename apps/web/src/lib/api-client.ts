@@ -353,6 +353,8 @@ export interface ApiRequestOptions {
   /** Set on credential writes (13-05 H1): the body is treated as secret, and any failure text that
    *  echoes one of its strings is replaced with fixed copy before it reaches the caller. */
   readonly sensitive?: boolean;
+  /** 19-04: sent as the `Idempotency-Key` header so a repeated send is answered with the first result. */
+  readonly idempotencyKey?: string;
 }
 
 /** Every string leaf of a request body, for the sensitive-request echo check. Kept local to one
@@ -564,7 +566,12 @@ async function sendRequest<T>(
       // A body that cannot be serialized is a caller bug; resolve, never reject, and never quote it.
       return internalFailure();
     }
-    init.headers = { "Content-Type": "application/json" };
+    init.headers = {
+      "Content-Type": "application/json",
+      ...(options.idempotencyKey === undefined
+        ? {}
+        : { "Idempotency-Key": options.idempotencyKey }),
+    };
     init.body = serialized;
   }
   const secrets = options.sensitive === true ? collectSecretStrings(body) : [];
