@@ -347,6 +347,23 @@ describe('Service page deploy narration (13-13 A5, A3)', () => {
     expect(document.body.textContent).not.toContain('RAW-SERVER-MESSAGE');
   });
 
+  it('opens the push webhook panel from Git-source services only (19-07 A3)', async () => {
+    seed({ current: service({ sourceType: 'git', repositoryUrl: 'https://example.com/a.git', branch: 'main', imageRef: null }) });
+    renderPage();
+
+    const link = await screen.findByTestId('service-webhook-link');
+    expect(link).toHaveTextContent('Push webhook');
+    expect(link).toHaveAttribute('href', '?webhook=1');
+  });
+
+  it('hides the push webhook control for image-source services (19-07 A3)', async () => {
+    seed();
+    renderPage();
+    await screen.findByTestId('service-status-pill');
+
+    expect(screen.queryByTestId('service-webhook-link')).toBeNull();
+  });
+
   it('shows no narration before the first deployment', async () => {
     seed();
     renderPage();

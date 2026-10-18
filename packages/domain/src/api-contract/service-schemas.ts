@@ -4,6 +4,7 @@
 // it by name as a 422 (H1). The route body cap bounds the work before them.
 import { z } from "zod";
 import { SERVICE_STATUSES } from "../deployment/index.js";
+import { validateHealthcheckConfig } from "../deployment/healthcheck.js";
 
 /** Route-level body cap: a service body is a handful of short strings and two ports. */
 export const SERVICE_ROUTE_BODY_LIMIT_BYTES = 16 * 1024;
@@ -13,13 +14,30 @@ export const ServiceParamsSchema = z.object({
   serviceId: z.uuid(),
 });
 
-/** `environmentId` picks the target; the rest goes to `validateServiceCreateInput` untouched. */
+/** 19-07: `null` = the default container check; anything else goes through the shared domain
+ *  validator so a bad value is a 400 whose issue message is the one the UI shows. */
+const HealthcheckInputSchema = z.unknown().superRefine((value, ctx) => {
+  if (value === null) return;
+  const result = validateHealthcheckConfig(value);
+  if (!result.ok) ctx.addIssue({ code: "custom", message: result.message });
+});
+
+const ServiceReliabilityInput = {
+  healthcheck: HealthcheckInputSchema.optional(),
+  autoRollback: z.boolean().optional(),
+};
+
+/** `environmentId` picks the target; the rest goes to `validateServiceCreateInput` untouched
+ *  (`healthcheck` / `autoRollback` are validated here and by the service). */
 export const CreateServiceBodySchema = z.looseObject({
   environmentId: z.uuid(),
+  ...ServiceReliabilityInput,
 });
 
 /** Every key goes to `validateServiceEditInput`, which also rejects `serverId` (no moves). */
-export const UpdateServiceBodySchema = z.looseObject({});
+export const UpdateServiceBodySchema = z.looseObject({
+  ...ServiceReliabilityInput,
+});
 
 const HealthcheckTimingShape = {
   probeTimeoutS: z.number().int(),
@@ -34,7 +52,7 @@ export const HealthcheckConfigSchema = z.discriminatedUnion("type", [
     type: z.literal("http"),
     path: z.string(),
     port: z.number().int(),
-    expectedStatuses: z.array(z.number().int()),
+    expectedStatuses: z.array(z.number().int()).readonly(),
     ...HealthcheckTimingShape,
   }),
   z.object({
@@ -60,6 +78,9 @@ export const ServiceViewSchema = z.object({
   imageRef: z.string().nullable(),
   internalPort: z.number().int(),
   publishedPort: z.number().int().nullable(),
+  // The server always sends both; optional keeps older clients and fixtures that predate 19-07 valid.
+  healthcheck: HealthcheckConfigSchema.nullable().exactOptional(),
+  autoRollback: z.boolean().exactOptional(),
   status: z.enum(SERVICE_STATUSES),
   createdAt: z.string(),
   updatedAt: z.string(),

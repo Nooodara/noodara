@@ -153,6 +153,8 @@ describe('createService: validation before the database (H1)', () => {
     ],
     ['a reserved published port', { ...VALID_CREATE, publishedPort: 22 }, 'PUBLISHED_PORT_RESERVED'],
     ['an out-of-range internal port', { ...VALID_CREATE, internalPort: 70000 }, 'INTERNAL_PORT_INVALID'],
+    ['an unknown healthcheck type', { ...VALID_CREATE, healthcheck: { type: 'udp' } }, 'HEALTHCHECK_CONFIG_INVALID'],
+    ['a non-boolean autoRollback', { ...VALID_CREATE, autoRollback: 'yes' }, 'SERVICE_INPUT_AUTO_ROLLBACK_INVALID'],
   ])('rejects %s as SERVICE_INPUT_INVALID with the domain reason', async (_label, fields, reason) => {
     const { services, events } = servicesWithoutDb();
     const result = await services.createService({
@@ -187,6 +189,8 @@ describe('updateService: validation before the database (H1)', () => {
     ['a server move', { serverId: SERVER_ID }, 'SERVICE_INPUT_UNSUPPORTED_FIELD'],
     ['a build-arg field', { buildArgs: {} }, 'SERVICE_INPUT_UNSUPPORTED_FIELD'],
     ['an invalid published port', { publishedPort: 0 }, 'PUBLISHED_PORT_INVALID'],
+    ['an invalid healthcheck alone', { healthcheck: { type: 'tcp', port: 0 } }, 'HEALTHCHECK_CONFIG_INVALID'],
+    ['an unknown field beside a healthcheck', { healthcheck: null, buildArgs: {} }, 'SERVICE_INPUT_UNSUPPORTED_FIELD'],
   ])('rejects %s as SERVICE_INPUT_INVALID with the domain reason', async (_label, fields, reason) => {
     const { services, events } = servicesWithoutDb();
     const result = await services.updateService({

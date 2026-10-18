@@ -8,6 +8,7 @@
 import {
   deriveServiceStatus,
   type ContainerObservation,
+  type HealthcheckConfig,
   type DeploymentStatus,
   type ServiceStatus,
 } from '@noodara/domain/deployment';
@@ -29,6 +30,8 @@ export type ServiceRow = Pick<
   | 'imageRef'
   | 'internalPort'
   | 'publishedPort'
+  | 'healthcheck'
+  | 'autoRollback'
   | 'status'
   | 'createdAt'
   | 'updatedAt'
@@ -49,6 +52,10 @@ export interface ServiceView {
   readonly imageRef: string | null;
   readonly internalPort: number;
   readonly publishedPort: number | null;
+  /** null = the default container healthcheck. Always set by toServiceView; optional in the type
+   *  only so older ServiceView fixtures stay valid. */
+  readonly healthcheck?: HealthcheckConfig | null;
+  readonly autoRollback?: boolean;
   readonly status: ServiceStatus;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -70,6 +77,8 @@ export const SERVICE_VIEW_FIELDS = Object.freeze([
   'imageRef',
   'internalPort',
   'publishedPort',
+  'healthcheck',
+  'autoRollback',
   'status',
   'createdAt',
   'updatedAt',
@@ -111,6 +120,8 @@ export function toServiceView(
     imageRef: row.imageRef,
     internalPort: row.internalPort,
     publishedPort: row.publishedPort,
+    healthcheck: row.healthcheck,
+    autoRollback: row.autoRollback,
     status: deriveServiceStatus({
       latestDeployment: latestDeployment === null ? null : { status: latestDeployment.status },
       container: containerObservationFromCache(row.status),

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CreateServiceBodySchema, UpdateServiceBodySchema } from '@noodara/domain/api-contract';
 import {
   WEBHOOK_DELIVERIES_DEFAULT_LIMIT,
   WEBHOOK_DELIVERIES_MAX_LIMIT,
@@ -38,5 +39,28 @@ describe('webhook deliveries query (19-03 H3)', () => {
     ]) {
       expect(decodeDeliveriesCursor(bad)).toBeNull();
     }
+  });
+});
+
+describe('service bodies: healthcheck and autoRollback (19-07 A1)', () => {
+  const timing = { probeTimeoutS: 3, intervalS: 5, retries: 3, startPeriodS: 0 };
+  const ENV = { environmentId: ID };
+
+  it('accepts a valid healthcheck, null and a boolean autoRollback on create and edit', () => {
+    const tcp = { type: 'tcp', port: 80, ...timing };
+    expect(CreateServiceBodySchema.safeParse({ ...ENV, healthcheck: tcp, autoRollback: false }).success).toBe(true);
+    expect(UpdateServiceBodySchema.safeParse({ healthcheck: null }).success).toBe(true);
+    expect(UpdateServiceBodySchema.safeParse({ autoRollback: true }).success).toBe(true);
+  });
+
+  it('rejects an invalid healthcheck with the domain validator message', () => {
+    const result = UpdateServiceBodySchema.safeParse({ healthcheck: { type: 'tcp', port: 0, ...timing } });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe('Healthcheck port must be an integer from 1 to 65535');
+    expect(CreateServiceBodySchema.safeParse({ ...ENV, healthcheck: { type: 'udp' } }).success).toBe(false);
+  });
+
+  it('rejects a non-boolean autoRollback', () => {
+    expect(UpdateServiceBodySchema.safeParse({ autoRollback: 'yes' }).success).toBe(false);
   });
 });

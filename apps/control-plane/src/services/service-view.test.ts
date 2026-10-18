@@ -21,6 +21,8 @@ function gitRow(overrides: Partial<ServiceRow> = {}): ServiceRow {
     imageRef: null,
     internalPort: 3000,
     publishedPort: null,
+    healthcheck: null,
+    autoRollback: true,
     status: 'NEVER_DEPLOYED',
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,
@@ -47,10 +49,19 @@ describe('toServiceView (SVC-05, SVC-07)', () => {
       imageRef: null,
       internalPort: 3000,
       publishedPort: null,
+      healthcheck: null,
+      autoRollback: true,
       status: 'NEVER_DEPLOYED',
       createdAt: '2026-10-01T10:00:00.000Z',
       updatedAt: '2026-10-02T11:30:00.000Z',
     });
+  });
+
+  it('returns the stored healthcheck and auto-rollback (19-07 A2)', () => {
+    const healthcheck = { type: 'tcp', port: 3000, probeTimeoutS: 3, intervalS: 5, retries: 3, startPeriodS: 0 } as const;
+    const view = toServiceView(gitRow({ healthcheck, autoRollback: false }), null);
+    expect(view.healthcheck).toStrictEqual(healthcheck);
+    expect(view.autoRollback).toBe(false);
   });
 
   it('never copies a column outside the allowlist (credential ids stay server-side)', () => {

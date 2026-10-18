@@ -7,6 +7,7 @@
 // and tells the sidebar through notifyProjectsChanged().
 // 13-13: the latest deployment is narrated step by step (DeploymentSteps), refetched with its
 // steps on that deployment's `deployment.updated`.
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Banner, EmptyState, InsetGroup, Notice, SkeletonRow } from '@noodara/ui';
@@ -213,6 +214,18 @@ export default function ServicePage() {
           />
         ) : null}
         <ServiceFacts service={service} serverName={serverName} now={now} />
+        {service.sourceType === 'git' ? (
+          <div>
+            <Link
+              href="?webhook=1"
+              scroll={false}
+              data-testid="service-webhook-link"
+              className="inline-flex min-h-11 items-center text-callout text-accent outline-none hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              Push webhook
+            </Link>
+          </div>
+        ) : null}
         {narrated === null ? null : (
           <InsetGroup title="Latest deployment" data-testid="service-latest-deployment">
             <div className="px-5 py-2">

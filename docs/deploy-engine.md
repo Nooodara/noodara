@@ -28,6 +28,10 @@ Full list in `apps/site/content/docs/reference/error-codes.mdx`. Build-time code
 
 Each deployment works in `.noodara/deploy/<deploymentId>` relative to the SSH user's home (sshd starts every command there), so a non-root user in the `docker` group needs no host setup. A workspace that cannot be created or written fails `WORKSPACE_UNAVAILABLE`. rc.1 used `/opt/noodara-deploy`; workspaces left there are not touched (no new deployment writes there).
 
+## Service Healthcheck and Auto-Rollback (19-07)
+
+`POST /api/projects/:id/services` and `PATCH .../services/:id` accept optional `healthcheck` (a config, or `null` for the default container check) and `autoRollback` (boolean, default on). Both are validated with `validateHealthcheckConfig`; an invalid value is a 400 whose issue message is the validator's. The service view returns both, so the sheet round-trips them and the next deploy uses them. Changing them never requires a redeploy by itself.
+
 ## Stale QUEUED Deployments (14-08)
 
 If the API's enqueue and its undo both fail (Redis and Postgres down), the row stays `QUEUED` with no job and holds the service's 409 lock. The worker sweeps at startup and before every reconcile tick: a `QUEUED` row older than `NOODARA_DEPLOY_QUEUED_STALE_MS` (default 120000, range 30000-3600000) whose BullMQ job is absent, completed or failed ends `FAILED/ENQUEUE_FAILED` with `deployment.finished` and `deployment.updated`.

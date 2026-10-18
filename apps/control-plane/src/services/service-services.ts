@@ -11,6 +11,7 @@ import {
   validateServiceEditInput,
   type ServiceEditableFields,
   type ServiceEditField,
+  type ServiceEditInput,
 } from '@noodara/domain';
 import {
   deriveServiceStatus,
@@ -18,7 +19,9 @@ import {
   preflightPublishedPort,
   type ContainerObservation,
   type DeploymentStatus,
+  type HealthcheckConfig,
   type PortOwner,
+  validateHealthcheckConfig,
 } from '@noodara/domain/deployment';
 import type { ServiceSource } from '@noodara/domain/validators';
 import { writeActivityEvent } from '../activity/write-activity-event.js';
@@ -160,6 +163,43 @@ export interface ServiceInputInvalid {
 
 function inputInvalid(failure: { code: string; message: string }): ServiceInputInvalid {
   return { ok: false, code: 'SERVICE_INPUT_INVALID', message: failure.message, reason: failure.code };
+}
+
+/** 19-07: `healthcheck` / `autoRollback` are not part of the domain service validators; they are
+ *  split off, validated with the shared healthcheck validator and stored beside the other columns. */
+interface ReliabilitySettings {
+  readonly healthcheck?: HealthcheckConfig | null;
+  readonly autoRollback?: boolean;
+}
+
+type SplitFields =
+  | { readonly ok: true; readonly rest: unknown; readonly settings: ReliabilitySettings }
+  | ServiceInputInvalid;
+
+function splitReliabilityFields(fields: unknown): SplitFields {
+  if (typeof fields !== 'object' || fields === null || Array.isArray(fields)) return { ok: true, rest: fields, settings: {} };
+  const { healthcheck, autoRollback, ...rest } = fields as Record<string, unknown>;
+  let settings: ReliabilitySettings = {};
+  if (healthcheck !== undefined) {
+    if (healthcheck === null) {
+      settings = { ...settings, healthcheck: null };
+    } else {
+      const parsed = validateHealthcheckConfig(healthcheck);
+      if (!parsed.ok) return inputInvalid(parsed);
+      settings = { ...settings, healthcheck: parsed.value };
+    }
+  }
+  if (autoRollback !== undefined) {
+    if (typeof autoRollback !== 'boolean') {
+      return inputInvalid({ code: 'SERVICE_INPUT_AUTO_ROLLBACK_INVALID', message: 'autoRollback must be true or false' });
+    }
+    settings = { ...settings, autoRollback };
+  }
+  return { ok: true, rest, settings };
+}
+
+function sameJson(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 }
 
 function notFound(kind: 'Project' | 'Environment' | 'Server' | 'Service', id: string): Failure<'NOT_FOUND'> {
@@ -342,9 +382,12 @@ export type CreateServiceResult =
   | Failure<Exclude<CreateServiceFailureCode, 'SERVICE_INPUT_INVALID'>>;
 
 export async function createService(deps: ServiceServicesDeps, input: CreateServiceInput): Promise<CreateServiceResult> {
-  const validated = validateServiceCreateInput(input.fields);
+  const split = splitReliabilityFields(input.fields);
+  if (!split.ok) return split;
+  const validated = validateServiceCreateInput(split.rest);
   if (!validated.ok) return inputInvalid(validated);
   const fields = validated.value;
+  const settings = split.settings;
   const serviceId = uuidv7();
 
   let result: CreateServiceResult;
@@ -392,6 +435,8 @@ export async function createService(deps: ServiceServicesDeps, input: CreateServ
           ...serviceColumnsFromSource(fields.source),
           internalPort: fields.internalPort,
           publishedPort: fields.publishedPort,
+          ...(settings.healthcheck !== undefined ? { healthcheck: settings.healthcheck } : {}),
+          ...(settings.autoRollback !== undefined ? { autoRollback: settings.autoRollback } : {}),
           createdAt: now,
           updatedAt: now,
         })
@@ -450,7 +495,7 @@ export interface UpdateServiceSuccess {
   readonly service: ServiceView;
   /** True when the change only takes effect in a new container (source or a port changed). */
   readonly requiresRedeploy: boolean;
-  readonly changedFields: readonly ServiceEditField[];
+  readonly changedFields: readonly (ServiceEditField | 'healthcheck' | 'autoRollback')[];
 }
 
 export type UpdateServiceResult =
@@ -459,9 +504,17 @@ export type UpdateServiceResult =
   | Failure<Exclude<UpdateServiceFailureCode, 'SERVICE_INPUT_INVALID'>>;
 
 export async function updateService(deps: ServiceServicesDeps, input: UpdateServiceInput): Promise<UpdateServiceResult> {
-  const validated = validateServiceEditInput(input.fields);
+  const split = splitReliabilityFields(input.fields);
+  if (!split.ok) return split;
+  const settings = split.settings;
+  const onlySettings =
+    Object.keys(settings).length > 0 &&
+    typeof split.rest === 'object' &&
+    split.rest !== null &&
+    Object.keys(split.rest).length === 0;
+  const validated = onlySettings ? ({ ok: true, value: {} } as const) : validateServiceEditInput(split.rest);
   if (!validated.ok) return inputInvalid(validated);
-  const edit = validated.value;
+  const edit: ServiceEditInput = validated.value;
   const scoped = and(eq(services.id, input.serviceId), eq(services.projectId, input.projectId));
 
   let result: UpdateServiceResult;
@@ -476,7 +529,12 @@ export async function updateService(deps: ServiceServicesDeps, input: UpdateServ
 
       const classification = classifyServiceEdit(editableFieldsFromRow(current), edit);
       const changed = new Set(classification.changedFields);
-      if (classification.kind === 'none') {
+      // The next deploy reads these, so a change never needs a redeploy by itself.
+      const settingsChanged: ('healthcheck' | 'autoRollback')[] = [
+        ...(settings.healthcheck !== undefined && !sameJson(settings.healthcheck, current.healthcheck) ? (['healthcheck'] as const) : []),
+        ...(settings.autoRollback !== undefined && settings.autoRollback !== current.autoRollback ? (['autoRollback'] as const) : []),
+      ];
+      if (classification.kind === 'none' && settingsChanged.length === 0) {
         return { ok: true, service: await viewOf(tx, current), requiresRedeploy: false, changedFields: [] };
       }
       if (changed.has('source') && edit.source?.kind === 'git') {
@@ -508,6 +566,8 @@ export async function updateService(deps: ServiceServicesDeps, input: UpdateServ
           ...credentialChanges.columns,
           ...(changed.has('internalPort') && edit.internalPort !== undefined ? { internalPort: edit.internalPort } : {}),
           ...(changed.has('publishedPort') && edit.publishedPort !== undefined ? { publishedPort: edit.publishedPort } : {}),
+          ...(settingsChanged.includes('healthcheck') ? { healthcheck: settings.healthcheck ?? null } : {}),
+          ...(settingsChanged.includes('autoRollback') && settings.autoRollback !== undefined ? { autoRollback: settings.autoRollback } : {}),
           updatedAt: nextUpdatedAt(current.updatedAt, now),
         })
         .where(eq(services.id, current.id))
@@ -525,14 +585,14 @@ export async function updateService(deps: ServiceServicesDeps, input: UpdateServ
           action: 'service.updated',
           outcome: 'success',
           metadata: {
-            changedFields: [...classification.changedFields],
+            changedFields: [...classification.changedFields, ...settingsChanged],
             requiresRedeploy,
             ...(credentialChanges.staleIds.length > 0 ? { credentialReplaced: true } : {}),
           },
         },
         now,
       );
-      return { ok: true, service: await viewOf(tx, row), requiresRedeploy, changedFields: classification.changedFields };
+      return { ok: true, service: await viewOf(tx, row), requiresRedeploy, changedFields: [...classification.changedFields, ...settingsChanged] };
     });
   } catch (error) {
     if (uniqueViolationConstraint(error) === SERVICE_NAME_UNIQUE_CONSTRAINT && edit.name !== undefined) {
