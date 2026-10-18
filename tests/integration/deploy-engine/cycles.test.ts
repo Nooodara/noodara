@@ -8,6 +8,8 @@
 // The manual rollback names its target explicitly (the good deployment before the running one),
 // so each cycle exercises the same edge instead of depending on how the default target walks
 // earlier rollback rows.
+// The order never runs an unhealthy deploy right after a manual rollback: there the worker's
+// retention drops an image the API still lists as retained (reported in 20-02, not covered here).
 //
 // Checked afterwards (A1, A2, H1):
 // - one deployments row per request, every row terminal, every published status sequence valid
@@ -17,7 +19,7 @@
 //   dropped, failed, duplicated or foreign); webhook_deliveries: one `deployed` row per push;
 // - on the deploy host: one service container, no -prev container, no extra container, network
 //   or volume, an empty workspace root, the service images equal to the retention set the API
-//   derives (imageRetention over the SUCCESS rows), the non-service image set unchanged since the
+//   derives (imageRetention over the SUCCESS rows; also after every iteration), the non-service image set unchanged since the
 //   warm-up, and docker system df stable: Containers and Local Volumes back at baseline (+1 for the
 //   service container), Images size within DF_IMAGES_GROWTH_BOUND_BYTES of the post-warm-up
 //   reference. Build cache is excluded (BuildKit-owned, DECISIONS 2026-10-05);
@@ -155,7 +157,7 @@ const UNHEALTHY_CHECK: HealthcheckConfig = { ...HEALTHY_CHECK, path: '/healthz' 
 type CycleKind = 'prime' | 'good' | 'unhealthy' | 'manual';
 const CYCLE_KINDS = ['good', 'unhealthy', 'manual'] as const;
 
-interface Request {
+interface CycleRequest {
   readonly iteration: number;
   readonly kind: CycleKind;
   readonly deploymentId: string;
@@ -297,6 +299,27 @@ describe.skipIf(!STRESS_ENABLED)(`20-02 stress: ${String(CYCLES)} deploy/rollbac
     };
     const serviceImageRefs = async (serviceId: string): Promise<string[]> =>
       lines(await rootOut(['docker', 'image', 'ls', '--format', '{{.Repository}}:{{.Tag}}', serviceRepo(serviceId)])).sort();
+
+    /**
+     * The retention set the API derives (deployment-services retainedImageRefs, which marks rows
+     * imageRetained and gates planRollback): imageRetention over the SUCCESS rows, newest first,
+     * with the newest one's image as the running image. Sorted, deduplicated refs.
+     */
+    const apiRetention = async (serviceId: string): Promise<{ retained: string[]; running: string | null }> => {
+      const [serviceRow] = await db().select({ retention: services.imageRetention }).from(services).where(eq(services.id, serviceId));
+      const successes = await db()
+        .select()
+        .from(deployments)
+        .where(and(eq(deployments.serviceId, serviceId), eq(deployments.status, 'SUCCESS')))
+        .orderBy(desc(deployments.createdAt), desc(deployments.id));
+      const running = successes[0]?.imageRef ?? null;
+      const keep = imageRetention(
+        successes.map((row) => ({ id: row.id, status: row.status, imageRef: row.imageRef, createdAt: row.createdAt.getTime() })),
+        running,
+        serviceRow?.retention ?? DEFAULT_IMAGE_RETENTION,
+      ).keep;
+      return { retained: [...new Set(keep)].sort(), running };
+    };
 
     const closedFor = (deploymentId: string) => {
       let entry = closed.get(deploymentId);
@@ -638,13 +661,13 @@ describe.skipIf(!STRESS_ENABLED)(`20-02 stress: ${String(CYCLES)} deploy/rollbac
         artifact.baseline = baseline.df;
         flushArtifact();
 
-        const requests: Request[] = [];
+        const requests: CycleRequest[] = [];
         const goods: string[] = [];
         let reference: { imageIds: string[]; df: DfRow[] } | undefined;
 
         const runIteration = async (iteration: number, kind: CycleKind): Promise<void> => {
           const started = Date.now();
-          let request: Request;
+          let request: CycleRequest;
           if (kind === 'prime' || kind === 'good') {
             const pushed = await deliverPush(`${kind} ${String(iteration)}`);
             request = { iteration, kind, deploymentId: pushed.deploymentId, deliveryId: pushed.deliveryId };
@@ -694,6 +717,11 @@ describe.skipIf(!STRESS_ENABLED)(`20-02 stress: ${String(CYCLES)} deploy/rollbac
             await rootOut(['docker', 'ps', '--all', '--filter', `label=noodara.service_id=${serviceId}`, '--format', '{{.Names}}']),
           );
           expect(own, `iteration ${String(iteration)} (${kind}) containers`).toEqual([container]);
+          // A2: every image the API offers as a rollback target is on the host, and nothing else is
+          // (the worker's retention and the API's view agree after every kind of iteration).
+          expect(await serviceImageRefs(serviceId), `iteration ${String(iteration)} (${kind}) images vs the API retention set`).toEqual(
+            (await apiRetention(serviceId)).retained,
+          );
           if (iteration === WARMUP_INDEX) reference = { imageIds: await nonServiceImageIds(serviceId), df: snapshot };
         };
 
@@ -701,8 +729,6 @@ describe.skipIf(!STRESS_ENABLED)(`20-02 stress: ${String(CYCLES)} deploy/rollbac
         for (let iteration = 0; iteration < CYCLES; iteration += 1) {
           const kind = CYCLE_KINDS[iteration % CYCLE_KINDS.length];
           if (kind === undefined) throw new Error('unreachable');
-          // A manual rollback after the good deploy that came right after another rollback still
-          // targets the good deployment before the running one (goods.at(-2)).
           await runIteration(iteration, kind);
         }
 
@@ -767,24 +793,9 @@ describe.skipIf(!STRESS_ENABLED)(`20-02 stress: ${String(CYCLES)} deploy/rollbac
         const workspaces = lines(await rootOut(['ls', '-A', WORKSPACE_ROOT]));
         if (workspaces.length > 0) problems.push(`workspaces left: ${workspaces.join(', ')}`);
 
-        // The retention set the API derives (deployment-services retainedImageRefs): imageRetention
-        // over the SUCCESS rows, newest first, with the newest one's image as the running image.
-        const [serviceRow] = await db().select({ retention: services.imageRetention }).from(services).where(eq(services.id, serviceId));
-        const successes = await db()
-          .select()
-          .from(deployments)
-          .where(and(eq(deployments.serviceId, serviceId), eq(deployments.status, 'SUCCESS')))
-          .orderBy(desc(deployments.createdAt), desc(deployments.id));
-        const current = successes[0];
-        if (current === undefined) throw new Error('no successful deployment');
-        const retentionSet = imageRetention(
-          successes.map((row) => ({ id: row.id, status: row.status, imageRef: row.imageRef, createdAt: row.createdAt.getTime() })),
-          current.imageRef,
-          serviceRow?.retention ?? DEFAULT_IMAGE_RETENTION,
-        ).keep;
-        expect([...retentionSet].sort(), 'retention set').toContain(current.imageRef);
-        const onHost = await serviceImageRefs(serviceId);
-        expect(onHost, 'service images vs the retention set').toEqual([...new Set(retentionSet)].sort());
+        const { retained, running } = await apiRetention(serviceId);
+        expect(retained, 'retention set').toContain(running);
+        expect(await serviceImageRefs(serviceId), 'service images vs the retention set').toEqual(retained);
 
         if (reference === undefined) throw new Error('no warm-up reference was taken');
         const extraImages = extraEntries(reference.imageIds, await nonServiceImageIds(serviceId));
