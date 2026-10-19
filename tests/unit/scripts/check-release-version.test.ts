@@ -10,15 +10,15 @@ const RELEASE_YML = readFileSync(path.join(ROOT, '.github/workflows/release.yml'
 
 describe('parseReleaseTag', () => {
   it.each([
-    ['v0.2.0', '0.2.0', false],
-    ['0.2.0', '0.2.0', false],
-    ['v0.2.0-rc.1', '0.2.0', true],
+    ['v0.3.0', '0.3.0', false],
+    ['0.3.0', '0.3.0', false],
+    ['v0.3.0-rc.1', '0.3.0', true],
     ['v1.10.3-rc.12', '1.10.3', true],
   ])('accepts %s', (tag, base, prerelease) => {
     expect(parseReleaseTag(tag)).toMatchObject({ base, prerelease });
   });
 
-  it.each(['v0.2.0-rc', 'v0.2.0-rc.0', 'v0.2.0-rc.0x', 'v0.2.0-rc.01', 'v0.2.0-rcfoo', 'v0.2.0-beta.1', 'v0.2', 'latest', 'v01.2.0', ''])(
+  it.each(['v0.3.0-rc', 'v0.3.0-rc.0', 'v0.3.0-rc.0x', 'v0.3.0-rc.01', 'v0.3.0-rcfoo', 'v0.3.0-beta.1', 'v0.2', 'latest', 'v01.2.0', ''])(
     'rejects malformed tag %s',
     (tag) => {
       expect(parseReleaseTag(tag)).toBeNull();
@@ -27,16 +27,16 @@ describe('parseReleaseTag', () => {
 });
 
 describe('checkReleaseConsistency', () => {
-  const versions = { 'package.json': '0.2.0', 'apps/web/package.json': '0.2.0' };
+  const versions = { 'package.json': '0.3.0', 'apps/web/package.json': '0.3.0' };
 
   it('passes when tag, packages and notes agree, for a final and for an rc tag', () => {
-    expect(checkReleaseConsistency({ tag: 'v0.2.0', packageVersions: versions, notesExist: true })).toEqual([]);
-    expect(checkReleaseConsistency({ tag: 'v0.2.0-rc.1', packageVersions: versions, notesExist: true })).toEqual([]);
+    expect(checkReleaseConsistency({ tag: 'v0.3.0', packageVersions: versions, notesExist: true })).toEqual([]);
+    expect(checkReleaseConsistency({ tag: 'v0.3.0-rc.1', packageVersions: versions, notesExist: true })).toEqual([]);
   });
 
   it('fails when a package version disagrees with the tag', () => {
     const problems = checkReleaseConsistency({
-      tag: 'v0.2.1',
+      tag: 'v0.3.1',
       packageVersions: versions,
       notesExist: true,
     });
@@ -44,17 +44,17 @@ describe('checkReleaseConsistency', () => {
   });
 
   it('fails when the release notes file is missing', () => {
-    const problems = checkReleaseConsistency({ tag: 'v0.2.0', packageVersions: versions, notesExist: false });
-    expect(problems.join('\n')).toContain('docs/releases/v0.2.0.md');
+    const problems = checkReleaseConsistency({ tag: 'v0.3.0', packageVersions: versions, notesExist: false });
+    expect(problems.join('\n')).toContain('docs/releases/v0.3.0.md');
   });
 
   it('fails on a malformed tag', () => {
-    expect(checkReleaseConsistency({ tag: 'v0.2.0-rc', packageVersions: versions, notesExist: true })).toHaveLength(1);
+    expect(checkReleaseConsistency({ tag: 'v0.3.0-rc', packageVersions: versions, notesExist: true })).toHaveLength(1);
   });
 });
 
 describe('repository release state', () => {
-  it('every workspace package.json and the release notes match 0.2.0', () => {
+  it('every workspace package.json and the release notes match 0.3.0', () => {
     const files = ['package.json'];
     for (const dir of ['apps', 'packages']) {
       for (const entry of readdirSync(path.join(ROOT, dir))) files.push(`${dir}/${entry}/package.json`);
@@ -69,11 +69,11 @@ describe('repository release state', () => {
     }
     let notesExist = true;
     try {
-      readFileSync(path.join(ROOT, 'docs/releases/v0.2.0.md'), 'utf8');
+      readFileSync(path.join(ROOT, 'docs/releases/v0.3.0.md'), 'utf8');
     } catch {
       notesExist = false;
     }
-    expect(checkReleaseConsistency({ tag: 'v0.2.0-rc.1', packageVersions, notesExist })).toEqual([]);
+    expect(checkReleaseConsistency({ tag: 'v0.3.0-rc.1', packageVersions, notesExist })).toEqual([]);
   });
 });
 

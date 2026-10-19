@@ -61,8 +61,7 @@ container is starting; once running, no cancel is shown.
 - No environment variables or build arguments: put all configuration into your image at build
   time or at container startup.
 - Redeployment stops the existing container and starts a new one. This causes brief downtime.
-- Noodara does not automatically restart failed containers, run healthchecks, or roll back
-  deployments.
+- Noodara does not restart a container that crashes after a deployment succeeded.
 
 See [Troubleshooting](/docs/operate/troubleshooting) or the full [error codes
 reference](/docs/reference/error-codes) if something goes wrong.

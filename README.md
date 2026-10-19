@@ -12,12 +12,14 @@ understanding applications and infrastructure on your own servers.
 
 ## Status
 
-This is **v0.2 Projects & Services**: connect a server over SSH, run discovery, organize work as
-projects, environments and services, and deploy a service from a Git repository, a Dockerfile or
-an image, with build and runtime logs and the real container state.
+This is **v0.3 Reliable Deployment Engine**: connect a server over SSH, run discovery, organize work
+as projects, environments and services, and deploy a service from a Git repository, a Dockerfile or
+an image, with build and runtime logs and the real container state. Deployments are checked with
+healthchecks, roll back automatically or on demand, can be triggered by signed GitHub webhooks and
+survive cancellation and worker crashes.
 
-Not part of this release: domains and HTTPS, application environment variables and secrets,
-webhooks, healthchecks and automatic rollback. Release notes: [`docs/releases/v0.2.0.md`](docs/releases/v0.2.0.md).
+Not part of this release: domains and HTTPS, application environment variables and secrets.
+Release notes: [`docs/releases/v0.3.0.md`](docs/releases/v0.3.0.md).
 
 ## Install
 
@@ -29,7 +31,7 @@ See [`docs/install.md`](docs/install.md) for requirements, the download-read-run
 supported variables, upgrade, rollback and troubleshooting.
 
 Release candidates (`vX.Y.Z-rc.N`) are published as GitHub prereleases and are never installed by
-default; pin one with `NOODARA_VERSION=v0.2.0-rc.1`.
+default; pin one with `NOODARA_VERSION=v0.3.0-rc.1`.
 
 ## Development
 

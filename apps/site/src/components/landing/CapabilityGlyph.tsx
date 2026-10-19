@@ -112,6 +112,21 @@ const GLYPHS: Record<CapabilityId, ReactNode> = {
       <line x1="8" y1="16" x2="12" y2="16" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
     </>
   ),
+  // Heartbeat line in a frame: healthcheck and rollback.
+  'deploy-health': (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2.5" fill="none" stroke="currentColor" strokeWidth={STROKE} />
+      <path d="M6 12.5 H9 L10.8 9 L13.2 15.5 L15 12.5 H18" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  // Inbound arrow into a bracketed target: webhook-triggered deploy.
+  'deploy-webhooks': (
+    <>
+      <path d="M4 12 H13" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+      <path d="M10 8.5 L13.5 12 L10 15.5" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17 5 H20 V19 H17" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
   // Padlock: credentials encrypted at rest.
   'encrypted-credentials': (
     <>

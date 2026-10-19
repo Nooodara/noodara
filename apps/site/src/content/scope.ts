@@ -92,6 +92,18 @@ export const DELIVERED_CAPABILITIES = [
     evidence: ['tests/e2e/deploy.spec.ts'],
   },
   {
+    id: 'deploy-health',
+    pillar: 'operate',
+    claim: 'Check a new deployment with a healthcheck and roll back to the previous version, automatically or on demand.',
+    evidence: ['tests/e2e/engine-rollback.spec.ts'],
+  },
+  {
+    id: 'deploy-webhooks',
+    pillar: 'operate',
+    claim: 'Deploy on every push to GitHub with a signed webhook that never deploys the same push twice.',
+    evidence: ['tests/integration/webhooks'],
+  },
+  {
     id: 'upgrade-rollback',
     pillar: 'operate',
     claim: 'Upgrade or roll back an installation from the command line.',
@@ -125,6 +137,8 @@ export const CAPABILITY_TITLES: Record<(typeof DELIVERED_CAPABILITIES)[number]['
   'projects-services': 'Projects & services',
   'deploy-sources': 'Deploy from Git or image',
   'deploy-logs': 'Build and runtime logs',
+  'deploy-health': 'Healthchecks & rollback',
+  'deploy-webhooks': 'GitHub webhooks',
   'upgrade-rollback': 'Upgrade & rollback',
   'encrypted-credentials': 'Encrypted at rest',
   'explicit-timeouts': 'Explicit timeouts',
@@ -147,9 +161,9 @@ export const SCOPE_EXCLUSIONS = [
   },
   {
     id: 'advanced-deploy',
-    statement: 'Noodara does not run webhooks, healthchecks or automatic rollbacks.',
+    statement: 'Noodara does not offer zero-downtime or blue-green deployments: a redeploy replaces the running container.',
     projectAnchor: 'Deployment engine, webhooks, healthchecks, rollback',
-    excludedTerms: ['webhook', 'webhooks', 'healthcheck', 'healthchecks', 'auto-deploy', 'automatic rollback', 'automatic rollbacks'],
+    excludedTerms: ['zero-downtime', 'blue-green', 'canary'],
     showOnLanding: true,
   },
   {
