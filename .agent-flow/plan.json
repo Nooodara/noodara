@@ -7245,7 +7245,8 @@
           "dependsOn": [
             "20-03",
             "20-06",
-            "20-07"
+            "20-07",
+            "20-08"
           ],
           "status": "active",
           "gates": [
@@ -7433,6 +7434,64 @@
             "http-api/body-cap"
           ],
           "tier": "deep"
+        },
+        {
+          "id": "20-08",
+          "title": "Release prep: 0.3.0 version and v0.3 notes for v0.3.0-rc.1",
+          "scope": [
+            "README.md",
+            "package.json",
+            "apps/control-plane/package.json",
+            "apps/web/package.json",
+            "apps/site/package.json",
+            "packages/config/package.json",
+            "packages/docker/package.json",
+            "packages/domain/package.json",
+            "packages/git/package.json",
+            "packages/ssh/package.json",
+            "packages/ui/package.json",
+            "pnpm-lock.yaml",
+            "docs/releases/v0.3.0.md",
+            "docs/releases/v0.3-scenarios.md",
+            "docs/install.md",
+            "apps/site/content/docs/",
+            "apps/site/src/",
+            "tests/unit/scripts/"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "20-07"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Every workspace package.json is 0.3.0 and node scripts/check-release-version.mjs passes for v0.3.0-rc.1 and v0.3.0 (lockfile consistent)",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "docs/releases/v0.3.0.md (concise) lists the v0.3 features (healthchecks, auto/manual rollback, GitHub webhooks, idempotency, cancel/crash recovery), the upgrade v0.2.0 → v0.3 and rollback steps with the NOODARA_VERSION pin, migrations 0011-0013 and known limits (no domains/HTTPS, no env vars/secrets yet)",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "README and the public site/install docs point to v0.3.0 notes and describe v0.3 without placeholders for v0.4 features; docs/releases/v0.3-scenarios.md points to the moved scenario-map test path",
+              "proof": "build"
+            }
+          ],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap"
+          ],
+          "tier": "standard"
         }
       ]
     }
