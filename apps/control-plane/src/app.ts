@@ -96,7 +96,17 @@ export interface BuildAppDeps {
   webhookIngest?: WebhookIngest;
   /** 18-02: receiver rate limits; defaults to `DEFAULT_WEBHOOK_RATE_LIMITS`. */
   webhookRateLimits?: WebhookRateLimits;
+  /** 20-03 F1: request receipt bound; defaults to API_REQUEST_TIMEOUT_MS checked every second. */
+  requestTimeout?: { timeoutMs: number; checkIntervalMs: number };
 }
+
+/**
+ * 20-03 F1: how long a client may take to send a whole request (headers and body). Fastify 5
+ * defaults to 0 (never), which let a client drip a webhook body forever. It bounds receipt only,
+ * so SSE and log-follow responses are never cut; connectionTimeout stays 0 for the same reason.
+ */
+export const API_REQUEST_TIMEOUT_MS = 30_000;
+const API_REQUEST_TIMEOUT_CHECK_MS = 1_000;
 
 /**
  * Builds the per-`buildApp()`-call resolver `fastify.getServerServices` decorates onto the
@@ -505,7 +515,16 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   // accepts a plain options object or boolean). `trustProxy` gates whether Fastify's own
   // `request.ip` honours `X-Forwarded-For` (T-1-40, D-07) — `false` by default, so the header is
   // ignored unless `NOODARA_TRUST_PROXY` is explicitly set.
-  const app = Fastify({ loggerInstance: deps.logger ?? createLogger(), trustProxy: env.NOODARA_TRUST_PROXY });
+  const timeout = deps.requestTimeout ?? { timeoutMs: API_REQUEST_TIMEOUT_MS, checkIntervalMs: API_REQUEST_TIMEOUT_CHECK_MS };
+  const app = Fastify({
+    loggerInstance: deps.logger ?? createLogger(),
+    trustProxy: env.NOODARA_TRUST_PROXY,
+    requestTimeout: timeout.timeoutMs,
+    // Fastify assigns requestTimeout after createServer, which leaves Node's 60 s headersTimeout
+    // above it and the bound never fires; passing it to the constructor clamps headersTimeout.
+    // Node checks the bound on connectionsCheckingInterval (default 30 s, doubling the bound).
+    http: { requestTimeout: timeout.timeoutMs, connectionsCheckingInterval: timeout.checkIntervalMs },
+  });
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);

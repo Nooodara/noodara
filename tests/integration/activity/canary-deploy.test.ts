@@ -17,7 +17,7 @@ import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { eq } from 'drizzle-orm';
+import { eq, isNotNull } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import parseSetCookie from 'set-cookie-parser';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -756,14 +756,17 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-17 / A1-A2: deploy-engine leak 
   );
 
   it(
-    'A2/SEC: no canary reaches build logs, log chunks, SSE, activity metadata, API responses, docker inspect/history or .git/config',
+    'A2/SEC: no canary (credentials, webhook secrets and signatures, build output) reaches build logs, log chunks, SSE, activity metadata, API responses or logs, webhook deliveries, idempotency storage, docker inspect/history or .git/config',
     async () => {
-      expect(deployed).toHaveLength(3);
+      expect(deployed).toHaveLength(4);
+      // 2 secrets (enable, rotate) and 2 signatures (stale, push; the replay reuses the push one).
+      expect(webhookCanaries.length, 'the webhook case seeded no secrets or signatures').toBeGreaterThanOrEqual(4);
       const buildCanaries: Canary[] = [
         { label: 'build canary (https repo)', value: BUILD_CANARIES.https },
         { label: 'build canary (ssh repo)', value: BUILD_CANARIES.ssh },
+        { label: 'build canary (webhook repo)', value: BUILD_CANARIES.webhook },
       ];
-      const every = [...credentialCanaries, ...buildCanaries];
+      const every = [...credentialCanaries, ...webhookCanaries, ...buildCanaries];
       const surfaces = new Map<string, string>();
 
       // Build logs: the logs API, deployment_log_chunks, the worker's own logger.
@@ -784,9 +787,28 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-17 / A1-A2: deploy-engine leak 
           await call('GET', url);
         }
       }
+      // The manual deploy and the rollback of the webhook case (idempotent, replayed once each).
+      for (const deploymentId of extraDeploymentIds) {
+        surfaces.set(`logs API (${deploymentId})`, await readAllLogs(deploymentId));
+        await call('GET', `/api/deployments/${deploymentId}`);
+      }
       await call('GET', `/api/projects/${projectId}/services`);
       await call('GET', '/api/activity');
       surfaces.set('worker logger', logged.join('\n'));
+      // The API's own logger at debug: the receiver, rotate and idempotent routes all logged here.
+      const apiLogged = apiLogs.join('');
+      expect(apiLogged.length, 'the API logger captured nothing').toBeGreaterThan(0);
+      surfaces.set('API logger', apiLogged);
+      surfaces.set('webhook_deliveries rows', JSON.stringify(await db().select().from(webhookDeliveries)));
+
+      // Idempotency storage: the keys are stored as given next to a sha256 fingerprint, nothing else.
+      const idempotency = await db()
+        .select({ key: deployments.idempotencyKey, fingerprint: deployments.requestFingerprint })
+        .from(deployments)
+        .where(isNotNull(deployments.idempotencyKey));
+      expect(idempotency.map((entry) => entry.key).sort()).toEqual([IDEMPOTENCY_KEYS.deploy, IDEMPOTENCY_KEYS.rollback].sort());
+      for (const entry of idempotency) expect(entry.fingerprint).toMatch(/^[0-9a-f]{64}$/);
+      surfaces.set('idempotency storage', JSON.stringify(idempotency));
 
       // The build canaries were printed and arrived redacted, not dropped: the proof is not vacuous.
       for (const { label } of deployed.filter((entry) => entry.repoUrl !== null)) {
@@ -850,14 +872,14 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-17 / A1-A2: deploy-engine leak 
       }
 
       // Nothing secret persisted on the host after the runs (the seeded repos legitimately hold the
-      // build canary, so only credential canaries are swept). Patterns arrive on stdin, never argv.
+      // build canary, so only credential and webhook canaries are swept). Patterns arrive on stdin, never argv.
       const sweep = await root(
         [
           'sh',
           '-c',
           `grep -rlF --exclude='noodara-stdin-*' -f /dev/stdin ${WORKSPACE_ROOT} /home/deployer /root /tmp 2>/dev/null || true`,
         ],
-        `${credentialCanaries.map((canary) => canary.value.split('\n')[0] ?? '').filter((line) => line.length >= 24 && !line.startsWith('-----')).join('\n')}\n`,
+        `${[...credentialCanaries, ...webhookCanaries].map((canary) => canary.value.split('\n')[0] ?? '').filter((line) => line.length >= 24 && !line.startsWith('-----')).join('\n')}\n`,
       );
       expect(sweep.stdout.trim(), 'a credential canary persisted on the deploy host').toBe('');
     },
