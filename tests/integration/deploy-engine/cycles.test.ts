@@ -2,14 +2,15 @@
 // path: webhook ingest / deployment services -> BullMQ on a real Redis -> the deploy worker -> the
 // DB-backed log sink. After one priming push the cycles alternate:
 //   good       a new commit pushed and delivered as a signed GitHub webhook -> SUCCESS
+//   manual     triggerRollback to the good deployment before the running one -> SUCCESS, no build
 //   unhealthy  the service switched to unhealthy-api on /healthz, manual deploy -> ROLLED_BACK
 //              (HEALTHCHECK_FAILED, the previous version restored automatically), then switched back
-//   manual     triggerRollback to the good deployment before the running one -> SUCCESS, no build
 // The manual rollback names its target explicitly (the good deployment before the running one),
 // so each cycle exercises the same edge instead of depending on how the default target walks
-// earlier rollback rows.
-// The order never runs an unhealthy deploy right after a manual rollback: there the worker's
-// retention drops an image the API still lists as retained (reported in 20-02, not covered here).
+// earlier rollback rows. Every unhealthy deploy follows a manual rollback, so its automatic
+// rollback restores a rollback row (20-06: the worker's retention counts it by its target image).
+// After the cycles (20-06 A5), ending on manual -> unhealthy, every row the API lists as
+// imageRetained is rolled back to and must succeed.
 //
 // Checked afterwards (A1, A2, H1):
 // - one deployments row per request, every row terminal, every published status sequence valid
@@ -124,7 +125,7 @@ const STACK_STOP_TIMEOUT_MS = 300_000;
 /** Past the worker's own deploy max, so an over-long iteration is measured instead of abandoned. */
 const WAIT_MS = DEPLOY_MAX_MS + 60_000;
 /** A healthy iteration takes 10-30 s; this only bounds a run that is wedged on every iteration. */
-const CASE_TIMEOUT_MS = (CYCLES + 1) * 90_000 + 600_000;
+const CASE_TIMEOUT_MS = (CYCLES + 16) * 90_000 + 600_000;
 const POLL_MS = 500;
 const KEY_VERSION = 1;
 const WORKSPACE_ROOT = '/home/deployer/.noodara/deploy';
@@ -155,7 +156,7 @@ const HEALTHY_CHECK: HealthcheckConfig = {
 const UNHEALTHY_CHECK: HealthcheckConfig = { ...HEALTHY_CHECK, path: '/healthz' };
 
 type CycleKind = 'prime' | 'good' | 'unhealthy' | 'manual';
-const CYCLE_KINDS = ['good', 'unhealthy', 'manual'] as const;
+const CYCLE_KINDS = ['good', 'manual', 'unhealthy'] as const;
 
 interface CycleRequest {
   readonly iteration: number;
@@ -665,7 +666,10 @@ describe.skipIf(!STRESS_ENABLED)(`20-02 stress: ${String(CYCLES)} deploy/rollbac
         const goods: string[] = [];
         let reference: { imageIds: string[]; df: DfRow[] } | undefined;
 
-        const runIteration = async (iteration: number, kind: CycleKind): Promise<void> => {
+        // The image the service container runs: the new build, unchanged after an automatic
+        // rollback, the target's image after a manual rollback.
+        let runningImage = '';
+        const runIteration = async (iteration: number, kind: CycleKind, rollbackTarget?: string): Promise<void> => {
           const started = Date.now();
           let request: CycleRequest;
           if (kind === 'prime' || kind === 'good') {
@@ -677,7 +681,7 @@ describe.skipIf(!STRESS_ENABLED)(`20-02 stress: ${String(CYCLES)} deploy/rollbac
             if (!result.ok) throw new Error(`triggerDeploy failed at ${String(iteration)}: ${result.code}`);
             request = { iteration, kind, deploymentId: result.deployment.id, deliveryId: null };
           } else {
-            const target = goods.at(-2);
+            const target = rollbackTarget ?? goods.at(-2);
             if (target === undefined) throw new Error(`no earlier good deployment to roll back to at ${String(iteration)}`);
             const result = await services$().triggerRollback({ actor: USER, serviceId, targetDeploymentId: target });
             if (!result.ok) throw new Error(`triggerRollback failed at ${String(iteration)}: ${result.code} ${result.message}`);
@@ -706,8 +710,9 @@ describe.skipIf(!STRESS_ENABLED)(`20-02 stress: ${String(CYCLES)} deploy/rollbac
             expect(outcome).toEqual({ iteration, kind, status: 'SUCCESS', errorCode: null });
           }
           if (kind === 'prime' || kind === 'good') goods.push(row.id);
-          // The running version: the new build, the restored one, or the rollback's target image.
-          const runningImage = kind === 'manual' ? imageOf(goods.at(-2) ?? '') : imageOf(goods.at(-1) ?? '');
+          if (kind === 'prime' || kind === 'good') runningImage = imageOf(row.id);
+          // A rollback row records its target's image (transitively for a rollback of a rollback).
+          if (kind === 'manual') runningImage = row.imageRef ?? '';
           expect(
             await rootOut(['docker', 'container', 'inspect', '--format', '{{.State.Status}} {{.Config.Image}}', container]),
             `iteration ${String(iteration)} (${kind})`,
@@ -730,6 +735,26 @@ describe.skipIf(!STRESS_ENABLED)(`20-02 stress: ${String(CYCLES)} deploy/rollbac
           const kind = CYCLE_KINDS[iteration % CYCLE_KINDS.length];
           if (kind === undefined) throw new Error('unreachable');
           await runIteration(iteration, kind);
+        }
+
+        // A5 (20-06): end on a manual rollback followed by an unhealthy deploy, then roll back to
+        // every row the API lists as imageRetained; none may be refused or fail.
+        let extra = CYCLES;
+        if (requests.at(-1)?.kind !== 'unhealthy') {
+          await runIteration(extra++, 'manual');
+          await runIteration(extra++, 'unhealthy');
+        }
+        const page = await services$().listDeployments(serviceId, { limit: 100 });
+        const retainedRows = (page?.items ?? []).filter((item) => item.imageRetained === true && typeof item.imageRef === 'string');
+        expect(retainedRows.length, 'rows the API lists as imageRetained').toBeGreaterThan(1);
+        for (const target of retainedRows) {
+          // The running image is refused as same_as_current: move off it first.
+          if (target.imageRef === runningImage) {
+            const other = retainedRows.find((item) => item.imageRef !== runningImage);
+            if (other === undefined) throw new Error('no retained row with another image');
+            await runIteration(extra++, 'manual', other.id);
+          }
+          await runIteration(extra++, 'manual', target.id);
         }
 
         const problems: string[] = [];

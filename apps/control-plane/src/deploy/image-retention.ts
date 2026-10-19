@@ -9,8 +9,11 @@
 //   never forced, so an image a container still uses is refused by Docker and reported as kept.
 // - The keep set is the domain's imageRetention over the deployments whose images are on the host:
 //   the running image, non-terminal attempts and the newest N known-good (SUCCESS) images.
+// - 20-06: one rule with the API (serviceImageRetention): a row's image is its recorded imageRef, so
+//   a rollback row counts as a newer use of its target's image and, when it is the running row, its
+//   target's image is the running one. The worker then removes only images the API does not retain.
 // - Failures are logged by class only (a remote message can carry a host or a path).
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, or } from 'drizzle-orm';
 import {
   listServiceImages,
   removeServiceImage,
@@ -19,7 +22,12 @@ import {
   type StepLimits,
   type StepResult,
 } from '@noodara/docker';
-import { imageRetention, type DeploymentStatus, type RetentionDeployment } from '@noodara/domain/deployment';
+import {
+  imageRetention,
+  type DeploymentStatus,
+  type ImageRetentionPlan,
+  type RetentionDeployment,
+} from '@noodara/domain/deployment';
 import type { Redactor } from '@noodara/domain/security';
 import type { ResourceId } from '@noodara/domain/validators';
 import type { SshDeploySession } from '@noodara/ssh';
@@ -64,10 +72,15 @@ export interface RetentionHistory {
     readonly id: string;
     readonly status: DeploymentStatus;
     readonly createdAt: number;
+    /** deployments.imageRef; a rollback row records its target's image. Absent or null: the own build tag. */
+    readonly imageRef?: string | null;
   }[];
 }
 
-/** The service's retention and the named deployments of that service; null when the service is gone. */
+/**
+ * The service's retention, the named deployments of that service and every deployment of the service
+ * whose imageRef is one of their build tags (20-06: rollback rows); null when the service is gone.
+ */
 export type RetentionHistoryLoader = (serviceId: ResourceId, deploymentIds: readonly string[]) => Promise<RetentionHistory | null>;
 
 export type ImageRetentionOutcome =
@@ -138,6 +151,22 @@ function tagOf(serviceId: string, deploymentId: string): string {
   return `noodara/${serviceId}:${deploymentId}`;
 }
 
+/**
+ * 20-06: the one retention rule the API (imageRetained, planRollback) and the worker share. Each row
+ * counts by its image (deployments.imageRef: a rollback row records its target's image); the running
+ * image is the running row's. Ordered newest first with the id breaking a createdAt tie, as the API
+ * reads them. Pure, never throws.
+ */
+export function serviceImageRetention(
+  rows: readonly RetentionDeployment[],
+  runningId: string | null,
+  retention: number,
+): ImageRetentionPlan {
+  const ordered = [...rows].sort((a, b) => b.createdAt - a.createdAt || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
+  const running = runningId === null ? null : (ordered.find((row) => row.id === runningId)?.imageRef ?? null);
+  return imageRetention(ordered, running, retention);
+}
+
 const skipped = (outcome: ImageRetentionOutcome): ImageRetentionReport => ({ outcome, kept: [], removed: [], failed: [] });
 
 export function createImageRetention(deps: ImageRetentionDeps): ImageRetentionRunner {
@@ -176,18 +205,25 @@ export function createImageRetention(deps: ImageRetentionDeps): ImageRetentionRu
     }
     if (history === null) return skipped('skipped_service_missing');
 
+    // A row's image is its recorded imageRef (a rollback row: its target's image), else its own build
+    // tag; only an image that is on the host counts (one already gone keeps nothing and frees no slot).
+    const hostTags = new Set([...onHost].map((id) => tagOf(serviceId, id)));
+    const imageOnHost = (row: RetentionHistory['deployments'][number]): string | null => {
+      const imageRef = row.imageRef ?? tagOf(serviceId, row.id);
+      return hostTags.has(imageRef) ? imageRef : null;
+    };
     // The current row is still non-terminal (H1); the plan sees it with the outcome it will record.
     const known: RetentionDeployment[] = history.deployments.map((row) => ({
       id: row.id,
       status: row.id === deploymentId ? input.outcome : row.status,
-      imageRef: onHost.has(row.id) ? tagOf(serviceId, row.id) : null,
+      imageRef: imageOnHost(row),
       createdAt: row.createdAt,
     }));
     const runningId = input.outcome === 'SUCCESS' ? deploymentId : input.previousSuccessId;
-    const running = runningId !== null && onHost.has(runningId) ? tagOf(serviceId, runningId) : null;
-    const keep = new Set(imageRetention(known, running, history.retention).keep);
+    const keep = new Set(serviceImageRetention(known, runningId, history.retention).keep);
 
-    // Images on the host without a row of the service are outside the keep set too.
+    // Images on the host without a row of the service are outside the keep set too. The running row's
+    // own tag is never a candidate (defensive: its row may be missing from the history).
     const candidates = [...onHost].filter((id) => id !== runningId && !keep.has(tagOf(serviceId, id)));
     const removed: string[] = [];
     const failed: ImageRetentionFailure[] = [];
@@ -231,16 +267,23 @@ export function loadRetentionHistoryFromDb(db: Database): RetentionHistoryLoader
       .from(services)
       .where(eq(services.id, serviceId));
     if (!service) return null;
+    const ids = [...deploymentIds];
     const rows =
-      deploymentIds.length === 0
+      ids.length === 0
         ? []
         : await db
-            .select({ id: deployments.id, status: deployments.status, createdAt: deployments.createdAt })
+            .select({ id: deployments.id, status: deployments.status, createdAt: deployments.createdAt, imageRef: deployments.imageRef })
             .from(deployments)
-            .where(and(eq(deployments.serviceId, serviceId), inArray(deployments.id, [...deploymentIds])));
+            .where(
+              and(
+                eq(deployments.serviceId, serviceId),
+                // 20-06: rollback rows record their target's tag, not their own id.
+                or(inArray(deployments.id, ids), inArray(deployments.imageRef, ids.map((id) => tagOf(serviceId, id)))),
+              ),
+            );
     return {
       retention: service.retention,
-      deployments: rows.map((row) => ({ id: row.id, status: row.status, createdAt: row.createdAt.getTime() })),
+      deployments: rows.map((row) => ({ id: row.id, status: row.status, createdAt: row.createdAt.getTime(), imageRef: row.imageRef })),
     };
   };
 }

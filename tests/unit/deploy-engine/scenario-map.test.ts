@@ -1,12 +1,12 @@
 // 20-01 A1/H1: the roadmap §8.8 integration matrix stays proven. A pure unit test (no containers):
-// it reads docs/releases/v0.3-scenarios.md, the roadmap and the mapped test sources. It lives here,
-// not in tests/unit/, because it guards this directory and runs in its gate.
+// it reads docs/releases/v0.3-scenarios.md, the roadmap and the mapped test sources under
+// tests/integration/deploy-engine/ (the it-deploy-engine-all suites). 20-06: it runs under pnpm test.
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { DEPLOY_ENGINE_UBUNTU_VERSIONS } from '../helpers/deploy-engine.js';
-import { checkMappedTest, checkScenarioMap, parseScenarioMap, readRoadmapScenarios, UBUNTU_VERSIONS } from './scenario-map.js';
+import { DEPLOY_ENGINE_UBUNTU_VERSIONS } from '../../integration/helpers/deploy-engine.js';
+import { checkMappedTest, checkScenarioMap, parseScenarioMap, readRoadmapScenarios, UBUNTU_VERSIONS } from '../../integration/deploy-engine/scenario-map.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const MAP_PATH = 'docs/releases/v0.3-scenarios.md';

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ServiceImage, ServiceImagesResult, StepResult } from '@noodara/docker';
-import type { DeploymentStatus } from '@noodara/domain/deployment';
+import { imageRetention, type DeploymentStatus } from '@noodara/domain/deployment';
 import { createRedactor } from '@noodara/domain/security';
 import type { ResourceId } from '@noodara/domain/validators';
 import type { SshDeploySession } from '@noodara/ssh';
@@ -10,6 +10,7 @@ import {
   type ImageRetentionDeps,
   type ImageRetentionRunInput,
   type RetentionHistory,
+  serviceImageRetention,
 } from './image-retention.js';
 
 const SERVICE = '0192f1a4-7b3c-7d2e-8f00-00000000bbbb' as ResourceId;
@@ -30,11 +31,18 @@ const listed = (ids: readonly string[]): StepResult<ServiceImagesResult> => ({
 interface Row {
   readonly id: string;
   readonly status: DeploymentStatus;
+  /** 20-06: the recorded image; a rollback row records its target's image. Absent: the own tag. */
+  readonly imageRef?: string | null;
 }
 /** createdAt follows the id order (uuidv7 ids are time ordered too). */
 const history = (rows: readonly Row[], retention = 3): RetentionHistory => ({
   retention,
-  deployments: rows.map((row) => ({ id: row.id, status: row.status, createdAt: Number(row.id.slice(-4)) })),
+  deployments: rows.map((row) => ({
+    id: row.id,
+    status: row.status,
+    createdAt: Number(row.id.slice(-4)),
+    ...(row.imageRef === undefined ? {} : { imageRef: row.imageRef }),
+  })),
 });
 
 function harness(options: {
@@ -319,5 +327,167 @@ describe('image retention (17-04)', () => {
 
     expect(report.outcome).toBe('skipped_aborted');
     expect(h.removed).toEqual([]);
+  });
+});
+
+describe('20-02 RED: worker and API retention views agree after a manual rollback', () => {
+  it('an automatic rollback right after a manual rollback keeps every image the API lists as retained', async () => {
+    // G1..G4 SUCCESS (own images), M5 = manual rollback to G3 (SUCCESS, imageRef = G3's tag, no own image),
+    // U6 = unhealthy deploy being rolled back to the previous success, which is M5.
+    const M5 = id(5);
+    const U6 = id(6);
+    const h = harness({
+      host: [id(1), id(2), id(3), id(4), U6],
+      rows: [...successes(1, 2, 3, 4), { id: M5, status: 'SUCCESS', imageRef: ref(id(3)) }, { id: U6, status: 'ROLLING_BACK' }],
+    });
+    // The API view (deployment-services.ts retainedImageRefs): SUCCESS rows by their imageRef, running = newest SUCCESS.
+    const apiRows = [1, 2, 3, 4].map((n) => ({ id: id(n), status: 'SUCCESS' as const, imageRef: ref(id(n)), createdAt: n }));
+    apiRows.push({ id: M5, status: 'SUCCESS', imageRef: ref(id(3)), createdAt: 5 });
+    const apiRetained = new Set(imageRetention(apiRows, ref(id(3)), 3).keep);
+
+    await h.run(input({ deploymentId: U6, outcome: 'ROLLED_BACK', previousSuccessId: M5 }));
+
+    const removedButRetainedByApi = h.removed.map(ref).filter((r) => apiRetained.has(r));
+    expect(removedButRetainedByApi).toEqual([]);
+  });
+});
+
+describe('20-06: worker retention and the API retention agree (one rule)', () => {
+  /** The production loader's contract: the named rows plus the rows recording one of their tags. */
+  const dbLoad = (rows: readonly Row[], retention = 3): ImageRetentionDeps['load'] =>
+    vi.fn((_serviceId: string, ids: readonly string[]) => {
+      const tags = new Set(ids.map(ref));
+      return Promise.resolve(
+        history(
+          rows.filter((row) => ids.includes(row.id) || (row.imageRef != null && tags.has(row.imageRef))),
+          retention,
+        ),
+      );
+    });
+  /** The API view once the run is recorded: SUCCESS rows by imageRef, the newest SUCCESS is running. */
+  const apiRetained = (rows: readonly Row[], retention = 3): ReadonlySet<string> => {
+    const successRows = rows
+      .filter((row) => row.status === 'SUCCESS')
+      .map((row) => ({ id: row.id, status: row.status, imageRef: row.imageRef ?? ref(row.id), createdAt: Number(row.id.slice(-4)) }));
+    const newest = successRows.reduce<(typeof successRows)[number] | undefined>((a, b) => (a && a.createdAt > b.createdAt ? a : b), undefined);
+    return new Set(serviceImageRetention(successRows, newest?.id ?? null, retention).keep);
+  };
+  const rollbackOf = (n: number, imageOf: number, status: DeploymentStatus = 'SUCCESS'): Row => ({
+    id: id(n),
+    status,
+    imageRef: ref(id(imageOf)),
+  });
+  const run = async (options: { host: readonly string[]; rows: readonly Row[]; after: readonly Row[]; input: Partial<ImageRetentionRunInput> }) => {
+    const h = harness({ host: options.host, rows: options.rows, load: dbLoad(options.rows) });
+    const report = await h.run(input(options.input));
+    const retained = apiRetained(options.after);
+    const remaining = options.host.map(ref).filter((tag) => !h.removed.map(ref).includes(tag));
+    return { h, report, retained, remaining };
+  };
+
+  it('previous success is a normal deploy: only the unhealthy attempt image goes; the host equals the API set', async () => {
+    const U5 = id(5);
+    const r = await run({
+      host: [id(1), id(2), id(3), id(4), U5],
+      rows: [...successes(1, 2, 3, 4), { id: U5, status: 'ROLLING_BACK' }],
+      after: [...successes(1, 2, 3, 4), { id: U5, status: 'ROLLED_BACK' }],
+      input: { deploymentId: U5, outcome: 'ROLLED_BACK', previousSuccessId: id(4) },
+    });
+
+    expect(r.h.removed).toEqual([U5]);
+    expect(new Set(r.remaining)).toEqual(r.retained);
+  });
+
+  it('previous success is a manual rollback: its target image is running; the host equals the API set', async () => {
+    const U6 = id(6);
+    const r = await run({
+      host: [id(1), id(2), id(3), id(4), U6],
+      rows: [...successes(1, 2, 3, 4), rollbackOf(5, 3), { id: U6, status: 'ROLLING_BACK' }],
+      after: [...successes(1, 2, 3, 4), rollbackOf(5, 3), { id: U6, status: 'ROLLED_BACK' }],
+      input: { deploymentId: U6, outcome: 'ROLLED_BACK', previousSuccessId: id(5) },
+    });
+
+    expect(r.h.removed).toEqual([U6]);
+    expect(new Set(r.remaining)).toEqual(r.retained);
+  });
+
+  it('a manual rollback row counts as a newer use of its target image in a later deploy', async () => {
+    // G1..G4, M5 = rollback to G1, D6 = a new deploy: the API keeps D6 + {G1 (via M5), G4, G3}.
+    const D6 = id(6);
+    const rows = [...successes(1, 2, 3, 4), rollbackOf(5, 1), { id: D6, status: 'HEALTHCHECK' as const }];
+    const r = await run({
+      host: [id(1), id(2), id(3), id(4), D6],
+      rows,
+      after: [...successes(1, 2, 3, 4), rollbackOf(5, 1), { id: D6, status: 'SUCCESS' }],
+      input: { deploymentId: D6, outcome: 'SUCCESS' },
+    });
+
+    expect(r.h.removed).toEqual([id(2)]);
+    expect(new Set(r.remaining)).toEqual(r.retained);
+  });
+
+  it('a rollback of a rollback: the running image is the original target, on success and after an unhealthy deploy', async () => {
+    // G1..G4, M5 = rollback to G1, D6 deploy (G2 removed), M7 = rollback of M5 (image G1).
+    const D6 = id(6);
+    const M7 = id(7);
+    const U8 = id(8);
+    const base = [...successes(1, 2, 3, 4), rollbackOf(5, 1), { id: D6, status: 'SUCCESS' as const }];
+    const host = [id(1), id(3), id(4), D6];
+
+    // M7 succeeds: the worker passes the restored target (M5) as the running deployment (17-05).
+    const restored = await run({
+      host,
+      rows: [...base, rollbackOf(7, 1, 'HEALTHCHECK')],
+      after: [...base, rollbackOf(7, 1)],
+      input: { deploymentId: id(5), outcome: 'SUCCESS' },
+    });
+    expect(restored.h.removed).toEqual([]);
+    expect(new Set(restored.remaining)).toEqual(restored.retained);
+
+    // U8 is unhealthy and rolled back to M7.
+    const rolledBack = await run({
+      host: [...host, U8],
+      rows: [...base, rollbackOf(7, 1), { id: U8, status: 'ROLLING_BACK' }],
+      after: [...base, rollbackOf(7, 1), { id: U8, status: 'ROLLED_BACK' }],
+      input: { deploymentId: U8, outcome: 'ROLLED_BACK', previousSuccessId: M7 },
+    });
+    expect(rolledBack.h.removed).toEqual([U8]);
+    expect(new Set(rolledBack.remaining)).toEqual(rolledBack.retained);
+  });
+
+  it("a rollback whose target image is already gone: nothing the API retains is removed and the run completes", async () => {
+    // G1..G4, M5 = rollback to G3, but G3's image is no longer on the host; U6 rolls back to M5.
+    const U6 = id(6);
+    const r = await run({
+      host: [id(1), id(2), id(4), U6],
+      rows: [...successes(1, 2, 3, 4), rollbackOf(5, 3), { id: U6, status: 'ROLLING_BACK' }],
+      after: [...successes(1, 2, 3, 4), rollbackOf(5, 3), { id: U6, status: 'ROLLED_BACK' }],
+      input: { deploymentId: U6, outcome: 'ROLLED_BACK', previousSuccessId: id(5) },
+    });
+
+    expect(r.report.outcome).toBe('done');
+    expect(r.h.removed).toEqual([U6]);
+    expect(r.h.removed.map(ref).filter((tag) => r.retained.has(tag))).toEqual([]);
+  });
+});
+
+describe('serviceImageRetention (20-06)', () => {
+  const row = (n: number, imageOf = n, status: DeploymentStatus = 'SUCCESS') => ({ id: id(n), status, imageRef: ref(id(imageOf)), createdAt: n });
+
+  it('the running image is the running row image (a rollback row: its target image)', () => {
+    const plan = serviceImageRetention([row(1), row(2), row(3), row(4), row(5, 3)], id(5), 3);
+
+    expect(new Set(plan.keep)).toEqual(new Set([ref(id(3)), ref(id(4)), ref(id(2)), ref(id(1))]));
+  });
+
+  it('a missing running row or no running id keeps only the N newest known-good images', () => {
+    expect(serviceImageRetention([row(1), row(2)], id(9), 1).keep).toEqual([ref(id(2))]);
+    expect(serviceImageRetention([row(1), row(2)], null, 1).keep).toEqual([ref(id(2))]);
+  });
+
+  it('orders newest first whatever the input order, the id breaking a createdAt tie', () => {
+    const tie = [{ ...row(1), createdAt: 7 }, { ...row(2), createdAt: 7 }];
+    expect(serviceImageRetention(tie, null, 1).keep).toEqual([ref(id(2))]);
+    expect(serviceImageRetention([...tie].reverse(), null, 1).keep).toEqual([ref(id(2))]);
   });
 });

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-18T21:41:38.240Z",
+  "updatedAt": "2026-10-19T03:32:03.241Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -7190,7 +7190,7 @@
           "dependsOn": [
             "20-02"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -7337,7 +7337,7 @@
           "dependsOn": [
             "20-02"
           ],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
@@ -7346,11 +7346,6 @@
             "it-rollback",
             "it-cycles"
           ],
-          "waives": [
-            "http-api/input-validation",
-            "http-api/body-cap"
-          ],
-          "tier": "deep",
           "acceptance": [
             {
               "id": "A1",
@@ -7382,7 +7377,12 @@
               "text": "The scenario-map checker test runs under pnpm test (moved to tests/unit/deploy-engine/ or equivalent), closing the 20-01 A1/H1 proof gap; the it-deploy-engine-all map stays the source it checks",
               "proof": "test"
             }
-          ]
+          ],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap"
+          ],
+          "tier": "deep"
         }
       ]
     }

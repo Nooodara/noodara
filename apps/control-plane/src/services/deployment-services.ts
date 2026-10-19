@@ -8,7 +8,6 @@ import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 import {
   DEFAULT_IMAGE_RETENTION,
-  imageRetention,
   NON_TERMINAL_DEPLOYMENT_STATUSES,
   requestFingerprint,
   selectRollbackTarget,
@@ -18,6 +17,7 @@ import {
   type RollbackRefusal,
 } from '@noodara/domain/deployment';
 import { writeActivityEvent } from '../activity/write-activity-event.js';
+import { serviceImageRetention } from '../deploy/image-retention.js';
 import type { Database } from '../db/client.js';
 import { activityEvents } from '../db/schema/activity-events.js';
 import { deployments } from '../db/schema/deployments.js';
@@ -604,9 +604,10 @@ export function planRollback(input: RollbackPlanInput): RollbackPlan {
   const [current] = input.successes;
   if (current === undefined) return unavailable('not_deployed');
 
-  const retained = imageRetention(
+  // 20-06: the rule the worker's retention applies (a rollback row counts by its target's image).
+  const retained = serviceImageRetention(
     input.successes.map((row) => ({ id: row.id, status: row.status, imageRef: row.imageRef, createdAt: row.createdAt.getTime() })),
-    current.imageRef,
+    current.id,
     input.retention,
   ).keep;
   const sameImage = (row: DeploymentRow): boolean => row.id !== current.id && row.imageRef !== null && row.imageRef === current.imageRef;
@@ -853,9 +854,9 @@ async function retainedImageRefs(deps: Pick<DeploymentServicesDeps, 'db'>, servi
     .where(eq(services.id, serviceId))
     .limit(1);
   return new Set(
-    imageRetention(
+    serviceImageRetention(
       successes.map((row) => ({ id: row.id, status: row.status, imageRef: row.imageRef, createdAt: row.createdAt.getTime() })),
-      current.imageRef,
+      current.id,
       retentionRow?.retention ?? DEFAULT_IMAGE_RETENTION,
     ).keep,
   );
