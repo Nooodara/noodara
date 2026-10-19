@@ -10,7 +10,7 @@
 // The build canary stands in for a user secret: it is registered with every run's redactor, so it
 // must arrive redacted. Assertion messages name canaries by label, never by value.
 // App modules are imported dynamically after a valid test env is written (env.ts fail-fasts, INST-06).
-import { randomBytes, randomUUID } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { cpSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -28,6 +28,7 @@ import {
   deployments,
   servers,
   services,
+  webhookDeliveries,
 } from '../../../apps/control-plane/src/db/schema/index.js';
 import {
   DEPLOY_ENGINE_UBUNTU_VERSIONS,
@@ -65,12 +66,18 @@ const TERMINAL = new Set(['SUCCESS', 'FAILED', 'CANCELLED']);
 const ADMIN_EMAIL = 'admin@noodara.test';
 const ADMIN_PASSWORD = 'correct horse battery staple';
 
-const REPOS = { https: 'canary-https', ssh: 'canary-ssh' } as const;
+const REPOS = { https: 'canary-https', ssh: 'canary-ssh', webhook: 'canary-webhook' } as const;
 
 /** One per git service so BuildKit never serves the printing RUN step from cache. */
 const BUILD_CANARIES = {
   https: `cnryBuildH${randomBytes(16).toString('hex')}`,
   ssh: `cnryBuildS${randomBytes(16).toString('hex')}`,
+  webhook: `cnryBuildW${randomBytes(16).toString('hex')}`,
+} as const;
+/** 20-03 H2: seeded as an Idempotency-Key; stored as given, it must never sit next to a credential. */
+const IDEMPOTENCY_KEYS = {
+  deploy: `cnryIdemD${randomBytes(12).toString('hex')}`,
+  rollback: `cnryIdemR${randomBytes(12).toString('hex')}`,
 } as const;
 
 interface Canary {
@@ -188,6 +195,12 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-17 / A1-A2: deploy-engine leak 
   const responses: { readonly label: string; readonly body: string }[] = [];
   const deployed: DeployedService[] = [];
   const credentialCanaries: Canary[] = [];
+  /** 20-03 A2: every webhook secret issued (enable and rotate) and every signature sent. */
+  const webhookCanaries: Canary[] = [];
+  const apiLogs: string[] = [];
+  /** The idempotent manual deploy and rollback of the webhook service (logs scanned too). */
+  const extraDeploymentIds: string[] = [];
+  let apiPort = 0;
 
   const s = (): DeployEngineStack => {
     if (stack === undefined) throw new Error('stack not started');
@@ -214,16 +227,17 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-17 / A1-A2: deploy-engine leak 
     method: 'GET' | 'POST' | 'PUT',
     url: string,
     payload?: unknown,
-  ): Promise<{ statusCode: number; body: Json; raw: string }> => {
+    headers: Record<string, string> = {},
+  ): Promise<{ statusCode: number; body: Json; raw: string; headers: Record<string, unknown> }> => {
     const response = await api().inject({
       method,
       url,
-      headers: { cookie },
+      headers: { cookie, ...headers },
       ...(payload !== undefined ? { payload: payload as Json } : {}),
     });
     responses.push({ label: `${method} ${url}`, body: response.body });
     const body = response.body === '' ? {} : (response.json() as Json);
-    return { statusCode: response.statusCode, body, raw: response.body };
+    return { statusCode: response.statusCode, body, raw: response.body, headers: response.headers };
   };
 
   const createService = async (source: Json, internalPort: number, publishedPort?: number): Promise<string> => {
@@ -266,24 +280,58 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-17 / A1-A2: deploy-engine leak 
     };
   };
 
-  const deployThroughApi = async (serviceId: string): Promise<{ deploymentId: string; status: string; gitConfigs: string[] }> => {
+  const waitTerminal = async (deploymentId: string): Promise<string> => {
+    const deadline = Date.now() + TERMINAL_WAIT_MS;
+    for (;;) {
+      const view = await call('GET', `/api/deployments/${deploymentId}`);
+      expect(view.statusCode, view.raw).toBe(200);
+      const status = String(view.body.status);
+      if (TERMINAL.has(status)) return status;
+      if (Date.now() > deadline) throw new Error(`deployment ${deploymentId} stuck in ${status}`);
+      await delay(POLL_MS);
+    }
+  };
+
+  /** Starts a deploy (API call, webhook delivery...) and waits for it, reading .git/config meanwhile. */
+  const runWatched = async (start: () => Promise<string>): Promise<{ deploymentId: string; status: string; gitConfigs: string[] }> => {
     const watcher = watchGitConfigs();
     try {
-      const triggered = await call('POST', `/api/services/${serviceId}/deploy`, {});
-      expect(triggered.statusCode, triggered.raw).toBe(201);
-      const deploymentId = String(triggered.body.id);
-      const deadline = Date.now() + TERMINAL_WAIT_MS;
-      for (;;) {
-        const view = await call('GET', `/api/deployments/${deploymentId}`);
-        expect(view.statusCode, view.raw).toBe(200);
-        const status = String(view.body.status);
-        if (TERMINAL.has(status)) return { deploymentId, status, gitConfigs: await watcher.stop() };
-        if (Date.now() > deadline) throw new Error(`deployment ${deploymentId} stuck in ${status}`);
-        await delay(POLL_MS);
-      }
+      const deploymentId = await start();
+      const status = await waitTerminal(deploymentId);
+      return { deploymentId, status, gitConfigs: await watcher.stop() };
     } finally {
       await watcher.stop();
     }
+  };
+
+  const deployThroughApi = (serviceId: string) =>
+    runWatched(async () => {
+      const triggered = await call('POST', `/api/services/${serviceId}/deploy`, {});
+      expect(triggered.statusCode, triggered.raw).toBe(201);
+      return String(triggered.body.id);
+    });
+
+  /** A GitHub delivery over the real listener (a socket, not inject): the receiver's whole HTTP path. */
+  const deliverWebhook = async (
+    hookId: string,
+    rawBody: string,
+    signature: string,
+    deliveryId: string,
+  ): Promise<{ statusCode: number; body: Json; raw: string }> => {
+    const response = await fetch(`http://127.0.0.1:${String(apiPort)}/webhooks/github/${hookId}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-github-event': 'push',
+        'x-github-delivery': deliveryId,
+        'x-hub-signature-256': signature,
+        'user-agent': 'GitHub-Hookshot/canary',
+      },
+      body: rawBody,
+    });
+    const raw = await response.text();
+    responses.push({ label: `POST /webhooks/github/<hook> (${deliveryId})`, body: `${JSON.stringify([...response.headers])}\n${raw}` });
+    return { statusCode: response.status, body: raw === '' ? {} : (JSON.parse(raw) as Json), raw };
   };
 
   /** Pages the whole deployment log through the API with the (phase, since) cursor. */
@@ -318,11 +366,13 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-17 / A1-A2: deploy-engine leak 
     tempRoot = mkdtempSync(path.join(tmpdir(), 'noodara-canary-deploy-'));
     const httpsRepo = writeCanaryRepo(tempRoot, REPOS.https, BUILD_CANARIES.https);
     const sshRepo = writeCanaryRepo(tempRoot, REPOS.ssh, BUILD_CANARIES.ssh);
+    const webhookRepo = writeCanaryRepo(tempRoot, REPOS.webhook, BUILD_CANARIES.webhook);
     stackStart = startDeployEngineStack({
         ubuntu,
         seedRepositories: [
           { name: REPOS.https, sourceDir: httpsRepo },
           { name: REPOS.ssh, sourceDir: sshRepo },
+          { name: REPOS.webhook, sourceDir: webhookRepo },
         ],
         httpsGit: true,
       });
@@ -347,6 +397,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-17 / A1-A2: deploy-engine leak 
     const logSink = await import('../../../apps/control-plane/src/deploy/log-sink.js');
     const { issueToken } = await import('../../../apps/control-plane/src/services/setup-token-repository.js');
     const { buildApp } = await import('../../../apps/control-plane/src/app.js');
+    const { createLogger } = await import('../../../apps/control-plane/src/logger.js');
     serviceCredentials = await import('../../../apps/control-plane/src/services/service-credentials.js');
 
     // Server row: CONNECTED, Docker + BuildKit present, fingerprint pinned from a first trusted connect.
@@ -390,9 +441,19 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-17 / A1-A2: deploy-engine leak 
     serverId = serverRow.id;
 
     // API: real HTTP listener (SSE), real Redis subscriber, admin session.
-    app = buildApp({});
+    // 20-03: the API's own pino logger (production redaction config, debug level) is a leak surface too.
+    const apiLogger = createLogger({
+      level: 'debug',
+      destination: {
+        write: (line: string) => {
+          apiLogs.push(line);
+        },
+      },
+    });
+    app = buildApp({ logger: apiLogger as unknown as ApiApp['log'] });
     await app.listen({ port: 0, host: '127.0.0.1' });
     const port = (app.server.address() as AddressInfo).port;
+    apiPort = port;
     const issued = await issueToken(db(), 'setup', new Date());
     const setup = await app.inject({
       method: 'POST',
@@ -467,6 +528,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-17 / A1-A2: deploy-engine leak 
         const runRedactor = createRedactor();
         runRedactor.register(BUILD_CANARIES.https, 'token');
         runRedactor.register(BUILD_CANARIES.ssh, 'token');
+        runRedactor.register(BUILD_CANARIES.webhook, 'token');
         return runRedactor;
       },
       sinkFor: (deploymentId) => sinks(deploymentId),
@@ -582,6 +644,113 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-17 / A1-A2: deploy-engine leak 
         expect({ label, status: row?.status, errorCode: row?.errorCode }).toEqual({ label, status: 'SUCCESS', errorCode: null });
         deployed.push({ label, serviceId, deploymentId: run.deploymentId, gitConfigs: run.gitConfigs, repoUrl });
       }
+    },
+    CASE_TIMEOUT_MS,
+  );
+
+  it(
+    '20-03 H1/H2: a signed push deploys through the real receiver, a replay with a new delivery id is already_deployed, and idempotent deploy/rollback store no credential',
+    async () => {
+      const httpsGit = s().httpsGit;
+      if (httpsGit === null) throw new Error('stack started without httpsGit');
+      const repoUrl = httpsGit.repoUrl(REPOS.webhook);
+      const serviceId = await createService({ kind: 'git', repositoryUrl: repoUrl, branch: 'main' }, 3000);
+      const credential = await call('PUT', credentialsUrl(serviceId, 'repository'), { kind: 'https_token', token: httpsGit.token });
+      expect(credential.statusCode, credential.raw).toBe(200);
+
+      // Secret lifecycle: enable, then rotate. Both answers carry a secret by design (no-store), so
+      // they stay out of `responses`; every other surface must never show either secret.
+      const webhookPath = `/api/projects/${projectId}/services/${serviceId}/webhook`;
+      const issueSecret = async (url: string): Promise<{ hookId: string; secret: string }> => {
+        const response = await api().inject({ method: 'POST', url, headers: { cookie } });
+        expect(response.statusCode, 'webhook enable/rotate failed').toBe(200);
+        expect(response.headers['cache-control']).toBe('no-store');
+        const body = response.json() as { payloadUrl: string; secret: string };
+        webhookCanaries.push({ label: `webhook secret #${String(webhookCanaries.length + 1)}`, value: body.secret });
+        return { hookId: body.payloadUrl.split('/webhooks/github/')[1] ?? '', secret: body.secret };
+      };
+      const first = await issueSecret(webhookPath);
+      const rotated = await issueSecret(`${webhookPath}/rotate`);
+      expect(rotated.hookId).toBe(first.hookId);
+      expect(rotated.secret).not.toBe(first.secret);
+      const view = await call('GET', webhookPath);
+      expect(view.statusCode, view.raw).toBe(200);
+      // The rotated-out secret's credential row is gone: one webhook_secret row is left in total.
+      const secretRows = await db().select({ id: credentials.id }).from(credentials).where(eq(credentials.type, 'webhook_secret'));
+      expect(secretRows).toHaveLength(1);
+
+      const sha = (await s().exec(['git', '-C', `/srv/git/${REPOS.webhook}.git`, 'rev-parse', 'main'], { user: 'git' })).stdout.trim();
+      expect(sha).toMatch(/^[0-9a-f]{40}$/);
+      const rawBody = JSON.stringify({
+        ref: 'refs/heads/main',
+        after: sha,
+        deleted: false,
+        repository: { clone_url: repoUrl, ssh_url: repoUrl },
+        head_commit: { id: sha },
+      });
+      const signWith = (secret: string): string => {
+        const hex = createHmac('sha256', secret).update(rawBody).digest('hex');
+        webhookCanaries.push({ label: `webhook signature #${String(webhookCanaries.length + 1)}`, value: hex });
+        return `sha256=${hex}`;
+      };
+
+      // The rotated-out secret no longer authenticates anything.
+      const stale = await deliverWebhook(first.hookId, rawBody, signWith(first.secret), randomUUID());
+      expect(stale.statusCode, stale.raw).toBe(401);
+
+      const signature = signWith(rotated.secret);
+      const run = await runWatched(async () => {
+        const delivered = await deliverWebhook(rotated.hookId, rawBody, signature, randomUUID());
+        expect(delivered.statusCode, delivered.raw).toBe(202);
+        expect(delivered.body.outcome).toBe('deployed');
+        return String(delivered.body.deploymentId);
+      });
+      expect(run.status).toBe('SUCCESS');
+      const [row] = await db()
+        .select({ trigger: deployments.trigger, commitSha: deployments.commitSha })
+        .from(deployments)
+        .where(eq(deployments.id, run.deploymentId));
+      expect(row).toEqual({ trigger: 'webhook', commitSha: sha });
+      deployed.push({ label: 'webhook', serviceId, deploymentId: run.deploymentId, gitConfigs: run.gitConfigs, repoUrl });
+
+      // H1 replay: the same validly signed bytes under a new X-GitHub-Delivery deploy nothing.
+      const replay = await deliverWebhook(rotated.hookId, rawBody, signature, randomUUID());
+      expect(replay.statusCode, replay.raw).toBe(200);
+      expect(replay.body).toEqual({ outcome: 'already_deployed' });
+      const afterReplay = await db().select({ id: deployments.id }).from(deployments).where(eq(deployments.serviceId, serviceId));
+      expect(afterReplay.map((entry) => entry.id)).toEqual([run.deploymentId]);
+      const outcomes = await db()
+        .select({ outcome: webhookDeliveries.outcome })
+        .from(webhookDeliveries)
+        .where(eq(webhookDeliveries.serviceId, serviceId));
+      expect(outcomes.map((entry) => entry.outcome).sort()).toEqual(['already_deployed', 'deployed']);
+
+      // H2: a manual deploy and a rollback, each under an Idempotency-Key, each replayed once.
+      const deployHeaders = { 'idempotency-key': IDEMPOTENCY_KEYS.deploy };
+      const manual = await call('POST', `/api/services/${serviceId}/deploy`, {}, deployHeaders);
+      expect(manual.statusCode, manual.raw).toBe(201);
+      const manualId = String(manual.body.id);
+      const manualReplay = await call('POST', `/api/services/${serviceId}/deploy`, {}, deployHeaders);
+      expect(manualReplay.statusCode, manualReplay.raw).toBe(201);
+      expect(manualReplay.body.id).toBe(manualId);
+      expect(manualReplay.headers['idempotency-replayed']).toBe('true');
+      expect(await waitTerminal(manualId)).toBe('SUCCESS');
+      extraDeploymentIds.push(manualId);
+
+      // A rollback body smuggling a credential is refused by the strict schema and stores nothing.
+      const rollbackUrl = `/api/services/${serviceId}/rollback`;
+      const rollbackHeaders = { 'idempotency-key': IDEMPOTENCY_KEYS.rollback };
+      const smuggled = await call('POST', rollbackUrl, { targetDeploymentId: run.deploymentId, token: httpsGit.token }, rollbackHeaders);
+      expect(smuggled.statusCode, smuggled.raw).toBe(400);
+      const rollbackBody = { targetDeploymentId: run.deploymentId };
+      const rollback = await call('POST', rollbackUrl, rollbackBody, rollbackHeaders);
+      expect(rollback.statusCode, rollback.raw).toBe(202);
+      const rollbackId = String(rollback.body.id);
+      const rollbackReplay = await call('POST', rollbackUrl, rollbackBody, rollbackHeaders);
+      expect(rollbackReplay.statusCode, rollbackReplay.raw).toBe(202);
+      expect(rollbackReplay.body.id).toBe(rollbackId);
+      expect(await waitTerminal(rollbackId)).toBe('SUCCESS');
+      extraDeploymentIds.push(rollbackId);
     },
     CASE_TIMEOUT_MS,
   );
