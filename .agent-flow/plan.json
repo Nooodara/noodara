@@ -7240,7 +7240,8 @@
           ],
           "wave": 4,
           "dependsOn": [
-            "20-03"
+            "20-03",
+            "20-06"
           ],
           "status": "pending",
           "gates": [
@@ -7316,6 +7317,72 @@
             "persistence/concurrent-writes"
           ],
           "tier": "deep"
+        },
+        {
+          "id": "20-06",
+          "title": "Fix image retention after a manual rollback (API and worker agree)",
+          "scope": [
+            "apps/control-plane/src/deploy/image-retention.ts",
+            "apps/control-plane/src/deploy/image-retention.test.ts",
+            "apps/control-plane/src/deploy/deploy-worker.ts",
+            "apps/control-plane/src/deploy/deploy-worker.test.ts",
+            "apps/control-plane/src/services/deployment-services.ts",
+            "apps/control-plane/src/services/deployment-services.test.ts",
+            "tests/integration/deploy-engine/cycles.test.ts",
+            "tests/integration/deploy-engine/scenario-map.ts",
+            "tests/integration/deploy-engine/scenario-map.test.ts",
+            "tests/unit/deploy-engine/"
+          ],
+          "wave": 3,
+          "dependsOn": [
+            "20-02"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-rollback",
+            "it-cycles"
+          ],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap"
+          ],
+          "tier": "deep",
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "RED first: .agent-flow/handoffs/20-02-retention-red.test.ts.txt lands as a unit test in apps/control-plane/src/deploy/ and fails on the current code (G1..G4, M5 = manual rollback to G3, U6 unhealthy auto-rollback: worker removes G1 while the API lists it retained)",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Worker retention and API retainedImageRefs/planRollback use one rule: when the previous success is a rollback row, its effective image (the rollback target imageRef) counts as running; the RED test passes and no SUCCESS row the API marks imageRetained has its image removed",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Unit tests cover the previous success being a normal deploy, a manual rollback, a rollback of a rollback, and a rollback whose target image is already gone; existing retention tests stay green unchanged",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "cycles.test.ts adds or reorders a cycle so an unhealthy deploy follows a manual rollback; the per-iteration host-images == API-retention check passes over the full run and the header gap comment is removed",
+              "proof": "it-cycles"
+            },
+            {
+              "id": "A5",
+              "text": "Rollback to every history row the API marks imageRetained succeeds after the sequence in A1 (no ROLLBACK_TARGET_UNAVAILABLE)",
+              "proof": "it-rollback"
+            },
+            {
+              "id": "A6",
+              "text": "The scenario-map checker test runs under pnpm test (moved to tests/unit/deploy-engine/ or equivalent), closing the 20-01 A1/H1 proof gap; the it-deploy-engine-all map stays the source it checks",
+              "proof": "test"
+            }
+          ]
         }
       ]
     }

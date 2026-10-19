@@ -3,7 +3,7 @@
 > Generated from `.agent-flow/plan.json` by `agent-flow plan render`. Edit the plan, not this file.
 
 **Milestone:** v0.2
-**Progress:** 122/128 tasks (95%), 8/10 phases
+**Progress:** 124/129 tasks (96%), 8/10 phases
 
 ## Phase 11: Motor de deploy — fundamentos — done
 **Goal:** Everything the engine needs to be built RED-first exists and is proven on real infrastructure: spikes resolved (ADR 0008), pure domain, schema, parameterized allowlist templates, streaming exec, git/docker packages, sshd+dockerd fixture and official fixtures.
@@ -767,16 +767,16 @@
   - A6 [test]: A WebhookPanel test asserts the shown-once secret never reaches localStorage, sessionStorage, the URL or console output
   - A7 [manual]: docs/ui-review/phase-19/REPORT.md records A3 human approval given by the user on 2026-10-18
 
-## Phase 20: Hardening, stress y gate de release v0.3 — pending
+## Phase 20: Hardening, stress y gate de release v0.3 — active
 **Goal:** Prove v0.3's acceptance criteria: the full integration matrix, 100 deploy/rollback cycles without corruption or orphans, a security review, the release gate and v0.3.0.
 **Requirements:** QA-11, QA-13, QA-14
 **Depends on:** 19
 
-- [ ] 20-01 (wave 1) Integration matrix of roadmap §8.8 complete on both Ubuntu versions — pending
+- [x] 20-01 (wave 1) Integration matrix of roadmap §8.8 complete on both Ubuntu versions — done
   - A1 [test]: docs/releases/v0.3-scenarios.md maps each of the twelve §8.8 scenarios to one named test; a unit test fails if a mapped test name is missing
   - A2 [it-deploy-engine-all]: Missing scenarios (dependency failure, Docker build failure on both versions) are added; the whole deploy-engine suite is green with NOODARA_TEST_UBUNTU=all
   - H1 [test]: The scenario map test also fails when a mapped test is skipped (it.skip/todo) or when a scenario lacks coverage on either Ubuntu version
-- [ ] 20-02 (wave 2) Stress: 100 deploy/rollback cycles, zero orphans, zero lost records; nightly — pending
+- [x] 20-02 (wave 2) Stress: 100 deploy/rollback cycles, zero orphans, zero lost records; nightly — done
   - A1 [it-cycles]: 100 cycles alternating good deploy, unhealthy deploy with automatic rollback and manual rollback end with one row per request, every row terminal, and every status sequence valid when replayed through transitionDeployment
   - A2 [it-cycles]: Afterwards: one service container, images equal to the retention set, no extra networks, workspaces or -prev containers, docker system df stable within a documented bound
   - A3 [manual]: nightly.yml runs the cycles suite and fails on any orphan
@@ -794,3 +794,10 @@
   - A1 [manual]: A human runs push → deploy → bad push → automatic rollback → manual rollback on a real install and an upgrade v0.2.0 → v0.3 with its rollback; evidence recorded
   - A2 [manual]: v0.3.0 tagged only after the user's approval; release.yml green with multi-arch images
   - H1 [manual]: The v0.2.0 to v0.3 upgrade check verifies the v0.3 migrations (0011-0013) on a database with real v0.2 deployments and services, that existing services default to container healthcheck, and that the documented downgrade/rollback path restores service without data loss
+- [ ] 20-06 (wave 3) Fix image retention after a manual rollback (API and worker agree) — pending
+  - A1 [test]: RED first: .agent-flow/handoffs/20-02-retention-red.test.ts.txt lands as a unit test in apps/control-plane/src/deploy/ and fails on the current code (G1..G4, M5 = manual rollback to G3, U6 unhealthy auto-rollback: worker removes G1 while the API lists it retained)
+  - A2 [test]: Worker retention and API retainedImageRefs/planRollback use one rule: when the previous success is a rollback row, its effective image (the rollback target imageRef) counts as running; the RED test passes and no SUCCESS row the API marks imageRetained has its image removed
+  - A3 [test]: Unit tests cover the previous success being a normal deploy, a manual rollback, a rollback of a rollback, and a rollback whose target image is already gone; existing retention tests stay green unchanged
+  - A4 [it-cycles]: cycles.test.ts adds or reorders a cycle so an unhealthy deploy follows a manual rollback; the per-iteration host-images == API-retention check passes over the full run and the header gap comment is removed
+  - A5 [it-rollback]: Rollback to every history row the API marks imageRetained succeeds after the sequence in A1 (no ROLLBACK_TARGET_UNAVAILABLE)
+  - A6 [test]: The scenario-map checker test runs under pnpm test (moved to tests/unit/deploy-engine/ or equivalent), closing the 20-01 A1/H1 proof gap; the it-deploy-engine-all map stays the source it checks
