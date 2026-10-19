@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-19T04:06:55.045Z",
+  "updatedAt": "2026-10-19T06:43:06.862Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -7238,14 +7238,16 @@
             "docs/releases/v0.3-gate.md",
             ".planning/REQUIREMENTS.md",
             ".planning/ROADMAP.md",
-            ".planning/STATE.md"
+            ".planning/STATE.md",
+            "docs/releases/v0.3-gate-logs/"
           ],
           "wave": 4,
           "dependsOn": [
             "20-03",
-            "20-06"
+            "20-06",
+            "20-07"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -7378,6 +7380,52 @@
               "id": "A6",
               "text": "The scenario-map checker test runs under pnpm test (moved to tests/unit/deploy-engine/ or equivalent), closing the 20-01 A1/H1 proof gap; the it-deploy-engine-all map stays the source it checks",
               "proof": "test"
+            }
+          ],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "20-07",
+          "title": "Fix deploy response missing imageRetained (20-06 regression)",
+          "scope": [
+            "apps/control-plane/src/services/deployment-services.ts",
+            "apps/control-plane/src/services/deployment-services.test.ts",
+            "apps/control-plane/src/routes/",
+            "tests/integration/queue/deploy-queue.test.ts"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "20-06"
+          ],
+          "status": "active",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-deploy-queue",
+            "it-rollback",
+            "it-full"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "RED first: a unit or route test shows the deploy/redeploy response omits imageRetained although DEPLOYMENT_VIEW_FIELDS lists it",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Every response built from a deployment view (deploy, redeploy, rollback, list, get) returns imageRetained consistent with serviceImageRetention; tests/integration/queue/deploy-queue.test.ts passes unchanged in its assertions",
+              "proof": "it-deploy-queue"
+            },
+            {
+              "id": "A3",
+              "text": "pnpm test:integration (it-full) is green with port 3000 free",
+              "proof": "it-full"
             }
           ],
           "waives": [
