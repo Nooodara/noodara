@@ -8,6 +8,8 @@ import {
   planRollback,
   deployFingerprint,
   expireIdempotencyKeys,
+  getDeployment,
+  getServiceDeployment,
   IDEMPOTENCY_EXPIRY_BATCH_LIMIT,
   IDEMPOTENCY_KEY_TTL_MS,
   idempotencyCutoff,
@@ -115,13 +117,16 @@ function harness(options: {
   return { deps, transaction, enqueue, published, logger };
 }
 
+/** 20-07: a trigger answers its deployment with imageRetained; a row that is not SUCCESS is never retained. */
+const answered = (view: DeploymentView): DeploymentView => ({ ...view, imageRetained: false });
+
 const inserted = () =>
   Promise.resolve({ kind: 'inserted', deployment: toDeploymentView(row()), service: SERVICE_VIEW, activityEventId: 'evt-1' });
 
 describe('toDeploymentView', () => {
   it('builds the allowlisted wire view with ISO timestamps', () => {
     const view = toDeploymentView(row({ startedAt: NOW, errorCode: 'BUILD_FAILED' }));
-    // imageRetained is list-only (19-04): listDeployments adds it, toDeploymentView never does.
+    // imageRetained needs the service's retention: the services add it (20-07), toDeploymentView never does.
     expect(Object.keys(view)).toEqual(DEPLOYMENT_VIEW_FIELDS.filter((field) => field !== 'imageRetained'));
     expect(view.createdAt).toBe(NOW.toISOString());
     expect(view.startedAt).toBe(NOW.toISOString());
@@ -158,7 +163,7 @@ describe('triggerDeploy', () => {
 
     const result = await triggerDeploy(h.deps, { actor: ACTOR, serviceId: SERVICE_ID });
 
-    expect(result).toEqual({ ok: true, replayed: false, deployment: toDeploymentView(row()) });
+    expect(result).toEqual({ ok: true, replayed: false, deployment: answered(toDeploymentView(row())) });
     expect(h.enqueue).toHaveBeenCalledWith({
       deploymentId: DEPLOYMENT_ID,
       serviceId: SERVICE_ID,
@@ -224,7 +229,7 @@ describe('triggerDeploy', () => {
 
       const result = await triggerDeploy(h.deps, { actor: ACTOR, serviceId: SERVICE_ID });
 
-      expect(result).toEqual({ ok: true, replayed: false, deployment: moved });
+      expect(result).toEqual({ ok: true, replayed: false, deployment: answered(moved) });
     });
 
     it('answers QUEUE_UNAVAILABLE when the row vanished meanwhile (service deleted)', async () => {
@@ -392,7 +397,7 @@ describe('triggerRollback (17-05 A1, A2, H1)', () => {
 
     const result = await triggerRollback(h.deps, { actor: ACTOR, serviceId: SERVICE_ID });
 
-    expect(result).toEqual({ ok: true, replayed: false, deployment: toDeploymentView(rollbackRow()) });
+    expect(result).toEqual({ ok: true, replayed: false, deployment: answered(toDeploymentView(rollbackRow())) });
     expect(h.enqueue).toHaveBeenCalledWith({ deploymentId: DEPLOYMENT_ID, serviceId: SERVICE_ID, actor: ACTOR, requestedAt: NOW.toISOString() });
     expect(h.published.map((event) => event.type)).toEqual(['deployment.updated', 'service.updated']);
   });
@@ -403,7 +408,7 @@ describe('triggerRollback (17-05 A1, A2, H1)', () => {
 
     const result = await triggerRollback(h.deps, { actor: ACTOR, serviceId: SERVICE_ID, idempotencyKey: 'k-1' });
 
-    expect(result).toEqual({ ok: true, replayed: true, deployment: original });
+    expect(result).toEqual({ ok: true, replayed: true, deployment: answered(original) });
     expect(h.enqueue).not.toHaveBeenCalled();
     expect(h.published).toEqual([]);
   });
@@ -435,7 +440,7 @@ describe('triggerRollback (17-05 A1, A2, H1)', () => {
 
       const result = await triggerRollback(h.deps, { actor: ACTOR, serviceId: SERVICE_ID, idempotencyKey: 'k-1' });
 
-      expect(result).toEqual({ ok: true, replayed: true, deployment: original });
+      expect(result).toEqual({ ok: true, replayed: true, deployment: answered(original) });
       expect(h.enqueue).not.toHaveBeenCalled();
     },
   );
@@ -480,7 +485,7 @@ describe('triggerDeploy Idempotency-Key (18-05 A1, H1, H9)', () => {
 
     const result = await triggerDeploy(h.deps, { actor: ACTOR, serviceId: SERVICE_ID, idempotencyKey: 'k-1' });
 
-    expect(result).toEqual({ ok: true, replayed: true, deployment: original });
+    expect(result).toEqual({ ok: true, replayed: true, deployment: answered(original) });
     expect(h.enqueue).not.toHaveBeenCalled();
     expect(h.published).toEqual([]);
   });
@@ -503,7 +508,7 @@ describe('triggerDeploy Idempotency-Key (18-05 A1, H1, H9)', () => {
 
       const result = await triggerDeploy(h.deps, { actor: ACTOR, serviceId: SERVICE_ID, idempotencyKey: 'k-1' });
 
-      expect(result).toEqual({ ok: true, replayed: true, deployment: original });
+      expect(result).toEqual({ ok: true, replayed: true, deployment: answered(original) });
       expect(h.enqueue).not.toHaveBeenCalled();
     },
   );
@@ -585,20 +590,20 @@ describe('idempotency expiry (18-05 H1)', () => {
   });
 });
 
-describe('listDeployments imageRetained (19-04 H2)', () => {
-  /** A db whose n-th select() resolves to results[n]; every chain method returns the chain. */
-  function fakeDb(results: unknown[][]): Pick<Database, 'select'> {
-    let call = 0;
-    const select = (): unknown => {
-      const result = results[call++] ?? [];
-      const chain: Record<string, unknown> = {};
-      for (const method of ['from', 'where', 'orderBy', 'limit']) chain[method] = () => chain;
-      chain.then = (resolve: (value: unknown) => unknown) => resolve(result);
-      return chain;
-    };
-    return { select } as unknown as Pick<Database, 'select'>;
-  }
+/** A db whose n-th select() resolves to results[n]; every chain method returns the chain. */
+function fakeDb(results: unknown[][]): Pick<Database, 'select'> {
+  let call = 0;
+  const select = vi.fn((): unknown => {
+    const result = results[call++] ?? [];
+    const chain: Record<string, unknown> = {};
+    for (const method of ['from', 'where', 'orderBy', 'limit']) chain[method] = () => chain;
+    chain.then = (resolve: (value: unknown) => unknown) => resolve(result);
+    return chain;
+  });
+  return { select } as unknown as Pick<Database, 'select'>;
+}
 
+describe('listDeployments imageRetained (19-04 H2)', () => {
   it('flags only successful rows whose image planRollback would still retain', async () => {
     const at = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000);
     const a = row({ id: id(1), status: 'SUCCESS', imageRef: 'img:a', createdAt: at(1) });
@@ -610,5 +615,97 @@ describe('listDeployments imageRetained (19-04 H2)', () => {
     const page = await listDeployments({ db } as Pick<DeploymentServicesDeps, 'db'>, SERVICE_ID, { limit: 10 });
 
     expect(page?.items.map((item) => item.imageRetained)).toEqual([true, true, false, false]);
+  });
+});
+
+describe('every deployment response carries imageRetained (20-07)', () => {
+  const at = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000);
+  const success = (n: number, imageRef: string, minutes: number) =>
+    row({ id: id(n), status: 'SUCCESS', imageRef, createdAt: at(minutes), updatedAt: at(minutes) });
+  /** retainedImageRefs reads the SUCCESS rows newest first, then the service's retention. */
+  const retentionReads = (successes: DeploymentRow[], retention: number): unknown[][] => [successes, [{ retention }]];
+
+  it('triggerDeploy answers the full wire view, imageRetained false for the new QUEUED row', async () => {
+    const h = harness({ transactions: [inserted] });
+
+    const result = await triggerDeploy(h.deps, { actor: ACTOR, serviceId: SERVICE_ID, action: 'redeploy' });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(Object.keys(result.deployment)).toEqual([...DEPLOYMENT_VIEW_FIELDS]);
+    expect(result.deployment.imageRetained).toBe(false);
+  });
+
+  it('triggerRollback answers the full wire view, imageRetained false for the new QUEUED row', async () => {
+    const queuedRollback = toDeploymentView(row({ trigger: 'rollback', imageRef: 'img:a', rollbackOfDeploymentId: id(2) }));
+    const h = harness({
+      transactions: [() => Promise.resolve({ kind: 'inserted', deployment: queuedRollback, service: SERVICE_VIEW, activityEventId: 'evt-1' })],
+    });
+
+    const result = await triggerRollback(h.deps, { actor: ACTOR, serviceId: SERVICE_ID });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(Object.keys(result.deployment)).toEqual([...DEPLOYMENT_VIEW_FIELDS]);
+    expect(result.deployment.imageRetained).toBe(false);
+  });
+
+  it('a replayed deployment that has since succeeded reports its image by the retention rule', async () => {
+    const newest = success(1, 'img:b', 1);
+    const original = success(2, 'img:a', 2);
+    const h = harness({ transactions: [() => Promise.resolve({ kind: 'replay', deployment: toDeploymentView(original) })] });
+    const db = fakeDb(retentionReads([newest, original], 2));
+    const deps = { ...h.deps, db: { transaction: h.transaction, select: db.select } as unknown as Database };
+
+    const result = await triggerDeploy(deps, { actor: ACTOR, serviceId: SERVICE_ID, idempotencyKey: 'k-1' });
+
+    expect(result).toMatchObject({ ok: true, replayed: true, deployment: { id: id(2), imageRetained: true } });
+    if (result.ok) expect(Object.keys(result.deployment)).toEqual([...DEPLOYMENT_VIEW_FIELDS]);
+  });
+
+  it('a replayed rollback whose image fell out of retention reports false', async () => {
+    const oldest = success(3, 'img:a', 3);
+    const rows = [success(1, 'img:c', 1), success(2, 'img:b', 2), oldest];
+    const h = harness({ transactions: [() => Promise.resolve({ kind: 'replay', deployment: toDeploymentView(oldest) })] });
+    const db = fakeDb(retentionReads(rows, 1));
+    const deps = { ...h.deps, db: { transaction: h.transaction, select: db.select } as unknown as Database };
+
+    const result = await triggerRollback(deps, { actor: ACTOR, serviceId: SERVICE_ID, idempotencyKey: 'k-1' });
+
+    expect(result).toMatchObject({ ok: true, replayed: true, deployment: { id: id(3), imageRetained: false } });
+  });
+
+  it('getDeployment and getServiceDeployment flag a retained SUCCESS row in wire order', async () => {
+    const oldest = success(3, 'img:a', 3);
+    const rows = [success(1, 'img:c', 1), success(2, 'img:b', 2), oldest];
+
+    const byId = await getDeployment({ db: fakeDb([[oldest], ...retentionReads(rows, 3)]) as Database }, id(3));
+    const scoped = await getServiceDeployment({ db: fakeDb([[oldest], ...retentionReads(rows, 1)]) as Database }, SERVICE_ID, id(3));
+
+    expect(byId && Object.keys(byId)).toEqual([...DEPLOYMENT_VIEW_FIELDS]);
+    expect(byId?.imageRetained).toBe(true);
+    expect(scoped?.imageRetained).toBe(false);
+  });
+
+  it('a row that is not SUCCESS is never retained and reads no retention', async () => {
+    const db = fakeDb([[row({ status: 'FAILED', imageRef: 'img:a' })]]);
+
+    const view = await getDeployment({ db: db as Database }, DEPLOYMENT_ID);
+
+    expect(view?.imageRetained).toBe(false);
+    expect(db.select).toHaveBeenCalledTimes(1);
+  });
+
+  it('a missing deployment is still null', async () => {
+    await expect(getDeployment({ db: fakeDb([[]]) as Database }, DEPLOYMENT_ID)).resolves.toBeNull();
+    await expect(getServiceDeployment({ db: fakeDb([[]]) as Database }, SERVICE_ID, DEPLOYMENT_ID)).resolves.toBeNull();
+  });
+
+  it('listDeployments items keep the wire order', async () => {
+    const only = success(1, 'img:a', 1);
+    const page = await listDeployments({ db: fakeDb([[{ id: SERVICE_ID }], [only], ...retentionReads([only], 1)]) as Database }, SERVICE_ID, {
+      limit: 10,
+    });
+    expect(page?.items.map((item) => Object.keys(item))).toEqual([[...DEPLOYMENT_VIEW_FIELDS]]);
   });
 });

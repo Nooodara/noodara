@@ -85,7 +85,10 @@ export interface DeploymentView {
   readonly rollbackOfDeploymentId?: string | null;
   readonly imageRef?: string | null;
   readonly webhookDeliveryId?: string | null;
-  /** 19-04 (H2): list views only; true when this row's image is still retained (planRollback's rule). */
+  /**
+   * 19-04 (H2): true when this row's image is still retained (planRollback's rule). 20-07: every
+   * response of these services sets it (withImageRetained); toDeploymentView alone never does.
+   */
   readonly imageRetained?: boolean;
   readonly startedAt: string | null;
   readonly completedAt: string | null;
@@ -145,6 +148,36 @@ export function toDeploymentView(row: DeploymentRow): DeploymentView {
   };
 }
 
+const NO_RETAINED_IMAGES: ReadonlySet<string> = new Set();
+
+/** 20-07: sets imageRetained in its wire slot (DEPLOYMENT_VIEW_FIELDS); only a SUCCESS image can be retained. */
+function placeImageRetained(view: DeploymentView, retained: ReadonlySet<string>): DeploymentView {
+  const { startedAt, completedAt, durationMs, errorCode, errorMessage, createdAt, updatedAt, ...head } = view;
+  const imageRetained = view.status === 'SUCCESS' && typeof view.imageRef === 'string' && retained.has(view.imageRef);
+  return { ...head, imageRetained, startedAt, completedAt, durationMs, errorCode, errorMessage, createdAt, updatedAt };
+}
+
+/** 20-07: one view answered by the API; reads the service's retention only when the row could be retained. */
+async function withImageRetained(deps: Pick<DeploymentServicesDeps, 'db'>, view: DeploymentView): Promise<DeploymentView> {
+  const candidate = view.status === 'SUCCESS' && typeof view.imageRef === 'string';
+  return placeImageRetained(view, candidate ? await retainedImageRefs(deps, view.serviceId) : NO_RETAINED_IMAGES);
+}
+
+export interface AnsweredDeployment {
+  readonly ok: true;
+  readonly deployment: DeploymentView;
+  readonly replayed: boolean;
+}
+
+/** 20-07: a trigger's success answers its deployment with imageRetained. */
+async function answerDeployment(
+  deps: Pick<DeploymentServicesDeps, 'db'>,
+  deployment: DeploymentView,
+  replayed: boolean,
+): Promise<AnsweredDeployment> {
+  return { ok: true, deployment: await withImageRetained(deps, deployment), replayed };
+}
+
 type SnapshotColumns = Pick<
   ServiceRow,
   | 'sourceType'
@@ -192,9 +225,7 @@ export type TriggerDeployFailureCode =
   | 'IDEMPOTENCY_KEY_REUSED';
 
 /** `replayed`: an Idempotency-Key matched an earlier request and its deployment is answered again. */
-export type TriggerDeployResult =
-  | { readonly ok: true; readonly deployment: DeploymentView; readonly replayed: boolean }
-  | Failure<TriggerDeployFailureCode>;
+export type TriggerDeployResult = AnsweredDeployment | Failure<TriggerDeployFailureCode>;
 
 const inProgress = (): Failure<'DEPLOYMENT_IN_PROGRESS'> => ({
   ok: false,
@@ -535,10 +566,10 @@ export async function triggerDeploy(deps: DeploymentServicesDeps, input: Trigger
     case 'failed':
       return result.failure;
     case 'replay':
-      return { ok: true, deployment: result.deployment, replayed: true };
+      return answerDeployment(deps, result.deployment, true);
     case 'inserted': {
       const enqueued = await enqueueInserted(deps, { ok: true, ...result }, input.actor);
-      return enqueued.ok ? { ...enqueued, replayed: false } : enqueued;
+      return enqueued.ok ? answerDeployment(deps, enqueued.deployment, false) : enqueued;
     }
   }
 }
@@ -650,9 +681,7 @@ export interface TriggerRollbackInput {
 
 export type TriggerRollbackFailureCode = TriggerDeployFailureCode | 'ROLLBACK_TARGET_UNAVAILABLE' | 'IDEMPOTENCY_KEY_REUSED';
 
-export type TriggerRollbackResult =
-  | { readonly ok: true; readonly deployment: DeploymentView; readonly replayed: boolean }
-  | Failure<TriggerRollbackFailureCode>;
+export type TriggerRollbackResult = AnsweredDeployment | Failure<TriggerRollbackFailureCode>;
 
 type RollbackTxResult =
   | ({ readonly kind: 'inserted' } & Omit<Inserted, 'ok'>)
@@ -755,10 +784,10 @@ export async function triggerRollback(deps: DeploymentServicesDeps, input: Trigg
     case 'failed':
       return result.failure;
     case 'replay':
-      return { ok: true, deployment: result.deployment, replayed: true };
+      return answerDeployment(deps, result.deployment, true);
     case 'inserted': {
       const enqueued = await enqueueInserted(deps, { ok: true, ...result }, input.actor);
-      return enqueued.ok ? { ...enqueued, replayed: false } : enqueued;
+      return enqueued.ok ? answerDeployment(deps, enqueued.deployment, false) : enqueued;
     }
   }
 }
@@ -892,17 +921,14 @@ export async function listDeployments(
   const last = page.at(-1);
   const retained = await retainedImageRefs(deps, serviceId);
   return {
-    items: page.map((row) => ({
-      ...toDeploymentView(row),
-      imageRetained: row.status === 'SUCCESS' && row.imageRef !== null && retained.has(row.imageRef),
-    })),
+    items: page.map((row) => placeImageRetained(toDeploymentView(row), retained)),
     nextCursor: hasMore && last ? encodeActivityCursor({ occurredAt: last.createdAt, id: last.id }) : null,
   };
 }
 
 export async function getDeployment(deps: Pick<DeploymentServicesDeps, 'db'>, deploymentId: string): Promise<DeploymentView | null> {
   const [row] = await deps.db.select().from(deployments).where(eq(deployments.id, deploymentId)).limit(1);
-  return row ? toDeploymentView(row) : null;
+  return row ? withImageRetained(deps, toDeploymentView(row)) : null;
 }
 
 /** Scoped by both ids: a deployment of another service reads exactly like a missing one (H2). */
@@ -916,7 +942,7 @@ export async function getServiceDeployment(
     .from(deployments)
     .where(and(eq(deployments.id, deploymentId), eq(deployments.serviceId, serviceId)))
     .limit(1);
-  return row ? toDeploymentView(row) : null;
+  return row ? withImageRetained(deps, toDeploymentView(row)) : null;
 }
 
 // ---------------------------------------------------------------------------------------------
