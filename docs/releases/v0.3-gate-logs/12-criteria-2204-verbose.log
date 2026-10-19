@@ -1,0 +1,1164 @@
+$ NOODARA_TEST_UBUNTU=22.04 pnpm exec vitest run --config vitest.integration.config.ts --reporter=verbose tests/integration/deploy-engine/runtime-pipeline.test.ts tests/integration/deploy-engine/runtime-faults.test.ts tests/integration/deploy-engine/runtime-cancel.test.ts tests/integration/deploy-engine/runtime-rollback.test.ts tests/integration/deploy-engine/runtime-manual-rollback.test.ts tests/integration/deploy-engine/runtime-healthcheck.test.ts tests/integration/webhooks tests/integration/queue/deploy-queue.test.ts
+# commit 3000994 2026-10-19T06:30:46Z
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+
+> noodara@0.2.0 build /Users/xch4rt/work/myself/noodara/code
+> turbo run build --filter=!@noodara/site
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/config, @noodara/control-plane, @noodara/docker, @noodara/domain, @noodara/git, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 8 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs aea70a0782b2c632
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ssh:build: cache hit, replaying logs 42810948f9897180
+@noodara/ui:build: cache hit, replaying logs 15e4f70e69b4d9b2
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/git:build: cache hit, replaying logs 9ab959db1b80b8c2
+@noodara/docker:build: cache hit, replaying logs 3960aab4155d4cce
+@noodara/git:build: 
+@noodara/git:build: > @noodara/git@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/git
+@noodara/git:build: > tsc -p tsconfig.build.json
+@noodara/git:build: 
+@noodara/docker:build: 
+@noodara/docker:build: > @noodara/docker@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/docker
+@noodara/docker:build: > tsc -p tsconfig.build.json
+@noodara/docker:build: 
+@noodara/control-plane:build: cache hit, replaying logs 29424404544fe556
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.2.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
+@noodara/web:build: cache hit, replaying logs 021655bf3ded2109
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.2.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > node scripts/sync-brand-assets.mjs && next build
+@noodara/web:build: 
+@noodara/web:build: sync-brand-assets: no files changed (fully idempotent run).
+@noodara/web:build: sync-brand-assets: 7 file(s) already up to date.
+@noodara/web:build: ▲ Next.js 16.3.8 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 62ms
+@noodara/web:build: 
+@noodara/web:build:   Creating an optimized production build ...
+@noodara/web:build: ✓ Compiled successfully in 638ms
+@noodara/web:build:   Running TypeScript ...
+@noodara/web:build:   Finished TypeScript in 954ms ...
+@noodara/web:build:   Collecting page data using 13 workers ...
+@noodara/web:build:   Generating static pages using 13 workers (0/16) ...
+@noodara/web:build: ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+@noodara/web:build:   Generating static pages using 13 workers (4/16) 
+@noodara/web:build:   Generating static pages using 13 workers (8/16) 
+@noodara/web:build:   Generating static pages using 13 workers (12/16) 
+@noodara/web:build: ✓ Generating static pages using 13 workers (16/16) in 173ms
+@noodara/web:build:   Finalizing page optimization ...
+@noodara/web:build: 
+@noodara/web:build: Route (app)
+@noodara/web:build: ┌ ƒ /
+@noodara/web:build: ├ ƒ /_not-found
+@noodara/web:build: ├ ƒ /[...catchAll]
+@noodara/web:build: ├ ƒ /activity
+@noodara/web:build: ├ ƒ /api/events
+@noodara/web:build: ├ ○ /apple-icon.png
+@noodara/web:build: ├ ○ /icon.svg
+@noodara/web:build: ├ ○ /icon1.png
+@noodara/web:build: ├ ○ /icon2.png
+@noodara/web:build: ├ ƒ /login
+@noodara/web:build: ├ ○ /manifest.webmanifest
+@noodara/web:build: ├ ○ /opengraph-image.png
+@noodara/web:build: ├ ƒ /projects
+@noodara/web:build: ├ ƒ /projects/[projectId]
+@noodara/web:build: ├ ƒ /projects/[projectId]/services/[serviceId]
+@noodara/web:build: ├ ƒ /servers
+@noodara/web:build: ├ ƒ /servers/[id]
+@noodara/web:build: ├ ƒ /settings
+@noodara/web:build: └ ○ /setup
+@noodara/web:build: 
+@noodara/web:build: 
+@noodara/web:build: ƒ Proxy (Middleware)
+@noodara/web:build: 
+@noodara/web:build: ○  (Static)   prerendered as static content
+@noodara/web:build: ƒ  (Dynamic)  server-rendered on demand
+@noodara/web:build: 
+
+ Tasks:    7 successful, 7 total
+Cached:    7 cached, 7 total
+  Time:    42ms >>> FULL TURBO
+
+{"level":40,"time":1792391452368,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"911e5fb990395fff","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":30,"time":1792391452393,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452468,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":74.02916699999969,"msg":"request completed"}
+{"level":30,"time":1792391452468,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452516,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":47.902500000000146,"msg":"request completed"}
+{"level":30,"time":1792391452517,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452526,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":9.277540999999474,"msg":"request completed"}
+{"level":30,"time":1792391452527,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/projects/01a152db-176c-724c-8649-60d33271505b/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452534,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":201},"responseTime":7.357833000000028,"msg":"request completed"}
+{"level":30,"time":1792391452535,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452546,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","res":{"statusCode":201},"responseTime":11.216333000000304,"msg":"request completed"}
+{"level":30,"time":1792391452548,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","req":{"method":"POST","url":"/api/projects/01a152db-176c-724c-8649-60d33271505b/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452559,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","res":{"statusCode":201},"responseTime":11.360374999999294,"msg":"request completed"}
+{"level":30,"time":1792391452560,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","req":{"method":"PUT","url":"/api/projects/01a152db-176c-724c-8649-60d33271505b/services/01a152db-1787-77ce-9469-13db8cc2b31d/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452568,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","res":{"statusCode":200},"responseTime":8.609958999999435,"msg":"request completed"}
+{"level":30,"time":1792391452568,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","req":{"method":"POST","url":"/api/services/01a152db-1787-77ce-9469-13db8cc2b31d/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452582,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","res":{"statusCode":201},"responseTime":13.374709000000621,"msg":"request completed"}
+{"level":30,"time":1792391452586,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452594,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","res":{"statusCode":201},"responseTime":7.885167000000365,"msg":"request completed"}
+{"level":30,"time":1792391452594,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","req":{"method":"POST","url":"/api/projects/01a152db-17af-7750-a801-2db722cb282f/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452604,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","res":{"statusCode":201},"responseTime":10.052083000000493,"msg":"request completed"}
+{"level":30,"time":1792391452605,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452616,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","res":{"statusCode":201},"responseTime":11.522625000000517,"msg":"request completed"}
+{"level":30,"time":1792391452617,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","req":{"method":"POST","url":"/api/projects/01a152db-17af-7750-a801-2db722cb282f/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452625,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","res":{"statusCode":201},"responseTime":7.452500000000327,"msg":"request completed"}
+{"level":30,"time":1792391452625,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-d","req":{"method":"PUT","url":"/api/projects/01a152db-17af-7750-a801-2db722cb282f/services/01a152db-17cb-760f-a201-87087c51059d/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452631,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-d","res":{"statusCode":200},"responseTime":6.054957999999715,"msg":"request completed"}
+{"level":30,"time":1792391452631,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-e","req":{"method":"POST","url":"/api/services/01a152db-17cb-760f-a201-87087c51059d/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452639,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-e","res":{"statusCode":201},"responseTime":7.2447919999995065,"msg":"request completed"}
+ × tests/integration/queue/deploy-queue.test.ts > deploy (A1) > inserts a QUEUED deployment with a source snapshot and enqueues deploy-<id> with ids only 69ms
+   → expected [ 'id', 'serviceId', 'status', …(15) ] to deeply equal [ 'id', 'serviceId', 'status', …(16) ]
+ ✓ tests/integration/queue/deploy-queue.test.ts > deploy (A1) > accepts an explicit empty JSON object 53ms
+{"level":30,"time":1792391452639,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-f","req":{"method":"POST","url":"/api/services/bdf7bb75-0253-462f-8bb0-09aeafab52df/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452643,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-f","res":{"statusCode":404},"responseTime":3.7542499999999563,"msg":"request completed"}
+{"level":30,"time":1792391452643,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-g","req":{"method":"POST","url":"/api/services/not-a-uuid/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452646,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-g","res":{"statusCode":400},"responseTime":2.705957999999555,"msg":"request completed"}
+{"level":30,"time":1792391452646,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-h","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452654,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-h","res":{"statusCode":201},"responseTime":8.26341599999978,"msg":"request completed"}
+{"level":30,"time":1792391452654,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-i","req":{"method":"POST","url":"/api/projects/01a152db-17e9-7d35-b2d4-d17505501e67/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452661,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-i","res":{"statusCode":201},"responseTime":6.16924999999992,"msg":"request completed"}
+{"level":30,"time":1792391452661,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-j","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452668,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-j","res":{"statusCode":201},"responseTime":6.972582999999759,"msg":"request completed"}
+{"level":30,"time":1792391452669,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-k","req":{"method":"POST","url":"/api/projects/01a152db-17e9-7d35-b2d4-d17505501e67/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452676,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-k","res":{"statusCode":201},"responseTime":7.056042000000161,"msg":"request completed"}
+{"level":30,"time":1792391452676,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-l","req":{"method":"PUT","url":"/api/projects/01a152db-17e9-7d35-b2d4-d17505501e67/services/01a152db-17ff-7444-870c-acf91eac318f/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452682,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-l","res":{"statusCode":200},"responseTime":5.91595899999993,"msg":"request completed"}
+{"level":30,"time":1792391452683,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-m","req":{"method":"POST","url":"/api/services/01a152db-17ff-7444-870c-acf91eac318f/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452688,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-m","res":{"statusCode":409},"responseTime":4.372707999999875,"msg":"request completed"}
+{"level":30,"time":1792391452690,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-n","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452694,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-n","res":{"statusCode":201},"responseTime":4.04700000000048,"msg":"request completed"}
+{"level":30,"time":1792391452694,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-o","req":{"method":"POST","url":"/api/projects/01a152db-1815-71ed-ae3f-125c226835dc/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452699,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-o","res":{"statusCode":201},"responseTime":4.253208000000086,"msg":"request completed"}
+{"level":30,"time":1792391452699,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-p","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452704,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-p","res":{"statusCode":201},"responseTime":5.6382919999996375,"msg":"request completed"}
+{"level":30,"time":1792391452705,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-q","req":{"method":"POST","url":"/api/projects/01a152db-1815-71ed-ae3f-125c226835dc/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452711,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-q","res":{"statusCode":201},"responseTime":5.726458000000093,"msg":"request completed"}
+{"level":30,"time":1792391452711,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-r","req":{"method":"PUT","url":"/api/projects/01a152db-1815-71ed-ae3f-125c226835dc/services/01a152db-1823-739e-bb54-d92a41781651/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452716,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-r","res":{"statusCode":200},"responseTime":5.110999999999876,"msg":"request completed"}
+{"level":30,"time":1792391452716,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-s","req":{"method":"POST","url":"/api/services/01a152db-1823-739e-bb54-d92a41781651/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452726,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-s","res":{"statusCode":201},"responseTime":9.78295800000069,"msg":"request completed"}
+{"level":30,"time":1792391452726,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-t","req":{"method":"POST","url":"/api/services/01a152db-1823-739e-bb54-d92a41781651/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452731,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-t","res":{"statusCode":409},"responseTime":4.72045799999978,"msg":"request completed"}
+{"level":30,"time":1792391452732,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-u","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452737,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-u","res":{"statusCode":201},"responseTime":4.151249999999891,"msg":"request completed"}
+{"level":30,"time":1792391452737,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-v","req":{"method":"POST","url":"/api/projects/01a152db-183f-7aad-bfe8-155d3357cf1e/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452741,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-v","res":{"statusCode":201},"responseTime":4.070458000000144,"msg":"request completed"}
+{"level":30,"time":1792391452741,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-w","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452746,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-w","res":{"statusCode":201},"responseTime":5.1489999999994325,"msg":"request completed"}
+{"level":30,"time":1792391452747,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-x","req":{"method":"POST","url":"/api/projects/01a152db-183f-7aad-bfe8-155d3357cf1e/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452753,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-x","res":{"statusCode":201},"responseTime":5.627500000000509,"msg":"request completed"}
+{"level":30,"time":1792391452753,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-y","req":{"method":"PUT","url":"/api/projects/01a152db-183f-7aad-bfe8-155d3357cf1e/services/01a152db-184c-7bd0-9dd6-c166fba4cff4/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452758,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-y","res":{"statusCode":200},"responseTime":5.471290999999837,"msg":"request completed"}
+{"level":30,"time":1792391452758,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-z","req":{"method":"POST","url":"/api/services/01a152db-184c-7bd0-9dd6-c166fba4cff4/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452758,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-10","req":{"method":"POST","url":"/api/services/01a152db-184c-7bd0-9dd6-c166fba4cff4/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452765,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-z","res":{"statusCode":201},"responseTime":6.871000000000095,"msg":"request completed"}
+{"level":30,"time":1792391452769,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-10","res":{"statusCode":409},"responseTime":10.141583999999966,"msg":"request completed"}
+ ✓ tests/integration/queue/deploy-queue.test.ts > deploy (A1) > answers 404 for an unknown service and 400 for a malformed id 7ms
+ ✓ tests/integration/queue/deploy-queue.test.ts > deploy (A1) > refuses a disconnected server with a named error 44ms
+ ✓ tests/integration/queue/deploy-queue.test.ts > one active deployment per service (A2) > answers 409 DEPLOYMENT_IN_PROGRESS for a second deploy while one is active 42ms
+ ✓ tests/integration/queue/deploy-queue.test.ts > one active deployment per service (A2) > lets exactly one of two parallel deploys win 37ms
+{"level":30,"time":1792391452770,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-11","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452774,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-11","res":{"statusCode":201},"responseTime":4.081583000000137,"msg":"request completed"}
+{"level":30,"time":1792391452774,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-12","req":{"method":"POST","url":"/api/projects/01a152db-1864-7349-93c2-22b7b41f3bd7/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452778,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-12","res":{"statusCode":201},"responseTime":4.280666999999994,"msg":"request completed"}
+{"level":30,"time":1792391452778,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-13","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452784,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-13","res":{"statusCode":201},"responseTime":5.492750000000342,"msg":"request completed"}
+{"level":30,"time":1792391452785,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-14","req":{"method":"POST","url":"/api/projects/01a152db-1864-7349-93c2-22b7b41f3bd7/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452792,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-14","res":{"statusCode":201},"responseTime":6.798957999999402,"msg":"request completed"}
+{"level":30,"time":1792391452792,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-15","req":{"method":"PUT","url":"/api/projects/01a152db-1864-7349-93c2-22b7b41f3bd7/services/01a152db-1873-70c5-a8ee-44015c2d8af0/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452797,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-15","res":{"statusCode":200},"responseTime":5.563707999999679,"msg":"request completed"}
+{"level":30,"time":1792391452798,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-16","req":{"method":"POST","url":"/api/services/01a152db-1873-70c5-a8ee-44015c2d8af0/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452804,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-16","res":{"statusCode":201},"responseTime":6.619375000000218,"msg":"request completed"}
+{"level":30,"time":1792391452805,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-17","req":{"method":"POST","url":"/api/services/01a152db-1873-70c5-a8ee-44015c2d8af0/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452813,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-17","res":{"statusCode":201},"responseTime":7.9172499999995125,"msg":"request completed"}
+{"level":30,"time":1792391452814,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-18","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452818,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-18","res":{"statusCode":201},"responseTime":4.252458999999362,"msg":"request completed"}
+{"level":30,"time":1792391452818,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-19","req":{"method":"POST","url":"/api/projects/01a152db-1890-7e55-b8fc-cb5830c13abd/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452822,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-19","res":{"statusCode":201},"responseTime":4.285041999999521,"msg":"request completed"}
+{"level":30,"time":1792391452822,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1a","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452828,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1a","res":{"statusCode":201},"responseTime":5.367792000000009,"msg":"request completed"}
+{"level":30,"time":1792391452829,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1b","req":{"method":"POST","url":"/api/projects/01a152db-1890-7e55-b8fc-cb5830c13abd/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452835,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1b","res":{"statusCode":201},"responseTime":5.915292000000591,"msg":"request completed"}
+{"level":30,"time":1792391452835,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1c","req":{"method":"PUT","url":"/api/projects/01a152db-1890-7e55-b8fc-cb5830c13abd/services/01a152db-189e-7a0f-a9f8-e9e353a3b0f5/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452840,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1c","res":{"statusCode":200},"responseTime":4.851249999999709,"msg":"request completed"}
+{"level":30,"time":1792391452840,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1d","req":{"method":"POST","url":"/api/projects/01a152db-1890-7e55-b8fc-cb5830c13abd/archive","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452844,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1d","res":{"statusCode":200},"responseTime":3.6762079999998605,"msg":"request completed"}
+{"level":30,"time":1792391452844,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1e","req":{"method":"POST","url":"/api/services/01a152db-189e-7a0f-a9f8-e9e353a3b0f5/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452847,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1e","res":{"statusCode":409},"responseTime":3.2918330000002243,"msg":"request completed"}
+{"level":30,"time":1792391452848,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1f","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452852,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1f","res":{"statusCode":201},"responseTime":4.235125000000153,"msg":"request completed"}
+{"level":30,"time":1792391452853,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1g","req":{"method":"POST","url":"/api/projects/01a152db-18b3-70ab-b715-404b4df3ef63/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452856,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1g","res":{"statusCode":201},"responseTime":3.537000000000262,"msg":"request completed"}
+{"level":30,"time":1792391452856,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1h","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452861,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1h","res":{"statusCode":201},"responseTime":4.708292000000256,"msg":"request completed"}
+{"level":30,"time":1792391452862,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1i","req":{"method":"POST","url":"/api/projects/01a152db-18b3-70ab-b715-404b4df3ef63/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452868,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1i","res":{"statusCode":201},"responseTime":6.170791999999892,"msg":"request completed"}
+{"level":30,"time":1792391452868,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1j","req":{"method":"PUT","url":"/api/projects/01a152db-18b3-70ab-b715-404b4df3ef63/services/01a152db-18bf-7ef3-bdac-6aa823574f72/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+ ✓ tests/integration/queue/deploy-queue.test.ts > one active deployment per service (A2) > allows a new deploy once the previous one is terminal 44ms
+ ✓ tests/integration/queue/deploy-queue.test.ts > archived project (A3) > blocks deploys with PROJECT_ARCHIVED and creates nothing 34ms
+{"level":30,"time":1792391452875,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1j","res":{"statusCode":200},"responseTime":6.369707999999264,"msg":"request completed"}
+{"level":30,"time":1792391452875,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1k","req":{"method":"POST","url":"/api/services/01a152db-18bf-7ef3-bdac-6aa823574f72/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452882,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1k","res":{"statusCode":201},"responseTime":7.661332999999104,"msg":"request completed"}
+{"level":30,"time":1792391452883,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1l","req":{"method":"POST","url":"/api/services/01a152db-18bf-7ef3-bdac-6aa823574f72/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452889,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1l","res":{"statusCode":201},"responseTime":6.000667000000249,"msg":"request completed"}
+{"level":30,"time":1792391452890,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1m","req":{"method":"POST","url":"/api/services/01a152db-18bf-7ef3-bdac-6aa823574f72/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452897,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1m","res":{"statusCode":201},"responseTime":6.626459000000068,"msg":"request completed"}
+{"level":30,"time":1792391452898,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1n","req":{"method":"GET","url":"/api/services/01a152db-18bf-7ef3-bdac-6aa823574f72/deployments?limit=2","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452905,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1n","res":{"statusCode":200},"responseTime":6.885207999999693,"msg":"request completed"}
+{"level":30,"time":1792391452905,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1o","req":{"method":"GET","url":"/api/services/01a152db-18bf-7ef3-bdac-6aa823574f72/deployments?limit=2&cursor=MjAyNi0xMC0xOVQwNjozMDo1Mi44ODZafDAxYTE1MmRiLTE4ZDYtNzFhNy05YTgxLTUxOWFlOWQyZGI0Zg","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452910,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1o","res":{"statusCode":200},"responseTime":4.643000000000029,"msg":"request completed"}
+{"level":30,"time":1792391452910,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1p","req":{"method":"GET","url":"/api/services/01a152db-18bf-7ef3-bdac-6aa823574f72/deployments/01a152db-18cf-7add-a75f-9a960e6196c5","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452913,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1p","res":{"statusCode":200},"responseTime":2.315458000000035,"msg":"request completed"}
+{"level":30,"time":1792391452913,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1q","req":{"method":"GET","url":"/api/deployments/01a152db-18cf-7add-a75f-9a960e6196c5","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452915,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1q","res":{"statusCode":200},"responseTime":2.549707999999555,"msg":"request completed"}
+{"level":30,"time":1792391452916,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1r","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452920,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1r","res":{"statusCode":201},"responseTime":4.198624999999993,"msg":"request completed"}
+{"level":30,"time":1792391452920,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1s","req":{"method":"POST","url":"/api/projects/01a152db-18f6-7200-86ce-a6c316877e3c/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452924,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1s","res":{"statusCode":201},"responseTime":4.120249999999942,"msg":"request completed"}
+{"level":30,"time":1792391452924,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1t","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452929,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1t","res":{"statusCode":201},"responseTime":5.087083000000348,"msg":"request completed"}
+{"level":30,"time":1792391452930,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1u","req":{"method":"POST","url":"/api/projects/01a152db-18f6-7200-86ce-a6c316877e3c/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452935,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1u","res":{"statusCode":201},"responseTime":5.24395899999945,"msg":"request completed"}
+{"level":30,"time":1792391452936,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1v","req":{"method":"PUT","url":"/api/projects/01a152db-18f6-7200-86ce-a6c316877e3c/services/01a152db-1904-7d13-879c-58536130d1ca/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452940,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1v","res":{"statusCode":200},"responseTime":4.831959000000097,"msg":"request completed"}
+{"level":30,"time":1792391452941,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1w","req":{"method":"GET","url":"/api/services/01a152db-1904-7d13-879c-58536130d1ca/deployments?limit=0","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452942,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1w","res":{"statusCode":400},"responseTime":1.5591249999997672,"msg":"request completed"}
+{"level":30,"time":1792391452942,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1x","req":{"method":"GET","url":"/api/services/01a152db-1904-7d13-879c-58536130d1ca/deployments?limit=101","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452944,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1x","res":{"statusCode":400},"responseTime":1.424167000000125,"msg":"request completed"}
+{"level":30,"time":1792391452944,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1y","req":{"method":"GET","url":"/api/services/01a152db-1904-7d13-879c-58536130d1ca/deployments?limit=abc","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452945,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1y","res":{"statusCode":400},"responseTime":1.5500419999998485,"msg":"request completed"}
+{"level":30,"time":1792391452946,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1z","req":{"method":"GET","url":"/api/services/01a152db-1904-7d13-879c-58536130d1ca/deployments?cursor=","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452947,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1z","res":{"statusCode":400},"responseTime":1.21087499999976,"msg":"request completed"}
+{"level":30,"time":1792391452947,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-20","req":{"method":"GET","url":"/api/services/01a152db-1904-7d13-879c-58536130d1ca/deployments?cursor=not-a-cursor","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452948,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-20","res":{"statusCode":400},"responseTime":1.3724160000001575,"msg":"request completed"}
+{"level":30,"time":1792391452948,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-21","req":{"method":"GET","url":"/api/services/01a152db-1904-7d13-879c-58536130d1ca/deployments?cursor=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452950,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-21","res":{"statusCode":400},"responseTime":1.6007920000001832,"msg":"request completed"}
+{"level":30,"time":1792391452950,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-22","req":{"method":"GET","url":"/api/services/01a152db-1904-7d13-879c-58536130d1ca/deployments?limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452953,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-22","res":{"statusCode":200},"responseTime":2.9996250000003783,"msg":"request completed"}
+{"level":30,"time":1792391452953,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-23","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452958,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-23","res":{"statusCode":201},"responseTime":4.795541999999841,"msg":"request completed"}
+{"level":30,"time":1792391452958,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-24","req":{"method":"POST","url":"/api/projects/01a152db-191d-75f0-85ac-00e820d33826/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452964,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-24","res":{"statusCode":201},"responseTime":5.113832999999431,"msg":"request completed"}
+{"level":30,"time":1792391452964,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-25","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452970,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-25","res":{"statusCode":201},"responseTime":6.464584000000286,"msg":"request completed"}
+{"level":30,"time":1792391452972,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-26","req":{"method":"POST","url":"/api/projects/01a152db-191d-75f0-85ac-00e820d33826/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452979,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-26","res":{"statusCode":201},"responseTime":6.753249999999753,"msg":"request completed"}
+{"level":30,"time":1792391452979,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-27","req":{"method":"PUT","url":"/api/projects/01a152db-191d-75f0-85ac-00e820d33826/services/01a152db-192e-7dd0-935d-41c7ec961b59/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452984,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-27","res":{"statusCode":200},"responseTime":4.813791999999921,"msg":"request completed"}
+{"level":30,"time":1792391452984,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-28","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452987,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-28","res":{"statusCode":201},"responseTime":3.753208000000086,"msg":"request completed"}
+{"level":30,"time":1792391452988,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-29","req":{"method":"POST","url":"/api/projects/01a152db-193a-7f90-8ec1-23f78b776ac3/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452991,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-29","res":{"statusCode":201},"responseTime":3.910917000000154,"msg":"request completed"}
+{"level":30,"time":1792391452992,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2a","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391452997,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2a","res":{"statusCode":201},"responseTime":4.958999999999833,"msg":"request completed"}
+{"level":30,"time":1792391452997,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2b","req":{"method":"POST","url":"/api/projects/01a152db-193a-7f90-8ec1-23f78b776ac3/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453003,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2b","res":{"statusCode":201},"responseTime":5.279333999999835,"msg":"request completed"}
+{"level":30,"time":1792391453003,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2c","req":{"method":"PUT","url":"/api/projects/01a152db-193a-7f90-8ec1-23f78b776ac3/services/01a152db-1947-719c-8acf-31c3c75841e2/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453007,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2c","res":{"statusCode":200},"responseTime":4.477208999999675,"msg":"request completed"}
+{"level":30,"time":1792391453008,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2d","req":{"method":"POST","url":"/api/services/01a152db-192e-7dd0-935d-41c7ec961b59/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453013,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2d","res":{"statusCode":201},"responseTime":5.655249999999796,"msg":"request completed"}
+{"level":30,"time":1792391453013,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2e","req":{"method":"GET","url":"/api/services/01a152db-1947-719c-8acf-31c3c75841e2/deployments/01a152db-1952-78f4-8718-f6adcb7ce66a","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453015,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2e","res":{"statusCode":404},"responseTime":1.8250829999997222,"msg":"request completed"}
+ ✓ tests/integration/queue/deploy-queue.test.ts > reads (A4, H2) > lists newest first with keyset pagination and reads the detail 68ms
+ ✓ tests/integration/queue/deploy-queue.test.ts > reads (A4, H2) > caps the page size and rejects malformed limits and cursors with 400 38ms
+{"level":30,"time":1792391453015,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2f","req":{"method":"GET","url":"/api/services/ca3db198-8b76-4380-bc23-7033eb05298d/deployments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453017,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2f","res":{"statusCode":404},"responseTime":1.560250000000451,"msg":"request completed"}
+{"level":30,"time":1792391453017,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2g","req":{"method":"GET","url":"/api/deployments/e9aa27d9-1065-4b52-b224-2426586fa53e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453018,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2g","res":{"statusCode":404},"responseTime":1.4625829999995403,"msg":"request completed"}
+{"level":30,"time":1792391453019,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2h","req":{"method":"GET","url":"/api/deployments/bab9aa93-26c4-4fb9-bd03-5b0471ebb239","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453019,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2h","res":{"statusCode":401},"responseTime":0.17462499999965075,"msg":"request completed"}
+{"level":30,"time":1792391453019,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2i","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453022,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2i","res":{"statusCode":201},"responseTime":3.25525000000016,"msg":"request completed"}
+{"level":30,"time":1792391453022,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2j","req":{"method":"POST","url":"/api/projects/01a152db-195d-791f-ad50-66feb82ffa20/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453026,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2j","res":{"statusCode":201},"responseTime":3.690500000000611,"msg":"request completed"}
+{"level":30,"time":1792391453026,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2k","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453032,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2k","res":{"statusCode":201},"responseTime":6.0242920000000595,"msg":"request completed"}
+{"level":30,"time":1792391453033,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2l","req":{"method":"POST","url":"/api/projects/01a152db-195d-791f-ad50-66feb82ffa20/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453038,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2l","res":{"statusCode":201},"responseTime":4.505624999999782,"msg":"request completed"}
+{"level":30,"time":1792391453038,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2m","req":{"method":"PUT","url":"/api/projects/01a152db-195d-791f-ad50-66feb82ffa20/services/01a152db-196a-7370-a491-fa38c069e5ab/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453042,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2m","res":{"statusCode":200},"responseTime":3.9818750000004,"msg":"request completed"}
+{"level":30,"time":1792391453042,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2n","req":{"method":"POST","url":"/api/services/01a152db-196a-7370-a491-fa38c069e5ab/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453043,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2n","res":{"statusCode":422},"responseTime":1.0606670000006488,"msg":"request completed"}
+{"level":30,"time":1792391453044,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2o","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453047,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2o","res":{"statusCode":201},"responseTime":2.9228750000002037,"msg":"request completed"}
+{"level":30,"time":1792391453047,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2p","req":{"method":"POST","url":"/api/projects/01a152db-1976-7f8c-ac5d-8807b75d4bbc/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453050,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2p","res":{"statusCode":201},"responseTime":3.4101670000000013,"msg":"request completed"}
+{"level":30,"time":1792391453050,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2q","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453054,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2q","res":{"statusCode":201},"responseTime":3.8706670000001395,"msg":"request completed"}
+{"level":30,"time":1792391453055,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2r","req":{"method":"POST","url":"/api/projects/01a152db-1976-7f8c-ac5d-8807b75d4bbc/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453060,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2r","res":{"statusCode":201},"responseTime":4.915124999999534,"msg":"request completed"}
+{"level":30,"time":1792391453060,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2s","req":{"method":"PUT","url":"/api/projects/01a152db-1976-7f8c-ac5d-8807b75d4bbc/services/01a152db-1980-7e04-b21b-931f16253c17/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453064,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2s","res":{"statusCode":200},"responseTime":4.21245799999997,"msg":"request completed"}
+{"level":30,"time":1792391453064,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2t","req":{"method":"POST","url":"/api/services/01a152db-1980-7e04-b21b-931f16253c17/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453066,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2t","code":"FST_ERR_CTP_BODY_TOO_LARGE","statusCode":413,"msg":"request rejected by parser"}
+{"level":30,"time":1792391453066,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2t","res":{"statusCode":413},"responseTime":1.4548329999997804,"msg":"request completed"}
+{"level":30,"time":1792391453067,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2u","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453071,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2u","res":{"statusCode":201},"responseTime":3.901082999999744,"msg":"request completed"}
+{"level":30,"time":1792391453071,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2v","req":{"method":"POST","url":"/api/projects/01a152db-198d-7dd5-96b4-bd7ede428ae9/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453074,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2v","res":{"statusCode":201},"responseTime":3.639541999999892,"msg":"request completed"}
+{"level":30,"time":1792391453075,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2w","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453079,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2w","res":{"statusCode":201},"responseTime":4.428667000000132,"msg":"request completed"}
+{"level":30,"time":1792391453080,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2x","req":{"method":"POST","url":"/api/projects/01a152db-198d-7dd5-96b4-bd7ede428ae9/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453085,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2x","res":{"statusCode":201},"responseTime":5.270375000000058,"msg":"request completed"}
+{"level":30,"time":1792391453085,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2y","req":{"method":"PUT","url":"/api/projects/01a152db-198d-7dd5-96b4-bd7ede428ae9/services/01a152db-1999-7cb7-aa24-38ff6f9e2bdd/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453090,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2y","res":{"statusCode":200},"responseTime":4.245832999999948,"msg":"request completed"}
+{"level":30,"time":1792391453090,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2z","req":{"method":"POST","url":"/api/services/01a152db-1999-7cb7-aa24-38ff6f9e2bdd/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453095,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2z","res":{"statusCode":201},"responseTime":5.338125000000218,"msg":"request completed"}
+{"level":30,"time":1792391453095,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-30","req":{"method":"POST","url":"/api/deployments/01a152db-19a4-75f4-ab10-b36d6e0ab27c/cancel","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453097,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-30","res":{"statusCode":422},"responseTime":1.48241599999983,"msg":"request completed"}
+{"level":30,"time":1792391453098,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-31","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453101,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-31","res":{"statusCode":201},"responseTime":3.3608329999997295,"msg":"request completed"}
+{"level":30,"time":1792391453101,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-32","req":{"method":"POST","url":"/api/projects/01a152db-19ac-7705-9d71-0d429d7e1002/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453105,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-32","res":{"statusCode":201},"responseTime":3.6850000000004,"msg":"request completed"}
+{"level":30,"time":1792391453105,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-33","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453110,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-33","res":{"statusCode":201},"responseTime":4.71533399999953,"msg":"request completed"}
+{"level":30,"time":1792391453110,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-34","req":{"method":"POST","url":"/api/projects/01a152db-19ac-7705-9d71-0d429d7e1002/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453116,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-34","res":{"statusCode":201},"responseTime":5.226208000000042,"msg":"request completed"}
+{"level":30,"time":1792391453116,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-35","req":{"method":"PUT","url":"/api/projects/01a152db-19ac-7705-9d71-0d429d7e1002/services/01a152db-19b8-7e81-a982-76f29cfc8dab/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+ ✓ tests/integration/queue/deploy-queue.test.ts > reads (A4, H2) > answers 404 for a deployment read under another service and for unknown ids 65ms
+ ✓ tests/integration/queue/deploy-queue.test.ts > reads (A4, H2) > requires a session 0ms
+ ✓ tests/integration/queue/deploy-queue.test.ts > deploy body (H3) > rejects unknown fields with a named 422 and creates nothing 25ms
+ ✓ tests/integration/queue/deploy-queue.test.ts > deploy body (H3) > enforces the body cap with 413 23ms
+ ✓ tests/integration/queue/deploy-queue.test.ts > cancel body (12-10 H3) > rejects unknown fields with the named 422 and cancels nothing 31ms
+{"level":30,"time":1792391453120,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-35","res":{"statusCode":200},"responseTime":4.711207999999715,"msg":"request completed"}
+{"level":30,"time":1792391453121,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-36","req":{"method":"POST","url":"/api/services/01a152db-19b8-7e81-a982-76f29cfc8dab/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453126,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-36","res":{"statusCode":201},"responseTime":5.508499999999913,"msg":"request completed"}
+{"level":30,"time":1792391453126,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-37","req":{"method":"POST","url":"/api/deployments/01a152db-19c3-7347-9023-1392aedb027e/cancel","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453128,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-37","code":"FST_ERR_CTP_BODY_TOO_LARGE","statusCode":413,"msg":"request rejected by parser"}
+{"level":30,"time":1792391453128,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-37","res":{"statusCode":413},"responseTime":1.481999999999971,"msg":"request completed"}
+{"level":30,"time":1792391453129,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-38","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453132,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-38","res":{"statusCode":201},"responseTime":3.883958000000348,"msg":"request completed"}
+{"level":30,"time":1792391453133,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-39","req":{"method":"POST","url":"/api/projects/01a152db-19cb-7234-9df3-b9b90f3bc6be/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453137,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-39","res":{"statusCode":201},"responseTime":4.391666000000441,"msg":"request completed"}
+{"level":30,"time":1792391453137,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3a","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453144,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3a","res":{"statusCode":201},"responseTime":6.600291000000652,"msg":"request completed"}
+{"level":30,"time":1792391453145,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3b","req":{"method":"POST","url":"/api/projects/01a152db-19cb-7234-9df3-b9b90f3bc6be/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453152,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3b","res":{"statusCode":201},"responseTime":6.873625000000175,"msg":"request completed"}
+{"level":30,"time":1792391453152,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3c","req":{"method":"PUT","url":"/api/projects/01a152db-19cb-7234-9df3-b9b90f3bc6be/services/01a152db-19da-7671-8d97-c7cbc0b0172a/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453157,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3c","res":{"statusCode":200},"responseTime":5.201041999999688,"msg":"request completed"}
+{"level":30,"time":1792391453157,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3d","req":{"method":"POST","url":"/api/services/01a152db-19da-7671-8d97-c7cbc0b0172a/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453163,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3d","res":{"statusCode":201},"responseTime":6.066958000000341,"msg":"request completed"}
+{"level":30,"time":1792391453163,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3e","req":{"method":"POST","url":"/api/deployments/01a152db-19e8-7bee-8d1c-9af250b0eef3/cancel","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453173,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3e","res":{"statusCode":202},"responseTime":9.571708000000399,"msg":"request completed"}
+{"level":30,"time":1792391453173,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3f","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453177,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3f","res":{"statusCode":201},"responseTime":4.000666999999339,"msg":"request completed"}
+{"level":30,"time":1792391453177,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3g","req":{"method":"POST","url":"/api/projects/01a152db-19f8-70d1-9040-4c680a3141bd/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453181,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3g","res":{"statusCode":201},"responseTime":3.6734589999996388,"msg":"request completed"}
+{"level":30,"time":1792391453181,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3h","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453186,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3h","res":{"statusCode":201},"responseTime":4.516042000000198,"msg":"request completed"}
+{"level":30,"time":1792391453187,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3i","req":{"method":"POST","url":"/api/projects/01a152db-19f8-70d1-9040-4c680a3141bd/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453192,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3i","res":{"statusCode":201},"responseTime":5.211750000000393,"msg":"request completed"}
+{"level":30,"time":1792391453192,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3j","req":{"method":"PUT","url":"/api/projects/01a152db-19f8-70d1-9040-4c680a3141bd/services/01a152db-1a04-7e6c-b36b-17382596b27a/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453196,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3j","res":{"statusCode":200},"responseTime":4.4950000000008,"msg":"request completed"}
+{"level":30,"time":1792391453197,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3k","req":{"method":"POST","url":"/api/services/01a152db-1a04-7e6c-b36b-17382596b27a/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453202,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3k","res":{"statusCode":201},"responseTime":5.641332999999577,"msg":"request completed"}
+{"level":30,"time":1792391453202,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3l","req":{"method":"POST","url":"/api/deployments/01a152db-1a0f-78b4-9357-4dfdc87ec5c8/cancel","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453210,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3l","res":{"statusCode":202},"responseTime":7.430749999999534,"msg":"request completed"}
+{"level":30,"time":1792391453210,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3m","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453214,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3m","res":{"statusCode":201},"responseTime":3.9573330000002898,"msg":"request completed"}
+{"level":30,"time":1792391453214,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3n","req":{"method":"POST","url":"/api/projects/01a152db-1a1d-76c5-b127-245a43363e95/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453218,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3n","res":{"statusCode":201},"responseTime":3.4801250000000437,"msg":"request completed"}
+{"level":30,"time":1792391453218,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3o","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453223,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3o","res":{"statusCode":201},"responseTime":4.7957500000002256,"msg":"request completed"}
+{"level":30,"time":1792391453224,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3p","req":{"method":"POST","url":"/api/projects/01a152db-1a1d-76c5-b127-245a43363e95/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+ ✓ tests/integration/queue/deploy-queue.test.ts > cancel body (12-10 H3) > enforces the body cap with 413 and cancels nothing 31ms
+ ✓ tests/integration/queue/deploy-queue.test.ts > cancel body (12-10 H3) > still cancels with an empty object or no body 81ms
+{"level":30,"time":1792391453229,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3p","res":{"statusCode":201},"responseTime":5.597459000000526,"msg":"request completed"}
+{"level":30,"time":1792391453230,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3q","req":{"method":"PUT","url":"/api/projects/01a152db-1a1d-76c5-b127-245a43363e95/services/01a152db-1a29-78b4-bc41-940374e182d9/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453235,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3q","res":{"statusCode":200},"responseTime":5.039749999999913,"msg":"request completed"}
+{"level":30,"time":1792391453241,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3r","req":{"method":"POST","url":"/api/services/01a152db-1a29-78b4-bc41-940374e182d9/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453245,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3r","res":{"statusCode":409},"responseTime":3.9860829999997804,"msg":"request completed"}
+{"level":30,"time":1792391453298,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3s","req":{"method":"POST","url":"/api/services/01a152db-1a29-78b4-bc41-940374e182d9/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453305,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3s","res":{"statusCode":201},"responseTime":6.47979099999975,"msg":"request completed"}
+{"level":30,"time":1792391453305,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3t","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453310,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3t","res":{"statusCode":201},"responseTime":4.484790999999859,"msg":"request completed"}
+{"level":30,"time":1792391453310,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3u","req":{"method":"POST","url":"/api/projects/01a152db-1a7c-71e4-a780-3d28a5467c98/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453314,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3u","res":{"statusCode":201},"responseTime":4.318124999999782,"msg":"request completed"}
+{"level":30,"time":1792391453314,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3v","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453321,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3v","res":{"statusCode":201},"responseTime":6.3874580000001515,"msg":"request completed"}
+{"level":30,"time":1792391453323,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3w","req":{"method":"POST","url":"/api/projects/01a152db-1a7c-71e4-a780-3d28a5467c98/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453328,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3w","res":{"statusCode":201},"responseTime":5.431625000000167,"msg":"request completed"}
+{"level":30,"time":1792391453328,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3x","req":{"method":"PUT","url":"/api/projects/01a152db-1a7c-71e4-a780-3d28a5467c98/services/01a152db-1a8c-7afe-91aa-18732744e592/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453333,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3x","res":{"statusCode":200},"responseTime":4.9646670000001905,"msg":"request completed"}
+{"level":30,"time":1792391453334,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3y","req":{"method":"POST","url":"/api/services/01a152db-1a8c-7afe-91aa-18732744e592/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453340,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3y","res":{"statusCode":201},"responseTime":5.990332999999737,"msg":"request completed"}
+ ✓ tests/integration/queue/deploy-queue.test.ts > stale QUEUED after a double outage (14-08 A3) > fails the orphaned QUEUED deployment ENQUEUE_FAILED, publishes it and releases the 409 lock 95ms
+ ✓ tests/integration/queue/deploy-queue.test.ts > stale QUEUED after a double outage (14-08 A3) > never touches a QUEUED deployment whose job exists, however old 45ms
+{"level":30,"time":1792391453350,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3z","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453354,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3z","res":{"statusCode":201},"responseTime":3.911000000000058,"msg":"request completed"}
+{"level":30,"time":1792391453354,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-40","req":{"method":"POST","url":"/api/projects/01a152db-1aa9-792e-a906-edf70c318ed9/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453358,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-40","res":{"statusCode":201},"responseTime":3.9852499999997235,"msg":"request completed"}
+{"level":30,"time":1792391453358,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-41","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453363,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-41","res":{"statusCode":201},"responseTime":4.796750000000429,"msg":"request completed"}
+{"level":30,"time":1792391453364,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-42","req":{"method":"POST","url":"/api/projects/01a152db-1aa9-792e-a906-edf70c318ed9/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453370,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-42","res":{"statusCode":201},"responseTime":5.955540999999357,"msg":"request completed"}
+{"level":30,"time":1792391453370,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-43","req":{"method":"PUT","url":"/api/projects/01a152db-1aa9-792e-a906-edf70c318ed9/services/01a152db-1ab6-7ce8-9bb6-b5b164c7413a/credentials/repository","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391453375,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-43","res":{"statusCode":200},"responseTime":4.876083000000108,"msg":"request completed"}
+{"level":30,"time":1792391453818,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-44","req":{"method":"POST","url":"/api/services/01a152db-1ab6-7ce8-9bb6-b5b164c7413a/deploy","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1792391455835,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","deploymentId":"01a152db-1c80-7bb3-9035-f9dce58e8173","msg":"deploy enqueue failed; QUEUED deployment rolled back"}
+{"level":30,"time":1792391455836,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-44","res":{"statusCode":503},"responseTime":2016.719,"msg":"request completed"}
+{"level":30,"time":1792391455837,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-45","req":{"method":"GET","url":"/api/services/01a152db-1ab6-7ce8-9bb6-b5b164c7413a/deployments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792391455842,"pid":47812,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-45","res":{"statusCode":200},"responseTime":4.971750000000611,"msg":"request completed"}
+ ✓ tests/integration/queue/deploy-queue.test.ts > queue unavailable (H1) > answers a named 503 and leaves no QUEUED deployment behind when Redis is down 2492ms
+stderr | tests/integration/queue/deploy-queue.test.ts
+[redis] queue connection error: Error
+
+stderr | tests/integration/queue/deploy-queue.test.ts
+[redis] queue connection error: Error
+Error: Command timed out
+    at Timeout.<anonymous> (/Users/xch4rt/work/myself/noodara/code/node_modules/.pnpm/ioredis@5.11.1/node_modules/ioredis/built/Command.js:195:33)
+    at listOnTimeout (node:internal/timers:605:17)
+    at processTimers (node:internal/timers:541:7)
+
+stderr | tests/integration/queue/deploy-queue.test.ts
+[redis] queue connection error: Error
+Error: Command timed out
+    at Timeout.<anonymous> (/Users/xch4rt/work/myself/noodara/code/node_modules/.pnpm/ioredis@5.11.1/node_modules/ioredis/built/Command.js:195:33)
+    at listOnTimeout (node:internal/timers:605:17)
+    at processTimers (node:internal/timers:541:7)
+
+ ✓ tests/integration/deploy-engine/runtime-faults.test.ts > 17-06: runtime faults on real infrastructure, Ubuntu 22.04 > container crash during HEALTHCHECK: the attempt rolls back to -prev and ends ROLLED_BACK 5457ms
+ ✓ tests/integration/deploy-engine/runtime-faults.test.ts > 17-06: runtime faults on real infrastructure, Ubuntu 22.04 > SSH interruption during HEALTHCHECK (sshd paused): the stalled check resumes and the attempt ends SUCCESS 14645ms
+ ✓ tests/integration/deploy-engine/runtime-faults.test.ts > 17-06: runtime faults on real infrastructure, Ubuntu 22.04 > SSH interruption during ROLLING_BACK (sshd paused): the restore resumes and the attempt ends ROLLED_BACK 21183ms
+ ✓ tests/integration/deploy-engine/runtime-faults.test.ts > 17-06: runtime faults on real infrastructure, Ubuntu 22.04 > worker kill in HEALTHCHECK: an unreachable server leaves the row; the next sweep restores -prev and ends FAILED/WORKER_CRASHED 35522ms
+ ✓ tests/integration/deploy-engine/runtime-faults.test.ts > 17-06: runtime faults on real infrastructure, Ubuntu 22.04 > worker kill in HEALTHCHECK on a first deploy: the only version is never removed 11414ms
+ ✓ tests/integration/deploy-engine/runtime-faults.test.ts > 17-06: runtime faults on real infrastructure, Ubuntu 22.04 > worker kill in BUILDING, then the job retries: one noodara-<svc>, one row per attempt, no orphan 24451ms
+ ✓ tests/integration/deploy-engine/runtime-faults.test.ts > 17-06: runtime faults on real infrastructure, Ubuntu 22.04 > worker kill in DEPLOYING, then the job retries: one noodara-<svc>, one row per attempt, no orphan 14389ms
+ ✓ tests/integration/deploy-engine/runtime-faults.test.ts > 17-06: runtime faults on real infrastructure, Ubuntu 22.04 > noodara-security: no credential reaches events, logs or deployment rows 4ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > A1/A2/A3/A5: a git deploy clones, builds, replaces the container and keeps the superseded image for retention 10149ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > 14-10 A3: the build cache prune ran once for two consecutive deployments and left the running container and its image 62ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > A4/A5: a failing build ends FAILED/BUILD_FAILED, the previous container keeps running and the partial image is removed 676ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > §8.8 git clone failure: a missing repository ends FAILED/REPOSITORY_NOT_FOUND at the clone step and the running container stays 684ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > §8.8 dependency failure: an npm install that cannot resolve a dependency ends FAILED/BUILD_FAILED and the running container stays 1205ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > §8.8 Docker build failure: a COPY of a missing file ends FAILED/BUILD_FAILED and the running container stays 687ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > §8.8 duplicate webhook: the same push delivered twice at once and again after SUCCESS deploys once on the server 4199ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > A2: the port preflight reads the real docker ps and fails PORT_IN_USE before touching any container 865ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > A1: a git source with a build target builds only that stage 4172ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > A1: an image source pulls from the htpasswd registry with its credential and runs it 3704ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > A5: a container create that fails after the network was created removes the network and the partial image 1247ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > A4: a silent build hits the idle timeout (BUILD_STALLED) and a chatty one the max timeout (BUILD_TIMEOUT) 30975ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > 14-07 A1/A2/A3/H3/H4: first clone pins the host key, later clones verify it, a rotated key fails and the CLI reset re-pins 12896ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > 14-07 H1: two concurrent first pins of one host store exactly one key; the loser reads the winner 50ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 12-11b / A1-A5: the deploy worker runs the pipeline on real infrastructure, Ubuntu 22.04 > noodara-security: no credential reaches events, logs or deployment rows 3ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 13-03 H3: step boundaries migrate onto a database with deployments in flight > migrates mid-deploy, derives from status alone, and finishes the in-flight row 2016ms
+ ✓ tests/integration/deploy-engine/runtime-pipeline.test.ts > 14-07 H2: git host key columns migrate onto a database with existing services > applies 0008 over existing services, which load no pinned key 1464ms
+ ✓ tests/integration/deploy-engine/runtime-rollback.test.ts > 17-07: automatic rollback on real infrastructure, Ubuntu 22.04 > rolled back: the failed container is removed and -prev restored, checked and named in the message 18011ms
+ ✓ tests/integration/deploy-engine/runtime-rollback.test.ts > 17-07: automatic rollback on real infrastructure, Ubuntu 22.04 > restore check fails: the previous snapshot no longer passes, the attempt ends FAILED/ROLLBACK_FAILED 27952ms
+ ✓ tests/integration/deploy-engine/runtime-rollback.test.ts > 17-07: automatic rollback on real infrastructure, Ubuntu 22.04 > auto_rollback off: FAILED, the new container stopped and -prev kept with the previous image 15292ms
+ ✓ tests/integration/deploy-engine/runtime-rollback.test.ts > 17-07: automatic rollback on real infrastructure, Ubuntu 22.04 > first deploy: no -prev to restore, FAILED with the new container stopped and no rollback 13254ms
+ ✓ tests/integration/deploy-engine/runtime-cancel.test.ts > 12-13 / A1-A4: cancel and worker-crash sweep on real infrastructure, Ubuntu 22.04 > A1: cancelling a QUEUED deployment removes its job and ends CANCELLED without any remote command 3079ms
+ ✓ tests/integration/deploy-engine/runtime-cancel.test.ts > 12-13 / A1-A4: cancel and worker-crash sweep on real infrastructure, Ubuntu 22.04 > A2/A3: cancelling a running build kills its process group, cleans up and ends CANCELLED with docker df unchanged (build cache bounded) 8401ms
+ ✓ tests/integration/deploy-engine/runtime-cancel.test.ts > 12-13 / A1-A4: cancel and worker-crash sweep on real infrastructure, Ubuntu 22.04 > A4: a worker killed mid-build is swept FAILED/WORKER_CRASHED; per-deployment resources go, the per-service container stays 11608ms
+ ✓ tests/integration/deploy-engine/runtime-cancel.test.ts > 12-13 / A1-A4: cancel and worker-crash sweep on real infrastructure, Ubuntu 22.04 > 17-06 A1: a cancel during HEALTHCHECK removes the new container, restores -prev and ends CANCELLED 4910ms
+ ✓ tests/integration/deploy-engine/runtime-cancel.test.ts > 12-13 / A1-A4: cancel and worker-crash sweep on real infrastructure, Ubuntu 22.04 > 17-06 A1: a cancel during ROLLING_BACK is a named 409 ROLLBACK_IN_PROGRESS and the rollback completes 11815ms
+ ✓ tests/integration/deploy-engine/runtime-cancel.test.ts > 12-13 / A1-A4: cancel and worker-crash sweep on real infrastructure, Ubuntu 22.04 > noodara-security: no credential reaches events, logs or deployment rows 3ms
+ ✓ tests/integration/deploy-engine/runtime-manual-rollback.test.ts > 17-05: manual rollback on real infrastructure, Ubuntu 22.04 > rolls back to the retained image without a build, refuses bad targets and races, and records the history 11284ms
+ ✓ tests/integration/deploy-engine/runtime-manual-rollback.test.ts > 17-05: manual rollback on real infrastructure, Ubuntu 22.04 > restores the version running before the manual rollback when the target fails its healthcheck 17806ms
+ ✓ tests/integration/deploy-engine/runtime-manual-rollback.test.ts > 17-05: manual rollback on real infrastructure, Ubuntu 22.04 > re-checks the target image in the worker: gone from the host -> FAILED, the running container untouched 3774ms
+ ✓ tests/integration/deploy-engine/runtime-healthcheck.test.ts > 17-02: runtime healthcheck on real infrastructure, Ubuntu 22.04 > HTTP pass: the redeploy keeps -prev until the check passed, then removes it; its image is kept by image retention 4958ms
+ ✓ tests/integration/deploy-engine/runtime-healthcheck.test.ts > 17-02: runtime healthcheck on real infrastructure, Ubuntu 22.04 > wrong status: unhealthy-api ends HEALTHCHECK_FAILED and -prev stays stopped with the previous image 15272ms
+ ✓ tests/integration/deploy-engine/runtime-healthcheck.test.ts > 17-02: runtime healthcheck on real infrastructure, Ubuntu 22.04 > timeout: a health path that never answers ends HEALTHCHECK_TIMEOUT 2755ms
+ ✓ tests/integration/deploy-engine/runtime-healthcheck.test.ts > 17-02: runtime healthcheck on real infrastructure, Ubuntu 22.04 > TCP pass: the open port passes even though the HTTP health path answers 500 1731ms
+{"level":40,"time":1792392041887,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"4b11195ab24f816d","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1792392041943,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1792392042048,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1792392042200,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1792392042405,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1792392042659,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1792392042962,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1792392043315,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1792392043718,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1792392043909,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1792392043911,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392043986,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":74.30154200000015,"msg":"request completed"}
+{"level":30,"time":1792392043986,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392044043,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":57.16783300000043,"msg":"request completed"}
+{"level":30,"time":1792392044045,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392044059,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":13.788582999999562,"msg":"request completed"}
+{"level":30,"time":1792392044059,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/projects/01a152e4-1e17-732b-9269-10abbda03b37/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392044067,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":201},"responseTime":7.742624999999862,"msg":"request completed"}
+{"level":30,"time":1792392044067,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > answers 400 for a malformed cursor
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1792392044170,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1792392044171,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","res":{"statusCode":201},"responseTime":103.78037499999937,"msg":"request completed"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > answers 400 for a malformed cursor
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1792392044171,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":30,"time":1792392044173,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","req":{"method":"POST","url":"/api/projects/01a152e4-1e17-732b-9269-10abbda03b37/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > answers 400 for a malformed cursor
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > answers 400 for a malformed cursor
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1792392044672,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1792392045225,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > answers 400 for a malformed cursor
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > answers 400 for a malformed cursor
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1792392045225,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1792392045227,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","res":{"statusCode":201},"responseTime":1053.1764999999996,"msg":"request completed"}
+{"level":30,"time":1792392045227,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","req":{"method":"POST","url":"/api/projects/01a152e4-1e17-732b-9269-10abbda03b37/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1792392045829,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > answers 400 for a malformed cursor
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > answers 400 for a malformed cursor
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1792392046484,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > answers 400 for a malformed cursor
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > answers 400 for a malformed cursor
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1792392046485,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1792392046486,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","res":{"statusCode":201},"responseTime":1258.5010419999999,"msg":"request completed"}
+{"level":30,"time":1792392046487,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","req":{"method":"GET","url":"/api/projects/01a152e4-1e17-732b-9269-10abbda03b37/services/01a152e4-1e90-7646-b5e7-1a2c6e279dd2/webhook/deliveries?cursor=not-a-cursor","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392046494,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","res":{"statusCode":400},"responseTime":7.228458000000501,"msg":"request completed"}
+{"level":30,"time":1792392046495,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","req":{"method":"GET","url":"/api/projects/01a152e4-1e17-732b-9269-10abbda03b37/services/01a152e4-1e90-7646-b5e7-1a2c6e279dd2/webhook/deliveries?cursor=AAAA","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392046499,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","res":{"statusCode":400},"responseTime":3.847874999999476,"msg":"request completed"}
+{"level":30,"time":1792392046499,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","req":{"method":"GET","url":"/api/projects/01a152e4-1e17-732b-9269-10abbda03b37/services/01a152e4-1e90-7646-b5e7-1a2c6e279dd2/webhook/deliveries?cursor=eyJ0IjoieCIsImlkIjoieSJ9","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392046503,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","res":{"statusCode":400},"responseTime":3.878125000000182,"msg":"request completed"}
+{"level":30,"time":1792392046503,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","req":{"method":"GET","url":"/api/projects/01a152e4-1e17-732b-9269-10abbda03b37/services/01a152e4-1e90-7646-b5e7-1a2c6e279dd2/webhook/deliveries?cursor=%20","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392046506,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","res":{"statusCode":400},"responseTime":2.4708750000008877,"msg":"request completed"}
+ ✓ tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > answers 400 for a malformed cursor 2462ms
+{"level":30,"time":1792392046506,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392046516,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","res":{"statusCode":201},"responseTime":9.546832999999424,"msg":"request completed"}
+{"level":30,"time":1792392046516,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-d","req":{"method":"POST","url":"/api/projects/01a152e4-27b0-7ed0-85c1-068abdc2f5b7/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392046523,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-d","res":{"statusCode":201},"responseTime":6.687542000000576,"msg":"request completed"}
+{"level":30,"time":1792392046523,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-e","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1792392047187,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > pages newest first with a keyset cursor and no overlap
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > pages newest first with a keyset cursor and no overlap
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > pages newest first with a keyset cursor and no overlap
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > pages newest first with a keyset cursor and no overlap
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1792392047943,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1792392047944,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1792392047945,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-e","res":{"statusCode":201},"responseTime":1421.8417089999994,"msg":"request completed"}
+{"level":30,"time":1792392047948,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-f","req":{"method":"POST","url":"/api/projects/01a152e4-27b0-7ed0-85c1-068abdc2f5b7/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1792392048747,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > pages newest first with a keyset cursor and no overlap
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > pages newest first with a keyset cursor and no overlap
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1792392049602,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > pages newest first with a keyset cursor and no overlap
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > pages newest first with a keyset cursor and no overlap
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1792392049603,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1792392049604,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-f","res":{"statusCode":201},"responseTime":1655.7453749999986,"msg":"request completed"}
+{"level":30,"time":1792392049604,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-g","req":{"method":"POST","url":"/api/projects/01a152e4-27b0-7ed0-85c1-068abdc2f5b7/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > pages newest first with a keyset cursor and no overlap
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > pages newest first with a keyset cursor and no overlap
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1792392050507,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > pages newest first with a keyset cursor and no overlap
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > pages newest first with a keyset cursor and no overlap
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1792392051462,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1792392051463,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1792392051463,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-g","res":{"statusCode":201},"responseTime":1858.6993750000001,"msg":"request completed"}
+{"level":30,"time":1792392051473,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-h","req":{"method":"GET","url":"/api/projects/01a152e4-27b0-7ed0-85c1-068abdc2f5b7/services/01a152e4-2d51-7f12-8ff2-b45e19e2891c/webhook/deliveries?limit=2","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392051483,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-h","res":{"statusCode":200},"responseTime":9.703166999999667,"msg":"request completed"}
+{"level":30,"time":1792392051484,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-i","req":{"method":"GET","url":"/api/projects/01a152e4-27b0-7ed0-85c1-068abdc2f5b7/services/01a152e4-2d51-7f12-8ff2-b45e19e2891c/webhook/deliveries?limit=2&cursor=eyJ0IjoiMjAyNi0xMC0xNlQxMjowMDowMy4wMDBaIiwiaWQiOiIwMWExNTJlNC0zYjA4LTdiNmQtYTY3MS05NmE4YjlkMWJhMzIifQ","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392051488,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-i","res":{"statusCode":200},"responseTime":4.159208999999464,"msg":"request completed"}
+{"level":30,"time":1792392051488,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-j","req":{"method":"GET","url":"/api/projects/01a152e4-27b0-7ed0-85c1-068abdc2f5b7/services/01a152e4-2d51-7f12-8ff2-b45e19e2891c/webhook/deliveries?limit=2&cursor=eyJ0IjoiMjAyNi0xMC0xNlQxMjowMDowMS4wMDBaIiwiaWQiOiIwMWExNTJlNC0zYjA4LTdiNmQtYTY3MS05NmE2NGRlMzYyMjMifQ","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392051492,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-j","res":{"statusCode":200},"responseTime":3.323500000000422,"msg":"request completed"}
+ ✓ tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > pages newest first with a keyset cursor and no overlap 4986ms
+{"level":30,"time":1792392051492,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-k","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392051498,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-k","res":{"statusCode":201},"responseTime":5.31695800000125,"msg":"request completed"}
+{"level":30,"time":1792392051498,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-l","req":{"method":"POST","url":"/api/projects/01a152e4-3b28-7034-bea9-009c534e447e/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392051503,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-l","res":{"statusCode":201},"responseTime":4.546374999999898,"msg":"request completed"}
+{"level":30,"time":1792392051503,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-m","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > scopes rows to the service and exposes no payload fields
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > scopes rows to the service and exposes no payload fields
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1792392052465,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1792392053508,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"failed to publish server event"}
+{"level":30,"time":1792392053509,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-m","res":{"statusCode":201},"responseTime":2006.3981249999997,"msg":"request completed"}
+{"level":30,"time":1792392053512,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-n","req":{"method":"POST","url":"/api/projects/01a152e4-3b28-7034-bea9-009c534e447e/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > scopes rows to the service and exposes no payload fields
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1792392053516,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > scopes rows to the service and exposes no payload fields
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > scopes rows to the service and exposes no payload fields
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > scopes rows to the service and exposes no payload fields
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1792392054618,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1792392055523,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"failed to publish server event"}
+{"level":30,"time":1792392055524,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-n","res":{"statusCode":201},"responseTime":2012.4876669999994,"msg":"request completed"}
+{"level":30,"time":1792392055526,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-o","req":{"method":"POST","url":"/api/projects/01a152e4-3b28-7034-bea9-009c534e447e/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1792392055772,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > scopes rows to the service and exposes no payload fields
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > scopes rows to the service and exposes no payload fields
+[redis] publisher connection error: AggregateError
+
+{"level":40,"time":1792392055772,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1792392055772,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-o","res":{"statusCode":201},"responseTime":246.5037080000002,"msg":"request completed"}
+{"level":30,"time":1792392055777,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-p","req":{"method":"GET","url":"/api/projects/01a152e4-3b28-7034-bea9-009c534e447e/services/01a152e4-430b-7dd8-875b-b8ecc7e5e5fb/webhook/deliveries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392055781,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-p","res":{"statusCode":200},"responseTime":3.930292000000918,"msg":"request completed"}
+ ✓ tests/integration/webhooks/deliveries.test.ts > GET webhook/deliveries (19-08 A3) > scopes rows to the service and exposes no payload fields 4289ms
+{"level":40,"time":1792392056977,"pid":51548,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/deliveries.test.ts
+[redis] publisher connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts > rotate and disable (A2, H1, H2) > a delivery resolved concurrently with rotations sees exactly the old or the new secret
+[redis] subscriber connection error: AggregateError
+
+ ✓ tests/integration/webhooks/config.test.ts > enable (A1, H2, H3) > returns the payload URL and a 32-byte secret once, built from the public origin only 43ms
+ ✓ tests/integration/webhooks/config.test.ts > enable (A1, H2, H3) > caps and validates the action body 21ms
+ ✓ tests/integration/webhooks/config.test.ts > rotate and disable (A2, H1, H2) > rotates the secret under the same URL and rejects the old one at once 23ms
+ ✓ tests/integration/webhooks/config.test.ts > rotate and disable (A2, H1, H2) > a delivery resolved concurrently with rotations sees exactly the old or the new secret 47ms
+ ✓ tests/integration/webhooks/config.test.ts > rotate and disable (A2, H1, H2) > disable removes the credential and the hook id resolves like an unknown one 26ms
+ ✓ tests/integration/webhooks/config.test.ts > rotate and disable (A2, H1, H2) > service delete removes the webhook credential row 24ms
+ ✓ tests/integration/webhooks/config.test.ts > hook-id collisions (18-05 H9) > redraws a hook id that collides on the unique index instead of failing 25ms
+ ✓ tests/integration/webhooks/config.test.ts > hook-id collisions (18-05 H9) > answers 409 WEBHOOK_HOOK_ID_CONFLICT when every draw collides and leaves no credential behind 28ms
+{"level":40,"time":1792392064028,"pid":51698,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"24c74a4bd823b7de","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+stderr | tests/integration/webhooks/config.test.ts > boot validation of the public origin (H3) > refuses to start with a NOODARA_PUBLIC_URL the webhook origin check rejects
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts > boot validation of the public origin (H3) > refuses to start with a NOODARA_PUBLIC_URL the webhook origin check rejects
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts > boot validation of the public origin (H3) > refuses to start with a NOODARA_PUBLIC_URL the webhook origin check rejects
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts > boot validation of the public origin (H3) > refuses to start with a NOODARA_PUBLIC_URL the webhook origin check rejects
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts > boot validation of the public origin (H3) > refuses to start with a NOODARA_PUBLIC_URL the webhook origin check rejects
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts > boot validation of the public origin (H3) > refuses to start with a NOODARA_PUBLIC_URL the webhook origin check rejects
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts > boot validation of the public origin (H3) > refuses to start with a NOODARA_PUBLIC_URL the webhook origin check rejects
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts > boot validation of the public origin (H3) > refuses to start with a NOODARA_PUBLIC_URL the webhook origin check rejects
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts > boot validation of the public origin (H3) > refuses to start with a NOODARA_PUBLIC_URL the webhook origin check rejects
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts > boot validation of the public origin (H3) > refuses to start with a NOODARA_PUBLIC_URL the webhook origin check rejects
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts > boot validation of the public origin (H3) > refuses to start with a NOODARA_PUBLIC_URL the webhook origin check rejects
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts > boot validation of the public origin (H3) > refuses to start with a NOODARA_PUBLIC_URL the webhook origin check rejects
+[redis] subscriber connection error: AggregateError
+
+ ✓ tests/integration/webhooks/config.test.ts > guards and activity (A4) > refuses an image-source service with 422 WEBHOOK_SOURCE_NOT_GIT 16ms
+ ✓ tests/integration/webhooks/config.test.ts > guards and activity (A4) > requires a session for every webhook route 12ms
+ ✓ tests/integration/webhooks/config.test.ts > guards and activity (A4) > answers 404 for a service of another project 20ms
+ ✓ tests/integration/webhooks/config.test.ts > guards and activity (A4) > records enable, rotate and disable as user activity events without the secret or hook id 21ms
+ ✓ tests/integration/webhooks/config.test.ts > canary sweep (A3) > no issued secret reaches a log line, an activity row, an event, a stored envelope or a later response 11ms
+ ✓ tests/integration/webhooks/config.test.ts > boot validation of the public origin (H3) > refuses to start with a NOODARA_PUBLIC_URL the webhook origin check rejects 2022ms
+stderr | tests/integration/webhooks/config.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts
+[redis] subscriber connection error: AggregateError
+
+stderr | tests/integration/webhooks/config.test.ts
+[redis] subscriber connection error: AggregateError
+
+{"level":40,"time":1792392071298,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"1ea7ba9687fd25ec","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":30,"time":1792392071317,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071394,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":76.75329100000044,"msg":"request completed"}
+{"level":30,"time":1792392071394,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071439,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":44.50187499999993,"msg":"request completed"}
+{"level":30,"time":1792392071440,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071448,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":8.107291999999688,"msg":"request completed"}
+{"level":30,"time":1792392071449,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/projects/01a152e4-8916-7229-b16d-a70d17c55939/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071455,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":201},"responseTime":6.075792000000092,"msg":"request completed"}
+{"level":30,"time":1792392071455,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071464,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","res":{"statusCode":201},"responseTime":9.099291999999878,"msg":"request completed"}
+{"level":30,"time":1792392071466,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","req":{"method":"POST","url":"/api/projects/01a152e4-8916-7229-b16d-a70d17c55939/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071475,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","res":{"statusCode":201},"responseTime":8.900959000000057,"msg":"request completed"}
+{"level":30,"time":1792392071475,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","req":{"method":"POST","url":"/api/projects/01a152e4-8916-7229-b16d-a70d17c55939/services/01a152e4-892c-7ff0-8bd7-8110c8c8c6c0/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071481,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","res":{"statusCode":200},"responseTime":6.450834000000214,"msg":"request completed"}
+{"level":30,"time":1792392071482,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","req":{"method":"POST","url":"/webhooks/github/hwb3vxJ8ovqI2z1RI-02igoGk55q5b_O","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071494,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-892c-7ff0-8bd7-8110c8c8c6c0","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071494,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","res":{"statusCode":202},"responseTime":12.465292000000318,"msg":"request completed"}
+{"level":30,"time":1792392071494,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","req":{"method":"POST","url":"/webhooks/github/hwb3vxJ8ovqI2z1RI-02igoGk55q5b_O","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071500,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-892c-7ff0-8bd7-8110c8c8c6c0","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071500,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","res":{"statusCode":202},"responseTime":5.20370899999989,"msg":"request completed"}
+{"level":30,"time":1792392071501,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","req":{"method":"POST","url":"/webhooks/github/hwb3vxJ8ovqI2z1RI-02igoGk55q5b_O","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071506,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-892c-7ff0-8bd7-8110c8c8c6c0","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071506,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","res":{"statusCode":202},"responseTime":5.168999999999869,"msg":"request completed"}
+{"level":30,"time":1792392071509,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071514,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","res":{"statusCode":201},"responseTime":4.277291999999761,"msg":"request completed"}
+{"level":30,"time":1792392071514,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","req":{"method":"POST","url":"/api/projects/01a152e4-8958-7b42-ae71-2389920526c6/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071518,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","res":{"statusCode":201},"responseTime":4.387042000000292,"msg":"request completed"}
+{"level":30,"time":1792392071518,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-d","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071526,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-d","res":{"statusCode":201},"responseTime":7.396625000000313,"msg":"request completed"}
+{"level":30,"time":1792392071527,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-e","req":{"method":"POST","url":"/api/projects/01a152e4-8958-7b42-ae71-2389920526c6/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071534,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-e","res":{"statusCode":201},"responseTime":6.8165829999998095,"msg":"request completed"}
+{"level":30,"time":1792392071534,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-f","req":{"method":"POST","url":"/api/projects/01a152e4-8958-7b42-ae71-2389920526c6/services/01a152e4-896a-775a-9936-86d9d913efa9/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+ ✓ tests/integration/webhooks/coalesce.test.ts > coalescing during an active deployment (A1) > a push while a deployment is active takes the pending slot; a newer one replaces it and supersedes the older 70ms
+{"level":30,"time":1792392071541,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-f","res":{"statusCode":200},"responseTime":6.881083999999646,"msg":"request completed"}
+{"level":30,"time":1792392071541,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-g","req":{"method":"POST","url":"/webhooks/github/gQC5Fh4CnGhqPRnKwSHW7aWl83lFfrgz","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071548,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-896a-775a-9936-86d9d913efa9","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071548,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-g","res":{"statusCode":202},"responseTime":6.739332999999988,"msg":"request completed"}
+{"level":30,"time":1792392071548,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-h","req":{"method":"POST","url":"/webhooks/github/gQC5Fh4CnGhqPRnKwSHW7aWl83lFfrgz","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071553,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-896a-775a-9936-86d9d913efa9","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071553,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-h","res":{"statusCode":202},"responseTime":4.633416999999554,"msg":"request completed"}
+{"level":30,"time":1792392071570,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-i","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071574,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-i","res":{"statusCode":201},"responseTime":3.1159999999999854,"msg":"request completed"}
+{"level":30,"time":1792392071574,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-j","req":{"method":"POST","url":"/api/projects/01a152e4-8994-725d-a457-1a8a1ca67a35/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071577,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-j","res":{"statusCode":201},"responseTime":2.8725829999998496,"msg":"request completed"}
+{"level":30,"time":1792392071577,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-k","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071580,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-k","res":{"statusCode":201},"responseTime":3.5059590000000753,"msg":"request completed"}
+{"level":30,"time":1792392071581,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-l","req":{"method":"POST","url":"/api/projects/01a152e4-8994-725d-a457-1a8a1ca67a35/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071585,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-l","res":{"statusCode":201},"responseTime":3.6414159999999356,"msg":"request completed"}
+{"level":30,"time":1792392071585,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-m","req":{"method":"POST","url":"/api/projects/01a152e4-8994-725d-a457-1a8a1ca67a35/services/01a152e4-899e-7792-b473-4846ed89fef8/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071588,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-m","res":{"statusCode":200},"responseTime":3.7697079999998095,"msg":"request completed"}
+{"level":30,"time":1792392071589,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-n","req":{"method":"POST","url":"/webhooks/github/KE3JWBcHXMvzlBoPuYc8AestVLcNa3N0","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071594,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-899e-7792-b473-4846ed89fef8","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071594,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-n","res":{"statusCode":202},"responseTime":5.040166000000227,"msg":"request completed"}
+{"level":30,"time":1792392071594,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-o","req":{"method":"POST","url":"/webhooks/github/KE3JWBcHXMvzlBoPuYc8AestVLcNa3N0","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071597,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-899e-7792-b473-4846ed89fef8","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071597,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-o","res":{"statusCode":202},"responseTime":3.4555419999996957,"msg":"request completed"}
+{"level":30,"time":1792392071609,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-p","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071611,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-p","res":{"statusCode":201},"responseTime":2.771165999999994,"msg":"request completed"}
+{"level":30,"time":1792392071611,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-q","req":{"method":"POST","url":"/api/projects/01a152e4-89ba-7c0b-a98f-db40a6cd091a/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071614,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-q","res":{"statusCode":201},"responseTime":2.4920420000003105,"msg":"request completed"}
+{"level":30,"time":1792392071614,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-r","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071617,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-r","res":{"statusCode":201},"responseTime":3.131540999999743,"msg":"request completed"}
+{"level":30,"time":1792392071618,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-s","req":{"method":"POST","url":"/api/projects/01a152e4-89ba-7c0b-a98f-db40a6cd091a/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071622,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-s","res":{"statusCode":201},"responseTime":3.3609999999998763,"msg":"request completed"}
+{"level":30,"time":1792392071622,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-t","req":{"method":"POST","url":"/api/projects/01a152e4-89ba-7c0b-a98f-db40a6cd091a/services/01a152e4-89c3-7e3d-94eb-5ee91baabafe/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071625,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-t","res":{"statusCode":200},"responseTime":3.122624999999971,"msg":"request completed"}
+{"level":30,"time":1792392071625,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-u","req":{"method":"POST","url":"/webhooks/github/bKqJS1JwJrmWXqWdZYErsq1GuqHomj65","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071630,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-89c3-7e3d-94eb-5ee91baabafe","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071631,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-u","res":{"statusCode":202},"responseTime":5.627166999999645,"msg":"request completed"}
+{"level":30,"time":1792392071631,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-v","req":{"method":"POST","url":"/webhooks/github/bKqJS1JwJrmWXqWdZYErsq1GuqHomj65","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071634,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-89c3-7e3d-94eb-5ee91baabafe","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071634,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-v","res":{"statusCode":202},"responseTime":3.19333400000005,"msg":"request completed"}
+{"level":30,"time":1792392071651,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-w","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071653,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-w","res":{"statusCode":201},"responseTime":2.473917000000256,"msg":"request completed"}
+{"level":30,"time":1792392071654,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-x","req":{"method":"POST","url":"/api/projects/01a152e4-89e5-714b-9112-e9da0b687125/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071656,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-x","res":{"statusCode":201},"responseTime":2.3052499999998872,"msg":"request completed"}
+{"level":30,"time":1792392071656,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-y","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071659,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-y","res":{"statusCode":201},"responseTime":2.900000000000091,"msg":"request completed"}
+{"level":30,"time":1792392071660,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-z","req":{"method":"POST","url":"/api/projects/01a152e4-89e5-714b-9112-e9da0b687125/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071663,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-z","res":{"statusCode":201},"responseTime":3.033208999999715,"msg":"request completed"}
+{"level":30,"time":1792392071663,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-10","req":{"method":"POST","url":"/api/projects/01a152e4-89e5-714b-9112-e9da0b687125/services/01a152e4-89ed-78c6-a9f7-50821fa241d1/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071666,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-10","res":{"statusCode":200},"responseTime":2.841624999999567,"msg":"request completed"}
+{"level":30,"time":1792392071666,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-11","req":{"method":"POST","url":"/webhooks/github/YElQAhhWpMyzqcAJRQDKT6GH6BKVXkQz","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071670,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-89ed-78c6-a9f7-50821fa241d1","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+ ✓ tests/integration/webhooks/coalesce.test.ts > drain when the active deployment ends (A2, A3) > the deploy worker claims the pending trigger after a terminal run and enqueues one webhook deployment 61ms
+{"level":30,"time":1792392071670,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-11","res":{"statusCode":202},"responseTime":4.226584000000003,"msg":"request completed"}
+{"level":30,"time":1792392071670,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-12","req":{"method":"POST","url":"/webhooks/github/YElQAhhWpMyzqcAJRQDKT6GH6BKVXkQz","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071673,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-89ed-78c6-a9f7-50821fa241d1","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071673,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-12","res":{"statusCode":202},"responseTime":2.96100000000024,"msg":"request completed"}
+{"level":30,"time":1792392071682,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-13","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071685,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-13","res":{"statusCode":201},"responseTime":2.2500420000001213,"msg":"request completed"}
+{"level":30,"time":1792392071685,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-14","req":{"method":"POST","url":"/api/projects/01a152e4-8a04-7c75-bc18-d3a79ca774a1/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071687,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-14","res":{"statusCode":201},"responseTime":2.168250000000171,"msg":"request completed"}
+{"level":30,"time":1792392071687,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-15","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071690,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-15","res":{"statusCode":201},"responseTime":2.8170000000000073,"msg":"request completed"}
+{"level":30,"time":1792392071690,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-16","req":{"method":"POST","url":"/api/projects/01a152e4-8a04-7c75-bc18-d3a79ca774a1/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071693,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-16","res":{"statusCode":201},"responseTime":2.8287920000002487,"msg":"request completed"}
+{"level":30,"time":1792392071693,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-17","req":{"method":"POST","url":"/api/projects/01a152e4-8a04-7c75-bc18-d3a79ca774a1/services/01a152e4-8a0b-7b78-92a9-12d5437b3b06/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071696,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-17","res":{"statusCode":200},"responseTime":2.9199170000001686,"msg":"request completed"}
+{"level":30,"time":1792392071696,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-18","req":{"method":"POST","url":"/webhooks/github/8DoKdIAvpDZOhw8lrQX2XIUqIeor0JcF","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071700,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a0b-7b78-92a9-12d5437b3b06","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071700,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-18","res":{"statusCode":202},"responseTime":3.7764170000000377,"msg":"request completed"}
+{"level":30,"time":1792392071700,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-19","req":{"method":"POST","url":"/webhooks/github/8DoKdIAvpDZOhw8lrQX2XIUqIeor0JcF","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071703,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a0b-7b78-92a9-12d5437b3b06","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071703,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-19","res":{"statusCode":202},"responseTime":3.188250000000153,"msg":"request completed"}
+{"level":30,"time":1792392071715,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1a","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071717,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1a","res":{"statusCode":201},"responseTime":2.3004580000001624,"msg":"request completed"}
+{"level":30,"time":1792392071717,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1b","req":{"method":"POST","url":"/api/projects/01a152e4-8a24-78e4-bdbd-47460b77882f/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071719,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1b","res":{"statusCode":201},"responseTime":2.1266249999998763,"msg":"request completed"}
+{"level":30,"time":1792392071719,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1c","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071722,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1c","res":{"statusCode":201},"responseTime":2.848916999999801,"msg":"request completed"}
+{"level":30,"time":1792392071723,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1d","req":{"method":"POST","url":"/api/projects/01a152e4-8a24-78e4-bdbd-47460b77882f/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071726,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1d","res":{"statusCode":201},"responseTime":3.083542000000307,"msg":"request completed"}
+{"level":30,"time":1792392071726,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1e","req":{"method":"POST","url":"/api/projects/01a152e4-8a24-78e4-bdbd-47460b77882f/services/01a152e4-8a2c-71b4-95a2-380f46d8d896/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071729,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1e","res":{"statusCode":200},"responseTime":2.8422920000002705,"msg":"request completed"}
+{"level":30,"time":1792392071729,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1f","req":{"method":"POST","url":"/webhooks/github/_zliGVa0vzXQxS2NyPcsC3EKGv2xf8W_","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071733,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a2c-71b4-95a2-380f46d8d896","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071733,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1f","res":{"statusCode":202},"responseTime":3.8171250000000327,"msg":"request completed"}
+{"level":30,"time":1792392071733,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1g","req":{"method":"POST","url":"/webhooks/github/_zliGVa0vzXQxS2NyPcsC3EKGv2xf8W_","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071736,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a2c-71b4-95a2-380f46d8d896","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071736,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1g","res":{"statusCode":202},"responseTime":2.739415999999892,"msg":"request completed"}
+{"level":30,"time":1792392071738,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1h","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071741,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1h","res":{"statusCode":201},"responseTime":2.225666999999703,"msg":"request completed"}
+{"level":30,"time":1792392071741,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1i","req":{"method":"POST","url":"/api/projects/01a152e4-8a3c-7f82-8436-f8db00bcc403/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071743,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1i","res":{"statusCode":201},"responseTime":2.1793750000001637,"msg":"request completed"}
+{"level":30,"time":1792392071743,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1j","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071746,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1j","res":{"statusCode":201},"responseTime":2.965625000000273,"msg":"request completed"}
+{"level":30,"time":1792392071746,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1k","req":{"method":"POST","url":"/api/projects/01a152e4-8a3c-7f82-8436-f8db00bcc403/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071749,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1k","res":{"statusCode":201},"responseTime":2.994166999999834,"msg":"request completed"}
+{"level":30,"time":1792392071749,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1l","req":{"method":"POST","url":"/api/projects/01a152e4-8a3c-7f82-8436-f8db00bcc403/services/01a152e4-8a43-70a4-bc58-9e9ed586d7f2/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071754,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1l","res":{"statusCode":200},"responseTime":4.232499999999618,"msg":"request completed"}
+{"level":30,"time":1792392071754,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1m","req":{"method":"POST","url":"/webhooks/github/8h9bGgkpbBrTMsXmE8MPbVz2xK8QBPxI","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071758,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a43-70a4-bc58-9e9ed586d7f2","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071758,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1m","res":{"statusCode":202},"responseTime":3.9164999999998145,"msg":"request completed"}
+{"level":30,"time":1792392071758,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1n","req":{"method":"POST","url":"/webhooks/github/8h9bGgkpbBrTMsXmE8MPbVz2xK8QBPxI","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071761,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a43-70a4-bc58-9e9ed586d7f2","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071761,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1n","res":{"statusCode":202},"responseTime":2.713000000000193,"msg":"request completed"}
+{"level":30,"time":1792392071766,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1o","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071769,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1o","res":{"statusCode":201},"responseTime":2.6647499999999127,"msg":"request completed"}
+{"level":30,"time":1792392071769,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1p","req":{"method":"POST","url":"/api/projects/01a152e4-8a58-7537-91f5-27cd34d56579/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071771,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1p","res":{"statusCode":201},"responseTime":2.3238750000000437,"msg":"request completed"}
+{"level":30,"time":1792392071771,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1q","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071775,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1q","res":{"statusCode":201},"responseTime":3.7716669999999795,"msg":"request completed"}
+{"level":30,"time":1792392071776,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1r","req":{"method":"POST","url":"/api/projects/01a152e4-8a58-7537-91f5-27cd34d56579/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071780,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1r","res":{"statusCode":201},"responseTime":4.06191600000011,"msg":"request completed"}
+{"level":30,"time":1792392071780,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1s","req":{"method":"POST","url":"/api/projects/01a152e4-8a58-7537-91f5-27cd34d56579/services/01a152e4-8a61-7a20-a96a-3300a9c48632/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071783,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1s","res":{"statusCode":200},"responseTime":3.205041000000165,"msg":"request completed"}
+{"level":30,"time":1792392071783,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1t","req":{"method":"POST","url":"/webhooks/github/0wq7FfBpHoNFQuIClUFWvgJmyz8T7Xbz","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071787,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a61-7a20-a96a-3300a9c48632","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071787,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1t","res":{"statusCode":202},"responseTime":4.149917000000187,"msg":"request completed"}
+{"level":30,"time":1792392071788,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1u","req":{"method":"POST","url":"/webhooks/github/0wq7FfBpHoNFQuIClUFWvgJmyz8T7Xbz","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071791,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a61-7a20-a96a-3300a9c48632","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071792,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1u","res":{"statusCode":202},"responseTime":4.009707999999591,"msg":"request completed"}
+{"level":30,"time":1792392071798,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1v","req":{"method":"POST","url":"/webhooks/github/0wq7FfBpHoNFQuIClUFWvgJmyz8T7Xbz","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071802,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a61-7a20-a96a-3300a9c48632","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071802,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1v","res":{"statusCode":202},"responseTime":4.044790999999805,"msg":"request completed"}
+ ✓ tests/integration/webhooks/coalesce.test.ts > drain when the active deployment ends (A2, A3) > runs after any terminal state, and concurrent terminal events enqueue exactly one deployment 144ms
+ ✓ tests/integration/webhooks/coalesce.test.ts > drain when the active deployment ends (A2, A3) > waits while a deployment is still active (busy) and changes nothing 24ms
+ ✓ tests/integration/webhooks/coalesce.test.ts > drain when the active deployment ends (A2, A3) > A3: a pending SHA equal to the SHA just deployed is dropped with outcome already_deployed 28ms
+ ✓ tests/integration/webhooks/coalesce.test.ts > drain when the active deployment ends (A2, A3) > a push during the follow-up coalesces behind it and leaves the drained delivery deployed 37ms
+{"level":30,"time":1792392071803,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1w","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071807,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1w","res":{"statusCode":201},"responseTime":3.15954099999999,"msg":"request completed"}
+{"level":30,"time":1792392071807,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1x","req":{"method":"POST","url":"/api/projects/01a152e4-8a7e-7cea-a44f-d5bf939f5754/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071809,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1x","res":{"statusCode":201},"responseTime":2.451958999999988,"msg":"request completed"}
+{"level":30,"time":1792392071809,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1y","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071812,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1y","res":{"statusCode":201},"responseTime":2.9812919999999394,"msg":"request completed"}
+{"level":30,"time":1792392071813,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1z","req":{"method":"POST","url":"/api/projects/01a152e4-8a7e-7cea-a44f-d5bf939f5754/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071818,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1z","res":{"statusCode":201},"responseTime":5.040082999999868,"msg":"request completed"}
+{"level":30,"time":1792392071818,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-20","req":{"method":"POST","url":"/api/projects/01a152e4-8a7e-7cea-a44f-d5bf939f5754/services/01a152e4-8a86-7e49-937d-46b3480be97c/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071821,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-20","res":{"statusCode":200},"responseTime":3.245582999999897,"msg":"request completed"}
+{"level":30,"time":1792392071821,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-21","req":{"method":"POST","url":"/webhooks/github/VUlORELQKEgMen5W0Spbo5e1GZx4HgSc","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071825,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a86-7e49-937d-46b3480be97c","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071825,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-21","res":{"statusCode":202},"responseTime":3.888542000000143,"msg":"request completed"}
+{"level":30,"time":1792392071825,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-22","req":{"method":"POST","url":"/webhooks/github/VUlORELQKEgMen5W0Spbo5e1GZx4HgSc","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071825,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-23","req":{"method":"POST","url":"/webhooks/github/VUlORELQKEgMen5W0Spbo5e1GZx4HgSc","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071825,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-24","req":{"method":"POST","url":"/webhooks/github/VUlORELQKEgMen5W0Spbo5e1GZx4HgSc","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071825,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-25","req":{"method":"POST","url":"/webhooks/github/VUlORELQKEgMen5W0Spbo5e1GZx4HgSc","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071825,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-26","req":{"method":"POST","url":"/webhooks/github/VUlORELQKEgMen5W0Spbo5e1GZx4HgSc","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071825,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-27","req":{"method":"POST","url":"/webhooks/github/VUlORELQKEgMen5W0Spbo5e1GZx4HgSc","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071825,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-28","req":{"method":"POST","url":"/webhooks/github/VUlORELQKEgMen5W0Spbo5e1GZx4HgSc","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071825,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-29","req":{"method":"POST","url":"/webhooks/github/VUlORELQKEgMen5W0Spbo5e1GZx4HgSc","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071830,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a86-7e49-937d-46b3480be97c","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071830,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-22","res":{"statusCode":202},"responseTime":4.915207999999893,"msg":"request completed"}
+{"level":30,"time":1792392071835,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a86-7e49-937d-46b3480be97c","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071835,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-23","res":{"statusCode":202},"responseTime":9.575166999999965,"msg":"request completed"}
+{"level":30,"time":1792392071838,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a86-7e49-937d-46b3480be97c","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071839,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-24","res":{"statusCode":202},"responseTime":13.124041999999918,"msg":"request completed"}
+{"level":30,"time":1792392071842,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a86-7e49-937d-46b3480be97c","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071842,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-29","res":{"statusCode":202},"responseTime":16.42191700000012,"msg":"request completed"}
+{"level":30,"time":1792392071845,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a86-7e49-937d-46b3480be97c","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071845,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-26","res":{"statusCode":202},"responseTime":19.795791999999892,"msg":"request completed"}
+{"level":30,"time":1792392071849,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a86-7e49-937d-46b3480be97c","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071849,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-25","res":{"statusCode":202},"responseTime":23.33874999999989,"msg":"request completed"}
+{"level":30,"time":1792392071852,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a86-7e49-937d-46b3480be97c","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071852,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-27","res":{"statusCode":202},"responseTime":26.888416999999663,"msg":"request completed"}
+{"level":30,"time":1792392071856,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8a86-7e49-937d-46b3480be97c","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071856,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-28","res":{"statusCode":202},"responseTime":30.306291999999758,"msg":"request completed"}
+{"level":30,"time":1792392071862,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2a","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071865,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2a","res":{"statusCode":201},"responseTime":2.688833000000159,"msg":"request completed"}
+{"level":30,"time":1792392071865,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2b","req":{"method":"POST","url":"/api/projects/01a152e4-8ab8-7f06-854a-0210649ff135/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071868,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2b","res":{"statusCode":201},"responseTime":2.4273330000000897,"msg":"request completed"}
+{"level":30,"time":1792392071868,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2c","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071871,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2c","res":{"statusCode":201},"responseTime":3.281040999999732,"msg":"request completed"}
+{"level":30,"time":1792392071871,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2d","req":{"method":"POST","url":"/api/projects/01a152e4-8ab8-7f06-854a-0210649ff135/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071874,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2d","res":{"statusCode":201},"responseTime":2.976709000000028,"msg":"request completed"}
+{"level":30,"time":1792392071874,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2e","req":{"method":"POST","url":"/api/projects/01a152e4-8ab8-7f06-854a-0210649ff135/services/01a152e4-8ac0-7fa9-87dd-df5e463be740/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071877,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2e","res":{"statusCode":200},"responseTime":2.636167000000114,"msg":"request completed"}
+{"level":30,"time":1792392071877,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2f","req":{"method":"POST","url":"/webhooks/github/Dhuxs5IOPz241pdEGY_3X3SKB5Iw1fiN","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071881,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8ac0-7fa9-87dd-df5e463be740","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071881,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2f","res":{"statusCode":202},"responseTime":3.875166000000263,"msg":"request completed"}
+{"level":30,"time":1792392071881,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2g","req":{"method":"POST","url":"/webhooks/github/Dhuxs5IOPz241pdEGY_3X3SKB5Iw1fiN","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071884,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8ac0-7fa9-87dd-df5e463be740","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071884,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2g","res":{"statusCode":202},"responseTime":2.7114999999998872,"msg":"request completed"}
+{"level":30,"time":1792392071900,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2h","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071902,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2h","res":{"statusCode":201},"responseTime":2.173667000000023,"msg":"request completed"}
+{"level":30,"time":1792392071902,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2i","req":{"method":"POST","url":"/api/projects/01a152e4-8ade-7039-9157-a68b1b2e77ac/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071905,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2i","res":{"statusCode":201},"responseTime":2.0864159999996446,"msg":"request completed"}
+{"level":30,"time":1792392071905,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2j","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071907,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2j","res":{"statusCode":201},"responseTime":2.701000000000022,"msg":"request completed"}
+{"level":30,"time":1792392071908,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2k","req":{"method":"POST","url":"/api/projects/01a152e4-8ade-7039-9157-a68b1b2e77ac/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071910,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2k","res":{"statusCode":201},"responseTime":2.5904169999998885,"msg":"request completed"}
+{"level":30,"time":1792392071910,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2l","req":{"method":"POST","url":"/api/projects/01a152e4-8ade-7039-9157-a68b1b2e77ac/services/01a152e4-8ae4-778b-a51c-9847829757c2/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071913,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2l","res":{"statusCode":200},"responseTime":2.4602920000002086,"msg":"request completed"}
+{"level":30,"time":1792392071913,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2m","req":{"method":"POST","url":"/webhooks/github/U0vi28OH6oWGptSp3_-F1pFx5Qp6E2sp","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071917,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8ae4-778b-a51c-9847829757c2","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071917,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2m","res":{"statusCode":202},"responseTime":3.6122920000002523,"msg":"request completed"}
+{"level":30,"time":1792392071917,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2n","req":{"method":"POST","url":"/webhooks/github/U0vi28OH6oWGptSp3_-F1pFx5Qp6E2sp","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071919,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8ae4-778b-a51c-9847829757c2","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071919,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2n","res":{"statusCode":202},"responseTime":2.6334170000000086,"msg":"request completed"}
+ ✓ tests/integration/webhooks/coalesce.test.ts > race safety and retention (H1, H2) > H1: N parallel pushes during a deploy leave one pending trigger (the newest), supersede the rest, and drain once 59ms
+ ✓ tests/integration/webhooks/coalesce.test.ts > race safety and retention (H1, H2) > H2: a failed follow-up enqueue retains the pending trigger and the next drain runs it 38ms
+ ✓ tests/integration/webhooks/coalesce.test.ts > race safety and retention (H1, H2) > H2: a pending delivery whose follow-up was enqueued but never cleared is not deployed twice 27ms
+{"level":30,"time":1792392071927,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2o","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071929,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2o","res":{"statusCode":201},"responseTime":2.0373749999998836,"msg":"request completed"}
+{"level":30,"time":1792392071929,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2p","req":{"method":"POST","url":"/api/projects/01a152e4-8af8-7677-a9a9-46edf0d4e61a/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071931,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2p","res":{"statusCode":201},"responseTime":1.998167000000194,"msg":"request completed"}
+{"level":30,"time":1792392071931,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2q","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071934,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2q","res":{"statusCode":201},"responseTime":2.5712499999999636,"msg":"request completed"}
+{"level":30,"time":1792392071934,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2r","req":{"method":"POST","url":"/api/projects/01a152e4-8af8-7677-a9a9-46edf0d4e61a/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071937,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2r","res":{"statusCode":201},"responseTime":2.5764170000002196,"msg":"request completed"}
+{"level":30,"time":1792392071937,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2s","req":{"method":"POST","url":"/api/projects/01a152e4-8af8-7677-a9a9-46edf0d4e61a/services/01a152e4-8aff-7560-b780-2c4ed91cbaeb/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071940,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2s","res":{"statusCode":200},"responseTime":2.5378749999999854,"msg":"request completed"}
+{"level":30,"time":1792392071940,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2t","req":{"method":"POST","url":"/webhooks/github/dqruoSYRDDyKEfuLEIkmIhDZhYZR32rh","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071943,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8aff-7560-b780-2c4ed91cbaeb","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071943,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2t","res":{"statusCode":202},"responseTime":3.48758399999997,"msg":"request completed"}
+{"level":30,"time":1792392071943,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2u","req":{"method":"POST","url":"/webhooks/github/dqruoSYRDDyKEfuLEIkmIhDZhYZR32rh","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071946,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8aff-7560-b780-2c4ed91cbaeb","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071946,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2u","res":{"statusCode":202},"responseTime":2.4529999999999745,"msg":"request completed"}
+{"level":30,"time":1792392071946,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2v","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071948,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2v","res":{"statusCode":201},"responseTime":1.9866250000000036,"msg":"request completed"}
+{"level":30,"time":1792392071948,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2w","req":{"method":"POST","url":"/api/projects/01a152e4-8b0b-71d2-865e-dfe475da728a/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071950,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2w","res":{"statusCode":201},"responseTime":1.9562499999997272,"msg":"request completed"}
+{"level":30,"time":1792392071950,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2x","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071952,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2x","res":{"statusCode":201},"responseTime":2.5167089999999916,"msg":"request completed"}
+{"level":30,"time":1792392071953,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2y","req":{"method":"POST","url":"/api/projects/01a152e4-8b0b-71d2-865e-dfe475da728a/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071955,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2y","res":{"statusCode":201},"responseTime":2.6093329999998787,"msg":"request completed"}
+{"level":30,"time":1792392071955,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2z","req":{"method":"POST","url":"/api/projects/01a152e4-8b0b-71d2-865e-dfe475da728a/services/01a152e4-8b12-708a-894d-7f8e7075b57e/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071958,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2z","res":{"statusCode":200},"responseTime":2.56183400000009,"msg":"request completed"}
+{"level":30,"time":1792392071958,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-30","req":{"method":"POST","url":"/webhooks/github/1vcrvFql71Q477pr5FnWfpzA7-yyHxoz","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071962,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8b12-708a-894d-7f8e7075b57e","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071962,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-30","res":{"statusCode":202},"responseTime":3.5423329999998714,"msg":"request completed"}
+{"level":30,"time":1792392071962,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-31","req":{"method":"POST","url":"/webhooks/github/1vcrvFql71Q477pr5FnWfpzA7-yyHxoz","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392071964,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8b12-708a-894d-7f8e7075b57e","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392071964,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-31","res":{"statusCode":202},"responseTime":2.336917000000085,"msg":"request completed"}
+ ✓ tests/integration/webhooks/coalesce.test.ts > race safety and retention (H1, H2) > H2: the sweep path drains a service whose deployment a crashed worker left behind 43ms
+{"level":30,"time":1792392072242,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-32","req":{"method":"POST","url":"/api/projects","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392072250,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-32","res":{"statusCode":201},"responseTime":7.875250000000051,"msg":"request completed"}
+{"level":30,"time":1792392072250,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-33","req":{"method":"POST","url":"/api/projects/01a152e4-8c37-7683-b93d-1d944fd635ad/environments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392072255,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-33","res":{"statusCode":201},"responseTime":4.782208000000082,"msg":"request completed"}
+{"level":30,"time":1792392072255,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-34","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392072260,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-34","res":{"statusCode":201},"responseTime":5.671459000000141,"msg":"request completed"}
+{"level":30,"time":1792392072262,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-35","req":{"method":"POST","url":"/api/projects/01a152e4-8c37-7683-b93d-1d944fd635ad/services","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392072268,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-35","res":{"statusCode":201},"responseTime":6.229291999999987,"msg":"request completed"}
+{"level":30,"time":1792392072268,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-36","req":{"method":"POST","url":"/api/projects/01a152e4-8c37-7683-b93d-1d944fd635ad/services/01a152e4-8c47-7559-b416-c9365da0cd95/webhook","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392072275,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-36","res":{"statusCode":200},"responseTime":6.965124999999716,"msg":"request completed"}
+{"level":30,"time":1792392072275,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-37","req":{"method":"POST","url":"/webhooks/github/ifgewYrMAtcsjLEBKemmOFTXHISphYWX","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392072283,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8c47-7559-b416-c9365da0cd95","outcome":"deployed","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392072283,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-37","res":{"statusCode":202},"responseTime":7.721749999999702,"msg":"request completed"}
+{"level":30,"time":1792392072283,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-38","req":{"method":"POST","url":"/webhooks/github/ifgewYrMAtcsjLEBKemmOFTXHISphYWX","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392072290,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-8c47-7559-b416-c9365da0cd95","outcome":"coalesced","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392072290,"pid":51771,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-38","res":{"statusCode":202},"responseTime":6.967249999999694,"msg":"request completed"}
+ ✓ tests/integration/webhooks/coalesce.test.ts > worker wiring: the stale-QUEUED sweep drains pending triggers (H2) > a follow-up left QUEUED by a lost enqueue is ended by the sweep and retried on the same pass 207ms
+ ✓ tests/integration/webhooks/receiver.test.ts > transport (A1) > needs no session and ignores a foreign Origin; a ping answers 200 and is recorded 51ms
+ ✓ tests/integration/webhooks/receiver.test.ts > transport (A1) > caps the body at 1 MiB (413) and accepts only application/json (415) 27ms
+ ✓ tests/integration/webhooks/receiver.test.ts > signature (A2, H1) > missing, malformed, wrong, unknown-hook and disabled deliveries share one 401 body 36ms
+{"level":40,"time":1792392077957,"pid":51833,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"dd4bd74f123d8ebc","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":30,"time":1792392077963,"pid":51833,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/webhooks/github/7W2AxstScXChy22vU8qxkzavlj-vyLBB","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392077967,"pid":51833,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-a27d-70ce-afa7-631a217e53d8","outcome":"ping","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392077967,"pid":51833,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":4.571582999999919,"msg":"request completed"}
+{"level":30,"time":1792392077968,"pid":51833,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/webhooks/github/7W2AxstScXChy22vU8qxkzavlj-vyLBB","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392077972,"pid":51833,"hostname":"Pablos-MacBook-Pro.local","serviceId":"01a152e4-a27d-70ce-afa7-631a217e53d8","outcome":"ping","duplicate":false,"msg":"github webhook delivery recorded"}
+{"level":30,"time":1792392077972,"pid":51833,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":4.572916999999961,"msg":"request completed"}
+{"level":30,"time":1792392077972,"pid":51833,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/webhooks/github/7W2AxstScXChy22vU8qxkzavlj-vyLBB","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392077972,"pid":51833,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":429},"responseTime":0.051124999999956344,"msg":"request completed"}
+{"level":30,"time":1792392077972,"pid":51833,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/webhooks/github/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392077973,"pid":51833,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":401},"responseTime":0.7257920000001832,"msg":"request completed"}
+ ✓ tests/integration/webhooks/receiver.test.ts > signature (A2, H1) > a rotated-out secret fails at once and the new one works 37ms
+ ✓ tests/integration/webhooks/receiver.test.ts > signature (A2, H1) > a missing or malformed X-GitHub-Delivery is 400, but only after the signature passes (H2) 25ms
+ ✓ tests/integration/webhooks/receiver.test.ts > events and rate limit (A3) > records an ignored event and a non-matching branch with their outcome and 200 32ms
+ ✓ tests/integration/webhooks/receiver.test.ts > events and rate limit (A3) > answers 429 once the per-hook or per-IP window is spent 40ms
+{"level":30,"time":1792392077973,"pid":51833,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","req":{"method":"POST","url":"/webhooks/github/CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1792392077973,"pid":51833,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","res":{"statusCode":429},"responseTime":0.03783300000031886,"msg":"request completed"}
+ ✓ tests/integration/webhooks/receiver.test.ts > push deploy and dedupe (A4, H2) > a matching push creates a webhook deployment with the requested SHA, linked to its delivery 41ms
+ ✓ tests/integration/webhooks/receiver.test.ts > push deploy and dedupe (A4, H2) > two concurrent identical deliveries create exactly one deployment and both answer its id (H2) 32ms
+ ✓ tests/integration/webhooks/receiver.test.ts > never triggers (H3) > an archived project records project_archived and deploys nothing 30ms
+ ✓ tests/integration/webhooks/receiver.test.ts > never triggers (H3) > an image-source service records source_not_git and deploys nothing 22ms
+ ✓ tests/integration/webhooks/receiver.test.ts > never triggers (H3) > a disabled webhook answers the shared 401 and records nothing 26ms
+ ✓ tests/integration/webhooks/receiver.test.ts > never triggers (H3) > a failed enqueue (unavailable) ends the deployment FAILED/ENQUEUE_FAILED, never QUEUED 35ms
+ ✓ tests/integration/webhooks/receiver.test.ts > never triggers (H3) > a failed enqueue (throw) ends the deployment FAILED/ENQUEUE_FAILED, never QUEUED 41ms
+ ✓ tests/integration/webhooks/receiver.test.ts > never triggers (H3) > an enqueue that reports failure after a worker already claimed the job answers 202, not 503 30ms
+ ✓ tests/integration/webhooks/receiver.test.ts > never triggers (H3) > a redelivery of a delivery whose deployment ended ENQUEUE_FAILED retries it with a new deployment 49ms
+ ✓ tests/integration/webhooks/receiver.test.ts > never triggers (H3) > a redelivery after ENQUEUE_FAILED is superseded once a newer push deployed, and deploys nothing 43ms
+ ✓ tests/integration/webhooks/receiver.test.ts > no leaks (A5) > logs carry neither payload, signature nor secret; error bodies carry no internal ids 29ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/queue/deploy-queue.test.ts > deploy (A1) > inserts a QUEUED deployment with a source snapshot and enqueues deploy-<id> with ids only
+AssertionError: expected [ 'id', 'serviceId', 'status', …(15) ] to deeply equal [ 'id', 'serviceId', 'status', …(16) ]
+
+- Expected
++ Received
+
+@@ -8,11 +8,10 @@
+    "commitSha",
+    "previousDeploymentId",
+    "rollbackOfDeploymentId",
+    "imageRef",
+    "webhookDeliveryId",
+-   "imageRetained",
+    "startedAt",
+    "completedAt",
+    "durationMs",
+    "errorCode",
+    "errorMessage",
+
+ ❯ tests/integration/queue/deploy-queue.test.ts:202:40
+    200|
+    201|     expect(response.statusCode, JSON.stringify(response.body)).toBe(20…
+    202|     expect(Object.keys(response.body)).toEqual([...viewFields]);
+       |                                        ^
+    203|     expect(response.body).toMatchObject({
+    204|       serviceId,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 10 passed (11)
+      Tests  1 failed | 107 passed (108)
+   Start at  00:30:47
+   Duration  631.41s (tests 99%, import 1%)
+
+# exit 1 in 632s

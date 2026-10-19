@@ -1,0 +1,3842 @@
+{
+  "ubuntu": "24.04",
+  "startedAt": "2026-10-19T06:06:10.657Z",
+  "cycles": 100,
+  "deployMaxMs": 300000,
+  "dfImagesGrowthBoundBytes": 134217728,
+  "baseline": [
+    {
+      "type": "Images",
+      "total": 2,
+      "active": 0,
+      "sizeBytes": 314800000
+    },
+    {
+      "type": "Containers",
+      "total": 0,
+      "active": 0,
+      "sizeBytes": 0
+    },
+    {
+      "type": "Local Volumes",
+      "total": 0,
+      "active": 0,
+      "sizeBytes": 0
+    },
+    {
+      "type": "Build Cache",
+      "total": 0,
+      "active": 0,
+      "sizeBytes": 0
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": -1,
+      "kind": "prime",
+      "deploymentId": "01a152d0-4b7c-70ed-9d6b-0ea6aa975b4b",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 4078,
+      "df": [
+        {
+          "type": "Images",
+          "total": 3,
+          "active": 1,
+          "sizeBytes": 314800000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 9,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 0,
+      "kind": "good",
+      "deploymentId": "01a152d0-5c34-7a7b-8eec-0b13aa893f40",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2055,
+      "df": [
+        {
+          "type": "Images",
+          "total": 4,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 9,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 1,
+      "kind": "manual",
+      "deploymentId": "01a152d0-650f-72cd-9fa8-c008efd64f97",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1525,
+      "df": [
+        {
+          "type": "Images",
+          "total": 4,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 9,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d0-6bc5-74fd-844b-44ba13ac3c17",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14623,
+      "df": [
+        {
+          "type": "Images",
+          "total": 4,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "kind": "good",
+      "deploymentId": "01a152d0-a5cd-7f6d-b434-4d9e45146b0c",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2065,
+      "df": [
+        {
+          "type": "Images",
+          "total": 5,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 4,
+      "kind": "manual",
+      "deploymentId": "01a152d0-ae88-7f12-bb89-6e1218185c58",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1521,
+      "df": [
+        {
+          "type": "Images",
+          "total": 5,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 5,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d0-b53a-7f17-99a1-1a86f3a8d090",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14625,
+      "df": [
+        {
+          "type": "Images",
+          "total": 5,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 6,
+      "kind": "good",
+      "deploymentId": "01a152d0-ef5a-7e8e-a9b4-13fd72036217",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2063,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 7,
+      "kind": "manual",
+      "deploymentId": "01a152d0-f81a-7197-992a-2b367cc7837d",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1521,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 8,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d0-fee9-783c-8a27-4a698ea08d09",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14621,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 9,
+      "kind": "good",
+      "deploymentId": "01a152d1-3932-79b1-a02c-c5cffcb4f842",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2058,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 10,
+      "kind": "manual",
+      "deploymentId": "01a152d1-41ff-7ce9-b804-4faa14b13ac5",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1524,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 11,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d1-48c0-7f7d-8814-14ddc9e3af37",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14632,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 12,
+      "kind": "good",
+      "deploymentId": "01a152d1-834f-70a5-bcfd-479c7a6d9fe6",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2068,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 13,
+      "kind": "manual",
+      "deploymentId": "01a152d1-8c07-74aa-b1f6-dd752b9d95ea",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1522,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 14,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d1-92cb-79be-8006-fe526d6b0d92",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14626,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 15,
+      "kind": "good",
+      "deploymentId": "01a152d1-ccec-75af-9d97-553aebae18d9",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2052,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 16,
+      "kind": "manual",
+      "deploymentId": "01a152d1-d597-760d-95c8-c937ade4582f",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1517,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 17,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d1-dc5d-7713-b552-b1e39da08761",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 15122,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 18,
+      "kind": "good",
+      "deploymentId": "01a152d2-1878-704e-8226-7456fbd69a0c",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2059,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 19,
+      "kind": "manual",
+      "deploymentId": "01a152d2-213a-7135-9d60-dee578bbe64b",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1521,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 20,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d2-2801-7fd1-b863-928898ab2fa0",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14625,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 21,
+      "kind": "good",
+      "deploymentId": "01a152d2-6226-75ba-88a8-05f6776e7ef6",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2060,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 22,
+      "kind": "manual",
+      "deploymentId": "01a152d2-6b09-7485-9a02-c1706f63d5c5",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1516,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 23,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d2-71c7-7565-95ab-89ee27f0d1e8",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14628,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 24,
+      "kind": "good",
+      "deploymentId": "01a152d2-abe9-7604-beea-4598c6789cab",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1048,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 25,
+      "kind": "manual",
+      "deploymentId": "01a152d2-b0b3-7b1f-b320-1bc3ae1df731",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1522,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 26,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d2-b771-7b1c-80c7-e27009bee887",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 15128,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 27,
+      "kind": "good",
+      "deploymentId": "01a152d2-f389-70a5-9293-a57b9c426b1b",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2076,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 28,
+      "kind": "manual",
+      "deploymentId": "01a152d2-fc6e-7a03-a616-e39987ab4fee",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1522,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 29,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d3-0332-7027-b339-cfddd400b0f4",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14612,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 30,
+      "kind": "good",
+      "deploymentId": "01a152d3-3d34-76dc-8c0b-2a0ace13901c",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2053,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 31,
+      "kind": "manual",
+      "deploymentId": "01a152d3-45f7-7264-8b4d-81b4a3fe6c6f",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1524,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 32,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d3-4cc6-7c35-8ab6-e06e524b8e14",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14617,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 33,
+      "kind": "good",
+      "deploymentId": "01a152d3-86d6-7d6c-be1c-619c03359431",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2061,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 34,
+      "kind": "manual",
+      "deploymentId": "01a152d3-8f96-76db-a8ef-4d27ed03d42a",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1521,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 35,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d3-9657-7d69-8f89-7bc881f63be0",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 15123,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 36,
+      "kind": "good",
+      "deploymentId": "01a152d3-d285-710d-aeaa-def483138ee9",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2066,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 37,
+      "kind": "manual",
+      "deploymentId": "01a152d3-db3f-7e08-a1e9-825c43ad62dc",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1523,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 38,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d3-e227-7d8f-b2d9-75ca6e10d104",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14609,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 39,
+      "kind": "good",
+      "deploymentId": "01a152d4-1c6d-7d9a-9eca-946e27f72512",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2057,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 40,
+      "kind": "manual",
+      "deploymentId": "01a152d4-2525-7b01-a9bd-f82ae72c63a3",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1521,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 41,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d4-2bec-7968-9ec8-ba829121b1a5",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14626,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 42,
+      "kind": "good",
+      "deploymentId": "01a152d4-6641-7c25-a506-8e83b583e023",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1064,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 43,
+      "kind": "manual",
+      "deploymentId": "01a152d4-6b10-7a6e-855e-797ae409c1f4",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1525,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 44,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d4-71da-7b73-962c-59fce46cdbb1",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14632,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 45,
+      "kind": "good",
+      "deploymentId": "01a152d4-ac0c-7cbe-8224-2961252b944f",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2058,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 46,
+      "kind": "manual",
+      "deploymentId": "01a152d4-b548-79ee-82a3-1f6bee915e09",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 513,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 47,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d4-b879-7ffd-8f61-7825fa20eff6",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14621,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 48,
+      "kind": "good",
+      "deploymentId": "01a152d4-f290-7b8c-b1bd-61f14de784da",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2058,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 49,
+      "kind": "manual",
+      "deploymentId": "01a152d4-fb60-78c3-b46b-d0391f80d488",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1524,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 50,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d5-022a-788b-9f20-5fd34a741501",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 15123,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 51,
+      "kind": "good",
+      "deploymentId": "01a152d5-3e4c-7ae6-a60c-b90693dcc73c",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2056,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 52,
+      "kind": "manual",
+      "deploymentId": "01a152d5-4704-76aa-b9bf-e08cf9711916",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1519,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 53,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d5-4dd7-7719-8a08-03b459eb7d05",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14623,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 54,
+      "kind": "good",
+      "deploymentId": "01a152d5-87f2-7ab2-9ec4-cc200c1ed0c9",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2067,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 55,
+      "kind": "manual",
+      "deploymentId": "01a152d5-90b5-7652-bb72-34e83fffd554",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1520,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 56,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d5-977e-7979-8abf-f1492e2296ca",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14626,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 57,
+      "kind": "good",
+      "deploymentId": "01a152d5-d19c-7671-adfa-5faf066d1ec1",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2058,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 58,
+      "kind": "manual",
+      "deploymentId": "01a152d5-da61-7051-add7-4fa92994013a",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1524,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 59,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d5-e126-7add-a45c-6251cd95337b",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14606,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 60,
+      "kind": "good",
+      "deploymentId": "01a152d6-1b45-7be3-a3d1-708fee20dd78",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2060,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 61,
+      "kind": "manual",
+      "deploymentId": "01a152d6-2402-7445-82fe-b9031cd2f4d1",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1526,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 62,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d6-2acd-7837-a3f5-35e2dceda15f",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14620,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 63,
+      "kind": "good",
+      "deploymentId": "01a152d6-6557-7a39-a588-68c249cb67d7",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2081,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 64,
+      "kind": "manual",
+      "deploymentId": "01a152d6-6e12-7805-aca9-7e831a8e37a1",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1515,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 65,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d6-74cf-7d87-92c9-83b0579a6ccf",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14654,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 66,
+      "kind": "good",
+      "deploymentId": "01a152d6-af18-7c03-9831-921d0fdefef0",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2057,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 67,
+      "kind": "manual",
+      "deploymentId": "01a152d6-b7c8-795f-b20d-4961306e34b0",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1521,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 68,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d6-be83-7db8-bd34-28a87c470aca",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14626,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 69,
+      "kind": "good",
+      "deploymentId": "01a152d6-f89d-751d-b57d-835745c7e375",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2058,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 70,
+      "kind": "manual",
+      "deploymentId": "01a152d7-01ba-772e-be70-cd627e9c220f",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1525,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 71,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d7-0881-730c-9ab8-ebd1f80dc998",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14625,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 72,
+      "kind": "good",
+      "deploymentId": "01a152d7-429e-76a3-8c4e-e1db6550452d",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2055,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 73,
+      "kind": "manual",
+      "deploymentId": "01a152d7-4b61-7ec9-89a8-8dc38f5bc26a",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1520,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 74,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d7-522f-780c-80cd-99fb87681ece",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14627,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 75,
+      "kind": "good",
+      "deploymentId": "01a152d7-8c6d-7cf1-87c8-0782c7fe2582",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2069,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 76,
+      "kind": "manual",
+      "deploymentId": "01a152d7-9529-70b5-b72e-ca8abc1f682f",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1519,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 77,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d7-9c66-7ade-bb54-ec9a6e44a3d2",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 15121,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 78,
+      "kind": "good",
+      "deploymentId": "01a152d7-d88d-7b81-993f-9c6a27a7086a",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2059,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 79,
+      "kind": "manual",
+      "deploymentId": "01a152d7-e147-7db9-84ba-67c71ed5ba6d",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1526,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 80,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d7-e80d-78ba-a837-47b109b5ede9",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 15126,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 81,
+      "kind": "good",
+      "deploymentId": "01a152d8-242b-76fa-8c08-03fdbe9db1e4",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2062,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 82,
+      "kind": "manual",
+      "deploymentId": "01a152d8-2cf6-7206-93fc-8d156234ae09",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1523,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 83,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d8-33b3-706f-8654-ecedda2126f7",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14626,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 84,
+      "kind": "good",
+      "deploymentId": "01a152d8-6dd0-7c9b-9ade-20dea7ab73ad",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2059,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 85,
+      "kind": "manual",
+      "deploymentId": "01a152d8-7717-7a90-bebd-1909e8627615",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1527,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 86,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d8-7ddc-7111-8bbb-422ccd9d2b23",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14615,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 87,
+      "kind": "good",
+      "deploymentId": "01a152d8-b7ee-72ea-8cae-e61b4387c836",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2059,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 88,
+      "kind": "manual",
+      "deploymentId": "01a152d8-c0b7-77c0-b456-04167eb22bdd",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1521,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 89,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d8-c774-7b8b-ba15-e18d7a40ebe9",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 15124,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 90,
+      "kind": "good",
+      "deploymentId": "01a152d9-038f-72c7-9bbe-e2d34816ea42",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2059,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 91,
+      "kind": "manual",
+      "deploymentId": "01a152d9-0c5f-7a49-9fda-7fadd45dfe83",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1525,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 92,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d9-1329-7819-b680-8dfc6513ec93",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14621,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 93,
+      "kind": "good",
+      "deploymentId": "01a152d9-4d66-780b-b244-a0c5d7263d24",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2057,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 94,
+      "kind": "manual",
+      "deploymentId": "01a152d9-5634-77b2-a81e-adea18b41d9e",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1521,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 95,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d9-5cef-7fab-aa81-5b177db182dc",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14623,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 96,
+      "kind": "good",
+      "deploymentId": "01a152d9-9775-75c1-a65a-7e36a2720c77",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1074,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 97,
+      "kind": "manual",
+      "deploymentId": "01a152d9-9c42-7575-b2e6-68d262eb5efd",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 514,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 98,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d9-9f1f-7783-ae3e-8f4f0975e045",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14628,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 99,
+      "kind": "good",
+      "deploymentId": "01a152d9-d935-70c7-8e65-3efa9c11277c",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2059,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 100,
+      "kind": "manual",
+      "deploymentId": "01a152d9-e209-7a2d-8296-49e7666b96b0",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1519,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 101,
+      "kind": "unhealthy",
+      "deploymentId": "01a152d9-e923-7db9-8a25-2c0b90d30cf7",
+      "status": "ROLLED_BACK",
+      "errorCode": "HEALTHCHECK_FAILED",
+      "durationMs": 14640,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 102,
+      "kind": "manual",
+      "deploymentId": "01a152da-2342-7015-9f0a-be1fe61c293f",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1519,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 103,
+      "kind": "manual",
+      "deploymentId": "01a152da-2a03-79b9-959f-298a30b151fe",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 512,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 104,
+      "kind": "manual",
+      "deploymentId": "01a152da-2cd3-7fe3-8031-bcc097294152",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1520,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 105,
+      "kind": "manual",
+      "deploymentId": "01a152da-33ef-7ef8-abe6-bb5911dfc20c",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 2024,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 106,
+      "kind": "manual",
+      "deploymentId": "01a152da-3cb3-7cac-9363-2d185ef11dfe",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1524,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 107,
+      "kind": "manual",
+      "deploymentId": "01a152da-4399-71d0-964c-62bfdd656e36",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1522,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 108,
+      "kind": "manual",
+      "deploymentId": "01a152da-4a7d-7d7f-a232-abea3561578a",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1542,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    },
+    {
+      "iteration": 109,
+      "kind": "manual",
+      "deploymentId": "01a152da-514a-75d8-9402-f85469ed288e",
+      "status": "SUCCESS",
+      "errorCode": null,
+      "durationMs": 1522,
+      "df": [
+        {
+          "type": "Images",
+          "total": 6,
+          "active": 1,
+          "sizeBytes": 314900000
+        },
+        {
+          "type": "Containers",
+          "total": 1,
+          "active": 1,
+          "sizeBytes": 4096
+        },
+        {
+          "type": "Local Volumes",
+          "total": 0,
+          "active": 0,
+          "sizeBytes": 0
+        },
+        {
+          "type": "Build Cache",
+          "total": 10,
+          "active": 0,
+          "sizeBytes": 234100000
+        }
+      ]
+    }
+  ],
+  "final": [
+    {
+      "type": "Images",
+      "total": 6,
+      "active": 1,
+      "sizeBytes": 314900000
+    },
+    {
+      "type": "Containers",
+      "total": 1,
+      "active": 1,
+      "sizeBytes": 4096
+    },
+    {
+      "type": "Local Volumes",
+      "total": 0,
+      "active": 0,
+      "sizeBytes": 0
+    },
+    {
+      "type": "Build Cache",
+      "total": 10,
+      "active": 0,
+      "sizeBytes": 234100000
+    }
+  ],
+  "summary": {
+    "iterations": 111,
+    "p50Ms": 2058,
+    "p95Ms": 15122,
+    "maxMs": 15128
+  },
+  "problems": []
+}

@@ -1,0 +1,29 @@
+$ pnpm test:state-machine
+# commit 3000994 2026-10-19T04:09:11Z
+
+> noodara@0.2.0 test:state-machine /Users/xch4rt/work/myself/noodara/code
+> vitest run --config vitest.state-machine.config.ts --coverage
+
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+      Coverage enabled with v8
+
+
+ Test Files  1 passed (1)
+      Tests  397 passed (397)
+   Start at  22:09:12
+   Duration  505ms (tests 76%, transform 13%, import 9%, worker 2%)
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 29/29 )
+Branches     : 100% ( 16/16 )
+Functions    : 100% ( 6/6 )
+Lines        : 100% ( 26/26 )
+================================================================================
+# exit 0 in 1s

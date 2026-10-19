@@ -1,0 +1,5 @@
+$ pnpm audit --audit-level=high
+# commit 3000994 2026-10-19T04:09:12Z
+5 vulnerabilities found
+Severity: 5 moderate
+# exit 0 in 3s
