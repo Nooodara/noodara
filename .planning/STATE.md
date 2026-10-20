@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: Reliable Deployment Engine
-status: phase_20_gate_not_ready
-stopped_at: 20-04 release gate NOT READY on 3000994 (deploy-queue.test.ts red in it-full; v0.3 unpublished, no CI/nightly on its tree); Phase 15 (OPS-05) still open, owner user
-last_updated: 2026-10-19T06:45:00.000Z
-last_activity: 2026-10-19 -- 20-04 gate run on 3000994: unit, coverage, audit, site, it-db, e2e 248/248, cycles 100x on 22.04 and 24.04 green; it-full 1 failure
+status: phase_20_gate_ready
+stopped_at: 20-04 release gate READY on 890bf60 = public 2d1e1c69 (v0.3.0-rc.1; CI 39281147566, nightly 39281208524 green); next 20-05 human gate and v0.3.0; Phase 15 (OPS-05) still open, owner user
+last_updated: 2026-10-19T22:15:00.000Z
+last_activity: 2026-10-19 -- 20-04 gate rerun on 890bf60: unit, coverage, audit, site, it-db, it-full and e2e green locally; CI, nightly (cycles 22.04/24.04, e2e-repeat 20x), Release and Publish site green on 2d1e1c69
 progress:
   total_phases: 9
   completed_phases: 8
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** v0.3 — Reliable Deployment Engine (fases 16-19 cerradas; fase 20, gate 20-04 NOT READY)
+**Current focus:** v0.3 — Reliable Deployment Engine (fases 16-19 cerradas; fase 20, gate 20-04 READY, falta 20-05)
 
 ## Current Position
 
-Phase: 20 en curso (v0.3: 16-19 cerradas; 20-01..20-03 y 20-06 hechas; 15/OPS-05 abierta, owner usuario)
-Plan: 20-04 gate NOT READY (`docs/releases/v0.3-gate.md`, logs en `docs/releases/v0.3-gate-logs/`); luego 20-05
-Status: Gate v0.3 NOT READY en 3000994
+Phase: 20 en curso (v0.3: 16-19 cerradas; 20-01..20-03, 20-06..20-08 hechas; 15/OPS-05 abierta, owner usuario)
+Plan: 20-04 gate READY (`docs/releases/v0.3-gate.md`, logs en `docs/releases/v0.3-gate-logs/`); siguiente 20-05 (gate humano y tag v0.3.0)
+Status: Gate v0.3 READY en 890bf60 = 2d1e1c69 (v0.3.0-rc.1)
 Last activity: 2026-10-19
 
-Gate 20-04 (3000994): criterios §8.10 1-11 READY con evidencia; fila 12 (CI) FAIL. Bloqueantes: (1) `tests/integration/queue/deploy-queue.test.ts` deploy (A1) falla porque 488befd (20-06) añadió `imageRetained` a `DEPLOYMENT_VIEW_FIELDS` y la respuesta del deploy no lo trae; (2) v0.3 sin publicar: CI y nightly (con el job `cycles`) deben correr sobre el commit del gate. Tras el fix, repetir it-full y el gate sobre el commit corregido.
+Gate 20-04 (890bf60 = público 2d1e1c69, mismo árbol 5b150f18): los 12 criterios §8.10 READY. Local: unit 7848, state machine 100%, audit sin high, site, it-db 264, it-full 1339 pasan / 0 fallan, e2e 248. Remoto sobre 2d1e1c69: CI 39281147566 (10/10), nightly 39281208524 (9/9, cycles 22.04/24.04 con `problems: []`, e2e-repeat 20x), Release 39281150628 y Publish site 39281147911. Los bloqueantes del gate en 3000994 se cerraron con 20-07 (d5a9e96) y 20-08 (rc.1).
 
 Verificación al cierre de 17: unit 7602/7602, typecheck, lint, boundaries verdes sin caché. `pnpm test:integration` completo: 10 fallos por tests legados (engine-primitives, workspace-non-root) que hacían DEPLOYING→SUCCESS sin HEALTHCHECK; corregido en af7c935; re-corrida completa 2026-10-16 verde: 103 archivos / 1234 tests pasan, 5 skipped (los mismos de antes), sin contenedores noodara.test residuales.
 

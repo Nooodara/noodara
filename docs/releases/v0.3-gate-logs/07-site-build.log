@@ -1,25 +1,26 @@
 $ pnpm --filter @noodara/site build
-# commit 3000994 2026-10-19T04:09:38Z
+# commit 890bf60 (public 2d1e1c69, tree 5b150f18) 2026-10-19T20:01:59Z
 
-> @noodara/site@0.2.0 build /Users/xch4rt/work/myself/noodara/code/apps/site
+
+> @noodara/site@0.3.0 build /Users/xch4rt/work/myself/noodara/code/apps/site
 > node scripts/sync-site-assets.mjs && next build && node scripts/check-export.mjs
 
 sync-site-assets: no files changed (fully idempotent run).
 sync-site-assets: 16 file(s) already up to date.
 ▲ Next.js 16.3.8 (Turbopack)
-[MDX] generated files in 1.0351249999999936ms
-✓ Running next.config.mjs took 268ms
+[MDX] generated files in 0.7728749999999991ms
+✓ Running next.config.mjs took 284ms
 
   Creating an optimized production build ...
-✓ Compiled successfully in 1374ms
+✓ Compiled successfully in 1759ms
   Running TypeScript ...
-  Finished TypeScript in 916ms ...
+  Finished TypeScript in 1243ms ...
   Collecting page data using 12 workers ...
   Generating static pages using 12 workers (0/31) ...
   Generating static pages using 12 workers (7/31) 
   Generating static pages using 12 workers (15/31) 
   Generating static pages using 12 workers (23/31) 
-✓ Generating static pages using 12 workers (31/31) in 511ms
+✓ Generating static pages using 12 workers (31/31) in 614ms
   Finalizing page optimization ...
 
 Route (app)
@@ -42,4 +43,4 @@ Route (app)
 ●  (SSG)     prerendered as static HTML (uses generateStaticParams)
 
 check-export: 25 files, zero third-party assets
-# exit 0 in 6s
+# exit 0 2026-10-19T20:02:05Z

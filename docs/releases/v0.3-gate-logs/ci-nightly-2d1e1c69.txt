@@ -1,0 +1,128 @@
+# captured 2026-10-19T20:02:30Z with gh, repo Nooodara/noodara
+# gate commit: local 890bf60 (monorepo) = public 2d1e1c69dc84f9ba0564dff76f7ee1ad9d4ed80b
+
+$ git -C /Users/xch4rt/work/myself rev-parse 890bf60:noodara/code
+5b150f18bfe1e383a4869d3cb865ef13f7b6fe46
+$ gh api repos/Nooodara/noodara/commits/2d1e1c69 --jq .commit.tree.sha
+5b150f18bfe1e383a4869d3cb865ef13f7b6fe46
+# same tree: the public commit is byte-identical to noodara/code at 890bf60
+
+$ gh run view 39281147566 -R Nooodara/noodara --json workflowName,event,headBranch,headSha,status,conclusion,createdAt,updatedAt,jobs
+CI push main headSha=2d1e1c69dc84f9ba0564dff76f7ee1ad9d4ed80b completed/success 2026-10-19T15:51:59Z -> 2026-10-19T16:42:56Z
+https://github.com/Nooodara/noodara/actions/runs/39281147566
+  success	lint	job 118155487071
+  success	security	job 118155487281
+  success	integration	job 118155487296
+  success	site	job 118155487391
+  success	boot-smoke	job 118155487399
+  success	e2e	job 118155487442
+  success	unit	job 118155487470
+  success	installer	job 118155487496
+  success	typecheck	job 118155487538
+  success	boundaries	job 118155487596
+
+$ gh run view 39281208524 -R Nooodara/noodara --json workflowName,event,headBranch,headSha,status,conclusion,createdAt,updatedAt,jobs
+Nightly workflow_dispatch main headSha=2d1e1c69dc84f9ba0564dff76f7ee1ad9d4ed80b completed/success 2026-10-19T15:52:29Z -> 2026-10-19T18:44:07Z
+https://github.com/Nooodara/noodara/actions/runs/39281208524
+  success	stress-connections	job 118155652115
+  success	deploy-engine (24.04)	job 118155652470
+  success	canary	job 118155652487
+  success	soak	job 118155652562
+  success	installer	job 118155652579
+  success	cycles (22.04)	job 118155652614
+  success	cycles (24.04)	job 118155652619
+  success	deploy-engine (22.04)	job 118155652628
+  success	e2e-repeat	job 118155652730
+
+$ gh run view 39281150628 -R Nooodara/noodara --json workflowName,event,headBranch,headSha,status,conclusion,createdAt,updatedAt,jobs
+Release push v0.3.0-rc.1 headSha=2d1e1c69dc84f9ba0564dff76f7ee1ad9d4ed80b completed/success 2026-10-19T15:52:00Z -> 2026-10-19T16:22:29Z
+https://github.com/Nooodara/noodara/actions/runs/39281150628
+  success	prepare	job 118155463379
+  success	build (noodara-web, arm64)	job 118156016195
+  success	build (noodara-web, amd64)	job 118156016202
+  success	build (noodara-control-plane, amd64)	job 118156016393
+  success	build (noodara-control-plane, arm64)	job 118156016615
+  success	manifest (noodara-control-plane)	job 118156644970
+  success	manifest (noodara-web)	job 118156645027
+  success	verify (noodara-web)	job 118157286761
+  success	verify (noodara-control-plane)	job 118157286922
+  success	release	job 118157337559
+
+$ gh run view 39281147911 -R Nooodara/noodara --json workflowName,event,headBranch,headSha,status,conclusion,createdAt,updatedAt,jobs
+Publish site push main headSha=2d1e1c69dc84f9ba0564dff76f7ee1ad9d4ed80b completed/success 2026-10-19T15:51:59Z -> 2026-10-19T16:17:04Z
+https://github.com/Nooodara/noodara/actions/runs/39281147911
+  success	deploy	job 118155452995
+
+# test summaries from job logs (gh run view --log --job=<id>, ANSI stripped)
+## job 118155487281 security
+  5 vulnerabilities found
+   Test Files  5 passed (5)
+        Tests  10 passed (10)
+    1 passed (20.2s)
+  4:00PM INF no leaks found
+  4:00PM INF no leaks found
+## job 118155487296 integration
+   Test Files  89 passed | 1 skipped (90)
+        Tests  1023 passed | 1 skipped (1024)
+## job 118155487391 site
+   Test Files  15 passed (15)
+        Tests  174 passed (174)
+## job 118155487399 boot-smoke
+   Test Files  1 passed (1)
+        Tests  7 passed (7)
+## job 118155487470 unit
+   Test Files  335 passed (335)
+        Tests  7848 passed (7848)
+## job 118155487496 installer
+   Test Files  10 passed (10)
+        Tests  56 passed (56)
+## job 118155652115 stress-connections
+   Test Files  1 passed (1)
+        Tests  1 passed (1)
+## job 118155652470 deploy-engine (24.04)
+   Test Files  21 passed | 2 skipped (23)
+        Tests  160 passed | 3 skipped (163)
+## job 118155652487 canary
+   Test Files  5 passed (5)
+        Tests  10 passed (10)
+    1 passed (19.9s)
+## job 118155652562 soak
+   Test Files  1 passed (1)
+        Tests  4 passed (4)
+## job 118155652579 installer
+   Test Files  10 passed (10)
+        Tests  56 passed (56)
+## job 118155652614 cycles (22.04)
+   Test Files  1 passed (1)
+        Tests  1 passed (1)
+## job 118155652619 cycles (24.04)
+   Test Files  1 passed (1)
+        Tests  1 passed (1)
+## job 118155652628 deploy-engine (22.04)
+   Test Files  21 passed | 2 skipped (23)
+        Tests  160 passed | 3 skipped (163)
+## job 118155487442 e2e
+    248 passed (10.3m)
+  flaky/failed/retry lines: 0
+## job 118155652730 e2e-repeat
+    248 passed (10.1m)
+    248 passed (8.4m)
+    248 passed (8.4m)
+    248 passed (8.3m)
+    248 passed (8.7m)
+    248 passed (8.6m)
+    248 passed (8.5m)
+    248 passed (8.2m)
+    248 passed (8.4m)
+    248 passed (8.5m)
+    248 passed (8.4m)
+    248 passed (8.3m)
+    248 passed (8.4m)
+    248 passed (8.5m)
+    248 passed (8.6m)
+    248 passed (8.4m)
+    248 passed (8.3m)
+    248 passed (8.4m)
+    248 passed (8.3m)
+    248 passed (8.4m)
+  flaky/failed/retry lines: 0

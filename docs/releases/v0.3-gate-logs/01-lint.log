@@ -1,7 +1,8 @@
 $ pnpm lint
-# commit 3000994 2026-10-19T04:08:36Z
+# commit 890bf60 (public 2d1e1c69, tree 5b150f18) 2026-10-19T20:01:20Z
 
-> noodara@0.2.0 lint /Users/xch4rt/work/myself/noodara/code
+
+> noodara@0.3.0 lint /Users/xch4rt/work/myself/noodara/code
 > turbo run lint
 
 • turbo 2.10.12
@@ -10,74 +11,74 @@ $ pnpm lint
    • Running lint in 9 packages
    • Remote caching disabled
 
-@noodara/domain:lint: cache hit, replaying logs f9d7d9ee1e866e98
-@noodara/config:lint: cache hit, replaying logs 72f1e08f2d39ac18
-@noodara/domain:lint: 
-@noodara/domain:lint: > @noodara/domain@0.2.0 lint /Users/xch4rt/work/myself/noodara/code/packages/domain
-@noodara/domain:lint: > eslint --config ../config/eslint.config.js .
-@noodara/domain:lint: 
+@noodara/config:lint: cache hit, replaying logs 6229a5c6af72feaa
+@noodara/domain:lint: cache hit, replaying logs 090b7a371de3aab0
 @noodara/config:lint: 
-@noodara/config:lint: > @noodara/config@0.2.0 lint /Users/xch4rt/work/myself/noodara/code/packages/config
+@noodara/config:lint: > @noodara/config@0.3.0 lint /Users/xch4rt/work/myself/noodara/code/packages/config
 @noodara/config:lint: > eslint .
 @noodara/config:lint: 
-@noodara/domain:build: cache hit, replaying logs 2c53fd3948542d8a
+@noodara/domain:lint: 
+@noodara/domain:lint: > @noodara/domain@0.3.0 lint /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:lint: > eslint --config ../config/eslint.config.js .
+@noodara/domain:lint: 
+@noodara/domain:build: cache hit, replaying logs d6c0efd7b19a02b8
 @noodara/domain:build: 
-@noodara/domain:build: > @noodara/domain@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > @noodara/domain@0.3.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
 @noodara/domain:build: > tsc -p tsconfig.build.json
 @noodara/domain:build: 
-@noodara/ui:lint: cache hit, replaying logs fb071d6248c200b6
-@noodara/ssh:lint: cache hit, replaying logs 86eb771677e97255
+@noodara/ui:lint: cache hit, replaying logs c48eca528d57b7b0
+@noodara/ssh:lint: cache hit, replaying logs fb4565bb0c538a1e
 @noodara/ui:lint: 
-@noodara/ui:lint: > @noodara/ui@0.2.0 lint /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:lint: > @noodara/ui@0.3.0 lint /Users/xch4rt/work/myself/noodara/code/packages/ui
 @noodara/ui:lint: > eslint --config ../config/eslint.config.js .
 @noodara/ui:lint: 
 @noodara/ssh:lint: 
-@noodara/ssh:lint: > @noodara/ssh@0.2.0 lint /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:lint: > @noodara/ssh@0.3.0 lint /Users/xch4rt/work/myself/noodara/code/packages/ssh
 @noodara/ssh:lint: > eslint --config ../config/eslint.config.js .
 @noodara/ssh:lint: 
-@noodara/ssh:build: cache hit, replaying logs e4f068da0e114475
+@noodara/ssh:build: cache hit, replaying logs 85b8059bc2133554
 @noodara/ssh:build: 
-@noodara/ssh:build: > @noodara/ssh@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > @noodara/ssh@0.3.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
 @noodara/ssh:build: > tsc -p tsconfig.build.json
 @noodara/ssh:build: 
-@noodara/git:lint: cache hit, replaying logs ee8d80bb4ef1c2df
-@noodara/docker:lint: cache hit, replaying logs 89b556691a7e9355
-@noodara/git:lint: 
-@noodara/git:lint: > @noodara/git@0.2.0 lint /Users/xch4rt/work/myself/noodara/code/packages/git
-@noodara/git:lint: > eslint --config ../config/eslint.config.js .
-@noodara/git:lint: 
+@noodara/docker:lint: cache hit, replaying logs 346254b4bcfcf931
+@noodara/git:lint: cache hit, replaying logs b56e3d3b5d43f2d5
 @noodara/docker:lint: 
-@noodara/docker:lint: > @noodara/docker@0.2.0 lint /Users/xch4rt/work/myself/noodara/code/packages/docker
+@noodara/docker:lint: > @noodara/docker@0.3.0 lint /Users/xch4rt/work/myself/noodara/code/packages/docker
 @noodara/docker:lint: > eslint --config ../config/eslint.config.js .
 @noodara/docker:lint: 
-@noodara/git:build: cache hit, replaying logs 0c53424f1fc1ee47
+@noodara/git:lint: 
+@noodara/git:lint: > @noodara/git@0.3.0 lint /Users/xch4rt/work/myself/noodara/code/packages/git
+@noodara/git:lint: > eslint --config ../config/eslint.config.js .
+@noodara/git:lint: 
+@noodara/git:build: cache hit, replaying logs 644adbf8bd5ed5cd
 @noodara/git:build: 
-@noodara/git:build: > @noodara/git@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/git
+@noodara/git:build: > @noodara/git@0.3.0 build /Users/xch4rt/work/myself/noodara/code/packages/git
 @noodara/git:build: > tsc -p tsconfig.build.json
 @noodara/git:build: 
-@noodara/docker:build: cache hit, replaying logs 9d1a4b4b8b10a7c8
+@noodara/docker:build: cache hit, replaying logs 47b85dea4d249063
 @noodara/docker:build: 
-@noodara/docker:build: > @noodara/docker@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/docker
+@noodara/docker:build: > @noodara/docker@0.3.0 build /Users/xch4rt/work/myself/noodara/code/packages/docker
 @noodara/docker:build: > tsc -p tsconfig.build.json
 @noodara/docker:build: 
-@noodara/control-plane:lint: cache hit, replaying logs f2d8524d6dad4f23
+@noodara/control-plane:lint: cache hit, replaying logs f2aff86675811737
 @noodara/control-plane:lint: 
-@noodara/control-plane:lint: > @noodara/control-plane@0.2.0 lint /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:lint: > @noodara/control-plane@0.3.0 lint /Users/xch4rt/work/myself/noodara/code/apps/control-plane
 @noodara/control-plane:lint: > eslint --config ../../packages/config/eslint.config.js .
 @noodara/control-plane:lint: 
-@noodara/ui:build: cache hit, replaying logs c649ab0ada06e561
+@noodara/ui:build: cache hit, replaying logs e419369c07a88a80
 @noodara/ui:build: 
-@noodara/ui:build: > @noodara/ui@0.2.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > @noodara/ui@0.3.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
 @noodara/ui:build: > tsc -p tsconfig.build.json
 @noodara/ui:build: 
-@noodara/web:lint: cache hit, replaying logs bca3a6f7d8d3c731
-@noodara/site:lint: cache hit, replaying logs cb16e8101b81ec76
+@noodara/site:lint: cache hit, replaying logs af208c7121feb5a7
 @noodara/site:lint: 
-@noodara/site:lint: > @noodara/site@0.2.0 lint /Users/xch4rt/work/myself/noodara/code/apps/site
+@noodara/site:lint: > @noodara/site@0.3.0 lint /Users/xch4rt/work/myself/noodara/code/apps/site
 @noodara/site:lint: > eslint --config ../../packages/config/eslint.config.js --ignore-pattern out --ignore-pattern .source .
 @noodara/site:lint: 
+@noodara/web:lint: cache hit, replaying logs 1a38e26ee37e0d69
 @noodara/web:lint: 
-@noodara/web:lint: > @noodara/web@0.2.0 lint /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:lint: > @noodara/web@0.3.0 lint /Users/xch4rt/work/myself/noodara/code/apps/web
 @noodara/web:lint: > eslint --config ../../packages/config/eslint.config.js .
 @noodara/web:lint: 
 
@@ -85,4 +86,4 @@ $ pnpm lint
 Cached:    14 cached, 14 total
   Time:    72ms >>> FULL TURBO
 
-# exit 0 in 1s
+# exit 0 2026-10-19T20:01:20Z
