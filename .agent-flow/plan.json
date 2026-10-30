@@ -8034,7 +8034,8 @@
             "packages/domain/src/deployment/deployment-error.test.ts",
             "apps/web/src/lib/deploy-error-copy.ts",
             "apps/web/src/lib/deploy-error-copy.test.ts",
-            "apps/control-plane/src/db/schema.test.ts"
+            "apps/control-plane/src/db/schema.test.ts",
+            "apps/control-plane/src/services/server-view.test.ts"
           ],
           "wave": 5,
           "dependsOn": [
