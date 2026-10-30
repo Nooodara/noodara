@@ -23,3 +23,9 @@ overrides:
   '@grpc/grpc-js@>=1.14.0 <1.14.5': ^1.14.5
   # GHSA-68fv-2mgg-jv7q via @vitest/coverage-v8 > magicast (dev only).
   'source-map-js@>=1.0.0 <1.2.2': ^1.2.2
+  # 20-10: transitive patches with no direct pin to bump. vite comes in as vitest's
+  # peer (GHSA advisories fixed in 8.3.3); undici via jsdom (fixed in 8.12.2); zod via
+  # apps/site > fumadocs-mdx (GHSA-mrhx-c7xc-m3w5, fixed in 4.6.6).
+  'vite@>=8.0.0 <8.3.3': 8.3.3
+  'undici@>=8.0.0 <8.12.2': 8.12.2
+  'zod@>=4.0.0 <4.6.6': 4.6.6

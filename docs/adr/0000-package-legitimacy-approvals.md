@@ -206,6 +206,21 @@ client runs entirely client-side against a build-time JSON index. D-08's intent 
 zero third parties -- is unchanged; only the concrete library differs from the earlier research
 pass.
 
+### Phase 20 security bumps (20-10)
+
+`pnpm audit --audit-level=high` went red on v0.3.0 CI. Smallest patched releases, no new
+packages. Every new version was published from GitHub Actions with an SLSA provenance
+attestation from the same repository as the version it replaces (checked with `npm view`
+on 2026-10-29), so the expected `owner/repo` literals in the script are unchanged.
+
+| Package | From | To | Repository | How |
+|---|---|---|---|---|
+| better-auth | 1.7.4 | 1.7.7 | better-auth/better-auth | direct pin |
+| next | 16.3.8 | 16.4.1 | vercel/next.js | direct pin (no patched 16.3.x) |
+| zod | 4.6.1 | 4.6.6 | colinhacks/zod | direct pin + override (fumadocs-mdx) |
+| vite | 8.3.0 | 8.3.3 | vitejs/vite | override (vitest peer) |
+| undici | 8.10.2 | 8.12.2 | nodejs/undici | override (jsdom) |
+
 ## Re-running this check
 
 This check must be re-run whenever one of these pins changes, or before
