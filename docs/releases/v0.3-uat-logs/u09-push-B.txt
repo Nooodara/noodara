@@ -1,0 +1,18 @@
+# U9 push B (e7fe4bf) -> signed delivery from the Mac through the Lima port forward
+pushed sha: e7fe4bf755a5a833d4ea5461eaacb336933504ee
+{"outcome":"deployed","deploymentId":"01a18ab9-edef-7872-98b4-2d2569a8f58c"}
+HTTP 202
+after ~5s: SUCCESS
+    t     | status  | trigger | error_code |   sha   | rb 
+----------+---------+---------+------------+---------+----
+ 02:53:23 | SUCCESS | webhook |            | e7fe4bf | f
+ 02:52:40 | SUCCESS | manual  |            | cdcf058 | f
+(2 rows)
+
+curl 8083:
+{"service":"node-api","version":"B","ok":true}
+ outcome  |  left   | ?column? 
+----------+---------+----------
+ deployed | e7fe4bf | t
+(1 row)
+

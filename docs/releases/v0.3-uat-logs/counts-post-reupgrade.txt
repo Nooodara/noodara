@@ -1,0 +1,27 @@
+   ?column?   | count 
+--------------+-------
+ users        |     1
+ servers      |     1
+ credentials  |     2
+ projects     |     1
+ environments |     1
+ services     |     3
+ deployments  |     8
+ log_chunks   |    60
+ migrations   |    14
+(9 rows)
+
+   status    | trigger  |     error_code     | count 
+-------------+----------+--------------------+-------
+ SUCCESS     | manual   |                    |     4
+ SUCCESS     | webhook  |                    |     1
+ SUCCESS     | rollback |                    |     1
+ FAILED      | manual   | IMAGE_PULL_FAILED  |     1
+ ROLLED_BACK | webhook  | HEALTHCHECK_FAILED |     1
+(5 rows)
+
+ count 
+-------
+     2
+(1 row)
+

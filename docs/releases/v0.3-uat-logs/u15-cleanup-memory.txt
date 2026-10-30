@@ -1,0 +1,20 @@
+# U15 2026-10-30T02:56:25Z
+noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f 12.65MiB / 3.813GiB
+noodara-web-1 54.66MiB / 256MiB
+noodara-api-1 81.11MiB / 256MiB
+noodara-worker-1 55.68MiB / 256MiB
+noodara-01a18ab6-3139-7679-97c3-3857c88d847a 12.79MiB / 3.813GiB
+noodara-postgres-1 46.64MiB / 512MiB
+noodara-redis-1 5.375MiB / 96MiB
+no -prev
+deploy workspaces (~paas/.noodara/deploy): 0
+## noodara-managed images per service
+noodara/01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f:01a18abc-5110-74b2-99a2-60938d863121 234MB
+noodara/01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f:01a18ab9-edef-7872-98b4-2d2569a8f58c 234MB
+noodara/01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f:01a18ab9-43a0-7a08-9891-d67c655df177 234MB
+noodara/01a18ab6-3139-7679-97c3-3857c88d847a:01a18ab8-0c73-7bad-adf9-6bbb82549121 234MB
+noodara/01a18ab6-3139-7679-97c3-3857c88d847a:01a18ab6-a74c-77c2-be77-12dd822b454e 234MB
+## host memory
+               total        used        free      shared  buff/cache   available
+Mem:            3904         873         113          35        3142        3031
+Swap:              0           0           0

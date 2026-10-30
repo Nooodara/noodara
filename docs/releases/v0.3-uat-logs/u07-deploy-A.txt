@@ -1,0 +1,16 @@
+# U7 create body: git https://github.com/Xch4rt/noodara-uat-node-api.git main . Dockerfile 3000->8083, healthcheck http /health:3000 [200] 2s/2s/3/0, autoRollback true
+HTTP 201
+after ~5s: SUCCESS
+    t     | status  | trigger | error_code |   sha   | rb 
+----------+---------+---------+------------+---------+----
+ 02:52:40 | SUCCESS | manual  |            | cdcf058 | f
+(1 row)
+
+    phase    | seq |                      content                       
+-------------+-----+----------------------------------------------------
+ healthcheck |   1 | Healthcheck attempt 1: HTTP 200Healthcheck passed.+
+             |     | 
+(1 row)
+
+curl 8083:
+{"service":"node-api","version":"A","ok":true}

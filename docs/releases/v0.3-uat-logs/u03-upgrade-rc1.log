@@ -1,0 +1,141 @@
+2026-10-30T02:50:38Z
+Noodara installer
+Checking system requirements...
+System requirements satisfied.
+Docker Engine and the Compose plugin are already installed; nothing to do.
+Pulling images...
+ Image ghcr.io/nooodara/noodara-web:0.3.0-rc.1 Pulling 
+ Image ghcr.io/nooodara/noodara-control-plane:0.3.0-rc.1 Pulling 
+ Image redis:7-alpine Pulling 
+ Image postgres:17-alpine Pulling 
+ Image redis:7-alpine Pulled 
+ d7d0dae7282d Pulling fs layer 0B
+ a8e3f40b26e8 Pulling fs layer 0B
+ c75f989a229d Pulling fs layer 0B
+ 8d752b15e163 Pulling fs layer 0B
+ a7d3259c0556 Pulling fs layer 0B
+ aa7268e3e147 Pulling fs layer 0B
+ 49f01e4679db Pulling fs layer 0B
+ 308cb49d526d Pulling fs layer 0B
+ 234ca6419b72 Pulling fs layer 0B
+ 122e4772befc Pulling fs layer 0B
+ aa7268e3e147 Already exists 0B
+ 8d752b15e163 Already exists 0B
+ a8e3f40b26e8 Already exists 0B
+ c75f989a229d Already exists 0B
+ a7d3259c0556 Already exists 0B
+ 4f4fb700ef54 Pulling fs layer 0B
+ d8df2078a0e2 Pulling fs layer 0B
+ 2b398d286800 Pulling fs layer 0B
+ a8e3f40b26e8 Pulling fs layer 0B
+ 9db6b1f55041 Pulling fs layer 0B
+ aa7268e3e147 Pulling fs layer 0B
+ 99cf9abd81a1 Pulling fs layer 0B
+ dd320852a9f0 Pulling fs layer 0B
+ fd4a823211d6 Pulling fs layer 0B
+ c75f989a229d Pulling fs layer 0B
+ 8d752b15e163 Pulling fs layer 0B
+ 489c0aae433e Pulling fs layer 0B
+ 4442b10a958b Pulling fs layer 0B
+ 5f8d3b5772c5 Pulling fs layer 0B
+ a7d3259c0556 Pulling fs layer 0B
+ a8e3f40b26e8 Already exists 0B
+ aa7268e3e147 Already exists 0B
+ 4f4fb700ef54 Already exists 0B
+ c75f989a229d Already exists 0B
+ 8d752b15e163 Already exists 0B
+ a7d3259c0556 Already exists 0B
+ 4f4fb700ef54 Pull complete 0B
+ 49f01e4679db Download complete 0B
+ d7d0dae7282d Download complete 0B
+ 308cb49d526d Download complete 0B
+ 49f01e4679db Pull complete 0B
+ 308cb49d526d Pull complete 0B
+ 234ca6419b72 Download complete 0B
+ 2b398d286800 Download complete 0B
+ 234ca6419b72 Pull complete 0B
+ 122e4772befc Downloading 2.097MB
+ 122e4772befc Downloading 6.291MB
+ 122e4772befc Downloading 11.53MB
+ 9db6b1f55041 Download complete 0B
+ d8df2078a0e2 Downloading 1.049MB
+ 122e4772befc Downloading 12.58MB
+ 122e4772befc Downloading 12.58MB
+ d8df2078a0e2 Downloading 2.097MB
+ d8df2078a0e2 Downloading 3.146MB
+ 122e4772befc Download complete 0B
+ 122e4772befc Extracting 1B
+ dd320852a9f0 Download complete 0B
+ d8df2078a0e2 Downloading 3.146MB
+ 122e4772befc Extracting 1B
+ d7d0dae7282d Pull complete 0B
+ 122e4772befc Pull complete 0B
+ Image ghcr.io/nooodara/noodara-web:0.3.0-rc.1 Pulled 
+ d8df2078a0e2 Downloading 4.194MB
+ 99cf9abd81a1 Download complete 0B
+ fd4a823211d6 Download complete 0B
+ d8df2078a0e2 Downloading 5.243MB
+ fd4a823211d6 Pull complete 0B
+ d8df2078a0e2 Downloading 6.291MB
+ 489c0aae433e Download complete 0B
+ 4442b10a958b Download complete 0B
+ d8df2078a0e2 Downloading 7.34MB
+ d8df2078a0e2 Download complete 0B
+ Image postgres:17-alpine Pulled 
+ 5f8d3b5772c5 Download complete 0B
+ d8df2078a0e2 Extracting 1B
+ 5f8d3b5772c5 Pull complete 0B
+ d8df2078a0e2 Extracting 1B
+ d8df2078a0e2 Extracting 1B
+ d8df2078a0e2 Extracting 1B
+ dd320852a9f0 Pull complete 0B
+ 99cf9abd81a1 Extracting 1B
+ 489c0aae433e Pull complete 0B
+ d8df2078a0e2 Pull complete 0B
+ 2b398d286800 Pull complete 0B
+ 9db6b1f55041 Pull complete 0B
+ 99cf9abd81a1 Pull complete 0B
+ 4442b10a958b Pull complete 0B
+ Image ghcr.io/nooodara/noodara-control-plane:0.3.0-rc.1 Pulled 
+Starting services...
+ Container noodara-postgres-1 Running 
+ Container noodara-redis-1 Running 
+ Container noodara-migrate-1 Recreate 
+ Container noodara-migrate-1 Recreated 
+ Container noodara-api-1 Recreate 
+ Container noodara-worker-1 Recreate 
+ Container noodara-api-1 Recreated 
+ Container noodara-web-1 Recreate 
+ Container noodara-worker-1 Recreated 
+ Container noodara-web-1 Recreated 
+ Container noodara-postgres-1 Waiting 
+ Container noodara-postgres-1 Healthy 
+ Container noodara-migrate-1 Starting 
+ Container noodara-migrate-1 Started 
+ Container noodara-migrate-1 Waiting 
+ Container noodara-redis-1 Waiting 
+ Container noodara-redis-1 Waiting 
+ Container noodara-migrate-1 Waiting 
+ Container noodara-migrate-1 Exited 
+ Container noodara-migrate-1 Exited 
+ Container noodara-redis-1 Healthy 
+ Container noodara-api-1 Starting 
+ Container noodara-redis-1 Healthy 
+ Container noodara-worker-1 Starting 
+ Container noodara-api-1 Started 
+ Container noodara-api-1 Waiting 
+ Container noodara-worker-1 Started 
+ Container noodara-api-1 Healthy 
+ Container noodara-web-1 Starting 
+ Container noodara-web-1 Started 
+Waiting for services to report healthy...
+All services are healthy.
+
+Noodara is running.
+Panel: http://localhost:3000
+An admin account already exists.
+
+WARNING: the panel is served over plain HTTP -- traffic, including the session cookie, is unencrypted until v0.4's TLS proxy (or your own) is in front. See docs/install.md.
+
+Upgraded from 0.2.0 to 0.3.0-rc.1. To go back: re-run this installer with NOODARA_VERSION=0.2.0.
+rc=0

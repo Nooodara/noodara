@@ -1,0 +1,10 @@
+# U12 migrate after downgrade
+exit: 0
+db:migrate completed in 3ms: 0 migration(s) applied, 14 total
+noodara-web-1 ghcr.io/nooodara/noodara-web:0.2.0 Up 22 seconds (healthy)
+noodara-api-1 ghcr.io/nooodara/noodara-control-plane:0.2.0 Up 27 seconds (healthy)
+noodara-worker-1 ghcr.io/nooodara/noodara-control-plane:0.2.0 Up 27 seconds
+noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f noodara/01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f:01a18ab9-43a0-7a08-9891-d67c655df177 Up 46 seconds
+noodara-01a18ab6-3139-7679-97c3-3857c88d847a noodara/01a18ab6-3139-7679-97c3-3857c88d847a:01a18ab8-0c73-7bad-adf9-6bbb82549121 Up 3 minutes
+noodara-postgres-1 postgres:17-alpine Up 7 minutes (healthy)
+noodara-redis-1 redis:7-alpine Up 7 minutes (healthy)

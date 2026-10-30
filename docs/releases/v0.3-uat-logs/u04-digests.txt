@@ -1,0 +1,12 @@
+# U4 host (VM)
+control-plane ["ghcr.io/nooodara/noodara-control-plane@sha256:a34dd2dde1bc3e4286e4cbd915e45140987ea76c25270e41dd5ce03971f4a349"] arm64
+web ["ghcr.io/nooodara/noodara-web@sha256:81319126cb5e01a0357a0f1119ee6996accc4299a1dedf8d51350b543537187c"] arm64
+# U4 Mac (registry)
+== control-plane
+Digest:    sha256:a34dd2dde1bc3e4286e4cbd915e45140987ea76c25270e41dd5ce03971f4a349
+  Platform:  linux/amd64
+  Platform:  linux/arm64
+== web
+Digest:    sha256:81319126cb5e01a0357a0f1119ee6996accc4299a1dedf8d51350b543537187c
+  Platform:  linux/amd64
+  Platform:  linux/arm64

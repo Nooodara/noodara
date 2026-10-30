@@ -1,0 +1,32 @@
+# U6
+   name    | healthcheck | auto_rollback | image_retention | webhook_hook_id 
+-----------+-------------+---------------+-----------------+-----------------
+ node-api  |             | t             |               3 | 
+ bad-image |             | t             |               3 | 
+(2 rows)
+
+## API service view (what the panel renders)
+{'name': 'node-api', 'status': 'RUNNING', 'healthcheck': None, 'autoRollback': True, 'imageRetention': '<absent>'}
+## server
+CONNECTED
+## redeploy
+HTTP 201
+    t     | status  | trigger | error_code |   sha   | rb 
+----------+---------+---------+------------+---------+----
+ 02:51:20 | SUCCESS | manual  |            | 2d1e1c6 | f
+ 02:49:49 | SUCCESS | manual  |            | 2d1e1c6 | f
+ 02:49:24 | SUCCESS | manual  |            | 2d1e1c6 | f
+(3 rows)
+
+  phase  
+---------
+ prepare
+ build
+ deploy
+(3 rows)
+
+ERROR:  column "text" does not exist
+LINE 1: select text from deployment_log_chunks where phase='healthch...
+               ^
+curl 8081:
+{"service":"node-api","ok":true}

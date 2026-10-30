@@ -1,0 +1,16 @@
+# Contingency (not needed: U12/U13 did not fail). Non-destructive restore check of the U2 backup into a scratch database
+restore-rc=0
+   ?column?   | count 
+--------------+-------
+ users        |     1
+ servers      |     1
+ credentials  |     1
+ projects     |     1
+ environments |     1
+ services     |     2
+ deployments  |     3
+ log_chunks   |    23
+ migrations   |    11
+(9 rows)
+
+scratch db dropped

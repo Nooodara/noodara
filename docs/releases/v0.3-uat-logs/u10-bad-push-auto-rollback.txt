@@ -1,0 +1,54 @@
+# U10 push C (f44faae, /health -> 500)
+pushed sha: f44faae950d7ca8012a793f74edf4feeb5bdc535
+{"outcome":"deployed","deploymentId":"01a18aba-47be-7be3-b13e-2dfd1f95c8c4"}
+HTTP 202
+after ~10s: ROLLED_BACK
+    t     |   status    | trigger |     error_code     |   sha   | rb 
+----------+-------------+---------+--------------------+---------+----
+ 02:53:46 | ROLLED_BACK | webhook | HEALTHCHECK_FAILED | f44faae | f
+ 02:53:23 | SUCCESS     | webhook |                    | e7fe4bf | f
+ 02:52:40 | SUCCESS     | manual  |                    | cdcf058 | f
+(3 rows)
+
+curl 8083:
+{"service":"node-api","version":"B","ok":true}
+## containers for the service
+noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f Up 5 seconds
+## all containers
+noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f Up 5 seconds
+noodara-01a18ab6-3139-7679-97c3-3857c88d847a Up 2 minutes
+noodara-web-1 Up 3 minutes (healthy)
+noodara-api-1 Up 3 minutes (healthy)
+noodara-worker-1 Up 3 minutes
+noodara-migrate-1 Exited (0) 3 minutes ago
+noodara-postgres-1 Up 6 minutes (healthy)
+noodara-redis-1 Up 6 minutes (healthy)
+## C attempt error
+   status    |     error_code     |                                                                                                       error_message                                                                                                       
+-------------+--------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ ROLLED_BACK | HEALTHCHECK_FAILED | The new version did not pass its healthcheck. Check the healthcheck path, port and expected status, then deploy again. The previous version (deployment 01a18ab9-edef-7872-98b4-2d2569a8f58c) was restored automatically.
+(1 row)
+
+## C attempt logs (healthcheck/rollback)
+    phase    | seq |                                           content                                            
+-------------+-----+----------------------------------------------------------------------------------------------
+ healthcheck |   1 | Healthcheck attempt 1: HTTP 500
+ healthcheck |   2 | Healthcheck attempt 2: HTTP 500
+ healthcheck |   3 | Healthcheck attempt 3: HTTP 500
+ healthcheck |   4 |                                                                                             +
+             |     | 
+ rollback    |   1 | Rolling back: restoring the previous version.noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f   +
+             |     | 
+ rollback    |   2 | noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f                                                +
+             |     | 
+ rollback    |   3 | Healthcheck attempt 1: HTTP 200The previous version was restored and passed its healthcheck.
+ rollback    |   4 |                                                                                             +
+             |     | 
+(8 rows)
+
+ outcome  |  left   | ?column? 
+----------+---------+----------
+ deployed | f44faae | t
+ deployed | e7fe4bf | t
+(2 rows)
+

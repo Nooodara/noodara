@@ -1,0 +1,66 @@
+# U5
+migrate exit: 0
+db:migrate completed in 27ms: 3 migration(s) applied, 14 total
+   ?column?   | count 
+--------------+-------
+ users        |     1
+ servers      |     1
+ credentials  |     1
+ projects     |     1
+ environments |     1
+ services     |     2
+ deployments  |     3
+ log_chunks   |    23
+ migrations   |    14
+(9 rows)
+
+ status  | trigger |    error_code     | count 
+---------+---------+-------------------+-------
+ SUCCESS | manual  |                   |     2
+ FAILED  | manual  | IMAGE_PULL_FAILED |     1
+(2 rows)
+
+## diff pre/post upgrade
+11c11
+<  migrations   |    11
+---
+>  migrations   |    14
+                                             enum_range                                              |             enum_range             
+-----------------------------------------------------------------------------------------------------+------------------------------------
+ {QUEUED,PREPARING,BUILDING,DEPLOYING,HEALTHCHECK,ROLLING_BACK,SUCCESS,FAILED,ROLLED_BACK,CANCELLED} | {manual,redeploy,webhook,rollback}
+(1 row)
+
+                                                                        indexdef                                                                        
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+ CREATE UNIQUE INDEX deployments_service_active_unique_idx ON public.deployments USING btree (service_id) WHERE (status < 'SUCCESS'::deployment_status)
+ CREATE UNIQUE INDEX webhook_deliveries_service_delivery_unique_idx ON public.webhook_deliveries USING btree (service_id, delivery_id)
+(2 rows)
+
+ webhook_deliveries 
+--------------------
+                  0
+(1 row)
+
+ old_rows_with_v03_cols 
+------------------------
+                      0
+(1 row)
+
+ id | h |  created_at   
+----+---+---------------
+  1 | t | 1789086687946
+  2 | t | 1789172919246
+  3 | t | 1789360185397
+  4 | t | 1789523055890
+  5 | t | 1790492146476
+  6 | t | 1790738827963
+  7 | t | 1791322704570
+  8 | t | 1791389716714
+  9 | t | 1791391684015
+ 10 | t | 1791411066058
+ 11 | t | 1791961021130
+ 12 | t | 1792026245627
+ 13 | t | 1792026245628
+ 14 | t | 1792029778076
+(14 rows)
+

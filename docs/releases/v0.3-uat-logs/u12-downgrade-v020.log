@@ -1,0 +1,56 @@
+2026-10-30T02:54:27Z
+Noodara installer
+Checking system requirements...
+System requirements satisfied.
+Docker Engine and the Compose plugin are already installed; nothing to do.
+Pulling images...
+ Image redis:7-alpine Pulling 
+ Image ghcr.io/nooodara/noodara-control-plane:0.2.0 Pulling 
+ Image postgres:17-alpine Pulling 
+ Image ghcr.io/nooodara/noodara-web:0.2.0 Pulling 
+ Image ghcr.io/nooodara/noodara-control-plane:0.2.0 Pulled 
+ Image ghcr.io/nooodara/noodara-web:0.2.0 Pulled 
+ Image postgres:17-alpine Pulled 
+ Image redis:7-alpine Pulled 
+Starting services...
+ Container noodara-postgres-1 Running 
+ Container noodara-redis-1 Running 
+ Container noodara-migrate-1 Recreate 
+ Container noodara-migrate-1 Recreated 
+ Container noodara-api-1 Recreate 
+ Container noodara-worker-1 Recreate 
+ Container noodara-api-1 Recreated 
+ Container noodara-web-1 Recreate 
+ Container noodara-worker-1 Recreated 
+ Container noodara-web-1 Recreated 
+ Container noodara-postgres-1 Waiting 
+ Container noodara-postgres-1 Healthy 
+ Container noodara-migrate-1 Starting 
+ Container noodara-migrate-1 Started 
+ Container noodara-redis-1 Waiting 
+ Container noodara-migrate-1 Waiting 
+ Container noodara-migrate-1 Waiting 
+ Container noodara-redis-1 Waiting 
+ Container noodara-migrate-1 Exited 
+ Container noodara-redis-1 Healthy 
+ Container noodara-redis-1 Healthy 
+ Container noodara-worker-1 Starting 
+ Container noodara-migrate-1 Exited 
+ Container noodara-api-1 Starting 
+ Container noodara-worker-1 Started 
+ Container noodara-api-1 Started 
+ Container noodara-api-1 Waiting 
+ Container noodara-api-1 Healthy 
+ Container noodara-web-1 Starting 
+ Container noodara-web-1 Started 
+Waiting for services to report healthy...
+All services are healthy.
+
+Noodara is running.
+Panel: http://localhost:3000
+An admin account already exists.
+
+WARNING: the panel is served over plain HTTP -- traffic, including the session cookie, is unencrypted until v0.4's TLS proxy (or your own) is in front. See docs/install.md.
+
+Rolled back from 0.3.0-rc.1 to 0.2.0. To go forward: re-run this installer with NOODARA_VERSION=0.3.0-rc.1.
+rc=0

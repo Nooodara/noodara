@@ -1,0 +1,27 @@
+# U11 manual rollback to A (01a18ab9-43a0-7a08-9891-d67c655df177)
+{"id":"01a18aba-a717-7c40-9a29-2aa5d3fbbc39","serviceId":"01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f","status":"QUEUED","trigger":"rollback","triggeredBy":"01a18ab5-0678-7804-8401-db08f9ed2b30","source":{"sourceType":"git","repositoryUrl":"https://github.com/Xch4rt/noodara-uat-node-api.git","branch":"main ... HTTP 202
+after ~5s: SUCCESS
+    t     |   status    | trigger  |     error_code     |   sha   | rb 
+----------+-------------+----------+--------------------+---------+----
+ 02:54:11 | SUCCESS     | rollback |                    | cdcf058 | t
+ 02:53:46 | ROLLED_BACK | webhook  | HEALTHCHECK_FAILED | f44faae | f
+ 02:53:23 | SUCCESS     | webhook  |                    | e7fe4bf | f
+ 02:52:40 | SUCCESS     | manual   |                    | cdcf058 | f
+(4 rows)
+
+ status  | trigger  | points_to_a |   sha   |                                     image_ref                                     
+---------+----------+-------------+---------+-----------------------------------------------------------------------------------
+ SUCCESS | rollback | t           | cdcf058 | noodara/01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f:01a18ab9-43a0-7a08-9891-d67c655df177
+(1 row)
+
+curl 8083:
+{"service":"node-api","version":"A","ok":true}
+    phase    
+-------------
+ healthcheck
+ deploy
+(2 rows)
+
+secret occurrences api logs: 0
+secret occurrences worker logs: 0
+secret occurrences in DB dump (plaintext): 0

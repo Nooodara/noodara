@@ -1,0 +1,19 @@
+   ?column?   | count 
+--------------+-------
+ users        |     1
+ servers      |     1
+ credentials  |     1
+ projects     |     1
+ environments |     1
+ services     |     2
+ deployments  |     3
+ log_chunks   |    23
+ migrations   |    11
+(9 rows)
+
+ status  | trigger |    error_code     | count 
+---------+---------+-------------------+-------
+ SUCCESS | manual  |                   |     2
+ FAILED  | manual  | IMAGE_PULL_FAILED |     1
+(2 rows)
+

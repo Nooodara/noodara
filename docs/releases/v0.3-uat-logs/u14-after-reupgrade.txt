@@ -1,0 +1,69 @@
+# U14 after re-upgrade
+migrate exit: 0
+db:migrate completed in 3ms: 0 migration(s) applied, 14 total
+## diff counts pre-downgrade / post-reupgrade
+(empty diff)
+   ?column?   | count 
+--------------+-------
+ users        |     1
+ servers      |     1
+ credentials  |     2
+ projects     |     1
+ environments |     1
+ services     |     3
+ deployments  |     8
+ log_chunks   |    60
+ migrations   |    14
+(9 rows)
+
+   status    | trigger  |     error_code     | count 
+-------------+----------+--------------------+-------
+ SUCCESS     | manual   |                    |     4
+ SUCCESS     | webhook  |                    |     1
+ SUCCESS     | rollback |                    |     1
+ FAILED      | manual   | IMAGE_PULL_FAILED  |     1
+ ROLLED_BACK | webhook  | HEALTHCHECK_FAILED |     1
+(5 rows)
+
+ count 
+-------
+     2
+(1 row)
+
+    t     |   status    | trigger  |     error_code     |   sha   | rb 
+----------+-------------+----------+--------------------+---------+----
+ 02:54:11 | SUCCESS     | rollback |                    | cdcf058 | t
+ 02:53:46 | ROLLED_BACK | webhook  | HEALTHCHECK_FAILED | f44faae | f
+ 02:53:23 | SUCCESS     | webhook  |                    | e7fe4bf | f
+ 02:52:40 | SUCCESS     | manual   |                    | cdcf058 | f
+(4 rows)
+
+ outcome  |  left   
+----------+---------
+ deployed | e7fe4bf
+ deployed | f44faae
+(2 rows)
+
+history API: HTTP 200
+webhook view: {"enabled":true,"payloadUrl":"http://localhost:3000/webhooks/github/<hook-id>"}
+## U14 webhook still active after downgrade round trip: push D (health fixed), deliver
+pushed sha: 8ec6d254cc8190ca2cf9d158f315ac780a23341b
+{"outcome":"deployed","deploymentId":"01a18abc-5110-74b2-99a2-60938d863121"}
+HTTP 202
+after ~5s: SUCCESS
+    t     |   status    | trigger  |     error_code     |   sha   | rb 
+----------+-------------+----------+--------------------+---------+----
+ 02:56:00 | SUCCESS     | webhook  |                    | 8ec6d25 | f
+ 02:54:11 | SUCCESS     | rollback |                    | cdcf058 | t
+ 02:53:46 | ROLLED_BACK | webhook  | HEALTHCHECK_FAILED | f44faae | f
+ 02:53:23 | SUCCESS     | webhook  |                    | e7fe4bf | f
+ 02:52:40 | SUCCESS     | manual   |                    | cdcf058 | f
+(5 rows)
+
+curl 8083:
+{"service":"node-api","version":"D","ok":true}
+ outcome  |  left   
+----------+---------
+ deployed | 8ec6d25
+(1 row)
+

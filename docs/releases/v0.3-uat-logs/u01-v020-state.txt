@@ -1,0 +1,32 @@
+# U1 2026-10-30T02:50:20Z
+NOODARA_VERSION=0.2.0
+NOODARA_PUBLIC_URL='http://localhost:3000'
+POSTGRES_USER=noodara
+POSTGRES_DB=noodara
+   ?column?   | count 
+--------------+-------
+ users        |     1
+ servers      |     1
+ credentials  |     1
+ projects     |     1
+ environments |     1
+ services     |     2
+ deployments  |     3
+ log_chunks   |    23
+ migrations   |    11
+(9 rows)
+
+ status  | trigger |    error_code     | count 
+---------+---------+-------------------+-------
+ SUCCESS | manual  |                   |     2
+ FAILED  | manual  | IMAGE_PULL_FAILED |     1
+(2 rows)
+
+   name    | status  | source_type |             repository_url              |   build_context   | published_port 
+-----------+---------+-------------+-----------------------------------------+-------------------+----------------
+ node-api  | RUNNING | git         | https://github.com/Nooodara/noodara.git | fixtures/node-api |           8081
+ bad-image | FAILED  | image       |                                         |                   |           8082
+(2 rows)
+
+curl 8081:
+{"service":"node-api","ok":true}

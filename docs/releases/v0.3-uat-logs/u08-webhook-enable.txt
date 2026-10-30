@@ -1,0 +1,11 @@
+# U8
+enable response: HTTP 200, payloadUrl=http://localhost:3000/webhooks/github/<hook-id>, secret=<redacted, 64 chars>
+cache-control: no-store
+     name     | hook | secret 
+--------------+------+--------
+ node-api-v03 | t    | t
+(1 row)
+
+## GET webhook view (secret must not be returned again)
+{"enabled":true,"payloadUrl":"http://localhost:3000/webhooks/github/<hook-id>"}
+HTTP 200

@@ -1,0 +1,20 @@
+# U13 v0.2.0 on the v0.3 schema
+## diff counts pre/post downgrade
+(empty diff)
+curl 8081:
+{"service":"node-api","ok":true}
+curl 8083:
+{"service":"node-api","version":"A","ok":true}
+## v0.2 API reads (what the panel calls)
+server: CONNECTED
+services list: HTTP 200
+node-api history: HTTP 200
+node-api-v03 history: HTTP 500
+{"error":"INTERNAL_ERROR","message":"Internal error"}
+
+node-api-v03 service view: HTTP 200
+## extra v0.2 reads of single deployments
+GET ROLLED_BACK deployment (C): HTTP 500
+GET webhook SUCCESS deployment (B): HTTP 500
+GET C logs: HTTP 400
+panel /: HTTP 307
