@@ -82,11 +82,11 @@
     },
     "tiers": {
       "light": {
-        "model": "haiku",
+        "model": "opus",
         "effort": "low"
       },
       "standard": {
-        "model": "sonnet",
+        "model": "opus",
         "effort": "medium"
       },
       "deep": {
@@ -95,9 +95,10 @@
       }
     },
     "models": {
-      "reviewer": "sonnet",
-      "hardener": "sonnet",
-      "escalation": "opus"
+      "reviewer": "fable",
+      "hardener": "fable",
+      "planner": "fable",
+      "escalation": "fable"
     },
     "escalateAfterFailures": 2,
     "contextBudgetTokens": 150000

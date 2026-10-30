@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-20T02:32:47.505Z",
+  "updatedAt": "2026-10-20T02:48:53.262Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -7286,13 +7286,15 @@
           "scope": [
             "docs/releases/v0.3-HUMAN-UAT.md",
             "docs/releases/v0.3-gate.md",
-            ".planning/STATE.md"
+            ".planning/STATE.md",
+            "docs/releases/v0.3-uat-logs/**",
+            ".planning/DECISIONS.md"
           ],
           "wave": 5,
           "dependsOn": [
             "20-04"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
