@@ -39,6 +39,13 @@ async function enumValues(db: Database, typeName: string): Promise<string[]> {
   return result.rows.map((row) => row.value);
 }
 
+// A counter, not random bits: (host, ssh_port) is unique and random ports collide across seeds.
+let sshPortSeed = 20_000;
+function nextSshPort(): number {
+  sshPortSeed += 1;
+  return sshPortSeed;
+}
+
 async function seedService(db: Database): Promise<string> {
   const credentialId = uuidv7();
   const serverId = uuidv7();
@@ -52,7 +59,7 @@ async function seedService(db: Database): Promise<string> {
   `);
   await db.execute(sql`
     insert into servers (id, name, host, ssh_port, ssh_user, credential_id)
-    values (${serverId}, ${`srv-${suffix}`}, '10.2.0.1', ${20_000 + Number.parseInt(suffix.slice(-3), 16)},
+    values (${serverId}, ${`srv-${suffix}`}, '10.2.0.1', ${nextSshPort()},
       'root', ${credentialId})
   `);
   await db.execute(
