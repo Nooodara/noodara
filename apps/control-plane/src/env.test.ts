@@ -1,7 +1,14 @@
 import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DEPLOY_ENV_KNOBS, DEPLOY_LOG_LINE_MAX_BYTES, loadEnv, parseEnv } from './env.js';
+import {
+  DEFAULT_PROXY_IMAGE,
+  DEPLOY_ENV_KNOBS,
+  DEPLOY_LOG_LINE_MAX_BYTES,
+  loadEnv,
+  parseEnv,
+  PROXY_ENV_KNOBS,
+} from './env.js';
 
 function base64Key(byteLength = 32): string {
   return randomBytes(byteLength).toString('base64');
@@ -648,6 +655,136 @@ describe('deploy engine knobs (Phase 12, D15/D16/D8)', () => {
   });
 });
 
+describe('proxy and certificate knobs (21-05 A6)', () => {
+  const DIGEST = 'a'.repeat(64);
+
+  function parsed(overrides: Record<string, string>) {
+    const result = parseEnv(validSource(overrides));
+    if (!result.ok) throw new Error(`expected success: ${JSON.stringify(result.issues)}`);
+    return result.value;
+  }
+
+  function issuesFor(overrides: Record<string, string>): { variable: string; requirement: string }[] {
+    const result = parseEnv(validSource(overrides));
+    if (result.ok) throw new Error('expected failure');
+    return result.issues;
+  }
+
+  it('declares exactly the five knobs', () => {
+    expect([...PROXY_ENV_KNOBS].sort()).toEqual(
+      [
+        'NOODARA_ACME_CA_URL',
+        'NOODARA_ACME_CA_ROOT_FILE',
+        'NOODARA_CERT_CHECK_INTERVAL_MS',
+        'NOODARA_CERT_ISSUE_TIMEOUT_MS',
+        'NOODARA_PROXY_IMAGE',
+      ].sort(),
+    );
+  });
+
+  it('defaults to Let\'s Encrypt production, no CA root file, 10 min timings and the pinned image', () => {
+    const value = parsed({});
+
+    expect(value.NOODARA_ACME_CA_URL).toBe('https://acme-v02.api.letsencrypt.org/directory');
+    expect(value).not.toHaveProperty('NOODARA_ACME_CA_ROOT_FILE');
+    expect(value.NOODARA_CERT_CHECK_INTERVAL_MS).toBe(600_000);
+    expect(value.NOODARA_CERT_ISSUE_TIMEOUT_MS).toBe(600_000);
+    expect(value.NOODARA_PROXY_IMAGE).toBe(DEFAULT_PROXY_IMAGE);
+    expect(DEFAULT_PROXY_IMAGE).toMatch(/^traefik:v3\.[0-9.]+@sha256:[0-9a-f]{64}$/);
+  });
+
+  describe('NOODARA_ACME_CA_URL', () => {
+    it.each(['https://pebble:14000/dir', 'https://acme-staging-v02.api.letsencrypt.org/directory'])(
+      'accepts %s',
+      (url) => {
+        expect(parsed({ NOODARA_ACME_CA_URL: url }).NOODARA_ACME_CA_URL).toBe(url);
+      },
+    );
+
+    it.each([
+      'http://acme.example.com/directory',
+      'not a url',
+      'ftp://acme.example.com',
+      'https://user:pass@acme.example.com/directory',
+      'https://acme.example.com/directory?token=x',
+      'https://acme.example.com/directory#x',
+    ])('rejects %j without echoing it', (url) => {
+      const issues = issuesFor({ NOODARA_ACME_CA_URL: url });
+
+      expect(issues).toEqual([
+        {
+          variable: 'NOODARA_ACME_CA_URL',
+          requirement: 'NOODARA_ACME_CA_URL must be an https URL without credentials, query or fragment',
+        },
+      ]);
+    });
+  });
+
+  describe('NOODARA_ACME_CA_ROOT_FILE', () => {
+    it('accepts an absolute path', () => {
+      expect(parsed({ NOODARA_ACME_CA_ROOT_FILE: '/etc/noodara/pebble.minica.pem' }).NOODARA_ACME_CA_ROOT_FILE).toBe(
+        '/etc/noodara/pebble.minica.pem',
+      );
+    });
+
+    it.each(['relative/ca.pem', '/etc/ca.pem\n/etc/other', '/etc/ca\0.pem', `/${'a'.repeat(4096)}`])(
+      'rejects %j',
+      (path) => {
+        expect(issuesFor({ NOODARA_ACME_CA_ROOT_FILE: path })).toEqual([
+          { variable: 'NOODARA_ACME_CA_ROOT_FILE', requirement: 'NOODARA_ACME_CA_ROOT_FILE must be an absolute file path' },
+        ]);
+      },
+    );
+  });
+
+  describe.each(['NOODARA_CERT_CHECK_INTERVAL_MS', 'NOODARA_CERT_ISSUE_TIMEOUT_MS'] as const)('%s', (variable) => {
+    it.each([60_000, 3_600_000])('accepts the boundary %d', (value) => {
+      expect(parsed({ [variable]: String(value) })[variable]).toBe(value);
+    });
+
+    it.each(['59999', '3600001', '0', '-1', '1.5', 'abc'])('rejects %j', (value) => {
+      const issues = issuesFor({ [variable]: value });
+
+      expect(issues).toHaveLength(1);
+      expect(issues[0]?.variable).toBe(variable);
+      expect(issues[0]?.requirement).toMatch(/between 60000 and 3600000/);
+    });
+  });
+
+  describe('NOODARA_PROXY_IMAGE', () => {
+    it.each([
+      `traefik@sha256:${DIGEST}`,
+      `traefik:v3.7.14@sha256:${DIGEST}`,
+      `library/traefik:v3@sha256:${DIGEST}`,
+      `registry.example.com:5000/mirror/traefik:v3.7.14@sha256:${DIGEST}`,
+      `ghcr.io/acme/traefik-fork@sha256:${DIGEST}`,
+    ])('accepts the digest-pinned %s', (image) => {
+      expect(parsed({ NOODARA_PROXY_IMAGE: image }).NOODARA_PROXY_IMAGE).toBe(image);
+    });
+
+    it.each([
+      'traefik',
+      'traefik:v3.7.14',
+      'traefik:latest',
+      `traefik@sha256:${'a'.repeat(63)}`,
+      `traefik@sha256:${'A'.repeat(64)}`,
+      `traefik@sha512:${DIGEST}`,
+      `Traefik@sha256:${DIGEST}`,
+      `traefik@sha256:${DIGEST} --privileged`,
+      `traefik@sha256:${DIGEST}\n`,
+      `$(id)@sha256:${DIGEST}`,
+      `${'a/'.repeat(300)}traefik@sha256:${DIGEST}`,
+    ])('rejects %j', (image) => {
+      expect(issuesFor({ NOODARA_PROXY_IMAGE: image })).toEqual([
+        {
+          variable: 'NOODARA_PROXY_IMAGE',
+          requirement: 'NOODARA_PROXY_IMAGE must be an image reference pinned as name@sha256:<64 hex>',
+        },
+      ]);
+    });
+  });
+});
+
 describe('env wiring (ADR 0003)', () => {
   const turbo = JSON.parse(readFileSync(new URL('../../../turbo.json', import.meta.url), 'utf8')) as {
     tasks: Record<string, { passThroughEnv?: string[] }>;
@@ -660,6 +797,7 @@ describe('env wiring (ADR 0003)', () => {
         NOODARA_MASTER_KEY_PREVIOUS: base64Key(32),
         NOODARA_ADMIN_EMAIL: 'admin@example.com',
         NOODARA_ADMIN_PASSWORD: 'a-long-admin-password',
+        NOODARA_ACME_CA_ROOT_FILE: '/etc/noodara/ca.pem',
       }),
     );
     if (!result.ok) throw new Error('expected success');
@@ -674,8 +812,8 @@ describe('env wiring (ADR 0003)', () => {
     }
   });
 
-  it('documents every deploy knob in .env.example', () => {
-    for (const variable of DEPLOY_ENV_KNOBS) {
+  it('documents every deploy and proxy knob in .env.example', () => {
+    for (const variable of [...DEPLOY_ENV_KNOBS, ...PROXY_ENV_KNOBS]) {
       expect(envExample, `${variable} missing from .env.example`).toMatch(new RegExp(`^${variable}=$`, 'm'));
     }
   });

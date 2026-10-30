@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEPLOYMENT_ERROR_CODES } from '@noodara/domain/deployment';
+import { DEPLOYMENT_ERROR_CODES as V03_DEPLOYMENT_ERROR_CODES, V04_DEPLOYMENT_ERROR_CODES } from '@noodara/domain/deployment';
 import {
   DEPLOYMENT_ERROR_COPY,
   GENERIC_DEPLOYMENT_ERROR_COPY,
@@ -9,6 +9,8 @@ import {
   LOG_TAIL_MAX_LINE_CHARS,
   LOG_TAIL_MAX_LINES,
 } from './deploy-error-copy';
+
+const DEPLOYMENT_ERROR_CODES = [...V03_DEPLOYMENT_ERROR_CODES, ...V04_DEPLOYMENT_ERROR_CODES];
 
 describe('deploymentErrorCopy', () => {
   it.each(DEPLOYMENT_ERROR_CODES.map((code) => [code]))('%s has a title and an actionable recovery', (code) => {
@@ -31,6 +33,12 @@ describe('deploymentErrorCopy', () => {
     expect(deploymentErrorCopy('ROLLBACK_FAILED').title).toBe('Rollback failed');
     expect(deploymentErrorCopy('ROLLBACK_TARGET_UNAVAILABLE').title).toBe('Rollback target unavailable');
     expect(deploymentErrorCopy('COMMIT_NOT_FOUND').title).toBe('Commit not found');
+  });
+
+  it('the v0.4 codes (21-05) have their own titles', () => {
+    expect(deploymentErrorCopy('SECRET_UNRESOLVED').title).toBe('Secret not found');
+    expect(deploymentErrorCopy('ENV_INJECTION_FAILED').title).toBe('Variables not written');
+    expect(deploymentErrorCopy('PROXY_ROUTE_FAILED').title).toBe('Proxy route rejected');
   });
 
   it('ENQUEUE_FAILED (14-08) tells the user nothing ran and to deploy again', () => {

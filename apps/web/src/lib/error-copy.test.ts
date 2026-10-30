@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { V04_SERVICE_ERROR_CODES } from '@noodara/domain/api-contract';
 import type { ApiFailure } from './api-client';
 import {
   ACCOUNT_GENERIC_ERROR,
   accountFieldErrors,
   copyForErrorCode,
   copyForServerErrorCode,
+  copyForV04ErrorCode,
+  V04_ERROR_COPY,
   fieldErrorsFromIssues,
   fieldForErrorCode,
   formatRetryAfterDuration,
@@ -76,6 +79,25 @@ describe('copyForErrorCode', () => {
       expect(copy).not.toMatch(/SHA256:/);
       expect(copy.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('copyForV04ErrorCode (21-05)', () => {
+  it('has copy for exactly the v0.4 codes', () => {
+    expect(Object.keys(V04_ERROR_COPY).sort()).toEqual([...V04_SERVICE_ERROR_CODES].sort());
+    expect(Object.isFrozen(V04_ERROR_COPY)).toBe(true);
+  });
+
+  it.each(V04_SERVICE_ERROR_CODES.map((code) => [code]))('%s is a fixed actionable sentence', (code) => {
+    const copy = copyForV04ErrorCode(code);
+    expect(copy.trim().length).toBeGreaterThan(0);
+    expect(copy).toMatch(/\.$/);
+    expect(copy).not.toMatch(/!|\{|\}/);
+  });
+
+  it('gives every code its own copy', () => {
+    const copies = V04_SERVICE_ERROR_CODES.map((code) => copyForV04ErrorCode(code));
+    expect(new Set(copies).size).toBe(copies.length);
   });
 });
 

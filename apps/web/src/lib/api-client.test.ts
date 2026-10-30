@@ -12,6 +12,7 @@ import {
   vi,
 } from "vitest";
 import type { ServiceErrorCode } from "@noodara/domain/api-contract";
+import { V04_SERVICE_ERROR_CODES } from "@noodara/domain/api-contract";
 import {
   ALL_DEPLOY_ENGINE_ERROR_CODES,
   ALL_KNOWN_SERVICE_ERROR_CODES,
@@ -409,6 +410,15 @@ describe("apiGet/apiSend 13-05 additions", () => {
     expect(
       ALL_DEPLOY_ENGINE_ERROR_CODES.filter((code) => core.has(code)),
     ).toEqual([]);
+  });
+
+  it("keeps every v0.4 code (21-05) on the deploy calls", async () => {
+    for (const code of V04_SERVICE_ERROR_CODES) {
+      expect(ALL_DEPLOY_ENGINE_ERROR_CODES).toContain(code);
+      fetchMock.mockResolvedValueOnce(jsonResponse(409, { error: code, message: "No." }));
+      const result = await deployApiSend("POST", "/api/domains", {});
+      expect(result).toMatchObject({ ok: false, code });
+    }
   });
 
   it("folds a deploy-engine code to INTERNAL_ERROR on the core calls, keeps it on the deploy calls", async () => {

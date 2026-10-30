@@ -8,6 +8,7 @@
 // browser bundle) applies here too. `ServerErrorCode` is the real, importable union from
 // `@noodara/domain/server` (pure, already an apps/web dependency), matching the precedent
 // packages/ui/src/tone.ts already set for importing domain unions instead of re-typing them.
+import type { V04ServiceErrorCode } from '@noodara/domain/api-contract';
 import type { ServerErrorCode } from '@noodara/domain/server';
 import type { ApiErrorCode, ApiFailure, ApiIssue } from './api-client';
 
@@ -55,6 +56,31 @@ const SERVICE_ERROR_COPY = {
  *  compile-time error here (the `satisfies Record<...>` above), never a silent runtime fallback. */
 export function copyForErrorCode(code: ServiceErrorCode): string {
   return SERVICE_ERROR_COPY[code];
+}
+
+// 21-05: copy for the v0.4 codes (domains, proxy, variables, secrets). A separate exhaustive
+// table: these codes reach only the deploy-api calls, never `ServiceErrorCode`. Fixed text: no
+// hostname, key, secret name or value is ever interpolated.
+export const V04_ERROR_COPY = Object.freeze({
+  DOMAIN_ALREADY_ASSIGNED: 'This domain is already assigned to a service. Remove it there first, or use another domain.',
+  DOMAIN_RESERVED: "This is the panel's own domain and cannot be assigned to a service. Use another domain.",
+  DOMAIN_LIMIT_REACHED: 'This service has reached its domain limit. Remove a domain before adding another.',
+  PROXY_PORT_IN_USE: 'Ports 80 or 443 are already in use on this server. Stop the other web server, then install the proxy again.',
+  PROXY_INSTALL_FAILED: 'The proxy could not be installed. Check that Docker is running and the server can pull images, then try again.',
+  PROXY_UNAVAILABLE: 'The proxy on this server is not answering. Check that the proxy container is running, then try again.',
+  PROXY_IN_USE: 'Domains still route through this proxy. Remove them before removing the proxy.',
+  PROXY_ROUTE_FAILED: 'The proxy did not accept the routes for this service. Check the proxy on the server, then try again.',
+  ENV_KEY_DUPLICATE: 'A variable with this key already exists in this scope. Edit it instead.',
+  ENV_VALUE_MULTILINE: 'Values must be a single line. Encode multi-line values such as certificates as base64.',
+  ENV_LIMIT_REACHED: 'This scope has reached its variable limit. Remove a variable before adding another.',
+  SECRET_NOT_FOUND: 'A variable references a secret that does not exist. Add the secret or fix the reference.',
+  SECRET_IN_USE: 'Variables still reference this secret. Remove those references before deleting it.',
+  SECRET_NAME_DUPLICATE: 'A secret with this name already exists in this scope. Rotate it instead.',
+  SECRET_LIMIT_REACHED: 'This scope has reached its secret limit. Remove a secret before adding another.',
+} as const satisfies Record<V04ServiceErrorCode, string>);
+
+export function copyForV04ErrorCode(code: V04ServiceErrorCode): string {
+  return V04_ERROR_COPY[code];
 }
 
 export type ErrorFormField = 'name' | 'host' | 'credential';

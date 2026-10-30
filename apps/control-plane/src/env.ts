@@ -7,6 +7,11 @@
 // NOODARA_PUBLIC_URL) carry no `.default()`, no `??`, no `||` anywhere in this module — only the
 // tuning knobs below may have defaults (D-05, D-07, D-08).
 
+import {
+  DEFAULT_CERT_CHECK_INTERVAL_MS,
+  DEFAULT_CERT_ISSUE_TIMEOUT_MS,
+  LETS_ENCRYPT_PRODUCTION_CA_URL,
+} from '@noodara/domain';
 import { DEPLOY_MAX_MS_DEFAULT, DEPLOY_MAX_MS_RANGE } from './queue/deploy-job-budget.js';
 
 type EnvSource = Record<string, string | undefined>;
@@ -33,6 +38,26 @@ export const DEPLOY_ENV_KNOBS = [
   'NOODARA_DEPLOY_QUEUED_STALE_MS',
   'NOODARA_BUILD_CACHE_PRUNE',
 ] as const;
+
+/** v0.4 proxy and certificate knobs (21-05 A6); each one is in turbo.json passThroughEnv and .env.example. */
+export const PROXY_ENV_KNOBS = [
+  'NOODARA_ACME_CA_URL',
+  'NOODARA_ACME_CA_ROOT_FILE',
+  'NOODARA_CERT_CHECK_INTERVAL_MS',
+  'NOODARA_CERT_ISSUE_TIMEOUT_MS',
+  'NOODARA_PROXY_IMAGE',
+] as const;
+
+/** Traefik pinned by digest (ADR 0011 spike): a tag alone could be repointed upstream. */
+export const DEFAULT_PROXY_IMAGE =
+  'traefik:v3.7.14@sha256:575fa15b135078fe5e50aa847987d96dbddd7b093c172429618404df73f3fa7c';
+
+/** `[registry[:port]/]name[/name...][:tag]@sha256:<64 hex>` (Docker reference grammar, digest required). */
+const DIGEST_PINNED_IMAGE_PATTERN =
+  /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?::[0-9]{1,5})?\/)?[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*(?:\/[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*)*(?::[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:[0-9a-f]{64}$/;
+
+/** Bounds shared by the certificate check interval and the issuance timeout: 1 min to 1 h. */
+const CERT_TIMING_RANGE = { min: 60_000, max: 3_600_000 } as const;
 
 /**
  * A base64-encoded 32-byte master key that has passed `parseEnv`'s validation. Distinct from a
@@ -88,6 +113,13 @@ export interface Env {
   NOODARA_DEPLOY_QUEUED_STALE_MS: number;
   // 14-10 (D12): age-based BuildKit cache prune after a SUCCESS deploy; `off` issues no prune.
   NOODARA_BUILD_CACHE_PRUNE: 'on' | 'off';
+  // 21-05 (A6): ACME directory (https), optional CA root bundle (test seam for Pebble), cert
+  // check cadence and issuance timeout, and the digest-pinned Traefik image.
+  NOODARA_ACME_CA_URL: string;
+  NOODARA_ACME_CA_ROOT_FILE?: string;
+  NOODARA_CERT_CHECK_INTERVAL_MS: number;
+  NOODARA_CERT_ISSUE_TIMEOUT_MS: number;
+  NOODARA_PROXY_IMAGE: string;
   PORT: number;
   LOG_LEVEL: string;
 }
@@ -308,6 +340,41 @@ function parseTuningString(value: string | undefined, fallback: string): string 
   return value === undefined || value.length === 0 ? fallback : value;
 }
 
+/** An https URL without credentials, query or fragment; the requirement never echoes the value. */
+function parseHttpsUrl(variable: string, value: string | undefined, fallback: string, issues: EnvIssue[]): string {
+  if (value === undefined || value.length === 0) return fallback;
+  let url: URL | null = null;
+  try {
+    url = new URL(value);
+  } catch {
+    url = null;
+  }
+  if (url?.protocol !== 'https:' || url.username !== '' || url.password !== '' || url.search !== '' || url.hash !== '') {
+    issues.push({ variable, requirement: `${variable} must be an https URL without credentials, query or fragment` });
+    return fallback;
+  }
+  return value;
+}
+
+/** An absolute path on one line; read by the proxy installer only when set. */
+function parseOptionalAbsolutePath(variable: string, value: string | undefined, issues: EnvIssue[]): string | undefined {
+  if (value === undefined || value.length === 0) return undefined;
+  if (!value.startsWith('/') || /[\0\r\n]/.test(value) || value.length > 4096) {
+    issues.push({ variable, requirement: `${variable} must be an absolute file path` });
+    return undefined;
+  }
+  return value;
+}
+
+function parseDigestPinnedImage(variable: string, value: string | undefined, fallback: string, issues: EnvIssue[]): string {
+  if (value === undefined || value.length === 0) return fallback;
+  if (value.length > 512 || !DIGEST_PINNED_IMAGE_PATTERN.test(value)) {
+    issues.push({ variable, requirement: `${variable} must be an image reference pinned as name@sha256:<64 hex>` });
+    return fallback;
+  }
+  return value;
+}
+
 /** Narrows `T | undefined` to `T` after the caller has already confirmed no issues were raised. */
 function assertDefined<T>(value: T | undefined): T {
   return value as T;
@@ -499,6 +566,23 @@ export function parseEnv(source: EnvSource): EnvParseResult {
         'NOODARA_DEPLOY_QUEUED_STALE_MS must be at least 30000 ms, above the longest legitimate enqueue-to-pickup delay',
     },
   );
+  const acmeCaUrl = parseHttpsUrl('NOODARA_ACME_CA_URL', source.NOODARA_ACME_CA_URL, LETS_ENCRYPT_PRODUCTION_CA_URL, issues);
+  const acmeCaRootFile = parseOptionalAbsolutePath('NOODARA_ACME_CA_ROOT_FILE', source.NOODARA_ACME_CA_ROOT_FILE, issues);
+  const certCheckIntervalMs = parseTuningInt(
+    'NOODARA_CERT_CHECK_INTERVAL_MS',
+    source.NOODARA_CERT_CHECK_INTERVAL_MS,
+    DEFAULT_CERT_CHECK_INTERVAL_MS,
+    issues,
+    CERT_TIMING_RANGE,
+  );
+  const certIssueTimeoutMs = parseTuningInt(
+    'NOODARA_CERT_ISSUE_TIMEOUT_MS',
+    source.NOODARA_CERT_ISSUE_TIMEOUT_MS,
+    DEFAULT_CERT_ISSUE_TIMEOUT_MS,
+    issues,
+    CERT_TIMING_RANGE,
+  );
+  const proxyImage = parseDigestPinnedImage('NOODARA_PROXY_IMAGE', source.NOODARA_PROXY_IMAGE, DEFAULT_PROXY_IMAGE, issues);
   const port = parseTuningInt('PORT', source.PORT, 3000, issues);
   const logLevel = parseTuningString(source.LOG_LEVEL, 'info');
 
@@ -544,6 +628,11 @@ export function parseEnv(source: EnvSource): EnvParseResult {
       NOODARA_RUNTIME_LOG_FOLLOW_MAX_MS: runtimeLogFollowMaxMs,
       NOODARA_DEPLOY_QUEUED_STALE_MS: deployQueuedStaleMs,
       NOODARA_BUILD_CACHE_PRUNE: buildCachePrune,
+      NOODARA_ACME_CA_URL: acmeCaUrl,
+      ...(acmeCaRootFile !== undefined ? { NOODARA_ACME_CA_ROOT_FILE: acmeCaRootFile } : {}),
+      NOODARA_CERT_CHECK_INTERVAL_MS: certCheckIntervalMs,
+      NOODARA_CERT_ISSUE_TIMEOUT_MS: certIssueTimeoutMs,
+      NOODARA_PROXY_IMAGE: proxyImage,
       PORT: port,
       LOG_LEVEL: logLevel,
     },

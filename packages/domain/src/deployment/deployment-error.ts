@@ -76,9 +76,9 @@ export const V03_DEPLOYMENT_ERROR_MESSAGES: Readonly<Record<V03DeploymentErrorCo
 
 /**
  * v0.4 (21-04, ADR 0011): codes a deployment fails with once env vars, secrets and routes are
- * applied. Declared here with their fixed messages; 21-05 appends them to
- * DEPLOYMENT_ERROR_CODES together with migration 0014 and the UI copy, so the enum, the DB and
- * the web copy move in one step.
+ * applied. Declared here with their fixed messages; the web copy carries them since 21-05, and
+ * 21-06 appends them to DEPLOYMENT_ERROR_CODES together with migration 0014 and the drift test,
+ * so the enum and the DB move in one step.
  */
 export const V04_DEPLOYMENT_ERROR_CODES = Object.freeze([
   'SECRET_UNRESOLVED',

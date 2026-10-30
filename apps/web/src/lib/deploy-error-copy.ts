@@ -2,14 +2,17 @@
 // the UI renders only the classified copy for `errorCode` (title + what to do) and, when present,
 // a guarded tail of the build log. `DEPLOYMENT_ERROR_COPY` is typed as a full Record over the
 // domain codes, so adding a code without copy fails typecheck and deploy-error-copy.test.ts.
-import type { DeploymentErrorCode } from '@noodara/domain/deployment';
+import type { DeploymentErrorCode, V04DeploymentErrorCode } from '@noodara/domain/deployment';
+
+/** v0.3 codes plus the v0.4 ones (21-05); the latter join DEPLOYMENT_ERROR_CODES with migration 0014 (21-06). */
+export type DeploymentErrorCopyCode = DeploymentErrorCode | V04DeploymentErrorCode;
 
 export interface DeploymentErrorCopy {
   readonly title: string;
   readonly recovery: string;
 }
 
-export const DEPLOYMENT_ERROR_COPY: Readonly<Record<DeploymentErrorCode, DeploymentErrorCopy>> = Object.freeze({
+export const DEPLOYMENT_ERROR_COPY: Readonly<Record<DeploymentErrorCopyCode, DeploymentErrorCopy>> = Object.freeze({
   REPOSITORY_AUTH_FAILED: {
     title: 'Repository access denied',
     recovery: 'Check that the repository credential in the service settings can read this repository, then deploy again.',
@@ -127,6 +130,18 @@ export const DEPLOYMENT_ERROR_COPY: Readonly<Record<DeploymentErrorCode, Deploym
     recovery:
       "Noodara could not write ~/.noodara/deploy on the server. Make sure the SSH user has a home directory it can write to, then deploy again.",
   },
+  SECRET_UNRESOLVED: {
+    title: 'Secret not found',
+    recovery: 'A variable references a secret that does not exist. Add the secret or fix the reference, then deploy again.',
+  },
+  ENV_INJECTION_FAILED: {
+    title: 'Variables not written',
+    recovery: 'The environment variables could not be written to the server. Check the server disk and connection, then deploy again.',
+  },
+  PROXY_ROUTE_FAILED: {
+    title: 'Proxy route rejected',
+    recovery: 'The proxy did not accept the routes for this service. Check the proxy on the server, then deploy again.',
+  },
 });
 
 /** Shown for a code this build of the UI does not know (a newer server) or no code at all. */
@@ -138,7 +153,7 @@ export const GENERIC_DEPLOYMENT_ERROR_COPY: DeploymentErrorCopy = Object.freeze(
 /** Total: unknown, empty or prototype-named codes get the generic copy, never undefined. */
 export function deploymentErrorCopy(code: string | null | undefined): DeploymentErrorCopy {
   if (typeof code !== 'string' || !Object.hasOwn(DEPLOYMENT_ERROR_COPY, code)) return GENERIC_DEPLOYMENT_ERROR_COPY;
-  return DEPLOYMENT_ERROR_COPY[code as DeploymentErrorCode];
+  return DEPLOYMENT_ERROR_COPY[code as DeploymentErrorCopyCode];
 }
 
 // Log tail guard (H1). The server already redacts build logs; this is a second, client-side net:

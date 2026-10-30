@@ -61,6 +61,21 @@ nothing else — no internal detail is ever attached to it.
 | `WEBHOOK_HOOK_ID_CONFLICT` | 409 | No unique webhook URL could be allocated; nothing was changed. Enable the webhook again. |
 | `WEBHOOK_DELIVERY_REJECTED` | 422 | Webhook receiver (`POST /webhooks/github/:hookId`): the signed delivery was recorded but cannot be deployed; `outcome` says why, such as a push to another branch or repository. |
 | `RATE_LIMITED` | 429 | Webhook receiver: too many deliveries for this hook id or source; retry after the `Retry-After` header. |
+| `DOMAIN_ALREADY_ASSIGNED` | 409 | The hostname is already assigned to a service; remove it there first. |
+| `DOMAIN_RESERVED` | 422 | The hostname is the panel's own host (`NOODARA_PUBLIC_URL`) and cannot be assigned to a service. |
+| `DOMAIN_LIMIT_REACHED` | 422 | The service already has the maximum number of domains. |
+| `PROXY_PORT_IN_USE` | 409 | Ports 80 or 443 are taken on the server; stop the other web server, then install the proxy again. |
+| `PROXY_INSTALL_FAILED` | 502 | The proxy could not be installed; check Docker and image pulls on the server. |
+| `PROXY_UNAVAILABLE` | 503 | The proxy on the server is not answering. |
+| `PROXY_IN_USE` | 409 | Domains still route through the proxy; remove them before removing it. |
+| `PROXY_ROUTE_FAILED` | 502 | The proxy did not accept the routes for the service. |
+| `ENV_KEY_DUPLICATE` | 409 | A variable with this key already exists in the scope. |
+| `ENV_VALUE_MULTILINE` | 422 | The value has a line break or NUL byte; encode multi-line values as base64. |
+| `ENV_LIMIT_REACHED` | 422 | The scope already has the maximum number of variables. |
+| `SECRET_NOT_FOUND` | 422 | A `<secret:name>` reference names a secret that does not exist in any visible scope. |
+| `SECRET_IN_USE` | 409 | Variables still reference the secret; remove the references before deleting it. |
+| `SECRET_NAME_DUPLICATE` | 409 | A secret with this name already exists in the scope. |
+| `SECRET_LIMIT_REACHED` | 422 | The scope already has the maximum number of secrets. |
 | `PROJECT_ARCHIVED` | 409 | The project is archived; unarchive it to deploy its services. |
 | `DEPLOYMENT_INPUT_INVALID` | 422 | The deploy request carried a field it does not accept; the body must be empty or `{}`. |
 | `DEPLOYMENT_NOT_CANCELLABLE` | 409 | The deployment already ended; only a queued or running deployment can be cancelled. |

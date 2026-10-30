@@ -86,7 +86,23 @@ export type DeployEngineErrorCode =
   | "WEBHOOK_NOT_ENABLED"
   | "WEBHOOK_HOOK_ID_CONFLICT"
   | "WEBHOOK_DELIVERY_REJECTED"
-  | "RATE_LIMITED";
+  | "RATE_LIMITED"
+  // v0.4 (21-05): domains, proxy, variables, secrets.
+  | "DOMAIN_ALREADY_ASSIGNED"
+  | "DOMAIN_RESERVED"
+  | "DOMAIN_LIMIT_REACHED"
+  | "PROXY_PORT_IN_USE"
+  | "PROXY_INSTALL_FAILED"
+  | "PROXY_UNAVAILABLE"
+  | "PROXY_IN_USE"
+  | "PROXY_ROUTE_FAILED"
+  | "ENV_KEY_DUPLICATE"
+  | "ENV_VALUE_MULTILINE"
+  | "ENV_LIMIT_REACHED"
+  | "SECRET_NOT_FOUND"
+  | "SECRET_IN_USE"
+  | "SECRET_NAME_DUPLICATE"
+  | "SECRET_LIMIT_REACHED";
 
 export type DeployApiErrorCode = ApiErrorCode | DeployEngineErrorCode;
 
@@ -263,6 +279,21 @@ const DEPLOY_ENGINE_ERROR_CODE_MARKER = Object.freeze({
   WEBHOOK_HOOK_ID_CONFLICT: true,
   WEBHOOK_DELIVERY_REJECTED: true,
   RATE_LIMITED: true,
+  DOMAIN_ALREADY_ASSIGNED: true,
+  DOMAIN_RESERVED: true,
+  DOMAIN_LIMIT_REACHED: true,
+  PROXY_PORT_IN_USE: true,
+  PROXY_INSTALL_FAILED: true,
+  PROXY_UNAVAILABLE: true,
+  PROXY_IN_USE: true,
+  PROXY_ROUTE_FAILED: true,
+  ENV_KEY_DUPLICATE: true,
+  ENV_VALUE_MULTILINE: true,
+  ENV_LIMIT_REACHED: true,
+  SECRET_NOT_FOUND: true,
+  SECRET_IN_USE: true,
+  SECRET_NAME_DUPLICATE: true,
+  SECRET_LIMIT_REACHED: true,
 } satisfies Record<DeployEngineErrorCode, true>);
 
 const KNOWN_SERVICE_ERROR_CODES: ReadonlySet<string> = new Set(
