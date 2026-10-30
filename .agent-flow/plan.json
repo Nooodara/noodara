@@ -7600,6 +7600,38 @@
             "persistence/concurrent-writes"
           ],
           "tier": "deep"
+        },
+        {
+          "id": "20-11",
+          "title": "Fix flaky seed port collision in migration integration tests",
+          "scope": [
+            "tests/integration/db/migration-0011-0012.test.ts",
+            "tests/integration/db/migration-0013.test.ts",
+            "tests/integration/helpers/"
+          ],
+          "wave": 7,
+          "dependsOn": [
+            "20-10"
+          ],
+          "status": "pending",
+          "gates": [
+            "typecheck",
+            "lint",
+            "it-db"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Seeded servers get unique (host, port) pairs deterministically (no port derived from random uuid digits); CI run 40996535993's servers_host_port_unique_idx collision cannot recur",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "it-db passes 10 consecutive local runs",
+              "proof": "test"
+            }
+          ],
+          "tier": "light"
         }
       ]
     }

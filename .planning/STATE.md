@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: Reliable Deployment Engine
-status: phase_20_gate_ready
-stopped_at: 20-04 release gate READY on 890bf60 = public 2d1e1c69 (v0.3.0-rc.1; CI 39281147566, nightly 39281208524 green); next 20-05 human gate and v0.3.0; Phase 15 (OPS-05) still open, owner user
-last_updated: 2026-10-19T22:15:00.000Z
-last_activity: 2026-10-19 -- 20-04 gate rerun on 890bf60: unit, coverage, audit, site, it-db, it-full and e2e green locally; CI, nightly (cycles 22.04/24.04, e2e-repeat 20x), Release and Publish site green on 2d1e1c69
+status: v0_3_0_released
+stopped_at: 20-05 A2 done: v0.3.0 tagged on public a0b45618 (= 770b961 tree); CI 41012499661 and Release 41016597518 green, multi-arch images, release Latest; Phase 15 (OPS-05) still open, owner user
+last_updated: 2026-10-30T07:05:00.000Z
+last_activity: 2026-10-30 -- v0.3.0 published (attempt 2): public main 92a7fbfa -> a0b45618, CI 41012499661 10/10, tag v0.3.0, Release 41016597518 green; attempt 1 CI 40996535993 red on pnpm audit (fixed by 20-10) plus a test port-collision flake
 progress:
   total_phases: 9
   completed_phases: 8
@@ -21,14 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** v0.3 — Reliable Deployment Engine (fases 16-19 cerradas; fase 20, gate 20-04 READY, falta 20-05)
+**Current focus:** v0.3 — Reliable Deployment Engine (v0.3.0 publicado 2026-10-30; falta cerrar fase 20)
 
 ## Current Position
 
 Phase: 20 en curso (v0.3: 16-19 cerradas; 20-01..20-03, 20-06..20-08 hechas; 15/OPS-05 abierta, owner usuario)
-Plan: 20-04 gate READY (`docs/releases/v0.3-gate.md`, logs en `docs/releases/v0.3-gate-logs/`); siguiente 20-05 (gate humano y tag v0.3.0)
-Status: Gate v0.3 READY en 890bf60 = 2d1e1c69 (v0.3.0-rc.1)
-Last activity: 2026-10-19
+Plan: 20-05 A2 hecho: v0.3.0 publicado (evidencia en `docs/releases/v0.3-gate.md`, sección Publicación v0.3.0); siguiente cierre de fase 20
+Status: v0.3.0 publicado en público a0b45618 (árbol de 770b961)
+Last activity: 2026-10-30
+
+Publicación v0.3.0 (20-05 A2): intento 1 (92a7fbfa, CI 40996535993) rojo por `pnpm audit` (advisories nuevos, 20-10) y un flake de `migration-0011-0012.test.ts` (puerto de seed `20000 + 3 hex`, colisión en `servers_host_port_unique_idx`; seguimiento pendiente). Intento 2: 78dea21 y 770b961 reproducidos → a0b45618; checkout limpio con audit/test/typecheck/lint verdes; CI 41012499661 10/10, Publish site 41012499667, Release 41016597518 verdes; imágenes 0.3.0 amd64+arm64 (control-plane `sha256:a0b37458…`, web `sha256:a1c23cbe…`); release v0.3.0 Latest, no prerelease.
 
 Gate 20-04 (890bf60 = público 2d1e1c69, mismo árbol 5b150f18): los 12 criterios §8.10 READY. Local: unit 7848, state machine 100%, audit sin high, site, it-db 264, it-full 1339 pasan / 0 fallan, e2e 248. Remoto sobre 2d1e1c69: CI 39281147566 (10/10), nightly 39281208524 (9/9, cycles 22.04/24.04 con `problems: []`, e2e-repeat 20x), Release 39281150628 y Publish site 39281147911. Los bloqueantes del gate en 3000994 se cerraron con 20-07 (d5a9e96) y 20-08 (rc.1).
 
