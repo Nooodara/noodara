@@ -70,7 +70,29 @@ export type ServiceErrorCode =
   | "WEBHOOK_NOT_ENABLED"
   | "WEBHOOK_HOOK_ID_CONFLICT"
   | "WEBHOOK_DELIVERY_REJECTED"
-  | "RATE_LIMITED";
+  | "RATE_LIMITED"
+  | V04ServiceErrorCode;
+
+/** 21-05 (v0.4): domains, proxy, env vars and secrets. web copy and error-codes.mdx iterate it. */
+export const V04_SERVICE_ERROR_CODES = Object.freeze([
+  "DOMAIN_ALREADY_ASSIGNED",
+  "DOMAIN_RESERVED",
+  "DOMAIN_LIMIT_REACHED",
+  "PROXY_PORT_IN_USE",
+  "PROXY_INSTALL_FAILED",
+  "PROXY_UNAVAILABLE",
+  "PROXY_IN_USE",
+  "PROXY_ROUTE_FAILED",
+  "ENV_KEY_DUPLICATE",
+  "ENV_VALUE_MULTILINE",
+  "ENV_LIMIT_REACHED",
+  "SECRET_NOT_FOUND",
+  "SECRET_IN_USE",
+  "SECRET_NAME_DUPLICATE",
+  "SECRET_LIMIT_REACHED",
+] as const);
+
+export type V04ServiceErrorCode = (typeof V04_SERVICE_ERROR_CODES)[number];
 
 export const SERVICE_ERROR_STATUS = Object.freeze({
   VALIDATION_FAILED: 400,
@@ -154,6 +176,25 @@ export const SERVICE_ERROR_STATUS = Object.freeze({
   // disabled or non-Git service) is 422 with its outcome; too many deliveries is 429.
   WEBHOOK_DELIVERY_REJECTED: 422,
   RATE_LIMITED: 429,
+  // 21-05 (v0.4): a hostname, variable key or secret name already taken (the unique index, via
+  // mapUniqueViolation) and a referenced secret in use are 409; a refused hostname, a multi-line
+  // value, a missing secret or a full scope are 422. The proxy failing on the server is a bad
+  // gateway (502); a proxy that is not running is 503.
+  DOMAIN_ALREADY_ASSIGNED: 409,
+  DOMAIN_RESERVED: 422,
+  DOMAIN_LIMIT_REACHED: 422,
+  PROXY_PORT_IN_USE: 409,
+  PROXY_INSTALL_FAILED: 502,
+  PROXY_UNAVAILABLE: 503,
+  PROXY_IN_USE: 409,
+  PROXY_ROUTE_FAILED: 502,
+  ENV_KEY_DUPLICATE: 409,
+  ENV_VALUE_MULTILINE: 422,
+  ENV_LIMIT_REACHED: 422,
+  SECRET_NOT_FOUND: 422,
+  SECRET_IN_USE: 409,
+  SECRET_NAME_DUPLICATE: 409,
+  SECRET_LIMIT_REACHED: 422,
 } satisfies Record<ServiceErrorCode, number>);
 
 const UNKNOWN_CODE_STATUS = 500;

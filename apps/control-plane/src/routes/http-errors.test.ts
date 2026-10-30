@@ -104,6 +104,22 @@ describe('SERVICE_ERROR_STATUS / mapServiceCodeToStatus (D-16)', () => {
     ['ROLLBACK_TARGET_UNAVAILABLE', 422],
     ['IDEMPOTENCY_KEY_INVALID', 400],
     ['IDEMPOTENCY_KEY_REUSED', 422],
+    // 21-05 (v0.4): domains, proxy, env vars and secrets.
+    ['DOMAIN_ALREADY_ASSIGNED', 409],
+    ['DOMAIN_RESERVED', 422],
+    ['DOMAIN_LIMIT_REACHED', 422],
+    ['PROXY_PORT_IN_USE', 409],
+    ['PROXY_INSTALL_FAILED', 502],
+    ['PROXY_UNAVAILABLE', 503],
+    ['PROXY_IN_USE', 409],
+    ['PROXY_ROUTE_FAILED', 502],
+    ['ENV_KEY_DUPLICATE', 409],
+    ['ENV_VALUE_MULTILINE', 422],
+    ['ENV_LIMIT_REACHED', 422],
+    ['SECRET_NOT_FOUND', 422],
+    ['SECRET_IN_USE', 409],
+    ['SECRET_NAME_DUPLICATE', 409],
+    ['SECRET_LIMIT_REACHED', 422],
   ] satisfies [ServiceErrorCode, number][])('maps %s to %d', (code, status) => {
     expect(mapServiceCodeToStatus(code)).toBe(status);
   });
