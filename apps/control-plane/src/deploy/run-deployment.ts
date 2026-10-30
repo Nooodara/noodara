@@ -470,8 +470,10 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
   });
 
   const log = (phase: DeploymentLogPhase, stream: 'stdout' | 'stderr' | 'system', text: string): void => {
+    // 20-09 F1: the sink concatenates entries as-is, so a system line carries its own newline.
+    const line = stream === 'system' && !text.endsWith('\n') ? `${text}\n` : text;
     try {
-      input.sink.write({ phase, stream, text: scrubHostKeyBlobs(redactor.redact(text)), seq: seq++ });
+      input.sink.write({ phase, stream, text: scrubHostKeyBlobs(redactor.redact(line)), seq: seq++ });
     } catch {
       // A sink failure never fails the deployment.
     }

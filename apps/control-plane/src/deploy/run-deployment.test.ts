@@ -1599,6 +1599,43 @@ describe('runDeployment: automatic rollback (17-07 A1, A2)', () => {
   });
 });
 
+// 20-09 F1: the sink concatenates entries as-is, so every system line carries its own newline.
+function systemEntries(h: Harness, phase: string): DeploymentLogEntry[] {
+  return h.sink.entries.filter((entry) => entry.phase === phase && entry.stream === 'system');
+}
+
+describe('runDeployment: system log lines end with a newline (20-09 F1)', () => {
+  it('healthcheck phase: consecutive system lines never run together', async () => {
+    const h = harness({ healthcheck: HTTP_CHECK, scripts: probing({ stdout: 'NOODARA_PROBE http 200\n' }) });
+
+    await runDeployment(h.input);
+
+    const lines = systemEntries(h, 'healthcheck');
+    expect(lines.length).toBeGreaterThanOrEqual(2);
+    lines.forEach((entry) => {
+      expect(entry.text.endsWith('\n')).toBe(true);
+      expect(entry.text.endsWith('\n\n')).toBe(false);
+    });
+    const joined = h.sink.entries.filter((e) => e.phase === 'healthcheck').map((e) => e.text).join('');
+    expect(joined).toContain('Healthcheck attempt 1: HTTP 200\nHealthcheck passed.\n');
+  });
+
+  it('rollback phase: every system line ends with a newline, before command output too', async () => {
+    const h = rollbackHarness(probing(HTTP_500, { 'probe.tcp': { stdout: 'NOODARA_PROBE open\n' } }));
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('ROLLED_BACK');
+    const lines = systemEntries(h, 'rollback');
+    expect(lines.length).toBeGreaterThanOrEqual(2);
+    lines.forEach((entry) => {
+      expect(entry.text.endsWith('\n')).toBe(true);
+    });
+    const joined = h.sink.entries.filter((e) => e.phase === 'rollback').map((e) => e.text).join('');
+    expect(joined).toContain('Rolling back: restoring the previous version.\n');
+  });
+});
+
 describe('runDeployment: a failed restore ends FAILED once, never retried (17-07 H1)', () => {
   it.each([
     ['rename', { 'docker.rename_from_prev': { exitCode: 1, stderr: GENERIC_DAEMON_ERROR } }],

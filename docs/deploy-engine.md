@@ -30,7 +30,7 @@ Each deployment works in `.noodara/deploy/<deploymentId>` relative to the SSH us
 
 ## Service Healthcheck and Auto-Rollback (19-07)
 
-`POST /api/projects/:id/services` and `PATCH .../services/:id` accept optional `healthcheck` (a config, or `null` for the default container check) and `autoRollback` (boolean, default on). Both are validated with `validateHealthcheckConfig`; an invalid value is a 400 whose issue message is the validator's. The service view returns both, so the sheet round-trips them and the next deploy uses them. Changing them never requires a redeploy by itself.
+`POST /api/projects/:id/services` and `PATCH .../services/:id` accept optional `healthcheck` (a config, or `null` for the default container check) and `autoRollback` (boolean, default on). Both are validated with `validateHealthcheckConfig`; an invalid value is a 400 whose issue message is the validator's. The service view returns both, so the sheet round-trips them and the next deploy uses them. Changing them never requires a redeploy by itself. Only configured checks write `healthcheck` log lines; every system line in the `healthcheck` and `rollback` phases ends with a newline (20-09).
 
 ## Stale QUEUED Deployments (14-08)
 
