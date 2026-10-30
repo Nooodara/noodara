@@ -3,6 +3,8 @@ import {
   DEPLOYMENT_ERROR_CODES,
   V03_DEPLOYMENT_ERROR_CODES,
   V03_DEPLOYMENT_ERROR_MESSAGES,
+  V04_DEPLOYMENT_ERROR_CODES,
+  V04_DEPLOYMENT_ERROR_MESSAGES,
   isDeploymentErrorCode,
 } from './deployment-error.js';
 
@@ -98,6 +100,38 @@ describe('v0.3 error codes (16-02)', () => {
 
   it('messages are distinct', () => {
     const messages = Object.values(V03_DEPLOYMENT_ERROR_MESSAGES);
+    expect(new Set(messages).size).toBe(messages.length);
+  });
+});
+
+describe('v0.4 error codes (21-04)', () => {
+  it('declares the secret, env injection and route codes (the pg enum grows in 21-05)', () => {
+    expect([...V04_DEPLOYMENT_ERROR_CODES]).toEqual([
+      'SECRET_UNRESOLVED',
+      'ENV_INJECTION_FAILED',
+      'PROXY_ROUTE_FAILED',
+    ]);
+    expect(Object.isFrozen(V04_DEPLOYMENT_ERROR_CODES)).toBe(true);
+    expect(Object.isFrozen(V04_DEPLOYMENT_ERROR_MESSAGES)).toBe(true);
+    expect(Object.keys(V04_DEPLOYMENT_ERROR_MESSAGES).sort()).toEqual(
+      [...V04_DEPLOYMENT_ERROR_CODES].sort(),
+    );
+  });
+
+  it.each(V04_DEPLOYMENT_ERROR_CODES)('%s has a fixed actionable message without values or remote detail', (code) => {
+    const message = V04_DEPLOYMENT_ERROR_MESSAGES[code];
+    expect(message).toMatch(/^[A-Z].+\. .+\.$/);
+    expect(message).toMatch(/\b(Check|Add|deploy|Deploy)\b/);
+    expect(message).not.toMatch(/\d+\.\d+\.\d+\.\d+/);
+    expect(message).not.toMatch(/noodara-|\/|<secret:|exit \d+|[A-Z]{2,}_[A-Z]+/);
+    expect(message.length).toBeLessThanOrEqual(160);
+  });
+
+  it('messages are distinct from each other and from the v0.3 ones', () => {
+    const messages = [
+      ...Object.values(V04_DEPLOYMENT_ERROR_MESSAGES),
+      ...Object.values(V03_DEPLOYMENT_ERROR_MESSAGES),
+    ];
     expect(new Set(messages).size).toBe(messages.length);
   });
 });

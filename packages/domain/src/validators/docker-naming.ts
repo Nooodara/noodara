@@ -263,3 +263,59 @@ export function resolveRepoBuildPaths(
     dockerfilePath: `${repo}/${dockerfile}` as RepoBuildPath,
   };
 }
+
+// ADR 0011: one Traefik per server, file provider only, under /opt/noodara-proxy.
+export type ProxyPath = Brand<string, 'ProxyPath'>;
+
+export const PROXY_CONTAINER_NAME = 'noodara-traefik';
+/** Only `<serviceId>.yml` files are Noodara's; temp files (`.noodara-XXXXXX`) have no suffix. */
+export const PROXY_DYNAMIC_DIR_ENTRY_SUFFIX = '.yml';
+
+const PROXY_ROOT = '/opt/noodara-proxy';
+const PROXY_CONTAINER_ROOT = '/etc/traefik';
+
+/** Host layout (deploy-user owned; `acme/acme.json` is Traefik's, root 0600, never read). */
+export const PROXY_LAYOUT = Object.freeze({
+  root: PROXY_ROOT,
+  staticConfigFile: `${PROXY_ROOT}/traefik.yml`,
+  dynamicDir: `${PROXY_ROOT}/dynamic`,
+  /** The API router (static-config); not a service file, so a change plan never removes it. */
+  apiRouterFile: `${PROXY_ROOT}/dynamic/noodara-api.yml`,
+  caDir: `${PROXY_ROOT}/ca`,
+  acmeDir: `${PROXY_ROOT}/acme`,
+  acmeStorageFile: `${PROXY_ROOT}/acme/acme.json`,
+} as const);
+
+/** Mount points inside the proxy container; the rendered static config references these. */
+export const PROXY_CONTAINER_PATHS = Object.freeze({
+  staticConfigFile: `${PROXY_CONTAINER_ROOT}/traefik.yml`,
+  dynamicDir: `${PROXY_CONTAINER_ROOT}/dynamic`,
+  caDir: `${PROXY_CONTAINER_ROOT}/ca`,
+  acmeDir: `${PROXY_CONTAINER_ROOT}/acme`,
+  acmeStorageFile: `${PROXY_CONTAINER_ROOT}/acme/acme.json`,
+} as const);
+
+export function proxyContainerName(): ContainerName {
+  return PROXY_CONTAINER_NAME as ContainerName;
+}
+
+export function proxyDynamicPathFor(serviceId: string): ValidationResult<ProxyPath> {
+  if (!isResourceId(serviceId)) return resourceIdFailure();
+  return ok(`${PROXY_LAYOUT.dynamicDir}/${serviceId}${PROXY_DYNAMIC_DIR_ENTRY_SUFFIX}` as ProxyPath);
+}
+
+/** `<uuid>.yml` → the service id; any other entry of `dynamic/` → null (left untouched). */
+export function serviceIdFromProxyDynamicFileName(name: string): ResourceId | null {
+  if (!name.endsWith(PROXY_DYNAMIC_DIR_ENTRY_SUFFIX)) return null;
+  const id = name.slice(0, -PROXY_DYNAMIC_DIR_ENTRY_SUFFIX.length);
+  return isResourceId(id) ? (id as ResourceId) : null;
+}
+
+const NETWORK_PREFIX = 'noodara-net-';
+
+/** `noodara-net-<uuid>` → the service id; `bridge` and foreign networks → null. */
+export function serviceIdFromNetworkName(name: string): ResourceId | null {
+  if (!name.startsWith(NETWORK_PREFIX)) return null;
+  const id = name.slice(NETWORK_PREFIX.length);
+  return isResourceId(id) ? (id as ResourceId) : null;
+}

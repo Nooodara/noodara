@@ -73,3 +73,28 @@ export const V03_DEPLOYMENT_ERROR_MESSAGES: Readonly<Record<V03DeploymentErrorCo
     COMMIT_NOT_FOUND:
       'The pushed commit was not found in the repository. Check that the branch was not force-pushed, then deploy again.',
   } satisfies Record<V03DeploymentErrorCode, string>);
+
+/**
+ * v0.4 (21-04, ADR 0011): codes a deployment fails with once env vars, secrets and routes are
+ * applied. Declared here with their fixed messages; 21-05 appends them to
+ * DEPLOYMENT_ERROR_CODES together with migration 0014 and the UI copy, so the enum, the DB and
+ * the web copy move in one step.
+ */
+export const V04_DEPLOYMENT_ERROR_CODES = Object.freeze([
+  'SECRET_UNRESOLVED',
+  'ENV_INJECTION_FAILED',
+  'PROXY_ROUTE_FAILED',
+] as const);
+
+export type V04DeploymentErrorCode = (typeof V04_DEPLOYMENT_ERROR_CODES)[number];
+
+/** Fixed text: never a key's value, a secret, a reference body, a path or remote output. */
+export const V04_DEPLOYMENT_ERROR_MESSAGES: Readonly<Record<V04DeploymentErrorCode, string>> =
+  Object.freeze({
+    SECRET_UNRESOLVED:
+      'A variable references a secret that does not exist. Add the secret or fix the reference, then deploy again.',
+    ENV_INJECTION_FAILED:
+      'The environment variables could not be written to the server. Check the server disk and connection, then deploy again.',
+    PROXY_ROUTE_FAILED:
+      'The proxy did not accept the routes for this service. Check the proxy on the server, then deploy again.',
+  } satisfies Record<V04DeploymentErrorCode, string>);

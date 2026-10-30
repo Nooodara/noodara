@@ -11,6 +11,13 @@ import {
   deployWorkspaceFor,
   deploymentImageRefFor,
   networkNameFor,
+  PROXY_CONTAINER_PATHS,
+  PROXY_DYNAMIC_DIR_ENTRY_SUFFIX,
+  PROXY_LAYOUT,
+  proxyContainerName,
+  proxyDynamicPathFor,
+  serviceIdFromNetworkName,
+  serviceIdFromProxyDynamicFileName,
   resolveRepoBuildPaths,
   validateBuildContextPath,
   validateBuildTarget,
@@ -323,5 +330,74 @@ describe('resolveRepoBuildPaths', () => {
     });
     expect(paths.contextPath.startsWith(repo)).toBe(true);
     expect(paths.dockerfilePath.startsWith(repo)).toBe(true);
+  });
+});
+
+describe('proxy layout (ADR 0011)', () => {
+  it('names the single proxy container noodara-traefik', () => {
+    expect(proxyContainerName()).toBe('noodara-traefik');
+  });
+
+  it('fixes the /opt/noodara-proxy layout and its container mounts', () => {
+    expect(PROXY_LAYOUT).toEqual({
+      root: '/opt/noodara-proxy',
+      staticConfigFile: '/opt/noodara-proxy/traefik.yml',
+      dynamicDir: '/opt/noodara-proxy/dynamic',
+      apiRouterFile: '/opt/noodara-proxy/dynamic/noodara-api.yml',
+      caDir: '/opt/noodara-proxy/ca',
+      acmeDir: '/opt/noodara-proxy/acme',
+      acmeStorageFile: '/opt/noodara-proxy/acme/acme.json',
+    });
+    expect(PROXY_CONTAINER_PATHS).toEqual({
+      staticConfigFile: '/etc/traefik/traefik.yml',
+      dynamicDir: '/etc/traefik/dynamic',
+      caDir: '/etc/traefik/ca',
+      acmeDir: '/etc/traefik/acme',
+      acmeStorageFile: '/etc/traefik/acme/acme.json',
+    });
+    expect(Object.isFrozen(PROXY_LAYOUT)).toBe(true);
+    expect(Object.isFrozen(PROXY_CONTAINER_PATHS)).toBe(true);
+  });
+
+  it('places a service dynamic file under dynamic/<serviceId>.yml', () => {
+    expect(proxyDynamicPathFor(SERVICE_ID)).toEqual({
+      ok: true,
+      value: `/opt/noodara-proxy/dynamic/${SERVICE_ID}${PROXY_DYNAMIC_DIR_ENTRY_SUFFIX}`,
+    });
+    expect(PROXY_DYNAMIC_DIR_ENTRY_SUFFIX).toBe('.yml');
+  });
+
+  it.each([
+    '',
+    '../etc',
+    'noodara-api',
+    SERVICE_ID.toUpperCase(),
+    `${SERVICE_ID}/../x`,
+    `${SERVICE_ID}\n`,
+    ` ${SERVICE_ID}`,
+  ])('proxyDynamicPathFor rejects %j with RESOURCE_ID_INVALID', (id) => {
+    expect(codeOf(proxyDynamicPathFor(id))).toBe('RESOURCE_ID_INVALID');
+  });
+
+  it('maps a managed dynamic file name back to its service id and ignores every other entry', () => {
+    expect(serviceIdFromProxyDynamicFileName(`${SERVICE_ID}.yml`)).toBe(SERVICE_ID);
+    for (const name of [
+      'noodara-api.yml',
+      '.noodara-AbC123',
+      `${SERVICE_ID}.yaml`,
+      `${SERVICE_ID}.yml.bak`,
+      `${SERVICE_ID.toUpperCase()}.yml`,
+      `x${SERVICE_ID}.yml`,
+      '',
+    ]) {
+      expect(serviceIdFromProxyDynamicFileName(name)).toBeNull();
+    }
+  });
+
+  it('maps a managed network name back to its service id and ignores bridge and foreign networks', () => {
+    expect(serviceIdFromNetworkName(`noodara-net-${SERVICE_ID}`)).toBe(SERVICE_ID);
+    for (const name of ['bridge', 'host', `noodara-${SERVICE_ID}`, `noodara-net-${SERVICE_ID}x`, '']) {
+      expect(serviceIdFromNetworkName(name)).toBeNull();
+    }
   });
 });
