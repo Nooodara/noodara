@@ -12,5 +12,5 @@
       "@noodara/ssh/testing/deploy-templates": ["../../../packages/ssh/src/testing/deploy-templates.ts"]
     }
   },
-  "include": ["**/*.ts", "../helpers/ssh.ts", "../helpers/deploy-engine.ts", "../helpers/deploy-keys.ts", "../helpers/registry.ts"]
+  "include": ["**/*.ts", "../helpers/ssh.ts", "../helpers/deploy-engine.ts", "../helpers/deploy-keys.ts", "../helpers/registry.ts", "../helpers/pebble.ts"]
 }
