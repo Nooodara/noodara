@@ -1,0 +1,59 @@
+# 2026-10-30T08:07:48Z POST /api/services/01a18bd9-b52f-7292-bd4a-28613e5cfcdd/deploy
+{"id":"01a18bd9-c861-75cb-a75a-71c99d0ce83f","serviceId":"01a18bd9-b52f-7292-bd4a-28613e5cfcdd","status":"QUEUED","trigger":"manual","triggeredBy":"01a18bd8-d8dc-7722-922f-7896688508b3","source":{"sourceType":"git","repositoryUrl":"https://github.com/Xch4rt/noodara-uat-node-api.git","branch":"main","buildContext":".","dockerfilePath":"Dockerfile","buildTarget":null,"imageRef":null,"internalPort":3000,"publishedPort":8081},"commitSha":null,"previousDeploymentId":null,"rollbackOfDeploymentId":null,"imageRef":null,"webhookDeliveryId":null,"imageRetained":false,"startedAt":null,"completedAt":null,"durationMs":null,"errorCode":null,"errorMessage":null,"createdAt":"2026-10-30T08:07:48.065Z","updatedAt":"2026-10-30T08:07:48.065Z"}
+HTTP 201
+# +0s status=PREPARING
+# +2s status=BUILDING
+## 08:07:50 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969         578          75          20        1315        1275
+Swap:              0           0           0
+NAME                 CPU %     MEM USAGE / LIMIT
+noodara-web-1        0.00%     68.23MiB / 256MiB
+noodara-api-1        6.64%     79.01MiB / 256MiB
+noodara-worker-1     0.65%     61.91MiB / 256MiB
+noodara-postgres-1   0.23%     52.51MiB / 512MiB
+noodara-redis-1      0.53%     13.71MiB / 96MiB
+  RSS COMMAND
+120260 node
+116540 next-server (v1
+108752 dockerd
+106832 node
+54284 containerd
+## 08:07:52 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969         593          83          20        1291        1259
+Swap:              0           0           0
+NAME                 CPU %     MEM USAGE / LIMIT
+noodara-web-1        10.96%    68.26MiB / 256MiB
+noodara-api-1        0.31%     79.06MiB / 256MiB
+noodara-worker-1     0.35%     62.02MiB / 256MiB
+noodara-postgres-1   1.31%     52.32MiB / 512MiB
+noodara-redis-1      1.08%     13.5MiB / 96MiB
+  RSS COMMAND
+120172 node
+116452 next-server (v1
+108964 dockerd
+106744 node
+52188 docker-buildx
+## 08:07:54 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969         585          88          20        1295        1267
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-web-1                                  0.00%     68.21MiB / 256MiB
+noodara-api-1                                  0.05%     78.81MiB / 256MiB
+noodara-worker-1                               0.67%     62.06MiB / 256MiB
+noodara-postgres-1                             0.13%     52.11MiB / 512MiB
+noodara-redis-1                                0.42%     13.26MiB / 96MiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     13.99MiB / 1.923GiB
+  RSS COMMAND
+120172 node
+116452 next-server (v1
+113156 dockerd
+106744 node
+61792 node
+# +9s status=HEALTHCHECK
+# +11s status=SUCCESS
+# final
+{"id":"01a18bd9-c861-75cb-a75a-71c99d0ce83f","serviceId":"01a18bd9-b52f-7292-bd4a-28613e5cfcdd","status":"SUCCESS","trigger":"manual","triggeredBy":"01a18bd8-d8dc-7722-922f-7896688508b3","source":{"sourceType":"git","repositoryUrl":"https://github.com/Xch4rt/noodara-uat-node-api.git","branch":"main","buildContext":".","dockerfilePath":"Dockerfile","buildTarget":null,"imageRef":null,"internalPort":3000,"publishedPort":8081},"commitSha":"8ec6d254cc8190ca2cf9d158f315ac780a23341b","previousDeploymentId":null,"rollbackOfDeploymentId":null,"imageRef":"noodara/01a18bd9-b52f-7292-bd4a-28613e5cfcdd:01a18bd9-c861-75cb-a75a-71c99d0ce83f","webhookDeliveryId":null,"imageRetained":true,"startedAt":"2026-10-30T08:07:48.087Z","completedAt":"2026-10-30T08:07:59.395Z","durationMs":11308,"errorCode":null,"errorMessage":null,"createdAt":"2026-10-30T08:07:48.065Z","updatedAt":"2026-10-30T08:07:59.395Z","steps":[{"name":"clone","state":"success","startedAt":"2026-10-30T08:07:48.087Z","completedAt":"2026-10-30T08:07:49.321Z","durationMs":1234},{"name":"build","state":"success","startedAt":"2026-10-30T08:07:49.321Z","completedAt":"2026-10-30T08:07:55.330Z","durationMs":6009},{"name":"start","state":"success","startedAt":"2026-10-30T08:07:55.330Z","completedAt":"2026-10-30T08:07:55.850Z","durationMs":520},{"name":"verify","state":"success","startedAt":"2026-10-30T08:07:55.850Z","completedAt":"2026-10-30T08:07:59.395Z","durationMs":3545}]}
+HTTP 200

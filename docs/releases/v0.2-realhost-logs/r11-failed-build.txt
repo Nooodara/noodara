@@ -1,0 +1,53 @@
+# POST service failing-build (git nooodara/noodara, context fixtures/failing-build)
+{"id":"01a18bdb-d056-74be-9c3a-835b8696e06e","projectId":"01a18bd9-607a-74ca-b245-3845576402d1","environmentId":"01a18bd9-60a2-7920-bf23-04003fd50121","serverId":"01a18bd9-2025-71d5-a886-7206e7468982","name":"failing-build","sourceType":"git","repositoryUrl":"https://github.com/nooodara/noodara.git","branch":"main","buildContext":"fixtures/failing-build","dockerfilePath":"Dockerfile","buildTarget":null,"imageRef":null,"internalPort":3000,"publishedPort":null,"healthcheck":null,"autoRollback":true,"status":"NEVER_DEPLOYED","createdAt":"2026-10-30T08:10:01.176Z","updatedAt":"2026-10-30T08:10:01.176Z"}
+HTTP 201
+# 2026-10-30T08:10:01Z POST /api/services/01a18bdb-d056-74be-9c3a-835b8696e06e/deploy
+{"id":"01a18bdb-d092-73a6-a80c-08547c197866","serviceId":"01a18bdb-d056-74be-9c3a-835b8696e06e","status":"QUEUED","trigger":"manual","triggeredBy":"01a18bd8-d8dc-7722-922f-7896688508b3","source":{"sourceType":"git","repositoryUrl":"https://github.com/nooodara/noodara.git","branch":"main","buildContext":"fixtures/failing-build","dockerfilePath":"Dockerfile","buildTarget":null,"imageRef":null,"internalPort":3000,"publishedPort":null},"commitSha":null,"previousDeploymentId":null,"rollbackOfDeploymentId":null,"imageRef":null,"webhookDeliveryId":null,"imageRetained":false,"startedAt":null,"completedAt":null,"durationMs":null,"errorCode":null,"errorMessage":null,"createdAt":"2026-10-30T08:10:01.234Z","updatedAt":"2026-10-30T08:10:01.234Z"}
+HTTP 201
+# +0s status=PREPARING
+# +4s status=FAILED
+# final
+{"id":"01a18bdb-d092-73a6-a80c-08547c197866","serviceId":"01a18bdb-d056-74be-9c3a-835b8696e06e","status":"FAILED","trigger":"manual","triggeredBy":"01a18bd8-d8dc-7722-922f-7896688508b3","source":{"sourceType":"git","repositoryUrl":"https://github.com/nooodara/noodara.git","branch":"main","buildContext":"fixtures/failing-build","dockerfilePath":"Dockerfile","buildTarget":null,"imageRef":null,"internalPort":3000,"publishedPort":null},"commitSha":"a0b456189697eab270c3d81c07e286229d2f81dd","previousDeploymentId":null,"rollbackOfDeploymentId":null,"imageRef":null,"webhookDeliveryId":null,"imageRetained":false,"startedAt":"2026-10-30T08:10:01.249Z","completedAt":"2026-10-30T08:10:04.920Z","durationMs":3671,"errorCode":"DOCKERFILE_NOT_FOUND","errorMessage":"The Dockerfile was not found in the repository. Check the Dockerfile path configured for this service, then redeploy.","createdAt":"2026-10-30T08:10:01.234Z","updatedAt":"2026-10-30T08:10:04.920Z","steps":[{"name":"clone","state":"success","startedAt":"2026-10-30T08:10:01.249Z","completedAt":"2026-10-30T08:10:04.600Z","durationMs":3351},{"name":"build","state":"failed","startedAt":"2026-10-30T08:10:04.600Z","completedAt":"2026-10-30T08:10:04.920Z","durationMs":320},{"name":"start","state":"pending","startedAt":null,"completedAt":null,"durationMs":null},{"name":"verify","state":"pending","startedAt":null,"completedAt":null,"durationMs":null}]}
+HTTP 200
+# operator error above: dockerfilePath is relative to the repo root (UI help text). PATCH it:
+{"service":{"id":"01a18bdb-d056-74be-9c3a-835b8696e06e","projectId":"01a18bd9-607a-74ca-b245-3845576402d1","environmentId":"01a18bd9-60a2-7920-bf23-04003fd50121","serverId":"01a18bd9-2025-71d5-a886-7206e7468982","name":"failing-build","sourceType":"git","repositoryUrl":"https://github.com/nooodara/noodara.git","branch":"main","buildContext":"fixtures/failing-build","dockerfilePath":"fixtures/failing-build/Dockerfile","buildTarget":null,"imageRef":null,"internalPort":3000,"publishedPort":null,"healthcheck":null,"autoRollback":true,"status":"FAILED","createdAt":"2026-10-30T08:10:01.176Z","updatedAt":"2026-10-30T08:10:50.481Z"},"requiresRedeploy":true,"changedFields":["source"]}
+HTTP 200
+# 2026-10-30T08:10:59Z POST /api/services/01a18bdb-d056-74be-9c3a-835b8696e06e/deploy
+{"id":"01a18bdc-b416-7f87-9cdd-021912000c6e","serviceId":"01a18bdb-d056-74be-9c3a-835b8696e06e","status":"QUEUED","trigger":"manual","triggeredBy":"01a18bd8-d8dc-7722-922f-7896688508b3","source":{"sourceType":"git","repositoryUrl":"https://github.com/nooodara/noodara.git","branch":"main","buildContext":"fixtures/failing-build","dockerfilePath":"fixtures/failing-build/Dockerfile","buildTarget":null,"imageRef":null,"internalPort":3000,"publishedPort":null},"commitSha":null,"previousDeploymentId":null,"rollbackOfDeploymentId":null,"imageRef":null,"webhookDeliveryId":null,"imageRetained":false,"startedAt":null,"completedAt":null,"durationMs":null,"errorCode":null,"errorMessage":null,"createdAt":"2026-10-30T08:10:59.478Z","updatedAt":"2026-10-30T08:10:59.478Z"}
+HTTP 201
+# +0s status=PREPARING
+# +4s status=FAILED
+# final
+{"id":"01a18bdc-b416-7f87-9cdd-021912000c6e","serviceId":"01a18bdb-d056-74be-9c3a-835b8696e06e","status":"FAILED","trigger":"manual","triggeredBy":"01a18bd8-d8dc-7722-922f-7896688508b3","source":{"sourceType":"git","repositoryUrl":"https://github.com/nooodara/noodara.git","branch":"main","buildContext":"fixtures/failing-build","dockerfilePath":"fixtures/failing-build/Dockerfile","buildTarget":null,"imageRef":null,"internalPort":3000,"publishedPort":null},"commitSha":"a0b456189697eab270c3d81c07e286229d2f81dd","previousDeploymentId":null,"rollbackOfDeploymentId":null,"imageRef":null,"webhookDeliveryId":null,"imageRetained":false,"startedAt":"2026-10-30T08:10:59.487Z","completedAt":"2026-10-30T08:11:03.289Z","durationMs":3802,"errorCode":"BUILD_FAILED","errorMessage":"The Docker build failed at step 2 of 2 with exit code 42. Check the build logs for that step, fix the Dockerfile or the application, then redeploy.","createdAt":"2026-10-30T08:10:59.478Z","updatedAt":"2026-10-30T08:11:03.289Z","steps":[{"name":"clone","state":"success","startedAt":"2026-10-30T08:10:59.487Z","completedAt":"2026-10-30T08:11:02.819Z","durationMs":3332},{"name":"build","state":"failed","startedAt":"2026-10-30T08:11:02.819Z","completedAt":"2026-10-30T08:11:03.289Z","durationMs":470},{"name":"start","state":"pending","startedAt":null,"completedAt":null,"durationMs":null},{"name":"verify","state":"pending","startedAt":null,"completedAt":null,"durationMs":null}]}
+HTTP 200
+final: FAILED BUILD_FAILED | The Docker build failed at step 2 of 2 with exit code 42. Check the build logs for that step, fix the Dockerfile or the application, then redeploy.
+ step clone success
+ step build failed
+ step start pending
+ step verify pending
+# last build log chunks
+ling-build
+#5 ERROR: process "/bin/sh -c echo \"NOODARA_FIXTURE_BUILD_FAILURE: intentional failure from fixtures/failing-build\" >&2 && exit 42" did not complete successfully: exit code: 42
+------
+ > [2/2] RUN echo "NOODARA_FIXTURE_BUILD_FAILURE: intentional failure from fixtures/failing-build" >&2 && exit 42:
+0.121 NOODARA_FIXTURE_BUILD_FAILURE: intentional failure from fixtures/failing-build
+------
+Dockerfile:2
+--------------------
+   1 |     FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
+   2 | >>> RUN echo "NOODARA_FIXTURE_BUILD_FAILURE: intentional failure from fixtures/failing-build" >&2 && exit 42
+   3 |     
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c echo \"NOODARA_FIXTURE_BUILD_FAILURE: intentional failure from fixtures/failing-build\" >&2 && exit 42" did not complete successfully: exit code: 42
+
+# host after failed build
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e Up 2 minutes
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd Up About a minute
+noodara-web-1 Up 5 minutes (healthy)
+noodara-api-1 Up 5 minutes (healthy)
+noodara-worker-1 Up 5 minutes
+noodara-postgres-1 Up 5 minutes (healthy)
+noodara-redis-1 Up 5 minutes (healthy)
+new images:
+ls: cannot access '/home/paas/.noodara/deploy/': Permission denied
+{"service":"node-api","version":"D","ok":true}

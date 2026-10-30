@@ -1,0 +1,333 @@
+# POST service web-heavy (git nooodara/noodara, context '.', apps/web/Dockerfile): Next.js multi-stage build, used for cancel
+{"id":"01a18bde-a1d1-774c-9b45-cba630cc6eee","projectId":"01a18bd9-607a-74ca-b245-3845576402d1","environmentId":"01a18bd9-60a2-7920-bf23-04003fd50121","serverId":"01a18bd9-2025-71d5-a886-7206e7468982","name":"web-heavy","sourceType":"git","repositoryUrl":"https://github.com/nooodara/noodara.git","branch":"main","buildContext":".","dockerfilePath":"apps/web/Dockerfile","buildTarget":null,"imageRef":null,"internalPort":3000,"publishedPort":null,"healthcheck":null,"autoRollback":true,"status":"NEVER_DEPLOYED","createdAt":"2026-10-30T08:13:05.876Z","updatedAt":"2026-10-30T08:13:05.876Z"}
+HTTP 201
+# 2026-10-30T08:13:05Z POST /api/services/01a18bde-a1d1-774c-9b45-cba630cc6eee/deploy
+{"id":"01a18bde-a204-7964-b758-1c569bff2043","serviceId":"01a18bde-a1d1-774c-9b45-cba630cc6eee","status":"QUEUED","trigger":"manual","triggeredBy":"01a18bd8-d8dc-7722-922f-7896688508b3","source":{"sourceType":"git","repositoryUrl":"https://github.com/nooodara/noodara.git","branch":"main","buildContext":".","dockerfilePath":"apps/web/Dockerfile","buildTarget":null,"imageRef":null,"internalPort":3000,"publishedPort":null},"commitSha":null,"previousDeploymentId":null,"rollbackOfDeploymentId":null,"imageRef":null,"webhookDeliveryId":null,"imageRetained":false,"startedAt":null,"completedAt":null,"durationMs":null,"errorCode":null,"errorMessage":null,"createdAt":"2026-10-30T08:13:05.924Z","updatedAt":"2026-10-30T08:13:05.924Z"}
+HTTP 201
+# +0s status=PREPARING
+# +5s status=BUILDING
+## 08:13:10 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969         824         372          20         771        1028
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.816MiB / 1.923GiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     12.92MiB / 1.923GiB
+noodara-web-1                                  2.43%     92.43MiB / 256MiB
+noodara-api-1                                  5.09%     99.95MiB / 256MiB
+noodara-worker-1                               0.26%     65.7MiB / 256MiB
+noodara-postgres-1                             1.21%     43.05MiB / 512MiB
+noodara-redis-1                                0.26%     8.168MiB / 96MiB
+  RSS COMMAND
+275572 dockerd
+102464 node
+85304 node
+84084 next-server (v1
+80492 node
+## 08:13:12 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969         934         144          20         889         918
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.816MiB / 1.923GiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     13.65MiB / 1.923GiB
+noodara-web-1                                  0.00%     82.2MiB / 256MiB
+noodara-api-1                                  0.08%     99.98MiB / 256MiB
+noodara-worker-1                               0.26%     65.71MiB / 256MiB
+noodara-postgres-1                             0.10%     43.03MiB / 512MiB
+noodara-redis-1                                0.24%     8.172MiB / 96MiB
+  RSS COMMAND
+276980 dockerd
+245360 node
+85304 node
+84084 next-server (v1
+80492 node
+## 08:13:14 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969        1032          38          20         898         820
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.816MiB / 1.923GiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     14.55MiB / 1.923GiB
+noodara-web-1                                  0.00%     80.01MiB / 256MiB
+noodara-api-1                                  0.02%     91.7MiB / 256MiB
+noodara-worker-1                               0.17%     65.66MiB / 256MiB
+noodara-postgres-1                             0.07%     39.75MiB / 512MiB
+noodara-redis-1                                0.25%     7.82MiB / 96MiB
+  RSS COMMAND
+298900 node
+280556 dockerd
+85532 node
+84084 next-server (v1
+80624 node
+## 08:13:16 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969        1097          71          20         800         756
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.816MiB / 1.923GiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     14.6MiB / 1.923GiB
+noodara-web-1                                  11.05%    81.46MiB / 256MiB
+noodara-api-1                                  0.31%     99.18MiB / 256MiB
+noodara-worker-1                               0.36%     65.79MiB / 256MiB
+noodara-postgres-1                             0.08%     40.98MiB / 512MiB
+noodara-redis-1                                0.33%     8.203MiB / 96MiB
+  RSS COMMAND
+345652 node
+283052 dockerd
+85892 node
+84188 next-server (v1
+80560 node
+## 08:13:18 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969        1149          96          20         723         704
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.816MiB / 1.923GiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     14.45MiB / 1.923GiB
+noodara-web-1                                  0.00%     79.92MiB / 256MiB
+noodara-api-1                                  0.04%     93.44MiB / 256MiB
+noodara-worker-1                               3.02%     65.82MiB / 256MiB
+noodara-postgres-1                             1.36%     42.73MiB / 512MiB
+noodara-redis-1                                0.59%     7.969MiB / 96MiB
+  RSS COMMAND
+389280 node
+283348 dockerd
+86092 node
+84188 next-server (v1
+81304 node
+## 08:13:20 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969        1212          85          20         670         640
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.812MiB / 1.923GiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     14.13MiB / 1.923GiB
+noodara-web-1                                  0.01%     79.56MiB / 256MiB
+noodara-api-1                                  5.07%     91.12MiB / 256MiB
+noodara-worker-1                               0.21%     65.77MiB / 256MiB
+noodara-postgres-1                             1.54%     41.67MiB / 512MiB
+noodara-redis-1                                1.40%     8.527MiB / 96MiB
+  RSS COMMAND
+505640 node
+282444 dockerd
+85412 node
+83888 next-server (v1
+80408 node
+## 08:13:22 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969        1377          39          20         552         475
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.801MiB / 1.923GiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     14.27MiB / 1.923GiB
+noodara-web-1                                  0.00%     83.81MiB / 256MiB
+noodara-api-1                                  0.08%     81.85MiB / 256MiB
+noodara-worker-1                               1.17%     65.83MiB / 256MiB
+noodara-postgres-1                             0.87%     38.18MiB / 512MiB
+noodara-redis-1                                0.23%     6.262MiB / 96MiB
+  RSS COMMAND
+295260 dockerd
+83660 node
+83464 next-server (v1
+79144 node
+42068 lima-guestagent
+## 08:13:24 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969         892         516          20         560         960
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.801MiB / 1.923GiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     14.14MiB / 1.923GiB
+noodara-web-1                                  0.00%     82.77MiB / 256MiB
+noodara-api-1                                  0.01%     80.96MiB / 256MiB
+noodara-worker-1                               0.08%     65.79MiB / 256MiB
+noodara-postgres-1                             0.01%     37.74MiB / 512MiB
+noodara-redis-1                                0.27%     6.211MiB / 96MiB
+  RSS COMMAND
+421664 dockerd
+84304 node
+83312 next-server (v1
+78992 node
+41932 lima-guestagent
+## 08:13:26 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969        1004          58          20         907         849
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.801MiB / 1.923GiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     13.8MiB / 1.923GiB
+noodara-web-1                                  13.12%    89.25MiB / 256MiB
+noodara-api-1                                  0.60%     89.94MiB / 256MiB
+noodara-worker-1                               0.76%     66.05MiB / 256MiB
+noodara-postgres-1                             0.10%     41.25MiB / 512MiB
+noodara-redis-1                                0.31%     7.059MiB / 96MiB
+  RSS COMMAND
+478904 dockerd
+84252 node
+83384 next-server (v1
+78404 node
+41836 lima-guestagent
+## 08:13:28 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969        1051          34          20         883         793
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.801MiB / 1.923GiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     13.41MiB / 1.923GiB
+noodara-web-1                                  0.00%     82.41MiB / 256MiB
+noodara-api-1                                  0.02%     82.28MiB / 256MiB
+noodara-worker-1                               0.28%     65.84MiB / 256MiB
+noodara-postgres-1                             0.28%     36.87MiB / 512MiB
+noodara-redis-1                                0.30%     6.73MiB / 96MiB
+  RSS COMMAND
+394648 dockerd
+83756 node
+83344 next-server (v1
+77212 node
+42304 lima-guestagent
+## 08:13:30 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969         978          55          20         935         874
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.801MiB / 1.923GiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     13.22MiB / 1.923GiB
+noodara-web-1                                  0.00%     83.54MiB / 256MiB
+noodara-api-1                                  5.55%     83.96MiB / 256MiB
+noodara-worker-1                               0.40%     66.2MiB / 256MiB
+noodara-postgres-1                             1.61%     36.79MiB / 512MiB
+noodara-redis-1                                1.10%     6.891MiB / 96MiB
+  RSS COMMAND
+402884 dockerd
+83256 node
+83056 next-server (v1
+75836 node
+75480 node
+## 08:13:32 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969        1029          35          20         903         823
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.801MiB / 1.923GiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     13.14MiB / 1.923GiB
+noodara-web-1                                  0.05%     83.8MiB / 256MiB
+noodara-api-1                                  0.11%     92.02MiB / 256MiB
+noodara-worker-1                               0.90%     66.14MiB / 256MiB
+noodara-postgres-1                             0.10%     35.8MiB / 512MiB
+noodara-redis-1                                0.25%     6.871MiB / 96MiB
+  RSS COMMAND
+402680 dockerd
+169412 node
+135336 node
+104420 node
+83448 next-server (v1
+## 08:13:34 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969        1287          39          20         642         565
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.801MiB / 1.923GiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     13.04MiB / 1.923GiB
+noodara-web-1                                  0.00%     81.5MiB / 256MiB
+noodara-api-1                                  0.05%     86.57MiB / 256MiB
+noodara-worker-1                               0.16%     66.03MiB / 256MiB
+noodara-postgres-1                             0.06%     35.07MiB / 512MiB
+noodara-redis-1                                0.23%     6.871MiB / 96MiB
+  RSS COMMAND
+402676 dockerd
+267812 node
+135336 node
+104408 node
+83680 node
+# +31s POST /api/deployments/01a18bde-a204-7964-b758-1c569bff2043/cancel
+{"id":"01a18bde-a204-7964-b758-1c569bff2043","serviceId":"01a18bde-a1d1-774c-9b45-cba630cc6eee","status":"BUILDING","trigger":"manual","triggeredBy":"01a18bd8-d8dc-7722-922f-7896688508b3","source":{"sourceType":"git","repositoryUrl":"https://github.com/nooodara/noodara.git","branch":"main","buildContext":".","dockerfilePath":"apps/web/Dockerfile","buildTarget":null,"imageRef":null,"internalPort":3000,"publishedPort":null},"commitSha":"a0b456189697eab270c3d81c07e286229d2f81dd","previousDeploymentId":null,"rollbackOfDeploymentId":null,"imageRef":null,"webhookDeliveryId":null,"startedAt":"2026-10-30T08:13:05.940Z","completedAt":null,"durationMs":null,"errorCode":null,"errorMessage":null,"createdAt":"2026-10-30T08:13:05.924Z","updatedAt":"2026-10-30T08:13:09.435Z"}
+HTTP 202
+## processes right after cancel
+   3034 buildkitd --oci-worker=false --containerd-worker=true --containerd-worker-rootless=true --addr=unix:///run/user/501/buildkit-default/buildkitd.sock --root=/home/xch4rt.guest/.local/share/buildkit-default --containerd-worker-namespace=default --containerd-worker-snapshotter=overlayfs --containerd-worker-net=bridge
+  24649 setsid -w sh -c echo $$ > "$0"; exec "$@" .noodara/deploy/01a18bde-a204-7964-b758-1c569bff2043/run/build.pid docker build --progress=plain --file .noodara/deploy/01a18bde-a204-7964-b758-1c569bff2043/repo/apps/web/Dockerfile --tag noodara/01a18bde-a1d1-774c-9b45-cba630cc6eee:01a18bde-a204-7964-b758-1c569bff2043 --label noodara.managed=true --label noodara.service_id=01a18bde-a1d1-774c-9b45-cba630cc6eee --label noodara.deployment_id=01a18bde-a204-7964-b758-1c569bff2043 -- .noodara/deploy/01a18bde-a204-7964-b758-1c569bff2043/repo
+  24650 docker build --progress=plain --file .noodara/deploy/01a18bde-a204-7964-b758-1c569bff2043/repo/apps/web/Dockerfile --tag noodara/01a18bde-a1d1-774c-9b45-cba630cc6eee:01a18bde-a204-7964-b758-1c569bff2043 --label noodara.managed=true --label noodara.service_id=01a18bde-a1d1-774c-9b45-cba630cc6eee --label noodara.deployment_id=01a18bde-a204-7964-b758-1c569bff2043 -- .noodara/deploy/01a18bde-a204-7964-b758-1c569bff2043/repo
+  25571 runc --log /var/lib/docker/buildkit/executor/runc-log.json --log-format json run --bundle /var/lib/docker/buildkit/executor/d2bw7kocxf0x0pbf16dw2h3x9 --keep d2bw7kocxf0x0pbf16dw2h3x9
+## 08:13:36 during BUILDING
+               total        used        free      shared  buff/cache   available
+Mem:            1969        1381          37          20         550         471
+Swap:              0           0           0
+NAME                                           CPU %     MEM USAGE / LIMIT
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.801MiB / 1.923GiB
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     12.99MiB / 1.923GiB
+noodara-web-1                                  11.15%    83.96MiB / 256MiB
+noodara-api-1                                  0.40%     97.48MiB / 256MiB
+noodara-worker-1                               1.97%     66.24MiB / 256MiB
+noodara-postgres-1                             0.62%     38.79MiB / 512MiB
+noodara-redis-1                                0.62%     8.203MiB / 96MiB
+  RSS COMMAND
+405924 dockerd
+85712 node
+83528 next-server (v1
+78076 node
+42172 lima-guestagent
+# +33s status=CANCELLED
+# final
+{"id":"01a18bde-a204-7964-b758-1c569bff2043","serviceId":"01a18bde-a1d1-774c-9b45-cba630cc6eee","status":"CANCELLED","trigger":"manual","triggeredBy":"01a18bd8-d8dc-7722-922f-7896688508b3","source":{"sourceType":"git","repositoryUrl":"https://github.com/nooodara/noodara.git","branch":"main","buildContext":".","dockerfilePath":"apps/web/Dockerfile","buildTarget":null,"imageRef":null,"internalPort":3000,"publishedPort":null},"commitSha":"a0b456189697eab270c3d81c07e286229d2f81dd","previousDeploymentId":null,"rollbackOfDeploymentId":null,"imageRef":null,"webhookDeliveryId":null,"imageRetained":false,"startedAt":"2026-10-30T08:13:05.940Z","completedAt":"2026-10-30T08:13:37.612Z","durationMs":31672,"errorCode":null,"errorMessage":null,"createdAt":"2026-10-30T08:13:05.924Z","updatedAt":"2026-10-30T08:13:37.612Z","steps":[{"name":"clone","state":"success","startedAt":"2026-10-30T08:13:05.940Z","completedAt":"2026-10-30T08:13:09.435Z","durationMs":3495},{"name":"build","state":"cancelled","startedAt":"2026-10-30T08:13:09.435Z","completedAt":"2026-10-30T08:13:37.612Z","durationMs":28177},{"name":"start","state":"pending","startedAt":null,"completedAt":null,"durationMs":null},{"name":"verify","state":"pending","startedAt":null,"completedAt":null,"durationMs":null}]}
+HTTP 200
+# deployment after cancel
+CANCELLED None | None
+ step clone success
+ step build cancelled
+ step start pending
+ step verify pending
+# 08:13:54 host ~10s after cancel
+## build/clone/pnpm/next processes:
+  10794       08:41 /usr/local/bin/containerd-shim-runc-v2 -namespace moby -id 1c28541dac7b6aa3c31f9ed0ae73dca180f1972b6164ded1e0cd96465d73b1a4 -address /run/containerd/containerd.sock
+  10861       08:41 /usr/local/bin/containerd-shim-runc-v2 -namespace moby -id 8adf638b917187d0603f4468422db08a11900c220ddd4aa2ea29f8040ed9da8b -address /run/containerd/containerd.sock
+  11128       08:35 /usr/local/bin/containerd-shim-runc-v2 -namespace moby -id ec177ba69b2e6c74b42d6514b5c28c0efd1253de3dd6ff945d2859d94405779b -address /run/containerd/containerd.sock
+  11195       08:35 /usr/local/bin/containerd-shim-runc-v2 -namespace moby -id bd80ae0c14b50010cf98f6dbe5229f7356b2465e606b3c019b65b1404a529da9 -address /run/containerd/containerd.sock
+  11341       08:29 /usr/local/bin/containerd-shim-runc-v2 -namespace moby -id 8abd84e01a64911581589732ae5960adcf19b8527e5a3da6d7104075d201f1ce -address /run/containerd/containerd.sock
+  16204       05:16 /usr/local/bin/containerd-shim-runc-v2 -namespace moby -id bd8f79031df9633a1807213444c72ab3298e041da5a81b8c0f431c49a054d87e -address /run/containerd/containerd.sock
+  17381       04:32 /usr/local/bin/containerd-shim-runc-v2 -namespace moby -id fe26c7eade2af8efa50f436cbb6b24ad3ab1458eafdb53a5132a5502fce42930 -address /run/containerd/containerd.sock
+## workspaces:
+total 8
+drwx------ 2 paas paas 4096 Oct 30 02:13 .
+drwx------ 3 paas paas 4096 Oct 30 02:07 ..
+## images:
+noodara/01a18bdc-f44f-76bd-8620-96e8b0019696:01a18bdd-0b3f-756c-85ad-3afe56de7438 425MB
+noodara/01a18bd9-b52f-7292-bd4a-28613e5cfcdd:01a18bd9-c861-75cb-a75a-71c99d0ce83f 234MB
+ghcr.io/nooodara/noodara-web:0.3.0 406MB
+ghcr.io/nooodara/noodara-control-plane:0.3.0 425MB
+redis:7-alpine 58.7MB
+postgres:17-alpine 415MB
+nginx:1.27-alpine 76.8MB
+## containers:
+noodara-01a18bdc-f44f-76bd-8620-96e8b0019696 Exited (1) About a minute ago
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e Up 5 minutes
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd Up 4 minutes
+noodara-web-1 Up 8 minutes (healthy)
+noodara-api-1 Up 8 minutes (healthy)
+noodara-worker-1 Up 8 minutes
+noodara-migrate-1 Exited (0) 8 minutes ago
+noodara-postgres-1 Up 8 minutes (healthy)
+noodara-redis-1 Up 8 minutes (healthy)
+               total        used        free      shared  buff/cache   available
+Mem:            1969         960         450          20         558         892
+Swap:              0           0           0
+ 02:13:54 up 11 min,  0 users,  load average: 1.68, 0.77, 0.33
+# node-api still serving:
+{"service":"node-api","version":"D","ok":true}
+# last build log lines
+0.12
+#19 1.834 
+#19 1.834    • Packages in scope: @noodara/web
+#19 1.834    • Running build in 1 packages
+#19 1.834    • Remote caching disabled
+#19 1.834 
+#19 1.849 @noodara/domain:build: cache miss, executing 0dd62d8b61e2a788
+#19 2.053 @noodara/domain:build: 
+#19 2.053 @noodara/domain:build: > @noodara/domain@0.3.0 build /app/packages/domain
+#19 2.053 @noodara/domain:build: > tsc -p tsconfig.build.json
+#19 2.053 @noodara/domain:build: 
+#19 3.546 @noodara/ui:build: cache miss, executing 91c32b0a0ff3ca25
+#19 3.729 @noodara/ui:build: 
+#19 3.729 @noodara/ui:build: > @noodara/ui@0.3.0 build /app/packages/ui
+#19 3.729 @noodara/ui:build: > tsc -p tsconfig.build.json
+#19 3.729 @noodara/ui:build: 
+

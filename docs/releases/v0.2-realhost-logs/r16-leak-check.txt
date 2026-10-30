@@ -1,0 +1,10 @@
+# leak check: count of occurrences (expect 0) of the SSH private key (a body line), the admin password and the setup token
+docker logs noodara-api-1: 1
+docker logs noodara-worker-1: 0
+docker logs noodara-web-1: 0
+docker logs noodara-migrate-1: 0
+/opt/noodara/install.log: 0
+pg_dump (plaintext key/password): 0
+# the api-log hit is the setup token line 'NOODARA_SETUP_TOKEN=<redacted>' printed at boot by design (bootstrap-admin.ts: the installer reads it from the logs). It is single-use; replay after the admin exists:
+{"error":"NOT_FOUND","message":"Not found"}
+HTTP 404

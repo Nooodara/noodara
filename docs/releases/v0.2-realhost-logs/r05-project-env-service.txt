@@ -1,0 +1,9 @@
+# POST /api/projects
+{"id":"01a18bd9-607a-74ca-b245-3845576402d1","name":"realhost","slug":"realhost","description":null,"archivedAt":null,"createdAt":"2026-10-30T08:07:21.466Z","updatedAt":"2026-10-30T08:07:21.466Z"}
+HTTP 201
+# POST /api/projects/:id/environments
+{"id":"01a18bd9-60a2-7920-bf23-04003fd50121","projectId":"01a18bd9-607a-74ca-b245-3845576402d1","name":"production","kind":"production","createdAt":"2026-10-30T08:07:21.506Z","updatedAt":"2026-10-30T08:07:21.506Z"}
+HTTP 201
+# POST /api/projects/:id/services
+{"id":"01a18bd9-b52f-7292-bd4a-28613e5cfcdd","projectId":"01a18bd9-607a-74ca-b245-3845576402d1","environmentId":"01a18bd9-60a2-7920-bf23-04003fd50121","serverId":"01a18bd9-2025-71d5-a886-7206e7468982","name":"node-api","sourceType":"git","repositoryUrl":"https://github.com/Xch4rt/noodara-uat-node-api.git","branch":"main","buildContext":".","dockerfilePath":"Dockerfile","buildTarget":null,"imageRef":null,"internalPort":3000,"publishedPort":8081,"healthcheck":null,"autoRollback":true,"status":"NEVER_DEPLOYED","createdAt":"2026-10-30T08:07:43.154Z","updatedAt":"2026-10-30T08:07:43.154Z"}
+HTTP 201

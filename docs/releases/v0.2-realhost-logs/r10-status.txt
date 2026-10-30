@@ -1,0 +1,9 @@
+# 08:09:05 service status: RUNNING
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd Up About a minute
+# 08:09:05 external: docker stop noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd
+# +17s service status: STOPPED
+# 08:09:22 external: docker start
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd
+# +29s service status: RUNNING
+{"service":"node-api","version":"D","ok":true}

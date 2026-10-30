@@ -94,7 +94,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **OPS-02**: La imagen de control-plane deja de embarcar el workspace completo (objetivo: por debajo de 600 MB) sin romper la resolución de módulos, verificado por el test de imagen existente.
 - [x] **OPS-03**: `check-posix-sh` reconoce `$(( ))`, `[[:space:]]`, `$'` en comentarios y `((` en heredocs sin falsos positivos, y los workarounds de `install.sh` se retiran.
 - [x] **OPS-04**: La deuda humana de v0.1 se cierra con evidencia: instalación real en Ubuntu 22.04, en arm64 y con ufw activo; un upgrade real entre dos releases publicadas y su rollback; memoria observada en un VPS de 1–2 GB. _Completo en lo verificado (upgrade real entre releases publicadas y rollback, `docs/releases/v0.2-HUMAN-UAT.md`). Las verificaciones en host real quedan sin cumplir y pasan a OPS-05 (DECISIONS 2026-10-14)._ — *Cumplido en lo verificado (upgrade v0.1.0 → v0.2 y rollback reales, memoria observada); la parte de host real (VPS público, 22.04, arm64, ufw, 1–2 GB) pasó a OPS-05 / Fase 15 por decisión del usuario (2026-10-14).*
-- [ ] **OPS-05**: Deuda de verificación en host real, sin cumplir y diferida: instalación y deploy en un VPS público real, en Ubuntu 22.04, en arm64, con `ufw` activo y en un VPS de 1–2 GB (memoria y tiempos QA-10), con logs en `docs/releases/`. Owner: usuario. Objetivo: v0.2.1 o inicio de v0.3.
+- [ ] **OPS-05**: Deuda de verificación en host real, sin cumplir y diferida: instalación y deploy en un VPS público real, en Ubuntu 22.04, en arm64, con `ufw` activo y en un VPS de 1–2 GB (memoria y tiempos QA-10), con logs en `docs/releases/`. Owner: usuario. Objetivo: v0.2.1 o inicio de v0.3. _Parcial (15-01, 2026-10-30): verificados Ubuntu 22.04, arm64, `ufw` activo y host de 1969 MiB (memoria y tiempos) con el flujo completo, evidencia en `docs/releases/v0.2-realhost-logs/`. Falta el VPS público real._
 
 ### Calidad (QA)
 
@@ -251,7 +251,7 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | OPS-02 | Phase 14 | Complete |
 | OPS-03 | Phase 14 | Complete |
 | OPS-04 | Phase 14 | Complete (host real → OPS-05) |
-| OPS-05 | Phase 15 | Pending (owner: usuario) |
+| OPS-05 | Phase 15 | Partial: falta VPS público (owner: usuario) |
 | ENG-01 | Phase 16 | Complete |
 | ENG-02 | Phase 16 | Complete |
 | HC-01 | Phase 16 | Complete |

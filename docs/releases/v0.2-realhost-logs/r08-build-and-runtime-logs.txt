@@ -1,0 +1,62 @@
+# curl node-api from VM and from Mac (Lima forward)
+{"service":"node-api","version":"D","ok":true}
+{"service":"node-api","version":"D","ok":true}
+# deployment steps
+SUCCESS 8ec6d254cc8190ca2cf9d158f315ac780a23341b None
+{'name': 'clone', 'state': 'success', 'startedAt': '2026-10-30T08:07:48.087Z', 'completedAt': '2026-10-30T08:07:49.321Z', 'durationMs': 1234}
+{'name': 'build', 'state': 'success', 'startedAt': '2026-10-30T08:07:49.321Z', 'completedAt': '2026-10-30T08:07:55.330Z', 'durationMs': 6009}
+{'name': 'start', 'state': 'success', 'startedAt': '2026-10-30T08:07:55.330Z', 'completedAt': '2026-10-30T08:07:55.850Z', 'durationMs': 520}
+{'name': 'verify', 'state': 'success', 'startedAt': '2026-10-30T08:07:55.850Z', 'completedAt': '2026-10-30T08:07:59.395Z', 'durationMs': 3545}
+# GET /api/deployments/:id/logs?phase=prepare
+17 chunks
+None "Cloning into '.noodara/deploy/01a18bd9-c861-75cb-a75a-71c99d0ce83f/repo'...\n"
+None '8ec6d254cc8190ca2cf9d158f315ac780a23341b\nsubmodules=0\nlfs=0\n'
+None '#0 building with "default" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 222B done\n#1 DONE 0.0s\n\n#2 [internal] load metadata for docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2
+None '#2 DONE 1.3s\n\n#3 [internal] load .dockerignore\n#3 transferring context: 2B done\n#3 DONE 0.0s\n\n#4 [internal] load build context\n#4 transferring context: 1.12kB done\n#4 DONE 0.0s\n\n#5 [1/3] FROM docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2
+None '#5 sha256:74849c662da757b89cfe8b5406d7beaaf491727ea6843cbba85b8889d1543956 0B / 1.26MB 0.3s\n#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 0B / 55.60MB 0.2s\n#5 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 0B / 4.19MB 0.2s\n#5 sha256:74849c662
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 3.15MB / 55.60MB 0.6s\n#5 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 1.05MB / 4.19MB 0.6s\n#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 8.39MB / 55.60MB 0.8s\n'
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 12.58MB / 55.60MB 0.9s\n#5 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 3.15MB / 4.19MB 0.8s\n#5 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 4.19MB / 4.19MB 1.0s done\n'
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 19.92MB / 55.60MB 1.2s\n#5 extracting sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 0.1s done\n#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 23.07MB / 55.60MB 1.4s\n'
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 27.26MB / 55.60MB 1.5s\n#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 30.41MB / 55.60MB 1.7s\n'
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 34.60MB / 55.60MB 1.8s\n#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 37.75MB / 55.60MB 2.0s\n'
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 41.94MB / 55.60MB 2.1s\n#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 45.09MB / 55.60MB 2.3s\n'
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 49.28MB / 55.60MB 2.4s\n#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 52.43MB / 55.60MB 2.6s\n'
+# GET /api/deployments/:id/logs?phase=build
+15 chunks
+None '#0 building with "default" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 222B done\n#1 DONE 0.0s\n\n#2 [internal] load metadata for docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2
+None '#2 DONE 1.3s\n\n#3 [internal] load .dockerignore\n#3 transferring context: 2B done\n#3 DONE 0.0s\n\n#4 [internal] load build context\n#4 transferring context: 1.12kB done\n#4 DONE 0.0s\n\n#5 [1/3] FROM docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2
+None '#5 sha256:74849c662da757b89cfe8b5406d7beaaf491727ea6843cbba85b8889d1543956 0B / 1.26MB 0.3s\n#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 0B / 55.60MB 0.2s\n#5 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 0B / 4.19MB 0.2s\n#5 sha256:74849c662
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 3.15MB / 55.60MB 0.6s\n#5 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 1.05MB / 4.19MB 0.6s\n#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 8.39MB / 55.60MB 0.8s\n'
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 12.58MB / 55.60MB 0.9s\n#5 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 3.15MB / 4.19MB 0.8s\n#5 sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 4.19MB / 4.19MB 1.0s done\n'
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 19.92MB / 55.60MB 1.2s\n#5 extracting sha256:a9986cd6f37dbddae7862a6d4be71683472e7c2ea708e87db14f8a6393c00f00 0.1s done\n#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 23.07MB / 55.60MB 1.4s\n'
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 27.26MB / 55.60MB 1.5s\n#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 30.41MB / 55.60MB 1.7s\n'
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 34.60MB / 55.60MB 1.8s\n#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 37.75MB / 55.60MB 2.0s\n'
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 41.94MB / 55.60MB 2.1s\n#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 45.09MB / 55.60MB 2.3s\n'
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 49.28MB / 55.60MB 2.4s\n#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 52.43MB / 55.60MB 2.6s\n'
+None '#5 sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 55.60MB / 55.60MB 2.7s done\n#5 extracting sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9\n'
+None '#5 extracting sha256:87919ed734a39bc185155d715bdcf2ce6c52d112ff642650d9e0e35502b481e9 0.7s done\n#5 DONE 3.4s\n\n#5 [1/3] FROM docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402\n#5 extracting sha256:74849c662da757b89cfe8b5406d7beaaf491727ea6843
+# GET /api/deployments/:id/logs?phase=deploy
+1 chunks
+None 'fe26c7eade2af8efa50f436cbb6b24ad3ab1458eafdb53a5132a5502fce42930\nnoodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd\n'
+# GET /api/deployments/:id/logs?phase=healthcheck
+0 chunks
+# runtime logs tail=5
+{"lines":[],"truncated":false}
+HTTP 200
+# POST service web-nginx (image nginx:1.27-alpine, 80->8082)
+{"id":"01a18bda-7de5-7db0-84d5-9f071a1ae11e","projectId":"01a18bd9-607a-74ca-b245-3845576402d1","environmentId":"01a18bd9-60a2-7920-bf23-04003fd50121","serverId":"01a18bd9-2025-71d5-a886-7206e7468982","name":"web-nginx","sourceType":"image","repositoryUrl":null,"branch":null,"buildContext":null,"dockerfilePath":null,"buildTarget":null,"imageRef":"nginx:1.27-alpine","internalPort":80,"publishedPort":8082,"healthcheck":null,"autoRollback":true,"status":"NEVER_DEPLOYED","createdAt":"2026-10-30T08:08:34.537Z","updatedAt":"2026-10-30T08:08:34.537Z"}
+HTTP 201
+# 2026-10-30T08:08:34Z POST /api/services/01a18bda-7de5-7db0-84d5-9f071a1ae11e/deploy
+{"id":"01a18bda-7e2b-7fca-a058-923901a5d867","serviceId":"01a18bda-7de5-7db0-84d5-9f071a1ae11e","status":"QUEUED","trigger":"manual","triggeredBy":"01a18bd8-d8dc-7722-922f-7896688508b3","source":{"sourceType":"image","repositoryUrl":null,"branch":null,"buildContext":null,"dockerfilePath":null,"buildTarget":null,"imageRef":"nginx:1.27-alpine","internalPort":80,"publishedPort":8082},"commitSha":null,"previousDeploymentId":null,"rollbackOfDeploymentId":null,"imageRef":null,"webhookDeliveryId":null,"imageRetained":false,"startedAt":null,"completedAt":null,"durationMs":null,"errorCode":null,"errorMessage":null,"createdAt":"2026-10-30T08:08:34.603Z","updatedAt":"2026-10-30T08:08:34.603Z"}
+HTTP 201
+# +0s status=PREPARING
+# +1s status=BUILDING
+# +3s status=DEPLOYING
+# +4s status=HEALTHCHECK
+# +7s status=SUCCESS
+# final
+{"id":"01a18bda-7e2b-7fca-a058-923901a5d867","serviceId":"01a18bda-7de5-7db0-84d5-9f071a1ae11e","status":"SUCCESS","trigger":"manual","triggeredBy":"01a18bd8-d8dc-7722-922f-7896688508b3","source":{"sourceType":"image","repositoryUrl":null,"branch":null,"buildContext":null,"dockerfilePath":null,"buildTarget":null,"imageRef":"nginx:1.27-alpine","internalPort":80,"publishedPort":8082},"commitSha":null,"previousDeploymentId":null,"rollbackOfDeploymentId":null,"imageRef":"nginx:1.27-alpine","webhookDeliveryId":null,"imageRetained":true,"startedAt":"2026-10-30T08:08:34.622Z","completedAt":"2026-10-30T08:08:41.628Z","durationMs":7006,"errorCode":null,"errorMessage":null,"createdAt":"2026-10-30T08:08:34.603Z","updatedAt":"2026-10-30T08:08:41.628Z","steps":[{"name":"pull","state":"success","startedAt":"2026-10-30T08:08:34.622Z","completedAt":"2026-10-30T08:08:37.730Z","durationMs":3108},{"name":"build","state":"skipped","startedAt":null,"completedAt":null,"durationMs":null},{"name":"start","state":"success","startedAt":"2026-10-30T08:08:37.730Z","completedAt":"2026-10-30T08:08:38.231Z","durationMs":501},{"name":"verify","state":"success","startedAt":"2026-10-30T08:08:38.231Z","completedAt":"2026-10-30T08:08:41.628Z","durationMs":3397}]}
+HTTP 200
+# runtime logs tail=5
+{"lines":[{"stream":"stdout","timestamp":"2026-10-30T08:08:42.086930755Z","text":"172.20.0.1 - - [30/Oct/2026:08:08:42 +0000] \"GET /uat-15-01-probe HTTP/1.1\" 404 153 \"-\" \"curl/7.81.0\" \"-\""},{"stream":"stderr","timestamp":"2026-10-30T08:08:38.238266421Z","text":"2026/10/30 08:08:38 [notice] 1#1: start worker processes"},{"stream":"stderr","timestamp":"2026-10-30T08:08:38.238267088Z","text":"2026/10/30 08:08:38 [notice] 1#1: start worker process 29"},{"stream":"stderr","timestamp":"2026-10-30T08:08:38.238269754Z","text":"2026/10/30 08:08:38 [notice] 1#1: start worker process 30"},{"stream":"stderr","timestamp":"2026-10-30T08:08:42.086930755Z","text":"2026/10/30 08:08:42 [error] 30#30: *1 open() \"/usr/share/nginx/html/uat-15-01-probe\" failed (2: No such file or directory), client: 172.20.0.1, server: localhost, request: \"GET /uat-15-01-probe HTTP/1.1\", host: \"127.0.0.1:8082\""}],"truncated":false}
+HTTP 200

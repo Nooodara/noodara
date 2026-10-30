@@ -1,0 +1,24 @@
+2026-10-30T08:14:27Z
+## free -m (idle after the flow: node-api + web-nginx running, cp-heavy exited)
+               total        used        free      shared  buff/cache   available
+Mem:            1969         956         379          20         634         897
+Swap:              0           0           0
+## docker stats --no-stream
+NAME                                           CPU %     MEM USAGE / LIMIT     MEM %
+noodara-01a18bda-7de5-7db0-84d5-9f071a1ae11e   0.00%     2.801MiB / 1.923GiB   0.14%
+noodara-01a18bd9-b52f-7292-bd4a-28613e5cfcdd   0.00%     13.21MiB / 1.923GiB   0.67%
+noodara-web-1                                  0.00%     83.79MiB / 256MiB     32.73%
+noodara-api-1                                  0.11%     98.46MiB / 256MiB     38.46%
+noodara-worker-1                               0.71%     66.65MiB / 256MiB     26.04%
+noodara-postgres-1                             1.39%     42.86MiB / 512MiB     8.37%
+noodara-redis-1                                1.55%     8.918MiB / 96MiB      9.29%
+## OOM events (dmesg)
+0
+## ufw still active
+Status: active
+## docker system df
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          7         7         1.348GB   0B (0%)
+Containers      9         7         131.1kB   8.192kB (6%)
+Local Volumes   2         2         49.55MB   0B (0%)
+Build Cache     47        0         4.759GB   4.525GB

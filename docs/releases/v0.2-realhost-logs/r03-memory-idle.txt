@@ -1,0 +1,12 @@
+2026-10-30T08:06:58Z
+## free -m (idle, admin created, no server yet)
+               total        used        free      shared  buff/cache   available
+Mem:            1969         539         121          20        1308        1314
+Swap:              0           0           0
+## docker stats --no-stream
+NAME                 CPU %     MEM USAGE / LIMIT   MEM %
+noodara-web-1        0.00%     61.43MiB / 256MiB   24.00%
+noodara-api-1        0.06%     73.32MiB / 256MiB   28.64%
+noodara-worker-1     0.95%     59.47MiB / 256MiB   23.23%
+noodara-postgres-1   0.45%     46.83MiB / 512MiB   9.15%
+noodara-redis-1      2.06%     13.64MiB / 96MiB    14.21%
