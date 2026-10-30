@@ -8077,7 +8077,8 @@
             "http-api/body-cap",
             "http-api/redirect-cache",
             "http-api/url-scheme-allowlist",
-            "auth-secrets/secret-logging"
+            "auth-secrets/secret-logging",
+            "http-api/input-validation"
           ],
           "tier": "deep"
         }
