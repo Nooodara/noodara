@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-20T02:48:53.262Z",
+  "updatedAt": "2026-10-30T02:59:19.778Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -7290,9 +7290,10 @@
             "docs/releases/v0.3-uat-logs/**",
             ".planning/DECISIONS.md"
           ],
-          "wave": 5,
+          "wave": 6,
           "dependsOn": [
-            "20-04"
+            "20-04",
+            "20-09"
           ],
           "status": "active",
           "gates": [
@@ -7493,6 +7494,48 @@
             "http-api/input-validation",
             "http-api/body-cap"
           ],
+          "tier": "standard"
+        },
+        {
+          "id": "20-09",
+          "title": "UAT findings: healthcheck log line breaks, downgrade caveat, sudo in release notes",
+          "scope": [
+            "apps/control-plane/src/deploy/run-deployment.ts",
+            "apps/control-plane/src/deploy/run-deployment.test.ts",
+            "docs/releases/v0.3.0.md",
+            "docs/deploy-engine.md"
+          ],
+          "wave": 5,
+          "dependsOn": [
+            "20-04"
+          ],
+          "status": "active",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-healthcheck",
+            "it-rollback"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "F1: every system line written to the healthcheck and rollback log phases ends with a newline, so consecutive lines never run together; a unit test written RED first proves it",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "F2: docs/releases/v0.3.0.md (Rollback section) warns that after downgrading to v0.2.0 the deployment history of services that ran v0.3 deployments (webhook/rollback triggers, ROLLED_BACK) cannot be read until re-upgrading; data is not lost",
+              "proof": "manual"
+            },
+            {
+              "id": "A3",
+              "text": "F3: every installer command in docs/releases/v0.3.0.md runs it with sudo",
+              "proof": "manual"
+            }
+          ],
+          "waives": [],
           "tier": "standard"
         }
       ]
