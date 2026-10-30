@@ -33,7 +33,7 @@ const STACK_TIMEOUT_MS = 900_000;
 const SSH_COMMAND_TIMEOUT_MS = 330_000;
 const SERVER_PORT = 8080;
 const PROXY_DIR = '/opt/noodara-proxy';
-const PROXY_CONTAINER = 'noodara-proxy';
+const PROXY_CONTAINER = 'noodara-traefik';
 const API_PORT = 9180;
 const RESOLVER = 'noodara';
 const CERT_VALIDITY_SECONDS = 300;
@@ -624,7 +624,7 @@ echo "M plain_again=$(redir GET "$4")"`,
 
   // --- A3: certificate-status probe -------------------------------------------------------------
 
-  it('CERT / ADR 0011 / A3: openssl is present because ca-certificates (installed by install.sh) depends on it', async () => {
+  it('CERT / ADR 0011 / A3: openssl is present because ca-certificates (a prerequisite of the Docker apt install) depends on it', async () => {
     const out = await must(
       bash`echo "M path=$(command -v openssl || echo none)"
 echo "M version=$(openssl version)"
