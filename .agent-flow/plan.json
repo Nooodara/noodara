@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-30T08:38:17.716Z",
+  "updatedAt": "2026-10-30T08:42:37.505Z",
   "cursor": {
     "phase": "15",
     "task": "15-01"
@@ -7705,12 +7705,29 @@
               "id": "H1",
               "text": "Every probe and measurement runs under env -i ... timeout with a hard cap and an output cap; no probe sends service env or secrets; no implicit image pull beyond the digest-pinned traefik and pebble images listed in the fixture allowlist (a test rejects :latest)",
               "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "The file-provider behaviour on an invalid or partially written dynamic file is measured and recorded in ADR 0011 (whether Traefik keeps the last good routers or drops them, and how long until the next good write is picked up); the 22-01 restore path and the 22-03 verify step are specified against that measured behaviour",
+              "proof": "manual"
+            },
+            {
+              "id": "H3",
+              "text": "No integration or E2E fixture configures the Let's Encrypt production or staging CA: a unit test over tests/integration and tests/e2e asserts every ACME CA URL is the Pebble container URL, so test runs can never consume real ACME rate limits",
+              "proof": "test"
+            },
+            {
+              "id": "H4",
+              "text": "The HTTP to HTTPS redirect is measured as non-cacheable: Traefik redirectScheme with permanent=false answers 302 (never 301/308), and after the redirect middleware is removed from the dynamic file a plain HTTP request to the same Host is served again; ADR 0011 fixes this so the per-domain httpsRedirect switch is reversible in browsers",
+              "proof": "it-contracts-v04"
             }
           ],
           "waives": [
             "http-api/body-cap",
             "auth-secrets/password-hashing",
-            "persistence/missing-file-boot"
+            "persistence/missing-file-boot",
+            "persistence/concurrent-writes",
+            "auth-secrets/secret-logging"
           ],
           "tier": "deep"
         },
@@ -7762,9 +7779,17 @@
               "id": "H1",
               "text": "A property test feeds random strings to validateHostname without a throw, and asserts that normalising then validating a valid hostname is idempotent",
               "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "validateHostname rejects names under the special-use TLDs .localhost, .local, .internal, .arpa, .onion and .example with a named error (while .test stays accepted for fixtures), and dnsInstructions never emits a record for a rejected name",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "randomness/crypto-random"
+          ],
           "tier": "deep"
         },
         {
@@ -7819,11 +7844,27 @@
               "id": "H1",
               "text": "A property test asserts for random three-scope inputs that the resolved key set is the union, each value equals its highest-precedence definition and no key repeats",
               "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "parseEnvValue returns a named error (never classifies as plain) for a malformed reference such as <secret:>, <secret:../x>, <secret:Name> with uppercase, embedded whitespace, or a reference followed by other text, so a typo in a reference can never be injected as a literal value",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "renderEnvFile enforces an exported aggregate cap MAX_ENV_FILE_BYTES derived from the 21-01 A4 --env-file measurement and returns a named error (not a truncated file) when the rendered output exceeds it",
+              "proof": "test"
+            },
+            {
+              "id": "H4",
+              "text": "Named errors from validateEnvKey, validateEnvValue, validateSecretName, parseEnvValue, resolveSecretRefs and renderEnvFile carry only the key, the reference name, the byte length and the offending character class, never the value: a test pushes a canary value through every error path and asserts the canary is absent from the error code, message and fields",
+              "proof": "test"
             }
           ],
           "waives": [
             "persistence/atomic-write",
-            "persistence/missing-file-boot"
+            "persistence/missing-file-boot",
+            "randomness/crypto-random"
           ],
           "tier": "deep"
         },
@@ -7876,9 +7917,34 @@
               "id": "H1",
               "text": "Router, service and middleware names derive only from UUIDs and validated hostnames; a test proves no rendered string can contain quotes, newlines, @, / or whitespace coming from input",
               "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "renderStaticConfig disables Traefik telemetry and update checks (global.sendAnonymousUsage=false, global.checkNewVersion=false), leaves the dashboard and insecure api off, disables the access log by default and sets log level WARN; asserted by snapshot",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "The https routers reference a TLS options block with minVersion VersionTLS12 rendered in the dynamic config; a snapshot test asserts no router serves TLS below 1.2",
+              "proof": "test"
+            },
+            {
+              "id": "H4",
+              "text": "planProxyChange is convergent: planProxyChange(x, x) is empty, and a property test asserts that applying the plan to current and re-planning against desired yields an empty plan for random current/desired sets",
+              "proof": "test"
+            },
+            {
+              "id": "H5",
+              "text": "renderDynamicConfig renders the HTTP to HTTPS redirect middleware with permanent=false (302) per the 21-01 measurement and a snapshot test rejects any permanent redirect, so a domain whose httpsRedirect is toggled off is served over plain HTTP again by browsers that saw the redirect",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/url-scheme-allowlist",
+            "auth-secrets/secret-logging",
+            "randomness/crypto-random"
+          ],
           "tier": "deep"
         },
         {
@@ -7954,12 +8020,26 @@
               "id": "H1",
               "text": "The secrets table has no plaintext column, the secret view schema is strict and rejects a value key, and a unique-constraint violation on hostname, variable key or secret name maps to its typed 409, never a 500 (mapper unit test)",
               "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "parseRuntimeConfigSnapshot v2 rejects an env array with duplicate keys, a key failing validateEnvKey, a secretRef failing validateSecretName, or more entries than MAX_ENV_VARS_PER_SCOPE * 3, as a named parse error",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "Migration 0015 creates the unique indexes that back concurrent writes: domains.hostname global (stored lowercased), environment_variables (owner scope id, key) and secrets (owner scope id, name); api-contract request schemas bound every string (hostname 253, env key 128, env value 32 KiB, secret name 64, secret value 64 KiB, ACME email 254) and the it-db test proves a second insert of each tuple fails with 23505",
+              "proof": "it-db"
             }
           ],
           "waives": [
             "persistence/atomic-write",
             "persistence/missing-file-boot",
-            "randomness/crypto-random"
+            "randomness/crypto-random",
+            "http-api/body-cap",
+            "http-api/redirect-cache",
+            "http-api/url-scheme-allowlist",
+            "auth-secrets/secret-logging"
           ],
           "tier": "deep"
         }
@@ -8043,6 +8123,21 @@
               "id": "H2",
               "text": "tls.cert_status output is at most 512 bytes and never contains BEGIN CERTIFICATE or key material (asserted)",
               "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "proxy.create sets --restart unless-stopped so the proxy returns after a host reboot; the template test asserts the flag and the fixture test asserts the container is running again after docker restart of the proxy and the router still answers",
+              "proof": "test"
+            },
+            {
+              "id": "H4",
+              "text": "The proxy.ports_in_use parser distinguishes a listener owned by the Noodara proxy container (docker-proxy for noodara-traefik) from a foreign process and reports only the foreign one, so re-install on a RUNNING proxy never yields PROXY_PORT_IN_USE; unit tests cover ss output for both cases on 22.04 and 24.04 formats",
+              "proof": "test"
+            },
+            {
+              "id": "H5",
+              "text": "tls.cert_status runs openssl s_client with stdin closed (</dev/null) and -connect to 127.0.0.1:443 only, so it never blocks waiting for input; the parser handles openssl's notAfter format (GMT, double-space day) and any unparseable output yields the down/unavailable outcome instead of a throw",
+              "proof": "test"
             }
           ],
           "waives": [
@@ -8123,12 +8218,24 @@
               "id": "H1",
               "text": "The boot sweep marks INSTALLING rows FAILED/PROXY_INSTALL_FAILED after the budget; concurrent installs for one server collapse into one job",
               "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "A failed install (pull error, create error or api verify timeout, each fault-injected) leaves no noodara-traefik container and no state under /opt/noodara-proxy that breaks the retry; the retry after each injected fault reaches RUNNING",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "The proxy job payload carries only serverId, acmeEmail and the job id, never a credential or decrypted key (payload schema test); install logs, job progress and activity metadata pass the Redactor and a canary SSH credential seeded on the server never appears in them",
+              "proof": "test"
             }
           ],
           "waives": [
             "http-api/body-cap",
             "randomness/crypto-random",
-            "persistence/concurrent-writes"
+            "persistence/concurrent-writes",
+            "http-api/url-scheme-allowlist",
+            "auth-secrets/password-hashing"
           ],
           "tier": "deep"
         },
@@ -8196,10 +8303,20 @@
               "id": "H2",
               "text": "Bodies are capped and strict; responses never include server credentials or ACME internals",
               "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "An SSH connection failure during apply maps to the existing typed server-unreachable error (never a 500), the domain row is kept with applyStatus pending, and the next reconcile cycle re-applies it (integration test with the fixture sshd stopped)",
+              "proof": "test"
             }
           ],
           "waives": [
-            "http-api/redirect-cache"
+            "http-api/redirect-cache",
+            "http-api/body-cap",
+            "http-api/url-scheme-allowlist",
+            "persistence/missing-file-boot",
+            "auth-secrets/password-hashing",
+            "auth-secrets/secret-logging"
           ],
           "tier": "deep"
         },
@@ -8256,10 +8373,30 @@
               "id": "H1",
               "text": "Two cycles never run concurrently for one server; an SSH failure leaves every status unchanged with a logged outcome (no FAILED flip); probe output beyond the cap is discarded and no certificate body is stored",
               "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "A cycle whose proxy.status finds no running noodara-traefik container on a server marked RUNNING transitions servers.proxy_status to FAILED/PROXY_UNAVAILABLE through the domain table and records server.proxy_failed once, not on every subsequent cycle",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "Each tls.cert_status and proxy.status result is validated with a zod schema before decideCertStatus runs: an unknown status token, an unparseable notAfter, an oversized issuer or an out-of-order field leaves the domain status unchanged with a logged probe-invalid outcome and nothing stored in certNotAfter",
+              "proof": "test"
+            },
+            {
+              "id": "H4",
+              "text": "A cycle whose proxy.status reports the dynamic file of a routed service missing on the host (deleted or lost after a reinstall) re-applies it once through apply-routes with verify-and-restore and records domain.route_restored; the integration test deletes the file and asserts the router is back in the Traefik API within one cycle",
+              "proof": "it-tls"
             }
           ],
           "waives": [
-            "http-api/body-cap"
+            "http-api/body-cap",
+            "http-api/redirect-cache",
+            "http-api/url-scheme-allowlist",
+            "persistence/atomic-write",
+            "auth-secrets/secret-logging",
+            "randomness/crypto-random"
           ],
           "tier": "deep"
         },
@@ -8325,11 +8462,23 @@
               "id": "H1",
               "text": "Cancel during DEPLOYING or HEALTHCHECK on a routed service leaves Traefik pointing at the restored -prev (HTTP asserted); a proxy in NOT_INSTALLED or FAILED while domains exist does not fail the deploy: a system log line is written and applyStatus stays pending",
               "proof": "it-routes-deploys"
+            },
+            {
+              "id": "H2",
+              "text": "When the service's internal port at deploy time differs from the port in the current dynamic file (service settings changed since the last apply), the deploy re-applies the routes after the swap through apply-routes with verify-and-restore; when equal the file is untouched (unit test with both cases, HTTP asserted on the fixture for the changed-port case)",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "Dynamic-file applies for one service are serialized through a per-serviceId lock in apply-routes: a deploy re-apply (H2) and a concurrent domain POST, PATCH or DELETE for the same service never interleave writes; a unit test firing two concurrent applies asserts the final file equals the last desired state and .prev is the immediately preceding file, and the lock is released on every error path",
+              "proof": "test"
             }
           ],
           "waives": [
             "persistence/atomic-write",
-            "http-api/body-cap"
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "persistence/missing-file-boot"
           ],
           "tier": "deep"
         },
@@ -8372,7 +8521,13 @@
               "proof": "it-tls-renewal"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap",
+            "persistence/atomic-write",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot"
+          ],
           "tier": "deep"
         }
       ]
@@ -8434,12 +8589,28 @@
               "id": "A3",
               "text": "decryptForDeploy registers each value in the given Redactor and the caller releases after the attempt (tested); tamper, wrong-key and malformed-blob errors surface as named store errors without the value; the logger canary shows only [REDACTED:app_secret]",
               "proof": "it-env-secrets"
+            },
+            {
+              "id": "H1",
+              "text": "decryptForDeploy takes the owner scope chain (project, environment, service) of the deploying service and refuses with a named store error any secret id outside that chain, so a caller bug cannot decrypt another project's secret; unit and integration tests cover a foreign-project id",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Redactor registration of app_secret values is tested with a 3-char and a 64-char value: the long value is redacted wherever it appears while a very short value does not corrupt unrelated log text (documented minimum length or exact-token rule), and the rule is recorded in the noodara-security skill",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "replaceSecret bumps version in a single UPDATE ... SET version = version + 1 with the ciphertext (no read-modify-write): two concurrent replaces end at version 3 with the ciphertext of the last committed write; secrets rotate running concurrently with a replace never leaves a row whose key_version disagrees with its ciphertext (row lock as in the credentials rotation)",
+              "proof": "it-env-secrets"
             }
           ],
           "waives": [
             "persistence/atomic-write",
             "persistence/missing-file-boot",
-            "randomness/crypto-random"
+            "randomness/crypto-random",
+            "auth-secrets/password-hashing"
           ],
           "tier": "deep"
         },
@@ -8499,11 +8670,18 @@
               "id": "H1",
               "text": "Concurrent creates of one key yield one 201 and one 409 (unique index on owner + key); a canary value pushed through every error path never reaches logs, activity or HTTP errors; bodies are capped",
               "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Updating a variable is validated identically to create (plain to reference and back re-checks SECRET_NOT_FOUND and ENV_VALUE_MULTILINE) and the key is immutable on update (a body with a different key is rejected 422), so no update can bypass the duplicate check",
+              "proof": "test"
             }
           ],
           "waives": [
             "http-api/redirect-cache",
-            "http-api/url-scheme-allowlist"
+            "http-api/url-scheme-allowlist",
+            "http-api/body-cap",
+            "auth-secrets/secret-logging"
           ],
           "tier": "deep"
         },
@@ -8562,7 +8740,9 @@
           ],
           "waives": [
             "http-api/redirect-cache",
-            "http-api/url-scheme-allowlist"
+            "http-api/url-scheme-allowlist",
+            "http-api/body-cap",
+            "auth-secrets/secret-logging"
           ],
           "tier": "deep"
         },
@@ -8645,11 +8825,23 @@
               "id": "H1",
               "text": "A static test over packages/ssh templates proves no docker inspect or docker ps --format selects .Config.Env; the deployment log canary never contains the secret value; the worker retry resume rule re-renders the env file rather than reusing one that may be gone, and the idempotency fingerprint excludes env values",
               "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "The transient env file is removed immediately after docker create returns, on success and on failure, before the healthcheck starts (integration assertion that <workspace>/secrets/env is gone while the new container is still starting), in addition to the workspace cleanup",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "secrets.write_file creates the env file 0600 from the first byte (umask 077, temp + rename into <workspace>/secrets/env, no 0644 window) and verifies the byte count against stdin; a short write, a non-zero exit or a mismatch ends FAILED/ENV_INJECTION_FAILED before docker create runs (template test plus fault-injected unit test)",
+              "proof": "test"
             }
           ],
           "waives": [
             "http-api/body-cap",
-            "randomness/crypto-random"
+            "randomness/crypto-random",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot"
           ],
           "tier": "deep"
         }
@@ -8721,7 +8913,11 @@
               "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/redirect-cache",
+            "http-api/url-scheme-allowlist"
+          ],
           "tier": "standard"
         },
         {
@@ -8782,7 +8978,14 @@
               "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/url-scheme-allowlist",
+            "persistence/atomic-write",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot",
+            "auth-secrets/secret-logging"
+          ],
           "tier": "standard"
         },
         {
@@ -8839,7 +9042,11 @@
               "proof": "e2e-servers"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap",
+            "auth-secrets/secret-logging"
+          ],
           "tier": "standard"
         },
         {
@@ -8892,7 +9099,16 @@
               "proof": "e2e-secrets"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap",
+            "http-api/redirect-cache",
+            "http-api/url-scheme-allowlist",
+            "persistence/atomic-write",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot",
+            "auth-secrets/secret-logging"
+          ],
           "tier": "deep"
         },
         {
@@ -8941,7 +9157,11 @@
               "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap",
+            "auth-secrets/secret-logging"
+          ],
           "tier": "standard"
         }
       ]
@@ -8998,7 +9218,12 @@
               "proof": "it-proxy-all"
             }
           ],
-          "waives": [],
+          "waives": [
+            "persistence/atomic-write",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot",
+            "auth-secrets/secret-logging"
+          ],
           "tier": "deep"
         },
         {
@@ -9037,9 +9262,26 @@
               "id": "A3",
               "text": "nightly.yml runs the cycles suite on 22.04 and 24.04 and fails on any leftover",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "After the 50 cycles the number of sshd sessions on the fixture and the control plane's open SSH connections and active handles return to the pre-run baseline (no session or handle leak), asserted by the cycles test",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "At least ten of the 50 cycles fire two operations on the same service concurrently (POST plus DELETE, PATCH plus PATCH, POST plus deploy re-apply) and the per-cycle invariant still holds: exactly one valid dynamic file per routed service, Traefik API equal to the database, no temp or .prev leftovers, no 500",
+              "proof": "it-domain-cycles"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/redirect-cache",
+            "http-api/url-scheme-allowlist",
+            "persistence/atomic-write",
+            "persistence/missing-file-boot",
+            "auth-secrets/secret-logging"
+          ],
           "tier": "deep"
         },
         {
@@ -9132,7 +9374,9 @@
           "waives": [
             "persistence/concurrent-writes",
             "persistence/missing-file-boot",
-            "auth-secrets/password-hashing"
+            "auth-secrets/password-hashing",
+            "persistence/atomic-write",
+            "auth-secrets/secret-logging"
           ],
           "tier": "deep"
         },
@@ -9189,7 +9433,11 @@
               "proof": "site-build"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap",
+            "auth-secrets/secret-logging"
+          ],
           "tier": "standard"
         },
         {
@@ -9234,7 +9482,11 @@
               "proof": "it-full"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap",
+            "auth-secrets/secret-logging"
+          ],
           "tier": "deep"
         },
         {
@@ -9274,12 +9526,28 @@
               "id": "A3",
               "text": "v0.4.0-rc.1 is tagged first; v0.4.0 is tagged from the same commit after the rc UAT with CI and nightly green; release.yml green with multi-arch images and the traefik image confirmed on arm64",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "The UAT reboots the Lima host after HTTPS is working and records that the proxy and the routed service come back without intervention, HTTPS /health answers 200 and the certificate status stays ISSUED on the next reconcile cycle",
+              "proof": "manual"
+            },
+            {
+              "id": "H2",
+              "text": "Every file committed under docs/releases/v0.4-uat-logs is grepped for the UAT secret value, private key markers (BEGIN ... PRIVATE KEY), the ACME account key and the Lima host credentials before the commit, with the grep command and its empty result recorded in v0.4-HUMAN-UAT.md; the UAT secret is a throwaway value",
+              "proof": "manual"
             }
           ],
           "waives": [
             "persistence/atomic-write",
             "persistence/missing-file-boot",
-            "persistence/concurrent-writes"
+            "persistence/concurrent-writes",
+            "http-api/input-validation",
+            "http-api/body-cap",
+            "http-api/redirect-cache",
+            "http-api/url-scheme-allowlist",
+            "auth-secrets/secret-logging",
+            "auth-secrets/password-hashing"
           ],
           "tier": "deep"
         }
