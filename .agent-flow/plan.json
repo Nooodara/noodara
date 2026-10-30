@@ -7290,10 +7290,11 @@
             "docs/releases/v0.3-uat-logs/**",
             ".planning/DECISIONS.md"
           ],
-          "wave": 6,
+          "wave": 7,
           "dependsOn": [
             "20-04",
-            "20-09"
+            "20-09",
+            "20-10"
           ],
           "status": "active",
           "gates": [
@@ -7537,6 +7538,68 @@
           ],
           "waives": [],
           "tier": "standard"
+        },
+        {
+          "id": "20-10",
+          "title": "Dependency security bumps: better-auth, next, zod, vite, undici (audit red on v0.3.0 CI)",
+          "scope": [
+            "package.json",
+            "pnpm-lock.yaml",
+            "pnpm-workspace.yaml",
+            "apps/*/package.json",
+            "packages/*/package.json",
+            "scripts/check-package-provenance.mjs",
+            "docs/adr/0000-package-legitimacy-approvals.md",
+            "apps/control-plane/src/auth/",
+            "apps/web/",
+            "apps/site/"
+          ],
+          "wave": 6,
+          "dependsOn": [
+            "20-09"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build",
+            "audit",
+            "security-leaks",
+            "site-build",
+            "it-boot",
+            "it-full",
+            "e2e-full"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "`pnpm audit --audit-level=high` reports zero high/critical: better-auth >=1.7.7, next >=16.4.1, zod >=4.6.6, vite >=8.3.3, undici >=8.12.2 (direct bumps or pnpm overrides for transitive deps)",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Bumped packages pass the supply-chain provenance check (allowlist/ADR 0000 updated only for versions from the same verified publishers)",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Auth behaviour unchanged after the better-auth bump: login, session expiry/revocation, lockout and setup-token suites green (unit, integration and E2E)",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Web and site build and run on the bumped next; E2E suite green",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "persistence/atomic-write",
+            "persistence/missing-file-boot",
+            "persistence/concurrent-writes"
+          ],
+          "tier": "deep"
         }
       ]
     }
