@@ -139,7 +139,7 @@ Planificados 2026-10-14 (fases 16–20). Fuente: `docs/roadmap-v0.1-v0.5.md` §8
 - [x] **QA-11**: La suite de integración simula, contra sshd+dockerd reales: deploy exitoso, fallo de clone, fallo de dependencias/build, fallo de `docker build`, crash del contenedor, timeout y status incorrecto del healthcheck, interrupción de red, webhook duplicado, reintento del worker, rollback exitoso y rollback fallido.
 - [x] **QA-12**: Los E2E cubren happy path (push firmado → webhook → `QUEUED … HEALTHCHECK → SUCCESS`), failure path (commit roto → la versión buena sigue sirviendo) y rollback path (`FAILED` → rollback → versión previa healthy → `ROLLED_BACK`).
 - [x] **QA-13**: 100 ciclos deploy/rollback sin corrupción de estado, cero contenedores huérfanos y cero deployment records perdidos, en un gate de stress y en nightly.
-- [ ] **QA-14**: Gate de release v0.3 con evidencia por criterio de `docs/roadmap-v0.1-v0.5.md` §8.10, CI y nightly verdes, y `v0.3.0` publicado. Gate 2026-10-19 en 890bf60 = público 2d1e1c69 (v0.3.0-rc.1, `docs/releases/v0.3-gate.md`): READY, los 12 criterios §8.10 con evidencia; CI 39281147566 y nightly 39281208524 verdes sobre ese commit. Falta `v0.3.0` (20-05, gate humano).
+- [x] **QA-14**: Gate de release v0.3 con evidencia por criterio de `docs/roadmap-v0.1-v0.5.md` §8.10, CI y nightly verdes, y `v0.3.0` publicado. Gate 2026-10-19 en 890bf60 = público 2d1e1c69 (v0.3.0-rc.1, `docs/releases/v0.3-gate.md`): READY, los 12 criterios §8.10 con evidencia; CI 39281147566 y nightly 39281208524 verdes sobre ese commit. `v0.3.0` publicado 2026-10-30 en a0b45618 (CI 41012499661, Release 41016597518).
 
 ## v2 Requirements
 
@@ -270,7 +270,7 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | QA-12 | Phase 19 | Complete |
 | QA-11 | Phase 20 | Complete |
 | QA-13 | Phase 20 | Complete |
-| QA-14 | Phase 20 | Pending (gate READY 2026-10-19 en 2d1e1c69; falta v0.3.0, 20-05) |
+| QA-14 | Phase 20 | Complete (v0.3.0 → a0b45618, 2026-10-30) |
 
 **Coverage:**
 - v1 requirements: 61 total
