@@ -71,6 +71,7 @@ describe('secretValue', () => {
       'session_secret',
       'setup_token',
       'api_key',
+      'app_secret',
     ];
     for (const kind of kinds) {
       const secret = secretValue('v', kind);

@@ -16,7 +16,8 @@ export type SecretKind =
   | 'master_key'
   | 'session_secret'
   | 'setup_token'
-  | 'api_key';
+  | 'api_key'
+  | 'app_secret';
 
 /**
  * Anything that can receive a raw secret value for later redaction. `redactor.ts`'s `Redactor`

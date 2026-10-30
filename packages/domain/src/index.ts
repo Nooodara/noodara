@@ -8,3 +8,4 @@ export * from './deployment/index.js';
 export * from './project/index.js';
 export * from './webhook/index.js';
 export * from './domain/index.js';
+export * from './env/index.js';
