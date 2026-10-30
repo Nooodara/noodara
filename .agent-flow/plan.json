@@ -5241,7 +5241,9 @@
             "docs/releases/v0.2-uat-logs/",
             ".planning/REQUIREMENTS.md",
             ".planning/ROADMAP.md",
-            ".planning/STATE.md"
+            ".planning/STATE.md",
+            "docs/releases/v0.2-realhost-logs/",
+            ".planning/DECISIONS.md"
           ],
           "wave": 1,
           "dependsOn": [],
