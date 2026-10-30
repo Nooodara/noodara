@@ -6,6 +6,10 @@ import {
   DeploymentLogChunkViewSchema,
   DeploymentViewSchema,
 } from '../api-contract/deployment-schemas.js';
+import { DomainViewSchema, EnvScopeSchema, ProxyViewSchema } from '../api-contract/v04-schemas.js';
+import { CERT_STATUSES, DNS_OUTCOMES } from '../domain/index.js';
+import { ENV_SCOPES } from '../env/index.js';
+import { PROXY_STATUSES } from '../proxy/index.js';
 import { DEPLOYMENT_ERROR_CODES } from './deployment-error.js';
 import {
   DEPLOYMENT_LOG_PHASES,
@@ -499,6 +503,11 @@ describe('H2: no drift between domain, api-contract and DB enums', () => {
       DEPLOYMENT_ERROR_CODES,
       statusShape.errorCode.unwrap().options,
     ],
+    // v0.4 (21-06, migration 0014): domain, proxy and env scope enums.
+    ['domain_cert_status', CERT_STATUSES, DomainViewSchema.shape.certStatus.options],
+    ['domain_dns_status', DNS_OUTCOMES, DomainViewSchema.shape.dnsStatus.unwrap().options],
+    ['proxy_status', PROXY_STATUSES, ProxyViewSchema.shape.status.options],
+    ['env_scope', ENV_SCOPES, EnvScopeSchema.options],
   ] as const;
 
   it.each(tuples)('%s: the api-contract enum is exactly the domain tuple', (_, domain, api) => {
@@ -516,4 +525,12 @@ describe('H2: no drift between domain, api-contract and DB enums', () => {
       expect([...db].filter((value) => !domainSet.has(value))).toEqual([]);
     },
   );
+
+  it('deployment_error_code carries the v0.4 secret, env and route codes (migration 0014)', () => {
+    const db = dbEnumValues('deployment_error_code');
+    for (const code of ['SECRET_UNRESOLVED', 'ENV_INJECTION_FAILED', 'PROXY_ROUTE_FAILED']) {
+      expect(db.has(code), code).toBe(true);
+      expect(DEPLOYMENT_ERROR_CODES as readonly string[]).toContain(code);
+    }
+  });
 });

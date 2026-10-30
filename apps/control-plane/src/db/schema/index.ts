@@ -13,3 +13,7 @@ export * from './services.js';
 export * from './deployments.js';
 export * from './deployment-log-chunks.js';
 export * from './webhook-deliveries.js';
+export * from './v04-enums.js';
+export * from './domains.js';
+export * from './environment-variables.js';
+export * from './secrets.js';

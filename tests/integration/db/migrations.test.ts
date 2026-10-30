@@ -32,6 +32,9 @@ const EXPECTED_TABLES = [
   'deployments',
   'deployment_log_chunks',
   'webhook_deliveries',
+  'domains',
+  'secrets',
+  'environment_variables',
 ];
 
 const EXPECTED_ENUMS = [
@@ -48,6 +51,10 @@ const EXPECTED_ENUMS = [
   'deployment_trigger',
   'deployment_error_code',
   'deployment_log_phase',
+  'domain_cert_status',
+  'domain_dns_status',
+  'proxy_status',
+  'env_scope',
 ];
 
 async function listTableNames(db: Database): Promise<string[]> {
@@ -214,6 +221,8 @@ describe('migrations applied from scratch (QA-06)', () => {
       '0011_phase16_v03_enum_values',
       '0012_phase16_active_deployment_index',
       '0013_phase16_v03_columns',
+      '0014_phase21_v04_enums',
+      '0015_phase21_v04_tables',
     ]);
   });
 

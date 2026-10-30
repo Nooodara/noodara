@@ -8,7 +8,8 @@
 // fails the row so the service is not locked forever. WORKSPACE_UNAVAILABLE (14-30): the deploy
 // workspace under the SSH user's home could not be created or written (not a repository problem).
 // v0.3 (16-02, ADR 0010): healthcheck, rollback and webhook-commit codes, appended so the pg enum
-// grows with plain `ADD VALUE` (migration 0011).
+// grows with plain `ADD VALUE` (migration 0011). v0.4 (21-04, ADR 0011): secret, env injection and
+// route codes, appended with migration 0014.
 
 export const DEPLOYMENT_ERROR_CODES = Object.freeze([
   'REPOSITORY_AUTH_FAILED',
@@ -40,6 +41,9 @@ export const DEPLOYMENT_ERROR_CODES = Object.freeze([
   'ROLLBACK_FAILED',
   'ROLLBACK_TARGET_UNAVAILABLE',
   'COMMIT_NOT_FOUND',
+  'SECRET_UNRESOLVED',
+  'ENV_INJECTION_FAILED',
+  'PROXY_ROUTE_FAILED',
 ] as const);
 
 export type DeploymentErrorCode = (typeof DEPLOYMENT_ERROR_CODES)[number];
@@ -76,15 +80,13 @@ export const V03_DEPLOYMENT_ERROR_MESSAGES: Readonly<Record<V03DeploymentErrorCo
 
 /**
  * v0.4 (21-04, ADR 0011): codes a deployment fails with once env vars, secrets and routes are
- * applied. Declared here with their fixed messages; the web copy carries them since 21-05, and
- * 21-06 appends them to DEPLOYMENT_ERROR_CODES together with migration 0014 and the drift test,
- * so the enum and the DB move in one step.
+ * applied. Part of DEPLOYMENT_ERROR_CODES since migration 0014 (21-06).
  */
 export const V04_DEPLOYMENT_ERROR_CODES = Object.freeze([
   'SECRET_UNRESOLVED',
   'ENV_INJECTION_FAILED',
   'PROXY_ROUTE_FAILED',
-] as const);
+] as const satisfies readonly DeploymentErrorCode[]);
 
 export type V04DeploymentErrorCode = (typeof V04_DEPLOYMENT_ERROR_CODES)[number];
 

@@ -19,6 +19,9 @@ const EXPECTED_TABLES = [
   'deployments',
   'deployment_log_chunks',
   'webhook_deliveries',
+  'domains',
+  'secrets',
+  'environment_variables',
 ];
 
 const EXPECTED_ENUMS = [
@@ -35,6 +38,10 @@ const EXPECTED_ENUMS = [
   'deployment_trigger',
   'deployment_error_code',
   'deployment_log_phase',
+  'domain_cert_status',
+  'domain_dns_status',
+  'proxy_status',
+  'env_scope',
 ];
 
 const UUID_V7_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/;

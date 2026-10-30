@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEPLOYMENT_ERROR_CODES as V03_DEPLOYMENT_ERROR_CODES, V04_DEPLOYMENT_ERROR_CODES } from '@noodara/domain/deployment';
+import { DEPLOYMENT_ERROR_CODES, V04_DEPLOYMENT_ERROR_CODES } from '@noodara/domain/deployment';
 import {
   DEPLOYMENT_ERROR_COPY,
   GENERIC_DEPLOYMENT_ERROR_COPY,
@@ -10,7 +10,10 @@ import {
   LOG_TAIL_MAX_LINES,
 } from './deploy-error-copy';
 
-const DEPLOYMENT_ERROR_CODES = [...V03_DEPLOYMENT_ERROR_CODES, ...V04_DEPLOYMENT_ERROR_CODES];
+// 21-06: the v0.4 codes are part of DEPLOYMENT_ERROR_CODES (migration 0014).
+it('the v0.4 codes are domain deployment error codes', () => {
+  expect(DEPLOYMENT_ERROR_CODES).toEqual(expect.arrayContaining([...V04_DEPLOYMENT_ERROR_CODES]));
+});
 
 describe('deploymentErrorCopy', () => {
   it.each(DEPLOYMENT_ERROR_CODES.map((code) => [code]))('%s has a title and an actionable recovery', (code) => {

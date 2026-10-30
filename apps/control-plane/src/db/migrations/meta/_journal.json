@@ -99,6 +99,20 @@
       "when": 1792029778076,
       "tag": "0013_phase16_v03_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793356016809,
+      "tag": "0014_phase21_v04_enums",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1793356086388,
+      "tag": "0015_phase21_v04_tables",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -110,6 +111,9 @@ export const services = pgTable(
       columns: [table.environmentId, table.projectId],
       foreignColumns: [environments.id, environments.projectId],
     }).onDelete("cascade"),
+    // 21-06: target of the v0.4 composite FKs (domains, environment_variables, secrets), which
+    // make a row naming another project's service impossible.
+    unique("services_id_project_id_unique").on(table.id, table.projectId),
     uniqueIndex("services_environment_name_lower_unique_idx").on(
       table.environmentId,
       sql`lower(${table.name})`,

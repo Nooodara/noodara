@@ -2,10 +2,10 @@
 // the UI renders only the classified copy for `errorCode` (title + what to do) and, when present,
 // a guarded tail of the build log. `DEPLOYMENT_ERROR_COPY` is typed as a full Record over the
 // domain codes, so adding a code without copy fails typecheck and deploy-error-copy.test.ts.
-import type { DeploymentErrorCode, V04DeploymentErrorCode } from '@noodara/domain/deployment';
+import type { DeploymentErrorCode } from '@noodara/domain/deployment';
 
-/** v0.3 codes plus the v0.4 ones (21-05); the latter join DEPLOYMENT_ERROR_CODES with migration 0014 (21-06). */
-export type DeploymentErrorCopyCode = DeploymentErrorCode | V04DeploymentErrorCode;
+/** Every domain deployment error code; the v0.4 ones joined DEPLOYMENT_ERROR_CODES with migration 0014 (21-06). */
+export type DeploymentErrorCopyCode = DeploymentErrorCode;
 
 export interface DeploymentErrorCopy {
   readonly title: string;

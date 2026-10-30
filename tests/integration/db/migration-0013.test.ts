@@ -265,8 +265,11 @@ function hookId(): string {
 }
 
 describe('migration 0013 files (16-06 A1, H2)', () => {
-  it('the journal ends with 0011, 0012 then 0013', () => {
-    expect(readJournal().slice(-3)).toEqual([MIGRATION_0011, MIGRATION_0012, MIGRATION_0013]);
+  it('the journal lists 0011, 0012 then 0013 consecutively', () => {
+    const journal = readJournal();
+    const start = journal.indexOf(MIGRATION_0011);
+    expect(start).toBeGreaterThan(-1);
+    expect(journal.slice(start, start + 3)).toEqual([MIGRATION_0011, MIGRATION_0012, MIGRATION_0013]);
   });
 
   it.each(Object.entries(SHIPPED_HASHES))('%s is byte-for-byte the 16-02 file', (tag, hash) => {

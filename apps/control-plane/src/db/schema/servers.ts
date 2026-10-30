@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   integer,
   pgEnum,
   pgTable,
@@ -11,7 +12,12 @@ import {
 } from 'drizzle-orm/pg-core';
 import { uuidv7 } from 'uuidv7';
 import { SERVER_ERROR_CODES, SERVER_STATUSES } from '@noodara/domain/server';
+import { SERVER_PROXY_ERROR_CODES } from '@noodara/domain/api-contract';
 import { credentials } from './credentials.js';
+import { proxyStatusEnum } from './v04-enums.js';
+import { sqlInList } from './v04-owner.js';
+
+const MAX_ACME_EMAIL_LENGTH = 254;
 
 // Enums derived from the domain constants (SERV-05) so the database enum and the TypeScript union
 // in packages/domain cannot drift — a new status/error code always starts as a domain change.
@@ -64,6 +70,12 @@ export const servers = pgTable(
     dockerBuildkitAvailable: boolean('docker_buildkit_available'),
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
     lastErrorCode: serverErrorCodeEnum('last_error_code'),
+    // v0.4 (21-06, migration 0015, ADR 0011): the per-server noodara-traefik proxy. Existing rows
+    // read NOT_INSTALLED; the error code is one of the server-level proxy codes only.
+    proxyStatus: proxyStatusEnum('proxy_status').notNull().default('NOT_INSTALLED'),
+    proxyErrorCode: text('proxy_error_code'),
+    proxyAcmeEmail: text('proxy_acme_email'),
+    proxyInstalledAt: timestamp('proxy_installed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -74,5 +86,15 @@ export const servers = pgTable(
     // D-10: a (host, ssh_port) pair identifies one server; two different names must not both
     // target the same host:port.
     uniqueIndex('servers_host_port_unique_idx').on(table.host, table.sshPort),
+    check(
+      'servers_proxy_error_code_check',
+      sql.raw(`"proxy_error_code" IS NULL OR "proxy_error_code" IN (${sqlInList(SERVER_PROXY_ERROR_CODES)})`),
+    ),
+    check(
+      'servers_proxy_acme_email_check',
+      sql.raw(
+        `"proxy_acme_email" IS NULL OR char_length("proxy_acme_email") BETWEEN 3 AND ${String(MAX_ACME_EMAIL_LENGTH)}`,
+      ),
+    ),
   ],
 );

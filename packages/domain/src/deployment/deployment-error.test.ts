@@ -40,12 +40,15 @@ describe('DEPLOYMENT_ERROR_CODES', () => {
       'ROLLBACK_FAILED',
       'ROLLBACK_TARGET_UNAVAILABLE',
       'COMMIT_NOT_FOUND',
+      'SECRET_UNRESOLVED',
+      'ENV_INJECTION_FAILED',
+      'PROXY_ROUTE_FAILED',
     ]);
   });
 
-  it('has 29 codes and no duplicates', () => {
-    expect(DEPLOYMENT_ERROR_CODES.length).toBe(29);
-    expect(new Set(DEPLOYMENT_ERROR_CODES).size).toBe(29);
+  it('has 32 codes and no duplicates', () => {
+    expect(DEPLOYMENT_ERROR_CODES.length).toBe(32);
+    expect(new Set(DEPLOYMENT_ERROR_CODES).size).toBe(32);
   });
 
   it('is frozen', () => {
@@ -75,7 +78,7 @@ describe('v0.3 error codes (16-02)', () => {
       'ROLLBACK_TARGET_UNAVAILABLE',
       'COMMIT_NOT_FOUND',
     ]);
-    expect(DEPLOYMENT_ERROR_CODES.slice(-5)).toEqual([...V03_DEPLOYMENT_ERROR_CODES]);
+    expect(DEPLOYMENT_ERROR_CODES.slice(-8, -3)).toEqual([...V03_DEPLOYMENT_ERROR_CODES]);
     expect(Object.isFrozen(V03_DEPLOYMENT_ERROR_CODES)).toBe(true);
     expect(Object.isFrozen(V03_DEPLOYMENT_ERROR_MESSAGES)).toBe(true);
   });
@@ -104,13 +107,15 @@ describe('v0.3 error codes (16-02)', () => {
   });
 });
 
-describe('v0.4 error codes (21-04)', () => {
-  it('declares the secret, env injection and route codes (the pg enum grows in 21-05)', () => {
+describe('v0.4 error codes (21-04, 21-06)', () => {
+  it('appends the secret, env injection and route codes at the end (migration 0014 ADD VALUE)', () => {
     expect([...V04_DEPLOYMENT_ERROR_CODES]).toEqual([
       'SECRET_UNRESOLVED',
       'ENV_INJECTION_FAILED',
       'PROXY_ROUTE_FAILED',
     ]);
+    expect(DEPLOYMENT_ERROR_CODES.slice(-3)).toEqual([...V04_DEPLOYMENT_ERROR_CODES]);
+    expect(V04_DEPLOYMENT_ERROR_CODES.every((code) => isDeploymentErrorCode(code))).toBe(true);
     expect(Object.isFrozen(V04_DEPLOYMENT_ERROR_CODES)).toBe(true);
     expect(Object.isFrozen(V04_DEPLOYMENT_ERROR_MESSAGES)).toBe(true);
     expect(Object.keys(V04_DEPLOYMENT_ERROR_MESSAGES).sort()).toEqual(
