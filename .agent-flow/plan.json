@@ -7662,7 +7662,8 @@
             "tests/integration/helpers/deploy-engine.ts",
             "tests/integration/helpers/pebble.ts",
             "tests/integration/images/",
-            "tests/integration/deploy-engine/tsconfig.json"
+            "tests/integration/deploy-engine/tsconfig.json",
+            "tests/unit/integration-helpers/"
           ],
           "wave": 1,
           "dependsOn": [],
