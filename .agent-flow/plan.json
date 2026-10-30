@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-30T10:21:39.579Z",
+  "updatedAt": "2026-10-30T10:53:42.680Z",
   "cursor": {
-    "phase": "21",
-    "task": "21-06"
+    "phase": "22",
+    "task": "22-01"
   },
   "phases": [
     {
@@ -7651,7 +7651,7 @@
       "dependsOn": [
         "20"
       ],
-      "status": "active",
+      "status": "done",
       "tasks": [
         {
           "id": "21-01",
@@ -8041,7 +8041,7 @@
           "dependsOn": [
             "21-05"
           ],
-          "status": "active",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
@@ -8125,7 +8125,8 @@
             "tests/integration/helpers/deploy-engine.ts",
             "tests/integration/helpers/pebble.ts",
             "tests/integration/images/",
-            "package.json"
+            "package.json",
+            "docs/adr/0011-domains-tls-env-contracts.md"
           ],
           "wave": 1,
           "dependsOn": [],
@@ -8182,6 +8183,11 @@
             {
               "id": "H5",
               "text": "tls.cert_status runs openssl s_client with stdin closed (</dev/null) and -connect to 127.0.0.1:443 only, so it never blocks waiting for input; the parser handles openssl's notAfter format (GMT, double-space day) and any unparseable output yields the down/unavailable outcome instead of a throw",
+              "proof": "test"
+            },
+            {
+              "id": "R1",
+              "text": "Phase 21 review follow-ups: ADR 0011's static-config section matches packages/domain/src/proxy/static-config.ts (api.insecure false, WARN log, noodara-api.yml router to api@internal on 127.0.0.1:9180); the rendered canonical-JSON dynamic files and the noodara-api router are loaded by a real Traefik in an integration test (not only snapshots)",
               "proof": "test"
             }
           ],
@@ -8352,6 +8358,11 @@
             {
               "id": "H3",
               "text": "An SSH connection failure during apply maps to the existing typed server-unreachable error (never a 500), the domain row is kept with applyStatus pending, and the next reconcile cycle re-applies it (integration test with the fixture sshd stopped)",
+              "proof": "test"
+            },
+            {
+              "id": "R1",
+              "text": "The HTTP→HTTPS redirect response carries an explicit `Cache-Control: no-store` (or equivalent) so a removed redirect is never cached by clients; asserted in an integration test",
               "proof": "test"
             }
           ],
