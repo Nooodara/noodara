@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-10-30T10:04:35.868Z",
+  "updatedAt": "2026-10-30T10:04:44.932Z",
   "cursor": {
     "phase": "21",
     "task": "21-05"
@@ -7950,16 +7950,12 @@
         },
         {
           "id": "21-05",
-          "title": "Schema 0014+, api-contract schemas, HTTP/deployment error ripple, runtime config v2, env vars",
+          "title": "api-contract schemas, HTTP/deployment error ripple, unique-violation mapper, runtime config v2, env knobs",
           "scope": [
-            "apps/control-plane/src/db/migrations/",
-            "apps/control-plane/src/db/schema/",
-            "tests/integration/db/",
             "packages/domain/src/api-contract/",
             "apps/control-plane/src/routes/http-errors.test.ts",
             "packages/domain/src/deployment/runtime-config.ts",
             "packages/domain/src/deployment/runtime-config.test.ts",
-            "packages/domain/src/deployment/deployment-state.test.ts",
             "apps/web/src/lib/api-client.ts",
             "apps/web/src/lib/api-client.test.ts",
             "apps/web/src/lib/error-copy.ts",
@@ -7980,7 +7976,66 @@
             "21-03",
             "21-04"
           ],
-          "status": "pending",
+          "status": "active",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A3",
+              "text": "api-contract zod schemas for domains, variables (incl. the effective view with origin and shadowed), secrets (strict views without any value key) and proxy views; HTTP codes and statuses: DOMAIN_ALREADY_ASSIGNED 409, DOMAIN_RESERVED 422, DOMAIN_LIMIT_REACHED 422, PROXY_PORT_IN_USE 409, PROXY_INSTALL_FAILED 502, PROXY_UNAVAILABLE 503, PROXY_IN_USE 409, PROXY_ROUTE_FAILED 502, ENV_KEY_DUPLICATE 409, ENV_VALUE_MULTILINE 422, ENV_LIMIT_REACHED 422, SECRET_NOT_FOUND 422, SECRET_IN_USE 409, SECRET_NAME_DUPLICATE 409, SECRET_LIMIT_REACHED 422; api-client, error-copy, deploy-error-copy and error-codes.mdx carry every new code (accuracy test)",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "parseRuntimeConfigSnapshot accepts v2 with env: [{key, value} | {key, secretRef, secretVersion}] next to v1 (v1 parses as empty env); a snapshot carrying a value for a secretRef entry is rejected",
+              "proof": "test"
+            },
+            {
+              "id": "A6",
+              "text": "env.ts, .env.example and turbo.json add NOODARA_ACME_CA_URL (https URL, default Let's Encrypt production), NOODARA_ACME_CA_ROOT_FILE (optional test seam), NOODARA_CERT_CHECK_INTERVAL_MS (default 600000, bounded), NOODARA_CERT_ISSUE_TIMEOUT_MS (default 600000, bounded) and NOODARA_PROXY_IMAGE (digest-pinned default, override must match name@sha256:<64 hex>), each with tests",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "The secret view schema is strict and rejects a value key, and a unique-constraint violation on hostname, variable key or secret name maps to its typed 409, never a 500 (pure mapper over exported constraint-name constants, unit test)",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "parseRuntimeConfigSnapshot v2 rejects an env array with duplicate keys, a key failing validateEnvKey, a secretRef failing validateSecretName, or more entries than MAX_ENV_VARS_PER_SCOPE * 3, as a named parse error",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "persistence/atomic-write",
+            "persistence/missing-file-boot",
+            "randomness/crypto-random",
+            "http-api/body-cap",
+            "http-api/redirect-cache",
+            "http-api/url-scheme-allowlist",
+            "auth-secrets/secret-logging"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "21-06",
+          "title": "Schema: migrations 0014 (enums) and 0015 (domains, secrets, environment_variables, server proxy columns), drift test",
+          "scope": [
+            "apps/control-plane/src/db/migrations/",
+            "apps/control-plane/src/db/schema/",
+            "tests/integration/db/",
+            "packages/domain/src/deployment/deployment-state.test.ts",
+            "packages/domain/src/api-contract/"
+          ],
+          "wave": 5,
+          "dependsOn": [
+            "21-05"
+          ],
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -8000,34 +8055,14 @@
               "proof": "it-db"
             },
             {
-              "id": "A3",
-              "text": "api-contract zod schemas for domains, variables (incl. the effective view with origin and shadowed), secrets (strict views without any value key) and proxy views; HTTP codes and statuses: DOMAIN_ALREADY_ASSIGNED 409, DOMAIN_RESERVED 422, DOMAIN_LIMIT_REACHED 422, PROXY_PORT_IN_USE 409, PROXY_INSTALL_FAILED 502, PROXY_UNAVAILABLE 503, PROXY_IN_USE 409, PROXY_ROUTE_FAILED 502, ENV_KEY_DUPLICATE 409, ENV_VALUE_MULTILINE 422, ENV_LIMIT_REACHED 422, SECRET_NOT_FOUND 422, SECRET_IN_USE 409, SECRET_NAME_DUPLICATE 409, SECRET_LIMIT_REACHED 422; api-client, error-copy, deploy-error-copy and error-codes.mdx carry every new code (accuracy test)",
-              "proof": "test"
-            },
-            {
               "id": "A4",
               "text": "The drift test (domain tuples vs DB enum vs api-contract) covers the new statuses, scopes and error codes",
               "proof": "test"
             },
             {
-              "id": "A5",
-              "text": "parseRuntimeConfigSnapshot accepts v2 with env: [{key, value} | {key, secretRef, secretVersion}] next to v1 (v1 parses as empty env); a snapshot carrying a value for a secretRef entry is rejected",
-              "proof": "test"
-            },
-            {
-              "id": "A6",
-              "text": "env.ts, .env.example and turbo.json add NOODARA_ACME_CA_URL (https URL, default Let's Encrypt production), NOODARA_ACME_CA_ROOT_FILE (optional test seam), NOODARA_CERT_CHECK_INTERVAL_MS (default 600000, bounded), NOODARA_CERT_ISSUE_TIMEOUT_MS (default 600000, bounded) and NOODARA_PROXY_IMAGE (digest-pinned default, override must match name@sha256:<64 hex>), each with tests",
-              "proof": "test"
-            },
-            {
               "id": "H1",
-              "text": "The secrets table has no plaintext column, the secret view schema is strict and rejects a value key, and a unique-constraint violation on hostname, variable key or secret name maps to its typed 409, never a 500 (mapper unit test)",
-              "proof": "test"
-            },
-            {
-              "id": "H2",
-              "text": "parseRuntimeConfigSnapshot v2 rejects an env array with duplicate keys, a key failing validateEnvKey, a secretRef failing validateSecretName, or more entries than MAX_ENV_VARS_PER_SCOPE * 3, as a named parse error",
-              "proof": "test"
+              "text": "The secrets table has no plaintext column; the constraint names used by the 21-05 unique-violation mapper are the ones the Drizzle schema and migration 0015 create (shared exported constants)",
+              "proof": "it-db"
             },
             {
               "id": "H3",
