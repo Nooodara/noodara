@@ -8029,7 +8029,12 @@
             "apps/control-plane/src/db/schema/",
             "tests/integration/db/",
             "packages/domain/src/deployment/deployment-state.test.ts",
-            "packages/domain/src/api-contract/"
+            "packages/domain/src/api-contract/",
+            "packages/domain/src/deployment/deployment-error.ts",
+            "packages/domain/src/deployment/deployment-error.test.ts",
+            "apps/web/src/lib/deploy-error-copy.ts",
+            "apps/web/src/lib/deploy-error-copy.test.ts",
+            "apps/control-plane/src/db/schema.test.ts"
           ],
           "wave": 5,
           "dependsOn": [
