@@ -8224,7 +8224,9 @@
             "apps/web/src/lib/activity-copy.ts",
             "apps/web/src/lib/activity-copy.test.ts",
             "tests/integration/proxy/proxy-lifecycle.test.ts",
-            "tests/integration/services/delete-server.test.ts"
+            "tests/integration/services/delete-server.test.ts",
+            "packages/ssh/src/index.ts",
+            "packages/ssh/src/run-discovery.test.ts"
           ],
           "wave": 2,
           "dependsOn": [
