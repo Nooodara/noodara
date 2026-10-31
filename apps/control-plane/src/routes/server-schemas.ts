@@ -4,6 +4,8 @@
 // vocabulary difference (see the `WireCredentialSchema` note below).
 import { z } from 'zod';
 import { DISCOVERY_CHECK_IDS, DISCOVERY_CHECK_STATUSES } from '@noodara/domain/discovery';
+import { PROXY_STATUSES } from '@noodara/domain';
+import { SERVER_PROXY_ERROR_CODES } from '@noodara/domain/api-contract';
 import { SERVER_ERROR_CODES, SERVER_STATUSES } from '@noodara/domain/server';
 import type { CredentialInput } from '../services/credential-store.js';
 import { SERVER_VIEW_KEYS } from '../services/server-view.js';
@@ -110,6 +112,10 @@ export const ServerViewSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
   credentialType: z.enum(['ssh_private_key', 'ssh_password']),
+  proxyStatus: z.enum(PROXY_STATUSES),
+  proxyErrorCode: z.enum(SERVER_PROXY_ERROR_CODES).nullable(),
+  proxyAcmeEmail: z.string().nullable(),
+  proxyInstalledAt: z.date().nullable(),
 });
 
 // Drift guard: a field added to `ServerView` without a matching entry here (or vice versa) is a

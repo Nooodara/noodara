@@ -71,8 +71,11 @@ describe('SERVER_VIEW_KEYS', () => {
   // (the must_haves.truths requirement, and the literal RESEARCH.md ServerView interface) is
   // authoritative here, so this asserts the real total (Rule 1: plan-arithmetic bug, not a code
   // bug — see 03-04-SUMMARY.md).
-  it('has exactly 27 entries and includes dockerComposeVersion', () => {
-    expect(SERVER_VIEW_KEYS).toHaveLength(27);
+  it('has exactly 31 entries and includes dockerComposeVersion and the proxy fields (22-02 A2)', () => {
+    expect(SERVER_VIEW_KEYS).toHaveLength(31);
+    expect(SERVER_VIEW_KEYS).toEqual(
+      expect.arrayContaining(['proxyStatus', 'proxyErrorCode', 'proxyAcmeEmail', 'proxyInstalledAt']),
+    );
     expect(SERVER_VIEW_KEYS).toContain('dockerComposeVersion');
     expect(SERVER_VIEW_KEYS).toContain('credentialType');
   });
@@ -144,4 +147,30 @@ describe('toServerCredentialType', () => {
       expect(() => toServerCredentialType(type)).toThrow(/not an SSH credential/);
     },
   );
+});
+
+describe('toServerView proxy fields (22-02 A2)', () => {
+  it('projects the proxy status, error code, ACME email and install time', () => {
+    const installedAt = new Date('2026-10-31T00:00:00Z');
+    const view = toServerView(
+      buildServerRow({
+        proxyStatus: 'FAILED',
+        proxyErrorCode: 'PROXY_PORT_IN_USE',
+        proxyAcmeEmail: 'ops@example.com',
+        proxyInstalledAt: installedAt,
+      }),
+      'ssh_password',
+    );
+    expect(view).toMatchObject({
+      proxyStatus: 'FAILED',
+      proxyErrorCode: 'PROXY_PORT_IN_USE',
+      proxyAcmeEmail: 'ops@example.com',
+      proxyInstalledAt: installedAt,
+    });
+  });
+
+  it('drops a stored proxy error code that is not a server-level proxy code', () => {
+    const view = toServerView(buildServerRow({ proxyErrorCode: 'SOMETHING_ELSE' }), 'ssh_password');
+    expect(view.proxyErrorCode).toBeNull();
+  });
 });

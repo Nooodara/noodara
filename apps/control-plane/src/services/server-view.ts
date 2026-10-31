@@ -4,6 +4,8 @@
 // stored credential) is a SEC-02 regression — `toServerView` is built as an explicit field-by-field
 // allowlist, never `{ ...row }` with keys deleted afterwards, so a new `servers` column never leaks
 // into the API surface just by existing on the row.
+import type { ProxyStatus } from '@noodara/domain';
+import { SERVER_PROXY_ERROR_CODES, type ServerProxyErrorCode } from '@noodara/domain/api-contract';
 import type { ServerErrorCode, ServerStatus } from '@noodara/domain/server';
 import type { servers } from '../db/schema/servers.js';
 
@@ -50,6 +52,11 @@ export interface ServerView {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly credentialType: CredentialType;
+  // 22-02 (A2): the per-server proxy. The ACME email is the operator's own contact, not a secret.
+  readonly proxyStatus: ProxyStatus;
+  readonly proxyErrorCode: ServerProxyErrorCode | null;
+  readonly proxyAcmeEmail: string | null;
+  readonly proxyInstalledAt: Date | null;
   // Deliberately absent: credentialId, encryptedValue, keyVersion, or anything credential-shaped.
 }
 
@@ -83,6 +90,10 @@ export const SERVER_VIEW_KEYS = Object.freeze([
   'createdAt',
   'updatedAt',
   'credentialType',
+  'proxyStatus',
+  'proxyErrorCode',
+  'proxyAcmeEmail',
+  'proxyInstalledAt',
 ] as const satisfies readonly (keyof ServerView)[]);
 
 /**
@@ -119,5 +130,13 @@ export function toServerView(row: ServerRow, credentialType: CredentialType): Se
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     credentialType,
+    proxyStatus: row.proxyStatus,
+    proxyErrorCode: toProxyErrorCode(row.proxyErrorCode),
+    proxyAcmeEmail: row.proxyAcmeEmail,
+    proxyInstalledAt: row.proxyInstalledAt,
   };
+}
+
+function toProxyErrorCode(code: string | null): ServerProxyErrorCode | null {
+  return SERVER_PROXY_ERROR_CODES.find((known) => known === code) ?? null;
 }

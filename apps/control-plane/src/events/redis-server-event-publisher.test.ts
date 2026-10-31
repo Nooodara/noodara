@@ -38,6 +38,10 @@ function buildServerView(overrides: Partial<ServerView> = {}): ServerView {
     createdAt: new Date('2025-12-31T00:00:00.000Z'),
     updatedAt: new Date('2026-01-02T00:00:00.000Z'),
     credentialType: 'ssh_password',
+    proxyStatus: 'NOT_INSTALLED',
+    proxyErrorCode: null,
+    proxyAcmeEmail: null,
+    proxyInstalledAt: null,
     ...overrides,
   };
 }
