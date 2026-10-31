@@ -22,6 +22,7 @@ import {
   proxyPortsInUse,
   proxyPrepareDirs,
   proxyRemoveDynamic,
+  proxyRemoveFiles,
   proxyRestoreDynamic,
   proxyRouterStatus,
   proxyWriteDynamic,
@@ -54,6 +55,7 @@ describe("proxy templates: bounded wrapper (A4)", () => {
     ["write_dynamic", proxyWriteDynamic({ path: dynamicPath, digest })],
     ["restore_dynamic", proxyRestoreDynamic(dynamicPath)],
     ["remove_dynamic", proxyRemoveDynamic(dynamicPath)],
+    ["remove_files", proxyRemoveFiles()],
     ["status", proxyRouterStatus("noodara-x-web")],
     ["ports_in_use", proxyPortsInUse()],
     ["cert_status", proxyCertStatus("app.example.com")],
@@ -91,6 +93,26 @@ describe("proxy.prepare_dirs (A1)", () => {
     expect(script).toContain("chmod 0600");
     expect(script).toContain(PROXY_LAYOUT.root);
     expect(script).not.toMatch(/07[5-7][5-7]|0644/);
+  });
+});
+
+describe("proxy.remove_files (22-02 A3, A4, H2)", () => {
+  it("removes the whole proxy root, sudo -n only as fallback, no caller argument", () => {
+    const cmd = proxyRemoveFiles();
+    expect(cmd.name).toBe("proxy.remove_files");
+    expect(cmd.stdin).toBe("none");
+    const { script, args } = wrapped(cmd);
+    expect(args).toEqual([]);
+    expect(script).toContain(`root=${PROXY_LAYOUT.root}`);
+    expect(script).toContain('rm -rf -- "$root"');
+    expect(script).toContain('sudo -n rm -rf -- "$root"');
+    expect(script.indexOf('rm -rf -- "$root"')).toBeLessThan(script.indexOf("sudo -n"));
+    expect(script).toContain("NOODARA_PROXY_PURGE ok");
+  });
+  it("is idempotent when nothing is there and refuses a symlinked root", () => {
+    const { script } = wrapped(proxyRemoveFiles());
+    expect(script).toMatch(/if \[ ! -e "\$root" \] && \[ ! -L "\$root" \]; then echo "NOODARA_PROXY_PURGE ok"; exit 0; fi/);
+    expect(script).toContain('if [ -L "$root" ]; then echo "NOODARA_PROXY_PURGE refused"; exit 3; fi');
   });
 });
 

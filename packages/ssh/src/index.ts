@@ -123,6 +123,7 @@ export {
   proxyFileDigest,
   proxyPortsInUse,
   proxyPrepareDirs,
+  proxyRemoveFiles,
   proxyRouterStatus,
   proxyWriteStatic,
 } from './commands/index.js';

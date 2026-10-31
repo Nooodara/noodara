@@ -54,6 +54,8 @@ export const DEPLOY_COMMAND_NAMES = Object.freeze([
   'proxy.write_dynamic',
   'proxy.restore_dynamic',
   'proxy.remove_dynamic',
+  // 22-02: remove/delete-server purges /opt/noodara-proxy (acme.json holds cert keys).
+  'proxy.remove_files',
   'proxy.create',
   'proxy.status',
   'proxy.ports_in_use',

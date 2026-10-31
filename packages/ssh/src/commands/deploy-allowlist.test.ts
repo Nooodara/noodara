@@ -91,6 +91,7 @@ const EXPECTED_DEPLOY_COMMAND_NAMES: readonly DeployCommandName[] = [
   "proxy.write_dynamic",
   "proxy.restore_dynamic",
   "proxy.remove_dynamic",
+  "proxy.remove_files",
   "proxy.create",
   "proxy.status",
   "proxy.ports_in_use",
@@ -120,9 +121,9 @@ const ALLOWED_PARAMETERS = new Set([
 ]);
 
 describe("DEPLOY_COMMAND_NAMES", () => {
-  it("is exactly the 53 expected names, in order", () => {
+  it("is exactly the 54 expected names, in order", () => {
     expect(DEPLOY_COMMAND_NAMES).toEqual(EXPECTED_DEPLOY_COMMAND_NAMES);
-    expect(DEPLOY_COMMAND_NAMES).toHaveLength(53);
+    expect(DEPLOY_COMMAND_NAMES).toHaveLength(54);
   });
 
   it("is frozen", () => {

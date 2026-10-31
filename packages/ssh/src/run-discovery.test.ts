@@ -764,6 +764,7 @@ describe('@noodara/ssh public surface (T-2-42)', () => {
     'proxyFileDigest',
     'proxyPortsInUse',
     'proxyPrepareDirs',
+    'proxyRemoveFiles',
     'proxyRouterStatus',
     'proxyWriteStatic',
   ] as const;

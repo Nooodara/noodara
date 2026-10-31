@@ -113,6 +113,14 @@ export const PROXY_SCRIPTS = Object.freeze({
     '  echo "NOODARA_PROXY_RESTORE removed"',
     "fi",
   ].join("\n"),
+  /** Whole proxy root (static, dynamic, CA, acme.json with cert keys); sudo -n for root-owned files. */
+  removeFiles: [
+    `root=${ROOT}`,
+    'if [ -L "$root" ]; then echo "NOODARA_PROXY_PURGE refused"; exit 3; fi',
+    'if [ ! -e "$root" ] && [ ! -L "$root" ]; then echo "NOODARA_PROXY_PURGE ok"; exit 0; fi',
+    'rm -rf -- "$root" 2>/dev/null || sudo -n rm -rf -- "$root" 2>/dev/null || { echo "NOODARA_PROXY_PURGE failed"; exit 3; }',
+    'echo "NOODARA_PROXY_PURGE ok"',
+  ].join("\n"),
   removeDynamic: ['rm -f -- "$1" "$1.prev" || exit 3', 'echo "NOODARA_PROXY_REMOVE ok"'].join("\n"),
   /** $1 router name (without `@file`). Raw HTTP/1.0 response, capped. */
   routerStatus: [
@@ -232,6 +240,11 @@ function dynamicPath(path: string, pattern: RegExp = DYNAMIC_PATH): string {
 
 export function proxyPrepareDirs(): RemoteCommand {
   return script("proxy.prepare_dirs", PROXY_SCRIPTS.prepareDirs);
+}
+
+/** Removes everything under /opt/noodara-proxy; succeeds when it is already gone. */
+export function proxyRemoveFiles(): RemoteCommand {
+  return script("proxy.remove_files", PROXY_SCRIPTS.removeFiles);
 }
 
 export type ProxyStaticTarget = "traefik" | "ca_root";
