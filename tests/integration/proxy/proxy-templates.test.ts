@@ -66,7 +66,10 @@ import {
 import { assertNoStrayTestContainers } from "../helpers/ssh.js";
 
 const STACK_TIMEOUT_MS = 900_000;
-const SSH_COMMAND_TIMEOUT_MS = 330_000;
+const SHELL_TIMEOUT_SECONDS = 60;
+const IMAGE_PULL_TIMEOUT_SECONDS = 300;
+/** Above the longest `shell` budget (the image pull) so the channel outlives the remote timeout. */
+const SSH_COMMAND_TIMEOUT_MS = (IMAGE_PULL_TIMEOUT_SECONDS + 30) * 1_000;
 const SERVER_PORT = 8080;
 const CERT_VALIDITY_SECONDS = 3600;
 const ACME_EMAIL = "ops@noodara.dev";
@@ -242,14 +245,18 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       ).toBe(0);
       return result.stdout;
     };
-    /** Fixture setup and root-side truth only; never a template under test. */
+    /**
+     * Fixture setup and root-side truth only; never a template under test. The outer `timeout`
+     * is the whole budget: an inner `timeout` cannot extend it, so long steps pass their own.
+     */
     const shell = async (
       script: string,
       args: readonly string[] = [],
+      timeoutSeconds = SHELL_TIMEOUT_SECONDS,
     ): Promise<string> => {
       const line = [
         "timeout",
-        "60",
+        String(timeoutSeconds),
         "bash",
         "--noprofile",
         "--norc",
@@ -320,9 +327,12 @@ printf '%s %s' "\${r##*|}" "\${r%|*}"`,
       ).trim();
       if (!/^\d+\.\d+\.\d+\.\d+$/.test(hostIp))
         throw new Error(`no host IP: ${hostIp}`);
-      await shell('timeout 300 docker pull --quiet "$1" >/dev/null', [
-        assertAllowlistedImage(TRAEFIK_IMAGE),
-      ]);
+      // Cold fetch through the per-stack mirror (231MB): the default 60s budget is not enough.
+      await shell(
+        'docker pull --quiet "$1" >/dev/null',
+        [assertAllowlistedImage(TRAEFIK_IMAGE)],
+        IMAGE_PULL_TIMEOUT_SECONDS,
+      );
       await shell(
         `docker network create --label noodara.managed=true -- "$2" >/dev/null
 docker run --detach --pull never --name "$1" --network "$2" --restart unless-stopped \\
