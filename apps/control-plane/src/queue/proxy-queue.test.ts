@@ -9,17 +9,27 @@ const payload: ProxyInstallJobPayload = { serverId: SERVER, acmeEmail: 'ops@exam
 function fakeQueue(state: string | null) {
   const jobs = new Map<string, { state: string }>();
   if (state !== null) jobs.set(JOB_ID, { state });
-  const add = vi.fn(async (_name: string, _data: ProxyInstallJobPayload, opts: { jobId: string }) => {
+  const add = vi.fn((_name: string, _data: ProxyInstallJobPayload, opts: { jobId: string }) => {
     jobs.set(opts.jobId, { state: 'waiting' });
-    return { id: opts.jobId };
+    return Promise.resolve({ id: opts.jobId });
   });
   const queue: ProxyBullQueue = {
     add,
-    getJob: async (id) => {
+    getJob: (id) => {
       const job = jobs.get(id);
-      return job ? { getState: async () => job.state, remove: async () => void jobs.delete(id) } : undefined;
+      return Promise.resolve(
+        job
+          ? {
+              getState: () => Promise.resolve(job.state),
+              remove: () => {
+                jobs.delete(id);
+                return Promise.resolve();
+              },
+            }
+          : undefined,
+      );
     },
-    close: async () => undefined,
+    close: () => Promise.resolve(),
   };
   return { queue, add };
 }
@@ -66,11 +76,9 @@ describe('proxy queue (22-02 H1)', () => {
 
   it('a broken queue is QUEUE_UNAVAILABLE with a fixed message', async () => {
     const queue: ProxyBullQueue = {
-      add: async () => {
-        throw new Error('redis://:pw@redis:6379 down');
-      },
-      getJob: async () => undefined,
-      close: async () => undefined,
+      add: () => Promise.reject(new Error('redis://:pw@redis:6379 down')),
+      getJob: () => Promise.resolve(undefined),
+      close: () => Promise.resolve(),
     };
     const result = await createProxyQueue({ queue }).enqueue(payload);
     expect(result).toEqual({ ok: false, code: 'QUEUE_UNAVAILABLE', message: 'Job queue is unavailable' });

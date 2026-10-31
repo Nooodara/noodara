@@ -40,7 +40,7 @@ function fakeSession(overrides: Record<string, Reply | Reply[]> = {}) {
         OK_REPLIES[command.name] ?? {};
       if (reply === 'throw') return Promise.reject(new Error('ssh: password=hunter2 channel closed'));
       return Promise.resolve({
-        commandName: command.name as StreamResult['commandName'],
+        commandName: command.name,
         outcome: reply.outcome ?? 'completed',
         exitCode: reply.exitCode ?? 0,
         exitSignal: null,
