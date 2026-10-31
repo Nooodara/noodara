@@ -28,6 +28,7 @@ describe('server.proxy_* metadata (22-02 A1, H3)', () => {
       trigger: 'request',
     });
     expect(build('server.proxy_failed', { durationMs: 5, step: 'ports', trigger: 'domain' }).metadata.step).toBe('ports');
+    expect(build('server.proxy_failed', { step: 'ports', listener: 'nginx', port: 80 }).metadata.listener).toBe('nginx');
     expect(build('server.proxy_removed', { durationMs: 0, trigger: 'server_deleted' }).metadata.trigger).toBe(
       'server_deleted',
     );
@@ -38,6 +39,7 @@ describe('server.proxy_* metadata (22-02 A1, H3)', () => {
     ['server.proxy_installed', { stdout: 'nginx pid=1' }],
     ['server.proxy_failed', { step: 'pull image traefik' }],
     ['server.proxy_failed', { process: 'nginx' }],
+    ['server.proxy_failed', { listener: '/usr/sbin/nginx -g daemon' }],
     ['server.proxy_failed', { durationMs: -1 }],
     ['server.proxy_removed', { trigger: 'x'.repeat(65) }],
     ['server.proxy_removed', { reinstalled: 'yes' }],

@@ -256,7 +256,8 @@ type ProxyAction = 'server.proxy_installed' | 'server.proxy_failed' | 'server.pr
 const PROXY_ACTION_METADATA_KEYS: Readonly<Record<ProxyAction, Readonly<Record<string, DeployEngineMetadataKind>>>> =
   Object.freeze({
     'server.proxy_installed': { durationMs: 'count', reinstalled: 'boolean', trigger: 'code' },
-    'server.proxy_failed': { durationMs: 'count', step: 'code', trigger: 'code' },
+    // A1: `listener`/`port` name the foreign process on 80/443 (a comm name, sanitized upstream).
+    'server.proxy_failed': { durationMs: 'count', step: 'code', trigger: 'code', listener: 'code', port: 'count' },
     'server.proxy_removed': { durationMs: 'count', trigger: 'code' },
   });
 
