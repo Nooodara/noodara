@@ -118,7 +118,10 @@ export const PROXY_SCRIPTS = Object.freeze({
   routerStatus: [
     `{ exec 3<>${API}; } 2>/dev/null || { echo "NOODARA_PROXY_API down"; exit 0; }`,
     "printf 'GET /api/http/routers/%s@file HTTP/1.0\\r\\nHost: 127.0.0.1\\r\\nUser-Agent: noodara-proxy/1\\r\\nConnection: close\\r\\n\\r\\n' \"$1\" >&3 2>/dev/null || { echo \"NOODARA_PROXY_API down\"; exit 0; }",
-    `head -c ${String(PROXY_STATUS_MAX_BYTES - 64)} <&3`,
+    // Traefik still starting: docker-proxy accepts, then resets. That is "down", never a failure.
+    `resp=$(head -c ${String(PROXY_STATUS_MAX_BYTES - 64)} <&3 2>/dev/null) || resp=`,
+    '[ -n "$resp" ] || { echo "NOODARA_PROXY_API down"; exit 0; }',
+    "printf '%s\\n' \"$resp\"",
   ].join("\n"),
   /** `S <ss line>` per listener on 80/443, `P <docker port line>` per proxy binding. */
   portsInUse: [

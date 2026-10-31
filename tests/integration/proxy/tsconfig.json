@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      // Same Vitest-only aliases as tests/integration/deploy-engine/tsconfig.json.
+      "@noodara/ssh/testing": ["../../../packages/ssh/src/testing/raw-ssh2.ts"],
+      "@noodara/ssh/testing/deploy-templates": ["../../../packages/ssh/src/testing/deploy-templates.ts"]
+    }
+  },
+  "include": ["**/*.ts", "../helpers/ssh.ts", "../helpers/deploy-engine.ts", "../helpers/deploy-keys.ts", "../helpers/registry.ts", "../helpers/pebble.ts"]
+}
