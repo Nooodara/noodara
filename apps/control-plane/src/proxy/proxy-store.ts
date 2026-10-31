@@ -5,7 +5,7 @@
 import { transitionProxyStatus, validateResourceId, type ProxyStatus, type ResourceId } from '@noodara/domain';
 import type { ServerProxyErrorCode } from '@noodara/domain/api-contract';
 import { and, asc, eq, inArray, lt } from 'drizzle-orm';
-import { writeActivityEvent } from '../activity/write-activity-event.js';
+import { writeProxyActivityEvent } from '../activity/proxy-events.js';
 import type { Database } from '../db/client.js';
 import { users } from '../db/schema/auth.js';
 import { credentials } from '../db/schema/credentials.js';
@@ -129,7 +129,7 @@ export async function finishInstall(
       ? await writeProxyStatus(tx, serverId, 'INSTALLING', 'RUNNING', { errorCode: null, installedAt: at, at })
       : await writeProxyStatus(tx, serverId, 'INSTALLING', 'FAILED', { errorCode: outcome.code, at });
     if (!moved) return null;
-    await writeActivityEvent(
+    await writeProxyActivityEvent(
       tx,
       outcome.ok
         ? {
@@ -172,7 +172,7 @@ export async function recordProxyRemoved(
   at: Date,
   input: { serverId: string; actor: ServiceActor; ok: boolean; durationMs: number; trigger: ProxyTrigger },
 ): Promise<void> {
-  await writeActivityEvent(
+  await writeProxyActivityEvent(
     db,
     {
       ...actorFields(input.actor),
@@ -187,6 +187,23 @@ export async function recordProxyRemoved(
   );
 }
 
+/**
+ * H1 (pure): an INSTALLING row is stale when it is older than the budget cutoff, or when its job is
+ * no longer pending. `isPending` is only asked for rows still inside the budget.
+ */
+export async function pickStaleInstalls(
+  rows: readonly { readonly id: string; readonly updatedAt: Date }[],
+  cutoff: Date,
+  isPending: (serverId: string) => Promise<boolean>,
+): Promise<string[]> {
+  const stale: string[] = [];
+  for (const row of rows) {
+    if (row.updatedAt.getTime() >= cutoff.getTime() && (await isPending(row.id))) continue;
+    stale.push(row.id);
+  }
+  return stale;
+}
+
 /** H1: INSTALLING rows whose job is gone, or older than the budget, end FAILED/PROXY_INSTALL_FAILED. */
 export async function failStaleInstalls(
   db: Database,
@@ -199,11 +216,7 @@ export async function failStaleInstalls(
     .select({ id: servers.id, updatedAt: servers.updatedAt })
     .from(servers)
     .where(eq(servers.proxyStatus, 'INSTALLING'));
-  const stale: string[] = [];
-  for (const row of installing) {
-    if (row.updatedAt >= cutoff && (await input.isPending(row.id))) continue;
-    stale.push(row.id);
-  }
+  const stale = await pickStaleInstalls(installing, cutoff, input.isPending);
   if (stale.length === 0) return [];
   return db.transaction(async (tx) => {
     const failed = await tx
@@ -212,7 +225,7 @@ export async function failStaleInstalls(
       .where(and(inArray(servers.id, stale), eq(servers.proxyStatus, 'INSTALLING'), lt(servers.updatedAt, at)))
       .returning({ id: servers.id });
     for (const { id } of failed) {
-      await writeActivityEvent(
+      await writeProxyActivityEvent(
         tx,
         {
           actorType: 'system',

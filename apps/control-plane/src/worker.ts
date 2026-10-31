@@ -19,6 +19,14 @@ import { createServiceOperationJobHandler } from './deploy/service-ops-job.js';
 import { DEPLOY_LOG_LINE_MAX_BYTES, env } from './env.js';
 import { createRedisServerEventPublisher } from './events/redis-server-event-publisher.js';
 import { createLogger } from './logger.js';
+import { createProxyInstallJobHandler } from './proxy/proxy-job.js';
+import {
+  createProxyInstallJobDeps,
+  PROXY_INSTALL_BUDGET_MS,
+  startProxyWorker,
+  sweepStaleProxyInstalls,
+} from './proxy/proxy-wiring.js';
+import { createProxyQueue } from './queue/proxy-queue.js';
 import { startWorkerReconcile } from './reconcile/reconcile-wiring.js';
 import { computeDeployCancelKeyTtlMs } from './queue/deploy-job-budget.js';
 import { computeJobLockDurationMs } from './queue/job-budget.js';
@@ -205,6 +213,39 @@ async function main(): Promise<void> {
     drainPendingTriggers: () => drainAllPendingTriggers(pendingTriggerDrain),
   });
 
+  // 22-02 (A1, H1): proxy installs run on their own queue and blocking connection. Before taking
+  // jobs, an INSTALLING row past the budget (or whose job is gone) ends FAILED/PROXY_INSTALL_FAILED.
+  const proxyQueue = createProxyQueue({ connection: queueConnection });
+  const proxySwept = await sweepStaleProxyInstalls({
+    db,
+    now: () => new Date(),
+    events: eventPublisher,
+    isPending: (serverId) => proxyQueue.isInstallPending(serverId),
+    budgetMs: PROXY_INSTALL_BUDGET_MS,
+    logger,
+  });
+  logger.info({ sweptCount: proxySwept.length }, 'worker startup sweep for stale proxy installs complete');
+  const proxyWorkerConnection = createWorkerRedisConnection(env.REDIS_URL);
+  const proxyHandle = startProxyWorker({
+    handler: createProxyInstallJobHandler(
+      createProxyInstallJobDeps({
+        db,
+        events: eventPublisher,
+        ssh: createSsh2Adapter(),
+        timeouts: deps.timeouts,
+        masterKeys: () => Promise.resolve(deps.masterKeys),
+        image: env.NOODARA_PROXY_IMAGE,
+        acmeCaUrl: env.NOODARA_ACME_CA_URL,
+        ...(env.NOODARA_ACME_CA_ROOT_FILE === undefined ? {} : { acmeCaRootFile: env.NOODARA_ACME_CA_ROOT_FILE }),
+        maxLineBytes: DEPLOY_LOG_LINE_MAX_BYTES,
+        logger,
+      }),
+    ),
+    connection: proxyWorkerConnection,
+    budgetMs: PROXY_INSTALL_BUDGET_MS,
+    logger,
+  });
+
   // The literal "Worker ready" is the boot smoke test's deterministic stdout marker, mirroring
   // how server.ts's "Server listening" line is used today.
   logger.info({ concurrency: env.NOODARA_WORKER_CONCURRENCY, workerId }, 'Worker ready');
@@ -224,10 +265,17 @@ async function main(): Promise<void> {
     await runWorkerShutdown({
       // Both workers close together; the deploy worker cancels its in-flight jobs first.
       close: () =>
-        Promise.all([handle.close(), deployHandle.close(), logRetention.stop(), reconcile.close()]).then(() => undefined),
+        Promise.all([
+          handle.close(),
+          deployHandle.close(),
+          proxyHandle.close(),
+          logRetention.stop(),
+          reconcile.close(),
+        ]).then(() => undefined),
       graceMs: lockDurationMs,
       stopHeartbeat,
-      closeQueue: () => Promise.all([queue.close(), pendingTriggerQueue.close()]).then(() => undefined),
+      closeQueue: () =>
+        Promise.all([queue.close(), pendingTriggerQueue.close(), proxyQueue.close()]).then(() => undefined),
       disconnect: [
         () => {
           workerConnection.disconnect();
@@ -237,6 +285,9 @@ async function main(): Promise<void> {
         },
         () => {
           reconcileWorkerConnection.disconnect();
+        },
+        () => {
+          proxyWorkerConnection.disconnect();
         },
         () => {
           queueConnection.disconnect();

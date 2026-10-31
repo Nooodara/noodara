@@ -24,11 +24,14 @@ import {
   type ServiceRemoteCleanup,
 } from './deploy/service-ops.js';
 import { createServiceOperationQueue, type ServiceOperationQueue } from './deploy/service-ops-job.js';
-import { env } from './env.js';
+import { DEPLOY_LOG_LINE_MAX_BYTES, env } from './env.js';
 import { createRedisServerEventPublisher } from './events/redis-server-event-publisher.js';
 import type { ServerEventPublisher } from './events/server-event-publisher.js';
 import { createSseBroadcaster, type SseBroadcaster } from './events/sse-broadcaster.js';
 import { createLogger } from './logger.js';
+import type { ProxyRemover, ProxyServiceDeps } from './proxy/proxy-service.js';
+import { createProxyRemover, proxyRemoveTimeoutMs } from './proxy/proxy-wiring.js';
+import { createProxyQueue, type ProxyQueue } from './queue/proxy-queue.js';
 import { createConnectServerQueue, type ConnectServerQueue } from './queue/connect-server-queue.js';
 import { computeDeployCancelKeyTtlMs } from './queue/deploy-job-budget.js';
 import { createDeployQueue, type DeployQueue } from './queue/deploy-queue.js';
@@ -98,6 +101,66 @@ export interface BuildAppDeps {
   webhookRateLimits?: WebhookRateLimits;
   /** 20-03 F1: request receipt bound; defaults to API_REQUEST_TIMEOUT_MS checked every second. */
   requestTimeout?: { timeoutMs: number; checkIntervalMs: number };
+  /** 22-02: the proxy routes' deps; built lazily from `getDb()` and the `proxy` queue. */
+  proxyService?: ProxyServiceDeps;
+  /** 22-02: removes a server's proxy (route and deleteServer); defaults to SSH via the deploy connect. */
+  proxyRemover?: ProxyRemover;
+}
+
+function sshTimeoutsFromEnv() {
+  return {
+    connectMs: env.NOODARA_SSH_CONNECT_TIMEOUT_MS,
+    commandMs: env.NOODARA_SSH_COMMAND_TIMEOUT_MS,
+    discoveryMs: env.NOODARA_SSH_DISCOVERY_TIMEOUT_MS,
+  };
+}
+
+/** 22-02: the default proxy remover. The database and SSH are reached on first use only. */
+function createDefaultProxyRemover(deps: BuildAppDeps): ProxyRemover {
+  if (deps.proxyRemover !== undefined) return deps.proxyRemover;
+  const timeouts = sshTimeoutsFromEnv();
+  return createProxyRemover({
+    loadServer: async (serverId) => loadDeployServerFromDb(await getDb())(serverId),
+    ssh: createSsh2Adapter(),
+    timeouts,
+    masterKeys: masterKeysFromEnvironment(),
+    limits: { stepMs: timeouts.commandMs, maxLineBytes: DEPLOY_LOG_LINE_MAX_BYTES },
+  });
+}
+
+/** 22-02: lazy, per-instance proxy service deps; the owned `proxy` queue is closed on `onClose`. */
+function createProxyServiceResolver(
+  deps: BuildAppDeps,
+  eventPublisher: ServerEventPublisher,
+  remove: ProxyRemover,
+  getRedis: () => Redis,
+): { getProxyService: () => Promise<ProxyServiceDeps>; closeOwnedProxyQueue: () => Promise<void> } {
+  let cached: Promise<ProxyServiceDeps> | undefined;
+  let ownedQueue: ProxyQueue | undefined;
+  const getProxyService = (): Promise<ProxyServiceDeps> => {
+    if (deps.proxyService !== undefined) return Promise.resolve(deps.proxyService);
+    cached ??= getDb()
+      .then((db): ProxyServiceDeps => ({
+        db,
+        now: () => new Date(),
+        events: eventPublisher,
+        enqueue: (payload) => (ownedQueue ??= createProxyQueue({ connection: getRedis() })).enqueue(payload),
+        acmeCaUrl: env.NOODARA_ACME_CA_URL,
+        remove,
+        removeTimeoutMs: proxyRemoveTimeoutMs(sshTimeoutsFromEnv()),
+      }))
+      .catch((error: unknown) => {
+        cached = undefined;
+        throw error;
+      });
+    return cached;
+  };
+  const closeOwnedProxyQueue = async (): Promise<void> => {
+    const queue = ownedQueue;
+    ownedQueue = undefined;
+    if (queue !== undefined) await queue.close();
+  };
+  return { getProxyService, closeOwnedProxyQueue };
 }
 
 /**
@@ -120,6 +183,7 @@ function createServerServicesResolver(
   deps: BuildAppDeps,
   eventPublisher: ServerEventPublisher,
   logger: ServiceLogger,
+  proxyRemover: ProxyRemover,
 ): () => Promise<ServerServices> {
   let cached: Promise<ServerServices> | undefined;
   return () => {
@@ -131,7 +195,9 @@ function createServerServicesResolver(
     // (`noopServerEventPublisher`) would otherwise silently swallow every HTTP-triggered event.
     // GR-03: the same Fastify pino instance every request already logs through, so a swallowed
     // `connectAndDiscover` recovery failure surfaces through the API's own log stream.
-    return (cached ??= resolveServerServicesDeps({ events: eventPublisher, logger }).then(
+    // 22-02 (A4): deleteServer removes the proxy best-effort within this bound.
+    const proxyRemoval = { remove: proxyRemover, timeoutMs: proxyRemoveTimeoutMs(sshTimeoutsFromEnv()) };
+    return (cached ??= resolveServerServicesDeps({ events: eventPublisher, logger, proxyRemoval }).then(
       createServerServices,
     ));
   };
@@ -573,10 +639,14 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
 
   // Plan 04-08: `routes/servers.ts` calls `await fastify.getServerServices()` once per request —
   // never at module load, which would open a Postgres pool merely by importing the route file.
-  app.decorate('getServerServices', createServerServicesResolver(deps, eventPublisher, app.log));
+  const proxyRemover = createDefaultProxyRemover(deps);
+  app.decorate('getServerServices', createServerServicesResolver(deps, eventPublisher, app.log, proxyRemover));
 
   // 12-07: `routes/projects.ts` resolves its services per request, the same deferred way.
   const { getDeployQueue, getDeployRedis, getOperationQueue, closeOwnedDeployQueue } = createDeployQueueResolver(deps);
+  // 22-02: the proxy queue shares the deploy queue's Redis connection (closed before it).
+  const { getProxyService, closeOwnedProxyQueue } = createProxyServiceResolver(deps, eventPublisher, proxyRemover, getDeployRedis);
+  app.decorate('getProxyService', getProxyService);
   const remoteCleanup = createRemoteCleanupResolver(deps);
   app.decorate('getProjectServices', createProjectServicesResolver(deps, eventPublisher, remoteCleanup));
   app.decorate('getServiceServices', createServiceServicesResolver(deps, eventPublisher, { getOperationQueue, remoteCleanup }));
@@ -635,6 +705,7 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
 
   app.addHook('onClose', async () => {
     await closeOwnedResources();
+    await closeOwnedProxyQueue();
     await closeOwnedDeployQueue();
     // Closed here, after `preClose` has already ended every stream — never before, and never a
     // connection this instance did not itself open (`deps.broadcaster`/`deps.eventPublisher`

@@ -12,6 +12,7 @@ import { decodeMasterKey } from '../boot/master-key.js';
 import { getDb, type Database } from '../db/client.js';
 import { env } from '../env.js';
 import { noopServerEventPublisher, type ServerEventPublisher } from '../events/server-event-publisher.js';
+import type { ProxyRemover } from '../proxy/proxy-service.js';
 
 /**
  * Every application service's caller identity — a specific admin user, or the system itself
@@ -56,6 +57,11 @@ export interface ServerServicesDeps {
    * in `defaultMasterKeys` below).
    */
   readonly logger?: ServiceLogger;
+  /**
+   * 22-02 (A4): removes a server's proxy on deleteServer, best-effort and bounded by `timeoutMs`.
+   * Absent means nobody wired SSH for it: the deletion still proceeds and records a failed removal.
+   */
+  readonly proxyRemoval?: { readonly remove: ProxyRemover; readonly timeoutMs: number };
 }
 
 function defaultMasterKeys(): MasterKeys {
@@ -94,5 +100,6 @@ export async function resolveServerServicesDeps(
     masterKeys,
     now,
     ...(overrides.logger === undefined ? {} : { logger: overrides.logger }),
+    ...(overrides.proxyRemoval === undefined ? {} : { proxyRemoval: overrides.proxyRemoval }),
   };
 }

@@ -64,8 +64,16 @@ export const UpdateServerBodySchema = z
     sshPort: z.number().int().optional(),
     sshUser: z.string().min(1).optional(),
     credential: WireCredentialSchema.optional(),
+    // 22-02 (A2): the server's ACME account email; a RUNNING proxy re-renders its static config.
+    proxyAcmeEmail: z.email().max(254).optional(),
   })
   .strict();
+
+/** 22-02: `POST /api/servers/:id/proxy`; the body is optional (the stored or admin email is used). */
+export const ProxyInstallBodySchema = z
+  .object({ acmeEmail: z.email().max(254).optional() })
+  .strict()
+  .optional();
 
 export type UpdateServerBody = z.infer<typeof UpdateServerBodySchema>;
 

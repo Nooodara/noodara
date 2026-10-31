@@ -1,10 +1,11 @@
-// D-19/SERV-06/DISC-05: the eight `/api/servers` routes. Every handler does exactly three
+// D-19/SERV-06/DISC-05 (+22-02 proxy routes): the `/api/servers` routes. Every handler does exactly three
 // things — read `request.actor`, call exactly one service, and map a `{ ok: false }` result
 // through `mapServiceCodeToStatus`/`toErrorBody` — never a hand-written status literal for a
 // service code and never any business logic of its own (noodara-domain-model/ARCHITECTURE.md §3).
 import type { ZodTypeProvider } from '@fastify/type-provider-zod';
 import type { FastifyInstance, FastifyPluginCallback, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { removeServerProxy, requestProxyInstall, setProxyAcmeEmail, type ProxyServiceDeps } from '../proxy/proxy-service.js';
 import type { ConnectServerQueue } from '../queue/connect-server-queue.js';
 import type { EditServerInput, RegisterServerInput, ServerServices } from '../services/server-services.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
@@ -15,6 +16,7 @@ import {
   type CreateServerBody,
   DeleteServerBodySchema,
   DiscoveryReadResponseSchema,
+  ProxyInstallBodySchema,
   ServerIdParamSchema,
   ServerViewSchema,
   toCredentialInput,
@@ -27,6 +29,7 @@ declare module 'fastify' {
   interface FastifyInstance {
     getServerServices(): Promise<ServerServices>;
     getQueue(): Promise<ConnectServerQueue>;
+    getProxyService(): Promise<ProxyServiceDeps>;
   }
 }
 
@@ -225,10 +228,80 @@ const serversRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
     },
     handler: async (request, reply) => {
       const actor = requireActor(request.actor);
-      const services = await fastify.getServerServices();
-      const result = await services.editServer(
-        buildEditServerInput(actor, request.params.id, request.body),
-      );
+      const { proxyAcmeEmail, ...connection } = request.body;
+      // 22-02 (A2): the ACME email is the proxy service's; editServer runs only for its own fields.
+      if (proxyAcmeEmail === undefined || Object.keys(connection).length > 0) {
+        const services = await fastify.getServerServices();
+        const edited = await services.editServer(buildEditServerInput(actor, request.params.id, connection));
+        if (!edited.ok) {
+          await sendServiceError(reply, edited.code, edited.message);
+          return;
+        }
+        if (proxyAcmeEmail === undefined) {
+          await reply.send(edited.server);
+          return;
+        }
+      }
+      const proxy = await fastify.getProxyService();
+      const result = await setProxyAcmeEmail(proxy, { actor, serverId: request.params.id, acmeEmail: proxyAcmeEmail });
+      if (!result.ok) {
+        await sendServiceError(reply, result.code, result.message);
+        return;
+      }
+      await reply.send(result.server);
+    },
+  });
+
+  app.route({
+    method: 'POST',
+    url: '/api/servers/:id/proxy',
+    schema: {
+      params: ServerIdParamSchema,
+      body: ProxyInstallBodySchema,
+      response: {
+        202: ServerViewSchema,
+        400: CreateOrEditErrorSchema,
+        401: ErrorBodySchema,
+        404: ErrorBodySchema,
+        409: ErrorBodySchema,
+        503: ErrorBodySchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const proxy = await fastify.getProxyService();
+      const acmeEmail = request.body?.acmeEmail;
+      const result = await requestProxyInstall(proxy, {
+        actor,
+        serverId: request.params.id,
+        ...(acmeEmail === undefined ? {} : { acmeEmail }),
+      });
+      if (!result.ok) {
+        await sendServiceError(reply, result.code, result.message);
+        return;
+      }
+      // Progress arrives over SSE (`server.updated`), never by polling.
+      await reply.code(202).send(result.server);
+    },
+  });
+
+  app.route({
+    method: 'POST',
+    url: '/api/servers/:id/proxy/remove',
+    schema: {
+      params: ServerIdParamSchema,
+      response: {
+        200: ServerViewSchema,
+        401: ErrorBodySchema,
+        404: ErrorBodySchema,
+        409: ErrorBodySchema,
+        503: ErrorBodySchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const actor = requireActor(request.actor);
+      const proxy = await fastify.getProxyService();
+      const result = await removeServerProxy(proxy, { actor, serverId: request.params.id });
       if (!result.ok) {
         await sendServiceError(reply, result.code, result.message);
         return;

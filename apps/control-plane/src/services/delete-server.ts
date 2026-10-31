@@ -11,6 +11,8 @@ import { credentials } from '../db/schema/credentials.js';
 import { servers } from '../db/schema/servers.js';
 import { services } from '../db/schema/services.js';
 import { publishServerEvent } from '../events/server-event-publisher.js';
+import { removeWithin } from '../proxy/proxy-service.js';
+import { recordProxyRemoved } from '../proxy/proxy-store.js';
 import type { ServerServicesDeps, ServiceActor } from './server-service-deps.js';
 
 export interface DeleteServerInput {
@@ -104,6 +106,23 @@ export async function deleteServer(
         code: 'CONFIRMATION_MISMATCH',
         message: 'Confirmation name does not match the server name',
       };
+    }
+
+    // 22-02 (A4): the proxy goes first, best-effort and bounded; its outcome is recorded against
+    // the still-live row, and a failure never blocks the deletion.
+    if (row.proxyStatus !== 'NOT_INSTALLED') {
+      const removal = deps.proxyRemoval;
+      const removed =
+        removal === undefined
+          ? ({ ok: false, durationMs: 0 } as const)
+          : await removeWithin(removal.remove, row.id, removal.timeoutMs);
+      await recordProxyRemoved(tx, deps.now(), {
+        serverId: row.id,
+        actor: input.actor,
+        ok: removed.ok,
+        durationMs: removed.durationMs,
+        trigger: 'server_deleted',
+      });
     }
 
     const activityInput = {
