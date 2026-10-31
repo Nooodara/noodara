@@ -30,6 +30,7 @@ import { validateHealthcheckConfig } from '@noodara/domain/deployment';
 import { describe, expect, it } from 'vitest';
 import { ADVERSARIAL_VALUES, shellWords } from '../testing/shell-round-trip.js';
 import * as commands from './index.js';
+import { proxyNetworkDisconnect } from './proxy.js';
 import {
   dockerBuild,
   dockerCreate,
@@ -506,6 +507,7 @@ function everyServiceScopedDockerCommand(id: ResourceId): RemoteCommand[] {
   return [
     dockerInspectNetworks({ serviceId: id, container: 'current' }),
     dockerNetworkConnect(id),
+    proxyNetworkDisconnect(id),
     dockerRenameToPrevious(id),
     dockerRenameFromPrevious(id),
     dockerStartPrevious(id),

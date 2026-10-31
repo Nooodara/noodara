@@ -1,6 +1,7 @@
 // Docker deploy templates (SVC-08, DEP-08, ROADMAP D8/D11/D12/D13, ADR 0008 G1/G2/G4). Branded
 // inputs only, `--` before every positional, and no builder can emit build args, env vars,
-// volumes, mounts, host namespaces or privileged flags. Every captured Docker failure exits 1
+// volumes, mounts, host namespaces or privileged flags (env vars arrive only as the ADR 0011
+// `--env-file <workspace>/secrets/env`). Every captured Docker failure exits 1
 // except a port clash (125): callers classify stderr, never the code.
 import {
   validateHealthcheckConfig,
@@ -15,6 +16,8 @@ import {
   type BuildTarget,
   type ContainerName,
   type ContainerPort,
+  type DeploySecretPath,
+  type DeployWorkspace,
   type DockerConfigDir,
   type DockerObjectId,
   type ImageRef,
@@ -32,6 +35,25 @@ const MAX_LOG_TAIL = 10_000;
 /** D8 defaults (research "Numbers That Are Reasoned Defaults"). */
 const LOG_MAX_SIZE = "max-size=10m";
 const LOG_MAX_FILE = "max-file=3";
+/** ADR 0011: the only env file `docker create` may read is `<workspace>/secrets/env`. */
+const ENV_FILE_PATH = /^\.noodara\/deploy\/([^/]+)\/secrets\/env$/;
+
+/** `<workspace>/secrets/env`; throws on a workspace not built by `deployWorkspaceFor`. */
+export function envFileFor(workspace: DeployWorkspace): DeploySecretPath {
+  if (workspace.secretsDir !== `${workspace.root}/secrets`) {
+    throw new RangeError("workspace secretsDir must be <root>/secrets");
+  }
+  return envFileArgs(`${workspace.secretsDir}/env` as DeploySecretPath)[1];
+}
+
+function envFileArgs(path: DeploySecretPath): readonly ["--env-file", DeploySecretPath] {
+  const match = ENV_FILE_PATH.exec(path);
+  const id = match?.[1];
+  if (id === undefined || !validateResourceId(id).ok) {
+    throw new RangeError("envFile must be <workspace>/secrets/env");
+  }
+  return ["--env-file", path];
+}
 
 function integerInRange(
   name: string,
@@ -194,7 +216,10 @@ export function dockerCreate(input: {
   readonly publishedPort: ContainerPort | null;
   readonly serviceId: ResourceId;
   readonly deploymentId: ResourceId;
+  /** ADR 0011: rendered as `--env-file <path>`; omitted means no env file. */
+  readonly envFile?: DeploySecretPath;
 }): RemoteCommand {
+  const envArgs = input.envFile === undefined ? [] : envFileArgs(input.envFile);
   const publishArgs =
     input.publishedPort === null
       ? []
@@ -215,6 +240,7 @@ export function dockerCreate(input: {
     LOG_MAX_SIZE,
     "--log-opt",
     LOG_MAX_FILE,
+    ...envArgs,
     ...managedLabels(input.serviceId, input.deploymentId),
     ...publishArgs,
     "--",
