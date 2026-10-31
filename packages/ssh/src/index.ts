@@ -121,10 +121,12 @@ export {
   parseProxyRouterStatus,
   proxyCreate,
   proxyFileDigest,
+  proxyNetworkConnect,
   proxyPortsInUse,
   proxyPrepareDirs,
   proxyRemoveFiles,
   proxyRouterStatus,
+  proxyWriteDynamic,
   proxyWriteStatic,
 } from './commands/index.js';
 export type {
