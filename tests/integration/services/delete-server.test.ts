@@ -352,4 +352,95 @@ describe('deleteServer (SERV-03, ACT-01, D-11, D-12, D-14)', () => {
     const freed = await deleteFixtureServer(fixture, { serverId: other.id, confirmName: other.name });
     expect(freed).toStrictEqual({ ok: true, serverId: other.id });
   });
+
+  describe('with an installed proxy (22-02 A4)', () => {
+    async function setProxyRunning(fx: ServiceFixture, serverId: string): Promise<void> {
+      await fx.db.update(servers).set({ proxyStatus: 'RUNNING', proxyInstalledAt: new Date() }).where(eq(servers.id, serverId));
+    }
+
+    async function deleteWithRemover(
+      fx: ServiceFixture,
+      serverId: string,
+      confirmName: string,
+      remove: (serverId: string) => Promise<{ ok: true; durationMs: number } | { ok: false; code: 'PROXY_UNAVAILABLE'; durationMs: number }>,
+    ) {
+      const { deleteServer } = await loadDeleteServer();
+      return deleteServer(
+        { ...fx.deps, proxyRemoval: { remove, timeoutMs: 300 } },
+        { actor: { type: 'system' }, serverId, confirmName },
+      );
+    }
+
+    async function proxyRemovedEvent(fx: ServiceFixture, serverId: string) {
+      const events = await fetchActivityEventsFor(fx, serverId);
+      return events.filter((event) => event.action === 'server.proxy_removed');
+    }
+
+    it('removes the proxy first and records a successful removal before server.deleted', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture);
+      await setProxyRunning(fixture, server.id);
+      const calls: string[] = [];
+
+      const result = await deleteWithRemover(fixture, server.id, server.name, (id) => {
+        calls.push(id);
+        return Promise.resolve({ ok: true, durationMs: 12 });
+      });
+
+      expect(result).toStrictEqual({ ok: true, serverId: server.id });
+      expect(calls).toStrictEqual([server.id]);
+      const removed = await proxyRemovedEvent(fixture, server.id);
+      expect(removed).toHaveLength(1);
+      expect(removed[0]).toMatchObject({ outcome: 'success', metadata: { durationMs: 12, trigger: 'server_deleted' } });
+      expect(await fetchServerDeletedEvent(fixture, server.id)).toBeDefined();
+      expect(await fetchServerRow(fixture, server.id)).toBeUndefined();
+    });
+
+    it('still deletes the server when the removal rejects, recording the failure', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture);
+      await setProxyRunning(fixture, server.id);
+
+      const result = await deleteWithRemover(fixture, server.id, server.name, () =>
+        Promise.reject(new Error('ssh: connect ECONNREFUSED')),
+      );
+
+      expect(result).toStrictEqual({ ok: true, serverId: server.id });
+      const removed = await proxyRemovedEvent(fixture, server.id);
+      expect(removed).toHaveLength(1);
+      expect(removed[0]).toMatchObject({ outcome: 'failure', errorCode: 'PROXY_UNAVAILABLE' });
+      expect(JSON.stringify(removed[0]?.metadata)).not.toContain('ECONNREFUSED');
+      expect(await fetchServerRow(fixture, server.id)).toBeUndefined();
+    });
+
+    it('bounds a hanging removal and still deletes the server', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture);
+      await setProxyRunning(fixture, server.id);
+      const startedAt = Date.now();
+
+      const result = await deleteWithRemover(fixture, server.id, server.name, () => new Promise(() => undefined));
+
+      expect(result).toStrictEqual({ ok: true, serverId: server.id });
+      expect(Date.now() - startedAt).toBeLessThan(5_000);
+      const removed = await proxyRemovedEvent(fixture, server.id);
+      expect(removed[0]).toMatchObject({ outcome: 'failure', errorCode: 'PROXY_UNAVAILABLE' });
+      expect(await fetchServerRow(fixture, server.id)).toBeUndefined();
+    });
+
+    it('never calls the remover when no proxy is installed', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture);
+      let called = false;
+
+      const result = await deleteWithRemover(fixture, server.id, server.name, () => {
+        called = true;
+        return Promise.resolve({ ok: true, durationMs: 0 });
+      });
+
+      expect(result).toStrictEqual({ ok: true, serverId: server.id });
+      expect(called).toBe(false);
+      expect(await proxyRemovedEvent(fixture, server.id)).toHaveLength(0);
+    });
+  });
 });
