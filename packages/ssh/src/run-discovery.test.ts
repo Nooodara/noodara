@@ -754,6 +754,18 @@ describe('@noodara/ssh public surface (T-2-42)', () => {
     'probeHttp',
     'probeTcp',
     'validateContainerIp',
+    // 22-02 (ADR 0011): proxy lifecycle builders; PROXY_SCRIPTS stays internal.
+    'PROXY_CERT_STATUS_MAX_BYTES',
+    'PROXY_FILE_MAX_BYTES',
+    'PROXY_STATUS_MAX_BYTES',
+    'parsePortsInUse',
+    'parseProxyRouterStatus',
+    'proxyCreate',
+    'proxyFileDigest',
+    'proxyPortsInUse',
+    'proxyPrepareDirs',
+    'proxyRouterStatus',
+    'proxyWriteStatic',
   ] as const;
 
   it('exports exactly the deliberate public surface, no internal module leaking through', async () => {

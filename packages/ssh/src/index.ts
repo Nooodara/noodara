@@ -111,3 +111,26 @@ export { classifyDockerError } from './docker-error-classifier.js';
 export { DEFAULT_MAX_LINE_BYTES, DEFAULT_TAIL_BYTES, registerSecretForStreaming } from './exec-streaming.js';
 export { killSupervisedOperation } from './remote-kill.js';
 export type { KillSupervisedOperationInput, KillSupervisedOperationResult, KillStep } from './remote-kill.js';
+// Proxy lifecycle surface (22-02, ADR 0011). PROXY_SCRIPTS stays internal like SHELL_SCRIPTS; the
+// router-status probe doubles as the install's API check ("missing" = API up).
+export {
+  PROXY_CERT_STATUS_MAX_BYTES,
+  PROXY_FILE_MAX_BYTES,
+  PROXY_STATUS_MAX_BYTES,
+  parsePortsInUse,
+  parseProxyRouterStatus,
+  proxyCreate,
+  proxyFileDigest,
+  proxyPortsInUse,
+  proxyPrepareDirs,
+  proxyRouterStatus,
+  proxyWriteStatic,
+} from './commands/index.js';
+export type {
+  ForeignListener,
+  PortsInUse,
+  ProxyExtraHost,
+  ProxyFileDigest,
+  ProxyRouterStatus,
+  ProxyStaticTarget,
+} from './commands/index.js';
