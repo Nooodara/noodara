@@ -47,6 +47,10 @@ export const SERVER_ACTIONS = [
   'server.connection_attempted',
   'server.discovery_completed',
   'server.fingerprint_trusted',
+  // 22-02 (ADR 0011): the per-server proxy lifecycle; metadata is a closed allowlist (below).
+  'server.proxy_installed',
+  'server.proxy_failed',
+  'server.proxy_removed',
 ] as const;
 
 export type ServerAction = (typeof SERVER_ACTIONS)[number];
@@ -246,6 +250,26 @@ const ACCOUNT_ACTION_METADATA_KEYS: Readonly<Record<AccountAction, readonly stri
   'account.password_changed': ['sessions_revoked'],
 });
 
+type ProxyAction = 'server.proxy_installed' | 'server.proxy_failed' | 'server.proxy_removed';
+
+/** 22-02 H3: proxy events never carry an email, a process name, remote output or a path. */
+const PROXY_ACTION_METADATA_KEYS: Readonly<Record<ProxyAction, Readonly<Record<string, DeployEngineMetadataKind>>>> =
+  Object.freeze({
+    'server.proxy_installed': { durationMs: 'count', reinstalled: 'boolean', trigger: 'code' },
+    'server.proxy_failed': { durationMs: 'count', step: 'code', trigger: 'code' },
+    'server.proxy_removed': { durationMs: 'count', trigger: 'code' },
+  });
+
+function assertProxyMetadata(action: ProxyAction, metadata: ActivityMetadata): void {
+  const allowed = PROXY_ACTION_METADATA_KEYS[action];
+  for (const [key, value] of Object.entries(metadata)) {
+    const kind = Object.hasOwn(allowed, key) ? allowed[key] : undefined;
+    if (kind === undefined || value === null || !isValidMetadataValue(kind, value)) {
+      throw new SensitiveMetadataError(key);
+    }
+  }
+}
+
 export type ActivityActorType = 'user' | 'system';
 export type ActivityOutcome = 'success' | 'failure';
 
@@ -352,6 +376,10 @@ export function buildActivityEvent(input: BuildActivityEventInput, now: Date): A
       throw new InvalidActivityActionError(action, 'Activity entityType does not match action');
     }
     assertDeployEngineMetadata(action, metadata);
+  }
+
+  if (Object.hasOwn(PROXY_ACTION_METADATA_KEYS, input.action)) {
+    assertProxyMetadata(input.action as ProxyAction, metadata);
   }
 
   if (ACCOUNT_ACTION_SET.has(input.action)) {

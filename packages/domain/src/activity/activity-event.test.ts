@@ -14,6 +14,38 @@ import {
 
 const NOW = new Date('2026-09-10T12:00:00.000Z');
 
+describe('server.proxy_* metadata (22-02 A1, H3)', () => {
+  const build = (action: 'server.proxy_installed' | 'server.proxy_failed' | 'server.proxy_removed', metadata: Record<string, unknown>) =>
+    buildActivityEvent(
+      { actorType: 'system', entityType: 'server', entityId: 'srv-1', action, outcome: 'success', metadata },
+      NOW,
+    );
+
+  it('accepts the closed keys with closed values', () => {
+    expect(build('server.proxy_installed', { durationMs: 1200, reinstalled: false, trigger: 'request' }).metadata).toEqual({
+      durationMs: 1200,
+      reinstalled: false,
+      trigger: 'request',
+    });
+    expect(build('server.proxy_failed', { durationMs: 5, step: 'ports', trigger: 'domain' }).metadata.step).toBe('ports');
+    expect(build('server.proxy_removed', { durationMs: 0, trigger: 'server_deleted' }).metadata.trigger).toBe(
+      'server_deleted',
+    );
+  });
+
+  it.each([
+    ['server.proxy_installed', { acmeEmail: 'ops@example.com' }],
+    ['server.proxy_installed', { stdout: 'nginx pid=1' }],
+    ['server.proxy_failed', { step: 'pull image traefik' }],
+    ['server.proxy_failed', { process: 'nginx' }],
+    ['server.proxy_failed', { durationMs: -1 }],
+    ['server.proxy_removed', { trigger: 'x'.repeat(65) }],
+    ['server.proxy_removed', { reinstalled: 'yes' }],
+  ] as const)('%s rejects %o', (action, metadata) => {
+    expect(() => build(action, metadata)).toThrow(SensitiveMetadataError);
+  });
+});
+
 describe('AUTH_ACTIONS', () => {
   it('contains exactly the 8 documented auth actions', () => {
     expect([...AUTH_ACTIONS].sort()).toEqual(
@@ -214,8 +246,8 @@ describe('buildActivityEvent', () => {
 });
 
 describe('server actions (ACT-01, D-16)', () => {
-  it('SERVER_ACTIONS has length 6 and equals the exact ordered tuple', () => {
-    expect(SERVER_ACTIONS.length).toBe(6);
+  it('SERVER_ACTIONS has length 9 and equals the exact ordered tuple', () => {
+    expect(SERVER_ACTIONS.length).toBe(9);
     expect([...SERVER_ACTIONS]).toEqual([
       'server.created',
       'server.updated',
@@ -223,6 +255,9 @@ describe('server actions (ACT-01, D-16)', () => {
       'server.connection_attempted',
       'server.discovery_completed',
       'server.fingerprint_trusted',
+      'server.proxy_installed',
+      'server.proxy_failed',
+      'server.proxy_removed',
     ]);
   });
 

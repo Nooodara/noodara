@@ -475,6 +475,21 @@ const ACTIVITY_COPY = {
       serverSentence(`${actorLabel(item)} trusted a new host key for `, '', item, lookupServer),
     curatedDetail: (item) => compact([previousFingerprintEntry(item), newFingerprintEntry(item)]),
   },
+  'server.proxy_installed': {
+    sentence: (item, lookupServer) => serverSentence('Proxy installed on ', '', item, lookupServer),
+    curatedDetail: (item) => compact([durationEntry(item)]),
+  },
+  'server.proxy_failed': {
+    sentence: (item, lookupServer) => serverSentence('Proxy install failed on ', '', item, lookupServer),
+    curatedDetail: (item) => compact([durationEntry(item), errorEntry(item)]),
+  },
+  'server.proxy_removed': {
+    sentence: (item, lookupServer) =>
+      item.outcome === 'success'
+        ? serverSentence('Proxy removed from ', '', item, lookupServer)
+        : serverSentence('Proxy removal failed on ', '', item, lookupServer),
+    curatedDetail: (item) => compact([durationEntry(item), errorEntry(item)]),
+  },
   'account.name_changed': {
     sentence: (item) => textSentence(`${actorLabel(item)} changed their name`),
     curatedDetail: (item) => compact([nameEntry(item)]),

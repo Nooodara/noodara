@@ -125,6 +125,36 @@ describe('curatedDetailFor -- curated keys only, in order, extra keys ignored', 
   });
 });
 
+describe('server.proxy_* copy (22-02)', () => {
+  it('renders the installed, failed and removed sentences with a linked server', () => {
+    expect(fullText(sentenceFor(buildItem({ action: 'server.proxy_installed', actorType: 'system' }), foundLookup))).toBe(
+      'Proxy installed on db-primary',
+    );
+    expect(
+      fullText(sentenceFor(buildItem({ action: 'server.proxy_failed', outcome: 'failure' }), foundLookup)),
+    ).toBe('Proxy install failed on db-primary');
+    expect(fullText(sentenceFor(buildItem({ action: 'server.proxy_removed' }), foundLookup))).toBe(
+      'Proxy removed from db-primary',
+    );
+    expect(
+      fullText(sentenceFor(buildItem({ action: 'server.proxy_removed', outcome: 'failure' }), foundLookup)),
+    ).toBe('Proxy removal failed on db-primary');
+  });
+
+  it('details carry duration and the error code only', () => {
+    const item = buildItem({
+      action: 'server.proxy_failed',
+      outcome: 'failure',
+      errorCode: 'PROXY_PORT_IN_USE',
+      metadata: { durationMs: 40, step: 'ports', trigger: 'request' },
+    });
+    expect(curatedDetailFor(item)).toEqual([
+      { label: 'Duration', value: '40ms', mono: false },
+      { label: 'Error', value: 'PROXY_PORT_IN_USE', mono: true },
+    ]);
+  });
+});
+
 describe('curatedDetailFor -- empty for the three chevron-less auth actions', () => {
   it.each(['auth.logout', 'auth.session_revoked', 'auth.password_reset'] as const)('%s has no curated detail', (action) => {
     const item = buildItem({ action, metadata: { email: 'admin@example.test' } });
