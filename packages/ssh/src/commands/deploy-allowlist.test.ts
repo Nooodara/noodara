@@ -86,6 +86,16 @@ const EXPECTED_DEPLOY_COMMAND_NAMES: readonly DeployCommandName[] = [
   // 18-03: deploy the exact pushed SHA.
   "git.fetch_commit",
   "git.fetch_unshallow",
+  "proxy.prepare_dirs",
+  "proxy.write_static",
+  "proxy.write_dynamic",
+  "proxy.restore_dynamic",
+  "proxy.remove_dynamic",
+  "proxy.create",
+  "proxy.status",
+  "proxy.ports_in_use",
+  "tls.cert_status",
+  "docker.network_disconnect",
 ];
 
 // ADR 0008 text, copied by hand. G1: secret file and workspace; G2: launcher and group kill.
@@ -110,9 +120,9 @@ const ALLOWED_PARAMETERS = new Set([
 ]);
 
 describe("DEPLOY_COMMAND_NAMES", () => {
-  it("is exactly the 41 expected names, in order", () => {
+  it("is exactly the 53 expected names, in order", () => {
     expect(DEPLOY_COMMAND_NAMES).toEqual(EXPECTED_DEPLOY_COMMAND_NAMES);
-    expect(DEPLOY_COMMAND_NAMES).toHaveLength(43);
+    expect(DEPLOY_COMMAND_NAMES).toHaveLength(53);
   });
 
   it("is frozen", () => {

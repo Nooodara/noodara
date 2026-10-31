@@ -48,6 +48,17 @@ export const DEPLOY_COMMAND_NAMES = Object.freeze([
   // 18-03: deploy the exact pushed SHA (fetch it shallowly; unshallow fallback).
   'git.fetch_commit',
   'git.fetch_unshallow',
+  // 22-01 (ADR 0011): the reverse proxy lifecycle and the certificate probe.
+  'proxy.prepare_dirs',
+  'proxy.write_static',
+  'proxy.write_dynamic',
+  'proxy.restore_dynamic',
+  'proxy.remove_dynamic',
+  'proxy.create',
+  'proxy.status',
+  'proxy.ports_in_use',
+  'tls.cert_status',
+  'docker.network_disconnect',
 ] as const);
 
 export type DeployCommandName = (typeof DEPLOY_COMMAND_NAMES)[number];

@@ -16,6 +16,7 @@ import {
   type BuildTarget,
   type ContainerName,
   type ContainerPort,
+  type DeploySecretPath,
   type DockerConfigDir,
   type ImageRef,
   type NetworkName,
@@ -32,6 +33,7 @@ import * as commands from './index.js';
 import {
   dockerBuild,
   dockerCreate,
+  envFileFor,
   dockerImageInspect,
   dockerImageRemove,
   dockerInspectState,
@@ -246,6 +248,54 @@ describe('dockerCreate', () => {
 
     expect(command.argv).not.toContain('--publish');
     expect(command.argv.slice(-2)).toEqual(['--', image]);
+  });
+});
+
+describe('dockerCreate envFile (22-01, ADR 0011 A4)', () => {
+  const workspace = valid(deployWorkspaceFor(DEPLOYMENT_ID_TEXT));
+  const base = {
+    container,
+    network,
+    image,
+    internalPort: port(3000),
+    publishedPort: null,
+    serviceId,
+    deploymentId,
+  } as const;
+
+  it('envFileFor is <workspace>/secrets/env', () => {
+    expect(envFileFor(workspace)).toBe(`.noodara/deploy/${DEPLOYMENT_ID_TEXT}/secrets/env`);
+  });
+
+  it('renders --env-file <path> after the log options and before the labels', () => {
+    const argv = [...dockerCreate({ ...base, envFile: envFileFor(workspace) }).argv];
+    const at = argv.indexOf('--env-file');
+    expect(argv[at + 1]).toBe(envFileFor(workspace));
+    expect(argv[at - 1]).toBe('max-file=3');
+    expect(argv.filter((token) => token === '--env-file')).toHaveLength(1);
+    expect(argv.slice(-2)).toEqual(['--', image]);
+  });
+
+  it('is unchanged when envFile is omitted', () => {
+    expect(dockerCreate(base).argv).not.toContain('--env-file');
+  });
+
+  it.each([
+    '/etc/passwd',
+    `.noodara/deploy/${DEPLOYMENT_ID_TEXT}/repo/.env`,
+    `.noodara/deploy/${DEPLOYMENT_ID_TEXT}/secrets/../repo/env`,
+    `.noodara/deploy/${DEPLOYMENT_ID_TEXT}/secrets/deploy_key`,
+    `.noodara/deploy/${DEPLOYMENT_ID_TEXT}/secrets/env;id`,
+    `.noodara/deploy/not-a-uuid/secrets/env`,
+    '--privileged',
+  ])('A2: rejects env-file path %j outside <workspace>/secrets/env', (path) => {
+    expect(() => dockerCreate({ ...base, envFile: path as DeploySecretPath })).toThrow(RangeError);
+  });
+
+  it('envFileFor refuses a forged workspace', () => {
+    expect(() =>
+      envFileFor({ ...workspace, secretsDir: '/tmp/secrets' as DeploySecretPath }),
+    ).toThrow();
   });
 });
 

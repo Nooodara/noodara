@@ -14,3 +14,4 @@ export * from './shell-scripts.js';
 export * from './git.js';
 export * from './workspace.js';
 export * from './docker-deploy.js';
+export * from './proxy.js';
