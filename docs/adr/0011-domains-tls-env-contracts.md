@@ -33,20 +33,22 @@ Docker Desktop, 2026-10-30. Images (digest-pinned, the only ones a fixture may p
 
   | Path | Mode | Owner | Mount |
   |---|---|---|---|
-  | `/opt/noodara-proxy` | 0755 | deployer | — |
-  | `traefik.yml` | 0644 | deployer | `/etc/traefik/traefik.yml` ro |
-  | `dynamic/` | 0755 | deployer | `/etc/traefik/dynamic` ro |
-  | `ca/` (test seam only) | 0755 | deployer | `/etc/traefik/ca` ro |
+  | `/opt/noodara-proxy` | 0700 | deployer | — |
+  | `traefik.yml` | 0600 | deployer | `/etc/traefik/traefik.yml` ro |
+  | `dynamic/` (`*.yml`, `*.yml.prev` 0600) | 0700 | deployer | `/etc/traefik/dynamic` ro |
+  | `ca/` (test seam only, `ca-root.pem` 0600) | 0700 | deployer | `/etc/traefik/ca` ro |
   | `acme/` | 0700 | deployer | `/etc/traefik/acme` rw |
   | `acme/acme.json` | 0600 | root (Traefik) | — |
 
-  Measured: Traefik creates `acme.json` as root 0600; the deploy user cannot read it.
+  Measured: Traefik creates `acme.json` as root 0600; the deploy user cannot read it. Traefik runs
+  as root in its container, so 0700/0600 (22-01, `proxy.prepare_dirs`) still lets it read the rest.
 - Static config (a change needs a proxy restart):
 
   ```yaml
   global: { checkNewVersion: false, sendAnonymousUsage: false }
+  log: { level: WARN }
   entryPoints: { web: { address: ":80" }, websecure: { address: ":443" }, traefik: { address: ":9180" } }
-  api: { insecure: true, dashboard: false }      # read-only API on the traefik entrypoint
+  api: { insecure: false, dashboard: false }     # API only through the noodara-api router below
   providers:
     file: { directory: /etc/traefik/dynamic, watch: true }   # no docker provider
   certificatesResolvers:
@@ -58,6 +60,17 @@ Docker Desktop, 2026-10-30. Images (digest-pinned, the only ones a fixture may p
         httpChallenge: { entryPoint: web }
   ```
 
+  `dynamic/noodara-api.yml`, written with the static config, exposes the read-only API on the
+  `traefik` entrypoint (published on 127.0.0.1:9180 only):
+
+  ```yaml
+  http:
+    routers:
+      noodara-api: { entryPoints: [traefik], rule: "PathPrefix(`/api`)", service: api@internal }
+  ```
+
+  Both files are rendered as canonical JSON (valid YAML) by `packages/domain/src/proxy/static-config.ts`;
+  `tests/integration/proxy/proxy-templates.test.ts` loads them in a real Traefik (22-01).
   `certificatesDuration` stays at Traefik's default (2160 h) in production; tests set it to 1.
   With `NOODARA_ACME_CA_ROOT_FILE` set, the root goes to `ca/` and the container gets
   `LEGO_CA_CERTIFICATES=/etc/traefik/ca/<file>` (measured: this is how Traefik trusts Pebble).
@@ -110,7 +123,9 @@ under Consequences.
   ```
 
 - Write = `mktemp dynamic/.noodara-XXXXXX` (same filesystem, no `.yml` suffix so the provider
-  ignores it), write, `chmod 0644`, `mv -f` onto `<serviceId>.yml`. Never write in place.
+  ignores it), content on stdin, size + sha256 checked, `chmod 0600`, the replaced file kept as
+  `<serviceId>.yml.prev` (0600), `mv -f` onto `<serviceId>.yml`. Never write in place; an
+  interrupted write never renames (22-01 `proxy.write_dynamic`, `proxy.restore_dynamic`).
 - Removing a service's routes = removing its file; then `docker network disconnect`.
 - The API lists routers as `<name>@file`; that suffix is part of the verify contract.
 
@@ -190,7 +205,7 @@ is removed, plain HTTP to the same host answers `200` again in ~2.0 s.
 - Probe on the host over SSH, no curl (ADR 0010):
   `openssl s_client -connect 127.0.0.1:443 -servername <hostname> </dev/null`, reduced on the host
   with `openssl x509 -issuer -enddate` to one line:
-  `NOODARA_CERT tls notAfter=<epoch> issuer=<RFC2253>` | `NOODARA_CERT down` |
+  `NOODARA_CERT tls notAfter=<epoch | openssl date when date -d fails> issuer=<RFC2253>` | `NOODARA_CERT down` |
   `NOODARA_CERT unavailable`. 22-04 adds a `command -v openssl` guard (`NOODARA_CERT no_openssl`).
   The default certificate is recognised by `issuer=CN=TRAEFIK DEFAULT CERT`.
 - The control plane never reads `acme.json`.
