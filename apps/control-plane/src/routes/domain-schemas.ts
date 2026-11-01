@@ -21,8 +21,8 @@ export const DomainServiceParamsSchema = ServiceParamsSchema;
 export const DomainItemParamsSchema = DomainParamsSchema;
 export const CreateDomainRouteBodySchema = CreateDomainBodySchema;
 export const UpdateDomainRouteBodySchema = UpdateDomainBodySchema;
-/** The DNS check takes no input. */
-export const DnsCheckBodySchema = z.strictObject({}).optional();
+/** The DNS check takes no input (an absent body reaches the schema as null). */
+export const DnsCheckBodySchema = z.strictObject({}).nullish();
 
 export const DomainInputErrorBodySchema = z.strictObject({
   error: z.literal('DOMAIN_INPUT_INVALID'),

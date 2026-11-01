@@ -34,6 +34,7 @@ describe('domain route schemas (22-03 H2)', () => {
   it('takes no input on the DNS check', () => {
     expect(DnsCheckBodySchema.safeParse(undefined).success).toBe(true);
     expect(DnsCheckBodySchema.safeParse({}).success).toBe(true);
+    expect(DnsCheckBodySchema.safeParse(null).success).toBe(true);
     expect(DnsCheckBodySchema.safeParse({ resolver: '8.8.8.8' }).success).toBe(false);
   });
 
