@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-01T17:08:23.912Z",
+  "updatedAt": "2026-11-01T17:08:24.105Z",
   "cursor": {
     "phase": "23",
     "task": "23-03"
@@ -8973,13 +8973,17 @@
             "apps/control-plane/src/services/service-services.test.ts",
             "apps/control-plane/src/activity/",
             "tests/integration/env/secrets-api.test.ts",
-            "tests/integration/projects/services-api.test.ts"
+            "tests/integration/projects/services-api.test.ts",
+            "packages/domain/src/activity/activity-event.ts",
+            "packages/domain/src/activity/activity-event.test.ts",
+            "apps/control-plane/src/routes/api-scope.ts",
+            "docs/deploy-engine.md"
           ],
           "wave": 2,
           "dependsOn": [
             "23-01"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",

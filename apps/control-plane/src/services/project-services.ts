@@ -20,6 +20,7 @@ import { noopServerEventPublisher, publishServerEvent, type ServerEventPublisher
 import { environmentVariables } from '../db/schema/environment-variables.js';
 import { environments } from '../db/schema/environments.js';
 import { projects } from '../db/schema/projects.js';
+import { secrets } from '../db/schema/secrets.js';
 import { services } from '../db/schema/services.js';
 import type { ServiceActor } from './server-service-deps.js';
 
@@ -537,9 +538,10 @@ export async function deleteProject(
       now,
     );
 
-    // 23-02 A4: the project's variables at every scope go in the same transaction (the owner FKs
-    // cascade too; the explicit delete keeps it visible and independent of the FK shape).
+    // 23-02 A4 / 23-03 A3: the project's variables and secrets at every scope go in the same
+    // transaction (the owner FKs cascade too; the explicit delete keeps it independent of them).
     await tx.delete(environmentVariables).where(eq(environmentVariables.projectId, current.id));
+    await tx.delete(secrets).where(eq(secrets.projectId, current.id));
     await tx.delete(projects).where(eq(projects.id, current.id));
     if (credentialIds.length > 0) {
       await tx.delete(credentials).where(inArray(credentials.id, credentialIds));
@@ -800,8 +802,10 @@ export async function deleteEnvironment(
       },
       now,
     );
-    // 23-02 A4: environment-scoped variables go with it (it holds no services, so no service ones).
+    // 23-02 A4 / 23-03 A3: environment-scoped variables and secrets go with it (it holds no
+    // services, so no service ones).
     await tx.delete(environmentVariables).where(eq(environmentVariables.environmentId, current.id));
+    await tx.delete(secrets).where(eq(secrets.environmentId, current.id));
     await tx.delete(environments).where(eq(environments.id, current.id));
     return { ok: true, environmentId: current.id };
   });

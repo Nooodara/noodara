@@ -51,6 +51,7 @@ import healthRoutes from './routes/health.js';
 import { toClientRequestError, toErrorBody, toValidationErrorBody } from './routes/http-errors.js';
 import setupRoutes from './routes/setup.js';
 import { createWebhookRoutes } from './routes/webhooks.js';
+import type { SecretServiceDeps } from './secrets/secret-services.js';
 import {
   createContainerLogs,
   DEFAULT_CONTAINER_LOGS_LIMITS,
@@ -710,6 +711,15 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   // 23-02: the variables API's deps (lazy; nothing opens before the first request).
   let envServices: Promise<EnvServiceDeps> | undefined;
   app.decorate('getEnvServices', () => (envServices ??= getDb().then((db): EnvServiceDeps => ({ db, now: () => new Date() }))));
+  // 23-03: the secrets API's deps (lazy, like the variables API's).
+  let secretServices: Promise<SecretServiceDeps> | undefined;
+  app.decorate(
+    'getSecretServices',
+    () =>
+      (secretServices ??= Promise.all([getDb(), masterKeysFromEnvironment()()]).then(
+        ([db, masterKeys]): SecretServiceDeps => ({ db, now: () => new Date(), masterKeys }),
+      )),
+  );
   const remoteCleanup = createRemoteCleanupResolver(deps);
   app.decorate('getProjectServices', createProjectServicesResolver(deps, eventPublisher, remoteCleanup));
   app.decorate('getServiceServices', createServiceServicesResolver(deps, eventPublisher, { getOperationQueue, remoteCleanup }));

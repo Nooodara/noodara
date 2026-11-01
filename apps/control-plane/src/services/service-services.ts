@@ -29,8 +29,10 @@ import type { Database } from '../db/client.js';
 import { CLEARED_GIT_HOST_KEY_COLUMNS, gitHostKeyColumnsForUrlChange } from '../db/git-host-key-store.js';
 import { deployments } from '../db/schema/deployments.js';
 import { domains } from '../db/schema/domains.js';
+import { environmentVariables } from '../db/schema/environment-variables.js';
 import { environments } from '../db/schema/environments.js';
 import { projects } from '../db/schema/projects.js';
+import { secrets } from '../db/schema/secrets.js';
 import { servers } from '../db/schema/servers.js';
 import { services } from '../db/schema/services.js';
 import type { ServiceOperation, ServiceRemoteCleanup } from '../deploy/service-ops.js';
@@ -854,6 +856,9 @@ async function deleteServiceLocked(
       },
       deps.now(),
     );
+    // 23-03 A3: the service's variables and secrets go in the same transaction.
+    await tx.delete(environmentVariables).where(eq(environmentVariables.serviceId, current.id));
+    await tx.delete(secrets).where(eq(secrets.serviceId, current.id));
     await tx.delete(services).where(eq(services.id, current.id));
     await deleteCredentialRows(tx, [
       current.repositoryCredentialId,

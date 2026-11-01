@@ -72,3 +72,5 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 
 - 2026-11-01 — 22-07 scope widened: servers schema + drizzle migration (A2 install timestamp column), run-deployment.test.ts (A7 proxy.read_dynamic rename), ADR 0011 (A8 fallback). 22-08 runs after 22-07, so the shared files are not touched in parallel.
 - 2026-11-01 — 23-02 scope adds `apps/control-plane/src/routes/api-scope.ts` (one registration line for the env routes); no other phase-23 task claims it.
+- 2026-11-01 — 23-03 scope adds `packages/domain/src/activity/activity-event.ts` and its test (secret.created/replaced/deleted actions for A2); 23-02, which also touched them, is done.
+- 2026-11-01 — 23-03 scope adds `apps/control-plane/src/routes/api-scope.ts` (secrets route registration) and `docs/deploy-engine.md` (route-docs.test requires documenting the new routes); 23-02 is done.

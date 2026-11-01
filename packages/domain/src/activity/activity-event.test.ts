@@ -7,6 +7,7 @@ import {
   DOMAIN_ACTIONS,
   ENV_ACTIONS,
   InvalidActivityActionError,
+  SECRET_ACTIONS,
   SERVER_ACTIONS,
   SensitiveMetadataError,
   buildActivityEvent,
@@ -592,5 +593,43 @@ describe('env.variable_* actions (23-02 A1)', () => {
 
   it('rejects a mismatched entityType', () => {
     expect(() => build('env.variable_updated', 'service', { scope: 'project', key: 'A' })).toThrow(InvalidActivityActionError);
+  });
+});
+
+describe('secret.* actions (23-03 A2, H1)', () => {
+  const build = (action: (typeof SECRET_ACTIONS)[number], entityType: string, metadata: Record<string, unknown>) =>
+    buildActivityEvent({ actorType: 'user', actorId: 'u-1', entityType, entityId: 'sec-1', action, outcome: 'success', metadata }, NOW);
+
+  it('accepts scope and name only, for each action', () => {
+    expect(SECRET_ACTIONS).toEqual(['secret.created', 'secret.replaced', 'secret.deleted']);
+    for (const action of SECRET_ACTIONS) {
+      expect(build(action, 'secret', { scope: 'environment', name: 'db_password' }).metadata).toEqual({
+        scope: 'environment',
+        name: 'db_password',
+      });
+    }
+  });
+
+  it('is not part of the legacy action lists', () => {
+    for (const action of SECRET_ACTIONS) expect(ALL_ACTIVITY_ACTIONS).not.toContain(action);
+  });
+
+  it.each<[Record<string, unknown>]>([
+    [{ scope: 'service', name: 'api_key', value: 'canary-123' }],
+    [{ scope: 'service', name: 'api_key', hint: '…123' }],
+    [{ scope: 'service' }],
+    [{ name: 'api_key' }],
+    [{ scope: 'global', name: 'api_key' }],
+    [{ scope: 'project', name: 'not a name: canary-123' }],
+    [{ scope: 'project', name: 'API_KEY' }],
+    [{ scope: 'project', name: 42 }],
+  ])('rejects metadata %j', (metadata) => {
+    expect(() => build('secret.created', 'secret', metadata)).toThrow(SensitiveMetadataError);
+  });
+
+  it('rejects a mismatched entityType', () => {
+    expect(() => build('secret.deleted', 'environment_variable', { scope: 'project', name: 'a' })).toThrow(
+      InvalidActivityActionError,
+    );
   });
 });

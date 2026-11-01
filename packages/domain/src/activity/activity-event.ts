@@ -7,7 +7,7 @@
 // nothing else at all". Phase 12 (12-05) adds the deploy engine actions (`project.*`,
 // `environment.*`, `service.*`, `deployment.*`), each with a closed, typed metadata allowlist.
 
-import { validateEnvKey } from '../env/env-value.js';
+import { validateEnvKey, validateSecretName } from '../env/env-value.js';
 import { ENV_SCOPES } from '../env/resolve-env.js';
 import { SecretValue } from '../security/secret-value.js';
 
@@ -154,7 +154,15 @@ export const ENV_ACTIONS = ['env.variable_created', 'env.variable_updated', 'env
 
 export type EnvAction = (typeof ENV_ACTIONS)[number];
 
-export type AnyActivityAction = ActivityAction | DeployEngineAction | DomainAction | EnvAction;
+/**
+ * 23-03 (A2, H1): secret writes. Kept out of `ALL_ACTIVITY_ACTIONS` like ENV_ACTIONS; metadata is
+ * exactly `{ scope, name }` (a valid name), never the value or its hint.
+ */
+export const SECRET_ACTIONS = ['secret.created', 'secret.replaced', 'secret.deleted'] as const;
+
+export type SecretAction = (typeof SECRET_ACTIONS)[number];
+
+export type AnyActivityAction = ActivityAction | DeployEngineAction | DomainAction | EnvAction | SecretAction;
 
 export const ALL_ACTIVITY_ACTIONS: readonly AnyActivityAction[] = Object.freeze([
   ...AUTH_ACTIONS,
@@ -167,9 +175,11 @@ const ACTIVITY_ACTION_SET: ReadonlySet<string> = new Set<string>([
   ...ALL_ACTIVITY_ACTIONS,
   ...DOMAIN_ACTIONS,
   ...ENV_ACTIONS,
+  ...SECRET_ACTIONS,
 ]);
 
 const ENV_ACTION_SET: ReadonlySet<string> = new Set(ENV_ACTIONS);
+const SECRET_ACTION_SET: ReadonlySet<string> = new Set(SECRET_ACTIONS);
 const ENV_SCOPE_SET: ReadonlySet<unknown> = new Set(ENV_SCOPES);
 
 const ACCOUNT_ACTION_SET: ReadonlySet<string> = new Set(ACCOUNT_ACTIONS);
@@ -326,6 +336,17 @@ function assertEnvEvent(action: EnvAction, entityType: string, metadata: Activit
   if (typeof metadata.key !== 'string' || !validateEnvKey(metadata.key).ok) throw new SensitiveMetadataError('key');
 }
 
+function assertSecretEvent(action: SecretAction, entityType: string, metadata: ActivityMetadata): void {
+  if (entityType !== 'secret') {
+    throw new InvalidActivityActionError(action, 'Activity entityType does not match action');
+  }
+  for (const key of Object.keys(metadata)) {
+    if (key !== 'scope' && key !== 'name') throw new SensitiveMetadataError(key);
+  }
+  if (!ENV_SCOPE_SET.has(metadata.scope)) throw new SensitiveMetadataError('scope');
+  if (typeof metadata.name !== 'string' || !validateSecretName(metadata.name).ok) throw new SensitiveMetadataError('name');
+}
+
 function assertProxyMetadata(action: ProxyAction, metadata: ActivityMetadata): void {
   const allowed = PROXY_ACTION_METADATA_KEYS[action];
   for (const [key, value] of Object.entries(metadata)) {
@@ -450,6 +471,10 @@ export function buildActivityEvent(input: BuildActivityEventInput, now: Date): A
 
   if (ENV_ACTION_SET.has(input.action)) {
     assertEnvEvent(input.action as EnvAction, input.entityType, metadata);
+  }
+
+  if (SECRET_ACTION_SET.has(input.action)) {
+    assertSecretEvent(input.action as SecretAction, input.entityType, metadata);
   }
 
   if (Object.hasOwn(PROXY_ACTION_METADATA_KEYS, input.action)) {
