@@ -58,6 +58,8 @@ export const DEPLOY_COMMAND_NAMES = Object.freeze([
   'proxy.remove_files',
   'proxy.create',
   'proxy.status',
+  // 22-07 A7: the dynamic port read had shared proxy.status; one script body per name.
+  'proxy.read_dynamic',
   'proxy.ports_in_use',
   'tls.cert_status',
   'docker.network_disconnect',

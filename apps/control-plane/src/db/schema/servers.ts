@@ -76,6 +76,9 @@ export const servers = pgTable(
     proxyErrorCode: text('proxy_error_code'),
     proxyAcmeEmail: text('proxy_acme_email'),
     proxyInstalledAt: timestamp('proxy_installed_at', { withTimezone: true }),
+    // 22-07 A2 (migration 0016): stamped on every move to INSTALLING and only then; the boot sweep
+    // keys install staleness on it, so connect/discovery writes to updated_at cannot extend it.
+    proxyInstallStartedAt: timestamp('proxy_install_started_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

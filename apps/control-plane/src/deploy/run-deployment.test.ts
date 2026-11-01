@@ -2063,7 +2063,7 @@ function routed(proxyRunning: boolean, reapplyOk = true) {
   return { routes, reapplied };
 }
 
-const PROXY_KEYS = ['docker.network_connect', 'proxy.status', 'proxy.write_dynamic', 'proxy.restore_dynamic', 'proxy.remove_dynamic'];
+const PROXY_KEYS = ['docker.network_connect', 'proxy.read_dynamic', 'proxy.write_dynamic', 'proxy.restore_dynamic', 'proxy.remove_dynamic'];
 
 describe('runDeployment: routes of a service with domains (22-05 A1, H1, H2)', () => {
   it('a service without domains issues no proxy command', async () => {
@@ -2075,7 +2075,7 @@ describe('runDeployment: routes of a service with domains (22-05 A1, H1, H2)', (
 
   it('connects the proxy to the service network before the swap and never rewrites the file', async () => {
     const r = routed(true);
-    const h = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.status': PROXY_READ(3000) }, extra: { routes: r.routes } });
+    const h = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.read_dynamic': PROXY_READ(3000) }, extra: { routes: r.routes } });
     const outcome = await runDeployment(h.input);
     expect(outcome.status).toBe('SUCCESS');
     const keys = h.session.keys();
@@ -2083,7 +2083,7 @@ describe('runDeployment: routes of a service with domains (22-05 A1, H1, H2)', (
     expect(keys.indexOf('docker.network_connect')).toBeLessThan(keys.indexOf('docker.stop'));
     expect(h.session.argv('docker.network_connect')).toEqual(expect.arrayContaining([NETWORK]));
     // The file routes to the container name: the same port means no write at all.
-    expect(keys.filter((key) => key.startsWith('proxy.') && key !== 'proxy.status')).toEqual([]);
+    expect(keys.filter((key) => key.startsWith('proxy.') && key !== 'proxy.read_dynamic')).toEqual([]);
     expect(r.reapplied).toEqual([]);
     expect(keys).not.toContain('docker.network_disconnect');
   });
@@ -2128,38 +2128,38 @@ describe('runDeployment: routes of a service with domains (22-05 A1, H1, H2)', (
 
   it('H2: a passed attempt whose port differs from the live file re-applies the routes with the deploy port', async () => {
     const r = routed(true);
-    const h = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.status': PROXY_READ(8080) }, extra: { routes: r.routes } });
+    const h = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.read_dynamic': PROXY_READ(8080) }, extra: { routes: r.routes } });
     const outcome = await runDeployment(h.input);
     expect(outcome.status).toBe('SUCCESS');
     expect(r.reapplied).toEqual([{ session: h.session, port: 3000 }]);
     const keys = h.session.keys();
-    expect(keys.indexOf('docker.remove_prev')).toBeLessThan(keys.indexOf('proxy.status'));
+    expect(keys.indexOf('docker.remove_prev')).toBeLessThan(keys.indexOf('proxy.read_dynamic'));
     expect(logText(h, 'deploy')).toContain(ROUTE_LOGS.REAPPLIED);
   });
 
   it('H2: an absent file or the same port leaves the file untouched; a failed re-apply never fails the deploy', async () => {
     for (const read of [PROXY_READ('absent'), PROXY_READ(3000)]) {
       const r = routed(true);
-      const h = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.status': read }, extra: { routes: r.routes } });
+      const h = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.read_dynamic': read }, extra: { routes: r.routes } });
       expect((await runDeployment(h.input)).status).toBe('SUCCESS');
       expect(r.reapplied).toEqual([]);
     }
     const failing = routed(true, false);
-    const h = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.status': PROXY_READ(8080) }, extra: { routes: failing.routes } });
+    const h = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.read_dynamic': PROXY_READ(8080) }, extra: { routes: failing.routes } });
     expect((await runDeployment(h.input)).status).toBe('SUCCESS');
     expect(logText(h, 'deploy')).toContain(ROUTE_LOGS.NOT_REAPPLIED);
     const throwing: DeployRoutes = { proxyRunning: true, reapply: () => Promise.reject(new Error('db down')) };
-    const t = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.status': PROXY_READ(8080) }, extra: { routes: throwing } });
+    const t = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.read_dynamic': PROXY_READ(8080) }, extra: { routes: throwing } });
     expect((await runDeployment(t.input)).status).toBe('SUCCESS');
   });
 
   it('an automatic rollback restores -prev without reading or rewriting the routes', async () => {
     const r = routed(true);
-    const h = rollbackHarness(probing(HTTP_500, { 'probe.tcp': { stdout: 'NOODARA_PROBE open\n' }, 'proxy.status': PROXY_READ(8080) }));
+    const h = rollbackHarness(probing(HTTP_500, { 'probe.tcp': { stdout: 'NOODARA_PROBE open\n' }, 'proxy.read_dynamic': PROXY_READ(8080) }));
     const outcome = await runDeployment({ ...h.input, routes: r.routes });
     expect(outcome.status).toBe('ROLLED_BACK');
     expect(h.session.keys()).toContain('docker.network_connect');
-    expect(h.session.keys()).not.toContain('proxy.status');
+    expect(h.session.keys()).not.toContain('proxy.read_dynamic');
     expect(r.reapplied).toEqual([]);
   });
 });

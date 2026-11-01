@@ -265,11 +265,38 @@ describe("docker.network_connect / network_disconnect for the proxy", () => {
   });
 });
 
+describe("22-07 A7: one script body per allowlisted name", () => {
+  it("no two proxy templates share a name with different scripts", () => {
+    const commands: RemoteCommand[] = [
+      proxyPrepareDirs(),
+      proxyRemoveFiles(),
+      proxyWriteStatic({ target: "traefik", digest }),
+      proxyWriteStatic({ target: "ca_root", digest }),
+      proxyWriteDynamic({ path: dynamicPath, digest }),
+      proxyRestoreDynamic(dynamicPath),
+      proxyRemoveDynamic(dynamicPath),
+      proxyReadDynamic(dynamicPath),
+      proxyRouterStatus("noodara-api"),
+      proxyRouterStatus("noodara-x-web"),
+      proxyPortsInUse(),
+      proxyCertStatus("app.example.com"),
+    ];
+    const bodies = new Map<string, Set<string>>();
+    for (const cmd of commands) {
+      const set = bodies.get(cmd.name) ?? new Set<string>();
+      set.add(wrapped(cmd).script);
+      bodies.set(cmd.name, set);
+    }
+    for (const [name, set] of bodies) expect([name, set.size]).toEqual([name, 1]);
+    expect(bodies.has("proxy.read_dynamic")).toBe(true);
+  });
+});
+
 describe("proxy dynamic port read (22-05 H2)", () => {
-  it("reads only a service file, passed as a positional argument, under the status probe name", () => {
+  it("reads only a service file, passed as a positional argument, under its own allowlisted name (22-07 A7)", () => {
     const cmd = proxyReadDynamic(dynamicPath);
     const w = wrapped(cmd);
-    expect(cmd.name).toBe("proxy.status");
+    expect(cmd.name).toBe("proxy.read_dynamic");
     expect(w.args).toEqual([dynamicPath]);
     expect(w.cap).toBeLessThanOrEqual(256);
     expect(w.seconds).toBeLessThanOrEqual(30);
@@ -306,6 +333,17 @@ describe("proxy.status (A1)", () => {
   );
   const http = (status: string, body: string): string =>
     `HTTP/1.0 ${status}\r\nContent-Type: application/json\r\n\r\n${body}`;
+  it("22-07 A7: tells a closed API port (down) from one that accepts but has not answered (starting)", () => {
+    const { script } = wrapped(proxyRouterStatus("noodara-api"));
+    const lines = script.split("\n");
+    const open = lines.find((line) => line.includes("exec 3<>"));
+    const empty = lines.find((line) => line.startsWith('[ -n "$resp" ]'));
+    expect(open).toContain("NOODARA_PROXY_API down");
+    expect(empty).toContain("NOODARA_PROXY_API starting");
+    expect(empty).not.toContain("NOODARA_PROXY_API down");
+    expect(parseProxyRouterStatus("NOODARA_PROXY_API starting\n")).toEqual({ kind: "starting" });
+    expect(parseProxyRouterStatus("NOODARA_PROXY_API starting extra")).toEqual({ kind: "error" });
+  });
   it("parses present, missing, down and error", () => {
     expect(
       parseProxyRouterStatus(

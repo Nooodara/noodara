@@ -1,0 +1,1 @@
+ALTER TABLE "servers" ADD COLUMN "proxy_install_started_at" timestamp with time zone;

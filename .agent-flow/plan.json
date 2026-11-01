@@ -8636,7 +8636,7 @@
             "packages/ssh/src/run-discovery.test.ts",
             "tests/integration/proxy/proxy-templates.test.ts",
             "apps/control-plane/src/db/schema/servers.ts",
-            "apps/control-plane/drizzle/",
+            "apps/control-plane/src/db/migrations/",
             "apps/control-plane/src/deploy/run-deployment.test.ts",
             "docs/adr/0011-domains-tls-env-contracts.md"
           ],

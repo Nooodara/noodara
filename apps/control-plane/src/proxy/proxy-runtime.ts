@@ -3,8 +3,11 @@
 //   the CA root when set), pull the pinned image, recreate noodara-traefik, reconnect the routed
 //   service networks, start, then poll the API until it answers. Every step has its own bound and
 //   the whole run honours `signal` (the job's total budget).
-// - H2: any failure removes the container (best effort), so the retry starts clean; the files are
-//   rewritten by the retry and prepare_dirs repairs their modes.
+// - H2: a failure from the create step on removes the container (best effort), so the retry starts
+//   clean; the files are rewritten by the retry and prepare_dirs repairs their modes.
+// - 22-07 A1: a failure before create (ports, prepare_dirs, write_config, pull) never touches the
+//   container: a RUNNING proxy being re-installed keeps routing. Only a container this attempt
+//   (re)created is cleaned up.
 // - removeProxy: `docker rm --force` then the /opt/noodara-proxy purge; both idempotent.
 // Nothing here throws, logs or returns remote output: results carry closed codes only. The one
 // exception is the foreign listener's process name (A1), sanitized to a short identifier.
@@ -174,6 +177,8 @@ export async function installProxy(input: ProxyInstallInput): Promise<ProxyInsta
   const step = { maxMs: limits.stepMs, maxLineBytes: limits.maxLineBytes, signal };
   const elapsed = () => Math.max(0, now() - startedAt);
   let current: ProxyInstallStep = 'ports';
+  // A1: set right before the old container is replaced; cleanup only runs from here on.
+  let replacing = false;
 
   const must = async (name: ProxyInstallStep, command: RemoteCommand, marker: string | null, extra: Partial<typeof step> & { stdin?: string; maxBytes?: number } = {}) => {
     current = name;
@@ -220,6 +225,7 @@ export async function installProxy(input: ProxyInstallInput): Promise<ProxyInsta
     });
 
     current = 'create';
+    replacing = true;
     if (!(await removeContainer(session, limits, signal))) throw new StepFailure('create');
     await must(
       'create',
@@ -248,6 +254,7 @@ export async function installProxy(input: ProxyInstallInput): Promise<ProxyInsta
     const deadline = now() + limits.verifyMs;
     for (;;) {
       const status = await run(session, proxyRouterStatus(PROXY_API_ROUTER_NAME), step);
+      // `starting` (accepts, no answer yet) and `down` both keep polling until the deadline.
       const kind = status.ok ? parseProxyRouterStatus(status.stdout).kind : 'down';
       if (kind === 'present' || kind === 'missing') break;
       if (now() >= deadline || signal?.aborted === true) throw new StepFailure('verify');
@@ -257,7 +264,8 @@ export async function installProxy(input: ProxyInstallInput): Promise<ProxyInsta
   } catch (error) {
     const failure = error instanceof StepFailure ? error : new StepFailure(current);
     // H2: never leave a half-installed container behind; a dead session simply skips this.
-    if (failure.step !== 'ports' || failure.code !== 'PROXY_PORT_IN_USE') {
+    // A1: before create the existing container (a RUNNING proxy) is left untouched.
+    if (replacing) {
       try {
         await removeContainer(session, limits);
       } catch {

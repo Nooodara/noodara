@@ -132,10 +132,11 @@ export const PROXY_SCRIPTS = Object.freeze({
   /** $1 router name (without `@file`). Raw HTTP/1.0 response, capped. */
   routerStatus: [
     `{ exec 3<>${API}; } 2>/dev/null || { echo "NOODARA_PROXY_API down"; exit 0; }`,
-    "printf 'GET /api/http/routers/%s@file HTTP/1.0\\r\\nHost: 127.0.0.1\\r\\nUser-Agent: noodara-proxy/1\\r\\nConnection: close\\r\\n\\r\\n' \"$1\" >&3 2>/dev/null || { echo \"NOODARA_PROXY_API down\"; exit 0; }",
-    // Traefik still starting: docker-proxy accepts, then resets. That is "down", never a failure.
+    "printf 'GET /api/http/routers/%s@file HTTP/1.0\\r\\nHost: 127.0.0.1\\r\\nUser-Agent: noodara-proxy/1\\r\\nConnection: close\\r\\n\\r\\n' \"$1\" >&3 2>/dev/null || { echo \"NOODARA_PROXY_API starting\"; exit 0; }",
+    // 22-07 A7: the socket opened but nothing answered: docker-proxy accepts while Traefik is
+    // still starting, then resets. That is "starting" (keep polling), never "down" or a failure.
     `resp=$(head -c ${String(PROXY_STATUS_MAX_BYTES - 64)} <&3 2>/dev/null) || resp=`,
-    '[ -n "$resp" ] || { echo "NOODARA_PROXY_API down"; exit 0; }',
+    '[ -n "$resp" ] || { echo "NOODARA_PROXY_API starting"; exit 0; }',
     "printf '%s\\n' \"$resp\"",
   ].join("\n"),
   /** `S <ss line>` per listener on 80/443, `P <docker port line>` per proxy binding. */
@@ -298,11 +299,11 @@ export function proxyRemoveDynamic(path: string): RemoteCommand {
 }
 
 /**
- * 22-05 H2: the port the live file routes to. Read-only, so it runs under the status probe's
- * allowlisted name. Service files only.
+ * 22-05 H2: the port the live file routes to. Read-only; 22-07 A7: its own allowlisted name, so
+ * every allowlisted name maps to exactly one script body. Service files only.
  */
 export function proxyReadDynamic(path: string): RemoteCommand {
-  return script("proxy.status", PROXY_SCRIPTS.readDynamic, {
+  return script("proxy.read_dynamic", PROXY_SCRIPTS.readDynamic, {
     seconds: PROBE_TIMEOUT_SECONDS,
     cap: 128,
     args: [dynamicPath(path, SERVICE_DYNAMIC_PATH)],
@@ -440,11 +441,15 @@ export function proxyRouterStatus(router: string): RemoteCommand {
 export type ProxyRouterStatus =
   | { readonly kind: "present"; readonly status: string; readonly rule: string; readonly service: string }
   | { readonly kind: "missing" }
+  | { readonly kind: "starting" }
   | { readonly kind: "down" }
   | { readonly kind: "error" };
 
+/** `down`: nothing listens on the API port; `starting`: it accepts but has not answered yet. */
 export function parseProxyRouterStatus(stdout: string): ProxyRouterStatus {
-  if (stdout.trim() === "NOODARA_PROXY_API down") return { kind: "down" };
+  const marker = stdout.trim();
+  if (marker === "NOODARA_PROXY_API down") return { kind: "down" };
+  if (marker === "NOODARA_PROXY_API starting") return { kind: "starting" };
   const status = /^HTTP\/1\.[01] (\d{3})/.exec(stdout);
   if (status === null) return { kind: "error" };
   if (status[1] === "404") return { kind: "missing" };

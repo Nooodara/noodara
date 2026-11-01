@@ -26,10 +26,33 @@ const OK_REPLIES: Record<string, Reply> = {
   'proxy.remove_files': { stdoutTail: 'NOODARA_PROXY_PURGE ok\n' },
 };
 
-function fakeSession(overrides: Record<string, Reply | Reply[]> = {}) {
+/**
+ * A fake server with state: `container` is what `docker ps -a` would show for noodara-traefik
+ * (`running` once started). `clearFaults()` drops the overrides so a retry runs against the same
+ * state the faulted attempt left behind (22-07 A3).
+ */
+function fakeSession(overrides: Record<string, Reply | Reply[]> = {}, initial: { container: 'none' | 'created' | 'running' } = { container: 'none' }) {
   const calls: { name: string; stdin: boolean; maxMs: number }[] = [];
   const queues = new Map<string, Reply[]>();
+  const state = { container: initial.container };
   for (const [name, reply] of Object.entries(overrides)) queues.set(name, Array.isArray(reply) ? [...reply] : [reply]);
+  const stateful = (name: string): Reply | undefined => {
+    if (name === 'docker.remove') {
+      return state.container === 'none'
+        ? OK_REPLIES['docker.remove']
+        : {};
+    }
+    if (name === 'docker.start' && state.container === 'none') return { exitCode: 1, stderrTail: 'No such container: noodara-traefik' };
+    if (name === 'proxy.create' && state.container !== 'none') return { exitCode: 125, stderrTail: 'Conflict. The container name is already in use' };
+    if (name === 'proxy.status' && state.container !== 'running') return { stdoutTail: 'NOODARA_PROXY_API down\n' };
+    return undefined;
+  };
+  const apply = (name: string, ok: boolean) => {
+    if (!ok) return;
+    if (name === 'docker.remove') state.container = 'none';
+    if (name === 'proxy.create') state.container = 'created';
+    if (name === 'docker.start') state.container = 'running';
+  };
   const session = {
     exec: () => Promise.reject(new Error('unused')),
     close: () => Promise.resolve(),
@@ -37,8 +60,9 @@ function fakeSession(overrides: Record<string, Reply | Reply[]> = {}) {
       calls.push({ name: command.name, stdin: options.stdin !== undefined, maxMs: options.maxDurationMs });
       const queued = queues.get(command.name);
       const reply = (queued !== undefined && queued.length > 0 ? (queued.length > 1 ? queued.shift() : queued[0]) : undefined) ??
-        OK_REPLIES[command.name] ?? {};
+        stateful(command.name) ?? OK_REPLIES[command.name] ?? {};
       if (reply === 'throw') return Promise.reject(new Error('ssh: password=hunter2 channel closed'));
+      apply(command.name, (reply.exitCode ?? 0) === 0 && (reply.outcome ?? 'completed') === 'completed');
       return Promise.resolve({
         commandName: command.name,
         outcome: reply.outcome ?? 'completed',
@@ -52,7 +76,16 @@ function fakeSession(overrides: Record<string, Reply | Reply[]> = {}) {
       });
     },
   } as unknown as SshDeploySession;
-  return { session, calls, names: () => calls.map((call) => call.name) };
+  return {
+    session,
+    calls,
+    state,
+    names: () => calls.map((call) => call.name),
+    clearFaults: () => {
+      queues.clear();
+      calls.length = 0;
+    },
+  };
 }
 
 const base = { image: IMAGE, config, caRoot: null, routedServiceIds: [], limits, sleep: () => Promise.resolve() };
@@ -105,17 +138,56 @@ describe('installProxy (22-02 A1)', () => {
   });
 
   it.each([
-    ['pull', { 'docker.pull': { exitCode: 1, stderrTail: 'manifest unknown' } }],
     ['create', { 'proxy.create': { exitCode: 125, stderrTail: 'Conflict' } }],
+    ['network', { 'docker.network_connect': { exitCode: 1, stderrTail: 'network not found' } }],
+    ['start', { 'docker.start': { exitCode: 1, stderrTail: 'OCI runtime create failed' } }],
     ['verify', { 'proxy.status': { stdoutTail: 'NOODARA_PROXY_API down\n' } }],
-    ['write_config', { 'proxy.write_static': { exitCode: 4, stdoutTail: 'NOODARA_PROXY_WRITE incomplete' } }],
-  ] as const)('H2: a %s failure removes the container so the retry starts clean', async (step, overrides) => {
+  ] as const)('H2: a %s failure removes the container it created; the retry on the same server reaches RUNNING', async (step, overrides) => {
     const fake = fakeSession(overrides);
-    const result = await installProxy({ ...base, session: fake.session });
+    const result = await installProxy({ ...base, session: fake.session, routedServiceIds: [SERVICE] });
     expect(result).toMatchObject({ ok: false, code: 'PROXY_INSTALL_FAILED', step, listener: null });
     expect(fake.names().at(-1)).toBe('docker.remove');
-    // The retry after the fault reaches RUNNING.
-    expect((await installProxy({ ...base, session: fakeSession().session })).ok).toBe(true);
+    expect(fake.state.container).toBe('none');
+    // A3: the retry runs against the state the faulted attempt left behind, not a fresh fake.
+    fake.clearFaults();
+    expect((await installProxy({ ...base, session: fake.session, routedServiceIds: [SERVICE] })).ok).toBe(true);
+    expect(fake.state.container).toBe('running');
+  });
+
+  it.each([
+    ['prepare_dirs', { 'proxy.prepare_dirs': { exitCode: 3, stdoutTail: 'NOODARA_PROXY_DIRS failed' } }],
+    ['write_config', { 'proxy.write_static': { exitCode: 4, stdoutTail: 'NOODARA_PROXY_WRITE incomplete' } }],
+    ['write_config', { 'proxy.write_dynamic': 'throw' }],
+    ['pull', { 'docker.pull': { exitCode: 1, stderrTail: 'manifest unknown' } }],
+  ] as const)('22-07 A1: a %s failure on a RUNNING proxy leaves its container untouched', async (step, overrides) => {
+    const fake = fakeSession(overrides, { container: 'running' });
+    const result = await installProxy({ ...base, session: fake.session });
+    expect(result).toMatchObject({ ok: false, code: 'PROXY_INSTALL_FAILED', step });
+    expect(fake.names()).not.toContain('docker.remove');
+    expect(fake.names()).not.toContain('proxy.create');
+    expect(fake.state.container).toBe('running');
+    // A3: the retry from that same state replaces the container and reaches RUNNING.
+    fake.clearFaults();
+    expect((await installProxy({ ...base, session: fake.session })).ok).toBe(true);
+    expect(fake.names()).toContain('docker.remove');
+    expect(fake.state.container).toBe('running');
+  });
+
+  it('22-07 A7: verify keeps polling while the API is starting', async () => {
+    const fake = fakeSession({
+      'proxy.status': [
+        { stdoutTail: 'NOODARA_PROXY_API starting\n' },
+        { stdoutTail: 'NOODARA_PROXY_API starting\n' },
+        { stdoutTail: 'HTTP/1.1 404 Not Found\r\n\r\n' },
+      ],
+    });
+    expect((await installProxy({ ...base, session: fake.session, limits: { ...limits, verifyMs: 10_000 } })).ok).toBe(true);
+    expect(fake.names().filter((name) => name === 'proxy.status')).toHaveLength(3);
+  });
+
+  it('22-07 A7: an API stuck starting past the deadline fails verify', async () => {
+    const fake = fakeSession({ 'proxy.status': { stdoutTail: 'NOODARA_PROXY_API starting\n' } });
+    expect(await installProxy({ ...base, session: fake.session })).toMatchObject({ ok: false, step: 'verify' });
   });
 
   it('verify polls until the API answers', async () => {
