@@ -8315,7 +8315,8 @@
             "apps/control-plane/src/routes/api-scope.ts",
             "apps/control-plane/src/routes/api-scope.test.ts",
             "apps/control-plane/src/reconcile/reconcile-wiring.ts",
-            "apps/control-plane/src/reconcile/reconcile-wiring.test.ts"
+            "apps/control-plane/src/reconcile/reconcile-wiring.test.ts",
+            "packages/ssh/src/index.ts"
           ],
           "wave": 3,
           "dependsOn": [
