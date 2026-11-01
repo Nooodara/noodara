@@ -17,6 +17,7 @@ import {
   type ContainerPort,
   type DeployWorkspace,
   type ImageRef,
+  type DeploySecretPath,
   type ResourceId,
   type ServiceSource,
 } from '@noodara/domain/validators';
@@ -530,6 +531,26 @@ describe('containers', () => {
     expect(argv).toEqual(expect.arrayContaining([`noodara.deployment_id=${DEPLOYMENT_ID}`, 'max-size=10m']));
     expect(argv.at(-1)).toBe(REGISTRY_IMAGE);
     expect(argv.some((token) => /^(-e|--env|--env-file|--volume|-v|--privileged)$/.test(token))).toBe(false);
+  });
+
+  it('createContainer passes the workspace env file as --env-file (23-04 A2)', async () => {
+    const redactor = createRedactor();
+    const session = new RecordingSession(redactor);
+    const envFile = `${workspace().secretsDir}/env` as DeploySecretPath;
+
+    const result = await createContainer(context(session, redactor), {
+      serviceId: SERVICE_ID,
+      deploymentId: DEPLOYMENT_ID,
+      image: REGISTRY_IMAGE,
+      internalPort: PORT_3000,
+      publishedPort: null,
+      envFile,
+    });
+
+    expect(result).toMatchObject({ ok: true, value: CONTAINER });
+    const argv = session.argv('docker.create');
+    expect(argv[argv.indexOf('--env-file') + 1]).toBe(envFile);
+    expect(argv.indexOf('--env-file')).toBeLessThan(argv.indexOf('--'));
   });
 
   it('createContainer classifies a port collision as PORT_IN_USE', async () => {

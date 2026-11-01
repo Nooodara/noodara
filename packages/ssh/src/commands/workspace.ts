@@ -75,6 +75,30 @@ export function writeSecretFile(path: DeploySecretPath): RemoteCommand {
   });
 }
 
+/**
+ * 23-04 H3: the rendered env file from stdin, verified against `byteCount` (the UTF-8 length of
+ * what is piped). Same command name as every secret write.
+ */
+export function writeEnvFile(path: DeploySecretPath, byteCount: number): RemoteCommand {
+  if (!Number.isSafeInteger(byteCount) || byteCount < 0) throw new RangeError('byteCount must be a non-negative integer');
+  return createRemoteCommand({
+    name: 'secrets.write_file',
+    argv: ['sh', '-c', SHELL_SCRIPTS.writeEnvFileFromStdin, path, String(byteCount)],
+    stdin: 'secret',
+    supervisable: false,
+  });
+}
+
+/** 23-04 H2: removes one file under the workspace (no new command name: it is deploy-dir cleanup). */
+export function removeSecretFile(path: DeploySecretPath): RemoteCommand {
+  return createRemoteCommand({
+    name: 'fs.remove_deploy_dir',
+    argv: ['sh', '-c', SHELL_SCRIPTS.removeSecretFile, path],
+    stdin: 'none',
+    supervisable: false,
+  });
+}
+
 /** Pass the workspace to write the helper to its own slot (askpassFileFor); mode 0700, it is run. */
 export function writeAskpassFile(target: DeployWorkspace | DeploySecretPath): RemoteCommand {
   const path = typeof target === 'string' ? target : askpassFileFor(target);

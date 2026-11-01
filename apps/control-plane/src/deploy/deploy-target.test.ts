@@ -11,6 +11,8 @@ import type { Database } from '../db/client.js';
 import { credentials } from '../db/schema/credentials.js';
 import { deployments } from '../db/schema/deployments.js';
 import { domains } from '../db/schema/domains.js';
+import { environmentVariables } from '../db/schema/environment-variables.js';
+import { secrets } from '../db/schema/secrets.js';
 import { servers } from '../db/schema/servers.js';
 import { services } from '../db/schema/services.js';
 import type { RouteLock } from '../domains/apply-routes.js';
@@ -19,6 +21,7 @@ import { encodeServiceCredential } from '../services/service-credentials.js';
 import {
   createLoadTarget,
   DeployTargetError,
+  resolveDeployEnv,
   resolveDeployTarget,
   sourceFromSnapshot,
   type DeployTargetRows,
@@ -344,15 +347,26 @@ interface LoadQuery {
 }
 
 /** A recording select-only fake: each `select()` chain answers from `answers` by table. */
-function loadDb(answers: { deployments: unknown[][]; services: unknown[][]; domains?: unknown[][]; servers?: unknown[][] }) {
+function loadDb(answers: {
+  deployments: unknown[][];
+  services: unknown[][];
+  domains?: unknown[][];
+  servers?: unknown[][];
+  variables?: unknown[][];
+  secrets?: unknown[][];
+}) {
   const queries: LoadQuery[] = [];
   const queues = {
     deployments: [...answers.deployments],
     services: [...answers.services],
     domains: [...(answers.domains ?? [])],
     servers: [...(answers.servers ?? [])],
+    variables: [...(answers.variables ?? [])],
+    secrets: [...(answers.secrets ?? [])],
   };
   const respond = (query: LoadQuery): unknown[] => {
+    if (query.table === environmentVariables) return queues.variables.shift() ?? [];
+    if (query.table === secrets) return queues.secrets.shift() ?? [];
     if (query.table === deployments) return queues.deployments.shift() ?? [];
     if (query.table === services) return queues.services.shift() ?? [];
     if (query.table === domains) return queues.domains.shift() ?? [];
@@ -573,5 +587,201 @@ describe('createLoadTarget: routes of a service with domains (22-05 A1, H1)', ()
     // The service row is gone by the time the lock is held: nothing to apply, nothing written.
     await expect(result.target.routes?.reapply(session, 8080)).resolves.toEqual({ ok: true });
     expect(locked).toEqual([SERVICE_ID]);
+  });
+});
+
+const PROJECT_ID = '0190a3c4-6666-7aaa-8bbb-000000000006';
+const ENVIRONMENT_ID = '0190a3c4-7777-7aaa-8bbb-000000000007';
+const SECRET_SERVICE = '0190a3c4-8888-7aaa-8bbb-000000000008';
+const SECRET_PROJECT = '0190a3c4-9999-7aaa-8bbb-000000000009';
+
+describe('resolveDeployEnv (23-04 A1, A3)', () => {
+  const secretRows = [
+    { id: SECRET_PROJECT, scope: 'project' as const, name: 'db_password', version: 2 },
+    { id: SECRET_SERVICE, scope: 'service' as const, name: 'db_password', version: 5 },
+  ];
+
+  it('merges the three scopes by precedence and binds references to the highest-precedence secret', () => {
+    const result = resolveDeployEnv(
+      {
+        variables: [
+          { scope: 'project', key: 'LOG_LEVEL', value: 'info' },
+          { scope: 'service', key: 'LOG_LEVEL', value: 'debug' },
+          { scope: 'environment', key: 'DATABASE_PASSWORD', value: '<secret:db_password>' },
+          { scope: 'project', key: 'APP_NAME', value: 'api' },
+        ],
+        secrets: secretRows,
+      },
+      null,
+    );
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.entries).toEqual([
+      { key: 'APP_NAME', value: 'api' },
+      { key: 'DATABASE_PASSWORD', secretRef: 'db_password', secretVersion: 5 },
+      { key: 'LOG_LEVEL', value: 'debug' },
+    ]);
+    expect([...result.secretIds]).toEqual([['DATABASE_PASSWORD', SECRET_SERVICE]]);
+  });
+
+  it('a missing secret is SECRET_UNRESOLVED naming the key and the reference', () => {
+    const result = resolveDeployEnv(
+      { variables: [{ scope: 'service', key: 'API_TOKEN', value: '<secret:api_token>' }], secrets: secretRows },
+      null,
+    );
+    expect(result).toMatchObject({ ok: false, code: 'SECRET_UNRESOLVED' });
+    if (result.ok) throw new Error('expected failure');
+    expect(result.message).toContain('API_TOKEN');
+    expect(result.message).toContain('api_token');
+  });
+
+  it('a stored value that does not parse is passed on as plain', () => {
+    const result = resolveDeployEnv({ variables: [{ scope: 'service', key: 'X', value: 'a\nb' }], secrets: [] }, null);
+    expect(result).toEqual({ ok: true, entries: [{ key: 'X', value: 'a\nb' }], secretIds: new Map() });
+  });
+
+  it('no variables resolve to an empty env', () => {
+    expect(resolveDeployEnv({ variables: [], secrets: secretRows }, null)).toEqual({
+      ok: true,
+      entries: [],
+      secretIds: new Map(),
+    });
+  });
+
+  it('a manual rollback takes the target snapshot env: plain values as stored, references resolved now', () => {
+    const result = resolveDeployEnv(
+      { variables: [{ scope: 'service', key: 'LOG_LEVEL', value: 'trace' }], secrets: secretRows },
+      [
+        { key: 'DATABASE_PASSWORD', secretRef: 'db_password', secretVersion: 1 },
+        { key: 'LOG_LEVEL', value: 'info' },
+      ],
+    );
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.entries).toEqual([
+      { key: 'DATABASE_PASSWORD', secretRef: 'db_password', secretVersion: 5 },
+      { key: 'LOG_LEVEL', value: 'info' },
+    ]);
+    expect(result.secretIds.get('DATABASE_PASSWORD')).toBe(SECRET_SERVICE);
+  });
+
+  it('a rollback reference that no longer resolves is ROLLBACK_TARGET_UNAVAILABLE naming the key and reference', () => {
+    const result = resolveDeployEnv({ variables: [], secrets: [] }, [
+      { key: 'DATABASE_PASSWORD', secretRef: 'db_password', secretVersion: 1 },
+    ]);
+    expect(result).toMatchObject({ ok: false, code: 'ROLLBACK_TARGET_UNAVAILABLE' });
+    if (result.ok) throw new Error('expected failure');
+    expect(result.message).toContain('DATABASE_PASSWORD');
+    expect(result.message).toContain('db_password');
+  });
+});
+
+describe('createLoadTarget: env (23-04 A1)', () => {
+  const deploymentRow = { id: DEPLOYMENT_ID, serviceId: SERVICE_ID, source: gitSnapshot, trigger: 'manual', runtimeConfig: null };
+  const serviceRow = {
+    id: SERVICE_ID,
+    serverId: SERVER_ID,
+    projectId: PROJECT_ID,
+    environmentId: ENVIRONMENT_ID,
+    repositoryCredentialId: null,
+    registryCredentialId: null,
+    healthcheck: null,
+    autoRollback: true,
+  };
+  const load = (fake: ReturnType<typeof loadDb>) =>
+    createLoadTarget({ db: fake.db, masterKeys: () => Promise.resolve(masterKeys), panelPorts: PANEL })({
+      id: DEPLOYMENT_ID,
+      serviceId: SERVICE_ID,
+    });
+
+  it('loads the chain variables and the visible secrets and hands the resolved entries on', async () => {
+    const fake = loadDb({
+      deployments: [[deploymentRow], []],
+      services: [[serviceRow], []],
+      variables: [[{ scope: 'service', key: 'DATABASE_PASSWORD', value: '<secret:db_password>' }, { scope: 'project', key: 'A', value: '1' }]],
+      secrets: [[{ id: SECRET_SERVICE, scope: 'service', name: 'db_password', version: 3 }]],
+    });
+    const result = await load(fake);
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.target.env?.entries).toEqual([
+      { key: 'A', value: '1' },
+      { key: 'DATABASE_PASSWORD', secretRef: 'db_password', secretVersion: 3 },
+    ]);
+    const secretQuery = fake.queries.find((q) => q.table === secrets);
+    expect(Object.keys(secretQuery?.fields ?? {}).sort()).toEqual(['id', 'name', 'scope', 'version']);
+    const where = render(argOf(secretQuery, 'where')[0]);
+    expect(where.params).toEqual(expect.arrayContaining([PROJECT_ID, ENVIRONMENT_ID, SERVICE_ID]));
+  });
+
+  it('a missing secret ends the load as SECRET_UNRESOLVED (nothing connects, nothing runs)', async () => {
+    const fake = loadDb({
+      deployments: [[deploymentRow], []],
+      services: [[serviceRow], []],
+      variables: [[{ scope: 'service', key: 'DATABASE_PASSWORD', value: '<secret:db_password>' }]],
+      secrets: [[]],
+    });
+    const result = await load(fake);
+    expect(result).toMatchObject({ ok: false, code: 'SECRET_UNRESOLVED' });
+    if (result.ok) throw new Error('expected failure');
+    expect(result.message).toContain('DATABASE_PASSWORD');
+  });
+
+  it('a rollback row rebuilds the env from its own runtime_config snapshot', async () => {
+    const fake = loadDb({
+      deployments: [
+        [
+          {
+            ...deploymentRow,
+            trigger: 'rollback',
+            runtimeConfig: { ...runtimeConfig, version: 2, env: [{ key: 'MODE', value: 'old' }] },
+          },
+        ],
+        [],
+      ],
+      services: [[serviceRow], []],
+      variables: [[{ scope: 'service', key: 'MODE', value: 'new' }]],
+      secrets: [[]],
+    });
+    const result = await load(fake);
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.target.env?.entries).toEqual([{ key: 'MODE', value: 'old' }]);
+  });
+
+  it('a rollback row whose reference no longer resolves is ROLLBACK_TARGET_UNAVAILABLE', async () => {
+    const fake = loadDb({
+      deployments: [
+        [
+          {
+            ...deploymentRow,
+            trigger: 'rollback',
+            runtimeConfig: { ...runtimeConfig, version: 2, env: [{ key: 'K', secretRef: 'gone', secretVersion: 1 }] },
+          },
+        ],
+        [],
+      ],
+      services: [[serviceRow], []],
+      variables: [[]],
+      secrets: [[]],
+    });
+    expect(await load(fake)).toMatchObject({ ok: false, code: 'ROLLBACK_TARGET_UNAVAILABLE' });
+  });
+
+  it('open() with no references leases nothing and releases idempotently', async () => {
+    const fake = loadDb({
+      deployments: [[deploymentRow], []],
+      services: [[serviceRow], []],
+      variables: [[{ scope: 'project', key: 'A', value: '1' }]],
+      secrets: [[]],
+    });
+    const result = await load(fake);
+    if (!result.ok || result.target.env === undefined) throw new Error('expected env');
+    const registered: string[] = [];
+    const lease = await result.target.env.open({
+      register: (raw: string) => registered.push(raw),
+      release: () => undefined,
+      redact: (text: string) => text,
+    } as never);
+    expect(lease.secrets.size).toBe(0);
+    lease.release();
+    lease.release();
+    expect(registered).toEqual([]);
   });
 });

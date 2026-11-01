@@ -9067,7 +9067,8 @@
             "apps/web/src/components/DeploymentSteps.test.tsx",
             "packages/ssh/src/commands/deploy-allowlist.test.ts",
             "packages/docker/src/docker-operations.ts",
-            "packages/docker/src/docker-operations.test.ts"
+            "packages/docker/src/docker-operations.test.ts",
+            "packages/ssh/src/index.ts"
           ],
           "wave": 3,
           "dependsOn": [

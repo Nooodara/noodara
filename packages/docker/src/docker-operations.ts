@@ -16,6 +16,7 @@ import {
   resolveRepoBuildPaths,
   type ContainerName,
   type ContainerPort,
+  type DeploySecretPath,
   type DeployWorkspace,
   type ImageRef,
   type NetworkName,
@@ -92,6 +93,8 @@ export interface CreateContainerInput {
   readonly internalPort: ContainerPort;
   /** `null` publishes nothing. */
   readonly publishedPort: ContainerPort | null;
+  /** 23-04 A2: `<workspace>/secrets/env`, rendered as `--env-file`; absent = no env (v0.3). */
+  readonly envFile?: DeploySecretPath;
 }
 
 export interface ServiceRef {
@@ -275,6 +278,7 @@ export function createContainer(
     publishedPort: input.publishedPort,
     serviceId: input.serviceId,
     deploymentId: input.deploymentId,
+    ...(input.envFile === undefined ? {} : { envFile: input.envFile }),
   });
   return single(context, 'create', command, container);
 }

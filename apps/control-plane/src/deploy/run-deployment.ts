@@ -60,6 +60,7 @@ import {
   type PostStartPollPolicy,
   type ResourceLedger,
   type RuntimeConfigSnapshot,
+  type RuntimeEnvEntry,
 } from '@noodara/domain/deployment';
 import { revealSecret, type Redactor, type SecretValue } from '@noodara/domain/security';
 import {
@@ -224,6 +225,8 @@ export interface RunDeploymentInput {
   readonly requestedSha?: CommitSha | null;
   /** 22-05: present only when the service has domains; absent = no proxy command at all. */
   readonly routes?: DeployRoutes;
+  /** 23-04: the resolved env; absent keeps the v0.3 behaviour (no env file, v1 snapshot). */
+  readonly env?: DeployEnv;
 }
 
 /** 22-05: what a deploy needs to keep a routed service reachable through the proxy. */
@@ -232,6 +235,20 @@ export interface DeployRoutes {
   readonly proxyRunning: boolean;
   /** H2: re-applies the service's routes on this session with this port, under the route lock. */
   readonly reapply: (session: SshDeploySession, internalPort: number) => Promise<{ readonly ok: boolean }>;
+}
+
+/** 23-04: one attempt's decrypted secrets by env key; `release` is idempotent. */
+export interface DeployEnvLease {
+  readonly secrets: ReadonlyMap<string, SecretValue>;
+  release(): void;
+}
+
+/** 23-04: the resolved env of a deploy, loaded in PREPARING; values are decrypted only by `open`. */
+export interface DeployEnv {
+  /** Key-sorted plain values and pinned references: the v2 snapshot env, never a secret value. */
+  readonly entries: readonly RuntimeEnvEntry[];
+  /** Decrypts the referenced secrets and registers them in `redactor` (app_secret). */
+  open(redactor: Redactor): Promise<DeployEnvLease>;
 }
 
 /** 17-05: the deployment a manual rollback restores, and the runtime config it ran with. */

@@ -86,6 +86,8 @@ export {
   supervise,
   writeAskpassFile,
   writeSecretFile,
+  writeEnvFile,
+  removeSecretFile,
   // 17-01 (ADR 0010): probes, the -prev container and per-service images. PROBE_SCRIPTS stays
   // internal like SHELL_SCRIPTS.
   PREV_STEP_TIMEOUT_SECONDS,

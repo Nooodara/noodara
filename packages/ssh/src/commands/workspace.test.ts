@@ -27,7 +27,9 @@ import {
   prepareWorkspace,
   removeDeployDir,
   supervise,
+  removeSecretFile,
   writeAskpassFile,
+  writeEnvFile,
   writeSecretFile,
 } from './workspace.js';
 
@@ -100,6 +102,28 @@ describe('removeDeployDir', () => {
       expect(() => removeDeployDir({ ...ws, root: root as never })).toThrow(/workspace root/);
     },
   );
+});
+
+describe('writeEnvFile / removeSecretFile (23-04 H2, H3)', () => {
+  const envPath = `${ws.secretsDir}/env` as DeploySecretPath;
+
+  it('writeEnvFile keeps the secrets.write_file name, pipes stdin and passes the byte count as $1', () => {
+    const command = writeEnvFile(envPath, 42);
+    expect(command.name).toBe('secrets.write_file');
+    expect(command.argv).toEqual(['sh', '-c', SHELL_SCRIPTS.writeEnvFileFromStdin, envPath, '42']);
+    expect(command.stdin).toBe('secret');
+  });
+
+  it.each([-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])('writeEnvFile refuses byte count %s', (count) => {
+    expect(() => writeEnvFile(envPath, count)).toThrow(RangeError);
+  });
+
+  it('removeSecretFile removes the one file with the constant script', () => {
+    const command = removeSecretFile(envPath);
+    expect(command.name).toBe('fs.remove_deploy_dir');
+    expect(command.argv).toEqual(['sh', '-c', SHELL_SCRIPTS.removeSecretFile, envPath]);
+    expect(command.stdin).toBe('none');
+  });
 });
 
 describe('writeSecretFile / writeAskpassFile', () => {

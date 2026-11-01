@@ -114,6 +114,9 @@ const INTERPOLATION_MARKER = DOLLAR + String.fromCharCode(123);
 const COMMAND_SUBSTITUTION_MARKER = DOLLAR + String.fromCharCode(40);
 const ALLOWED_PARAMETERS = new Set([
   "0",
+  // 23-04 H3: writeEnvFileFromStdin's expected byte count and the count it read back.
+  "1",
+  "n",
   "@",
   DOLLAR,
   "pgid",
@@ -143,8 +146,10 @@ describe("SHELL_SCRIPTS", () => {
         "killGroup",
         "prepareWorkspace",
         "probeFeatures",
+        "removeSecretFile",
         "supervise",
         "writeAskpassFromStdin",
+        "writeEnvFileFromStdin",
         "writeSecretFromStdin",
       ].sort(),
     );

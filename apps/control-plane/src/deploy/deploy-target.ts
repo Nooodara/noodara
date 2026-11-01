@@ -39,10 +39,13 @@ import type { Database } from '../db/client.js';
 import { credentials } from '../db/schema/credentials.js';
 import { deployments } from '../db/schema/deployments.js';
 import { domains } from '../db/schema/domains.js';
+import { secrets } from '../db/schema/secrets.js';
 import { servers } from '../db/schema/servers.js';
 import { services } from '../db/schema/services.js';
 import { applyRoutes, createRouteLock, sessionRoutePorts, type RouteLock } from '../domains/apply-routes.js';
 import { domainApplyLimits, type DomainApplyLimits } from '../domains/domain-apply.js';
+import { listChainVariables, type OwnerChain } from '../env/env-store.js';
+import { decryptForDeploy, SecretStoreError } from '../secrets/secret-store.js';
 import type { MasterKeys } from '../services/server-service-deps.js';
 import {
   decodeServiceCredential,
@@ -56,7 +59,7 @@ import type {
   LoadTargetResult,
   PreviousSuccessDeployment,
 } from './deploy-worker.js';
-import type { DeployCredential, DeployRoutes } from './run-deployment.js';
+import type { DeployCredential, DeployEnv, DeployEnvLease, DeployRoutes } from './run-deployment.js';
 
 export class DeployTargetError extends Error {
   constructor() {
@@ -259,6 +262,133 @@ export function resolveDeployTarget(rows: DeployTargetRows, masterKeys: MasterKe
   };
 }
 
+// ---------------------------------------------------------------------------------------------
+// 23-04: env resolution
+// ---------------------------------------------------------------------------------------------
+
+export interface DeployEnvRows {
+  readonly variables: readonly { readonly scope: EnvScope; readonly key: string; readonly value: string }[];
+  readonly secrets: readonly { readonly id: string; readonly scope: EnvScope; readonly name: string; readonly version: number }[];
+}
+
+export type DeployEnvFailureCode = 'SECRET_UNRESOLVED' | 'ROLLBACK_TARGET_UNAVAILABLE';
+
+export type ResolvedDeployEnv =
+  | {
+      readonly ok: true;
+      readonly entries: readonly RuntimeEnvEntry[];
+      /** Env key -> id of the secret its reference binds to. */
+      readonly secretIds: ReadonlyMap<string, string>;
+    }
+  | { readonly ok: false; readonly code: DeployEnvFailureCode; readonly message: string };
+
+/** A3: names the key and the reference (never a value). */
+export function rollbackReferenceMessage(key: string, reference: string): string {
+  return `The target deployment's variable ${key} references secret ${reference}, which no longer exists in this service, its environment or its project. Add the secret again, or roll back to another deployment.`;
+}
+
+function storedEnvValue(key: string, value: string): EnvDefinition {
+  const parsed = parseEnvValue(value, key);
+  // A row that no longer parses is passed on as stored (env-services reads it the same way).
+  return { key, value: parsed.ok ? parsed.value : { kind: 'plain', value } };
+}
+
+/** Pure: the env of one deploy, plain values and pinned references, key-sorted. */
+export function resolveDeployEnv(rows: DeployEnvRows, rollbackEnv: readonly RuntimeEnvEntry[] | null): ResolvedDeployEnv {
+  const secretsByScope: Record<EnvScope, { readonly name: string; readonly version: number }[]> = {
+    project: [],
+    environment: [],
+    service: [],
+  };
+  const secretId = new Map<string, string>();
+  for (const secret of rows.secrets) {
+    secretsByScope[secret.scope].push({ name: secret.name, version: secret.version });
+    secretId.set(`${secret.scope}:${secret.name}`, secret.id);
+  }
+
+  let resolved: ResolvedEnvEntry[];
+  if (rollbackEnv === null) {
+    const byScope: Record<EnvScope, EnvDefinition[]> = { project: [], environment: [], service: [] };
+    for (const row of rows.variables) byScope[row.scope].push(storedEnvValue(row.key, row.value));
+    resolved = resolveEnv(byScope.project, byScope.environment, byScope.service);
+  } else {
+    resolved = [...rollbackEnv]
+      .sort((a, b) => (a.key < b.key ? -1 : 1))
+      .map((entry) => ({
+        key: entry.key,
+        value: 'secretRef' in entry ? { kind: 'secret_ref', name: entry.secretRef } : { kind: 'plain', value: entry.value },
+        scope: 'service',
+        shadowed: [],
+      }));
+  }
+
+  const bound = resolveSecretRefs(resolved, secretsByScope as SecretsByScope);
+  if (!bound.ok) {
+    if (rollbackEnv === null) return { ok: false, code: 'SECRET_UNRESOLVED', message: bound.message };
+    return {
+      ok: false,
+      code: 'ROLLBACK_TARGET_UNAVAILABLE',
+      message: rollbackReferenceMessage(bound.key ?? '', bound.reference ?? ''),
+    };
+  }
+  const entries: RuntimeEnvEntry[] = [];
+  const secretIds = new Map<string, string>();
+  for (const binding of bound.value) {
+    if ('value' in binding) {
+      entries.push({ key: binding.key, value: binding.value });
+      continue;
+    }
+    entries.push({ key: binding.key, secretRef: binding.secretRef, secretVersion: binding.secretVersion });
+    const id = secretId.get(`${binding.secretScope}:${binding.secretRef}`);
+    if (id !== undefined) secretIds.set(binding.key, id);
+  }
+  return { ok: true, entries, secretIds };
+}
+
+/** The secrets a service sees (env-store's visibility rule); ids and versions, never a value. */
+function visibleSecretsOf(chain: OwnerChain): SQL | undefined {
+  const levels: (SQL | undefined)[] = [eq(secrets.scope, 'project')];
+  if (chain.environmentId !== null) {
+    levels.push(and(eq(secrets.scope, 'environment'), eq(secrets.environmentId, chain.environmentId)));
+  }
+  if (chain.serviceId !== null) levels.push(and(eq(secrets.scope, 'service'), eq(secrets.serviceId, chain.serviceId)));
+  return and(eq(secrets.projectId, chain.projectId), or(...levels));
+}
+
+function envOf(
+  db: Database,
+  chain: OwnerChain,
+  resolved: Extract<ResolvedDeployEnv, { ok: true }>,
+  masterKeys: () => Promise<MasterKeys>,
+): DeployEnv {
+  return {
+    entries: resolved.entries,
+    open: async (redactor): Promise<DeployEnvLease> => {
+      const keys = [...resolved.secretIds.keys()];
+      const lease = await decryptForDeploy(
+        db,
+        {
+          chain: { projectId: chain.projectId, environmentId: chain.environmentId ?? '', serviceId: chain.serviceId ?? '' },
+          secretIds: [...resolved.secretIds.values()],
+        },
+        await masterKeys(),
+        redactor,
+      );
+      const byKey = new Map<string, NonNullable<ReturnType<typeof lease.values.get>>>();
+      for (const key of keys) {
+        const id = resolved.secretIds.get(key);
+        const value = id === undefined ? undefined : lease.values.get(id);
+        if (value === undefined) {
+          lease.release();
+          throw new SecretStoreError('SECRET_NOT_IN_SCOPE', id ?? '');
+        }
+        byKey.set(key, value);
+      }
+      return { secrets: byKey, release: () => lease.release() };
+    },
+  };
+}
+
 export interface LoadTargetDeps {
   readonly db: Database;
   readonly masterKeys: () => Promise<MasterKeys>;
@@ -305,6 +435,8 @@ export function createLoadTarget(
         serviceId: deployments.serviceId,
         source: deployments.source,
         commitSha: deployments.commitSha,
+        trigger: deployments.trigger,
+        runtimeConfig: deployments.runtimeConfig,
       })
       .from(deployments)
       .where(eq(deployments.id, id))
@@ -314,6 +446,8 @@ export function createLoadTarget(
       .select({
         id: services.id,
         serverId: services.serverId,
+        projectId: services.projectId,
+        environmentId: services.environmentId,
         repositoryCredentialId: services.repositoryCredentialId,
         registryCredentialId: services.registryCredentialId,
         healthcheck: services.healthcheck,
@@ -361,6 +495,27 @@ export function createLoadTarget(
       .from(services)
       .where(and(eq(services.serverId, service.serverId), ne(services.id, service.id), isNotNull(services.publishedPort)));
 
+    // 23-04 A1: built from the service row (not loadOwnerChain), so it costs no extra service read.
+    const chain: OwnerChain = {
+      owner: { scope: 'service', projectId: service.projectId, serviceId: service.id },
+      projectId: service.projectId,
+      environmentId: service.environmentId,
+      serviceId: service.id,
+    };
+    const variables = await listChainVariables(deps.db, chain);
+    const visibleSecrets = await deps.db
+      .select({ id: secrets.id, scope: secrets.scope, name: secrets.name, version: secrets.version })
+      .from(secrets)
+      .where(visibleSecretsOf(chain));
+    let rollbackEnv: readonly RuntimeEnvEntry[] | null = null;
+    if (deployment.trigger === 'rollback') {
+      const snapshot = parseRuntimeConfigSnapshot(deployment.runtimeConfig);
+      // An unusable snapshot never reaches here: the worker ends it before loading (17-05).
+      rollbackEnv = snapshot.ok ? runtimeConfigEnv(snapshot.value) : [];
+    }
+    const env = resolveDeployEnv({ variables, secrets: visibleSecrets }, rollbackEnv);
+    if (!env.ok) return { ok: false, code: env.code, message: env.message };
+
     const resolved = resolveDeployTarget(
       {
         deployment,
@@ -381,7 +536,12 @@ export function createLoadTarget(
     const routes = await routesFor(deps, routeLock, service);
     return {
       ...resolved,
-      target: { ...resolved.target, recordRollbackStarted, ...(routes === undefined ? {} : { routes }) },
+      target: {
+        ...resolved.target,
+        recordRollbackStarted,
+        env: envOf(deps.db, chain, env, deps.masterKeys),
+        ...(routes === undefined ? {} : { routes }),
+      },
     };
   };
 }

@@ -75,7 +75,13 @@ export type DeployRunOutcome = DeploymentOutcome;
 /** The closed codes a failure before the pipeline can end with. */
 export type DeployJobFailureCode = Extract<
   DeploymentErrorCode,
-  'SERVER_UNREACHABLE' | 'DOCKER_UNAVAILABLE' | 'REPOSITORY_AUTH_FAILED' | 'REGISTRY_AUTH_FAILED'
+  | 'SERVER_UNREACHABLE'
+  | 'DOCKER_UNAVAILABLE'
+  | 'REPOSITORY_AUTH_FAILED'
+  | 'REGISTRY_AUTH_FAILED'
+  // 23-04: the env resolved in PREPARING (loadTarget), before anything connects.
+  | 'SECRET_UNRESOLVED'
+  | 'ROLLBACK_TARGET_UNAVAILABLE'
 >;
 
 export const DEPLOY_JOB_MESSAGES: Readonly<Record<DeployJobFailureCode, string>> = Object.freeze({
@@ -86,11 +92,14 @@ export const DEPLOY_JOB_MESSAGES: Readonly<Record<DeployJobFailureCode, string>>
     "The service's repository credential could not be used. Replace the deploy key or access token, then redeploy.",
   REGISTRY_AUTH_FAILED:
     "The service's registry credential could not be used. Replace the registry password, then redeploy.",
+  SECRET_UNRESOLVED: V04_DEPLOYMENT_ERROR_MESSAGES.SECRET_UNRESOLVED,
+  ROLLBACK_TARGET_UNAVAILABLE: V03_DEPLOYMENT_ERROR_MESSAGES.ROLLBACK_TARGET_UNAVAILABLE,
 });
 
 export type LoadTargetResult =
   | { readonly ok: true; readonly target: DeployTarget; readonly serverId: string }
-  | { readonly ok: false; readonly code: DeployJobFailureCode };
+  /** 23-04: `message` names the key and reference of an env failure (never a value). */
+  | { readonly ok: false; readonly code: DeployJobFailureCode; readonly message?: string };
 
 export type ConnectResult =
   | { readonly ok: true; readonly session: SshDeploySession; readonly close: () => Promise<void> }
@@ -173,8 +182,8 @@ const cancelledBeforeRun: FinishDeploymentInput = Object.freeze({
   container: null,
 });
 
-function failedWith(code: DeployJobFailureCode): FinishDeploymentInput {
-  return { status: 'FAILED', errorCode: code, errorMessage: DEPLOY_JOB_MESSAGES[code], commitSha: null, container: null };
+function failedWith(code: DeployJobFailureCode, message?: string): FinishDeploymentInput {
+  return { status: 'FAILED', errorCode: code, errorMessage: message ?? DEPLOY_JOB_MESSAGES[code], commitSha: null, container: null };
 }
 
 const rollbackTargetUnavailable: FinishDeploymentInput = Object.freeze({
@@ -348,7 +357,7 @@ export function createDeployJobHandler(deps: DeployJobDeps): (data: unknown, sig
           finish = cancelledBeforeRun;
           outcome = 'CANCELLED';
         } else if (!loaded.ok) {
-          finish = failedWith(loaded.code);
+          finish = failedWith(loaded.code, loaded.message);
           outcome = 'FAILED';
         } else {
           const redactor = deps.createRedactor();
