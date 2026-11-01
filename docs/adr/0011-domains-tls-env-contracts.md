@@ -197,6 +197,13 @@ is removed, plain HTTP to the same host answers `200` again in ~2.0 s.
 - Retry after a DNS fix (dns-check `RESOLVES`, or a PATCH) = write the file without the domain's
   routers, verify, then write it back. A plain rewrite is not a retry.
 - Tests and fixtures name only the Pebble directory (`https://pebble:14000/dir`); H3 enforces it.
+- Renewal contract (22-06, `tests/integration/proxy/tls-renewal.test.ts`): Pebble at 300 s, the
+  install seam `certificatesDurationHours: 1`; the reconciler goes ISSUED → RENEWING → ISSUED with
+  a later `notAfter`, HTTPS answers 200 throughout, `acme.json` stays root 0600 and no database
+  table holds certificate or key material. Run on 24.04: ~115 s for the whole file.
+- CI: the `tests/integration/proxy` suites run nightly (`proxy` job, 22.04 and 24.04, leak checks
+  on `noodara.test` containers and networks); `ci.yml` excludes them like deploy-engine and keeps
+  the DB-only `tests/integration/domains`.
 
 ## Certificate probe and status (A3)
 

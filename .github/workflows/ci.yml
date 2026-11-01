@@ -236,7 +236,10 @@ jobs:
       # Phase 12: tests/integration/deploy-engine (real builds on the sshd+dockerd fixture, both
       # Ubuntu versions) no longer fits this job's budget; nightly.yml runs it in full in the
       # `deploy-engine` and `soak` jobs, so pushes and PRs skip it here.
-      - run: pnpm test:integration --exclude 'tests/integration/deploy-engine/**'
+      # 22-06: tests/integration/proxy (Traefik + Pebble on the same fixture) is skipped for the
+      # same reason; nightly.yml's `proxy` job runs it on both Ubuntu versions.
+      # tests/integration/domains (DB-only, no proxy) still runs here.
+      - run: pnpm test:integration --exclude 'tests/integration/deploy-engine/**' --exclude 'tests/integration/proxy/**'
       - name: Fail if any noodara.test container survived
         if: always()
         run: |
