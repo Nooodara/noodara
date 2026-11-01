@@ -9,6 +9,7 @@
 // browser `Origin` header satisfies the control plane's Origin guard instead of 403
 // FORBIDDEN_ORIGIN (T-5-41).
 import { execFile } from 'node:child_process';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -37,6 +38,47 @@ const WEB_READY_PATTERN = /Ready in \d+ms/;
 
 const CONTROL_PLANE_DIR = path.join(repoRoot, 'apps/control-plane');
 
+// 24-04 (H1): the ACME test seam lives only here, never in the control-plane image or compose
+// files. The worker trusts Pebble's listener root from a file the `acme` fixture writes into the
+// run dir once Pebble is up (read lazily at proxy install); the API's DNS resolver is pointed at
+// challtestsrv by a preload that reads the `ip:port` the fixture writes (fixtures/dns-seam.mjs).
+export const E2E_ACME_CA_URL = 'https://pebble:14000/dir';
+export const ACME_ROOT_FILE_NAME = 'pebble-listener-root.pem';
+export const DNS_SERVER_FILE_NAME = 'dns-server';
+export const STACK_LOG_DIR_NAME = 'stack-logs';
+/** The env minimum (60 s): issuance failures and re-checks land within a test's budget. */
+const E2E_CERT_TIMING_MS = '60000';
+const DNS_SEAM = path.join(repoRoot, 'tests/e2e/fixtures/dns-seam.mjs');
+const LOG_FLUSH_MS = 500;
+
+function runDir(): string {
+  const dir = process.env['NOODARA_E2E_RUN_DIR'];
+  if (dir === undefined || dir === '') throw new Error('startStack: NOODARA_E2E_RUN_DIR unset (global-setup did not run)');
+  return dir;
+}
+
+/** Mirrors every stack process's stdout/stderr into `<runDir>/stack-logs/` (canary greps). */
+function mirrorLogs(dir: string, processes: Readonly<Record<string, BootProcess | undefined>>): () => void {
+  const logDir = path.join(dir, STACK_LOG_DIR_NAME);
+  mkdirSync(logDir, { recursive: true, mode: 0o700 });
+  const flush = (): void => {
+    for (const [name, proc] of Object.entries(processes)) {
+      if (proc === undefined) continue;
+      try {
+        writeFileSync(path.join(logDir, `${name}.log`), `${proc.stdout}\n${proc.stderr}`, { mode: 0o600 });
+      } catch {
+        // The run dir may already be gone at teardown.
+      }
+    }
+  };
+  const timer = setInterval(flush, LOG_FLUSH_MS);
+  timer.unref();
+  return () => {
+    clearInterval(timer);
+    flush();
+  };
+}
+
 /** Obviously-fake fixture credentials for the preseeded E2E admin (T-5-42) — never a value that
  *  resembles a real secret. Fixed rather than random so a spec can log in deterministically; the
  *  admin account only ever exists inside this fixture's own throwaway Postgres container. */
@@ -58,6 +100,7 @@ interface RunningStack extends Stack {
   readonly api: BootProcess;
   readonly worker: BootProcess;
   readonly web: BootProcess;
+  readonly stopLogs: () => void;
 }
 
 // Playwright's global-setup and global-teardown modules are loaded via plain require/import in
@@ -155,6 +198,7 @@ export async function startStack(): Promise<Stack> {
   const postgres = await startPostgres({ migrate: true });
   const redis = await startRedis();
 
+  const dir = runDir();
   const sharedEnv: NodeJS.ProcessEnv = {
     ...buildValidBootEnv(postgres.connectionString, redis.connectionUrl),
     PORT: String(API_PORT),
@@ -162,14 +206,20 @@ export async function startStack(): Promise<Stack> {
     NOODARA_API_ORIGIN: API_ORIGIN,
     NOODARA_ADMIN_EMAIL: E2E_ADMIN_EMAIL,
     NOODARA_ADMIN_PASSWORD: E2E_ADMIN_PASSWORD,
+    NOODARA_ACME_CA_URL: E2E_ACME_CA_URL,
+    NOODARA_ACME_CA_ROOT_FILE: path.join(dir, ACME_ROOT_FILE_NAME),
+    NOODARA_CERT_CHECK_INTERVAL_MS: E2E_CERT_TIMING_MS,
+    NOODARA_CERT_ISSUE_TIMEOUT_MS: E2E_CERT_TIMING_MS,
   };
 
   const api = spawnBootProcess({
     command: process.execPath,
-    args: [path.join(CONTROL_PLANE_DIR, 'dist/server.js')],
+    args: ['--import', DNS_SEAM, path.join(CONTROL_PLANE_DIR, 'dist/server.js')],
     cwd: CONTROL_PLANE_DIR,
-    env: sharedEnv,
+    env: { ...sharedEnv, E2E_DNS_SERVER_FILE: path.join(dir, DNS_SERVER_FILE_NAME) },
   });
+  const processes: Record<string, BootProcess | undefined> = { api };
+  const stopLogs = mirrorLogs(dir, processes);
 
   let worker: BootProcess | undefined;
   let web: BootProcess | undefined;
@@ -183,6 +233,7 @@ export async function startStack(): Promise<Stack> {
       cwd: CONTROL_PLANE_DIR,
       env: sharedEnv,
     });
+    processes['worker'] = worker;
     await waitForReady(worker, WORKER_READY_PATTERN, 'the worker', 60_000);
 
     web = spawnBootProcess({
@@ -195,8 +246,10 @@ export async function startStack(): Promise<Stack> {
         NOODARA_API_ORIGIN: API_ORIGIN,
       },
     });
+    processes['web'] = web;
     await waitForReady(web, WEB_READY_PATTERN, 'the web app', 60_000);
   } catch (err) {
+    stopLogs();
     await Promise.allSettled([api.killGroup(), worker?.killGroup(), web?.killGroup()]);
     await postgres.stop();
     await redis.stop();
@@ -212,6 +265,7 @@ export async function startStack(): Promise<Stack> {
     api,
     worker,
     web,
+    stopLogs,
   };
 
   return { baseUrl: activeStack.baseUrl, adminEmail: activeStack.adminEmail, adminPassword: activeStack.adminPassword };
@@ -267,6 +321,7 @@ export async function stopStack(stack: Stack): Promise<void> {
   await killAndWait(handle.web, 'the web app');
   await killAndWait(handle.worker, 'the worker');
   await killAndWait(handle.api, 'the API');
+  handle.stopLogs();
 
   try {
     await handle.redis.stop();

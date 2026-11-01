@@ -35,6 +35,7 @@ const STARTUP_TIMEOUT_MS = 180_000;
 const EXEC_TIMEOUT_MS = 30_000;
 const MANAGEMENT_TIMEOUT_MS = 10_000;
 const MANAGEMENT_PORT = 8055;
+const DNS_PORT = 8053;
 
 /** Throws unless `ref` is a tagged, digest-pinned, non-`latest` entry of the allowlist. */
 export function assertAllowlistedImage(ref: string): string {
@@ -55,6 +56,8 @@ export interface StartPebbleOptions {
   /** Validity of every issued certificate, in seconds (Pebble profile `validityPeriod`). */
   readonly validitySeconds: number;
   readonly labels?: Readonly<Record<string, string>>;
+  /** 24-04: also answer DNS on :53 (for resolv.conf) and publish 8053/udp to the runner. */
+  readonly exposeDns?: boolean;
 }
 
 export interface StartedPebble {
@@ -64,8 +67,14 @@ export interface StartedPebble {
   /** Root of Pebble's own HTTPS listener (minica), for LEGO_CA_CERTIFICATES. Public test data. */
   readonly listenerRootPem: string;
   readonly validitySeconds: number;
-  /** Points `host` at `ip` for Pebble's VA (A record only; AAAA stays empty). */
-  setARecord(host: string, ip: string): Promise<void>;
+  /** challtestsrv's address on `networkName` (a resolv.conf nameserver with `exposeDns`). */
+  readonly challtestsrvIp: string;
+  /** Runner-reachable `ip:port` of challtestsrv's DNS (UDP); only with `exposeDns`. */
+  readonly dnsServer: string | null;
+  /** Host-side ids of the Pebble and challtestsrv containers (leak checks). */
+  readonly containerIds: readonly string[];
+  /** Points `host` at `ip` (or several) for Pebble's VA (A records only; AAAA stays empty). */
+  setARecord(host: string, ip: string | readonly string[]): Promise<void>;
   clearARecord(host: string): Promise<void>;
   /** Idempotent. */
   stop(): Promise<void>;
@@ -137,8 +146,9 @@ export async function startPebble(options: StartPebbleOptions): Promise<StartedP
         '',
         '-doh',
         '',
+        ...(options.exposeDns === true ? ['-dns01', `:${String(DNS_PORT)},:53`] : []),
       ])
-      .withExposedPorts(MANAGEMENT_PORT)
+      .withExposedPorts(MANAGEMENT_PORT, ...(options.exposeDns === true ? [`${String(DNS_PORT)}/udp` as const] : []))
       .withWaitStrategy(Wait.forLogMessage('Starting challenge servers'))
       .withStartupTimeout(STARTUP_TIMEOUT_MS)
       .start();
@@ -198,8 +208,12 @@ export async function startPebble(options: StartPebbleOptions): Promise<StartedP
       ip: pebble.getIpAddress(options.networkName),
       listenerRootPem,
       validitySeconds: options.validitySeconds,
+      challtestsrvIp: challtestsrv.getIpAddress(options.networkName),
+      dnsServer:
+        options.exposeDns === true ? `127.0.0.1:${String(challtestsrv.getMappedPort(DNS_PORT, 'udp'))}` : null,
+      containerIds: [challtestsrv.getId(), pebble.getId()],
       setARecord: (host, ip) =>
-        management(managementBase, '/add-a', { host: fqdn(host), addresses: [ip] }),
+        management(managementBase, '/add-a', { host: fqdn(host), addresses: typeof ip === 'string' ? [ip] : [...ip] }),
       clearARecord: (host) => management(managementBase, '/clear-a', { host: fqdn(host) }),
       stop: async () => {
         if (stopped) return;

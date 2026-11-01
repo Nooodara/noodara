@@ -107,6 +107,8 @@ export interface CurlResult {
 
 export interface DeployHost {
   readonly runId: string;
+  /** The deploy-engine stack's Docker network (Pebble and challtestsrv join it). */
+  readonly networkName: string;
   readonly ssh: {
     readonly host: string;
     readonly port: number;
@@ -337,6 +339,7 @@ export async function startDeployHost(
 
   const handle: DeployHost = {
     runId,
+    networkName: stack.networkName,
     ssh: { ...stack.ssh, privateKeyPath },
     deployKey: stack.deployKey,
     registry: stack.registry,

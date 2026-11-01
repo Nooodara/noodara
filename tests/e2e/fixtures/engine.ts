@@ -74,11 +74,12 @@ export interface ConnectedServer {
   readonly name: string;
 }
 
-export async function connectServer(page: Page, host: DeployHost): Promise<ConnectedServer> {
+/** `hostOverride`: e.g. '127.0.0.1', so the DNS check compares against an IP literal. */
+export async function connectServer(page: Page, host: DeployHost, hostOverride?: string): Promise<ConnectedServer> {
   const name = `engine-${uniqueSuffix()}`;
   const created = await api(page, 'POST', '/api/servers', {
     name,
-    host: host.ssh.host,
+    host: hostOverride ?? host.ssh.host,
     sshPort: host.ssh.port,
     sshUser: host.ssh.user,
     credential: { type: 'ssh_private_key', privateKey: host.ssh.privateKey },
@@ -140,7 +141,7 @@ export class Cleanup {
 
 export type FixtureFiles = Readonly<Record<string, string>>;
 
-export function fixtureFiles(name: 'node-api' | 'unhealthy-api'): FixtureFiles {
+export function fixtureFiles(name: 'node-api' | 'unhealthy-api' | 'env-api'): FixtureFiles {
   const dir = path.join(FIXTURES_DIR, name);
   return {
     Dockerfile: readFileSync(path.join(dir, 'Dockerfile'), 'utf8'),
