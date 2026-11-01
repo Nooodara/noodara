@@ -624,7 +624,9 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-04 certificate reconciler on Ub
           cleared = await domainRow('a');
         }
         expect(cleared.certErrorCode).toBeNull();
-        expect(cleared.certStatus).toBe(before.certStatus);
+        // The certificate stays valid: a short-lived (Pebble) RENEWING one may be renewed by the
+        // restarted Traefik and read back ISSUED; it never turns FAILED/EXPIRED.
+        expect(before.certStatus === 'RENEWING' ? ['RENEWING', 'ISSUED'] : [before.certStatus]).toContain(cleared.certStatus);
       } finally {
         if (!restarted) await rootOut(['docker', 'start', proxyContainerName()]);
       }

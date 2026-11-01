@@ -48,7 +48,7 @@ interface Remote {
   cert?: string | ((hostname: string) => string);
   router?: string;
   truncated?: boolean;
-  throwOn?: RemoteCommand['name'];
+  throwOn?: RemoteCommand['name'] | undefined;
 }
 
 function streamResult(command: RemoteCommand, stdout: string, truncated = false): StreamResult {

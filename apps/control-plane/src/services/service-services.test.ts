@@ -5,6 +5,7 @@ import { deployments as deploymentsTable } from '../db/schema/deployments.js';
 import { domains as domainsTable } from '../db/schema/domains.js';
 import { services as servicesTable } from '../db/schema/services.js';
 import type { ServiceRemoteCleanupRequest } from '../deploy/service-ops.js';
+import { createRouteLock, type RouteLock } from '../domains/apply-routes.js';
 import {
   createServiceServices,
   buildkitGuard,
@@ -364,7 +365,13 @@ describe('deleteService: remote cleanup gate (22-05 A3)', () => {
     return { db: handle as unknown as Database, deleted };
   }
 
-  function run(options: { claimed: boolean; domains: boolean; cleanupOk?: boolean }) {
+  function run(options: {
+    claimed: boolean;
+    domains: boolean;
+    cleanupOk?: boolean;
+    routeLock?: RouteLock;
+    onCleanup?: () => void;
+  }) {
     const tables = new Map<unknown, unknown[]>([
       [servicesTable, [STORED_SERVICE]],
       [deploymentsTable, options.claimed ? [{ id: '0190a5d2-0000-7000-8000-0000000000d1' }] : []],
@@ -373,14 +380,22 @@ describe('deleteService: remote cleanup gate (22-05 A3)', () => {
     const fake = fakeDb(tables);
     const requests: ServiceRemoteCleanupRequest[] = [];
     const publisher = recordingPublisher();
+    const locked: string[] = [];
     const result = deleteService(
       {
         db: fake.db,
         now: () => new Date('2026-10-31T00:00:00Z'),
         events: publisher,
         panelPorts: [],
+        routeLock:
+          options.routeLock ??
+          (<T>(serviceId: string, task: () => Promise<T>): Promise<T> => {
+            locked.push(serviceId);
+            return task();
+          }),
         remoteCleanup: (request) => {
           requests.push(request);
+          options.onCleanup?.();
           return Promise.resolve(
             options.cleanupOk === false
               ? { ok: false, code: 'SERVICE_CLEANUP_FAILED', message: 'Removing the service resources on the server failed.' }
@@ -390,8 +405,59 @@ describe('deleteService: remote cleanup gate (22-05 A3)', () => {
       },
       { actor: ACTOR, projectId: PROJECT_ID, serviceId: SERVICE_ID, confirmName: 'api' },
     );
-    return { result, requests, deleted: fake.deleted };
+    return { result, requests, deleted: fake.deleted, locked };
   }
+
+  it('runs the remote cleanup and the row delete under the service route lock (22-08 A5)', async () => {
+    const events: string[] = [];
+    const recordingLock: RouteLock = async <T>(serviceId: string, task: () => Promise<T>): Promise<T> => {
+      events.push(`lock:${serviceId}`);
+      const value = await task();
+      events.push('unlock');
+      return value;
+    };
+    const { result, deleted } = run({
+      claimed: false,
+      domains: true,
+      routeLock: recordingLock,
+      onCleanup: () => events.push('cleanup'),
+    });
+
+    expect(await result).toEqual({ ok: true, serviceId: SERVICE_ID });
+    expect(deleted).toContain(servicesTable);
+    expect(events).toEqual([`lock:${SERVICE_ID}`, 'cleanup', 'unlock']);
+  });
+
+  it('a route apply queued during the delete runs only after the rows are gone (22-08 A5)', async () => {
+    const lock = createRouteLock(null);
+    let applySawDeleted: boolean | undefined;
+    let deletedRef: unknown[] = [];
+    let queued: Promise<void> | undefined;
+    const handle = run({
+      claimed: false,
+      domains: true,
+      routeLock: lock,
+      onCleanup: () => {
+        // A concurrent domain apply arrives between the route-file removal and the row delete.
+        queued = lock(SERVICE_ID, () => {
+          applySawDeleted = deletedRef.includes(servicesTable);
+          return Promise.resolve();
+        });
+      },
+    });
+    deletedRef = handle.deleted;
+
+    expect(await handle.result).toEqual({ ok: true, serviceId: SERVICE_ID });
+    await queued;
+    expect(applySawDeleted).toBe(true);
+  });
+
+  it('takes the lock for the service being deleted', async () => {
+    const { result, locked } = run({ claimed: false, domains: false });
+
+    expect(await result).toEqual({ ok: true, serviceId: SERVICE_ID });
+    expect(locked).toEqual([SERVICE_ID]);
+  });
 
   it('runs the remote cleanup for a never-deployed service that has domains (route file, proxy attachment)', async () => {
     const { result, requests, deleted } = run({ claimed: false, domains: true });

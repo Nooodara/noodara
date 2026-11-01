@@ -36,6 +36,7 @@ import { services } from '../db/schema/services.js';
 import type { ServiceOperation, ServiceRemoteCleanup } from '../deploy/service-ops.js';
 import type { RecordServiceOperationInput, ServiceOperationQueue, ServiceOperationTarget } from '../deploy/service-ops-job.js';
 import { buildServiceUpdatedEvent } from '../events/deploy-engine-events.js';
+import { createRouteLock, type RouteLock } from '../domains/apply-routes.js';
 import { publishServerEvent, type ServerEventPublisher } from '../events/server-event-publisher.js';
 import type { MasterKeys, ServiceActor } from './server-service-deps.js';
 import {

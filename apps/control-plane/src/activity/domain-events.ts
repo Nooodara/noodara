@@ -2,6 +2,8 @@
 // as the row. The metadata names only the changed field (never a hostname, an IP or ACME data).
 // 22-04 (A3, H4): the certificate and route-restore events of the cert reconciler; their metadata is
 // the closed allowlist of activity-event.ts (ids, status, duration), never a certificate body.
+import { sql, type AnyColumn, type SQL } from 'drizzle-orm';
+import { activityEvents } from '../db/schema/activity-events.js';
 import { writeActivityEvent, type ActivityWriteHandle, type WriteActivityEventInput } from './write-activity-event.js';
 
 export type DomainEventActor = { readonly type: 'user'; readonly id: string } | { readonly type: 'system' };
@@ -78,4 +80,20 @@ export function writeDomainActivityEvent(
   at: Date,
 ): Promise<string> {
   return writeActivityEvent(handle, input, at);
+}
+
+/**
+ * 22-08 A1: the outcome of the latest `service.updated` domains event of the service in
+ * `serviceIdColumn` (a correlated subquery; `failure` marks a route cleanup still pending).
+ */
+export function latestServiceDomainsOutcome(serviceIdColumn: AnyColumn): SQL<string | null> {
+  return sql<string | null>`(
+    select ${activityEvents.outcome} from ${activityEvents}
+    where ${activityEvents.entityType} = 'service'
+      and ${activityEvents.entityId} = ${serviceIdColumn}
+      and ${activityEvents.action} = 'service.updated'
+      and ${activityEvents.metadata} -> 'changedFields' @> '["domains"]'::jsonb
+    order by ${activityEvents.occurredAt} desc, ${activityEvents.createdAt} desc
+    limit 1
+  )`;
 }

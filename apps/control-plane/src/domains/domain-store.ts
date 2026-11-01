@@ -18,10 +18,14 @@ import {
 import { mapUniqueViolation, type DomainApplyStatus } from '@noodara/domain/api-contract';
 import type { DomainAction } from '@noodara/domain/activity';
 import { and, asc, desc, eq, inArray, ne, sql, type SQL } from 'drizzle-orm';
-import { writeDomainActivityEvent, writeServiceDomainsChangedEvent, writeServiceRouteCleanupEvent } from '../activity/domain-events.js';
+import {
+  latestServiceDomainsOutcome,
+  writeDomainActivityEvent,
+  writeServiceDomainsChangedEvent,
+  writeServiceRouteCleanupEvent,
+} from '../activity/domain-events.js';
 import { writeProxyActivityEvent } from '../activity/proxy-events.js';
 import type { Database } from '../db/client.js';
-import { activityEvents } from '../db/schema/activity-events.js';
 import { deployments } from '../db/schema/deployments.js';
 import { domains } from '../db/schema/domains.js';
 import { servers } from '../db/schema/servers.js';
@@ -272,15 +276,7 @@ export async function recordRouteCleanup(
  * cleanup failure: their dynamic file is an orphan the reconcile cycle removes.
  */
 export async function listOrphanRouteServices(db: Handle, limit: number): Promise<string[]> {
-  const latestDomainsOutcome = sql`(
-    select ${activityEvents.outcome} from ${activityEvents}
-    where ${activityEvents.entityType} = 'service'
-      and ${activityEvents.entityId} = ${services.id}
-      and ${activityEvents.action} = 'service.updated'
-      and ${activityEvents.metadata} -> 'changedFields' @> '["domains"]'::jsonb
-    order by ${activityEvents.occurredAt} desc, ${activityEvents.createdAt} desc
-    limit 1
-  )`;
+  const latestDomainsOutcome = latestServiceDomainsOutcome(services.id);
   const rows = await db
     .select({ serviceId: services.id })
     .from(services)

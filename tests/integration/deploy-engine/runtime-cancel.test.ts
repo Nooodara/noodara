@@ -8,6 +8,8 @@
 // - 17-06 A1: a cancel during HEALTHCHECK removes the new container and puts `-prev` back under the
 //   service name (CANCELLED); a cancel during ROLLING_BACK is the named 409 ROLLBACK_IN_PROGRESS and
 //   the rollback runs to ROLLED_BACK.
+// - 22-08 A7: a cancel raised while a routed service's deployment is DEPLOYING ends CANCELLED and
+//   the route (real Traefik, installed against Pebble) keeps answering the previous deployment.
 import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -22,6 +24,7 @@ import { createSsh2Adapter, formatFingerprint } from '@noodara/ssh';
 import {
   credentials,
   deployments,
+  domains,
   environments,
   projects,
   servers,
@@ -37,6 +40,7 @@ import {
   startDeployEngineStack,
   type DeployEngineStack,
 } from '../helpers/deploy-engine.js';
+import { PEBBLE_ACME_DIRECTORY_URL, PEBBLE_HOSTNAME, TRAEFIK_IMAGE, startPebble, type StartedPebble } from '../helpers/pebble.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../helpers/redis.js';
 import { runTeardown, settleWithin } from '../helpers/teardown.js';
@@ -80,6 +84,10 @@ const MAX_CACHE_GROWTH_PER_CANCEL = 64_000;
 /** The ps marker of the slow build's RUN step: unique to this file. */
 const SLOW_MARKER = 'sleep 307';
 const ACTOR = { type: 'system' } as const;
+const TIMEOUTS = { connectMs: 20_000, commandMs: 60_000, discoveryMs: 120_000 } as const;
+const ROUTED_CASE_TIMEOUT_MS = 900_000;
+const ROUTE_WAIT_MS = 20_000;
+const CERT_VALIDITY_SECONDS = 3600;
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -152,6 +160,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
   let triggerDeploy: ((serviceId: string) => Promise<string>) | undefined;
   let createRowOnly: ((serviceId: string) => Promise<string>) | undefined;
   let cancelDeployment: CancelDeployment | undefined;
+  let pebble: StartedPebble | undefined;
 
   const masterKey = randomBytes(32);
   const events: ServerEvent[] = [];
@@ -470,6 +479,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
         { name: 'worker.close', run: () => worker?.close() },
         { name: 'deployQueue.close', run: () => deployQueue?.close() },
         { name: 'disconnect redis connections', run: () => { workerConnection?.disconnect(); queueConnection?.disconnect(); } },
+        { name: 'pebble.stop', run: () => pebble?.stop(), timeoutMs: FIXTURE_STOP_TIMEOUT_MS },
         { name: 'redis.stop', run: () => rd?.stop(), timeoutMs: FIXTURE_STOP_TIMEOUT_MS },
         { name: 'postgres.stop', run: () => pg?.stop(), timeoutMs: FIXTURE_STOP_TIMEOUT_MS },
         { name: 'stack.stop', run: () => stk?.stop(), timeoutMs: STACK_STOP_TIMEOUT_MS },
@@ -722,6 +732,113 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('12-13 / A1-A4: cancel and worker-c
       await root(['docker', 'rm', '-f', `noodara-${serviceId}`, `noodara-${serviceId}-prev`]);
     }
   }, CASE_TIMEOUT_MS);
+
+  /** 22-08 A7: installs the real proxy (Traefik against Pebble) and returns the domain applier's re-apply. */
+  const installRoutedProxy = async (): Promise<() => Promise<{ applied: number; failed: number }>> => {
+    if (tempRoot === undefined) throw new Error('runtime not started');
+    const proxyJob = await import('../../../apps/control-plane/src/proxy/proxy-job.js');
+    const proxyWiring = await import('../../../apps/control-plane/src/proxy/proxy-wiring.js');
+    const deployConnect = await import('../../../apps/control-plane/src/deploy/deploy-connect.js');
+    const domainServices = await import('../../../apps/control-plane/src/domains/domain-services.js');
+    const domainApply = await import('../../../apps/control-plane/src/domains/domain-apply.js');
+    pebble = await startPebble({ networkName: s().networkName, validitySeconds: CERT_VALIDITY_SECONDS });
+    const caRootFile = path.join(tempRoot, 'ca-root.pem');
+    writeFileSync(caRootFile, pebble.listenerRootPem, { mode: 0o600 });
+    const quiet = { info: () => undefined, warn: () => undefined, error: () => undefined };
+    const ssh = createSsh2Adapter();
+    const masterKeys = () => Promise.resolve({ current: masterKey });
+    const install = proxyJob.createProxyInstallJobHandler(
+      proxyWiring.createProxyInstallJobDeps({
+        db: db(),
+        events: { publish: () => Promise.resolve() },
+        ssh,
+        timeouts: TIMEOUTS,
+        masterKeys,
+        image: TRAEFIK_IMAGE,
+        acmeCaUrl: PEBBLE_ACME_DIRECTORY_URL,
+        acmeCaRootFile: caRootFile,
+        maxLineBytes: 16_384,
+        logger: quiet,
+        extraHosts: [{ name: PEBBLE_HOSTNAME, ip: pebble.ip }],
+      }),
+    );
+    await db().update(servers).set({ proxyStatus: 'INSTALLING' }).where(eq(servers.id, serverId));
+    expect(await install({ serverId, acmeEmail: 'admin@noodara.dev', jobId: `proxy-install-${serverId}` })).not.toBe('failed');
+    const [server] = await db().select({ proxyStatus: servers.proxyStatus }).from(servers).where(eq(servers.id, serverId));
+    expect(server?.proxyStatus).toBe('RUNNING');
+    const connect = deployConnect.createDeployConnect({
+      loadServer: deployConnect.loadDeployServerFromDb(db()),
+      ssh,
+      timeouts: TIMEOUTS,
+      masterKeys,
+    });
+    const apply = domainServices.createDomainApplier({
+      db: db(),
+      connect,
+      createRedactor,
+      limits: domainApply.domainApplyLimits(TIMEOUTS.commandMs),
+    });
+    return () => domainServices.reapplyPendingDomains({ db: db(), apply, logger: { warn: () => undefined } });
+  };
+  /** Status code and body of `/` through Traefik (Host header), curl as root on the deploy host. */
+  const hit = async (host: string): Promise<{ code: string; body: string }> => {
+    const result = await root(['curl', '-s', '--max-time', '3', '-H', `Host: ${host}`, '-w', ' %{http_code}', 'http://127.0.0.1/']);
+    const at = result.stdout.lastIndexOf(' ');
+    return { code: result.stdout.slice(at + 1).trim(), body: result.stdout.slice(0, Math.max(at, 0)) };
+  };
+  const waitAnswer = async (host: string, body: string): Promise<{ code: string; body: string }> => {
+    const deadline = Date.now() + ROUTE_WAIT_MS;
+    for (;;) {
+      const current = await hit(host);
+      if ((current.code === '200' && current.body === body) || Date.now() >= deadline) return current;
+      await delay(250);
+    }
+  };
+
+  it('22-08 A7: a cancel during DEPLOYING on a routed service ends CANCELLED and the route keeps serving the previous deployment', async () => {
+    if (triggerDeploy === undefined) throw new Error('runtime not started');
+    const reapplyPending = await installRoutedProxy();
+    const host = `c${randomUUID().slice(0, 8)}.cancel.noodara.test`;
+    const previous = JSON.stringify({ service: 'node-api', ok: true });
+    const serviceId = await insertService(REPOS.healthy, httpCheck('/health'));
+    try {
+      await db().insert(domains).values({ projectId, serviceId, hostname: host, httpsRedirect: false, applyStatus: 'PENDING' });
+      // A long start period keeps a new (unhealthy) version in HEALTHCHECK until the cancel lands.
+      const first = await deployThenBreak(serviceId, 120);
+      expect(await reapplyPending()).toEqual({ applied: 1, failed: 0 });
+      expect(await waitAnswer(host, previous)).toEqual({ code: '200', body: previous });
+
+      const deploymentId = await triggerDeploy(serviceId);
+      let accepted: Promise<CancelDeploymentResult> | undefined;
+      onEvent = (event) => {
+        if (event.type !== 'deployment.updated' || event.deployment.id !== deploymentId) return;
+        if (event.deployment.status === 'DEPLOYING') accepted ??= cancel(deploymentId);
+      };
+      const row = await waitStatus(deploymentId, (status) => TERMINAL.has(status));
+      onEvent = null;
+
+      if (accepted === undefined) throw new Error('DEPLOYING was never published');
+      // Only the worker moves a claimed row: the API answers 202 with the row as it was.
+      expect(await accepted).toMatchObject({ ok: true, deployment: { id: deploymentId, status: 'DEPLOYING' } });
+      expect({ status: row.status, errorCode: row.errorCode }).toEqual({ status: 'CANCELLED', errorCode: null });
+      expect(deploymentStatuses(deploymentId)).toContain('DEPLOYING');
+      expect(deploymentStatuses(deploymentId).filter((status) => TERMINAL.has(status))).toEqual(['CANCELLED']);
+      // The previous deployment runs under the service name and the route answers it over HTTP.
+      expect(await containerField(`noodara-${serviceId}`, '{{.State.Status}} {{.Config.Image}}')).toBe(
+        `running noodara/${serviceId}:${first.id}`,
+      );
+      expect(await waitAnswer(host, previous)).toEqual({ code: '200', body: previous });
+      // Stable, not a transient answer: three more samples all hit the previous deployment.
+      for (let sample = 0; sample < 3; sample += 1) {
+        expect(await hit(host)).toEqual({ code: '200', body: previous });
+        await delay(250);
+      }
+      expect(await serviceContainers(serviceId)).toEqual([`noodara-${serviceId}`]);
+    } finally {
+      onEvent = null;
+      await root(['docker', 'rm', '-f', `noodara-${serviceId}`, `noodara-${serviceId}-prev`]);
+    }
+  }, ROUTED_CASE_TIMEOUT_MS);
 
   it('noodara-security: no credential reaches events, logs or deployment rows', async () => {
     const rows = await db().select().from(deployments);
