@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-01T03:06:14.507Z",
+  "updatedAt": "2026-11-01T03:06:14.740Z",
   "cursor": {
     "phase": "22",
     "task": "22-04"
@@ -8405,13 +8405,15 @@
             "apps/control-plane/src/events/deploy-engine-events.ts",
             "apps/control-plane/src/events/deploy-engine-events.test.ts",
             "tests/integration/proxy/tls-issuance.test.ts",
-            "tests/integration/helpers/pebble.ts"
+            "tests/integration/helpers/pebble.ts",
+            "packages/domain/src/activity/activity-event.ts",
+            "packages/domain/src/activity/activity-event.test.ts"
           ],
           "wave": 4,
           "dependsOn": [
             "22-03"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
