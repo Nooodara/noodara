@@ -54,7 +54,7 @@ describe('secretsRotateCommand preconditions', () => {
   const env = (current: Buffer, previous?: Buffer) => ({
     NOODARA_MASTER_KEY: current.toString('base64'),
     ...(previous === undefined ? {} : { NOODARA_MASTER_KEY_PREVIOUS: previous.toString('base64') }),
-  });
+  }) as Parameters<typeof secretsRotateCommand>[0]['env'];
   const noDb = {
     transaction: () => {
       throw new Error('must not open a transaction');

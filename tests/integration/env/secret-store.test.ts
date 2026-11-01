@@ -282,7 +282,10 @@ describe('secret store (SEC-04)', () => {
         await replaceSecret(tx, target.id, appSecret(replacement), windowKeys);
         rotation = secretsRotateCommand({
           db,
-          env: { NOODARA_MASTER_KEY: NEW_KEY.toString('base64'), NOODARA_MASTER_KEY_PREVIOUS: OLD_KEY.toString('base64') },
+          env: {
+            NOODARA_MASTER_KEY: NEW_KEY.toString('base64'),
+            NOODARA_MASTER_KEY_PREVIOUS: OLD_KEY.toString('base64'),
+          } as Parameters<typeof secretsRotateCommand>[0]['env'],
           logger,
         });
         await waitForLockWaiter(db);

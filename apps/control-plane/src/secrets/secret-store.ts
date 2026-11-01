@@ -19,10 +19,16 @@ import {
 } from '@noodara/domain/security';
 import type { EnvScope } from '@noodara/domain';
 import { and, eq, inArray, or, sql } from 'drizzle-orm';
-import type { ActivityWriteHandle } from '../activity/write-activity-event.js';
+import type { NodePgQueryResultHKT } from 'drizzle-orm/node-postgres';
+import type { PgDatabase } from 'drizzle-orm/pg-core';
 import { credentials } from '../db/schema/credentials.js';
+import type * as schema from '../db/schema/index.js';
 import { secrets } from '../db/schema/secrets.js';
 import type { MasterKeys } from '../services/server-service-deps.js';
+
+/** A Drizzle handle or transaction bound to the full schema (kept local: ACT-01 forbids importing
+ *  the activity writer's handle type outside src/services/ and src/activity/). */
+export type SecretStoreHandle = PgDatabase<NodePgQueryResultHKT, typeof schema>;
 
 /** The hint shows the last 4 characters only for values at least this long (shorter ones: ''). */
 export const HINT_MIN_VALUE_LENGTH = 16;
@@ -237,8 +243,8 @@ function toRecord(row: typeof secrets.$inferSelect): SecretRecord {
  * The `key_version` a newly encrypted secret uses: the current maximum across `secrets` and
  * `credentials` (one master-key version space, rotated together), or 1 on an empty install.
  */
-export async function currentSecretKeyVersion(handle: ActivityWriteHandle): Promise<number> {
-  const result = await handle.execute<{ v: number | null }>(
+export async function currentSecretKeyVersion(handle: SecretStoreHandle): Promise<number> {
+  const result = await handle.execute<{ v: number | string | null }>(
     sql`SELECT GREATEST((SELECT max(${secrets.keyVersion}) FROM ${secrets}), (SELECT max(${credentials.keyVersion}) FROM ${credentials})) AS v`,
   );
   const value = result.rows[0]?.v;
@@ -253,7 +259,7 @@ export interface CreateSecretInput {
 
 /** Inserts a secret at version 1. A unique violation (same name per owner) propagates. */
 export async function createSecret(
-  handle: ActivityWriteHandle,
+  handle: SecretStoreHandle,
   input: CreateSecretInput,
   masterKeys: MasterKeys,
 ): Promise<SecretRecord> {
@@ -283,7 +289,7 @@ export async function createSecret(
  * every row) and this write serialize, and the key version is read after the lock.
  */
 export async function replaceSecret(
-  handle: ActivityWriteHandle,
+  handle: SecretStoreHandle,
   id: string,
   value: SecretValue,
   masterKeys: MasterKeys,
@@ -322,7 +328,7 @@ export interface DecryptForDeployInput {
  * `release()` on the lease after the attempt, on every exit path.
  */
 export async function decryptForDeploy(
-  handle: ActivityWriteHandle,
+  handle: SecretStoreHandle,
   input: DecryptForDeployInput,
   masterKeys: MasterKeys,
   redactor: Redactor,
@@ -357,7 +363,7 @@ export async function decryptForDeploy(
 }
 
 /** The envelope columns of every `secrets` row, locked FOR UPDATE inside `tx` (secrets rotate). */
-export async function lockSecretEnvelopes(tx: ActivityWriteHandle): Promise<EnvelopeRow[]> {
+export async function lockSecretEnvelopes(tx: SecretStoreHandle): Promise<EnvelopeRow[]> {
   return tx
     .select({ id: secrets.id, encryptedValue: secrets.encryptedValue, keyVersion: secrets.keyVersion })
     .from(secrets)
@@ -366,7 +372,7 @@ export async function lockSecretEnvelopes(tx: ActivityWriteHandle): Promise<Enve
 
 /** Writes one rotated envelope (ciphertext and key version together) inside `tx`. */
 export async function writeSecretEnvelope(
-  tx: ActivityWriteHandle,
+  tx: SecretStoreHandle,
   id: string,
   encryptedValue: string,
   keyVersion: number,

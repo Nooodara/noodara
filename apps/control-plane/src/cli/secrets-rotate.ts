@@ -10,11 +10,14 @@ import {
   SecretTamperError,
   type EncryptedBlob,
 } from '@noodara/domain/security';
-import type { ActivityWriteHandle } from '../activity/write-activity-event.js';
 import { decodeMasterKey, masterKeyFingerprint } from '../boot/master-key.js';
 import { credentials } from '../db/schema/credentials.js';
 import type { Env } from '../env.js';
-import { lockSecretEnvelopes, writeSecretEnvelope } from '../secrets/secret-store.js';
+import {
+  lockSecretEnvelopes,
+  writeSecretEnvelope,
+  type SecretStoreHandle,
+} from '../secrets/secret-store.js';
 
 export interface SecretsRotateLogger {
   error(msg: string): void;
@@ -22,7 +25,7 @@ export interface SecretsRotateLogger {
 }
 
 export interface SecretsRotateDeps {
-  readonly db: ActivityWriteHandle;
+  readonly db: SecretStoreHandle;
   readonly env: Pick<Env, 'NOODARA_MASTER_KEY' | 'NOODARA_MASTER_KEY_PREVIOUS'>;
   readonly logger: SecretsRotateLogger;
 }
@@ -89,7 +92,7 @@ export function planRotation(
   return updates;
 }
 
-async function rotateAll(tx: ActivityWriteHandle, previousKey: Buffer, newKey: Buffer): Promise<number> {
+async function rotateAll(tx: SecretStoreHandle, previousKey: Buffer, newKey: Buffer): Promise<number> {
   const credentialRows = await tx
     .select({
       id: credentials.id,

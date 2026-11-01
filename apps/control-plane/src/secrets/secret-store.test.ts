@@ -10,9 +10,7 @@ import {
   encryptSecret,
   revealSecret,
   secretValue,
-  type EncryptedBlob,
 } from '@noodara/domain/security';
-import type { ActivityWriteHandle } from '../activity/write-activity-event.js';
 import {
   createSecret,
   decryptForDeploy,
@@ -26,6 +24,7 @@ import {
   SecretStoreError,
   secretHint,
   type ScopeChain,
+  type SecretStoreHandle,
 } from './secret-store.js';
 
 const CURRENT = randomBytes(32);
@@ -112,7 +111,7 @@ function fakeHandle(rows: StoredRow[], maxKeyVersion: number | null = 1) {
     update: () => chain(rows),
     transaction: (cb: (tx: unknown) => Promise<unknown>) => cb(handle),
   };
-  return { handle: handle as unknown as ActivityWriteHandle, calls };
+  return { handle: handle as unknown as SecretStoreHandle, calls };
 }
 
 describe('secretHint', () => {
@@ -366,7 +365,7 @@ describe('decryptForDeploy', () => {
   });
 
   it('surfaces a tampered row as SECRET_TAMPERED without the value', async () => {
-    const row = storedRow({ encryptedValue: encryptSecret(canary(30), { key: OTHER, version: 1 }) as EncryptedBlob });
+    const row = storedRow({ encryptedValue: encryptSecret(canary(30), { key: OTHER, version: 1 }) });
     const { handle } = fakeHandle([row]);
     await expect(
       decryptForDeploy(handle, { chain: CHAIN, secretIds: [row.id] }, { current: CURRENT }, createRedactor()),
