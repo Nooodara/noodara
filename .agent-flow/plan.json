@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-01T06:58:12.796Z",
+  "updatedAt": "2026-11-01T06:58:13.011Z",
   "cursor": {
     "phase": "22",
     "task": "22-08"
@@ -8728,13 +8728,14 @@
             "tests/integration/proxy/routes-across-deploys.test.ts",
             "tests/integration/deploy-engine/runtime-cancel.test.ts",
             "docs/adr/0011-domains-tls-env-contracts.md",
-            "docs/deploy-engine.md"
+            "docs/deploy-engine.md",
+            "tests/integration/proxy/tls-renewal.test.ts"
           ],
           "wave": 8,
           "dependsOn": [
             "22-07"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
