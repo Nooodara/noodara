@@ -15,6 +15,8 @@
 //   `deployment.rollback_started` activity event (ids only) through src/activity/.
 // - 18-03: deployments.commit_sha set before the run (a webhook push) is the exact commit to
 //   deploy: it rides along as `requestedSha`, re-validated as 40-hex (corrupt = caller bug).
+// - 22-05: a service with at least one domain row gets `routes` (is its server's proxy RUNNING,
+//   and the H2 re-apply through apply-routes under the per-service route lock); none = no routes.
 import { and, desc, eq, inArray, isNotNull, ne } from 'drizzle-orm';
 import {
   parseRuntimeConfigSnapshot,
@@ -36,7 +38,11 @@ import { writeDeploymentRollbackStartedEvent } from '../activity/index.js';
 import type { Database } from '../db/client.js';
 import { credentials } from '../db/schema/credentials.js';
 import { deployments } from '../db/schema/deployments.js';
+import { domains } from '../db/schema/domains.js';
+import { servers } from '../db/schema/servers.js';
 import { services } from '../db/schema/services.js';
+import { applyRoutes, createRouteLock, sessionRoutePorts, type RouteLock } from '../domains/apply-routes.js';
+import { domainApplyLimits, type DomainApplyLimits } from '../domains/domain-apply.js';
 import type { MasterKeys } from '../services/server-service-deps.js';
 import {
   decodeServiceCredential,
@@ -50,7 +56,7 @@ import type {
   LoadTargetResult,
   PreviousSuccessDeployment,
 } from './deploy-worker.js';
-import type { DeployCredential } from './run-deployment.js';
+import type { DeployCredential, DeployRoutes } from './run-deployment.js';
 
 export class DeployTargetError extends Error {
   constructor() {
@@ -257,12 +263,41 @@ export interface LoadTargetDeps {
   readonly db: Database;
   readonly masterKeys: () => Promise<MasterKeys>;
   readonly panelPorts: PanelPorts;
+  /** 22-05: bounds of the H2 re-apply; defaults to a 30 s step. */
+  readonly routeLimits?: DomainApplyLimits;
+  /** 22-05: defaults to the per-service route lock over `db` (H3). */
+  readonly routeLock?: RouteLock;
+}
+
+/** The default step bound of a deploy's route re-apply (deploy-runtime keeps its own timeouts). */
+export const DEPLOY_ROUTE_STEP_MS = 30_000;
+
+/** 22-05: `routes` for a service with domains, or undefined (no proxy command at all). */
+async function routesFor(
+  deps: LoadTargetDeps,
+  lock: RouteLock,
+  service: { readonly id: string; readonly serverId: string },
+): Promise<DeployRoutes | undefined> {
+  const [routed] = await deps.db.select({ id: domains.id }).from(domains).where(eq(domains.serviceId, service.id)).limit(1);
+  if (routed === undefined) return undefined;
+  const [server] = await deps.db
+    .select({ proxyStatus: servers.proxyStatus })
+    .from(servers)
+    .where(eq(servers.id, service.serverId))
+    .limit(1);
+  const limits = deps.routeLimits ?? domainApplyLimits(DEPLOY_ROUTE_STEP_MS);
+  return {
+    proxyRunning: server?.proxyStatus === 'RUNNING',
+    reapply: (session, internalPort) =>
+      applyRoutes(service.id, sessionRoutePorts(deps.db, session), { lock, limits, internalPort }),
+  };
 }
 
 /** The job's `loadTarget` port over the database. Throws only on a driver error or a caller bug. */
 export function createLoadTarget(
   deps: LoadTargetDeps,
 ): (deployment: { readonly id: string; readonly serviceId: string }) => Promise<LoadTargetResult> {
+  const routeLock = deps.routeLock ?? createRouteLock(deps.db);
   return async ({ id }) => {
     const [deployment] = await deps.db
       .select({
@@ -343,6 +378,10 @@ export function createLoadTarget(
     const recordRollbackStarted = async (targetDeploymentId: string | null): Promise<void> => {
       await writeDeploymentRollbackStartedEvent(deps.db, { deploymentId, serviceId, targetDeploymentId });
     };
-    return { ...resolved, target: { ...resolved.target, recordRollbackStarted } };
+    const routes = await routesFor(deps, routeLock, service);
+    return {
+      ...resolved,
+      target: { ...resolved.target, recordRollbackStarted, ...(routes === undefined ? {} : { routes }) },
+    };
   };
 }

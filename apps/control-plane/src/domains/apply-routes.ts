@@ -178,3 +178,12 @@ export function dbRoutePorts(deps: DbRoutePortsDeps): ApplyRoutesPorts {
     record: (ids, status) => setApplyStatus(deps.db, ids, status, now()),
   };
 }
+
+/** Ports over the database and a session the caller owns (a deploy's re-apply, H2): never closed here. */
+export function sessionRoutePorts(db: Database, session: SshDeploySession, now: () => Date = () => new Date()): ApplyRoutesPorts {
+  return {
+    loadDesired: (serviceId) => loadRouteDesired(db, serviceId),
+    open: () => Promise.resolve({ ok: true, session }),
+    record: (ids, status) => setApplyStatus(db, ids, status, now()),
+  };
+}

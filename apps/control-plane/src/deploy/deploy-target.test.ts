@@ -10,7 +10,11 @@ import { revealSecret, secretValue } from '@noodara/domain/security';
 import type { Database } from '../db/client.js';
 import { credentials } from '../db/schema/credentials.js';
 import { deployments } from '../db/schema/deployments.js';
+import { domains } from '../db/schema/domains.js';
+import { servers } from '../db/schema/servers.js';
 import { services } from '../db/schema/services.js';
+import type { RouteLock } from '../domains/apply-routes.js';
+import type { SshDeploySession } from '@noodara/ssh';
 import { encodeServiceCredential } from '../services/service-credentials.js';
 import {
   createLoadTarget,
@@ -25,6 +29,7 @@ const key = { key: masterKeys.current, version: 1 };
 const SERVICE_ID = '0190a3c4-1111-7aaa-8bbb-000000000001';
 const DEPLOYMENT_ID = '0190a3c4-2222-7aaa-8bbb-000000000002';
 const SERVER_ID = '0190a3c4-3333-7aaa-8bbb-000000000003';
+const DOMAIN_ID = '0190a3c4-4444-7aaa-8bbb-000000000004';
 const PANEL = [{ port: 3000, label: 'Noodara panel' }];
 
 const gitSnapshot = {
@@ -339,12 +344,19 @@ interface LoadQuery {
 }
 
 /** A recording select-only fake: each `select()` chain answers from `answers` by table. */
-function loadDb(answers: { deployments: unknown[][]; services: unknown[][] }) {
+function loadDb(answers: { deployments: unknown[][]; services: unknown[][]; domains?: unknown[][]; servers?: unknown[][] }) {
   const queries: LoadQuery[] = [];
-  const queues = { deployments: [...answers.deployments], services: [...answers.services] };
+  const queues = {
+    deployments: [...answers.deployments],
+    services: [...answers.services],
+    domains: [...(answers.domains ?? [])],
+    servers: [...(answers.servers ?? [])],
+  };
   const respond = (query: LoadQuery): unknown[] => {
     if (query.table === deployments) return queues.deployments.shift() ?? [];
     if (query.table === services) return queues.services.shift() ?? [];
+    if (query.table === domains) return queues.domains.shift() ?? [];
+    if (query.table === servers) return queues.servers.shift() ?? [];
     if (query.table === credentials) return [];
     return [];
   };
@@ -498,5 +510,68 @@ describe('createLoadTarget: requested SHA (18-03)', () => {
     if (!result.ok) throw new Error('expected ok');
     expect(result.target.requestedSha).toBe(pushed);
     expect(fake.queries.find((q) => q.table === deployments)?.fields).toHaveProperty('commitSha', deployments.commitSha);
+  });
+});
+
+describe('createLoadTarget: routes of a service with domains (22-05 A1, H1)', () => {
+  const deploymentRow = { id: DEPLOYMENT_ID, serviceId: SERVICE_ID, source: gitSnapshot };
+  const serviceRow = {
+    id: SERVICE_ID,
+    serverId: SERVER_ID,
+    repositoryCredentialId: null,
+    registryCredentialId: null,
+    healthcheck: null,
+    autoRollback: true,
+  };
+  const locked: string[] = [];
+  const routeLock: RouteLock = (serviceId, task) => {
+    locked.push(serviceId);
+    return task();
+  };
+  const load = (fake: ReturnType<typeof loadDb>) =>
+    createLoadTarget({ db: fake.db, masterKeys: () => Promise.resolve(masterKeys), panelPorts: PANEL, routeLock })({
+      id: DEPLOYMENT_ID,
+      serviceId: SERVICE_ID,
+    });
+
+  it('a service without domain rows gets no routes and never reads the proxy status', async () => {
+    const fake = loadDb({ deployments: [[deploymentRow], []], services: [[serviceRow], []], domains: [[]] });
+    const result = await load(fake);
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.target.routes).toBeUndefined();
+    expect(fake.queries.some((q) => q.table === servers)).toBe(false);
+    const where = render(argOf(fake.queries.find((q) => q.table === domains), 'where')[0]);
+    expect(where.params).toEqual([SERVICE_ID]);
+  });
+
+  it.each([
+    ['RUNNING', true],
+    ['FAILED', false],
+    ['NOT_INSTALLED', false],
+  ] as const)('a routed service on a %s proxy has proxyRunning %s', async (proxyStatus, running) => {
+    const fake = loadDb({
+      deployments: [[deploymentRow], []],
+      services: [[serviceRow], []],
+      domains: [[{ id: DOMAIN_ID }]],
+      servers: [[{ proxyStatus }]],
+    });
+    const result = await load(fake);
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.target.routes?.proxyRunning).toBe(running);
+  });
+
+  it('the H2 re-apply runs under the per-service route lock on the deploy session', async () => {
+    const fake = loadDb({
+      deployments: [[deploymentRow], []],
+      services: [[serviceRow], [], []],
+      domains: [[{ id: DOMAIN_ID }]],
+      servers: [[{ proxyStatus: 'RUNNING' }]],
+    });
+    const result = await load(fake);
+    if (!result.ok) throw new Error('expected ok');
+    const session = {} as unknown as SshDeploySession;
+    // The service row is gone by the time the lock is held: nothing to apply, nothing written.
+    await expect(result.target.routes?.reapply(session, 8080)).resolves.toEqual({ ok: true });
+    expect(locked).toEqual([SERVICE_ID]);
   });
 });
