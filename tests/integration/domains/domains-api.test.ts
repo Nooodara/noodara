@@ -165,7 +165,7 @@ beforeAll(async () => {
       installs.push(payload);
       return Promise.resolve({ ok: true, jobId: payload.jobId, collapsed: false });
     },
-    acmeCaUrl: 'https://acme-v02.api.letsencrypt.org/directory',
+    acmeCaUrl: 'https://pebble:14000/dir',
     remove: () => Promise.resolve({ ok: true }) as never,
     removeTimeoutMs: 5_000,
   };
