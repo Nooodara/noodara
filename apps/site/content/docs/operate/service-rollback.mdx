@@ -28,8 +28,8 @@ removed after a successful deploy, so only retained versions can be rolled back 
 
 ## Downtime
 
-Until v0.4 (Traefik and domains), a rollback replaces the container: the current one is stopped and
-the retained image is started under the same name. Expect a short interruption, the same as a
-redeploy. Zero-downtime switching arrives with the reverse proxy.
+A rollback replaces the container: the current one is stopped and the retained image is started
+under the same name. Expect a short interruption, the same as a redeploy; with a
+[domain](/docs/operate/domains), the proxy answers `502` while the containers swap.
 
 To go back to an earlier Noodara release instead, see [Rollback](/docs/operate/rollback).

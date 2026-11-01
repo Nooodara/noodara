@@ -105,12 +105,18 @@ describe('install docs (apps/site/content/docs) accuracy against install.sh', ()
     }
   });
 
-  it('every NOODARA_ variable named anywhere under apps/site/content/docs actually occurs in install.sh', () => {
+  it('every NOODARA_ variable named anywhere under apps/site/content/docs occurs in install.sh or is a control-plane proxy knob', () => {
     const docs = allDocsPages();
     const source = installSh();
+    // 24-05: the proxy and certificate knobs are read by the control plane from .env, not by install.sh.
+    const envSource = readFileSync('apps/control-plane/src/env.ts', 'utf8');
+    const knobList = /export const PROXY_ENV_KNOBS = \[([^\]]*)\]/.exec(envSource)?.[1] ?? '';
+    const proxyKnobs = new Set([...knobList.matchAll(/'(NOODARA_[A-Z0-9_]+)'/g)].map((m) => m[1]));
+    expect(proxyKnobs.size).toBeGreaterThan(0);
     const names = new Set([...docs.matchAll(/\bNOODARA_[A-Z0-9_]+\b/g)].map((m) => m[0]));
     expect(names.size).toBeGreaterThan(0);
     for (const name of names) {
+      if (proxyKnobs.has(name)) continue;
       expect(source, `${name} is documented but does not occur in install.sh`).toContain(name);
     }
   });

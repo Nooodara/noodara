@@ -1,0 +1,77 @@
+---
+title: Domains and HTTPS
+description: Point a domain at a service and get a Let's Encrypt certificate automatically.
+---
+
+Each server runs one reverse proxy, the `noodara-traefik` container. It listens on ports 80 and
+443, routes each domain to its service and obtains a certificate from Let's Encrypt. The panel
+itself is not routed through the proxy.
+
+## Before you start
+
+- **Install the proxy.** In the server's detail, click **Install proxy**. The certificate account
+  uses the admin email unless you give another one.
+- **Ports 80 and 443 must be free.** If another web server holds them, the install fails with
+  `PROXY_PORT_IN_USE`; stop it and install again. This includes the panel: keep `NOODARA_PORT` off
+  80 and 443 on a server that also runs services with domains.
+- **Ports 80 and 443 must be reachable from the internet.** Let's Encrypt validates over port 80.
+  Noodara does not change ufw or your provider's firewall. Docker-published ports bypass ufw
+  rules, so a cloud firewall or security group is usually what blocks them: allow TCP 80 and 443
+  there. If you use ufw, `sudo ufw allow 80/tcp` and `sudo ufw allow 443/tcp` keep the rules
+  explicit.
+
+## Add a domain
+
+1. In the service, open **Domains** and click **Add domain**.
+2. Create the DNS record Noodara shows: an `A` record (and `AAAA` for IPv6) pointing the hostname
+   at the server IP, or a `CNAME` to the server's hostname.
+3. Click **Check DNS**. The check is advisory: it reports whether the name points at this server
+   (`RESOLVES`, `MISMATCH`, `UNRESOLVED` or `UNAVAILABLE`), and the certificate is requested
+   either way.
+
+A service has at most 10 domains. A hostname is at most 253 characters (63 per label). Wildcards,
+IP addresses and special-use names such as `localhost` are rejected. A hostname belongs to one
+service only (`DOMAIN_ALREADY_ASSIGNED`), and the panel's own host cannot be assigned
+(`DOMAIN_RESERVED`).
+
+**Redirect HTTP to HTTPS** is on by default and can be switched off per domain. The redirect is
+temporary, so browsers do not cache it and switching it off takes effect at once.
+
+## Certificate states
+
+| State | Meaning |
+|---|---|
+| `NONE` | No certificate has been requested yet. |
+| `PENDING` | Requested; waiting for Let's Encrypt. |
+| `ISSUED` | A valid certificate is served. |
+| `RENEWING` | The certificate expires within 30 days; the proxy renews it on its own. |
+| `FAILED` | No certificate within 10 minutes of the request. |
+| `EXPIRED` | The served certificate is past its expiry date. |
+
+Noodara checks the certificate 15, 30 and 60 seconds after a domain change, then every 10 minutes.
+The checks read the certificate from a TLS handshake on the server; private keys never leave it.
+
+## When a certificate fails
+
+The failure cause is shown on the domain:
+
+- `CERT_DNS_MISMATCH`: the domain does not point at this server. Fix the `A`/`AAAA` record.
+- `CERT_ISSUANCE_FAILED`: Let's Encrypt did not issue in time. Usually port 80 is not reachable
+  from the internet.
+- `CERT_PROXY_UNAVAILABLE`: the proxy is not answering on port 443. Check the `noodara-traefik`
+  container.
+
+Fix the cause, then click **Check DNS** to request the certificate again.
+
+## Let's Encrypt limits
+
+Let's Encrypt enforces [rate limits](https://letsencrypt.org/docs/rate-limits/) per account and
+per registered domain, including a cap on failed validations per hostname per hour and on
+duplicate certificates per week. Repeated retries while DNS or port 80 is still wrong can hit
+them; once hit, wait for the limit window to pass. Fix the cause before you retry.
+
+## During a deploy
+
+A deploy still stops the old container before it starts the new one. While it swaps, the proxy
+answers `502` for that domain. Measured windows are well under a second, and Noodara's tests hold
+it under 3 seconds.

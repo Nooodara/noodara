@@ -44,3 +44,16 @@ changed — `web` for `NOODARA_PORT`, `api`/`worker` for `NOODARA_PUBLIC_URL` or
 already has recorded, the installer prints a single warning naming both values and keeps the one
 already in `.env`; it never overwrites your edit. To change either value, edit `/opt/noodara/.env`
 directly and apply it with the `docker compose ... up -d` command above.
+
+## Proxy and certificate variables
+
+The control plane reads these from `/opt/noodara/.env`; apply an edit with the
+`docker compose ... up -d` command above. The defaults suit a production install.
+
+| Variable | Default | Effect |
+|---|---|---|
+| `NOODARA_ACME_CA_URL` | `https://acme-v02.api.letsencrypt.org/directory` | The ACME directory certificates are requested from. Must be `https://`. |
+| `NOODARA_ACME_CA_ROOT_FILE` | unset | Absolute path to a CA root bundle the proxy trusts for a private ACME server. Not needed for Let's Encrypt. |
+| `NOODARA_CERT_CHECK_INTERVAL_MS` | `600000` (10 minutes) | How often each certificate is checked. 60000 to 3600000. |
+| `NOODARA_CERT_ISSUE_TIMEOUT_MS` | `600000` (10 minutes) | How long a certificate may stay pending before it is marked failed. 60000 to 3600000. |
+| `NOODARA_PROXY_IMAGE` | The Traefik image this release pins | The proxy image. Must be pinned by digest (`@sha256:`). |

@@ -130,3 +130,16 @@ full fetch. The branch was most likely force-pushed past it; push again or deplo
 in `~/.noodara/deploy/<deploymentId>` under the SSH user's home directory, so a non-root user in the
 `docker` group needs no other setup. Make sure that user has a home directory it can write to (and
 that `~/.noodara` is a directory, not a file), then deploy again.
+A domain's certificate failures are recorded on the domain, not returned as HTTP errors:
+`CERT_DNS_MISMATCH` (the domain does not point at the server), `CERT_ISSUANCE_FAILED` (no
+certificate before the issuance timeout, usually port 80 unreachable) and `CERT_PROXY_UNAVAILABLE`
+(the proxy is not answering on port 443). See [Domains and HTTPS](/docs/operate/domains).
+
+Three deployment failures concern variables and routes. None of them carries a value:
+
+- `SECRET_UNRESOLVED`: a variable references a secret that does not exist. Add the secret or fix
+  the reference (see [Environment variables and secrets](/docs/operate/variables-and-secrets)).
+- `ENV_INJECTION_FAILED`: the variables could not be written to the server. Check its disk and
+  connection.
+- `PROXY_ROUTE_FAILED`: the proxy did not accept the service's routes. Check the proxy on the
+  server.

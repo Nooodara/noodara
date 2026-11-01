@@ -71,7 +71,7 @@ describe('content/docs meta.json tree (D-08 four-group sidebar order)', () => {
   it('operate/meta.json has the D-08 title and page order', () => {
     const meta = readMetaJson('operate', 'meta.json');
     expect(meta.title).toBe('Operate');
-    expect(meta.pages).toEqual(['upgrade', 'healthchecks', 'webhooks', 'service-rollback', 'rollback', 'backups', 'troubleshooting']);
+    expect(meta.pages).toEqual(['upgrade', 'healthchecks', 'webhooks', 'domains', 'variables-and-secrets', 'service-rollback', 'rollback', 'backups', 'troubleshooting']);
   });
 
   it('reference/meta.json has the D-08 title and page order', () => {

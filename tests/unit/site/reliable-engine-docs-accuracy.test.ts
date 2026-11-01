@@ -96,8 +96,10 @@ describe('service-rollback.mdx', () => {
       expect(Object.hasOwn(SERVICE_ERROR_STATUS, code), `${code} not in SERVICE_ERROR_STATUS`).toBe(true);
     }
   });
-  it('states the replacement downtime until v0.4', () => {
-    expect(text).toContain('Until v0.4');
+  it('states the replacement downtime plainly, with no zero-downtime promise', () => {
+    expect(text).toContain('Expect a short interruption');
+    expect(text).toContain('the proxy answers `502` while the containers swap');
+    expect(text).not.toMatch(/zero-downtime|until v0\.4/i);
   });
 });
 
