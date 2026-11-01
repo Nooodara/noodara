@@ -206,7 +206,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-05 routes across deploys on Ubu
     return row;
   };
   const deployLog = (deploymentId: string): string[] =>
-    (entries.get(deploymentId) ?? []).filter((entry) => entry.stream === 'system').map((entry) => entry.text);
+    (entries.get(deploymentId) ?? []).filter((entry) => entry.stream === 'system').map((entry) => entry.text.trimEnd());
   const runJob = async (deploymentId: string, id: string, signal?: AbortSignal) => {
     if (handler === undefined) throw new Error('runtime not started');
     await handler({ deploymentId, serviceId: id, actor: ACTOR, requestedAt: new Date().toISOString() }, signal);
@@ -563,7 +563,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-05 routes across deploys on Ubu
       });
       const row = await deploy(serviceId);
       expect({ status: row.status, errorCode: row.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
-      expect(deployLog(row.id)).toContain(logs().REAPPLIED);
+      expect(deployLog(row.id), JSON.stringify(deployLog(row.id))).toContain(logs().REAPPLIED);
       expect(await waitVersion(hosts.main, 'v3')).toEqual({ code: '200', body: 'version v3' });
       expect(await rootOut(['cat', '--', dynamicPath(serviceId)])).toContain(`noodara-${serviceId}:${String(CHANGED_PORT)}`);
     },
@@ -579,7 +579,10 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-05 routes across deploys on Ubu
       try {
         const row = await deploy(otherId);
         expect({ status: row.status, errorCode: row.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
-        expect(deployLog(row.id).filter((text) => text === logs().PROXY_NOT_RUNNING)).toHaveLength(1);
+        expect(
+          deployLog(row.id).filter((text) => text === logs().PROXY_NOT_RUNNING),
+          JSON.stringify(deployLog(row.id)),
+        ).toHaveLength(1);
         expect(await domainStatus(domainId)).toBe('PENDING');
         expect(await networkMembers(otherId)).not.toContain(proxyContainerName());
       } finally {
