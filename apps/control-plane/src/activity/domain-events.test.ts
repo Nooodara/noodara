@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { activityEvents } from '../db/schema/activity-events.js';
-import { writeDomainActivityEvent, writeServiceDomainsChangedEvent } from './domain-events.js';
+import { writeDomainActivityEvent, writeServiceDomainsChangedEvent, writeServiceRouteCleanupEvent } from './domain-events.js';
 import type { ActivityWriteHandle } from './write-activity-event.js';
 
 function createMockHandle(): {
@@ -113,5 +113,43 @@ describe('writeDomainActivityEvent (22-04 A3, H4)', () => {
     expect(row.entityType).toBe('service');
     expect(row.action).toBe('domain.route_restored');
     expect(row.metadata).toEqual({ serviceId: 'svc-2', durationMs: 12 });
+  });
+});
+
+describe('writeServiceRouteCleanupEvent (22-08 A1)', () => {
+  const at = new Date('2026-11-01T00:00:00.000Z');
+
+  it('writes a failure marker with its error code and the domains-only metadata', async () => {
+    const mock = createMockHandle();
+
+    await writeServiceRouteCleanupEvent(
+      mock.handle,
+      { actor: { type: 'user', id: 'user-1' }, serviceId: 'svc-1', outcome: 'failure', errorCode: 'SERVER_UNREACHABLE' },
+      at,
+    );
+
+    const row = insertedRow(mock.values);
+    expect(row).toMatchObject({
+      actorType: 'user',
+      actorId: 'user-1',
+      entityType: 'service',
+      entityId: 'svc-1',
+      action: 'service.updated',
+      outcome: 'failure',
+      errorCode: 'SERVER_UNREACHABLE',
+      occurredAt: at,
+    });
+    expect(row.metadata).toEqual({ changedFields: ['domains'], requiresRedeploy: false, credentialReplaced: false });
+  });
+
+  it('writes a success marker without an error code for the system actor', async () => {
+    const mock = createMockHandle();
+
+    await writeServiceRouteCleanupEvent(mock.handle, { actor: { type: 'system' }, serviceId: 'svc-2', outcome: 'success' }, at);
+
+    const row = insertedRow(mock.values);
+    expect(row.outcome).toBe('success');
+    expect(row.actorId).toBeNull();
+    expect(row).not.toHaveProperty('errorCode');
   });
 });

@@ -9,6 +9,8 @@
 //       proxy is 503 PROXY_UNAVAILABLE with the row kept PENDING; delete ends in Traefik's 404.
 //   H3: sshd stopped -> SERVER_UNREACHABLE (502, never 500), row PENDING; the next reconcile
 //       re-apply, with sshd back, routes it.
+//   22-08 A1: the last delete with sshd stopped is surfaced (SERVER_UNREACHABLE, 502) and marks the
+//       file; the reconcile cleanup removes the orphan file once sshd is back, then has nothing left.
 // App modules are imported dynamically after a valid test env is written (env.ts fail-fasts).
 import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -112,6 +114,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-03 domain apply on Ubuntu %s', 
     c: `c${label()}.apply.noodara.test`,
     d: `d${label()}.apply.noodara.test`,
     e: `e${label()}.apply.noodara.test`,
+    f: `f${label()}.apply.noodara.test`,
   };
   const ids: Partial<Record<keyof typeof hosts, string>> = {};
 
@@ -552,6 +555,44 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-03 domain apply on Ubuntu %s', 
       expect((await root(['test', '-e', dynamicPath()])).exitCode).not.toBe(0);
       expect(await networkMembers()).not.toContain(proxyContainerName());
       expect(await db().select().from(domains).where(eq(domains.serviceId, serviceId))).toEqual([]);
+    },
+    CASE_TIMEOUT_MS,
+  );
+
+  it(
+    '22-08 A1: a last delete the applier cannot carry out is surfaced, and the reconcile cleanup removes the orphan file',
+    async () => {
+      expect(await create('f')).toMatchObject({ ok: true });
+      expect((await waitHit(hosts.f, routed(hosts.f))).hit.status).toBe(200);
+      const cleanup = () =>
+        m().domainServices.cleanupOrphanRoutes({ db: db(), apply: applier(), logger: { warn: (fields) => warned.push(fields) } });
+
+      await sshd('stop');
+      try {
+        const result = await remove('f');
+        expect(result).toEqual({
+          ok: false,
+          code: 'SERVER_UNREACHABLE',
+          message: m().domainServices.DOMAIN_REMOVED_ROUTE_PENDING_MESSAGE,
+        });
+        if (result.ok) throw new Error('unreachable');
+        expect(m().httpErrors.mapServiceCodeToStatus(result.code)).toBe(502);
+        expect(await db().select().from(domains).where(eq(domains.serviceId, serviceId))).toEqual([]);
+        // Still unreachable: the cleanup fails and the mark stays for the next tick.
+        warned.length = 0;
+        expect(await cleanup()).toEqual({ removed: 0, failed: 1 });
+        expect(warned).toEqual([{ serviceId, code: 'SERVER_UNREACHABLE' }]);
+      } finally {
+        await sshd('start');
+      }
+      // The orphan file still routes the removed host until the cleanup runs.
+      expect((await root(['test', '-e', dynamicPath()])).exitCode).toBe(0);
+
+      expect(await cleanup()).toEqual({ removed: 1, failed: 0 });
+      expect((await root(['test', '-e', dynamicPath()])).exitCode).not.toBe(0);
+      expect(await networkMembers()).not.toContain(proxyContainerName());
+      expect((await waitHit(hosts.f, notFound)).hit.status).toBe(404);
+      expect(await cleanup()).toEqual({ removed: 0, failed: 0 });
     },
     CASE_TIMEOUT_MS,
   );

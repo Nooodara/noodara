@@ -72,6 +72,8 @@ export interface ServiceServicesDeps {
   readonly operationQueue?: ServiceOperationQueue;
   /** 12-14: remote cleanup on delete; without it a deployed service cannot be deleted. */
   readonly remoteCleanup?: ServiceRemoteCleanup;
+  /** 22-08 A5: the per-service route lock the domain applies take; defaults to the one over `db`. */
+  readonly routeLock?: RouteLock;
 }
 
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
@@ -781,6 +783,9 @@ const CLEANUP_UNAVAILABLE = {
  * from its server (only when a deployment was ever claimed or a domain exists), then its row,
  * deployments and domains (cascade) and credentials. A cleanup
  * failure keeps the row and records a failed `service.deleted`, so the delete can be retried.
+ * 22-08 A5: the remote cleanup (route file first) and the row delete run under the per-service
+ * route lock, so no domain apply runs between them: one waiting on the lock finds the rows gone
+ * and writes nothing, and can never recreate the route file as an orphan.
  */
 export async function deleteService(deps: ServiceServicesDeps, input: DeleteServiceInput): Promise<DeleteServiceResult> {
   const row = await scopedServiceRow(deps.db, input.projectId, input.serviceId);
@@ -789,7 +794,17 @@ export async function deleteService(deps: ServiceServicesDeps, input: DeleteServ
     return { ok: false, code: 'DELETE_CONFIRMATION_MISMATCH', message: 'Confirmation name does not match the service name' };
   }
   if (await hasActiveDeployment(deps.db, row.id)) return deploymentInProgress();
+  const lock = deps.routeLock ?? createRouteLock(deps.db);
+  const result = await lock(row.id, () => deleteServiceLocked(deps, input, row));
+  if (result.ok) await publishServerEvent(deps.events, { type: 'service.deleted', id: result.serviceId });
+  return result;
+}
 
+async function deleteServiceLocked(
+  deps: ServiceServicesDeps,
+  input: DeleteServiceInput,
+  row: NonNullable<Awaited<ReturnType<typeof scopedServiceRow>>>,
+): Promise<DeleteServiceResult> {
   const metadata = { projectId: row.projectId, environmentId: row.environmentId, serverId: row.serverId, name: row.name };
   const deploymentIds = await claimedDeploymentIds(deps.db, row.id);
   if (deploymentIds.length > 0 || (await hasDomains(deps.db, row.id))) {
@@ -817,7 +832,7 @@ export async function deleteService(deps: ServiceServicesDeps, input: DeleteServ
     }
   }
 
-  const result = await deps.db.transaction(async (tx): Promise<DeleteServiceResult> => {
+  return deps.db.transaction(async (tx): Promise<DeleteServiceResult> => {
     const [current] = await tx
       .select()
       .from(services)
@@ -846,8 +861,6 @@ export async function deleteService(deps: ServiceServicesDeps, input: DeleteServ
     ]);
     return { ok: true, serviceId: current.id };
   });
-  if (result.ok) await publishServerEvent(deps.events, { type: 'service.deleted', id: result.serviceId });
-  return result;
 }
 
 // ---------------------------------------------------------------------------------------------

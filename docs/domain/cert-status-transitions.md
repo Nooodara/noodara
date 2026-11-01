@@ -26,7 +26,7 @@ EXPIRED   the served certificate's notAfter is past
 | ISSUED | RENEWING | notAfter within 30 days |
 | ISSUED, RENEWING | EXPIRED | notAfter past |
 | RENEWING | ISSUED | later notAfter |
-| FAILED | PENDING | dns-check RESOLVES or PATCH (`retryCertStatus`) |
+| FAILED | PENDING | dns-check RESOLVES or PATCH (`retryCertStatus`); reachable proxy after `CERT_PROXY_UNAVAILABLE` (22-08) |
 | FAILED, EXPIRED | ISSUED | valid certificate observed (21-02) |
 | ISSUED, RENEWING, EXPIRED | PENDING | default certificate served again (21-02) |
 
@@ -39,7 +39,9 @@ re-issued instead of shown as ISSUED.
 Pure. `probe` is `issued {notAfter}`, `default` or `down`.
 
 - `down`: status unchanged, cause `CERT_PROXY_UNAVAILABLE`; FAILED only when a PENDING issuance
-  timed out.
+  timed out. The server's `proxy_status` goes RUNNING -> FAILED only after 3 consecutive down
+  probes (`PROXY_DOWN_FAILURE_THRESHOLD` in the reconciler), so one restart does not flip it.
+- Any non-`down` probe clears `CERT_PROXY_UNAVAILABLE`; FAILED with that cause goes back to PENDING.
 - PENDING: an expired certificate counts as not issued yet; a null `pendingSince` never times out.
 - NONE never leaves through a probe. An unparseable notAfter leaves the state untouched.
 - `notAfter` exactly at `now` is still valid; the renewal window is inclusive.
@@ -50,6 +52,7 @@ Pure. `probe` is `issued {notAfter}`, `default` or `down`.
   (`CERT_FAILURE_MESSAGES`).
 - DNS outcomes: `RESOLVES`, `MISMATCH`, `UNRESOLVED`, `UNAVAILABLE` (`DNS_OUTCOME_MESSAGES`,
   `classifyDnsOutcome`); `dnsInstructions` returns the A/AAAA records and the CNAME alternative.
-- Checks after a change: 15 s, 30 s, 60 s, then `NOODARA_CERT_CHECK_INTERVAL_MS` (`certCheckDelayMs`).
+- Checks after a change: at t = 15 s, 30 s and 60 s after the change (absolute offsets,
+  `CERT_POST_CHANGE_CHECK_OFFSETS_MS`), then every `NOODARA_CERT_CHECK_INTERVAL_MS` (`nextCertCheckAt`).
 - Limits: `MAX_DOMAINS_PER_SERVICE` = 10 (`DOMAIN_LIMIT_REACHED`); the panel host is reserved
   (`isReservedHostname`, `DOMAIN_RESERVED`).

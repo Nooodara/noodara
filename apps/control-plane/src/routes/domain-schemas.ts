@@ -1,6 +1,6 @@
 // 22-03: route schemas of `/api/projects/:projectId/services/:serviceId/domains`. The bodies are
-// capped (bodyLimit + the hostname max length) and strict: the contract's loose shapes let
-// unknown keys reach the domain validator, which names them in a 422 DOMAIN_INPUT_INVALID (H2).
+// capped (bodyLimit + the hostname max length) and strict: the contract bodies are
+// z.strictObject, so an unknown key is a 400 at the schema layer (H2, 22-08 A8).
 // Responses are the strict DomainView allowlist: no server credential, no ACME internals.
 import { z } from 'zod';
 import {

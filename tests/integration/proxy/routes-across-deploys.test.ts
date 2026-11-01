@@ -53,8 +53,10 @@ const KEY_VERSION = 1;
 const DEPLOY_MAX_MS = 300_000;
 const ACTOR = { type: 'system' } as const;
 const ROUTE_WAIT_MS = 20_000;
-/** ADR 0011: the stop-then-start window of a replace; Traefik answers 502 inside it. */
-const SWAP_WINDOW_BOUND_MS = 10_000;
+/** ADR 0011 (22-08): the stop-then-start window of a replace (measured 339 ms); Traefik answers 502 inside it. */
+const SWAP_WINDOW_BOUND_MS = 3_000;
+/** ADR 0011 (22-08): error samples inside that window (measured 5; one request every 50 ms at most). */
+const SWAP_ERROR_COUNT_BOUND = Math.ceil(SWAP_WINDOW_BOUND_MS / 50);
 const SWAP_ERROR_CODES = new Set(['502', '503', '000']);
 const SAMPLER_MAX_S = 420;
 const REPOS = { v1: 'routes-v1', v2: 'routes-v2', broken: 'routes-broken', v3: 'routes-v3' } as const;
@@ -489,6 +491,9 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-05 routes across deploys on Ubu
       expect(errors.every((sample) => SWAP_ERROR_CODES.has(sample.code))).toBe(true);
       expect(lastV1.at).toBeLessThan(firstV2.at);
       expect(windowMs).toBeLessThan(SWAP_WINDOW_BOUND_MS);
+      expect(errors.length).toBeLessThanOrEqual(SWAP_ERROR_COUNT_BOUND);
+      // Every error sample falls inside the swap window.
+      expect(errors.every((sample) => sample.at > lastV1.at && sample.at < firstV2.at)).toBe(true);
       // Once v2 answers, v1 never comes back.
       expect(samples.filter((sample) => sample.at > firstV2.at && isV1(sample))).toEqual([]);
       expect(await fileSha()).toBe(before);
@@ -566,6 +571,31 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-05 routes across deploys on Ubu
       expect(deployLog(row.id), JSON.stringify(deployLog(row.id))).toContain(logs().REAPPLIED);
       expect(await waitVersion(hosts.main, 'v3')).toEqual({ code: '200', body: 'version v3' });
       expect(await rootOut(['cat', '--', dynamicPath(serviceId)])).toContain(`noodara-${serviceId}:${String(CHANGED_PORT)}`);
+    },
+    CASE_TIMEOUT_MS,
+  );
+
+  it(
+    'A3 (22-08): a manual rollback to the port-3000 deployment, then a domain PATCH, routes the deployed port',
+    async () => {
+      if (api === undefined || apply === undefined || firstOf.v1 === undefined) throw new Error('runtime not started');
+      const result = await api.triggerRollback({ actor: ACTOR, serviceId, targetDeploymentId: firstOf.v1 });
+      if (!result.ok) throw new Error(`triggerRollback failed: ${result.code}`);
+      const row = await runJob(result.deployment.id, serviceId);
+      expect({ status: row.status, errorCode: row.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
+      expect(await waitVersion(hosts.main, 'v1')).toEqual({ code: '200', body: 'version v1' });
+      // The service row still says 4000: the rollback restores the deployment, not the config.
+      const [service] = await db().select({ internalPort: services.internalPort }).from(services).where(eq(services.id, serviceId));
+      expect(service?.internalPort).toBe(CHANGED_PORT);
+
+      // PATCH stand-in: a domain change marks it PENDING and re-applies the service's routes.
+      await db().update(domains).set({ applyStatus: 'PENDING', updatedAt: new Date() }).where(eq(domains.serviceId, serviceId));
+      const outcome = await apply(serviceId);
+      expect(outcome.ok, JSON.stringify(outcome)).toBe(true);
+      const file = await rootOut(['cat', '--', dynamicPath(serviceId)]);
+      expect(file).toContain(`noodara-${serviceId}:${String(PORT)}`);
+      expect(file).not.toContain(`:${String(CHANGED_PORT)}`);
+      expect(await waitVersion(hosts.main, 'v1')).toEqual({ code: '200', body: 'version v1' });
     },
     CASE_TIMEOUT_MS,
   );

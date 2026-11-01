@@ -28,9 +28,11 @@ import {
   deleteDomain,
   insertDomain,
   listPendingDomainServices,
+  listOrphanRouteServices,
   listServiceDomains,
   loadDomain,
   loadServiceTarget,
+  recordRouteCleanup,
   setDnsResult,
   updateDomainRedirect,
   type DomainRow,
@@ -240,10 +242,30 @@ export async function removeDomain(
   if (target === null) return notFound('Domain', input.domainId);
   const deleted = await deleteDomain(deps.db, { actor: input.actor, scope: { ...input.scope, domainId: input.domainId }, at: deps.now() });
   if (!deleted) return notFound('Domain', input.domainId);
-  // The row is gone either way; a failed re-render leaves the remaining rows PENDING/FAILED.
-  await ensureRoutes(deps, input.actor, target, false);
+  // The row is gone either way; a failed re-render leaves the remaining rows PENDING/FAILED and is
+  // surfaced (22-08 A1). With no row left the route file is marked for the reconcile cleanup
+  // when it could not be removed now (failed apply, or a proxy that is not RUNNING).
+  const applied = await ensureRoutes(deps, input.actor, target, false);
+  const routeTouched = target.proxyStatus === 'RUNNING';
+  if (!applied.ok || !routeTouched) {
+    const remaining = await listServiceDomains(deps.db, target.serviceId);
+    if (remaining.length === 0) {
+      await recordRouteCleanup(deps.db, {
+        actor: input.actor,
+        serviceId: target.serviceId,
+        outcome: 'failure',
+        errorCode: applied.ok ? 'PROXY_UNAVAILABLE' : applied.code,
+        at: deps.now(),
+      });
+    }
+  }
+  if (!applied.ok) return { ok: false, code: applied.code, message: DOMAIN_REMOVED_ROUTE_PENDING_MESSAGE };
   return { ok: true };
 }
+
+/** 22-08 A1: the row is gone but the proxy still has its route; the reconcile cycle removes it. */
+export const DOMAIN_REMOVED_ROUTE_PENDING_MESSAGE =
+  'The domain was removed, but the proxy could not be updated. Noodara removes its route once the server and proxy are reachable.';
 
 export async function recheckDomainDns(
   deps: DomainServiceDeps,
@@ -301,4 +323,45 @@ export async function reapplyPendingDomains(input: {
     }
   }
   return { applied, failed };
+}
+
+/**
+ * 22-08 A1: removes the route file (and the proxy's network attachment) of services whose last
+ * domain went while the proxy could not be updated. The empty apply runs under the per-service
+ * route lock and re-reads the rows there, so a domain added meanwhile is applied, not removed.
+ * One service failing never stops the others; never rejects.
+ */
+export async function cleanupOrphanRoutes(input: {
+  readonly db: Database;
+  readonly apply: DomainApplier;
+  readonly logger: DomainReapplyLogger;
+  readonly now?: () => Date;
+  readonly limit?: number;
+}): Promise<{ readonly removed: number; readonly failed: number }> {
+  const now = input.now ?? (() => new Date());
+  let serviceIds: string[];
+  try {
+    serviceIds = await listOrphanRouteServices(input.db, input.limit ?? DOMAIN_REAPPLY_BATCH);
+  } catch (error) {
+    input.logger.warn({ errorKind: error instanceof Error ? error.name : typeof error }, 'orphan route lookup failed');
+    return { removed: 0, failed: 0 };
+  }
+  let removed = 0;
+  let failed = 0;
+  for (const serviceId of serviceIds) {
+    try {
+      const outcome = await input.apply(serviceId);
+      if (!outcome.ok) {
+        failed += 1;
+        input.logger.warn({ serviceId, code: outcome.code }, 'orphan route cleanup failed');
+        continue;
+      }
+      await recordRouteCleanup(input.db, { actor: { type: 'system' }, serviceId, outcome: 'success', at: now() });
+      removed += 1;
+    } catch (error) {
+      failed += 1;
+      input.logger.warn({ serviceId, errorKind: error instanceof Error ? error.name : typeof error }, 'orphan route cleanup failed');
+    }
+  }
+  return { removed, failed };
 }

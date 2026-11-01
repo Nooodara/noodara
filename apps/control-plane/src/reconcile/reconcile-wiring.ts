@@ -6,6 +6,7 @@
 // enqueue failed (and that the sweep just ended ENQUEUE_FAILED) is retried on the same pass.
 // 22-04: the certificate status reconciler runs beside the tick as its own in-process poll
 // (ADR 0011), sharing the tick's domain applier so one service's route writes stay serialized.
+// 22-08 A1: after the re-apply, orphan route files of services with no domain left are removed.
 import { Queue, type ConnectionOptions } from 'bullmq';
 import type { Database } from '../db/client.js';
 import {
@@ -20,7 +21,7 @@ import { BULLMQ_PREFIX } from '../queue/connect-server-queue.js';
 import { DEPLOY_QUEUE_NAME } from '../queue/deploy-queue.js';
 import { createCertReconciler, createCertStore, startCertReconcileLoop, type CertReconcileLoopHandle } from '../domains/cert-reconciler.js';
 import { domainApplyLimits } from '../domains/domain-apply.js';
-import { createDomainApplier, reapplyPendingDomains, type DomainApplier } from '../domains/domain-services.js';
+import { cleanupOrphanRoutes, createDomainApplier, reapplyPendingDomains, type DomainApplier } from '../domains/domain-services.js';
 import { startReconcileLoop, type ReconcileLoopHandle } from './reconcile-runtime.js';
 import {
   createOperationInFlight,
@@ -71,6 +72,9 @@ export interface WorkerReconcileTickSummary extends ReconcileTickSummary {
   /** 22-03: services whose PENDING domain routes this tick re-applied, and those still failing. */
   readonly domainsReapplied: number;
   readonly domainsReapplyFailed: number;
+  /** 22-08 A1: orphan route files (services with no domain left) removed, and those still failing. */
+  readonly orphanRoutesRemoved: number;
+  readonly orphanRoutesFailed: number;
 }
 
 const NO_STALE_SWEEP: StaleQueuedSweepResult = Object.freeze({ failed: [], unknown: 0 });
@@ -145,11 +149,14 @@ export function createWorkerReconcileTick(
     const stale = await sweepStaleQueued();
     const summary = await reconcileTick();
     const domains = await reapplyPendingDomains({ db: deps.db, apply: domainApply, logger: deps.logger });
+    const orphans = await cleanupOrphanRoutes({ db: deps.db, apply: domainApply, logger: deps.logger, now });
     return {
       ...summary,
       staleQueuedFailed: stale.failed.length,
       domainsReapplied: domains.applied,
       domainsReapplyFailed: domains.failed,
+      orphanRoutesRemoved: orphans.removed,
+      orphanRoutesFailed: orphans.failed,
     };
   };
   return { tick, sweepStaleQueued, domainApply, close: () => deployQueue.close() };

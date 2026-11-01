@@ -18,9 +18,10 @@ import {
 import { mapUniqueViolation, type DomainApplyStatus } from '@noodara/domain/api-contract';
 import type { DomainAction } from '@noodara/domain/activity';
 import { and, asc, desc, eq, inArray, ne, sql, type SQL } from 'drizzle-orm';
-import { writeDomainActivityEvent, writeServiceDomainsChangedEvent } from '../activity/domain-events.js';
+import { writeDomainActivityEvent, writeServiceDomainsChangedEvent, writeServiceRouteCleanupEvent } from '../activity/domain-events.js';
 import { writeProxyActivityEvent } from '../activity/proxy-events.js';
 import type { Database } from '../db/client.js';
+import { activityEvents } from '../db/schema/activity-events.js';
 import { deployments } from '../db/schema/deployments.js';
 import { domains } from '../db/schema/domains.js';
 import { servers } from '../db/schema/servers.js';
@@ -242,6 +243,55 @@ export async function listPendingDomainServices(db: Handle, limit: number): Prom
     .innerJoin(services, eq(services.id, domains.serviceId))
     .innerJoin(servers, eq(servers.id, services.serverId))
     .where(and(eq(domains.applyStatus, 'PENDING'), eq(servers.proxyStatus, 'RUNNING')))
+    .limit(limit);
+  return rows.map((row) => row.serviceId);
+}
+
+/**
+ * 22-08 A1: marks a service whose route file may outlive its last domain (`failure`), or clears
+ * that mark once the file is gone (`success`).
+ */
+export async function recordRouteCleanup(
+  db: Handle,
+  input: { readonly actor: ServiceActor; readonly serviceId: string; readonly outcome: 'success' | 'failure'; readonly errorCode?: string; readonly at: Date },
+): Promise<void> {
+  await writeServiceRouteCleanupEvent(
+    db,
+    {
+      actor: input.actor,
+      serviceId: input.serviceId,
+      outcome: input.outcome,
+      ...(input.errorCode === undefined ? {} : { errorCode: input.errorCode }),
+    },
+    input.at,
+  );
+}
+
+/**
+ * 22-08 A1: services on a RUNNING proxy with no domain left whose latest domains event is a
+ * cleanup failure: their dynamic file is an orphan the reconcile cycle removes.
+ */
+export async function listOrphanRouteServices(db: Handle, limit: number): Promise<string[]> {
+  const latestDomainsOutcome = sql`(
+    select ${activityEvents.outcome} from ${activityEvents}
+    where ${activityEvents.entityType} = 'service'
+      and ${activityEvents.entityId} = ${services.id}
+      and ${activityEvents.action} = 'service.updated'
+      and ${activityEvents.metadata} -> 'changedFields' @> '["domains"]'::jsonb
+    order by ${activityEvents.occurredAt} desc, ${activityEvents.createdAt} desc
+    limit 1
+  )`;
+  const rows = await db
+    .select({ serviceId: services.id })
+    .from(services)
+    .innerJoin(servers, eq(servers.id, services.serverId))
+    .where(
+      and(
+        eq(servers.proxyStatus, 'RUNNING'),
+        sql`not exists (select 1 from ${domains} where ${domains.serviceId} = ${services.id})`,
+        sql`${latestDomainsOutcome} = 'failure'`,
+      ),
+    )
     .limit(limit);
   return rows.map((row) => row.serviceId);
 }

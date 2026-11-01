@@ -127,6 +127,10 @@ under Consequences.
   `<serviceId>.yml.prev` (0600), `mv -f` onto `<serviceId>.yml`. Never write in place; an
   interrupted write never renames (22-01 `proxy.write_dynamic`, `proxy.restore_dynamic`).
 - Removing a service's routes = removing its file; then `docker network disconnect`.
+- 22-08: a last-domain delete that cannot remove the file (failed apply, proxy not RUNNING) is
+  surfaced (non-2xx on a failed apply) and marked with a `service.updated` `failure` event; the
+  reconcile tick removes the orphan file under the per-service route lock (`cleanupOrphanRoutes`).
+  Service delete removes the file under the same lock after its domain rows are gone.
 - The API lists routers as `<name>@file`; that suffix is part of the verify contract.
 
 ### Measured
@@ -142,6 +146,11 @@ under Consequences.
   | 24.04 | 91 | 15 | 147 | 282 | 502 only |
 
   During the window Traefik answers `502`; this is the documented stop-then-start downtime.
+
+- Through the deploy engine (22-05 `[22-05-SWAP]`, re-measured in 22-08 on 24.04): 43 samples,
+  **5 errors, all `502`, window 339 ms** (sampler: one request every 50 ms + request time).
+  Bound asserted by `routes-across-deploys.test.ts`: window **< 3000 ms** and at most
+  **60 error samples** (3000 / 50), every error inside the window, codes `502`/`503`/`000` only.
 
 ## Invalid or partial dynamic files (H2)
 
@@ -233,13 +242,24 @@ is removed, plain HTTP to the same host answers `200` again in ~2.0 s.
   | PENDING | default cert, within `NOODARA_CERT_ISSUE_TIMEOUT_MS` (10 min) | PENDING |
   | PENDING | beyond the timeout | FAILED (`CERT_DNS_MISMATCH` if dns ≠ RESOLVES, else `CERT_ISSUANCE_FAILED`) |
   | any | `down` | unchanged status, cause `CERT_PROXY_UNAVAILABLE` (FAILED when PENDING times out) |
+  | any | reachable proxy (not `down`) | cause `CERT_PROXY_UNAVAILABLE` cleared (22-08) |
+  | FAILED (`CERT_PROXY_UNAVAILABLE`) | reachable proxy, no valid certificate | PENDING (22-08) |
   | ISSUED | `notAfter` within 30 days | RENEWING |
   | RENEWING | later `notAfter` | ISSUED |
   | ISSUED, RENEWING | `notAfter` past | EXPIRED |
   | FAILED | dns-check RESOLVES or PATCH (retry above) | PENDING |
 
 - Timings: regular cycle `NOODARA_CERT_CHECK_INTERVAL_MS` (10 min); after a domain change, checks
-  at 15 s, 30 s and 60 s (issuance measured at 2–8 s, plus the 2 s throttle).
+  at t = 15 s, 30 s and 60 s **absolute offsets from the change** (`CERT_POST_CHANGE_CHECK_OFFSETS_MS`,
+  `nextCertCheckAt`; a late check never pushes the next one back), then every interval (issuance
+  measured at 2–8 s, plus the 2 s throttle).
+- Proxy down (22-08): the server's `proxy_status` goes RUNNING -> FAILED only after **3 consecutive**
+  `down` answers (`PROXY_DOWN_FAILURE_THRESHOLD`); any other API answer resets the streak, an SSH
+  failure leaves it as is. A restarting container is transient.
+- Single worker (22-08): the certificate cycle runs in one worker process. `inFlight`, the check
+  schedule and the down streaks are in memory (a restart probes once more at worst). Every row
+  write is a CAS: cert status on `updated_at`, `recordRouteRestored` only while an APPLIED domain
+  exists. A second worker could only probe twice, never overwrite a newer state.
 - dns-check outcomes: `RESOLVES` (an A/AAAA answer equals a server IP), `MISMATCH` (answers, none
   match), `UNRESOLVED` (NXDOMAIN or no address), `UNAVAILABLE` (resolver error or 3 s timeout).
   Advisory only: a domain can be added before DNS points at the server.
@@ -313,7 +333,7 @@ and unknown references and any `docker run`/`create` without `--pull never`.
 
 ## Consequences
 
-- Stop-then-start stays: Traefik answers `502` for 60–300 ms per deploy.
+- Stop-then-start stays: Traefik answers `502` for 60–350 ms per deploy (bound 3 s, see Measured).
 - One broken dynamic file freezes routing changes for the whole server until fixed; verify (22-03)
   and drift re-apply (22-04) catch it, and temp + rename plus pre-upload validation prevent it.
 - Failed issuance needs the remove/re-add retry; a plain rewrite does nothing.

@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   failStaleQueued: vi.fn<(id: string, cutoff: Date) => Promise<unknown>>(),
   listServers: vi.fn<() => Promise<string[]>>(),
   pendingDomainServices: vi.fn<(db: unknown, limit: number) => Promise<string[]>>(),
+  orphanRouteServices: vi.fn<(db: unknown, limit: number) => Promise<string[]>>(),
+  recordRouteCleanup: vi.fn<(db: unknown, input: unknown) => Promise<void>>(),
   loopTick: { current: null as null | (() => Promise<unknown>) },
   order: [] as string[],
   certDeps: vi.fn<(deps: Record<string, unknown>) => void>(),
@@ -62,6 +64,11 @@ vi.mock('../domains/domain-store.js', async (importOriginal) => ({
     mocks.order.push('domains');
     return mocks.pendingDomainServices(db, limit);
   },
+  listOrphanRouteServices: (db: unknown, limit: number) => {
+    mocks.order.push('orphans');
+    return mocks.orphanRouteServices(db, limit);
+  },
+  recordRouteCleanup: (db: unknown, input: unknown) => mocks.recordRouteCleanup(db, input),
 }));
 
 vi.mock('./reconcile-runtime.js', () => ({
@@ -113,6 +120,8 @@ beforeEach(() => {
   mocks.getJob.mockResolvedValue(undefined);
   mocks.listServers.mockResolvedValue([]);
   mocks.pendingDomainServices.mockResolvedValue([]);
+  mocks.orphanRouteServices.mockResolvedValue([]);
+  mocks.recordRouteCleanup.mockResolvedValue(undefined);
   mocks.certClose.mockResolvedValue(undefined);
 });
 
@@ -132,7 +141,7 @@ describe('worker reconcile wiring: stale QUEUED sweep (14-08)', () => {
 
     const summary = await mocks.loopTick.current?.();
 
-    expect(mocks.order).toEqual(['stale', 'reconcile', 'domains']);
+    expect(mocks.order).toEqual(['stale', 'reconcile', 'domains', 'orphans']);
     expect(summary).toMatchObject({ staleQueuedFailed: 1, servers: 0 });
   });
 
@@ -180,7 +189,7 @@ describe('worker reconcile wiring: pending domain routes (22-03 H3)', () => {
     const d = deps({ domainApply, logger: { info: vi.fn(), warn, error: vi.fn() } });
     const summary = await createWorkerReconcileTick(d).tick();
 
-    expect(mocks.order).toEqual(['stale', 'reconcile', 'domains']);
+    expect(mocks.order).toEqual(['stale', 'reconcile', 'domains', 'orphans']);
     expect(mocks.pendingDomainServices).toHaveBeenCalledWith(d.db, 50);
     expect(domainApply.mock.calls.map((call) => call[0])).toEqual([SERVICE_ID, OTHER]);
     expect(summary).toMatchObject({ domainsReapplied: 1, domainsReapplyFailed: 1 });
@@ -195,6 +204,45 @@ describe('worker reconcile wiring: pending domain routes (22-03 H3)', () => {
     expect(await reconcile.tick()).toMatchObject({ domainsReapplied: 0, domainsReapplyFailed: 1 });
     mocks.pendingDomainServices.mockRejectedValueOnce(new Error('db down'));
     expect(await reconcile.tick()).toMatchObject({ domainsReapplied: 0, domainsReapplyFailed: 0 });
+  });
+});
+
+describe('worker reconcile wiring: orphan route files (22-08 A1)', () => {
+  const OTHER = '0192f1a4-7b3c-7d2e-8f00-00000000dddd';
+
+  it('removes each orphan route through the shared applier after the re-apply and clears its mark', async () => {
+    mocks.orphanRouteServices.mockResolvedValue([SERVICE_ID, OTHER]);
+    const domainApply = vi.fn((serviceId: string) =>
+      Promise.resolve(serviceId === SERVICE_ID ? { ok: true as const } : { ok: false as const, code: 'SERVER_UNREACHABLE' as const }),
+    );
+    const warn = vi.fn();
+    const d = deps({ domainApply, logger: { info: vi.fn(), warn, error: vi.fn() } });
+    const summary = await createWorkerReconcileTick(d).tick();
+
+    expect(mocks.order).toEqual(['stale', 'reconcile', 'domains', 'orphans']);
+    expect(mocks.orphanRouteServices).toHaveBeenCalledWith(d.db, 50);
+    expect(domainApply.mock.calls.map((call) => call[0])).toEqual([SERVICE_ID, OTHER]);
+    expect(summary).toMatchObject({ orphanRoutesRemoved: 1, orphanRoutesFailed: 1 });
+    // Only the removed one is cleared; the failing one stays marked for the next tick.
+    expect(mocks.recordRouteCleanup).toHaveBeenCalledTimes(1);
+    expect(mocks.recordRouteCleanup).toHaveBeenCalledWith(d.db, {
+      actor: { type: 'system' },
+      serviceId: SERVICE_ID,
+      outcome: 'success',
+      at: NOW,
+    });
+    expect(warn).toHaveBeenCalledWith({ serviceId: OTHER, code: 'SERVER_UNREACHABLE' }, 'orphan route cleanup failed');
+  });
+
+  it('a throwing apply or a failing lookup never fails the tick', async () => {
+    mocks.orphanRouteServices.mockResolvedValueOnce([SERVICE_ID]);
+    const domainApply = vi.fn(() => Promise.reject(new Error('boom')));
+    const reconcile = createWorkerReconcileTick(deps({ domainApply }));
+
+    expect(await reconcile.tick()).toMatchObject({ orphanRoutesRemoved: 0, orphanRoutesFailed: 1 });
+    mocks.orphanRouteServices.mockRejectedValueOnce(new Error('db down'));
+    expect(await reconcile.tick()).toMatchObject({ orphanRoutesRemoved: 0, orphanRoutesFailed: 0 });
+    expect(mocks.recordRouteCleanup).not.toHaveBeenCalled();
   });
 });
 

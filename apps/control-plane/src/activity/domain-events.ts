@@ -31,6 +31,39 @@ export function writeServiceDomainsChangedEvent(
   );
 }
 
+export interface ServiceRouteCleanupEventInput {
+  readonly actor: DomainEventActor;
+  readonly serviceId: string;
+  /** failure: the service's route file may outlive its last domain (the reconcile removes it). */
+  readonly outcome: 'success' | 'failure';
+  readonly errorCode?: string;
+}
+
+/**
+ * 22-08 A1: the route-cleanup marker. Same action and metadata as a domains change; a `failure`
+ * as the service's latest domains event means its dynamic file still has to be removed.
+ */
+export function writeServiceRouteCleanupEvent(
+  handle: ActivityWriteHandle,
+  input: ServiceRouteCleanupEventInput,
+  at: Date = new Date(),
+): Promise<string> {
+  return writeActivityEvent(
+    handle,
+    {
+      actorType: input.actor.type,
+      actorId: input.actor.type === 'user' ? input.actor.id : null,
+      entityType: 'service',
+      entityId: input.serviceId,
+      action: 'service.updated',
+      outcome: input.outcome,
+      ...(input.errorCode === undefined ? {} : { errorCode: input.errorCode }),
+      metadata: { changedFields: ['domains'], requiresRedeploy: false, credentialReplaced: false },
+    },
+    at,
+  );
+}
+
 export type DomainCertActivityAction =
   | 'domain.certificate_issued'
   | 'domain.certificate_failed'
