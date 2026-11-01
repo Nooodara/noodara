@@ -13,10 +13,9 @@ const snapshot = (env: readonly RuntimeEnvEntry[]) => ({
   env,
 });
 
-const running: RuntimeEnvEntry[] = [
-  { key: 'A', value: '1' },
-  { key: 'DB', secretRef: 'db_password', secretVersion: 2 },
-];
+const PLAIN_A: RuntimeEnvEntry = { key: 'A', value: '1' };
+const REF_DB: RuntimeEnvEntry = { key: 'DB', secretRef: 'db_password', secretVersion: 2 };
+const running: RuntimeEnvEntry[] = [PLAIN_A, REF_DB];
 
 describe('differsFromRunning (23-02 A3)', () => {
   it('is false when nothing has run yet', () => {
@@ -28,12 +27,12 @@ describe('differsFromRunning (23-02 A3)', () => {
   });
 
   it.each<[string, RuntimeEnvEntry[]]>([
-    ['a changed plain value', [{ key: 'A', value: '2' }, running[1]!]],
+    ['a changed plain value', [{ key: 'A', value: '2' }, REF_DB]],
     ['a new key', [...running, { key: 'B', value: '1' }]],
-    ['a removed key', [running[0]!]],
-    ['a renamed reference', [running[0]!, { key: 'DB', secretRef: 'db_pass', secretVersion: 2 }]],
-    ['a rotated secret', [running[0]!, { key: 'DB', secretRef: 'db_password', secretVersion: 3 }]],
-    ['plain to reference', [{ key: 'A', secretRef: 'a', secretVersion: 1 }, running[1]!]],
+    ['a removed key', [PLAIN_A]],
+    ['a renamed reference', [PLAIN_A, { key: 'DB', secretRef: 'db_pass', secretVersion: 2 }]],
+    ['a rotated secret', [PLAIN_A, { key: 'DB', secretRef: 'db_password', secretVersion: 3 }]],
+    ['plain to reference', [{ key: 'A', secretRef: 'a', secretVersion: 1 }, REF_DB]],
   ])('is true for %s', (_label, current) => {
     expect(differsFromRunning(current, snapshot(running))).toBe(true);
   });

@@ -78,16 +78,29 @@ async function valueFree<T>(work: () => Promise<T>, onDuplicate: () => T): Promi
   }
 }
 
+/** `and(...)` of at least one condition is never undefined; this keeps the type honest. */
+function allOf(...conditions: SQL[]): SQL {
+  const combined = and(...conditions);
+  if (combined === undefined) throw new Error('allOf needs at least one condition');
+  return combined;
+}
+
+function anyOf(...conditions: SQL[]): SQL {
+  const combined = or(...conditions);
+  if (combined === undefined) throw new Error('anyOf needs at least one condition');
+  return combined;
+}
+
 /** Rows owned by exactly `owner`. */
 export function ownedBy(owner: EnvOwner): SQL {
-  const base = and(eq(environmentVariables.projectId, owner.projectId), eq(environmentVariables.scope, owner.scope));
+  const base = allOf(eq(environmentVariables.projectId, owner.projectId), eq(environmentVariables.scope, owner.scope));
   switch (owner.scope) {
     case 'project':
-      return and(base, isNull(environmentVariables.environmentId), isNull(environmentVariables.serviceId)) as SQL;
+      return allOf(base, isNull(environmentVariables.environmentId), isNull(environmentVariables.serviceId));
     case 'environment':
-      return and(base, eq(environmentVariables.environmentId, owner.environmentId)) as SQL;
+      return allOf(base, eq(environmentVariables.environmentId, owner.environmentId));
     case 'service':
-      return and(base, eq(environmentVariables.serviceId, owner.serviceId)) as SQL;
+      return allOf(base, eq(environmentVariables.serviceId, owner.serviceId));
   }
 }
 
@@ -121,12 +134,12 @@ export async function loadOwnerChain(handle: Handle, owner: EnvOwner, lock = fal
 function visibleSecretsWhere(chain: OwnerChain): SQL {
   const levels: SQL[] = [eq(secrets.scope, 'project')];
   if (chain.environmentId !== null) {
-    levels.push(and(eq(secrets.scope, 'environment'), eq(secrets.environmentId, chain.environmentId)) as SQL);
+    levels.push(allOf(eq(secrets.scope, 'environment'), eq(secrets.environmentId, chain.environmentId)));
   }
   if (chain.serviceId !== null) {
-    levels.push(and(eq(secrets.scope, 'service'), eq(secrets.serviceId, chain.serviceId)) as SQL);
+    levels.push(allOf(eq(secrets.scope, 'service'), eq(secrets.serviceId, chain.serviceId)));
   }
-  return and(eq(secrets.projectId, chain.projectId), or(...levels)) as SQL;
+  return allOf(eq(secrets.projectId, chain.projectId), anyOf(...levels));
 }
 
 /** A2: a secret of `name` visible from the chain's owner; locked FOR SHARE inside a write tx. */
