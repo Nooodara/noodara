@@ -9064,7 +9064,10 @@
             "apps/control-plane/src/db/schema/deployments.ts",
             "apps/control-plane/src/db/migrations/",
             "apps/web/src/components/DeploymentSteps.tsx",
-            "apps/web/src/components/DeploymentSteps.test.tsx"
+            "apps/web/src/components/DeploymentSteps.test.tsx",
+            "packages/ssh/src/commands/deploy-allowlist.test.ts",
+            "packages/docker/src/docker-operations.ts",
+            "packages/docker/src/docker-operations.test.ts"
           ],
           "wave": 3,
           "dependsOn": [
