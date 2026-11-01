@@ -356,19 +356,19 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-06 TLS renewal on Ubuntu %s', (
     const ssh = createSsh2Adapter();
     const masterKeys = () => Promise.resolve({ current: masterKey });
     const installDeps = proxyWiring.createProxyInstallJobDeps({
-        db: db(),
-        events: noEvents,
-        ssh,
-        timeouts: TIMEOUTS,
-        masterKeys,
-        image: TRAEFIK_IMAGE,
-        acmeCaUrl: PEBBLE_ACME_DIRECTORY_URL,
-        acmeCaRootFile: caRootFile,
-        maxLineBytes: MAX_LINE_BYTES,
-        logger: installLogger,
-        extraHosts: [{ name: PEBBLE_HOSTNAME, ip: pebble.ip }],
-        certificatesDurationHours: CERTIFICATES_DURATION_HOURS,
-      });
+      db: db(),
+      events: noEvents,
+      ssh,
+      timeouts: TIMEOUTS,
+      masterKeys,
+      image: TRAEFIK_IMAGE,
+      acmeCaUrl: PEBBLE_ACME_DIRECTORY_URL,
+      acmeCaRootFile: caRootFile,
+      maxLineBytes: MAX_LINE_BYTES,
+      logger: installLogger,
+      extraHosts: [{ name: PEBBLE_HOSTNAME, ip: pebble.ip }],
+      certificatesDurationHours: CERTIFICATES_DURATION_HOURS,
+    });
     // 22-07 A8 (ADR 0011): the job logs only the class of an error thrown while connecting; the
     // test keeps its message and top frames so an unexplained install failure carries its origin.
     handler = proxyJob.createProxyInstallJobHandler({

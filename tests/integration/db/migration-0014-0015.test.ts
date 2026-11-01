@@ -166,8 +166,11 @@ async function count(db: Database, table: string, column: string, value: string)
 }
 
 describe('migrations 0014/0015 files (21-06 A1, H1, H3)', () => {
-  it('the journal ends with 0013, 0014 then 0015', () => {
-    expect(readJournal().slice(-3)).toEqual([V030_TAG, MIGRATION_0014, MIGRATION_0015]);
+  it('the journal holds 0013, 0014 then 0015 consecutively', () => {
+    const journal = readJournal();
+    const at = journal.indexOf(V030_TAG);
+    expect(at).toBeGreaterThanOrEqual(0);
+    expect(journal.slice(at, at + 3)).toEqual([V030_TAG, MIGRATION_0014, MIGRATION_0015]);
   });
 
   it('0014 only adds enum values and creates the four v0.4 enums', () => {

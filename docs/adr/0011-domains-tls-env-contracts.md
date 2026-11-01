@@ -201,6 +201,14 @@ is removed, plain HTTP to the same host answers `200` again in ~2.0 s.
   install seam `certificatesDurationHours: 1`; the reconciler goes ISSUED → RENEWING → ISSUED with
   a later `notAfter`, HTTPS answers 200 throughout, `acme.json` stays root 0600 and no database
   table holds certificate or key material. Run on 24.04: ~115 s for the whole file.
+- Install flake (22-07 A8): two early 24.04 runs failed the proxy install at step `connect` in
+  50–90 ms with job log `{error: 'TypeError'}`, i.e. an error thrown out of `deps.connect`
+  (deploy-connect / ssh2 adapter), which by contract return results and never throw. Production
+  code was identical in the failing and passing runs. A cross-module-instance `SecretValue`
+  private-field read was ruled out (vitest aliases domain and ssh to `src`). Root cause not
+  reproduced: 5 consecutive passes on 24.04 with the 22-07 code. Documented, not fixed; the test
+  now wraps `connect` and records `thrownByConnect` (name, message, top 5 frames) in the install
+  log printed on failure, so a recurrence names its origin.
 - CI: the `tests/integration/proxy` suites run nightly (`proxy` job, 22.04 and 24.04, leak checks
   on `noodara.test` containers and networks); `ci.yml` excludes them like deploy-engine and keeps
   the DB-only `tests/integration/domains`.
