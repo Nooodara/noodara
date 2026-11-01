@@ -773,6 +773,10 @@ describe('@noodara/ssh public surface (T-2-42)', () => {
     'proxyNetworkDisconnect',
     'proxyRemoveDynamic',
     'proxyRestoreDynamic',
+    // 22-04: the certificate reconciler's TLS probe.
+    'certProbeFromTlsStatus',
+    'parseTlsCertStatus',
+    'proxyCertStatus',
   ] as const;
 
   it('exports exactly the deliberate public surface, no internal module leaking through', async () => {

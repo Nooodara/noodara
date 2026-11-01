@@ -117,8 +117,12 @@ export {
   PROXY_CERT_STATUS_MAX_BYTES,
   PROXY_FILE_MAX_BYTES,
   PROXY_STATUS_MAX_BYTES,
+  // 22-04: the certificate reconciler's per-domain TLS probe.
+  certProbeFromTlsStatus,
   parsePortsInUse,
   parseProxyRouterStatus,
+  parseTlsCertStatus,
+  proxyCertStatus,
   proxyCreate,
   proxyFileDigest,
   proxyNetworkConnect,
@@ -139,4 +143,5 @@ export type {
   ProxyFileDigest,
   ProxyRouterStatus,
   ProxyStaticTarget,
+  TlsCertStatus,
 } from './commands/index.js';
