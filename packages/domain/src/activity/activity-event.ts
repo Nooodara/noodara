@@ -130,7 +130,21 @@ export const DEPLOY_ENGINE_ACTIONS = [
 export type DeployEngineAction = (typeof DEPLOY_ENGINE_ACTIONS)[number];
 
 /** Every action `buildActivityEvent` accepts. */
-export type AnyActivityAction = ActivityAction | DeployEngineAction;
+/**
+ * 22-04 (A3, H4): certificate reconciler outcomes. Kept out of `ALL_ACTIVITY_ACTIONS` (whose shape
+ * other suites pin) but accepted by `buildActivityEvent`; metadata is a closed allowlist (ids,
+ * the previous certificate status code, a duration) and never a hostname, issuer or certificate.
+ */
+export const DOMAIN_ACTIONS = [
+  'domain.certificate_issued',
+  'domain.certificate_failed',
+  'domain.certificate_expired',
+  'domain.route_restored',
+] as const;
+
+export type DomainAction = (typeof DOMAIN_ACTIONS)[number];
+
+export type AnyActivityAction = ActivityAction | DeployEngineAction | DomainAction;
 
 export const ALL_ACTIVITY_ACTIONS: readonly AnyActivityAction[] = Object.freeze([
   ...AUTH_ACTIONS,
@@ -139,7 +153,7 @@ export const ALL_ACTIVITY_ACTIONS: readonly AnyActivityAction[] = Object.freeze(
   ...DEPLOY_ENGINE_ACTIONS,
 ]);
 
-const ACTIVITY_ACTION_SET: ReadonlySet<string> = new Set(ALL_ACTIVITY_ACTIONS);
+const ACTIVITY_ACTION_SET: ReadonlySet<string> = new Set<string>([...ALL_ACTIVITY_ACTIONS, ...DOMAIN_ACTIONS]);
 
 const ACCOUNT_ACTION_SET: ReadonlySet<string> = new Set(ACCOUNT_ACTIONS);
 
@@ -261,6 +275,28 @@ const PROXY_ACTION_METADATA_KEYS: Readonly<Record<ProxyAction, Readonly<Record<s
     'server.proxy_removed': { durationMs: 'count', trigger: 'code' },
   });
 
+const DOMAIN_ACTION_RULES: Readonly<
+  Record<DomainAction, { readonly entityType: string; readonly keys: Readonly<Record<string, DeployEngineMetadataKind>> }>
+> = Object.freeze({
+  'domain.certificate_issued': { entityType: 'domain', keys: { serviceId: 'id', previousStatus: 'code' } },
+  'domain.certificate_failed': { entityType: 'domain', keys: { serviceId: 'id', previousStatus: 'code' } },
+  'domain.certificate_expired': { entityType: 'domain', keys: { serviceId: 'id', previousStatus: 'code' } },
+  'domain.route_restored': { entityType: 'service', keys: { serviceId: 'id', durationMs: 'count' } },
+});
+
+function assertDomainEvent(action: DomainAction, entityType: string, metadata: ActivityMetadata): void {
+  const rule = DOMAIN_ACTION_RULES[action];
+  if (entityType !== rule.entityType) {
+    throw new InvalidActivityActionError(action, 'Activity entityType does not match action');
+  }
+  for (const [key, value] of Object.entries(metadata)) {
+    const kind = Object.hasOwn(rule.keys, key) ? rule.keys[key] : undefined;
+    if (kind === undefined || value === null || !isValidMetadataValue(kind, value)) {
+      throw new SensitiveMetadataError(key);
+    }
+  }
+}
+
 function assertProxyMetadata(action: ProxyAction, metadata: ActivityMetadata): void {
   const allowed = PROXY_ACTION_METADATA_KEYS[action];
   for (const [key, value] of Object.entries(metadata)) {
@@ -377,6 +413,10 @@ export function buildActivityEvent(input: BuildActivityEventInput, now: Date): A
       throw new InvalidActivityActionError(action, 'Activity entityType does not match action');
     }
     assertDeployEngineMetadata(action, metadata);
+  }
+
+  if (Object.hasOwn(DOMAIN_ACTION_RULES, input.action)) {
+    assertDomainEvent(input.action as DomainAction, input.entityType, metadata);
   }
 
   if (Object.hasOwn(PROXY_ACTION_METADATA_KEYS, input.action)) {

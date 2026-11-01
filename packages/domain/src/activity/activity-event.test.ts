@@ -4,6 +4,7 @@ import {
   ACCOUNT_ACTIONS,
   ALL_ACTIVITY_ACTIONS,
   AUTH_ACTIONS,
+  DOMAIN_ACTIONS,
   InvalidActivityActionError,
   SERVER_ACTIONS,
   SensitiveMetadataError,
@@ -518,5 +519,44 @@ describe('deployment.rollback_started (17-03 P1)', () => {
         NOW,
       ),
     ).toThrow(SensitiveMetadataError);
+  });
+});
+
+describe('domain.* certificate actions (22-04 A3, H4)', () => {
+  const build = (action: (typeof DOMAIN_ACTIONS)[number], entityType: string, metadata: Record<string, unknown>) =>
+    buildActivityEvent({ actorType: 'system', entityType, entityId: 'dom-1', action, outcome: 'success', metadata }, NOW);
+
+  it('accepts the closed allowlist for each action', () => {
+    expect(build('domain.certificate_issued', 'domain', { serviceId: 'svc-1', previousStatus: 'PENDING' }).action).toBe(
+      'domain.certificate_issued',
+    );
+    expect(build('domain.certificate_failed', 'domain', { serviceId: 'svc-1', previousStatus: 'PENDING' }).metadata).toEqual({
+      serviceId: 'svc-1',
+      previousStatus: 'PENDING',
+    });
+    expect(build('domain.certificate_expired', 'domain', { serviceId: 'svc-1' }).action).toBe('domain.certificate_expired');
+    expect(build('domain.route_restored', 'service', { serviceId: 'svc-1', durationMs: 12 }).action).toBe('domain.route_restored');
+  });
+
+  it('is not part of the deploy-engine or legacy action lists', () => {
+    for (const action of DOMAIN_ACTIONS) {
+      expect(ALL_ACTIVITY_ACTIONS).not.toContain(action);
+    }
+  });
+
+  it.each<[(typeof DOMAIN_ACTIONS)[number], string, Record<string, unknown>]>([
+    ['domain.certificate_issued', 'domain', { hostname: 'app.example.com' }],
+    ['domain.certificate_failed', 'domain', { issuer: 'Pebble Intermediate' }],
+    ['domain.certificate_failed', 'domain', { previousStatus: 'pending status' }],
+    ['domain.certificate_expired', 'domain', { certificate: '-----BEGIN' }],
+    ['domain.route_restored', 'service', { path: '/etc/noodara/traefik/dynamic/x.yml' }],
+    ['domain.route_restored', 'service', { durationMs: -1 }],
+  ])('rejects %s with metadata %j', (action, entityType, metadata) => {
+    expect(() => build(action, entityType, metadata)).toThrow(SensitiveMetadataError);
+  });
+
+  it('rejects a mismatched entityType', () => {
+    expect(() => build('domain.certificate_issued', 'service', { serviceId: 'svc-1' })).toThrow(InvalidActivityActionError);
+    expect(() => build('domain.route_restored', 'domain', { serviceId: 'svc-1' })).toThrow(InvalidActivityActionError);
   });
 });
