@@ -6,6 +6,9 @@
 import {
   domainAdmissionRejection,
   initialDomainCertState,
+  retryCertStatus,
+  type CertFailureCause,
+  type CertStatus,
   validateHostname,
   type DomainAdmissionRejection,
   type DomainCreateInput,
@@ -13,13 +16,18 @@ import {
   type ProxyStatus,
 } from '@noodara/domain';
 import { mapUniqueViolation, type DomainApplyStatus } from '@noodara/domain/api-contract';
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import type { DomainAction } from '@noodara/domain/activity';
+import { and, asc, desc, eq, inArray, ne, sql } from 'drizzle-orm';
 import { writeServiceDomainsChangedEvent } from '../activity/domain-events.js';
+import { writeActivityEvent } from '../activity/write-activity-event.js';
 import type { Database } from '../db/client.js';
+import { deployments } from '../db/schema/deployments.js';
 import { domains } from '../db/schema/domains.js';
 import { servers } from '../db/schema/servers.js';
 import { services } from '../db/schema/services.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
+import { toServiceView, type ServiceView } from '../services/service-view.js';
+import { nextUpdatedAt, nextUpdatedAtSql } from '../services/updated-at.js';
 
 type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
 type Handle = Database | Tx;
@@ -87,6 +95,21 @@ export function toRouteDomains(rows: readonly DomainRow[]): ProxyRouteDomain[] {
   }
   return out;
 }
+
+/**
+ * 22-04 (A2): a FAILED certificate returns to PENDING (its cause cleared) on a resolving DNS check
+ * or a PATCH; any other status is kept. The transition is the domain's (`retryCertStatus`); the
+ * literals are closed constants, never input.
+ */
+const RETRY_FROM: CertStatus = 'FAILED';
+const RETRY_COLUMNS = {
+  certStatus: sql.raw(
+    `CASE WHEN "domains"."cert_status" = '${RETRY_FROM}' THEN '${retryCertStatus(RETRY_FROM)}' ELSE "domains"."cert_status" END`,
+  ) as unknown as CertStatus,
+  certErrorCode: sql.raw(`CASE WHEN "domains"."cert_status" = '${RETRY_FROM}' THEN NULL ELSE "domains"."cert_error_code" END`) as unknown as
+    | string
+    | null,
+};
 
 async function recordDomainsChanged(tx: Tx, actor: ServiceActor, serviceId: string, at: Date): Promise<void> {
   await writeServiceDomainsChangedEvent(tx, { actor, serviceId }, at);
@@ -161,7 +184,7 @@ export async function updateDomainRedirect(
     const { scope } = input;
     const [row] = await tx
       .update(domains)
-      .set({ httpsRedirect: input.httpsRedirect, applyStatus: 'PENDING', updatedAt: input.at })
+      .set({ httpsRedirect: input.httpsRedirect, applyStatus: 'PENDING', ...RETRY_COLUMNS, updatedAt: input.at })
       .where(and(eq(domains.id, scope.domainId), eq(domains.serviceId, scope.serviceId), eq(domains.projectId, scope.projectId)))
       .returning();
     if (!row) return null;
@@ -198,7 +221,12 @@ export async function setDnsResult(
 ): Promise<DomainRow | null> {
   const [row] = await db
     .update(domains)
-    .set({ dnsStatus: result.status, dnsCheckedAt: result.at, updatedAt: result.at })
+    .set({
+      dnsStatus: result.status,
+      dnsCheckedAt: result.at,
+      ...(result.status === 'RESOLVES' ? RETRY_COLUMNS : {}),
+      updatedAt: result.at,
+    })
     .where(eq(domains.id, domainId))
     .returning();
   return row ?? null;
@@ -214,4 +242,133 @@ export async function listPendingDomainServices(db: Handle, limit: number): Prom
     .where(and(eq(domains.applyStatus, 'PENDING'), eq(servers.proxyStatus, 'RUNNING')))
     .limit(limit);
   return rows.map((row) => row.serviceId);
+}
+
+/** 22-04: one domain the certificate reconciler probes (never NONE; the server's proxy installed). */
+export interface CertCandidate {
+  readonly id: string;
+  readonly serviceId: string;
+  readonly serverId: string;
+  readonly hostname: string;
+  readonly certStatus: CertStatus;
+  readonly certNotAfter: Date | null;
+  readonly certErrorCode: string | null;
+  readonly dnsStatus: DomainRow['dnsStatus'];
+  readonly applyStatus: string;
+  readonly updatedAt: Date;
+  readonly proxyStatus: ProxyStatus;
+}
+
+export function listCertCandidates(db: Handle): Promise<CertCandidate[]> {
+  return db
+    .select({
+      id: domains.id,
+      serviceId: domains.serviceId,
+      serverId: services.serverId,
+      hostname: domains.hostname,
+      certStatus: domains.certStatus,
+      certNotAfter: domains.certNotAfter,
+      certErrorCode: domains.certErrorCode,
+      dnsStatus: domains.dnsStatus,
+      applyStatus: domains.applyStatus,
+      updatedAt: domains.updatedAt,
+      proxyStatus: servers.proxyStatus,
+    })
+    .from(domains)
+    .innerJoin(services, eq(services.id, domains.serviceId))
+    .innerJoin(servers, eq(servers.id, services.serverId))
+    .where(and(ne(domains.certStatus, 'NONE'), inArray(servers.proxyStatus, ['RUNNING', 'FAILED'])))
+    .orderBy(asc(services.serverId), asc(domains.createdAt), asc(domains.id));
+}
+
+export interface CertStatusWrite {
+  readonly domainId: string;
+  readonly serviceId: string;
+  /** The row's `updated_at` the decision was made on: a concurrent change wins (no write). */
+  readonly expectedUpdatedAt: Date;
+  readonly status: CertStatus;
+  readonly notAfter: Date | null;
+  readonly errorCode: CertFailureCause | null;
+  readonly at: Date;
+  readonly activity?: { readonly action: Exclude<DomainAction, 'domain.route_restored'>; readonly previousStatus: CertStatus };
+}
+
+async function serviceUpdated(tx: Tx, serviceId: string, at: Date): Promise<ServiceView | null> {
+  const [service] = await tx
+    .update(services)
+    .set({ updatedAt: nextUpdatedAtSql(services.updatedAt, at) })
+    .where(eq(services.id, serviceId))
+    .returning();
+  if (!service) return null;
+  const [latest] = await tx
+    .select({ status: deployments.status })
+    .from(deployments)
+    .where(eq(deployments.serviceId, serviceId))
+    .orderBy(desc(deployments.createdAt), desc(deployments.id))
+    .limit(1);
+  return toServiceView(service, latest ?? null);
+}
+
+/**
+ * 22-04 (A1, A3): the certificate decision, the service's `updated_at` bump (so `service.updated`
+ * orders) and its activity event in one transaction. Only the status, `notAfter` and the cause
+ * are stored: never an issuer or a certificate body (H1). `null` when the row changed meanwhile.
+ */
+export function writeCertStatus(
+  db: Database,
+  write: CertStatusWrite,
+): Promise<{ readonly view: ServiceView; readonly updatedAt: Date } | null> {
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(domains)
+      .set({
+        certStatus: write.status,
+        certNotAfter: write.notAfter,
+        certErrorCode: write.errorCode,
+        updatedAt: nextUpdatedAt(write.expectedUpdatedAt, write.at),
+      })
+      .where(and(eq(domains.id, write.domainId), eq(domains.updatedAt, write.expectedUpdatedAt)))
+      .returning({ serviceId: domains.serviceId, updatedAt: domains.updatedAt });
+    if (!row) return null;
+    const view = await serviceUpdated(tx, row.serviceId, write.at);
+    if (write.activity !== undefined) {
+      const { action, previousStatus } = write.activity;
+      await writeActivityEvent(
+        tx,
+        {
+          actorType: 'system',
+          entityType: 'domain',
+          entityId: write.domainId,
+          action,
+          outcome: action === 'domain.certificate_issued' ? 'success' : 'failure',
+          ...(write.errorCode === null ? {} : { errorCode: write.errorCode }),
+          metadata: { serviceId: row.serviceId, previousStatus },
+        },
+        write.at,
+      );
+    }
+    return view === null ? null : { view, updatedAt: row.updatedAt };
+  });
+}
+
+/** 22-04 (H4): a routed service's dynamic file was restored on the host. */
+export async function recordRouteRestored(
+  db: Database,
+  input: { readonly serviceId: string; readonly durationMs: number; readonly at: Date },
+): Promise<ServiceView | null> {
+  return db.transaction(async (tx) => {
+    await writeActivityEvent(
+      tx,
+      {
+        actorType: 'system',
+        entityType: 'service',
+        entityId: input.serviceId,
+        action: 'domain.route_restored',
+        outcome: 'success',
+        metadata: { serviceId: input.serviceId, durationMs: Math.max(0, Math.round(input.durationMs)) },
+      },
+      input.at,
+    );
+    return serviceUpdated(tx, input.serviceId, input.at);
+  });
 }
