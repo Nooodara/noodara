@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { decryptSecret, encryptSecret, type EncryptedBlob } from '@noodara/domain/security';
 import { secretsRotateCommand } from '../../../apps/control-plane/src/cli/secrets-rotate.js';
 import { credentials } from '../../../apps/control-plane/src/db/schema/credentials.js';
+import { projects } from '../../../apps/control-plane/src/db/schema/projects.js';
+import { secrets } from '../../../apps/control-plane/src/db/schema/secrets.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
 
 // D-11/SEC-01 (01-14-PLAN.md): `noodara secrets rotate` re-encrypts every `credentials` row in
@@ -62,7 +64,79 @@ async function allRows(db: PostgresFixture['db']): Promise<(typeof credentials.$
   return db.select().from(credentials);
 }
 
+async function seedSecretRow(db: PostgresFixture['db'], projectId: string, name: string, plaintext: string, key: Buffer, version: number): Promise<string> {
+  const [row] = await db
+    .insert(secrets)
+    .values({ scope: 'project', projectId, name, encryptedValue: encryptSecret(plaintext, { key, version }), keyVersion: version, hint: '' })
+    .returning({ id: secrets.id });
+  return row!.id;
+}
+
+async function seedProject(db: PostgresFixture['db']): Promise<string> {
+  const [row] = await db.insert(projects).values({ name: 'Rotate', slug: 'rotate' }).returning({ id: projects.id });
+  return row!.id;
+}
+
 describe('secretsRotateCommand (D-11, SEC-01)', () => {
+  it('23-01 A2: rotates credentials and secrets together to one key version, decryptable under the new key', async () => {
+    fixture = await startPostgres();
+    await seedRow(fixture.db, 'plaintext-cred-one', OLD_KEY, 1);
+    await seedRow(fixture.db, 'plaintext-cred-two', OLD_KEY, 1);
+    const projectId = await seedProject(fixture.db);
+    await seedSecretRow(fixture.db, projectId, 'one', 'plaintext-secret-one', OLD_KEY, 1);
+    await seedSecretRow(fixture.db, projectId, 'two', 'plaintext-secret-two', OLD_KEY, 1);
+    const [before] = await fixture.db.select({ version: secrets.version }).from(secrets).limit(1);
+    const logger = createLogger();
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+
+    try {
+      const env = envWith({ previous: OLD_KEY, current: NEW_KEY });
+      expect(await secretsRotateCommand({ db: fixture.db, env, logger })).toBe(0);
+      expect(writeSpy.mock.calls.map((call) => String(call[0])).join('')).toMatch(/Rotated 4 row/);
+
+      const rows = [
+        ...(await allRows(fixture.db)).map((row) => ({ ...row, table: 'credentials' })),
+        ...(await fixture.db.select().from(secrets)).map((row) => ({ ...row, table: 'secrets' })),
+      ];
+      expect(rows).toHaveLength(4);
+      for (const row of rows) {
+        expect(row.keyVersion).toBe(2);
+        expect(row.encryptedValue.startsWith('v2:')).toBe(true);
+        expect(decryptSecret(row.encryptedValue as EncryptedBlob, new Map([[2, NEW_KEY]]))).toMatch(
+          row.table === 'credentials' ? /^plaintext-cred-/ : /^plaintext-secret-/,
+        );
+        expect(() => decryptSecret(row.encryptedValue as EncryptedBlob, new Map([[2, OLD_KEY]]))).toThrow();
+      }
+      // Rotation re-encrypts; it is not a value change, so the secret version stays put.
+      const after = await fixture.db.select({ version: secrets.version }).from(secrets);
+      expect(after.every((row) => row.version === before!.version)).toBe(true);
+
+      // A second run with the same key pair changes nothing in either table.
+      expect(await secretsRotateCommand({ db: fixture.db, env, logger })).toBe(0);
+      const again = [...(await allRows(fixture.db)), ...(await fixture.db.select().from(secrets))];
+      expect(again.map((row) => row.encryptedValue).sort()).toEqual(rows.map((row) => row.encryptedValue).sort());
+    } finally {
+      writeSpy.mockRestore();
+    }
+  });
+
+  it('23-01 A2: a corrupt secrets row aborts the run and leaves both tables unchanged', async () => {
+    fixture = await startPostgres();
+    const credId = await seedRow(fixture.db, 'plaintext-cred', OLD_KEY, 1);
+    const projectId = await seedProject(fixture.db);
+    await seedSecretRow(fixture.db, projectId, 'bad', 'plaintext-secret', randomBytes(32), 1);
+    const logger = createLogger();
+
+    const exitCode = await secretsRotateCommand({ db: fixture.db, env: envWith({ previous: OLD_KEY, current: NEW_KEY }), logger });
+
+    expect(exitCode).toBe(1);
+    const [cred] = await fixture.db.select().from(credentials).where(eq(credentials.id, credId));
+    expect(cred!.keyVersion).toBe(1);
+    expect(decryptSecret(cred!.encryptedValue as EncryptedBlob, new Map([[1, OLD_KEY]]))).toBe('plaintext-cred');
+    const secretRows = await fixture.db.select().from(secrets);
+    expect(secretRows.every((row) => row.keyVersion === 1)).toBe(true);
+  });
+
   it('rotates every row to a new key version, decryptable only under the new key', async () => {
     fixture = await startPostgres();
     await seedRow(fixture.db, 'plaintext-one', OLD_KEY, 1);

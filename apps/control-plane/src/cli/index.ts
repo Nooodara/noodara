@@ -52,7 +52,7 @@ adminCommand
 const secretsCommand = program.command('secrets').description('Master-key secret operations');
 secretsCommand
   .command('rotate')
-  .description('Re-encrypt every credential row under the new master key (D-11)')
+  .description('Re-encrypt every credential and secret row under the new master key (D-11)')
   .action(async () => {
     try {
       const db = await getDb();

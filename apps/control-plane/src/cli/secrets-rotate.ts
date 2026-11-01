@@ -1,95 +1,120 @@
-// D-11/SEC-01: `noodara secrets rotate` — re-encrypts every `credentials` row from the previous
-// master key to the new one, inside one transaction, incrementing `key_version`. A failure
-// anywhere aborts the whole run: every row still decrypts under the previous key (T-1-47).
-import { eq, type SQL } from 'drizzle-orm';
+// D-11/SEC-01: `noodara secrets rotate` — re-encrypts every `credentials` and `secrets` row from
+// the previous master key to the new one, inside one transaction, moving both tables to one shared
+// `key_version`. Every row is locked FOR UPDATE first, so a concurrent secret replace and the
+// rotation serialize and no row ends with a ciphertext/key_version pair from two writers (23-01
+// H3). A failure anywhere aborts the whole run: every row still decrypts as before (T-1-47).
+import { eq } from 'drizzle-orm';
 import {
   decryptSecret,
   reencryptSecret,
+  SecretTamperError,
   type EncryptedBlob,
 } from '@noodara/domain/security';
+import type { ActivityWriteHandle } from '../activity/write-activity-event.js';
 import { decodeMasterKey, masterKeyFingerprint } from '../boot/master-key.js';
 import { credentials } from '../db/schema/credentials.js';
 import type { Env } from '../env.js';
+import { lockSecretEnvelopes, writeSecretEnvelope } from '../secrets/secret-store.js';
 
 export interface SecretsRotateLogger {
   error(msg: string): void;
   info(msg: string): void;
 }
 
-export interface SecretsRotateDb {
-  transaction<T>(cb: (tx: SecretsRotateTx) => Promise<T>): Promise<T>;
-}
-
-/** Narrow structural shape of the parts of the Drizzle handle this command needs inside its own
- *  transaction — kept independently mockable in unit-style tests. */
-export interface SecretsRotateTx {
-  select(): { from: (table: typeof credentials) => Promise<CredentialRow[]> };
-  update(table: typeof credentials): {
-    set: (values: { encryptedValue: string; keyVersion: number }) => {
-      where: (predicate: SQL | undefined) => Promise<unknown>;
-    };
-  };
-}
-
-export type CredentialRow = typeof credentials.$inferSelect;
-
 export interface SecretsRotateDeps {
-  readonly db: SecretsRotateDb;
+  readonly db: ActivityWriteHandle;
   readonly env: Pick<Env, 'NOODARA_MASTER_KEY' | 'NOODARA_MASTER_KEY_PREVIOUS'>;
   readonly logger: SecretsRotateLogger;
 }
 
-/**
- * Picks the version number every rotated row should end up at. If any row already decrypts under
- * `newKey` at the table's current max `key_version`, that version *is* the target — this run is a
- * safe re-run after a prior successful rotation with the same key pair, and nothing needs to
- * change. Otherwise the target is one past the current max, a version never used before.
- */
-function pickTargetVersion(rows: CredentialRow[], newKey: Buffer): number {
-  const maxVersion = rows.reduce((max, row) => Math.max(max, row.keyVersion), 0);
-  const probe = rows.find((row) => row.keyVersion === maxVersion);
-  if (probe) {
-    try {
-      decryptSecret(probe.encryptedValue as EncryptedBlob, new Map([[maxVersion, newKey]]));
-      return maxVersion;
-    } catch {
-      // Not yet under the new key — fall through to a fresh version.
-    }
+/** The envelope columns of one row of either table. */
+export interface EnvelopeRow {
+  readonly id: string;
+  readonly encryptedValue: string;
+  readonly keyVersion: number;
+}
+
+export interface RotationUpdate {
+  readonly id: string;
+  readonly encryptedValue: string;
+  readonly keyVersion: number;
+}
+
+function decryptsUnder(row: EnvelopeRow, key: Buffer): boolean {
+  try {
+    decryptSecret(row.encryptedValue as EncryptedBlob, new Map([[row.keyVersion, key]]));
+    return true;
+  } catch {
+    return false;
   }
-  return maxVersion + 1;
 }
 
 /**
- * Re-encrypts every `credentials` row not already at `target` from its own stored `key_version`
- * (assumed to be under `previousKey`) to `target` (under `newKey`), inside `tx`. Returns the
- * number of rows actually changed. Any thrown error (a corrupt row that decrypts under neither
- * key) propagates out of `tx` uncaught, so the caller's transaction rolls back automatically —
- * this function never catches and continues past a row it cannot verify.
+ * The version every rotated row ends up at. When every row at the current max `key_version`
+ * already decrypts under `newKey`, that version is the target (a safe re-run after a successful
+ * rotation with the same key pair). Otherwise it is one past the max, a version never used.
  */
-async function rotateRows(
-  tx: SecretsRotateTx,
-  rows: CredentialRow[],
+export function pickTargetVersion(rows: readonly EnvelopeRow[], newKey: Buffer): number {
+  const maxVersion = rows.reduce((max, row) => Math.max(max, row.keyVersion), 0);
+  const atMax = rows.filter((row) => row.keyVersion === maxVersion);
+  return atMax.length > 0 && atMax.every((row) => decryptsUnder(row, newKey)) ? maxVersion : maxVersion + 1;
+}
+
+/**
+ * Pure: the writes that move `rows` to `target` under `newKey`. A row already at `target` is left
+ * alone. Any other row is re-encrypted from `previousKey`, or from `newKey` when it was written
+ * under the new key during the rotation window. A row that decrypts under neither key throws
+ * (SecretTamperError or an envelope error), so the caller's transaction rolls back.
+ */
+export function planRotation(
+  rows: readonly EnvelopeRow[],
   target: number,
   previousKey: Buffer,
   newKey: Buffer,
-): Promise<number> {
-  let rotated = 0;
+): RotationUpdate[] {
+  const updates: RotationUpdate[] = [];
   for (const row of rows) {
-    if (row.keyVersion === target) {
-      continue;
+    if (row.keyVersion === target) continue;
+    const blob = row.encryptedValue as EncryptedBlob;
+    const to = { key: newKey, version: target };
+    let encryptedValue: string;
+    try {
+      encryptedValue = reencryptSecret(blob, new Map([[row.keyVersion, previousKey]]), to);
+    } catch (error) {
+      if (!(error instanceof SecretTamperError)) throw error;
+      encryptedValue = reencryptSecret(blob, new Map([[row.keyVersion, newKey]]), to);
     }
-    const keyMap = new Map([[row.keyVersion, previousKey]]);
-    const newBlob = reencryptSecret(row.encryptedValue as EncryptedBlob, keyMap, {
-      key: newKey,
-      version: target,
-    });
+    updates.push({ id: row.id, encryptedValue, keyVersion: target });
+  }
+  return updates;
+}
+
+async function rotateAll(tx: ActivityWriteHandle, previousKey: Buffer, newKey: Buffer): Promise<number> {
+  const credentialRows = await tx
+    .select({
+      id: credentials.id,
+      encryptedValue: credentials.encryptedValue,
+      keyVersion: credentials.keyVersion,
+    })
+    .from(credentials)
+    .for('update');
+  const secretRows = await lockSecretEnvelopes(tx);
+  const all = [...credentialRows, ...secretRows];
+  if (all.length === 0) return 0;
+
+  const target = pickTargetVersion(all, newKey);
+  const credentialUpdates = planRotation(credentialRows, target, previousKey, newKey);
+  const secretUpdates = planRotation(secretRows, target, previousKey, newKey);
+  for (const update of credentialUpdates) {
     await tx
       .update(credentials)
-      .set({ encryptedValue: newBlob, keyVersion: target })
-      .where(eq(credentials.id, row.id));
-    rotated += 1;
+      .set({ encryptedValue: update.encryptedValue, keyVersion: update.keyVersion })
+      .where(eq(credentials.id, update.id));
   }
-  return rotated;
+  for (const update of secretUpdates) {
+    await writeSecretEnvelope(tx, update.id, update.encryptedValue, update.keyVersion);
+  }
+  return credentialUpdates.length + secretUpdates.length;
 }
 
 /**
@@ -115,17 +140,10 @@ export async function secretsRotateCommand(deps: SecretsRotateDeps): Promise<num
   }
 
   try {
-    const rotated = await db.transaction(async (tx) => {
-      const rows = await tx.select().from(credentials);
-      if (rows.length === 0) {
-        return 0;
-      }
-      const target = pickTargetVersion(rows, newKey);
-      return rotateRows(tx, rows, target, previousKey, newKey);
-    });
+    const rotated = await db.transaction(async (tx) => rotateAll(tx, previousKey, newKey));
 
     logger.info(
-      `Rotated ${rotated.toString()} credential row(s) (old key ${masterKeyFingerprint(previousKey)} -> new key ${masterKeyFingerprint(newKey)}).`,
+      `Rotated ${rotated.toString()} credential and secret row(s) (old key ${masterKeyFingerprint(previousKey)} -> new key ${masterKeyFingerprint(newKey)}).`,
     );
     process.stdout.write(
       `Rotated ${rotated.toString()} row(s). NOODARA_MASTER_KEY_PREVIOUS can now be removed from .env.\n`,
