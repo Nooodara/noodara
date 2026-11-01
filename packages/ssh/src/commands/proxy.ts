@@ -122,6 +122,13 @@ export const PROXY_SCRIPTS = Object.freeze({
     'echo "NOODARA_PROXY_PURGE ok"',
   ].join("\n"),
   removeDynamic: ['rm -f -- "$1" "$1.prev" || exit 3', 'echo "NOODARA_PROXY_REMOVE ok"'].join("\n"),
+  /** 22-05 H2: the backend port of a service file (one line; never the file itself). */
+  readDynamic: [
+    '[ -f "$1" ] || { echo "NOODARA_PROXY_READ absent"; exit 0; }',
+    `port=$(head -c ${String(PROXY_FILE_MAX_BYTES)} -- "$1" | sed -n 's/.*"url":"http:\\/\\/noodara-[0-9a-f-]\\{36\\}:\\([0-9]\\{1,5\\}\\)".*/\\1/p' | head -n 1) || port=`,
+    '[ -n "$port" ] || { echo "NOODARA_PROXY_READ unknown"; exit 0; }',
+    'echo "NOODARA_PROXY_READ port=$port"',
+  ].join("\n"),
   /** $1 router name (without `@file`). Raw HTTP/1.0 response, capped. */
   routerStatus: [
     `{ exec 3<>${API}; } 2>/dev/null || { echo "NOODARA_PROXY_API down"; exit 0; }`,
@@ -288,6 +295,31 @@ export function proxyRemoveDynamic(path: string): RemoteCommand {
   return script("proxy.remove_dynamic", PROXY_SCRIPTS.removeDynamic, {
     args: [dynamicPath(path, SERVICE_DYNAMIC_PATH)],
   });
+}
+
+/**
+ * 22-05 H2: the port the live file routes to. Read-only, so it runs under the status probe's
+ * allowlisted name. Service files only.
+ */
+export function proxyReadDynamic(path: string): RemoteCommand {
+  return script("proxy.status", PROXY_SCRIPTS.readDynamic, {
+    seconds: PROBE_TIMEOUT_SECONDS,
+    cap: 128,
+    args: [dynamicPath(path, SERVICE_DYNAMIC_PATH)],
+  });
+}
+
+export type ProxyDynamicPort =
+  | { readonly kind: "port"; readonly port: number }
+  | { readonly kind: "absent" }
+  | { readonly kind: "unknown" };
+
+export function parseProxyDynamicPort(stdout: string): ProxyDynamicPort {
+  const line = stdout.trim();
+  if (line === "NOODARA_PROXY_READ absent") return { kind: "absent" };
+  const match = /^NOODARA_PROXY_READ port=(\d{1,5})$/.exec(line);
+  const port = match === null ? NaN : Number(match[1]);
+  return Number.isInteger(port) && port >= 1 && port <= 65_535 ? { kind: "port", port } : { kind: "unknown" };
 }
 
 export interface ProxyExtraHost {

@@ -777,6 +777,9 @@ describe('@noodara/ssh public surface (T-2-42)', () => {
     'certProbeFromTlsStatus',
     'parseTlsCertStatus',
     'proxyCertStatus',
+    // 22-05 H2: the deploy reads the port of the live service file.
+    'parseProxyDynamicPort',
+    'proxyReadDynamic',
   ] as const;
 
   it('exports exactly the deliberate public surface, no internal module leaking through', async () => {

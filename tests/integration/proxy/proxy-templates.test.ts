@@ -34,6 +34,7 @@ import {
   PROXY_CERT_STATUS_MAX_BYTES,
   certProbeFromTlsStatus,
   parsePortsInUse,
+  parseProxyDynamicPort,
   parseProxyRouterStatus,
   parseTlsCertStatus,
   proxyCertStatus,
@@ -43,6 +44,7 @@ import {
   proxyNetworkDisconnect,
   proxyPortsInUse,
   proxyPrepareDirs,
+  proxyReadDynamic,
   proxyRemoveDynamic,
   proxyRestoreDynamic,
   proxyRouterStatus,
@@ -687,10 +689,18 @@ curl -s -o /dev/null --max-time 2 -w 'web_api %{http_code}\\n' http://127.0.0.1/
       ).toMatchObject({ kind: "present", status: "enabled" });
     });
 
+    it("22-05 H2: read_dynamic reports the live file's backend port, and absent once removed", async () => {
+      expect(parseProxyDynamicPort(await mustRun(proxyReadDynamic(dynamicPath)))).toEqual({
+        kind: "port",
+        port: SERVER_PORT,
+      });
+    });
+
     it("A1: remove_dynamic drops the routers and network_disconnect detaches the proxy", async () => {
       expect(await mustRun(proxyRemoveDynamic(dynamicPath))).toContain(
         "NOODARA_PROXY_REMOVE ok",
       );
+      expect(parseProxyDynamicPort(await mustRun(proxyReadDynamic(dynamicPath)))).toEqual({ kind: "absent" });
       expect(
         await pollUntil(
           () => routerStatus(webRouterA ?? ""),

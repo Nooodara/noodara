@@ -9,9 +9,11 @@ import {
 import { renderRemoteCommand, type RemoteCommand } from "./remote-command.js";
 import {
   PROXY_CERT_STATUS_MAX_BYTES,
+  PROXY_FILE_MAX_BYTES,
   PROXY_SCRIPTS,
   certProbeFromTlsStatus,
   parsePortsInUse,
+  parseProxyDynamicPort,
   parseProxyRouterStatus,
   parseTlsCertStatus,
   proxyCertStatus,
@@ -21,6 +23,7 @@ import {
   proxyNetworkDisconnect,
   proxyPortsInUse,
   proxyPrepareDirs,
+  proxyReadDynamic,
   proxyRemoveDynamic,
   proxyRemoveFiles,
   proxyRestoreDynamic,
@@ -55,6 +58,7 @@ describe("proxy templates: bounded wrapper (A4)", () => {
     ["write_dynamic", proxyWriteDynamic({ path: dynamicPath, digest })],
     ["restore_dynamic", proxyRestoreDynamic(dynamicPath)],
     ["remove_dynamic", proxyRemoveDynamic(dynamicPath)],
+    ["read_dynamic", proxyReadDynamic(dynamicPath)],
     ["remove_files", proxyRemoveFiles()],
     ["status", proxyRouterStatus("noodara-x-web")],
     ["ports_in_use", proxyPortsInUse()],
@@ -258,6 +262,29 @@ describe("docker.network_connect / network_disconnect for the proxy", () => {
     expect(d.name).toBe("docker.network_disconnect");
     expect(d.argv.slice(4)).toEqual(["docker", "network", "disconnect", "--", `noodara-net-${SERVICE}`, "noodara-traefik"]);
     expect(() => proxyNetworkDisconnect("x;id" as ResourceId)).toThrow();
+  });
+});
+
+describe("proxy dynamic port read (22-05 H2)", () => {
+  it("reads only a service file, passed as a positional argument, under the status probe name", () => {
+    const cmd = proxyReadDynamic(dynamicPath);
+    const w = wrapped(cmd);
+    expect(cmd.name).toBe("proxy.status");
+    expect(w.args).toEqual([dynamicPath]);
+    expect(w.cap).toBeLessThanOrEqual(256);
+    expect(w.seconds).toBeLessThanOrEqual(30);
+    expect(w.script).not.toContain(SERVICE);
+    expect(w.script).toContain(`head -c ${String(PROXY_FILE_MAX_BYTES)}`);
+    expect(() => proxyReadDynamic("/opt/noodara-proxy/dynamic/noodara-api.yml")).toThrow(RangeError);
+    expect(() => proxyReadDynamic("/etc/passwd")).toThrow(RangeError);
+  });
+  it("parses the port line, an absent file and anything else", () => {
+    expect(parseProxyDynamicPort("NOODARA_PROXY_READ port=8080\n")).toEqual({ kind: "port", port: 8080 });
+    expect(parseProxyDynamicPort("NOODARA_PROXY_READ absent\n")).toEqual({ kind: "absent" });
+    expect(parseProxyDynamicPort("NOODARA_PROXY_READ unknown\n")).toEqual({ kind: "unknown" });
+    expect(parseProxyDynamicPort("NOODARA_PROXY_READ port=70000\n")).toEqual({ kind: "unknown" });
+    expect(parseProxyDynamicPort("NOODARA_PROXY_READ port=0\n")).toEqual({ kind: "unknown" });
+    expect(parseProxyDynamicPort("garbage")).toEqual({ kind: "unknown" });
   });
 });
 

@@ -120,6 +120,8 @@ export {
   // 22-04: the certificate reconciler's per-domain TLS probe.
   certProbeFromTlsStatus,
   parsePortsInUse,
+  // 22-05 H2: the deploy reads the port the live service file routes to.
+  parseProxyDynamicPort,
   parseProxyRouterStatus,
   parseTlsCertStatus,
   proxyCertStatus,
@@ -129,6 +131,7 @@ export {
   proxyNetworkDisconnect,
   proxyPortsInUse,
   proxyPrepareDirs,
+  proxyReadDynamic,
   proxyRemoveDynamic,
   proxyRemoveFiles,
   proxyRestoreDynamic,
@@ -139,6 +142,7 @@ export {
 export type {
   ForeignListener,
   PortsInUse,
+  ProxyDynamicPort,
   ProxyExtraHost,
   ProxyFileDigest,
   ProxyRouterStatus,
