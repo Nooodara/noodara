@@ -22,5 +22,5 @@
 19. CONFIRMED (user, DECISIONS 2026-10-14): Phase 18 assumption: the receiver accepts only `application/json` GitHub deliveries and requires the Noodara URL to be reachable from GitHub; no tunnel or relay is in scope, the docs say so.
 20. v0.4 UAT (25-06): proving certificate issuance against Let's Encrypt production needs a public VPS with a public IP and a real domain (or subdomain) the user owns, pointed at it. Renting either costs money and is outside the orchestrator's delegation. Without them the UAT runs on a Lima VM against Pebble (mechanism proven; LE production path recorded UNVERIFIED). Owner: user. Needed before `v0.4.0` if the criterion is to be fully verified.
 
-- 2026-10-31 (22-05) — Deleting a service's last domain while the proxy is down or the server unreachable leaves the dynamic route file on the server; reconcile doesn't clean it up. Outside 22-05's criteria.
-- 2026-10-31 (22-05) — createDomainApplier renders from `services.internalPort`, not the port actually deployed. Check whether they can diverge.
+- RESOLVED (22-08 A1, cleanupOrphanRoutes in reconcile) — 2026-10-31 (22-05) — Deleting a service's last domain while the proxy is down or the server unreachable leaves the dynamic route file on the server; reconcile doesn't clean it up. Outside 22-05's criteria.
+- RESOLVED (22-08 A3, newest SUCCESS deployment port) — 2026-10-31 (22-05) — createDomainApplier renders from `services.internalPort`, not the port actually deployed. Check whether they can diverge.
