@@ -30,6 +30,7 @@ import type { ServerErrorCode } from '@noodara/domain/server';
 import { Banner, EmptyState, Skeleton, SkeletonText } from '@noodara/ui';
 import { DiscoverySection } from '../../../../components/DiscoverySection';
 import { FirstTrustNotice } from '../../../../components/FirstTrustNotice';
+import { ProxyCard } from '../../../../components/ProxyCard';
 import { HostKeyChangedBanner } from '../../../../components/HostKeyChangedBanner';
 import { ServerDetailToolbar } from '../../../../components/ServerDetailToolbar';
 import { ServerFacts } from '../../../../components/ServerFacts';
@@ -41,6 +42,7 @@ import { copyForErrorCode, copyForServerErrorCode } from '../../../../lib/error-
 import { dismissFirstTrustNotice, shouldShowFirstTrustNotice } from '../../../../lib/first-trust';
 import { requireSession } from '../../../../lib/require-session';
 import { safeLocalStorage } from '../../../../lib/safe-storage';
+import { readServerProxy } from '../../../../lib/server-api';
 import { useShellContext } from '../../../../lib/shell-context';
 
 type PageState =
@@ -327,6 +329,11 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
 
         {detailState === 'discovered' || detailState === 'failed-with-history' ? (
           <ServerFacts server={server} now={now} dimmed={detailState === 'failed-with-history'} warnings={warnings} />
+        ) : null}
+
+        {/* 24-03 (A1): the reverse proxy, once the server has been discovered. */}
+        {detailState === 'discovered' ? (
+          <ProxyCard serverId={server.id} proxy={readServerProxy(server)} onSettled={fetchServer} />
         ) : null}
 
         {detailState === 'host-key-changed' ? (

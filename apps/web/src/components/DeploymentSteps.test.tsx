@@ -15,7 +15,7 @@ import {
 
 const deployApi = vi.hoisted(() => ({
   getDeployment: vi.fn(),
-  getConfigureNames: vi.fn(() => Promise.resolve({ ok: false, code: 'NOT_FOUND', message: 'x', unauthorized: false })),
+  getConfigureNames: vi.fn((_id: string) => Promise.resolve({ ok: false, code: 'NOT_FOUND', message: 'x', unauthorized: false })),
 }));
 vi.mock('../lib/deploy-api', () => ({
   getDeployment: (id: string) => deployApi.getDeployment(id) as unknown,
