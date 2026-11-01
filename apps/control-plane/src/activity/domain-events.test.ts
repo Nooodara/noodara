@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { activityEvents } from '../db/schema/activity-events.js';
-import { writeServiceDomainsChangedEvent } from './domain-events.js';
+import { writeDomainActivityEvent, writeServiceDomainsChangedEvent } from './domain-events.js';
 import type { ActivityWriteHandle } from './write-activity-event.js';
 
 function createMockHandle(): {
@@ -57,5 +57,61 @@ describe('writeServiceDomainsChangedEvent (22-03 A1)', () => {
     expect(row.actorType).toBe('system');
     expect(row.actorId).toBeNull();
     expect(row.entityId).toBe('svc-2');
+  });
+});
+
+describe('writeDomainActivityEvent (22-04 A3, H4)', () => {
+  const at = new Date('2026-10-31T00:00:00.000Z');
+
+  it('writes a domain.certificate_failed row with the error code and allowlisted metadata', async () => {
+    const mock = createMockHandle();
+
+    const id = await writeDomainActivityEvent(
+      mock.handle,
+      {
+        actorType: 'system',
+        entityType: 'domain',
+        entityId: 'dom-1',
+        action: 'domain.certificate_failed',
+        outcome: 'failure',
+        errorCode: 'CERT_DNS_MISMATCH',
+        metadata: { serviceId: 'svc-1', previousStatus: 'PENDING' },
+      },
+      at,
+    );
+
+    expect(id).toBe('event-row-id');
+    expect(mock.insert).toHaveBeenCalledWith(activityEvents);
+    const row = insertedRow(mock.values);
+    expect(row.actorType).toBe('system');
+    expect(row.entityType).toBe('domain');
+    expect(row.entityId).toBe('dom-1');
+    expect(row.action).toBe('domain.certificate_failed');
+    expect(row.outcome).toBe('failure');
+    expect(row.errorCode).toBe('CERT_DNS_MISMATCH');
+    expect(row.occurredAt).toEqual(at);
+    expect(row.metadata).toEqual({ serviceId: 'svc-1', previousStatus: 'PENDING' });
+  });
+
+  it('writes a domain.route_restored row on the service', async () => {
+    const mock = createMockHandle();
+
+    await writeDomainActivityEvent(
+      mock.handle,
+      {
+        actorType: 'system',
+        entityType: 'service',
+        entityId: 'svc-2',
+        action: 'domain.route_restored',
+        outcome: 'success',
+        metadata: { serviceId: 'svc-2', durationMs: 12 },
+      },
+      at,
+    );
+
+    const row = insertedRow(mock.values);
+    expect(row.entityType).toBe('service');
+    expect(row.action).toBe('domain.route_restored');
+    expect(row.metadata).toEqual({ serviceId: 'svc-2', durationMs: 12 });
   });
 });

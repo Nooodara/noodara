@@ -18,9 +18,8 @@ import {
 import { mapUniqueViolation, type DomainApplyStatus } from '@noodara/domain/api-contract';
 import type { DomainAction } from '@noodara/domain/activity';
 import { and, asc, desc, eq, inArray, ne, sql } from 'drizzle-orm';
-import { writeServiceDomainsChangedEvent } from '../activity/domain-events.js';
+import { writeDomainActivityEvent, writeServiceDomainsChangedEvent } from '../activity/domain-events.js';
 import { writeProxyActivityEvent } from '../activity/proxy-events.js';
-import { writeActivityEvent } from '../activity/write-activity-event.js';
 import type { Database } from '../db/client.js';
 import { deployments } from '../db/schema/deployments.js';
 import { domains } from '../db/schema/domains.js';
@@ -336,7 +335,7 @@ export function writeCertStatus(
     const view = await serviceUpdated(tx, row.serviceId, write.at);
     if (write.activity !== undefined) {
       const { action, previousStatus } = write.activity;
-      await writeActivityEvent(
+      await writeDomainActivityEvent(
         tx,
         {
           actorType: 'system',
@@ -360,7 +359,7 @@ export async function recordRouteRestored(
   input: { readonly serviceId: string; readonly durationMs: number; readonly at: Date },
 ): Promise<ServiceView | null> {
   return db.transaction(async (tx) => {
-    await writeActivityEvent(
+    await writeDomainActivityEvent(
       tx,
       {
         actorType: 'system',
