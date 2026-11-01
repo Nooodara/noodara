@@ -162,7 +162,7 @@ export function DeploymentSteps({ deployment, logTail = null }: DeploymentStepsP
                 threadFilled={!UNRESOLVED_STEP_STATES.has(step.state)}
               >
                 {detail === null ? null : (
-                  <p data-testid="deployment-configure-counts" className="pl-6 text-callout text-ink-secondary">
+                  <p data-testid="deployment-configure-counts" className="pl-6 text-caption text-ink-secondary">
                     {detail}
                   </p>
                 )}
