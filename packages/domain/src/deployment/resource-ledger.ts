@@ -8,6 +8,8 @@
 //   container this attempt replaced is never in a cleanup set: after SUCCESS it is a known-good
 //   rollback target and image retention (17-04) decides whether it stays.
 // - The network goes only when this attempt created it and attached nothing to it.
+// - 22-05: proxy resources (the dynamic file, the proxy's network membership) belong to the
+//   domains, never to an attempt: no exit lists them, and a network the proxy joined stays.
 // - WORKER_CRASHED: the in-job ledger is lost, so the set uses only the deterministic names.
 // - 17-02 (H1): the previous container is kept as `noodara-<serviceId>-prev` until the new one
 //   passes its healthcheck. Its image is the restore target, so no exit ever lists it.
@@ -55,6 +57,8 @@ export interface ResourceLedger {
   readonly replacedImage: ImageRef | null;
   /** Image of the container kept as `-prev` (the restore target); never cleaned up on failure. */
   readonly previousImage: string | null;
+  /** 22-05: the proxy joined the service network (the service has domains); the network stays. */
+  readonly proxyAttached: boolean;
 }
 
 export type LedgerEvent =
@@ -66,7 +70,9 @@ export type LedgerEvent =
   | { readonly kind: 'container_created' }
   /** 17-02: the previous container was stopped and kept as `-prev` (not removed). */
   | { readonly kind: 'previous_container_kept'; readonly imageRef: string | null }
-  | { readonly kind: 'previous_container_removed'; readonly imageRef: string | null };
+  | { readonly kind: 'previous_container_removed'; readonly imageRef: string | null }
+  /** 22-05: the proxy is connected to the service network. */
+  | { readonly kind: 'proxy_attached' };
 
 export type CleanupResource =
   | { readonly kind: 'secrets_file'; readonly path: string }
@@ -105,6 +111,7 @@ export function createResourceLedger(
     containerCreated: false,
     replacedImage: null,
     previousImage: null,
+    proxyAttached: false,
   });
 }
 
@@ -142,6 +149,8 @@ export function recordResource(ledger: ResourceLedger, event: LedgerEvent): Reso
       return { ...ledger, previousImage: event.imageRef };
     case 'previous_container_removed':
       return { ...ledger, replacedImage: ownReplacedImage(ledger, event.imageRef) };
+    case 'proxy_attached':
+      return { ...ledger, proxyAttached: true };
   }
 }
 
@@ -164,7 +173,7 @@ export function cleanupSetFor(
   if (failed && ledger.imageCreated && !ledger.containerCreated) {
     set.push({ kind: 'image', ref: ledger.names.image });
   }
-  if (failed && ledger.networkCreatedByAttempt && !ledger.containerCreated) {
+  if (failed && ledger.networkCreatedByAttempt && !ledger.containerCreated && !ledger.proxyAttached) {
     set.push({ kind: 'network', name: ledger.names.network });
   }
   return failed ? keepPrevious(ledger, set) : set;

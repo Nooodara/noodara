@@ -80,6 +80,7 @@ describe('createResourceLedger', () => {
     expect(l.containerCreated).toBe(false);
     expect(l.replacedImage).toBeNull();
     expect(l.previousImage).toBeNull();
+    expect(l.proxyAttached).toBe(false);
   });
 
   it.each([
@@ -245,6 +246,27 @@ describe('cleanupSetFor', () => {
       ]);
     },
   );
+
+  it.each([...FAILED_EXITS, 'SUCCESS', 'WORKER_CRASHED'] as const)(
+    'on %s never lists a proxy resource, and a network the proxy joined stays (22-05 A1)',
+    (exit) => {
+      const l = ledger(
+        { kind: 'workspace_created' },
+        { kind: 'image_created' },
+        { kind: 'network_created' },
+        { kind: 'proxy_attached' },
+      );
+
+      const set = cleanupSetFor(l, exit);
+
+      expect(set.some((resource) => resource.kind === 'network')).toBe(false);
+      expect(set.every((resource) => ['workspace', 'image', 'secrets_file'].includes(resource.kind))).toBe(true);
+    },
+  );
+
+  it('records the proxy joining the network only as a flag (22-05 A1)', () => {
+    expect(ledger({ kind: 'proxy_attached' }).proxyAttached).toBe(true);
+  });
 
   it.each(FAILED_EXITS)('on %s with nothing recorded removes only the workspace path', (exit) => {
     expect(cleanupSetFor(ledger(), exit)).toEqual([{ kind: 'workspace', path: WORKSPACE }]);
