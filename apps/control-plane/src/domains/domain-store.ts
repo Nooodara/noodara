@@ -19,13 +19,16 @@ import { mapUniqueViolation, type DomainApplyStatus } from '@noodara/domain/api-
 import type { DomainAction } from '@noodara/domain/activity';
 import { and, asc, desc, eq, inArray, ne, sql } from 'drizzle-orm';
 import { writeServiceDomainsChangedEvent } from '../activity/domain-events.js';
+import { writeProxyActivityEvent } from '../activity/proxy-events.js';
 import { writeActivityEvent } from '../activity/write-activity-event.js';
 import type { Database } from '../db/client.js';
 import { deployments } from '../db/schema/deployments.js';
 import { domains } from '../db/schema/domains.js';
 import { servers } from '../db/schema/servers.js';
 import { services } from '../db/schema/services.js';
+import { loadServerView, writeProxyStatus } from '../proxy/proxy-store.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
+import type { ServerView } from '../services/server-view.js';
 import { toServiceView, type ServiceView } from '../services/service-view.js';
 import { nextUpdatedAt, nextUpdatedAtSql } from '../services/updated-at.js';
 
@@ -370,5 +373,32 @@ export async function recordRouteRestored(
       input.at,
     );
     return serviceUpdated(tx, input.serviceId, input.at);
+  });
+}
+
+/**
+ * 22-04 (H2): the certificate cycle found no running proxy container on a server marked RUNNING.
+ * A conditional RUNNING -> FAILED move, so `server.proxy_failed` is recorded once: a later cycle
+ * finds the row already FAILED and writes nothing. `null` when the row was not RUNNING.
+ */
+export function markProxyUnavailable(db: Database, serverId: string, at: Date): Promise<ServerView | null> {
+  return db.transaction(async (tx) => {
+    const moved = await writeProxyStatus(tx, serverId, 'RUNNING', 'FAILED', { errorCode: 'PROXY_UNAVAILABLE', at });
+    if (!moved) return null;
+    await writeProxyActivityEvent(
+      tx,
+      {
+        actorType: 'system',
+        actorId: null,
+        entityType: 'server',
+        entityId: serverId,
+        action: 'server.proxy_failed',
+        outcome: 'failure',
+        errorCode: 'PROXY_UNAVAILABLE',
+        metadata: { step: 'status', trigger: 'cert_check' },
+      },
+      at,
+    );
+    return loadServerView(tx, serverId);
   });
 }

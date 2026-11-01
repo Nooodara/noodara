@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import type { Database } from '../db/client.js';
 import * as schema from '../db/schema/index.js';
 import { services } from '../db/schema/services.js';
-import { listCertCandidates, setDnsResult, updateDomainRedirect, writeCertStatus } from './domain-store.js';
+import { listCertCandidates, markProxyUnavailable, setDnsResult, updateDomainRedirect, writeCertStatus } from './domain-store.js';
 
 interface Query {
   readonly text: string;
@@ -26,7 +26,7 @@ function fakeDb(respond: Responder = () => []): { db: Database; queries: Query[]
       return Promise.resolve({ rows, rowCount: rows.length, fields: [] });
     },
   };
-  return { db: drizzle(client as never, { schema, casing: 'snake_case' }) as unknown as Database, queries };
+  return { db: drizzle(client as never, { schema, casing: 'snake_case' }), queries };
 }
 
 function rowFor(table: typeof services, record: Record<string, unknown>): unknown[] {
@@ -142,6 +142,34 @@ describe('writeCertStatus (22-04 A1, A3, H1)', () => {
     });
     const result = await writeCertStatus(db, { ...write, status: 'PENDING', notAfter: null, errorCode: 'CERT_PROXY_UNAVAILABLE' });
     expect(result).not.toBeNull();
+    expect(queries.some((q) => q.text.startsWith('insert into "activity_events"'))).toBe(false);
+  });
+});
+
+describe('markProxyUnavailable (22-04 H2)', () => {
+  const SERVER_ID = SERVICE_RECORD.serverId;
+
+  it('moves RUNNING -> FAILED/PROXY_UNAVAILABLE and records server.proxy_failed in the same transaction', async () => {
+    const { db, queries } = fakeDb((query) => {
+      if (query.text.startsWith('update "servers"')) return [[SERVER_ID]];
+      if (query.text.startsWith('insert into "activity_events"')) return [['0192f1a4-7b3c-7d2e-8f00-00000000eeee']];
+      return [];
+    });
+    await markProxyUnavailable(db, SERVER_ID, AT);
+    const [update] = updates(queries, 'servers');
+    expect(update?.values).toEqual(expect.arrayContaining(['FAILED', 'PROXY_UNAVAILABLE', SERVER_ID, 'RUNNING']));
+    expect(update?.text).toMatch(/"servers"\."proxy_status" = \$\d+/);
+    const insert = queries.find((q) => q.text.startsWith('insert into "activity_events"'));
+    expect(insert?.values).toEqual(expect.arrayContaining(['server', SERVER_ID, 'server.proxy_failed', 'failure', 'PROXY_UNAVAILABLE']));
+    expect(JSON.stringify(insert?.values)).toContain('cert_check');
+    expect(queries[0]?.text).toBe('begin');
+    expect(queries.at(-1)?.text).toBe('commit');
+  });
+
+  it('writes no activity event when the row is no longer RUNNING (recorded once, not every cycle)', async () => {
+    const { db, queries } = fakeDb();
+    const result = await markProxyUnavailable(db, SERVER_ID, AT);
+    expect(result).toBeNull();
     expect(queries.some((q) => q.text.startsWith('insert into "activity_events"'))).toBe(false);
   });
 });

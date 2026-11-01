@@ -270,7 +270,10 @@ export function createCertReconciler(deps: CertReconcilerDeps): CertReconciler {
 
   async function probe(session: SshDeploySession, cycle: ServerCycle): Promise<ProbeOutcome> {
     const api = await probeRouter(session, PROXY_API_ROUTER_NAME, deps.commandMs);
-    if (api === null) return { proxyDown: false, probes: new Map(), invalid: 1, missingRoutes: [] };
+    if (api === null) {
+      deps.logger.warn({ serverId: cycle.serverId, outcome: 'probe_invalid' }, 'proxy status answer rejected');
+      return { proxyDown: false, probes: new Map(), invalid: 1, missingRoutes: [] };
+    }
     if (api.kind === 'down') return { proxyDown: true, probes: new Map(), invalid: 0, missingRoutes: [] };
     const probes = new Map<string, CertProbe>();
     let invalid = 0;
@@ -416,9 +419,6 @@ export function createCertReconciler(deps: CertReconcilerDeps): CertReconciler {
       deps.logger.warn({ serverId: cycle.serverId, outcome: 'ssh_failed', domains: cycle.due.length }, 'certificate check could not reach the server');
       return { ...empty, checked: cycle.due.length, sshFailed: 1 };
     }
-    if (outcome.invalid > 0 && outcome.probes.size === 0 && !outcome.proxyDown && cycle.due.length > 0 && outcome.missingRoutes.length === 0) {
-      deps.logger.warn({ serverId: cycle.serverId, outcome: 'probe_invalid' }, 'certificate check answers rejected');
-    }
     const written = await writeDecisions(cycle, outcome, at);
     if (outcome.proxyDown) await failProxy(cycle, at);
     const restored = outcome.proxyDown ? 0 : await reapply(cycle, outcome.missingRoutes);
@@ -492,11 +492,17 @@ export function startCertReconcileLoop(input: {
   readonly pollMs: number;
   readonly logger: DeployJobLogger;
 }): CertReconcileLoopHandle {
-  let running: Promise<unknown> = Promise.resolve();
+  let running: Promise<unknown> | null = null;
   let stopped = false;
   const timer = setInterval(() => {
-    if (stopped) return;
-    running = input.reconciler.runDue().catch(() => undefined);
+    // One poll at a time: a slow cycle is never stacked on (runDue also guards per server, H1).
+    if (stopped || running !== null) return;
+    running = input.reconciler
+      .runDue()
+      .catch(() => undefined)
+      .finally(() => {
+        running = null;
+      });
   }, input.pollMs);
   timer.unref();
   input.logger.info({ pollMs: input.pollMs }, 'certificate reconcile loop started');
@@ -504,7 +510,7 @@ export function startCertReconcileLoop(input: {
     async close() {
       stopped = true;
       clearInterval(timer);
-      await running;
+      if (running !== null) await running;
     },
   };
 }

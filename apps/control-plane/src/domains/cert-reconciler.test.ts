@@ -1,10 +1,15 @@
-import type { CertStatus } from '@noodara/domain';
 import type { RemoteCommand, StreamResult } from '@noodara/ssh';
 import { describe, expect, it, vi } from 'vitest';
 import type { ConnectResult, DeployJobLogger } from '../deploy/deploy-worker.js';
 import type { ServerEvent } from '../events/server-event-publisher.js';
 import type { ServiceView } from '../services/service-view.js';
-import { createCertReconciler, type CertReconcilerDeps, type CertReconcilerStore } from './cert-reconciler.js';
+import {
+  createCertReconciler,
+  startCertReconcileLoop,
+  type CertReconciler,
+  type CertReconcilerDeps,
+  type CertReconcilerStore,
+} from './cert-reconciler.js';
 import type { CertCandidate, CertStatusWrite } from './domain-store.js';
 
 const SERVER = '0192f1a4-7b3c-7d2e-8f00-00000000aaa3';
@@ -67,7 +72,7 @@ function harness(options: { candidates: CertCandidate[]; remote?: Remote; connec
   const writes: CertStatusWrite[] = [];
   const events: ServerEvent[] = [];
   const order: string[] = [];
-  const logs: Array<{ level: string; fields: Record<string, unknown>; message: string }> = [];
+  const logs: { level: string; fields: Record<string, unknown>; message: string }[] = [];
   const stream = vi.fn((command: RemoteCommand) => {
     if (remote.throwOn === command.name) return Promise.reject(new Error('channel closed: secret remote text'));
     if (command.name === 'tls.cert_status') {
@@ -90,8 +95,14 @@ function harness(options: { candidates: CertCandidate[]; remote?: Remote; connec
   });
   const view = (updatedAt: Date): ServiceView =>
     ({ id: SERVICE, projectId: 'p', environmentId: 'e', serverId: SERVER, status: 'RUNNING', updatedAt: updatedAt.toISOString() }) as never;
+  const markProxyUnavailable = vi.fn((_serverId: string, _at: Date) => {
+    candidates = candidates.map((c) => ({ ...c, proxyStatus: 'FAILED' as const }));
+    return Promise.resolve({ id: SERVER } as never);
+  });
+  const recordRouteRestored = vi.fn((_input: { serviceId: string; durationMs: number; at: Date }) => Promise.resolve(view(clock)));
+  const listCandidates = vi.fn(() => Promise.resolve(candidates));
   const store: CertReconcilerStore = {
-    listCandidates: vi.fn(() => Promise.resolve(candidates)),
+    listCandidates,
     writeCertStatus: vi.fn((write: CertStatusWrite) => {
       writes.push(write);
       const updatedAt = new Date(write.at.getTime());
@@ -100,11 +111,8 @@ function harness(options: { candidates: CertCandidate[]; remote?: Remote; connec
       );
       return Promise.resolve({ view: view(updatedAt), updatedAt });
     }),
-    markProxyUnavailable: vi.fn(() => {
-      candidates = candidates.map((c) => ({ ...c, proxyStatus: 'FAILED' as const }));
-      return Promise.resolve({ id: SERVER } as never);
-    }),
-    recordRouteRestored: vi.fn(() => Promise.resolve(view(clock))),
+    markProxyUnavailable,
+    recordRouteRestored,
   };
   const apply = vi.fn((serviceId: string) => {
     order.push(`apply:${serviceId}`);
@@ -131,6 +139,7 @@ function harness(options: { candidates: CertCandidate[]; remote?: Remote; connec
   return {
     reconciler,
     store,
+    mocks: { listCandidates, markProxyUnavailable, recordRouteRestored },
     connect,
     stream,
     close,
@@ -170,13 +179,16 @@ describe('cert reconciler decisions (22-04 A1, A3)', () => {
         activity: { action: 'domain.certificate_issued', previousStatus: 'PENDING' },
       }),
     ]);
-    expect(h.events).toEqual([{ type: 'service.updated', service: expect.objectContaining({ id: SERVICE }) }]);
+    expect(h.events).toEqual([{ type: 'service.updated', service: expect.objectContaining({ id: SERVICE }) as unknown }]);
     expect(h.close).toHaveBeenCalledTimes(1);
   });
 
   it('keeps a PENDING domain with the default certificate inside the issue timeout', async () => {
-    const h = harness({ candidates: [candidate({ updatedAt: OLD })], remote: { cert: DEFAULT_CERT } });
+    // Settled (past the post-change checks, so due now) but well inside the 10 min timeout.
+    const inside = new Date(T0.getTime() - 5 * 60_000);
+    const h = harness({ candidates: [candidate({ updatedAt: inside })], remote: { cert: DEFAULT_CERT } });
     await h.reconciler.runDue();
+    expect(h.stream).toHaveBeenCalled();
     expect(h.writes).toEqual([]);
     expect(h.events).toEqual([]);
   });
@@ -283,12 +295,12 @@ describe('cert reconciler schedule (22-04 A2)', () => {
     const h = harness({ candidates: [candidate({ updatedAt: OLD })] });
     await h.reconciler.runDue();
     expect(h.writes).toHaveLength(1);
-    // Own write: next check is the 30 s step, not a restart at 15 s.
+    // Own write: no restart at 15 s (a settled domain goes on with the regular interval).
     h.advance(15_000);
     await h.reconciler.runDue();
     expect(h.connect).toHaveBeenCalledTimes(1);
     const patched = new Date(T0.getTime() + 16_000);
-    h.setCandidates(h.candidates.map((c) => ({ ...c, certStatus: 'PENDING' as CertStatus, updatedAt: patched })));
+    h.setCandidates(h.candidates.map((c) => ({ ...c, certStatus: 'PENDING', updatedAt: patched })));
     h.advance(1_000);
     await h.reconciler.runDue();
     h.advance(15_000);
@@ -335,9 +347,9 @@ describe('cert reconciler hardening (22-04 H1, H2, H3, H4)', () => {
     });
     const summary = await h.reconciler.runDue();
     expect(h.writes).toEqual([]);
-    expect(h.store.markProxyUnavailable).not.toHaveBeenCalled();
+    expect(h.mocks.markProxyUnavailable).not.toHaveBeenCalled();
     expect(summary.sshFailed).toBe(1);
-    expect(h.logs).toContainEqual(expect.objectContaining({ fields: expect.objectContaining({ serverId: SERVER, outcome: 'ssh_failed' }) }));
+    expect(h.logs).toContainEqual(expect.objectContaining({ fields: expect.objectContaining({ serverId: SERVER, outcome: 'ssh_failed' }) as unknown }));
     expect(JSON.stringify(h.logs)).not.toContain('secret remote text');
   });
 
@@ -361,7 +373,7 @@ describe('cert reconciler hardening (22-04 H1, H2, H3, H4)', () => {
     const summary = await h.reconciler.runDue();
     expect(h.writes).toEqual([]);
     expect(summary.probeInvalid).toBe(1);
-    expect(h.logs).toContainEqual(expect.objectContaining({ fields: expect.objectContaining({ domainId: DOMAIN, outcome: 'probe_invalid' }) }));
+    expect(h.logs).toContainEqual(expect.objectContaining({ fields: expect.objectContaining({ domainId: DOMAIN, outcome: 'probe_invalid' }) as unknown }));
     expect(JSON.stringify(h.logs)).not.toContain('CN=');
   });
 
@@ -369,21 +381,21 @@ describe('cert reconciler hardening (22-04 H1, H2, H3, H4)', () => {
     const h = harness({ candidates: [candidate({ updatedAt: OLD })], remote: { api: 'HTTP/1.1 500 Internal\r\n\r\n' } });
     const summary = await h.reconciler.runDue();
     expect(h.writes).toEqual([]);
-    expect(h.store.markProxyUnavailable).not.toHaveBeenCalled();
+    expect(h.mocks.markProxyUnavailable).not.toHaveBeenCalled();
     expect(summary.probeInvalid).toBe(1);
   });
 
   it('H2: no running proxy on a RUNNING server fails the proxy once, not on every cycle', async () => {
     const h = harness({ candidates: [candidate({ updatedAt: OLD })], remote: { api: 'NOODARA_PROXY_API down\n' } });
     await h.reconciler.runDue();
-    expect(h.store.markProxyUnavailable).toHaveBeenCalledTimes(1);
-    expect(h.store.markProxyUnavailable).toHaveBeenCalledWith(SERVER, T0);
+    expect(h.mocks.markProxyUnavailable).toHaveBeenCalledTimes(1);
+    expect(h.mocks.markProxyUnavailable).toHaveBeenCalledWith(SERVER, T0);
     expect(h.events).toContainEqual({ type: 'server.updated', server: { id: SERVER } });
     h.advance(INTERVAL * 2);
     await h.reconciler.runDue();
     h.advance(INTERVAL * 2);
     await h.reconciler.runDue();
-    expect(h.store.markProxyUnavailable).toHaveBeenCalledTimes(1);
+    expect(h.mocks.markProxyUnavailable).toHaveBeenCalledTimes(1);
   });
 
   it('H4: a routed service whose dynamic file is gone is re-applied once and records route_restored', async () => {
@@ -394,21 +406,59 @@ describe('cert reconciler hardening (22-04 H1, H2, H3, H4)', () => {
     await h.reconciler.runDue();
     expect(h.order).toEqual(['connect', 'close', `apply:${SERVICE}`]);
     expect(h.apply).toHaveBeenCalledTimes(1);
-    expect(h.store.recordRouteRestored).toHaveBeenCalledWith(expect.objectContaining({ serviceId: SERVICE }));
-    expect(h.events).toContainEqual({ type: 'service.updated', service: expect.objectContaining({ id: SERVICE }) });
+    expect(h.mocks.recordRouteRestored).toHaveBeenCalledWith(expect.objectContaining({ serviceId: SERVICE }));
+    expect(h.events).toContainEqual({ type: 'service.updated', service: expect.objectContaining({ id: SERVICE }) as unknown });
   });
 
   it('H4: a present router is left alone', async () => {
     const h = harness({ candidates: [candidate({ updatedAt: OLD, certStatus: 'ISSUED', certNotAfter: NOT_AFTER })] });
     await h.reconciler.runDue();
     expect(h.apply).not.toHaveBeenCalled();
-    expect(h.store.recordRouteRestored).not.toHaveBeenCalled();
+    expect(h.mocks.recordRouteRestored).not.toHaveBeenCalled();
   });
 
   it('a listing failure is logged and never rejects', async () => {
     const h = harness({ candidates: [] });
-    vi.mocked(h.store.listCandidates).mockRejectedValueOnce(new Error('db down'));
+    vi.mocked(h.mocks.listCandidates).mockRejectedValueOnce(new Error('db down'));
     await expect(h.reconciler.runDue()).resolves.toMatchObject({ checked: 0 });
     expect(h.logs).toContainEqual(expect.objectContaining({ level: 'warn' }));
+  });
+});
+
+describe('startCertReconcileLoop (22-04 A1, H1)', () => {
+  const quiet: DeployJobLogger = { info: () => undefined, warn: () => undefined, error: () => undefined };
+  const summary = { checked: 0, written: 0, skippedInFlight: 0, sshFailed: 0, probeInvalid: 0, restored: 0 };
+
+  it('polls runDue, never stacks a poll on a slow one, and close waits for the running poll', async () => {
+    vi.useFakeTimers();
+    try {
+      let release: () => void = () => undefined;
+      const runDue = vi.fn(
+        () =>
+          new Promise<typeof summary>((resolve) => {
+            release = () => {
+              resolve(summary);
+            };
+          }),
+      );
+      const loop = startCertReconcileLoop({ reconciler: { runDue } satisfies CertReconciler, pollMs: 1_000, logger: quiet });
+      await vi.advanceTimersByTimeAsync(3_500);
+      expect(runDue).toHaveBeenCalledTimes(1);
+      release();
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(runDue).toHaveBeenCalledTimes(2);
+      let closed = false;
+      const closing = loop.close().then(() => {
+        closed = true;
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(closed).toBe(false);
+      release();
+      await closing;
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(runDue).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
