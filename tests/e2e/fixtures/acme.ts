@@ -2,8 +2,9 @@
 // `deployHost`) starts Pebble + challtestsrv on the deploy host's network and wires the three
 // seams the stack (fixtures/stack.ts) already points at:
 // - the worker trusts Pebble's listener root from <runDir>/pebble-listener-root.pem;
-// - Traefik, on the nested dockerd's default bridge, resolves `pebble` through challtestsrv,
-//   appended as a nameserver to the deploy host's resolv.conf (Docker drops the loopback one);
+// - Traefik resolves `pebble` through challtestsrv, appended as a nameserver to the deploy host's
+//   resolv.conf. Its `options ndots:0` is dropped: once Traefik joins a service network, the
+//   nested dockerd's embedded DNS never forwards single-label names when ndots comes from the host;
 // - the API's DNS check asks challtestsrv through <runDir>/dns-server (fixtures/dns-seam.mjs).
 // An SSH tunnel forwards the deploy host's 443/80 to the runner for real HTTPS requests.
 import { execFile, spawn, type ChildProcess } from 'node:child_process';
@@ -35,7 +36,10 @@ export interface Acme {
   readonly pebble: StartedPebble;
   /** The deploy host's address on the stack network (Pebble's VA validates HTTP-01 there). */
   readonly deployHostIp: string;
-  /** The server answers: 127.0.0.1 (the API's view of the server) and the deploy host IP (Pebble's). */
+  /**
+   * The server answers: the deploy host IP first (Pebble's VA dials only the first A record) and
+   * 127.0.0.1 (the API's view of the server; its DNS check needs any answer to match).
+   */
   pointAtServer(hostname: string): Promise<void>;
   pointAt(hostname: string, ip: string): Promise<void>;
   /** Root of the certificates Pebble issues (fresh per Pebble run). */
@@ -185,7 +189,12 @@ export async function startAcme(host: DeployHost): Promise<{ acme: Acme; stop: (
     writeFileSync(dnsFile, pebble.dnsServer, { mode: 0o600 });
     await pebble.setARecord(PEBBLE_HOSTNAME, pebble.ip);
     if (!IPV4.test(pebble.challtestsrvIp)) throw new Error(`acme: no challtestsrv IP: ${pebble.challtestsrvIp}`);
-    await rootExec(host, 'printf "nameserver %s\\n" "$1" >> /etc/resolv.conf', pebble.challtestsrvIp);
+    // resolv.conf is a bind mount: rewrite it in place (sed -i cannot rename over it).
+    await rootExec(
+      host,
+      String.raw`conf=$(grep -v '^options ndots' /etc/resolv.conf) && printf '%s\nnameserver %s\n' "$conf" "$1" > /etc/resolv.conf`,
+      pebble.challtestsrvIp,
+    );
     const deployHostIp = (
       await rootExec(host, String.raw`ip -4 -o addr show dev eth0 | sed -n 's/.* inet \([0-9.]*\)\/.*/\1/p'`)
     ).trim();
@@ -196,7 +205,7 @@ export async function startAcme(host: DeployHost): Promise<{ acme: Acme; stop: (
     const acme: Acme = {
       pebble,
       deployHostIp,
-      pointAtServer: (hostname) => pebble.setARecord(hostname, ['127.0.0.1', deployHostIp]),
+      pointAtServer: (hostname) => pebble.setARecord(hostname, [deployHostIp, '127.0.0.1']),
       pointAt: (hostname, ip) => pebble.setARecord(hostname, ip),
       async issuanceRoot() {
         const out = await rootExec(host, 'curl -sk --max-time 5 "https://$1:15000/roots/0"', pebble.ip);

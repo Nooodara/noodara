@@ -226,9 +226,19 @@ test.describe('@e2e-domains domain -> DNS -> certificate -> HTTPS', () => {
       .poll(async () => (await acme.httpGet(hostname, '/health')).status, { timeout: ROUTE_TIMEOUT_MS })
       .toBe(404);
 
-    // A3: deleting the service disconnects the proxy from its network and removes the network.
+    // The last domain gone, the proxy leaves the service network.
     const network = `noodara-net-${service.serviceId}`;
-    expect(await proxyNetworks(deployHost)).toContain(network);
+    await expect
+      .poll(async () => (await proxyNetworks(deployHost)).includes(network), { timeout: ROUTE_TIMEOUT_MS })
+      .toBe(false);
+
+    // A3: with a domain routed again, deleting the service disconnects the proxy and removes the network.
+    const second = `www.r${suffix}.test`;
+    await acme.pointAtServer(second);
+    await addDomainInUi(page, service, second);
+    await expect
+      .poll(async () => (await proxyNetworks(deployHost)).includes(network), { timeout: ROUTE_TIMEOUT_MS })
+      .toBe(true);
     const deleted = await api(page, 'DELETE', `/api/projects/${service.projectId}/services/${service.serviceId}`, {
       confirmName: `domains-${suffix}`,
     });
@@ -241,6 +251,7 @@ test.describe('@e2e-domains domain -> DNS -> certificate -> HTTPS', () => {
       .toBe(false);
     expect(await deployHost.listContainers()).toContain(PROXY_CONTAINER);
     await acme.pebble.clearARecord(hostname);
+    await acme.pebble.clearARecord(second);
   });
 
   test('a domain pointing elsewhere ends Failed with the DNS cause', async ({ page, deployHost, acme }) => {
