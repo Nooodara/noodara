@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-01T03:52:58.961Z",
+  "updatedAt": "2026-11-01T03:53:02.135Z",
   "cursor": {
     "phase": "22",
     "task": "22-05"
@@ -8496,13 +8496,20 @@
             "tests/integration/proxy/routes-across-deploys.test.ts",
             "tests/integration/deploy-engine/runtime-pipeline.test.ts",
             "tests/integration/deploy-engine/runtime-rollback.test.ts",
-            "tests/integration/projects/services-api.test.ts"
+            "tests/integration/projects/services-api.test.ts",
+            "apps/control-plane/src/domains/domain-services.ts",
+            "packages/ssh/src/commands/proxy.ts",
+            "packages/ssh/src/commands/proxy.test.ts",
+            "packages/ssh/src/index.ts",
+            "packages/ssh/src/run-discovery.test.ts",
+            "tests/integration/proxy/proxy-templates.test.ts",
+            "docs/deploy-engine.md"
           ],
           "wave": 5,
           "dependsOn": [
             "22-03"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
