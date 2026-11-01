@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEPLOYMENT_ERROR_CODES, V04_DEPLOYMENT_ERROR_CODES } from '@noodara/domain/deployment';
 import {
+  CONTEXT_ERROR_CODES,
   DEPLOYMENT_ERROR_COPY,
   GENERIC_DEPLOYMENT_ERROR_COPY,
   deploymentErrorCopy,
@@ -8,6 +9,7 @@ import {
   LOG_TAIL_MAX_CHARS,
   LOG_TAIL_MAX_LINE_CHARS,
   LOG_TAIL_MAX_LINES,
+  parseConfigureLog,
 } from './deploy-error-copy';
 
 // 21-06: the v0.4 codes are part of DEPLOYMENT_ERROR_CODES (migration 0014).
@@ -157,5 +159,64 @@ describe('guardLogTail', () => {
     const line = '#5 sha256:4f2a8f0d6c9e1b3a5d7f9e2c4b6a8d0f1e3c5a7b9d1f3e5c7a9b1d3f5e7c9a1b 0.2s done';
     expect(guardLogTail(line)).toEqual([line]);
     expect(guardLogTail('npm ERR! code ELIFECYCLE')).toEqual(['npm ERR! code ELIFECYCLE']);
+  });
+});
+
+// 24-03 A2: recovery copy names keys and reference names (never values) when they are known.
+describe('configure context in recovery copy', () => {
+  it('parses keys and secret references from configure log lines, never values', () => {
+    const text = [
+      'Configuring environment: 2 variables, 1 secret.',
+      '  PORT',
+      '  NODE_ENV',
+      '  DATABASE_URL = <secret:db_password>',
+      'PASSWORD=hunter2',
+      '  bad key = <secret:x>',
+    ].join('\n');
+    expect(parseConfigureLog(text)).toEqual({
+      keys: ['PORT', 'NODE_ENV', 'DATABASE_URL'],
+      references: [{ key: 'DATABASE_URL', secret: 'db_password' }],
+    });
+    expect(parseConfigureLog(null)).toEqual({ keys: [], references: [] });
+  });
+
+  it('SECRET_UNRESOLVED names each key and the secret it references', () => {
+    const copy = deploymentErrorCopy('SECRET_UNRESOLVED', {
+      keys: ['DATABASE_URL', 'PORT'],
+      references: [{ key: 'DATABASE_URL', secret: 'db_password' }],
+    });
+    expect(copy.recovery).toContain('DATABASE_URL');
+    expect(copy.recovery).toContain('<secret:db_password>');
+    expect(copy.recovery).not.toContain('PORT');
+    expect(copy.recovery).toMatch(/\.$/);
+  });
+
+  it('ENV_INJECTION_FAILED names the keys it could not write', () => {
+    const copy = deploymentErrorCopy('ENV_INJECTION_FAILED', { keys: ['PORT', 'NODE_ENV'], references: [] });
+    expect(copy.recovery).toContain('PORT, NODE_ENV');
+    expect(copy.recovery).toMatch(/\.$/);
+  });
+
+  it('PROXY_ROUTE_FAILED names the hostnames when given', () => {
+    const copy = deploymentErrorCopy('PROXY_ROUTE_FAILED', { hostnames: ['app.example.com'] });
+    expect(copy.recovery).toContain('app.example.com');
+    expect(copy.recovery).toMatch(/\.$/);
+  });
+
+  it('caps long lists and drops tokens that are not plain names', () => {
+    const keys = Array.from({ length: 9 }, (_, i) => `KEY_${String(i)}`);
+    const copy = deploymentErrorCopy('ENV_INJECTION_FAILED', { keys: [...keys, 'x=secret value'] });
+    expect(copy.recovery).toContain('and 4 more');
+    expect(copy.recovery).not.toContain('secret value');
+  });
+
+  it('falls back to the plain copy without context, and ignores context for other codes', () => {
+    expect(deploymentErrorCopy('SECRET_UNRESOLVED', { keys: [], references: [] })).toEqual(DEPLOYMENT_ERROR_COPY.SECRET_UNRESOLVED);
+    expect(deploymentErrorCopy('BUILD_FAILED', { keys: ['PORT'] })).toEqual(DEPLOYMENT_ERROR_COPY.BUILD_FAILED);
+    expect(deploymentErrorCopy('nope', { keys: ['PORT'] })).toEqual(GENERIC_DEPLOYMENT_ERROR_COPY);
+  });
+
+  it('marks exactly the three codes that use configure context', () => {
+    expect([...CONTEXT_ERROR_CODES].sort()).toEqual(['ENV_INJECTION_FAILED', 'PROXY_ROUTE_FAILED', 'SECRET_UNRESOLVED']);
   });
 });

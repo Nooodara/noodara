@@ -150,10 +150,89 @@ export const GENERIC_DEPLOYMENT_ERROR_COPY: DeploymentErrorCopy = Object.freeze(
   recovery: 'Check the build log for details, then deploy again.',
 });
 
-/** Total: unknown, empty or prototype-named codes get the generic copy, never undefined. */
-export function deploymentErrorCopy(code: string | null | undefined): DeploymentErrorCopy {
+// 24-03 A2: what the configure step logged, used to name keys and reference names (never values)
+// in the recovery copy of the three v0.4 codes. Every token is re-checked against the domain's
+// key/name rules here, so a log line that is not exactly `  KEY` or `  KEY = <secret:name>` is
+// dropped, and a value can never be mistaken for a name.
+export interface SecretReferenceName {
+  readonly key: string;
+  readonly secret: string;
+}
+
+export interface DeploymentErrorContext {
+  readonly keys?: readonly string[];
+  readonly references?: readonly SecretReferenceName[];
+  readonly hostnames?: readonly string[];
+}
+
+export interface ConfigureNames {
+  readonly keys: readonly string[];
+  readonly references: readonly SecretReferenceName[];
+}
+
+export const CONTEXT_ERROR_CODES: ReadonlySet<DeploymentErrorCopyCode> = new Set<DeploymentErrorCopyCode>([
+  'SECRET_UNRESOLVED',
+  'ENV_INJECTION_FAILED',
+  'PROXY_ROUTE_FAILED',
+]);
+
+const KEY_TOKEN = /^[A-Z_][A-Z0-9_]{0,127}$/;
+const SECRET_TOKEN = /^[a-z][a-z0-9_]{0,63}$/;
+const HOSTNAME_TOKEN = /^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
+const CONFIGURE_LINE = /^ {2}([A-Z_][A-Z0-9_]{0,127})(?: = <secret:([a-z][a-z0-9_]{0,63})>)?$/;
+const MAX_NAMED = 5;
+
+/** Keys and secret references from the configure lines of a deployment's prepare log. */
+export function parseConfigureLog(text: string | null | undefined): ConfigureNames {
+  if (typeof text !== 'string') return { keys: [], references: [] };
+  const keys: string[] = [];
+  const references: SecretReferenceName[] = [];
+  for (const line of text.replace(/\r\n?/g, '\n').split('\n')) {
+    const match = CONFIGURE_LINE.exec(line);
+    const key = match?.[1];
+    if (key === undefined || keys.includes(key)) continue;
+    keys.push(key);
+    const secret = match?.[2];
+    if (secret !== undefined) references.push({ key, secret });
+  }
+  return { keys, references };
+}
+
+function nameList(names: readonly string[]): string {
+  const shown = names.slice(0, MAX_NAMED).join(', ');
+  const rest = names.length - MAX_NAMED;
+  return rest > 0 ? `${shown} and ${String(rest)} more` : shown;
+}
+
+function contextualRecovery(code: DeploymentErrorCopyCode, context: DeploymentErrorContext): string | null {
+  if (code === 'SECRET_UNRESOLVED') {
+    const refs = (context.references ?? []).filter((ref) => KEY_TOKEN.test(ref.key) && SECRET_TOKEN.test(ref.secret));
+    if (refs.length === 0) return null;
+    const list = nameList(refs.map((ref) => `${ref.key} → <secret:${ref.secret}>`));
+    return `One of these references points to a secret that does not exist or is out of scope: ${list}. Add the secret or fix the reference, then deploy again.`;
+  }
+  if (code === 'ENV_INJECTION_FAILED') {
+    const keys = (context.keys ?? []).filter((key) => KEY_TOKEN.test(key));
+    if (keys.length === 0) return null;
+    return `The variables ${nameList(keys)} could not be written to the server. Check the server disk and connection, then deploy again.`;
+  }
+  if (code === 'PROXY_ROUTE_FAILED') {
+    const hosts = (context.hostnames ?? []).filter((host) => HOSTNAME_TOKEN.test(host));
+    if (hosts.length === 0) return null;
+    return `The proxy did not accept the routes for ${nameList(hosts)}. Check the proxy on the server, then deploy again.`;
+  }
+  return null;
+}
+
+/** Total: unknown, empty or prototype-named codes get the generic copy, never undefined. `context`
+ *  only changes the recovery of CONTEXT_ERROR_CODES, and only with at least one valid name. */
+export function deploymentErrorCopy(code: string | null | undefined, context?: DeploymentErrorContext): DeploymentErrorCopy {
   if (typeof code !== 'string' || !Object.hasOwn(DEPLOYMENT_ERROR_COPY, code)) return GENERIC_DEPLOYMENT_ERROR_COPY;
-  return DEPLOYMENT_ERROR_COPY[code as DeploymentErrorCopyCode];
+  const known = code as DeploymentErrorCopyCode;
+  const copy = DEPLOYMENT_ERROR_COPY[known];
+  if (context === undefined || !CONTEXT_ERROR_CODES.has(known)) return copy;
+  const recovery = contextualRecovery(known, context);
+  return recovery === null ? copy : { title: copy.title, recovery };
 }
 
 // Log tail guard (H1). The server already redacts build logs; this is a second, client-side net:

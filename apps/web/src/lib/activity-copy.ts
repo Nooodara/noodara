@@ -14,12 +14,18 @@ import {
   ACCOUNT_ACTIONS,
   AUTH_ACTIONS,
   DEPLOYMENT_ACTIONS,
+  DOMAIN_ACTIONS,
+  ENV_ACTIONS,
   ENVIRONMENT_ACTIONS,
   PROJECT_ACTIONS,
   SERVER_ACTIONS,
+  SECRET_ACTIONS,
   SERVICE_ACTIONS,
   type ActivityAction,
   type DeployEngineAction,
+  type DomainAction,
+  type EnvAction,
+  type SecretAction,
 } from '@noodara/domain/activity';
 
 /** The wire shape `GET /api/activity` returns (05-15-PLAN.md's `<interfaces>` block), hand-copied
@@ -595,7 +601,89 @@ const DEPLOY_ENGINE_COPY = {
   },
 } satisfies Record<DeployEngineAction, ActivityCopyEntry>;
 
-const ANY_COPY: Readonly<Record<string, ActivityCopyEntry>> = { ...ACTIVITY_COPY, ...DEPLOY_ENGINE_COPY };
+// 24-03 A3: v0.4 actions. Keys and secret names are shown only when they are plain tokens;
+// values never reach metadata (the domain allowlist) and are never read here.
+const ENV_KEY_TOKEN = /^[A-Z_][A-Z0-9_]{0,127}$/;
+const SECRET_NAME_TOKEN = /^[a-z][a-z0-9_]{0,63}$/;
+const SCOPE_LABELS: Readonly<Record<string, string>> = { project: 'project', environment: 'environment', service: 'service' };
+
+function tokenField(item: ActivityItem, key: string, pattern: RegExp): string | null {
+  const value = stringField(item.metadata, key);
+  return value !== undefined && pattern.test(value) ? value : null;
+}
+
+function scopeEntry(item: ActivityItem): CuratedDetailEntry | undefined {
+  const scope = stringField(item.metadata, 'scope');
+  return scope !== undefined && Object.hasOwn(SCOPE_LABELS, scope)
+    ? { label: 'Scope', value: SCOPE_LABELS[scope] ?? scope, mono: false }
+    : undefined;
+}
+
+function previousStatusEntry(item: ActivityItem): CuratedDetailEntry | undefined {
+  const status = stringField(item.metadata, 'previousStatus');
+  return status === undefined ? undefined : { label: 'Previous', value: status, mono: true };
+}
+
+function variableSentence(verb: string, item: ActivityItem): ActivitySentence {
+  const key = tokenField(item, 'key', ENV_KEY_TOKEN);
+  return textSentence(`${actorLabel(item)} ${verb} ${key === null ? 'a variable' : `variable ${key}`}`);
+}
+
+function secretSentence(verb: string, item: ActivityItem, suffix = ''): ActivitySentence {
+  const name = tokenField(item, 'name', SECRET_NAME_TOKEN);
+  return textSentence(`${actorLabel(item)} ${verb}${name === null ? 'a secret' : `secret ${name}`}${suffix}`);
+}
+
+const domainServiceSentence = (before: string, item: ActivityItem, lookups: ActivityLookups): ActivitySentence =>
+  deploymentSentence(before, '', item, lookups);
+
+const V04_COPY = {
+  'domain.certificate_issued': {
+    sentence: (item, _s, l) => domainServiceSentence('Certificate issued for a domain of ', item, l),
+    curatedDetail: (item) => compact([previousStatusEntry(item)]),
+  },
+  'domain.certificate_failed': {
+    sentence: (item, _s, l) => domainServiceSentence('Certificate request failed for a domain of ', item, l),
+    curatedDetail: (item) => compact([previousStatusEntry(item), errorEntry(item)]),
+  },
+  'domain.certificate_expired': {
+    sentence: (item, _s, l) => domainServiceSentence('Certificate expired for a domain of ', item, l),
+    curatedDetail: (item) => compact([previousStatusEntry(item)]),
+  },
+  'domain.route_restored': {
+    sentence: (item, _s, l) => domainServiceSentence('Proxy routes restored for ', item, l),
+    curatedDetail: (item) => compact([durationEntry(item)]),
+  },
+  'env.variable_created': {
+    sentence: (item) => variableSentence('added', item),
+    curatedDetail: (item) => compact([scopeEntry(item)]),
+  },
+  'env.variable_updated': {
+    sentence: (item) => variableSentence('edited', item),
+    curatedDetail: (item) => compact([scopeEntry(item)]),
+  },
+  'env.variable_deleted': {
+    sentence: (item) => variableSentence('deleted', item),
+    curatedDetail: (item) => compact([scopeEntry(item)]),
+  },
+  'secret.created': {
+    sentence: (item) => secretSentence('added ', item),
+    curatedDetail: (item) => compact([scopeEntry(item)]),
+  },
+  'secret.replaced': {
+    sentence: (item) => {
+      const name = tokenField(item, 'name', SECRET_NAME_TOKEN);
+      return textSentence(`${actorLabel(item)} replaced the value of ${name === null ? 'a secret' : `secret ${name}`}`);
+    },
+    curatedDetail: (item) => compact([scopeEntry(item)]),
+  },
+  'secret.deleted': {
+    sentence: (item) => secretSentence('deleted ', item),
+    curatedDetail: (item) => compact([scopeEntry(item)]),
+  },
+} satisfies Record<DomainAction | EnvAction | SecretAction, ActivityCopyEntry>;
+
+const ANY_COPY: Readonly<Record<string, ActivityCopyEntry>> = { ...ACTIVITY_COPY, ...DEPLOY_ENGINE_COPY, ...V04_COPY };
 
 const KNOWN_ACTIONS: ReadonlySet<string> = new Set<string>([
   ...AUTH_ACTIONS,
@@ -605,6 +693,9 @@ const KNOWN_ACTIONS: ReadonlySet<string> = new Set<string>([
   ...ENVIRONMENT_ACTIONS,
   ...SERVICE_ACTIONS,
   ...DEPLOYMENT_ACTIONS,
+  ...DOMAIN_ACTIONS,
+  ...ENV_ACTIONS,
+  ...SECRET_ACTIONS,
 ]);
 
 function isKnownAction(action: string): boolean {

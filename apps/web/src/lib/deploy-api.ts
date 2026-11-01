@@ -18,6 +18,7 @@ import {
   type DeployApiErrorCode,
   type ApiResult as CoreApiResult,
 } from "./api-client";
+import { parseConfigureLog, type ConfigureNames } from "./deploy-error-copy";
 
 /** Every deploy-api call resolves to this: success, or a failure in the deploy-engine vocabulary. */
 export type DeployApiResult<T> = CoreApiResult<T, DeployApiErrorCode>;
@@ -485,6 +486,26 @@ export function getDeploymentLogs(
       limit: query.limit,
     }),
   );
+}
+
+/** 24-03 A2: the keys and secret reference names the configure step logged (never values), read
+ *  from the first page of prepare chunks. A malformed body yields no names, not a failure. */
+export async function getConfigureNames(
+  deploymentId: string,
+): Promise<ApiResult<ConfigureNames>> {
+  const result = await getDeploymentLogs(deploymentId, { phase: "prepare", limit: 100 });
+  if (!result.ok) return result;
+  const items: unknown = (result.data as { items?: unknown }).items;
+  const text = Array.isArray(items)
+    ? items
+        .filter((chunk): chunk is { phase: string; text: string } => {
+          const c = chunk as { phase?: unknown; text?: unknown } | null;
+          return c !== null && typeof c === "object" && c.phase === "prepare" && typeof c.text === "string";
+        })
+        .map((chunk) => chunk.text)
+        .join("")
+    : "";
+  return { ok: true, data: parseConfigureLog(text) };
 }
 
 /** One-shot runtime log tail (JSON); the follow stream lives in runtime-log-stream.ts. */

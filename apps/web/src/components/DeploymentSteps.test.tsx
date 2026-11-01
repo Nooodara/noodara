@@ -13,9 +13,13 @@ import {
   type DeploymentWithSteps,
 } from './DeploymentSteps';
 
-const deployApi = vi.hoisted(() => ({ getDeployment: vi.fn() }));
+const deployApi = vi.hoisted(() => ({
+  getDeployment: vi.fn(),
+  getConfigureNames: vi.fn(() => Promise.resolve({ ok: false, code: 'NOT_FOUND', message: 'x', unauthorized: false })),
+}));
 vi.mock('../lib/deploy-api', () => ({
   getDeployment: (id: string) => deployApi.getDeployment(id) as unknown,
+  getConfigureNames: (id: string) => deployApi.getConfigureNames(id) as unknown,
 }));
 vi.mock('../lib/require-session', () => ({ requireSession: () => undefined }));
 
@@ -152,6 +156,70 @@ describe('DeploymentSteps', () => {
     const row = screen.getByTestId('deployment-step-configure');
     expect(within(row).getByText('Failed')).toBeInTheDocument();
     expect(within(row).queryByTestId('deployment-configure-counts')).toBeNull();
+  });
+
+  it('24-03 A2: configure shows variables, secrets and duration', () => {
+    const configure: DeploymentStepView = {
+      name: 'configure',
+      state: 'success',
+      startedAt: STAMP,
+      completedAt: STAMP,
+      durationMs: 1200,
+      counts: { variables: 1, secrets: 2 },
+    };
+    renderUi(<DeploymentSteps deployment={deployment({ steps: [configure] })} />);
+    const row = screen.getByTestId('deployment-step-configure');
+    expect(within(row).getByTestId('deployment-configure-counts')).toHaveTextContent('1 variable, 2 secrets');
+    expect(within(row).getByTestId('step-duration')).not.toHaveTextContent(/^$/);
+  });
+
+  it('24-03 A2: SECRET_UNRESOLVED recovery names the keys and references the configure step logged, never values', async () => {
+    deployApi.getConfigureNames.mockResolvedValueOnce({
+      ok: true,
+      data: { keys: ['PORT', 'DATABASE_URL'], references: [{ key: 'DATABASE_URL', secret: 'db_password' }] },
+    } as never);
+    renderUi(
+      <DeploymentSteps
+        deployment={deployment({
+          status: 'FAILED',
+          errorCode: 'SECRET_UNRESOLVED',
+          errorMessage: RAW_MESSAGE,
+          steps: steps(['clone', 'success', 10], ['configure', 'failed', 30]),
+        })}
+      />,
+    );
+    const banner = screen.getByTestId('deployment-error');
+    await waitFor(() => {
+      expect(banner).toHaveTextContent('DATABASE_URL → <secret:db_password>');
+    });
+    expect(deployApi.getConfigureNames).toHaveBeenCalledWith(DEPLOYMENT_ID);
+    expect(banner).not.toHaveTextContent('hunter2');
+  });
+
+  it('24-03 A2: ENV_INJECTION_FAILED names keys; PROXY_ROUTE_FAILED names the given hostnames without fetching', async () => {
+    deployApi.getConfigureNames.mockResolvedValueOnce({ ok: true, data: { keys: ['PORT'], references: [] } } as never);
+    const { unmount } = renderUi(
+      <DeploymentSteps deployment={deployment({ status: 'FAILED', errorCode: 'ENV_INJECTION_FAILED', steps: steps(['configure', 'failed', 5]) })} />,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('deployment-error')).toHaveTextContent('The variables PORT could not be written');
+    });
+    unmount();
+    deployApi.getConfigureNames.mockClear();
+
+    renderUi(
+      <DeploymentSteps
+        deployment={deployment({ status: 'FAILED', errorCode: 'PROXY_ROUTE_FAILED' })}
+        errorContext={{ hostnames: ['app.example.com'] }}
+      />,
+    );
+    expect(screen.getByTestId('deployment-error')).toHaveTextContent('routes for app.example.com');
+    expect(deployApi.getConfigureNames).not.toHaveBeenCalled();
+  });
+
+  it('24-03 A2: keeps the plain recovery copy while names are unknown', () => {
+    renderUi(<DeploymentSteps deployment={deployment({ status: 'FAILED', errorCode: 'SECRET_UNRESOLVED' })} />);
+    expect(screen.getByTestId('deployment-error')).toHaveTextContent(DEPLOYMENT_ERROR_COPY.SECRET_UNRESOLVED.recovery);
   });
 
   it('reuses the discovery step row treatment instead of a copy (A1)', () => {

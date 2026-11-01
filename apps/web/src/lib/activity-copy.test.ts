@@ -3,6 +3,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEPLOYMENT_ACTIONS,
+  DOMAIN_ACTIONS,
+  ENV_ACTIONS,
+  SECRET_ACTIONS,
   DEPLOY_ENGINE_ACTIONS,
   ENVIRONMENT_ACTIONS,
   PROJECT_ACTIONS,
@@ -405,5 +408,74 @@ describe('deploy engine copy', () => {
       }),
     );
     expect(d.map((e) => e.value)).toEqual(['FAILED', '1200ms', 'abcdef1', 'BUILD_FAILED']);
+  });
+});
+
+describe('v0.4 domain, env and secret copy (24-03 A3)', () => {
+  const serviceLookups: ActivityLookups = {
+    service: (id) => (id === 'svc-1' ? { name: 'web', projectId: 'prj-1' } : null),
+  };
+
+  it('covers every domain, env and secret action as text, never the fallback', () => {
+    for (const action of [...DOMAIN_ACTIONS, ...ENV_ACTIONS, ...SECRET_ACTIONS]) {
+      const text = fullText(sentenceFor(buildItem({ action, metadata: { serviceId: 'svc-1', scope: 'service', key: 'PORT', name: 'db_password' } }), notFoundLookup, serviceLookups));
+      expect(text, action).not.toMatch(/An activity event occurred/);
+    }
+  });
+
+  it('names the service of a certificate event and links it when known', () => {
+    const item = buildItem({ action: 'domain.certificate_issued', actorType: 'system', entityType: 'domain', entityId: 'dom-1', metadata: { serviceId: 'svc-1', previousStatus: 'PENDING' } });
+    const sentence = sentenceFor(item, notFoundLookup, serviceLookups);
+    expect(fullText(sentence)).toBe('Certificate issued for a domain of web');
+    expect(sentence.server).toEqual({ label: 'web', href: '/projects/prj-1/services/svc-1', mono: false });
+    expect(curatedDetailFor(item)).toEqual([{ label: 'Previous', value: 'PENDING', mono: true }]);
+  });
+
+  it('renders failed and expired certificates and restored routes', () => {
+    const at = (action: string, metadata: Record<string, unknown> = { serviceId: 'svc-1' }) =>
+      fullText(sentenceFor(buildItem({ action, metadata }), notFoundLookup, serviceLookups));
+    expect(at('domain.certificate_failed')).toBe('Certificate request failed for a domain of web');
+    expect(at('domain.certificate_expired')).toBe('Certificate expired for a domain of web');
+    expect(at('domain.route_restored', { serviceId: 'svc-1', durationMs: 120 })).toBe('Proxy routes restored for web');
+    expect(curatedDetailFor(buildItem({ action: 'domain.route_restored', metadata: { durationMs: 120 } }))).toEqual([
+      { label: 'Duration', value: '120ms', mono: false },
+    ]);
+  });
+
+  it('names the variable key and scope, never a value', () => {
+    const item = buildItem({ action: 'env.variable_updated', entityType: 'environment_variable', metadata: { scope: 'environment', key: 'DATABASE_URL', value: 'postgres://u:p@h/db' } });
+    expect(fullText(sentenceFor(item, notFoundLookup))).toBe('Admin edited variable DATABASE_URL');
+    const detail = curatedDetailFor(item);
+    expect(detail).toEqual([{ label: 'Scope', value: 'environment', mono: false }]);
+    expect(JSON.stringify(detail)).not.toContain('postgres');
+    expect(fullText(sentenceFor(buildItem({ action: 'env.variable_created', metadata: { key: 'PORT' } }), notFoundLookup))).toBe(
+      'Admin added variable PORT',
+    );
+    expect(fullText(sentenceFor(buildItem({ action: 'env.variable_deleted', metadata: {} }), notFoundLookup))).toBe(
+      'Admin deleted a variable',
+    );
+  });
+
+  it('names the secret, never its value', () => {
+    const item = buildItem({ action: 'secret.replaced', entityType: 'secret', metadata: { scope: 'project', name: 'db_password', value: 'hunter2' } });
+    expect(fullText(sentenceFor(item, notFoundLookup))).toBe('Admin replaced the value of secret db_password');
+    expect(JSON.stringify([sentenceFor(item, notFoundLookup), curatedDetailFor(item)])).not.toContain('hunter2');
+    expect(fullText(sentenceFor(buildItem({ action: 'secret.created', metadata: { name: 'api_key' } }), notFoundLookup))).toBe(
+      'Admin added secret api_key',
+    );
+    expect(fullText(sentenceFor(buildItem({ action: 'secret.deleted', metadata: { name: 12 } }), notFoundLookup))).toBe(
+      'Admin deleted a secret',
+    );
+  });
+
+  it('drops a key or name that is not a valid token', () => {
+    const item = buildItem({ action: 'env.variable_created', metadata: { key: 'A B<script>' } });
+    expect(fullText(sentenceFor(item, notFoundLookup))).toBe('Admin added a variable');
+  });
+
+  it('keeps the generic fallback for an unknown action', () => {
+    expect(fullText(sentenceFor(buildItem({ action: 'domain.unknown_thing', entityType: 'domain' }), notFoundLookup))).toBe(
+      'An activity event occurred on this domain.',
+    );
   });
 });

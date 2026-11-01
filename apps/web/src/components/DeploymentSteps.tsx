@@ -15,8 +15,13 @@ import {
   type DeploymentStepState,
 } from '@noodara/domain/deployment';
 import { Banner } from '@noodara/ui';
-import { getDeployment, type DeploymentView } from '../lib/deploy-api';
-import { deploymentErrorCopy, guardLogTail } from '../lib/deploy-error-copy';
+import { getConfigureNames, getDeployment, type DeploymentView } from '../lib/deploy-api';
+import {
+  deploymentErrorCopy,
+  guardLogTail,
+  type ConfigureNames,
+  type DeploymentErrorContext,
+} from '../lib/deploy-error-copy';
 import { shortSha } from '../lib/service-status-copy';
 import type { CheckState } from '../lib/discovery-progress';
 import { requireSession } from '../lib/require-session';
@@ -130,17 +135,40 @@ export function configureDetail(step: DeploymentStepView): string | null {
 
 const UNRESOLVED_STEP_STATES: ReadonlySet<DeploymentStepState> = new Set(['pending', 'running']);
 
+// 24-03 A2: the env codes whose recovery names the keys and references configure logged.
+const ENV_NAME_CODES: ReadonlySet<string> = new Set(['SECRET_UNRESOLVED', 'ENV_INJECTION_FAILED']);
+
+/** Keys and reference names (never values) for a deployment that failed on its env, fetched once. */
+function useConfigureNames(deployment: DeploymentWithSteps): ConfigureNames | null {
+  const wanted = deployment.errorCode !== null && ENV_NAME_CODES.has(deployment.errorCode) ? deployment.id : null;
+  const [names, setNames] = useState<{ id: string; names: ConfigureNames } | null>(null);
+  useEffect(() => {
+    if (wanted === null) return;
+    let live = true;
+    void getConfigureNames(wanted).then((result) => {
+      if (live && result.ok) setNames({ id: wanted, names: result.data });
+    });
+    return () => {
+      live = false;
+    };
+  }, [wanted]);
+  return wanted !== null && names?.id === wanted ? names.names : null;
+}
+
 export interface DeploymentStepsProps {
   readonly deployment: DeploymentWithSteps;
   /** Build log text to show under the error; it goes through guardLogTail before rendering. */
   readonly logTail?: string | null;
+  /** Names the caller already knows (e.g. the service's hostnames for PROXY_ROUTE_FAILED). */
+  readonly errorContext?: DeploymentErrorContext;
 }
 
-export function DeploymentSteps({ deployment, logTail = null }: DeploymentStepsProps) {
+export function DeploymentSteps({ deployment, logTail = null, errorContext }: DeploymentStepsProps) {
   const restoredCommit = useRestoredCommit(deployment);
+  const configureNames = useConfigureNames(deployment);
   const rollback = rollbackRow(deployment, restoredCommit);
   const failed = deployment.status === 'FAILED' || deployment.errorCode !== null || ROLLBACK_STATUSES.has(deployment.status);
-  const copy = deploymentErrorCopy(deployment.errorCode);
+  const copy = deploymentErrorCopy(deployment.errorCode, { ...errorContext, ...configureNames });
   const knownCode = deployment.errorCode !== null && isDeploymentErrorCode(deployment.errorCode) ? deployment.errorCode : undefined;
   const tailLines = failed ? guardLogTail(logTail) : [];
 

@@ -21,6 +21,7 @@ import {
   deleteService,
   deployService,
   getDeployment,
+  getConfigureNames,
   getDeploymentLogs,
   getEnvironment,
   getProject,
@@ -768,5 +769,40 @@ describe("timeouts and network failures (A4)", () => {
     const result = await archiveProject(P);
 
     expect(result).toEqual({ ok: true, data: undefined });
+  });
+});
+
+// 24-03 A2: the configure names behind SECRET_UNRESOLVED / ENV_INJECTION_FAILED recovery copy.
+describe("getConfigureNames", () => {
+  it("reads only prepare chunks and returns keys and reference names", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        items: [
+          { phase: "prepare", seq: 1, text: "Configuring environment: 1 variable, 1 secret.\n  PORT\n", byteLength: 1, createdAt: "x" },
+          { phase: "prepare", seq: 2, text: "  DATABASE_URL = <secret:db_password>\n", byteLength: 1, createdAt: "x" },
+          { phase: "build", seq: 3, text: "  BUILD_ONLY\n", byteLength: 1, createdAt: "x" },
+        ],
+        hasMore: false,
+      }),
+    );
+    const result = await getConfigureNames(D);
+    expect(lastPath()).toBe(`/api/deployments/${D}/logs?phase=prepare&limit=100`);
+    expect(result).toEqual({
+      ok: true,
+      data: { keys: ["PORT", "DATABASE_URL"], references: [{ key: "DATABASE_URL", secret: "db_password" }] },
+    });
+  });
+
+  it("passes failures through and rejects an unsafe id without fetching", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(404, { code: "NOT_FOUND", message: "x" }));
+    expect((await getConfigureNames(D)).ok).toBe(false);
+    fetchMock.mockClear();
+    expect((await getConfigureNames("../x")).ok).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("treats a malformed body as no names", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { items: "nope" }));
+    expect(await getConfigureNames(D)).toEqual({ ok: true, data: { keys: [], references: [] } });
   });
 });
