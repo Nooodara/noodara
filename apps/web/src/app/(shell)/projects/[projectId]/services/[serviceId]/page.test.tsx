@@ -54,6 +54,12 @@ vi.mock('../../../../../../lib/api-client', async (importOriginal) => ({
   apiGet: (path: string) => apiClient.apiGet(path) as unknown,
 }));
 vi.mock('../../../../../../lib/require-session', () => ({ requireSession: () => undefined }));
+// DomainsPanel is covered by DomainsPanel.test.tsx; here only that the page mounts it for the service and its server.
+vi.mock('../../../../../../components/DomainsPanel', () => ({
+  DomainsPanel: (props: { serviceId: string; serverId: string; proxy: { status: string } | null }) => (
+    <div data-testid="domains-panel-stub" data-service={props.serviceId} data-server={props.serverId} data-proxy={props.proxy?.status ?? 'none'} />
+  ),
+}));
 // ServiceSheet itself is covered by ServiceSheet.test.tsx; here only how the page opens it and applies a save.
 vi.mock('../../../../../../components/ServiceSheet', () => ({
   REDEPLOY_NEEDED_COPY: 'Redeploy to apply.',
@@ -205,6 +211,19 @@ describe('Service page (13-12 A1, A3, A5)', () => {
       expect(screen.getByTestId('service-fact-server')).toHaveTextContent('edge-1');
     });
     expect(deployApi.getService).toHaveBeenCalledWith(PROJECT_ID, SERVICE_ID);
+  });
+
+  it('mounts the domains panel for the service with its server proxy state (24-01)', async () => {
+    apiClient.apiGet.mockImplementation(() => ok({ items: [{ id: SERVER_ID, name: 'edge-1', proxyStatus: 'FAILED', proxyErrorCode: null }] }));
+    seed({ current: service({}) });
+    renderPage();
+
+    const stub = await screen.findByTestId('domains-panel-stub');
+    expect(stub).toHaveAttribute('data-service', SERVICE_ID);
+    expect(stub).toHaveAttribute('data-server', SERVER_ID);
+    await waitFor(() => {
+      expect(screen.getByTestId('domains-panel-stub')).toHaveAttribute('data-proxy', 'FAILED');
+    });
   });
 
   it('follows service.updated instead of computing a status itself', async () => {

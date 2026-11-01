@@ -47,8 +47,10 @@ export { Sheet, type SheetProps } from './Sheet.js';
 export { Skeleton, type SkeletonProps, SkeletonRow, type SkeletonRowProps, SkeletonText, type SkeletonTextProps } from './Skeleton.js';
 export { StatTile, type StatTileProps } from './StatTile.js';
 export { StatusPill, type StatusPillProps } from './StatusPill.js';
+export { Switch, type SwitchProps } from './Switch.js';
 export { Textarea, type TextareaProps } from './Textarea.js';
 export { applyPreferences, readPreferencesMirror } from './ThemeToggle.js';
+export { TonePill, type TonePillProps } from './TonePill.js';
 export { Tooltip, TooltipProvider, type TooltipProps } from './Tooltip.js';
 
 // Brand (07-03-PLAN.md Task 3): the three lockups D-04 defines, plus the concept metadata a

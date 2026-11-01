@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Banner, EmptyState, InsetGroup, Notice, SkeletonRow } from '@noodara/ui';
 import { DeploymentHistory, useDeploymentHistory } from '../../../../../../components/DeploymentHistory';
 import { DeploymentSteps, useDeploymentSteps } from '../../../../../../components/DeploymentSteps';
+import { DomainsPanel } from '../../../../../../components/DomainsPanel';
 import {
   isRoutableId,
   notifyProjectsChanged,
@@ -26,6 +27,7 @@ import { ServiceToolbar } from '../../../../../../components/ServiceToolbar';
 import { Toolbar } from '../../../../../../components/Toolbar';
 import { apiGet, type ServerView } from '../../../../../../lib/api-client';
 import { getProject, getService, type ProjectView, type ServiceView } from '../../../../../../lib/deploy-api';
+import { readProxy } from '../../../../../../lib/domain-api';
 import { requireSession } from '../../../../../../lib/require-session';
 import { isCancellable } from '../../../../../../lib/service-status-copy';
 import { useDeployStream } from '../../../../../../lib/shell-context';
@@ -177,7 +179,8 @@ export default function ServicePage() {
 
   const { project, service } = state;
   const activeDeployment = history.rows.find((row) => isCancellable(row.status)) ?? null;
-  const serverName = servers.find((server) => server.id === service.serverId)?.name ?? null;
+  const server = servers.find((entry) => entry.id === service.serverId) ?? null;
+  const serverName = server?.name ?? null;
 
   return (
     <>
@@ -233,6 +236,17 @@ export default function ServicePage() {
             </div>
           </InsetGroup>
         )}
+        <InsetGroup title="Domains" data-testid="service-domains">
+          <div className="px-5 py-3">
+            <DomainsPanel
+              projectId={project.id}
+              serviceId={service.id}
+              serverId={service.serverId}
+              proxy={readProxy(server)}
+              now={now}
+            />
+          </div>
+        </InsetGroup>
         <DeploymentHistory history={history} now={now} />
       </div>
       <ServiceSheet
