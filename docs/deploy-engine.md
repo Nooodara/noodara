@@ -24,6 +24,15 @@ Phase 12 runtime engine: project/environment/service setup, deployment queue, li
 - `GET` returns each domain (hostname, httpsRedirect, dns/cert/apply status) plus DNS instructions (A/AAAA to the server addresses, CNAME to the server host). `dns-check` resolves only the stored hostname and the server host (3 s timeout, one check per domain every 10 s, else 429 `RATE_LIMITED`).
 - The HTTP to HTTPS redirect carries `Cache-Control: no-store`, so removing it takes effect at once.
 
+## Routes Across Deploys (22-05)
+
+- Only a service with at least one domain row gets route steps; without domains a deploy issues no proxy command.
+- Before the swap the proxy joins `noodara-net-<serviceId>` (idempotent: "already exists" counts as joined). The dynamic file routes to the container name, so replace, auto rollback, manual rollback and cancel never rewrite it; the ledger never lists proxy resources for cleanup.
+- Proxy `NOT_INSTALLED`/`FAILED`/`INSTALLING`: the deploy is not failed; one system log line, domains stay `applyStatus: PENDING`.
+- A passed attempt whose internal port differs from the live file's port re-applies the routes through apply-routes (verify, restore `.prev` on failure) and logs it; equal ports leave the file untouched.
+- Every dynamic-file apply for a service (deploy re-apply, domain POST/PATCH/DELETE, reconcile) takes the same per-service lock, across processes.
+- Service delete order: route file (and `.prev`), proxy disconnect, container, network, then images and workspaces. Domain rows cascade. A service with domains but no deployment still reaches its server, so an unreachable server keeps the row (502).
+
 ## Deployment Statuses
 
 States (ADR 0004): `QUEUED`, `PREPARING`, `BUILDING`, `DEPLOYING` (active); `SUCCESS`, `FAILED`, `CANCELLED` (terminal). Timeouts are not a state: they end `FAILED` with `BUILD_TIMEOUT` / `BUILD_STALLED`; a failed deploy leaves the prior container running.

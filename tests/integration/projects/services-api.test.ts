@@ -3,9 +3,11 @@ import { and, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import parseSetCookie from 'set-cookie-parser';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { revealSecret } from '@noodara/domain/security';
+import { createRedactor, revealSecret } from '@noodara/domain/security';
+import type { RemoteCommand, SshDeploySession, StreamOptions, StreamResult } from '@noodara/ssh';
 import { activityEvents } from '../../../apps/control-plane/src/db/schema/activity-events.js';
 import { deployments } from '../../../apps/control-plane/src/db/schema/deployments.js';
+import { domains } from '../../../apps/control-plane/src/db/schema/domains.js';
 import { servers } from '../../../apps/control-plane/src/db/schema/servers.js';
 import { services } from '../../../apps/control-plane/src/db/schema/services.js';
 import type { ServerEvent, ServerEventPublisher } from '../../../apps/control-plane/src/events/server-event-publisher.js';
@@ -73,7 +75,7 @@ async function signIn(): Promise<string> {
 }
 
 async function call(
-  method: 'GET' | 'POST' | 'PATCH',
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   url: string,
   payload?: unknown,
 ): Promise<{ statusCode: number; body: Json }> {
@@ -153,6 +155,121 @@ async function activityFor(entityId: string): Promise<{ action: string; actorTyp
     .orderBy(activityEvents.occurredAt, activityEvents.id);
 }
 
+/**
+ * 22-05 A3: a stateful stand-in for the service's server. Like the Docker daemon, `docker network
+ * rm` fails with "has active endpoints" while the proxy or the container is still attached, so a
+ * delete that removes the network before detaching the proxy leaves `network` true.
+ */
+class ProxyHost implements SshDeploySession {
+  readonly calls: string[] = [];
+  routeFile = true;
+  routePrev = true;
+  proxyAttached = true;
+  network = true;
+  images = 0;
+  workspaces = 0;
+
+  constructor(
+    private readonly serviceId: string,
+    public container: boolean,
+    deployed: number,
+  ) {
+    this.images = deployed;
+    this.workspaces = deployed;
+  }
+
+  exec(): Promise<never> {
+    return Promise.reject(new Error('unused'));
+  }
+
+  close(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  private psLine(): string {
+    return JSON.stringify({
+      ID: 'b'.repeat(64),
+      Image: `noodara/${this.serviceId}:latest`,
+      Names: `noodara-${this.serviceId}`,
+      State: 'running',
+      Status: 'Up 2 hours',
+      Labels: `noodara.managed=true,noodara.service_id=${this.serviceId}`,
+      Ports: '',
+    });
+  }
+
+  private answer(command: RemoteCommand): { exitCode: number; stdout?: string; stderr?: string } {
+    switch (command.name) {
+      case 'docker.ps':
+        return { exitCode: 0, stdout: this.container ? `${this.psLine()}\n` : '' };
+      case 'proxy.remove_dynamic':
+        this.routeFile = false;
+        this.routePrev = false;
+        return { exitCode: 0, stdout: 'NOODARA_PROXY_REMOVE ok\n' };
+      case 'docker.network_disconnect':
+        if (!this.proxyAttached) {
+          return { exitCode: 1, stderr: 'Error response from daemon: container noodara-traefik is not connected to network' };
+        }
+        this.proxyAttached = false;
+        return { exitCode: 0 };
+      case 'docker.stop':
+        return { exitCode: 0 };
+      case 'docker.remove':
+        this.container = false;
+        return { exitCode: 0 };
+      case 'docker.network_remove':
+        if (this.proxyAttached || this.container) {
+          return {
+            exitCode: 1,
+            stderr: `Error response from daemon: error while removing network: network noodara-net-${this.serviceId} has active endpoints`,
+          };
+        }
+        this.network = false;
+        return { exitCode: 0 };
+      case 'docker.image_remove':
+        this.images = Math.max(0, this.images - 1);
+        return { exitCode: 0 };
+      case 'fs.remove_deploy_dir':
+        this.workspaces = Math.max(0, this.workspaces - 1);
+        return { exitCode: 0 };
+      default:
+        return { exitCode: 127, stderr: `unexpected ${command.name}` };
+    }
+  }
+
+  stream(command: RemoteCommand, options: StreamOptions): Promise<StreamResult> {
+    this.calls.push(command.name);
+    const { exitCode, stdout = '', stderr = '' } = this.answer(command);
+    let seq = 0;
+    if (stdout.length > 0) options.onChunk({ stream: 'stdout', text: stdout, seq: seq++, truncatedLine: false });
+    if (stderr.length > 0) options.onChunk({ stream: 'stderr', text: stderr, seq: seq++, truncatedLine: false });
+    return Promise.resolve({
+      commandName: command.name,
+      outcome: 'completed',
+      exitCode,
+      exitSignal: null,
+      durationMs: 1,
+      totalBytes: stdout.length + stderr.length,
+      truncated: false,
+      stdoutTail: stdout,
+      stderrTail: stderr,
+    });
+  }
+
+  remote(): { routeFile: boolean; routePrev: boolean; proxyAttached: boolean; container: boolean; network: boolean } {
+    return {
+      routeFile: this.routeFile,
+      routePrev: this.routePrev,
+      proxyAttached: this.proxyAttached,
+      container: this.container,
+      network: this.network,
+    };
+  }
+}
+
+/** The server the remote cleanup reaches; null answers like an unreachable server. */
+let host: ProxyHost | null = null;
+
 function serviceEvents(serviceId: string): ServerEvent[] {
   return published.filter((event) => event.type === 'service.updated' && event.service.id === serviceId);
 }
@@ -161,7 +278,20 @@ beforeAll(async () => {
   postgres = await startPostgres();
   setTestEnv(postgres.connectionString);
   const { buildApp } = await import('../../../apps/control-plane/src/app.js');
-  app = buildApp({ eventPublisher: recorder });
+  const serviceOps = await import('../../../apps/control-plane/src/deploy/service-ops.js');
+  app = buildApp({
+    eventPublisher: recorder,
+    serviceRemoteCleanup: serviceOps.createServiceRemoteCleanup({
+      connect: () =>
+        Promise.resolve(
+          host === null
+            ? { ok: false as const, code: 'SERVER_UNREACHABLE' as const }
+            : { ok: true as const, session: host, close: () => Promise.resolve() },
+        ),
+      createRedactor,
+      limits: serviceOps.DEFAULT_SERVICE_OPS_LIMITS,
+    }),
+  });
   cookie = await signIn();
 });
 
@@ -172,6 +302,7 @@ afterAll(async () => {
 
 beforeEach(() => {
   published.length = 0;
+  host = null;
 });
 
 describe('create and read (A1, A3)', () => {
@@ -577,5 +708,80 @@ describe('port claim race (H2)', () => {
     );
     expect(results.map((r) => r.statusCode).sort()).toEqual([200, 409]);
     expect(results.find((r) => r.statusCode === 409)?.body.error).toBe('PORT_IN_USE');
+  });
+});
+
+describe('delete with a routed service (22-05 A3)', () => {
+  async function routedService(): Promise<{ projectId: string; serviceId: string; name: string }> {
+    const { projectId, environmentId } = await newProject();
+    const serverId = await newServer();
+    const created = await createService(projectId, imageBody(environmentId, serverId));
+    const serviceId = String(created.id);
+    await postgres.db.insert(domains).values({ projectId, serviceId, hostname: `app-${short()}.example.test` });
+    return { projectId, serviceId, name: String(created.name) };
+  }
+
+  async function domainCount(serviceId: string): Promise<number> {
+    return (await postgres.db.select({ id: domains.id }).from(domains).where(eq(domains.serviceId, serviceId))).length;
+  }
+
+  it('removes the route file and detaches the proxy before the container and the network; domains cascade', async () => {
+    const { projectId, serviceId, name } = await routedService();
+    await postgres.db.insert(deployments).values({
+      serviceId,
+      status: 'SUCCESS',
+      source: { kind: 'image', imageRef: 'nginx:1.27' },
+      startedAt: new Date(),
+      completedAt: new Date(),
+    });
+    host = new ProxyHost(serviceId, true, 1);
+
+    const response = await call('DELETE', `/api/projects/${projectId}/services/${serviceId}`, { confirmName: name });
+
+    expect(response.statusCode, JSON.stringify(response.body)).toBe(200);
+    expect(host.calls.slice(0, 6)).toEqual([
+      'docker.ps',
+      'proxy.remove_dynamic',
+      'docker.network_disconnect',
+      'docker.stop',
+      'docker.remove',
+      'docker.network_remove',
+    ]);
+    expect(host.calls.slice(6)).toEqual(['docker.image_remove', 'fs.remove_deploy_dir']);
+    expect(host.remote()).toEqual({
+      routeFile: false,
+      routePrev: false,
+      proxyAttached: false,
+      container: false,
+      network: false,
+    });
+    expect(host.images).toBe(0);
+    expect(host.workspaces).toBe(0);
+    expect(await postgres.db.select().from(services).where(eq(services.id, serviceId))).toEqual([]);
+    expect(await domainCount(serviceId)).toBe(0);
+  });
+
+  it('keeps a never-deployed service with a domain when its server is unreachable, then cleans it up', async () => {
+    const { projectId, serviceId, name } = await routedService();
+    const url = `/api/projects/${projectId}/services/${serviceId}`;
+
+    const refused = await call('DELETE', url, { confirmName: name });
+    expect(refused.statusCode, JSON.stringify(refused.body)).toBe(502);
+    expect(refused.body.error).toBe('SERVER_UNREACHABLE');
+    expect(await domainCount(serviceId)).toBe(1);
+
+    host = new ProxyHost(serviceId, false, 0);
+    const deleted = await call('DELETE', url, { confirmName: name });
+
+    expect(deleted.statusCode, JSON.stringify(deleted.body)).toBe(200);
+    expect(host.calls).toEqual(['docker.ps', 'proxy.remove_dynamic', 'docker.network_disconnect', 'docker.network_remove']);
+    expect(host.remote()).toEqual({
+      routeFile: false,
+      routePrev: false,
+      proxyAttached: false,
+      container: false,
+      network: false,
+    });
+    expect(await domainCount(serviceId)).toBe(0);
   });
 });
