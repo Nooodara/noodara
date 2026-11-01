@@ -245,7 +245,12 @@ describe('POST .../domains (A1, H1)', () => {
     });
     expect(huge.statusCode).toBe(413);
     const extra = await call('POST', fx.url, { hostname: host(), acmeEmail: 'x@y.dev' });
-    expect([400, 422]).toContain(extra.statusCode);
+    expect(extra.statusCode, extra.raw).toBe(400);
+    const patchExtra = await call('PATCH', `${fx.url}/00000000-0000-4000-8000-000000000000`, {
+      httpsRedirect: true,
+      hostname: host(),
+    });
+    expect(patchExtra.statusCode, patchExtra.raw).toBe(400);
 
     const created = await call('POST', fx.url, { hostname: host() });
     const listed = await call('GET', fx.url);

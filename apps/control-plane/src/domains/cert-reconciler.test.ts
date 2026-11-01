@@ -65,7 +65,13 @@ function streamResult(command: RemoteCommand, stdout: string, truncated = false)
   };
 }
 
-function harness(options: { candidates: CertCandidate[]; remote?: Remote; connectOk?: boolean; connectThrows?: boolean }) {
+function harness(options: {
+  candidates: CertCandidate[];
+  remote?: Remote;
+  connectOk?: boolean;
+  connectThrows?: boolean;
+  checkDelayMs?: CertReconcilerDeps['checkDelayMs'];
+}) {
   let clock = T0;
   let candidates = options.candidates;
   const remote: Remote = { api: API_UP, cert: certLine(NOT_AFTER), router: API_UP, ...options.remote };
@@ -134,6 +140,7 @@ function harness(options: { candidates: CertCandidate[]; remote?: Remote; connec
     issueTimeoutMs: TIMEOUT,
     commandMs: 5_000,
     now: () => clock,
+    ...(options.checkDelayMs === undefined ? {} : { checkDelayMs: options.checkDelayMs }),
   };
   const reconciler = createCertReconciler(deps);
   return {
@@ -151,6 +158,10 @@ function harness(options: { candidates: CertCandidate[]; remote?: Remote; connec
     remote,
     advance(ms: number) {
       clock = new Date(clock.getTime() + ms);
+    },
+    /** Sets the clock to T0 + ms (absolute, like the ADR offsets). */
+    seek(ms: number) {
+      clock = new Date(T0.getTime() + ms);
     },
     setCandidates(next: CertCandidate[]) {
       candidates = next;
@@ -266,29 +277,60 @@ describe('cert reconciler decisions (22-04 A1, A3)', () => {
 });
 
 describe('cert reconciler schedule (22-04 A2)', () => {
-  it('checks a changed domain at 15 s, 30 s and 60 s, then every interval', async () => {
+  // ADR 0011: checks fire at t = 15 s, 30 s and 60 s after the change (absolute offsets from the
+  // change, not successive delays), then every interval after the last check.
+  const probesOf = (h: ReturnType<typeof harness>) =>
+    h.stream.mock.calls.filter(([command]) => command.name === 'tls.cert_status').length;
+
+  it('checks a changed domain at t = 15 s, 30 s and 60 s after the change, then every interval', async () => {
     const h = harness({ candidates: [candidate({ updatedAt: T0 })], remote: { cert: DEFAULT_CERT } });
-    const probes = () => h.stream.mock.calls.filter(([command]) => command.name === 'tls.cert_status').length;
+    const spec: [number, number][] = [
+      [0, 0],
+      [14_999, 0],
+      [15_000, 1],
+      [29_999, 1],
+      [30_000, 2],
+      [59_999, 2],
+      [60_000, 3],
+      [60_000 + INTERVAL - 1, 3],
+      [60_000 + INTERVAL, 4],
+    ];
+    for (const [t, expected] of spec) {
+      h.seek(t);
+      await h.reconciler.runDue();
+      expect(probesOf(h), `t=${String(t)}`).toBe(expected);
+    }
+  });
+
+  it('a late check keeps the absolute offsets: first seen at 20 s, checked late at 35 s, next at 60 s', async () => {
+    const h = harness({ candidates: [candidate({ updatedAt: T0 })], remote: { cert: DEFAULT_CERT } });
+    h.seek(20_000);
     await h.reconciler.runDue();
-    expect(probes()).toBe(0);
-    h.advance(15_000);
+    expect(probesOf(h)).toBe(1);
+    h.seek(35_000);
     await h.reconciler.runDue();
-    expect(probes()).toBe(1);
-    h.advance(29_000);
+    expect(probesOf(h)).toBe(2);
+    // Successive delays would wait until 35 + 30 = 65 s; the spec fires at t = 60 s.
+    h.seek(60_000);
     await h.reconciler.runDue();
-    expect(probes()).toBe(1);
-    h.advance(1_000);
+    expect(probesOf(h)).toBe(3);
+    h.seek(60_000 + INTERVAL - 1);
     await h.reconciler.runDue();
-    expect(probes()).toBe(2);
-    h.advance(60_000);
-    await h.reconciler.runDue();
-    expect(probes()).toBe(3);
-    h.advance(INTERVAL - 1);
-    await h.reconciler.runDue();
-    expect(probes()).toBe(3);
-    h.advance(1);
-    await h.reconciler.runDue();
-    expect(probes()).toBe(4);
+    expect(probesOf(h)).toBe(3);
+  });
+
+  it('the checkDelayMs seam replaces the offsets with successive delays (real-infra suites)', async () => {
+    const h = harness({ candidates: [candidate({ updatedAt: T0 })], remote: { cert: DEFAULT_CERT }, checkDelayMs: () => 1_000 });
+    for (const [t, expected] of [
+      [999, 0],
+      [1_000, 1],
+      [1_999, 1],
+      [2_000, 2],
+    ] as const) {
+      h.seek(t);
+      await h.reconciler.runDue();
+      expect(probesOf(h), `t=${String(t)}`).toBe(expected);
+    }
   });
 
   it('an external change (a PATCH, a dns-check) restarts the post-change checks; its own writes do not', async () => {
@@ -385,17 +427,63 @@ describe('cert reconciler hardening (22-04 H1, H2, H3, H4)', () => {
     expect(summary.probeInvalid).toBe(1);
   });
 
-  it('H2: no running proxy on a RUNNING server fails the proxy once, not on every cycle', async () => {
+  it('H2/22-08 A4: a RUNNING proxy fails only after 3 consecutive down answers, and only once', async () => {
     const h = harness({ candidates: [candidate({ updatedAt: OLD })], remote: { api: 'NOODARA_PROXY_API down\n' } });
     await h.reconciler.runDue();
+    expect(h.mocks.markProxyUnavailable).not.toHaveBeenCalled();
+    h.advance(INTERVAL);
+    await h.reconciler.runDue();
+    expect(h.mocks.markProxyUnavailable).not.toHaveBeenCalled();
+    h.advance(INTERVAL);
+    await h.reconciler.runDue();
     expect(h.mocks.markProxyUnavailable).toHaveBeenCalledTimes(1);
-    expect(h.mocks.markProxyUnavailable).toHaveBeenCalledWith(SERVER, T0);
+    expect(h.mocks.markProxyUnavailable).toHaveBeenCalledWith(SERVER, new Date(T0.getTime() + 2 * INTERVAL));
     expect(h.events).toContainEqual({ type: 'server.updated', server: { id: SERVER } });
     h.advance(INTERVAL * 2);
     await h.reconciler.runDue();
     h.advance(INTERVAL * 2);
     await h.reconciler.runDue();
     expect(h.mocks.markProxyUnavailable).toHaveBeenCalledTimes(1);
+  });
+
+  it('22-08 A4: a single down probe (a restarting proxy) never flips RUNNING; an up answer resets the streak, an SSH failure does not', async () => {
+    const h = harness({ candidates: [candidate({ updatedAt: OLD })], remote: { api: 'NOODARA_PROXY_API down\n' } });
+    const cycle = async (api: string) => {
+      h.remote.api = api;
+      await h.reconciler.runDue();
+      h.advance(INTERVAL);
+    };
+    await cycle('NOODARA_PROXY_API down\n');
+    await cycle('NOODARA_PROXY_API down\n');
+    await cycle(API_UP);
+    await cycle('NOODARA_PROXY_API down\n');
+    await cycle('NOODARA_PROXY_API down\n');
+    expect(h.mocks.markProxyUnavailable).not.toHaveBeenCalled();
+    h.remote.throwOn = 'proxy.status';
+    await cycle('NOODARA_PROXY_API down\n');
+    expect(h.mocks.markProxyUnavailable).not.toHaveBeenCalled();
+    h.remote.throwOn = undefined;
+    await cycle('NOODARA_PROXY_API down\n');
+    expect(h.mocks.markProxyUnavailable).toHaveBeenCalledTimes(1);
+  });
+
+  it('22-08 A4: CERT_PROXY_UNAVAILABLE clears once the proxy answers again', async () => {
+    const h = harness({
+      candidates: [
+        candidate({ updatedAt: OLD, certStatus: 'ISSUED', certNotAfter: NOT_AFTER, certErrorCode: 'CERT_PROXY_UNAVAILABLE', proxyStatus: 'FAILED' }),
+      ],
+    });
+    await h.reconciler.runDue();
+    expect(h.writes).toEqual([expect.objectContaining({ status: 'ISSUED', notAfter: NOT_AFTER, errorCode: null })]);
+  });
+
+  it('22-08 A4: a certificate failed only by the proxy is retried (PENDING) when the proxy is back', async () => {
+    const h = harness({
+      candidates: [candidate({ updatedAt: OLD, certStatus: 'FAILED', certErrorCode: 'CERT_PROXY_UNAVAILABLE', proxyStatus: 'FAILED' })],
+      remote: { cert: DEFAULT_CERT },
+    });
+    await h.reconciler.runDue();
+    expect(h.writes).toEqual([expect.objectContaining({ status: 'PENDING', errorCode: null })]);
   });
 
   it('H4: a routed service whose dynamic file is gone is re-applied once and records route_restored', async () => {

@@ -7,7 +7,14 @@ import { describe, expect, it } from 'vitest';
 import type { Database } from '../db/client.js';
 import * as schema from '../db/schema/index.js';
 import { services } from '../db/schema/services.js';
-import { listCertCandidates, markProxyUnavailable, setDnsResult, updateDomainRedirect, writeCertStatus } from './domain-store.js';
+import {
+  listCertCandidates,
+  markProxyUnavailable,
+  recordRouteRestored,
+  setDnsResult,
+  updateDomainRedirect,
+  writeCertStatus,
+} from './domain-store.js';
 
 interface Query {
   readonly text: string;
@@ -171,5 +178,33 @@ describe('markProxyUnavailable (22-04 H2)', () => {
     const result = await markProxyUnavailable(db, SERVER_ID, AT);
     expect(result).toBeNull();
     expect(queries.some((q) => q.text.startsWith('insert into "activity_events"'))).toBe(false);
+  });
+});
+
+describe('recordRouteRestored (22-08 A9)', () => {
+  const INPUT = { serviceId: SERVICE_ID, durationMs: 120.4, at: AT };
+
+  it('is a compare-and-set on the service still having an APPLIED domain: none left writes no event', async () => {
+    const { db, queries } = fakeDb();
+    expect(await recordRouteRestored(db, INPUT)).toBeNull();
+    const [update] = updates(queries, 'services');
+    expect(update?.text).toMatch(/exists \(select 1 from "domains" where "domains"\."service_id" = "services"\."id" and "domains"\."apply_status" = 'APPLIED'\)/);
+    expect(queries.some((q) => q.text.startsWith('insert into "activity_events"'))).toBe(false);
+  });
+
+  it('bumps the service first, then records domain.route_restored in the same transaction', async () => {
+    const { db, queries } = fakeDb((query) => {
+      if (query.text.startsWith('update "services"')) return [rowFor(services, SERVICE_RECORD)];
+      if (query.text.startsWith('insert into "activity_events"')) return [['0192f1a4-7b3c-7d2e-8f00-00000000eeee']];
+      return [];
+    });
+    const view = await recordRouteRestored(db, INPUT);
+    expect(view?.id).toBe(SERVICE_ID);
+    const texts = queries.map((q) => q.text);
+    const bump = texts.findIndex((t) => t.startsWith('update "services"'));
+    const event = texts.findIndex((t) => t.startsWith('insert into "activity_events"'));
+    expect(bump).toBeGreaterThanOrEqual(0);
+    expect(event).toBeGreaterThan(bump);
+    expect(texts[0]).toBe('begin');
   });
 });

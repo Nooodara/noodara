@@ -3,11 +3,12 @@
 // under a per-serviceId lock: in-process first (one queue per service), then a Postgres advisory
 // transaction lock so the API and the worker never interleave writes for the same service. The
 // desired rows are read inside the lock, so the last apply always renders the latest state.
-import { sql } from 'drizzle-orm';
-import { validateResourceId, type ResourceId } from '@noodara/domain';
+import { and, desc, eq, sql } from 'drizzle-orm';
+import { parseRuntimeConfigSnapshot, validateResourceId, type ResourceId } from '@noodara/domain';
 import type { Redactor } from '@noodara/domain/security';
 import type { SshDeploySession } from '@noodara/ssh';
 import type { Database } from '../db/client.js';
+import { deployments } from '../db/schema/deployments.js';
 import type { ConnectResult } from '../deploy/deploy-worker.js';
 import {
   applyServiceDomains,
@@ -149,14 +150,34 @@ export function applyRoutes(serviceId: string, ports: ApplyRoutesPorts, options:
   });
 }
 
-/** The rows of one service as the database holds them now. */
+/**
+ * 22-08 A3: the port the running container listens on is the one of the snapshot it was
+ * deployed with; an absent or invalid snapshot falls back to the service row's port.
+ */
+export function deployedInternalPort(runtimeConfig: unknown, fallback: number): number {
+  if (runtimeConfig === null || runtimeConfig === undefined) return fallback;
+  const snapshot = parseRuntimeConfigSnapshot(runtimeConfig);
+  return snapshot.ok ? snapshot.value.internalPort : fallback;
+}
+
+/**
+ * The rows of one service as the database holds them now, routed to the port of its newest
+ * SUCCESS deployment (what runs, also after a manual rollback to an older port), not the row's.
+ */
 export async function loadRouteDesired(db: Database, serviceId: string): Promise<RouteDesired | null> {
   const id = validateResourceId(serviceId);
   if (!id.ok) return null;
   const target = await loadServiceTargetById(db, serviceId);
   if (target === null) return null;
   const rows = await listServiceDomains(db, serviceId);
-  return { serverId: target.serverId, serviceId: id.value, internalPort: target.internalPort, rows };
+  const [running] = await db
+    .select({ runtimeConfig: deployments.runtimeConfig })
+    .from(deployments)
+    .where(and(eq(deployments.serviceId, id.value), eq(deployments.status, 'SUCCESS')))
+    .orderBy(desc(deployments.createdAt), desc(deployments.id))
+    .limit(1);
+  const internalPort = deployedInternalPort(running?.runtimeConfig, target.internalPort);
+  return { serverId: target.serverId, serviceId: id.value, internalPort, rows };
 }
 
 export interface DbRoutePortsDeps {

@@ -102,7 +102,13 @@ const domainView = {
 };
 
 describe("domain and proxy schemas", () => {
-  it("bounds the create body and keeps unknown keys for the domain validator", () => {
+  it("bounds the create and update bodies and rejects unknown keys", () => {
+    expect(contract.CreateDomainBodySchema.safeParse({ hostname: "app.example.com", acmeEmail: "x@y.dev" }).success).toBe(
+      false,
+    );
+    expect(contract.UpdateDomainBodySchema.safeParse({ httpsRedirect: true, hostname: "b.example.com" }).success).toBe(
+      false,
+    );
     expect(contract.CreateDomainBodySchema.safeParse({ hostname: "app.example.com" }).success).toBe(true);
     expect(
       contract.CreateDomainBodySchema.safeParse({ hostname: "app.example.com", httpsRedirect: false }).success,

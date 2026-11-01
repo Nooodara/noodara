@@ -42,8 +42,11 @@ export const DEFAULT_CERT_ISSUE_TIMEOUT_MS = 10 * MINUTE_MS;
 export const DEFAULT_CERT_CHECK_INTERVAL_MS = 10 * MINUTE_MS;
 /** Traefik renews 30 days before `notAfter`; inside that window the status is RENEWING. */
 export const CERT_RENEWAL_WINDOW_MS = 30 * DAY_MS;
-/** Checks after a domain change (issuance measured at 2-8 s plus the 2 s throttle). */
-export const CERT_POST_CHANGE_CHECK_DELAYS_MS = Object.freeze([15_000, 30_000, 60_000] as const);
+/**
+ * Checks after a domain change, as absolute offsets from the change (ADR 0011): t = 15 s, 30 s
+ * and 60 s (issuance measured at 2-8 s plus the 2 s throttle), then every interval.
+ */
+export const CERT_POST_CHANGE_CHECK_OFFSETS_MS = Object.freeze([15_000, 30_000, 60_000] as const);
 
 export interface CertTimings {
   readonly issueTimeoutMs: number;
@@ -91,9 +94,17 @@ export function retryCertStatus(status: CertStatus): CertStatus {
   return status === 'FAILED' ? transitionCertStatus(status, 'PENDING') : status;
 }
 
-/** Delay before the next check: 15 s, 30 s, 60 s after a change, then `intervalMs`. */
-export function certCheckDelayMs(checksSinceChange: number, intervalMs: number): number {
-  return CERT_POST_CHANGE_CHECK_DELAYS_MS[Math.max(0, checksSinceChange)] ?? intervalMs;
+/**
+ * When the next check is due: the first post-change offset (changedAt + 15 s, 30 s, 60 s) that is
+ * later than the last check, else one interval after the last check. A late check skips the
+ * offsets it passed; it never shifts the remaining ones.
+ */
+export function nextCertCheckAt(changedAtMs: number, lastCheckAtMs: number | null, intervalMs: number): number {
+  for (const offset of CERT_POST_CHANGE_CHECK_OFFSETS_MS) {
+    const at = changedAtMs + offset;
+    if (lastCheckAtMs === null || at > lastCheckAtMs) return at;
+  }
+  return (lastCheckAtMs ?? changedAtMs) + intervalMs;
 }
 
 /** The parsed probe line: an issued certificate, Traefik's default certificate, or no listener. */
@@ -162,10 +173,16 @@ function validCertDecision(
   );
 }
 
+function proxyCauseCleared(errorCode: CertFailureCause | null): CertFailureCause | null {
+  return errorCode === 'CERT_PROXY_UNAVAILABLE' ? null : errorCode;
+}
+
 /**
  * Pure: the next certificate state for `current` given one probe result at `now`. A proxy that
  * is down keeps the status (FAILED only when a PENDING issuance times out) and records
- * CERT_PROXY_UNAVAILABLE. NONE only leaves through "domain added", never through a probe.
+ * CERT_PROXY_UNAVAILABLE. A reachable proxy clears that cause: a FAILED domain failed only by
+ * the proxy goes back to PENDING (retry). NONE only leaves through "domain added", never
+ * through a probe.
  */
 export function decideCertStatus(
   current: CertState,
@@ -187,15 +204,16 @@ export function decideCertStatus(
 
   switch (current.status) {
     case 'NONE':
-      return decision(current, 'NONE', current.notAfter, current.errorCode);
+      return decision(current, 'NONE', current.notAfter, proxyCauseCleared(current.errorCode));
     case 'PENDING':
       return valid === null
         ? pendingDecision(current, now, timings)
         : decision(current, 'ISSUED', valid, null);
     case 'FAILED':
-      return valid === null
-        ? decision(current, 'FAILED', current.notAfter, current.errorCode)
-        : decision(current, 'ISSUED', valid, null);
+      if (valid !== null) return decision(current, 'ISSUED', valid, null);
+      return current.errorCode === 'CERT_PROXY_UNAVAILABLE'
+        ? decision(current, 'PENDING', null, null)
+        : decision(current, 'FAILED', current.notAfter, current.errorCode);
     case 'ISSUED':
     case 'RENEWING':
     case 'EXPIRED':

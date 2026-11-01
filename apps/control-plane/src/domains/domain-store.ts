@@ -17,7 +17,7 @@ import {
 } from '@noodara/domain';
 import { mapUniqueViolation, type DomainApplyStatus } from '@noodara/domain/api-contract';
 import type { DomainAction } from '@noodara/domain/activity';
-import { and, asc, desc, eq, inArray, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, ne, sql, type SQL } from 'drizzle-orm';
 import { writeDomainActivityEvent, writeServiceDomainsChangedEvent } from '../activity/domain-events.js';
 import { writeProxyActivityEvent } from '../activity/proxy-events.js';
 import type { Database } from '../db/client.js';
@@ -295,11 +295,11 @@ export interface CertStatusWrite {
   readonly activity?: { readonly action: Exclude<DomainAction, 'domain.route_restored'>; readonly previousStatus: CertStatus };
 }
 
-async function serviceUpdated(tx: Tx, serviceId: string, at: Date): Promise<ServiceView | null> {
+async function serviceUpdated(tx: Tx, serviceId: string, at: Date, guard?: SQL): Promise<ServiceView | null> {
   const [service] = await tx
     .update(services)
     .set({ updatedAt: nextUpdatedAtSql(services.updatedAt, at) })
-    .where(eq(services.id, serviceId))
+    .where(guard === undefined ? eq(services.id, serviceId) : and(eq(services.id, serviceId), guard))
     .returning();
   if (!service) return null;
   const [latest] = await tx
@@ -353,12 +353,19 @@ export function writeCertStatus(
   });
 }
 
-/** 22-04 (H4): a routed service's dynamic file was restored on the host. */
+/**
+ * 22-04 (H4): a routed service's dynamic file was restored on the host. 22-08 A9: a CAS on the
+ * service still having an APPLIED domain (the bump locks the service row first): a removal that
+ * won the race leaves nothing to restore, so no event and `null`.
+ */
 export async function recordRouteRestored(
   db: Database,
   input: { readonly serviceId: string; readonly durationMs: number; readonly at: Date },
 ): Promise<ServiceView | null> {
   return db.transaction(async (tx) => {
+    const routed = sql`exists (select 1 from ${domains} where ${domains.serviceId} = ${services.id} and ${domains.applyStatus} = 'APPLIED')`;
+    const view = await serviceUpdated(tx, input.serviceId, input.at, routed);
+    if (view === null) return null;
     await writeDomainActivityEvent(
       tx,
       {
@@ -371,7 +378,7 @@ export async function recordRouteRestored(
       },
       input.at,
     );
-    return serviceUpdated(tx, input.serviceId, input.at);
+    return view;
   });
 }
 

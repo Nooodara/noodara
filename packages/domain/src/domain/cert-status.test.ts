@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CERT_FAILURE_CAUSES,
   CERT_FAILURE_MESSAGES,
-  CERT_POST_CHANGE_CHECK_DELAYS_MS,
+  CERT_POST_CHANGE_CHECK_OFFSETS_MS,
   CERT_RENEWAL_WINDOW_MS,
   CERT_STATUSES,
   DEFAULT_CERT_CHECK_INTERVAL_MS,
@@ -13,8 +13,8 @@ import {
   type CertState,
   type CertStatus,
   canTransitionCertStatus,
-  certCheckDelayMs,
   decideCertStatus,
+  nextCertCheckAt,
   retryCertStatus,
   transitionCertStatus,
 } from './cert-status.js';
@@ -135,16 +135,31 @@ describe('timings', () => {
       issueTimeoutMs: 10 * MINUTE,
       renewalWindowMs: 30 * DAY,
     });
-    expect(CERT_POST_CHANGE_CHECK_DELAYS_MS).toEqual([15_000, 30_000, 60_000]);
+    expect(CERT_POST_CHANGE_CHECK_OFFSETS_MS).toEqual([15_000, 30_000, 60_000]);
   });
 
-  it('checks at 15 s, 30 s and 60 s after a change, then on the regular interval', () => {
-    expect(certCheckDelayMs(0, 600_000)).toBe(15_000);
-    expect(certCheckDelayMs(1, 600_000)).toBe(30_000);
-    expect(certCheckDelayMs(2, 600_000)).toBe(60_000);
-    expect(certCheckDelayMs(3, 600_000)).toBe(600_000);
-    expect(certCheckDelayMs(50, 120_000)).toBe(120_000);
-    expect(certCheckDelayMs(-1, 600_000)).toBe(15_000);
+  // ADR 0011: checks at t = 15 s, 30 s and 60 s after the change (absolute), then every interval.
+  it('checks at t = 15 s, 30 s and 60 s after a change, then on the regular interval', () => {
+    const changed = 1_000_000;
+    const interval = 600_000;
+    let last: number | null = null;
+    const fired: number[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      const next = nextCertCheckAt(changed, last, interval);
+      fired.push(next - changed);
+      last = next;
+    }
+    expect(fired).toEqual([15_000, 30_000, 60_000, 60_000 + interval, 60_000 + 2 * interval]);
+  });
+
+  it('keeps the absolute offsets after a late check and skips the ones it passed', () => {
+    const changed = 0;
+    expect(nextCertCheckAt(changed, 17_000, 600_000)).toBe(30_000);
+    expect(nextCertCheckAt(changed, 35_000, 600_000)).toBe(60_000);
+    expect(nextCertCheckAt(changed, 60_000, 600_000)).toBe(660_000);
+    expect(nextCertCheckAt(changed, 70_000, 120_000)).toBe(190_000);
+    // A domain first seen long after its change is due at once (its first offset is past).
+    expect(nextCertCheckAt(changed, null, 600_000)).toBe(15_000);
   });
 });
 
@@ -467,6 +482,24 @@ describe('decideCertStatus (A2)', () => {
       }
     });
 
+    it('retries (PENDING) a certificate failed only by the proxy once the proxy answers again', () => {
+      const current = state({ status: 'FAILED', errorCode: 'CERT_PROXY_UNAVAILABLE' });
+      for (const probe of [DEFAULT, issued(-DAY)]) {
+        expect(decideCertStatus(current, probe, NOW)).toEqual({
+          status: 'PENDING',
+          notAfter: null,
+          errorCode: null,
+          statusChanged: true,
+        });
+      }
+      expect(decideCertStatus(current, DOWN, NOW)).toEqual({
+        status: 'FAILED',
+        notAfter: null,
+        errorCode: 'CERT_PROXY_UNAVAILABLE',
+        statusChanged: false,
+      });
+    });
+
     it('becomes ISSUED when a valid certificate is observed', () => {
       expect(
         decideCertStatus(
@@ -494,6 +527,27 @@ describe('decideCertStatus (A2)', () => {
         });
       }
     });
+
+    it('clears CERT_PROXY_UNAVAILABLE when the proxy is reachable again', () => {
+      const current = state({ status: 'NONE', errorCode: 'CERT_PROXY_UNAVAILABLE' });
+      expect(decideCertStatus(current, DEFAULT, NOW).errorCode).toBeNull();
+      expect(decideCertStatus(current, DOWN, NOW).errorCode).toBe('CERT_PROXY_UNAVAILABLE');
+      const dns = state({ status: 'NONE', errorCode: 'CERT_DNS_MISMATCH' });
+      expect(decideCertStatus(dns, DEFAULT, NOW).errorCode).toBe('CERT_DNS_MISMATCH');
+    });
+  });
+
+  it('clears CERT_PROXY_UNAVAILABLE on every reachable probe, whatever the status', () => {
+    for (const status of CERT_STATUSES) {
+      for (const probe of [DEFAULT, issued(60 * DAY), issued(-DAY)]) {
+        const decision = decideCertStatus(
+          state({ status, notAfter: at(10 * DAY), pendingSince: at(-MINUTE), errorCode: 'CERT_PROXY_UNAVAILABLE' }),
+          probe,
+          NOW,
+        );
+        expect(decision.errorCode, `${status}/${probe.kind}`).not.toBe('CERT_PROXY_UNAVAILABLE');
+      }
+    }
   });
 
   it('leaves the state untouched on an unparseable notAfter', () => {

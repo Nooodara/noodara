@@ -8,6 +8,7 @@ import {
   ROUTE_LOCK_PERMITS,
   applyRoutes,
   createRouteLock,
+  deployedInternalPort,
   type ApplyRoutesPorts,
   type RouteDesired,
   type RouteLock,
@@ -253,5 +254,26 @@ describe('createRouteLock over the database (22-05 H3)', () => {
     expect(peak).toBe(ROUTE_LOCK_PERMITS);
     expect(samePeak).toBe(1);
     expect(open).toBe(0);
+  });
+});
+
+describe('deployedInternalPort (22-08 A3)', () => {
+  const snapshot = (internalPort: unknown) => ({
+    version: 1,
+    imageRef: `noodara/${SERVICE_ID}:0192f1a4-7b3c-7d2e-8f00-00000000aaaa`,
+    internalPort,
+    publishedPort: null,
+    healthcheck: { type: 'container', probeTimeoutS: 5, intervalS: 2, retries: 3, startPeriodS: 0 },
+  });
+
+  it('routes to the port of the running deployment, not the service row', () => {
+    expect(deployedInternalPort(snapshot(4000), 3000)).toBe(4000);
+  });
+
+  it('falls back to the service row when there is no deployment or its snapshot is invalid', () => {
+    expect(deployedInternalPort(undefined, 3000)).toBe(3000);
+    expect(deployedInternalPort(null, 3000)).toBe(3000);
+    expect(deployedInternalPort(snapshot(70_000), 3000)).toBe(3000);
+    expect(deployedInternalPort({ version: 9 }, 3000)).toBe(3000);
   });
 });

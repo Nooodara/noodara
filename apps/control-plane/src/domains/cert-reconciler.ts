@@ -10,17 +10,22 @@
 // invalid or truncated answer leaves that domain unchanged (H3). Only status, notAfter and a
 // closed cause are stored, never an issuer or a certificate (H1). Logs carry ids and codes only.
 //
-// Schedule (in memory, so a restart probes once more at worst): a domain is checked 15 s, 30 s
-// and 60 s after a change (certCheckDelayMs), then every interval. A change is an `updated_at`
-// that is not this reconciler's own write. A PENDING domain's issue timeout runs from when it was
-// seen entering PENDING (or its `updated_at` when first seen PENDING).
+// Schedule (in memory, so a restart probes once more at worst): a domain is checked at t = 15 s,
+// 30 s and 60 s after a change (absolute offsets, nextCertCheckAt), then every interval. A change
+// is an `updated_at` that is not this reconciler's own write. A PENDING domain's issue timeout
+// runs from when it was seen entering PENDING (or its `updated_at` when first seen PENDING).
+// A RUNNING proxy is failed only after PROXY_DOWN_FAILURE_THRESHOLD consecutive "down" answers
+// (a restarting container is transient); any other API answer resets the streak, an SSH failure
+// leaves it as is.
+// Single worker (ADR 0011): `inFlight`, the schedule and the down streaks live in this process;
+// every row write is a CAS on `updated_at` (or on an APPLIED row), so a second worker could only
+// probe twice, never overwrite a newer state.
 import {
   CERT_FAILURE_CAUSES,
-  CERT_POST_CHANGE_CHECK_DELAYS_MS,
   CERT_RENEWAL_WINDOW_MS,
   PROXY_API_ROUTER_NAME,
-  certCheckDelayMs,
   decideCertStatus,
+  nextCertCheckAt,
   proxyRouterNamesFor,
   type CertDecision,
   type CertFailureCause,
@@ -85,8 +90,13 @@ export interface CertReconcilerDeps {
   /** NOODARA_SSH_COMMAND_TIMEOUT_MS: the bound of each probe. */
   readonly commandMs: number;
   readonly now?: () => Date;
-  /** Test seam: the post-change backoff (defaults to the domain table). */
+  /**
+   * Test seam: successive delays instead of the absolute post-change offsets (nextCertCheckAt),
+   * so a real-infra suite can re-check within seconds.
+   */
   readonly checkDelayMs?: (checksSinceChange: number, intervalMs: number) => number;
+  /** Consecutive "down" API answers before a RUNNING proxy is failed (default 3). */
+  readonly proxyDownThreshold?: number;
 }
 
 export interface CertRunSummary {
@@ -106,12 +116,15 @@ export interface CertReconciler {
 interface Tracked {
   seenUpdatedAt: number;
   status: CertStatus;
+  /** The last change made elsewhere (`updated_at`); the post-change offsets count from here. */
+  changedAt: number;
+  lastCheckAt: number | null;
   checks: number;
   nextAt: number;
   pendingSince: Date | null;
 }
 
-const POST_CHANGE_TOTAL_MS = CERT_POST_CHANGE_CHECK_DELAYS_MS.reduce((sum, ms) => sum + ms, 0);
+export const PROXY_DOWN_FAILURE_THRESHOLD = 3;
 const LINE_MAX_BYTES = 4_096;
 const MAX_ISSUER_LENGTH = 256;
 const CAUSES: ReadonlySet<string> = new Set(CERT_FAILURE_CAUSES);
@@ -221,6 +234,8 @@ interface ServerCycle {
 
 interface ProbeOutcome {
   readonly proxyDown: boolean;
+  /** The API router answered present or missing (the proxy is reachable). */
+  readonly proxyUp: boolean;
   readonly probes: ReadonlyMap<string, CertProbe>;
   readonly invalid: number;
   readonly missingRoutes: readonly string[];
@@ -228,31 +243,46 @@ interface ProbeOutcome {
 
 export function createCertReconciler(deps: CertReconcilerDeps): CertReconciler {
   const now = deps.now ?? (() => new Date());
-  const delay = deps.checkDelayMs ?? certCheckDelayMs;
   const tracked = new Map<string, Tracked>();
   const inFlight = new Set<string>();
+  const downStreak = new Map<string, number>();
+  const downThreshold = deps.proxyDownThreshold ?? PROXY_DOWN_FAILURE_THRESHOLD;
+
+  function scheduleNext(entry: Tracked): void {
+    if (deps.checkDelayMs === undefined) {
+      entry.nextAt = nextCertCheckAt(entry.changedAt, entry.lastCheckAt, deps.intervalMs);
+      return;
+    }
+    const base = entry.lastCheckAt ?? entry.changedAt;
+    entry.nextAt = base + deps.checkDelayMs(entry.checks, deps.intervalMs);
+  }
   const timings = { issueTimeoutMs: deps.issueTimeoutMs, renewalWindowMs: CERT_RENEWAL_WINDOW_MS };
 
   function observe(candidate: CertCandidate, nowMs: number): Tracked {
     const updatedAt = candidate.updatedAt.getTime();
     const previous = tracked.get(candidate.id);
     if (previous === undefined) {
-      const settled = nowMs - updatedAt > POST_CHANGE_TOTAL_MS;
       const entry: Tracked = {
         seenUpdatedAt: updatedAt,
         status: candidate.certStatus,
-        checks: settled ? CERT_POST_CHANGE_CHECK_DELAYS_MS.length : 0,
-        nextAt: settled ? nowMs : updatedAt + delay(0, deps.intervalMs),
+        changedAt: updatedAt,
+        lastCheckAt: null,
+        checks: 0,
+        nextAt: nowMs,
         pendingSince: candidate.certStatus === 'PENDING' ? candidate.updatedAt : null,
       };
+      // First seen long after its change: every offset is past, so the first check is due now.
+      scheduleNext(entry);
       tracked.set(candidate.id, entry);
       return entry;
     }
     if (updatedAt !== previous.seenUpdatedAt) {
       // A change made elsewhere (create, PATCH, dns-check, apply): restart the post-change checks.
       previous.seenUpdatedAt = updatedAt;
+      previous.changedAt = updatedAt;
+      previous.lastCheckAt = null;
       previous.checks = 0;
-      previous.nextAt = updatedAt + delay(0, deps.intervalMs);
+      scheduleNext(previous);
     }
     if (candidate.certStatus !== previous.status) {
       previous.pendingSince = candidate.certStatus === 'PENDING' ? candidate.updatedAt : null;
@@ -265,16 +295,17 @@ export function createCertReconciler(deps: CertReconcilerDeps): CertReconciler {
     const entry = tracked.get(domainId);
     if (entry === undefined) return;
     entry.checks += 1;
-    entry.nextAt = nowMs + delay(entry.checks, deps.intervalMs);
+    entry.lastCheckAt = nowMs;
+    scheduleNext(entry);
   }
 
   async function probe(session: SshDeploySession, cycle: ServerCycle): Promise<ProbeOutcome> {
     const api = await probeRouter(session, PROXY_API_ROUTER_NAME, deps.commandMs);
     if (api === null) {
       deps.logger.warn({ serverId: cycle.serverId, outcome: 'probe_invalid' }, 'proxy status answer rejected');
-      return { proxyDown: false, probes: new Map(), invalid: 1, missingRoutes: [] };
+      return { proxyDown: false, proxyUp: false, probes: new Map(), invalid: 1, missingRoutes: [] };
     }
-    if (api.kind === 'down') return { proxyDown: true, probes: new Map(), invalid: 0, missingRoutes: [] };
+    if (api.kind === 'down') return { proxyDown: true, proxyUp: false, probes: new Map(), invalid: 0, missingRoutes: [] };
     const probes = new Map<string, CertProbe>();
     let invalid = 0;
     for (const candidate of cycle.due) {
@@ -303,7 +334,7 @@ export function createCertReconciler(deps: CertReconcilerDeps): CertReconciler {
       const answer = await probeRouter(session, router, deps.commandMs);
       if (answer?.kind === 'missing') missingRoutes.push(serviceId);
     }
-    return { proxyDown: false, probes, invalid, missingRoutes };
+    return { proxyDown: false, proxyUp: true, probes, invalid, missingRoutes };
   }
 
   function decide(candidate: CertCandidate, result: CertProbe, at: Date): CertDecision | null {
@@ -364,6 +395,12 @@ export function createCertReconciler(deps: CertReconcilerDeps): CertReconciler {
   }
 
   async function failProxy(cycle: ServerCycle, at: Date): Promise<void> {
+    const streak = (downStreak.get(cycle.serverId) ?? 0) + 1;
+    downStreak.set(cycle.serverId, streak);
+    if (streak < downThreshold) {
+      deps.logger.info({ serverId: cycle.serverId, outcome: 'proxy_down_transient', streak }, 'proxy did not answer the certificate check');
+      return;
+    }
     if (!cycle.all.some((candidate) => candidate.proxyStatus === 'RUNNING')) return;
     const server = await deps.store.markProxyUnavailable(cycle.serverId, at);
     if (server === null) return;
@@ -419,6 +456,7 @@ export function createCertReconciler(deps: CertReconcilerDeps): CertReconciler {
       deps.logger.warn({ serverId: cycle.serverId, outcome: 'ssh_failed', domains: cycle.due.length }, 'certificate check could not reach the server');
       return { ...empty, checked: cycle.due.length, sshFailed: 1 };
     }
+    if (outcome.proxyUp) downStreak.delete(cycle.serverId);
     const written = await writeDecisions(cycle, outcome, at);
     if (outcome.proxyDown) await failProxy(cycle, at);
     const restored = outcome.proxyDown ? 0 : await reapply(cycle, outcome.missingRoutes);
@@ -452,6 +490,8 @@ export function createCertReconciler(deps: CertReconcilerDeps): CertReconciler {
       const nowMs = now().getTime();
       const present = new Set(candidates.map((candidate) => candidate.id));
       for (const id of tracked.keys()) if (!present.has(id)) tracked.delete(id);
+      const servers = new Set(candidates.map((candidate) => candidate.serverId));
+      for (const id of downStreak.keys()) if (!servers.has(id)) downStreak.delete(id);
       const byServer = new Map<string, CertCandidate[]>();
       for (const candidate of candidates) {
         const list = byServer.get(candidate.serverId) ?? [];

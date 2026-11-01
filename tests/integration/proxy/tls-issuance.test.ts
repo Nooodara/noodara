@@ -585,10 +585,11 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-04 certificate reconciler on Ub
   );
 
   it(
-    'A1/H2: a stopped proxy -> CERT_PROXY_UNAVAILABLE and server FAILED/PROXY_UNAVAILABLE, server.proxy_failed once',
+    'A1/H2: a stopped proxy -> CERT_PROXY_UNAVAILABLE and, after 3 down checks, server FAILED/PROXY_UNAVAILABLE once; cleared when back',
     async () => {
       const before = await domainRow('a');
       await rootOut(['docker', 'stop', proxyContainerName()]);
+      let restarted = false;
       try {
         await delay(TEST_CHECK_DELAY_MS + 100);
         const first = await rec().runDue();
@@ -597,6 +598,13 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-04 certificate reconciler on Ub
         expect(row.certErrorCode).toBe('CERT_PROXY_UNAVAILABLE');
         // A down proxy keeps the certificate status (no FAILED flip for a valid certificate).
         expect(row.certStatus).toBe(before.certStatus);
+        // 22-08 A4: one down answer is transient; the third consecutive one fails the proxy.
+        expect((await serverRow()).proxyStatus).toBe('RUNNING');
+        await delay(TEST_CHECK_DELAY_MS + 100);
+        await rec().runDue();
+        expect((await serverRow()).proxyStatus).toBe('RUNNING');
+        await delay(TEST_CHECK_DELAY_MS + 100);
+        await rec().runDue();
         const server = await serverRow();
         expect(server.proxyStatus).toBe('FAILED');
         expect(server.proxyErrorCode).toBe('PROXY_UNAVAILABLE');
@@ -606,8 +614,19 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-04 certificate reconciler on Ub
         await rec().runDue();
         expect(await activities('server.proxy_failed', serverId)).toHaveLength(1);
         expect((await serverRow()).proxyStatus).toBe('FAILED');
-      } finally {
+
         await rootOut(['docker', 'start', proxyContainerName()]);
+        restarted = true;
+        let cleared = await domainRow('a');
+        for (let i = 0; i < 20 && cleared.certErrorCode !== null; i += 1) {
+          await delay(TEST_CHECK_DELAY_MS + 100);
+          await rec().runDue();
+          cleared = await domainRow('a');
+        }
+        expect(cleared.certErrorCode).toBeNull();
+        expect(cleared.certStatus).toBe(before.certStatus);
+      } finally {
+        if (!restarted) await rootOut(['docker', 'start', proxyContainerName()]);
       }
     },
     CASE_TIMEOUT_MS,

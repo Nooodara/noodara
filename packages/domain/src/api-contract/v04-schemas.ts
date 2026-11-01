@@ -20,13 +20,13 @@ const Timestamp = z.string();
 export const DOMAIN_APPLY_STATUSES = Object.freeze(["PENDING", "APPLIED", "FAILED"] as const);
 export type DomainApplyStatus = (typeof DOMAIN_APPLY_STATUSES)[number];
 
-/** Loose on purpose: unknown keys reach `validateDomainCreateInput`, which names them (422). */
-export const CreateDomainBodySchema = z.looseObject({
+/** Strict (22-08 A8): an unknown key is a 400 at the schema layer, before any domain validator runs. */
+export const CreateDomainBodySchema = z.strictObject({
   hostname: z.string().max(MAX_HOSTNAME_LENGTH),
   httpsRedirect: z.boolean().optional(),
 });
 
-export const UpdateDomainBodySchema = z.looseObject({
+export const UpdateDomainBodySchema = z.strictObject({
   httpsRedirect: z.boolean().optional(),
 });
 

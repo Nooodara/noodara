@@ -8729,7 +8729,9 @@
             "tests/integration/deploy-engine/runtime-cancel.test.ts",
             "docs/adr/0011-domains-tls-env-contracts.md",
             "docs/deploy-engine.md",
-            "tests/integration/proxy/tls-renewal.test.ts"
+            "tests/integration/proxy/tls-renewal.test.ts",
+            "docs/domain/cert-status-transitions.md",
+            "apps/control-plane/src/routes/domain-schemas.ts"
           ],
           "wave": 8,
           "dependsOn": [
