@@ -14,7 +14,7 @@ import {
 } from '@noodara/domain';
 import { mapUniqueViolation, type DomainApplyStatus } from '@noodara/domain/api-contract';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
-import { writeActivityEvent } from '../activity/write-activity-event.js';
+import { writeServiceDomainsChangedEvent } from '../activity/domain-events.js';
 import type { Database } from '../db/client.js';
 import { domains } from '../db/schema/domains.js';
 import { servers } from '../db/schema/servers.js';
@@ -88,23 +88,8 @@ export function toRouteDomains(rows: readonly DomainRow[]): ProxyRouteDomain[] {
   return out;
 }
 
-function actorFields(actor: ServiceActor): { actorType: ServiceActor['type']; actorId: string | null } {
-  return { actorType: actor.type, actorId: actor.type === 'user' ? actor.id : null };
-}
-
 async function recordDomainsChanged(tx: Tx, actor: ServiceActor, serviceId: string, at: Date): Promise<void> {
-  await writeActivityEvent(
-    tx,
-    {
-      ...actorFields(actor),
-      entityType: 'service',
-      entityId: serviceId,
-      action: 'service.updated',
-      outcome: 'success',
-      metadata: { changedFields: ['domains'], requiresRedeploy: false, credentialReplaced: false },
-    },
-    at,
-  );
+  await writeServiceDomainsChangedEvent(tx, { actor, serviceId }, at);
 }
 
 export type InsertDomainResult =

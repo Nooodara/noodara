@@ -769,6 +769,10 @@ describe('@noodara/ssh public surface (T-2-42)', () => {
     'proxyRouterStatus',
     'proxyWriteDynamic',
     'proxyWriteStatic',
+    // 22-03: domain apply builders (disconnect on last domain, remove and restore the dynamic file).
+    'proxyNetworkDisconnect',
+    'proxyRemoveDynamic',
+    'proxyRestoreDynamic',
   ] as const;
 
   it('exports exactly the deliberate public surface, no internal module leaking through', async () => {
