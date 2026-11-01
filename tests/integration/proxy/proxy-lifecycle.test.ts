@@ -113,6 +113,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     let nodeImage = "";
     let serverId = "";
     let handler: ((data: unknown) => Promise<string>) | undefined;
+    let buildHandler: ((image: string) => (data: unknown) => Promise<string>) | undefined;
     let serviceDeps: ProxyServiceDeps | undefined;
     let proxyService: ProxyServiceModule | undefined;
     let httpErrors: HttpErrorsModule | undefined;
@@ -314,21 +315,24 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       };
       const ssh = createSsh2Adapter();
       const masterKeys = () => Promise.resolve({ current: masterKey });
-      handler = proxyJob.createProxyInstallJobHandler(
+      const pebbleIp = pebble.ip;
+      buildHandler = (image: string) =>
+        proxyJob.createProxyInstallJobHandler(
         proxyWiring.createProxyInstallJobDeps({
           db: db(),
           events: recordingEvents,
           ssh,
           timeouts: TIMEOUTS,
           masterKeys,
-          image: TRAEFIK_IMAGE,
+          image,
           acmeCaUrl: PEBBLE_ACME_DIRECTORY_URL,
           acmeCaRootFile: caRootFile,
           maxLineBytes: MAX_LINE_BYTES,
           logger,
-          extraHosts: [{ name: PEBBLE_HOSTNAME, ip: pebble.ip }],
+          extraHosts: [{ name: PEBBLE_HOSTNAME, ip: pebbleIp }],
         }),
       );
+      handler = buildHandler(TRAEFIK_IMAGE);
       serviceDeps = {
         db: db(),
         now: () => new Date(),
@@ -486,6 +490,97 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         expect(installs[1]).toMatchObject({ metadata: { reinstalled: true } });
       },
       INSTALL_CASE_TIMEOUT_MS,
+    );
+
+    it(
+      "22-07 A1: a pre-create fault (pull) on a RUNNING proxy fails the attempt but leaves noodara-traefik running",
+      async () => {
+        if (buildHandler === undefined) throw new Error("handler not built");
+        const before = (await proxyContainers())[0];
+        expect(before).toMatch(/ running$/);
+        // A digest no registry serves: the pull step fails after ports/prepare_dirs/write_config ran.
+        const faulty = buildHandler(`traefik:v3.7.14@sha256:${"0".repeat(64)}`);
+        const queued = enqueued.length;
+        viewOf(await svc().requestProxyInstall(deps(), { actor: ACTOR, serverId }));
+        const payload = enqueued[queued];
+        if (payload === undefined) throw new Error("no payload enqueued");
+        expect(await faulty(payload)).not.toBe("installed");
+        expect(await serverRow()).toMatchObject({
+          proxyStatus: "FAILED",
+          proxyErrorCode: "PROXY_INSTALL_FAILED",
+        });
+        const [failure] = (await proxyActivity("server.proxy_failed")).slice(-1);
+        expect(failure).toMatchObject({ metadata: { step: "pull" } });
+        // Same container (same id), still running and still answering on the entrypoint.
+        expect(await proxyContainers()).toEqual([before]);
+
+        // The retry with the real image ends RUNNING again.
+        const { outcome } = await install();
+        expect(outcome).toBe("installed");
+        expect((await serverRow()).proxyStatus).toBe("RUNNING");
+      },
+      INSTALL_CASE_TIMEOUT_MS,
+    );
+
+    it(
+      "22-07 A2: the boot sweep keys on the install start, so an updated_at bump cannot keep a stale install alive",
+      async () => {
+        const wiring: ProxyWiringModule =
+          await import("../../../apps/control-plane/src/proxy/proxy-wiring.js");
+        const credentialId = (await serverRow()).credentialId;
+        const started = new Date(Date.now() - 3_600_000);
+        const insertInstalling = async (name: string, sshPort: number, installStartedAt: Date | null) => {
+          const [row] = await db()
+            .insert(servers)
+            .values({
+              name,
+              host: "203.0.113.10",
+              sshPort,
+              sshUser: "root",
+              credentialId,
+              status: "CONNECTED",
+              proxyStatus: "INSTALLING",
+              proxyInstallStartedAt: installStartedAt,
+            })
+            .returning({ id: servers.id });
+          if (!row) throw new Error("server insert returned no row");
+          return row.id;
+        };
+        const staleId = await insertInstalling(`sweep-stale-${ubuntu}`, 2201, started);
+        const freshId = await insertInstalling(`sweep-fresh-${ubuntu}`, 2202, new Date());
+        const legacyId = await insertInstalling(`sweep-legacy-${ubuntu}`, 2203, null);
+        // A discovery/connect write bumps updated_at on the stale row: it must not extend the install.
+        await db().update(servers).set({ updatedAt: new Date() }).where(eq(servers.id, staleId));
+
+        const sweepEvents: ServerEvent[] = [];
+        const failed = await wiring.sweepStaleProxyInstalls({
+          db: db(),
+          now: () => new Date(),
+          events: { publish: (event: ServerEvent) => { sweepEvents.push(event); return Promise.resolve(); } },
+          isPending: (id) => Promise.resolve(id === freshId || id === staleId),
+          budgetMs: 600_000,
+          logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
+        });
+        expect([...failed].sort()).toEqual([staleId, legacyId].sort());
+        const rows = await db()
+          .select({ id: servers.id, status: servers.proxyStatus, code: servers.proxyErrorCode })
+          .from(servers);
+        const byId = new Map(rows.map((row) => [row.id, row]));
+        expect(byId.get(staleId)).toMatchObject({ status: "FAILED", code: "PROXY_INSTALL_FAILED" });
+        expect(byId.get(legacyId)).toMatchObject({ status: "FAILED", code: "PROXY_INSTALL_FAILED" });
+        expect(byId.get(freshId)).toMatchObject({ status: "INSTALLING", code: null });
+        expect(sweepEvents).toHaveLength(2);
+        const sweepRows = await db()
+          .select()
+          .from(activityEvents)
+          .where(eq(activityEvents.entityId, staleId));
+        expect(sweepRows).toMatchObject([{ action: "server.proxy_failed", metadata: { trigger: "sweep" } }]);
+
+        await db().delete(servers).where(eq(servers.id, staleId));
+        await db().delete(servers).where(eq(servers.id, freshId));
+        await db().delete(servers).where(eq(servers.id, legacyId));
+      },
+      CASE_TIMEOUT_MS,
     );
 
     it(

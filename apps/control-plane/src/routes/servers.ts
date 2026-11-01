@@ -230,17 +230,21 @@ const serversRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
       const actor = requireActor(request.actor);
       const { proxyAcmeEmail, ...connection } = request.body;
       // 22-02 (A2): the ACME email is the proxy service's; editServer runs only for its own fields.
-      if (proxyAcmeEmail === undefined || Object.keys(connection).length > 0) {
+      if (proxyAcmeEmail === undefined) {
         const services = await fastify.getServerServices();
         const edited = await services.editServer(buildEditServerInput(actor, request.params.id, connection));
         if (!edited.ok) {
           await sendServiceError(reply, edited.code, edited.message);
           return;
         }
-        if (proxyAcmeEmail === undefined) {
-          await reply.send(edited.server);
-          return;
-        }
+        await reply.send(edited.server);
+        return;
+      }
+      // 22-07 (A6): two services cannot commit as one, so the email travels alone; a proxy 409
+      // therefore never leaves half-applied connection fields behind.
+      if (Object.keys(connection).length > 0) {
+        await sendServiceError(reply, 'VALIDATION_FAILED', 'Change the ACME email in its own request, without connection fields');
+        return;
       }
       const proxy = await fastify.getProxyService();
       const result = await setProxyAcmeEmail(proxy, { actor, serverId: request.params.id, acmeEmail: proxyAcmeEmail });

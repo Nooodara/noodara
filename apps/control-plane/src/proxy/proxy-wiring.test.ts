@@ -23,7 +23,7 @@ describe('pickStaleInstalls (H1)', () => {
 
   it('fails a row older than the budget even while its job is pending', async () => {
     const isPending = vi.fn(() => Promise.resolve(true));
-    expect(await pickStaleInstalls([{ id: 'a', updatedAt: before }], cutoff, isPending)).toEqual(['a']);
+    expect(await pickStaleInstalls([{ id: 'a', installStartedAt: before }], cutoff, isPending)).toEqual(['a']);
     expect(isPending).not.toHaveBeenCalled();
   });
 
@@ -31,14 +31,20 @@ describe('pickStaleInstalls (H1)', () => {
     const pending = new Set(['live']);
     const stale = await pickStaleInstalls(
       [
-        { id: 'live', updatedAt: after },
-        { id: 'lost', updatedAt: after },
-        { id: 'edge', updatedAt: cutoff },
+        { id: 'live', installStartedAt: after },
+        { id: 'lost', installStartedAt: after },
+        { id: 'edge', installStartedAt: cutoff },
       ],
       cutoff,
       (id) => Promise.resolve(pending.has(id)),
     );
     expect(stale).toEqual(['lost', 'edge']);
+  });
+
+  it('fails a row with no install start time without asking the queue', async () => {
+    const isPending = vi.fn(() => Promise.resolve(true));
+    expect(await pickStaleInstalls([{ id: 'legacy', installStartedAt: null }], cutoff, isPending)).toEqual(['legacy']);
+    expect(isPending).not.toHaveBeenCalled();
   });
 
   it('returns nothing for no rows', async () => {

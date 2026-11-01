@@ -5,6 +5,9 @@
 // `servers.credential_id` references it with ON DELETE no action. Deleting credentials first
 // would violate that still-present reference. All of it commits in one `deps.db.transaction`, or
 // nothing at all.
+// 22-07 (A5): the transaction holds the server's proxy advisory lock (no install/removal runs
+// meanwhile), refuses a server whose proxy is INSTALLING, and reaches the server over SSH for the
+// proxy removal BEFORE taking the row lock; the FOR UPDATE re-check and the deletes come after.
 import { asc, eq } from 'drizzle-orm';
 import { writeActivityEvent } from '../activity/write-activity-event.js';
 import { credentials } from '../db/schema/credentials.js';
@@ -12,7 +15,7 @@ import { servers } from '../db/schema/servers.js';
 import { services } from '../db/schema/services.js';
 import { publishServerEvent } from '../events/server-event-publisher.js';
 import { removeWithin } from '../proxy/proxy-service.js';
-import { recordProxyRemoved } from '../proxy/proxy-store.js';
+import { recordProxyRemoved, tryProxyLock } from '../proxy/proxy-store.js';
 import type { ServerServicesDeps, ServiceActor } from './server-service-deps.js';
 
 export interface DeleteServerInput {
@@ -49,6 +52,47 @@ function hasServicesMessage(blocking: readonly BlockingService[]): string {
   return `Server still has services: ${list}. Move or delete them first`;
 }
 
+type Tx = Parameters<Parameters<ServerServicesDeps['db']['transaction']>[0]>[0];
+type ServerRow = typeof servers.$inferSelect;
+type DeleteServerFailure = Exclude<DeleteServerResult, { readonly ok: true }>;
+
+const PROXY_CHANGING: DeleteServerFailure = {
+  ok: false,
+  code: 'SERVER_BUSY',
+  message: 'The proxy on this server is being changed. Try again in a moment',
+};
+
+function notFound(serverId: string): DeleteServerFailure {
+  return { ok: false, code: 'NOT_FOUND', message: `Server "${serverId}" not found` };
+}
+
+/** Every reason to refuse the deletion, in the order the caller sees them; `null` to proceed. */
+async function refusal(tx: Tx, row: ServerRow, confirmName: string): Promise<DeleteServerFailure | null> {
+  if (row.status === 'CONNECTING') {
+    return { ok: false, code: 'SERVER_BUSY', message: 'Server has a connection attempt in flight' };
+  }
+  // A5: the install job would recreate the proxy on a server that is about to disappear.
+  if (row.proxyStatus === 'INSTALLING') {
+    return { ok: false, code: 'SERVER_BUSY', message: 'A proxy install is in progress on this server' };
+  }
+  // PROJ-05/A4: a server with services is never deleted from under them. The FOR UPDATE re-check
+  // conflicts with the lock createService takes on the server, so no service lands after it.
+  const blocking = await tx
+    .select({ id: services.id, name: services.name, projectId: services.projectId })
+    .from(services)
+    .where(eq(services.serverId, row.id))
+    .orderBy(asc(services.name), asc(services.id));
+  if (blocking.length > 0) {
+    return { ok: false, code: 'SERVER_HAS_SERVICES', message: hasServicesMessage(blocking), blockingServices: blocking };
+  }
+  // D-12: exact, case-sensitive, untrimmed comparison against the live row's name — the caller
+  // sends what the admin typed, nothing is normalized on either side.
+  if (confirmName !== row.name) {
+    return { ok: false, code: 'CONFIRMATION_MISMATCH', message: 'Confirmation name does not match the server name' };
+  }
+  return null;
+}
+
 /**
  * SERV-03: requires the caller to repeat the server's exact name (D-12: strict `!==`, no
  * trimming, no case folding), rejects a server with a connection attempt in flight (D-11), then
@@ -60,62 +104,27 @@ export async function deleteServer(
   input: DeleteServerInput,
 ): Promise<DeleteServerResult> {
   const result: DeleteServerResult = await deps.db.transaction(async (tx) => {
-    // D-11/T-3-06: the row lock stops a concurrently in-flight connectAndDiscover from writing
-    // status/fingerprint onto a row about to disappear.
-    const [row] = await tx
-      .select()
-      .from(servers)
-      .where(eq(servers.id, input.serverId))
-      .for('update');
-    if (!row) {
-      return {
-        ok: false,
-        code: 'NOT_FOUND',
-        message: `Server "${input.serverId}" not found`,
-      };
-    }
-    if (row.status === 'CONNECTING') {
-      return {
-        ok: false,
-        code: 'SERVER_BUSY',
-        message: 'Server has a connection attempt in flight',
-      };
-    }
+    // A5: an install, email change or removal in flight holds this key.
+    if (!(await tryProxyLock(tx, input.serverId))) return PROXY_CHANGING;
+    const [before] = await tx.select().from(servers).where(eq(servers.id, input.serverId)).limit(1);
+    if (before === undefined) return notFound(input.serverId);
+    const refused = await refusal(tx, before, input.confirmName);
+    if (refused !== null) return refused;
 
-    // PROJ-05/A4: a server with services is never deleted from under them. The FOR UPDATE above
-    // conflicts with the lock createService takes on the server, so no service lands after this.
-    const blocking = await tx
-      .select({ id: services.id, name: services.name, projectId: services.projectId })
-      .from(services)
-      .where(eq(services.serverId, row.id))
-      .orderBy(asc(services.name), asc(services.id));
-    if (blocking.length > 0) {
-      return {
-        ok: false,
-        code: 'SERVER_HAS_SERVICES',
-        message: hasServicesMessage(blocking),
-        blockingServices: blocking,
-      };
-    }
-
-    // D-12: exact, case-sensitive, untrimmed comparison against the live row's name — the caller
-    // sends what the admin typed, nothing is normalized on either side.
-    if (input.confirmName !== row.name) {
-      return {
-        ok: false,
-        code: 'CONFIRMATION_MISMATCH',
-        message: 'Confirmation name does not match the server name',
-      };
-    }
-
-    // 22-02 (A4): the proxy goes first, best-effort and bounded; its outcome is recorded against
-    // the still-live row, and a failure never blocks the deletion.
-    if (row.proxyStatus !== 'NOT_INSTALLED') {
-      const removal = deps.proxyRemoval;
-      const removed =
-        removal === undefined
+    // 22-02 (A4): the proxy goes first, best-effort and bounded, with no row lock held; its
+    // outcome is recorded against the still-live row, and a failure never blocks the deletion.
+    const removed =
+      before.proxyStatus === 'NOT_INSTALLED'
+        ? null
+        : deps.proxyRemoval === undefined
           ? ({ ok: false, durationMs: 0 } as const)
-          : await removeWithin(removal.remove, row.id, removal.timeoutMs);
+          : await removeWithin(deps.proxyRemoval.remove, before.id, deps.proxyRemoval.timeoutMs);
+
+    // D-11/T-3-06: the row lock stops a concurrently in-flight connectAndDiscover from writing
+    // status/fingerprint onto a row about to disappear; everything is re-checked under it.
+    const [row] = await tx.select().from(servers).where(eq(servers.id, input.serverId)).for('update');
+    if (row === undefined) return notFound(input.serverId);
+    if (removed !== null) {
       await recordProxyRemoved(tx, deps.now(), {
         serverId: row.id,
         actor: input.actor,
@@ -124,6 +133,8 @@ export async function deleteServer(
         trigger: 'server_deleted',
       });
     }
+    const changed = await refusal(tx, row, input.confirmName);
+    if (changed !== null) return changed;
 
     const activityInput = {
       actorType: input.actor.type,

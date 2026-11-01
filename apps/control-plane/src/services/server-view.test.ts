@@ -25,6 +25,7 @@ function buildServerRow(overrides: Partial<ServerRow> = {}): ServerRow {
     proxyErrorCode: null,
     proxyAcmeEmail: null,
     proxyInstalledAt: null,
+    proxyInstallStartedAt: null,
     hostFingerprint: 'SHA256:abc',
     pendingFingerprint: null,
     hostFingerprintCapturedAt: new Date('2026-01-01T00:00:00Z'),

@@ -4,7 +4,7 @@
 // is the closed allowlist of activity-event.ts; no email, path or remote output).
 import { transitionProxyStatus, validateResourceId, type ProxyStatus, type ResourceId } from '@noodara/domain';
 import type { ServerProxyErrorCode } from '@noodara/domain/api-contract';
-import { and, asc, eq, inArray, lt } from 'drizzle-orm';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import { writeProxyActivityEvent } from '../activity/proxy-events.js';
 import type { Database } from '../db/client.js';
 import { users } from '../db/schema/auth.js';
@@ -108,6 +108,8 @@ export async function writeProxyStatus(
       proxyErrorCode: fields.errorCode,
       ...(fields.installedAt === undefined ? {} : { proxyInstalledAt: fields.installedAt }),
       ...(fields.acmeEmail === undefined ? {} : { proxyAcmeEmail: fields.acmeEmail }),
+      // A2: install staleness keys on this, never on updatedAt (discovery/connect bump that).
+      ...(next === 'INSTALLING' ? { proxyInstallStartedAt: fields.at } : {}),
       updatedAt: fields.at,
     })
     .where(and(eq(servers.id, serverId), eq(servers.proxyStatus, from)))
@@ -188,17 +190,20 @@ export async function recordProxyRemoved(
 }
 
 /**
- * H1 (pure): an INSTALLING row is stale when it is older than the budget cutoff, or when its job is
- * no longer pending. `isPending` is only asked for rows still inside the budget.
+ * H1 (pure): an INSTALLING row is stale when its install started before the budget cutoff (or has
+ * no start time), or when its job is no longer pending. `isPending` is only asked for rows still
+ * inside the budget.
  */
 export async function pickStaleInstalls(
-  rows: readonly { readonly id: string; readonly updatedAt: Date }[],
+  rows: readonly { readonly id: string; readonly installStartedAt: Date | null }[],
   cutoff: Date,
   isPending: (serverId: string) => Promise<boolean>,
 ): Promise<string[]> {
   const stale: string[] = [];
   for (const row of rows) {
-    if (row.updatedAt.getTime() >= cutoff.getTime() && (await isPending(row.id))) continue;
+    if (row.installStartedAt !== null && row.installStartedAt.getTime() >= cutoff.getTime() && (await isPending(row.id))) {
+      continue;
+    }
     stale.push(row.id);
   }
   return stale;
@@ -213,17 +218,32 @@ export async function failStaleInstalls(
   const at = now();
   const cutoff = new Date(at.getTime() - input.budgetMs);
   const installing = await db
-    .select({ id: servers.id, updatedAt: servers.updatedAt })
+    .select({ id: servers.id, installStartedAt: servers.proxyInstallStartedAt })
     .from(servers)
     .where(eq(servers.proxyStatus, 'INSTALLING'));
-  const stale = await pickStaleInstalls(installing, cutoff, input.isPending);
+  const staleIds = new Set(await pickStaleInstalls(installing, cutoff, input.isPending));
+  const stale = installing.filter((row) => staleIds.has(row.id));
   if (stale.length === 0) return [];
   return db.transaction(async (tx) => {
-    const failed = await tx
-      .update(servers)
-      .set({ proxyStatus: transitionProxyStatus('INSTALLING', 'FAILED'), proxyErrorCode: 'PROXY_INSTALL_FAILED', updatedAt: at })
-      .where(and(inArray(servers.id, stale), eq(servers.proxyStatus, 'INSTALLING'), lt(servers.updatedAt, at)))
-      .returning({ id: servers.id });
+    // Per row, conditional on the install start that was judged: a re-install that began after
+    // the read (new start time) is not failed by this sweep.
+    const failed: { id: string }[] = [];
+    for (const row of stale) {
+      const moved = await tx
+        .update(servers)
+        .set({ proxyStatus: transitionProxyStatus('INSTALLING', 'FAILED'), proxyErrorCode: 'PROXY_INSTALL_FAILED', updatedAt: at })
+        .where(
+          and(
+            eq(servers.id, row.id),
+            eq(servers.proxyStatus, 'INSTALLING'),
+            row.installStartedAt === null
+              ? isNull(servers.proxyInstallStartedAt)
+              : eq(servers.proxyInstallStartedAt, row.installStartedAt),
+          ),
+        )
+        .returning({ id: servers.id });
+      failed.push(...moved);
+    }
     for (const { id } of failed) {
       await writeProxyActivityEvent(
         tx,
@@ -242,4 +262,88 @@ export async function failStaleInstalls(
     }
     return failed.map(({ id }) => id);
   });
+}
+
+/**
+ * 22-07 (A5/A6): two-int advisory key (class, hashtext(serverId)) that serialises every proxy
+ * change request on one server: install, ACME email change, removal and server deletion. Distinct
+ * from ROUTE_LOCK_CLASS (per service) and the setup lock.
+ */
+export const PROXY_LOCK_CLASS = 78_321_003;
+
+/** `pg_try_advisory_xact_lock` on the server's proxy key; released when `tx` ends. */
+export async function tryProxyLock(tx: Tx, serverId: string): Promise<boolean> {
+  const result = await tx.execute<{ locked: boolean }>(
+    sql`select pg_try_advisory_xact_lock(${PROXY_LOCK_CLASS}::int4, hashtext(${serverId})) as locked`,
+  );
+  return result.rows[0]?.locked === true;
+}
+
+export interface ProxyServerState {
+  readonly status: ProxyStatus;
+  readonly acmeEmail: string | null;
+}
+
+export interface ProxyStatusFields {
+  readonly errorCode: ServerProxyErrorCode | null;
+  readonly installedAt?: Date | null;
+  readonly acmeEmail?: string;
+  readonly at: Date;
+}
+
+/** What the service may do inside one locked transaction on one server. */
+export interface ProxyLockedStore {
+  adminEmail(): Promise<string | null>;
+  countDomains(): Promise<number>;
+  transition(from: ProxyStatus, to: ProxyStatus, fields: ProxyStatusFields): Promise<boolean>;
+  setAcmeEmail(email: string, at: Date): Promise<void>;
+  recordRemoved(at: Date, input: { actor: ServiceActor; ok: boolean; durationMs: number; trigger: ProxyTrigger }): Promise<void>;
+}
+
+export type ProxyLockResult<T> =
+  | { readonly kind: 'ok'; readonly value: T }
+  | { readonly kind: 'missing' }
+  | { readonly kind: 'busy' };
+
+/** The proxy service's persistence port (Drizzle in production, a fake in unit tests). */
+export interface ProxyServiceStore {
+  /**
+   * Runs `fn` in one transaction holding the server's proxy lock (try-lock: `busy` when another
+   * change holds it). `rowLock` also takes FOR UPDATE on the server row first; a removal passes
+   * false so no row lock is held while the server is reached over SSH.
+   */
+  withServerLock<T>(
+    serverId: string,
+    options: { readonly rowLock: boolean },
+    fn: (store: ProxyLockedStore, state: ProxyServerState) => Promise<T>,
+  ): Promise<ProxyLockResult<T>>;
+  transition(serverId: string, from: ProxyStatus, to: ProxyStatus, fields: ProxyStatusFields): Promise<boolean>;
+  loadView(serverId: string): Promise<ServerView | null>;
+}
+
+export function createDrizzleProxyServiceStore(db: Database): ProxyServiceStore {
+  return {
+    withServerLock: (serverId, options, fn) =>
+      db.transaction(async (tx) => {
+        const query = tx
+          .select({ status: servers.proxyStatus, acmeEmail: servers.proxyAcmeEmail })
+          .from(servers)
+          .where(eq(servers.id, serverId));
+        const [row] = options.rowLock ? await query.for('update') : await query.limit(1);
+        if (!row) return { kind: 'missing' } as const;
+        if (!(await tryProxyLock(tx, serverId))) return { kind: 'busy' } as const;
+        const locked: ProxyLockedStore = {
+          adminEmail: () => loadAdminEmail(tx),
+          countDomains: () => countServerDomains(tx, serverId),
+          transition: (from, to, fields) => writeProxyStatus(tx, serverId, from, to, fields),
+          setAcmeEmail: async (email, at) => {
+            await tx.update(servers).set({ proxyAcmeEmail: email, updatedAt: at }).where(eq(servers.id, serverId));
+          },
+          recordRemoved: (at, input) => recordProxyRemoved(tx, at, { ...input, serverId }),
+        };
+        return { kind: 'ok', value: await fn(locked, row) } as const;
+      }),
+    transition: (serverId, from, to, fields) => writeProxyStatus(db, serverId, from, to, fields),
+    loadView: (serverId) => loadServerView(db, serverId),
+  };
 }
