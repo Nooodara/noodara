@@ -146,9 +146,9 @@ export async function startPebble(options: StartPebbleOptions): Promise<StartedP
         '',
         '-doh',
         '',
-        ...(options.exposeDns === true ? ['-dns01', `:${String(DNS_PORT)},:53`] : []),
+        ...(options.exposeDns === true ? ['-dnsserver', `:${String(DNS_PORT)},:53`] : []),
       ])
-      .withExposedPorts(MANAGEMENT_PORT, ...(options.exposeDns === true ? [`${String(DNS_PORT)}/udp` as const] : []))
+      .withExposedPorts(MANAGEMENT_PORT, ...(options.exposeDns === true ? [`${DNS_PORT}/udp` as const] : []))
       .withWaitStrategy(Wait.forLogMessage('Starting challenge servers'))
       .withStartupTimeout(STARTUP_TIMEOUT_MS)
       .start();
