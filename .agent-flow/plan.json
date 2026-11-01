@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-01T05:45:30.014Z",
+  "updatedAt": "2026-11-01T05:45:30.185Z",
   "cursor": {
     "phase": "22",
     "task": "22-07"
@@ -8634,13 +8634,17 @@
             "packages/ssh/src/commands/deploy-allowlist.test.ts",
             "packages/ssh/src/index.ts",
             "packages/ssh/src/run-discovery.test.ts",
-            "tests/integration/proxy/proxy-templates.test.ts"
+            "tests/integration/proxy/proxy-templates.test.ts",
+            "apps/control-plane/src/db/schema/servers.ts",
+            "apps/control-plane/drizzle/",
+            "apps/control-plane/src/deploy/run-deployment.test.ts",
+            "docs/adr/0011-domains-tls-env-contracts.md"
           ],
           "wave": 7,
           "dependsOn": [
             "22-06"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
