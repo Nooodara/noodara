@@ -12,7 +12,17 @@ Phase 12 runtime engine: project/environment/service setup, deployment queue, li
 - Deployments: `POST /api/services/:serviceId/deploy` (201, `QUEUED`), `GET /api/services/:serviceId/deployments[/:deploymentId]`, `GET /api/deployments/:deploymentId`, `POST /api/deployments/:deploymentId/cancel` (202), `POST /api/services/:serviceId/rollback` (202, optional `targetDeploymentId`; redeploys a previous image without build, optional `Idempotency-Key`).
 - Build logs: `GET /api/deployments/:deploymentId/logs?phase=&since=&limit=` (append-only chunks, resync without replay).
 - Runtime logs: `GET /api/projects/:projectId/services/:serviceId/logs?tail=` (JSON) and `.../logs/follow?tail=` (NDJSON, bounded by duration).
+- Domains (22-03): `GET|POST /api/projects/:projectId/services/:serviceId/domains`, `PATCH|DELETE /api/projects/:projectId/services/:serviceId/domains/:domainId` and `POST /api/projects/:projectId/services/:serviceId/domains/:domainId/dns-check`. See "Domains and Routes" below.
 - Server operations are unchanged from Phase 11.
+
+## Domains and Routes (22-03)
+
+- `POST` lowercases and validates the hostname. 409 `DOMAIN_ALREADY_ASSIGNED` (global unique index, so two concurrent POSTs give one 201 and one 409), 422 `DOMAIN_RESERVED` (the `NOODARA_PUBLIC_URL` host), 422 `DOMAIN_LIMIT_REACHED`, 422 `DOMAIN_INPUT_INVALID` with the validator code in `reason`. Row and `service.updated` activity are one transaction.
+- Then the proxy is ensured: `NOT_INSTALLED`/`FAILED` enqueues the install job (row stays `applyStatus: PENDING`); `RUNNING` applies the service's routes under a per-service lock: connect the proxy to `noodara-net-<serviceId>`, render, atomic write (previous file kept as `.prev`), verify through `proxy.status` (Traefik API, 30 s, 500 ms poll).
+- Apply failures keep the row: 503 `PROXY_UNAVAILABLE` and 502 `SERVER_UNREACHABLE` leave it `PENDING` (the reconcile cycle re-applies up to 50 services per tick); 502 `PROXY_ROUTE_FAILED` restores `.prev` and marks it `FAILED`.
+- `PATCH { httpsRedirect }` re-renders through the same path. `DELETE` (204) rewrites the file, or removes it and disconnects the network when it was the last domain. Known gap: a last-domain delete while the server is unreachable leaves the file (22-05).
+- `GET` returns each domain (hostname, httpsRedirect, dns/cert/apply status) plus DNS instructions (A/AAAA to the server addresses, CNAME to the server host). `dns-check` resolves only the stored hostname and the server host (3 s timeout, one check per domain every 10 s, else 429 `RATE_LIMITED`).
+- The HTTP to HTTPS redirect carries `Cache-Control: no-store`, so removing it takes effect at once.
 
 ## Deployment Statuses
 

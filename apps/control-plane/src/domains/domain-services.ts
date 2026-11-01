@@ -25,6 +25,7 @@ import { checkDomainDns, instructionsFor, type DnsCheckLimiter, type DnsResolver
 import {
   deleteDomain,
   insertDomain,
+  listPendingDomainServices,
   listServiceDomains,
   loadDomain,
   loadServiceTarget,
@@ -224,7 +225,7 @@ export async function createDomain(
 ): Promise<DomainResult> {
   const validated = validateDomainCreateInput(input.body);
   if (!validated.ok) {
-    return { ok: false, code: 'DOMAIN_INPUT_INVALID', message: validated.error.message, reason: validated.error.code };
+    return { ok: false, code: 'DOMAIN_INPUT_INVALID', message: validated.message, reason: validated.code };
   }
   const target = await loadServiceTarget(deps.db, input.scope.projectId, input.scope.serviceId);
   if (target === null) return notFound('Service', input.scope.serviceId);
@@ -252,7 +253,7 @@ export async function updateDomain(
 ): Promise<DomainResult> {
   const validated = validateDomainEditInput(input.body);
   if (!validated.ok) {
-    return { ok: false, code: 'DOMAIN_INPUT_INVALID', message: validated.error.message, reason: validated.error.code };
+    return { ok: false, code: 'DOMAIN_INPUT_INVALID', message: validated.message, reason: validated.code };
   }
   const target = await loadServiceTarget(deps.db, input.scope.projectId, input.scope.serviceId);
   if (target === null) return notFound('Domain', input.domainId);
@@ -296,4 +297,46 @@ export async function recheckDomainDns(
   const status = await checkDomainDns(deps.resolver, row.hostname, target.serverHost);
   const updated = await setDnsResult(deps.db, row.id, { status, at: deps.now() });
   return updated === null ? notFound('Domain', row.id) : { ok: true, domain: toDomainView(updated) };
+}
+
+/** Services re-applied per reconcile tick (H3); the rest wait for the next tick. */
+export const DOMAIN_REAPPLY_BATCH = 50;
+
+export interface DomainReapplyLogger {
+  warn(fields: Record<string, unknown>, message: string): void;
+}
+
+/**
+ * H3: re-applies every service whose domains wait PENDING on a RUNNING proxy (an earlier apply
+ * met a lost server or a stopped proxy). One service failing never stops the others; never rejects.
+ */
+export async function reapplyPendingDomains(input: {
+  readonly db: Database;
+  readonly apply: DomainApplier;
+  readonly logger: DomainReapplyLogger;
+  readonly limit?: number;
+}): Promise<{ readonly applied: number; readonly failed: number }> {
+  let serviceIds: string[];
+  try {
+    serviceIds = await listPendingDomainServices(input.db, input.limit ?? DOMAIN_REAPPLY_BATCH);
+  } catch (error) {
+    input.logger.warn({ errorKind: error instanceof Error ? error.name : typeof error }, 'pending domain lookup failed');
+    return { applied: 0, failed: 0 };
+  }
+  let applied = 0;
+  let failed = 0;
+  for (const serviceId of serviceIds) {
+    try {
+      const outcome = await input.apply(serviceId);
+      if (outcome.ok) applied += 1;
+      else {
+        failed += 1;
+        input.logger.warn({ serviceId, code: outcome.code }, 'domain route re-apply failed');
+      }
+    } catch (error) {
+      failed += 1;
+      input.logger.warn({ serviceId, errorKind: error instanceof Error ? error.name : typeof error }, 'domain route re-apply failed');
+    }
+  }
+  return { applied, failed };
 }

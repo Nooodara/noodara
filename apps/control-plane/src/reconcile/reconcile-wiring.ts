@@ -16,6 +16,8 @@ import { createDeploymentStore } from '../deploy/deployment-store.js';
 import type { ServerEventPublisher } from '../events/server-event-publisher.js';
 import { BULLMQ_PREFIX } from '../queue/connect-server-queue.js';
 import { DEPLOY_QUEUE_NAME } from '../queue/deploy-queue.js';
+import { domainApplyLimits } from '../domains/domain-apply.js';
+import { createDomainApplier, reapplyPendingDomains, type DomainApplier } from '../domains/domain-services.js';
 import { startReconcileLoop, type ReconcileLoopHandle } from './reconcile-runtime.js';
 import {
   createOperationInFlight,
@@ -43,11 +45,16 @@ export interface WorkerReconcileDeps {
   readonly staleQueued?: { readonly thresholdMs: number; readonly batchLimit?: number };
   /** 18-04 (H2): drains every service's pending webhook trigger; runs after each stale-QUEUED sweep. */
   readonly drainPendingTriggers?: () => Promise<unknown>;
+  /** 22-03 (H3): re-applies PENDING domain routes after each tick; defaults to SSH via `connect`. */
+  readonly domainApply?: DomainApplier;
 }
 
 export interface WorkerReconcileTickSummary extends ReconcileTickSummary {
   /** Deployments the stale-QUEUED sweep of this tick ended ENQUEUE_FAILED. */
   readonly staleQueuedFailed: number;
+  /** 22-03: services whose PENDING domain routes this tick re-applied, and those still failing. */
+  readonly domainsReapplied: number;
+  readonly domainsReapplyFailed: number;
 }
 
 const NO_STALE_SWEEP: StaleQueuedSweepResult = Object.freeze({ failed: [], unknown: 0 });
@@ -105,11 +112,27 @@ export function createWorkerReconcileTick(
     events: deps.events,
     logger: deps.logger,
   });
-  // The sweep never rejects and runs first, so a failing reconcile tick never starves it.
+  const domainApply =
+    deps.domainApply ??
+    createDomainApplier({
+      db: deps.db,
+      connect: deps.connect,
+      createRedactor: deps.createRedactor,
+      limits: domainApplyLimits(deps.commandMs),
+      now,
+    });
+  // The sweep never rejects and runs first, so a failing reconcile tick never starves it; the
+  // domain re-apply never rejects either and runs last, on the servers the tick just reached.
   const tick = async (): Promise<WorkerReconcileTickSummary> => {
     const stale = await sweepStaleQueued();
     const summary = await reconcileTick();
-    return { ...summary, staleQueuedFailed: stale.failed.length };
+    const domains = await reapplyPendingDomains({ db: deps.db, apply: domainApply, logger: deps.logger });
+    return {
+      ...summary,
+      staleQueuedFailed: stale.failed.length,
+      domainsReapplied: domains.applied,
+      domainsReapplyFailed: domains.failed,
+    };
   };
   return { tick, sweepStaleQueued, close: () => deployQueue.close() };
 }

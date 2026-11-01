@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   staleQueued: vi.fn<(cutoff: Date, limit: number) => Promise<{ deploymentId: string; serviceId: string; createdAt: Date }[]>>(),
   failStaleQueued: vi.fn<(id: string, cutoff: Date) => Promise<unknown>>(),
   listServers: vi.fn<() => Promise<string[]>>(),
+  pendingDomainServices: vi.fn<(db: unknown, limit: number) => Promise<string[]>>(),
   loopTick: { current: null as null | (() => Promise<unknown>) },
   order: [] as string[],
 }));
@@ -32,6 +33,14 @@ vi.mock('./reconcile-store.js', () => ({
   loadReconcileServices: () => Promise.resolve([]),
   recordReconcileDiscrepancy: () => Promise.resolve(),
   writeReconcileStatus: () => Promise.resolve(),
+}));
+
+vi.mock('../domains/domain-store.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../domains/domain-store.js')>()),
+  listPendingDomainServices: (db: unknown, limit: number) => {
+    mocks.order.push('domains');
+    return mocks.pendingDomainServices(db, limit);
+  },
 }));
 
 vi.mock('./reconcile-runtime.js', () => ({
@@ -77,6 +86,7 @@ beforeEach(() => {
   mocks.failStaleQueued.mockResolvedValue({ id: DEPLOYMENT_ID, status: 'FAILED' });
   mocks.getJob.mockResolvedValue(undefined);
   mocks.listServers.mockResolvedValue([]);
+  mocks.pendingDomainServices.mockResolvedValue([]);
 });
 
 describe('worker reconcile wiring: stale QUEUED sweep (14-08)', () => {
@@ -95,7 +105,7 @@ describe('worker reconcile wiring: stale QUEUED sweep (14-08)', () => {
 
     const summary = await mocks.loopTick.current?.();
 
-    expect(mocks.order).toEqual(['stale', 'reconcile']);
+    expect(mocks.order).toEqual(['stale', 'reconcile', 'domains']);
     expect(summary).toMatchObject({ staleQueuedFailed: 1, servers: 0 });
   });
 
@@ -128,5 +138,35 @@ describe('worker reconcile wiring: stale QUEUED sweep (14-08)', () => {
 
     expect(await reconcile.sweepStaleQueued()).toEqual({ failed: [], unknown: 0 });
     expect(mocks.staleQueued).not.toHaveBeenCalled();
+  });
+});
+
+describe('worker reconcile wiring: pending domain routes (22-03 H3)', () => {
+  const OTHER = '0192f1a4-7b3c-7d2e-8f00-00000000dddd';
+
+  it('re-applies each PENDING service after the tick and reports the counts', async () => {
+    mocks.pendingDomainServices.mockResolvedValue([SERVICE_ID, OTHER]);
+    const domainApply = vi.fn((serviceId: string) =>
+      Promise.resolve(serviceId === SERVICE_ID ? { ok: true as const } : { ok: false as const, code: 'SERVER_UNREACHABLE' as const }),
+    );
+    const warn = vi.fn();
+    const d = deps({ domainApply, logger: { info: vi.fn(), warn, error: vi.fn() } });
+    const summary = await createWorkerReconcileTick(d).tick();
+
+    expect(mocks.order).toEqual(['stale', 'reconcile', 'domains']);
+    expect(mocks.pendingDomainServices).toHaveBeenCalledWith(d.db, 50);
+    expect(domainApply.mock.calls.map((call) => call[0])).toEqual([SERVICE_ID, OTHER]);
+    expect(summary).toMatchObject({ domainsReapplied: 1, domainsReapplyFailed: 1 });
+    expect(warn).toHaveBeenCalledWith({ serviceId: OTHER, code: 'SERVER_UNREACHABLE' }, 'domain route re-apply failed');
+  });
+
+  it('a throwing apply or a failing lookup never fails the tick', async () => {
+    mocks.pendingDomainServices.mockResolvedValueOnce([SERVICE_ID]);
+    const domainApply = vi.fn(() => Promise.reject(new Error('boom')));
+    const reconcile = createWorkerReconcileTick(deps({ domainApply }));
+
+    expect(await reconcile.tick()).toMatchObject({ domainsReapplied: 0, domainsReapplyFailed: 1 });
+    mocks.pendingDomainServices.mockRejectedValueOnce(new Error('db down'));
+    expect(await reconcile.tick()).toMatchObject({ domainsReapplied: 0, domainsReapplyFailed: 0 });
   });
 });

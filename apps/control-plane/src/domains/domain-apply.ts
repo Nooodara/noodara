@@ -43,6 +43,21 @@ export interface DomainApplyLimits {
   readonly maxLineBytes: number;
 }
 
+/** Traefik's file watch plus a reload; the apply polls the router list until then. */
+export const DOMAIN_APPLY_VERIFY_MS = 30_000;
+export const DOMAIN_APPLY_VERIFY_POLL_MS = 500;
+/** Same bound as DEPLOY_LOG_LINE_MAX_BYTES (env.ts is not imported here). */
+export const DOMAIN_APPLY_MAX_LINE_BYTES = 16_384;
+
+export function domainApplyLimits(commandMs: number): DomainApplyLimits {
+  return {
+    stepMs: commandMs,
+    verifyMs: DOMAIN_APPLY_VERIFY_MS,
+    verifyPollMs: DOMAIN_APPLY_VERIFY_POLL_MS,
+    maxLineBytes: DOMAIN_APPLY_MAX_LINE_BYTES,
+  };
+}
+
 export type DomainRenderer = (
   service: ProxyRouteService,
   domains: readonly ProxyRouteDomain[],
@@ -140,8 +155,9 @@ export function withNoStoreRedirects(rendered: string): string {
   const record = http as { routers?: Record<string, { middlewares?: unknown }>; middlewares?: Record<string, unknown> };
   const routers = record.routers ?? {};
   for (const router of Object.values(routers)) {
-    const list = router.middlewares;
-    if (!Array.isArray(list)) continue;
+    const raw = router.middlewares;
+    if (!Array.isArray(raw)) continue;
+    const list: readonly unknown[] = raw;
     const redirect = list.find((name): name is string => typeof name === 'string' && name.endsWith('-redirect'));
     if (redirect === undefined) continue;
     const noStore = `${redirect.slice(0, -'-redirect'.length)}-nostore`;

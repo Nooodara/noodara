@@ -130,7 +130,7 @@ describe('applyServiceDomains (22-03 A1)', () => {
       ...base,
       session: fake.session,
       domains: [domain],
-      render: () => ({ ok: false, error: { code: 'PROXY_CONFIG_PORT_INVALID', message: 'x' } }),
+      render: () => ({ ok: false, code: 'PROXY_CONFIG_PORT_INVALID', message: 'x' }),
     });
     expect(result.ok).toBe(false);
     expect(fake.names()).toEqual(['proxy.status']);

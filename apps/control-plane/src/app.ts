@@ -32,6 +32,9 @@ import { createLogger } from './logger.js';
 import type { ProxyRemover, ProxyServiceDeps } from './proxy/proxy-service.js';
 import { createProxyRemover, proxyRemoveTimeoutMs } from './proxy/proxy-wiring.js';
 import { createProxyQueue, type ProxyQueue } from './queue/proxy-queue.js';
+import { createDnsCheckLimiter, createSystemDnsResolver, type DnsResolverLike } from './domains/domain-dns.js';
+import { domainApplyLimits } from './domains/domain-apply.js';
+import { createDomainApplier, type DomainApplier, type DomainServiceDeps } from './domains/domain-services.js';
 import { createConnectServerQueue, type ConnectServerQueue } from './queue/connect-server-queue.js';
 import { computeDeployCancelKeyTtlMs } from './queue/deploy-job-budget.js';
 import { createDeployQueue, type DeployQueue } from './queue/deploy-queue.js';
@@ -105,6 +108,10 @@ export interface BuildAppDeps {
   proxyService?: ProxyServiceDeps;
   /** 22-02: removes a server's proxy (route and deleteServer); defaults to SSH via the deploy connect. */
   proxyRemover?: ProxyRemover;
+  /** 22-03: applies a service's domain routes; defaults to SSH via the deploy connect. */
+  domainApply?: DomainApplier;
+  /** 22-03: the domains' DNS check resolver; defaults to `node:dns/promises`. */
+  domainDnsResolver?: DnsResolverLike;
 }
 
 function sshTimeoutsFromEnv() {
@@ -161,6 +168,57 @@ function createProxyServiceResolver(
     if (queue !== undefined) await queue.close();
   };
   return { getProxyService, closeOwnedProxyQueue };
+}
+
+/** The NOODARA_PUBLIC_URL host, lowercased; null when the URL cannot be parsed. */
+export function publicUrlHostOf(publicUrl: string): string | null {
+  try {
+    const host = new URL(publicUrl).hostname.toLowerCase();
+    return host === '' ? null : host;
+  } catch {
+    return null;
+  }
+}
+
+/** 22-03: lazy, per-instance domain service deps; nothing is opened until the first request. */
+function createDomainServicesResolver(
+  deps: BuildAppDeps,
+  getProxyService: () => Promise<ProxyServiceDeps>,
+): () => Promise<DomainServiceDeps> {
+  let cached: Promise<DomainServiceDeps> | undefined;
+  const resolver = deps.domainDnsResolver ?? createSystemDnsResolver();
+  const dnsLimiter = createDnsCheckLimiter();
+  return () =>
+    (cached ??= getDb()
+      .then((db): DomainServiceDeps => {
+        const timeouts = sshTimeoutsFromEnv();
+        const apply =
+          deps.domainApply ??
+          createDomainApplier({
+            db,
+            connect: createDeployConnect({
+              loadServer: loadDeployServerFromDb(db),
+              ssh: createSsh2Adapter(),
+              timeouts,
+              masterKeys: masterKeysFromEnvironment(),
+            }),
+            createRedactor,
+            limits: domainApplyLimits(timeouts.commandMs),
+          });
+        return {
+          db,
+          now: () => new Date(),
+          publicUrlHost: publicUrlHostOf(env.NOODARA_PUBLIC_URL),
+          getProxyService,
+          apply,
+          resolver,
+          dnsLimiter,
+        };
+      })
+      .catch((error: unknown) => {
+        cached = undefined;
+        throw error;
+      }));
 }
 
 /**
@@ -647,6 +705,7 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   // 22-02: the proxy queue shares the deploy queue's Redis connection (closed before it).
   const { getProxyService, closeOwnedProxyQueue } = createProxyServiceResolver(deps, eventPublisher, proxyRemover, getDeployRedis);
   app.decorate('getProxyService', getProxyService);
+  app.decorate('getDomainServices', createDomainServicesResolver(deps, getProxyService));
   const remoteCleanup = createRemoteCleanupResolver(deps);
   app.decorate('getProjectServices', createProjectServicesResolver(deps, eventPublisher, remoteCleanup));
   app.decorate('getServiceServices', createServiceServicesResolver(deps, eventPublisher, { getOperationQueue, remoteCleanup }));
