@@ -65,3 +65,4 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-10-31 — 22-03 scope adds `packages/ssh/src/run-discovery.test.ts` (expected-exports list for the new ssh exports) and `activity/domain-events.ts` (+test), the activity writer, so domain-store.ts respects the activity boundary test.
 - 2026-10-31 — 22-04 scope adds `packages/domain/src/activity/activity-event.ts` (+test) for the new actions domain.certificate_issued|failed|expired and domain.route_restored. No `pending_since` migration: the issuance timeout uses in-memory state seeded from `domains.updatedAt`, which survives restarts.
 - 2026-10-31 — 22-04 scope adds `packages/ssh/src/index.ts` and `run-discovery.test.ts` to export the existing cert probe (proxyCertStatus, parseTlsCertStatus, certProbeFromTlsStatus, TlsCertStatus).
+- 2026-10-31 — 22-04 scope adds `activity/domain-events.ts` (+test): writeDomainActivityEvent, so domain-store.ts passes the ACT-01 boundary test.

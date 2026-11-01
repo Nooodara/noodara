@@ -8409,7 +8409,9 @@
             "packages/domain/src/activity/activity-event.ts",
             "packages/domain/src/activity/activity-event.test.ts",
             "packages/ssh/src/index.ts",
-            "packages/ssh/src/run-discovery.test.ts"
+            "packages/ssh/src/run-discovery.test.ts",
+            "apps/control-plane/src/activity/domain-events.ts",
+            "apps/control-plane/src/activity/domain-events.test.ts"
           ],
           "wave": 4,
           "dependsOn": [
