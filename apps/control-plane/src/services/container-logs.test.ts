@@ -238,6 +238,57 @@ describe('tail', () => {
     expect(result.ok && result.lines).toEqual([{ stream: 'stdout', timestamp: null, text: 'no stamp here' }]);
   });
 
+  // 25-03 (UAT F1): docker logs writes stdout and stderr on separate channels, so chunks arrive
+  // grouped by stream; the tail must come back in timestamp order.
+  it('orders interleaved stdout and stderr lines by their Docker timestamp', async () => {
+    const session = new FakeSession({
+      'docker.logs': {
+        stdout: '2026-10-05T08:08:42.000000002Z GET / 200\n2026-10-05T08:08:44.5Z GET /a 200\n',
+        stderr: '2026-10-05T08:08:38.123456789Z worker started\n2026-10-05T08:08:42.000000001Z warn: slow\n',
+      },
+    });
+    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 5 });
+
+    expect(result.ok && result.lines.map((line) => line.text)).toEqual(['worker started', 'warn: slow', 'GET / 200', 'GET /a 200']);
+  });
+
+  it('sorts stably: equal timestamps keep their arrival order', async () => {
+    const session = new FakeSession({
+      'docker.logs': { stdout: `${TS} out-1\n${TS} out-2\n`, stderr: `${TS} err-1\n` },
+    });
+    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 5 });
+
+    expect(result.ok && result.lines.map((line) => line.text)).toEqual(['out-1', 'out-2', 'err-1']);
+  });
+
+  it('compares timestamps with an offset by their instant, not their text', async () => {
+    const session = new FakeSession({
+      'docker.logs': { stdout: '2026-10-05T10:00:00+02:00 later-text-earlier\n', stderr: '2026-10-05T09:00:00Z earlier-text-later\n' },
+    });
+    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 5 });
+
+    expect(result.ok && result.lines.map((line) => line.text)).toEqual(['later-text-earlier', 'earlier-text-later']);
+  });
+
+  it('keeps a line without a timestamp right after the previous timestamped line of its stream', async () => {
+    const session = new FakeSession({
+      'docker.logs': {
+        stdout: 'leading rest\n2026-10-05T08:08:42Z long line head\nlong line rest\n2026-10-05T08:08:45Z next\n',
+        stderr: '2026-10-05T08:08:40Z err-a\n2026-10-05T08:08:43Z err-b\n',
+      },
+    });
+    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 10 });
+
+    expect(result.ok && result.lines.map((line) => line.text)).toEqual([
+      'leading rest',
+      'err-a',
+      'long line head',
+      'long line rest',
+      'err-b',
+      'next',
+    ]);
+  });
+
   it('reports CONTAINER_NOT_FOUND when the service has no managed container, without running docker logs', async () => {
     const session = new FakeSession({ 'docker.ps': { stdout: `${psLine('noodara-other')}\n` } });
     const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 5 });

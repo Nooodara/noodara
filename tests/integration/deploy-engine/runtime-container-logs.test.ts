@@ -66,6 +66,16 @@ const CHATTY_SCRIPT = [
   'let i = 0;',
   'setInterval(() => { process.stdout.write("tick " + String(i++) + "\\n"); }, 200);',
 ].join(' ');
+/** 25-03 (UAT F1): 20 numbered lines alternating stdout and stderr, 50 ms apart, then idle. */
+const INTERLEAVED_LINES = 20;
+const INTERLEAVED_SCRIPT = [
+  'let i = 0;',
+  'const t = setInterval(() => {',
+  `  if (i >= ${String(INTERLEAVED_LINES)}) { clearInterval(t); return; }`,
+  '  (i % 2 === 0 ? process.stdout : process.stderr).write("seq " + String(i++) + "\\n");',
+  '}, 50);',
+  'setInterval(() => undefined, 1000000);',
+].join(' ');
 
 interface LineFrame {
   readonly type: 'line';
@@ -100,6 +110,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('runtime container logs on Ubuntu %
   const serviceId = randomUUID();
   /** A service whose container was never created. */
   const missingServiceId = randomUUID();
+  /** A service whose container writes to both stdout and stderr (25-03). */
+  const interleavedServiceId = randomUUID();
   const serverId = randomUUID();
   const streamIds: string[] = [];
   const startedContainers: string[] = [];
@@ -187,7 +199,18 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('runtime container logs on Ubuntu %
     if (run.exitCode !== 0) throw new Error(`docker run ${name} failed: ${run.stderr}`);
     startedContainers.push(name);
 
-    const known = new Set<string>([serviceId, missingServiceId]);
+    const interleavedName = `noodara-${interleavedServiceId}`;
+    const interleaved = await root([
+      'docker', 'run', '-d', '--name', interleavedName,
+      '--label', 'noodara.managed=true',
+      '--label', `noodara.service_id=${interleavedServiceId}`,
+      '--label', 'noodara.test=true',
+      nodeBase, 'node', '-e', INTERLEAVED_SCRIPT,
+    ]);
+    if (interleaved.exitCode !== 0) throw new Error(`docker run ${interleavedName} failed: ${interleaved.stderr}`);
+    startedContainers.push(interleavedName);
+
+    const known = new Set<string>([serviceId, missingServiceId, interleavedServiceId]);
     const fakeServices = {
       getService: (pid: string, sid: string) =>
         Promise.resolve(pid === projectId && known.has(sid) ? { id: sid, serverId } : null),
@@ -219,6 +242,11 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('runtime container logs on Ubuntu %
     while (Date.now() < deadline) {
       const out = await root(['docker', 'logs', name]);
       if ((out.stdout.match(/tick /g) ?? []).length >= 5) break;
+      await delay(250);
+    }
+    while (Date.now() < deadline) {
+      const out = await root(['docker', 'logs', `noodara-${interleavedServiceId}`]);
+      if (((out.stdout + out.stderr).match(/seq /g) ?? []).length >= INTERLEAVED_LINES) break;
       await delay(250);
     }
   }, STACK_TIMEOUT_MS);
@@ -263,6 +291,23 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('runtime container logs on Ubuntu %
     const all = (await (await fetch(url(''))).json()) as { lines: LineFrame[] };
     expect(all.lines.length).toBeGreaterThan(3);
     expect(all.lines.at(-1)?.text).toMatch(/^tick \d+$/);
+  }, CASE_TIMEOUT_MS);
+
+  it('25-03 (F1): a tail across stdout and stderr comes back in chronological order', async () => {
+    const response = await fetch(url(`?tail=${String(INTERLEAVED_LINES)}`, interleavedServiceId));
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { lines: LineFrame[] };
+    expect(body.lines).toHaveLength(INTERLEAVED_LINES);
+    expect(new Set(body.lines.map((line) => line.stream))).toEqual(new Set(['stdout', 'stderr']));
+    // Written in this order, alternating streams 50 ms apart.
+    expect(body.lines.map((line) => line.text)).toEqual(
+      Array.from({ length: INTERLEAVED_LINES }, (_, index) => `seq ${String(index)}`),
+    );
+    const instants = body.lines.map((line) => {
+      expect(line.timestamp).toMatch(TIMESTAMP);
+      return Date.parse(line.timestamp ?? '');
+    });
+    expect(instants).toEqual([...instants].sort((a, b) => a - b));
   }, CASE_TIMEOUT_MS);
 
   it('A3: ANSI escapes and binary bytes never reach the client', async () => {

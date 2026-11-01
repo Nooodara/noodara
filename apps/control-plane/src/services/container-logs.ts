@@ -184,6 +184,45 @@ function toLines(chunk: StreamChunk): ContainerLogLine[] {
   });
 }
 
+const TIMESTAMP_PARTS = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:\d{2})$/;
+
+/** Instant of a Docker RFC 3339 timestamp as [epoch ms of the whole second, nanoseconds]. */
+function instantOf(timestamp: string): readonly [number, number] | null {
+  const parts = TIMESTAMP_PARTS.exec(timestamp);
+  if (parts?.[1] === undefined || parts[3] === undefined) return null;
+  const seconds = Date.parse(`${parts[1]}${parts[3]}`);
+  if (Number.isNaN(seconds)) return null;
+  return [seconds, Number((parts[2] ?? '').padEnd(9, '0'))];
+}
+
+/**
+ * 25-03 (UAT F1): docker logs writes stdout and stderr on separate channels, so lines arrive
+ * grouped by stream. Stable sort by timestamp; a line without one (a cut line's rest) stays right
+ * after the previous timestamped line of its stream, or at the head when there is none.
+ */
+export function orderByTimestamp(lines: readonly ContainerLogLine[]): ContainerLogLine[] {
+  interface Group {
+    readonly instant: readonly [number, number];
+    readonly lines: ContainerLogLine[];
+  }
+  const head: ContainerLogLine[] = [];
+  const groups: Group[] = [];
+  const lastOf = new Map<ContainerLogLine['stream'], Group>();
+  for (const line of lines) {
+    const instant = line.timestamp === null ? null : instantOf(line.timestamp);
+    if (instant !== null) {
+      const group = { instant, lines: [line] };
+      groups.push(group);
+      lastOf.set(line.stream, group);
+    } else {
+      (lastOf.get(line.stream)?.lines ?? head).push(line);
+    }
+  }
+  // Array.prototype.sort is stable: equal instants keep their arrival order.
+  groups.sort((a, b) => a.instant[0] - b.instant[0] || a.instant[1] - b.instant[1]);
+  return [...head, ...groups.flatMap((group) => group.lines)];
+}
+
 interface Connected {
   readonly session: SshDeploySession;
   readonly close: () => Promise<void>;
@@ -332,7 +371,7 @@ export function createContainerLogs(deps: ContainerLogsDeps): ContainerLogs {
       if (result.outcome !== 'completed') return failure('RUNTIME_LOGS_TIMEOUT');
       if (result.exitCode === COMMAND_NOT_FOUND_EXIT_CODE) return failure('SERVER_DOCKER_UNAVAILABLE');
       if (result.exitCode !== 0) return failure('RUNTIME_LOGS_FAILED');
-      return { ok: true, lines, truncated: result.truncated };
+      return { ok: true, lines: orderByTimestamp(lines), truncated: result.truncated };
     } catch (error) {
       return codeOf(error);
     } finally {
