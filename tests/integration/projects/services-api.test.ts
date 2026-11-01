@@ -8,6 +8,8 @@ import type { RemoteCommand, SshDeploySession, StreamOptions, StreamResult } fro
 import { activityEvents } from '../../../apps/control-plane/src/db/schema/activity-events.js';
 import { deployments } from '../../../apps/control-plane/src/db/schema/deployments.js';
 import { domains } from '../../../apps/control-plane/src/db/schema/domains.js';
+import { environmentVariables } from '../../../apps/control-plane/src/db/schema/environment-variables.js';
+import { secrets } from '../../../apps/control-plane/src/db/schema/secrets.js';
 import { servers } from '../../../apps/control-plane/src/db/schema/servers.js';
 import { services } from '../../../apps/control-plane/src/db/schema/services.js';
 import type { ServerEvent, ServerEventPublisher } from '../../../apps/control-plane/src/events/server-event-publisher.js';
@@ -783,5 +785,42 @@ describe('delete with a routed service (22-05 A3)', () => {
       network: false,
     });
     expect(await domainCount(serviceId)).toBe(0);
+  });
+});
+
+describe('delete cascades scoped secrets and variables (23-03 A3)', () => {
+  it('removes the service secrets and variables in the delete and keeps the project ones', async () => {
+    const { projectId, environmentId } = await newProject();
+    const serverId = await newServer();
+    const created = await createService(projectId, imageBody(environmentId, serverId));
+    const serviceId = String(created.id);
+    const base = `/api/projects/${projectId}`;
+    for (const [url, name] of [
+      [`${base}/secrets`, 'shared'],
+      [`${base}/services/${serviceId}/secrets`, 'own'],
+    ] as const) {
+      const response = await call('POST', url, { name, value: `value-${short()}` });
+      expect(response.statusCode, JSON.stringify(response.body)).toBe(201);
+    }
+    for (const [url, key] of [
+      [`${base}/env`, 'SHARED'],
+      [`${base}/services/${serviceId}/env`, 'OWN'],
+    ] as const) {
+      const response = await call('POST', url, { key, value: '<secret:shared>' });
+      expect(response.statusCode, JSON.stringify(response.body)).toBe(201);
+    }
+    host = new ProxyHost(serviceId, false, 0);
+
+    const response = await call('DELETE', `${base}/services/${serviceId}`, { confirmName: String(created.name) });
+
+    expect(response.statusCode, JSON.stringify(response.body)).toBe(200);
+    expect(await postgres.db.select().from(services).where(eq(services.id, serviceId))).toEqual([]);
+    const secretRows = await postgres.db.select().from(secrets).where(eq(secrets.projectId, projectId));
+    expect(secretRows.map((row) => [row.scope, row.name])).toEqual([['project', 'shared']]);
+    const variableRows = await postgres.db
+      .select()
+      .from(environmentVariables)
+      .where(eq(environmentVariables.projectId, projectId));
+    expect(variableRows.map((row) => [row.scope, row.key])).toEqual([['project', 'SHARED']]);
   });
 });
