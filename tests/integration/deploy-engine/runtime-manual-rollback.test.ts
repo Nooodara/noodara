@@ -9,6 +9,8 @@
 // - The target fails its healthcheck: the version running before the manual rollback is restored.
 // - H1: the target image was removed from the host after the API accepted it: the worker re-checks,
 //   ends FAILED/ROLLBACK_TARGET_UNAVAILABLE and never touches the running container.
+// - 23-04 A3: the target's snapshot references a secret deleted since: 422
+//   ROLLBACK_TARGET_UNAVAILABLE naming the key and the reference, nothing queued.
 import { randomBytes, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,8 +23,10 @@ import {
   activityEvents,
   credentials,
   deployments,
+  environmentVariables,
   environments,
   projects,
+  secrets,
   servers,
   services,
 } from '../../../apps/control-plane/src/db/schema/index.js';
@@ -43,6 +47,7 @@ type DeploymentServices = ReturnType<DeploymentServicesModule['createDeploymentS
 type TriggerRollbackResult = Awaited<ReturnType<DeploymentServices['triggerRollback']>>;
 type DeploymentView = NonNullable<Awaited<ReturnType<DeploymentServices['getDeployment']>>>;
 type CredentialStoreModule = typeof import('../../../apps/control-plane/src/services/credential-store.js');
+type SecretStoreModule = typeof import('../../../apps/control-plane/src/secrets/secret-store.js');
 type CursorModule = typeof import('../../../apps/control-plane/src/routes/activity-cursor.js');
 type StepsViewModule = typeof import('../../../apps/control-plane/src/deploy/deployment-steps-view.js');
 type JobHandler = ReturnType<DeployWorkerModule['createDeployJobHandler']>;
@@ -94,6 +99,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('17-05: manual rollback on real inf
   let api: DeploymentServices | undefined;
   let cursors: CursorModule | undefined;
   let stepsView: StepsViewModule | undefined;
+  let secretStore: SecretStoreModule | undefined;
   let projectId = '';
   let environmentId = '';
   let serverId = '';
@@ -245,6 +251,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('17-05: manual rollback on real inf
     const credentialStore: CredentialStoreModule = await import('../../../apps/control-plane/src/services/credential-store.js');
     cursors = await import('../../../apps/control-plane/src/routes/activity-cursor.js');
     stepsView = await import('../../../apps/control-plane/src/deploy/deployment-steps-view.js');
+    secretStore = await import('../../../apps/control-plane/src/secrets/secret-store.js');
 
     const redactor = createRedactor();
     const probe = await createSsh2Adapter().connect({
@@ -530,6 +537,46 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('17-05: manual rollback on real inf
       expect(before).toContain(imageOf(serviceId, second.id));
       expect(await containerExists(`${runningName}-prev`)).toBe(false);
       expect((await activityFor(row.id)).some((event) => event.action === 'deployment.rollback_started')).toBe(false);
+    } finally {
+      await removeServiceContainers(serviceId);
+    }
+  }, CASE_TIMEOUT_MS);
+
+  it('answers 422 ROLLBACK_TARGET_UNAVAILABLE naming the key and reference when the target references a deleted secret', async () => {
+    if (secretStore === undefined) throw new Error('secret store not loaded');
+    const serviceId = await insertService(httpCheck('/health'));
+    try {
+      await db()
+        .insert(environmentVariables)
+        .values({ scope: 'service', projectId, serviceId, key: 'API_TOKEN', value: '<secret:mr_token>' });
+      const secret = await secretStore.createSecret(
+        db(),
+        {
+          owner: { scope: 'service', projectId, serviceId },
+          name: 'mr_token',
+          value: secretValue(`tok-${randomBytes(16).toString('hex')}`, 'app_secret'),
+        },
+        { current: masterKey },
+      );
+      const { first } = await deployTwice(serviceId);
+      expect(first.runtimeConfig).toMatchObject({
+        version: 2,
+        env: [{ key: 'API_TOKEN', secretRef: 'mr_token', secretVersion: 1 }],
+      });
+      const runningName = `noodara-${serviceId}`;
+      const before = await containerField(runningName, '{{.Id}} {{.State.StartedAt}} {{.Config.Image}}');
+      const rowsBefore = await db().select({ id: deployments.id }).from(deployments).where(eq(deployments.serviceId, serviceId));
+      await db().delete(secrets).where(eq(secrets.id, secret.id));
+
+      const result = await services$().triggerRollback({ actor: USER, serviceId, targetDeploymentId: first.id });
+
+      expect(result).toMatchObject({ ok: false, code: 'ROLLBACK_TARGET_UNAVAILABLE' });
+      const message = result.ok ? '' : result.message;
+      expect(message).toContain('API_TOKEN');
+      expect(message).toContain('mr_token');
+      const rowsAfter = await db().select({ id: deployments.id }).from(deployments).where(eq(deployments.serviceId, serviceId));
+      expect(rowsAfter).toHaveLength(rowsBefore.length);
+      expect(await containerField(runningName, '{{.Id}} {{.State.StartedAt}} {{.Config.Image}}')).toBe(before);
     } finally {
       await removeServiceContainers(serviceId);
     }

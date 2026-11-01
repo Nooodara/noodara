@@ -1144,10 +1144,19 @@ describe('13-03 H3: step boundaries migrate onto a database with deployments in 
 
     const inFlight = await rowOf(inFlightId);
     expect([inFlight.buildingStartedAt, inFlight.deployingStartedAt, inFlight.verifyingStartedAt]).toEqual([null, null, null]);
-    expect(statesOf(inFlight)).toEqual(['success', 'running', 'pending', 'pending']);
-    expect(statesOf(await rowOf(failedId))).toEqual(['success', 'failed', 'pending', 'pending']);
+    // 23-04: a row from before the configure columns went past it without one: configure is skipped.
+    expect(statesOf(inFlight)).toEqual(['success', 'skipped', 'running', 'pending', 'pending']);
+    expect(statesOf(await rowOf(failedId))).toEqual(['success', 'skipped', 'failed', 'pending', 'pending']);
     const stamps = await readDeploymentStepStamps(db, [inFlightId, failedId]);
-    expect(stamps.get(inFlightId)).toEqual({ buildingStartedAt: null, deployingStartedAt: null, verifyingStartedAt: null });
+    expect(stamps.get(inFlightId)).toEqual({
+      buildingStartedAt: null,
+      deployingStartedAt: null,
+      verifyingStartedAt: null,
+      configureStartedAt: null,
+      configureCompletedAt: null,
+      configureVariables: null,
+      configureSecrets: null,
+    });
 
     // The boot sweep's write path: in-flight rows end WORKER_CRASHED without throwing.
     process.env.NOODARA_MASTER_KEY ??= randomBytes(32).toString('base64');

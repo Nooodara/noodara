@@ -9068,7 +9068,8 @@
             "packages/ssh/src/commands/deploy-allowlist.test.ts",
             "packages/docker/src/docker-operations.ts",
             "packages/docker/src/docker-operations.test.ts",
-            "packages/ssh/src/index.ts"
+            "packages/ssh/src/index.ts",
+            "packages/ssh/src/run-discovery.test.ts"
           ],
           "wave": 3,
           "dependsOn": [
