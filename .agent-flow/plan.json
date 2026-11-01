@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-01T17:27:19.316Z",
+  "updatedAt": "2026-11-01T17:27:22.802Z",
   "cursor": {
     "phase": "23",
     "task": "23-04"
@@ -9053,14 +9053,25 @@
             "fixtures/env-api/",
             "fixtures/README.md",
             "tests/unit/fixtures/official-fixtures.test.ts",
-            "tests/integration/deploy-engine/fixtures.test.ts"
+            "tests/integration/deploy-engine/fixtures.test.ts",
+            "packages/ssh/src/commands/shell-scripts.ts",
+            "packages/ssh/src/commands/shell-scripts.test.ts",
+            "packages/ssh/src/commands/workspace.ts",
+            "packages/ssh/src/commands/workspace.test.ts",
+            "packages/domain/src/api-contract/deployment-schemas.ts",
+            "packages/domain/src/api-contract/deployment-schemas.test.ts",
+            "apps/control-plane/src/routes/deployment-schemas.test.ts",
+            "apps/control-plane/src/db/schema/deployments.ts",
+            "apps/control-plane/src/db/migrations/",
+            "apps/web/src/components/DeploymentSteps.tsx",
+            "apps/web/src/components/DeploymentSteps.test.tsx"
           ],
           "wave": 3,
           "dependsOn": [
             "23-02",
             "23-03"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
