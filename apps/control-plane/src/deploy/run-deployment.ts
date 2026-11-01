@@ -27,6 +27,10 @@
 //   deployment's snapshot inside its own budget (reserved out of NOODARA_DEPLOY_MAX_MS). Pass ends
 //   ROLLED_BACK with the original code; anything else ends FAILED/ROLLBACK_FAILED. One attempt,
 //   never retried. Without a rollback the new container is stopped and `-prev` kept (A3).
+// - 22-05: a service with domains has `routes`. Before the swap the proxy joins the service network
+//   (idempotent; a proxy that is not running only gets a log line, never a failed deploy). The
+//   dynamic file routes to the container name, so replace and every rollback need no rewrite; only
+//   a passed attempt whose port differs from the live file's re-applies through apply-routes (H2).
 import {
   cleanupSetFor,
   classifyCleanupOutcome,
@@ -97,11 +101,15 @@ import {
   type StepResult,
 } from '@noodara/docker';
 import { cloneRepository, type GitCredential } from '@noodara/git';
+import { proxyDynamicPathFor } from '@noodara/domain';
 import {
   dockerImageRemove,
   dockerNetworkRemove,
   killSupervisedOperation,
+  parseProxyDynamicPort,
   previousContainerNameFor,
+  proxyNetworkConnect,
+  proxyReadDynamic,
   removeDeployDir,
   type RemoteCommand,
   type SshDeploySession,
@@ -214,6 +222,16 @@ export interface RunDeploymentInput {
   readonly rollbackTarget?: ManualRollbackTarget;
   /** 18-03: the exact commit to deploy (webhook push); null or absent = the branch head (v0.2). */
   readonly requestedSha?: CommitSha | null;
+  /** 22-05: present only when the service has domains; absent = no proxy command at all. */
+  readonly routes?: DeployRoutes;
+}
+
+/** 22-05: what a deploy needs to keep a routed service reachable through the proxy. */
+export interface DeployRoutes {
+  /** The server's proxy is RUNNING; otherwise the deploy only logs and the domains stay pending. */
+  readonly proxyRunning: boolean;
+  /** H2: re-applies the service's routes on this session with this port, under the route lock. */
+  readonly reapply: (session: SshDeploySession, internalPort: number) => Promise<{ readonly ok: boolean }>;
 }
 
 /** 17-05: the deployment a manual rollback restores, and the runtime config it ran with. */
@@ -411,6 +429,14 @@ const NEW_STOPPED_LOG = 'The new container was stopped; the previous version is 
 const CANCEL_RESTORED_LOG = 'The deployment was cancelled during the healthcheck, so the previous version was restored.';
 const CANCEL_NOT_RESTORED_LOG = 'The deployment was cancelled during the healthcheck and the previous version could not be restored.';
 const CANCEL_STOPPED_LOG = 'The deployment was cancelled during the healthcheck, so the new container was stopped.';
+/** 22-05: the proxy lines of a routed service's deploy (never remote output). */
+export const ROUTE_LOGS = Object.freeze({
+  PROXY_NOT_RUNNING: 'The proxy is not running on this server; the domains stay pending until it is.',
+  PROXY_NOT_JOINED: 'The proxy could not join the service network; the domains may not answer until the next domain apply.',
+  REAPPLIED: 'The service port changed, so the domain routes were re-applied.',
+  NOT_REAPPLIED: 'The service port changed but the domain routes could not be re-applied; the next domain apply retries.',
+});
+const PROXY_ALREADY_JOINED = /already exists|already attached|endpoint with name .* already/i;
 
 function exitFor(end: End | null): DeploymentExit {
   if (end === null) return 'SUCCESS';
@@ -587,6 +613,57 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     }
   };
 
+  /** 22-05: a proxy command bounded like a recovery step; its output is classified, never logged. */
+  const proxyStep = async (command: RemoteCommand): Promise<{ readonly ok: boolean; readonly stdout: string; readonly stderr: string }> => {
+    try {
+      const result = await session.stream(command, {
+        maxDurationMs: limits.cleanupStepMs,
+        idleTimeoutMs: limits.cleanupStepMs,
+        maxTotalBytes: CLEANUP_MAX_TOTAL_BYTES,
+        maxLineBytes: limits.maxLineBytes,
+        onChunk: () => undefined,
+      });
+      return { ok: result.outcome === 'completed' && result.exitCode === 0, stdout: result.stdoutTail, stderr: result.stderrTail };
+    } catch {
+      return { ok: false, stdout: '', stderr: '' };
+    }
+  };
+
+  /** A1: before the swap the proxy is on the service network (idempotent); never fails the deploy. */
+  const joinProxy = async (): Promise<void> => {
+    const routes = input.routes;
+    if (routes === undefined) return;
+    if (!routes.proxyRunning) {
+      log('deploy', 'system', ROUTE_LOGS.PROXY_NOT_RUNNING);
+      return;
+    }
+    const joined = await proxyStep(proxyNetworkConnect(serviceId));
+    if (joined.ok || PROXY_ALREADY_JOINED.test(joined.stderr)) {
+      ledger = recordResource(ledger, { kind: 'proxy_attached' });
+    } else {
+      log('deploy', 'system', ROUTE_LOGS.PROXY_NOT_JOINED);
+    }
+  };
+
+  /** H2: a passed attempt re-applies the routes only when the live file routes to another port. */
+  const reapplyRoutesOnPortChange = async (): Promise<void> => {
+    const routes = input.routes;
+    if (routes?.proxyRunning !== true) return;
+    const path = proxyDynamicPathFor(serviceId);
+    if (!path.ok) return;
+    const read = await proxyStep(proxyReadDynamic(path.value));
+    if (!read.ok) return;
+    const live = parseProxyDynamicPort(read.stdout);
+    if (live.kind !== 'port' || live.port === internalPort) return;
+    let reapplied = false;
+    try {
+      reapplied = (await routes.reapply(session, internalPort)).ok;
+    } catch {
+      reapplied = false;
+    }
+    log('deploy', 'system', reapplied ? ROUTE_LOGS.REAPPLIED : ROUTE_LOGS.NOT_REAPPLIED);
+  };
+
   const probe = async (config: HealthcheckConfig): Promise<HealthcheckObservation> => {
     const result = await probeContainerHealth(context(null), { serviceId, config });
     if (result.ok || result.kind === 'interrupted') return check(result, null);
@@ -687,6 +764,7 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     const network = await ensureNetwork(context(null), { serviceId });
     await check(network, null);
     if (network.ok && network.result.exitCode === 0) ledger = recordResource(ledger, { kind: 'network_created' });
+    await joinProxy();
 
     cancellable = false;
     const stop = { serviceId, timeoutSeconds: limits.stopTimeoutSeconds };
@@ -803,6 +881,7 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
         log('deploy', 'system', PREVIOUS_NOT_REMOVED_LOG);
       }
     }
+    await reapplyRoutesOnPortChange();
   };
 
   /** The rollback's probe loop on the restored container; throws a DeployStop when it fails. */

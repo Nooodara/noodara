@@ -35,11 +35,13 @@ import {
   CANCEL_UNCONFIRMED_ERROR_CODE,
   DEFAULT_ROLLBACK_MAX_MS,
   DEPLOY_MESSAGES,
+  ROUTE_LOGS,
   rollbackBudgetMs,
   runDeployment,
   runLedgerCleanup,
   type AdvanceRecord,
   type DeployCredential,
+  type DeployRoutes,
   type DeployRunLimits,
   type DeploymentProgress,
   type GitHostKeyPinResult,
@@ -2040,5 +2042,124 @@ describe('runDeployment: requested SHA (18-03)', () => {
     expect(outcome).toMatchObject({ status: 'SUCCESS', commitSha: SHA });
     expect(h.session.keys()).not.toContain('git.checkout');
     expect(h.session.keys().filter((key) => key === 'supervise:clone')).toHaveLength(1);
+  });
+});
+
+// 22-05: a routed service's deploy and the proxy.
+const PROXY_READ = (port: number | 'absent'): Script => ({
+  stdout: port === 'absent' ? 'NOODARA_PROXY_READ absent\n' : `NOODARA_PROXY_READ port=${String(port)}\n`,
+});
+const ALREADY_JOINED_STDERR = `Error response from daemon: endpoint with name noodara-proxy already exists in network ${NETWORK}\n`;
+
+function routed(proxyRunning: boolean, reapplyOk = true) {
+  const reapplied: { session: SshDeploySession; port: number }[] = [];
+  const routes: DeployRoutes = {
+    proxyRunning,
+    reapply: (session, port) => {
+      reapplied.push({ session, port });
+      return Promise.resolve({ ok: reapplyOk });
+    },
+  };
+  return { routes, reapplied };
+}
+
+const PROXY_KEYS = ['docker.network_connect', 'proxy.status', 'proxy.write_dynamic', 'proxy.restore_dynamic', 'proxy.remove_dynamic'];
+
+describe('runDeployment: routes of a service with domains (22-05 A1, H1, H2)', () => {
+  it('a service without domains issues no proxy command', async () => {
+    const h = harness({ scripts: PREVIOUS_SCRIPTS });
+    const outcome = await runDeployment(h.input);
+    expect(outcome.status).toBe('SUCCESS');
+    expect(h.session.keys().filter((key) => PROXY_KEYS.includes(key))).toEqual([]);
+  });
+
+  it('connects the proxy to the service network before the swap and never rewrites the file', async () => {
+    const r = routed(true);
+    const h = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.status': PROXY_READ(3000) }, extra: { routes: r.routes } });
+    const outcome = await runDeployment(h.input);
+    expect(outcome.status).toBe('SUCCESS');
+    const keys = h.session.keys();
+    expect(keys.indexOf('docker.network_create')).toBeLessThan(keys.indexOf('docker.network_connect'));
+    expect(keys.indexOf('docker.network_connect')).toBeLessThan(keys.indexOf('docker.stop'));
+    expect(h.session.argv('docker.network_connect')).toEqual(expect.arrayContaining([NETWORK]));
+    // The file routes to the container name: the same port means no write at all.
+    expect(keys.filter((key) => key.startsWith('proxy.') && key !== 'proxy.status')).toEqual([]);
+    expect(r.reapplied).toEqual([]);
+    expect(keys).not.toContain('docker.network_disconnect');
+  });
+
+  it('an already joined proxy is fine (idempotent connect), and a failed join only logs', async () => {
+    const joined = harness({
+      scripts: { ...PREVIOUS_SCRIPTS, 'docker.network_connect': { exitCode: 1, stderr: ALREADY_JOINED_STDERR } },
+      extra: { routes: routed(true).routes },
+    });
+    expect((await runDeployment(joined.input)).status).toBe('SUCCESS');
+    expect(logText(joined)).not.toContain(ROUTE_LOGS.PROXY_NOT_JOINED);
+
+    const refused = harness({
+      scripts: { ...PREVIOUS_SCRIPTS, 'docker.network_connect': { exitCode: 1, stderr: 'Error response from daemon: No such container: noodara-proxy\n' } },
+      extra: { routes: routed(true).routes },
+    });
+    expect((await runDeployment(refused.input)).status).toBe('SUCCESS');
+    expect(logText(refused, 'deploy')).toContain(ROUTE_LOGS.PROXY_NOT_JOINED);
+    expect(logText(refused)).not.toContain('No such container');
+  });
+
+  it('the network the proxy joined is never cleaned up, even when the attempt fails after creating it', async () => {
+    const h = harness({
+      scripts: { 'docker.create': { exitCode: 125, stderr: 'Error response from daemon: boom\n' } },
+      extra: { routes: routed(true).routes },
+    });
+    const outcome = await runDeployment(h.input);
+    expect(outcome.status).toBe('FAILED');
+    expect(h.session.keys()).toContain('docker.network_connect');
+    expect(h.session.keys()).not.toContain('docker.network_remove');
+  });
+
+  it('H1: a proxy that is not running never fails the deploy: one system line, no proxy command', async () => {
+    const r = routed(false);
+    const h = harness({ scripts: PREVIOUS_SCRIPTS, extra: { routes: r.routes } });
+    const outcome = await runDeployment(h.input);
+    expect(outcome.status).toBe('SUCCESS');
+    expect(h.session.keys().filter((key) => PROXY_KEYS.includes(key))).toEqual([]);
+    expect(h.sink.entries.filter((entry) => entry.text.includes(ROUTE_LOGS.PROXY_NOT_RUNNING))).toHaveLength(1);
+    expect(r.reapplied).toEqual([]);
+  });
+
+  it('H2: a passed attempt whose port differs from the live file re-applies the routes with the deploy port', async () => {
+    const r = routed(true);
+    const h = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.status': PROXY_READ(8080) }, extra: { routes: r.routes } });
+    const outcome = await runDeployment(h.input);
+    expect(outcome.status).toBe('SUCCESS');
+    expect(r.reapplied).toEqual([{ session: h.session, port: 3000 }]);
+    const keys = h.session.keys();
+    expect(keys.indexOf('docker.remove_prev')).toBeLessThan(keys.indexOf('proxy.status'));
+    expect(logText(h, 'deploy')).toContain(ROUTE_LOGS.REAPPLIED);
+  });
+
+  it('H2: an absent file or the same port leaves the file untouched; a failed re-apply never fails the deploy', async () => {
+    for (const read of [PROXY_READ('absent'), PROXY_READ(3000)]) {
+      const r = routed(true);
+      const h = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.status': read }, extra: { routes: r.routes } });
+      expect((await runDeployment(h.input)).status).toBe('SUCCESS');
+      expect(r.reapplied).toEqual([]);
+    }
+    const failing = routed(true, false);
+    const h = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.status': PROXY_READ(8080) }, extra: { routes: failing.routes } });
+    expect((await runDeployment(h.input)).status).toBe('SUCCESS');
+    expect(logText(h, 'deploy')).toContain(ROUTE_LOGS.NOT_REAPPLIED);
+    const throwing: DeployRoutes = { proxyRunning: true, reapply: () => Promise.reject(new Error('db down')) };
+    const t = harness({ scripts: { ...PREVIOUS_SCRIPTS, 'proxy.status': PROXY_READ(8080) }, extra: { routes: throwing } });
+    expect((await runDeployment(t.input)).status).toBe('SUCCESS');
+  });
+
+  it('an automatic rollback restores -prev without reading or rewriting the routes', async () => {
+    const r = routed(true);
+    const h = rollbackHarness(probing(HTTP_500, { 'probe.tcp': { stdout: 'NOODARA_PROBE open\n' }, 'proxy.status': PROXY_READ(8080) }));
+    const outcome = await runDeployment({ ...h.input, routes: r.routes });
+    expect(outcome.status).toBe('ROLLED_BACK');
+    expect(h.session.keys()).toContain('docker.network_connect');
+    expect(h.session.keys()).not.toContain('proxy.status');
+    expect(r.reapplied).toEqual([]);
   });
 });
