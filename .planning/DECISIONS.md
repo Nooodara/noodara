@@ -67,3 +67,4 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-10-31 — 22-04 scope adds `packages/ssh/src/index.ts` and `run-discovery.test.ts` to export the existing cert probe (proxyCertStatus, parseTlsCertStatus, certProbeFromTlsStatus, TlsCertStatus).
 - 2026-10-31 — 22-04 scope adds `activity/domain-events.ts` (+test): writeDomainActivityEvent, so domain-store.ts passes the ACT-01 boundary test.
 - 2026-10-31 — 22-05 scope adds domain-services.ts (cross-process per-service apply-routes lock, e.g. a PG advisory lock, between API and worker), ssh proxy.ts/test/index/run-discovery.test (new bounded proxyReadDynamic template), proxy-templates.test.ts and docs/deploy-engine.md.
+- 2026-10-31 — 22-06 scope adds `tests/unit/scripts/proxy-workflows.test.ts`, a unit test asserting the nightly.yml/ci.yml proxy wiring so A2 has proof in the `test` gate.

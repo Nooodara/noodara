@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-01T05:21:39.195Z",
+  "updatedAt": "2026-11-01T05:21:45.584Z",
   "cursor": {
     "phase": "22",
     "task": "22-06"
@@ -8574,13 +8574,14 @@
             "tests/integration/helpers/pebble.ts",
             ".github/workflows/nightly.yml",
             ".github/workflows/ci.yml",
-            "docs/adr/0011-domains-tls-env-contracts.md"
+            "docs/adr/0011-domains-tls-env-contracts.md",
+            "tests/unit/scripts/proxy-workflows.test.ts"
           ],
           "wave": 6,
           "dependsOn": [
             "22-04"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
