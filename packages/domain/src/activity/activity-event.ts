@@ -7,6 +7,8 @@
 // nothing else at all". Phase 12 (12-05) adds the deploy engine actions (`project.*`,
 // `environment.*`, `service.*`, `deployment.*`), each with a closed, typed metadata allowlist.
 
+import { validateEnvKey } from '../env/env-value.js';
+import { ENV_SCOPES } from '../env/resolve-env.js';
 import { SecretValue } from '../security/secret-value.js';
 
 /**
@@ -144,7 +146,15 @@ export const DOMAIN_ACTIONS = [
 
 export type DomainAction = (typeof DOMAIN_ACTIONS)[number];
 
-export type AnyActivityAction = ActivityAction | DeployEngineAction | DomainAction;
+/**
+ * 23-02 (A1): variable writes. Kept out of `ALL_ACTIVITY_ACTIONS` like DOMAIN_ACTIONS; metadata is
+ * exactly `{ scope, key }` (a valid key), never a value or a secret reference.
+ */
+export const ENV_ACTIONS = ['env.variable_created', 'env.variable_updated', 'env.variable_deleted'] as const;
+
+export type EnvAction = (typeof ENV_ACTIONS)[number];
+
+export type AnyActivityAction = ActivityAction | DeployEngineAction | DomainAction | EnvAction;
 
 export const ALL_ACTIVITY_ACTIONS: readonly AnyActivityAction[] = Object.freeze([
   ...AUTH_ACTIONS,
@@ -153,7 +163,14 @@ export const ALL_ACTIVITY_ACTIONS: readonly AnyActivityAction[] = Object.freeze(
   ...DEPLOY_ENGINE_ACTIONS,
 ]);
 
-const ACTIVITY_ACTION_SET: ReadonlySet<string> = new Set<string>([...ALL_ACTIVITY_ACTIONS, ...DOMAIN_ACTIONS]);
+const ACTIVITY_ACTION_SET: ReadonlySet<string> = new Set<string>([
+  ...ALL_ACTIVITY_ACTIONS,
+  ...DOMAIN_ACTIONS,
+  ...ENV_ACTIONS,
+]);
+
+const ENV_ACTION_SET: ReadonlySet<string> = new Set(ENV_ACTIONS);
+const ENV_SCOPE_SET: ReadonlySet<unknown> = new Set(ENV_SCOPES);
 
 const ACCOUNT_ACTION_SET: ReadonlySet<string> = new Set(ACCOUNT_ACTIONS);
 
@@ -297,6 +314,18 @@ function assertDomainEvent(action: DomainAction, entityType: string, metadata: A
   }
 }
 
+function assertEnvEvent(action: EnvAction, entityType: string, metadata: ActivityMetadata): void {
+  if (entityType !== 'environment_variable') {
+    throw new InvalidActivityActionError(action, 'Activity entityType does not match action');
+  }
+  const keys = Object.keys(metadata);
+  for (const key of keys) {
+    if (key !== 'scope' && key !== 'key') throw new SensitiveMetadataError(key);
+  }
+  if (!ENV_SCOPE_SET.has(metadata.scope)) throw new SensitiveMetadataError('scope');
+  if (typeof metadata.key !== 'string' || !validateEnvKey(metadata.key).ok) throw new SensitiveMetadataError('key');
+}
+
 function assertProxyMetadata(action: ProxyAction, metadata: ActivityMetadata): void {
   const allowed = PROXY_ACTION_METADATA_KEYS[action];
   for (const [key, value] of Object.entries(metadata)) {
@@ -417,6 +446,10 @@ export function buildActivityEvent(input: BuildActivityEventInput, now: Date): A
 
   if (Object.hasOwn(DOMAIN_ACTION_RULES, input.action)) {
     assertDomainEvent(input.action as DomainAction, input.entityType, metadata);
+  }
+
+  if (ENV_ACTION_SET.has(input.action)) {
+    assertEnvEvent(input.action as EnvAction, input.entityType, metadata);
   }
 
   if (Object.hasOwn(PROXY_ACTION_METADATA_KEYS, input.action)) {

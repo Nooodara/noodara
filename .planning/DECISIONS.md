@@ -71,3 +71,4 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-10-31 — Phase 22 tier-1 review: **fail** (.agent-flow/review-22.verdict.json). Findings split into two remediation tasks: 22-07 (proxy lifecycle: pre-create cleanup that kills a healthy proxy, races, staleness, test gaps, flaky it-tls-renewal) and 22-08 (domain delete orphans, 15/30/60 s cert schedule, deployed backend port, swap bound, strict schemas). The two OPEN_QUESTIONS entries for 22-05 are now covered by 22-08 A1/A3. Re-review after 22-08.
 
 - 2026-11-01 — 22-07 scope widened: servers schema + drizzle migration (A2 install timestamp column), run-deployment.test.ts (A7 proxy.read_dynamic rename), ADR 0011 (A8 fallback). 22-08 runs after 22-07, so the shared files are not touched in parallel.
+- 2026-11-01 — 23-02 scope adds `apps/control-plane/src/routes/api-scope.ts` (one registration line for the env routes); no other phase-23 task claims it.

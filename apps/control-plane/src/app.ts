@@ -35,6 +35,7 @@ import { createProxyQueue, type ProxyQueue } from './queue/proxy-queue.js';
 import { createDnsCheckLimiter, createSystemDnsResolver, type DnsResolverLike } from './domains/domain-dns.js';
 import { domainApplyLimits } from './domains/domain-apply.js';
 import { createDomainApplier, type DomainApplier, type DomainServiceDeps } from './domains/domain-services.js';
+import type { EnvServiceDeps } from './env/env-services.js';
 import { createConnectServerQueue, type ConnectServerQueue } from './queue/connect-server-queue.js';
 import { computeDeployCancelKeyTtlMs } from './queue/deploy-job-budget.js';
 import { createDeployQueue, type DeployQueue } from './queue/deploy-queue.js';
@@ -706,6 +707,9 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   const { getProxyService, closeOwnedProxyQueue } = createProxyServiceResolver(deps, eventPublisher, proxyRemover, getDeployRedis);
   app.decorate('getProxyService', getProxyService);
   app.decorate('getDomainServices', createDomainServicesResolver(deps, getProxyService));
+  // 23-02: the variables API's deps (lazy; nothing opens before the first request).
+  let envServices: Promise<EnvServiceDeps> | undefined;
+  app.decorate('getEnvServices', () => (envServices ??= getDb().then((db): EnvServiceDeps => ({ db, now: () => new Date() }))));
   const remoteCleanup = createRemoteCleanupResolver(deps);
   app.decorate('getProjectServices', createProjectServicesResolver(deps, eventPublisher, remoteCleanup));
   app.decorate('getServiceServices', createServiceServicesResolver(deps, eventPublisher, { getOperationQueue, remoteCleanup }));

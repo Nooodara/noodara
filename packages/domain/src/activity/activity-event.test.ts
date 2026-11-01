@@ -5,6 +5,7 @@ import {
   ALL_ACTIVITY_ACTIONS,
   AUTH_ACTIONS,
   DOMAIN_ACTIONS,
+  ENV_ACTIONS,
   InvalidActivityActionError,
   SERVER_ACTIONS,
   SensitiveMetadataError,
@@ -558,5 +559,38 @@ describe('domain.* certificate actions (22-04 A3, H4)', () => {
   it('rejects a mismatched entityType', () => {
     expect(() => build('domain.certificate_issued', 'service', { serviceId: 'svc-1' })).toThrow(InvalidActivityActionError);
     expect(() => build('domain.route_restored', 'domain', { serviceId: 'svc-1' })).toThrow(InvalidActivityActionError);
+  });
+});
+
+describe('env.variable_* actions (23-02 A1)', () => {
+  const build = (action: (typeof ENV_ACTIONS)[number], entityType: string, metadata: Record<string, unknown>) =>
+    buildActivityEvent({ actorType: 'user', actorId: 'u-1', entityType, entityId: 'var-1', action, outcome: 'success', metadata }, NOW);
+
+  it('accepts scope and key only, for each action', () => {
+    for (const action of ENV_ACTIONS) {
+      expect(build(action, 'environment_variable', { scope: 'service', key: 'DATABASE_URL' }).metadata).toEqual({
+        scope: 'service',
+        key: 'DATABASE_URL',
+      });
+    }
+  });
+
+  it('is not part of the legacy action lists', () => {
+    for (const action of ENV_ACTIONS) expect(ALL_ACTIVITY_ACTIONS).not.toContain(action);
+  });
+
+  it.each<[Record<string, unknown>]>([
+    [{ scope: 'service', key: 'API_KEY', value: 'canary-123' }],
+    [{ scope: 'service' }],
+    [{ key: 'API_KEY' }],
+    [{ scope: 'global', key: 'API_KEY' }],
+    [{ scope: 'project', key: 'not a key: canary-123' }],
+    [{ scope: 'project', key: 42 }],
+  ])('rejects metadata %j', (metadata) => {
+    expect(() => build('env.variable_created', 'environment_variable', metadata)).toThrow(SensitiveMetadataError);
+  });
+
+  it('rejects a mismatched entityType', () => {
+    expect(() => build('env.variable_updated', 'service', { scope: 'project', key: 'A' })).toThrow(InvalidActivityActionError);
   });
 });

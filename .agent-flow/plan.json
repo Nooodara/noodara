@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-01T16:42:53.100Z",
+  "updatedAt": "2026-11-01T16:42:58.385Z",
   "cursor": {
     "phase": "23",
     "task": "23-02"
@@ -8890,6 +8890,7 @@
           "title": "Variables API at three scopes, secret-reference validation, effective view with differsFromRunning",
           "scope": [
             "apps/control-plane/src/env/",
+            "apps/control-plane/src/routes/api-scope.ts",
             "apps/control-plane/src/routes/env.ts",
             "apps/control-plane/src/routes/env.test.ts",
             "apps/control-plane/src/routes/env-schemas.ts",
@@ -8907,7 +8908,7 @@
           "dependsOn": [
             "23-01"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",

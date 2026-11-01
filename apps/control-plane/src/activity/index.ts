@@ -5,3 +5,4 @@ export {
   type DeploymentRollbackStartedEventInput,
 } from './deployment-rollback-event.js';
 export { writeProxyActivityEvent, type ProxyActivityAction, type ProxyActivityEventInput } from './proxy-events.js';
+export { writeEnvVariableEvent, type EnvVariableEventInput } from './env-events.js';

@@ -13,6 +13,7 @@ Phase 12 runtime engine: project/environment/service setup, deployment queue, li
 - Build logs: `GET /api/deployments/:deploymentId/logs?phase=&since=&limit=` (append-only chunks, resync without replay).
 - Runtime logs: `GET /api/projects/:projectId/services/:serviceId/logs?tail=` (JSON) and `.../logs/follow?tail=` (NDJSON, bounded by duration).
 - Domains (22-03): `GET|POST /api/projects/:projectId/services/:serviceId/domains`, `PATCH|DELETE /api/projects/:projectId/services/:serviceId/domains/:domainId` and `POST /api/projects/:projectId/services/:serviceId/domains/:domainId/dns-check`. See "Domains and Routes" below.
+- Variables (23-02): `GET|POST /api/projects/:projectId/env`, `PATCH|DELETE /api/projects/:projectId/env/:variableId`, `GET|POST /api/projects/:projectId/environments/:environmentId/env`, `PATCH|DELETE /api/projects/:projectId/environments/:environmentId/env/:variableId`, `GET|POST /api/projects/:projectId/services/:serviceId/env`, `PATCH|DELETE /api/projects/:projectId/services/:serviceId/env/:variableId` and `GET /api/projects/:projectId/services/:serviceId/env/effective`. See "Variables" below.
 - Server operations are unchanged from Phase 11.
 
 ## Domains and Routes (22-03)
@@ -23,6 +24,15 @@ Phase 12 runtime engine: project/environment/service setup, deployment queue, li
 - `PATCH { httpsRedirect }` re-renders through the same path. `DELETE` (204) rewrites the file, or removes it and disconnects the network when it was the last domain. Known gap: a last-domain delete while the server is unreachable leaves the file (22-05).
 - `GET` returns each domain (hostname, httpsRedirect, dns/cert/apply status) plus DNS instructions (A/AAAA to the server addresses, CNAME to the server host). `dns-check` resolves only the stored hostname and the server host (3 s timeout, one check per domain every 10 s, else 429 `RATE_LIMITED`).
 - The HTTP to HTTPS redirect carries `Cache-Control: no-store`, so removing it takes effect at once.
+
+## Variables (23-02)
+
+- Create and update share one validator: key `A-Z0-9_` (not a leading digit), single-line value up to 32 KiB. 422 `ENV_VALUE_MULTILINE`, 422 `ENV_INPUT_INVALID` with the validator code in `reason`, 409 `ENV_KEY_DUPLICATE` (unique index on owner + key), 422 `ENV_LIMIT_REACHED` (200 per owner, counted under a lock on the owner row), 404 for an owner of another project.
+- `PATCH { value, key? }`: the key is immutable; a different `key` is 422 `ENV_INPUT_INVALID` / `ENV_KEY_IMMUTABLE`.
+- A value of exactly `<secret:name>` needs a secret of that name visible from the owner (project: project; environment: + its environment; service: + its service), else 422 `SECRET_NOT_FOUND` with `reference`. The secret row is locked `FOR SHARE` in the write; a secret delete must lock it `FOR UPDATE` before its in-use check (23-03).
+- Activity `env.variable_created|updated|deleted` carries `{ scope, key }` only. No error, log or activity row holds a value (driver errors are rethrown value-free).
+- `effective`: `resolveEnv` output (key, plain value or reference name, origin, shadowed origins) and `differsFromRunning` against the latest `SUCCESS` or `ROLLED_BACK` snapshot (keys, plain values, reference names, secret versions); `false` before any such deploy, `true` when a reference does not resolve. Secret values never appear.
+- Deleting a project or an environment deletes its variables in the same transaction.
 
 ## Routes Across Deploys (22-05)
 
