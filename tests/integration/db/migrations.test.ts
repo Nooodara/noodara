@@ -223,6 +223,7 @@ describe('migrations applied from scratch (QA-06)', () => {
       '0013_phase16_v03_columns',
       '0014_phase21_v04_enums',
       '0015_phase21_v04_tables',
+      '0016_phase22_proxy_install_started_at',
     ]);
   });
 

@@ -8640,7 +8640,8 @@
             "apps/control-plane/src/deploy/run-deployment.test.ts",
             "docs/adr/0011-domains-tls-env-contracts.md",
             "apps/control-plane/src/services/server-view.test.ts",
-            "tests/integration/db/migrations.test.ts"
+            "tests/integration/db/migrations.test.ts",
+            "tests/integration/db/migration-0014-0015.test.ts"
           ],
           "wave": 7,
           "dependsOn": [

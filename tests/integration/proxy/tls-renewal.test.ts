@@ -113,6 +113,13 @@ function acmeBlobs(value: unknown, into: string[]): void {
   }
 }
 
+/** Name, message and top frames of an error thrown into the install job (test diagnostics only). */
+function describeThrown(error: unknown): string {
+  if (!(error instanceof Error)) return typeof error;
+  const frames = (error.stack ?? '').split('\n').slice(1, 6).map((line) => line.trim());
+  return [`${error.name}: ${error.message.slice(0, 300)}`, ...frames].join(' | ');
+}
+
 describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-06 TLS renewal on Ubuntu %s', (ubuntu) => {
   let stack: DeployEngineStack | undefined;
   let postgres: PostgresFixture | undefined;
@@ -348,8 +355,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-06 TLS renewal on Ubuntu %s', (
     const silent = { info: () => undefined, warn: () => undefined, error: () => undefined };
     const ssh = createSsh2Adapter();
     const masterKeys = () => Promise.resolve({ current: masterKey });
-    handler = proxyJob.createProxyInstallJobHandler(
-      proxyWiring.createProxyInstallJobDeps({
+    const installDeps = proxyWiring.createProxyInstallJobDeps({
         db: db(),
         events: noEvents,
         ssh,
@@ -362,8 +368,20 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-06 TLS renewal on Ubuntu %s', (
         logger: installLogger,
         extraHosts: [{ name: PEBBLE_HOSTNAME, ip: pebble.ip }],
         certificatesDurationHours: CERTIFICATES_DURATION_HOURS,
-      }),
-    );
+      });
+    // 22-07 A8 (ADR 0011): the job logs only the class of an error thrown while connecting; the
+    // test keeps its message and top frames so an unexplained install failure carries its origin.
+    handler = proxyJob.createProxyInstallJobHandler({
+      ...installDeps,
+      connect: async (...args) => {
+        try {
+          return await installDeps.connect(...args);
+        } catch (error) {
+          installLog.push({ thrownByConnect: describeThrown(error) });
+          throw error;
+        }
+      },
+    });
     const connect = deployConnect.createDeployConnect({
       loadServer: deployConnect.loadDeployServerFromDb(db()),
       ssh,

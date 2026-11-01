@@ -442,5 +442,69 @@ describe('deleteServer (SERV-03, ACT-01, D-11, D-12, D-14)', () => {
       expect(called).toBe(false);
       expect(await proxyRemovedEvent(fixture, server.id)).toHaveLength(0);
     });
+
+    it('refuses with SERVER_BUSY while the proxy is INSTALLING, keeping the row and never calling the remover (22-07 A5)', async () => {
+      fixture = await startServiceFixture();
+      const server = await registerFixtureServer(fixture);
+      await fixture.db
+        .update(servers)
+        .set({ proxyStatus: 'INSTALLING', proxyInstallStartedAt: new Date() })
+        .where(eq(servers.id, server.id));
+      let called = false;
+
+      const result = await deleteWithRemover(fixture, server.id, server.name, () => {
+        called = true;
+        return Promise.resolve({ ok: true, durationMs: 0 });
+      });
+
+      expect(result).toMatchObject({ ok: false, code: 'SERVER_BUSY' });
+      expect(called).toBe(false);
+      expect(await fetchServerRow(fixture, server.id)).toBeDefined();
+      expect(await fetchServerDeletedEvent(fixture, server.id)).toBeUndefined();
+    });
+
+    it('refuses with SERVER_BUSY while another proxy change holds the server lock (22-07 A5)', async () => {
+      fixture = await startServiceFixture();
+      const fx = fixture;
+      const server = await registerFixtureServer(fx);
+      await setProxyRunning(fx, server.id);
+      const { PROXY_LOCK_CLASS } = await import('../../../apps/control-plane/src/proxy/proxy-store.js');
+      let called = false;
+
+      const result = await fx.db.transaction(async (holder) => {
+        await holder.execute(sql`select pg_advisory_xact_lock(${PROXY_LOCK_CLASS}::int4, hashtext(${server.id}))`);
+        return deleteWithRemover(fx, server.id, server.name, () => {
+          called = true;
+          return Promise.resolve({ ok: true, durationMs: 0 });
+        });
+      });
+
+      expect(result).toMatchObject({ ok: false, code: 'SERVER_BUSY' });
+      expect(called).toBe(false);
+      expect(await fetchServerRow(fx, server.id)).toBeDefined();
+    });
+
+    it('holds no row lock on the server while the remote removal runs (22-07 A5)', async () => {
+      fixture = await startServiceFixture();
+      const fx = fixture;
+      const server = await registerFixtureServer(fx);
+      await setProxyRunning(fx, server.id);
+      let lockedDuringRemoval: boolean | undefined;
+
+      const result = await deleteWithRemover(fx, server.id, server.name, async () => {
+        // A separate connection: NOWAIT fails at once (55P03) if the delete holds FOR UPDATE.
+        lockedDuringRemoval = await fx.db
+          .transaction(async (probe) => {
+            await probe.execute(sql`select id from servers where id = ${server.id} for update nowait`);
+            return false;
+          })
+          .catch(() => true);
+        return { ok: true, durationMs: 1 };
+      });
+
+      expect(lockedDuringRemoval).toBe(false);
+      expect(result).toStrictEqual({ ok: true, serverId: server.id });
+      expect(await fetchServerRow(fx, server.id)).toBeUndefined();
+    });
   });
 });

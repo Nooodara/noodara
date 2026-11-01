@@ -82,7 +82,7 @@ function buildStore(initial: { status: ProxyStatus; acmeEmail: string | null; do
       };
     },
     transition: () => Promise.resolve(true),
-    loadView: () => Promise.resolve(toServerView(serverRow(row.status, row.acmeEmail), 'password')),
+    loadView: () => Promise.resolve(toServerView(serverRow(row.status, row.acmeEmail), 'ssh_password')),
   };
   return { row, store };
 }
@@ -130,7 +130,6 @@ describe('POST /api/servers/:id/proxy (22-07 A4/A6)', () => {
     const { store } = buildStore({ status: 'NOT_INSTALLED', acmeEmail: null });
     const { app, enqueue } = await buildApp(store);
     const response = await app.inject({ method: 'POST', url: `/api/servers/${SERVER}/proxy`, payload: {} });
-    expect(response.body).toBe("");
     expect(response.statusCode).toBe(202);
     expect(response.json()).toMatchObject({ id: SERVER, proxyStatus: 'INSTALLING' });
     expect(enqueue).toHaveBeenCalledTimes(1);
@@ -225,9 +224,9 @@ describe('PATCH /api/servers/:id (22-07 A6)', () => {
 
   it('a connection-only body goes to editServer and never to the proxy service', async () => {
     const { store, row } = buildStore({ status: 'RUNNING', acmeEmail: 'ops@noodara.dev' });
-    const view = toServerView({ ...serverRow('RUNNING', 'ops@noodara.dev'), name: 'renamed' }, 'password');
+    const view = toServerView({ ...serverRow('RUNNING', 'ops@noodara.dev'), name: 'renamed' }, 'ssh_password');
     const editServer = vi.fn(() => Promise.resolve({ ok: true as const, server: view }));
-    const { app, enqueue } = await buildApp(store, { editServer } as Partial<ServerServices>);
+    const { app, enqueue } = await buildApp(store, { editServer });
     const response = await app.inject({ method: 'PATCH', url: `/api/servers/${SERVER}`, payload: { name: 'renamed' } });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ name: 'renamed' });
@@ -243,7 +242,7 @@ describe('DELETE /api/servers/:id (22-07 A5)', () => {
     const deleteServer = vi.fn(() =>
       Promise.resolve({ ok: false as const, code: 'SERVER_BUSY' as const, message: 'A proxy install is in progress on this server' }),
     );
-    const { app } = await buildApp(store, { deleteServer } as Partial<ServerServices>);
+    const { app } = await buildApp(store, { deleteServer });
     const response = await app.inject({
       method: 'DELETE',
       url: `/api/servers/${SERVER}`,
