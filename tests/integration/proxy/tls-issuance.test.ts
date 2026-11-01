@@ -44,6 +44,7 @@ import type { ProxyInstallJobPayload } from '../../../apps/control-plane/src/que
 import { DEPLOY_ENGINE_UBUNTU_VERSIONS, startDeployEngineStack, type DeployEngineStack } from '../helpers/deploy-engine.js';
 import { PEBBLE_ACME_DIRECTORY_URL, PEBBLE_HOSTNAME, TRAEFIK_IMAGE, startPebble, type StartedPebble } from '../helpers/pebble.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
+import { expectRemoteMatchesDatabase } from './remote-state-probe.js';
 import { assertNoStrayTestContainers } from '../helpers/ssh.js';
 
 const STACK_TIMEOUT_MS = 900_000;
@@ -506,6 +507,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-04 certificate reconciler on Ub
       const secure = await httpsHit(hosts.a);
       expect(secure.status).toBe(200);
       expect(secure.body).toContain(`ok ${hosts.a}`);
+      await expectRemoteMatchesDatabase({ exec: root, db: db(), serverId });
     },
     INSTALL_CASE_TIMEOUT_MS,
   );
@@ -554,6 +556,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-04 certificate reconciler on Ub
       const failedEvents = await activities('domain.certificate_failed', domainId);
       expect(failedEvents).toHaveLength(1);
       expect(failedEvents[0]).toMatchObject({ errorCode: 'CERT_DNS_MISMATCH', metadata: { serviceId, previousStatus: 'PENDING' } });
+      await expectRemoteMatchesDatabase({ exec: root, db: db(), serverId });
     },
     CASE_TIMEOUT_MS,
   );

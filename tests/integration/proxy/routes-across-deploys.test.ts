@@ -34,6 +34,7 @@ import type { DomainApplier } from '../../../apps/control-plane/src/domains/doma
 import { DEPLOY_ENGINE_UBUNTU_VERSIONS, resolveBaseImages, startDeployEngineStack, type DeployEngineStack } from '../helpers/deploy-engine.js';
 import { PEBBLE_ACME_DIRECTORY_URL, PEBBLE_HOSTNAME, TRAEFIK_IMAGE, startPebble, type StartedPebble } from '../helpers/pebble.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
+import { expectRemoteMatchesDatabase } from './remote-state-probe.js';
 import { assertNoStrayTestContainers } from '../helpers/ssh.js';
 
 type DeployRuntimeModule = typeof import('../../../apps/control-plane/src/deploy/deploy-runtime.js');
@@ -148,6 +149,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-05 routes across deploys on Ubu
   let reapplyPending: (() => Promise<{ applied: number; failed: number }>) | undefined;
   let routeLogs: RouteLogs | undefined;
   let installProxy: (() => Promise<string>) | undefined;
+  let deleteServiceRow: ((id: string, confirmName: string) => Promise<{ ok: boolean; code?: string }>) | undefined;
   let serverId = '';
   let projectId = '';
   let environmentId = '';
@@ -309,6 +311,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-05 routes across deploys on Ubu
     const credentialStore = await import('../../../apps/control-plane/src/services/credential-store.js');
     const domainServices = await import('../../../apps/control-plane/src/domains/domain-services.js');
     const domainApply = await import('../../../apps/control-plane/src/domains/domain-apply.js');
+    const serviceServices = await import('../../../apps/control-plane/src/services/service-services.js');
+    const serviceOps = await import('../../../apps/control-plane/src/deploy/service-ops.js');
     routeLogs = runDeploymentModule.ROUTE_LOGS;
 
     pebble = await startPebble({ networkName: s().networkName, validitySeconds: CERT_VALIDITY_SECONDS });
@@ -398,6 +402,12 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-05 routes across deploys on Ubu
     apply = domainServices.createDomainApplier({ db: db(), connect, createRedactor, limits: domainApply.domainApplyLimits(TIMEOUTS.commandMs) });
     const applier = apply;
     reapplyPending = () => domainServices.reapplyPendingDomains({ db: db(), apply: applier, logger: { warn: () => undefined } });
+    const remoteCleanup = serviceOps.createServiceRemoteCleanup({ connect, createRedactor, limits: serviceOps.DEFAULT_SERVICE_OPS_LIMITS });
+    deleteServiceRow = (id, confirmName) =>
+      serviceServices.deleteService(
+        { db: db(), now: () => new Date(), events, panelPorts: [], masterKeys, remoteCleanup },
+        { actor: ACTOR, projectId, serviceId: id, confirmName },
+      );
 
     const deps = runtime.createDeployJobDeps({
       db: db(),
@@ -497,6 +507,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-05 routes across deploys on Ubu
       // Once v2 answers, v1 never comes back.
       expect(samples.filter((sample) => sample.at > firstV2.at && isV1(sample))).toEqual([]);
       expect(await fileSha()).toBe(before);
+      await expectRemoteMatchesDatabase({ exec: root, db: db(), serverId });
     },
     CASE_TIMEOUT_MS,
   );
@@ -510,6 +521,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-05 routes across deploys on Ubu
       expect({ status: rolled.status, errorCode: rolled.errorCode }).toEqual({ status: 'ROLLED_BACK', errorCode: 'HEALTHCHECK_FAILED' });
       expect(await waitVersion(hosts.main, 'v2')).toEqual({ code: '200', body: 'version v2' });
       expect(await fileSha()).toBe(before);
+      await expectRemoteMatchesDatabase({ exec: root, db: db(), serverId });
     },
     CASE_TIMEOUT_MS,
   );
@@ -525,6 +537,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-05 routes across deploys on Ubu
       expect({ status: row.status, errorCode: row.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
       expect(await waitVersion(hosts.main, 'v1')).toEqual({ code: '200', body: 'version v1' });
       expect(await fileSha()).toBe(before);
+      await expectRemoteMatchesDatabase({ exec: root, db: db(), serverId });
     },
     CASE_TIMEOUT_MS,
   );
@@ -619,6 +632,29 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-05 routes across deploys on Ubu
         await setProxyStatus('RUNNING');
         await root(['docker', 'rm', '-f', `noodara-${otherId}`, `noodara-${otherId}-prev`]);
       }
+    },
+    CASE_TIMEOUT_MS,
+  );
+  // 25-01 QA-15: the service delete path tears down everything the proxy holds for the service.
+  it(
+    'QA-15: deleting a routed service removes its route file, detaches the proxy and drops container, network and domains',
+    async () => {
+      if (deleteServiceRow === undefined) throw new Error('delete not wired');
+      const [row] = await db().select({ name: services.name }).from(services).where(eq(services.id, serviceId));
+      if (!row) throw new Error('routed service missing');
+      expect((await root(['test', '-e', dynamicPath(serviceId)])).exitCode).toBe(0);
+      expect(await networkMembers(serviceId)).toContain(proxyContainerName());
+
+      expect(await deleteServiceRow(serviceId, row.name)).toEqual({ ok: true, serviceId });
+
+      expect((await root(['test', '-e', dynamicPath(serviceId)])).exitCode).not.toBe(0);
+      expect((await root(['test', '-e', `${dynamicPath(serviceId)}.prev`])).exitCode).not.toBe(0);
+      expect((await root(['docker', 'network', 'inspect', `noodara-net-${serviceId}`])).exitCode).not.toBe(0);
+      const left = await rootOut(['docker', 'ps', '--all', '--filter', `name=noodara-${serviceId}`, '--format', '{{.Names}}']);
+      expect(left.trim()).toBe('');
+      expect(await db().select().from(domains).where(eq(domains.serviceId, serviceId))).toEqual([]);
+      expect((await waitVersion(hosts.main, 'none', 5_000)).code).toBe('404');
+      await expectRemoteMatchesDatabase({ exec: root, db: db(), serverId });
     },
     CASE_TIMEOUT_MS,
   );

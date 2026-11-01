@@ -54,6 +54,7 @@ import {
   type StartedPebble,
 } from "../helpers/pebble.js";
 import { startPostgres, type PostgresFixture } from "../helpers/postgres.js";
+import { expectRemoteMatchesDatabase } from "./remote-state-probe.js";
 import { assertNoStrayTestContainers } from "../helpers/ssh.js";
 
 const STACK_TIMEOUT_MS = 900_000;
@@ -430,6 +431,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
         });
 
         await rootOut(["docker", "rm", "--force", "--", FOREIGN_LISTENER]);
+        await expectRemoteMatchesDatabase({ exec: root, db: db(), serverId });
       },
       INSTALL_CASE_TIMEOUT_MS,
     );
@@ -472,6 +474,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
           type: "server.updated",
           server: { proxyStatus: "RUNNING", proxyErrorCode: null },
         });
+        await expectRemoteMatchesDatabase({ exec: root, db: db(), serverId });
       },
       INSTALL_CASE_TIMEOUT_MS,
     );

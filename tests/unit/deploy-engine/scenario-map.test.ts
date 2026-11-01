@@ -242,7 +242,7 @@ describe('remote proxy state against the database (25-01 A2)', () => {
     expect(compareProxyState(remote(), database())).toEqual([]);
     const pending = new Map([[SVC, [{ hostname: 'a.test', httpsRedirect: false, applyStatus: 'APPLIED' }, { hostname: 'p.test', httpsRedirect: true, applyStatus: 'PENDING' }]]]);
     expect(compareProxyState(remote(), database({ services: pending }))).toEqual([]);
-    expect(compareProxyState(remote({ proxy: 'absent', dynamicEntries: [], routes: new Map(), networks: new Map() }), database({ proxyStatus: 'NOT_INSTALLED', services: new Map() }))).toEqual([]);
+    expect(compareProxyState(remote({ proxy: 'absent', dynamicEntries: [], routes: new Map(), containers: [], networks: new Map() }), database({ proxyStatus: 'NOT_INSTALLED', services: new Map() }))).toEqual([]);
   });
 
   it('reports the proxy container against the proxy status', () => {

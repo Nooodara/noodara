@@ -28,6 +28,7 @@ import type { ProxyInstallJobPayload } from '../../../apps/control-plane/src/que
 import { DEPLOY_ENGINE_UBUNTU_VERSIONS, startDeployEngineStack, type DeployEngineStack } from '../helpers/deploy-engine.js';
 import { PEBBLE_ACME_DIRECTORY_URL, PEBBLE_HOSTNAME, TRAEFIK_IMAGE, startPebble, type StartedPebble } from '../helpers/pebble.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
+import { expectRemoteMatchesDatabase } from './remote-state-probe.js';
 import { assertNoStrayTestContainers } from '../helpers/ssh.js';
 
 const STACK_TIMEOUT_MS = 900_000;
@@ -444,6 +445,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-03 domain apply on Ubuntu %s', 
       expect(answered.status).toBe(200);
       expect(applyMs).toBeLessThan(m().domainApply.DOMAIN_APPLY_VERIFY_MS + TIMEOUTS.commandMs);
       expect((await hit(hosts.a)).status).toBe(200);
+      await expectRemoteMatchesDatabase({ exec: root, db: db(), serverId });
     },
     CASE_TIMEOUT_MS,
   );
@@ -488,6 +490,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-03 domain apply on Ubuntu %s', 
       expect(await remove('c')).toEqual({ ok: true });
       expect((await domainRow('a'))?.applyStatus).toBe('APPLIED');
       expect((await domainRow('b'))?.applyStatus).toBe('APPLIED');
+      await expectRemoteMatchesDatabase({ exec: root, db: db(), serverId });
     },
     CASE_TIMEOUT_MS,
   );
@@ -555,6 +558,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-03 domain apply on Ubuntu %s', 
       expect((await root(['test', '-e', dynamicPath()])).exitCode).not.toBe(0);
       expect(await networkMembers()).not.toContain(proxyContainerName());
       expect(await db().select().from(domains).where(eq(domains.serviceId, serviceId))).toEqual([]);
+      await expectRemoteMatchesDatabase({ exec: root, db: db(), serverId });
     },
     CASE_TIMEOUT_MS,
   );

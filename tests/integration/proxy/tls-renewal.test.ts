@@ -33,6 +33,7 @@ import type { ProxyInstallJobPayload } from '../../../apps/control-plane/src/que
 import { DEPLOY_ENGINE_UBUNTU_VERSIONS, startDeployEngineStack, type DeployEngineStack } from '../helpers/deploy-engine.js';
 import { PEBBLE_ACME_DIRECTORY_URL, PEBBLE_HOSTNAME, TRAEFIK_IMAGE, startPebble, type StartedPebble } from '../helpers/pebble.js';
 import { startPostgres, type PostgresFixture } from '../helpers/postgres.js';
+import { expectRemoteMatchesDatabase } from './remote-state-probe.js';
 import { assertNoStrayTestContainers } from '../helpers/ssh.js';
 
 const STACK_TIMEOUT_MS = 900_000;
@@ -529,6 +530,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('22-06 TLS renewal on Ubuntu %s', (
       expect(dump).not.toMatch(/BEGIN CERTIFICATE|PRIVATE KEY|BEGIN EC|LS0tLS1CRUdJTi/);
       const leaked = material.blobs.filter((blob) => dump.includes(blob.slice(0, 64)));
       expect(leaked).toHaveLength(0);
+      await expectRemoteMatchesDatabase({ exec: root, db: db(), serverId });
     },
     CASE_TIMEOUT_MS,
   );
