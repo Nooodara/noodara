@@ -11,6 +11,27 @@ const mocks = vi.hoisted(() => ({
   pendingDomainServices: vi.fn<(db: unknown, limit: number) => Promise<string[]>>(),
   loopTick: { current: null as null | (() => Promise<unknown>) },
   order: [] as string[],
+  certDeps: vi.fn<(deps: Record<string, unknown>) => void>(),
+  certLoop: vi.fn<(input: { pollMs: number; reconciler: unknown }) => void>(),
+  certClose: vi.fn<() => Promise<void>>(),
+}));
+
+vi.mock('../domains/cert-reconciler.js', () => ({
+  createCertStore: () => ({}),
+  createCertReconciler: (deps: Record<string, unknown>) => {
+    mocks.certDeps(deps);
+    return { runDue: () => Promise.resolve() };
+  },
+  startCertReconcileLoop: (input: { pollMs: number; reconciler: unknown }) => {
+    mocks.order.push('cert-loop');
+    mocks.certLoop(input);
+    return {
+      close: () => {
+        mocks.order.push('cert-close');
+        return mocks.certClose();
+      },
+    };
+  },
 }));
 
 vi.mock('bullmq', () => ({
@@ -47,7 +68,12 @@ vi.mock('./reconcile-runtime.js', () => ({
   startReconcileLoop: (options: { tick: () => Promise<unknown> }) => {
     mocks.order.push('loop');
     mocks.loopTick.current = options.tick;
-    return Promise.resolve({ close: () => Promise.resolve() });
+    return Promise.resolve({
+      close: () => {
+        mocks.order.push('loop-close');
+        return Promise.resolve();
+      },
+    });
   },
 }));
 
@@ -87,6 +113,7 @@ beforeEach(() => {
   mocks.getJob.mockResolvedValue(undefined);
   mocks.listServers.mockResolvedValue([]);
   mocks.pendingDomainServices.mockResolvedValue([]);
+  mocks.certClose.mockResolvedValue(undefined);
 });
 
 describe('worker reconcile wiring: stale QUEUED sweep (14-08)', () => {
@@ -168,5 +195,39 @@ describe('worker reconcile wiring: pending domain routes (22-03 H3)', () => {
     expect(await reconcile.tick()).toMatchObject({ domainsReapplied: 0, domainsReapplyFailed: 1 });
     mocks.pendingDomainServices.mockRejectedValueOnce(new Error('db down'));
     expect(await reconcile.tick()).toMatchObject({ domainsReapplied: 0, domainsReapplyFailed: 0 });
+  });
+});
+
+describe('worker reconcile wiring: certificate checks (22-04 A1, A2)', () => {
+  it('starts the certificate loop after the reconcile loop with the configured timings and the shared applier', async () => {
+    const domainApply = vi.fn(() => Promise.resolve({ ok: true as const }));
+    const d = deps({ domainApply, cert: { intervalMs: 600_000, issueTimeoutMs: 900_000 } });
+    const handle = await startWorkerReconcile(d);
+
+    expect(mocks.order).toEqual(['stale', 'loop', 'cert-loop']);
+    expect(mocks.certDeps).toHaveBeenCalledWith(
+      expect.objectContaining({ intervalMs: 600_000, issueTimeoutMs: 900_000, commandMs: 5_000, apply: domainApply, connect: d.connect }),
+    );
+    expect(mocks.certLoop).toHaveBeenCalledWith(expect.objectContaining({ pollMs: 5_000 }));
+
+    mocks.order.length = 0;
+    await handle.close();
+    expect(mocks.order).toEqual(['cert-close', 'loop-close']);
+  });
+
+  it('polls no slower than a short interval and passes the backoff seam through', async () => {
+    const checkDelayMs = () => 100;
+    await startWorkerReconcile(deps({ cert: { intervalMs: 1_000, issueTimeoutMs: 2_000, checkDelayMs } }));
+
+    expect(mocks.certLoop).toHaveBeenCalledWith(expect.objectContaining({ pollMs: 1_000 }));
+    expect(mocks.certDeps).toHaveBeenCalledWith(expect.objectContaining({ checkDelayMs }));
+  });
+
+  it('without a cert config no certificate loop starts', async () => {
+    const handle = await startWorkerReconcile(deps());
+
+    expect(mocks.certLoop).not.toHaveBeenCalled();
+    await handle.close();
+    expect(mocks.order).not.toContain('cert-close');
   });
 });

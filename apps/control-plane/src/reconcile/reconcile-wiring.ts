@@ -4,6 +4,8 @@
 // sweep) and before every reconcile tick, reading deploy jobs through the same queue lookup.
 // 18-04 (H2): pending webhook triggers drain after every stale-QUEUED sweep, so a follow-up whose
 // enqueue failed (and that the sweep just ended ENQUEUE_FAILED) is retried on the same pass.
+// 22-04: the certificate status reconciler runs beside the tick as its own in-process poll
+// (ADR 0011), sharing the tick's domain applier so one service's route writes stay serialized.
 import { Queue, type ConnectionOptions } from 'bullmq';
 import type { Database } from '../db/client.js';
 import {
@@ -16,6 +18,7 @@ import { createDeploymentStore } from '../deploy/deployment-store.js';
 import type { ServerEventPublisher } from '../events/server-event-publisher.js';
 import { BULLMQ_PREFIX } from '../queue/connect-server-queue.js';
 import { DEPLOY_QUEUE_NAME } from '../queue/deploy-queue.js';
+import { createCertReconciler, createCertStore, startCertReconcileLoop, type CertReconcileLoopHandle } from '../domains/cert-reconciler.js';
 import { domainApplyLimits } from '../domains/domain-apply.js';
 import { createDomainApplier, reapplyPendingDomains, type DomainApplier } from '../domains/domain-services.js';
 import { startReconcileLoop, type ReconcileLoopHandle } from './reconcile-runtime.js';
@@ -47,7 +50,20 @@ export interface WorkerReconcileDeps {
   readonly drainPendingTriggers?: () => Promise<unknown>;
   /** 22-03 (H3): re-applies PENDING domain routes after each tick; defaults to SSH via `connect`. */
   readonly domainApply?: DomainApplier;
+  /** 22-04: NOODARA_CERT_CHECK_INTERVAL_MS / NOODARA_CERT_ISSUE_TIMEOUT_MS; omitted, no certificate checks run. */
+  readonly cert?: WorkerCertReconcileConfig;
 }
+
+export interface WorkerCertReconcileConfig {
+  readonly intervalMs: number;
+  readonly issueTimeoutMs: number;
+  /** How often due cycles are looked for; defaults to min(5 s, intervalMs). */
+  readonly pollMs?: number;
+  /** Test seam: the post-change backoff (defaults to the domain table). */
+  readonly checkDelayMs?: (checksSinceChange: number, intervalMs: number) => number;
+}
+
+const CERT_POLL_MAX_MS = 5_000;
 
 export interface WorkerReconcileTickSummary extends ReconcileTickSummary {
   /** Deployments the stale-QUEUED sweep of this tick ended ENQUEUE_FAILED. */
@@ -63,6 +79,8 @@ export interface WorkerReconcileTick {
   readonly tick: () => Promise<WorkerReconcileTickSummary>;
   /** The stale-QUEUED sweep, then the pending-trigger drain; never rejects. */
   readonly sweepStaleQueued: () => Promise<StaleQueuedSweepResult>;
+  /** The domain applier the tick re-applies PENDING routes through (shared with the cert checks). */
+  readonly domainApply: DomainApplier;
   /** Closes the queue lookup the tick reads service-operation jobs through. */
   close(): Promise<void>;
 }
@@ -134,12 +152,13 @@ export function createWorkerReconcileTick(
       domainsReapplyFailed: domains.failed,
     };
   };
-  return { tick, sweepStaleQueued, close: () => deployQueue.close() };
+  return { tick, sweepStaleQueued, domainApply, close: () => deployQueue.close() };
 }
 
 export async function startWorkerReconcile(deps: WorkerReconcileDeps): Promise<ReconcileLoopHandle> {
   const reconcile = createWorkerReconcileTick(deps);
   let loop: ReconcileLoopHandle;
+  let certLoop: CertReconcileLoopHandle | null = null;
   try {
     // The worker's startup sweep: before the first tick, never blocking boot on Redis/Postgres.
     const startup = await reconcile.sweepStaleQueued();
@@ -155,8 +174,30 @@ export async function startWorkerReconcile(deps: WorkerReconcileDeps): Promise<R
     await reconcile.close();
     throw error;
   }
+  if (deps.cert !== undefined) {
+    const cert = deps.cert;
+    const reconciler = createCertReconciler({
+      store: createCertStore(deps.db),
+      connect: deps.connect,
+      createRedactor: deps.createRedactor,
+      apply: reconcile.domainApply,
+      events: deps.events,
+      logger: deps.logger,
+      intervalMs: cert.intervalMs,
+      issueTimeoutMs: cert.issueTimeoutMs,
+      commandMs: deps.commandMs,
+      ...(deps.now === undefined ? {} : { now: deps.now }),
+      ...(cert.checkDelayMs === undefined ? {} : { checkDelayMs: cert.checkDelayMs }),
+    });
+    certLoop = startCertReconcileLoop({
+      reconciler,
+      pollMs: cert.pollMs ?? Math.min(CERT_POLL_MAX_MS, cert.intervalMs),
+      logger: deps.logger,
+    });
+  }
   return {
     async close() {
+      if (certLoop !== null) await certLoop.close();
       await loop.close();
       await reconcile.close();
     },

@@ -211,6 +211,8 @@ async function main(): Promise<void> {
     // startup and on every tick.
     staleQueued: { thresholdMs: env.NOODARA_DEPLOY_QUEUED_STALE_MS },
     drainPendingTriggers: () => drainAllPendingTriggers(pendingTriggerDrain),
+    // 22-04 (A1, A2): per server, one bounded certificate check cycle (ADR 0011).
+    cert: { intervalMs: env.NOODARA_CERT_CHECK_INTERVAL_MS, issueTimeoutMs: env.NOODARA_CERT_ISSUE_TIMEOUT_MS },
   });
 
   // 22-02 (A1, H1): proxy installs run on their own queue and blocking connection. Before taking
