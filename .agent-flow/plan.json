@@ -8316,7 +8316,10 @@
             "apps/control-plane/src/routes/api-scope.test.ts",
             "apps/control-plane/src/reconcile/reconcile-wiring.ts",
             "apps/control-plane/src/reconcile/reconcile-wiring.test.ts",
-            "packages/ssh/src/index.ts"
+            "packages/ssh/src/index.ts",
+            "packages/ssh/src/run-discovery.test.ts",
+            "apps/control-plane/src/activity/domain-events.ts",
+            "apps/control-plane/src/activity/domain-events.test.ts"
           ],
           "wave": 3,
           "dependsOn": [
