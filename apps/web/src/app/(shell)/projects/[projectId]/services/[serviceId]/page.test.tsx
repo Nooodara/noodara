@@ -60,6 +60,25 @@ vi.mock('../../../../../../components/DomainsPanel', () => ({
     <div data-testid="domains-panel-stub" data-service={props.serviceId} data-server={props.serverId} data-proxy={props.proxy?.status ?? 'none'} />
   ),
 }));
+// The variables, secrets and effective panels are covered by their own tests; here only that the page
+// mounts them at service scope and refetches the effective view after a write.
+const envStub = vi.hoisted(() => ({ onChanged: null as null | (() => void) }));
+vi.mock('../../../../../../components/EnvPanel', () => ({
+  EnvPanel: (props: { owner: { scope: string; serviceId?: string; environmentId?: string }; onChanged?: () => void }) => {
+    envStub.onChanged = props.onChanged ?? null;
+    return <div data-testid="env-panel-stub" data-scope={props.owner.scope} data-service={props.owner.serviceId} data-environment={props.owner.environmentId} />;
+  },
+}));
+vi.mock('../../../../../../components/SecretsPanel', () => ({
+  SecretsPanel: (props: { owner: { scope: string; serviceId?: string } }) => (
+    <div data-testid="secrets-panel-stub" data-scope={props.owner.scope} data-service={props.owner.serviceId} />
+  ),
+}));
+vi.mock('../../../../../../components/EffectiveEnv', () => ({
+  EffectiveEnv: (props: { serviceId: string; version?: number }) => (
+    <div data-testid="effective-env-stub" data-service={props.serviceId} data-version={props.version ?? 0} />
+  ),
+}));
 // ServiceSheet itself is covered by ServiceSheet.test.tsx; here only how the page opens it and applies a save.
 vi.mock('../../../../../../components/ServiceSheet', () => ({
   REDEPLOY_NEEDED_COPY: 'Redeploy to apply.',
@@ -224,6 +243,23 @@ describe('Service page (13-12 A1, A3, A5)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('domains-panel-stub')).toHaveAttribute('data-proxy', 'FAILED');
     });
+  });
+
+  it('mounts variables, secrets and the effective view at service scope (24-02 A1-A3)', async () => {
+    seed({ current: service({}) });
+    renderPage();
+
+    const env = await screen.findByTestId('env-panel-stub');
+    expect(env).toHaveAttribute('data-scope', 'service');
+    expect(env).toHaveAttribute('data-service', SERVICE_ID);
+    expect(screen.getByTestId('secrets-panel-stub')).toHaveAttribute('data-scope', 'service');
+    const effective = screen.getByTestId('effective-env-stub');
+    expect(effective).toHaveAttribute('data-service', SERVICE_ID);
+    expect(effective).toHaveAttribute('data-version', '0');
+    act(() => {
+      envStub.onChanged?.();
+    });
+    expect(screen.getByTestId('effective-env-stub')).toHaveAttribute('data-version', '1');
   });
 
   it('follows service.updated instead of computing a status itself', async () => {

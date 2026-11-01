@@ -48,6 +48,17 @@ vi.mock('../../../../lib/api-client', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   apiGet: (path: string) => apiClient.apiGet(path) as unknown,
 }));
+// The variables and secrets panels are covered by their own tests; here only where they mount.
+vi.mock('../../../../components/EnvPanel', () => ({
+  EnvPanel: (props: { owner: { scope: string; environmentId?: string } }) => (
+    <div data-testid={`env-panel-stub-${props.owner.scope}`} data-environment={props.owner.environmentId ?? ''} />
+  ),
+}));
+vi.mock('../../../../components/SecretsPanel', () => ({
+  SecretsPanel: (props: { owner: { scope: string; environmentId?: string } }) => (
+    <div data-testid={`secrets-panel-stub-${props.owner.scope}`} data-environment={props.owner.environmentId ?? ''} />
+  ),
+}));
 // ServiceSheet itself is covered by ServiceSheet.test.tsx; here only how the page opens it and reacts to a save.
 vi.mock('../../../../components/ServiceSheet', () => ({
   ServiceSheet: (props: {
@@ -172,6 +183,20 @@ describe('Project page (13-10 A1, A2, A3, H1)', () => {
     const staging = screen.getByTestId(`environment-section-${STAGING_ID}`);
     expect(staging).toHaveTextContent('No services in this environment yet.');
     expect(screen.getByRole('heading', { name: 'Billing' })).toBeInTheDocument();
+  });
+
+  it('mounts project-scope panels and environment-scope panels on demand (24-02 A1, A2)', async () => {
+    seed();
+    const user = userEvent.setup();
+    renderPage();
+    const projectVars = await screen.findByTestId('project-variables');
+    expect(within(projectVars).getByTestId('env-panel-stub-project')).toBeInTheDocument();
+    expect(within(screen.getByTestId('project-secrets')).getByTestId('secrets-panel-stub-project')).toBeInTheDocument();
+    expect(screen.queryByTestId('env-panel-stub-environment')).not.toBeInTheDocument();
+    const disclosure = screen.getByTestId(`environment-env-${PROD_ID}`);
+    await user.click(within(disclosure).getByRole('button', { name: 'Variables and secrets' }));
+    expect(within(disclosure).getByTestId('env-panel-stub-environment')).toHaveAttribute('data-environment', PROD_ID);
+    expect(within(disclosure).getByTestId('secrets-panel-stub-environment')).toHaveAttribute('data-environment', PROD_ID);
   });
 
   // 13-20 A3: ListRow's two truncating spans shrink in proportion to their content, so a

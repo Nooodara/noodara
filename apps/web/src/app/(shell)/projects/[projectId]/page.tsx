@@ -9,8 +9,9 @@
 // ServiceSheet in create mode; a save refetches the project and tells the sidebar.
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Banner, Button, EmptyState, InsetGroup, ListRow, RowMenu, SkeletonRow } from '@noodara/ui';
+import { Banner, Button, Disclosure, EmptyState, InsetGroup, ListRow, RowMenu, SkeletonRow } from '@noodara/ui';
 import { ConfirmByNameDialog, deleteOutcome } from '../../../../components/ConfirmByNameDialog';
+import { EnvPanel } from '../../../../components/EnvPanel';
 import { ENVIRONMENT_NOT_EMPTY_COPY, EnvironmentSheet } from '../../../../components/EnvironmentSheet';
 import {
   isRoutableId,
@@ -21,6 +22,7 @@ import {
 } from '../../../../components/ProjectNav';
 import { ProjectToolbar } from '../../../../components/ProjectToolbar';
 import { focusNewPageHeading } from '../../../../components/ProjectSheet';
+import { SecretsPanel } from '../../../../components/SecretsPanel';
 import { ServiceSheet } from '../../../../components/ServiceSheet';
 import { Toolbar } from '../../../../components/Toolbar';
 import { apiGet, type ServerView } from '../../../../lib/api-client';
@@ -82,6 +84,10 @@ export default function ProjectPage() {
   const [creatingIn, setCreatingIn] = useState<string | null>(null);
   const [serviceSheetOpen, setServiceSheetOpen] = useState(false);
   const [servers, setServers] = useState<readonly ServerView[]>([]);
+  const [secretsVersion, setSecretsVersion] = useState(0);
+  const bumpSecrets = useCallback(() => {
+    setSecretsVersion((value) => value + 1);
+  }, []);
   const latestRequest = useRef(0);
 
   const fetchProject = useCallback((): void => {
@@ -279,10 +285,34 @@ export default function ProjectPage() {
                     ))
                   )}
                 </InsetGroup>
+                <div className="px-4">
+                  <Disclosure title="Variables and secrets" data-testid={`environment-env-${environment.id}`}>
+                    <div className="flex flex-col gap-6 pb-2">
+                      <EnvPanel
+                        owner={{ scope: 'environment', projectId: project.id, environmentId: environment.id }}
+                        secretsVersion={secretsVersion}
+                      />
+                      <SecretsPanel
+                        owner={{ scope: 'environment', projectId: project.id, environmentId: environment.id }}
+                        onChanged={bumpSecrets}
+                      />
+                    </div>
+                  </Disclosure>
+                </div>
               </section>
             );
           })
         )}
+        <InsetGroup title="Project variables" data-testid="project-variables">
+          <div className="px-5 py-3">
+            <EnvPanel owner={{ scope: 'project', projectId: project.id }} secretsVersion={secretsVersion} />
+          </div>
+        </InsetGroup>
+        <InsetGroup title="Project secrets" data-testid="project-secrets">
+          <div className="px-5 py-3">
+            <SecretsPanel owner={{ scope: 'project', projectId: project.id }} onChanged={bumpSecrets} />
+          </div>
+        </InsetGroup>
       </div>
       <EnvironmentSheet
         open={sheetOpen}

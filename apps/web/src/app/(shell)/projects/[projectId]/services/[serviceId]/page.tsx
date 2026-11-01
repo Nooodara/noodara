@@ -14,6 +14,8 @@ import { Banner, EmptyState, InsetGroup, Notice, SkeletonRow } from '@noodara/ui
 import { DeploymentHistory, useDeploymentHistory } from '../../../../../../components/DeploymentHistory';
 import { DeploymentSteps, useDeploymentSteps } from '../../../../../../components/DeploymentSteps';
 import { DomainsPanel } from '../../../../../../components/DomainsPanel';
+import { EffectiveEnv } from '../../../../../../components/EffectiveEnv';
+import { EnvPanel } from '../../../../../../components/EnvPanel';
 import {
   isRoutableId,
   notifyProjectsChanged,
@@ -21,6 +23,7 @@ import {
   PROJECTS_HREF,
   subscribeProjectsChanged,
 } from '../../../../../../components/ProjectNav';
+import { SecretsPanel } from '../../../../../../components/SecretsPanel';
 import { ServiceFacts } from '../../../../../../components/ServiceFacts';
 import { REDEPLOY_NEEDED_COPY, ServiceSheet } from '../../../../../../components/ServiceSheet';
 import { ServiceToolbar } from '../../../../../../components/ServiceToolbar';
@@ -71,6 +74,8 @@ export default function ServicePage() {
   const [editOpen, setEditOpen] = useState(false);
   const [redeployNeeded, setRedeployNeeded] = useState(false);
   const [now, setNow] = useState(() => new Date());
+  const [envVersion, setEnvVersion] = useState(0);
+  const [secretsVersion, setSecretsVersion] = useState(0);
   const latestRequest = useRef(0);
 
   const fetchService = useCallback((): void => {
@@ -192,6 +197,7 @@ export default function ServicePage() {
         onDeploymentChange={(deployment) => {
           history.upsert(deployment);
           setRedeployNeeded(false);
+          setEnvVersion((value) => value + 1);
           fetchService();
         }}
         onServiceChange={(next) => {
@@ -244,6 +250,34 @@ export default function ServicePage() {
               serverId={service.serverId}
               proxy={readProxy(server)}
               now={now}
+            />
+          </div>
+        </InsetGroup>
+        <InsetGroup title="Variables" data-testid="service-variables">
+          <div className="flex flex-col gap-6 px-5 py-3">
+            <EnvPanel
+              owner={{ scope: 'service', projectId: project.id, serviceId: service.id, environmentId: service.environmentId }}
+              secretsVersion={secretsVersion}
+              onChanged={() => {
+                setEnvVersion((value) => value + 1);
+              }}
+            />
+          </div>
+        </InsetGroup>
+        <InsetGroup title="Effective variables" data-testid="service-effective-env">
+          <div className="px-5 py-3">
+            <EffectiveEnv projectId={project.id} serviceId={service.id} version={envVersion} />
+          </div>
+        </InsetGroup>
+        <InsetGroup title="Secrets" data-testid="service-secrets">
+          <div className="px-5 py-3">
+            <SecretsPanel
+              owner={{ scope: 'service', projectId: project.id, serviceId: service.id, environmentId: service.environmentId }}
+              now={now}
+              onChanged={() => {
+                setSecretsVersion((value) => value + 1);
+                setEnvVersion((value) => value + 1);
+              }}
             />
           </div>
         </InsetGroup>
