@@ -6,7 +6,7 @@
 //   reconcile cycle re-applies it, H3), PROXY_ROUTE_FAILED marks it FAILED (`.prev` is live).
 // - delete / patch re-render through the same verify-and-restore path (A2, A4).
 // Responses carry the DomainView allowlist only: no server credential, no ACME internals (H2).
-import { PROXY_ERROR_MESSAGES, validateDomainCreateInput, validateDomainEditInput, validateResourceId } from '@noodara/domain';
+import { PROXY_ERROR_MESSAGES, validateDomainCreateInput, validateDomainEditInput } from '@noodara/domain';
 import type { DnsInstructionsView, DomainView } from '@noodara/domain/api-contract';
 import type { Redactor } from '@noodara/domain/security';
 import type { Database } from '../db/client.js';
@@ -15,12 +15,14 @@ import type { ProxyServiceDeps } from '../proxy/proxy-service.js';
 import { requestProxyInstall } from '../proxy/proxy-service.js';
 import type { ServiceActor } from '../services/server-service-deps.js';
 import {
-  applyServiceDomains,
-  createServiceLock,
-  type DomainApplyLimits,
-  type DomainApplyResult,
-  type DomainRenderer,
-} from './domain-apply.js';
+  applyRoutes,
+  createRouteLock,
+  dbRoutePorts,
+  type ApplyFailureCode,
+  type ApplyOutcome,
+  type RouteLock,
+} from './apply-routes.js';
+import type { DomainApplyLimits, DomainRenderer } from './domain-apply.js';
 import { checkDomainDns, instructionsFor, type DnsCheckLimiter, type DnsResolverLike } from './domain-dns.js';
 import {
   deleteDomain,
@@ -29,16 +31,12 @@ import {
   listServiceDomains,
   loadDomain,
   loadServiceTarget,
-  loadServiceTargetById,
-  setApplyStatus,
   setDnsResult,
-  toRouteDomains,
   updateDomainRedirect,
   type DomainRow,
 } from './domain-store.js';
 
-export type ApplyFailureCode = 'PROXY_UNAVAILABLE' | 'PROXY_ROUTE_FAILED' | 'SERVER_UNREACHABLE';
-export type ApplyOutcome = { readonly ok: true } | { readonly ok: false; readonly code: ApplyFailureCode };
+export type { ApplyFailureCode, ApplyOutcome } from './apply-routes.js';
 
 /** Applies the current rows of one service on its proxy and records each row's apply status. */
 export type DomainApplier = (serviceId: string) => Promise<ApplyOutcome>;
@@ -51,7 +49,8 @@ export interface DomainApplierDeps {
   readonly now?: () => Date;
   /** Test seam (A5: a forced invalid write). */
   readonly render?: DomainRenderer;
-  readonly lock?: <T>(serviceId: string, task: () => Promise<T>) => Promise<T>;
+  /** Defaults to the per-serviceId route lock over `db` (22-05 H3). */
+  readonly lock?: RouteLock;
 }
 
 export const SERVER_UNREACHABLE_MESSAGE = 'The server could not be reached over SSH. Check that it is online, then try again.';
@@ -64,51 +63,14 @@ export const APPLY_FAILURE_MESSAGES: Readonly<Record<ApplyFailureCode, string>> 
   SERVER_UNREACHABLE: SERVER_UNREACHABLE_MESSAGE,
 });
 
-function failedOutcome(result: DomainApplyResult): ApplyOutcome {
-  return result.ok ? { ok: true } : { ok: false, code: result.code };
-}
-
 export function createDomainApplier(deps: DomainApplierDeps): DomainApplier {
-  const now = deps.now ?? (() => new Date());
-  const lock = deps.lock ?? createServiceLock();
+  const lock = deps.lock ?? createRouteLock(deps.db);
+  const ports = dbRoutePorts(deps);
   return (serviceId) =>
-    lock(serviceId, async (): Promise<ApplyOutcome> => {
-      const target = await loadServiceTargetById(deps.db, serviceId);
-      const id = validateResourceId(serviceId);
-      if (target === null || !id.ok) return { ok: true };
-      const rows = await listServiceDomains(deps.db, serviceId);
-      const ids = rows.map((row) => row.id);
-      let close: (() => Promise<void>) | null = null;
-      let result: DomainApplyResult;
-      try {
-        const connected = await deps.connect(target.serverId, deps.createRedactor(), undefined);
-        if (!connected.ok) {
-          result = { ok: false, code: 'SERVER_UNREACHABLE', restored: false };
-        } else {
-          close = connected.close;
-          result = await applyServiceDomains({
-            session: connected.session,
-            service: { id: id.value, internalPort: target.internalPort },
-            domains: toRouteDomains(rows),
-            limits: deps.limits,
-            ...(deps.render === undefined ? {} : { render: deps.render }),
-          });
-        }
-      } catch {
-        // A thrown connect is a lost server, never a 500 (H3).
-        result = { ok: false, code: 'SERVER_UNREACHABLE', restored: false };
-      } finally {
-        if (close !== null) {
-          try {
-            await close();
-          } catch {
-            // A failed close never changes the outcome.
-          }
-        }
-      }
-      const status = result.ok ? 'APPLIED' : result.code === 'PROXY_ROUTE_FAILED' ? 'FAILED' : 'PENDING';
-      await setApplyStatus(deps.db, ids, status, now());
-      return failedOutcome(result);
+    applyRoutes(serviceId, ports, {
+      lock,
+      limits: deps.limits,
+      ...(deps.render === undefined ? {} : { render: deps.render }),
     });
 }
 
