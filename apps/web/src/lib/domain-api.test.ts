@@ -55,7 +55,7 @@ describe('domain-api', () => {
     await setHttpsRedirect(P, S, D, false);
     await checkDomainDns(P, S, D);
     const calls = fn.mock.calls as unknown as [string, RequestInit][];
-    expect(calls.map(([url, init]) => `${init.method ?? '?'} ${url} ${String(init.body)}`)).toEqual([
+    expect(calls.map(([url, init]) => `${init.method ?? '?'} ${url} ${typeof init.body === 'string' ? init.body : ''}`)).toEqual([
       `POST /api/projects/${P}/services/${S}/domains {"hostname":"app.example.com"}`,
       `PATCH /api/projects/${P}/services/${S}/domains/${D} {"httpsRedirect":false}`,
       `POST /api/projects/${P}/services/${S}/domains/${D}/dns-check {}`,

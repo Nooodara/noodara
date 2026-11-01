@@ -214,8 +214,8 @@ describe('Service page (13-12 A1, A3, A5)', () => {
   });
 
   it('mounts the domains panel for the service with its server proxy state (24-01)', async () => {
-    apiClient.apiGet.mockImplementation(() => ok({ items: [{ id: SERVER_ID, name: 'edge-1', proxyStatus: 'FAILED', proxyErrorCode: null }] }));
     seed({ current: service({}) });
+    apiClient.apiGet.mockImplementation(() => ok({ items: [{ id: SERVER_ID, name: 'edge-1', proxyStatus: 'FAILED', proxyErrorCode: null }] }));
     renderPage();
 
     const stub = await screen.findByTestId('domains-panel-stub');

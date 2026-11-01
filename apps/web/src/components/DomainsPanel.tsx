@@ -6,7 +6,7 @@
 // DNS, the HTTPS redirect switch and Remove (confirmed by hostname). The panel also states that
 // HTTPS is served by the server proxy and shows its installing or failed state with a retry.
 // Failures render fixed copy (domainFailureCopy), never a raw code or server text.
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { Button, ConfirmDialog, Field, Input, TonePill } from '@noodara/ui';
 import { DomainRow } from './DomainRow';
 import { requireSession } from '../lib/require-session';
@@ -115,7 +115,7 @@ export function DomainsPanel({ projectId, serviceId, serverId, proxy: initialPro
     });
   };
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = (event: SyntheticEvent) => {
     event.preventDefault();
     if (adding) return;
     const checked = checkHostnameInput(hostname);

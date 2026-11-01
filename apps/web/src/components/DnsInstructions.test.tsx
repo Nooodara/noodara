@@ -20,7 +20,8 @@ describe('DnsInstructions', () => {
     );
     const rows = screen.getAllByTestId('dns-record');
     expect(rows).toHaveLength(2);
-    const first = within(rows[0] as HTMLElement);
+    const [row0] = rows as [HTMLElement, ...HTMLElement[]];
+    const first = within(row0);
     expect(first.getByTestId('dns-record-type')).toHaveTextContent('A');
     expect(first.getByTestId('dns-record-name')).toHaveTextContent('app.example.com');
     expect(first.getByTestId('dns-record-value')).toHaveTextContent('203.0.113.7');

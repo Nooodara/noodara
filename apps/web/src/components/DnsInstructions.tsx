@@ -72,7 +72,7 @@ export function DnsInstructions({ instructions }: DnsInstructionsProps) {
           </tbody>
         </table>
       )}
-      {cname === null || cname.target === null ? null : (
+      {cname?.target == null ? null : (
         <p data-testid="dns-cname" className="text-caption text-ink-secondary">
           Or create a <span className="font-mono">CNAME</span> record for{' '}
           <span className="font-mono text-ink">{cname.name}</span> pointing at{' '}
