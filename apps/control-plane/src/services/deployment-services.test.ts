@@ -554,6 +554,15 @@ describe('deployFingerprint (18-05 H1)', () => {
   it('is the hash of { action, serviceId } only: no actor, key, body or secret is stored', () => {
     expect(deployFingerprint('deploy', SERVICE_ID)).toBe(requestFingerprint({ action: 'deploy', serviceId: SERVICE_ID }));
   });
+
+  it('23-04 H1: excludes env values: a variable or secret change never changes the fingerprint', () => {
+    // The fingerprint takes the action and the service only; the env is read by the worker.
+    expect(deployFingerprint.length).toBe(2);
+    expect(rollbackFingerprint.length).toBe(2);
+    expect(rollbackFingerprint(SERVICE_ID, undefined)).toBe(
+      requestFingerprint({ action: 'rollback', serviceId: SERVICE_ID, targetDeploymentId: null }),
+    );
+  });
 });
 
 describe('idempotency expiry (18-05 H1)', () => {

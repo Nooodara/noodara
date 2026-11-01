@@ -113,6 +113,20 @@ describe('recordResource', () => {
     expect(l.secretsFiles).toEqual([`${WORKSPACE}/secrets/docker`]);
   });
 
+  it('23-04 A2: maps the transient env file to <workspace>/secrets/env', () => {
+    const l = ledger({ kind: 'workspace_created' }, { kind: 'secrets_file_written', name: 'env' });
+
+    expect(l.secretsFiles).toEqual([`${WORKSPACE}/secrets/env`]);
+  });
+
+  it.each(DEPLOYMENT_EXITS)('23-04 A2: the env file goes with the workspace on a %s exit', (exit) => {
+    const l = ledger({ kind: 'workspace_created' }, { kind: 'secrets_file_written', name: 'env' });
+
+    const set = cleanupSetFor(l, exit);
+
+    expect(set).toContainEqual({ kind: 'workspace', path: WORKSPACE });
+  });
+
   it('records a secrets file once even when it is written twice', () => {
     const l = ledger(
       { kind: 'secrets_file_written', name: 'https_token' },

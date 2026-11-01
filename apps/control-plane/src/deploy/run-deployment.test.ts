@@ -2,16 +2,17 @@
 // The fake keys scripts by command name; `process.supervise` is keyed by the supervised op
 // (`supervise:clone|build|pull`) read from its pidfile argument.
 import { randomBytes } from 'node:crypto';
-import type { DeploymentExit, DeploymentStatus, HealthcheckConfig } from '@noodara/domain/deployment';
+import type { DeploymentExit, DeploymentStatus, HealthcheckConfig, RuntimeEnvEntry } from '@noodara/domain/deployment';
 import {
   createResourceLedger,
   DEFAULT_POST_START_POLL_POLICY,
   isCleanupSettled,
   recordResource,
   V03_DEPLOYMENT_ERROR_MESSAGES,
+  V04_DEPLOYMENT_ERROR_MESSAGES,
   validateHealthcheckConfig,
 } from '@noodara/domain/deployment';
-import { createRedactor, revealSecret, secretValue, type Redactor } from '@noodara/domain/security';
+import { createRedactor, revealSecret, secretValue, type Redactor, type SecretValue } from '@noodara/domain/security';
 import {
   deployWorkspaceFor,
   parseGitHostKeyLine,
@@ -29,10 +30,13 @@ import {
 } from '@noodara/domain/validators';
 import type { ExecResult, RemoteCommand, SshDeploySession, StreamOptions, StreamResult } from '@noodara/ssh';
 import { describe, expect, it, vi } from 'vitest';
+import { SecretStoreError } from '../secrets/secret-store.js';
 import type { DeploymentLogEntry, DeploymentLogSink } from './log-sink.js';
 import {
   CANCEL_UNCONFIRMED,
   CANCEL_UNCONFIRMED_ERROR_CODE,
+  configureSummary,
+  ENV_FILE_NOT_REMOVED_LOG,
   DEFAULT_ROLLBACK_MAX_MS,
   DEPLOY_MESSAGES,
   ROUTE_LOGS,
@@ -40,7 +44,9 @@ import {
   runDeployment,
   runLedgerCleanup,
   type AdvanceRecord,
+  type ConfigureStepRecord,
   type DeployCredential,
+  type DeployEnv,
   type DeployRoutes,
   type DeployRunLimits,
   type DeploymentProgress,
@@ -2161,5 +2167,243 @@ describe('runDeployment: routes of a service with domains (22-05 A1, H1, H2)', (
     expect(h.session.keys()).toContain('docker.network_connect');
     expect(h.session.keys()).not.toContain('proxy.read_dynamic');
     expect(r.reapplied).toEqual([]);
+  });
+});
+
+// 23-04: env injection. The env file is rendered from the attempt's lease, written 0600 under the
+// workspace, passed to docker create and removed right after it returns.
+const ENV_SECRET = `pw-${randomBytes(12).toString('hex')}`;
+const ENV_ENTRIES: RuntimeEnvEntry[] = [
+  { key: 'API_URL', value: 'https://api.example.com' },
+  { key: 'DB_PASSWORD', secretRef: 'db_password', secretVersion: 3 },
+];
+const ENV_FILE = `${WORKSPACE.secretsDir}/env`;
+
+function fakeEnv(
+  entries: readonly RuntimeEnvEntry[] = ENV_ENTRIES,
+  values: Record<string, string> = { DB_PASSWORD: ENV_SECRET },
+  openError?: Error,
+): { env: DeployEnv; released: { count: number } } {
+  const released = { count: 0 };
+  const env: DeployEnv = {
+    entries,
+    open: (redactor) => {
+      if (openError !== undefined) return Promise.reject(openError);
+      const secrets = new Map<string, SecretValue>();
+      for (const [key, raw] of Object.entries(values)) {
+        redactor.register(raw, 'app_secret');
+        secrets.set(key, secretValue(raw, 'app_secret'));
+      }
+      return Promise.resolve({
+        secrets,
+        release: () => {
+          released.count += 1;
+          for (const raw of Object.values(values)) redactor.release(raw);
+        },
+      });
+    },
+  };
+  return { env, released };
+}
+
+function envHarness(
+  env: DeployEnv,
+  options: Parameters<typeof harness>[0] = {},
+): Harness & { readonly configures: ConfigureStepRecord[] } {
+  const configures: ConfigureStepRecord[] = [];
+  const h = harness({ ...options, extra: { ...options.extra, env } });
+  (h.progress as RecordingProgress & { recordConfigure: DeploymentProgress['recordConfigure'] }).recordConfigure = (step) => {
+    configures.push(step);
+    return Promise.resolve();
+  };
+  return { ...h, configures };
+}
+
+function envFileCalls(h: Harness): { key: string; command: RemoteCommand; options: StreamOptions }[] {
+  return h.session.calls.filter((call) => call.command.argv.includes(ENV_FILE));
+}
+
+describe('runDeployment: env injection (23-04 A1, A2, A4, H2, H3)', () => {
+  it('writes the rendered env file 0600, passes it to docker create and removes it before the start', async () => {
+    const { env, released } = fakeEnv();
+    const h = envHarness(env);
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('SUCCESS');
+    const keys = h.session.keys();
+    const write = h.session.calls.find((call) => call.key === 'secrets.write_file');
+    expect(write).toBeDefined();
+    const content = `API_URL=https://api.example.com\nDB_PASSWORD=${ENV_SECRET}\n`;
+    expect(write?.options.stdin === undefined ? null : revealSecret(write.options.stdin)).toBe(content);
+    expect(write?.command.argv).toContain(ENV_FILE);
+    expect(write?.command.argv).toContain(String(Buffer.byteLength(content, 'utf8')));
+    expect(h.session.argv('docker.create')).toEqual(expect.arrayContaining(['--env-file', ENV_FILE]));
+    // H2: removed as soon as docker create returns, before the start and the healthcheck.
+    const removal = h.session.calls.findIndex((call) => call.key === 'fs.remove_deploy_dir' && call.command.argv.includes(ENV_FILE));
+    expect(removal).toBe(keys.indexOf('docker.create') + 1);
+    expect(removal).toBeLessThan(keys.indexOf('docker.start'));
+    expect(keys.indexOf('secrets.write_file')).toBeLessThan(keys.indexOf('docker.create'));
+    // The value never reaches argv, the log, progress or the outcome; the lease is released.
+    expect(h.session.allArgv().join('\n')).not.toContain(ENV_SECRET);
+    expect(JSON.stringify(h.sink.entries)).not.toContain(ENV_SECRET);
+    expect(JSON.stringify(h.progress)).not.toContain(ENV_SECRET);
+    expect(JSON.stringify(outcome)).not.toContain(ENV_SECRET);
+    expect(released.count).toBe(1);
+    expect(h.redactor.redact(ENV_SECRET)).toBe(ENV_SECRET);
+  });
+
+  it('A3: the DEPLOYING snapshot is v2 with plain values and pinned references only', async () => {
+    const { env } = fakeEnv();
+    const h = envHarness(env);
+
+    await runDeployment(h.input);
+
+    const record = h.progress.records.find((entry) => entry.to === 'DEPLOYING')?.record;
+    expect(record?.runtimeConfig).toMatchObject({ version: 2, env: ENV_ENTRIES });
+    expect(JSON.stringify(record)).not.toContain(ENV_SECRET);
+  });
+
+  it('A4: logs the configure step in prepare with counts, keys and reference names only, before the clone', async () => {
+    const { env } = fakeEnv();
+    const h = envHarness(env);
+
+    await runDeployment(h.input);
+
+    const prepare = logText(h, 'prepare');
+    expect(prepare).toContain(configureSummary(1, 1));
+    expect(prepare).toContain('API_URL');
+    expect(prepare).toContain('DB_PASSWORD = <secret:db_password>');
+    expect(prepare).not.toContain('https://api.example.com');
+    expect(prepare).not.toContain(ENV_SECRET);
+    expect(h.configures).toHaveLength(1);
+    expect(h.configures[0]).toMatchObject({ variables: 1, secrets: 1 });
+    const step = h.configures[0];
+    expect(step === undefined ? -1 : step.completedAt.getTime() - step.startedAt.getTime()).toBeGreaterThanOrEqual(0);
+    expect(h.sink.entries.findIndex((entry) => entry.text.startsWith('Configuring environment'))).toBe(0);
+  });
+
+  it.each([
+    ['SECRET_NOT_IN_SCOPE', 'SECRET_UNRESOLVED'],
+    ['SECRET_NOT_FOUND', 'SECRET_UNRESOLVED'],
+    ['SECRET_TAMPERED', 'ENV_INJECTION_FAILED'],
+    ['SECRET_KEY_UNKNOWN', 'ENV_INJECTION_FAILED'],
+  ] as const)('A1: a lease that fails with %s ends FAILED/%s before any clone, with no container touched', async (storeCode, code) => {
+    const { env } = fakeEnv(ENV_ENTRIES, {}, new SecretStoreError(storeCode, 'secret-id'));
+    const h = envHarness(env, { scripts: PREVIOUS_SCRIPTS });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({ status: 'FAILED', errorCode: code, errorMessage: V04_DEPLOYMENT_ERROR_MESSAGES[code] });
+    expect(h.session.keys().filter((key) => !key.startsWith('fs.'))).toEqual([]);
+    expect(h.progress.advances).toEqual([]);
+  });
+
+  it('H3: a failed env write ends FAILED/ENV_INJECTION_FAILED before docker create and restores -prev (17-02 H2)', async () => {
+    const { env, released } = fakeEnv();
+    const h = envHarness(env, { scripts: { ...PREVIOUS_SCRIPTS, 'secrets.write_file': { exitCode: 1 } } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome).toMatchObject({
+      status: 'FAILED',
+      errorCode: 'ENV_INJECTION_FAILED',
+      errorMessage: V04_DEPLOYMENT_ERROR_MESSAGES.ENV_INJECTION_FAILED,
+      container: { kind: 'running' },
+    });
+    const keys = h.session.keys();
+    expect(keys).not.toContain('docker.create');
+    expect(keys).toContain('docker.rename_from_prev');
+    expect(logText(h, 'deploy')).toContain(PREVIOUS_RESTORED);
+    expect(h.session.calls.some((call) => call.key === 'fs.remove_deploy_dir' && call.command.argv.includes(WORKSPACE.root))).toBe(true);
+    expect(released.count).toBe(1);
+  });
+
+  it.each([
+    ['an interrupted write', { outcome: 'timed_out' as const, exitCode: null }],
+    ['a rejected write', { reject: new Error('channel closed') }],
+  ])('H3: %s ends ENV_INJECTION_FAILED before docker create', async (_name, script) => {
+    const { env } = fakeEnv();
+    const h = envHarness(env, { scripts: { 'secrets.write_file': script } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.errorCode).toBe('ENV_INJECTION_FAILED');
+    expect(h.session.keys()).not.toContain('docker.create');
+  });
+
+  it('H2: a failed docker create still removes the env file right away, before -prev is restored', async () => {
+    const { env } = fakeEnv();
+    const h = envHarness(env, {
+      scripts: { ...PREVIOUS_SCRIPTS, 'docker.create': { exitCode: 1, stderr: GENERIC_DAEMON_ERROR } },
+    });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('FAILED');
+    const keys = h.session.keys();
+    const removal = h.session.calls.findIndex((call) => call.key === 'fs.remove_deploy_dir' && call.command.argv.includes(ENV_FILE));
+    expect(removal).toBe(keys.indexOf('docker.create') + 1);
+    expect(removal).toBeLessThan(keys.indexOf('docker.rename_from_prev'));
+  });
+
+  it('H2: a failed removal is logged and left to the workspace cleanup; the deploy still succeeds', async () => {
+    const { env } = fakeEnv();
+    const h = envHarness(env, { scripts: { 'fs.remove_deploy_dir': [{ exitCode: 1 }, { exitCode: 0 }] } });
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('SUCCESS');
+    expect(logText(h, 'deploy')).toContain(ENV_FILE_NOT_REMOVED_LOG);
+    expect(h.session.calls.at(-1)?.command.argv).toContain(WORKSPACE.root);
+  });
+
+  it('A5: an empty env writes no file and passes no --env-file (v0.3 behaviour), snapshot v2 with no env', async () => {
+    const { env } = fakeEnv([], {});
+    const h = envHarness(env);
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('SUCCESS');
+    expect(h.session.keys()).not.toContain('secrets.write_file');
+    expect(h.session.argv('docker.create')).not.toContain('--env-file');
+    expect(envFileCalls(h)).toEqual([]);
+    expect(h.progress.records.find((entry) => entry.to === 'DEPLOYING')?.record.runtimeConfig).toMatchObject({ version: 2, env: [] });
+  });
+
+  it('no env at all keeps the v1 snapshot and no configure step', async () => {
+    const h = harness({});
+
+    await runDeployment(h.input);
+
+    expect(h.progress.records.find((entry) => entry.to === 'DEPLOYING')?.record.runtimeConfig).toMatchObject({ version: 1 });
+    expect(logText(h, 'prepare')).not.toContain('Configuring environment');
+  });
+
+  it('a manual rollback prepares a workspace for the env file and cleans it up', async () => {
+    const { env } = fakeEnv();
+    const h = manualRollbackHarness(probing({ stdout: 'NOODARA_PROBE http 200\n' }));
+    const input: RunDeploymentInput = { ...h.input, env };
+
+    const outcome = await runDeployment(input);
+
+    expect(outcome.status).toBe('SUCCESS');
+    const keys = h.session.keys();
+    expect(keys.indexOf('fs.prepare_workspace')).toBeLessThan(keys.indexOf('secrets.write_file'));
+    expect(h.session.argv('docker.create')).toEqual(expect.arrayContaining(['--env-file', ENV_FILE]));
+    expect(h.session.calls.at(-1)?.command.argv).toContain(WORKSPACE.root);
+  });
+
+  it('H1: every attempt renders and writes its own env file; a retry never reuses one', async () => {
+    const { env } = fakeEnv();
+    const first = envHarness(env);
+    const second = envHarness(env);
+
+    await runDeployment(first.input);
+    await runDeployment(second.input);
+
+    for (const h of [first, second]) {
+      expect(h.session.keys().filter((key) => key === 'secrets.write_file')).toHaveLength(1);
+    }
   });
 });

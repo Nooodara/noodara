@@ -17,6 +17,7 @@ import {
   type RollbackRefusal,
 } from '@noodara/domain/deployment';
 import { writeActivityEvent } from '../activity/write-activity-event.js';
+import { rollbackTargetEnvIssue } from '../deploy/deploy-target.js';
 import { serviceImageRetention } from '../deploy/image-retention.js';
 import type { Database } from '../db/client.js';
 import { activityEvents } from '../db/schema/activity-events.js';
@@ -747,6 +748,20 @@ async function insertRollbackDeployment(
   if (!plan.ok) return { kind: 'failed', failure: { ok: false, code: plan.code, message: plan.message } };
 
   const { target, current } = plan;
+  // 23-04 A3: a reference the target's env pinned must still resolve now (named key and reference).
+  const envIssue = await rollbackTargetEnvIssue(
+    tx,
+    {
+      owner: { scope: 'service', projectId: service.projectId, serviceId: service.id },
+      projectId: service.projectId,
+      environmentId: service.environmentId,
+      serviceId: service.id,
+    },
+    target.runtimeConfig,
+  );
+  if (envIssue !== null) {
+    return { kind: 'failed', failure: { ok: false, code: 'ROLLBACK_TARGET_UNAVAILABLE', message: envIssue } };
+  }
   const inserted = await insertQueuedRow(
     tx,
     deps,

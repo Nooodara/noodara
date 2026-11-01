@@ -45,6 +45,7 @@ import {
   startPostStartPolls,
   transitionDeployment,
   V03_DEPLOYMENT_ERROR_MESSAGES,
+  V04_DEPLOYMENT_ERROR_MESSAGES,
   type CleanupOutcome,
   type CleanupResource,
   type ContainerObservation,
@@ -62,7 +63,7 @@ import {
   type RuntimeConfigSnapshot,
   type RuntimeEnvEntry,
 } from '@noodara/domain/deployment';
-import { revealSecret, type Redactor, type SecretValue } from '@noodara/domain/security';
+import { revealSecret, secretValue, type Redactor, type SecretValue } from '@noodara/domain/security';
 import {
   bundledGitHostKeysFor,
   deployWorkspaceFor,
@@ -72,6 +73,7 @@ import {
   validateImageRef,
   type CommitSha,
   type ContainerPort,
+  type DeploySecretPath,
   type DeployWorkspace,
   type GitHostKey,
   type GitSshEndpoint,
@@ -102,20 +104,25 @@ import {
   type StepResult,
 } from '@noodara/docker';
 import { cloneRepository, type GitCredential } from '@noodara/git';
-import { proxyDynamicPathFor } from '@noodara/domain';
+import { proxyDynamicPathFor, renderEnvFile, utf8ByteLength, type EnvFileEntry } from '@noodara/domain';
 import {
   dockerImageRemove,
   dockerNetworkRemove,
+  envFileFor,
   killSupervisedOperation,
   parseProxyDynamicPort,
+  prepareWorkspace,
   previousContainerNameFor,
   proxyNetworkConnect,
   proxyReadDynamic,
   removeDeployDir,
+  removeSecretFile,
+  writeEnvFile,
   type RemoteCommand,
   type SshDeploySession,
   type StreamChunk,
 } from '@noodara/ssh';
+import { SecretStoreError } from '../secrets/secret-store.js';
 import type { DeploymentLogSink } from './log-sink.js';
 
 export interface DeployRunLimits {
@@ -161,6 +168,15 @@ export interface DeploymentProgress {
    *  runtime config snapshot and image_ref. */
   advance(from: DeploymentStatus, to: DeploymentStatus, record?: AdvanceRecord): Promise<void>;
   recordCommitSha(sha: CommitSha): Promise<void>;
+  /** 23-04 A4: the configure step (counts and bounds only; never a key, a name or a value). */
+  recordConfigure?(step: ConfigureStepRecord): Promise<void>;
+}
+
+export interface ConfigureStepRecord {
+  readonly variables: number;
+  readonly secrets: number;
+  readonly startedAt: Date;
+  readonly completedAt: Date;
 }
 
 export type DeployCredential = GitCredential | { readonly kind: 'registry'; readonly registry: RegistryCredential };
@@ -278,6 +294,16 @@ export interface DeploymentOutcome {
 
 /** Named warning of an unconfirmed cancel; carried by the `deployment.finished` activity event. */
 export const CANCEL_UNCONFIRMED = 'CANCEL_UNCONFIRMED';
+
+/** 23-04 A4: the configure line; counts only. */
+export function configureSummary(variables: number, secrets: number): string {
+  const v = `${String(variables)} variable${variables === 1 ? '' : 's'}`;
+  const r = `${String(secrets)} secret${secrets === 1 ? '' : 's'}`;
+  return `Configuring environment: ${v}, ${r}.`;
+}
+
+export const ENV_FILE_NOT_REMOVED_LOG =
+  'The environment file could not be removed after the container was created; it is removed with the workspace.';
 export type DeploymentWarning = typeof CANCEL_UNCONFIRMED;
 
 /** The closed `deployment_error_code` (pg enum) has no cancel code, so an unconfirmed cancel is
@@ -505,6 +531,8 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
   // The new container is gone from the server, so the ledger may clean its image (A5).
   let newRemoved = false;
   let seq = 0;
+  // 23-04: the attempt's decrypted env secrets (held in an object so TS does not narrow it).
+  const envHold: { lease: DeployEnvLease | null } = { lease: null };
 
   const secrets = credentialSecrets(input.credential).map((secret) => revealSecret(secret));
   const kinds = credentialSecrets(input.credential).map((secret) => secret.kind);
@@ -631,9 +659,13 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
   };
 
   /** 22-05: a proxy command bounded like a recovery step; its output is classified, never logged. */
-  const proxyStep = async (command: RemoteCommand): Promise<{ readonly ok: boolean; readonly stdout: string; readonly stderr: string }> => {
+  const proxyStep = async (
+    command: RemoteCommand,
+    stdin?: SecretValue,
+  ): Promise<{ readonly ok: boolean; readonly stdout: string; readonly stderr: string }> => {
     try {
       const result = await session.stream(command, {
+        ...(stdin === undefined ? {} : { stdin }),
         maxDurationMs: limits.cleanupStepMs,
         idleTimeoutMs: limits.cleanupStepMs,
         maxTotalBytes: CLEANUP_MAX_TOTAL_BYTES,
@@ -699,7 +731,79 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     return { kind: 'missing' };
   };
 
+  /** 23-04 A1, A4: decrypts the referenced secrets (registered in the redactor) and logs the
+   *  configure step with keys and reference names only. Runs first: nothing is cloned or built
+   *  for an env that cannot be resolved. */
+  const configureEnv = async (): Promise<void> => {
+    const env = input.env;
+    if (env === undefined) return;
+    const configureStartedAt = new Date(clock.now());
+    try {
+      envHold.lease = await env.open(redactor);
+    } catch (error) {
+      if (!(error instanceof SecretStoreError)) throw error;
+      if (error.code === 'SECRET_NOT_IN_SCOPE' || error.code === 'SECRET_NOT_FOUND') {
+        failed('SECRET_UNRESOLVED', V04_DEPLOYMENT_ERROR_MESSAGES.SECRET_UNRESOLVED);
+      }
+      failed('ENV_INJECTION_FAILED', V04_DEPLOYMENT_ERROR_MESSAGES.ENV_INJECTION_FAILED);
+    }
+    const references = env.entries.filter((entry) => 'secretRef' in entry).length;
+    const plain = env.entries.length - references;
+    log('prepare', 'system', configureSummary(plain, references));
+    for (const entry of env.entries) {
+      log('prepare', 'system', 'secretRef' in entry ? `  ${entry.key} = <secret:${entry.secretRef}>` : `  ${entry.key}`);
+    }
+    await progress.recordConfigure?.({
+      variables: plain,
+      secrets: references,
+      startedAt: configureStartedAt,
+      completedAt: new Date(clock.now()),
+    });
+  };
+
+  /** 23-04 A2, H3: renders and writes `<workspace>/secrets/env` (0600 from the first byte, byte
+   *  count checked remotely). Null when the deploy has no env. Any failure is ENV_INJECTION_FAILED. */
+  const writeEnv = async (): Promise<DeploySecretPath | null> => {
+    const env = input.env;
+    const lease = envHold.lease;
+    if (env === undefined || lease === null || env.entries.length === 0) return null;
+    const fileEntries: EnvFileEntry[] = [];
+    for (const entry of env.entries) {
+      if (!('secretRef' in entry)) {
+        fileEntries.push({ key: entry.key, value: entry.value });
+        continue;
+      }
+      const value = lease.secrets.get(entry.key);
+      if (value === undefined) failed('SECRET_UNRESOLVED', V04_DEPLOYMENT_ERROR_MESSAGES.SECRET_UNRESOLVED);
+      fileEntries.push({ key: entry.key, value: revealSecret(value) });
+    }
+    const rendered = renderEnvFile(fileEntries);
+    if (!rendered.ok) failed('ENV_INJECTION_FAILED', V04_DEPLOYMENT_ERROR_MESSAGES.ENV_INJECTION_FAILED);
+    if (!ledger.workspaceCreated) {
+      // A manual rollback has no workspace yet: the env file still lives under one (cleaned up).
+      ledger = recordResource(ledger, { kind: 'workspace_created' });
+      if (!(await proxyStep(prepareWorkspace(workspace))).ok) {
+        failed('ENV_INJECTION_FAILED', V04_DEPLOYMENT_ERROR_MESSAGES.ENV_INJECTION_FAILED);
+      }
+    }
+    const path = envFileFor(workspace);
+    ledger = recordResource(ledger, { kind: 'secrets_file_written', name: 'env' });
+    const written = await proxyStep(
+      writeEnvFile(path, utf8ByteLength(rendered.value)),
+      secretValue(rendered.value, 'app_secret'),
+    );
+    if (!written.ok) failed('ENV_INJECTION_FAILED', V04_DEPLOYMENT_ERROR_MESSAGES.ENV_INJECTION_FAILED);
+    return path;
+  };
+
+  /** 23-04 H2: the env file goes as soon as docker create returns; the workspace cleanup is the
+   *  fallback when this removal fails. Never throws. */
+  const removeEnv = async (path: DeploySecretPath): Promise<void> => {
+    if (!(await proxyStep(removeSecretFile(path))).ok) log('deploy', 'system', ENV_FILE_NOT_REMOVED_LOG);
+  };
+
   const pipeline = async (): Promise<void> => {
+    await configureEnv();
     // prepare
     let image: ImageRef;
     const { source } = input;
@@ -755,14 +859,11 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
 
     // deploy
     const resolved = resolveHealthcheck(manual === null ? (input.healthcheck ?? null) : manual.runtimeConfig.healthcheck);
+    const runtime = { imageRef: image, internalPort, publishedPort, healthcheck: resolved.config };
     await advance('DEPLOYING', {
-      runtimeConfig: {
-        version: 1,
-        imageRef: image,
-        internalPort,
-        publishedPort,
-        healthcheck: resolved.config,
-      },
+      // 23-04 A3: v2 carries plain values and pinned references, never a secret value.
+      runtimeConfig:
+        input.env === undefined ? { version: 1, ...runtime } : { version: 2, ...runtime, env: input.env.entries },
     });
     const ps = await check(await listManagedContainers(context(null)), null);
     if (ps.kind !== 'ok') failed('DOCKER_UNAVAILABLE', DEPLOY_MESSAGES.DOCKER_PS_UNREADABLE);
@@ -823,16 +924,22 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     containerTouched = true;
     await guarded(
       async () => {
-        await check(
-          await createContainer(context('deploy'), {
-            serviceId,
-            deploymentId,
-            image,
-            internalPort,
-            publishedPort,
-          }),
-          null,
-        );
+        const envFile = await writeEnv();
+        try {
+          await check(
+            await createContainer(context('deploy'), {
+              serviceId,
+              deploymentId,
+              image,
+              internalPort,
+              publishedPort,
+              ...(envFile === null ? {} : { envFile }),
+            }),
+            null,
+          );
+        } finally {
+          if (envFile !== null) await removeEnv(envFile);
+        }
         containerCreated = true;
         ledger = recordResource(ledger, { kind: 'container_created' });
         await check(await startContainer(context('deploy'), { serviceId }), null);
@@ -1032,6 +1139,7 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
     secrets.forEach((raw) => {
       redactor.release(raw);
     });
+    envHold.lease?.release();
   }
 
   if (end === null) {

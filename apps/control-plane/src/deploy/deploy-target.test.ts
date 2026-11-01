@@ -23,6 +23,8 @@ import {
   DeployTargetError,
   resolveDeployEnv,
   resolveDeployTarget,
+  rollbackReferenceMessage,
+  rollbackTargetEnvIssue,
   sourceFromSnapshot,
   type DeployTargetRows,
 } from './deploy-target.js';
@@ -783,5 +785,68 @@ describe('createLoadTarget: env (23-04 A1)', () => {
     lease.release();
     lease.release();
     expect(registered).toEqual([]);
+  });
+});
+
+describe('rollbackTargetEnvIssue (23-04 A3)', () => {
+  const CHAIN = {
+    owner: { scope: 'service' as const, projectId: 'p-1', serviceId: 's-1' },
+    projectId: 'p-1',
+    environmentId: 'e-1',
+    serviceId: 's-1',
+  };
+  const snapshot = (env: unknown[]) => ({
+    version: 2,
+    imageRef: 'noodara/s:d',
+    internalPort: 3000,
+    publishedPort: null,
+    healthcheck: { type: 'none' },
+    env,
+  });
+  function readerOf(rows: { id: string; scope: 'project' | 'environment' | 'service'; name: string; version: number }[]) {
+    let reads = 0;
+    const db = {
+      select: () => ({
+        from: () => ({
+          where: () => {
+            reads += 1;
+            return Promise.resolve(rows);
+          },
+        }),
+      }),
+    } as unknown as Pick<Database, 'select'>;
+    return { db, reads: () => reads };
+  }
+
+  it('is null when every pinned reference still resolves', async () => {
+    const r = readerOf([{ id: 'sec-1', scope: 'environment', name: 'db_password', version: 4 }]);
+    const issue = await rollbackTargetEnvIssue(
+      r.db,
+      CHAIN,
+      snapshot([{ key: 'DB_PASSWORD', secretRef: 'db_password', secretVersion: 1 }]),
+    );
+    expect(issue).toBeNull();
+  });
+
+  it('names the key and the reference that no longer resolves', async () => {
+    const r = readerOf([]);
+    const issue = await rollbackTargetEnvIssue(
+      r.db,
+      CHAIN,
+      snapshot([
+        { key: 'API_URL', value: 'https://a' },
+        { key: 'DB_PASSWORD', secretRef: 'db_password', secretVersion: 1 },
+      ]),
+    );
+    expect(issue).toBe(rollbackReferenceMessage('DB_PASSWORD', 'db_password'));
+  });
+
+  it('reads nothing for a v1 snapshot, a plain-only env or an unusable snapshot', async () => {
+    const r = readerOf([]);
+    const v1 = { version: 1, imageRef: 'noodara/s:d', internalPort: 3000, publishedPort: null, healthcheck: { type: 'none' } };
+    expect(await rollbackTargetEnvIssue(r.db, CHAIN, v1)).toBeNull();
+    expect(await rollbackTargetEnvIssue(r.db, CHAIN, snapshot([{ key: 'A', value: 'b' }]))).toBeNull();
+    expect(await rollbackTargetEnvIssue(r.db, CHAIN, { version: 9 })).toBeNull();
+    expect(r.reads()).toBe(0);
   });
 });

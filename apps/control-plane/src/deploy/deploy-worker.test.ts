@@ -242,6 +242,25 @@ describe('deploy job handler: failures never crash the worker and never carry ra
     expect(h.finished[0]).toMatchObject({ errorCode: 'REPOSITORY_AUTH_FAILED', errorMessage: DEPLOY_JOB_MESSAGES.REPOSITORY_AUTH_FAILED });
   });
 
+  it('23-04 A1: an unresolved secret ends FAILED/SECRET_UNRESOLVED with the load message, before any connection', async () => {
+    const message = 'Variable DB_URL references secret db_password, which does not exist.';
+    const h = harness({
+      loadTarget: () => Promise.resolve({ ok: false as const, code: 'SECRET_UNRESOLVED' as const, message }),
+    });
+    await h.handle(PAYLOAD);
+    expect(h.deps.connect).not.toHaveBeenCalled();
+    expect(h.deps.run).not.toHaveBeenCalled();
+    expect(h.finished).toEqual([
+      { status: 'FAILED', errorCode: 'SECRET_UNRESOLVED', errorMessage: message, commitSha: null, container: null },
+    ]);
+  });
+
+  it('23-04 A1: SECRET_UNRESOLVED without a message falls back to the closed V04 message', async () => {
+    const h = harness({ loadTarget: () => Promise.resolve({ ok: false as const, code: 'SECRET_UNRESOLVED' as const }) });
+    await h.handle(PAYLOAD);
+    expect(h.finished[0]).toMatchObject({ errorCode: 'SECRET_UNRESOLVED', errorMessage: DEPLOY_JOB_MESSAGES.SECRET_UNRESOLVED });
+  });
+
   it.each([
     ['loadTarget', { loadTarget: () => Promise.reject(new Error(RAW_REMOTE)) }],
     ['connect', { connect: () => Promise.reject(new Error(RAW_REMOTE)) }],

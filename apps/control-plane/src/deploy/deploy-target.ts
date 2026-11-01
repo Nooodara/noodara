@@ -17,10 +17,21 @@
 //   deploy: it rides along as `requestedSha`, re-validated as 40-hex (corrupt = caller bug).
 // - 22-05: a service with at least one domain row gets `routes` (is its server's proxy RUNNING,
 //   and the H2 re-apply through apply-routes under the per-service route lock); none = no routes.
-import { and, desc, eq, inArray, isNotNull, ne } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, ne, or, type SQL } from 'drizzle-orm';
+import {
+  parseEnvValue,
+  resolveEnv,
+  resolveSecretRefs,
+  type EnvDefinition,
+  type EnvScope,
+  type ResolvedEnvEntry,
+  type SecretsByScope,
+} from '@noodara/domain';
 import {
   parseRuntimeConfigSnapshot,
+  runtimeConfigEnv,
   validateHealthcheckConfig,
+  type RuntimeEnvEntry,
   type HealthcheckConfig,
 } from '@noodara/domain/deployment';
 import {
@@ -355,6 +366,28 @@ function visibleSecretsOf(chain: OwnerChain): SQL | undefined {
   return and(eq(secrets.projectId, chain.projectId), or(...levels));
 }
 
+/** 23-04 A3: the secrets `chain` sees now: ids, scopes, names and versions, never a value. */
+export async function listVisibleSecrets(db: Pick<Database, 'select'>, chain: OwnerChain): Promise<DeployEnvRows['secrets']> {
+  return db
+    .select({ id: secrets.id, scope: secrets.scope, name: secrets.name, version: secrets.version })
+    .from(secrets)
+    .where(visibleSecretsOf(chain));
+}
+
+/** 23-04 A3: why a rollback target's env no longer resolves (named key and reference), or null. */
+export async function rollbackTargetEnvIssue(
+  db: Pick<Database, 'select'>,
+  chain: OwnerChain,
+  runtimeConfig: unknown,
+): Promise<string | null> {
+  const snapshot = parseRuntimeConfigSnapshot(runtimeConfig);
+  if (!snapshot.ok) return null;
+  const env = runtimeConfigEnv(snapshot.value);
+  if (!env.some((entry) => 'secretRef' in entry)) return null;
+  const resolved = resolveDeployEnv({ variables: [], secrets: await listVisibleSecrets(db, chain) }, env);
+  return resolved.ok ? null : resolved.message;
+}
+
 function envOf(
   db: Database,
   chain: OwnerChain,
@@ -503,10 +536,7 @@ export function createLoadTarget(
       serviceId: service.id,
     };
     const variables = await listChainVariables(deps.db, chain);
-    const visibleSecrets = await deps.db
-      .select({ id: secrets.id, scope: secrets.scope, name: secrets.name, version: secrets.version })
-      .from(secrets)
-      .where(visibleSecretsOf(chain));
+    const visibleSecrets = await listVisibleSecrets(deps.db, chain);
     let rollbackEnv: readonly RuntimeEnvEntry[] | null = null;
     if (deployment.trigger === 'rollback') {
       const snapshot = parseRuntimeConfigSnapshot(deployment.runtimeConfig);

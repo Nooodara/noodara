@@ -28,6 +28,7 @@
 import {
   parseRuntimeConfigSnapshot,
   V03_DEPLOYMENT_ERROR_MESSAGES,
+  V04_DEPLOYMENT_ERROR_MESSAGES,
   type DeploymentErrorCode,
   type PostStartPollPolicy,
 } from '@noodara/domain/deployment';

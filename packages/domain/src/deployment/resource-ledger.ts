@@ -63,7 +63,7 @@ export interface ResourceLedger {
 
 export type LedgerEvent =
   | { readonly kind: 'workspace_created' }
-  | { readonly kind: 'secrets_file_written'; readonly name: DeploySecretName | 'docker_config' }
+  | { readonly kind: 'secrets_file_written'; readonly name: DeploySecretName | 'docker_config' | 'env' }
   | { readonly kind: 'image_created' }
   /** Only when the network did not exist before this attempt. */
   | { readonly kind: 'network_created' }
@@ -115,7 +115,7 @@ export function createResourceLedger(
   });
 }
 
-function secretsPath(ledger: ResourceLedger, name: DeploySecretName | 'docker_config'): string {
+function secretsPath(ledger: ResourceLedger, name: DeploySecretName | 'docker_config' | 'env'): string {
   const file = name === 'docker_config' ? 'docker' : name;
   return `${ledger.names.workspace}/secrets/${file}`;
 }

@@ -59,6 +59,7 @@ export {
   dockerBuild,
   dockerBuilderPrune,
   dockerCreate,
+  envFileFor,
   dockerImageRemove,
   dockerInspectState,
   dockerKill,
