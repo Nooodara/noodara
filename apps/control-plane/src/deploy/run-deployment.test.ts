@@ -2283,6 +2283,19 @@ describe('runDeployment: env injection (23-04 A1, A2, A4, H2, H3)', () => {
     expect(h.sink.entries.findIndex((entry) => entry.text.startsWith('Configuring environment'))).toBe(0);
   });
 
+  it('A4, A5: an empty env logs no configure line, records no configure step and writes no env file', async () => {
+    const { env } = fakeEnv([]);
+    const h = envHarness(env);
+
+    const outcome = await runDeployment(h.input);
+
+    expect(outcome.status).toBe('SUCCESS');
+    expect(logText(h, 'prepare')).not.toContain('Configuring environment');
+    expect(h.configures).toEqual([]);
+    expect(h.session.keys()).not.toContain('secrets.write_file');
+    expect(h.session.argv('docker.create')).not.toContain('--env-file');
+  });
+
   it.each([
     ['SECRET_NOT_IN_SCOPE', 'SECRET_UNRESOLVED'],
     ['SECRET_NOT_FOUND', 'SECRET_UNRESOLVED'],

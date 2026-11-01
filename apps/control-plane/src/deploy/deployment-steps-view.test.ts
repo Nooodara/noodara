@@ -43,12 +43,28 @@ function view(overrides: Partial<DeploymentView> = {}): DeploymentView {
   };
 }
 
-const STAMPS: DeploymentStepStamps = { buildingStartedAt: at(5), deployingStartedAt: at(20), verifyingStartedAt: at(22) };
+const STAMPS: DeploymentStepStamps = {
+  buildingStartedAt: at(5),
+  deployingStartedAt: at(20),
+  verifyingStartedAt: at(22),
+  configureStartedAt: at(0),
+  configureCompletedAt: at(1),
+  configureVariables: 2,
+  configureSecrets: 1,
+};
 
 describe('withDeploymentSteps (13-03 A3)', () => {
-  it('serializes the four derived steps with ISO times', () => {
+  it('serializes the five derived steps with ISO times and the configure counts (23-04 A4)', () => {
     expect(withDeploymentSteps(view(), STAMPS).steps).toEqual([
       { name: 'clone', state: 'success', startedAt: at(0).toISOString(), completedAt: at(5).toISOString(), durationMs: 5000 },
+      {
+        name: 'configure',
+        state: 'success',
+        startedAt: at(0).toISOString(),
+        completedAt: at(1).toISOString(),
+        durationMs: 1000,
+        counts: { variables: 2, secrets: 1 },
+      },
       { name: 'build', state: 'success', startedAt: at(5).toISOString(), completedAt: at(20).toISOString(), durationMs: 15000 },
       { name: 'start', state: 'success', startedAt: at(20).toISOString(), completedAt: at(22).toISOString(), durationMs: 2000 },
       { name: 'verify', state: 'success', startedAt: at(22).toISOString(), completedAt: at(30).toISOString(), durationMs: 8000 },
@@ -58,18 +74,30 @@ describe('withDeploymentSteps (13-03 A3)', () => {
   it('a failed deploy marks the failing step failed and later steps pending', () => {
     const failed = view({ status: 'FAILED', errorCode: 'BUILD_FAILED', completedAt: at(9).toISOString() });
     const steps = withDeploymentSteps(failed, { ...STAMPS, deployingStartedAt: null, verifyingStartedAt: null }).steps;
-    expect(steps.map((step) => step.state)).toEqual(['success', 'failed', 'pending', 'pending']);
+    expect(steps.map((step) => step.state)).toEqual(['success', 'success', 'failed', 'pending', 'pending']);
   });
 
   it('a cancel marks the running step cancelled', () => {
     const cancelled = view({ status: 'CANCELLED', completedAt: at(21).toISOString() });
     const steps = withDeploymentSteps(cancelled, { ...STAMPS, verifyingStartedAt: null }).steps;
-    expect(steps.map((step) => step.state)).toEqual(['success', 'success', 'cancelled', 'pending']);
+    expect(steps.map((step) => step.state)).toEqual(['success', 'success', 'success', 'cancelled', 'pending']);
   });
 
-  it('a row without boundaries derives its steps from the status alone', () => {
+  it('a row without boundaries derives its steps from the status alone (no configure: skipped)', () => {
     const steps = withDeploymentSteps(view({ status: 'BUILDING', completedAt: null }), undefined).steps;
-    expect(steps.map((step) => step.state)).toEqual(['success', 'running', 'pending', 'pending']);
+    expect(steps.map((step) => step.state)).toEqual(['success', 'skipped', 'running', 'pending', 'pending']);
+    expect(steps[1]).not.toHaveProperty('counts');
+  });
+
+  it('a stamp reader without the configure columns (13-03 shape) still yields a valid timeline', () => {
+    const legacy: DeploymentStepStamps = { buildingStartedAt: at(5), deployingStartedAt: at(20), verifyingStartedAt: at(22) };
+    expect(withDeploymentSteps(view(), legacy).steps.map((step) => step.state)).toEqual([
+      'success',
+      'skipped',
+      'success',
+      'success',
+      'success',
+    ]);
   });
 });
 
@@ -90,7 +118,7 @@ describe('attachDeploymentSteps', () => {
   it('attaches steps to a single view', async () => {
     const read: DeploymentStepStampReader = () => Promise.resolve(new Map([[ID_A, STAMPS]]));
     const one = await attachDeploymentStepsTo(read, view());
-    expect(one.steps).toHaveLength(4);
+    expect(one.steps).toHaveLength(5);
     expect(one.id).toBe(ID_A);
   });
 });

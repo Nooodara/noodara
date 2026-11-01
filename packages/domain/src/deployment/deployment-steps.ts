@@ -1,13 +1,14 @@
-// 13-03: the deployment step timeline (clone|pull, build, start, verify). 16-02: HEALTHCHECK is
+// 13-03: the deployment step timeline (clone|pull, build, start, verify). 23-04 A4: plus configure
+// between clone|pull and build (variables and secrets resolved; counts and bounds only). 16-02: HEALTHCHECK is
 // the verify step (DEPLOYING -> HEALTHCHECK writes its boundary). Pure and total: every
-// status x source x error code x timestamp combination yields exactly four steps in fixed order.
+// status x source x error code x timestamp combination yields exactly five steps in fixed order.
 // Step *states* come from the status (plus, once terminal, which boundary the attempt reached);
 // timestamps only add times. So a terminal deployment never shows a running step, and a row from
 // before the step columns existed (all boundaries null) still gets a valid timeline.
 import { canTransitionDeployment, type DeploymentStatus, type DeploymentTrigger } from './deployment-state.js';
 import type { DeploymentErrorCode } from './deployment-error.js';
 
-export const DEPLOYMENT_STEP_NAMES = Object.freeze(['clone', 'pull', 'build', 'start', 'verify'] as const);
+export const DEPLOYMENT_STEP_NAMES = Object.freeze(['clone', 'pull', 'configure', 'build', 'start', 'verify'] as const);
 export type DeploymentStepName = (typeof DEPLOYMENT_STEP_NAMES)[number];
 
 export const DEPLOYMENT_STEP_STATES = Object.freeze([
@@ -39,6 +40,17 @@ export interface DeploymentStepsInput {
   readonly deployingStartedAt: Date | null;
   readonly verifyingStartedAt: Date | null;
   readonly completedAt: Date | null;
+  /** 23-04 A4: the configure step as stored; absent or null on rows without one (no env, or
+   *  before 23-04). The step counts as done only when its completion is known. */
+  readonly configureStartedAt?: Date | null;
+  readonly configureCompletedAt?: Date | null;
+  readonly configureVariables?: number | null;
+  readonly configureSecrets?: number | null;
+}
+
+export interface DeploymentStepCounts {
+  readonly variables: number;
+  readonly secrets: number;
 }
 
 export interface DeploymentStep {
@@ -48,6 +60,8 @@ export interface DeploymentStep {
   readonly completedAt: Date | null;
   /** Null unless both ends are known; never negative (a skewed clock reads as 0). */
   readonly durationMs: number | null;
+  /** Only on a configure step that completed. */
+  readonly counts?: DeploymentStepCounts;
 }
 
 /**
@@ -66,6 +80,7 @@ export function stepBoundaryOfTransition(
   return null;
 }
 
+// The core timeline (clone|pull, build, start, verify); configure is derived on its own.
 const STEP_COUNT = 4;
 const DONE = STEP_COUNT;
 const NONE = -1;
@@ -143,11 +158,34 @@ function reachedStep(input: DeploymentStepsInput): number {
   }
 }
 
+// 23-04: codes that end an attempt while its env is resolved (before anything is cloned).
+const CONFIGURE_FAILURES: ReadonlySet<DeploymentErrorCode> = new Set(['SECRET_UNRESOLVED', 'ENV_INJECTION_FAILED']);
+
+function hasLaterBoundary(input: DeploymentStepsInput): boolean {
+  return (
+    validDate(input.buildingStartedAt) !== null ||
+    validDate(input.deployingStartedAt) !== null ||
+    validDate(input.verifyingStartedAt) !== null
+  );
+}
+
+/** A terminal attempt that ended in configure: no configure record and no later boundary. */
+function failedInConfigure(input: DeploymentStepsInput): boolean {
+  return (
+    input.errorCode !== null &&
+    CONFIGURE_FAILURES.has(input.errorCode) &&
+    validDate(input.configureCompletedAt ?? null) === null &&
+    !hasLaterBoundary(input)
+  );
+}
+
 function terminalReachedStep(input: DeploymentStepsInput): number {
   const git = input.sourceType === 'git';
   if (validDate(input.verifyingStartedAt) !== null) return 3;
   if (validDate(input.deployingStartedAt) !== null) return 2;
   if (validDate(input.buildingStartedAt) !== null) return git ? 1 : 0;
+  // Nothing after configure ran.
+  if (failedInConfigure(input)) return NONE;
   if (input.errorCode !== null) {
     const mapped = (git ? GIT_FAILURE_STEP : IMAGE_FAILURE_STEP)[input.errorCode];
     if (mapped !== undefined) return mapped;
@@ -164,13 +202,48 @@ function step(name: DeploymentStepName, state: DeploymentStepState, startedAt: D
   return { name, state, startedAt, completedAt, durationMs: durationOf(startedAt, completedAt) };
 }
 
-/** The four-step timeline of a deployment. Never throws. */
+function count(value: number | null | undefined): number {
+  return value !== null && value !== undefined && Number.isInteger(value) && value >= 0 ? value : 0;
+}
+
+function isStopped(status: DeploymentStatus): boolean {
+  return status === 'FAILED' || status === 'CANCELLED' || status === 'ROLLING_BACK' || status === 'ROLLED_BACK';
+}
+
+/** 23-04 A4: success with its stored bounds and counts once recorded; failed when the attempt
+ *  ended resolving its env; skipped when the attempt went past it without one (no variables, or
+ *  a row from before 23-04); pending otherwise. */
+function configureStep(input: DeploymentStepsInput, coreReached: number): DeploymentStep {
+  const completedAt = validDate(input.configureCompletedAt ?? null);
+  if (completedAt !== null) {
+    return {
+      ...step('configure', 'success', validDate(input.configureStartedAt ?? null), completedAt),
+      counts: { variables: count(input.configureVariables), secrets: count(input.configureSecrets) },
+    };
+  }
+  if (isStopped(input.status) && failedInConfigure(input)) {
+    const state: DeploymentStepState = input.status === 'CANCELLED' ? 'cancelled' : 'failed';
+    return step('configure', state, validDate(input.startedAt), validDate(input.completedAt));
+  }
+  const past =
+    input.status === 'SUCCESS' ||
+    (input.status !== 'QUEUED' && input.status !== 'PREPARING' && !isStopped(input.status)) ||
+    (isStopped(input.status) && (hasLaterBoundary(input) || coreReached >= 1));
+  return step('configure', past ? 'skipped' : 'pending', null, null);
+}
+
+/** The five-step timeline of a deployment. Never throws. */
 export function deriveDeploymentSteps(input: DeploymentStepsInput): DeploymentStep[] {
+  const reached = reachedStep(input);
+  const core = deriveCoreSteps(input, reached);
+  return [...core.slice(0, 1), configureStep(input, reached), ...core.slice(1)];
+}
+
+function deriveCoreSteps(input: DeploymentStepsInput, reached: number): DeploymentStep[] {
   const git = input.sourceType === 'git';
   const names: readonly DeploymentStepName[] = [git ? 'clone' : 'pull', 'build', 'start', 'verify'];
   const starts = stepStarts(input);
   const completedAt = validDate(input.completedAt);
-  const reached = reachedStep(input);
   // ROLLING_BACK restores the previous container: the attempt's own failed step is over.
   const terminalState: DeploymentStepState =
     input.status === 'CANCELLED'

@@ -61,6 +61,10 @@ function deploymentRow(overrides: Partial<DeploymentRow> = {}): DeploymentRow {
     runtimeConfig: null,
     healthcheckStartedAt: null,
     rollbackStartedAt: null,
+    configureStartedAt: null,
+    configureCompletedAt: null,
+    configureVariables: null,
+    configureSecrets: null,
     createdAt: CREATED,
     updatedAt: CREATED,
     ...overrides,
@@ -308,12 +312,41 @@ describe('deployment store: progress (C1)', () => {
     await h.store.progress(DEPLOYMENT_ID).recordCommitSha(SHA);
     expect(h.state.deployment?.commitSha).toBe(SHA);
   });
+
+  it('23-04 A4: records the configure step (counts and bounds only) while PREPARING and publishes it', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'PREPARING', startedAt: STARTED }), service: serviceRow() });
+    const configured = new Date(STARTED.getTime() + 40);
+    await h.store.progress(DEPLOYMENT_ID).recordConfigure?.({ variables: 3, secrets: 2, startedAt: STARTED, completedAt: configured });
+    const [update] = h.ops.filter((op) => op.root === 'update');
+    if (update === undefined) throw new Error('no configure update');
+    expect(Object.keys(h.setOf(update)).sort()).toEqual(
+      ['configureCompletedAt', 'configureSecrets', 'configureStartedAt', 'configureVariables', 'updatedAt'].sort(),
+    );
+    expect(h.state.deployment).toMatchObject({
+      status: 'PREPARING',
+      configureStartedAt: STARTED,
+      configureCompletedAt: configured,
+      configureVariables: 3,
+      configureSecrets: 2,
+    });
+    expect(h.published).toHaveLength(1);
+  });
+
+  it('23-04 A4: a row that left PREPARING keeps its columns and nothing is published', async () => {
+    const h = harness({ deployment: deploymentRow({ status: 'CANCELLED', startedAt: STARTED }), service: serviceRow() });
+    await h.store.progress(DEPLOYMENT_ID).recordConfigure?.({ variables: 1, secrets: 0, startedAt: STARTED, completedAt: STARTED });
+    expect(h.ops.filter((op) => op.root === 'update')).toEqual([]);
+    expect(h.state.deployment?.configureCompletedAt).toBeNull();
+    expect(h.published).toEqual([]);
+  });
 });
 
 describe('deployment store: step boundaries (13-03 A2, H1)', () => {
   const stepsOf = (row: DeploymentRow | null) => {
     if (!row) throw new Error('row missing');
-    return deriveDeploymentSteps({ ...row, sourceType: 'git' }).map((s) => s.state);
+    return deriveDeploymentSteps({ ...row, sourceType: 'git' })
+      .filter((s) => s.name !== 'configure')
+      .map((s) => s.state);
   };
   const at = <T,>(items: readonly T[], index: number): T => {
     const item = items[index];

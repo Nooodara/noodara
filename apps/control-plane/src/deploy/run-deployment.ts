@@ -747,6 +747,8 @@ export async function runDeployment(input: RunDeploymentInput): Promise<Deployme
       }
       failed('ENV_INJECTION_FAILED', V04_DEPLOYMENT_ERROR_MESSAGES.ENV_INJECTION_FAILED);
     }
+    // A service without variables keeps the v0.3 log and timeline (configure derives as skipped).
+    if (env.entries.length === 0) return;
     const references = env.entries.filter((entry) => 'secretRef' in entry).length;
     const plain = env.entries.length - references;
     log('prepare', 'system', configureSummary(plain, references));

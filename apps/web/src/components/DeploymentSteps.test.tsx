@@ -106,6 +106,54 @@ describe('DeploymentSteps', () => {
     expect(within(screen.getByTestId('deployment-step-verify')).getByText('Pending')).toBeInTheDocument();
   });
 
+  it('23-04 A4: shows configure between clone and build with its counts, never a key or a reference', () => {
+    const [clone, ...rest] = deployment().steps;
+    if (clone === undefined) throw new Error('no clone step');
+    const configure: DeploymentStepView = {
+      name: 'configure',
+      state: 'success',
+      startedAt: STAMP,
+      completedAt: STAMP,
+      durationMs: 40,
+      counts: { variables: 3, secrets: 1 },
+    };
+    renderUi(<DeploymentSteps deployment={deployment({ steps: [clone, configure, ...rest] })} />);
+    expect(screen.getAllByTestId(/^deployment-step-/).map((row) => row.getAttribute('data-testid'))).toEqual([
+      'deployment-step-clone',
+      'deployment-step-configure',
+      'deployment-step-build',
+      'deployment-step-start',
+      'deployment-step-verify',
+    ]);
+    const row = screen.getByTestId('deployment-step-configure');
+    expect(within(row).getByText('Configure')).toBeInTheDocument();
+    expect(within(row).getByTestId('step-duration')).toHaveTextContent('40ms');
+    expect(within(row).getByTestId('deployment-configure-counts')).toHaveTextContent('3 variables, 1 secret');
+  });
+
+  it('23-04 A4: hides a skipped configure (no variables) and fails it on an unresolved secret', () => {
+    const [clone, ...rest] = deployment().steps;
+    if (clone === undefined) throw new Error('no clone step');
+    const skipped = steps(['configure', 'skipped', null]);
+    const { unmount } = renderUi(<DeploymentSteps deployment={deployment({ steps: [clone, ...skipped, ...rest] })} />);
+    expect(screen.queryByTestId('deployment-step-configure')).toBeNull();
+    expect(screen.getAllByTestId(/^deployment-step-/)).toHaveLength(4);
+    unmount();
+
+    renderUi(
+      <DeploymentSteps
+        deployment={deployment({
+          status: 'FAILED',
+          errorCode: 'SECRET_UNRESOLVED',
+          steps: steps(['clone', 'pending', null], ['configure', 'failed', 30], ['build', 'pending', null], ['start', 'pending', null], ['verify', 'pending', null]),
+        })}
+      />,
+    );
+    const row = screen.getByTestId('deployment-step-configure');
+    expect(within(row).getByText('Failed')).toBeInTheDocument();
+    expect(within(row).queryByTestId('deployment-configure-counts')).toBeNull();
+  });
+
   it('reuses the discovery step row treatment instead of a copy (A1)', () => {
     renderUi(
       <>

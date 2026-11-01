@@ -96,6 +96,11 @@ export const deployments = pgTable(
       withTimezone: true,
     }),
     rollbackStartedAt: timestamp("rollback_started_at", { withTimezone: true }),
+    // 23-04 A4 (migration 0017) configure step: bounds and counts only, never a key or a value.
+    configureStartedAt: timestamp("configure_started_at", { withTimezone: true }),
+    configureCompletedAt: timestamp("configure_completed_at", { withTimezone: true }),
+    configureVariables: integer("configure_variables"),
+    configureSecrets: integer("configure_secrets"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

@@ -11,7 +11,7 @@ const TESTS_UNIT_FIXTURES_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(TESTS_UNIT_FIXTURES_DIR, '..', '..', '..');
 const FIXTURES_DIR = join(REPO_ROOT, 'fixtures');
 
-const FIXTURE_NAMES = ['node-api', 'static-app', 'failing-build'] as const;
+const FIXTURE_NAMES = ['node-api', 'static-app', 'failing-build', 'env-api'] as const;
 
 const MAX_CONTEXT_BYTES = 1_048_576;
 
@@ -114,6 +114,19 @@ describe('official fixtures (D-13)', () => {
     const dockerfile = readFixtureFile('static-app', 'Dockerfile');
 
     expect(dockerfile).toContain('EXPOSE 80');
+  });
+
+  it('env-api exposes port 3000, drops to a non-root user and answers digests, never values (23-04 A5)', () => {
+    const dockerfile = readFixtureFile('env-api', 'Dockerfile');
+    expect(dockerfile).toMatch(/^EXPOSE 3000$/m);
+    expect(dockerfile).toMatch(/^USER node$/m);
+    expect(dockerfile).not.toMatch(/^ENV /m);
+    const server = readFixtureFile('env-api', 'server.js');
+    expect(server).toContain("url.pathname === '/health'");
+    expect(server).toContain("url.pathname === '/env-digest'");
+    expect(server).toContain("createHash('sha256')");
+    // The response is the digest: the raw variable is never written back.
+    expect(server).not.toMatch(/res\.end\(value\)/);
   });
 
   it('pnpm-workspace.yaml does not turn fixtures/* into workspace packages', () => {

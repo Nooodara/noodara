@@ -89,17 +89,22 @@ export const DeploymentViewSchema = z.object({
   updatedAt: z.string(),
 });
 
-// 13-03 (A3): the GET views add the four-step timeline derived by deriveDeploymentSteps.
+// 13-03 (A3): the GET views add the step timeline derived by deriveDeploymentSteps. 23-04 A4: five
+// steps (configure between clone|pull and build); only a completed configure carries counts.
 export const DeploymentStepViewSchema = z.object({
   name: z.enum(DEPLOYMENT_STEP_NAMES),
   state: z.enum(DEPLOYMENT_STEP_STATES),
   startedAt: z.string().nullable(),
   completedAt: z.string().nullable(),
   durationMs: z.number().int().min(0).nullable(),
+  counts: z
+    .object({ variables: z.number().int().min(0), secrets: z.number().int().min(0) })
+    .strict()
+    .optional(),
 });
 
 export const DeploymentWithStepsViewSchema = DeploymentViewSchema.extend({
-  steps: z.array(DeploymentStepViewSchema).length(4),
+  steps: z.array(DeploymentStepViewSchema).length(5),
 });
 
 export const DeploymentListResponseSchema = z.object({

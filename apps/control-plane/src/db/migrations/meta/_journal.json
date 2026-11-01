@@ -120,6 +120,13 @@
       "when": 1793513624640,
       "tag": "0016_phase22_proxy_install_started_at",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793555587578,
+      "tag": "0017_phase23_configure_step",
+      "breakpoints": true
     }
   ]
 }

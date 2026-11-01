@@ -25,7 +25,6 @@ import {
   type EnvDefinition,
   type EnvScope,
   type ResolvedEnvEntry,
-  type SecretsByScope,
 } from '@noodara/domain';
 import {
   parseRuntimeConfigSnapshot,
@@ -333,7 +332,7 @@ export function resolveDeployEnv(rows: DeployEnvRows, rollbackEnv: readonly Runt
       }));
   }
 
-  const bound = resolveSecretRefs(resolved, secretsByScope as SecretsByScope);
+  const bound = resolveSecretRefs(resolved, secretsByScope);
   if (!bound.ok) {
     if (rollbackEnv === null) return { ok: false, code: 'SECRET_UNRESOLVED', message: bound.message };
     return {
@@ -417,7 +416,12 @@ function envOf(
         }
         byKey.set(key, value);
       }
-      return { secrets: byKey, release: () => lease.release() };
+      return {
+        secrets: byKey,
+        release: () => {
+          lease.release();
+        },
+      };
     },
   };
 }

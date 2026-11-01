@@ -4,6 +4,7 @@
 import { inArray } from 'drizzle-orm';
 import {
   deriveDeploymentSteps,
+  type DeploymentStepCounts,
   type DeploymentStepName,
   type DeploymentStepState,
 } from '@noodara/domain/deployment';
@@ -15,6 +16,11 @@ export interface DeploymentStepStamps {
   readonly buildingStartedAt: Date | null;
   readonly deployingStartedAt: Date | null;
   readonly verifyingStartedAt: Date | null;
+  /** 23-04 A4: the configure step; optional so a reader of the 13-03 columns stays valid. */
+  readonly configureStartedAt?: Date | null;
+  readonly configureCompletedAt?: Date | null;
+  readonly configureVariables?: number | null;
+  readonly configureSecrets?: number | null;
 }
 
 export interface DeploymentStepView {
@@ -23,6 +29,7 @@ export interface DeploymentStepView {
   readonly startedAt: string | null;
   readonly completedAt: string | null;
   readonly durationMs: number | null;
+  readonly counts?: DeploymentStepCounts;
 }
 
 export type DeploymentWithStepsView = DeploymentView & { readonly steps: DeploymentStepView[] };
@@ -43,6 +50,10 @@ export async function readDeploymentStepStamps(
       buildingStartedAt: deployments.buildingStartedAt,
       deployingStartedAt: deployments.deployingStartedAt,
       verifyingStartedAt: deployments.verifyingStartedAt,
+      configureStartedAt: deployments.configureStartedAt,
+      configureCompletedAt: deployments.configureCompletedAt,
+      configureVariables: deployments.configureVariables,
+      configureSecrets: deployments.configureSecrets,
     })
     .from(deployments)
     .where(inArray(deployments.id, [...deploymentIds]));
@@ -63,6 +74,10 @@ export function withDeploymentSteps(view: DeploymentView, stamps: DeploymentStep
     deployingStartedAt: boundaries.deployingStartedAt,
     verifyingStartedAt: boundaries.verifyingStartedAt,
     completedAt: toDate(view.completedAt),
+    configureStartedAt: boundaries.configureStartedAt ?? null,
+    configureCompletedAt: boundaries.configureCompletedAt ?? null,
+    configureVariables: boundaries.configureVariables ?? null,
+    configureSecrets: boundaries.configureSecrets ?? null,
   });
   return {
     ...view,
@@ -72,6 +87,7 @@ export function withDeploymentSteps(view: DeploymentView, stamps: DeploymentStep
       startedAt: toIso(step.startedAt),
       completedAt: toIso(step.completedAt),
       durationMs: step.durationMs,
+      ...(step.counts === undefined ? {} : { counts: step.counts }),
     })),
   };
 }

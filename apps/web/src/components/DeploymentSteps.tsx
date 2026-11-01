@@ -1,11 +1,13 @@
 'use client';
 
-// 13-13: deploy narration. Renders a deployment's four steps (clone or pull, build, start, verify)
-// from the server's `steps[]` (13-03, docs/deploy-engine.md "Step timeline") with the row
+// 13-13: deploy narration. Renders a deployment's steps (clone or pull, configure, build, start,
+// verify) from the server's `steps[]` (13-03, docs/deploy-engine.md "Step timeline") with the row
 // treatment DiscoveryStep uses (StepRow, extracted there). A failed deploy shows only classified
 // copy for its `errorCode` and, when given, a guarded tail of the build log. The server's
 // `errorMessage` is never rendered. `useDeploymentSteps` keeps one deployment live: it refetches
 // on that deployment's `deployment.updated` (the event carries no steps) and on stream resync.
+// 23-04 A4: configure shows its counts once done and is hidden while skipped (no variables), so a
+// service without an env keeps the v0.3 timeline.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   isDeploymentErrorCode,
@@ -28,9 +30,11 @@ export interface DeploymentStepView {
   readonly startedAt: string | null;
   readonly completedAt: string | null;
   readonly durationMs: number | null;
+  /** Only on a configure step that completed. */
+  readonly counts?: { readonly variables: number; readonly secrets: number };
 }
 
-/** What the GET deployment routes return: the view plus its four-step timeline. */
+/** What the GET deployment routes return: the view plus its step timeline. */
 export type DeploymentWithSteps = DeploymentView & { readonly steps: readonly DeploymentStepView[] };
 
 export function hasSteps(deployment: DeploymentView | null | undefined): deployment is DeploymentWithSteps {
@@ -42,6 +46,7 @@ export function hasSteps(deployment: DeploymentView | null | undefined): deploym
 export const DEPLOYMENT_STEP_LABELS = Object.freeze({
   clone: 'Clone',
   pull: 'Pull image',
+  configure: 'Configure',
   build: 'Build',
   start: 'Start',
   verify: 'Health check',
@@ -115,6 +120,14 @@ function useRestoredCommit(deployment: DeploymentWithSteps): string | null {
   return previousId !== null && restored?.id === previousId ? restored.sha : null;
 }
 
+const plural = (count: number, word: string): string => `${String(count)} ${word}${count === 1 ? '' : 's'}`;
+
+/** The configure row's detail: counts only, never a key or a reference name. */
+export function configureDetail(step: DeploymentStepView): string | null {
+  if (step.name !== 'configure' || step.counts === undefined) return null;
+  return `${plural(step.counts.variables, 'variable')}, ${plural(step.counts.secrets, 'secret')}`;
+}
+
 const UNRESOLVED_STEP_STATES: ReadonlySet<DeploymentStepState> = new Set(['pending', 'running']);
 
 export interface DeploymentStepsProps {
@@ -134,17 +147,28 @@ export function DeploymentSteps({ deployment, logTail = null }: DeploymentStepsP
   return (
     <section aria-label="Deployment steps" className="flex flex-col gap-4">
       <div data-testid="deployment-steps" className="flex flex-col">
-        {deployment.steps.map((step) => (
-          <StepRow
-            key={step.name}
-            testId={`deployment-step-${step.name}`}
-            visual={Object.hasOwn(STEP_VISUAL, step.state) ? STEP_VISUAL[step.state] : 'skipped'}
-            label={Object.hasOwn(DEPLOYMENT_STEP_LABELS, step.name) ? DEPLOYMENT_STEP_LABELS[step.name] : 'Step'}
-            word={Object.hasOwn(STEP_WORDS, step.state) ? STEP_WORDS[step.state] : 'Unknown'}
-            durationMs={step.state === 'skipped' ? null : step.durationMs}
-            threadFilled={!UNRESOLVED_STEP_STATES.has(step.state)}
-          />
-        ))}
+        {deployment.steps
+          .filter((step) => !(step.name === 'configure' && step.state === 'skipped'))
+          .map((step) => {
+            const detail = configureDetail(step);
+            return (
+              <StepRow
+                key={step.name}
+                testId={`deployment-step-${step.name}`}
+                visual={Object.hasOwn(STEP_VISUAL, step.state) ? STEP_VISUAL[step.state] : 'skipped'}
+                label={Object.hasOwn(DEPLOYMENT_STEP_LABELS, step.name) ? DEPLOYMENT_STEP_LABELS[step.name] : 'Step'}
+                word={Object.hasOwn(STEP_WORDS, step.state) ? STEP_WORDS[step.state] : 'Unknown'}
+                durationMs={step.state === 'skipped' ? null : step.durationMs}
+                threadFilled={!UNRESOLVED_STEP_STATES.has(step.state)}
+              >
+                {detail === null ? null : (
+                  <p data-testid="deployment-configure-counts" className="pl-6 text-callout text-ink-secondary">
+                    {detail}
+                  </p>
+                )}
+              </StepRow>
+            );
+          })}
         {rollback === null ? null : (
           <StepRow
             testId="deployment-step-rollback"

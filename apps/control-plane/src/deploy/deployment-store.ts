@@ -381,6 +381,27 @@ export function createDeploymentStore(deps: DeploymentStoreDeps): DeploymentStor
               .where(eq(deployments.id, deploymentId));
           });
         },
+        // 23-04 A4: counts and bounds only. Written while PREPARING (configure runs first in the
+        // pipeline); a row that moved on (cancelled, swept) keeps what it has.
+        async recordConfigure(step) {
+          const row = await deps.db.transaction(async (tx) => {
+            const [current] = await tx.select().from(deployments).where(eq(deployments.id, deploymentId)).for('update');
+            if (current?.status !== 'PREPARING') return null;
+            const [updated] = await tx
+              .update(deployments)
+              .set({
+                configureStartedAt: step.startedAt,
+                configureCompletedAt: step.completedAt,
+                configureVariables: step.variables,
+                configureSecrets: step.secrets,
+                updatedAt: nextUpdatedAt(current.updatedAt, deps.now()),
+              })
+              .where(and(eq(deployments.id, deploymentId), eq(deployments.status, 'PREPARING')))
+              .returning();
+            return updated ?? null;
+          });
+          if (row) await publishDeployment(deps, row);
+        },
       };
     },
 

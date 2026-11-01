@@ -306,8 +306,11 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
     };
 
     /** 13-03: the timeline the GET views derive, from the stored row. */
-    const stepsOf = (row: typeof deployments.$inferSelect): DeploymentStep[] =>
+    const fullStepsOf = (row: typeof deployments.$inferSelect): DeploymentStep[] =>
       deriveDeploymentSteps({ ...row, sourceType: (row.source as { sourceType: 'git' | 'image' }).sourceType });
+    // The v0.3 core timeline; 23-04 configure is asserted on its own (skipped without variables).
+    const stepsOf = (row: typeof deployments.$inferSelect): DeploymentStep[] =>
+      fullStepsOf(row).filter((step) => step.name !== 'configure');
     const stepStates = (row: typeof deployments.$inferSelect): string[] => stepsOf(row).map((step) => step.state);
 
     const waitTerminal = async (deploymentId: string) => {
@@ -611,11 +614,18 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)(
       }
       expect(steps[0]?.startedAt).toEqual(first.startedAt);
       expect(steps[3]?.completedAt).toEqual(first.completedAt);
+      // 23-04 A4, A5: a service without variables records no configure step; it derives skipped.
+      expect(fullStepsOf(first).map((step) => step.name)).toEqual(['clone', 'configure', 'build', 'start', 'verify']);
+      expect(fullStepsOf(first)[1]).toMatchObject({ state: 'skipped', startedAt: null, durationMs: null });
       // The GET views read the same boundaries.
       expect((await readDeploymentStepStamps(db(), [first.id])).get(first.id)).toEqual({
         buildingStartedAt: first.buildingStartedAt,
         deployingStartedAt: first.deployingStartedAt,
         verifyingStartedAt: first.verifyingStartedAt,
+        configureStartedAt: null,
+        configureCompletedAt: null,
+        configureVariables: null,
+        configureSecrets: null,
       });
       expect(await serviceStatus(appServiceId)).toBe('RUNNING');
       expect(lastServiceStatus(appServiceId)).toBe('RUNNING');
@@ -1159,7 +1169,7 @@ describe('13-03 H3: step boundaries migrate onto a database with deployments in 
     const finished = await rowOf(inFlightId);
     expect(finished.status).toBe('FAILED');
     const timeline = deriveDeploymentSteps({ ...finished, sourceType: 'git' });
-    expect(timeline).toHaveLength(4);
+    expect(timeline).toHaveLength(5);
     expect(timeline.filter((step) => step.state === 'running')).toEqual([]);
   }, CASE_TIMEOUT_MS);
 });

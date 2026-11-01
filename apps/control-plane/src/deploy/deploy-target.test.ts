@@ -800,7 +800,7 @@ describe('rollbackTargetEnvIssue (23-04 A3)', () => {
     imageRef: 'noodara/s:d',
     internalPort: 3000,
     publishedPort: null,
-    healthcheck: { type: 'none' },
+    healthcheck: { type: 'container', probeTimeoutS: 5, intervalS: 2, retries: 3, startPeriodS: 0 },
     env,
   });
   function readerOf(rows: { id: string; scope: 'project' | 'environment' | 'service'; name: string; version: number }[]) {
@@ -843,7 +843,7 @@ describe('rollbackTargetEnvIssue (23-04 A3)', () => {
 
   it('reads nothing for a v1 snapshot, a plain-only env or an unusable snapshot', async () => {
     const r = readerOf([]);
-    const v1 = { version: 1, imageRef: 'noodara/s:d', internalPort: 3000, publishedPort: null, healthcheck: { type: 'none' } };
+    const v1 = { version: 1, imageRef: 'noodara/s:d', internalPort: 3000, publishedPort: null, healthcheck: { type: 'container', probeTimeoutS: 5, intervalS: 2, retries: 3, startPeriodS: 0 } };
     expect(await rollbackTargetEnvIssue(r.db, CHAIN, v1)).toBeNull();
     expect(await rollbackTargetEnvIssue(r.db, CHAIN, snapshot([{ key: 'A', value: 'b' }]))).toBeNull();
     expect(await rollbackTargetEnvIssue(r.db, CHAIN, { version: 9 })).toBeNull();

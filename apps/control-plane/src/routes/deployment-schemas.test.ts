@@ -132,16 +132,28 @@ describe('deployment view schema', () => {
 const pendingStep = (name: string) => ({ name, state: 'pending', startedAt: null, completedAt: null, durationMs: null });
 const WITH_STEPS = {
   ...VIEW,
-  steps: [pendingStep('pull'), { ...pendingStep('build'), state: 'skipped' }, pendingStep('start'), pendingStep('verify')],
+  steps: [
+    pendingStep('pull'),
+    pendingStep('configure'),
+    { ...pendingStep('build'), state: 'skipped' },
+    pendingStep('start'),
+    pendingStep('verify'),
+  ],
 };
 
 describe('DeploymentWithStepsViewSchema (13-03 A3)', () => {
-  it('accepts exactly four steps with a known name and state', () => {
-    expect(DeploymentWithStepsViewSchema.parse(WITH_STEPS).steps.map((step) => step.name)).toEqual(['pull', 'build', 'start', 'verify']);
+  it('accepts exactly five steps with a known name and state (23-04: configure)', () => {
+    expect(DeploymentWithStepsViewSchema.parse(WITH_STEPS).steps.map((step) => step.name)).toEqual([
+      'pull',
+      'configure',
+      'build',
+      'start',
+      'verify',
+    ]);
   });
 
-  it('rejects a timeline that is not four steps long', () => {
-    expect(DeploymentWithStepsViewSchema.safeParse({ ...WITH_STEPS, steps: WITH_STEPS.steps.slice(0, 3) }).success).toBe(false);
+  it('rejects a timeline that is not five steps long', () => {
+    expect(DeploymentWithStepsViewSchema.safeParse({ ...WITH_STEPS, steps: WITH_STEPS.steps.slice(0, 4) }).success).toBe(false);
   });
 
   it('rejects unknown states, unknown names and negative durations', () => {
@@ -149,6 +161,16 @@ describe('DeploymentWithStepsViewSchema (13-03 A3)', () => {
     expect(DeploymentWithStepsViewSchema.safeParse(withStep({ ...pendingStep('pull'), state: 'done' })).success).toBe(false);
     expect(DeploymentWithStepsViewSchema.safeParse(withStep(pendingStep('deploy'))).success).toBe(false);
     expect(DeploymentWithStepsViewSchema.safeParse(withStep({ ...pendingStep('pull'), durationMs: -1 })).success).toBe(false);
+  });
+
+  it('a configure step carries counts only (23-04 A4): non-negative integers, no other key', () => {
+    const withConfigure = (counts: unknown) => ({
+      ...WITH_STEPS,
+      steps: [WITH_STEPS.steps[0], { ...pendingStep('configure'), state: 'success', counts }, ...WITH_STEPS.steps.slice(2)],
+    });
+    expect(DeploymentWithStepsViewSchema.safeParse(withConfigure({ variables: 2, secrets: 1 })).success).toBe(true);
+    expect(DeploymentWithStepsViewSchema.safeParse(withConfigure({ variables: -1, secrets: 1 })).success).toBe(false);
+    expect(DeploymentWithStepsViewSchema.safeParse(withConfigure({ variables: 1, secrets: 1, keys: ['A'] })).success).toBe(false);
   });
 
   it('the plain view (POST responses) has no steps key', () => {
