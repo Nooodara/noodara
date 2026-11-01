@@ -42,7 +42,11 @@ function psLine(state: string, name = CONTAINER, serviceId = SERVICE_ID): string
 class FakeSession {
   readonly calls: { name: string; argv: readonly string[]; options: StreamOptions }[] = [];
   private readonly cursors = new Map<string, number>();
-  constructor(private readonly scripts: Record<string, Script | Script[]> = {}) {}
+  private readonly scripts: Record<string, Script | Script[]>;
+  constructor(scripts: Record<string, Script | Script[]> = {}) {
+    // The route-file removal settles only on its marker; every other default is exit 0, no output.
+    this.scripts = { 'proxy.remove_dynamic': { stdout: 'NOODARA_PROXY_REMOVE ok\n' }, ...scripts };
+  }
 
   exec(): Promise<never> {
     return Promise.reject(new Error('unused'));
@@ -203,7 +207,7 @@ describe('runServiceOperation', () => {
 });
 
 describe('cleanupServiceRemote', () => {
-  it('removes the container, the network, then each deployment image and workspace', async () => {
+  it('removes the route file and detaches the proxy, then the container, the network, each image and workspace', async () => {
     const session = new FakeSession({ 'docker.ps': { stdout: psLine('running') } });
 
     const result = await cleanup(session);
@@ -211,6 +215,8 @@ describe('cleanupServiceRemote', () => {
     expect(result).toEqual({ ok: true });
     expect(session.names()).toEqual([
       'docker.ps',
+      'proxy.remove_dynamic',
+      'docker.network_disconnect',
       'docker.stop',
       'docker.remove',
       'docker.network_remove',
@@ -220,10 +226,46 @@ describe('cleanupServiceRemote', () => {
       'fs.remove_deploy_dir',
     ]);
     const argv = session.calls.map((call) => call.argv.join(' '));
-    expect(argv[3]).toContain(`noodara-net-${SERVICE_ID}`);
-    expect(argv[4]).toContain(`noodara/${SERVICE_ID}:${DEP_NEW}`);
-    expect(argv[5]).toContain(DEP_NEW);
-    expect(argv[6]).toContain(`noodara/${SERVICE_ID}:${DEP_OLD}`);
+    expect(argv[1]).toContain(`/opt/noodara-proxy/dynamic/${SERVICE_ID}.yml`);
+    expect(argv[2]).toContain(`network disconnect -- noodara-net-${SERVICE_ID} noodara-traefik`);
+    expect(argv[2]).not.toContain('--force');
+    expect(argv[5]).toContain(`noodara-net-${SERVICE_ID}`);
+    expect(argv[6]).toContain(`noodara/${SERVICE_ID}:${DEP_NEW}`);
+    expect(argv[7]).toContain(DEP_NEW);
+    expect(argv[8]).toContain(`noodara/${SERVICE_ID}:${DEP_OLD}`);
+  });
+
+  it.each([
+    ['the proxy is not connected', `Error response from daemon: container abc is not connected to network noodara-net-${SERVICE_ID}`],
+    ['no proxy is installed', 'Error response from daemon: No such container: noodara-traefik'],
+    ['the network is gone', `Error response from daemon: network noodara-net-${SERVICE_ID} not found`],
+  ])('treats a disconnect as settled when %s', async (_label, stderr) => {
+    const session = new FakeSession({ 'docker.ps': { stdout: '' }, 'docker.network_disconnect': { exitCode: 1, stderr } });
+
+    expect(await cleanup(session, [])).toEqual({ ok: true });
+    expect(session.names()).toEqual(['docker.ps', 'proxy.remove_dynamic', 'docker.network_disconnect', 'docker.network_remove']);
+  });
+
+  it.each([
+    ['a route file removal without its marker', { 'proxy.remove_dynamic': { exitCode: 3, stdout: RAW } }],
+    ['a timed out route file removal', { 'proxy.remove_dynamic': { outcome: 'timed_out', exitCode: null } }],
+    ['a refused disconnect', { 'docker.network_disconnect': { exitCode: 1, stderr: RAW } }],
+    ['a timed out disconnect', { 'docker.network_disconnect': { outcome: 'timed_out', exitCode: null } }],
+  ] as const)('fails on %s before the container or the network is touched', async (_label, scripts) => {
+    const session = new FakeSession({ 'docker.ps': { stdout: psLine('running') }, ...scripts });
+
+    const result = await cleanup(session);
+
+    expect(result).toEqual({ ok: false, code: 'SERVICE_CLEANUP_FAILED', message: SERVICE_OPS_MESSAGES.SERVICE_CLEANUP_FAILED });
+    expect(session.names()).not.toContain('docker.stop');
+    expect(session.names()).not.toContain('docker.network_remove');
+    expect(JSON.stringify(result)).not.toContain('hunter2');
+  });
+
+  it('maps a thrown route file removal to SERVER_UNREACHABLE', async () => {
+    const session = new FakeSession({ 'docker.ps': { stdout: '' }, 'proxy.remove_dynamic': { reject: new Error(RAW) } });
+
+    expect(await cleanup(session)).toEqual({ ok: false, code: 'SERVER_UNREACHABLE', message: SERVICE_OPS_MESSAGES.SERVER_UNREACHABLE });
   });
 
   it('is idempotent: an absent container, network, image and workspace all count as settled', async () => {
@@ -241,12 +283,12 @@ describe('cleanupServiceRemote', () => {
     expect(session.names()).not.toContain('docker.remove');
   });
 
-  it('only touches the network when the service was never claimed (no deployment ids)', async () => {
+  it('only touches the proxy route and the network when the service was never claimed (no deployment ids)', async () => {
     const session = new FakeSession({ 'docker.ps': { stdout: '' } });
 
     await cleanup(session, []);
 
-    expect(session.names()).toEqual(['docker.ps', 'docker.network_remove']);
+    expect(session.names()).toEqual(['docker.ps', 'proxy.remove_dynamic', 'docker.network_disconnect', 'docker.network_remove']);
   });
 
   it(`caps the per-deployment removals at ${String(MAX_CLEANUP_DEPLOYMENTS)} and skips invalid ids`, async () => {

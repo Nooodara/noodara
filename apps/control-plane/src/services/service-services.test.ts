@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Database } from '../db/client.js';
 import type { ServerEvent, ServerEventPublisher } from '../events/server-event-publisher.js';
-import type { services as servicesTable } from '../db/schema/services.js';
+import { deployments as deploymentsTable } from '../db/schema/deployments.js';
+import { domains as domainsTable } from '../db/schema/domains.js';
+import { services as servicesTable } from '../db/schema/services.js';
+import type { ServiceRemoteCleanupRequest } from '../deploy/service-ops.js';
 import {
   createServiceServices,
   buildkitGuard,
+  deleteService,
   editableFieldsFromRow,
   panelPortsFromEnv,
   recordServiceOperation,
@@ -204,40 +208,44 @@ describe('updateService: validation before the database (H1)', () => {
   });
 });
 
+type ServiceRow = typeof servicesTable.$inferSelect;
+const STORED_AT = new Date('2026-10-05T10:00:00.000Z');
+const STORED_SERVICE: ServiceRow = {
+  id: SERVICE_ID,
+  projectId: PROJECT_ID,
+  environmentId: ENVIRONMENT_ID,
+  serverId: SERVER_ID,
+  name: 'api',
+  sourceType: 'image',
+  repositoryUrl: null,
+  branch: null,
+  buildContext: null,
+  dockerfilePath: null,
+  buildTarget: null,
+  imageRef: 'nginx:1.27',
+  internalPort: 80,
+  publishedPort: null,
+  repositoryCredentialId: null,
+  registryCredentialId: null,
+  gitHostKeyHost: null,
+  gitHostKey: null,
+  healthcheck: null,
+  autoRollback: true,
+  imageRetention: 3,
+  webhookHookId: null,
+  webhookSecretCredentialId: null,
+  pendingTriggerDeliveryId: null,
+  pendingTriggerSha: null,
+  pendingTriggerAt: null,
+  status: 'RUNNING',
+  createdAt: STORED_AT,
+  updatedAt: STORED_AT,
+};
+
 describe('recordServiceOperation: updatedAt (13-02 A1, H1)', () => {
-  const STORED = new Date('2026-10-05T10:00:00.000Z');
-  type Row = typeof servicesTable.$inferSelect;
-  const stored: Row = {
-    id: SERVICE_ID,
-    projectId: PROJECT_ID,
-    environmentId: ENVIRONMENT_ID,
-    serverId: SERVER_ID,
-    name: 'api',
-    sourceType: 'image',
-    repositoryUrl: null,
-    branch: null,
-    buildContext: null,
-    dockerfilePath: null,
-    buildTarget: null,
-    imageRef: 'nginx:1.27',
-    internalPort: 80,
-    publishedPort: null,
-    repositoryCredentialId: null,
-    registryCredentialId: null,
-    gitHostKeyHost: null,
-    gitHostKey: null,
-    healthcheck: null,
-    autoRollback: true,
-    imageRetention: 3,
-    webhookHookId: null,
-    webhookSecretCredentialId: null,
-    pendingTriggerDeliveryId: null,
-    pendingTriggerSha: null,
-    pendingTriggerAt: null,
-    status: 'RUNNING',
-    createdAt: STORED,
-    updatedAt: STORED,
-  };
+  const STORED = STORED_AT;
+  const stored: ServiceRow = STORED_SERVICE;
+  type Row = ServiceRow;
 
   /** A thenable query-builder fake over one service row; records every UPDATE's `set`. */
   function fakeDb() {
@@ -314,5 +322,96 @@ describe('buildkitGuard', () => {
 
     expect(failure).toMatchObject({ ok: false, code: 'SERVER_BUILDKIT_UNKNOWN' });
     expect(failure?.message.toLowerCase()).toContain('discovery');
+  });
+});
+
+describe('deleteService: remote cleanup gate (22-05 A3)', () => {
+  /** Query-builder fake: every select resolves by the table passed to `from`. */
+  function fakeDb(byTable: Map<unknown, unknown[]>) {
+    const deleted: unknown[] = [];
+    const chain = (onFrom: (table: unknown) => void, resolve: () => unknown[]): unknown => {
+      const proxy: unknown = new Proxy(
+        {},
+        {
+          get(_target, prop) {
+            if (prop === 'then') return (ok: (value: unknown) => void) => {
+              ok(resolve());
+            };
+            return (...args: unknown[]) => {
+              if (prop === 'from') onFrom(args[0]);
+              return proxy;
+            };
+          },
+        },
+      );
+      return proxy;
+    };
+    const handle = {
+      select: () => {
+        let table: unknown;
+        return chain(
+          (from) => (table = from),
+          () => byTable.get(table) ?? [],
+        );
+      },
+      insert: () => chain(() => undefined, () => [{ id: 'activity-1' }]),
+      delete: (table: unknown) => {
+        deleted.push(table);
+        return chain(() => undefined, () => []);
+      },
+      transaction: <T>(fn: (tx: unknown) => Promise<T>): Promise<T> => fn(handle),
+    };
+    return { db: handle as unknown as Database, deleted };
+  }
+
+  function run(options: { claimed: boolean; domains: boolean; cleanupOk?: boolean }) {
+    const tables = new Map<unknown, unknown[]>([
+      [servicesTable, [STORED_SERVICE]],
+      [deploymentsTable, options.claimed ? [{ id: '0190a5d2-0000-7000-8000-0000000000d1' }] : []],
+      [domainsTable, options.domains ? [{ id: '0190a5d2-0000-7000-8000-0000000000e1' }] : []],
+    ]);
+    const fake = fakeDb(tables);
+    const requests: ServiceRemoteCleanupRequest[] = [];
+    const publisher = recordingPublisher();
+    const result = deleteService(
+      {
+        db: fake.db,
+        now: () => new Date('2026-10-31T00:00:00Z'),
+        events: publisher,
+        panelPorts: [],
+        remoteCleanup: (request) => {
+          requests.push(request);
+          return Promise.resolve(
+            options.cleanupOk === false
+              ? { ok: false, code: 'SERVICE_CLEANUP_FAILED', message: 'Removing the service resources on the server failed.' }
+              : { ok: true },
+          );
+        },
+      },
+      { actor: ACTOR, projectId: PROJECT_ID, serviceId: SERVICE_ID, confirmName: 'api' },
+    );
+    return { result, requests, deleted: fake.deleted };
+  }
+
+  it('runs the remote cleanup for a never-deployed service that has domains (route file, proxy attachment)', async () => {
+    const { result, requests, deleted } = run({ claimed: false, domains: true });
+
+    expect(await result).toEqual({ ok: true, serviceId: SERVICE_ID });
+    expect(requests).toEqual([{ serverId: SERVER_ID, serviceId: SERVICE_ID, deploymentIds: [] }]);
+    expect(deleted).toContain(servicesTable);
+  });
+
+  it('skips the remote cleanup when the service was never deployed and has no domains', async () => {
+    const { result, requests } = run({ claimed: false, domains: false });
+
+    expect(await result).toEqual({ ok: true, serviceId: SERVICE_ID });
+    expect(requests).toEqual([]);
+  });
+
+  it('keeps the row (domains cascade only with it) when the cleanup of a routed service fails', async () => {
+    const { result, deleted } = run({ claimed: false, domains: true, cleanupOk: false });
+
+    expect(await result).toMatchObject({ ok: false, code: 'SERVICE_CLEANUP_FAILED' });
+    expect(deleted).toEqual([]);
   });
 });

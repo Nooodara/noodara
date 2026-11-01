@@ -28,6 +28,7 @@ import { writeActivityEvent } from '../activity/write-activity-event.js';
 import type { Database } from '../db/client.js';
 import { CLEARED_GIT_HOST_KEY_COLUMNS, gitHostKeyColumnsForUrlChange } from '../db/git-host-key-store.js';
 import { deployments } from '../db/schema/deployments.js';
+import { domains } from '../db/schema/domains.js';
 import { environments } from '../db/schema/environments.js';
 import { projects } from '../db/schema/projects.js';
 import { servers } from '../db/schema/servers.js';
@@ -632,6 +633,13 @@ export async function claimedDeploymentIds(db: Selector, serviceId: string): Pro
   return rows.map((row) => row.id);
 }
 
+/** 22-05 A3: a domain row means a route file may exist and the proxy may sit on the network, even
+ *  before the first deploy. */
+async function hasDomains(db: Selector, serviceId: string): Promise<boolean> {
+  const [row] = await db.select({ id: domains.id }).from(domains).where(eq(domains.serviceId, serviceId)).limit(1);
+  return row !== undefined;
+}
+
 async function scopedServiceRow(db: Selector, projectId: string, serviceId: string) {
   const [row] = await db
     .select()
@@ -769,8 +777,9 @@ const CLEANUP_UNAVAILABLE = {
 } as const;
 
 /**
- * Removes the service's container, network, images and workspaces from its server (only when a
- * deployment was ever claimed), then its row, deployments (cascade) and credentials. A cleanup
+ * Removes the service's route file, proxy attachment, container, network, images and workspaces
+ * from its server (only when a deployment was ever claimed or a domain exists), then its row,
+ * deployments and domains (cascade) and credentials. A cleanup
  * failure keeps the row and records a failed `service.deleted`, so the delete can be retried.
  */
 export async function deleteService(deps: ServiceServicesDeps, input: DeleteServiceInput): Promise<DeleteServiceResult> {
@@ -783,7 +792,7 @@ export async function deleteService(deps: ServiceServicesDeps, input: DeleteServ
 
   const metadata = { projectId: row.projectId, environmentId: row.environmentId, serverId: row.serverId, name: row.name };
   const deploymentIds = await claimedDeploymentIds(deps.db, row.id);
-  if (deploymentIds.length > 0) {
+  if (deploymentIds.length > 0 || (await hasDomains(deps.db, row.id))) {
     const cleaned =
       deps.remoteCleanup === undefined
         ? CLEANUP_UNAVAILABLE

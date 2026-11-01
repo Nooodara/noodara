@@ -2,10 +2,12 @@
 // - runServiceOperation: `docker ps` first (an absent container is CONTAINER_NOT_FOUND, nothing is
 //   touched), then stop / restart / remove (a running container is stopped before its removal),
 //   then a best-effort re-observation for the status cache.
-// - cleanupServiceRemote: what deleting a service leaves behind: the container, its network, and
-//   per claimed deployment (newest first, capped) its own image and workspace. Every removal is
-//   idempotent (absent counts as settled) and the first unsettled one ends the run, so a retry
-//   resumes safely. Images are never forced.
+// - cleanupServiceRemote: what deleting a service leaves behind. 22-05: its proxy route file goes
+//   first and the proxy leaves its network (so `docker network rm` never fails on an attached
+//   proxy), then the container, its network, and per claimed deployment (newest first, capped) its
+//   own image and workspace. Every removal is idempotent (absent counts as settled: no proxy, no
+//   file, not connected) and the first unsettled one ends the run, so a retry resumes safely.
+//   Images are never forced.
 // Nothing here throws, and no remote output reaches a result: failures carry a closed code and a
 // fixed message (SEC: never raw stderr).
 import {
@@ -33,12 +35,16 @@ import {
   type DockerStepContext,
   type StepResult,
 } from '@noodara/docker';
+import { proxyDynamicPathFor } from '@noodara/domain';
 import {
   dockerImageRemove,
   dockerNetworkRemove,
+  proxyNetworkDisconnect,
+  proxyRemoveDynamic,
   removeDeployDir,
   type RemoteCommand,
   type SshDeploySession,
+  type StreamResult,
 } from '@noodara/ssh';
 import type { DeployJobDeps } from './deploy-worker.js';
 
@@ -86,6 +92,9 @@ export const MAX_CLEANUP_DEPLOYMENTS = 50;
 const PS_MAX_TOTAL_BYTES = 1_048_576;
 const REMOVAL_MAX_TOTAL_BYTES = 65_536;
 const COMMAND_NOT_FOUND_EXIT_CODE = 127;
+/** The proxy was never attached, is not installed, or the network is already gone: settled. */
+const PROXY_NOT_CONNECTED = /is not connected|not connected to (the )?network|no such network|network .*not found|no such container/i;
+const PROXY_REMOVED = 'NOODARA_PROXY_REMOVE ok';
 
 export type ServiceOperationResult =
   | {
@@ -252,15 +261,10 @@ export async function runServiceOperation(input: RunServiceOperationInput): Prom
   }
 }
 
-/** One idempotent removal: settled unless the classifier says `failed`. */
-async function removeResource(
-  input: CleanupServiceRemoteInput,
-  command: RemoteCommand,
-  resource: CleanupResource,
-): Promise<void> {
-  let settled: boolean;
+/** A rejected stream is a lost connection; the tails are classified, never logged. */
+async function streamRemoval(input: CleanupServiceRemoteInput, command: RemoteCommand): Promise<StreamResult> {
   try {
-    const result = await input.session.stream(command, {
+    return await input.session.stream(command, {
       maxDurationMs: input.limits.stepMs,
       idleTimeoutMs: input.limits.stepMs,
       maxTotalBytes: REMOVAL_MAX_TOTAL_BYTES,
@@ -270,18 +274,40 @@ async function removeResource(
         // Cleanup output is classified from the tails, never logged.
       },
     });
-    settled =
-      result.outcome === 'completed' &&
-      result.exitCode !== null &&
-      classifyCleanupOutcome(resource, {
-        exitCode: result.exitCode,
-        stdout: result.stdoutTail,
-        stderr: result.stderrTail,
-      }) !== 'failed';
   } catch {
     throw new StepError('unreachable');
   }
+}
+
+/** One idempotent removal: settled unless the classifier says `failed`. */
+async function removeResource(
+  input: CleanupServiceRemoteInput,
+  command: RemoteCommand,
+  resource: CleanupResource,
+): Promise<void> {
+  const result = await streamRemoval(input, command);
+  const settled =
+    result.outcome === 'completed' &&
+    result.exitCode !== null &&
+    classifyCleanupOutcome(resource, {
+      exitCode: result.exitCode,
+      stdout: result.stdoutTail,
+      stderr: result.stderrTail,
+    }) !== 'failed';
   if (!settled) throw new StepError('failed');
+}
+
+/** 22-05 A3: the route file goes (with its `.prev`), then the proxy leaves the service network. */
+async function detachProxy(input: CleanupServiceRemoteInput, serviceId: ResourceId): Promise<void> {
+  const path = proxyDynamicPathFor(serviceId);
+  if (!path.ok) throw new StepError('failed');
+  const removed = await streamRemoval(input, proxyRemoveDynamic(path.value));
+  if (removed.outcome !== 'completed' || removed.exitCode !== 0 || !removed.stdoutTail.includes(PROXY_REMOVED)) {
+    throw new StepError('failed');
+  }
+  const left = await streamRemoval(input, proxyNetworkDisconnect(serviceId));
+  if (left.outcome !== 'completed') throw new StepError('failed');
+  if (left.exitCode !== 0 && !PROXY_NOT_CONNECTED.test(left.stderrTail)) throw new StepError('failed');
 }
 
 function deploymentTargets(serviceId: ResourceId, deploymentIds: readonly string[]) {
@@ -310,6 +336,7 @@ export async function cleanupServiceRemote(input: CleanupServiceRemoteInput): Pr
 
   try {
     const found = (await observe(context)).containers.find((candidate) => candidate.name === container.value);
+    await detachProxy(input, serviceId.value);
     if (found !== undefined) {
       if (needsStop(found.state)) {
         await step(() => stopContainer(context, { ...ref, timeoutSeconds: input.limits.stopTimeoutSeconds }));
