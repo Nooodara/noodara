@@ -1075,11 +1075,11 @@ describe('13-03 H3: step boundaries migrate onto a database with deployments in 
       .values({ type: 'ssh_private_key', encryptedValue: 'not-a-real-ciphertext', keyVersion: KEY_VERSION })
       .returning({ id: credentials.id });
     if (!credential) throw new Error('credential insert returned no row');
-    const [server] = await db
-      .insert(servers)
-      .values({ name: 'legacy-host', host: '203.0.113.10', sshPort: 22, sshUser: 'deployer', credentialId: credential.id })
-      .returning({ id: servers.id });
-    if (!server) throw new Error('server insert returned no row');
+    // Raw SQL: the legacy servers table has no proxy columns (0015) for drizzle's insert to name.
+    const server = { id: randomUUID() };
+    await db.execute(sql`
+      insert into servers (id, name, host, ssh_port, ssh_user, credential_id)
+      values (${server.id}, 'legacy-host', '203.0.113.10', 22, 'deployer', ${credential.id})`);
     const now = new Date();
     const [project] = await db
       .insert(projects)
@@ -1184,11 +1184,11 @@ describe('14-07 H2: git host key columns migrate onto a database with existing s
       .values({ type: 'ssh_private_key', encryptedValue: 'not-a-real-ciphertext', keyVersion: KEY_VERSION })
       .returning({ id: credentials.id });
     if (!credential) throw new Error('credential insert returned no row');
-    const [server] = await db
-      .insert(servers)
-      .values({ name: 'legacy-host', host: '203.0.113.11', sshPort: 22, sshUser: 'deployer', credentialId: credential.id })
-      .returning({ id: servers.id });
-    if (!server) throw new Error('server insert returned no row');
+    // Raw SQL: the legacy servers table has no proxy columns (0015) for drizzle's insert to name.
+    const server = { id: randomUUID() };
+    await db.execute(sql`
+      insert into servers (id, name, host, ssh_port, ssh_user, credential_id)
+      values (${server.id}, 'legacy-host', '203.0.113.11', 22, 'deployer', ${credential.id})`);
     const now = new Date();
     const [project] = await db
       .insert(projects)
