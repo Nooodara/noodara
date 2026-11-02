@@ -1,0 +1,28 @@
+   ?column?   | count 
+--------------+-------
+ users        |     1
+ servers      |     1
+ credentials  |     2
+ projects     |     1
+ environments |     1
+ services     |     3
+ deployments  |    11
+ log_chunks   |    77
+ activity     |    56
+ domains      |     0
+ env_vars     |     2
+ secrets      |     1
+ migrations   |    18
+(13 rows)
+
+             env_md5              
+----------------------------------
+ 092db62db1752668c8f04dfedeeb2d07
+(1 row)
+
+           secrets_md5            
+----------------------------------
+ 3fb190cef3f323ffcc380f69f44019a2
+(1 row)
+
+NOODARA_VERSION=0.4.0-rc.1

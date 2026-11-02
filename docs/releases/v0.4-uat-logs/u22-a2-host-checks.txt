@@ -1,0 +1,38 @@
+# u22 A2 host checks (Pebble, Lima): acme.json, owner of 80/443, ufw active vs published ports
+## acme.json
+600 root:root /opt/noodara-proxy/acme/acme.json
+## who owns 80/443
+0.0.0.0:443 users:(("docker-proxy",pid=1901,fd=8))
+0.0.0.0:80 users:(("docker-proxy",pid=1854,fd=8))
+[::]:443 users:(("docker-proxy",pid=1909,fd=8))
+[::]:80 users:(("docker-proxy",pid=1882,fd=8))
+80/tcp -> 0.0.0.0:80
+80/tcp -> [::]:80
+443/tcp -> 0.0.0.0:443
+443/tcp -> [::]:443
+9180/tcp -> 127.0.0.1:9180
+## ufw
+Status: active
+
+To                         Action      From
+## FORWARD chain order (Docker chains before ufw)
+-P FORWARD DROP
+-A FORWARD -j DOCKER-USER
+-A FORWARD -j DOCKER-FORWARD
+-A FORWARD -j ufw-before-logging-forward
+-A FORWARD -j ufw-before-forward
+-A FORWARD -j ufw-after-forward
+-A FORWARD -j ufw-after-logging-forward
+-A FORWARD -j ufw-reject-forward
+## routed probe: throwaway curl container -> <vm-ip>:80/:443 (ufw active, INPUT default drop)
+net uat-probe (new bridge): http 404 https 404
+net uat-acme (Pebble's bridge): http 404 https 404
+net bridge (docker0, Traefik's own network): http 000 https 000
+## nat DOCKER rules for 80/443
+-A DOCKER ! -i docker0 -p tcp -m tcp --dport 80 -j DNAT --to-destination <docker-ip>:80
+-A DOCKER ! -i docker0 -p tcp -m tcp --dport 443 -j DNAT --to-destination <docker-ip>:443
+# 404 = Traefik answered (unknown host). Traffic from any interface other than docker0 (eth0 = the internet on a VPS,
+# other bridges) is DNAT-ed to noodara-traefik and forwarded through DOCKER-FORWARD before the ufw chains, so ufw active
+# does not block 80/443. Only hairpin traffic from docker0 itself is not DNAT-ed and falls into ufw INPUT (expected).
+# Pebble's HTTP-01 validations (u09-u11) took the routed path. An external-interface probe needs a public VPS (#20).
+## from the Mac through the Lima port forward: https://localhost:443 -> 404

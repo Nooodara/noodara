@@ -43,3 +43,9 @@ X509v3 Subject Alternative Name: critical
 {'status': 'CONNECTED', 'proxyStatus': 'RUNNING', 'proxyErrorCode': None, 'lastErrorCode': None}
 worker warn/error lines since boot: 0
 node-api direct: ok
+## next certificate reconcile cycle after boot (worker started 19:32:25Z; a restarted worker checks every domain at once, then every 10 min)
+2026-11-02T19:44:03Z
+{'certStatus': 'ISSUED', 'certNotAfter': '2027-01-31T19:24:27.000Z', 'certErrorCode': None, 'applyStatus': 'APPLIED', 'updatedAt': '2026-11-02T19:31:49.188Z'}
+worker warn/error lines since boot: 0
+https /health -> 200 verify=0
+body: ok

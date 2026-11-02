@@ -1,0 +1,59 @@
+Noodara installer
+Checking system requirements...
+System requirements satisfied.
+Docker Engine and the Compose plugin are already installed; nothing to do.
+Pulling images...
+ Image postgres:17-alpine Pulling 
+ Image redis:7-alpine Pulling 
+ Image ghcr.io/nooodara/noodara-control-plane:0.3.0 Pulling 
+ Image ghcr.io/nooodara/noodara-web:0.3.0 Pulling 
+ Image ghcr.io/nooodara/noodara-control-plane:0.3.0 Pulled 
+ Image ghcr.io/nooodara/noodara-web:0.3.0 Pulled 
+ Image postgres:17-alpine Pulled 
+ Image redis:7-alpine Pulled 
+Starting services...
+ Container noodara-redis-1 Running 
+ Container noodara-postgres-1 Running 
+ Container noodara-migrate-1 Recreate 
+ Container noodara-migrate-1 Recreated 
+ Container noodara-api-1 Recreate 
+ Container noodara-worker-1 Recreate 
+ Container noodara-api-1 Recreated 
+ Container noodara-web-1 Recreate 
+ Container noodara-worker-1 Recreated 
+ Container noodara-web-1 Recreated 
+ Container noodara-postgres-1 Waiting 
+ Container noodara-postgres-1 Healthy 
+ Container noodara-migrate-1 Starting 
+ Container noodara-migrate-1 Started 
+ Container noodara-migrate-1 Waiting 
+ Container noodara-redis-1 Waiting 
+ Container noodara-migrate-1 Waiting 
+ Container noodara-redis-1 Waiting 
+ Container noodara-redis-1 Healthy 
+ Container noodara-migrate-1 Exited 
+ Container noodara-api-1 Starting 
+ Container noodara-redis-1 Healthy 
+ Container noodara-migrate-1 Exited 
+ Container noodara-worker-1 Starting 
+ Container noodara-api-1 Started 
+ Container noodara-api-1 Waiting 
+ Container noodara-worker-1 Started 
+ Container noodara-api-1 Healthy 
+ Container noodara-web-1 Starting 
+ Container noodara-web-1 Started 
+Waiting for services to report healthy...
+All services are healthy.
+
+Noodara is running.
+Panel: http://localhost:3000
+An admin account already exists.
+
+WARNING: the panel is served over plain HTTP -- traffic, including the session cookie, is unencrypted until v0.4's TLS proxy (or your own) is in front. See docs/install.md.
+
+ufw is active on this server. Docker publishes container ports by inserting its own iptables rules, which typically bypass ufw's rules entirely for published ports -- a port Docker publishes may be reachable from the internet even if ufw shows it as denied.
+If you rely on ufw to restrict access to this port, see docs/install.md for the DOCKER-USER-chain configuration needed to make ufw actually govern Docker's published ports.
+To allow the panel port through ufw anyway: sudo ufw allow 3000/tcp
+Remember your cloud provider's own firewall/security-group rules also apply -- ufw only governs this host.
+
+Rolled back from 0.4.0-rc.1 to 0.3.0. To go forward: re-run this installer with NOODARA_VERSION=0.4.0-rc.1.

@@ -1,0 +1,21 @@
+# u21 back on 0.4.0-rc.1 (installer + Pebble override re-applied)
+NOODARA_VERSION=0.4.0-rc.1
+db:migrate completed in 4ms: 0 migration(s) applied, 18 total
+noodara-01a18ab6-3139-7679-97c3-3857c88d847a noodara/01a18ab6-3139-7679-97c3-3857c88d847a:01a19dbc-3018-7fd5-bab4-69fd5ecacae7 Up 13 minutes
+noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f noodara/01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f:01a18abc-5110-74b2-99a2-60938d863121 Up 13 minutes
+noodara-api-1 ghcr.io/nooodara/noodara-control-plane:0.4.0-rc.1 Up 13 seconds (healthy)
+noodara-postgres-1 postgres:17-alpine Up 13 minutes (healthy)
+noodara-redis-1 redis:7-alpine Up 13 minutes (healthy)
+noodara-traefik traefik:v3.7.14 Up 13 minutes
+noodara-web-1 ghcr.io/nooodara/noodara-web:0.4.0-rc.1 Up 27 seconds (healthy)
+noodara-worker-1 ghcr.io/nooodara/noodara-control-plane:0.4.0-rc.1 Up 13 seconds
+pebble ghcr.io/letsencrypt/pebble:2.10.1 Up 13 minutes
+port 8081: {"service":"node-api","ok":true}
+port 8083: {"service":"node-api","version":"D","ok":true}
+## secrets and variables are back in the API (values never returned)
+{"items":[{"id":"01a19dbb-01d0-7090-8d3f-21668b4f25c0","scope":"service","name":"uat_token","version":1,"hint":"<masked>","createdAt":"2026-11-02T19:27:21.036Z","updatedAt":"2026-11-02T19:27:21.036Z"}]}
+{"items":[{"key":"UAT_GREETING","origin":"service","value":{"kind":"plain","value":"hello-v04"},"shadowed":[]},{"key":"UAT_TOKEN","origin":"service","value":{"kind":"secret_ref","name":"uat_token"},"shadowed":[]}],"differsFromRunning":false}
+{'status': 'CONNECTED', 'proxyStatus': 'RUNNING', 'proxyErrorCode': None}
+## counts and env/secrets md5 post-downgrade vs post-reupgrade: identical
+## redeploy after re-upgrade: 01a19dcc-3891-755f-ac6e-ff37c4d23d8e -> SUCCESS None; the secret still decrypts and reaches the container
+UAT_TOKEN matches throwaway secret: true UAT_GREETING: hello-v04

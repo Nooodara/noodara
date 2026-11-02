@@ -1,0 +1,19 @@
+# u19 v0.3.0 running on the v0.4 schema (after downgrade)
+NOODARA_VERSION=0.3.0
+migrate exit: 0
+db:migrate completed in 5ms: 0 migration(s) applied, 18 total
+noodara-01a18ab6-3139-7679-97c3-3857c88d847a noodara/01a18ab6-3139-7679-97c3-3857c88d847a:01a19dbc-3018-7fd5-bab4-69fd5ecacae7 Up 12 minutes
+noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f noodara/01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f:01a18abc-5110-74b2-99a2-60938d863121 Up 12 minutes
+noodara-api-1 ghcr.io/nooodara/noodara-control-plane:0.3.0 Up 25 seconds (healthy)
+noodara-postgres-1 postgres:17-alpine Up 12 minutes (healthy)
+noodara-redis-1 redis:7-alpine Up 12 minutes (healthy)
+noodara-traefik traefik:v3.7.14 Up 12 minutes
+noodara-web-1 ghcr.io/nooodara/noodara-web:0.3.0 Up 19 seconds (healthy)
+noodara-worker-1 ghcr.io/nooodara/noodara-control-plane:0.3.0 Up 25 seconds
+pebble ghcr.io/letsencrypt/pebble:2.10.1 Up 12 minutes
+port 8081: {"service":"node-api","ok":true}
+port 8083: {"service":"node-api","version":"D","ok":true}
+## API v0.3.0 with the existing session
+HTTP 200
+{'status': 'CONNECTED', 'lastErrorCode': None}
+## counts and env/secrets md5 pre-downgrade vs post-downgrade: identical (diff only the NOODARA_VERSION line kept in the pre file)
