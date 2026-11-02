@@ -80,3 +80,4 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-11-01 — 23-04 scope adds packages/ssh/src/run-discovery.test.ts (public-surface list gains writeEnvFile, removeSecretFile, envFileFor).
 - 2026-11-02 — 25-05 scope adds `tests/unit/scripts/` (check-release-version.test hardcodes the current release version and notes; same precedent as 20-08).
 - 2026-11-02 — 25-05 scope adds `apps/site/src/content/` (scope.ts still excluded domains/TLS and env/secrets, contradicting v0.4; A3).
+- 2026-11-02 — 25-05 scope adds `apps/site/src/components/` (CapabilityGlyph record, ScopeTable/landing tests pin capability ids and grid count).
