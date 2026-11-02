@@ -381,10 +381,14 @@ describe.skipIf(!STRESS_ENABLED)(`25-02 stress: ${String(CYCLES)} domain create/
       return problems;
     };
 
-    const sshdSessions = async (): Promise<number> =>
-      (await rootOut(['sh', '-c', "ss -tnH state established '( sport = :22 )' | wc -l"])).trim() === ''
-        ? 0
-        : Number((await rootOut(['sh', '-c', "ss -tnH state established '( sport = :22 )' | wc -l"])).trim());
+    // Established TCP sessions on the fixture's sshd. `ss` must exist: a missing binary fails the
+    // probe instead of reading as zero sessions.
+    const sshdSessions = async (): Promise<number> => {
+      const out = await rootOut(['sh', '-c', "command -v ss >/dev/null || exit 127; ss -tnH state established '( sport = :22 )' | wc -l"]);
+      const count = Number(out.trim());
+      if (!Number.isInteger(count)) throw new Error(`unexpected ss output: ${out}`);
+      return count;
+    };
     const handleCounts = (): HandleCounts => {
       const pgPort = Number(new URL(postgres?.connectionString ?? 'postgres://x:1/').port);
       return countHandles(activeHandles(), { ssh: s().ssh.port, postgres: pgPort });

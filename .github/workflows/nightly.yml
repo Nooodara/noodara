@@ -393,3 +393,60 @@ jobs:
           done
           [ "$failed" -eq 0 ] || exit 1
           echo "no stray noodara.test=true containers, networks or volumes"
+
+  # 25-02: 50 domain create/update/delete cycles per Ubuntu version (add, redirect toggle, delete,
+  # concurrent pairs on one service, a forced invalid write every tenth cycle), opt-in via
+  # NOODARA_STRESS=1 so the proxy job above skips it. The suite fails on any leftover: a dynamic
+  # file without a routed service, a temp or stray .prev file, a Traefik router without a database
+  # row, a proxy network of an unrouted service, or an SSH session or handle above the baseline.
+  # Per-cycle apply latency (bounded by the ADR 0011 numbers) goes to the uploaded artifact.
+  domain-cycles:
+    name: domain-cycles (${{ matrix.ubuntu }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ['22.04', '24.04']
+    # Healthy: ~4 min per version including the stack start.
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Domain cycles on Ubuntu ${{ matrix.ubuntu }} (25-02)
+        env:
+          NOODARA_DOMAIN_CYCLES_ARTIFACT_DIR: ${{ runner.temp }}/domain-cycles-artifacts
+        run: NOODARA_STRESS=1 NOODARA_TEST_UBUNTU=${{ matrix.ubuntu }} pnpm exec vitest run --config vitest.integration.config.ts tests/integration/proxy/domain-cycles.test.ts
+      - name: Upload domain cycles artifact
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: domain-cycles-report-${{ matrix.ubuntu }}
+          path: ${{ runner.temp }}/domain-cycles-artifacts/
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Fail if any noodara.test resource survived
+        if: always()
+        run: |
+          failed=0
+          for kind in container network volume; do
+            case "$kind" in
+              container) stray=$(docker ps -aq --filter "label=noodara.test=true") ;;
+              network) stray=$(docker network ls -q --filter "label=noodara.test=true") ;;
+              volume) stray=$(docker volume ls -q --filter "label=noodara.test=true") ;;
+            esac
+            if [ -n "$stray" ]; then
+              echo "::error::stray ${kind}s labelled noodara.test=true survived the domain cycles run"
+              echo "$stray"
+              failed=1
+            fi
+          done
+          [ "$failed" -eq 0 ] || exit 1
+          echo "no stray noodara.test=true containers, networks or volumes"
