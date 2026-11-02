@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-02T18:20:34.604Z",
+  "updatedAt": "2026-11-02T18:20:37.300Z",
   "cursor": {
     "phase": "25",
     "task": "25-07"
@@ -9795,13 +9795,14 @@
             "docs/releases/v0.4-gate.md",
             ".planning/STATE.md",
             ".planning/DECISIONS.md",
-            ".planning/OPEN_QUESTIONS.md"
+            ".planning/OPEN_QUESTIONS.md",
+            ".gitleaks.toml"
           ],
           "wave": 5,
           "dependsOn": [
             "25-06"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",

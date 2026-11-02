@@ -82,3 +82,4 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-11-02 — 25-05 scope adds `apps/site/src/content/` (scope.ts still excluded domains/TLS and env/secrets, contradicting v0.4; A3).
 - 2026-11-02 — 25-05 scope adds `apps/site/src/components/` (CapabilityGlyph record, ScopeTable/landing tests pin capability ids and grid count).
 - 2026-11-02 — 25-06 scope adds tests/integration/db/migrations.test.ts and routes/servers-crud.test.ts (stale asserts: missing 0017 migration, ServerView key count 27→31).
+- 2026-11-02 — 25-07 scope adds `.gitleaks.toml` (allowlist two web test files with fake `sk_live_CANARY…` values; CI gitleaks would fail rc.1).
