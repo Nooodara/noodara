@@ -9694,7 +9694,8 @@
             "tests/unit/site/",
             "scripts/check-release-version.mjs",
             "docs/releases/v0.4-scenarios.md",
-            "tests/unit/scripts/"
+            "tests/unit/scripts/",
+            "apps/site/src/content/"
           ],
           "wave": 3,
           "dependsOn": [
