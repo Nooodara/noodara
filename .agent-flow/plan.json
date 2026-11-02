@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-02T06:36:33.126Z",
+  "updatedAt": "2026-11-02T06:36:36.552Z",
   "cursor": {
     "phase": "25",
     "task": "25-06"
@@ -9743,7 +9743,9 @@
             "docs/releases/v0.4-gate-logs/",
             ".planning/REQUIREMENTS.md",
             ".planning/ROADMAP.md",
-            ".planning/STATE.md"
+            ".planning/STATE.md",
+            "tests/integration/db/migrations.test.ts",
+            "tests/integration/routes/servers-crud.test.ts"
           ],
           "wave": 4,
           "dependsOn": [
@@ -9752,7 +9754,7 @@
             "25-04",
             "25-05"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
