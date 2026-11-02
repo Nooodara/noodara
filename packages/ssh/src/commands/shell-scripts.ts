@@ -8,9 +8,10 @@ export const SHELL_SCRIPTS = Object.freeze({
    * 23-04 H3: env file from stdin; $0 = target path, $1 = expected byte count. Written 0600 from
    * the first byte to "$0.tmp", its size checked against $1, then renamed into place; any
    * failure removes the temp and exits 1, so a short or partial file never reaches docker.
+   * 25-04 L4: a hangup or kill mid-write (dropped SSH channel) also removes the temp.
    */
   writeEnvFileFromStdin:
-    'umask 077 && rm -f -- "$0.tmp" && cat > "$0.tmp" && wc -c < "$0.tmp" | { read -r n && [ "$n" -eq "$1" ]; } && mv -f "$0.tmp" "$0" || { rm -f -- "$0.tmp"; exit 1; }',
+    'umask 077 && trap \'rm -f -- "$0.tmp"; exit 1\' HUP INT TERM && rm -f -- "$0.tmp" && cat > "$0.tmp" && wc -c < "$0.tmp" | { read -r n && [ "$n" -eq "$1" ]; } && mv -f "$0.tmp" "$0" || { rm -f -- "$0.tmp"; exit 1; }',
   /** 23-04 H2: removes one file (the env file right after docker create); $0 = path. */
   removeSecretFile: 'rm -f -- "$0"',
   /** G1 (D7): askpass helper from stdin, then owner-executable; $0 = target path. */

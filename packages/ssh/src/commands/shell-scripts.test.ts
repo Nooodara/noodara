@@ -1,5 +1,5 @@
 // 23-04 H1/H3: the env file never leaks through a docker read, and its write is verified.
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -78,6 +78,33 @@ describe('H3: writeEnvFileFromStdin', () => {
     expect(result.status).not.toBe(0);
     expect(existsSync(file)).toBe(false);
     expect(existsSync(`${file}.tmp`)).toBe(false);
+  });
+
+  it('25-04 L4: a hangup mid-write (SSH channel closed) removes the temp and exits non-zero', async () => {
+    const file = join(tempDir(), 'env');
+    const child = spawn('/bin/sh', ['-c', SHELL_SCRIPTS.writeEnvFileFromStdin, file, '1000'], {
+      detached: true,
+      stdio: ['pipe', 'ignore', 'ignore'],
+    });
+    const exited = new Promise<number | null>((resolve) => {
+      child.on('exit', (code) => {
+        resolve(code);
+      });
+    });
+    child.stdin.write('TOKEN=partial');
+    const deadline = Date.now() + 5_000;
+    while (!existsSync(`${file}.tmp`) && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    expect(existsSync(`${file}.tmp`)).toBe(true);
+
+    // sshd hangs up the whole session's process group when the channel drops.
+    process.kill(-(child.pid ?? 0), 'SIGHUP');
+    const code = await exited;
+
+    expect(code).not.toBe(0);
+    expect(existsSync(`${file}.tmp`)).toBe(false);
+    expect(existsSync(file)).toBe(false);
   });
 
   it('a target directory that does not exist exits non-zero', () => {

@@ -117,10 +117,14 @@ function recordingPort<S extends SshSession>(inner: SshPort<S>): SshPort<S> {
   };
 }
 
-vi.mock('@noodara/ssh', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@noodara/ssh')>();
-  return { ...original, createSsh2Adapter: () => recordingPort(original.createSsh2Adapter()) };
-});
+// Registered per Ubuntu block, after vi.resetModules(): a hoisted vi.mock keeps the first block's
+// factory result, whose @noodara/domain (SecretValue) would differ from the next block's graph.
+function mockRecordingSsh(): void {
+  vi.doMock('@noodara/ssh', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@noodara/ssh')>();
+    return { ...original, createSsh2Adapter: () => recordingPort(original.createSsh2Adapter()) };
+  });
+}
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -291,6 +295,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('25-04 / A2: application-secret lea
   beforeAll(async () => {
     // A fresh module graph per Ubuntu block (env.ts and getDb() cache their clients).
     vi.resetModules();
+    mockRecordingSsh();
     process.on('uncaughtException', onException);
     process.on('unhandledRejection', onException);
     const { createRedactor, revealSecret, secretValue } = await import('@noodara/domain/security');

@@ -10,14 +10,26 @@ import {
 } from '../validators/docker-naming.js';
 import { type ValidationResult, fail, ok } from '../validators/network.js';
 import { type ServiceSource, validateServiceSource } from '../validators/service-source.js';
+import { PROXY_API_PORT } from '../proxy/static-config.js';
 import { ENTITY_SLUG_PATTERN, type InputRecord, hasKey, parseInputRecord } from './input.js';
 
 export type ServiceName = Brand<string, 'ServiceName'>;
 /** Host port the container is published on; `null` means not published (the D10 default). */
 export type PublishedPort = Brand<number, 'PublishedPort'>;
 
-/** Host ports a service may never take: SSH (Noodara's control channel) and the Docker daemon. */
-export const RESERVED_PUBLISHED_PORTS: readonly number[] = [22, 2375, 2376];
+/**
+ * Host ports a service may never take: SSH (Noodara's control channel), the proxy's web,
+ * websecure and API entrypoints (a service holding them while the proxy is stopped would
+ * block or impersonate it), and the Docker daemon.
+ */
+export const RESERVED_PUBLISHED_PORTS: readonly number[] = Object.freeze([
+  22,
+  80,
+  443,
+  2375,
+  2376,
+  PROXY_API_PORT,
+]);
 
 export interface ServiceCreateInput {
   readonly name: ServiceName;
@@ -86,7 +98,7 @@ export function validatePublishedPort(input: unknown): ValidationResult<Publishe
   if (RESERVED_PUBLISHED_PORTS.includes(input)) {
     return fail(
       'PUBLISHED_PORT_RESERVED',
-      `Published port ${input.toString()} is reserved for SSH or the Docker daemon`,
+      `Published port ${input.toString()} is reserved for SSH, the proxy or the Docker daemon`,
     );
   }
   return ok(input as PublishedPort);

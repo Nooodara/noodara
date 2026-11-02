@@ -76,7 +76,7 @@ describe('validatePublishedPort', () => {
     expect(validatePublishedPort(port)).toEqual({ ok: true, value: null });
   });
 
-  it.each([1, 80, 443, 8080, 65535])('accepts %d', (port) => {
+  it.each([1, 81, 3000, 8080, 65535])('accepts %d', (port) => {
     expect(validatePublishedPort(port)).toEqual({ ok: true, value: port });
   });
 
@@ -87,8 +87,8 @@ describe('validatePublishedPort', () => {
     },
   );
 
-  it('reserves SSH and the Docker daemon ports', () => {
-    expect([...RESERVED_PUBLISHED_PORTS]).toEqual([22, 2375, 2376]);
+  it('reserves SSH, the Docker daemon and the proxy ports', () => {
+    expect([...RESERVED_PUBLISHED_PORTS]).toEqual([22, 80, 443, 2375, 2376, 9180]);
   });
 
   it.each([...RESERVED_PUBLISHED_PORTS])('rejects the reserved port %d', (port) => {
