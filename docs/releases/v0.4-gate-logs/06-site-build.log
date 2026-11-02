@@ -1,0 +1,47 @@
+$ pnpm --filter @noodara/site build
+# commit ca45dd1a (tree 2d9ca37e) + working-tree fix of migrations.test.ts and servers-crud.test.ts (diff sha256 8ee4ee0ee8a9) 2026-11-02T09:26:25Z
+
+
+> @noodara/site@0.4.0 build /Users/xch4rt/work/myself/noodara/code/apps/site
+> node scripts/sync-site-assets.mjs && next build && node scripts/check-export.mjs
+
+sync-site-assets: no files changed (fully idempotent run).
+sync-site-assets: 16 file(s) already up to date.
+▲ Next.js 16.4.1 (Turbopack)
+[MDX] generated files in 0.9375ms
+✓ Running next.config.mjs took 216ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.0s
+  Running TypeScript ...
+  Finished TypeScript in 882ms ...
+  Collecting page data using 12 workers ...
+  Generating static pages using 12 workers (0/33) ...
+  Generating static pages using 12 workers (8/33) 
+  Generating static pages using 12 workers (16/33) 
+  Generating static pages using 12 workers (24/33) 
+✓ Generating static pages using 12 workers (33/33) in 456ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /api/search
+├ ○ /apple-icon.png
+├   /docs/[[...slug]]
+│ ├ ● /docs/concepts/deployment
+│ ├ ● /docs/concepts/environment
+│ ├ ● /docs/concepts/project
+│ └ ● [+20 more paths]
+├ ○ /icon.svg
+├ ○ /opengraph-image.png
+├ ○ /robots.txt
+└ ○ /sitemap.xml
+
+
+○  (Static)  prerendered as static content
+●  (SSG)     prerendered as static HTML (uses generateStaticParams)
+
+check-export: 27 files, zero third-party assets
+
+# exit 0 2026-11-02T09:26:30Z

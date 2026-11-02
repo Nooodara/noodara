@@ -1,0 +1,998 @@
+{
+  "ubuntu": "24.04",
+  "boundMs": {
+    "sequential": 10000,
+    "concurrent": 20000,
+    "forced": 20000
+  },
+  "cycles": [
+    {
+      "cycle": 1,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 2179,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2179
+        }
+      ],
+      "checkMs": 110
+    },
+    {
+      "cycle": 2,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 2195,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2195
+        }
+      ],
+      "checkMs": 247
+    },
+    {
+      "cycle": 3,
+      "mode": "concurrent",
+      "pair": "patch+patch",
+      "applyMs": 164,
+      "ops": [
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 95
+        },
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 164
+        }
+      ],
+      "checkMs": 164
+    },
+    {
+      "cycle": 4,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 77,
+      "ops": [
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 77
+        }
+      ],
+      "checkMs": 1284
+    },
+    {
+      "cycle": 5,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 2193,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2193
+        }
+      ],
+      "checkMs": 285
+    },
+    {
+      "cycle": 6,
+      "mode": "concurrent",
+      "pair": "post+reapply",
+      "applyMs": 1752,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1696
+        },
+        {
+          "kind": "reapply",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1752
+        }
+      ],
+      "checkMs": 174
+    },
+    {
+      "cycle": 7,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 110,
+      "ops": [
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 109
+        }
+      ],
+      "checkMs": 1772
+    },
+    {
+      "cycle": 8,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 108,
+      "ops": [
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 108
+        }
+      ],
+      "checkMs": 1784
+    },
+    {
+      "cycle": 9,
+      "mode": "concurrent",
+      "pair": "post+delete",
+      "applyMs": 1737,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1737
+        },
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 84
+        }
+      ],
+      "checkMs": 156
+    },
+    {
+      "cycle": 10,
+      "mode": "forced",
+      "pair": null,
+      "applyMs": 10508,
+      "ops": [
+        {
+          "kind": "forced",
+          "ok": false,
+          "code": "PROXY_ROUTE_FAILED",
+          "httpStatus": 502,
+          "ms": 10508
+        },
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2201
+        }
+      ],
+      "checkMs": 227
+    },
+    {
+      "cycle": 11,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 1669,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1669
+        }
+      ],
+      "checkMs": 130
+    },
+    {
+      "cycle": 12,
+      "mode": "concurrent",
+      "pair": "patch+patch",
+      "applyMs": 187,
+      "ops": [
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 187
+        },
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 102
+        }
+      ],
+      "checkMs": 1822
+    },
+    {
+      "cycle": 13,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 95,
+      "ops": [
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 95
+        }
+      ],
+      "checkMs": 1808
+    },
+    {
+      "cycle": 14,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 2167,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2167
+        }
+      ],
+      "checkMs": 185
+    },
+    {
+      "cycle": 15,
+      "mode": "concurrent",
+      "pair": "post+reapply",
+      "applyMs": 1713,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1657
+        },
+        {
+          "kind": "reapply",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1713
+        }
+      ],
+      "checkMs": 285
+    },
+    {
+      "cycle": 16,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 129,
+      "ops": [
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 128
+        }
+      ],
+      "checkMs": 1790
+    },
+    {
+      "cycle": 17,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 1649,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1649
+        }
+      ],
+      "checkMs": 239
+    },
+    {
+      "cycle": 18,
+      "mode": "concurrent",
+      "pair": "post+delete",
+      "applyMs": 2255,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2255
+        },
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2169
+        }
+      ],
+      "checkMs": 210
+    },
+    {
+      "cycle": 19,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 1647,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1647
+        }
+      ],
+      "checkMs": 241
+    },
+    {
+      "cycle": 20,
+      "mode": "forced",
+      "pair": null,
+      "applyMs": 10498,
+      "ops": [
+        {
+          "kind": "forced",
+          "ok": false,
+          "code": "PROXY_ROUTE_FAILED",
+          "httpStatus": 502,
+          "ms": 10498
+        },
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2276
+        }
+      ],
+      "checkMs": 259
+    },
+    {
+      "cycle": 21,
+      "mode": "concurrent",
+      "pair": "patch+patch",
+      "applyMs": 174,
+      "ops": [
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 174
+        },
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 95
+        }
+      ],
+      "checkMs": 1432
+    },
+    {
+      "cycle": 22,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 95,
+      "ops": [
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 94
+        }
+      ],
+      "checkMs": 1870
+    },
+    {
+      "cycle": 23,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 79,
+      "ops": [
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 79
+        }
+      ],
+      "checkMs": 1880
+    },
+    {
+      "cycle": 24,
+      "mode": "concurrent",
+      "pair": "post+reapply",
+      "applyMs": 2230,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2166
+        },
+        {
+          "kind": "reapply",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2230
+        }
+      ],
+      "checkMs": 382
+    },
+    {
+      "cycle": 25,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 93,
+      "ops": [
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 92
+        }
+      ],
+      "checkMs": 1888
+    },
+    {
+      "cycle": 26,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 77,
+      "ops": [
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 77
+        }
+      ],
+      "checkMs": 1826
+    },
+    {
+      "cycle": 27,
+      "mode": "concurrent",
+      "pair": "post+delete",
+      "applyMs": 1733,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1733
+        },
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1651
+        }
+      ],
+      "checkMs": 246
+    },
+    {
+      "cycle": 28,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 1649,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1649
+        }
+      ],
+      "checkMs": 223
+    },
+    {
+      "cycle": 29,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 86,
+      "ops": [
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 86
+        }
+      ],
+      "checkMs": 1921
+    },
+    {
+      "cycle": 30,
+      "mode": "forced",
+      "pair": null,
+      "applyMs": 10526,
+      "ops": [
+        {
+          "kind": "forced",
+          "ok": false,
+          "code": "PROXY_ROUTE_FAILED",
+          "httpStatus": 502,
+          "ms": 10526
+        },
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2235
+        }
+      ],
+      "checkMs": 234
+    },
+    {
+      "cycle": 31,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 85,
+      "ops": [
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 84
+        }
+      ],
+      "checkMs": 1636
+    },
+    {
+      "cycle": 32,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 82,
+      "ops": [
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 82
+        }
+      ],
+      "checkMs": 1881
+    },
+    {
+      "cycle": 33,
+      "mode": "concurrent",
+      "pair": "post+reapply",
+      "applyMs": 2269,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2208
+        },
+        {
+          "kind": "reapply",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2269
+        }
+      ],
+      "checkMs": 229
+    },
+    {
+      "cycle": 34,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 121,
+      "ops": [
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 120
+        }
+      ],
+      "checkMs": 1413
+    },
+    {
+      "cycle": 35,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 125,
+      "ops": [
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 125
+        }
+      ],
+      "checkMs": 2326
+    },
+    {
+      "cycle": 36,
+      "mode": "concurrent",
+      "pair": "post+delete",
+      "applyMs": 1700,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1700
+        },
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1626
+        }
+      ],
+      "checkMs": 184
+    },
+    {
+      "cycle": 37,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 1640,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1640
+        }
+      ],
+      "checkMs": 214
+    },
+    {
+      "cycle": 38,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 103,
+      "ops": [
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 103
+        }
+      ],
+      "checkMs": 1803
+    },
+    {
+      "cycle": 39,
+      "mode": "concurrent",
+      "pair": "patch+patch",
+      "applyMs": 161,
+      "ops": [
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 83
+        },
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 161
+        }
+      ],
+      "checkMs": 168
+    },
+    {
+      "cycle": 40,
+      "mode": "forced",
+      "pair": null,
+      "applyMs": 10482,
+      "ops": [
+        {
+          "kind": "forced",
+          "ok": false,
+          "code": "PROXY_ROUTE_FAILED",
+          "httpStatus": 502,
+          "ms": 10482
+        },
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2192
+        }
+      ],
+      "checkMs": 204
+    },
+    {
+      "cycle": 41,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 2179,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2179
+        }
+      ],
+      "checkMs": 223
+    },
+    {
+      "cycle": 42,
+      "mode": "concurrent",
+      "pair": "post+reapply",
+      "applyMs": 1747,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1684
+        },
+        {
+          "kind": "reapply",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1747
+        }
+      ],
+      "checkMs": 234
+    },
+    {
+      "cycle": 43,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 97,
+      "ops": [
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 96
+        }
+      ],
+      "checkMs": 1287
+    },
+    {
+      "cycle": 44,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 67,
+      "ops": [
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 67
+        }
+      ],
+      "checkMs": 2385
+    },
+    {
+      "cycle": 45,
+      "mode": "concurrent",
+      "pair": "post+delete",
+      "applyMs": 1713,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1713
+        },
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1633
+        }
+      ],
+      "checkMs": 168
+    },
+    {
+      "cycle": 46,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 1637,
+      "ops": [
+        {
+          "kind": "add",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 1637
+        }
+      ],
+      "checkMs": 177
+    },
+    {
+      "cycle": 47,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 81,
+      "ops": [
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 81
+        }
+      ],
+      "checkMs": 1826
+    },
+    {
+      "cycle": 48,
+      "mode": "concurrent",
+      "pair": "patch+patch",
+      "applyMs": 179,
+      "ops": [
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 102
+        },
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 179
+        }
+      ],
+      "checkMs": 222
+    },
+    {
+      "cycle": 49,
+      "mode": "sequential",
+      "pair": null,
+      "applyMs": 99,
+      "ops": [
+        {
+          "kind": "redirect",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 99
+        }
+      ],
+      "checkMs": 1339
+    },
+    {
+      "cycle": 50,
+      "mode": "forced",
+      "pair": null,
+      "applyMs": 10494,
+      "ops": [
+        {
+          "kind": "forced",
+          "ok": false,
+          "code": "PROXY_ROUTE_FAILED",
+          "httpStatus": 502,
+          "ms": 10494
+        },
+        {
+          "kind": "delete",
+          "ok": true,
+          "code": null,
+          "httpStatus": 200,
+          "ms": 2217
+        }
+      ],
+      "checkMs": 308
+    }
+  ],
+  "forced": {
+    "attempted": 5,
+    "restored": 5
+  },
+  "concurrentCycles": 15,
+  "summary": {
+    "sequential": {
+      "count": 30,
+      "p50Ms": 108,
+      "p95Ms": 2193,
+      "maxMs": 2195
+    },
+    "concurrent": {
+      "count": 15,
+      "p50Ms": 1713,
+      "p95Ms": 2269,
+      "maxMs": 2269
+    },
+    "forced": {
+      "count": 5,
+      "p50Ms": 10498,
+      "p95Ms": 10526,
+      "maxMs": 10526
+    }
+  },
+  "baseline": {
+    "sshdSessions": 0,
+    "handles": {
+      "ssh": 0,
+      "postgres": 2,
+      "other": {
+        "Pipe": 1,
+        "Socket": 2
+      }
+    }
+  },
+  "final": {
+    "sshdSessions": 0,
+    "handles": {
+      "ssh": 0,
+      "postgres": 2,
+      "other": {
+        "Pipe": 1,
+        "Socket": 2
+      }
+    }
+  },
+  "problems": []
+}

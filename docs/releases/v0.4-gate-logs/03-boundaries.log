@@ -1,0 +1,12 @@
+$ pnpm boundaries
+# commit ca45dd1a (tree 2d9ca37e) + working-tree fix of migrations.test.ts and servers-crud.test.ts (diff sha256 8ee4ee0ee8a9) 2026-11-02T09:25:56Z
+
+
+> noodara@0.4.0 boundaries /Users/xch4rt/work/myself/noodara/code
+> turbo boundaries
+
+• turbo 2.10.12
+Checking packages...
+Checked 1569 files in 9 packages, no issues found
+
+# exit 0 2026-11-02T09:25:56Z

@@ -99,14 +99,14 @@ async function createServer(
 }
 
 describe('POST /api/servers (D-19)', () => {
-  it('returns 201 with a ServerView whose key set is exactly the 27 allowlisted fields', async () => {
+  it('returns 201 with a ServerView whose key set is exactly the 31 allowlisted fields', async () => {
     const { app, cookie } = await bootAuthenticated();
 
     const { statusCode, body } = await createServer(app, cookie);
 
     expect(statusCode).toBe(201);
     expect(Object.keys(body).sort()).toEqual([...SERVER_VIEW_KEYS].sort());
-    expect(Object.keys(body)).toHaveLength(27);
+    expect(Object.keys(body)).toHaveLength(31);
   });
 
   it('returns 409 NAME_TAKEN for a duplicate name', async () => {

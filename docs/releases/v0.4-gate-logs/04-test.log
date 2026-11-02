@@ -1,0 +1,22 @@
+$ pnpm test
+# commit ca45dd1a (tree 2d9ca37e) + working-tree fix of migrations.test.ts and servers-crud.test.ts (diff sha256 8ee4ee0ee8a9) 2026-11-02T09:25:56Z
+
+
+> noodara@0.4.0 test /Users/xch4rt/work/myself/noodara/code
+> vitest run
+
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+{"level":40,"time":1793611559318,"pid":80979,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"de64602faf957ec4","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+
+ Test Files  394 passed (394)
+      Tests  9231 passed (9231)
+   Start at  03:25:57
+   Duration  26.60s (tests 42%, environment 22%, import 20%, transform 9%, setup 6%)
+
+
+# exit 0 2026-11-02T09:26:24Z

@@ -1,0 +1,18 @@
+$ gh api repos/Nooodara/noodara/commits/main --jq .sha; gh run list -R Nooodara/noodara -L 10
+# 2026-11-02T09:42:04Z, local HEAD ca45dd1a (tree 2d9ca37e)
+
+public main: a0b456189697eab270c3d81c07e286229d2f81dd  (= v0.3.0, a0b45618)
+
+2026-11-01T09:56:07Z  Nightly  run 41295237379  success  headSha a0b456189697eab270c3d81c07e286229d2f81dd
+2026-10-31T09:09:06Z  Nightly  run 41187492428  success  headSha a0b456189697eab270c3d81c07e286229d2f81dd
+2026-10-30T09:21:56Z  Nightly  run 41032885034  success  headSha a0b456189697eab270c3d81c07e286229d2f81dd
+2026-10-30T06:51:59Z  Release  run 41016597518  success  headSha a0b456189697eab270c3d81c07e286229d2f81dd
+2026-10-30T06:10:08Z  Publish site  run 41012499667  success  headSha a0b456189697eab270c3d81c07e286229d2f81dd
+2026-10-30T06:10:08Z  CI  run 41012499661  success  headSha a0b456189697eab270c3d81c07e286229d2f81dd
+2026-10-30T03:17:25Z  Publish site  run 40996536030  success  headSha 92a7fbfa0d460f603927584d737f025d10a9750e
+2026-10-30T03:17:25Z  CI  run 40996535993  failure  headSha 92a7fbfa0d460f603927584d737f025d10a9750e
+2026-10-29T09:10:39Z  Nightly  run 40847585136  success  headSha 2d1e1c69dc84f9ba0564dff76f7ee1ad9d4ed80b
+2026-10-28T09:10:58Z  Nightly  run 40662247818  success  headSha 2d1e1c69dc84f9ba0564dff76f7ee1ad9d4ed80b
+
+No CI or nightly run exists on any v0.4 commit: every run above is on a0b45618 (v0.3.0).
+The v0.4 tree reaches the public repo with v0.4.0-rc.1 in task 25-07.
