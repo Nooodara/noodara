@@ -60,8 +60,9 @@ container is starting; once running, no cancel is shown.
 
 - No build arguments. Runtime configuration goes in
   [environment variables and secrets](/docs/operate/variables-and-secrets).
-- Redeployment stops the existing container and starts a new one. This causes brief downtime.
 - Noodara does not restart a container that crashes after a deployment succeeded.
+
+<ScopeNote id="advanced-deploy" />
 
 See [Troubleshooting](/docs/operate/troubleshooting) or the full [error codes
 reference](/docs/reference/error-codes) if something goes wrong.

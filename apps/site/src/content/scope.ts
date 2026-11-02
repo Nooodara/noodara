@@ -104,6 +104,24 @@ export const DELIVERED_CAPABILITIES = [
     evidence: ['tests/integration/webhooks'],
   },
   {
+    id: 'domains-https',
+    pillar: 'operate',
+    claim: 'Point a domain at a service and get automatic HTTPS from a Traefik proxy on each server.',
+    evidence: ['tests/e2e/domains-https.spec.ts'],
+  },
+  {
+    id: 'variables',
+    pillar: 'operate',
+    claim: 'Set environment variables on a project, an environment or a service; the most specific value wins.',
+    evidence: ['packages/domain/src/env/resolve-env.ts'],
+  },
+  {
+    id: 'secrets',
+    pillar: 'connect',
+    claim: 'Store secrets encrypted at rest and reference them by name; the panel, API and logs never show their values.',
+    evidence: ['tests/e2e/secrets.spec.ts'],
+  },
+  {
     id: 'upgrade-rollback',
     pillar: 'operate',
     claim: 'Upgrade or roll back an installation from the command line.',
@@ -139,26 +157,15 @@ export const CAPABILITY_TITLES: Record<(typeof DELIVERED_CAPABILITIES)[number]['
   'deploy-logs': 'Build and runtime logs',
   'deploy-health': 'Healthchecks & rollback',
   'deploy-webhooks': 'GitHub webhooks',
+  'domains-https': 'Domains & HTTPS',
+  variables: 'Variables with precedence',
+  secrets: 'Encrypted secrets',
   'upgrade-rollback': 'Upgrade & rollback',
   'encrypted-credentials': 'Encrypted at rest',
   'explicit-timeouts': 'Explicit timeouts',
 };
 
 export const SCOPE_EXCLUSIONS = [
-  {
-    id: 'app-config',
-    statement: 'Noodara does not manage application environment variables or secrets. Put configuration in the image.',
-    projectAnchor: 'Dominios, reverse proxy (Traefik), TLS, env vars y secrets de aplicación',
-    excludedTerms: ['environment variable', 'environment variables', 'env var', 'env vars', 'app secret', 'app secrets', 'secrets management'],
-    showOnLanding: true,
-  },
-  {
-    id: 'domains-tls',
-    statement: 'Noodara does not manage domains, TLS certificates or a reverse proxy.',
-    projectAnchor: 'Dominios, reverse proxy (Traefik), TLS, env vars y secrets de aplicación',
-    excludedTerms: ['domain', 'domains', 'TLS', 'HTTPS', 'certificate', 'certificates', 'Traefik', 'reverse proxy'],
-    showOnLanding: true,
-  },
   {
     id: 'advanced-deploy',
     statement: 'Noodara does not offer zero-downtime or blue-green deployments: a redeploy replaces the running container.',

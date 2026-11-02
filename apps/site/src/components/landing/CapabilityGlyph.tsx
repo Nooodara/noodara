@@ -81,6 +81,32 @@ const GLYPHS: Record<CapabilityId, ReactNode> = {
       <path d="M5 19.5 C5 15.5 8 13.5 12 13.5 C16 13.5 19 15.5 19 19.5" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
     </>
   ),
+  // Globe: a domain served over HTTPS.
+  'domains-https': (
+    <>
+      <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth={STROKE} />
+      <path d="M12 4 C9 7 9 17 12 20 C15 17 15 7 12 4 Z" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinejoin="round" />
+      <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+    </>
+  ),
+  // Three sliders: variables layered by scope.
+  variables: (
+    <>
+      <line x1="4" y1="7" x2="20" y2="7" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+      <circle cx="9" cy="7" r="1.8" fill="currentColor" stroke="none" />
+      <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+      <circle cx="15" cy="12" r="1.8" fill="currentColor" stroke="none" />
+      <line x1="4" y1="17" x2="20" y2="17" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+      <circle cx="11" cy="17" r="1.8" fill="currentColor" stroke="none" />
+    </>
+  ),
+  // Key: a secret referenced by name.
+  secrets: (
+    <>
+      <circle cx="8" cy="12" r="3.5" fill="none" stroke="currentColor" strokeWidth={STROKE} />
+      <path d="M11.5 12 H20 M17 12 V15 M20 12 V14.5" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
   // Circular arrow: upgrade/rollback.
   'upgrade-rollback': (
     <>

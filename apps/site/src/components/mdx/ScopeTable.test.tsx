@@ -41,11 +41,24 @@ describe('ScopeTable', () => {
   });
 });
 
+describe('ScopeTable v0.4 scope', () => {
+  it('lists domains, HTTPS, variables and secrets as included, never as excluded', () => {
+    render(<ScopeTable />);
+    const ids = DELIVERED_CAPABILITIES.map((c) => c.id);
+    expect(ids).toEqual(expect.arrayContaining(['domains-https', 'variables', 'secrets']));
+    const exclusionIds: readonly string[] = SCOPE_EXCLUSIONS.map((e) => e.id);
+    expect(exclusionIds).not.toContain('app-config');
+    expect(exclusionIds).not.toContain('domains-tls');
+    const table = screen.getByRole('table');
+    expect(table.textContent).not.toMatch(/does not manage (domains|application environment variables)/);
+  });
+});
+
 describe('ScopeNote', () => {
   it('renders the statement of the given exclusion id verbatim, and a link to the full scope page', () => {
-    render(<ScopeNote id="domains-tls" />);
+    render(<ScopeNote id="advanced-deploy" />);
 
-    const exclusion = SCOPE_EXCLUSIONS.find((e) => e.id === 'domains-tls');
+    const exclusion = SCOPE_EXCLUSIONS.find((e) => e.id === 'advanced-deploy');
     expect(exclusion).toBeTruthy();
     expect(screen.getByText(exclusion?.statement ?? '')).toBeInTheDocument();
 
@@ -54,9 +67,9 @@ describe('ScopeNote', () => {
   });
 
   it('renders no text of its own besides the statement and the link', () => {
-    render(<ScopeNote id="app-config" />);
+    render(<ScopeNote id="multi-user" />);
 
-    const exclusion = SCOPE_EXCLUSIONS.find((e) => e.id === 'app-config');
+    const exclusion = SCOPE_EXCLUSIONS.find((e) => e.id === 'multi-user');
     const text = document.body.textContent;
     const withoutStatement = text.replace(exclusion?.statement ?? '', '');
     const withoutLink = withoutStatement.replace('See the full scope', '');

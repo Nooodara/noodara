@@ -93,7 +93,8 @@ and `linux/arm64` as a single multi-arch manifest, and `<version>` is always an 
 tag — the installer never pulls the unversioned tag, so a restart can never silently change which
 release is running.
 
-<ScopeNote id="domains-tls" />
+The Traefik proxy Noodara installs on a server serves your services' [domains](/docs/operate/domains),
+not this panel.
 
 ## Plain HTTP warning
 
@@ -104,7 +105,7 @@ connection. This also means the session cookie — and the one-time setup token,
 use it — travel in the clear. Anyone able to observe traffic between your browser and the server
 can read them.
 
-Noodara does not terminate TLS. To add TLS today:
+Noodara does not terminate TLS for the panel. To add it:
 
 1. Put a reverse proxy (for example Caddy or nginx) in front of the panel, terminating TLS there
    and forwarding to `127.0.0.1:<NOODARA_PORT>`.

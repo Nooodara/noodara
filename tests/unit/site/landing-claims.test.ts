@@ -40,7 +40,7 @@ describe('SCOPE_EXCLUSIONS anchored to PROJECT.md', () => {
 
   it('includes the landing-visible D-03/D-09 exclusion ids', () => {
     const showOnLandingIds = SCOPE_EXCLUSIONS.filter((e) => e.showOnLanding).map((e) => e.id);
-    for (const id of ['app-config', 'domains-tls', 'advanced-deploy', 'multi-user']) {
+    for (const id of ['advanced-deploy', 'multi-user']) {
       expect(showOnLandingIds).toContain(id);
     }
   });
@@ -72,10 +72,17 @@ describe('DELIVERED_CAPABILITIES backed by real evidence', () => {
 });
 
 describe('findExcludedTerms', () => {
-  it('flags a claim that names an excluded domains/TLS feature', () => {
-    const findings = findExcludedTerms('Automatic HTTPS');
+  it('flags a claim that names an excluded feature', () => {
+    const findings = findExcludedTerms('Runs on Kubernetes');
     const ids = new Set(findings.map((f) => f.exclusionId));
-    expect(ids).toContain('domains-tls');
+    expect(ids).toContain('kubernetes-cloud');
+  });
+
+  it('no longer excludes the v0.4 domains, HTTPS, variables and secrets features', () => {
+    expect(findExcludedTerms('Automatic HTTPS for your domains, environment variables and secrets')).toEqual([]);
+    const ids: readonly string[] = SCOPE_EXCLUSIONS.map((e) => e.id);
+    expect(ids).not.toContain('app-config');
+    expect(ids).not.toContain('domains-tls');
   });
 
   it('does not match the short all-caps term "AI" inside a longer word like "AIX"', () => {

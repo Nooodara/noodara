@@ -129,3 +129,10 @@ describe('reference pages', () => {
     for (const text of [domains, env]) expect(text).not.toMatch(/coming soon|until v0\.\d|in a future release/i);
   });
 });
+
+describe('v0.4.0 release notes link', () => {
+  it('the upgrade page points to the v0.4.0 release notes', () => {
+    const page = readFileSync('apps/site/content/docs/operate/upgrade.mdx', 'utf8');
+    expect(page).toContain('https://github.com/nooodara/noodara/blob/main/docs/releases/v0.4.0.md');
+  });
+});

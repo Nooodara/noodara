@@ -5,9 +5,10 @@
 // "Personalize your account" cell, encrypted-credentials+explicit-timeouts become one "Secure by
 // default" cell. Both merges keep every underlying claim's exact text -- nothing is reworded or
 // dropped, a merged cell just lists two claims under one shared title/glyph pairing instead of
-// two separate cells. 9 cells is an exact multiple of the one column count FeatureGrid ever uses
+// two separate cells. 12 cells is an exact multiple of the one column count FeatureGrid ever uses
 // (3, at >=900px) and of 1 (mobile) -- no ragged row at any breakpoint (FeatureGrid.tsx
-// deliberately has no 2-column tablet tier for this reason).
+// deliberately has no 2-column tablet tier for this reason). v0.4 adds three cells (domains/HTTPS,
+// variables, secrets): 15 cells, still a multiple of 3.
 import { CAPABILITY_TITLES, DELIVERED_CAPABILITIES, type CapabilityId } from './scope';
 
 export interface FeatureCell {
@@ -28,6 +29,9 @@ export const FEATURE_GRID_CELLS: readonly FeatureCell[] = [
   { title: CAPABILITY_TITLES['projects-services'], capabilityIds: ['projects-services'] },
   { title: CAPABILITY_TITLES['deploy-sources'], capabilityIds: ['deploy-sources'] },
   { title: 'Reliable deploys', capabilityIds: ['deploy-logs', 'deploy-health', 'deploy-webhooks'] },
+  { title: CAPABILITY_TITLES['domains-https'], capabilityIds: ['domains-https'] },
+  { title: CAPABILITY_TITLES.variables, capabilityIds: ['variables'] },
+  { title: CAPABILITY_TITLES.secrets, capabilityIds: ['secrets'] },
   { title: CAPABILITY_TITLES['upgrade-rollback'], capabilityIds: ['upgrade-rollback'] },
   { title: 'Secure by default', capabilityIds: ['encrypted-credentials', 'explicit-timeouts'] },
 ];

@@ -130,12 +130,20 @@ describe('CapabilityGlyph', () => {
       unmount();
     }
   });
+
+  it('draws a glyph for each v0.4 capability', () => {
+    for (const id of ['domains-https', 'variables', 'secrets'] as const) {
+      const { container, unmount } = render(<CapabilityGlyph id={id} />);
+      expect(container.querySelectorAll('svg rect, svg line, svg path, svg circle').length).toBeGreaterThan(0);
+      unmount();
+    }
+  });
 });
 
 describe('FeatureGrid', () => {
-  it('renders every DELIVERED_CAPABILITIES claim exactly once, grouped into 12 cells (a multiple of the desktop column count, no ragged row)', () => {
+  it('renders every DELIVERED_CAPABILITIES claim exactly once, grouped into 15 cells (a multiple of the desktop column count, no ragged row)', () => {
     render(<FeatureGrid />);
-    expect(FEATURE_GRID_CELLS.length).toBe(12);
+    expect(FEATURE_GRID_CELLS.length).toBe(15);
     expect(FEATURE_GRID_CELLS.length % FEATURE_GRID_DESKTOP_COLUMNS).toBe(0);
     for (const capability of DELIVERED_CAPABILITIES) {
       expect(screen.getByText(capability.claim)).toBeInTheDocument();
@@ -145,7 +153,7 @@ describe('FeatureGrid', () => {
     }
   });
 
-  it('never uses a 2-column tablet tier (grid-cols-2) -- only 1 column mobile, 3 columns desktop, so 12 cells never end a row short', () => {
+  it('never uses a 2-column tablet tier (grid-cols-2) -- only 1 column mobile, 3 columns desktop, so 15 cells never end a row short', () => {
     const { container } = render(<FeatureGrid />);
     const grid = container.querySelector('[data-testid="feature-grid"]');
     expect(grid?.className).not.toMatch(/grid-cols-2/);

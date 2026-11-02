@@ -97,14 +97,18 @@ describe('concepts/server.mdx statuses match the domain', () => {
 });
 
 describe('concepts pages carry the right in-context scope notes', () => {
-  it('service.mdx contains the app-config ScopeNote', () => {
+  it('service.mdx links to variables and domains instead of a stale app-config ScopeNote', () => {
     const page = docsPage('concepts/service');
     expect(page).not.toMatch(/deploy-services/);
-    expect(page).toMatch(/<ScopeNote id="app-config"\s*\/>/);
+    expect(page).not.toMatch(/app-config/);
+    expect(page).toMatch(/\/docs\/operate\/variables-and-secrets/);
+    expect(page).toMatch(/\/docs\/operate\/domains/);
   });
 
-  it('environment.mdx contains the app-config ScopeNote', () => {
-    expect(docsPage('concepts/environment')).toMatch(/<ScopeNote id="app-config"\s*\/>/);
+  it('environment.mdx links to variables instead of a stale app-config ScopeNote', () => {
+    const page = docsPage('concepts/environment');
+    expect(page).not.toMatch(/app-config/);
+    expect(page).toMatch(/\/docs\/operate\/variables-and-secrets/);
   });
 
   it('deployment.mdx carries no stale deploy-services ScopeNote', () => {

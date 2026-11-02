@@ -71,16 +71,26 @@ describe('Landing', () => {
     expect(githubLink).toHaveAttribute('href', GITHUB_URL);
   });
 
-  it('renders a feature grid with every DELIVERED_CAPABILITIES claim, grouped into 12 cells (D-02a, Round 1 fix)', () => {
+  it('renders a feature grid with every DELIVERED_CAPABILITIES claim, grouped into 15 cells (D-02a, Round 1 fix)', () => {
     render(<Landing />);
     const grid = within(screen.getByTestId('feature-grid'));
-    expect(FEATURE_GRID_CELLS.length).toBe(12);
+    expect(FEATURE_GRID_CELLS.length).toBe(15);
     for (const capability of DELIVERED_CAPABILITIES) {
       expect(grid.getByText(claimFor(capability.id))).toBeInTheDocument();
     }
     for (const cell of FEATURE_GRID_CELLS) {
       expect(grid.getByText(cell.title)).toBeInTheDocument();
     }
+  });
+
+  it('shows the v0.4 domains/HTTPS and variables/secrets capabilities in the feature grid, not in the scope block', () => {
+    render(<Landing />);
+    const grid = within(screen.getByTestId('feature-grid'));
+    for (const id of ['domains-https', 'variables', 'secrets'] as const) {
+      expect(grid.getByText(claimFor(id))).toBeInTheDocument();
+    }
+    const scopeBlock = screen.getByTestId('scope-block');
+    expect(scopeBlock.textContent).not.toMatch(/domains|environment variables|secrets/i);
   });
 
   it('renders a tabbed product tour over the 6 APPROVED_SCREENS (D-02a)', () => {
