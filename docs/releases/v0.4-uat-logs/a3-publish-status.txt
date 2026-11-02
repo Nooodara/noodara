@@ -1,0 +1,38 @@
+$ git rev-parse v0.4.0-rc.1^{commit} v0.4.0^{commit}; gh run view <id> --json ...; gh release view; docker buildx imagetools inspect
+# 2026-11-02T22:16:12Z, repo Nooodara/noodara
+
+v0.4.0-rc.1 -> d1d956bce58f394c0d4fb872cff8d7dad00f102a
+v0.4.0      -> d1d956bce58f394c0d4fb872cff8d7dad00f102a
+public main -> d1d956bce58f394c0d4fb872cff8d7dad00f102a
+
+CI  run 41500911568  push main  headSha d1d956bce58f394c0d4fb872cff8d7dad00f102a  success  2026-11-02T18:28:28Z
+  jobs (10): unit=success, site=success, typecheck=success, integration=success, security=success, lint=success, installer=success, boundaries=success, boot-smoke=success, e2e=success
+Nightly  run 41500993949  workflow_dispatch main  headSha d1d956bce58f394c0d4fb872cff8d7dad00f102a  success  2026-11-02T18:29:00Z
+  jobs (13): installer=success, proxy (24.04)=success, cycles (22.04)=success, soak=success, stress-connections=success, canary=success, proxy (22.04)=success, domain-cycles (24.04)=success, deploy-engine (22.04)=success, cycles (24.04)=success, e2e-repeat=success, domain-cycles (22.04)=success, deploy-engine (24.04)=success
+Release  run 41508069777  push v0.4.0-rc.1  headSha d1d956bce58f394c0d4fb872cff8d7dad00f102a  success  2026-11-02T19:14:23Z
+  jobs (10): prepare=success, build (noodara-web, arm64)=success, build (noodara-control-plane, amd64)=success, build (noodara-web, amd64)=success, build (noodara-control-plane, arm64)=success, manifest (noodara-control-plane)=success, manifest (noodara-web)=success, verify (noodara-control-plane)=success, verify (noodara-web)=success, release=success
+Release  run 41535064354  push v0.4.0  headSha d1d956bce58f394c0d4fb872cff8d7dad00f102a  success  2026-11-02T22:11:17Z
+  jobs (10): prepare=success, build (noodara-web, arm64)=success, build (noodara-web, amd64)=success, build (noodara-control-plane, arm64)=success, build (noodara-control-plane, amd64)=success, manifest (noodara-control-plane)=success, manifest (noodara-web)=success, verify (noodara-control-plane)=success, verify (noodara-web)=success, release=success
+
+$ gh release list -L 3
+v0.4.0	Latest	v0.4.0	2026-11-02T22:13:52Z
+v0.4.0-rc.1	Pre-release	v0.4.0-rc.1	2026-11-02T19:17:00Z
+v0.3.0		v0.3.0	2026-10-30T06:54:45Z
+releases/latest -> v0.4.0
+
+$ docker buildx imagetools inspect ghcr.io/nooodara/noodara-control-plane:0.4.0
+Digest:    sha256:43eb8f8b4db7814623332d003e0ee5272dfd65ff44a3895b366940323e3dc764
+  Platform:  linux/amd64
+  Platform:  linux/arm64
+$ docker buildx imagetools inspect ghcr.io/nooodara/noodara-web:0.4.0
+Digest:    sha256:c40b2fdc56d9a6b1702c66d61d5ea3e119ca1f1219ff0f4eab7ea81ab08c91d4
+  Platform:  linux/amd64
+  Platform:  linux/arm64
+$ docker buildx imagetools inspect traefik:v3.7.14@sha256:575fa15b135078fe5e50aa847987d96dbddd7b093c172429618404df73f3fa7c
+Digest:    sha256:575fa15b135078fe5e50aa847987d96dbddd7b093c172429618404df73f3fa7c
+  Platform:    linux/amd64
+  Platform:    linux/arm/v6
+  Platform:    linux/arm64/v8
+  Platform:    linux/ppc64le
+  Platform:    linux/riscv64
+  Platform:    linux/s390x

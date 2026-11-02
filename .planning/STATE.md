@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.3
-milestone_name: Reliable Deployment Engine
-status: v0_3_0_released
-stopped_at: 25-06 v0.4 gate NOT READY (docs/releases/v0.4-gate.md): all local gates green on ca45dd1a + test fix; no CI/nightly on a v0.4 commit yet, rc.1 is 25-07
-last_updated: 2026-11-02T15:30:00.000Z
-last_activity: 2026-11-02 -- 25-06 gate evidence: it-full 1598/0, e2e 252/0, QA-15 matrix on 22.04+24.04, 50 domain cycles x2 problems [], audit 0 high; criterion CI green NOT READY
+milestone: v0.4
+milestone_name: Domains, Networking, Secrets
+status: v0_4_0_released
+stopped_at: 25-07 v0.4.0 published (tag v0.4.0 = v0.4.0-rc.1 = public d1d956bc; Release 41535064354, Latest, multi-arch); UAT A1/H1/H2 OK on Lima, LE production UNVERIFIED (#20); gate READY
+last_updated: 2026-11-02T22:20:00.000Z
+last_activity: 2026-11-02 -- 25-07: CI 41500911568 10/10 + nightly 41500993949 13/13 on d1d956bc, tag v0.4.0, Release 41535064354, Lima VM upgraded rc.1 -> 0.4.0 with identical data
 progress:
   total_phases: 9
   completed_phases: 8
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** v0.3 — Reliable Deployment Engine (v0.3.0 publicado 2026-10-30; falta cerrar fase 20)
+**Current focus:** v0.4 — Domains, Networking, Secrets (v0.4.0 publicado 2026-11-02; falta review y cierre de fase 25)
 
 ## Current Position
 
 Phase: 25 en curso (v0.4: fases 21-24 hechas; 25-01..25-06 hechas; 15/OPS-05 abierta, owner usuario)
-Plan: 25-06 hecho: gate v0.4 NOT READY solo por CI/nightly sobre un commit v0.4 (`docs/releases/v0.4-gate.md`); siguiente 25-07 (rc.1, UAT Lima, v0.4.0)
-Status: v0.3.0 publicado (a0b45618); v0.4 lista en local, sin publicar
-Last activity: 2026-10-30
+Plan: 25-07 hecho: rc.1 y v0.4.0 publicados desde `d1d956bc`, UAT Lima (`docs/releases/v0.4-HUMAN-UAT.md`), gate READY (`docs/releases/v0.4-gate.md` § Publicación); Let's Encrypt producción UNVERIFIED (OPEN_QUESTIONS #20). Siguiente: review y cierre de fase 25
+Status: v0.4.0 publicado (público d1d956bc, Latest); v0.3.0 en a0b45618
+Last activity: 2026-11-02
 
 Publicación v0.3.0 (20-05 A2): intento 1 (92a7fbfa, CI 40996535993) rojo por `pnpm audit` (advisories nuevos, 20-10) y un flake de `migration-0011-0012.test.ts` (puerto de seed `20000 + 3 hex`, colisión en `servers_host_port_unique_idx`; seguimiento pendiente). Intento 2: 78dea21 y 770b961 reproducidos → a0b45618; checkout limpio con audit/test/typecheck/lint verdes; CI 41012499661 10/10, Publish site 41012499667, Release 41016597518 verdes; imágenes 0.3.0 amd64+arm64 (control-plane `sha256:a0b37458…`, web `sha256:a1c23cbe…`); release v0.3.0 Latest, no prerelease.
 

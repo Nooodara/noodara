@@ -1,0 +1,45 @@
+# u24 on 0.4.0 (installer + Pebble override re-applied), 2026-11-02T22:15:31Z
+NOODARA_VERSION=0.4.0
+db:migrate completed in 4ms: 0 migration(s) applied, 18 total
+noodara-01a18ab6-3139-7679-97c3-3857c88d847a noodara/01a18ab6-3139-7679-97c3-3857c88d847a:01a19dcc-3891-755f-ac6e-ff37c4d23d8e Up 2 hours
+noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f noodara/01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f:01a18abc-5110-74b2-99a2-60938d863121 Up 3 hours
+noodara-api-1 ghcr.io/nooodara/noodara-control-plane:0.4.0 Up 37 seconds (healthy)
+noodara-postgres-1 postgres:17-alpine Up 3 hours (healthy)
+noodara-redis-1 redis:7-alpine Up 3 hours (healthy)
+noodara-traefik traefik:v3.7.14 Up 3 hours
+noodara-web-1 ghcr.io/nooodara/noodara-web:0.4.0 Up 44 seconds (healthy)
+noodara-worker-1 ghcr.io/nooodara/noodara-control-plane:0.4.0 Up 37 seconds
+pebble ghcr.io/letsencrypt/pebble:2.10.1 Up 3 hours
+port 8081: ok
+port 8083: ok
+## counts and env/secrets md5 after upgrade
+   ?column?   | count 
+--------------+-------
+ users        |     1
+ servers      |     1
+ credentials  |     2
+ projects     |     1
+ environments |     1
+ services     |     3
+ deployments  |    12
+ log_chunks   |    85
+ activity     |    58
+ domains      |     0
+ env_vars     |     2
+ secrets      |     1
+ migrations   |    18
+(13 rows)
+
+             env_md5              
+----------------------------------
+ 092db62db1752668c8f04dfedeeb2d07
+(1 row)
+
+           secrets_md5            
+----------------------------------
+ 3fb190cef3f323ffcc380f69f44019a2
+(1 row)
+
+## server status via API
+{'status': 'CONNECTED', 'proxyStatus': 'RUNNING', 'proxyErrorCode': None}
+HTTP200

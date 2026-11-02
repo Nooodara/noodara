@@ -1,0 +1,196 @@
+# 2026-11-02T22:14:35Z counts before upgrade to 0.4.0
+   ?column?   | count 
+--------------+-------
+ users        |     1
+ servers      |     1
+ credentials  |     2
+ projects     |     1
+ environments |     1
+ services     |     3
+ deployments  |    12
+ log_chunks   |    85
+ activity     |    58
+ domains      |     0
+ env_vars     |     2
+ secrets      |     1
+ migrations   |    18
+(13 rows)
+
+             env_md5              
+----------------------------------
+ 092db62db1752668c8f04dfedeeb2d07
+(1 row)
+
+           secrets_md5            
+----------------------------------
+ 3fb190cef3f323ffcc380f69f44019a2
+(1 row)
+
+
+$ curl -fsSL https://raw.githubusercontent.com/Nooodara/noodara/v0.4.0/install.sh | sudo NOODARA_VERSION=0.4.0 sh
+Noodara installer
+Checking system requirements...
+System requirements satisfied.
+Docker Engine and the Compose plugin are already installed; nothing to do.
+Pulling images...
+ Image ghcr.io/nooodara/noodara-control-plane:0.4.0 Pulling 
+ Image redis:7-alpine Pulling 
+ Image ghcr.io/nooodara/noodara-web:0.4.0 Pulling 
+ Image postgres:17-alpine Pulling 
+ Image redis:7-alpine Pulled 
+ Image postgres:17-alpine Pulled 
+ 80738dbdf642 Pulling fs layer 0B
+ 4f4fb700ef54 Pulling fs layer 0B
+ 15128bbeab19 Pulling fs layer 0B
+ 7e37a7d02723 Pulling fs layer 0B
+ bb4c1ad5c3b7 Pulling fs layer 0B
+ 0164eeffd551 Pulling fs layer 0B
+ 2b32b7d2daba Pulling fs layer 0B
+ 666f5907a167 Pulling fs layer 0B
+ 43f71657ab58 Pulling fs layer 0B
+ 49e63a727199 Pulling fs layer 0B
+ f791e47cf52a Pulling fs layer 0B
+ 8c0bdc66dfeb Pulling fs layer 0B
+ 467306870dd0 Pulling fs layer 0B
+ 983c66c07139 Pulling fs layer 0B
+ 6d1261fde001 Pulling fs layer 0B
+ bc48553f60bf Pulling fs layer 0B
+ 467306870dd0 Pulling fs layer 0B
+ f791e47cf52a Pulling fs layer 0B
+ 8c0bdc66dfeb Pulling fs layer 0B
+ 49e63a727199 Pulling fs layer 0B
+ 983c66c07139 Pulling fs layer 0B
+ 5b2c726afcd8 Pulling fs layer 0B
+ ace688acea2f Pulling fs layer 0B
+ 8a34ea112f7c Pulling fs layer 0B
+ 49257784df37 Pulling fs layer 0B
+ f791e47cf52a Already exists 0B
+ 4f4fb700ef54 Already exists 0B
+ 8c0bdc66dfeb Already exists 0B
+ 8c0bdc66dfeb Already exists 0B
+ 983c66c07139 Already exists 0B
+ 49e63a727199 Already exists 0B
+ f791e47cf52a Already exists 0B
+ 467306870dd0 Already exists 0B
+ 983c66c07139 Already exists 0B
+ 467306870dd0 Already exists 0B
+ 49e63a727199 Already exists 0B
+ 4f4fb700ef54 Pull complete 0B
+ 80738dbdf642 Download complete 0B
+ bb4c1ad5c3b7 Download complete 0B
+ 0164eeffd551 Download complete 0B
+ 666f5907a167 Download complete 0B
+ 2b32b7d2daba Downloading 9.398kB
+ 2b32b7d2daba Download complete 0B
+ 7e37a7d02723 Download complete 0B
+ 15128bbeab19 Downloading 1.049MB
+ 43f71657ab58 Download complete 0B
+ 6d1261fde001 Download complete 0B
+ 15128bbeab19 Downloading 4.194MB
+ 80738dbdf642 Pull complete 0B
+ 6d1261fde001 Pull complete 0B
+ 15128bbeab19 Download complete 0B
+ ace688acea2f Download complete 0B
+ 15128bbeab19 Extracting 1B
+ 5b2c726afcd8 Download complete 0B
+ 15128bbeab19 Extracting 1B
+ 15128bbeab19 Extracting 1B
+ 15128bbeab19 Extracting 1B
+ 8a34ea112f7c Download complete 0B
+ ace688acea2f Pull complete 0B
+ 5b2c726afcd8 Pull complete 0B
+ 8a34ea112f7c Pull complete 0B
+ 15128bbeab19 Extracting 1B
+ 7e37a7d02723 Pull complete 0B
+ 15128bbeab19 Pull complete 0B
+ bb4c1ad5c3b7 Pull complete 0B
+ 0164eeffd551 Pull complete 0B
+ 666f5907a167 Pull complete 0B
+ 2b32b7d2daba Pull complete 0B
+ 43f71657ab58 Pull complete 0B
+ Image ghcr.io/nooodara/noodara-control-plane:0.4.0 Pulled 
+ 49257784df37 Downloading 1.049MB
+ 49257784df37 Downloading 4.194MB
+ 49257784df37 Downloading 10.49MB
+ bc48553f60bf Download complete 0B
+ 49257784df37 Download complete 0B
+ 49257784df37 Extracting 1B
+ 49257784df37 Extracting 1B
+ bc48553f60bf Pull complete 0B
+ 49257784df37 Pull complete 0B
+ Image ghcr.io/nooodara/noodara-web:0.4.0 Pulled 
+Starting services...
+ Container noodara-postgres-1 Running 
+ Container noodara-redis-1 Running 
+ Container noodara-migrate-1 Recreate 
+ Container noodara-migrate-1 Recreated 
+ Container noodara-worker-1 Recreate 
+ Container noodara-api-1 Recreate 
+ Container noodara-api-1 Recreated 
+ Container noodara-web-1 Recreate 
+ Container noodara-worker-1 Recreated 
+ Container noodara-web-1 Recreated 
+ Container noodara-postgres-1 Waiting 
+ Container noodara-postgres-1 Healthy 
+ Container noodara-migrate-1 Starting 
+ Container noodara-migrate-1 Started 
+ Container noodara-migrate-1 Waiting 
+ Container noodara-redis-1 Waiting 
+ Container noodara-migrate-1 Waiting 
+ Container noodara-redis-1 Waiting 
+ Container noodara-migrate-1 Exited 
+ Container noodara-redis-1 Healthy 
+ Container noodara-migrate-1 Exited 
+ Container noodara-worker-1 Starting 
+ Container noodara-redis-1 Healthy 
+ Container noodara-api-1 Starting 
+ Container noodara-worker-1 Started 
+ Container noodara-api-1 Started 
+ Container noodara-api-1 Waiting 
+ Container noodara-api-1 Healthy 
+ Container noodara-web-1 Starting 
+ Container noodara-web-1 Started 
+Waiting for services to report healthy...
+All services are healthy.
+
+Noodara is running.
+Panel: http://localhost:3000
+An admin account already exists.
+
+WARNING: the panel is served over plain HTTP -- traffic, including the session cookie, is unencrypted until v0.4's TLS proxy (or your own) is in front. See docs/install.md.
+
+ufw is active on this server. Docker publishes container ports by inserting its own iptables rules, which typically bypass ufw's rules entirely for published ports -- a port Docker publishes may be reachable from the internet even if ufw shows it as denied.
+If you rely on ufw to restrict access to this port, see docs/install.md for the DOCKER-USER-chain configuration needed to make ufw actually govern Docker's published ports.
+To allow the panel port through ufw anyway: sudo ufw allow 3000/tcp
+Remember your cloud provider's own firewall/security-group rules also apply -- ufw only governs this host.
+
+Upgraded from 0.4.0-rc.1 to 0.4.0. To go back: re-run this installer with NOODARA_VERSION=0.4.0-rc.1.
+# exit 0
+
+$ re-apply Pebble override
+ Container noodara-web-1 Running 
+ Container noodara-postgres-1 Running 
+ Container noodara-redis-1 Running 
+ Container noodara-api-1 Recreate 
+ Container noodara-worker-1 Recreate 
+ Container noodara-api-1 Recreated 
+ Container noodara-worker-1 Recreated 
+ Container noodara-postgres-1 Waiting 
+ Container noodara-postgres-1 Healthy 
+ Container noodara-migrate-1 Starting 
+ Container noodara-migrate-1 Started 
+ Container noodara-migrate-1 Waiting 
+ Container noodara-redis-1 Waiting 
+ Container noodara-migrate-1 Waiting 
+ Container noodara-redis-1 Waiting 
+ Container noodara-migrate-1 Exited 
+ Container noodara-redis-1 Healthy 
+ Container noodara-api-1 Starting 
+ Container noodara-redis-1 Healthy 
+ Container noodara-migrate-1 Exited 
+ Container noodara-worker-1 Starting 
+ Container noodara-api-1 Started 
+ Container noodara-api-1 Waiting 
+ Container noodara-worker-1 Started 
+ Container noodara-api-1 Healthy 
+# exit 0
