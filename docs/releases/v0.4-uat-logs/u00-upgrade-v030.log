@@ -1,0 +1,485 @@
+Noodara installer
+Checking system requirements...
+System requirements satisfied.
+Docker Engine and the Compose plugin are already installed; nothing to do.
+Pulling images...
+ Image redis:7-alpine Pulling 
+ Image ghcr.io/nooodara/noodara-web:0.3.0 Pulling 
+ Image postgres:17-alpine Pulling 
+ Image ghcr.io/nooodara/noodara-control-plane:0.3.0 Pulling 
+ Image postgres:17-alpine Pulled 
+ Image redis:7-alpine Pulled 
+ f791e47cf52a Pulling fs layer 0B
+ 8c0bdc66dfeb Pulling fs layer 0B
+ 467306870dd0 Pulling fs layer 0B
+ 49e63a727199 Pulling fs layer 0B
+ df3b0a43df5a Pulling fs layer 0B
+ 983c66c07139 Pulling fs layer 0B
+ 3a1b6483e44b Pulling fs layer 0B
+ 5a17925a35f6 Pulling fs layer 0B
+ 8b03055d5b3f Pulling fs layer 0B
+ 1284fb174103 Pulling fs layer 0B
+ 8d03a7a6b987 Pulling fs layer 0B
+ 4f4fb700ef54 Pulling fs layer 0B
+ 303c7f30e64a Pulling fs layer 0B
+ 7759d43ff098 Pulling fs layer 0B
+ 3e9df04f980f Pulling fs layer 0B
+ e91207216588 Pulling fs layer 0B
+ d2e00d449ef7 Pulling fs layer 0B
+ 6bd82c8b224b Pulling fs layer 0B
+ a47b126e835e Pulling fs layer 0B
+ 49e63a727199 Pulling fs layer 0B
+ f791e47cf52a Pulling fs layer 0B
+ 8c0bdc66dfeb Pulling fs layer 0B
+ 467306870dd0 Pulling fs layer 0B
+ 983c66c07139 Pulling fs layer 0B
+ a78f89ad7430 Pulling fs layer 0B
+ 4f4fb700ef54 Already exists 0B
+ 4f4fb700ef54 Pull complete 0B
+ 467306870dd0 Download complete 0B
+ 467306870dd0 Download complete 0B
+ f791e47cf52a Downloading 2.097MB
+ f791e47cf52a Downloading 2.097MB
+ 8c0bdc66dfeb Download complete 0B
+ 8c0bdc66dfeb Download complete 0B
+ f791e47cf52a Downloading 7.34MB
+ 5a17925a35f6 Download complete 0B
+ f791e47cf52a Downloading 7.34MB
+ f791e47cf52a Downloading 12.71MB
+ f791e47cf52a Downloading 13.63MB
+ f791e47cf52a Downloading 13.63MB
+ f791e47cf52a Downloading 13.63MB
+ f791e47cf52a Downloading 17.83MB
+ f791e47cf52a Downloading 17.83MB
+ f791e47cf52a Downloading 19.92MB
+ f791e47cf52a Downloading 19.92MB
+ f791e47cf52a Downloading 19.92MB
+ f791e47cf52a Downloading 19.92MB
+ f791e47cf52a Downloading 24.12MB
+ f791e47cf52a Downloading 24.12MB
+ f791e47cf52a Downloading 26.21MB
+ f791e47cf52a Downloading 26.21MB
+ f791e47cf52a Download complete 0B
+ f791e47cf52a Download complete 0B
+ f791e47cf52a Extracting 1B
+ f791e47cf52a Extracting 1B
+ f791e47cf52a Extracting 1B
+ f791e47cf52a Extracting 1B
+ f791e47cf52a Extracting 1B
+ f791e47cf52a Extracting 1B
+ df3b0a43df5a Download complete 0B
+ f791e47cf52a Extracting 1B
+ f791e47cf52a Extracting 1B
+ 8c0bdc66dfeb Pull complete 0B
+ f791e47cf52a Extracting 1B
+ f791e47cf52a Pull complete 0B
+ f791e47cf52a Extracting 1B
+ 1284fb174103 Download complete 0B
+ f791e47cf52a Extracting 1B
+ 49e63a727199 Downloading 1.049MB
+ 49e63a727199 Downloading 1.049MB
+ f791e47cf52a Extracting 1B
+ 49e63a727199 Downloading 1.049MB
+ 3a1b6483e44b Download complete 0B
+ 49e63a727199 Downloading 1.049MB
+ f791e47cf52a Extracting 1B
+ 49e63a727199 Downloading 1.049MB
+ 49e63a727199 Downloading 1.049MB
+ f791e47cf52a Extracting 1B
+ 49e63a727199 Downloading 1.049MB
+ 49e63a727199 Downloading 1.049MB
+ f791e47cf52a Extracting 2B
+ 49e63a727199 Downloading 1.049MB
+ 8b03055d5b3f Downloading 3.146MB
+ 49e63a727199 Downloading 1.049MB
+ f791e47cf52a Extracting 2B
+ 49e63a727199 Downloading 1.049MB
+ 8b03055d5b3f Downloading 7.34MB
+ 49e63a727199 Downloading 1.049MB
+ f791e47cf52a Extracting 2B
+ 49e63a727199 Downloading 1.049MB
+ 8b03055d5b3f Downloading 11.53MB
+ 49e63a727199 Downloading 1.049MB
+ f791e47cf52a Extracting 2B
+ 49e63a727199 Downloading 1.049MB
+ 8b03055d5b3f Download complete 0B
+ 49e63a727199 Downloading 1.049MB
+ f791e47cf52a Extracting 2B
+ 49e63a727199 Downloading 1.049MB
+ 983c66c07139 Downloading 1.049MB
+ 49e63a727199 Downloading 1.049MB
+ 983c66c07139 Downloading 1.049MB
+ f791e47cf52a Extracting 2B
+ 49e63a727199 Downloading 1.049MB
+ 983c66c07139 Downloading 1.049MB
+ 8d03a7a6b987 Download complete 0B
+ 983c66c07139 Downloading 1.049MB
+ 49e63a727199 Downloading 1.049MB
+ f791e47cf52a Extracting 2B
+ 49e63a727199 Downloading 1.049MB
+ 983c66c07139 Downloading 1.049MB
+ 49e63a727199 Downloading 1.049MB
+ 983c66c07139 Downloading 1.049MB
+ f791e47cf52a Extracting 2B
+ 49e63a727199 Downloading 1.049MB
+ 983c66c07139 Downloading 1.049MB
+ 983c66c07139 Downloading 1.049MB
+ 49e63a727199 Downloading 1.049MB
+ f791e47cf52a Extracting 2B
+ 983c66c07139 Downloading 1.049MB
+ 49e63a727199 Downloading 1.049MB
+ 49e63a727199 Downloading 1.049MB
+ 983c66c07139 Downloading 1.049MB
+ f791e47cf52a Extracting 2B
+ 49e63a727199 Downloading 2.097MB
+ 983c66c07139 Downloading 1.049MB
+ 49e63a727199 Downloading 2.097MB
+ 983c66c07139 Downloading 1.049MB
+ f791e47cf52a Extracting 3B
+ 49e63a727199 Downloading 2.097MB
+ 983c66c07139 Downloading 1.049MB
+ 49e63a727199 Downloading 2.097MB
+ 983c66c07139 Downloading 1.049MB
+ f791e47cf52a Extracting 3B
+ 303c7f30e64a Downloading 1.049MB
+ 983c66c07139 Downloading 1.049MB
+ 49e63a727199 Downloading 2.097MB
+ 49e63a727199 Downloading 2.097MB
+ 983c66c07139 Downloading 1.049MB
+ 49e63a727199 Downloading 2.097MB
+ 983c66c07139 Downloading 1.049MB
+ 49e63a727199 Downloading 2.097MB
+ 303c7f30e64a Downloading 4.194MB
+ 983c66c07139 Downloading 1.049MB
+ 49e63a727199 Downloading 2.097MB
+ 303c7f30e64a Download complete 0B
+ 983c66c07139 Download complete 0B
+ 49e63a727199 Downloading 2.097MB
+ 983c66c07139 Download complete 0B
+ 49e63a727199 Downloading 2.097MB
+ 49e63a727199 Downloading 2.097MB
+ 3e9df04f980f Download complete 0B
+ 49e63a727199 Downloading 2.097MB
+ 49e63a727199 Downloading 2.097MB
+ 49e63a727199 Downloading 2.097MB
+ 49e63a727199 Downloading 2.097MB
+ 49e63a727199 Downloading 2.097MB
+ 7759d43ff098 Download complete 0B
+ 49e63a727199 Downloading 2.097MB
+ 49e63a727199 Downloading 2.097MB
+ e91207216588 Download complete 0B
+ 49e63a727199 Downloading 2.097MB
+ 49e63a727199 Downloading 3.146MB
+ d2e00d449ef7 Download complete 0B
+ 49e63a727199 Downloading 3.146MB
+ a47b126e835e Download complete 0B
+ 49e63a727199 Downloading 3.146MB
+ 49e63a727199 Downloading 3.146MB
+ 49e63a727199 Downloading 3.146MB
+ 49e63a727199 Downloading 3.146MB
+ 49e63a727199 Downloading 3.146MB
+ 49e63a727199 Downloading 3.146MB
+ 49e63a727199 Downloading 3.146MB
+ a78f89ad7430 Download complete 0B
+ 49e63a727199 Downloading 3.146MB
+ 49e63a727199 Downloading 3.146MB
+ 49e63a727199 Downloading 3.146MB
+ 6bd82c8b224b Download complete 0B
+ 49e63a727199 Downloading 3.146MB
+ 49e63a727199 Downloading 3.146MB
+ 49e63a727199 Downloading 3.146MB
+ 49e63a727199 Downloading 3.146MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 4.194MB
+ 49e63a727199 Downloading 5.243MB
+ 49e63a727199 Downloading 5.243MB
+ 49e63a727199 Downloading 5.243MB
+ 49e63a727199 Downloading 5.243MB
+ 49e63a727199 Downloading 5.243MB
+ 49e63a727199 Downloading 5.243MB
+ 49e63a727199 Downloading 5.243MB
+ 49e63a727199 Downloading 5.243MB
+ 49e63a727199 Downloading 5.243MB
+ 49e63a727199 Downloading 5.243MB
+ 49e63a727199 Downloading 5.243MB
+ 49e63a727199 Downloading 5.243MB
+ 49e63a727199 Downloading 5.243MB
+ 49e63a727199 Downloading 5.243MB
+ 49e63a727199 Downloading 6.291MB
+ 49e63a727199 Downloading 6.291MB
+ 49e63a727199 Downloading 6.291MB
+ 49e63a727199 Downloading 6.291MB
+ 49e63a727199 Downloading 6.291MB
+ 49e63a727199 Downloading 6.291MB
+ 49e63a727199 Downloading 6.291MB
+ 49e63a727199 Downloading 6.291MB
+ 49e63a727199 Downloading 6.291MB
+ 49e63a727199 Downloading 6.291MB
+ 49e63a727199 Downloading 6.291MB
+ 49e63a727199 Downloading 6.291MB
+ 49e63a727199 Downloading 6.291MB
+ 49e63a727199 Downloading 6.291MB
+ 49e63a727199 Downloading 7.34MB
+ 49e63a727199 Downloading 7.34MB
+ 49e63a727199 Downloading 7.34MB
+ 49e63a727199 Downloading 7.34MB
+ 49e63a727199 Downloading 7.34MB
+ 49e63a727199 Downloading 7.34MB
+ 49e63a727199 Downloading 7.34MB
+ 49e63a727199 Downloading 7.34MB
+ 49e63a727199 Downloading 7.34MB
+ 49e63a727199 Downloading 7.34MB
+ 49e63a727199 Downloading 7.34MB
+ 49e63a727199 Downloading 7.34MB
+ 49e63a727199 Downloading 8.389MB
+ 49e63a727199 Downloading 8.389MB
+ 49e63a727199 Downloading 8.389MB
+ 49e63a727199 Downloading 8.389MB
+ 49e63a727199 Downloading 8.389MB
+ 49e63a727199 Downloading 8.389MB
+ 49e63a727199 Downloading 8.389MB
+ 49e63a727199 Downloading 8.389MB
+ 49e63a727199 Downloading 8.389MB
+ 49e63a727199 Downloading 8.389MB
+ 49e63a727199 Downloading 9.437MB
+ 49e63a727199 Downloading 9.437MB
+ 49e63a727199 Downloading 9.437MB
+ 49e63a727199 Downloading 9.437MB
+ 49e63a727199 Downloading 9.437MB
+ 49e63a727199 Downloading 9.437MB
+ 49e63a727199 Downloading 9.437MB
+ 49e63a727199 Downloading 9.437MB
+ 49e63a727199 Downloading 9.437MB
+ 49e63a727199 Downloading 9.437MB
+ 49e63a727199 Downloading 9.437MB
+ 49e63a727199 Downloading 9.437MB
+ 49e63a727199 Downloading 10.49MB
+ 49e63a727199 Downloading 10.49MB
+ 49e63a727199 Downloading 10.49MB
+ 49e63a727199 Downloading 10.49MB
+ 49e63a727199 Downloading 10.49MB
+ 49e63a727199 Downloading 10.49MB
+ 49e63a727199 Downloading 10.49MB
+ 49e63a727199 Downloading 10.49MB
+ 49e63a727199 Downloading 10.49MB
+ 49e63a727199 Downloading 10.49MB
+ 49e63a727199 Downloading 11.53MB
+ 49e63a727199 Downloading 11.53MB
+ 49e63a727199 Downloading 11.53MB
+ 49e63a727199 Downloading 11.53MB
+ 49e63a727199 Downloading 11.53MB
+ 49e63a727199 Downloading 11.53MB
+ 49e63a727199 Downloading 11.53MB
+ 49e63a727199 Downloading 11.53MB
+ 49e63a727199 Downloading 12.58MB
+ 49e63a727199 Downloading 12.58MB
+ 49e63a727199 Downloading 12.58MB
+ 49e63a727199 Downloading 12.58MB
+ 49e63a727199 Downloading 12.58MB
+ 49e63a727199 Downloading 12.58MB
+ 49e63a727199 Downloading 13.63MB
+ 49e63a727199 Downloading 13.63MB
+ 49e63a727199 Downloading 13.63MB
+ 49e63a727199 Downloading 13.63MB
+ 49e63a727199 Downloading 13.63MB
+ 49e63a727199 Downloading 13.63MB
+ 49e63a727199 Downloading 13.63MB
+ 49e63a727199 Downloading 13.63MB
+ 49e63a727199 Downloading 14.68MB
+ 49e63a727199 Downloading 14.68MB
+ 49e63a727199 Downloading 14.68MB
+ 49e63a727199 Downloading 14.68MB
+ 49e63a727199 Downloading 15.73MB
+ 49e63a727199 Downloading 15.73MB
+ 49e63a727199 Downloading 15.73MB
+ 49e63a727199 Downloading 15.73MB
+ 49e63a727199 Downloading 15.73MB
+ 49e63a727199 Downloading 15.73MB
+ 49e63a727199 Downloading 16.78MB
+ 49e63a727199 Downloading 16.78MB
+ 49e63a727199 Downloading 16.78MB
+ 49e63a727199 Downloading 16.78MB
+ 49e63a727199 Downloading 17.29MB
+ 49e63a727199 Downloading 17.83MB
+ 49e63a727199 Downloading 17.83MB
+ 49e63a727199 Downloading 17.83MB
+ 49e63a727199 Downloading 17.83MB
+ 49e63a727199 Downloading 17.83MB
+ 49e63a727199 Downloading 18.87MB
+ 49e63a727199 Downloading 18.87MB
+ 49e63a727199 Downloading 18.87MB
+ 49e63a727199 Downloading 18.87MB
+ 49e63a727199 Downloading 19.92MB
+ 49e63a727199 Downloading 19.92MB
+ 49e63a727199 Downloading 19.92MB
+ 49e63a727199 Downloading 19.92MB
+ 49e63a727199 Downloading 20.97MB
+ 49e63a727199 Downloading 20.97MB
+ 49e63a727199 Downloading 20.97MB
+ 49e63a727199 Downloading 20.97MB
+ 49e63a727199 Downloading 22.02MB
+ 49e63a727199 Downloading 22.02MB
+ 49e63a727199 Downloading 23.07MB
+ 49e63a727199 Downloading 23.07MB
+ 49e63a727199 Downloading 23.07MB
+ 49e63a727199 Downloading 23.07MB
+ 49e63a727199 Downloading 24.12MB
+ 49e63a727199 Downloading 24.12MB
+ 49e63a727199 Downloading 24.12MB
+ 49e63a727199 Downloading 24.12MB
+ 49e63a727199 Downloading 25.17MB
+ 49e63a727199 Downloading 25.17MB
+ 49e63a727199 Downloading 26.21MB
+ 49e63a727199 Downloading 26.21MB
+ 49e63a727199 Downloading 27.26MB
+ 49e63a727199 Downloading 27.26MB
+ 49e63a727199 Downloading 27.26MB
+ 49e63a727199 Downloading 27.26MB
+ 49e63a727199 Downloading 28.31MB
+ 49e63a727199 Downloading 28.31MB
+ 49e63a727199 Downloading 29.36MB
+ 49e63a727199 Downloading 29.36MB
+ 49e63a727199 Downloading 30.41MB
+ 49e63a727199 Downloading 30.41MB
+ 49e63a727199 Downloading 30.41MB
+ 49e63a727199 Downloading 30.41MB
+ 49e63a727199 Downloading 31.46MB
+ 49e63a727199 Downloading 31.46MB
+ 49e63a727199 Downloading 32.51MB
+ 49e63a727199 Downloading 32.51MB
+ 49e63a727199 Downloading 33.55MB
+ 49e63a727199 Downloading 33.55MB
+ 49e63a727199 Downloading 34.6MB
+ 49e63a727199 Downloading 34.6MB
+ 49e63a727199 Downloading 35.65MB
+ 49e63a727199 Downloading 35.65MB
+ 49e63a727199 Downloading 36.7MB
+ 49e63a727199 Downloading 36.7MB
+ 49e63a727199 Downloading 37.75MB
+ 49e63a727199 Downloading 37.75MB
+ 49e63a727199 Downloading 38.8MB
+ 49e63a727199 Downloading 38.8MB
+ 49e63a727199 Downloading 39.85MB
+ 49e63a727199 Downloading 39.85MB
+ 49e63a727199 Downloading 40.89MB
+ 49e63a727199 Downloading 40.89MB
+ 49e63a727199 Downloading 41.94MB
+ 49e63a727199 Downloading 41.94MB
+ 49e63a727199 Downloading 42.99MB
+ 49e63a727199 Downloading 42.99MB
+ 49e63a727199 Downloading 44.04MB
+ 49e63a727199 Downloading 44.04MB
+ 49e63a727199 Downloading 45.09MB
+ 49e63a727199 Downloading 45.09MB
+ 49e63a727199 Downloading 47.19MB
+ 49e63a727199 Downloading 47.19MB
+ 49e63a727199 Downloading 48.23MB
+ 49e63a727199 Downloading 48.23MB
+ 49e63a727199 Downloading 49.28MB
+ 49e63a727199 Downloading 49.28MB
+ 49e63a727199 Download complete 0B
+ 49e63a727199 Download complete 0B
+ 49e63a727199 Extracting 1B
+ 49e63a727199 Extracting 1B
+ 49e63a727199 Extracting 1B
+ 49e63a727199 Extracting 1B
+ 49e63a727199 Extracting 1B
+ 49e63a727199 Extracting 1B
+ 49e63a727199 Extracting 1B
+ 49e63a727199 Extracting 1B
+ 49e63a727199 Extracting 1B
+ 49e63a727199 Extracting 1B
+ 49e63a727199 Extracting 1B
+ 49e63a727199 Extracting 1B
+ 983c66c07139 Extracting 1B
+ 49e63a727199 Pull complete 0B
+ 49e63a727199 Extracting 1B
+ 467306870dd0 Pull complete 0B
+ 5a17925a35f6 Pull complete 0B
+ 1284fb174103 Pull complete 0B
+ 3a1b6483e44b Pull complete 0B
+ 8b03055d5b3f Extracting 1B
+ 983c66c07139 Pull complete 0B
+ 49e63a727199 Extracting 1B
+ 8b03055d5b3f Extracting 1B
+ 49e63a727199 Extracting 1B
+ df3b0a43df5a Pull complete 0B
+ 8b03055d5b3f Pull complete 0B
+ Image ghcr.io/nooodara/noodara-web:0.3.0 Pulled 
+ 49e63a727199 Extracting 1B
+ 49e63a727199 Extracting 1B
+ 49e63a727199 Extracting 2B
+ 49e63a727199 Extracting 2B
+ 49e63a727199 Extracting 2B
+ 49e63a727199 Extracting 2B
+ 8d03a7a6b987 Pull complete 0B
+ 303c7f30e64a Extracting 1B
+ a78f89ad7430 Pull complete 0B
+ 303c7f30e64a Extracting 1B
+ 303c7f30e64a Extracting 1B
+ 303c7f30e64a Extracting 1B
+ 303c7f30e64a Extracting 1B
+ 303c7f30e64a Pull complete 0B
+ 3e9df04f980f Extracting 1B
+ 7759d43ff098 Pull complete 0B
+ 3e9df04f980f Pull complete 0B
+ e91207216588 Pull complete 0B
+ d2e00d449ef7 Pull complete 0B
+ a47b126e835e Pull complete 0B
+ 6bd82c8b224b Pull complete 0B
+ Image ghcr.io/nooodara/noodara-control-plane:0.3.0 Pulled 
+Starting services...
+ Container noodara-postgres-1 Running 
+ Container noodara-redis-1 Running 
+ Container noodara-migrate-1 Recreate 
+ Container noodara-migrate-1 Recreated 
+ Container noodara-api-1 Recreate 
+ Container noodara-worker-1 Recreate 
+ Container noodara-worker-1 Recreated 
+ Container noodara-api-1 Recreated 
+ Container noodara-web-1 Recreate 
+ Container noodara-web-1 Recreated 
+ Container noodara-postgres-1 Waiting 
+ Container noodara-postgres-1 Healthy 
+ Container noodara-migrate-1 Starting 
+ Container noodara-migrate-1 Started 
+ Container noodara-redis-1 Waiting 
+ Container noodara-migrate-1 Waiting 
+ Container noodara-redis-1 Waiting 
+ Container noodara-migrate-1 Waiting 
+ Container noodara-migrate-1 Exited 
+ Container noodara-redis-1 Healthy 
+ Container noodara-redis-1 Healthy 
+ Container noodara-api-1 Starting 
+ Container noodara-migrate-1 Exited 
+ Container noodara-worker-1 Starting 
+ Container noodara-api-1 Started 
+ Container noodara-api-1 Waiting 
+ Container noodara-worker-1 Started 
+ Container noodara-api-1 Healthy 
+ Container noodara-web-1 Starting 
+ Container noodara-web-1 Started 
+Waiting for services to report healthy...
+All services are healthy.
+
+Noodara is running.
+Panel: http://localhost:3000
+An admin account already exists.
+
+WARNING: the panel is served over plain HTTP -- traffic, including the session cookie, is unencrypted until v0.4's TLS proxy (or your own) is in front. See docs/install.md.
+
+Upgraded from 0.3.0-rc.1 to 0.3.0. To go back: re-run this installer with NOODARA_VERSION=0.3.0-rc.1.

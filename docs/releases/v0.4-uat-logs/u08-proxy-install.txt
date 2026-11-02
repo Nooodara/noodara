@@ -1,0 +1,24 @@
+# u08 proxy install (POST /api/servers/:id/proxy) -> RUNNING
+{'proxyStatus': 'RUNNING', 'proxyErrorCode': None, 'proxyInstalledAt': '2026-11-02T19:20:12.845Z'}
+noodara-traefik traefik:v3.7.14 Up 15 seconds 0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp, 127.0.0.1:9180->9180/tcp
+traefik:v3.7.14@sha256:575fa15b135078fe5e50aa847987d96dbddd7b093c172429618404df73f3fa7c restart=unless-stopped
+LISTEN 0      4096         0.0.0.0:443        0.0.0.0:*    users:(("docker-proxy",pid=81066,fd=8))                 
+LISTEN 0      4096         0.0.0.0:80         0.0.0.0:*    users:(("docker-proxy",pid=81042,fd=8))                 
+LISTEN 0      4096            [::]:443           [::]:*    users:(("docker-proxy",pid=81073,fd=8))                 
+LISTEN 0      4096            [::]:80            [::]:*    users:(("docker-proxy",pid=81049,fd=8))                 
+# acme.json mode/owner:
+600 root:root /opt/noodara-proxy/acme/acme.json
+# ufw:
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), deny (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp (OpenSSH)           ALLOW IN    Anywhere                  
+22/tcp (OpenSSH (v6))      ALLOW IN    Anywhere (v6)             
+
+# docker DNAT for the published ports:
+-A DOCKER ! -i docker0 -p tcp -m tcp --dport 80 -j DNAT --to-destination <docker-ip>:80
+-A DOCKER ! -i docker0 -p tcp -m tcp --dport 443 -j DNAT --to-destination <docker-ip>:443

@@ -1,0 +1,45 @@
+# u16 H1 host reboot (sudo systemctl reboot inside the VM, no manual action afterwards)
+## before
+2026-11-02T19:32:11Z
+2026-11-02 12:29:16
+noodara-01a18ab6-3139-7679-97c3-3857c88d847a Up 3 minutes
+noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f Up About an hour
+noodara-api-1 Up 14 minutes (healthy)
+noodara-postgres-1 Up About an hour (healthy)
+noodara-redis-1 Up About an hour (healthy)
+noodara-traefik Up 7 minutes
+noodara-web-1 Up 14 minutes (healthy)
+noodara-worker-1 Up 14 minutes
+pebble Up 10 minutes
+## after (no manual action)
+2026-11-02T19:35:01Z
+boot: 2026-11-02 13:32:17 (VM local time)
+noodara-01a18ab6-3139-7679-97c3-3857c88d847a Up 2 minutes
+noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f Up 2 minutes
+noodara-api-1 Up 2 minutes (healthy)
+noodara-postgres-1 Up 2 minutes (healthy)
+noodara-redis-1 Up 2 minutes (healthy)
+noodara-traefik Up 2 minutes
+noodara-web-1 Up 2 minutes (healthy)
+noodara-worker-1 Up 2 minutes
+pebble Up 2 minutes
+0.0.0.0:443 users:(("docker-proxy",pid=1901,fd=8))
+0.0.0.0:80 users:(("docker-proxy",pid=1854,fd=8))
+[::]:443 users:(("docker-proxy",pid=1909,fd=8))
+[::]:80 users:(("docker-proxy",pid=1882,fd=8))
+## HTTPS through noodara-traefik
+https /health -> 200 verify=0
+body: ok
+http /health -> 302 location=https://app.vm-ip.sslip.io/health
+issuer=CN = Pebble Intermediate CA 43d358
+notBefore=Nov  2 19:24:28 2026 GMT
+notAfter=Jan 31 19:24:27 2027 GMT
+X509v3 Subject Alternative Name: critical
+    DNS:app.vm-ip.sslip.io
+## API proxy + domain
+{'status': None, 'errorCode': None, 'image': None, 'updatedAt': None}
+{'certStatus': 'ISSUED', 'certNotAfter': '2027-01-31T19:24:27.000Z', 'applyStatus': 'APPLIED', 'updatedAt': '2026-11-02T19:31:49.188Z'}
+## server after boot
+{'status': 'CONNECTED', 'proxyStatus': 'RUNNING', 'proxyErrorCode': None, 'lastErrorCode': None}
+worker warn/error lines since boot: 0
+node-api direct: ok

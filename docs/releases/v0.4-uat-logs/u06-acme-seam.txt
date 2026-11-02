@@ -1,0 +1,8 @@
+NOODARA_ACME_CA_URL=https://pebble:14000/dir
+NOODARA_ACME_CA_ROOT_FILE=/etc/noodara/pebble.minica.pem
+ Container noodara-api-1 Started 
+ Container noodara-api-1 Waiting 
+ Container noodara-worker-1 Started 
+ Container noodara-api-1 Healthy 
+-----BEGIN CERTIFICATE-----
+https://pebble:14000/dir

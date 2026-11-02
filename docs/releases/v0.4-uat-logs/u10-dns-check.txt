@@ -1,0 +1,2 @@
+{"id":"01a19db4-cca2-7363-a4b2-b2d643d3356e","projectId":"01a18ab5-b0ee-7f52-9297-7eebaeb143e2","serviceId":"01a18ab6-3139-7679-97c3-3857c88d847a","hostname":"app.vm-ip.sslip.io","httpsRedirect":true,"certStatus":"PENDING","certNotAfter":null,"certErrorCode":null,"dnsStatus":"RESOLVES","dnsCheckedAt":"2026-11-02T19:20:43.187Z","applyStatus":"APPLIED","createdAt":"2026-11-02T19:20:34.207Z","updatedAt":"2026-11-02T19:20:43.187Z"}
+HTTP 200

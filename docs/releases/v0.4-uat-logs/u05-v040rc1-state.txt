@@ -1,0 +1,51 @@
+# u05 state after upgrade to 0.4.0-rc.1
+NOODARA_VERSION=0.4.0-rc.1
+   ?column?   | count 
+--------------+-------
+ users        |     1
+ servers      |     1
+ credentials  |     2
+ projects     |     1
+ environments |     1
+ services     |     3
+ deployments  |     9
+ log_chunks   |    68
+ migrations   |    18
+(9 rows)
+
+     name     | status  | published_port 
+--------------+---------+----------------
+ bad-image    | UNKNOWN |           8082
+ node-api     | UNKNOWN |           8081
+ node-api-v03 | UNKNOWN |           8083
+(3 rows)
+
+     name     |   status    | trigger  | count 
+--------------+-------------+----------+-------
+ bad-image    | FAILED      | manual   |     1
+ node-api     | SUCCESS     | manual   |     3
+ node-api-v03 | SUCCESS     | manual   |     1
+ node-api-v03 | SUCCESS     | webhook  |     2
+ node-api-v03 | SUCCESS     | rollback |     1
+ node-api-v03 | ROLLED_BACK | webhook  |     1
+(6 rows)
+
+ id |  created_at   
+----+---------------
+ 18 | 1793555587578
+ 17 | 1793513624640
+ 16 | 1793356086388
+ 15 | 1793356016809
+ 14 | 1792029778076
+(5 rows)
+
+port 8081: {"service":"node-api","ok":true}
+port 8083: {"service":"node-api","version":"D","ok":true}
+noodara-web-1 ghcr.io/nooodara/noodara-web:0.4.0-rc.1 Up 11 seconds (healthy)
+noodara-api-1 ghcr.io/nooodara/noodara-control-plane:0.4.0-rc.1 Up 17 seconds (healthy)
+noodara-worker-1 ghcr.io/nooodara/noodara-control-plane:0.4.0-rc.1 Up 17 seconds
+pebble ghcr.io/letsencrypt/pebble:2.10.1 Up 34 minutes
+noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f noodara/01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f:01a18abc-5110-74b2-99a2-60938d863121 Up 48 minutes
+noodara-01a18ab6-3139-7679-97c3-3857c88d847a noodara/01a18ab6-3139-7679-97c3-3857c88d847a:01a18ab8-0c73-7bad-adf9-6bbb82549121 Up 48 minutes
+noodara-postgres-1 postgres:17-alpine Up 48 minutes (healthy)
+noodara-redis-1 redis:7-alpine Up 48 minutes (healthy)

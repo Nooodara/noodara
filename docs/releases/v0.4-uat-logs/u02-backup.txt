@@ -1,0 +1,7 @@
+TS=20261102T183227Z
+TABLE DATA: 17
+-rw------- env-pre-v040-rc1-20261102T183227Z
+-rw-r--r-- pre-v040-rc1-20261102T183227Z.dump
+# after fixing the chmod glob (dir is 0700, glob must expand as root):
+-rw------- env-pre-v040-rc1-20261102T183227Z
+-rw------- pre-v040-rc1-20261102T183227Z.dump

@@ -1,0 +1,4 @@
+# u11 cert status (API) and HTTPS through noodara-traefik, verified against the Pebble root; hosts override = curl --resolve
+{'hostname': 'app.vm-ip.sslip.io', 'certStatus': 'RENEWING', 'certNotAfter': '2026-12-02T19:20:40.000Z', 'dnsStatus': 'RESOLVES', 'applyStatus': 'APPLIED', 'httpsRedirect': True}
+sh: 0: cannot open /Users/xch4rt/uat-v04/https-check.sh: No such file
+# note: the https-check line above used a host path and did not run; the same check (HTTPS /health 200 verify=0, HTTP 302 -> https) ran at 19:28Z in u13-deploy-reads-secret.txt and after the reboot in u16-reboot.txt

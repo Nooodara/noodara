@@ -1,0 +1,23 @@
+# u07 Lima regenerates sshd host keys on every boot (keys dated 2026-11-02T12:29:35, boot 12:29:20)
+# deploy -> SERVER_UNREACHABLE, proxy install -> PROXY_INSTALL_FAILED step connect; connect surfaces the new key as pending:
+ status |                        host_fingerprint                        |                      pending_fingerprint                       
+--------+----------------------------------------------------------------+----------------------------------------------------------------
+ ERROR  | ssh-ed25519 SHA256:IVO2WqNy2AbocNdcAi8aSt+3rBtUTJBPFbZKpfBC88A | ssh-ed25519 SHA256:T2f2fHOkHJ+XoJqY1J1i9vuulL4zeIt7roe0Vw60J48
+(1 row)
+
+# actual key on the host:
+256 SHA256:T2f2fHOkHJ+XoJqY1J1i9vuulL4zeIt7roe0Vw60J48 root@lima-noodara-uat (ED25519)
+# trust-fingerprint with the verified key:
+HTTP 200
+ status  |                        host_fingerprint                        | pending_fingerprint 
+---------+----------------------------------------------------------------+---------------------
+ PENDING | ssh-ed25519 SHA256:T2f2fHOkHJ+XoJqY1J1i9vuulL4zeIt7roe0Vw60J48 | 
+(1 row)
+
+# connect after trust:
+  status   |                        host_fingerprint                        
+-----------+----------------------------------------------------------------
+ CONNECTED | ssh-ed25519 SHA256:T2f2fHOkHJ+XoJqY1J1i9vuulL4zeIt7roe0Vw60J48
+(1 row)
+
+# cloud-init: /etc/cloud/cloud.cfg.d/99-uat-keep-host-keys.cfg = ssh_deletekeys: false (a real VPS keeps its host keys across reboots)

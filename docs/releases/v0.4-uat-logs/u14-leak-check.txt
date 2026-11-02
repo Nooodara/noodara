@@ -1,0 +1,25 @@
+# u14 leak check: occurrences of the throwaway secret value (grep -cF, value read from a 0600 file, never printed)
+API GET service: bytes=617 occurrences=0
+API GET secrets: bytes=208 occurrences=0
+API GET env: bytes=393 occurrences=0
+API GET env/effective: bytes=251 occurrences=0
+API GET deployment: bytes=1642 occurrences=0
+API GET deployment-logs: bytes=2985 occurrences=0
+API GET activity: bytes=20905 occurrences=0
+API GET runtime-logs: bytes=40 occurrences=0
+API GET domains: bytes=712 occurrences=0
+API GET project: bytes=196 occurrences=0
+docker logs api: bytes=156564 occurrences=0
+docker logs worker: bytes=2528 occurrences=0
+docker logs web: bytes=372 occurrences=0
+docker logs traefik: bytes=6360 occurrences=0
+docker logs node-api service: bytes=0 occurrences=0
+db deployment_log_chunks: bytes=103 occurrences=0
+db activity_events: bytes=27224 occurrences=0
+db secrets (ciphertext): bytes=1061 occurrences=0
+pg_dump full database: bytes=114045 occurrences=0
+redis dump of every key: bytes=44 occurrences=0
+{"items":[{"phase":"prepare","seq":1,"text":"Configuring environment: 1 variable, 1 secret.\n  UAT_GREETING\n  UAT_TOKEN = <secret:uat_token>\n","byteLength":95,"createdAt":"2026-11-02T19:28:38.918Z"}
+
+UI page /projects/<p>/services/<s> (web HTML): occurrences=0
+positive control: docker inspect of the service container (runtime env, expected): occurrences=1 -> the grep method detects the value where it legitimately lives
