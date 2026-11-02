@@ -1,9 +1,15 @@
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   PROXY_LAYOUT,
   PROXY_PUBLISHED_PORTS,
   proxyDynamicPathFor,
+  renderDynamicConfig,
   validateResourceId,
+  type Hostname,
   type ResourceId,
 } from "@noodara/domain";
 import { renderRemoteCommand, type RemoteCommand } from "./remote-command.js";
@@ -304,6 +310,26 @@ describe("proxy dynamic port read (22-05 H2)", () => {
     expect(w.script).toContain(`head -c ${String(PROXY_FILE_MAX_BYTES)}`);
     expect(() => proxyReadDynamic("/opt/noodara-proxy/dynamic/noodara-api.yml")).toThrow(RangeError);
     expect(() => proxyReadDynamic("/etc/passwd")).toThrow(RangeError);
+  });
+  it("reads the port from a file rendered by renderDynamicConfig (canonical JSON spacing)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "noodara-read-dynamic-"));
+    try {
+      const rendered = renderDynamicConfig({ id: serviceId, internalPort: 8080 }, [
+        { id: "1a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c8d", hostname: "app.acme.dev" as Hostname, httpsRedirect: true },
+      ]);
+      expect(rendered.ok).toBe(true);
+      const file = join(dir, "service.yml");
+      writeFileSync(file, rendered.ok ? rendered.value : "");
+      const run = spawnSync("/bin/sh", ["-c", PROXY_SCRIPTS.readDynamic, "sh", file], {
+        encoding: "utf8",
+        env: { PATH: "/usr/sbin:/usr/bin:/sbin:/bin", LC_ALL: "C" },
+        timeout: 10_000,
+      });
+      expect(run.status).toBe(0);
+      expect(parseProxyDynamicPort(run.stdout)).toEqual({ kind: "port", port: 8080 });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
   it("parses the port line, an absent file and anything else", () => {
     expect(parseProxyDynamicPort("NOODARA_PROXY_READ port=8080\n")).toEqual({ kind: "port", port: 8080 });

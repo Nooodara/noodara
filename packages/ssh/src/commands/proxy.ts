@@ -125,7 +125,7 @@ export const PROXY_SCRIPTS = Object.freeze({
   /** 22-05 H2: the backend port of a service file (one line; never the file itself). */
   readDynamic: [
     '[ -f "$1" ] || { echo "NOODARA_PROXY_READ absent"; exit 0; }',
-    `port=$(head -c ${String(PROXY_FILE_MAX_BYTES)} -- "$1" | sed -n 's/.*"url":"http:\\/\\/noodara-[0-9a-f-]\\{36\\}:\\([0-9]\\{1,5\\}\\)".*/\\1/p' | head -n 1) || port=`,
+    `port=$(head -c ${String(PROXY_FILE_MAX_BYTES)} -- "$1" | sed -n 's/.*"url":[[:space:]]*"http:\\/\\/noodara-[0-9a-f-]\\{36\\}:\\([0-9]\\{1,5\\}\\)".*/\\1/p' | head -n 1) || port=`,
     '[ -n "$port" ] || { echo "NOODARA_PROXY_READ unknown"; exit 0; }',
     'echo "NOODARA_PROXY_READ port=$port"',
   ].join("\n"),
