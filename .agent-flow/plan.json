@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.2",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-02T06:26:38.828Z",
+  "updatedAt": "2026-11-02T06:26:41.863Z",
   "cursor": {
     "phase": "25",
     "task": "25-05"
@@ -9693,13 +9693,14 @@
             "tests/unit/docs/",
             "tests/unit/site/",
             "scripts/check-release-version.mjs",
-            "docs/releases/v0.4-scenarios.md"
+            "docs/releases/v0.4-scenarios.md",
+            "tests/unit/scripts/"
           ],
           "wave": 3,
           "dependsOn": [
             "25-01"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",

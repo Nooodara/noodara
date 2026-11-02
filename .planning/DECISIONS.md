@@ -78,3 +78,4 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-11-01 — 23-04 scope also adds ssh deploy-allowlist.test.ts (pins the new secrets script/params) and packages/docker docker-operations.ts (+test) for `--env-file`. H2: add a single-file remove template in shell-scripts rather than removing the whole deploy dir.
 - 2026-11-01 — 23-04 scope adds packages/ssh/src/index.ts (re-exports for the new secrets templates).
 - 2026-11-01 — 23-04 scope adds packages/ssh/src/run-discovery.test.ts (public-surface list gains writeEnvFile, removeSecretFile, envFileFor).
+- 2026-11-02 — 25-05 scope adds `tests/unit/scripts/` (check-release-version.test hardcodes the current release version and notes; same precedent as 20-08).
