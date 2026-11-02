@@ -36,6 +36,9 @@ paths = [
   # Phase 13 web redaction tests: a fake AKIA…MNOP access key and a NOODARA_CANARY_ghp_ token.
   '''^apps/web/src/lib/deploy-error-copy\.test\.ts$''',
   '''^apps/web/src/lib/build-log\.test\.ts$''',
+  # 25-04: synthetic sk_live_CANARY secret values in the secrets UI tests.
+  '''^apps/web/src/components/SecretRow\.test\.tsx$''',
+  '''^apps/web/src/components/SecretsPanel\.test\.tsx$''',
 ]
 
 [[allowlists]]
