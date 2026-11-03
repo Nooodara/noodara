@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** v0.4 — Domains, Networking, Secrets (v0.4.0 publicado 2026-11-02; fase 25 cerrada, review pass). Siguiente: planificar v0.5 (Observability + AI Read-Only)
+**Current focus:** v0.5 — Observability + AI Read-Only, planificado 2026-11-03 como fases 26–31 (33 tareas, 24 requisitos). Siguiente: `/flow-harden` y `/flow-orchestrate` desde 26-01. Bloqueo conocido: OPEN_QUESTIONS #21 (key de proveedor para el baseline en vivo, owner usuario)
 
 ## Current Position
 
