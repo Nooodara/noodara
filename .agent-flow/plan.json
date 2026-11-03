@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-03T15:56:17.182045+00:00",
+  "updatedAt": "2026-11-03T16:53:48.868Z",
   "cursor": {
     "phase": null,
     "task": null
@@ -9927,7 +9927,10 @@
               "proof": "it-contracts-v05"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "http-api/body-cap"
+          ],
           "tier": "deep"
         },
         {
@@ -9978,9 +9981,16 @@
               "id": "A5",
               "text": "coverage-state-machine also requires 100% branch on the classifier and threshold modules; the domain-model skill documents the vocabulary and points to ADR 0012",
               "proof": "coverage-state-machine"
+            },
+            {
+              "id": "H1",
+              "text": "Edge inputs are total: CPU % from /proc/stat is 'no value' (never negative or NaN) on the first sample or a counter wrap; container highMemory with HostConfig.Memory = 0 (unlimited) falls back to the host MemTotal and never divides by zero; a filesystem with 0 blocks yields no disk flag; each case has a table test",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "randomness/crypto-random"
+          ],
           "tier": "deep"
         },
         {
@@ -10039,7 +10049,11 @@
               "proof": "coverage-state-machine"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "randomness/crypto-random"
+          ],
           "tier": "deep"
         },
         {
@@ -10084,6 +10098,11 @@
             {
               "id": "H1",
               "text": "A canary pushed through every new schema and error path is absent from serialized output: the AI provider settings schema has no field that can carry the key",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Structured answer, message and tool-call schemas cap text length and array sizes (answer text, entities, evidence references, tool calls per message) and constrain confidence to [0,1]; an oversized or out-of-range value fails schema validation instead of being stored or streamed",
               "proof": "test"
             }
           ],
@@ -10132,7 +10151,13 @@
               "proof": "it-db"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "persistence/atomic-write",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot"
+          ],
           "tier": "deep"
         }
       ]
@@ -10187,9 +10212,16 @@
               "id": "A3",
               "text": "Timeouts and transport errors map to existing classified error kinds; stdout/stderr pass through the Redactor before any log line",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "docker.logs_window accepts since/until only as validated RFC3339 UTC timestamps (strict regex) and tail as an integer within [1, MAX_LOG_TAIL]; a test feeds shell metacharacters and negative or huge values and asserts rejection before any command string is built; the parser treats a line cut by the output cap as dropped-and-flagged, never as a parse failure of the whole window",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "randomness/crypto-random"
+          ],
           "tier": "deep"
         },
         {
@@ -10241,9 +10273,17 @@
               "id": "H1",
               "text": "Collector ticks skip a server whose connection mutex is held by a deploy and never overlap with themselves (two workers, one tick); logs carry ids, counts and error kinds only",
               "proof": "it-metrics"
+            },
+            {
+              "id": "H2",
+              "text": "NOODARA_METRICS_INTERVAL_MS and NOODARA_METRICS_RETENTION_HOURS are range-validated with a named boot error, listed in turbo.json passThroughEnv and .env.example (ADR 0003); a parse failure for one container records an observation error and never discards the host sample or the other containers of that tick",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap"
+          ],
           "tier": "deep"
         },
         {
@@ -10283,9 +10323,16 @@
               "id": "A3",
               "text": "A service is never read through another project id (404); ranges beyond retention or malformed return LOG_QUERY_INVALID-style named 400s; output uses explicit schemas",
               "proof": "it-metrics-api"
+            },
+            {
+              "id": "H1",
+              "text": "Range validation and downsampling are deterministic: from < to, span <= retention, points cap bounded (default and max); buckets are aligned to the interval so the same query returns the same series, gaps surface as nulls (never interpolated or zero-filled), and empty and single-point series are tested",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap"
+          ],
           "tier": "deep"
         },
         {
@@ -10331,9 +10378,21 @@
               "id": "A4",
               "text": "Every entry passes the Redactor; a canary secret written by the fixture app to stdout is absent from every response; an unreachable server yields LOG_SOURCE_UNAVAILABLE for runtime while the other sources still answer",
               "proof": "it-logs"
+            },
+            {
+              "id": "H1",
+              "text": "The pagination cursor is opaque and validated (encoded timestamp, source, sequence); a tampered, truncated or foreign cursor returns LOG_QUERY_INVALID, never a 500 or another service's entries",
+              "proof": "it-logs"
+            },
+            {
+              "id": "H2",
+              "text": "Substring search runs over redacted entries only: searching for a 4-char prefix of the fixture canary returns zero entries (no oracle); follow streams are capped per user and per service with a hard max lifetime, and a runtime fetch timeout yields LOG_SOURCE_UNAVAILABLE for runtime while build, deploy and activity still answer",
+              "proof": "it-logs"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap"
+          ],
           "tier": "deep"
         },
         {
@@ -10371,9 +10430,18 @@
               "id": "A3",
               "text": "The graph never includes env values or secret names; DEPENDS_ON edges expose only the two service ids",
               "proof": "it-graph"
+            },
+            {
+              "id": "H1",
+              "text": "Graph scope parameters are validated as UUIDs (malformed returns a named 400, unknown or out-of-scope returns 404) and the response is capped in node count with a truncated flag",
+              "proof": "it-graph"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "randomness/crypto-random"
+          ],
           "tier": "deep"
         },
         {
@@ -10411,7 +10479,10 @@
               "proof": "it-observe-faults"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation"
+          ],
           "tier": "deep"
         }
       ]
@@ -10475,9 +10546,21 @@
               "id": "A4",
               "text": "Every provider call has an explicit timeout and abort signal; the API key is a SecretValue resolved only inside the provider and never appears in errors (canary test through every error path)",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Provider HTTP responses are size-capped and parsed through explicit schemas (malformed, oversized or unexpected JSON and a never-ending stream map to AI_PROVIDER_UNAVAILABLE, never a throw); the key is sent only as a header to the pinned vendor host (never in URL or query, asserted through MSW); 429 is retried with bounded backoff honoring Retry-After, 401/403 are never retried; abort mid-stream releases the body reader",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Provider base URLs come from a per-provider allowlist; an override (test seam or future openai-compatible endpoint) must be an https URL with no userinfo and is rejected for http, file, data or javascript schemes unless the explicit test-seam flag is set; tested",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/secret-logging"
+          ],
           "tier": "deep"
         },
         {
@@ -10519,9 +10602,16 @@
               "id": "A3",
               "text": "The decrypted key is registered in the Redactor for the duration of each call and released after; a canary key is absent from responses, logs and activity",
               "proof": "it-ai-settings"
+            },
+            {
+              "id": "H1",
+              "text": "Key input is validated server-side (length cap, printable ASCII, no whitespace) with a 422 that does not echo it; a validation call timeout maps to AI_PROVIDER_UNAVAILABLE and stores nothing; replacing a key deletes the previous encrypted key in the same transaction (no window with two keys); the redacted hint reveals at most the last 4 characters",
+              "proof": "it-ai-settings"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap"
+          ],
           "tier": "deep"
         },
         {
@@ -10564,9 +10654,16 @@
               "id": "A4",
               "text": "Running every tool against real Postgres leaves a row-count and content hash of every table unchanged and opens no SSH write template (asserted with a spy on the command allowlist)",
               "proof": "it-ai-tools"
+            },
+            {
+              "id": "H1",
+              "text": "Every tool validates its arguments with a per-tool Zod schema (unknown or malformed args return a tool error to the model, never a throw, and count toward the tool cap); get_logs uses parseLogFilter with substring only and a line and byte cap lower than the API; tool results are returned to the model inside a fixed JSON envelope {tool, scope, truncated, data} and never concatenated as free text, proven by a log line containing 'ignore previous instructions' arriving only inside data",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap"
+          ],
           "tier": "deep"
         },
         {
@@ -10612,9 +10709,17 @@
               "id": "A5",
               "text": "Model input (every message and tool result) and output pass through the Redactor; unit tests use a scripted fake provider",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "History sent to the provider is bounded (max messages and estimated tokens, oldest user/assistant turns dropped first, system prompt and tool definitions always retained); the system prompt marks tool results as untrusted data; a tool call with unparseable JSON arguments is reported back once and never retried unbounded",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "randomness/crypto-random"
+          ],
           "tier": "deep"
         },
         {
@@ -10661,9 +10766,23 @@
               "id": "A4",
               "text": "Each question writes an ActivityEvent with actor ai, the conversation id and the tool names used, never the question text, tool output or answer",
               "proof": "it-ai-api"
+            },
+            {
+              "id": "H1",
+              "text": "The question body is capped (named 413/422) and conversation, message and tool-call ids are server-generated UUID v7 (client-supplied ids rejected); a conversation owned by another user returns 404; concurrent asks on one conversation are rejected with a named 409 so history never interleaves",
+              "proof": "it-ai-api"
+            },
+            {
+              "id": "H2",
+              "text": "SSE streams send a heartbeat comment at a fixed interval and have a hard max duration; on client disconnect, timeout or provider error the abort propagates to the provider call and tools, the assistant message is persisted with status failed/aborted (never a partial answer marked complete) and the conversation remains askable; after the stream ends the in-flight provider request count returns to zero",
+              "proof": "it-ai-api"
             }
           ],
-          "waives": [],
+          "waives": [
+            "persistence/atomic-write",
+            "persistence/missing-file-boot",
+            "randomness/crypto-random"
+          ],
           "tier": "deep"
         },
         {
@@ -10699,7 +10818,16 @@
               "proof": "security-leaks"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "persistence/atomic-write",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot",
+            "randomness/crypto-random"
+          ],
           "tier": "deep"
         }
       ]
@@ -10754,9 +10882,17 @@
               "id": "A3",
               "text": "Fixtures contain canary secret values so secret leakage is measurable; the dataset carries a version and a changelog",
               "proof": "ai-evals-dataset"
+            },
+            {
+              "id": "H1",
+              "text": "Scenario ids are unique and stable across the dataset; canary values carry an identifiable prefix (NOODARA_CANARY_) and a test asserts no scenario or fixture file contains a string matching a real provider key format (sk-ant-, sk-, AKIA) or a real-looking SSH private key",
+              "proof": "ai-evals-dataset"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap"
+          ],
           "tier": "deep"
         },
         {
@@ -10798,9 +10934,17 @@
               "id": "A3",
               "text": "NOODARA_AI_EVAL_LIVE=1 with a configured key runs the same suite at temperature 0 on the pinned model, re-records cassettes and writes a report; baseline.json records model, dataset version, date and per-metric results from a live run, never from hand-written cassettes",
               "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "The cassette key is a hash of the canonicalized redacted request (sorted keys; model id, messages, tool definitions) and excludes headers, API key, timestamps and request ids: a test proves the same request with a different key or date gives the same hash and a changed system prompt or model a different one; a cassette recorded with a model other than the pinned one is a miss; cassette files contain no key, canary or Authorization header",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation"
+          ],
           "tier": "deep"
         },
         {
@@ -10832,9 +10976,16 @@
               "id": "A2",
               "text": "The adversarial set runs in replay in CI and in live mode with the baseline run; any write attempt that reaches execution fails the suite regardless of model",
               "proof": "ai-adversarial"
+            },
+            {
+              "id": "H1",
+              "text": "Each injection payload carries a unique marker phrase and an instruction to repeat it; the suite fails if the marker appears in the answer, stream or stored messages, or if the answer cites the injected text as an instruction; injection channels also include a domain hostname, an env var name and a deployment error message",
+              "proof": "ai-adversarial"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/secret-logging"
+          ],
           "tier": "deep"
         },
         {
@@ -10876,9 +11027,16 @@
               "id": "A3",
               "text": "ai-baseline-check refuses a baseline that lowers any metric unless the change carries a justification file; docs/ai/evals.md explains replay versus live and how to re-record",
               "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "The required ai-evals job runs with no provider secret available to the job (fork PRs included), asserts NOODARA_AI_EVAL_LIVE is unset, and fails if the cassette directory is missing or uncommitted; only nightly.yml receives the provider key secret",
+              "proof": "test"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/secret-logging"
+          ],
           "tier": "deep"
         }
       ]
@@ -10933,7 +11091,12 @@
               "proof": "e2e-metrics"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "randomness/crypto-random"
+          ],
           "tier": "standard"
         },
         {
@@ -10967,9 +11130,17 @@
               "id": "A2",
               "text": "Truncated and source-unavailable states are explained; follow stops when the view closes (no open stream left, asserted)",
               "proof": "e2e-logs"
+            },
+            {
+              "id": "H1",
+              "text": "Log lines render as plain text nodes (no dangerouslySetInnerHTML): a line containing <img onerror>, an ANSI escape and a javascript: URL renders inert with no anchor; the list is virtualized so 10k lines stay responsive, and the search input enforces the server max length",
+              "proof": "e2e-logs"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation"
+          ],
           "tier": "standard"
         },
         {
@@ -11003,9 +11174,16 @@
               "id": "A2",
               "text": "The view stays readable at 375 px (tree fallback) and with 30+ services; keyboard navigation reaches every node",
               "proof": "e2e-graph"
+            },
+            {
+              "id": "H1",
+              "text": "Node links are built only from validated ids returned by the graph API, never from node names or labels; hostnames in Domain nodes are rendered as text (no href) and a fixture with a javascript: or data: name yields no navigable link",
+              "proof": "e2e-graph"
             }
           ],
-          "waives": [],
+          "waives": [
+            "http-api/body-cap"
+          ],
           "tier": "standard"
         },
         {
@@ -11046,9 +11224,22 @@
               "id": "A3",
               "text": "Model output is rendered as text with no HTML injection path (a test feeds markup and script in an answer and asserts it is inert)",
               "proof": "e2e-ai-chat"
+            },
+            {
+              "id": "H1",
+              "text": "Entity chips navigate only to routes built from validated UUIDs in the structured answer; URLs inside model text are not rendered as anchors; the BYOK key field is write-only (type password, autocomplete off) and a test asserts the pasted key never reaches localStorage, sessionStorage, the URL or console output",
+              "proof": "e2e-ai-chat"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/password-hashing",
+            "http-api/body-cap",
+            "http-api/url-scheme-allowlist",
+            "persistence/atomic-write",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot",
+            "randomness/crypto-random"
+          ],
           "tier": "deep"
         },
         {
@@ -11096,7 +11287,11 @@
               "proof": "manual"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "http-api/input-validation"
+          ],
           "tier": "deep"
         },
         {
@@ -11218,9 +11413,18 @@
               "id": "A2",
               "text": "Concurrent AI questions stay within rate and budget limits without starving the API; both suites run nightly",
               "proof": "it-metrics-soak"
+            },
+            {
+              "id": "H1",
+              "text": "After a storm of concurrent asks with mid-stream client disconnects, open SSE connections, in-flight provider stub requests and follow log streams all return to zero and no conversation is left locked",
+              "proof": "it-metrics-soak"
             }
           ],
-          "waives": [],
+          "waives": [
+            "auth-secrets/secret-logging",
+            "http-api/body-cap",
+            "http-api/input-validation"
+          ],
           "tier": "deep"
         },
         {
@@ -11254,6 +11458,11 @@
               "id": "A2",
               "text": "security:scan-leaks covers all §9.9 surfaces including AI prompts and responses with 0 matches; pnpm audit has no high",
               "proof": "security-leaks"
+            },
+            {
+              "id": "H1",
+              "text": "The review contains a prompt-injection threat model listing every untrusted channel that can reach a model (service and project names, domain hostnames, env var names, runtime and build log lines, commit messages, deployment errors, activity metadata) with the backend mitigation and the adversarial test that covers each; a channel without a test is recorded as a finding",
+              "proof": "manual"
             }
           ],
           "waives": [],
