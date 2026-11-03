@@ -147,43 +147,43 @@ Planificados 2026-10-30 (fases 21–25). Fuente: `docs/roadmap-v0.1-v0.5.md` §9
 
 ### Reverse proxy (PRX)
 
-- [ ] **PRX-01**: Noodara instala y opera un reverse proxy Traefik por servidor (`noodara-traefik`, imagen fijada por digest, puertos 80/443 del host, configuración por file provider sin montar `docker.sock`, directorio `/opt/noodara-proxy`) con un job acotado por timeout; el preflight rechaza puertos 80/443 ocupados con `PROXY_PORT_IN_USE` nombrando el proceso; el estado del proxy (`NOT_INSTALLED | INSTALLING | RUNNING | FAILED`) se ve en el servidor y en el activity log.
-- [ ] **PRX-02**: El proxy se instala automáticamente al añadir el primer dominio de un servidor y se puede retirar solo cuando no quedan dominios (`PROXY_IN_USE`); eliminar un servidor sin servicios retira el proxy con mejor esfuerzo y sin bloquear la eliminación; la configuración dinámica de un servicio se escribe de forma atómica (temp + rename), se verifica contra la API local de Traefik y, si el proxy no la carga, se restaura la versión anterior (`PROXY_ROUTE_FAILED`).
+- [x] **PRX-01**: Noodara instala y opera un reverse proxy Traefik por servidor (`noodara-traefik`, imagen fijada por digest, puertos 80/443 del host, configuración por file provider sin montar `docker.sock`, directorio `/opt/noodara-proxy`) con un job acotado por timeout; el preflight rechaza puertos 80/443 ocupados con `PROXY_PORT_IN_USE` nombrando el proceso; el estado del proxy (`NOT_INSTALLED | INSTALLING | RUNNING | FAILED`) se ve en el servidor y en el activity log.
+- [x] **PRX-02**: El proxy se instala automáticamente al añadir el primer dominio de un servidor y se puede retirar solo cuando no quedan dominios (`PROXY_IN_USE`); eliminar un servidor sin servicios retira el proxy con mejor esfuerzo y sin bloquear la eliminación; la configuración dinámica de un servicio se escribe de forma atómica (temp + rename), se verifica contra la API local de Traefik y, si el proxy no la carga, se restaura la versión anterior (`PROXY_ROUTE_FAILED`).
 
 ### Dominios (DMN)
 
-- [ ] **DMN-01**: El usuario añade y elimina dominios de un servicio: FQDN en minúsculas validado en `packages/domain` (sin esquema ni path, punycode aceptado, ≤253 chars, sin IPs ni `localhost`), único globalmente (`DOMAIN_ALREADY_ASSIGNED`, 409), nunca el host de `NOODARA_PUBLIC_URL` (`DOMAIN_RESERVED`), con tope por servicio (`DOMAIN_LIMIT_REACHED`); cada dominio registra hostname, servicio, `https_redirect`, estado DNS, estado de certificado y timestamps.
-- [ ] **DMN-02**: Al añadir un dominio la UI/API dan instrucciones DNS concretas (registro A/AAAA hacia la IP del servidor, alternativa CNAME) y una validación básica de resolución (`RESOLVES | MISMATCH | UNRESOLVED | UNAVAILABLE`) con timeout acotado, re-ejecutable bajo demanda; la validación es orientativa y nunca bloquea añadir el dominio.
-- [ ] **DMN-03**: El routing HTTP y HTTPS de cada dominio al contenedor `noodara-<serviceId>:<internalPort>` lo genera una función pura y determinística (`renderDynamicConfig`) en `packages/domain`, con redirect HTTP → HTTPS por dominio (por defecto activo); las rutas sobreviven a replace, rollback automático y manual, y se eliminan con el dominio o con el servicio (desconectando el proxy de la red del servicio antes de borrarla).
+- [x] **DMN-01**: El usuario añade y elimina dominios de un servicio: FQDN en minúsculas validado en `packages/domain` (sin esquema ni path, punycode aceptado, ≤253 chars, sin IPs ni `localhost`), único globalmente (`DOMAIN_ALREADY_ASSIGNED`, 409), nunca el host de `NOODARA_PUBLIC_URL` (`DOMAIN_RESERVED`), con tope por servicio (`DOMAIN_LIMIT_REACHED`); cada dominio registra hostname, servicio, `https_redirect`, estado DNS, estado de certificado y timestamps.
+- [x] **DMN-02**: Al añadir un dominio la UI/API dan instrucciones DNS concretas (registro A/AAAA hacia la IP del servidor, alternativa CNAME) y una validación básica de resolución (`RESOLVES | MISMATCH | UNRESOLVED | UNAVAILABLE`) con timeout acotado, re-ejecutable bajo demanda; la validación es orientativa y nunca bloquea añadir el dominio.
+- [x] **DMN-03**: El routing HTTP y HTTPS de cada dominio al contenedor `noodara-<serviceId>:<internalPort>` lo genera una función pura y determinística (`renderDynamicConfig`) en `packages/domain`, con redirect HTTP → HTTPS por dominio (por defecto activo); las rutas sobreviven a replace, rollback automático y manual, y se eliminan con el dominio o con el servicio (desconectando el proxy de la red del servicio antes de borrarla).
 
 ### TLS (TLS)
 
-- [ ] **TLS-01**: Los certificados se emiten automáticamente por ACME (challenge http-01) desde el proxy (CA configurable con `NOODARA_ACME_CA_URL`, por defecto Let's Encrypt producción; email de cuenta = email del admin salvo override por servidor) y se almacenan solo en el servidor (`acme.json` 0600); el control plane nunca lee claves privadas.
-- [ ] **TLS-02**: Noodara deriva el estado de certificado de cada dominio (`NONE | PENDING | ISSUED | RENEWING | FAILED | EXPIRED`, tabla de transiciones en `packages/domain` al 100% de branch coverage) con una sonda TLS desde el host del servidor que solo devuelve emisor y `notAfter`, en un ciclo acotado (`NOODARA_CERT_CHECK_INTERVAL_MS`) y tras cada cambio de dominio; `FAILED` llega con causa de vocabulario cerrado (`CERT_DNS_MISMATCH`, `CERT_ISSUANCE_FAILED`, `CERT_PROXY_UNAVAILABLE`) tras `NOODARA_CERT_ISSUE_TIMEOUT_MS`; la fecha de expiración es visible en la UI.
-- [ ] **TLS-03**: La renovación se prueba de verdad contra Pebble con certificados de validez corta en Testcontainers (`it-tls-renewal`, nightly): el certificado se renueva sin intervención, el estado pasa por `RENEWING` y vuelve a `ISSUED`, y el tráfico HTTPS no se interrumpe.
+- [x] **TLS-01**: Los certificados se emiten automáticamente por ACME (challenge http-01) desde el proxy (CA configurable con `NOODARA_ACME_CA_URL`, por defecto Let's Encrypt producción; email de cuenta = email del admin salvo override por servidor) y se almacenan solo en el servidor (`acme.json` 0600); el control plane nunca lee claves privadas.
+- [x] **TLS-02**: Noodara deriva el estado de certificado de cada dominio (`NONE | PENDING | ISSUED | RENEWING | FAILED | EXPIRED`, tabla de transiciones en `packages/domain` al 100% de branch coverage) con una sonda TLS desde el host del servidor que solo devuelve emisor y `notAfter`, en un ciclo acotado (`NOODARA_CERT_CHECK_INTERVAL_MS`) y tras cada cambio de dominio; `FAILED` llega con causa de vocabulario cerrado (`CERT_DNS_MISMATCH`, `CERT_ISSUANCE_FAILED`, `CERT_PROXY_UNAVAILABLE`) tras `NOODARA_CERT_ISSUE_TIMEOUT_MS`; la fecha de expiración es visible en la UI.
+- [x] **TLS-03**: La renovación se prueba de verdad contra Pebble con certificados de validez corta en Testcontainers (`it-tls-renewal`, nightly): el certificado se renueva sin intervención, el estado pasa por `RENEWING` y vuelve a `ISSUED`, y el tráfico HTTPS no se interrumpe.
 
 ### Variables de entorno (ENV)
 
-- [ ] **ENV-01**: El usuario crea, edita y elimina variables en tres scopes (`project`, `environment`, `service`); la clave cumple `^[A-Z_][A-Z0-9_]*$` (≤128 chars), el valor es de una sola línea (≤32 KiB, `ENV_VALUE_MULTILINE` con mensaje accionable), única por scope (`ENV_KEY_DUPLICATE`), con tope por scope (`ENV_LIMIT_REACHED`); toda mutación es un `ActivityEvent` sin valores.
-- [ ] **ENV-02**: La precedencia `service > environment > project` es una función pura `resolveEnv` en `packages/domain` testeada por cada combinación de sombra, documentada en el sitio; la API expone la vista efectiva por servicio con el origen de cada variable y las sombreadas.
-- [ ] **ENV-03**: Las variables se inyectan en el contenedor en el deploy con `docker create --env-file` desde `<workspace>/secrets/env` (0600, fuera del build context, eliminado al terminar), nunca por argv ni build args; el snapshot de runtime config (v2) guarda valores planos y referencias a secrets (nunca valores de secrets), el rollback restaura los valores planos del snapshot y resuelve las referencias en ese momento; los servicios sin variables conservan el comportamiento de v0.3.
-- [ ] **ENV-04**: Un cambio de variables o secrets no toca el contenedor en ejecución; la UI y la API indican que aplica en el siguiente deploy y señalan cuando la configuración efectiva difiere de la del deployment en ejecución.
+- [x] **ENV-01**: El usuario crea, edita y elimina variables en tres scopes (`project`, `environment`, `service`); la clave cumple `^[A-Z_][A-Z0-9_]*$` (≤128 chars), el valor es de una sola línea (≤32 KiB, `ENV_VALUE_MULTILINE` con mensaje accionable), única por scope (`ENV_KEY_DUPLICATE`), con tope por scope (`ENV_LIMIT_REACHED`); toda mutación es un `ActivityEvent` sin valores.
+- [x] **ENV-02**: La precedencia `service > environment > project` es una función pura `resolveEnv` en `packages/domain` testeada por cada combinación de sombra, documentada en el sitio; la API expone la vista efectiva por servicio con el origen de cada variable y las sombreadas.
+- [x] **ENV-03**: Las variables se inyectan en el contenedor en el deploy con `docker create --env-file` desde `<workspace>/secrets/env` (0600, fuera del build context, eliminado al terminar), nunca por argv ni build args; el snapshot de runtime config (v2) guarda valores planos y referencias a secrets (nunca valores de secrets), el rollback restaura los valores planos del snapshot y resuelve las referencias en ese momento; los servicios sin variables conservan el comportamiento de v0.3.
+- [x] **ENV-04**: Un cambio de variables o secrets no toca el contenedor en ejecución; la UI y la API indican que aplica en el siguiente deploy y señalan cuando la configuración efectiva difiere de la del deployment en ejecución.
 
 ### Secrets (SCR)
 
-- [ ] **SCR-01**: Un `Secret` (nombre `^[a-z][a-z0-9_]{0,63}$`, scope `project | environment | service`) se cifra at-rest con el envelope de cifrado existente (AES-GCM de 256 bits) y `key_version`, se modela como `SecretValue` (`kind: app_secret`) y lo cubre `noodara secrets rotate`; la API nunca devuelve el valor tras crearlo y muestra una vista redactada (`••••••••` + últimos 4 chars solo si el valor tiene ≥16).
-- [ ] **SCR-02**: Una variable referencia un secret como `<secret:name>`; el dominio parsea y valida la referencia, la API rechaza referencias a secrets inexistentes (`SECRET_NOT_FOUND`), un secret referenciado no puede eliminarse (`SECRET_IN_USE` nombra las variables) y la resolución ocurre solo en la capa de ejecución del deploy, registrando los valores en el Redactor y liberándolos al terminar; una referencia que no resuelve en el deploy termina `FAILED` con `SECRET_UNRESOLVED` sin tocar el contenedor en ejecución.
-- [ ] **SCR-03**: Ningún secret de aplicación aparece en API responses, errores HTTP, logs de aplicación, logs de deployment, activity log, SSE, excepciones, snapshots de runtime ni en la salida de `docker inspect`/`docker ps` que Noodara lee (formatos que nunca seleccionan `.Config.Env`); el canary de fugas siembra un secret de aplicación y recorre las nueve superficies de §9.9 (las de AI quedan registradas como no aplicables hasta v0.5).
-- [ ] **SCR-04**: La exposición inherente del valor resuelto en el entorno del contenedor (visible con acceso Docker al servidor del usuario) queda documentada como límite de v0.4; el `-prev` y el contenedor nuevo se tratan igual y la eliminación de un servicio borra sus variables y secrets de scope `service` en la misma transacción.
+- [x] **SCR-01**: Un `Secret` (nombre `^[a-z][a-z0-9_]{0,63}$`, scope `project | environment | service`) se cifra at-rest con el envelope de cifrado existente (AES-GCM de 256 bits) y `key_version`, se modela como `SecretValue` (`kind: app_secret`) y lo cubre `noodara secrets rotate`; la API nunca devuelve el valor tras crearlo y muestra una vista redactada (`••••••••` + últimos 4 chars solo si el valor tiene ≥16).
+- [x] **SCR-02**: Una variable referencia un secret como `<secret:name>`; el dominio parsea y valida la referencia, la API rechaza referencias a secrets inexistentes (`SECRET_NOT_FOUND`), un secret referenciado no puede eliminarse (`SECRET_IN_USE` nombra las variables) y la resolución ocurre solo en la capa de ejecución del deploy, registrando los valores en el Redactor y liberándolos al terminar; una referencia que no resuelve en el deploy termina `FAILED` con `SECRET_UNRESOLVED` sin tocar el contenedor en ejecución.
+- [x] **SCR-03**: Ningún secret de aplicación aparece en API responses, errores HTTP, logs de aplicación, logs de deployment, activity log, SSE, excepciones, snapshots de runtime ni en la salida de `docker inspect`/`docker ps` que Noodara lee (formatos que nunca seleccionan `.Config.Env`); el canary de fugas siembra un secret de aplicación y recorre las nueve superficies de §9.9 (las de AI quedan registradas como no aplicables hasta v0.5).
+- [x] **SCR-04**: La exposición inherente del valor resuelto en el entorno del contenedor (visible con acceso Docker al servidor del usuario) queda documentada como límite de v0.4; el `-prev` y el contenedor nuevo se tratan igual y la eliminación de un servicio borra sus variables y secrets de scope `service` en la misma transacción.
 
 ### UI, docs y calidad
 
-- [ ] **UI-14**: La UI añade y elimina dominios con instrucciones DNS, pills de estado DNS y certificado (colores semánticos de infraestructura, fecha de expiración bajo demanda), edita variables y secrets en los tres scopes con filas de secret redactadas y vista efectiva con origen, muestra el estado del proxy en el detalle del servidor y narra el paso de configuración del deploy, todo dentro del design system y aprobado por `noodara-ux-review` y un humano en ambos temas.
-- [ ] **DOCS-04**: El sitio documenta dominios y HTTPS (DNS, puertos 80/443, `NOODARA_PORT` fuera de 80/443, límites de Let's Encrypt, ventana de replace), variables y secrets (precedencia, referencias, límites de una línea, exposición en el servidor) y los códigos de error nuevos, con test de exactitud sobre códigos, defaults y límites.
-- [ ] **QA-15**: La suite de integración cubre, contra sshd+dockerd reales y Pebble: instalación del proxy, puerto ocupado, alta/baja de dominio con configuración aplicada y revertida, emisión, fallo por DNS, renovación, routing tras replace y rollback, inyección de variables y secrets, referencia sin resolver y borrado de servicio con dominios.
-- [ ] **QA-16**: Los E2E cubren `deploy → add domain → validate DNS → certificate issued → HTTPS /health 200` contra Pebble y `create secret → deploy → el servicio lee el secret → UI/API/logs nunca muestran el plaintext`.
-- [ ] **QA-17**: 50 ciclos create/update/delete de dominio no dejan configuración dinámica corrupta ni huérfana (archivos, routers en Traefik, redes conectadas) y la base de datos coincide con el servidor al final, en un gate de stress y en nightly.
-- [ ] **QA-18**: Gate de release v0.4 con evidencia por criterio de `docs/roadmap-v0.1-v0.5.md` §9.11, security review (`docs/security/v0.4-review.md`), CI y nightly verdes, UAT en host real (Lima) y `v0.4.0` publicado.
+- [x] **UI-14**: La UI añade y elimina dominios con instrucciones DNS, pills de estado DNS y certificado (colores semánticos de infraestructura, fecha de expiración bajo demanda), edita variables y secrets en los tres scopes con filas de secret redactadas y vista efectiva con origen, muestra el estado del proxy en el detalle del servidor y narra el paso de configuración del deploy, todo dentro del design system y aprobado por `noodara-ux-review` y un humano en ambos temas.
+- [x] **DOCS-04**: El sitio documenta dominios y HTTPS (DNS, puertos 80/443, `NOODARA_PORT` fuera de 80/443, límites de Let's Encrypt, ventana de replace), variables y secrets (precedencia, referencias, límites de una línea, exposición en el servidor) y los códigos de error nuevos, con test de exactitud sobre códigos, defaults y límites.
+- [x] **QA-15**: La suite de integración cubre, contra sshd+dockerd reales y Pebble: instalación del proxy, puerto ocupado, alta/baja de dominio con configuración aplicada y revertida, emisión, fallo por DNS, renovación, routing tras replace y rollback, inyección de variables y secrets, referencia sin resolver y borrado de servicio con dominios.
+- [x] **QA-16**: Los E2E cubren `deploy → add domain → validate DNS → certificate issued → HTTPS /health 200` contra Pebble y `create secret → deploy → el servicio lee el secret → UI/API/logs nunca muestran el plaintext`.
+- [x] **QA-17**: 50 ciclos create/update/delete de dominio no dejan configuración dinámica corrupta ni huérfana (archivos, routers en Traefik, redes conectadas) y la base de datos coincide con el servidor al final, en un gate de stress y en nightly.
+- [x] **QA-18**: Gate de release v0.4 con evidencia por criterio de `docs/roadmap-v0.1-v0.5.md` §9.11, security review (`docs/security/v0.4-review.md`), CI y nightly verdes, UAT en host real (Lima) y `v0.4.0` publicado.
 
 ## v2 Requirements
 
@@ -315,28 +315,28 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | QA-11 | Phase 20 | Complete |
 | QA-13 | Phase 20 | Complete |
 | QA-14 | Phase 20 | Complete (v0.3.0 → a0b45618, 2026-10-30) |
-| DMN-01 | Phase 21 | Pending |
-| DMN-03 | Phase 21 | Pending |
-| ENV-02 | Phase 21 | Pending |
-| TLS-02 | Phase 21 | Pending |
-| PRX-01 | Phase 22 | Pending |
-| PRX-02 | Phase 22 | Pending |
-| DMN-02 | Phase 22 | Pending |
-| TLS-01 | Phase 22 | Pending |
-| TLS-03 | Phase 22 | Pending |
-| ENV-01 | Phase 23 | Pending |
-| ENV-03 | Phase 23 | Pending |
-| ENV-04 | Phase 23 | Pending |
-| SCR-01 | Phase 23 | Pending |
-| SCR-02 | Phase 23 | Pending |
-| SCR-04 | Phase 23 | Pending |
-| UI-14 | Phase 24 | Pending |
-| DOCS-04 | Phase 24 | Pending |
-| QA-16 | Phase 24 | Pending |
-| SCR-03 | Phase 25 | Pending |
-| QA-15 | Phase 25 | Pending |
-| QA-17 | Phase 25 | Pending |
-| QA-18 | Phase 25 | Pending |
+| DMN-01 | Phase 21 | Complete |
+| DMN-03 | Phase 21 | Complete |
+| ENV-02 | Phase 21 | Complete |
+| TLS-02 | Phase 21 | Complete |
+| PRX-01 | Phase 22 | Complete |
+| PRX-02 | Phase 22 | Complete |
+| DMN-02 | Phase 22 | Complete |
+| TLS-01 | Phase 22 | Complete (Pebble on Lima; LE production UNVERIFIED, OPEN_QUESTIONS #20) |
+| TLS-03 | Phase 22 | Complete |
+| ENV-01 | Phase 23 | Complete |
+| ENV-03 | Phase 23 | Complete |
+| ENV-04 | Phase 23 | Complete |
+| SCR-01 | Phase 23 | Complete |
+| SCR-02 | Phase 23 | Complete |
+| SCR-04 | Phase 23 | Complete |
+| UI-14 | Phase 24 | Complete |
+| DOCS-04 | Phase 24 | Complete |
+| QA-16 | Phase 24 | Complete |
+| SCR-03 | Phase 25 | Complete |
+| QA-15 | Phase 25 | Complete |
+| QA-17 | Phase 25 | Complete |
+| QA-18 | Phase 25 | Complete (v0.4.0 → d1d956bc, 2026-11-02) |
 
 **Coverage:**
 - v1 requirements: 61 total

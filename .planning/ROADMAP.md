@@ -3,7 +3,7 @@
 > Generated from `.agent-flow/plan.json` by `agent-flow plan render`. Edit the plan, not this file.
 
 **Milestone:** v0.2
-**Progress:** 139/162 tasks (86%), 10/15 phases
+**Progress:** 163/164 tasks (99%), 14/15 phases
 
 ## Phase 11: Motor de deploy — fundamentos — done
 **Goal:** Everything the engine needs to be built RED-first exists and is proven on real infrastructure: spikes resolved (ADR 0008), pure domain, schema, parameterized allowlist templates, streaming exec, git/docker packages, sshd+dockerd fixture and official fixtures.
@@ -877,12 +877,12 @@
   - H1 [it-db]: The secrets table has no plaintext column; the constraint names used by the 21-05 unique-violation mapper are the ones the Drizzle schema and migration 0015 create (shared exported constants)
   - H3 [it-db]: Migration 0015 creates the unique indexes that back concurrent writes: domains.hostname global (stored lowercased), environment_variables (owner scope id, key) and secrets (owner scope id, name); api-contract request schemas bound every string (hostname 253, env key 128, env value 32 KiB, secret name 64, secret value 64 KiB, ACME email 254) and the it-db test proves a second insert of each tuple fails with 23505
 
-## Phase 22: Reverse proxy, dominios y TLS en el runtime — pending
+## Phase 22: Reverse proxy, dominios y TLS en el runtime — done
 **Goal:** Operate a Traefik proxy per server over SSH, add and remove domains with atomically applied and revertible routing, issue and renew certificates automatically, derive certificate status with a host-side probe, and keep routes correct across replace, rollback and service deletion.
 **Requirements:** PRX-01, PRX-02, DMN-02, TLS-01, TLS-03
 **Depends on:** 21
 
-- [ ] 22-01 (wave 1) SSH templates: proxy lifecycle, atomic dynamic writes, Traefik API read, TLS probe, env-file create — pending
+- [x] 22-01 (wave 1) SSH templates: proxy lifecycle, atomic dynamic writes, Traefik API read, TLS probe, env-file create — done
   - A1 [test]: Allowlisted templates per ADR 0011: proxy.prepare_dirs (0700 dirs, 0600 files), proxy.write_static (stdin), proxy.write_dynamic (stdin to temp + rename keeping .prev), proxy.restore_dynamic, proxy.remove_dynamic, proxy.create (digest-pinned image, 80/443 published, api on 127.0.0.1, config and acme volumes, labels noodara.managed and noodara.proxy), proxy.status (GET /api/http/routers/<name>@file on 127.0.0.1 via /dev/tcp, capped), proxy.ports_in_use (ss -ltnp for 80/443, parsed), tls.cert_status (openssl s_client with SNI, issuer and notAfter only), docker.network_disconnect; dockerCreate gains an envFile option rendered as --env-file <path>
   - A2 [test]: Allowlist tests reject every other shape: hostnames or paths with shell metacharacters, an unpinned or wrong image, api on 0.0.0.0, a dynamic path outside /opt/noodara-proxy/dynamic, an env-file path outside <workspace>/secrets
   - A3 [it-proxy-templates]: On 22.04 and 24.04 against real dockerd: install, write dynamic, router visible in the api, HTTP routed by Host, invalid dynamic restored from .prev with the router back, ports_in_use detects a listener, tls.cert_status distinguishes no proxy, default certificate and a Pebble-issued certificate
@@ -893,7 +893,7 @@
   - H4 [test]: The proxy.ports_in_use parser distinguishes a listener owned by the Noodara proxy container (docker-proxy for noodara-traefik) from a foreign process and reports only the foreign one, so re-install on a RUNNING proxy never yields PROXY_PORT_IN_USE; unit tests cover ss output for both cases on 22.04 and 24.04 formats
   - H5 [test]: tls.cert_status runs openssl s_client with stdin closed (</dev/null) and -connect to 127.0.0.1:443 only, so it never blocks waiting for input; the parser handles openssl's notAfter format (GMT, double-space day) and any unparseable output yields the down/unavailable outcome instead of a throw
   - R1 [test]: Phase 21 review follow-ups: ADR 0011's static-config section matches packages/domain/src/proxy/static-config.ts (api.insecure false, WARN log, noodara-api.yml router to api@internal on 127.0.0.1:9180); the rendered canonical-JSON dynamic files and the noodara-api router are loaded by a real Traefik in an integration test (not only snapshots)
-- [ ] 22-02 (wave 2) Proxy lifecycle service: install job with port preflight, status, remove, server deletion — pending
+- [x] 22-02 (wave 2) Proxy lifecycle service: install job with port preflight, status, remove, server deletion — done
   - A1 [it-proxy]: installProxy(serverId) runs as job proxy-install-<serverId> (deterministic id, per-command SSH timeout, total budget): ports 80/443 preflight fails with PROXY_PORT_IN_USE naming the listening process, then prepare dirs, write static config (admin or per-server ACME email, CA URL, root file when set), pull the pinned image, create and start, verify the api; servers.proxy_status moves only through the domain table; activity server.proxy_installed | proxy_failed | proxy_removed without sensitive metadata
   - A2 [it-proxy]: Re-install is idempotent on a RUNNING proxy; a FAILED one is retried by POST /api/servers/:id/proxy or by the next first-domain; the server view exposes proxyStatus, proxyErrorCode, proxyAcmeEmail and proxyInstalledAt; PATCH accepts proxyAcmeEmail (validated email) and re-renders the static config
   - A3 [it-proxy]: POST /api/servers/:id/proxy/remove answers 409 PROXY_IN_USE while any domain exists on the server; otherwise stops and removes the container and files and ends NOT_INSTALLED
@@ -902,7 +902,7 @@
   - H1 [test]: The boot sweep marks INSTALLING rows FAILED/PROXY_INSTALL_FAILED after the budget; concurrent installs for one server collapse into one job
   - H2 [test]: A failed install (pull error, create error or api verify timeout, each fault-injected) leaves no noodara-traefik container and no state under /opt/noodara-proxy that breaks the retry; the retry after each injected fault reaches RUNNING
   - H3 [test]: The proxy job payload carries only serverId, acmeEmail and the job id, never a credential or decrypted key (payload schema test); install logs, job progress and activity metadata pass the Redactor and a canary SSH credential seeded on the server never appears in them
-- [ ] 22-03 (wave 3) Domains API: add/remove, conflicts, DNS check and instructions, apply with rollback — pending
+- [x] 22-03 (wave 3) Domains API: add/remove, conflicts, DNS check and instructions, apply with rollback — done
   - A1 [it-domains-apply]: POST /api/projects/:p/services/:s/domains normalises and validates the hostname, answers 409 DOMAIN_ALREADY_ASSIGNED (global, case-insensitive), 422 DOMAIN_RESERVED for the NOODARA_PUBLIC_URL host and 422 DOMAIN_LIMIT_REACHED; the row and its activity event are written in one transaction; then the proxy is ensured (install job when NOT_INSTALLED) and the routes applied: connect the proxy to noodara-net-<serviceId>, render, write atomically, verify with proxy.status, on failure restore .prev and record PROXY_ROUTE_FAILED in apply_status
   - A2 [it-domains-api]: DELETE removes the row, rewrites or removes the dynamic file and disconnects the network when the service has no domains left; a foreign project id is a 404 without existence leak
   - A3 [it-domains-api]: GET lists hostname, httpsRedirect, dnsStatus and dnsCheckedAt, certStatus, certNotAfter, certErrorCode, applyStatus and the DNS instructions (A/AAAA to the server IPs, CNAME alternative); POST .../dns-check re-runs the resolver check (3 s timeout, rate-limited per domain) through the DnsResolverLike seam and never resolves anything but the validated hostname and the server host
@@ -912,7 +912,7 @@
   - H2 [test]: Bodies are capped and strict; responses never include server credentials or ACME internals
   - H3 [test]: An SSH connection failure during apply maps to the existing typed server-unreachable error (never a 500), the domain row is kept with applyStatus pending, and the next reconcile cycle re-applies it (integration test with the fixture sshd stopped)
   - R1 [test]: The HTTP→HTTPS redirect response carries an explicit `Cache-Control: no-store` (or equivalent) so a removed redirect is never cached by clients; asserted in an integration test
-- [ ] 22-04 (wave 4) Certificate status reconciler: bounded probe cycle, failure causes, expiry, redirect verified — pending
+- [x] 22-04 (wave 4) Certificate status reconciler: bounded probe cycle, failure causes, expiry, redirect verified — done
   - A1 [it-tls]: Per server, one bounded cycle every NOODARA_CERT_CHECK_INTERVAL_MS probes each domain over a single SSH session with tls.cert_status and applies decideCertStatus: issued certificate -> ISSUED with notAfter; default certificate while PENDING within NOODARA_CERT_ISSUE_TIMEOUT_MS -> unchanged; beyond it -> FAILED with CERT_DNS_MISMATCH when dnsStatus is not RESOLVES else CERT_ISSUANCE_FAILED; proxy down -> CERT_PROXY_UNAVAILABLE; notAfter past -> EXPIRED; a new certificate replacing one inside the renewal window passes through RENEWING
   - A2 [test]: After a domain create or PATCH the domain is checked at 15 s, 30 s and 60 s before the regular interval (backoff table in the domain package); a FAILED domain returns to PENDING on a successful dns-check or a PATCH; pending applyStatus rows are re-applied by the same cycle
   - A3 [test]: Status changes publish on the existing SSE channel as service.updated with the serviceId so the UI refetches; activity records domain.certificate_issued | failed | expired without sensitive metadata
@@ -921,7 +921,7 @@
   - H2 [test]: A cycle whose proxy.status finds no running noodara-traefik container on a server marked RUNNING transitions servers.proxy_status to FAILED/PROXY_UNAVAILABLE through the domain table and records server.proxy_failed once, not on every subsequent cycle
   - H3 [test]: Each tls.cert_status and proxy.status result is validated with a zod schema before decideCertStatus runs: an unknown status token, an unparseable notAfter, an oversized issuer or an out-of-order field leaves the domain status unchanged with a logged probe-invalid outcome and nothing stored in certNotAfter
   - H4 [it-tls]: A cycle whose proxy.status reports the dynamic file of a routed service missing on the host (deleted or lost after a reinstall) re-applies it once through apply-routes with verify-and-restore and records domain.route_restored; the integration test deletes the file and asserts the router is back in the Traefik API within one cycle
-- [ ] 22-05 (wave 5) Deploy integration: routes across replace and rollback, proxy connect on deploy, service delete — pending
+- [x] 22-05 (wave 5) Deploy integration: routes across replace and rollback, proxy connect on deploy, service delete — done
   - A1 [test]: A deploy of a service with domains ensures the proxy is connected to noodara-net-<serviceId> before the swap (idempotent connect), never rewrites the dynamic file, and the ledger never lists proxy resources for cleanup; services without domains issue no proxy command (unit-asserted)
   - A2 [it-routes-deploys]: On 24.04: HTTP through Traefik answers the new version after replace, the restored version after automatic rollback and after manual rollback; the swap-window error count is recorded and within the ADR 0011 bound
   - A3 [it-projects]: Service deletion removes the dynamic file and disconnects the proxy from the network before removing container, network, images and workspace; domain rows cascade; docker network rm no longer fails with the proxy attached (services-api suite)
@@ -929,36 +929,55 @@
   - H1 [it-routes-deploys]: Cancel during DEPLOYING or HEALTHCHECK on a routed service leaves Traefik pointing at the restored -prev (HTTP asserted); a proxy in NOT_INSTALLED or FAILED while domains exist does not fail the deploy: a system log line is written and applyStatus stays pending
   - H2 [test]: When the service's internal port at deploy time differs from the port in the current dynamic file (service settings changed since the last apply), the deploy re-applies the routes after the swap through apply-routes with verify-and-restore; when equal the file is untouched (unit test with both cases, HTTP asserted on the fixture for the changed-port case)
   - H3 [test]: Dynamic-file applies for one service are serialized through a per-serviceId lock in apply-routes: a deploy re-apply (H2) and a concurrent domain POST, PATCH or DELETE for the same service never interleave writes; a unit test firing two concurrent applies asserts the final file equals the last desired state and .prev is the immediately preceding file, and the lock is released on every error path
-- [ ] 22-06 (wave 6) TLS renewal contract with Pebble short validity; nightly and CI wiring for the proxy suites — pending
+- [x] 22-06 (wave 6) TLS renewal contract with Pebble short validity; nightly and CI wiring for the proxy suites — done
   - A1 [it-tls-renewal]: With Pebble short validity and Traefik certificatesDuration per ADR 0011, a certificate issued at T renews without intervention; the reconciler shows ISSUED -> RENEWING -> ISSUED with a later notAfter, and every HTTPS request made during the renewal succeeds
   - A2 [test]: nightly.yml runs tests/integration/proxy on 22.04 and 24.04 and fails on leftover noodara.test containers or networks; the CI integration job includes tests/integration/domains (DB-only) and excludes tests/integration/proxy like deploy-engine, documented in the workflow
   - H1 [it-tls-renewal]: The renewal test asserts acme.json stays 0600 on the server and that the control plane database holds no certificate or key material
+- [x] 22-07 (wave 7) Review remediation: proxy lifecycle error paths, races and test gaps — done
+  - A1 [it-proxy]: A failed re-install of a RUNNING proxy before the create step (prepare_dirs, write_config, pull) leaves the running noodara-traefik untouched and routing; cleanup only removes a container this attempt created. Proven with an injected pre-create fault on a running proxy
+  - A2 [test]: Boot sweep failStaleInstalls has a DB-backed test; install staleness is keyed on a dedicated install timestamp, not servers.updatedAt, so discovery/connect writes cannot extend it
+  - A3 [test]: proxy-runtime retry-after-fault assertions run against the faulted session state (not a fresh fake) and reach RUNNING
+  - A4 [test]: proxy-service (requestProxyInstall, setProxyAcmeEmail, removeServerProxy) has unit tests and HTTP route tests that run in the PR test gate
+  - A5 [test]: removeServerProxy serialises with install (lock or CAS) and returns an error when the ->NOT_INSTALLED transition does not apply; deleting a server is refused (409) while proxyStatus is INSTALLING; remote proxy removal does not run inside the FOR UPDATE transaction
+  - A6 [test]: Changing proxyAcmeEmail while INSTALLING either is rejected (409) or produces a job carrying the new email, never a DB/static-config divergence; the servers PATCH is atomic: a proxy 409 leaves connection fields unchanged
+  - A7 [test]: The Traefik status probe distinguishes starting from down; proxy.status has a single script body per allowlisted name (proxyReadDynamic gets its own allowlisted name)
+  - A8 [it-tls-renewal]: Root cause of the two it-tls-renewal install failures is identified and fixed or documented in docs/adr/0011; the suite passes 3 consecutive runs
+- [x] 22-08 (wave 8) Review remediation: domain delete, cert check schedule, route port, swap bound — done
+  - A1 [it-domains-apply]: DELETE of a domain whose route rewrite or proxy disconnect fails does not report success silently: the failure is surfaced (non-2xx or a pending cleanup marker) and reconcile removes orphan dynamic/<serviceId>.yml files for services with no domains. Tested with a failing applier
+  - A2 [test]: Post-change cert checks fire at t=15 s, 30 s and 60 s after the change (absolute offsets per ADR 0011), and the unit test encodes the spec, not successive delays
+  - A3 [it-rollback]: The route applier renders the backend port actually deployed (including after a manual rollback to a deployment with a different port); proven by a manual-rollback-then-domain-PATCH case
+  - A4 [test]: A single down probe does not flip proxy_status RUNNING->FAILED (requires consecutive failures or treats starting as transient), and CERT_PROXY_UNAVAILABLE clears when the proxy is reachable again
+  - A5 [test]: Service delete removes the dynamic file under the apply-routes advisory lock after domain rows are gone, so concurrent applies cannot recreate an orphan
+  - A6 [it-routes-deploys]: routes-across-deploys asserts the swap error count and window against a bound recorded in ADR 0011 (updated with the measured 22-05 bound)
+  - A7 [it-runtime-cancel]: Cancel during DEPLOYING on a routed service is HTTP-asserted (route keeps serving the previous deployment)
+  - A8 [it-domains-api]: v04 domain request bodies are strict at the schema layer (unknown keys rejected by Zod) and the API test pins a single status code
+  - A9 [test]: Cert-cycle single-worker assumption (in-memory inFlight, CAS writes) is documented in ADR 0011, and recordRouteRestored is CAS-protected
 
-## Phase 23: Variables de entorno y secrets — pending
+## Phase 23: Variables de entorno y secrets — done
 **Goal:** Manage environment variables at project, environment and service scope with deterministic precedence, store application secrets encrypted and referenced as <secret:name>, inject both at deploy time through a transient env file, and keep every Noodara surface free of plaintext.
 **Requirements:** ENV-01, ENV-03, ENV-04, SCR-01, SCR-02, SCR-04
 **Depends on:** 21
 
-- [ ] 23-01 (wave 1) Secret store: envelope boundary, SecretValue(app_secret), Redactor registration, secrets rotate — pending
+- [x] 23-01 (wave 1) Secret store: envelope boundary, SecretValue(app_secret), Redactor registration, secrets rotate — done
   - A1 [test]: secret-store is the only module in apps/control-plane importing both the envelope primitives and the secrets schema (boundary test like credential-store); createSecret, replaceSecret and decryptForDeploy return SecretValue(app_secret) only; hint = last 4 chars only when the value has at least 16 chars; version increments on replace
   - A2 [it-cli]: noodara secrets rotate re-encrypts secrets rows with the same transaction semantics and key-version rules as credentials; the integration test rotates both tables and decrypts every row afterwards
   - A3 [it-env-secrets]: decryptForDeploy registers each value in the given Redactor and the caller releases after the attempt (tested); tamper, wrong-key and malformed-blob errors surface as named store errors without the value; the logger canary shows only [REDACTED:app_secret]
   - H1 [test]: decryptForDeploy takes the owner scope chain (project, environment, service) of the deploying service and refuses with a named store error any secret id outside that chain, so a caller bug cannot decrypt another project's secret; unit and integration tests cover a foreign-project id
   - H2 [test]: Redactor registration of app_secret values is tested with a 3-char and a 64-char value: the long value is redacted wherever it appears while a very short value does not corrupt unrelated log text (documented minimum length or exact-token rule), and the rule is recorded in the noodara-security skill
   - H3 [it-env-secrets]: replaceSecret bumps version in a single UPDATE ... SET version = version + 1 with the ciphertext (no read-modify-write): two concurrent replaces end at version 3 with the ciphertext of the last committed write; secrets rotate running concurrently with a replace never leaves a row whose key_version disagrees with its ciphertext (row lock as in the credentials rotation)
-- [ ] 23-02 (wave 2) Variables API at three scopes, secret-reference validation, effective view with differsFromRunning — pending
+- [x] 23-02 (wave 2) Variables API at three scopes, secret-reference validation, effective view with differsFromRunning — done
   - A1 [it-env-secrets]: Routes /api/projects/:p/env, /api/projects/:p/environments/:e/env and /api/projects/:p/services/:s/env list, create, update and delete with strict zod schemas: 409 ENV_KEY_DUPLICATE (exact key per owner), 422 ENV_VALUE_MULTILINE, 422 ENV_LIMIT_REACHED, 404 for a foreign project id; activity env.variable_created | updated | deleted carry scope and key only
   - A2 [it-env-secrets]: A value of the exact form <secret:name> is accepted only when a secret of that name is visible from the owner scope by precedence; otherwise 422 SECRET_NOT_FOUND naming the reference
   - A3 [it-env-secrets]: GET /api/projects/:p/services/:s/env/effective returns resolveEnv output (key, plain value or secretRef, origin scope, shadowed origins) and differsFromRunning computed against the latest SUCCESS or ROLLED_BACK snapshot (keys, plain values, reference names, secret versions); secret values never appear
   - A4 [it-projects]: Deleting a project or an environment deletes its scoped variables in the same transaction (projects suite green)
   - H1 [test]: Concurrent creates of one key yield one 201 and one 409 (unique index on owner + key); a canary value pushed through every error path never reaches logs, activity or HTTP errors; bodies are capped
   - H2 [test]: Updating a variable is validated identically to create (plain to reference and back re-checks SECRET_NOT_FOUND and ENV_VALUE_MULTILINE) and the key is immutable on update (a body with a different key is rejected 422), so no update can bypass the duplicate check
-- [ ] 23-03 (wave 2) Secrets API: create, replace, delete with in-use guard, redacted view, scoped cascade — pending
+- [x] 23-03 (wave 2) Secrets API: create, replace, delete with in-use guard, redacted view, scoped cascade — done
   - A1 [it-env-secrets]: POST creates a secret (name, scope, single-line value of at most 64 KiB, non-empty) and answers 201 with {id, name, scope, hint, version, createdAt} and never the value; 409 SECRET_NAME_DUPLICATE per owner; 422 SECRET_LIMIT_REACHED; PUT replaces the value (version + 1, hint recomputed); GET list and get never return a value; no reveal endpoint exists
   - A2 [it-env-secrets]: DELETE answers 409 SECRET_IN_USE listing the referencing variables (scope and key) when any variable that would resolve to this secret references <secret:name>; otherwise deletes and records activity with name and scope only
   - A3 [it-projects]: Deleting a service, environment or project deletes its scoped secrets and variables in the same transaction, tested at each level; nothing is orphaned
   - H1 [test]: A canary value passed through create, replace and delete error paths never appears in logs, activity or HTTP errors; the value is accepted only as a JSON string with its length checked before encryption; strict schemas reject extra keys; bodies are capped
-- [ ] 23-04 (wave 3) Deploy injection: resolve env in PREPARING, transient env file, snapshot v2, rollback resolution, configure step — pending
+- [x] 23-04 (wave 3) Deploy injection: resolve env in PREPARING, transient env file, snapshot v2, rollback resolution, configure step — done
   - A1 [test]: loadDeployTarget loads the variables of the three scopes and the secrets they reference and resolves them with resolveEnv and resolveSecretRefs; a missing secret ends FAILED/SECRET_UNRESOLVED in PREPARING, before clone or build, with the running container untouched; secret values are registered in the Redactor for the attempt and released on every exit path
   - A2 [test]: The rendered env file is written with secrets.write_file to <workspace>/secrets/env (0600) and passed to dockerCreate as envFile; it is removed with the workspace on every exit path (ledger test); a write failure ends FAILED/ENV_INJECTION_FAILED with -prev restored as in 17-02 H2
   - A3 [it-rollback]: The runtime_config snapshot v2 stores plain values and {secretRef, secretVersion}, never a secret value; automatic rollback keeps restoring -prev unchanged; manual rollback rebuilds the env from the target snapshot (plain values as stored, references resolved now) and a reference that no longer resolves answers 422 ROLLBACK_TARGET_UNAVAILABLE naming the key and reference
@@ -968,66 +987,66 @@
   - H2 [test]: The transient env file is removed immediately after docker create returns, on success and on failure, before the healthcheck starts (integration assertion that <workspace>/secrets/env is gone while the new container is still starting), in addition to the workspace cleanup
   - H3 [test]: secrets.write_file creates the env file 0600 from the first byte (umask 077, temp + rename into <workspace>/secrets/env, no 0644 window) and verifies the byte count against stdin; a short write, a non-zero exit or a mismatch ends FAILED/ENV_INJECTION_FAILED before docker create runs (template test plus fault-injected unit test)
 
-## Phase 24: UI de dominios, variables y secrets, E2E y docs — pending
+## Phase 24: UI de dominios, variables y secrets, E2E y docs — done
 **Goal:** Let the user add domains with DNS instructions and certificate status, edit variables and secrets at every scope with redacted secrets and an effective view, see the proxy on the server, and prove the two roadmap E2E flows against Pebble; document everything on the site and pass the UX review.
 **Requirements:** UI-14, DOCS-04, QA-16
 **Depends on:** 22, 23
 
-- [ ] 24-01 (wave 1) Domains panel: add, DNS instructions, DNS and certificate pills, redirect switch, delete — pending
+- [x] 24-01 (wave 1) Domains panel: add, DNS instructions, DNS and certificate pills, redirect switch, delete — done
   - A1 [test]: Add domain is one field validated client-side with the shared domain validator (same named errors as the API); on success the panel shows the DNS instructions (record type, name, value, copy buttons) and the pills DNS (unchecked / resolves / mismatch / unresolved) and Certificate (none / pending / issued / renewing / failed / expired) in semantic infrastructure colours only; Check DNS re-runs the check
   - A2 [test]: Expiry date, failure cause and apply status are disclosed on demand, not in the row; unknown statuses render a fallback pill; the panel states that HTTPS is served by the server proxy and shows installing or failed proxy states with a retry action
   - A3 [e2e-deploy]: Delete asks for confirmation naming the hostname; the HTTPS redirect switch is per domain; the existing deploy E2E stays green and ui-safety passes
   - H1 [test]: Hostnames and statuses render as text only; the open link uses the validated hostname with rel=noopener; the panel tolerates unknown fields and never shows raw error codes
-- [ ] 24-02 (wave 1) Variables and secrets editors at three scopes, secret picker, effective view with Redeploy to apply — pending
+- [x] 24-02 (wave 1) Variables and secrets editors at three scopes, secret picker, effective view with Redeploy to apply — done
   - A1 [test]: Variables table (mono key, value, origin) with inline add and edit using the shared validators; a <secret:name> value renders as a secret chip with the name; the value field offers Use a secret listing the secrets visible from that scope; every edit states that it applies on the next deploy
   - A2 [test]: Secrets panel: create with name and a masked value input that is never echoed back; rows show name, scope, hint, version and updatedAt; replace and delete ask confirmation and SECRET_IN_USE lists the referencing variables; no reveal control exists anywhere
   - A3 [test]: The service page shows the effective variables with an origin pill (service / environment / project), shadowed definitions on demand, and a Redeploy to apply notice when differsFromRunning is true
   - H1 [test]: Secret values live only in component state, cleared on submit and unmount, and never reach the URL, storage, console or query cache (test as in 19-03 H1); the masked input has an accessible label and autocomplete off; keys and values render as text only and unknown scopes fall back
-- [ ] 24-03 (wave 2) Proxy status in server detail, configure step narration, error and activity copy — pending
+- [x] 24-03 (wave 2) Proxy status in server detail, configure step narration, error and activity copy — done
   - A1 [test]: Server detail shows a Reverse proxy card with status (not installed / installing / running / failed), ports 80/443, ACME email (editable), retry on failure and remove (disabled with the reason while domains exist)
   - A2 [test]: Deployment steps show configure (n variables, m secrets, duration); SECRET_UNRESOLVED, ENV_INJECTION_FAILED and PROXY_ROUTE_FAILED have recovery copy naming keys and reference names, never values
   - A3 [e2e-servers]: Activity copy covers every new action (domain, certificate, proxy, env, secret) as text with a fallback for unknown actions; servers E2E and ui-safety stay green
-- [ ] 24-04 (wave 3) E2E: deploy -> domain -> DNS -> certificate -> HTTPS /health 200 (Pebble); secret -> deploy -> never exposed — pending
+- [x] 24-04 (wave 3) E2E: deploy -> domain -> DNS -> certificate -> HTTPS /health 200 (Pebble); secret -> deploy -> never exposed — done
   - A1 [e2e-domains]: Deploy node-api, add api.<run>.test, Check DNS shows resolves (challtestsrv answer), the Certificate pill reaches Issued, and an HTTPS GET /health from the runner with the Pebble root and the right SNI returns 200 through the proxy; HTTP GET answers a redirect
   - A2 [e2e-secrets]: Create secret database_url at the environment scope and DATABASE_URL=<secret:database_url> at the service scope, deploy env-api; /env-digest matches the sha256 of the plaintext while the UI (rows, effective view, build log, activity), the API list responses and the stack log files never contain the plaintext (canary grep)
   - A3 [e2e-domains]: Deleting the domain makes Traefik answer 404 for the host; deleting the service leaves the proxy disconnected and the network gone; teardown finds no noodara.test leftovers including proxy, Pebble and challtestsrv containers
   - H1 [e2e-secrets]: Negative paths covered: a domain whose DNS points elsewhere ends Failed with the DNS cause within the test-shortened timeout; deleting a referenced secret shows the SECRET_IN_USE copy; the Pebble root and the ACME test seam are passed only by the e2e stack and never appear in the control plane image or compose files
-- [ ] 24-05 (wave 4) Docs: domains and HTTPS, variables and secrets, precedence and limits; accuracy tests; UX review — pending
+- [x] 24-05 (wave 4) Docs: domains and HTTPS, variables and secrets, precedence and limits; accuracy tests; UX review — done
   - A1 [site-build]: Pages Domains and HTTPS (DNS records, ports 80/443 and ufw, NOODARA_PORT off 80/443, Let's Encrypt limits, swap window, certificate states and failure causes) and Environment variables and secrets (scopes, precedence service > environment > project with the roadmap example, <secret:name> references, single-line limit with the base64 hint, applies on next deploy, exposure on the server, rotation); reference pages carry the new error codes and control-plane variables; limits are stated plainly without coming soon
   - A2 [test]: Accuracy tests check the new error codes, the defaults (intervals, timeouts, limits) and the precedence order against the domain constants
   - A3 [manual]: docs/ui-review/phase-24/REPORT.md (noodara-ux-review) has no BLOCK; screenshots at 375 and 1280 px in both themes approved under the user's delegation, recorded as in 19-08 A7
   - H1 [test]: Forbidden-words and landing-claims tests stay green; a test greps the docs for secret-looking literals (sk-, ghp_, BEGIN PRIVATE) and finds none
 
-## Phase 25: Hardening, stress, seguridad y gate de release v0.4 — pending
+## Phase 25: Hardening, stress, seguridad y gate de release v0.4 — done
 **Goal:** Prove v0.4 acceptance criteria: the §9.8/§9.10 integration matrix on both Ubuntu versions, 50 domain cycles without corrupt configuration, a security review with a zero-leak canary for application secrets, the F1 runtime-log fix, the release gate, a real-host UAT and v0.4.0.
 **Requirements:** SCR-03, QA-15, QA-17, QA-18
 **Depends on:** 24
 
-- [ ] 25-01 (wave 1) Integration matrix of roadmap §9.8 and §9.10 complete on both Ubuntu versions — pending
+- [x] 25-01 (wave 1) Integration matrix of roadmap §9.8 and §9.10 complete on both Ubuntu versions — done
   - A1 [test]: docs/releases/v0.4-scenarios.md maps every QA-15 scenario (proxy install, port in use, domain add and remove with apply and revert, issuance, DNS failure, renewal, routing after replace and rollback, variable and secret injection, unresolved reference, service delete with domains) and every §9.8 unit area to a named test; the scenario-map unit test fails on a missing, skipped or single-Ubuntu mapping
   - A2 [it-proxy-all]: tests/integration/proxy is green with NOODARA_TEST_UBUNTU=all; each scenario test asserts the remote state (containers, networks, files) matches the database afterwards
-- [ ] 25-02 (wave 2) Stress: 50 domain create/update/delete cycles, zero corrupt or orphan configuration; nightly — pending
+- [x] 25-02 (wave 2) Stress: 50 domain create/update/delete cycles, zero corrupt or orphan configuration; nightly — done
   - A1 [it-domain-cycles]: 50 cycles mixing add, redirect toggle and delete across three services on one server: after each cycle the dynamic directory holds exactly one valid file per routed service, every router in the Traefik API matches a database row, no .prev or temp leftovers remain, and the proxy is connected to exactly the networks of routed services; at the end database equals server
   - A2 [it-domain-cycles]: Apply latency per cycle is recorded to a CI artifact and bounded by the ADR 0011 number; HTTP through the proxy answers correctly after every cycle; a forced invalid write every tenth cycle is restored and counted
   - A3 [manual]: nightly.yml runs the cycles suite on 22.04 and 24.04 and fails on any leftover
   - H1 [test]: After the 50 cycles the number of sshd sessions on the fixture and the control plane's open SSH connections and active handles return to the pre-run baseline (no session or handle leak), asserted by the cycles test
   - H2 [it-domain-cycles]: At least ten of the 50 cycles fire two operations on the same service concurrently (POST plus DELETE, PATCH plus PATCH, POST plus deploy re-apply) and the per-cycle invariant still holds: exactly one valid dynamic file per routed service, Traefik API equal to the database, no temp or .prev leftovers, no 500
-- [ ] 25-03 (wave 1) UAT backlog F1: runtime log tail ordered across stdout and stderr — pending
+- [x] 25-03 (wave 1) UAT backlog F1: runtime log tail ordered across stdout and stderr — done
   - A1 [test]: RED first: a unit test with interleaved stdout and stderr chunks carrying Docker RFC 3339 timestamps shows the tail out of order on the current code
   - A2 [it-runtime-container-logs]: Lines are stably sorted by timestamp, a line without a timestamp keeping its position after the previous timestamped line; the integration test with an image writing to both streams asserts chronological order; F1 is marked fixed in docs/releases/v0.2-HUMAN-UAT.md
-- [ ] 25-04 (wave 3) Security review of proxy, domains, env and secrets; leak canary with application secrets — pending
+- [x] 25-04 (wave 3) Security review of proxy, domains, env and secrets; leak canary with application secrets — done
   - A1 [manual]: The noodara-security checklist is applied to the proxy templates and files (acme.json, static config), the Traefik API exposure, the dynamic-config injection surface, the DNS checker, the env-file lifecycle, the secret store and API, snapshot v2 and the inspect/ps formats; findings are fixed or recorded with severity, status and mitigation in docs/security/v0.4-review.md
   - A2 [it-canary-env]: The leak canary seeds an application secret and a variable referencing it, runs create -> deploy (env-api) -> error paths -> delete, and searches API responses, HTTP errors, app logs, deployment logs, activity, SSE, exceptions, runtime config snapshots and every docker inspect or ps output Noodara captured: 0 matches; the AI prompt and response surfaces are recorded as not applicable until v0.5
   - A3 [test]: Abuse tests: hostname and dynamic-config injection attempts (quotes, newlines, @, unicode), oversized env values, <secret:../x> references, the Traefik API from outside the host (must fail), and a ports-preflight bypass are all rejected with named errors
   - H1 [audit]: pnpm audit shows no critical or high for dependencies added in v0.4; the traefik, pebble and challtestsrv images are digest-pinned and allowlisted; security:scan-leaks includes the new canary in the CI security job and the nightly canary job
-- [ ] 25-05 (wave 3) Release prep: 0.4.0 version, v0.4.0 notes with upgrade and downgrade, README and site — pending
+- [x] 25-05 (wave 3) Release prep: 0.4.0 version, v0.4.0 notes with upgrade and downgrade, README and site — done
   - A1 [test]: Every workspace package.json is 0.4.0 and node scripts/check-release-version.mjs passes for v0.4.0-rc.1 and v0.4.0 with a consistent lockfile
   - A2 [manual]: docs/releases/v0.4.0.md (concise, sudo in every installer command) lists the v0.4 features (Traefik proxy per server, domains, automatic HTTPS, variables with precedence, secrets), the upgrade v0.3.0 -> v0.4 with the NOODARA_VERSION pin and migrations 0014+, the downgrade caveat (v0.3.0 cannot read domains or variables; data intact) and the known limits (single-line values, env visible on the server, panel not behind the proxy, no DNS-01, wildcards or Cloudflare, swap window)
   - A3 [site-build]: README and the public site describe v0.4 without placeholders for v0.5 features and point to the v0.4.0 notes
-- [ ] 25-06 (wave 4) Release gate v0.4 evidence — pending
+- [x] 25-06 (wave 4) Release gate v0.4 evidence — done
   - A1 [manual]: docs/releases/v0.4-gate.md gives READY or NOT READY with evidence for every §9.11 criterion pinned to a commit (domain routing reliable, HTTPS provisioning reliable, renewal test, domain configuration rollback, secrets encrypted at rest, no secret in logs, API responses or AI context (recorded not applicable), deterministic precedence, 50 cycles, CI green); a criterion without evidence forces NOT READY; check-gate-doc passes
   - A2 [it-full]: it-full, e2e-full, site build, audit and migration hygiene are green on that commit; CI and nightly (including proxy, cycles and canary jobs) are green on the same commit
-- [ ] 25-07 (wave 5) UAT on a real host (Lima, Pebble), rc.1, publish v0.4.0 — pending
+- [x] 25-07 (wave 5) UAT on a real host (Lima, Pebble), rc.1, publish v0.4.0 — done
   - A1 [manual]: On a Lima Ubuntu VM running v0.3.0 with real services: upgrade to v0.4.0-rc.1 (migrations 0014+ on real data, existing services unchanged), add a domain -> DNS instructions -> certificate issued with Pebble as CA and a hosts override -> HTTPS /health 200 and HTTP redirect; create a secret and a variable -> deploy -> the service reads it -> no plaintext in UI, API or logs; delete the domain; downgrade to v0.3.0 and back without data loss; evidence logs with secrets and IPs masked
   - A2 [manual]: Let's Encrypt production issuance on a public VPS with a real domain is run if OPEN_QUESTIONS #20 is provided, otherwise recorded UNVERIFIED without weakening the criterion; the UAT checks acme.json is 0600, ports 80/443 belong to noodara-traefik and ufw active does not block the published ports
   - A3 [manual]: v0.4.0-rc.1 is tagged first; v0.4.0 is tagged from the same commit after the rc UAT with CI and nightly green; release.yml green with multi-arch images and the traefik image confirmed on arm64

@@ -2,7 +2,7 @@
 gsd_state_version: 1.0
 milestone: v0.4
 milestone_name: Domains, Networking, Secrets
-status: v0_4_0_released
+status: v0_4_complete
 stopped_at: 25-07 v0.4.0 published (tag v0.4.0 = v0.4.0-rc.1 = public d1d956bc; Release 41535064354, Latest, multi-arch); UAT A1/H1/H2 OK on Lima, LE production UNVERIFIED (#20); gate READY
 last_updated: 2026-11-02T22:20:00.000Z
 last_activity: 2026-11-02 -- 25-07: CI 41500911568 10/10 + nightly 41500993949 13/13 on d1d956bc, tag v0.4.0, Release 41535064354, Lima VM upgraded rc.1 -> 0.4.0 with identical data
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** v0.4 — Domains, Networking, Secrets (v0.4.0 publicado 2026-11-02; falta review y cierre de fase 25)
+**Current focus:** v0.4 — Domains, Networking, Secrets (v0.4.0 publicado 2026-11-02; fase 25 cerrada, review pass). Siguiente: planificar v0.5 (Observability + AI Read-Only)
 
 ## Current Position
 
-Phase: 25 en curso (v0.4: fases 21-24 hechas; 25-01..25-06 hechas; 15/OPS-05 abierta, owner usuario)
-Plan: 25-07 hecho: rc.1 y v0.4.0 publicados desde `d1d956bc`, UAT Lima (`docs/releases/v0.4-HUMAN-UAT.md`), gate READY (`docs/releases/v0.4-gate.md` § Publicación); Let's Encrypt producción UNVERIFIED (OPEN_QUESTIONS #20). Siguiente: review y cierre de fase 25
+Phase: 25 cerrada (v0.4 completo: fases 21-25 hechas, review Fable pass 2026-11-02; 15/OPS-05 abierta, owner usuario)
+Plan: 25-07 hecho: rc.1 y v0.4.0 publicados desde `d1d956bc`, UAT Lima (`docs/releases/v0.4-HUMAN-UAT.md`), gate READY (`docs/releases/v0.4-gate.md` § Publicación); Let's Encrypt producción UNVERIFIED (OPEN_QUESTIONS #20). Siguiente: `/flow-plan` para v0.5; follow-up install.sh copy proxy TLS (OPEN_QUESTIONS F3)
 Status: v0.4.0 publicado (público d1d956bc, Latest); v0.3.0 en a0b45618
 Last activity: 2026-11-02
 
