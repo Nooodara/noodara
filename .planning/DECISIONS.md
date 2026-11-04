@@ -101,3 +101,4 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-11-03: Phase 26 closed after the tier-1 review (Fable): attempt 1 failed on a quadratic df regex, fixed in ec4ba159, and attempt 2 passed. Non-blocking follow-ups went into the plan: 28-02 H2 (settings only reference ai_provider_key credentials; key_hint pattern) and 29-04 H2 (CI runs coverage-state-machine).
 
 - 2026-11-04 — 27-01 scope ampliado con `packages/ssh/src/index.ts` y `packages/ssh/src/run-discovery.test.ts` (export de los nuevos builders; mismo precedente que 22-01). Ninguna otra tarea de la fase 27 toca esos archivos.
+- 2026-11-04 — 27-02 scope ampliado con `turbo.json`, `.env.example` (knobs de métricas, criterio H2) y `apps/control-plane/src/activity/observability-events.ts` (+test) para emitir `service.container_changed` (crash_loop/out_of_memory) respetando el boundary ACT-01.

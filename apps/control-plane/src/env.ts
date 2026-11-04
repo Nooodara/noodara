@@ -48,6 +48,16 @@ export const PROXY_ENV_KNOBS = [
   'NOODARA_PROXY_IMAGE',
 ] as const;
 
+/** v0.5 metrics collector knobs (27-02 H2, ADR 0012); each one is in turbo.json passThroughEnv and .env.example. */
+export const METRICS_ENV_KNOBS = ['NOODARA_METRICS_INTERVAL_MS', 'NOODARA_METRICS_RETENTION_HOURS'] as const;
+
+/** ADR 0012: one sample per server per minute, bounded to 30 s .. 5 min. */
+export const DEFAULT_METRICS_INTERVAL_MS = 60_000;
+const METRICS_INTERVAL_RANGE = { min: 30_000, max: 300_000 } as const;
+/** Seven days of samples by default, at most 30 days. */
+export const DEFAULT_METRICS_RETENTION_HOURS = 168;
+const METRICS_RETENTION_RANGE = { min: 1, max: 720 } as const;
+
 /** Traefik pinned by digest (ADR 0011 spike): a tag alone could be repointed upstream. */
 export const DEFAULT_PROXY_IMAGE =
   'traefik:v3.7.14@sha256:575fa15b135078fe5e50aa847987d96dbddd7b093c172429618404df73f3fa7c';
@@ -120,6 +130,9 @@ export interface Env {
   NOODARA_CERT_CHECK_INTERVAL_MS: number;
   NOODARA_CERT_ISSUE_TIMEOUT_MS: number;
   NOODARA_PROXY_IMAGE: string;
+  // 27-02 (H2): metrics collector cadence and sample retention.
+  NOODARA_METRICS_INTERVAL_MS: number;
+  NOODARA_METRICS_RETENTION_HOURS: number;
   PORT: number;
   LOG_LEVEL: string;
 }
@@ -583,6 +596,20 @@ export function parseEnv(source: EnvSource): EnvParseResult {
     CERT_TIMING_RANGE,
   );
   const proxyImage = parseDigestPinnedImage('NOODARA_PROXY_IMAGE', source.NOODARA_PROXY_IMAGE, DEFAULT_PROXY_IMAGE, issues);
+  const metricsIntervalMs = parseTuningInt(
+    'NOODARA_METRICS_INTERVAL_MS',
+    source.NOODARA_METRICS_INTERVAL_MS,
+    DEFAULT_METRICS_INTERVAL_MS,
+    issues,
+    METRICS_INTERVAL_RANGE,
+  );
+  const metricsRetentionHours = parseTuningInt(
+    'NOODARA_METRICS_RETENTION_HOURS',
+    source.NOODARA_METRICS_RETENTION_HOURS,
+    DEFAULT_METRICS_RETENTION_HOURS,
+    issues,
+    METRICS_RETENTION_RANGE,
+  );
   const port = parseTuningInt('PORT', source.PORT, 3000, issues);
   const logLevel = parseTuningString(source.LOG_LEVEL, 'info');
 
@@ -633,6 +660,8 @@ export function parseEnv(source: EnvSource): EnvParseResult {
       NOODARA_CERT_CHECK_INTERVAL_MS: certCheckIntervalMs,
       NOODARA_CERT_ISSUE_TIMEOUT_MS: certIssueTimeoutMs,
       NOODARA_PROXY_IMAGE: proxyImage,
+      NOODARA_METRICS_INTERVAL_MS: metricsIntervalMs,
+      NOODARA_METRICS_RETENTION_HOURS: metricsRetentionHours,
       PORT: port,
       LOG_LEVEL: logLevel,
     },

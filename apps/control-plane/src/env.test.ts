@@ -5,7 +5,10 @@ import {
   DEFAULT_PROXY_IMAGE,
   DEPLOY_ENV_KNOBS,
   DEPLOY_LOG_LINE_MAX_BYTES,
+  DEFAULT_METRICS_INTERVAL_MS,
+  DEFAULT_METRICS_RETENTION_HOURS,
   loadEnv,
+  METRICS_ENV_KNOBS,
   parseEnv,
   PROXY_ENV_KNOBS,
 } from './env.js';
@@ -785,6 +788,69 @@ describe('proxy and certificate knobs (21-05 A6)', () => {
   });
 });
 
+describe('metrics collector knobs (27-02 H2)', () => {
+  function parsed(overrides: Record<string, string>) {
+    const result = parseEnv(validSource(overrides));
+    if (!result.ok) throw new Error(`expected success: ${JSON.stringify(result.issues)}`);
+    return result.value;
+  }
+
+  function issuesFor(overrides: Record<string, string>): { variable: string; requirement: string }[] {
+    const result = parseEnv(validSource(overrides));
+    if (result.ok) throw new Error('expected failure');
+    return result.issues;
+  }
+
+  it('declares exactly the two knobs', () => {
+    expect([...METRICS_ENV_KNOBS].sort()).toEqual(['NOODARA_METRICS_INTERVAL_MS', 'NOODARA_METRICS_RETENTION_HOURS']);
+  });
+
+  it('defaults to one sample a minute kept for seven days (ADR 0012)', () => {
+    const value = parsed({});
+    expect(DEFAULT_METRICS_INTERVAL_MS).toBe(60_000);
+    expect(DEFAULT_METRICS_RETENTION_HOURS).toBe(168);
+    expect(value.NOODARA_METRICS_INTERVAL_MS).toBe(60_000);
+    expect(value.NOODARA_METRICS_RETENTION_HOURS).toBe(168);
+  });
+
+  it.each([
+    ['NOODARA_METRICS_INTERVAL_MS', '30000', 30_000],
+    ['NOODARA_METRICS_INTERVAL_MS', '300000', 300_000],
+    ['NOODARA_METRICS_RETENTION_HOURS', '1', 1],
+    ['NOODARA_METRICS_RETENTION_HOURS', '720', 720],
+  ] as const)('accepts %s=%s at the edge of its range', (variable, raw, expected) => {
+    expect(parsed({ [variable]: raw })[variable]).toBe(expected);
+  });
+
+  it.each([
+    ['NOODARA_METRICS_INTERVAL_MS', '29999', 'NOODARA_METRICS_INTERVAL_MS must be between 30000 and 300000'],
+    ['NOODARA_METRICS_INTERVAL_MS', '300001', 'NOODARA_METRICS_INTERVAL_MS must be between 30000 and 300000'],
+    ['NOODARA_METRICS_INTERVAL_MS', '1.5', 'NOODARA_METRICS_INTERVAL_MS must be an integer between 30000 and 300000'],
+    ['NOODARA_METRICS_RETENTION_HOURS', '0', 'NOODARA_METRICS_RETENTION_HOURS must be between 1 and 720'],
+    ['NOODARA_METRICS_RETENTION_HOURS', '721', 'NOODARA_METRICS_RETENTION_HOURS must be between 1 and 720'],
+    ['NOODARA_METRICS_RETENTION_HOURS', 'week', 'NOODARA_METRICS_RETENTION_HOURS must be an integer between 1 and 720'],
+  ] as const)('rejects %s=%s with a named issue', (variable, raw, requirement) => {
+    expect(issuesFor({ [variable]: raw })).toEqual([{ variable, requirement }]);
+  });
+
+  it('fails boot with a named NOODARA_CONFIG_ERROR for an out-of-range interval, never echoing the value', () => {
+    const written: string[] = [];
+    vi.spyOn(process.stderr, 'write').mockImplementation((chunk: string | Uint8Array) => {
+      written.push(String(chunk));
+      return true;
+    });
+    vi.spyOn(process, 'exit').mockImplementation((code?: string | number | null) => {
+      throw new Error(`exit ${String(code)}`);
+    });
+
+    expect(() => loadEnv(validSource({ NOODARA_METRICS_INTERVAL_MS: '987654321' }))).toThrow('exit 1');
+    const output = written.join('');
+    expect(output).toContain('NOODARA_CONFIG_ERROR NOODARA_METRICS_INTERVAL_MS:');
+    expect(output).not.toContain('987654321');
+    vi.restoreAllMocks();
+  });
+});
+
 describe('env wiring (ADR 0003)', () => {
   const turbo = JSON.parse(readFileSync(new URL('../../../turbo.json', import.meta.url), 'utf8')) as {
     tasks: Record<string, { passThroughEnv?: string[] }>;
@@ -812,8 +878,8 @@ describe('env wiring (ADR 0003)', () => {
     }
   });
 
-  it('documents every deploy and proxy knob in .env.example', () => {
-    for (const variable of [...DEPLOY_ENV_KNOBS, ...PROXY_ENV_KNOBS]) {
+  it('documents every deploy, proxy and metrics knob in .env.example', () => {
+    for (const variable of [...DEPLOY_ENV_KNOBS, ...PROXY_ENV_KNOBS, ...METRICS_ENV_KNOBS]) {
       expect(envExample, `${variable} missing from .env.example`).toMatch(new RegExp(`^${variable}=$`, 'm'));
     }
   });

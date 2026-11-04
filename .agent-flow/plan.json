@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-04T17:44:34.801Z",
+  "updatedAt": "2026-11-04T17:44:38.282Z",
   "cursor": {
     "phase": "27",
     "task": "27-02"
@@ -10242,13 +10242,17 @@
             "apps/control-plane/src/env.ts",
             "apps/control-plane/src/env.test.ts",
             "apps/control-plane/src/queue/",
-            "tests/integration/observability/collector.test.ts"
+            "tests/integration/observability/collector.test.ts",
+            "turbo.json",
+            ".env.example",
+            "apps/control-plane/src/activity/observability-events.ts",
+            "apps/control-plane/src/activity/observability-events.test.ts"
           ],
           "wave": 2,
           "dependsOn": [
             "27-01"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
