@@ -1,6 +1,6 @@
 import { inspect } from 'node:util';
 import { secretValue } from '@noodara/domain/security';
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse, type JsonBodyType } from 'msw';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -26,8 +26,8 @@ interface Fixture {
   readonly id: ImplementedAIProviderId;
   readonly url: string;
   authOk(request: Request): boolean;
-  text(text: string): unknown;
-  toolUse(id: string, name: string, input: Record<string, unknown>): unknown;
+  text(text: string): JsonBodyType;
+  toolUse(id: string, name: string, input: Record<string, unknown>): JsonBodyType;
   sseText(parts: readonly string[]): string;
   sseTool(id: string, name: string, jsonParts: readonly string[]): string;
   /** First SSE event only: the stream never finishes. */
