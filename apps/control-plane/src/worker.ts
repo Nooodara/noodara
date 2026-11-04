@@ -19,6 +19,7 @@ import { createServiceOperationJobHandler } from './deploy/service-ops-job.js';
 import { DEPLOY_LOG_LINE_MAX_BYTES, env } from './env.js';
 import { createRedisServerEventPublisher } from './events/redis-server-event-publisher.js';
 import { createLogger } from './logger.js';
+import { startWorkerCollector } from './observability/collector-runtime.js';
 import { createProxyInstallJobHandler } from './proxy/proxy-job.js';
 import {
   createProxyInstallJobDeps,
@@ -215,6 +216,21 @@ async function main(): Promise<void> {
     cert: { intervalMs: env.NOODARA_CERT_CHECK_INTERVAL_MS, issueTimeoutMs: env.NOODARA_CERT_ISSUE_TIMEOUT_MS },
   });
 
+  // 27-02 (A1, H1): the metrics collector, a repeatable job on its own queue and blocking
+  // connection; one SSH session per CONNECTED server per tick, never overlapping (Redis lock).
+  const metricsWorkerConnection = createWorkerRedisConnection(env.REDIS_URL);
+  const metrics = await startWorkerCollector({
+    db,
+    connect: deployJobDeps.connect,
+    createRedactor: deployJobDeps.createRedactor,
+    logger,
+    intervalMs: env.NOODARA_METRICS_INTERVAL_MS,
+    retentionHours: env.NOODARA_METRICS_RETENTION_HOURS,
+    redis: queueConnection,
+    queueConnection,
+    workerConnection: metricsWorkerConnection,
+  });
+
   // 22-02 (A1, H1): proxy installs run on their own queue and blocking connection. Before taking
   // jobs, an INSTALLING row past the budget (or whose job is gone) ends FAILED/PROXY_INSTALL_FAILED.
   const proxyQueue = createProxyQueue({ connection: queueConnection });
@@ -273,6 +289,7 @@ async function main(): Promise<void> {
           proxyHandle.close(),
           logRetention.stop(),
           reconcile.close(),
+          metrics.close(),
         ]).then(() => undefined),
       graceMs: lockDurationMs,
       stopHeartbeat,
@@ -290,6 +307,9 @@ async function main(): Promise<void> {
         },
         () => {
           proxyWorkerConnection.disconnect();
+        },
+        () => {
+          metricsWorkerConnection.disconnect();
         },
         () => {
           queueConnection.disconnect();

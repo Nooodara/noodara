@@ -35,7 +35,8 @@ export function salvageContainerSample(stdout: string): SalvagedContainers {
     if (!line.startsWith('I ')) continue;
     const id = ID_FIELD.exec(line)?.[1] ?? null;
     const name = NAME_FIELD.exec(line)?.[1] ?? null;
-    const own = [line, ...(id === null ? [] : (statsById.get(id) ?? []))].join('\n');
+    // Each probe line ends with a newline; the parser treats a missing one as truncated output.
+    const own = `${[line, ...(id === null ? [] : (statsById.get(id) ?? []))].join('\n')}\n`;
     const parsed = parseContainerSample(own);
     if (parsed.ok && parsed.value.length === 1 && parsed.value[0] !== undefined) {
       samples.push(parsed.value[0]);

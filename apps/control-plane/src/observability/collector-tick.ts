@@ -145,7 +145,7 @@ function capturing(session: SshDeploySession, sink: string[]): SshDeploySession 
         ...options,
         onChunk: (chunk: StreamChunk) => {
           if (chunk.stream === 'stdout') sink.push(chunk.text);
-          options.onChunk?.(chunk);
+          options.onChunk(chunk);
         },
       }),
   });
@@ -246,7 +246,7 @@ async function incidentsFor(
   const since = new Date(current.observedAtMs - CRASH_LOOP_WINDOW_MS);
   const before = [...(await deps.history(serviceId, containerId, since))];
   // The last stored point counts even outside the window: an OOM that is still showing is not new.
-  if (last !== undefined && last.containerId === containerId && !before.some((p) => p.observedAtMs === last.observedAtMs)) {
+  if (last?.containerId === containerId && !before.some((p) => p.observedAtMs === last.observedAtMs)) {
     before.push({ observedAtMs: last.observedAtMs, state: last.state });
   }
   const options = { hostTotalBytes };
@@ -278,11 +278,14 @@ async function collectServer(
   try {
     connected = await deps.connect(serverId, redactor, signal);
   } catch (error) {
+    if (signal.aborted) return 'deadline';
     deps.logger.warn({ serverId, errorKind: errorKind(error) }, 'metrics: server unreachable');
     return 'unreachable';
   }
   if (!connected.ok) {
-    deps.logger.warn({ serverId, errorKind: 'CONNECT_FAILED' }, 'metrics: server unreachable');
+    // A connect cut short by the tick deadline is the deadline, not an unreachable server.
+    if (signal.aborted) return 'deadline';
+    deps.logger.warn({ serverId, errorKind: connected.code }, 'metrics: server unreachable');
     return 'unreachable';
   }
 
@@ -333,7 +336,7 @@ async function collectServer(
       restartCount: sample.restartCount,
     });
     const previous = last.get(serviceId);
-    if (previous !== undefined && previous.containerId === sample.id && sameState(previous.state, state)) continue;
+    if (previous?.containerId === sample.id && sameState(previous.state, state)) continue;
     observations.push({ kind: 'state', serviceId, containerId: sample.id, state });
     const point = { observedAtMs: sampledAt.getTime(), state };
     for (const diagnosis of await incidentsFor(deps, serviceId, sample.id, point, previous, hostTotalBytes)) {

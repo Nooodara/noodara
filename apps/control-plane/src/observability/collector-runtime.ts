@@ -101,7 +101,7 @@ export async function startCollectorLoop(options: StartCollectorLoopOptions): Pr
     { connection: options.workerConnection, prefix: BULLMQ_PREFIX, concurrency: 1 },
   );
   // An EventEmitter 'error' without a listener would crash the process.
-  worker.on('error', (error) => {
+  worker.on('error', (error: Error) => {
     logger.error({ errorKind: errorKind(error) }, 'metrics worker error');
   });
   return {
