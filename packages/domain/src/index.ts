@@ -11,3 +11,5 @@ export * from './domain/index.js';
 export * from './env/index.js';
 export * from './proxy/index.js';
 export * from './observability/index.js';
+export * from './graph/index.js';
+export * from './logs/index.js';
