@@ -126,6 +126,11 @@
           "allow": ["pure-domain", "@noodara/config", "ssh-adapter"]
         }
       },
+      "ai-adapter": {
+        "dependencies": {
+          "allow": ["pure-domain", "@noodara/config", "ai-adapter"]
+        }
+      },
       "ui-components": {
         "dependencies": {
           "allow": ["ui-components", "@noodara/config", "pure-domain", "ssh-adapter"]

@@ -22,14 +22,21 @@ const envFallbackSelectors = [
   },
 ];
 
+export const deepDomainImportPattern = {
+  group: ['**/packages/domain/src/*', '**/domain/src/**', '@noodara/domain/src/*'],
+  message:
+    'Deep imports into packages/domain/src are forbidden; import a package entrypoint (., ./server, ./security, ./validators, ./activity) instead.',
+};
+
+// v0.5 (28-01, A3): AI provider SDKs live only in packages/ai/src/providers, which re-enables
+// them in packages/ai/eslint.config.js. Everywhere else goes through @noodara/ai.
+export const providerSdkImportPattern = {
+  regex: '^(@anthropic-ai/|openai(/|$)|@aws-sdk/|@azure/openai(/|$))',
+  message: 'AI provider SDKs may only be imported under packages/ai/src/providers; use @noodara/ai instead.',
+};
+
 const noDeepDomainImports = {
-  patterns: [
-    {
-      group: ['**/packages/domain/src/*', '**/domain/src/**', '@noodara/domain/src/*'],
-      message:
-        'Deep imports into packages/domain/src are forbidden; import a package entrypoint (., ./server, ./security, ./validators, ./activity) instead.',
-    },
-  ],
+  patterns: [deepDomainImportPattern, providerSdkImportPattern],
 };
 
 export default tseslint.config(

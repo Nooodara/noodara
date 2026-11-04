@@ -16,7 +16,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "lint": "eslint --config ../config/eslint.config.js .",
+    "lint": "eslint --config eslint.config.js .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --root ../.. --project packages"
   },
