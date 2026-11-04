@@ -26,3 +26,9 @@
 - RESOLVED (22-08 A3, newest SUCCESS deployment port) — 2026-10-31 (22-05) — createDomainApplier renders from `services.internalPort`, not the port actually deployed. Check whether they can diverge.
 - 2026-11-02 (25-07 UAT F3) — `install.sh` still warns "until v0.4's TLS proxy (or your own) is in front"; in v0.4 the panel is not served through the proxy. Fix the copy in v0.5 (install.sh was outside 25-07 scope).
 21. v0.5 evals (29-02 A3, 31-06 A2): the live baseline, the cassettes CI replays and the live UAT need a real Anthropic and/or OpenAI API key and a token budget. Spending on a provider account is outside the orchestrator's delegation. Owner: user. Needed before 29-02 can close (without cassettes there is nothing to replay). Expected cost: one live run of 50+ scenarios plus the adversarial set per baseline refresh. Status 2026-11-03: not provided.
+
+## Follow-ups review fase 27 (2026-11-04, no bloqueantes)
+- Server inalcanzable no se persiste como UNREACHABLE (solo `last_seen_at` envejece); decidir en 28/29 si se transiciona vía state machine o se añade flag `stale` server-side.
+- `createDeployConnect` ignora el AbortSignal: el deadline del tick no corta el connect SSH; con connect timeout > 30 s el lock Redis puede expirar.
+- "Deploy tiene la conexión" es check-then-act, no mutex; jobs stop/restart no cuentan como ocupado.
+- Cobertura: salvage H2 y prune de `container_metric_samples` sin prueba de integración real.

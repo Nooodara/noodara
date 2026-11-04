@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-04T19:15:10.163Z",
+  "updatedAt": "2026-11-04T21:11:29.457Z",
   "cursor": {
-    "phase": "27",
-    "task": "27-06"
+    "phase": "28",
+    "task": "28-01"
   },
   "phases": [
     {
@@ -10183,7 +10183,7 @@
       "dependsOn": [
         "26"
       ],
-      "status": "active",
+      "status": "done",
       "tasks": [
         {
           "id": "27-01",
@@ -10475,7 +10475,7 @@
             "27-03",
             "27-04"
           ],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
