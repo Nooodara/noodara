@@ -27,6 +27,7 @@ import configRoutes from './config.js';
 import deploymentsRoutes from './deployments.js';
 import domainsRoutes from './domains.js';
 import envRoutes from './env.js';
+import graphRoutes from './graph.js';
 import logsRoutes from './logs.js';
 import metricsRoutes from './metrics.js';
 import secretsRoutes from './secrets.js';
@@ -77,6 +78,7 @@ const apiScope: FastifyPluginCallback<ApiScopeOptions> = (fastify, opts, done) =
     fastify.register(secretsRoutes);
     fastify.register(metricsRoutes);
     fastify.register(logsRoutes);
+    fastify.register(graphRoutes);
     fastify.register(
       createEventsRoutes({
         broadcaster: opts.broadcaster,
