@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-04T18:19:48.383Z",
+  "updatedAt": "2026-11-04T18:33:14.584Z",
   "cursor": {
     "phase": "27",
-    "task": "27-03"
+    "task": "27-04"
   },
   "phases": [
     {
@@ -10307,13 +10307,14 @@
             "apps/control-plane/src/routes/metrics-schemas.ts",
             "apps/control-plane/src/routes/api-scope.ts",
             "apps/control-plane/src/observability/",
-            "tests/integration/observability/metrics-api.test.ts"
+            "tests/integration/observability/metrics-api.test.ts",
+            "docs/deploy-engine.md"
           ],
           "wave": 3,
           "dependsOn": [
             "27-02"
           ],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
@@ -10356,7 +10357,8 @@
             "apps/control-plane/src/routes/logs-schemas.ts",
             "apps/control-plane/src/routes/api-scope.ts",
             "apps/control-plane/src/observability/logs/",
-            "tests/integration/observability/logs-api.test.ts"
+            "tests/integration/observability/logs-api.test.ts",
+            "docs/deploy-engine.md"
           ],
           "wave": 4,
           "dependsOn": [
@@ -10416,7 +10418,8 @@
             "apps/control-plane/src/routes/graph-schemas.ts",
             "apps/control-plane/src/routes/api-scope.ts",
             "apps/control-plane/src/observability/graph/",
-            "tests/integration/observability/graph-api.test.ts"
+            "tests/integration/observability/graph-api.test.ts",
+            "docs/deploy-engine.md"
           ],
           "wave": 5,
           "dependsOn": [],

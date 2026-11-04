@@ -102,3 +102,4 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 
 - 2026-11-04 — 27-01 scope ampliado con `packages/ssh/src/index.ts` y `packages/ssh/src/run-discovery.test.ts` (export de los nuevos builders; mismo precedente que 22-01). Ninguna otra tarea de la fase 27 toca esos archivos.
 - 2026-11-04 — 27-02 scope ampliado con `turbo.json`, `.env.example` (knobs de métricas, criterio H2) y `apps/control-plane/src/activity/observability-events.ts` (+test) para emitir `service.container_changed` (crash_loop/out_of_memory) respetando el boundary ACT-01.
+- 2026-11-04 — 27-03/04/05 scope incluye `docs/deploy-engine.md` (route-docs.test exige listar cada ruta /api/projects).
