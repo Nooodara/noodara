@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-04T01:06:45.893Z",
+  "updatedAt": "2026-11-04T01:20:52.934Z",
   "cursor": {
     "phase": "26",
-    "task": "26-04"
+    "task": "26-05"
   },
   "phases": [
     {
@@ -10067,14 +10067,19 @@
             "packages/domain/src/security/",
             "packages/domain/src/index.ts",
             "apps/control-plane/src/routes/http-errors.ts",
-            "apps/control-plane/src/routes/http-errors.test.ts"
+            "apps/control-plane/src/routes/http-errors.test.ts",
+            "apps/control-plane/src/db/schema/activity-events.ts",
+            "apps/control-plane/src/routes/activity.ts",
+            "apps/web/src/lib/api-client.ts",
+            "apps/site/content/docs/reference/error-codes.mdx",
+            "apps/control-plane/src/services/read-activity.ts"
           ],
           "wave": 4,
           "dependsOn": [
             "26-02",
             "26-03"
           ],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",

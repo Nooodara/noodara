@@ -71,7 +71,8 @@ export type ServiceErrorCode =
   | "WEBHOOK_HOOK_ID_CONFLICT"
   | "WEBHOOK_DELIVERY_REJECTED"
   | "RATE_LIMITED"
-  | V04ServiceErrorCode;
+  | V04ServiceErrorCode
+  | V05ServiceErrorCode;
 
 /** 21-05 (v0.4): domains, proxy, env vars and secrets. web copy and error-codes.mdx iterate it. */
 export const V04_SERVICE_ERROR_CODES = Object.freeze([
@@ -93,6 +94,42 @@ export const V04_SERVICE_ERROR_CODES = Object.freeze([
 ] as const);
 
 export type V04ServiceErrorCode = (typeof V04_SERVICE_ERROR_CODES)[number];
+
+/** 26-04 (v0.5): metrics, logs and the read-only AI. Each code has one fixed message below. */
+export const V05_SERVICE_ERROR_CODES = Object.freeze([
+  "METRICS_UNAVAILABLE",
+  "LOG_SOURCE_UNAVAILABLE",
+  "LOG_QUERY_INVALID",
+  "AI_PROVIDER_NOT_CONFIGURED",
+  "AI_PROVIDER_AUTH_FAILED",
+  "AI_PROVIDER_UNAVAILABLE",
+  "AI_PROVIDER_RATE_LIMITED",
+  "AI_BUDGET_EXCEEDED",
+  "AI_TOOL_NOT_ALLOWED",
+] as const);
+
+export type V05ServiceErrorCode = (typeof V05_SERVICE_ERROR_CODES)[number];
+
+/** Fixed, actionable copy. A route never forwards a provider, SSH or Docker message instead: those
+ *  can quote a key, a prompt or server output. */
+export const V05_ERROR_MESSAGES = Object.freeze({
+  METRICS_UNAVAILABLE:
+    "Metrics are not available yet. Check that the server is connected and try again in a minute.",
+  LOG_SOURCE_UNAVAILABLE:
+    "Logs from this source could not be read. Check that the server is reachable and try again.",
+  LOG_QUERY_INVALID: "The log query is not valid. Check the sources, time range and search term.",
+  AI_PROVIDER_NOT_CONFIGURED: "No AI provider is configured. Add an API key in Settings to ask questions.",
+  AI_PROVIDER_AUTH_FAILED: "The AI provider rejected the API key. Replace the key in Settings.",
+  AI_PROVIDER_UNAVAILABLE: "The AI provider is not responding. Try again in a few minutes.",
+  AI_PROVIDER_RATE_LIMITED: "The AI provider is rate limiting requests. Wait a moment and try again.",
+  AI_BUDGET_EXCEEDED: "This question needed more steps than allowed. Ask a narrower question.",
+  AI_TOOL_NOT_ALLOWED: "The assistant tried a tool it is not allowed to use. Nothing was changed.",
+} satisfies Record<V05ServiceErrorCode, string>);
+
+/** The error body of a v0.5 code: the code and its fixed message, nothing else. */
+export function toV05ErrorBody(code: V05ServiceErrorCode): { error: V05ServiceErrorCode; message: string } {
+  return { error: code, message: V05_ERROR_MESSAGES[code] };
+}
 
 export const SERVICE_ERROR_STATUS = Object.freeze({
   VALIDATION_FAILED: 400,
@@ -195,6 +232,18 @@ export const SERVICE_ERROR_STATUS = Object.freeze({
   SECRET_IN_USE: 409,
   SECRET_NAME_DUPLICATE: 409,
   SECRET_LIMIT_REACHED: 422,
+  // 26-04 (v0.5): no data or an unreachable source is 503/502; a bad log query is 422. A missing
+  // provider is a state conflict (409). A key the provider rejects is 422, never 401: 401 means
+  // the Noodara session ended. A refused tool call is 403.
+  METRICS_UNAVAILABLE: 503,
+  LOG_SOURCE_UNAVAILABLE: 502,
+  LOG_QUERY_INVALID: 422,
+  AI_PROVIDER_NOT_CONFIGURED: 409,
+  AI_PROVIDER_AUTH_FAILED: 422,
+  AI_PROVIDER_UNAVAILABLE: 503,
+  AI_PROVIDER_RATE_LIMITED: 429,
+  AI_BUDGET_EXCEEDED: 422,
+  AI_TOOL_NOT_ALLOWED: 403,
 } satisfies Record<ServiceErrorCode, number>);
 
 const UNKNOWN_CODE_STATUS = 500;

@@ -1,7 +1,7 @@
 import { inspect } from 'node:util';
 import { describe, expect, it } from 'vitest';
 import { createRedactor } from './redactor.js';
-import { revealSecret, secretValue, type SecretKind } from './secret-value.js';
+import { revealSecret, SECRET_KINDS, secretValue } from './secret-value.js';
 
 describe('secretValue', () => {
   it('toString() returns the redacted marker carrying the kind', () => {
@@ -64,16 +64,8 @@ describe('secretValue', () => {
   });
 
   it('supports every declared SecretKind', () => {
-    const kinds: SecretKind[] = [
-      'ssh_password',
-      'ssh_private_key',
-      'master_key',
-      'session_secret',
-      'setup_token',
-      'api_key',
-      'app_secret',
-    ];
-    for (const kind of kinds) {
+    expect(SECRET_KINDS).toContain('ai_provider_key');
+    for (const kind of SECRET_KINDS) {
       const secret = secretValue('v', kind);
       expect(secret.toString()).toBe(`[REDACTED:${kind}]`);
       expect(secret.kind).toBe(kind);

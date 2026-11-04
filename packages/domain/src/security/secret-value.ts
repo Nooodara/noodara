@@ -10,14 +10,26 @@ const INSPECT_SYMBOL = Symbol.for('nodejs.util.inspect.custom');
  * only change needed to teach the whole redaction surface (SecretValue, Redactor, pino) about a
  * new secret category.
  */
-export type SecretKind =
-  | 'ssh_password'
-  | 'ssh_private_key'
-  | 'master_key'
-  | 'session_secret'
-  | 'setup_token'
-  | 'api_key'
-  | 'app_secret';
+export const SECRET_KINDS = Object.freeze([
+  'ssh_password',
+  'ssh_private_key',
+  'master_key',
+  'session_secret',
+  'setup_token',
+  'api_key',
+  'app_secret',
+  // v0.5: a BYOK AI provider key, stored encrypted in `credentials` and never returned.
+  'ai_provider_key',
+] as const);
+export type SecretKind = (typeof SECRET_KINDS)[number];
+
+/** The kinds stored as rows of `credentials` with `type` equal to the kind: each must be a value
+ *  of the DB enum `credential_type` (drift test in secret-value.test.ts). */
+export const CREDENTIAL_SECRET_KINDS = Object.freeze([
+  'ssh_password',
+  'ssh_private_key',
+  'ai_provider_key',
+] as const satisfies readonly SecretKind[]);
 
 /**
  * Anything that can receive a raw secret value for later redaction. `redactor.ts`'s `Redactor`

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { secretValue } from '../security/secret-value.js';
 import {
   ACCOUNT_ACTIONS,
+  ACTIVITY_ACTOR_TYPES,
   ALL_ACTIVITY_ACTIONS,
   AUTH_ACTIONS,
   DOMAIN_ACTIONS,
@@ -12,6 +13,7 @@ import {
   SensitiveMetadataError,
   buildActivityEvent,
   type ActivityAction,
+  type ActivityActorType,
   type AuthAction,
 } from './activity-event.js';
 
@@ -90,6 +92,30 @@ describe('buildActivityEvent', () => {
     expect(event.outcome).toBe('success');
     expect(event.metadata).toEqual({ ip: '203.0.113.5' });
     expect(event.occurredAt).toBe(NOW);
+  });
+
+  it('builds an event with the ai actor type (26-04 A3)', () => {
+    expect(ACTIVITY_ACTOR_TYPES).toEqual(['user', 'system', 'ai']);
+    const event = buildActivityEvent(
+      { actorType: 'ai', entityType: 'server', entityId: 'srv-1', action: 'auth.login_succeeded', outcome: 'success' },
+      NOW,
+    );
+    expect(event.actorType).toBe('ai');
+  });
+
+  it('rejects an actor type outside ACTIVITY_ACTOR_TYPES', () => {
+    expect(() =>
+      buildActivityEvent(
+        {
+          actorType: 'robot' as unknown as ActivityActorType,
+          entityType: 'server',
+          entityId: 'srv-1',
+          action: 'auth.login_succeeded',
+          outcome: 'success',
+        },
+        NOW,
+      ),
+    ).toThrow(InvalidActivityActionError);
   });
 
   it('accepts an optional errorCode', () => {

@@ -1,6 +1,7 @@
 // D-20: the read-only, keyset-paginated activity log `GET /api/activity` consumes. Mirrors
 // read-servers.ts's shape: no transaction opened, no activity event written (a read is not an
 // event, ACT-01).
+import type { ActivityActorType } from '@noodara/domain/activity';
 import { and, desc, eq, lt, or } from 'drizzle-orm';
 import { activityEvents } from '../db/schema/activity-events.js';
 import { encodeActivityCursor } from '../routes/activity-cursor.js';
@@ -9,7 +10,7 @@ import type { ServerServicesDeps } from './server-service-deps.js';
 export interface ActivityItem {
   readonly id: string;
   readonly occurredAt: Date;
-  readonly actorType: 'user' | 'system';
+  readonly actorType: ActivityActorType;
   readonly actorId: string | null;
   readonly entityType: string;
   readonly entityId: string | null;

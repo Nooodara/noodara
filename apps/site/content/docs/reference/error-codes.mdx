@@ -69,6 +69,15 @@ nothing else — no internal detail is ever attached to it.
 | `PROXY_UNAVAILABLE` | 503 | The proxy on the server is not answering. |
 | `PROXY_IN_USE` | 409 | Domains still route through the proxy; remove them before removing it. |
 | `PROXY_ROUTE_FAILED` | 502 | The proxy did not accept the routes for the service. |
+| `METRICS_UNAVAILABLE` | 503 | Metrics are not available yet. Check that the server is connected and try again in a minute. |
+| `LOG_SOURCE_UNAVAILABLE` | 502 | Logs from this source could not be read. Check that the server is reachable and try again. |
+| `LOG_QUERY_INVALID` | 422 | The log query is not valid. Check the sources, time range and search term. |
+| `AI_PROVIDER_NOT_CONFIGURED` | 409 | No AI provider is configured. Add an API key in Settings to ask questions. |
+| `AI_PROVIDER_AUTH_FAILED` | 422 | The AI provider rejected the API key. Replace the key in Settings. |
+| `AI_PROVIDER_UNAVAILABLE` | 503 | The AI provider is not responding. Try again in a few minutes. |
+| `AI_PROVIDER_RATE_LIMITED` | 429 | The AI provider is rate limiting requests. Wait a moment and try again. |
+| `AI_BUDGET_EXCEEDED` | 422 | This question needed more steps than allowed. Ask a narrower question. |
+| `AI_TOOL_NOT_ALLOWED` | 403 | The assistant tried a tool it is not allowed to use. Nothing was changed. |
 | `ENV_KEY_DUPLICATE` | 409 | A variable with this key already exists in the scope. |
 | `ENV_VALUE_MULTILINE` | 422 | The value has a line break or NUL byte; encode multi-line values as base64. |
 | `ENV_LIMIT_REACHED` | 422 | The scope already has the maximum number of variables. |

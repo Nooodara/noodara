@@ -357,7 +357,12 @@ function assertProxyMetadata(action: ProxyAction, metadata: ActivityMetadata): v
   }
 }
 
-export type ActivityActorType = 'user' | 'system';
+/** Who caused an event. `ai` (v0.5) is the read-only agent; its events never carry the question,
+ *  tool output or answer. The DB enum `activity_actor_type` must hold exactly these values. */
+export const ACTIVITY_ACTOR_TYPES = Object.freeze(['user', 'system', 'ai'] as const);
+export type ActivityActorType = (typeof ACTIVITY_ACTOR_TYPES)[number];
+const ACTIVITY_ACTOR_TYPE_SET: ReadonlySet<string> = new Set(ACTIVITY_ACTOR_TYPES);
+
 export type ActivityOutcome = 'success' | 'failure';
 
 /** `metadata` is JSON-shaped structured detail (ARCHITECTURE.md §6) — never a raw secret. */
@@ -451,6 +456,9 @@ function assertNoSensitiveMetadata(value: unknown): void {
  * and this function's output deterministic in tests.
  */
 export function buildActivityEvent(input: BuildActivityEventInput, now: Date): ActivityEvent {
+  if (!ACTIVITY_ACTOR_TYPE_SET.has(input.actorType)) {
+    throw new InvalidActivityActionError(input.actorType, 'Unknown activity actor type');
+  }
   if (!ACTIVITY_ACTION_SET.has(input.action)) {
     throw new InvalidActivityActionError(input.action);
   }

@@ -1,10 +1,10 @@
 import { index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { uuidv7 } from 'uuidv7';
+import { ACTIVITY_ACTOR_TYPES } from '@noodara/domain/activity';
 
-// AUTH-04 / noodara-domain-model skill §7: only auth actions are emitted this phase (setup,
-// login, login failure, logout, session revoked, recovery) — the general activity-log service
-// and its non-auth action union members land in phase 3.
-export const activityActorTypeEnum = pgEnum('activity_actor_type', ['user', 'system']);
+// The actor types come from the domain tuple (v0.5 adds `ai`); the DB value lands with migration
+// 0018, and the v05-drift test fails if the two diverge.
+export const activityActorTypeEnum = pgEnum('activity_actor_type', [...ACTIVITY_ACTOR_TYPES]);
 export const activityOutcomeEnum = pgEnum('activity_outcome', ['success', 'failure']);
 
 export const activityEvents = pgTable(

@@ -3,6 +3,7 @@
 // `.strict()`, so an unknown key like `?action=` is a 400, never a silently-ignored no-op filter.
 import type { ZodTypeProvider } from '@fastify/type-provider-zod';
 import type { FastifyPluginCallback } from 'fastify';
+import { ActivityActorTypeSchema } from '@noodara/domain/api-contract';
 import { z } from 'zod';
 import { decodeActivityCursor } from './activity-cursor.js';
 import { ErrorBodySchema, toValidationErrorBody, ValidationErrorBodySchema } from './http-errors.js';
@@ -19,7 +20,7 @@ const ActivityQuerySchema = z
 const ActivityItemSchema = z.object({
   id: z.uuid(),
   occurredAt: z.date(),
-  actorType: z.enum(['user', 'system']),
+  actorType: ActivityActorTypeSchema,
   actorId: z.uuid().nullable(),
   entityType: z.string(),
   entityId: z.uuid().nullable(),

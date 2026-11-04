@@ -120,6 +120,15 @@ describe('SERVICE_ERROR_STATUS / mapServiceCodeToStatus (D-16)', () => {
     ['SECRET_IN_USE', 409],
     ['SECRET_NAME_DUPLICATE', 409],
     ['SECRET_LIMIT_REACHED', 422],
+    ['METRICS_UNAVAILABLE', 503],
+    ['LOG_SOURCE_UNAVAILABLE', 502],
+    ['LOG_QUERY_INVALID', 422],
+    ['AI_PROVIDER_NOT_CONFIGURED', 409],
+    ['AI_PROVIDER_AUTH_FAILED', 422],
+    ['AI_PROVIDER_UNAVAILABLE', 503],
+    ['AI_PROVIDER_RATE_LIMITED', 429],
+    ['AI_BUDGET_EXCEEDED', 422],
+    ['AI_TOOL_NOT_ALLOWED', 403],
   ] satisfies [ServiceErrorCode, number][])('maps %s to %d', (code, status) => {
     expect(mapServiceCodeToStatus(code)).toBe(status);
   });
