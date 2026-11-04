@@ -21,13 +21,19 @@ export interface ToolEnvelope {
 
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 
+/** JSON.stringify is typed as string but answers undefined for undefined and functions. */
+function stringify(value: unknown): string | undefined {
+  const text: string | undefined = JSON.stringify(value);
+  return text;
+}
+
 function byteLength(value: unknown): number {
-  return Buffer.byteLength(JSON.stringify(value) ?? 'null', 'utf8');
+  return Buffer.byteLength(stringify(value) ?? 'null', 'utf8');
 }
 
 /** Dates become ISO strings, undefined and functions disappear, exactly as JSON would send them. */
 function toJson(value: unknown): Json {
-  const text = JSON.stringify(value);
+  const text = stringify(value);
   return text === undefined ? null : (JSON.parse(text) as Json);
 }
 

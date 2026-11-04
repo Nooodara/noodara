@@ -15,6 +15,7 @@ import {
   type AuthorizationScope,
   type ReadToolBackend,
   type ToolArgIssue,
+  type ToolInputs,
   type ToolOutcome,
   type ToolTarget,
 } from './types.js';
@@ -90,7 +91,7 @@ async function runTool<N extends AIToolName>(
   const parsed = tool.parse(raw, nowMs);
   if (!parsed.ok) return { ok: false, code: 'INVALID_ARGUMENTS', issues: parsed.issues, target: null };
   const target = tool.target(parsed.input, scope);
-  const read = backend[tool.name] as (input: typeof parsed.input, scope: AuthorizationScope) => Promise<ToolOutcome>;
+  const read = backend[tool.name] as (input: ToolInputs[N], scope: AuthorizationScope) => Promise<ToolOutcome>;
   let outcome: ToolOutcome;
   try {
     outcome = await read(parsed.input, scope);
