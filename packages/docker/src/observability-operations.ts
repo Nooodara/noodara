@@ -20,6 +20,7 @@ import {
   type LogsWindow,
   type LogsWindowInput,
   type RemoteCommand,
+  type StreamResult,
 } from '@noodara/ssh';
 import { classify, type DockerStepContext } from './docker-operations.js';
 import { notCompleted, runStep } from './run-step.js';
@@ -67,9 +68,18 @@ async function probe<T>(
   const { result } = outcome;
   if (TIMEOUT_EXIT_CODES.includes(result.exitCode)) return TIMED_OUT;
   if (result.exitCode === null || !acceptedExits.includes(result.exitCode)) {
-    return classify(context, 'inspect', result);
+    // Every template merges stderr into stdout (`2>&1 | head -c`), so the classifier, which keys
+    // on stderr text, reads the merged output.
+    return classify(context, 'inspect', { ...result, stderrTail: `${result.stderrTail}${result.stdoutTail}` });
   }
-  return { ok: true, value: read(context.redactor.redact(outcome.stdout), result.exitCode), result };
+  // The adapter already redacts at stream time; redacting again here keeps a raw byte from ever
+  // reaching a parser, a caller or a log line even through a session that did not (A3).
+  const redacted: StreamResult = {
+    ...result,
+    stdoutTail: context.redactor.redact(result.stdoutTail),
+    stderrTail: context.redactor.redact(result.stderrTail),
+  };
+  return { ok: true, value: read(context.redactor.redact(outcome.stdout), result.exitCode), result: redacted };
 }
 
 function parsed<T>(validation: ValidationResult<T>): ParsedSample<T> {
