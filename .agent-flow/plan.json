@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-03T21:22:21.322Z",
+  "updatedAt": "2026-11-04T00:52:19.717Z",
   "cursor": {
     "phase": "26",
-    "task": "26-02"
+    "task": "26-03"
   },
   "phases": [
     {
@@ -9942,13 +9942,15 @@
             "packages/domain/package.json",
             "vitest.state-machine.config.ts",
             ".claude/skills/noodara-domain-model/SKILL.md",
-            "docs/domain/"
+            "docs/domain/",
+            "packages/domain/src/domain/cert-status.ts",
+            "packages/domain/src/domain/cert-status.test.ts"
           ],
           "wave": 2,
           "dependsOn": [
             "26-01"
           ],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",

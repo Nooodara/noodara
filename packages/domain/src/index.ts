@@ -10,3 +10,4 @@ export * from './webhook/index.js';
 export * from './domain/index.js';
 export * from './env/index.js';
 export * from './proxy/index.js';
+export * from './observability/index.js';

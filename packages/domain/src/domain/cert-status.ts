@@ -100,11 +100,13 @@ export function retryCertStatus(status: CertStatus): CertStatus {
  * offsets it passed; it never shifts the remaining ones.
  */
 export function nextCertCheckAt(changedAtMs: number, lastCheckAtMs: number | null, intervalMs: number): number {
+  // No previous check: every offset is later than it, so the first one wins inside the loop.
+  const last = lastCheckAtMs ?? Number.NEGATIVE_INFINITY;
   for (const offset of CERT_POST_CHANGE_CHECK_OFFSETS_MS) {
     const at = changedAtMs + offset;
-    if (lastCheckAtMs === null || at > lastCheckAtMs) return at;
+    if (at > last) return at;
   }
-  return (lastCheckAtMs ?? changedAtMs) + intervalMs;
+  return last + intervalMs;
 }
 
 /** The parsed probe line: an issued certificate, Traefik's default certificate, or no listener. */
