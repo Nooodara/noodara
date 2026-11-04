@@ -127,6 +127,20 @@
       "when": 1793555587578,
       "tag": "0017_phase23_configure_step",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793755434832,
+      "tag": "0018_phase26_v05_enums",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793755533136,
+      "tag": "0019_phase26_v05_tables",
+      "breakpoints": true
     }
   ]
 }

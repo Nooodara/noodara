@@ -225,6 +225,8 @@ describe('migrations applied from scratch (QA-06)', () => {
       '0015_phase21_v04_tables',
       '0016_phase22_proxy_install_started_at',
       '0017_phase23_configure_step',
+      '0018_phase26_v05_enums',
+      '0019_phase26_v05_tables',
     ]);
   });
 
@@ -302,6 +304,7 @@ describe('migration 0005 defensive guards (T-11-15)', () => {
       'git_https_token',
       'registry_password',
       'webhook_secret', // 0013 (16-06)
+      'ai_provider_key', // 0018 (26-05)
     ]);
   });
 });

@@ -18,6 +18,9 @@ export const credentialTypeEnum = pgEnum('credential_type', [
   'registry_password',
   // 16-06: the HMAC secret of a service's push webhook (migration 0013, same rule as above).
   'webhook_secret',
+  // v0.5: the encrypted BYOK AI provider key (migration 0018, same rule as above). Only
+  // ai_provider_settings.credential_id references such a row.
+  'ai_provider_key',
 ]);
 
 export const credentials = pgTable('credentials', {

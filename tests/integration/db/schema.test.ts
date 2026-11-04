@@ -22,6 +22,13 @@ const EXPECTED_TABLES = [
   'domains',
   'secrets',
   'environment_variables',
+  'host_metric_samples',
+  'container_metric_samples',
+  'container_observations',
+  'ai_provider_settings',
+  'ai_conversations',
+  'ai_messages',
+  'ai_tool_calls',
 ];
 
 const EXPECTED_ENUMS = [

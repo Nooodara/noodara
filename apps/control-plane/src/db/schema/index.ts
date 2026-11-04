@@ -17,3 +17,5 @@ export * from './v04-enums.js';
 export * from './domains.js';
 export * from './environment-variables.js';
 export * from './secrets.js';
+export * from './v05-observability.js';
+export * from './v05-ai.js';

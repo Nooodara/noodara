@@ -1,0 +1,2813 @@
+{
+  "id": "0ec34d2d-4674-4fb6-aaa2-e813763ccb42",
+  "prevId": "e223120a-8df4-4c05-b89d-73a938e88496",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.activity_events": {
+      "name": "activity_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_type": {
+          "name": "actor_type",
+          "type": "activity_actor_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_id": {
+          "name": "actor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "activity_outcome",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "activity_events_occurred_at_idx": {
+          "name": "activity_events_occurred_at_idx",
+          "columns": [
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.accounts": {
+      "name": "accounts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "accounts_user_id_users_id_fk": {
+          "name": "accounts_user_id_users_id_fk",
+          "tableFrom": "accounts",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sessions": {
+      "name": "sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "absolute_expires_at": {
+          "name": "absolute_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sessions_user_id_users_id_fk": {
+          "name": "sessions_user_id_users_id_fk",
+          "tableFrom": "sessions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "sessions_token_unique": {
+          "name": "sessions_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "preferences": {
+          "name": "preferences",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "users_email_lower_idx": {
+          "name": "users_email_lower_idx",
+          "columns": [
+            {
+              "expression": "lower(\"email\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.verifications": {
+      "name": "verifications",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.credentials": {
+      "name": "credentials",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "credential_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "encrypted_value": {
+          "name": "encrypted_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key_version": {
+          "name": "key_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "public_key": {
+          "name": "public_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.deployment_log_chunks": {
+      "name": "deployment_log_chunks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "deployment_id": {
+          "name": "deployment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phase": {
+          "name": "phase",
+          "type": "deployment_log_phase",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seq": {
+          "name": "seq",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "byte_length": {
+          "name": "byte_length",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "deployment_log_chunks_deployment_phase_seq_unique_idx": {
+          "name": "deployment_log_chunks_deployment_phase_seq_unique_idx",
+          "columns": [
+            {
+              "expression": "deployment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "phase",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "deployment_log_chunks_deployment_id_deployments_id_fk": {
+          "name": "deployment_log_chunks_deployment_id_deployments_id_fk",
+          "tableFrom": "deployment_log_chunks",
+          "tableTo": "deployments",
+          "columnsFrom": [
+            "deployment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.deployments": {
+      "name": "deployments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "service_id": {
+          "name": "service_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "deployment_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'QUEUED'"
+        },
+        "trigger": {
+          "name": "trigger",
+          "type": "deployment_trigger",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'manual'"
+        },
+        "triggered_by": {
+          "name": "triggered_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "commit_sha": {
+          "name": "commit_sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previous_deployment_id": {
+          "name": "previous_deployment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "building_started_at": {
+          "name": "building_started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deploying_started_at": {
+          "name": "deploying_started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verifying_started_at": {
+          "name": "verifying_started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "duration_ms": {
+          "name": "duration_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "deployment_error_code",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_ref": {
+          "name": "image_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rollback_of_deployment_id": {
+          "name": "rollback_of_deployment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "webhook_delivery_id": {
+          "name": "webhook_delivery_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "request_fingerprint": {
+          "name": "request_fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "runtime_config": {
+          "name": "runtime_config",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "healthcheck_started_at": {
+          "name": "healthcheck_started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rollback_started_at": {
+          "name": "rollback_started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "configure_started_at": {
+          "name": "configure_started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "configure_completed_at": {
+          "name": "configure_completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "configure_variables": {
+          "name": "configure_variables",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "configure_secrets": {
+          "name": "configure_secrets",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "deployments_service_active_unique_idx": {
+          "name": "deployments_service_active_unique_idx",
+          "columns": [
+            {
+              "expression": "service_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"deployments\".\"status\" < 'SUCCESS'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "deployments_service_created_at_idx": {
+          "name": "deployments_service_created_at_idx",
+          "columns": [
+            {
+              "expression": "service_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "deployments_service_idempotency_key_unique_idx": {
+          "name": "deployments_service_idempotency_key_unique_idx",
+          "columns": [
+            {
+              "expression": "service_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "idempotency_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"deployments\".\"idempotency_key\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "deployments_service_id_services_id_fk": {
+          "name": "deployments_service_id_services_id_fk",
+          "tableFrom": "deployments",
+          "tableTo": "services",
+          "columnsFrom": [
+            "service_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deployments_previous_deployment_id_deployments_id_fk": {
+          "name": "deployments_previous_deployment_id_deployments_id_fk",
+          "tableFrom": "deployments",
+          "tableTo": "deployments",
+          "columnsFrom": [
+            "previous_deployment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "deployments_rollback_of_deployment_id_deployments_id_fk": {
+          "name": "deployments_rollback_of_deployment_id_deployments_id_fk",
+          "tableFrom": "deployments",
+          "tableTo": "deployments",
+          "columnsFrom": [
+            "rollback_of_deployment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "deployments_webhook_delivery_id_webhook_deliveries_id_fk": {
+          "name": "deployments_webhook_delivery_id_webhook_deliveries_id_fk",
+          "tableFrom": "deployments",
+          "tableTo": "webhook_deliveries",
+          "columnsFrom": [
+            "webhook_delivery_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "deployments_idempotency_pair_check": {
+          "name": "deployments_idempotency_pair_check",
+          "value": "(\"deployments\".\"idempotency_key\" IS NULL AND \"deployments\".\"request_fingerprint\" IS NULL) OR (\"deployments\".\"idempotency_key\" IS NOT NULL AND \"deployments\".\"request_fingerprint\" IS NOT NULL AND char_length(\"deployments\".\"idempotency_key\") BETWEEN 1 AND 255 AND \"deployments\".\"request_fingerprint\" ~ '^[0-9a-f]{64}$')"
+        },
+        "deployments_runtime_config_object_check": {
+          "name": "deployments_runtime_config_object_check",
+          "value": "\"deployments\".\"runtime_config\" IS NULL OR jsonb_typeof(\"deployments\".\"runtime_config\") = 'object'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.discovery_snapshots": {
+      "name": "discovery_snapshots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "server_id": {
+          "name": "server_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "collected_at": {
+          "name": "collected_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "discovery_outcome",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "server_error_code",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "discovery_snapshots_server_id_collected_at_idx": {
+          "name": "discovery_snapshots_server_id_collected_at_idx",
+          "columns": [
+            {
+              "expression": "server_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "collected_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "discovery_snapshots_server_id_servers_id_fk": {
+          "name": "discovery_snapshots_server_id_servers_id_fk",
+          "tableFrom": "discovery_snapshots",
+          "tableTo": "servers",
+          "columnsFrom": [
+            "server_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.domains": {
+      "name": "domains",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "service_id": {
+          "name": "service_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hostname": {
+          "name": "hostname",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "https_redirect": {
+          "name": "https_redirect",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "cert_status": {
+          "name": "cert_status",
+          "type": "domain_cert_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'NONE'"
+        },
+        "cert_not_after": {
+          "name": "cert_not_after",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cert_error_code": {
+          "name": "cert_error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dns_status": {
+          "name": "dns_status",
+          "type": "domain_dns_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dns_checked_at": {
+          "name": "dns_checked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "apply_status": {
+          "name": "apply_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PENDING'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "domains_hostname_lower_unique_idx": {
+          "name": "domains_hostname_lower_unique_idx",
+          "columns": [
+            {
+              "expression": "lower(\"hostname\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "domains_project_id_projects_id_fk": {
+          "name": "domains_project_id_projects_id_fk",
+          "tableFrom": "domains",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "domains_service_project_fk": {
+          "name": "domains_service_project_fk",
+          "tableFrom": "domains",
+          "tableTo": "services",
+          "columnsFrom": [
+            "service_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "id",
+            "project_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "domains_hostname_shape_check": {
+          "name": "domains_hostname_shape_check",
+          "value": "\"hostname\" = lower(\"hostname\") AND char_length(\"hostname\") BETWEEN 1 AND 253"
+        },
+        "domains_cert_error_code_check": {
+          "name": "domains_cert_error_code_check",
+          "value": "\"cert_error_code\" IS NULL OR \"cert_error_code\" IN ('CERT_DNS_MISMATCH', 'CERT_ISSUANCE_FAILED', 'CERT_PROXY_UNAVAILABLE')"
+        },
+        "domains_apply_status_check": {
+          "name": "domains_apply_status_check",
+          "value": "\"apply_status\" IN ('PENDING', 'APPLIED', 'FAILED')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.environment_variables": {
+      "name": "environment_variables",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "scope": {
+          "name": "scope",
+          "type": "env_scope",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "environment_id": {
+          "name": "environment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "service_id": {
+          "name": "service_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "environment_variables_owner_key_unique_idx": {
+          "name": "environment_variables_owner_key_unique_idx",
+          "columns": [
+            {
+              "expression": "COALESCE(\"service_id\", \"environment_id\", \"project_id\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "environment_variables_project_id_projects_id_fk": {
+          "name": "environment_variables_project_id_projects_id_fk",
+          "tableFrom": "environment_variables",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "environment_variables_environment_project_fk": {
+          "name": "environment_variables_environment_project_fk",
+          "tableFrom": "environment_variables",
+          "tableTo": "environments",
+          "columnsFrom": [
+            "environment_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "id",
+            "project_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "environment_variables_service_project_fk": {
+          "name": "environment_variables_service_project_fk",
+          "tableFrom": "environment_variables",
+          "tableTo": "services",
+          "columnsFrom": [
+            "service_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "id",
+            "project_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "environment_variables_scope_owner_check": {
+          "name": "environment_variables_scope_owner_check",
+          "value": "(\"environment_variables\".\"scope\" = 'project' AND \"environment_variables\".\"environment_id\" IS NULL AND \"environment_variables\".\"service_id\" IS NULL) OR (\"environment_variables\".\"scope\" = 'environment' AND \"environment_variables\".\"environment_id\" IS NOT NULL AND \"environment_variables\".\"service_id\" IS NULL) OR (\"environment_variables\".\"scope\" = 'service' AND \"environment_variables\".\"service_id\" IS NOT NULL AND \"environment_variables\".\"environment_id\" IS NULL)"
+        },
+        "environment_variables_size_check": {
+          "name": "environment_variables_size_check",
+          "value": "char_length(\"key\") BETWEEN 1 AND 128 AND octet_length(\"value\") <= 32768"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.environments": {
+      "name": "environments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'development'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "environments_project_name_lower_unique_idx": {
+          "name": "environments_project_name_lower_unique_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lower(\"name\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "environments_project_id_projects_id_fk": {
+          "name": "environments_project_id_projects_id_fk",
+          "tableFrom": "environments",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "environments_id_project_id_unique": {
+          "name": "environments_id_project_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "project_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.setup_tokens": {
+      "name": "setup_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "purpose": {
+          "name": "purpose",
+          "type": "setup_token_purpose",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "used_at": {
+          "name": "used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "setup_tokens_active_purpose_idx": {
+          "name": "setup_tokens_active_purpose_idx",
+          "columns": [
+            {
+              "expression": "purpose",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"setup_tokens\".\"used_at\" IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "setup_tokens_token_hash_unique": {
+          "name": "setup_tokens_token_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token_hash"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.login_attempts": {
+      "name": "login_attempts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "scope": {
+          "name": "scope",
+          "type": "login_attempt_scope",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope_key": {
+          "name": "scope_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "failure_count": {
+          "name": "failure_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "window_started_at": {
+          "name": "window_started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "locked_until": {
+          "name": "locked_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lockout_count": {
+          "name": "lockout_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_failure_at": {
+          "name": "last_failure_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "login_attempts_scope_key_idx": {
+          "name": "login_attempts_scope_key_idx",
+          "columns": [
+            {
+              "expression": "scope",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.servers": {
+      "name": "servers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "host": {
+          "name": "host",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ssh_port": {
+          "name": "ssh_port",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 22
+        },
+        "ssh_user": {
+          "name": "ssh_user",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credential_id": {
+          "name": "credential_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "server_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PENDING'"
+        },
+        "host_fingerprint": {
+          "name": "host_fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pending_fingerprint": {
+          "name": "pending_fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "host_fingerprint_captured_at": {
+          "name": "host_fingerprint_captured_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pending_fingerprint_seen_at": {
+          "name": "pending_fingerprint_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hostname": {
+          "name": "hostname",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "os_distribution": {
+          "name": "os_distribution",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "os_version": {
+          "name": "os_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "arch": {
+          "name": "arch",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cpu_cores": {
+          "name": "cpu_cores",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ram_mb": {
+          "name": "ram_mb",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "disk_total_mb": {
+          "name": "disk_total_mb",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "disk_used_mb": {
+          "name": "disk_used_mb",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "uptime_seconds": {
+          "name": "uptime_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "docker_installed": {
+          "name": "docker_installed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "docker_version": {
+          "name": "docker_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "docker_compose_version": {
+          "name": "docker_compose_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "docker_buildkit_available": {
+          "name": "docker_buildkit_available",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error_code": {
+          "name": "last_error_code",
+          "type": "server_error_code",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proxy_status": {
+          "name": "proxy_status",
+          "type": "proxy_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'NOT_INSTALLED'"
+        },
+        "proxy_error_code": {
+          "name": "proxy_error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proxy_acme_email": {
+          "name": "proxy_acme_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proxy_installed_at": {
+          "name": "proxy_installed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proxy_install_started_at": {
+          "name": "proxy_install_started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "servers_name_lower_unique_idx": {
+          "name": "servers_name_lower_unique_idx",
+          "columns": [
+            {
+              "expression": "lower(\"name\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "servers_host_port_unique_idx": {
+          "name": "servers_host_port_unique_idx",
+          "columns": [
+            {
+              "expression": "host",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "ssh_port",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "servers_credential_id_credentials_id_fk": {
+          "name": "servers_credential_id_credentials_id_fk",
+          "tableFrom": "servers",
+          "tableTo": "credentials",
+          "columnsFrom": [
+            "credential_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "servers_proxy_error_code_check": {
+          "name": "servers_proxy_error_code_check",
+          "value": "\"proxy_error_code\" IS NULL OR \"proxy_error_code\" IN ('PROXY_PORT_IN_USE', 'PROXY_INSTALL_FAILED', 'PROXY_UNAVAILABLE')"
+        },
+        "servers_proxy_acme_email_check": {
+          "name": "servers_proxy_acme_email_check",
+          "value": "\"proxy_acme_email\" IS NULL OR char_length(\"proxy_acme_email\") BETWEEN 3 AND 254"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.projects": {
+      "name": "projects",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "projects_name_lower_unique_idx": {
+          "name": "projects_name_lower_unique_idx",
+          "columns": [
+            {
+              "expression": "lower(\"name\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "projects_slug_unique_idx": {
+          "name": "projects_slug_unique_idx",
+          "columns": [
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.services": {
+      "name": "services",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "environment_id": {
+          "name": "environment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "server_id": {
+          "name": "server_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_type": {
+          "name": "source_type",
+          "type": "service_source_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "repository_url": {
+          "name": "repository_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "branch": {
+          "name": "branch",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "build_context": {
+          "name": "build_context",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dockerfile_path": {
+          "name": "dockerfile_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "build_target": {
+          "name": "build_target",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_ref": {
+          "name": "image_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "internal_port": {
+          "name": "internal_port",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "published_port": {
+          "name": "published_port",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "service_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'NEVER_DEPLOYED'"
+        },
+        "repository_credential_id": {
+          "name": "repository_credential_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "registry_credential_id": {
+          "name": "registry_credential_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "git_host_key_host": {
+          "name": "git_host_key_host",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "git_host_key": {
+          "name": "git_host_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "healthcheck": {
+          "name": "healthcheck",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "auto_rollback": {
+          "name": "auto_rollback",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "image_retention": {
+          "name": "image_retention",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 3
+        },
+        "webhook_hook_id": {
+          "name": "webhook_hook_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "webhook_secret_credential_id": {
+          "name": "webhook_secret_credential_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pending_trigger_delivery_id": {
+          "name": "pending_trigger_delivery_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pending_trigger_sha": {
+          "name": "pending_trigger_sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pending_trigger_at": {
+          "name": "pending_trigger_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "services_environment_name_lower_unique_idx": {
+          "name": "services_environment_name_lower_unique_idx",
+          "columns": [
+            {
+              "expression": "environment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lower(\"name\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "services_webhook_hook_id_unique_idx": {
+          "name": "services_webhook_hook_id_unique_idx",
+          "columns": [
+            {
+              "expression": "webhook_hook_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "services_project_id_projects_id_fk": {
+          "name": "services_project_id_projects_id_fk",
+          "tableFrom": "services",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "services_server_id_servers_id_fk": {
+          "name": "services_server_id_servers_id_fk",
+          "tableFrom": "services",
+          "tableTo": "servers",
+          "columnsFrom": [
+            "server_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "services_repository_credential_id_credentials_id_fk": {
+          "name": "services_repository_credential_id_credentials_id_fk",
+          "tableFrom": "services",
+          "tableTo": "credentials",
+          "columnsFrom": [
+            "repository_credential_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "services_registry_credential_id_credentials_id_fk": {
+          "name": "services_registry_credential_id_credentials_id_fk",
+          "tableFrom": "services",
+          "tableTo": "credentials",
+          "columnsFrom": [
+            "registry_credential_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "services_webhook_secret_credential_id_credentials_id_fk": {
+          "name": "services_webhook_secret_credential_id_credentials_id_fk",
+          "tableFrom": "services",
+          "tableTo": "credentials",
+          "columnsFrom": [
+            "webhook_secret_credential_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "services_environment_project_fk": {
+          "name": "services_environment_project_fk",
+          "tableFrom": "services",
+          "tableTo": "environments",
+          "columnsFrom": [
+            "environment_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "id",
+            "project_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "services_id_project_id_unique": {
+          "name": "services_id_project_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "project_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "services_source_shape_check": {
+          "name": "services_source_shape_check",
+          "value": "(\"services\".\"source_type\" = 'git' AND \"services\".\"repository_url\" IS NOT NULL AND \"services\".\"branch\" IS NOT NULL AND \"services\".\"build_context\" IS NOT NULL AND \"services\".\"dockerfile_path\" IS NOT NULL AND \"services\".\"image_ref\" IS NULL) OR (\"services\".\"source_type\" = 'image' AND \"services\".\"image_ref\" IS NOT NULL AND \"services\".\"repository_url\" IS NULL AND \"services\".\"branch\" IS NULL AND \"services\".\"build_context\" IS NULL AND \"services\".\"dockerfile_path\" IS NULL AND \"services\".\"build_target\" IS NULL)"
+        },
+        "services_git_host_key_pair_check": {
+          "name": "services_git_host_key_pair_check",
+          "value": "(\"services\".\"git_host_key_host\" IS NULL) = (\"services\".\"git_host_key\" IS NULL)"
+        },
+        "services_webhook_hook_id_shape_check": {
+          "name": "services_webhook_hook_id_shape_check",
+          "value": "\"services\".\"webhook_hook_id\" IS NULL OR \"services\".\"webhook_hook_id\" ~ '^[A-Za-z0-9_-]{22,64}$'"
+        },
+        "services_webhook_pair_check": {
+          "name": "services_webhook_pair_check",
+          "value": "\"services\".\"webhook_secret_credential_id\" IS NULL OR \"services\".\"webhook_hook_id\" IS NOT NULL"
+        },
+        "services_pending_trigger_check": {
+          "name": "services_pending_trigger_check",
+          "value": "(\"services\".\"pending_trigger_delivery_id\" IS NULL AND \"services\".\"pending_trigger_sha\" IS NULL AND \"services\".\"pending_trigger_at\" IS NULL) OR (\"services\".\"pending_trigger_delivery_id\" IS NOT NULL AND \"services\".\"pending_trigger_at\" IS NOT NULL AND \"services\".\"pending_trigger_sha\" IS NOT NULL AND \"services\".\"pending_trigger_sha\" ~ '^[0-9a-f]{40}$')"
+        },
+        "services_image_retention_range_check": {
+          "name": "services_image_retention_range_check",
+          "value": "\"image_retention\" BETWEEN 1 AND 10"
+        },
+        "services_healthcheck_object_check": {
+          "name": "services_healthcheck_object_check",
+          "value": "\"services\".\"healthcheck\" IS NULL OR jsonb_typeof(\"services\".\"healthcheck\") = 'object'"
+        },
+        "services_ports_range_check": {
+          "name": "services_ports_range_check",
+          "value": "\"services\".\"internal_port\" BETWEEN 1 AND 65535 AND (\"services\".\"published_port\" IS NULL OR \"services\".\"published_port\" BETWEEN 1 AND 65535)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.webhook_deliveries": {
+      "name": "webhook_deliveries",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "service_id": {
+          "name": "service_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "delivery_id": {
+          "name": "delivery_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event": {
+          "name": "event",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pushed_sha": {
+          "name": "pushed_sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deployment_id": {
+          "name": "deployment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "received_at": {
+          "name": "received_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "webhook_deliveries_service_delivery_unique_idx": {
+          "name": "webhook_deliveries_service_delivery_unique_idx",
+          "columns": [
+            {
+              "expression": "service_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "delivery_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "webhook_deliveries_service_received_at_idx": {
+          "name": "webhook_deliveries_service_received_at_idx",
+          "columns": [
+            {
+              "expression": "service_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "received_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "webhook_deliveries_service_id_services_id_fk": {
+          "name": "webhook_deliveries_service_id_services_id_fk",
+          "tableFrom": "webhook_deliveries",
+          "tableTo": "services",
+          "columnsFrom": [
+            "service_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "webhook_deliveries_deployment_id_deployments_id_fk": {
+          "name": "webhook_deliveries_deployment_id_deployments_id_fk",
+          "tableFrom": "webhook_deliveries",
+          "tableTo": "deployments",
+          "columnsFrom": [
+            "deployment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "webhook_deliveries_outcome_check": {
+          "name": "webhook_deliveries_outcome_check",
+          "value": "\"webhook_deliveries\".\"outcome\" IN ('deployed', 'coalesced', 'superseded', 'already_deployed', 'ping', 'ignored_event', 'ignored_tag', 'ignored_ref', 'ignored_branch', 'ignored_deletion', 'repository_mismatch', 'invalid_payload', 'invalid_sha', 'project_archived', 'source_not_git')"
+        },
+        "webhook_deliveries_delivery_id_check": {
+          "name": "webhook_deliveries_delivery_id_check",
+          "value": "char_length(\"webhook_deliveries\".\"delivery_id\") BETWEEN 1 AND 128 AND char_length(\"webhook_deliveries\".\"event\") BETWEEN 1 AND 64"
+        },
+        "webhook_deliveries_pushed_sha_check": {
+          "name": "webhook_deliveries_pushed_sha_check",
+          "value": "\"webhook_deliveries\".\"pushed_sha\" IS NULL OR \"webhook_deliveries\".\"pushed_sha\" ~ '^[0-9a-f]{40}$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.secrets": {
+      "name": "secrets",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "scope": {
+          "name": "scope",
+          "type": "env_scope",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "environment_id": {
+          "name": "environment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "service_id": {
+          "name": "service_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "encrypted_value": {
+          "name": "encrypted_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key_version": {
+          "name": "key_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "hint": {
+          "name": "hint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "secrets_owner_name_unique_idx": {
+          "name": "secrets_owner_name_unique_idx",
+          "columns": [
+            {
+              "expression": "COALESCE(\"service_id\", \"environment_id\", \"project_id\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "secrets_project_id_projects_id_fk": {
+          "name": "secrets_project_id_projects_id_fk",
+          "tableFrom": "secrets",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "secrets_environment_project_fk": {
+          "name": "secrets_environment_project_fk",
+          "tableFrom": "secrets",
+          "tableTo": "environments",
+          "columnsFrom": [
+            "environment_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "id",
+            "project_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "secrets_service_project_fk": {
+          "name": "secrets_service_project_fk",
+          "tableFrom": "secrets",
+          "tableTo": "services",
+          "columnsFrom": [
+            "service_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "id",
+            "project_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "secrets_scope_owner_check": {
+          "name": "secrets_scope_owner_check",
+          "value": "(\"secrets\".\"scope\" = 'project' AND \"secrets\".\"environment_id\" IS NULL AND \"secrets\".\"service_id\" IS NULL) OR (\"secrets\".\"scope\" = 'environment' AND \"secrets\".\"environment_id\" IS NOT NULL AND \"secrets\".\"service_id\" IS NULL) OR (\"secrets\".\"scope\" = 'service' AND \"secrets\".\"service_id\" IS NOT NULL AND \"secrets\".\"environment_id\" IS NULL)"
+        },
+        "secrets_shape_check": {
+          "name": "secrets_shape_check",
+          "value": "char_length(\"name\") BETWEEN 1 AND 64 AND \"version\" >= 1 AND \"key_version\" >= 1"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.activity_actor_type": {
+      "name": "activity_actor_type",
+      "schema": "public",
+      "values": [
+        "user",
+        "system",
+        "ai"
+      ]
+    },
+    "public.activity_outcome": {
+      "name": "activity_outcome",
+      "schema": "public",
+      "values": [
+        "success",
+        "failure"
+      ]
+    },
+    "public.credential_type": {
+      "name": "credential_type",
+      "schema": "public",
+      "values": [
+        "ssh_private_key",
+        "ssh_password",
+        "git_deploy_key",
+        "git_https_token",
+        "registry_password",
+        "webhook_secret",
+        "ai_provider_key"
+      ]
+    },
+    "public.deployment_log_phase": {
+      "name": "deployment_log_phase",
+      "schema": "public",
+      "values": [
+        "prepare",
+        "build",
+        "deploy",
+        "healthcheck",
+        "rollback"
+      ]
+    },
+    "public.deployment_error_code": {
+      "name": "deployment_error_code",
+      "schema": "public",
+      "values": [
+        "REPOSITORY_AUTH_FAILED",
+        "REPOSITORY_NOT_FOUND",
+        "BRANCH_NOT_FOUND",
+        "REPOSITORY_HOST_UNREACHABLE",
+        "GIT_HOST_KEY_MISMATCH",
+        "GIT_HOST_KEY_UNAVAILABLE",
+        "UNSUPPORTED_REPOSITORY_FEATURE",
+        "CLONE_FAILED",
+        "DOCKERFILE_NOT_FOUND",
+        "BUILDKIT_UNAVAILABLE",
+        "BUILD_FAILED",
+        "REGISTRY_AUTH_FAILED",
+        "IMAGE_NOT_FOUND",
+        "IMAGE_PULL_FAILED",
+        "DISK_FULL",
+        "PORT_IN_USE",
+        "START_FAILED",
+        "DOCKER_UNAVAILABLE",
+        "SERVER_UNREACHABLE",
+        "BUILD_TIMEOUT",
+        "BUILD_STALLED",
+        "WORKER_CRASHED",
+        "ENQUEUE_FAILED",
+        "WORKSPACE_UNAVAILABLE",
+        "HEALTHCHECK_FAILED",
+        "HEALTHCHECK_TIMEOUT",
+        "ROLLBACK_FAILED",
+        "ROLLBACK_TARGET_UNAVAILABLE",
+        "COMMIT_NOT_FOUND",
+        "SECRET_UNRESOLVED",
+        "ENV_INJECTION_FAILED",
+        "PROXY_ROUTE_FAILED"
+      ]
+    },
+    "public.deployment_status": {
+      "name": "deployment_status",
+      "schema": "public",
+      "values": [
+        "QUEUED",
+        "PREPARING",
+        "BUILDING",
+        "DEPLOYING",
+        "HEALTHCHECK",
+        "SUCCESS",
+        "FAILED",
+        "ROLLING_BACK",
+        "ROLLED_BACK",
+        "CANCELLED"
+      ]
+    },
+    "public.deployment_trigger": {
+      "name": "deployment_trigger",
+      "schema": "public",
+      "values": [
+        "manual",
+        "redeploy",
+        "webhook",
+        "rollback"
+      ]
+    },
+    "public.discovery_outcome": {
+      "name": "discovery_outcome",
+      "schema": "public",
+      "values": [
+        "ok",
+        "partial",
+        "failed"
+      ]
+    },
+    "public.setup_token_purpose": {
+      "name": "setup_token_purpose",
+      "schema": "public",
+      "values": [
+        "setup",
+        "recovery"
+      ]
+    },
+    "public.login_attempt_scope": {
+      "name": "login_attempt_scope",
+      "schema": "public",
+      "values": [
+        "ip",
+        "account"
+      ]
+    },
+    "public.server_error_code": {
+      "name": "server_error_code",
+      "schema": "public",
+      "values": [
+        "AUTH_FAILED",
+        "HOST_UNRESOLVED",
+        "CONNECT_TIMEOUT",
+        "COMMAND_TIMEOUT",
+        "HOST_KEY_CHANGED",
+        "CONNECTION_LOST",
+        "UNSUPPORTED_OS"
+      ]
+    },
+    "public.server_status": {
+      "name": "server_status",
+      "schema": "public",
+      "values": [
+        "PENDING",
+        "CONNECTING",
+        "CONNECTED",
+        "DISCONNECTED",
+        "UNREACHABLE",
+        "ERROR"
+      ]
+    },
+    "public.service_source_type": {
+      "name": "service_source_type",
+      "schema": "public",
+      "values": [
+        "git",
+        "image"
+      ]
+    },
+    "public.service_status": {
+      "name": "service_status",
+      "schema": "public",
+      "values": [
+        "NEVER_DEPLOYED",
+        "DEPLOYING",
+        "RUNNING",
+        "STOPPED",
+        "FAILED",
+        "UNKNOWN"
+      ]
+    },
+    "public.domain_cert_status": {
+      "name": "domain_cert_status",
+      "schema": "public",
+      "values": [
+        "NONE",
+        "PENDING",
+        "ISSUED",
+        "RENEWING",
+        "FAILED",
+        "EXPIRED"
+      ]
+    },
+    "public.domain_dns_status": {
+      "name": "domain_dns_status",
+      "schema": "public",
+      "values": [
+        "RESOLVES",
+        "MISMATCH",
+        "UNRESOLVED",
+        "UNAVAILABLE"
+      ]
+    },
+    "public.env_scope": {
+      "name": "env_scope",
+      "schema": "public",
+      "values": [
+        "project",
+        "environment",
+        "service"
+      ]
+    },
+    "public.proxy_status": {
+      "name": "proxy_status",
+      "schema": "public",
+      "values": [
+        "NOT_INSTALLED",
+        "INSTALLING",
+        "RUNNING",
+        "FAILED"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
