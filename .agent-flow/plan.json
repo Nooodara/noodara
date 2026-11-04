@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-04T01:21:00.586Z",
+  "updatedAt": "2026-11-04T02:03:52.705Z",
   "cursor": {
-    "phase": "26",
-    "task": "26-05"
+    "phase": "27",
+    "task": "27-01"
   },
   "phases": [
     {
@@ -9862,7 +9862,7 @@
       "dependsOn": [
         "25"
       ],
-      "status": "active",
+      "status": "done",
       "tasks": [
         {
           "id": "26-01",
@@ -10128,7 +10128,7 @@
           "dependsOn": [
             "26-04"
           ],
-          "status": "active",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
@@ -10614,6 +10614,11 @@
               "id": "H1",
               "text": "Key input is validated server-side (length cap, printable ASCII, no whitespace) with a 422 that does not echo it; a validation call timeout maps to AI_PROVIDER_UNAVAILABLE and stores nothing; replacing a key deletes the previous encrypted key in the same transaction (no window with two keys); the redacted hint reveals at most the last 4 characters",
               "proof": "it-ai-settings"
+            },
+            {
+              "id": "H2",
+              "text": "ai_provider_settings only ever points at a credential of type ai_provider_key (asserted on write in the service layer, since the 0019 delete trigger does not check the type); a test proves settings cannot reference an SSH or Git credential, so deleting settings can never delete one; key_hint stores only the redacted pattern, never a key prefix",
+              "proof": "it-ai-settings"
             }
           ],
           "waives": [
@@ -11038,6 +11043,11 @@
             {
               "id": "H1",
               "text": "The required ai-evals job runs with no provider secret available to the job (fork PRs included), asserts NOODARA_AI_EVAL_LIVE is unset, and fails if the cassette directory is missing or uncommitted; only nightly.yml receives the provider key secret",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "ci.yml also runs pnpm test:state-machine (coverage-state-machine) as a required job, so a branch-coverage regression in a state machine or classifier fails the PR (the 22-08 cert-status gap reached main because no CI job ran it)",
               "proof": "test"
             }
           ],

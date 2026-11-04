@@ -3,7 +3,7 @@
 > Generated from `.agent-flow/plan.json` by `agent-flow plan render`. Edit the plan, not this file.
 
 **Milestone:** v0.5
-**Progress:** 163/197 tasks (83%), 14/21 phases
+**Progress:** 168/197 tasks (85%), 15/21 phases
 
 ## Phase 11: Motor de deploy — fundamentos — done
 **Goal:** Everything the engine needs to be built RED-first exists and is proven on real infrastructure: spikes resolved (ADR 0008), pure domain, schema, parameterized allowlist templates, streaming exec, git/docker packages, sshd+dockerd fixture and official fixtures.
@@ -1053,12 +1053,12 @@
   - H1 [manual]: The UAT reboots the Lima host after HTTPS is working and records that the proxy and the routed service come back without intervention, HTTPS /health answers 200 and the certificate status stays ISSUED on the next reconcile cycle
   - H2 [manual]: Every file committed under docs/releases/v0.4-uat-logs is grepped for the UAT secret value, private key markers (BEGIN ... PRIVATE KEY), the ACME account key and the Lima host credentials before the commit, with the grep command and its empty result recorded in v0.4-HUMAN-UAT.md; the UAT secret is a throwaway value
 
-## Phase 26: Observabilidad y AI — contratos, dominio y esquema — pending
+## Phase 26: Observabilidad y AI — contratos, dominio y esquema — done
 **Goal:** Resolve the v0.5 remote and provider contracts with evidence (ADR 0012: host and container sampling commands, docker inspect state fields without .Config.Env, reproducible OOM, docker logs semantics, AI provider tool use and structured output, eval replay) and land the pure domain (metric parsers and thresholds, container observation, diagnosis vocabulary and evidence classifier, Infrastructure Graph, log model) plus the additive schema and error-code ripple, without changing runtime behaviour.
 **Requirements:** MET-03, GRF-01
 **Depends on:** 25
 
-- [ ] 26-01 (wave 1) Spike + ADR 0012: sampling commands, docker inspect state, OOM fixture, docker logs, AI provider and eval replay contracts — pending
+- [x] 26-01 (wave 1) Spike + ADR 0012: sampling commands, docker inspect state, OOM fixture, docker logs, AI provider and eval replay contracts — done
   - A1 [it-contracts-v05]: Host sampling measured on 22.04 and 24.04 under env -i ... timeout with an output cap: /proc/stat (two reads, CPU % from the delta), /proc/meminfo (MemTotal, MemAvailable), df -B1 --output for / and the Docker root, /proc/uptime; one SSH exec per sample, duration and output size recorded in the ADR
   - A2 [it-contracts-v05]: Container sampling measured: docker stats --no-stream with an explicit --format (CPU %, memory usage and limit) and docker inspect with a --format template selecting only .State (Status, Running, Restarting, RestartCount, OOMKilled, ExitCode, StartedAt, FinishedAt, Health.Status and the last Health.Log exit codes) and .HostConfig.Memory; a test asserts no template Noodara uses selects .Config.Env, .Config.Cmd or .Mounts
   - A3 [it-contracts-v05]: OOM is reproducible on the fixture dockerd: a container with --memory=32m and a fixture allocator exits with OOMKilled=true and ExitCode 137 within a bounded time; a crash-looping container (restart policy on-failure) shows a growing RestartCount; both recorded with timings
@@ -1067,27 +1067,27 @@
   - A6 [adr-0012-accepted]: Eval execution strategy fixed in the ADR: CI replays recorded provider responses (cassettes keyed by a hash of the redacted request) through the real agent loop, tools and scorer, and fails on a cassette miss; a live mode re-records with a real key and is the only way to produce or raise the baseline; the ADR states what replay proves and what it does not
   - A7 [adr-0012-accepted]: ADR 0012 status Accepted and lists: sample interval and retention defaults, which data lives in Postgres and which stays on the server (runtime logs are fetched on demand, never bulk-copied), the graph derivation rule (derived on read, no hand-maintained tables) and the DEPENDS_ON inference rule
   - H1 [it-contracts-v05]: Every probe runs under a hard timeout and output cap; no probe sends service env, secrets or credentials; the OOM and crash-loop fixture images are built locally from a pinned base digest (a test rejects :latest)
-- [ ] 26-02 (wave 2) Domain: metric parsers and thresholds, container observation, crash loop, diagnosis vocabulary and evidence classifier — pending
+- [x] 26-02 (wave 2) Domain: metric parsers and thresholds, container observation, crash loop, diagnosis vocabulary and evidence classifier — done
   - A1 [test]: Pure parsers turn the ADR 0012 command outputs into typed HostSample and ContainerSample values; malformed, truncated or oversized input returns a named error (never a throw, never NaN); a property test feeds random strings without a throw
   - A2 [test]: Thresholds are exported constants with pure policies: highDisk (used >= 90% of a filesystem), highMemory (host or container >= 90% of its limit, sustained over N samples), nearFullDisk returns the filesystem and percentage; each boundary is tested at, below and above the threshold
   - A3 [test]: ContainerObservation from docker inspect state: crashLoop is a RestartCount increase >= 3 within a window, outOfMemory is OOMKilled or ExitCode 137 with memory near the limit, healthcheck outcome distinguishes timeout from failing exit; tested as tables
   - A4 [test]: DIAGNOSES = container_stopped crash_loop out_of_memory healthcheck_timeout port_not_responding failed_deployment high_memory high_disk server_unreachable unknown; classifyEvidence(evidence) is pure, returns ranked candidates each with the evidence references that support it, and returns unknown when no rule fires; every diagnosis has a positive and a near-miss test
   - A5 [coverage-state-machine]: coverage-state-machine also requires 100% branch on the classifier and threshold modules; the domain-model skill documents the vocabulary and points to ADR 0012
   - H1 [test]: Edge inputs are total: CPU % from /proc/stat is 'no value' (never negative or NaN) on the first sample or a counter wrap; container highMemory with HostConfig.Memory = 0 (unlimited) falls back to the host MemTotal and never divides by zero; a filesystem with 0 blocks yields no disk flag; each case has a table test
-- [ ] 26-03 (wave 3) Domain: Infrastructure Graph buildGraph, DEPENDS_ON inference, scope filter; log source and filter model — pending
+- [x] 26-03 (wave 3) Domain: Infrastructure Graph buildGraph, DEPENDS_ON inference, scope filter; log source and filter model — done
   - A1 [test]: buildGraph(snapshot) is pure and returns nodes Server, Project, Environment, Service, Domain and relations RUNS_ON (Service->Server), BELONGS_TO (Service->Environment, Environment->Project), EXPOSED_BY (Service->Domain), DEPENDS_ON (Service->Service); output is byte-identical for the same input in any order
   - A2 [test]: Invariants hold for every fixture and for random snapshots (property test): each Service has exactly one RUNS_ON and one BELONGS_TO, every Environment one BELONGS_TO, no relation points at a missing node, no orphan Domain
   - A3 [test]: DEPENDS_ON is inferred only from the ADR 0012 rule (a plain env value that names another registered service by its container name or by one of its domains); secret references are never inspected or resolved; tests cover self-reference, cross-project names (ignored) and unknown names (ignored)
   - A4 [test]: scopeGraph(graph, scope) keeps only nodes inside the authorized project or environment ids plus the servers their services run on; nodes outside scope never appear, even as relation endpoints
   - A5 [test]: Log model: LOG_SOURCES = build deploy runtime activity; parseLogFilter validates source set, time range (bounded window), level and a search term (max length, plain substring, no regex), and mergeLogEntries orders entries from several sources by timestamp then source deterministically
   - A6 [coverage-state-machine]: coverage-state-machine requires 100% branch on buildGraph and parseLogFilter; the domain-model skill §8 is updated with the inference rule
-- [ ] 26-04 (wave 4) api-contract schemas and error ripple for metrics, logs, graph and AI; activity actor ai; ai_provider_key secret kind — pending
+- [x] 26-04 (wave 4) api-contract schemas and error ripple for metrics, logs, graph and AI; activity actor ai; ai_provider_key secret kind — done
   - A1 [test]: Output schemas exist for metric series (bounded points), service status summary, log page, graph, AI provider settings (key never present, only a redacted hint), conversation, message, tool call record and the structured answer (diagnosis from DIAGNOSES, entities, evidence references, confidence)
   - A2 [test]: Error codes with fixed actionable messages: METRICS_UNAVAILABLE, LOG_SOURCE_UNAVAILABLE, LOG_QUERY_INVALID, AI_PROVIDER_NOT_CONFIGURED, AI_PROVIDER_AUTH_FAILED, AI_PROVIDER_UNAVAILABLE, AI_PROVIDER_RATE_LIMITED, AI_BUDGET_EXCEEDED, AI_TOOL_NOT_ALLOWED; each maps to one HTTP status in http-errors
   - A3 [test]: Activity actor types gain ai and SecretKind gains ai_provider_key; the H2-style drift test fails when a domain value is missing from the DB enum or the api-contract
   - H1 [test]: A canary pushed through every new schema and error path is absent from serialized output: the AI provider settings schema has no field that can carry the key
   - H2 [test]: Structured answer, message and tool-call schemas cap text length and array sizes (answer text, entities, evidence references, tool calls per message) and constrain confidence to [0,1]; an oversized or out-of-range value fails schema validation instead of being stored or streamed
-- [ ] 26-05 (wave 5) Schema: migrations 0018 (enums) and 0019 (metric samples, container observations, AI provider settings, conversations, messages, tool calls), drift test — pending
+- [x] 26-05 (wave 5) Schema: migrations 0018 (enums) and 0019 (metric samples, container observations, AI provider settings, conversations, messages, tool calls), drift test — done
   - A1 [it-db]: 0018 adds enum values with ADD VALUE IF NOT EXISTS (actor ai, secret kind ai_provider_key); 0019 adds host_metric_samples and container_metric_samples (server or service FK with ON DELETE CASCADE, sampled_at index), container_observations, ai_provider_settings (encrypted key reference only), ai_conversations, ai_messages (redacted content) and ai_tool_calls
   - A2 [it-db]: Migrations apply from scratch and from the v0.4.0 snapshot; the drift test compares Drizzle schema and database; migration-hygiene passes
   - A3 [it-db]: Deleting a server or service cascades its samples and observations; deleting the AI provider settings deletes its encrypted key in the same transaction (asserted)
@@ -1148,6 +1148,7 @@
   - A2 [it-ai-settings]: Models are chosen from a per-provider allowlist; an invalid key returns AI_PROVIDER_AUTH_FAILED and nothing is stored
   - A3 [it-ai-settings]: The decrypted key is registered in the Redactor for the duration of each call and released after; a canary key is absent from responses, logs and activity
   - H1 [it-ai-settings]: Key input is validated server-side (length cap, printable ASCII, no whitespace) with a 422 that does not echo it; a validation call timeout maps to AI_PROVIDER_UNAVAILABLE and stores nothing; replacing a key deletes the previous encrypted key in the same transaction (no window with two keys); the redacted hint reveals at most the last 4 characters
+  - H2 [it-ai-settings]: ai_provider_settings only ever points at a credential of type ai_provider_key (asserted on write in the service layer, since the 0019 delete trigger does not check the type); a test proves settings cannot reference an SSH or Git credential, so deleting settings can never delete one; key_hint stores only the redacted pattern, never a key prefix
 - [ ] 28-03 (wave 2) Read-only tool registry: closed set, kind read at type level, authorization scope, redacted capped results — pending
   - A1 [test]: The registry holds exactly get_server, list_servers, get_service, list_services, get_deployment, list_deployments, get_health, get_metrics, get_logs, get_infrastructure_graph; a test asserts the exact name set and that no deploy, restart, stop, delete, update_env, update_secret, reveal_secret, configure_domain or shell tool exists
   - A2 [typecheck]: AITool admits only kind read: a ts-expect-error type test proves a write kind does not compile; no tool accepts a free string that reaches SSH or a shell (tools read Postgres and the 27-xx APIs only)
@@ -1196,6 +1197,7 @@
   - A2 [test]: nightly.yml runs the live suite when the provider key secret is configured, otherwise records an explicit skip with the reason; a failing live run opens no automatic baseline change
   - A3 [test]: ai-baseline-check refuses a baseline that lowers any metric unless the change carries a justification file; docs/ai/evals.md explains replay versus live and how to re-record
   - H1 [test]: The required ai-evals job runs with no provider secret available to the job (fork PRs included), asserts NOODARA_AI_EVAL_LIVE is unset, and fails if the cassette directory is missing or uncommitted; only nightly.yml receives the provider key secret
+  - H2 [test]: ci.yml also runs pnpm test:state-machine (coverage-state-machine) as a required job, so a branch-coverage regression in a state machine or classifier fails the PR (the 22-08 cert-status gap reached main because no CI job ran it)
 
 ## Phase 30: UI de observabilidad, graph y AI, E2E y docs — pending
 **Goal:** Make metrics, service status, logs, the Infrastructure Graph, AI settings and the AI chat usable inside the design system, cover the three §10.12 AI flows end to end, and document observability and the AI guarantees.
