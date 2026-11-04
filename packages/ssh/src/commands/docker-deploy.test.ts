@@ -30,6 +30,7 @@ import { validateHealthcheckConfig } from '@noodara/domain/deployment';
 import { describe, expect, it } from 'vitest';
 import { ADVERSARIAL_VALUES, shellWords } from '../testing/shell-round-trip.js';
 import * as commands from './index.js';
+import { dockerInspectStateSample, dockerLogsWindow, dockerStatsSample } from './metrics.js';
 import { proxyNetworkDisconnect } from './proxy.js';
 import {
   dockerBuild,
@@ -515,6 +516,10 @@ function everyServiceScopedDockerCommand(id: ResourceId): RemoteCommand[] {
     dockerRemovePrevious(id),
     dockerListServiceImages(id),
     dockerRemoveServiceImage({ serviceId: id, deploymentId }),
+    // 27-01: observability probes.
+    dockerStatsSample({ serviceId: id }),
+    dockerInspectStateSample({ serviceId: id }),
+    dockerLogsWindow({ serviceId: id, since: '2026-01-01T00:00:00Z', tail: 10 }),
   ];
 }
 

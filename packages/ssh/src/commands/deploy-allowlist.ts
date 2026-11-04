@@ -63,6 +63,11 @@ export const DEPLOY_COMMAND_NAMES = Object.freeze([
   'proxy.ports_in_use',
   'tls.cert_status',
   'docker.network_disconnect',
+  // 27-01 (ADR 0012): observability probes.
+  'metrics.host_sample',
+  'docker.stats',
+  'docker.inspect_state',
+  'docker.logs_window',
 ] as const);
 
 export type DeployCommandName = (typeof DEPLOY_COMMAND_NAMES)[number];

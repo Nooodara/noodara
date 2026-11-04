@@ -152,3 +152,18 @@ export type {
   ProxyStaticTarget,
   TlsCertStatus,
 } from './commands/index.js';
+// Observability probes (27-01, ADR 0012). METRICS_SCRIPTS stays internal like PROXY_SCRIPTS.
+export {
+  HOST_SAMPLE_MAX_DELTA_SECONDS,
+  INSPECT_STATE_TEMPLATE,
+  LOGS_WINDOW_MAX_LINE_LENGTH,
+  MAX_LOG_TAIL,
+  OBSERVABILITY_LIMITS,
+  STATS_TEMPLATE,
+  dockerInspectStateSample,
+  dockerLogsWindow,
+  dockerStatsSample,
+  metricsHostSample,
+  parseLogsWindow,
+} from './commands/index.js';
+export type { LogsWindow, LogsWindowInput, LogsWindowLine } from './commands/index.js';

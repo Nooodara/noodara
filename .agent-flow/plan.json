@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-04T02:03:52.705Z",
+  "updatedAt": "2026-11-04T17:08:43.851Z",
   "cursor": {
     "phase": "27",
     "task": "27-01"
@@ -10183,7 +10183,7 @@
       "dependsOn": [
         "26"
       ],
-      "status": "pending",
+      "status": "active",
       "tasks": [
         {
           "id": "27-01",
@@ -10191,11 +10191,13 @@
           "scope": [
             "packages/ssh/src/commands/",
             "packages/docker/src/",
-            "tests/integration/deploy-engine/metrics-templates.test.ts"
+            "tests/integration/deploy-engine/metrics-templates.test.ts",
+            "packages/ssh/src/index.ts",
+            "packages/ssh/src/run-discovery.test.ts"
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",

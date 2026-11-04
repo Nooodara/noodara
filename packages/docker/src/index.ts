@@ -42,4 +42,11 @@ export type {
   ServiceImage,
   ServiceImagesResult,
 } from './runtime-operations.js';
+export {
+  fetchLogsWindow,
+  inspectContainerStates,
+  sampleContainers,
+  sampleHost,
+} from './observability-operations.js';
+export type { ParsedSample } from './observability-operations.js';
 export type { StepLimits, StepResult } from './step-result.js';

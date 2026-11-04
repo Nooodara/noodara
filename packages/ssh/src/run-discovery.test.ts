@@ -783,6 +783,18 @@ describe('@noodara/ssh public surface (T-2-42)', () => {
     // 22-05 H2: the deploy reads the port of the live service file.
     'parseProxyDynamicPort',
     'proxyReadDynamic',
+    // 27-01 (ADR 0012): observability probes; METRICS_SCRIPTS stays internal.
+    'HOST_SAMPLE_MAX_DELTA_SECONDS',
+    'INSPECT_STATE_TEMPLATE',
+    'LOGS_WINDOW_MAX_LINE_LENGTH',
+    'MAX_LOG_TAIL',
+    'OBSERVABILITY_LIMITS',
+    'STATS_TEMPLATE',
+    'dockerInspectStateSample',
+    'dockerLogsWindow',
+    'dockerStatsSample',
+    'metricsHostSample',
+    'parseLogsWindow',
   ] as const;
 
   it('exports exactly the deliberate public surface, no internal module leaking through', async () => {

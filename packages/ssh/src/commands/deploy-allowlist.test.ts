@@ -98,6 +98,10 @@ const EXPECTED_DEPLOY_COMMAND_NAMES: readonly DeployCommandName[] = [
   "proxy.ports_in_use",
   "tls.cert_status",
   "docker.network_disconnect",
+  "metrics.host_sample",
+  "docker.stats",
+  "docker.inspect_state",
+  "docker.logs_window",
 ];
 
 // ADR 0008 text, copied by hand. G1: secret file and workspace; G2: launcher and group kill.
@@ -125,9 +129,9 @@ const ALLOWED_PARAMETERS = new Set([
 ]);
 
 describe("DEPLOY_COMMAND_NAMES", () => {
-  it("is exactly the 55 expected names, in order", () => {
+  it("is exactly the 59 expected names, in order", () => {
     expect(DEPLOY_COMMAND_NAMES).toEqual(EXPECTED_DEPLOY_COMMAND_NAMES);
-    expect(DEPLOY_COMMAND_NAMES).toHaveLength(55);
+    expect(DEPLOY_COMMAND_NAMES).toHaveLength(59);
   });
 
   it("is frozen", () => {
