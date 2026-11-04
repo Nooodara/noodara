@@ -57,6 +57,19 @@ describe('log entries (A1, A4)', () => {
     expect(activityEntry({ occurredAt, action: 'deployment.succeeded', outcome: 'success', errorCode: null }).level).toBe('info');
   });
 
+  it('adds an allowlisted observedState diagnosis and drops every other metadata value (27-06)', () => {
+    const occurredAt = new Date(NOW);
+    const row = { occurredAt, action: 'service.container_changed', outcome: 'success' as const, errorCode: null };
+    expect(activityEntry({ ...row, metadata: { serverId: 'srv', observedState: 'out_of_memory' } })).toMatchObject({
+      text: 'service.container_changed: out_of_memory',
+      level: 'warn',
+    });
+    expect(activityEntry({ ...row, metadata: { observedState: 'crash_loop' } }).text).toBe('service.container_changed: crash_loop');
+    for (const metadata of [{ observedState: 'canary-secret' }, { observedState: 'unknown' }, { observedState: 3 }, null, 'x', {}]) {
+      expect(activityEntry({ ...row, metadata })).toMatchObject({ text: 'service.container_changed', level: 'info' });
+    }
+  });
+
   it('infers a level from words', () => {
     expect(inferLogLevel('Error: boom')).toBe('error');
     expect(inferLogLevel('npm WARN deprecated x')).toBe('warn');

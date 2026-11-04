@@ -159,7 +159,7 @@ export async function scanChunks(
   };
 }
 
-/** Activity about the service itself or one of its deployments: action and outcome only. */
+/** Activity about the service itself or one of its deployments: action, outcome, observedState. */
 export async function scanActivity(
   db: Database,
   serviceId: string,
@@ -175,6 +175,7 @@ export async function scanActivity(
       action: activityEvents.action,
       outcome: activityEvents.outcome,
       errorCode: activityEvents.errorCode,
+      metadata: activityEvents.metadata,
     })
     .from(activityEvents)
     .where(

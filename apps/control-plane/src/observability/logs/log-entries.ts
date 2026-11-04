@@ -1,7 +1,7 @@
 // 27-04 (A1, A4): converts each source's rows into unified log entries. Every entry's text is
 // redacted with the service's redactor, then sanitized (ANSI, CR, binary) and cut to
 // LOG_LINE_MAX_LENGTH before anything filters or searches it (H2: search sees redacted text only).
-import { compareLogTimestamps, parseLogTimestamp, type LogLevel, type LogSource } from '@noodara/domain';
+import { DIAGNOSES, compareLogTimestamps, parseLogTimestamp, type Diagnosis, type LogLevel, type LogSource } from '@noodara/domain';
 import { LOG_LINE_MAX_LENGTH, type LogEntryView } from '@noodara/domain/api-contract';
 import { sanitizeLogText, type DeploymentLogPhase } from '@noodara/domain/deployment';
 import type { Redactor } from '@noodara/domain/security';
@@ -55,18 +55,28 @@ export interface ActivityRow {
   readonly action: string;
   readonly outcome: 'success' | 'failure';
   readonly errorCode: string | null;
+  readonly metadata?: unknown;
 }
 
-/** Action and outcome only: metadata never reaches a log entry. */
+/** The collector's incident diagnosis (27-02), the only metadata value an entry may show. */
+function observedState(metadata: unknown): Diagnosis | null {
+  if (typeof metadata !== 'object' || metadata === null) return null;
+  const value: unknown = (metadata as Record<string, unknown>).observedState;
+  return DIAGNOSES.find((diagnosis) => diagnosis !== 'unknown' && diagnosis === value) ?? null;
+}
+
+/** Action, outcome and an allowlisted observedState only: other metadata never reaches an entry. */
 export function activityEntry(row: ActivityRow): RawEntry {
   const failed = row.outcome === 'failure';
-  const text = failed ? `${row.action} failed${row.errorCode === null ? '' : ` (${row.errorCode})`}` : row.action;
+  const state = observedState(row.metadata);
+  let text = failed ? `${row.action} failed${row.errorCode === null ? '' : ` (${row.errorCode})`}` : row.action;
+  if (state !== null) text = `${text}: ${state}`;
   return {
     source: 'activity',
     timestamp: row.occurredAt.toISOString(),
     stream: null,
     text,
-    level: failed ? 'error' : 'info',
+    level: failed ? 'error' : state !== null ? 'warn' : 'info',
   };
 }
 

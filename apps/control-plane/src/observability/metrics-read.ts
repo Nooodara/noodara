@@ -13,6 +13,7 @@ import {
   nearFullDisk,
   type ContainerHealthStatus,
   type DockerContainerState,
+  type MemoryReading,
   type ServerStatus,
 } from '@noodara/domain';
 import type { Database } from '../db/client.js';
@@ -52,11 +53,12 @@ export async function findServiceInProject(db: Database, projectId: string, serv
   return row ?? null;
 }
 
-async function latestHostSample(db: Database, serverId: string) {
+export async function latestHostSample(db: Database, serverId: string) {
   const [row] = await db
     .select({
       sampledAt: hostMetricSamples.sampledAt,
       memoryTotalBytes: hostMetricSamples.memoryTotalBytes,
+      memoryUsedBytes: hostMetricSamples.memoryUsedBytes,
       uptimeSeconds: hostMetricSamples.uptimeSeconds,
       filesystems: hostMetricSamples.filesystems,
     })
@@ -172,8 +174,8 @@ export interface StatusOptions {
 
 const SHA_PATTERN = /^[0-9a-f]{7,64}$/;
 /** Collector ticks can run late; a reading older than this many intervals is stale. */
-const DISK_FRESH_INTERVALS = 3;
-const MEMORY_FRESH_INTERVALS = HIGH_MEMORY_SUSTAINED_SAMPLES + 2;
+export const DISK_FRESH_INTERVALS = 3;
+export const MEMORY_FRESH_INTERVALS = HIGH_MEMORY_SUSTAINED_SAMPLES + 2;
 
 async function latestObservation(db: Database, serviceId: string) {
   const [row] = await db
@@ -185,7 +187,7 @@ async function latestObservation(db: Database, serviceId: string) {
   return row ?? null;
 }
 
-async function lastDeployment(db: Database, serviceId: string) {
+export async function lastDeployment(db: Database, serviceId: string) {
   const [row] = await db
     .select({
       id: deployments.id,
@@ -200,7 +202,7 @@ async function lastDeployment(db: Database, serviceId: string) {
   return row ?? null;
 }
 
-async function recentMemoryReadings(db: Database, serviceId: string, since: Date) {
+export async function recentMemoryReadings(db: Database, serviceId: string, since: Date): Promise<MemoryReading[]> {
   const rows = await db
     .select({ usedBytes: containerMetricSamples.memoryUsedBytes, limitBytes: containerMetricSamples.memoryLimitBytes })
     .from(containerMetricSamples)
@@ -215,6 +217,17 @@ async function recentMemoryReadings(db: Database, serviceId: string, since: Date
     .limit(HIGH_MEMORY_SUSTAINED_SAMPLES);
   // Oldest first, as highMemory expects.
   return rows.reverse().map((row) => ({ usedBytes: row.usedBytes ?? 0, limitBytes: row.limitBytes }));
+}
+
+/** The last N host memory readings since `since`, oldest first (limit = host MemTotal). */
+export async function recentHostMemoryReadings(db: Database, serverId: string, since: Date): Promise<MemoryReading[]> {
+  const rows = await db
+    .select({ usedBytes: hostMetricSamples.memoryUsedBytes, limitBytes: hostMetricSamples.memoryTotalBytes })
+    .from(hostMetricSamples)
+    .where(and(eq(hostMetricSamples.serverId, serverId), gte(hostMetricSamples.sampledAt, since)))
+    .orderBy(desc(hostMetricSamples.sampledAt), desc(hostMetricSamples.id))
+    .limit(HIGH_MEMORY_SUSTAINED_SAMPLES);
+  return rows.reverse();
 }
 
 type Observation = typeof containerObservations.$inferSelect;
