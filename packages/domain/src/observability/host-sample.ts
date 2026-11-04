@@ -40,7 +40,6 @@ const MALFORMED = 'HOST_SAMPLE_MALFORMED';
 const INCOMPLETE = 'HOST_SAMPLE_INCOMPLETE';
 const CPU_FIELDS = 8;
 const MEM_LINE = /^(MemTotal|MemAvailable):\s+(\d+) kB$/;
-const DF_LINE = /^(.+?)\s+(\d+)\s+(\d+)\s+(\d+)$/;
 const UP_LINE = /^(\d+(?:\.\d+)?) \d+(?:\.\d+)?$/;
 const KIB = 1024;
 
@@ -98,15 +97,34 @@ function collectMem(rest: string, into: Collected): LineOutcome {
   return null;
 }
 
+const WS = /\s/;
+
+/** Splits off the last whitespace-delimited token in linear time; no regex backtracking. */
+function popToken(text: string): { head: string; token: string } | null {
+  let end = text.length;
+  while (end > 0 && WS.test(text.charAt(end - 1))) end -= 1;
+  if (end === 0) return null;
+  let begin = end;
+  while (begin > 0 && !WS.test(text.charAt(begin - 1))) begin -= 1;
+  return { head: text.slice(0, begin), token: text.slice(begin, end) };
+}
+
 function collectDf(rest: string, into: Collected): LineOutcome {
-  const match = DF_LINE.exec(rest.trim());
-  const size = safeUnsigned(match?.[2] ?? '');
-  const used = safeUnsigned(match?.[3] ?? '');
-  const avail = safeUnsigned(match?.[4] ?? '');
-  if (match?.[1] === undefined || size === null || used === null || avail === null) {
+  const nums: number[] = [];
+  let head = rest;
+  for (let i = 0; i < 3; i += 1) {
+    const popped = popToken(head);
+    const value = popped === null || !/^\d+$/.test(popped.token) ? null : safeUnsigned(popped.token);
+    if (popped === null || value === null) return 'DF line is malformed';
+    nums.unshift(value);
+    head = popped.head;
+  }
+  const target = head.trim();
+  const [size, used, avail] = nums;
+  if (target === '' || head === head.trimEnd() || size === undefined || used === undefined || avail === undefined) {
     return 'DF line is malformed';
   }
-  into.filesystems.push({ target: match[1], sizeBytes: size, usedBytes: used, availBytes: avail });
+  into.filesystems.push({ target, sizeBytes: size, usedBytes: used, availBytes: avail });
   return null;
 }
 

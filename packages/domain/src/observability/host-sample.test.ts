@@ -117,6 +117,14 @@ describe('parseHostSample', () => {
     expect(parseHostSample(stdout)).toMatchObject({ ok: false, code: 'HOST_SAMPLE_MALFORMED' });
   });
 
+  it('rejects a hostile 60 KiB DF line quickly (no regex backtracking)', () => {
+    const hostile = `a${' '.repeat(60000)}x`;
+    const started = performance.now();
+    const result = parseHostSample(replaceLine(4, `DF ${hostile}`));
+    expect(performance.now() - started).toBeLessThan(200);
+    expect(result).toMatchObject({ ok: false, code: 'HOST_SAMPLE_MALFORMED' });
+  });
+
   it.each([
     ['one CPU read', replaceLine(1, null)],
     ['no CPU read', replaceLine(1, null).split('\n').slice(1).join('\n')],
