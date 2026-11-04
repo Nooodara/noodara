@@ -295,6 +295,8 @@ export function createLogsRoutes(deps: LogsRoutesDeps): FastifyPluginCallback {
             'Cache-Control': 'no-cache',
             'X-Accel-Buffering': 'no',
           });
+          // Send the headers now: a quiet stream must not leave the client waiting for its first frame.
+          raw.flushHeaders();
           if (wantsRuntime && runtime === null) {
             write({ type: 'unavailable', source: 'runtime', error: LOG_SOURCE_UNAVAILABLE });
           }

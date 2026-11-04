@@ -153,6 +153,7 @@ export async function runFollow(input: RunFollowInput): Promise<FollowEndReason>
   input.shutdown.addEventListener('abort', onStop, { once: true });
   if (input.signal.aborted || input.shutdown.aborted) stop.abort();
 
+  const stopped = (): boolean => stop.signal.aborted;
   let runtime = input.runtime;
   const last = new Map<LogSource, LogPosition>();
   const started = now();
@@ -175,7 +176,7 @@ export async function runFollow(input: RunFollowInput): Promise<FollowEndReason>
   const reason = await (async (): Promise<FollowEndReason> => {
     try {
       for (;;) {
-        if (stop.signal.aborted) break;
+        if (stopped()) break;
         const upperMs = now();
         const windowOf = (source: LogSource): ScanWindow => ({ sinceMs: lowerOf(source), upperMs });
         const bySource: Partial<Record<LogSource, PositionedEntry[]>> = {};
@@ -189,19 +190,19 @@ export async function runFollow(input: RunFollowInput): Promise<FollowEndReason>
         if (wants('activity')) {
           bySource.activity = fresh('activity', await scanActivity(input.db, input.service.id, windowOf('activity'), input.redactor));
         }
-        if (runtime !== null && !stop.signal.aborted) {
+        if (runtime !== null && !stopped()) {
           const fetched = await fetchRuntimeWindow(runtime, input.service.id, windowOf('runtime'), input.redactor, limits.runtimeTimeoutMs, {
             signal: stop.signal,
           });
           if (fetched.ok) {
             bySource.runtime = fresh('runtime', fetched.scan);
-          } else if (!stop.signal.aborted) {
+          } else if (!stopped()) {
             input.emit({ type: 'unavailable', source: 'runtime', error: 'LOG_SOURCE_UNAVAILABLE' });
             await runtime.close();
             runtime = null;
           }
         }
-        if (stop.signal.aborted) break;
+        if (stopped()) break;
 
         for (const [source, entries] of Object.entries(bySource) as [LogSource, PositionedEntry[]][]) {
           const newest = entries.at(-1);

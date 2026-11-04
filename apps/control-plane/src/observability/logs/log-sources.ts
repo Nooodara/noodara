@@ -3,12 +3,12 @@
 // demand over SSH. Every entry is redacted with a redactor holding the service's secret values
 // (fail closed: no redactor, no entries). A scan that hits its row cap drops its oldest instant
 // and reports a boundary, so an instant is never split across pages.
-import { LOG_SOURCES, logTimestampMs, parseLogTimestamp, type LogSource } from '@noodara/domain';
+import { logTimestampMs, parseLogTimestamp, type LogSource } from '@noodara/domain';
 import { createRedactor, type Redactor } from '@noodara/domain/security';
 import { validateResourceId } from '@noodara/domain/validators';
 import { fetchLogsWindow } from '@noodara/docker';
 import { MAX_LOG_TAIL, type SshDeploySession } from '@noodara/ssh';
-import { and, asc, desc, eq, gte, inArray, lt, or } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lt, or } from 'drizzle-orm';
 import type { Database } from '../../db/client.js';
 import { activityEvents, deploymentLogChunks, deployments, secrets, services } from '../../db/schema/index.js';
 import type { ConnectResult } from '../../deploy/deploy-worker.js';
@@ -53,6 +53,11 @@ export interface ServiceRedactor {
   release(): void;
 }
 
+/** Release for a redactor that leased nothing. */
+function noRelease(): void {
+  return;
+}
+
 /** A redactor holding every secret value the service can see (project, environment, service). */
 export async function openServiceRedactor(
   db: Database,
@@ -74,9 +79,14 @@ export async function openServiceRedactor(
       ),
     );
   const redactor = createRedactor();
-  if (rows.length === 0) return { redactor, release: () => undefined };
+  if (rows.length === 0) return { redactor, release: noRelease };
   const lease = await decryptForDeploy(db, { chain, secretIds: rows.map((row) => row.id) }, await masterKeys(), redactor);
-  return { redactor, release: () => lease.release() };
+  return {
+    redactor,
+    release: () => {
+      lease.release();
+    },
+  };
 }
 
 /** Inclusive window in epoch ms; `upperMs` already accounts for the cursor. */
@@ -85,7 +95,7 @@ export interface ScanWindow {
   readonly upperMs: number;
 }
 
-const FIRST_SOURCE: LogSource = LOG_SOURCES[0] ?? 'build';
+const FIRST_SOURCE: LogSource = 'build';
 
 /** Epoch ms of an entry's timestamp (NaN when unparseable). */
 export function entryMs(entry: { readonly timestamp: string }): number {
