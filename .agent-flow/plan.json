@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-04T23:51:53.056Z",
+  "updatedAt": "2026-11-04T23:51:53.230Z",
   "cursor": {
     "phase": "28",
     "task": "28-02"
@@ -10588,13 +10588,18 @@
             "apps/control-plane/src/routes/ai-settings-schemas.ts",
             "apps/control-plane/src/routes/api-scope.ts",
             "apps/control-plane/src/secrets/",
-            "tests/integration/ai/settings.test.ts"
+            "tests/integration/ai/settings.test.ts",
+            "packages/domain/src/activity/activity-event.ts",
+            "packages/domain/src/activity/activity-event.test.ts",
+            "apps/control-plane/src/activity/ai-settings-events.ts",
+            "apps/control-plane/package.json",
+            "pnpm-lock.yaml"
           ],
           "wave": 2,
           "dependsOn": [
             "28-01"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -10647,7 +10652,7 @@
           "dependsOn": [
             "28-01"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
