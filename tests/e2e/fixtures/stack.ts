@@ -46,9 +46,12 @@ export const E2E_ACME_CA_URL = 'https://pebble:14000/dir';
 export const ACME_ROOT_FILE_NAME = 'pebble-listener-root.pem';
 export const DNS_SERVER_FILE_NAME = 'dns-server';
 export const STACK_LOG_DIR_NAME = 'stack-logs';
+/** 30-05: the replay provider writes its loopback `ip:port` here (fixtures/ai-seam.mjs). */
+export const AI_REPLAY_FILE_NAME = 'ai-replay';
 /** The env minimum (60 s): issuance failures and re-checks land within a test's budget. */
 const E2E_CERT_TIMING_MS = '60000';
 const DNS_SEAM = path.join(repoRoot, 'tests/e2e/fixtures/dns-seam.mjs');
+const AI_SEAM = path.join(repoRoot, 'tests/e2e/fixtures/ai-seam.mjs');
 const LOG_FLUSH_MS = 500;
 
 function runDir(): string {
@@ -214,9 +217,13 @@ export async function startStack(): Promise<Stack> {
 
   const api = spawnBootProcess({
     command: process.execPath,
-    args: ['--import', DNS_SEAM, path.join(CONTROL_PLANE_DIR, 'dist/server.js')],
+    args: ['--import', DNS_SEAM, '--import', AI_SEAM, path.join(CONTROL_PLANE_DIR, 'dist/server.js')],
     cwd: CONTROL_PLANE_DIR,
-    env: { ...sharedEnv, E2E_DNS_SERVER_FILE: path.join(dir, DNS_SERVER_FILE_NAME) },
+    env: {
+      ...sharedEnv,
+      E2E_DNS_SERVER_FILE: path.join(dir, DNS_SERVER_FILE_NAME),
+      E2E_AI_REPLAY_FILE: path.join(dir, AI_REPLAY_FILE_NAME),
+    },
   });
   const processes: Record<string, BootProcess | undefined> = { api };
   const stopLogs = mirrorLogs(dir, processes);
