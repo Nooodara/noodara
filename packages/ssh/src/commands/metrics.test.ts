@@ -243,6 +243,24 @@ describe("docker.logs_window (A1, H1)", () => {
     ]);
   });
 
+  it("on a real shell keeps every line whole when both streams write at once", () => {
+    const fake = fakeBin({
+      docker: [
+        'case "$1" in',
+        "  container) echo sha256abc;;",
+        '  logs) i=0; while [ $i -lt 200 ]; do echo "2026-11-04T10:00:01.000000001Z out $i"; echo "2026-11-04T10:00:02.000000000Z err $i" >&2; i=$((i+1)); done;;',
+        "esac",
+      ].join("\n"),
+    });
+    const result = runBody(dockerLogsWindow(valid), fake);
+    expect(result.status).toBe(0);
+    const lines = result.stdout.split("\n").filter((line) => line !== "");
+    expect(lines).toHaveLength(400);
+    for (const line of lines) {
+      expect(line).toMatch(/^(O 2026-11-04T10:00:01\.000000001Z out|E 2026-11-04T10:00:02\.000000000Z err) \d+$/);
+    }
+  });
+
   it("on a real shell reports a missing container with the marker, other inspect failures with exit 3", () => {
     const missing = fakeBin({ docker: 'echo "Error: No such container: noodara-x" >&2; exit 1' });
     const result = runBody(dockerLogsWindow(valid), missing);

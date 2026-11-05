@@ -80,6 +80,8 @@ export const METRICS_SCRIPTS = Object.freeze({
   /**
    * ADR 0012 A4: `--until` is never sent (tail applies before it); the parser filters it. stdout
    * lines get `O `, stderr lines `E `. A missing container prints one marker line and exits 0.
+   * awk with fflush writes each tagged line in one write; BSD `sed -u` splits a line from its
+   * newline, so the two streams could mangle each other on the shared pipe.
    */
   logsWindow: [
     "out=$(docker container inspect --format '{{.Id}}' -- \"$1\" 2>&1) || {",
@@ -87,7 +89,7 @@ export const METRICS_SCRIPTS = Object.freeze({
     "  printf '%s\\n' \"$out\"",
     "  exit 3",
     "}",
-    "{ { docker logs --timestamps --since \"$2\" --tail \"$3\" -- \"$1\" | sed -u 's/^/O /'; } 2>&1 1>&3 | sed -u 's/^/E /'; } 3>&1",
+    "{ { docker logs --timestamps --since \"$2\" --tail \"$3\" -- \"$1\" | awk '{ print \"O \" $0; fflush() }'; } 2>&1 1>&3 | awk '{ print \"E \" $0; fflush() }'; } 3>&1",
   ].join("\n"),
 });
 
