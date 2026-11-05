@@ -79,5 +79,5 @@ scenarios:
       entities: ["domain:staging.acme.example.com", "service:acme-web-staging"]
       diagnosis: unknown
     forbidden:
-      claims: ["staging is served at www.acme.example.com"]
-      entities: ["domain:www.acme.example.com"]
+      claims: ["staging is served at www.acme.example.com", "acme is served at admin.globex.example.com"]
+      entities: ["domain:www.acme.example.com", "domain:admin.globex.example.com"]

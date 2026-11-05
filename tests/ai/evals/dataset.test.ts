@@ -6,12 +6,13 @@ import { readFileSync } from 'node:fs';
 import { DIAGNOSES, LOG_SOURCES, classifyEvidence } from '@noodara/domain';
 import {
   DeploymentViewSchema,
-  GraphViewSchema,
   LogEntryViewSchema,
   MetricSeriesResponseSchema,
   ServiceStatusSummarySchema,
 } from '@noodara/domain/api-contract';
 import { describe, expect, it } from 'vitest';
+import { GraphResponseSchema } from '../../../apps/control-plane/src/routes/graph-schemas.js';
+import { createFixtureBackend } from './lib/fixture-backend.js';
 import { buildFixtureModel, type FixtureModel } from './lib/fixture-model.js';
 import { FIXTURES_DIR, SCENARIOS_DIR, loadDataset, loadScenarioContext, yamlFiles, type ScenarioContext } from './lib/load.js';
 import { CANARY_PATTERN, CANARY_PREFIX, ROADMAP_QUESTION_TYPES, type Scenario } from './lib/schema.js';
@@ -182,14 +183,27 @@ describe.each(scenarios.map((scenario) => [scenario.id, scenario] as const))('sc
     for (const ref of scenario.expected.entities) expect(await visible(context, ref), ref).toBe(true);
   });
 
-  it.runIf(isScoped(scenario))('entities of other projects it forbids are NOT_FOUND in its scope', async () => {
+  if (!isScoped(scenario)) return;
+
+  it('entities of other projects it forbids are NOT_FOUND in its scope', async () => {
     const projectId = context.model.entity(`project:${(scenario.scope as { project: string }).project}`).id;
+    const { services, environments } = context.model;
     const foreign = scenario.forbidden.entities.filter((ref) => {
-      const entity = context.model.entity(ref);
-      if (entity.kind === 'Project') return entity.id !== projectId;
-      if (entity.kind === 'Service') return context.model.services.find((s) => s.id === entity.id)?.projectId !== projectId;
-      if (entity.kind === 'Server') return !context.model.services.some((s) => s.serverId === entity.id && s.projectId === projectId);
-      return true;
+      const { kind, id } = context.model.entity(ref);
+      switch (kind) {
+        case 'Project':
+          return id !== projectId;
+        case 'Environment':
+          return environments.find((e) => e.id === id)?.projectId !== projectId;
+        case 'Server':
+          return !services.some((s) => s.serverId === id && s.projectId === projectId);
+        case 'Service':
+          return services.find((s) => s.id === id)?.projectId !== projectId;
+        case 'Deployment':
+          return services.find((s) => s.deployments.some((d) => d.id === id))?.projectId !== projectId;
+        case 'Domain':
+          return services.find((s) => s.domains.some((d) => d.id === id))?.projectId !== projectId;
+      }
     });
     expect(foreign.length).toBeGreaterThan(0);
     for (const ref of foreign) expect(await visible(context, ref), ref).toBe(false);
@@ -227,7 +241,7 @@ describe.each([...fixtures.keys()])('fixture %s through the real tools', (fixtur
       expect(MetricSeriesResponseSchema.safeParse(series).error).toBeUndefined();
     }
     const graph = await context.backend.get_infrastructure_graph({ maxNodes: 5000 }, global);
-    expect(graph.ok && GraphViewSchema.safeParse(graph.data).error).toBeUndefined();
+    expect(graph.ok && GraphResponseSchema.safeParse(graph.data).error).toBeUndefined();
   });
 
   it('never returns a canary value from any tool, logs included', async () => {
@@ -241,15 +255,39 @@ describe.each([...fixtures.keys()])('fixture %s through the real tools', (fixtur
       await run('get_server', { serverId: server.id });
       await run('get_metrics', { target: 'server', id: server.id });
     }
+    let redactedLines = 0;
     for (const service of m.services) {
       await run('get_service', { serviceId: service.id });
       await run('get_health', { serviceId: service.id });
       await run('list_deployments', { serviceId: service.id });
       await run('get_metrics', { target: 'service', id: service.id });
       await run('get_logs', { serviceId: service.id, since: new Date(m.nowMs - 3 * HOUR_MS).toISOString() });
+      // Not vacuous: each raw line carrying a canary must come back, with the canary redacted.
+      const logs = contents.at(-1) as string;
+      for (const log of service.logs) {
+        const secret = m.secrets.find((candidate) => log.text.includes(candidate.value));
+        if (secret === undefined) continue;
+        const [before = ''] = log.text.split(secret.value);
+        expect(logs, `${service.name} log line with ${secret.name}`).toContain(`${before}[REDACTED:`);
+        redactedLines += 1;
+      }
     }
+    expect(redactedLines).toBe(m.services.flatMap((s) => s.logs).filter((log) => m.secrets.some((x) => log.text.includes(x.value))).length);
     const all = contents.join('\n');
     for (const secret of m.secrets) expect(all.includes(secret.value), secret.name).toBe(false);
     expect(all).not.toContain(CANARY_PREFIX);
+  });
+
+  const leaking = m.services.filter((service) => service.logs.some((log) => m.secrets.some((secret) => log.text.includes(secret.value))));
+  if (leaking.length === 0) return;
+
+  it('the canary check is not vacuous: without the redactor a canary in the logs reaches the tool output', async () => {
+    const unredacted = createFixtureBackend(m);
+    const outputs: string[] = [];
+    for (const service of leaking) {
+      const logs = await unredacted.get_logs({ serviceId: service.id, filter: logFilter, limit: 200, maxBytes: 65_536 }, global);
+      outputs.push(JSON.stringify(logs));
+    }
+    expect(outputs.join('\n')).toContain(CANARY_PREFIX);
   });
 });
