@@ -16,7 +16,7 @@
         "text": "",
         "toolCalls": [
           {
-            "id": "toolu_01JEMMgTQNPQqC2Ff8Sj6FUi",
+            "id": "toolu_01RGWYzzk2R5wyas3qMPF8iK",
             "name": "get_infrastructure_graph",
             "input": {
               "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
@@ -33,7 +33,7 @@
           "content": "",
           "toolCalls": [
             {
-              "id": "toolu_01JEMMgTQNPQqC2Ff8Sj6FUi",
+              "id": "toolu_01RGWYzzk2R5wyas3qMPF8iK",
               "name": "get_infrastructure_graph",
               "input": {
                 "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
@@ -46,7 +46,7 @@
               {
                 "type": "thinking",
                 "thinking": "",
-                "signature": "CAQSiAUKEAgTGAI4AUIIdGhpbmtpbmcSDGpPjU+pvW+7i+mMwxoMQDQNzpplmDEARxvcIjAMy8YwOddRjCKhlqoYB0zZJH1X8TV2cgwXkRx9DpemEPg7RaEVVb82V6+V0xPPRnEqpQR+8dfajZST4CxL8n4loLqkxxEJ1fBxpyieTs+Il7AwcWH9wWzWp2HIz5lVwAS+0y1t8TxGFpDdkmYiXJuQ+V2oiqmeOKobpxjUyt+deZ7qsv/oNh7/pN6m8/+X87U2x633KbrHkV2anNbLSPv/0ydgHckTXIm5kz/lRDU8Z2DBLCeV6ndBch5xpsa08CSI5u3vv1KRtOE0uHwsnL059bL4oCALbvvYFDD+4Z/lPo3Q9ccWiMm3pI8LS+2OXeeK5+bSiSCVnrpytTzU+rGFFmTsduwR0KAV9P05yI01kg+mk2FfacnoWCEHS336WSiq8ifphij6mIzLuMC0aKn6RoiVUa+jyHHYMer2OIat03aIExZp0luthq5h8TU48GGVd9/928FpS7ZowXP252wXI2nUrj0VkAn5GL1YUaqGjT/hsEr5SK80wUYpSdlTPNlJgFaH7MRYkqk+sVy3z9iDEU2zCP2HIFTj/5S+7o2PNX8dRe1rs7j3cVjrNDV9b9amdvjfB9vP+m6w8JMItftT0I+TDoCw40hYeDTrvCpQKDAwWiS3lac1EDqI6vzBGvgU1d9h2VVqJwkl28SQ/+Eo6jWCRDVQ2Ilxl7NvZPMUGC8B/V1HSTbPUZ0cETIjE6W/S9DTCIQ7ORt3oQXnVhlOuhxhiuuH/1ILNyzK7W3BM9+JIDrR/zVvVefkjNyzsqQfXH334lLyivZBPY0JMYp1u57fMc4ZNfMYAQ=="
+                "signature": "CAQSiQUKEAgTGAI4AUIIdGhpbmtpbmcSDMw4gatEoNbvgGhRKhoMKdnuUR55yQuX+trqIjAslDWP3ZtuzXT82n5GYAtCKhF9nif2yxPLf8Is9W/LoRlnyz88m27qSluuWotw+iEqpgQDe+UgwGmCT5Tie/NRdka4So/qKzXnJFh62FEPFbwibqY8MRNCf/CIX23er3UIJfIuC1HfeCmpINPhahHn/dAKoxaAVGsTEmvEo57Iof+lOD63d5ZbRzTjEMn6dhrO27F2/NyUFwsvNBmfXyjTQ2ZeFSdHgMNCrkJ8hb49RpldGtzA1HLB/6gWFo4jA8r4H3d1ikXRkP1Eh7IzXjbZ25ldk/7DRnooOzZGRln8/DQv8y52CvacrfhC7VVFfokcFZtNXUjtO88VxVsfv56Xo1m4ZgapFcBeYKItas5yiaSEzdXM+tkpIXRy0UgwVgLJlj5DeI6O+X9suhW5Dx5FZ3oOg7syFO18/pt6D4Ss4ATCwbXKG8DFQrt8+aqw8zlF1k2nM28JDq0lUwKNyxNUDZwJ48hioair2uyLp9Ue1+JxI9XdnymL22jEUSufPHAVaQnmxRiTLMGigLNsT0NlcJspSQw6+f1TU1soxPMxHmxFLYvkbTutKmBlw+BE1QGxev/bAgbK/VFdIOVqEpMSMoOsYJ9FmD6rh8yGO9NRvCKlE9cmwfkQpi6Uw/gA7vwO/cs7uHOEyMhpjG+XDi2ZWPvgLA+2u6jx6/uX7wQaPByiGPCwt3oVTcauA++Mgd9Z5uZpReG+evyaN+X7hGgMduHwmpFe00lwRWTOSr+tPxRVPTAVopA2/jE88s1WjhdlJoBuItE8BpTWufUDXd4QVuBlhnZ9S8XnGAE="
               }
             ]
           }
@@ -54,66 +54,31 @@
       }
     },
     {
-      "key": "40a13a7aeea46b6b250808be3186f7630723ad462a4d018b4ee149d90ab47da9",
+      "key": "24c4fda82688e802d10f69c49a0336f5286a861ef814cd329ec434035a17527c",
       "model": "claude-opus-5-5",
       "turn": 2,
       "response": {
-        "text": "",
-        "toolCalls": [
-          {
-            "id": "toolu_01GSNRZnzU4vgGwKQZLG2kv5",
-            "name": "list_services",
-            "input": {
-              "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
-            }
-          }
-        ],
-        "stopReason": "tool_use",
+        "text": "{\"answer\":\"Here's how the acme project is set up. I only looked at the infrastructure graph, so this covers the layout, not whether anything is currently healthy.\\n\\nThe project has two environments:\\n\\n**Production**\\n- **acme-web** runs on server host-a and is served at www.acme.example.com. It depends on acme-api.\\n- **acme-api** runs on server host-b and is served at api.acme.example.com.\\n\\n**Staging**\\n- **acme-web-staging** runs on host-a, the same server as production acme-web. It's served at staging.acme.example.com.\\n\\nSo production is split across two servers: the web front end on host-a and the API on host-b. Staging only has the web service, and it shares host-a with production web. The graph doesn't show a staging API service.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Project\",\"id\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"label\":\"acme\"},{\"kind\":\"Environment\",\"id\":\"43ae5173-99bb-4153-ba4e-45dd0fc291ab\",\"label\":\"production\"},{\"kind\":\"Environment\",\"id\":\"c0fe22dc-1aa8-426c-93d7-398c8eb01e0c\",\"label\":\"staging\"},{\"kind\":\"Service\",\"id\":\"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\",\"label\":\"acme-web\"},{\"kind\":\"Service\",\"id\":\"ba9c5821-063e-4eb6-bdfa-2e6960f51340\",\"label\":\"acme-api\"},{\"kind\":\"Service\",\"id\":\"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\",\"label\":\"acme-web-staging\"},{\"kind\":\"Server\",\"id\":\"cd751bfb-7d65-4628-99fc-0f7fd1c7d142\",\"label\":\"host-a\"},{\"kind\":\"Server\",\"id\":\"65d53194-0618-4f5a-bb52-f134fc2393aa\",\"label\":\"host-b\"},{\"kind\":\"Domain\",\"id\":\"dd49b2ee-c087-4bde-9160-f1c259685e7a\",\"label\":\"www.acme.example.com\"},{\"kind\":\"Domain\",\"id\":\"e972445e-465e-4aa6-a294-ba3207779498\",\"label\":\"api.acme.example.com\"},{\"kind\":\"Domain\",\"id\":\"128f798f-ba13-4cca-b8a8-10dbddbc3225\",\"label\":\"staging.acme.example.com\"}],\"evidence\":[{\"ref\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"note\":\"Project acme has two environments: production and staging.\"},{\"ref\":\"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\",\"note\":\"acme-web is in production, runs on host-a, is served at www.acme.example.com and depends on acme-api.\"},{\"ref\":\"ba9c5821-063e-4eb6-bdfa-2e6960f51340\",\"note\":\"acme-api is in production, runs on host-b and is served at api.acme.example.com.\"},{\"ref\":\"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\",\"note\":\"acme-web-staging is in staging, runs on host-a and is served at staging.acme.example.com.\"}],\"missingEvidence\":[\"Runtime status, health, and recent deployments of each service were not checked; only the infrastructure graph was read.\",\"Service source and build settings (image or repository, ports) were not read.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
         "usage": {
           "inputTokens": 9066,
-          "outputTokens": 146
+          "outputTokens": 1236
         },
         "message": {
           "role": "assistant",
-          "content": "",
-          "toolCalls": [
-            {
-              "id": "toolu_01GSNRZnzU4vgGwKQZLG2kv5",
-              "name": "list_services",
-              "input": {
-                "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
-              }
-            }
-          ],
+          "content": "{\"answer\":\"Here's how the acme project is set up. I only looked at the infrastructure graph, so this covers the layout, not whether anything is currently healthy.\\n\\nThe project has two environments:\\n\\n**Production**\\n- **acme-web** runs on server host-a and is served at www.acme.example.com. It depends on acme-api.\\n- **acme-api** runs on server host-b and is served at api.acme.example.com.\\n\\n**Staging**\\n- **acme-web-staging** runs on host-a, the same server as production acme-web. It's served at staging.acme.example.com.\\n\\nSo production is split across two servers: the web front end on host-a and the API on host-b. Staging only has the web service, and it shares host-a with production web. The graph doesn't show a staging API service.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Project\",\"id\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"label\":\"acme\"},{\"kind\":\"Environment\",\"id\":\"43ae5173-99bb-4153-ba4e-45dd0fc291ab\",\"label\":\"production\"},{\"kind\":\"Environment\",\"id\":\"c0fe22dc-1aa8-426c-93d7-398c8eb01e0c\",\"label\":\"staging\"},{\"kind\":\"Service\",\"id\":\"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\",\"label\":\"acme-web\"},{\"kind\":\"Service\",\"id\":\"ba9c5821-063e-4eb6-bdfa-2e6960f51340\",\"label\":\"acme-api\"},{\"kind\":\"Service\",\"id\":\"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\",\"label\":\"acme-web-staging\"},{\"kind\":\"Server\",\"id\":\"cd751bfb-7d65-4628-99fc-0f7fd1c7d142\",\"label\":\"host-a\"},{\"kind\":\"Server\",\"id\":\"65d53194-0618-4f5a-bb52-f134fc2393aa\",\"label\":\"host-b\"},{\"kind\":\"Domain\",\"id\":\"dd49b2ee-c087-4bde-9160-f1c259685e7a\",\"label\":\"www.acme.example.com\"},{\"kind\":\"Domain\",\"id\":\"e972445e-465e-4aa6-a294-ba3207779498\",\"label\":\"api.acme.example.com\"},{\"kind\":\"Domain\",\"id\":\"128f798f-ba13-4cca-b8a8-10dbddbc3225\",\"label\":\"staging.acme.example.com\"}],\"evidence\":[{\"ref\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"note\":\"Project acme has two environments: production and staging.\"},{\"ref\":\"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\",\"note\":\"acme-web is in production, runs on host-a, is served at www.acme.example.com and depends on acme-api.\"},{\"ref\":\"ba9c5821-063e-4eb6-bdfa-2e6960f51340\",\"note\":\"acme-api is in production, runs on host-b and is served at api.acme.example.com.\"},{\"ref\":\"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\",\"note\":\"acme-web-staging is in staging, runs on host-a and is served at staging.acme.example.com.\"}],\"missingEvidence\":[\"Runtime status, health, and recent deployments of each service were not checked; only the infrastructure graph was read.\",\"Service source and build settings (image or repository, ports) were not read.\"]}",
+          "toolCalls": [],
           "reasoning": {
             "provider": "anthropic",
             "blocks": [
               {
                 "type": "thinking",
                 "thinking": "",
-                "signature": "CAQS0wYKEAgTGAI4AUIIdGhpbmtpbmcSDCf6kUrCVYpUtD7bOxoMjkw+Q0QkFGIL/VVzIjABK/cOS1T/HAd/VvhseB6VdKejkxZzSRQQuWbO1KUWWNMWL3oPqsxe5XoJabED7dIq8AWKcqBKqXzJ4exaZ4ZgzwTf+Dv3KsGb7nvZaHv63gdgRSReg1CIqaHExaLxUMS81aP7Xi8+qNylhHNqSIqsJy4LcenOm0LVLIVXlj5B586cmkDG6z32vIpTlYvclRGpHewcJsfGUb9nO4xWxTYH+KtBFqKtj2uJn/+XyG0fotsTWiVVu+kz6WgkyppmvgLquWkDN2TBgVt7aoQ863CiZhZpLTcoxeuDyOfCyaM69zeqaXWC1BC0l7G0DEzGLvh/pFs9jjQ9k/Uxx6AFu1+FIY6E7XUQTPDg08pca3exLmmvb3Uw8R+o8jj6jBpXKjbwpDHc4O2ua9YUr2qKqBILGxaVXjqoMHoSDOc1ey6SMDI0FELDZMMA+PS60Qw6+Q3GgZZSJJKzJIPiVaQN+SyPPoMnjTML+MiyTIttNFoHhylvmiTkPQrksFicvU6xy8vFWZ5G0UOM/Pt/Wn+AtrpMpOCk3bHg4BcWolRshLe7/y+42pA/Aie/ao6JqDr38kcN+rif18Do41cvTHRmT7Vv6ly+C7V6Xr2PmYqQg83BvthMf5KSKGaqq2SBAZg7kY35l/LWdjflr9MnZA8Q4MMf4FYFJXl1/Au/RHIT/J6LWoV5aSzznD6fl+sLDKoGPPCDV+Y4QN3IhXHLlR4DWq5Jt8NkQyC8l5QhVuzzJe2Zq6yQrob+eLzgW+bkQaid6ECsVwQKEhuuu3ZGf0ZKMMRGbC7TiJX7DAnk6936cs9/kfusKb6rUE2Pjsn2I8HBexgJlZ9ZDp75JK6t9Ujr6Y9r6oZHebAkkVRcpqNBMnpCY0Yb9mydXvwYlI2y8DK2AhKiufrTfrCGdodhdBBOPI0+jlZNbUwADrM8lCj5NfgFMj28Gx1wVVJMXXPGjBJaRPRjbsOeNeyz3I9KXjLDVze0FPFtVOQRkBsgNzOiynueQm/RGT2lEwVReks6WaYEvHLya+KT6l7OouYNQUgoMvr+sei3YkyjvjWk/j3oX5cLS2UpnxgB"
+                "signature": "CAQS1AYKEAgTGAI4AUIIdGhpbmtpbmcSDOxDTwVU7vu4MfKvlBoMNRiJgqW30kfZb6XpIjAJFn9ciqyuwtL/HS35o4rzPGMQkqdqLOOl01YlOv0rItALdDtOntUTfL7nJ1PoXL0q8QW14JJ/gsZmwFDx0Ds451m5RMOjnBxigXkF/8Hn3nE3B+FSHa/hR4XEFsPm2Z3kE52jYOSBdqRYEWTj1h5We5BPof8pIIpJEMyv7wITGQrUchd6u/8kV5mEfTXqwaRO2hujBcOl+sGxx6Tg+h9rc2OZg7fWpk4FIxOkYf+AZYeKl7loJKE0MmHZDkWgtC1Di85HYN48jS5a07emOKD8QWbSGA2yLmj8mDhWP9GvLOcZOnUbaZmzLr0V7rrWJ0bZlqpdAIM9Oidz++cfJ5KbbUmdpRmmiBCOZ936Nrq1ohdqI7wQRXnpvzoQcDQFpBniP0NDs2q8KbkQpX8OwV5l6OR5K8ip1cq+BcGLlxAeZIafV1TuHO4NiLsBHm7ZB2qcHLNyJwPTqrSL34Xpo3K88OJpgC+DCwZzMdKxs7ti3MbgYbyVEvn+xw6kUiCnPD5XVd3pBzwfhQ8YrNtPwseL4nn2CHo7EZ8yRlge/cmi+qMtymUoAwgdnmp/LGe4LGvgd8yT/KLd8Qzfk0Vv7wCwuLnrp2BoKI56xH/9RfoCVTD2cvXlvinidmgL+rUW+BkAJvHYlSfwMCFuewpQnQ9i+jAy1t8dibv8Pf1vC0vR1yPhqwv61+b9V0pZhgJnAfmEqHWtvp8BOxVMPXUS++4Vjg1achwJRJzMdSJDzUN3MwpsS06lspWCyI3yet1jjbFROnC7Xs33hOuydA9r9BXp9e+cN1a184RLEkMOKXNxKSUYAS7WVLzOhwW6yRSf80Gc+YSOKAZQdRA1shLfrRSfhVDneZNrgp8ZD9O0aPDAIzE81wH0tE8XUlytaiCLluJvSKOuZ0LDWYtLIdaFpIeiyGBtQ0WwCXje/2+YBDJrYijVGICS38Z8Geqkz1VoIJ/uKCTSEfPVP0SYm+Mu4JM3wmP/vnQiw3s92zrRdwD+SU3VZO01Jpsnce/LSNekBPD636ldag2ZWFus5gvhv5ZoBNhJswAFt1WF9uQPVg+aQfl2vrwYAQ=="
               }
             ]
           }
-        }
-      }
-    },
-    {
-      "key": "57109d597828cbcc9953e7695f221ce7cc8c49bc57448373128afb96b47873bd",
-      "model": "claude-opus-5-5",
-      "turn": 3,
-      "response": {
-        "text": "{\"answer\": \"The acme project has two environments, production and staging. They contain three services, all built from Git repos using the Dockerfile at the repo root. All three currently show the cached status RUNNING.\\n\\n**Production**\\n- **acme-api** runs on server host-b. It's built from https://github.com/acme/api (branch main) and listens inside its container on port 8080. No port is published on the host. It's reachable at api.acme.example.com.\\n- **acme-web** runs on server host-a. It's built from https://github.com/acme/web (branch main) and listens inside its container on port 3000, with no published host port. It's reachable at www.acme.example.com. acme-web depends on acme-api.\\n\\n**Staging**\\n- **acme-web-staging** also runs on host-a. It's built from the same acme/web repo but from the develop branch, listens inside its container on port 3000 (no published host port) and is reachable at staging.acme.example.com.\\n\\n**Settings shared by all three services**\\n- A healthcheck on /health.\\n- Auto-rollback turned on.\\n- The 3 most recent images are kept.\\n\\nThis answer only covers how acme is set up. I didn't look at deployment history, live health or metrics, so this isn't a diagnosis of any problem.\", \"diagnosis\": \"unknown\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Project\", \"id\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"label\": \"acme\"}, {\"kind\": \"Environment\", \"id\": \"43ae5173-99bb-4153-ba4e-45dd0fc291ab\", \"label\": \"production\"}, {\"kind\": \"Environment\", \"id\": \"c0fe22dc-1aa8-426c-93d7-398c8eb01e0c\", \"label\": \"staging\"}, {\"kind\": \"Service\", \"id\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"label\": \"acme-api\"}, {\"kind\": \"Service\", \"id\": \"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\", \"label\": \"acme-web\"}, {\"kind\": \"Service\", \"id\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"label\": \"acme-web-staging\"}, {\"kind\": \"Server\", \"id\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"label\": \"host-b\"}, {\"kind\": \"Server\", \"id\": \"cd751bfb-7d65-4628-99fc-0f7fd1c7d142\", \"label\": \"host-a\"}, {\"kind\": \"Domain\", \"id\": \"e972445e-465e-4aa6-a294-ba3207779498\", \"label\": \"api.acme.example.com\"}, {\"kind\": \"Domain\", \"id\": \"dd49b2ee-c087-4bde-9160-f1c259685e7a\", \"label\": \"www.acme.example.com\"}, {\"kind\": \"Domain\", \"id\": \"128f798f-ba13-4cca-b8a8-10dbddbc3225\", \"label\": \"staging.acme.example.com\"}], \"evidence\": [{\"ref\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"note\": \"Project acme has two environments: production and staging.\"}, {\"ref\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"note\": \"acme-api: production, on host-b, Git repo acme/api (branch main), internal port 8080, healthcheck /health, auto-rollback on, cached status RUNNING.\"}, {\"ref\": \"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\", \"note\": \"acme-web: production, on host-a, Git repo acme/web (branch main), internal port 3000, depends on acme-api, cached status RUNNING.\"}, {\"ref\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"note\": \"acme-web-staging: staging, on host-a, Git repo acme/web (branch develop), internal port 3000, cached status RUNNING.\"}, {\"ref\": \"e972445e-465e-4aa6-a294-ba3207779498\", \"note\": \"Domain for acme-api.\"}, {\"ref\": \"dd49b2ee-c087-4bde-9160-f1c259685e7a\", \"note\": \"Domain for acme-web.\"}, {\"ref\": \"128f798f-ba13-4cca-b8a8-10dbddbc3225\", \"note\": \"Domain for acme-web-staging.\"}], \"missingEvidence\": [\"Deployment history and recent deployment status were not checked.\", \"Live health, metrics and server connection status were not checked.\"]}",
-        "toolCalls": [],
-        "stopReason": "end_turn",
-        "usage": {
-          "inputTokens": 10267,
-          "outputTokens": 1547
-        },
-        "message": {
-          "role": "assistant",
-          "content": "{\"answer\": \"The acme project has two environments, production and staging. They contain three services, all built from Git repos using the Dockerfile at the repo root. All three currently show the cached status RUNNING.\\n\\n**Production**\\n- **acme-api** runs on server host-b. It's built from https://github.com/acme/api (branch main) and listens inside its container on port 8080. No port is published on the host. It's reachable at api.acme.example.com.\\n- **acme-web** runs on server host-a. It's built from https://github.com/acme/web (branch main) and listens inside its container on port 3000, with no published host port. It's reachable at www.acme.example.com. acme-web depends on acme-api.\\n\\n**Staging**\\n- **acme-web-staging** also runs on host-a. It's built from the same acme/web repo but from the develop branch, listens inside its container on port 3000 (no published host port) and is reachable at staging.acme.example.com.\\n\\n**Settings shared by all three services**\\n- A healthcheck on /health.\\n- Auto-rollback turned on.\\n- The 3 most recent images are kept.\\n\\nThis answer only covers how acme is set up. I didn't look at deployment history, live health or metrics, so this isn't a diagnosis of any problem.\", \"diagnosis\": \"unknown\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Project\", \"id\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"label\": \"acme\"}, {\"kind\": \"Environment\", \"id\": \"43ae5173-99bb-4153-ba4e-45dd0fc291ab\", \"label\": \"production\"}, {\"kind\": \"Environment\", \"id\": \"c0fe22dc-1aa8-426c-93d7-398c8eb01e0c\", \"label\": \"staging\"}, {\"kind\": \"Service\", \"id\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"label\": \"acme-api\"}, {\"kind\": \"Service\", \"id\": \"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\", \"label\": \"acme-web\"}, {\"kind\": \"Service\", \"id\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"label\": \"acme-web-staging\"}, {\"kind\": \"Server\", \"id\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"label\": \"host-b\"}, {\"kind\": \"Server\", \"id\": \"cd751bfb-7d65-4628-99fc-0f7fd1c7d142\", \"label\": \"host-a\"}, {\"kind\": \"Domain\", \"id\": \"e972445e-465e-4aa6-a294-ba3207779498\", \"label\": \"api.acme.example.com\"}, {\"kind\": \"Domain\", \"id\": \"dd49b2ee-c087-4bde-9160-f1c259685e7a\", \"label\": \"www.acme.example.com\"}, {\"kind\": \"Domain\", \"id\": \"128f798f-ba13-4cca-b8a8-10dbddbc3225\", \"label\": \"staging.acme.example.com\"}], \"evidence\": [{\"ref\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"note\": \"Project acme has two environments: production and staging.\"}, {\"ref\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"note\": \"acme-api: production, on host-b, Git repo acme/api (branch main), internal port 8080, healthcheck /health, auto-rollback on, cached status RUNNING.\"}, {\"ref\": \"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\", \"note\": \"acme-web: production, on host-a, Git repo acme/web (branch main), internal port 3000, depends on acme-api, cached status RUNNING.\"}, {\"ref\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"note\": \"acme-web-staging: staging, on host-a, Git repo acme/web (branch develop), internal port 3000, cached status RUNNING.\"}, {\"ref\": \"e972445e-465e-4aa6-a294-ba3207779498\", \"note\": \"Domain for acme-api.\"}, {\"ref\": \"dd49b2ee-c087-4bde-9160-f1c259685e7a\", \"note\": \"Domain for acme-web.\"}, {\"ref\": \"128f798f-ba13-4cca-b8a8-10dbddbc3225\", \"note\": \"Domain for acme-web-staging.\"}], \"missingEvidence\": [\"Deployment history and recent deployment status were not checked.\", \"Live health, metrics and server connection status were not checked.\"]}",
-          "toolCalls": []
         }
       }
     }

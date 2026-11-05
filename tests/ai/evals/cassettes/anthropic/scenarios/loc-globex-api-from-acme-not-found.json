@@ -16,7 +16,7 @@
         "text": "",
         "toolCalls": [
           {
-            "id": "toolu_01BcYGemQaAFA8b3U4HVrWDj",
+            "id": "toolu_01F1qc9EqZzA9u7qtt9nrqiA",
             "name": "get_infrastructure_graph",
             "input": {
               "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
@@ -33,7 +33,7 @@
           "content": "",
           "toolCalls": [
             {
-              "id": "toolu_01BcYGemQaAFA8b3U4HVrWDj",
+              "id": "toolu_01F1qc9EqZzA9u7qtt9nrqiA",
               "name": "get_infrastructure_graph",
               "input": {
                 "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
@@ -44,11 +44,11 @@
       }
     },
     {
-      "key": "25a323374e064f69f21f85cf0c9c5b147b1f01b05c86c8ea184e1b8d1df0137c",
+      "key": "c677f26ce65597e702ab617fd0a46056c45ccbcdde6d1562bc80a690988a7471",
       "model": "claude-opus-5-5",
       "turn": 2,
       "response": {
-        "text": "{\"answer\":\"I couldn't find a service called globex-api. I can only see the project \\\"acme\\\", and its infrastructure graph has no service with that name, so I can't tell you where it runs. It may belong to a different project that I don't have access to here. If you meant a service in acme, tell me which one and I'll look up its server.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Project\",\"id\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"label\":\"acme\"}],\"evidence\":[{\"ref\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"note\":\"The full infrastructure graph for this project (not truncated, nothing left out) has no service named globex-api.\"}],\"missingEvidence\":[\"No service named globex-api in project b0cd1806-31c5-4699-bed0-cae3507b370c, so there's no server it runs on to report.\"]}",
+        "text": "{\"answer\": \"I couldn't find a service called globex-api in this project. The infrastructure graph for project acme returned three services, and none of them is globex-api. My access only covers this project, so if globex-api belongs to a different project, I can't see where it runs. If you meant a service in this project, tell me its exact name and I'll look up its server.\", \"diagnosis\": \"unknown\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Project\", \"id\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"label\": \"acme\"}], \"evidence\": [{\"ref\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"note\": \"The full infrastructure graph for this project (not truncated, nothing omitted) has no service named globex-api.\"}], \"missingEvidence\": [\"No service named globex-api exists in project b0cd1806-31c5-4699-bed0-cae3507b370c. It may be in a project outside my access, or the name may be different.\"]}",
         "toolCalls": [],
         "stopReason": "end_turn",
         "usage": {
@@ -57,7 +57,7 @@
         },
         "message": {
           "role": "assistant",
-          "content": "{\"answer\":\"I couldn't find a service called globex-api. I can only see the project \\\"acme\\\", and its infrastructure graph has no service with that name, so I can't tell you where it runs. It may belong to a different project that I don't have access to here. If you meant a service in acme, tell me which one and I'll look up its server.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Project\",\"id\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"label\":\"acme\"}],\"evidence\":[{\"ref\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"note\":\"The full infrastructure graph for this project (not truncated, nothing left out) has no service named globex-api.\"}],\"missingEvidence\":[\"No service named globex-api in project b0cd1806-31c5-4699-bed0-cae3507b370c, so there's no server it runs on to report.\"]}",
+          "content": "{\"answer\": \"I couldn't find a service called globex-api in this project. The infrastructure graph for project acme returned three services, and none of them is globex-api. My access only covers this project, so if globex-api belongs to a different project, I can't see where it runs. If you meant a service in this project, tell me its exact name and I'll look up its server.\", \"diagnosis\": \"unknown\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Project\", \"id\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"label\": \"acme\"}], \"evidence\": [{\"ref\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"note\": \"The full infrastructure graph for this project (not truncated, nothing omitted) has no service named globex-api.\"}], \"missingEvidence\": [\"No service named globex-api exists in project b0cd1806-31c5-4699-bed0-cae3507b370c. It may be in a project outside my access, or the name may be different.\"]}",
           "toolCalls": [],
           "reasoning": {
             "provider": "anthropic",
@@ -65,7 +65,7 @@
               {
                 "type": "thinking",
                 "thinking": "",
-                "signature": "CAQS1wUKEAgTGAI4AUIIdGhpbmtpbmcSDE8GRyRifY7kftApWRoM/VDni40INSLBoLgLIjBmF8HNKnnJy/G56rquc21WJmdLkoTgdxl5iGzhhJroo8M7sOfJ6Nsn84ZHyA+GdmYq9ATxUSeZcrTe5+hUGj6ypJBfK8G1jV2sibaUvzB780Y0GVgNUUszKnurtZsHFfC1VSOKFLl4ZuY9hDd/xQzycmuUzhGtfVCu51MyCpiRyYzT2M4mMlCVnIxUDUvNvVubHMFynFs22WL34dgQRfKyG7N3WnJKow8fTEVGUAkRQI1je14w7awne5Q36y3BUVOXtzUvfwlXOO+KtAIWU+zsWt0zByKkmbmqr4way4702glX6xCb0/WE7ZguIifNhLI8+XgQHa0+5xMSaeaiUtZBLO8J8ucSq6IhmftWxXTZlS//Uf+YRXx7O52rXcR1eGPZo/NuXqE9XWiOBIJiaw4O3ZLWZwtHrxpAVEcPZki/qqB1DkXU52zALvKZj1XOZRbdWlDJc77Lf741mBXyO7z/A4z0N80xFFiR9Ay3Wd0UzY2k2NpBb3GwvvJtd/NGMgurFpKarB8xG+Ak4J8dT/kWx22y61UWDAwVHoty7fRpTQiCwb30lqlYRMM8CPAFHR1XFq5HnmVUMn36i6tqmttvWcIuFWhEQUaWxMH8XViwYq0dlIzN8cNM8mJ0wLElWaPgPRWGBUk2uCeicuMI4hjCkpzCNAuEdNVC826oMWGqgJHjk6ljY77YXEGQWbkeIsWTBgkSUQsrNxD+O7yJy6nAQvvbThZ6LEnFIRwK2aOMrL+tSJxhqFr0czvjFI0qTyaHhfEFfgRzxT1ci73HTsQw5OpEHEAtPrc3bhUi3VUuL/5Stg9ymA46AVcHbC0H1VJgqhh25IqlOiuot3UEpLITPDN7LkdkgGfp+MC05mARL4FybefD6pbBBPb85VE5OCuvyZZzFr73GAE="
+                "signature": "CAQSkgUKEAgTGAI4AUIIdGhpbmtpbmcSDLHsOD7jliI1FBIJuRoMFVodlOqqnqlk1k59IjCgCuSnTA0B+yScOW+gbJpxaBYz9KmZwkZqa1/0NuD7+6qL0TSF0p4vNoS1kcrJtHwqrwRv5o0WVDq/finHXGg1FE6ecGpO56R+232/SXCOuV7jMqxm3mypkHJh+Ga5ECdXcOeAG9/+4hDAFk3Hz2EWckEdRDcX1NJdBll8u6EIhslbpk0oH8C5/X6nuH8Y1YkcAGpkhV6rtm0QU4Z/5GIx25n78UZA+SMcUtkBvmX2nMz666S8igxkv0HkukPEBtUQi4QSMcGD9Xti8wk6s5rTvMNZwmBOzuut0AznElCQs75oWoYA7WBB6yJpomZkDafzuBeVCkJApXWe6yWuXRcm+OyteXuFqzSQ0eupZd0B8DvwsTfRNztruSs5fHKp2OBzfkkhZhuaWHrI+V+b9R0YvameI8Fw3MiFA/0IbT5fRt/t1+5wpUXkhZ+JpCSNKFnwfS34S1TgfaOL3N+t/MdMj7ElFxfzikiwB96rNUr3FcKDPeWmj9PqRGxCG/6q28R16MTYsE61Xlgbc5o7ZfAfJ3I/3QV2bTU1t4asBW1GdqzZEyJ/EcvsnP310VgZsflgGkPPwAotslpiI8JfgouAcNC6p7aEiOU4QnTpU+uZ8GGmRm3hfSoWAq3U0wu+Ew2m5CJEnI78esVHIwxAY+SZaA1WP62t1X7ifKA322RFYPGpaFgnIBsmXPRDN6T8e+xeB640Yb1Xu36MWYaTvuk0tCyfyBToKBRceU+jEceWJiAYBofQDuAJAT2yJ4KkWH5ido94GC9y3dwRXWBDROoHYBg6RmSznTmNziBxjiTTmmY0GAE="
               }
             ]
           }

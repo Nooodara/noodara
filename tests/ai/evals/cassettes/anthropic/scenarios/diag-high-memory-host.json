@@ -16,12 +16,12 @@
         "text": "",
         "toolCalls": [
           {
-            "id": "toolu_01UjTu7WQFPPCePMGzHaKNMF",
+            "id": "toolu_01MJNjebisW69FDBJCRkWUCH",
             "name": "list_services",
             "input": {}
           },
           {
-            "id": "toolu_01Kbg8McaczRzn9x26sYTjP8",
+            "id": "toolu_01L5yPGfPCKLeS5U2E5fdToJ",
             "name": "get_server",
             "input": {
               "serverId": "76825c68-8399-4fc0-8f5c-457bcceed234"
@@ -38,12 +38,12 @@
           "content": "",
           "toolCalls": [
             {
-              "id": "toolu_01UjTu7WQFPPCePMGzHaKNMF",
+              "id": "toolu_01MJNjebisW69FDBJCRkWUCH",
               "name": "list_services",
               "input": {}
             },
             {
-              "id": "toolu_01Kbg8McaczRzn9x26sYTjP8",
+              "id": "toolu_01L5yPGfPCKLeS5U2E5fdToJ",
               "name": "get_server",
               "input": {
                 "serverId": "76825c68-8399-4fc0-8f5c-457bcceed234"
@@ -54,14 +54,21 @@
       }
     },
     {
-      "key": "962cb63f45dd60fe79cb7bf10ea346d125c159d088c4fef2fa09f775c7b94eb1",
+      "key": "22f367effd21f15409fee404174532687c52170cf150f902ea5e1e09bacea597",
       "model": "claude-opus-5-5",
       "turn": 2,
       "response": {
         "text": "",
         "toolCalls": [
           {
-            "id": "toolu_01Sj8EN9Y9CWSVmMqUorQBig",
+            "id": "toolu_013Yqu3GMQFBJt58CfBoUZjx",
+            "name": "get_health",
+            "input": {
+              "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8"
+            }
+          },
+          {
+            "id": "toolu_01KrYGbwNhmMbrSWHL2XQDiQ",
             "name": "get_metrics",
             "input": {
               "target": "server",
@@ -70,14 +77,7 @@
             }
           },
           {
-            "id": "toolu_011KrqEmrnSK1HrXdTmCK7Lg",
-            "name": "get_health",
-            "input": {
-              "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8"
-            }
-          },
-          {
-            "id": "toolu_01VsryrFKCZEs6YF8HeaMQmj",
+            "id": "toolu_01EkzdfhnTVC5xi5PcJYVUX4",
             "name": "get_metrics",
             "input": {
               "target": "service",
@@ -86,7 +86,7 @@
             }
           },
           {
-            "id": "toolu_01RtpGVtKx9YiX91LGPqddE7",
+            "id": "toolu_01QGydqzaHSQxDw58DG4rmhd",
             "name": "get_logs",
             "input": {
               "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8",
@@ -104,7 +104,14 @@
           "content": "",
           "toolCalls": [
             {
-              "id": "toolu_01Sj8EN9Y9CWSVmMqUorQBig",
+              "id": "toolu_013Yqu3GMQFBJt58CfBoUZjx",
+              "name": "get_health",
+              "input": {
+                "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8"
+              }
+            },
+            {
+              "id": "toolu_01KrYGbwNhmMbrSWHL2XQDiQ",
               "name": "get_metrics",
               "input": {
                 "target": "server",
@@ -113,14 +120,7 @@
               }
             },
             {
-              "id": "toolu_011KrqEmrnSK1HrXdTmCK7Lg",
-              "name": "get_health",
-              "input": {
-                "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8"
-              }
-            },
-            {
-              "id": "toolu_01VsryrFKCZEs6YF8HeaMQmj",
+              "id": "toolu_01EkzdfhnTVC5xi5PcJYVUX4",
               "name": "get_metrics",
               "input": {
                 "target": "service",
@@ -129,7 +129,7 @@
               }
             },
             {
-              "id": "toolu_01RtpGVtKx9YiX91LGPqddE7",
+              "id": "toolu_01QGydqzaHSQxDw58DG4rmhd",
               "name": "get_logs",
               "input": {
                 "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8",
@@ -143,7 +143,7 @@
               {
                 "type": "thinking",
                 "thinking": "",
-                "signature": "CAQS5QQKEAgTGAI4AUIIdGhpbmtpbmcSDAQTiotEKocWyPA0oRoMGOGSRK3YBXr0Kou/IjACdiskIWtREgY+FAHPkVAEHQLyhu8ymv41eAILg0/TIFO9ECXeRB/11b6G9zIUQ+kqggSeKlpGNH2z03GlUs/U/X5YzmYPfAa3qFm7f9x/fb992XdqzENmr9tQpsFmzVHBKmtnu4qVduWkekd+3Lmg3pz/p+7c7+3qN2FpW5/gpUZUaJm82u71Ubjdz8HNZKtQt7wSAdn4/g8WNNRjM2w2CIuDh/jgY0NeTsIzmfM94kL4EidZ750l1MdveDRsCy3uqQGXPTpqB9YyyEYF2sGfACBvunF6CaXpPOtICvT5pT/TV+wm+HbJUgGY3ZJsK8Penq1FcvEKmRnzY6UlpMEahVbMawSvXTISkVfJSi3s8J8YrqyQV+3crLFOOnQOUFTDNf2VNq7Jax+vlnn001Ix3bQFWrWxvgnOzF+9lhgfhldRyC8DUZ9iuEPZbxjEW8r6zTCr3H4K3U/2eKNna+eTHMFtSkF2QZNew6YFyZc4aaAtKrOQmyOFgu4lyosFVVS1xUygJjNxvLv5GO57UWd2Lkuay2t5ZXTTr0+i3gv9HiDHIZgw9RtrTe9SOM2lkqbBAR9Yfu4Tpi3WTvzHIMPv4bQ0B5MtxNzMa6X731qQGb5SDCL8pkKukm2lzsocIVSPM9rzlNCMQYEYNIuf8rEdpv40Abtk9s5NC+9WiMLdM2eoSGBacVdxIFEqIluhZDrJG1jj8GR+uUsuhGX9QjR3HUrorWQQe3zbmyG2/wiB+ShpONIpGAE="
+                "signature": "CAQS5QQKEAgTGAI4AUIIdGhpbmtpbmcSDDxk2vfP/xF7rI+Y1RoMkmGWSrsyNR7ackU+IjDmqZTSAnIfsPaCFmbC5+a0x9ku/J6p1s+gKUjOeihutyRtkM0KbMsVLJj2XeYCq34qggQTA+iuAm75TI2VJiNZWyx0Zt1O2IcJsU0/m9lkphUxEuVyoZktbxKJNIhgwmrRvylxIR8WAFwPcOfuLtB1wevlKqzuyATP5K6zC9mlF1EnzngKNKQr/pWn/BoVVgNl0BANMRvnkC6eQKdlB90ln5vK0hoPRXd2MlqqSwo7lyoAlXylvQ/+iOc+VOx0AunOK9YaCOMrCnpRL8CJHrkDqNgYHr1Ja2UyP2he8Y9JAkue+ppCoBQH9kp+ZLKIrSk8Wjto1e6Ngdah2jgR6MiOQUNn43lrQm1CSF093cVKvyXRRolNTPc8GZC3ijFmqwaFUH4Nqba0qFJWtU8e50CS6JrA9vOtNpCVE9zf2g/mouCs1vdbsDuaxkAbPg3kk4ueuLKVof2mxwu/I/hEehP3GuHW11krOd5d/1Ro8V/HGS40NyUsVKPX2FjHE41MXlU5lcGbY5TqjdHHDKZA7xD+gtRqwRB8UfE9jkG3cj4HwEV8O1n3PntmgKvvEjLK9uLQUdF8PVURFzOyc3YNGydLSIzLejSLgAjin6KEMFCxZfV8c/V78npjS4PtjLl/Y+xP1Sgsgqzl7FA8J2fcDDTUtDNVoN/clCCUGBV69Zy7KCMYCjka0rQ/2hsm5xzfSmuJvsUSa6PIuG/+1c0FK3vyrzpoRO9i52etBBH5Z/G2DPBP2y3JGAE="
               }
             ]
           }
@@ -151,68 +151,31 @@
       }
     },
     {
-      "key": "9b72599e8cb19dc6d5ea41c14767fa39165a6df3afbb921b03d3bb20037d076e",
+      "key": "d224f2a2795417bdf7e7b7371a50f83920e02cfb51f1466d9c2dc95b0dc588d2",
       "model": "claude-opus-5-5",
       "turn": 3,
       "response": {
-        "text": "",
-        "toolCalls": [
-          {
-            "id": "toolu_01H1FHy7KfmUfxxQQJm9GdhV",
-            "name": "get_logs",
-            "input": {
-              "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8",
-              "limit": 30
-            }
-          }
-        ],
-        "stopReason": "tool_use",
+        "text": "{\"answer\": \"The likeliest cause is memory pressure on postgres's server, data-1. A full disk may be adding to it. I haven't confirmed either one as the reason it's slow, because there are no logs or query timings.\\n\\n**Memory:** data-1 has 16 GB of RAM. Its memory use rose from 88.5% to 92.8% between 11:57 and 12:00. When memory is that tight, the operating system has less room to cache disk data, so database reads and writes slow down. Postgres itself is using about 9.6 GB, roughly 56% of the server's memory, and that went up every minute too. The service's own high-memory flag is off, so the pressure shows up at the server level.\\n\\n**Disk:** data-1's disk is 90% full (about 184 GB of 200 GB), and postgres's health check flags it for high disk use. If the disk keeps filling, slow writes can turn into failed writes.\\n\\n**Ruled out:** postgres isn't crashing or failing to deploy. The container is running with 0 restarts, and the last deployment succeeded on 2026-10-04. Server CPU is moderate at 35–41%.\\n\\nI can only read data, so I can't change anything. Things to look at next:\\n- What else is using the rest of data-1's memory.\\n- Postgres's memory settings, such as shared_buffers and work_mem, compared with the 16 GB of RAM.\\n- What is filling the disk: database tables, write-ahead log (WAL) files, old Docker images or logs.\\n- Postgres's own slow-query statistics.\", \"diagnosis\": \"high_memory\", \"confidence\": 0.6, \"entities\": [{\"kind\": \"Service\", \"id\": \"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\", \"label\": \"postgres\"}, {\"kind\": \"Server\", \"id\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"label\": \"data-1\"}], \"evidence\": [{\"ref\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"note\": \"Server memory use rose from 88.5% to 92.8% of 16 GB between 11:57 and 12:00; disk is 90% full (184320 of 204800 MB); CPU is 35–41%.\"}, {\"ref\": \"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\", \"note\": \"Running with 0 restarts and no healthcheck. Memory rose from about 9.4 GB to 9.6 GB (about 56%). Health flags: highDisk=true, highMemory=false. No log entries were returned.\"}, {\"ref\": \"3b6eb201-773e-47c3-bdc8-e50886f34d58\", \"note\": \"Last deployment SUCCESS, finished 2026-10-04, so a failed deployment is unlikely to be the cause.\"}], \"missingEvidence\": [\"No postgres logs or query timing data, so the slowness can't be tied directly to memory or disk pressure.\", \"No postgres CPU data (that metric series was empty).\", \"No breakdown of which processes use the rest of data-1's memory or what is filling its disk.\", \"Metrics cover only the last few minutes, so the longer trend isn't known.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
         "usage": {
           "inputTokens": 9797,
-          "outputTokens": 180
+          "outputTokens": 1144
         },
         "message": {
           "role": "assistant",
-          "content": "",
-          "toolCalls": [
-            {
-              "id": "toolu_01H1FHy7KfmUfxxQQJm9GdhV",
-              "name": "get_logs",
-              "input": {
-                "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8",
-                "limit": 30
-              }
-            }
-          ],
+          "content": "{\"answer\": \"The likeliest cause is memory pressure on postgres's server, data-1. A full disk may be adding to it. I haven't confirmed either one as the reason it's slow, because there are no logs or query timings.\\n\\n**Memory:** data-1 has 16 GB of RAM. Its memory use rose from 88.5% to 92.8% between 11:57 and 12:00. When memory is that tight, the operating system has less room to cache disk data, so database reads and writes slow down. Postgres itself is using about 9.6 GB, roughly 56% of the server's memory, and that went up every minute too. The service's own high-memory flag is off, so the pressure shows up at the server level.\\n\\n**Disk:** data-1's disk is 90% full (about 184 GB of 200 GB), and postgres's health check flags it for high disk use. If the disk keeps filling, slow writes can turn into failed writes.\\n\\n**Ruled out:** postgres isn't crashing or failing to deploy. The container is running with 0 restarts, and the last deployment succeeded on 2026-10-04. Server CPU is moderate at 35–41%.\\n\\nI can only read data, so I can't change anything. Things to look at next:\\n- What else is using the rest of data-1's memory.\\n- Postgres's memory settings, such as shared_buffers and work_mem, compared with the 16 GB of RAM.\\n- What is filling the disk: database tables, write-ahead log (WAL) files, old Docker images or logs.\\n- Postgres's own slow-query statistics.\", \"diagnosis\": \"high_memory\", \"confidence\": 0.6, \"entities\": [{\"kind\": \"Service\", \"id\": \"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\", \"label\": \"postgres\"}, {\"kind\": \"Server\", \"id\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"label\": \"data-1\"}], \"evidence\": [{\"ref\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"note\": \"Server memory use rose from 88.5% to 92.8% of 16 GB between 11:57 and 12:00; disk is 90% full (184320 of 204800 MB); CPU is 35–41%.\"}, {\"ref\": \"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\", \"note\": \"Running with 0 restarts and no healthcheck. Memory rose from about 9.4 GB to 9.6 GB (about 56%). Health flags: highDisk=true, highMemory=false. No log entries were returned.\"}, {\"ref\": \"3b6eb201-773e-47c3-bdc8-e50886f34d58\", \"note\": \"Last deployment SUCCESS, finished 2026-10-04, so a failed deployment is unlikely to be the cause.\"}], \"missingEvidence\": [\"No postgres logs or query timing data, so the slowness can't be tied directly to memory or disk pressure.\", \"No postgres CPU data (that metric series was empty).\", \"No breakdown of which processes use the rest of data-1's memory or what is filling its disk.\", \"Metrics cover only the last few minutes, so the longer trend isn't known.\"]}",
+          "toolCalls": [],
           "reasoning": {
             "provider": "anthropic",
             "blocks": [
               {
                 "type": "thinking",
                 "thinking": "",
-                "signature": "CAQSzwYKEAgTGAI4AUIIdGhpbmtpbmcSDPmdb9CAw38QWPxUrxoMN9AMuRaSymBQ+xvIIjAmhDV42nimzAEXOUAi/EKrIe/3TMcUpd3oTF8HAvltCQ8yZo0IhdJvQYTFYkwWPkcq7AUDGv8KB9irNr5SxpS5FqYlOKT0pKEeO+NRfy5fwK66RRZdMhQjVlShhmzITE6+hsD/73I24RxXfNXVit2IrDdNtXKZhNQSANEo411B7dcWOFtnqxN+kH5ph8IZnnZUMAaEPn9gBgpaFJYEc0HtkKc2KSW9ucYiiaK2P02jGZP5agKOAFxA7kwo7b+NCUlJ9ndZwSz3b/ulwERq4ycKG0xvmtrknZIKqusZ/BM3tKwLeAqIbZUi1/afIic30DY+lz52dlbPM/eByanVgGQDkqLO+TPvZqx5PdNEO6zyGHIKRga4FKtR1wR4uYnWbBZrYVifAoygTsiW4SIVKNv5iSd2hUvCKbmS/EQVknNO4CGNNYPc5KXM6+N7lZP3jleTaCc5A4pEvyZycdwAlZWCyHBJJE45bZuNqrDsll+j0IspgS4U7w7g76vsExy4jICDqffpuSCvuAAGdq9Pyfa9k3y+XztuKIK7VEgatL8HcwG5dV7x5plUJVF4EQv1hkSQKDBgaq5dnLHQeYIGWTg5rSY+dct4rt5Qf082+7z4AXLAKrqWFYBoiDAfBJJA+wv1dta5+QNHAItaKVtTZLGgj8m2zewTaRRNt0EnKJjxgjcQ9mlHUgDJ7Gq+5OIGWNYA7LTthHarUiX0WEixeljDZzsRx5SdiC1qvi1h3kIMwxRdBT/CK6EZHpC0srCnMIhVLgcp6VRCI60Np+GXjdN4GJuiEmmQfRyfIJlxR00hsTDLj7uDV0JnR0uPFPpMF9YR8jAiYPwNkQvdYV+tvMs7gpo23PWuVxsQl4Ug2sQL/2NACWL9a6P/VUyGIs95FAoFojwUf+HsBFmil4qJIY8ZjDNJmeped0h/PMRVlYUFNQflfCQqOXwAWdZWBseiqr2frIhr/tV4y+0cL/yRTmOPAR18a9kamgt0poYjfqlMyXolW+pOXPnezxd9P36Xlc2P4n2j5+oEzN2AEtjDTSPOfGG+StFLsNhwXcHe+0E9GAE="
+                "signature": "CAQS6gYKEAgTGAI4AUIIdGhpbmtpbmcSDCLfOnhl9XfMFk3fZRoM5NQlrB0Tx6z/gA4mIjAiMX4MN7lSMrgy/YKqsuehADBzV7SOOvJU/WnbpGXp9lSUXROQq2puyco3dqzovWoqhwZTFpubZHLm2XxIFy7lPqiUI9psO51H/uNQyVja7jl6v8a1EzO3zFp0XBx9Bou1Xuq+PR+Ec9gzq+p6TZ6jLeYqgQdfkpgV406qbLDP5XRQmWlUTID66jcajhWlDS+fDDx4zHdoK/6D5t3MrD2qtmos9SyEkC7vBlBvaIIpp3dJ0mRU4/d2c6ozERL/sh+S32wEY3YoMGRPs8YMZ0JNxuQjzCoV2wtcEDdX/2KkvXCzu64U4qToeOOeTVeXQLwj1zsMstJudsryMg0EnPvoHU43G5D5V87WaebSV8CT7099rzAHdqdZ8Ktx0ih3WvrXFsTAp6oT3I3SKLbMABXzFf+FqPbmiMZli+ZJW+6LcKbl2bRgzMWGuGne0X9Wta/nyLrYC28dN0X7Gkray4avusJyZ99FoJW2EiM1XBiLYKmhAaqlR/FX16SwamiNNgX4Ex/bQTxgvqQTXGuHspRpvpgU0swxrdP9jGPgmxqbm7iaE7aB4xIQ2xFFqqKoidI/W5tlkS4jWjuEwefdV22b+ePrLtXNPZkWckDyo+xlAgeyzERV9Zwnp0tIgjuRaX3KoB2eFmQZKAaT+DVL+5N1ta1RGrSBwNDEQkcvT6+v4ZetV7iD9wY7Nf/VFXg2fvwiOfUWjdlHlQpLjEmm01q8er3zzrsWhwQ1rAyDJL8ufGK8SmLxiddWmdJg7C/x8BiKhhEKMebCh+19E3s1u8KwFGsXvs3MTNEr/nVHW6Oc7/HRZLVa2AyPXnm0z1F0xnW8ypAQZVaxUn7QAyiajYHxEIz6N7aVhnjbFj+LphgosaDNdLDuT3kx8zBbAvouETPP0xeAR5grcvpwAsdn5BlfBUsYsyGMd0gkVa/dcuoApUB6ke2TIZcgLguevua+Nv3qNHuLZz4Te/dLDTnxKMFqpBDVRVYaVx0oe5Re7+uT5Gb7XP3BpoZQ1IMKY/QJisXY8V6xPo0rSzzhIBvx+bvIqm7nnG0RqWAKl0iW22+d7mJCmJ68rwVZ+lYQbM/EwHDVQRypSxYGQ9IMGAE="
               }
             ]
           }
-        }
-      }
-    },
-    {
-      "key": "439dd733d3ec7cf9021e26d34b816535cffd5ae0d22d655611a01789b01eb02f",
-      "model": "claude-opus-5-5",
-      "turn": 4,
-      "response": {
-        "text": "{\"answer\":\"The most likely cause is that the server postgres runs on is short of memory. Postgres runs on server data-1 (16 GB RAM, 8 cores), and that server's memory use climbed from 88.5% to 92.8% in the last few minutes (about 15.9 GB used). Postgres alone uses about 9.6 GB (56% of the server) and is still growing. When memory is that tight, the OS has little room left to cache disk reads, so queries slow down. The disk is also 90% full (about 180 of 200 GB), and the system has flagged it as high. That's a second risk: a nearly full disk can slow writes, vacuum and WAL handling. CPU use is moderate (35–41%). The container itself looks fine: it's running, with no restarts, and the last deployment succeeded on 2026-10-04. I can't confirm the exact cause because postgres returned no log entries and there are no query-level metrics. I can only read data, so I can't change anything. Next steps to check: what besides postgres is using the remaining ~6 GB on data-1, postgres's memory settings (shared_buffers, work_mem, max_connections), whether connection counts or long-running queries are growing, and what is filling the disk (table and index bloat, WAL, old images).\",\"diagnosis\":\"high_memory\",\"confidence\":0.6,\"entities\":[{\"kind\":\"Service\",\"id\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"label\":\"postgres\"},{\"kind\":\"Server\",\"id\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"label\":\"data-1\"}],\"evidence\":[{\"ref\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"note\":\"Server memory rose from 88.5% to 92.8% (about 15.9 GB of 16 GB) between 11:57 and 12:00. Disk is 90% used (184320 of 204800 MB). CPU is 35–41%.\"},{\"ref\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"note\":\"postgres (postgres:16) uses about 9.6 GB, 56% of server memory, and is growing. Its container is running with 0 restarts and no healthcheck. The health flags show highDisk true. No log entries were returned.\"},{\"ref\":\"3b6eb201-773e-47c3-bdc8-e50886f34d58\",\"note\":\"The last deployment succeeded on 2026-10-04, so a recent deployment is unlikely to be the cause.\"}],\"missingEvidence\":[\"No postgres log entries were available (no slow-query, checkpoint or out-of-memory messages)\",\"No query-level or connection-count metrics\",\"No per-container breakdown of the roughly 6 GB of server memory postgres isn't using\",\"No breakdown of what is using the disk on data-1\",\"No postgres CPU samples (the series was empty)\"]}",
-        "toolCalls": [],
-        "stopReason": "end_turn",
-        "usage": {
-          "inputTokens": 10079,
-          "outputTokens": 956
-        },
-        "message": {
-          "role": "assistant",
-          "content": "{\"answer\":\"The most likely cause is that the server postgres runs on is short of memory. Postgres runs on server data-1 (16 GB RAM, 8 cores), and that server's memory use climbed from 88.5% to 92.8% in the last few minutes (about 15.9 GB used). Postgres alone uses about 9.6 GB (56% of the server) and is still growing. When memory is that tight, the OS has little room left to cache disk reads, so queries slow down. The disk is also 90% full (about 180 of 200 GB), and the system has flagged it as high. That's a second risk: a nearly full disk can slow writes, vacuum and WAL handling. CPU use is moderate (35–41%). The container itself looks fine: it's running, with no restarts, and the last deployment succeeded on 2026-10-04. I can't confirm the exact cause because postgres returned no log entries and there are no query-level metrics. I can only read data, so I can't change anything. Next steps to check: what besides postgres is using the remaining ~6 GB on data-1, postgres's memory settings (shared_buffers, work_mem, max_connections), whether connection counts or long-running queries are growing, and what is filling the disk (table and index bloat, WAL, old images).\",\"diagnosis\":\"high_memory\",\"confidence\":0.6,\"entities\":[{\"kind\":\"Service\",\"id\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"label\":\"postgres\"},{\"kind\":\"Server\",\"id\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"label\":\"data-1\"}],\"evidence\":[{\"ref\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"note\":\"Server memory rose from 88.5% to 92.8% (about 15.9 GB of 16 GB) between 11:57 and 12:00. Disk is 90% used (184320 of 204800 MB). CPU is 35–41%.\"},{\"ref\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"note\":\"postgres (postgres:16) uses about 9.6 GB, 56% of server memory, and is growing. Its container is running with 0 restarts and no healthcheck. The health flags show highDisk true. No log entries were returned.\"},{\"ref\":\"3b6eb201-773e-47c3-bdc8-e50886f34d58\",\"note\":\"The last deployment succeeded on 2026-10-04, so a recent deployment is unlikely to be the cause.\"}],\"missingEvidence\":[\"No postgres log entries were available (no slow-query, checkpoint or out-of-memory messages)\",\"No query-level or connection-count metrics\",\"No per-container breakdown of the roughly 6 GB of server memory postgres isn't using\",\"No breakdown of what is using the disk on data-1\",\"No postgres CPU samples (the series was empty)\"]}",
-          "toolCalls": []
         }
       }
     }

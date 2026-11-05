@@ -16,14 +16,14 @@
         "text": "",
         "toolCalls": [
           {
-            "id": "toolu_011zbdH41yv1eobVkphY3P1E",
+            "id": "toolu_01Q9TwBRvnkUysY7F6sJNvrS",
             "name": "get_server",
             "input": {
               "serverId": "695183d3-fe96-443c-934a-ec1611179a22"
             }
           },
           {
-            "id": "toolu_01M392xfYpm5SmeAs4vxm9cy",
+            "id": "toolu_01XnqXRn2tNkwP1akDWkCQBu",
             "name": "list_services",
             "input": {}
           }
@@ -38,14 +38,14 @@
           "content": "",
           "toolCalls": [
             {
-              "id": "toolu_011zbdH41yv1eobVkphY3P1E",
+              "id": "toolu_01Q9TwBRvnkUysY7F6sJNvrS",
               "name": "get_server",
               "input": {
                 "serverId": "695183d3-fe96-443c-934a-ec1611179a22"
               }
             },
             {
-              "id": "toolu_01M392xfYpm5SmeAs4vxm9cy",
+              "id": "toolu_01XnqXRn2tNkwP1akDWkCQBu",
               "name": "list_services",
               "input": {}
             }
@@ -56,7 +56,7 @@
               {
                 "type": "thinking",
                 "thinking": "",
-                "signature": "CAQSrgUKEAgTGAI4AUIIdGhpbmtpbmcSDKa7sE9df4PPqMCKFhoMUy+mIRpRcy6cFthLIjAIvnLPDtBHgNjNH3nCYV6Tyk9PttGigLokGIJu24KMvNkHOQVSpLZ+ONmyQlxeVacqywREjTZBTmSWWhPI8j/lzqmAmDlT4BEOIU25V7iE1HPqDxq+qdrWHNhrmhXJe6bMbojGCaUpmuZJPpGTKuw4VZcVsXoISIiLvK+zzbEfl39s1bT3wCYiqJTU81a3fp8U70mSTuMumUiXgDnY5EZ+JWDG9DqItt2BT0pBvhMLYn2Iilfo1A76B5L5mUsLWXo+tDxWwnHu3inB1eyFblqmAdF2DF3f32LCS1UX0iJrCZN8g123HtipPN8XIBYZH6wwqYsSyGF7QIbaW1WK5XI1KRaYKtSakctNSiuhfYEGzkja/pCvjaECFTmAG+kbI2N1Basr76Hh2V/jgeeznKQJ3TKbqOEdPV/uUtYp6moKmFMJAeyu8j54b0mBleyrCp3f+vrHZq5b/+jp8S4yWoBqv5zPjJmq4Su7O5yhGWZOBPGXBzU45eUv/0SpWh9oVi6m6hAG867Ceh20NljNEouElptBXLpJO1oqAyp1WdUhrw2n/jm3MD2+3n5OCs/nLRBt41J8rspaHMUNBRNMdfc2Ll1InuMlZ1Tr7s3G8cDaWOIOWeIsdVvUr6H/CnjSzD86vTwRpz33NPSE+wYOMnqAzYZRz24sgqG8iHhDaz2rlTDomIg/Q0RdITpmtKSK7OrDdHcsraXF/fGgtjr6eP0ZoNeWknUIC5taT7XpT0Ym8cXsG3e6F3bL2ml3DVJZqQ4/CmDAWF9NUT9iTAdp8Jygai+exSIr1hAwEZlqzwtTNdZLdBA3gXl0l3dOIEpxcscDBIiKCFsg7EsAdB6cCBgB"
+                "signature": "CAQSswUKEAgTGAI4AUIIdGhpbmtpbmcSDApvhDtUoEm+mkURIxoMusgfmiXf9fOzebs1IjAj3UGvWACHzR8vHhIXa1HPMMvVpT8W0SxZIvr7U3UvR+HXnFqB3g54KmBcyO1A4iUq0AToqyg5RgcDudxZpjbVhIWGCbrLF+EKki0zGCkvQfNLiSCzZWTlqFH5RqdcZ2bYsZYp39yggNWxhDU7i78MujWsBZK45Y8C5/BictfiXXUYc35e10wmaPRg2nvSVJYEQs6BRM11UiTvKuOhGZQLyhh4fYFK0GdvJBD4meec3RHFgNhO0cj30Uxx9/R1wEDl9djdIfkhStaH5s+ly+/m+wfFYPxR3sbOzDbJpmUwmVmx1bwlwKy+jzlcblNryqQYRM/4pTIfFv0L7FsSt7GqDP7GwQBgzb1XMmdmZQTIwYnaA1HZjeNJ7HiELUXXANChlwZNXPzKF41h+i8jNzjScPwIUbQ0IUTHBCb3oUGXceZ0cGq6LTXQVR98sf5HZv7BvJ82qdaq1FpInOxX+eNHzoFMijjCTJ6eweSw1XhX0jtvZ4Iuu0WQEA0njQ7SN1QX0Oya0aT51NAX3n2AMF7MWRcRPkAg1ol+rTyVXsrGN5v0e90uxPqyBejJUv+8JAVpQfnG/wUku4fR4Tw4h4cbZ4pyS+oDoH2Jo0EUcwqjbrQ6dYnh1uOQu4QgfjqYuNV4CldvSpLZY6QdN9aiN+5x8YBDfTqoZjlo8bIj5YsAOhFI6RPp/vSMNxQADHky85BIo5IybQzsI+LZSbcEc4Sl7hnh3tWl3dGpvdN3njZKG+4++pB9UdsBeG32h58/793DAI8WoC8DhOFKDlT3l1aMUARZ2TpA9B5TE9BKxHgA5etBZ/FeA/w3tqBURYbIXGMTH8uwPzcierzqMHnhu2TzIxPhGAE="
               }
             ]
           }
@@ -64,29 +64,21 @@
       }
     },
     {
-      "key": "014755d9a412907dd4bbb16054483a6ea34b2da39d5784468fce41765cd2f5c9",
+      "key": "2273762fd0153c38839cec739aee0363446ef825a68f90e79cb6cac491456e10",
       "model": "claude-opus-5-5",
       "turn": 2,
       "response": {
         "text": "",
         "toolCalls": [
           {
-            "id": "toolu_017JFdyVgxTTMoNPTPTXX17R",
+            "id": "toolu_017QwuB95GeZ8Y4vMHUTgKT3",
             "name": "get_health",
             "input": {
               "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01"
             }
           },
           {
-            "id": "toolu_01NT2zK96qRUMG4Nxeh9rYrT",
-            "name": "list_deployments",
-            "input": {
-              "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01",
-              "limit": 5
-            }
-          },
-          {
-            "id": "toolu_01NAk4zqhichpkSkWLFw73WP",
+            "id": "toolu_01BvymsyFKEze9LSJVst84Zq",
             "name": "get_logs",
             "input": {
               "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01",
@@ -97,29 +89,21 @@
         "stopReason": "tool_use",
         "usage": {
           "inputTokens": 7251,
-          "outputTokens": 275
+          "outputTokens": 176
         },
         "message": {
           "role": "assistant",
           "content": "",
           "toolCalls": [
             {
-              "id": "toolu_017JFdyVgxTTMoNPTPTXX17R",
+              "id": "toolu_017QwuB95GeZ8Y4vMHUTgKT3",
               "name": "get_health",
               "input": {
                 "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01"
               }
             },
             {
-              "id": "toolu_01NT2zK96qRUMG4Nxeh9rYrT",
-              "name": "list_deployments",
-              "input": {
-                "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01",
-                "limit": 5
-              }
-            },
-            {
-              "id": "toolu_01NAk4zqhichpkSkWLFw73WP",
+              "id": "toolu_01BvymsyFKEze9LSJVst84Zq",
               "name": "get_logs",
               "input": {
                 "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01",
@@ -131,31 +115,66 @@
       }
     },
     {
-      "key": "b121d0eb2be113d082b5c87e2a12828916f9701861df621c48eee5f0578823af",
+      "key": "939dcc97714f55558f90021f08e9676a0ae67de3906b30d7ef9f23801c1a141d",
       "model": "claude-opus-5-5",
       "turn": 3,
       "response": {
-        "text": "{\"answer\":\"Reports is most likely missing because the server it runs on can't be reached. The service `reports` (image ghcr.io/platform/reports:0.4.0) runs on server `batch-1`, and that server's status is UNREACHABLE. The last time anyone heard from it was 2026-11-01T10:30:00Z.\\n\\nBecause of that, the service's status is UNKNOWN. Its last health snapshot is from that same moment (10:30), when the container was running and healthy with 0 restarts. Nothing newer has come in since then. Runtime logs for the service are unavailable, which is what you'd expect if the server went offline.\\n\\nThe last deployment doesn't look like the cause. It finished successfully on 2026-10-26 and had no errors.\\n\\nSo the problem is most likely the server or its connection, not the reports app itself. I can only read data here, so I can't restart or reconnect anything. Things to check:\\n- whether the `batch-1` machine is powered on and connected to the network\\n- whether its monitoring agent is still running and can reach this platform\\n- what happened on the machine around 10:30 UTC on 2026-11-01\\n\\nOnce the server reports in again, check the `reports` container's state and runtime logs to confirm it's back.\",\"diagnosis\":\"server_unreachable\",\"confidence\":0.8,\"entities\":[{\"kind\":\"Server\",\"id\":\"695183d3-fe96-443c-934a-ec1611179a22\",\"label\":\"batch-1\"},{\"kind\":\"Service\",\"id\":\"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\",\"label\":\"reports\"},{\"kind\":\"Deployment\",\"id\":\"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\",\"label\":\"reports deployment 8c9d0e1\"}],\"evidence\":[{\"ref\":\"695183d3-fe96-443c-934a-ec1611179a22\",\"note\":\"Server batch-1 status is UNREACHABLE; last seen at 2026-11-01T10:30:00Z.\"},{\"ref\":\"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\",\"note\":\"The reports service runs on batch-1. Its status is UNKNOWN. The last container snapshot (running, healthy, 0 restarts) is from 2026-11-01T10:30:00Z. Runtime logs are unavailable.\"},{\"ref\":\"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\",\"note\":\"The last deployment succeeded on 2026-10-26T06:01:00Z with no error, so a failed deployment is unlikely to be the cause.\"}],\"missingEvidence\":[\"No container state or runtime logs from after batch-1 became unreachable, so I can't confirm whether the reports container is still running.\",\"No information on why batch-1 can't be reached (power, network or agent).\"]}",
-        "toolCalls": [],
-        "stopReason": "end_turn",
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01SvyR3YXH1BoVnHx8uHtTc3",
+            "name": "get_deployment",
+            "input": {
+              "deploymentId": "ebbb82b2-0528-4ca5-ac4e-4de461578c9f"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
         "usage": {
-          "inputTokens": 8467,
-          "outputTokens": 995
+          "inputTokens": 7875,
+          "outputTokens": 110
         },
         "message": {
           "role": "assistant",
-          "content": "{\"answer\":\"Reports is most likely missing because the server it runs on can't be reached. The service `reports` (image ghcr.io/platform/reports:0.4.0) runs on server `batch-1`, and that server's status is UNREACHABLE. The last time anyone heard from it was 2026-11-01T10:30:00Z.\\n\\nBecause of that, the service's status is UNKNOWN. Its last health snapshot is from that same moment (10:30), when the container was running and healthy with 0 restarts. Nothing newer has come in since then. Runtime logs for the service are unavailable, which is what you'd expect if the server went offline.\\n\\nThe last deployment doesn't look like the cause. It finished successfully on 2026-10-26 and had no errors.\\n\\nSo the problem is most likely the server or its connection, not the reports app itself. I can only read data here, so I can't restart or reconnect anything. Things to check:\\n- whether the `batch-1` machine is powered on and connected to the network\\n- whether its monitoring agent is still running and can reach this platform\\n- what happened on the machine around 10:30 UTC on 2026-11-01\\n\\nOnce the server reports in again, check the `reports` container's state and runtime logs to confirm it's back.\",\"diagnosis\":\"server_unreachable\",\"confidence\":0.8,\"entities\":[{\"kind\":\"Server\",\"id\":\"695183d3-fe96-443c-934a-ec1611179a22\",\"label\":\"batch-1\"},{\"kind\":\"Service\",\"id\":\"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\",\"label\":\"reports\"},{\"kind\":\"Deployment\",\"id\":\"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\",\"label\":\"reports deployment 8c9d0e1\"}],\"evidence\":[{\"ref\":\"695183d3-fe96-443c-934a-ec1611179a22\",\"note\":\"Server batch-1 status is UNREACHABLE; last seen at 2026-11-01T10:30:00Z.\"},{\"ref\":\"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\",\"note\":\"The reports service runs on batch-1. Its status is UNKNOWN. The last container snapshot (running, healthy, 0 restarts) is from 2026-11-01T10:30:00Z. Runtime logs are unavailable.\"},{\"ref\":\"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\",\"note\":\"The last deployment succeeded on 2026-10-26T06:01:00Z with no error, so a failed deployment is unlikely to be the cause.\"}],\"missingEvidence\":[\"No container state or runtime logs from after batch-1 became unreachable, so I can't confirm whether the reports container is still running.\",\"No information on why batch-1 can't be reached (power, network or agent).\"]}",
-          "toolCalls": [],
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01SvyR3YXH1BoVnHx8uHtTc3",
+              "name": "get_deployment",
+              "input": {
+                "deploymentId": "ebbb82b2-0528-4ca5-ac4e-4de461578c9f"
+              }
+            }
+          ],
           "reasoning": {
             "provider": "anthropic",
             "blocks": [
               {
                 "type": "thinking",
                 "thinking": "",
-                "signature": "CAQSjwYKEAgTGAI4AUIIdGhpbmtpbmcSDN3fJZGsUqRlJ50f8xoM0z8xS0vJ4qjFsmPfIjCVQQ5eS/+syRHp6hV1qTB4sDm+MFQvFhO/F+gWDmtD9vEdHsx63tavBcCfLkiWe+EqrAXHqk0GJOjVDAdtpYs2cMhfAUvjtwkdmvHvJlesC/y75e+buv5Vp3dHJAKoMq1KjnCArY1+yCevehGRasG2Ma8re2XM0RdI3guwvt/toP868X09Oh3E6F2JhrKrj6EYMken+W1v+Fo4Y2XHMq22PRHslTOuUjbwocRatOwFl8aw7d1spaXVwML1S/2lx+L2qEmSwvJBeU/mTRnOUJdI7ttdST86YwYRYGE82nPs9NlDk3iBf6b7RnAk75j3bunKHK+Jqwaub6mMQUsqIfEWH5wC84l8o6vZpYnNnh1OzL2l+AIEla0cLipzv6kNloMZV1moe+L0XCyplOKpn3aZCnq89HZjmHq9R8egor3qCcz6Cl134OmJ6LnK92owgioa0eHC2EpB98Huj+fM73XR9s7VHlE+SIMvVpnUCf+7rMp+gmSzacbe0fwuBlVhVV4TsbCF/AoJVH1JVhonxaIQR8PnTmJ1bMxbi9uuJIKyz4Rp9MOzI8ROP428qfuZu3yJzqyGSUPAlF4X6/SLyRE8BPbZZYSemH4Yrk/ihBU0JwUfplxd5cYfeMm0NFg00C7+n9P2DTDuD2h49mP4yJDUNpQ213dLjXTNr3JZKAFi7Qibeps8gvkP22T5EVRcacR7ELNf1vVlKqjwotnGMVJTWlxS3vEeGPAzQj4I6yJcpkPBUMxlmuD+gqD1pwa37tZDfpSwTv+ExEDg2lLldCXcrYSlgFxjoc3olrL6PBdc5XETeY3QgEiCew5vD8JDtI+zhBGWTkBmGfCEgOAYRUAi0HsDwMC3ATegW2s7DjBxbfN/nJGtq0i4q96a8yjUleIhcoE2igRANOCp9gOPMfXHkv8bZ60DLLULt+ExE5QIYO7j4D6jqRpJAj8uwa2pLaGeMmXzBjp5bLG9BHXlxloYAQ=="
+                "signature": "CAQS2QUKEAgTGAI4AUIIdGhpbmtpbmcSDHXbTm7v6kPpXsUCbxoMRD9iJYLhCPIclZTOIjCryz0xJm8FtxfhUOX2isyL+2YDcRlmRzIncykmEjZePQ2GHKxiPB1h0a/wbXAK3jgq9gTd9/yGlxlRGxeHrSehxYpYg+zarKjXLwYVheTuPGng2ATcdGQ7xU2evgMYfecwfe7qQLOWyLj8Z+sY7x5l6rnRGbfNsC4AfFJtp/ooJmcANnwZBTKQ/6C8qx6JvCF/PzFWIQ5RcjsAT3Z/uXHFeNTe/Qp4VZbNXfQ7uk78Y55jn0Bk6BABB8TTshE+0Zp8CwvcDVeBfZi53Kv0mocKAtdZJ3AXC8DizWZ8TtklvHwpk72n2EtZftp8m9u+uYckNr3nJk1o6zjBe5v0ERsyZeIhtY5UkSKZ9/ZBgYydNKH50SVT9llJ2721ZZMc5vxW4PbsgIcpzdejo41JinOwsvto/TtVUlMSkgitYZG67Rk0rcGHbjQvKu7YZO4YlPeFVR6Inoz4PD+zjxko+HEQjByFVrsPDGjlqAdQF8AEkxLCeox+hsy24wgdM+ooYr8qrzGSM9oVsBwkmW0yIiL/ogdAxeVopjeYxcGiYTZYtsIfY2iLm/x/sWAXr10r0i6eEVW+cr8pa3ezS/jyxH1ZiWXIw+l2IWTGOc5pClkynBxRURFJGgU0AKZ/YawIk79IHjQvUieGIqVUYU1nFidhK8UnS00Sbc9auR8ZvzTyd/rQsfc1nmoYOLx4uSNiAd18rPg1bwy/NoDd8iMz4bMVSJObcThjgMwaDsARh9TmZsE0NXZawnmDkGQJr1tGN0SXDQW+oSgWCPV2c3c3AGoBycKxTCL2yQtttASfsXp+noOsvyTo50lAdzc287oQOnkpyv3ZGLLU++J/jQRL1QrdmP4in29KJs3T9Sh/fXRAuxNLD6bCNeG1pLIWXr2Ob2QhinG+ovsBNr4YAQ=="
               }
             ]
           }
+        }
+      }
+    },
+    {
+      "key": "f9f5bd9c33749e28966391428c50d3b12c70d67531d33e58e4eca81ee9dce340",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "{\"answer\": \"The reports service runs on the server batch-1, and Noodara can't reach that server right now. Its status is UNREACHABLE and it was last seen at 2026-11-01T10:30:00Z. That cut-off is the most likely reason reports are missing.\\n\\nWhat the data shows:\\n- **Reports status is UNKNOWN.** The last known container state was running, healthy, with 0 restarts, but that reading was taken at the moment the server dropped out (10:30). It doesn't tell us what's happening now.\\n- **Runtime logs can't be fetched** for the reports service, which fits with the server being unreachable.\\n- **The last deployment looks fine.** It was deployed manually on 2026-10-26 (image ghcr.io/platform/reports:0.4.0) and finished with SUCCESS and no error, so a bad deploy probably isn't the cause.\\n\\nI only have read access, so I can't restart or reconnect anything. Next steps for you:\\n1. Check whether batch-1 itself is up, using your hosting provider's console.\\n2. Check that its network connection and Noodara's agent connection are working.\\n3. Once the server reconnects, check the reports container's live state and runtime logs to see if it actually stopped or just lost its connection.\", \"diagnosis\": \"server_unreachable\", \"confidence\": 0.8, \"entities\": [{\"kind\": \"Server\", \"id\": \"695183d3-fe96-443c-934a-ec1611179a22\", \"label\": \"batch-1\"}, {\"kind\": \"Service\", \"id\": \"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\", \"label\": \"reports\"}, {\"kind\": \"Deployment\", \"id\": \"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\", \"label\": \"reports last deployment\"}], \"evidence\": [{\"ref\": \"695183d3-fe96-443c-934a-ec1611179a22\", \"note\": \"Server batch-1 status is UNREACHABLE; it was last seen at 2026-11-01T10:30:00Z.\"}, {\"ref\": \"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\", \"note\": \"The reports service runs on batch-1 and its status is UNKNOWN. The last container reading (running, healthy) was taken at 10:30, when the server was last seen, so it is stale. Runtime logs are unavailable.\"}, {\"ref\": \"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\", \"note\": \"Last deployment, on 2026-10-26, finished with SUCCESS and no error code, so a failed deployment is unlikely.\"}], \"missingEvidence\": [\"The current container state of reports since 10:30, which can't be read while batch-1 is unreachable\", \"Runtime logs for reports, which are unavailable\", \"The reason batch-1 became unreachable (powered off, network issue or agent issue)\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 8442,
+          "outputTokens": 972
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\": \"The reports service runs on the server batch-1, and Noodara can't reach that server right now. Its status is UNREACHABLE and it was last seen at 2026-11-01T10:30:00Z. That cut-off is the most likely reason reports are missing.\\n\\nWhat the data shows:\\n- **Reports status is UNKNOWN.** The last known container state was running, healthy, with 0 restarts, but that reading was taken at the moment the server dropped out (10:30). It doesn't tell us what's happening now.\\n- **Runtime logs can't be fetched** for the reports service, which fits with the server being unreachable.\\n- **The last deployment looks fine.** It was deployed manually on 2026-10-26 (image ghcr.io/platform/reports:0.4.0) and finished with SUCCESS and no error, so a bad deploy probably isn't the cause.\\n\\nI only have read access, so I can't restart or reconnect anything. Next steps for you:\\n1. Check whether batch-1 itself is up, using your hosting provider's console.\\n2. Check that its network connection and Noodara's agent connection are working.\\n3. Once the server reconnects, check the reports container's live state and runtime logs to see if it actually stopped or just lost its connection.\", \"diagnosis\": \"server_unreachable\", \"confidence\": 0.8, \"entities\": [{\"kind\": \"Server\", \"id\": \"695183d3-fe96-443c-934a-ec1611179a22\", \"label\": \"batch-1\"}, {\"kind\": \"Service\", \"id\": \"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\", \"label\": \"reports\"}, {\"kind\": \"Deployment\", \"id\": \"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\", \"label\": \"reports last deployment\"}], \"evidence\": [{\"ref\": \"695183d3-fe96-443c-934a-ec1611179a22\", \"note\": \"Server batch-1 status is UNREACHABLE; it was last seen at 2026-11-01T10:30:00Z.\"}, {\"ref\": \"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\", \"note\": \"The reports service runs on batch-1 and its status is UNKNOWN. The last container reading (running, healthy) was taken at 10:30, when the server was last seen, so it is stale. Runtime logs are unavailable.\"}, {\"ref\": \"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\", \"note\": \"Last deployment, on 2026-10-26, finished with SUCCESS and no error code, so a failed deployment is unlikely.\"}], \"missingEvidence\": [\"The current container state of reports since 10:30, which can't be read while batch-1 is unreachable\", \"Runtime logs for reports, which are unavailable\", \"The reason batch-1 became unreachable (powered off, network issue or agent issue)\"]}",
+          "toolCalls": []
         }
       }
     }

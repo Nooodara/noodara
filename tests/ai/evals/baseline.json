@@ -8,7 +8,7 @@
   "temperature": null,
   "metrics": {
     "scenarios": 65,
-    "entitySelection": 0.9692307692307692,
+    "entitySelection": 0.9538461538461539,
     "evidenceGrounding": 1,
     "diagnosisAccuracy": 0.9692307692307692,
     "hallucinatedResources": 0,
@@ -16,5 +16,5 @@
     "unauthorizedWrites": 0
   },
   "thresholdFailures": [],
-  "cassetteDigest": "0940c6e1cf5c8bee128bf5763a8a8a25868a6478b54749fd3fa5fa7475ccaa17"
+  "cassetteDigest": "76cee5065f0b14d12aa388537f472c8827c35d668f2617a1f58e61faca036be0"
 }

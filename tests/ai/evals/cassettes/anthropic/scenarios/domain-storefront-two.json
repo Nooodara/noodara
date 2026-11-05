@@ -16,7 +16,7 @@
         "text": "",
         "toolCalls": [
           {
-            "id": "toolu_015r824SBinUQX3zCYNzxBAz",
+            "id": "toolu_01J2TQ7pxYYyfVGAwobRvTjD",
             "name": "get_infrastructure_graph",
             "input": {}
           }
@@ -31,7 +31,7 @@
           "content": "",
           "toolCalls": [
             {
-              "id": "toolu_015r824SBinUQX3zCYNzxBAz",
+              "id": "toolu_01J2TQ7pxYYyfVGAwobRvTjD",
               "name": "get_infrastructure_graph",
               "input": {}
             }
@@ -40,20 +40,20 @@
       }
     },
     {
-      "key": "d73c1978a9546089b7df9adb843e8fc21505ab7626d1978216325ae2888856f8",
+      "key": "7874ecc8168c0baa06fdb4f0f55febe48f9b4022167227f46bd11133d1ea3238",
       "model": "claude-opus-5-5",
       "turn": 2,
       "response": {
-        "text": "{\"answer\":\"Two domains point to the storefront service (shop project, production environment): shop.example.com and www.shop.example.com. The infrastructure graph links storefront to both of them. This shows how domains are linked inside Noodara. It doesn't check public DNS records.\",\"diagnosis\":\"unknown\",\"confidence\":0.95,\"entities\":[{\"kind\":\"Service\",\"id\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"label\":\"storefront\"},{\"kind\":\"Domain\",\"id\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"label\":\"shop.example.com\"},{\"kind\":\"Domain\",\"id\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"label\":\"www.shop.example.com\"}],\"evidence\":[{\"ref\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"note\":\"The graph links storefront to shop.example.com, and this domain's serviceId is storefront.\"},{\"ref\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"note\":\"The graph links storefront to www.shop.example.com, and this domain's serviceId is storefront.\"},{\"ref\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"note\":\"Storefront is linked to these 2 domains in the graph and to no others. The graph was complete (not truncated).\"}],\"missingEvidence\":[\"No DNS check was done. These are domain links set up in Noodara, not proof that public DNS points to the server.\"]}",
+        "text": "{\"answer\":\"Two domains point to the storefront service (shop / production): shop.example.com and www.shop.example.com. The infrastructure graph links storefront to each of them with an EXPOSED_BY relation. This is not a health problem, so there is nothing to diagnose. Note that the graph only shows how domains are assigned in this installation. It doesn't show whether public DNS actually resolves to the server.\",\"diagnosis\":\"unknown\",\"confidence\":0.95,\"entities\":[{\"kind\":\"Service\",\"id\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"label\":\"storefront\"},{\"kind\":\"Domain\",\"id\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"label\":\"shop.example.com\"},{\"kind\":\"Domain\",\"id\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"label\":\"www.shop.example.com\"}],\"evidence\":[{\"ref\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"note\":\"The graph links storefront to shop.example.com with an EXPOSED_BY relation.\"},{\"ref\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"note\":\"The graph links storefront to www.shop.example.com with an EXPOSED_BY relation.\"},{\"ref\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"note\":\"The graph shows exactly two domains linked to storefront.\"}],\"missingEvidence\":[\"Whether public DNS actually resolves these domains to the server. The graph only shows how domains are assigned in this installation.\"]}",
         "toolCalls": [],
         "stopReason": "end_turn",
         "usage": {
           "inputTokens": 8498,
-          "outputTokens": 525
+          "outputTokens": 552
         },
         "message": {
           "role": "assistant",
-          "content": "{\"answer\":\"Two domains point to the storefront service (shop project, production environment): shop.example.com and www.shop.example.com. The infrastructure graph links storefront to both of them. This shows how domains are linked inside Noodara. It doesn't check public DNS records.\",\"diagnosis\":\"unknown\",\"confidence\":0.95,\"entities\":[{\"kind\":\"Service\",\"id\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"label\":\"storefront\"},{\"kind\":\"Domain\",\"id\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"label\":\"shop.example.com\"},{\"kind\":\"Domain\",\"id\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"label\":\"www.shop.example.com\"}],\"evidence\":[{\"ref\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"note\":\"The graph links storefront to shop.example.com, and this domain's serviceId is storefront.\"},{\"ref\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"note\":\"The graph links storefront to www.shop.example.com, and this domain's serviceId is storefront.\"},{\"ref\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"note\":\"Storefront is linked to these 2 domains in the graph and to no others. The graph was complete (not truncated).\"}],\"missingEvidence\":[\"No DNS check was done. These are domain links set up in Noodara, not proof that public DNS points to the server.\"]}",
+          "content": "{\"answer\":\"Two domains point to the storefront service (shop / production): shop.example.com and www.shop.example.com. The infrastructure graph links storefront to each of them with an EXPOSED_BY relation. This is not a health problem, so there is nothing to diagnose. Note that the graph only shows how domains are assigned in this installation. It doesn't show whether public DNS actually resolves to the server.\",\"diagnosis\":\"unknown\",\"confidence\":0.95,\"entities\":[{\"kind\":\"Service\",\"id\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"label\":\"storefront\"},{\"kind\":\"Domain\",\"id\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"label\":\"shop.example.com\"},{\"kind\":\"Domain\",\"id\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"label\":\"www.shop.example.com\"}],\"evidence\":[{\"ref\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"note\":\"The graph links storefront to shop.example.com with an EXPOSED_BY relation.\"},{\"ref\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"note\":\"The graph links storefront to www.shop.example.com with an EXPOSED_BY relation.\"},{\"ref\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"note\":\"The graph shows exactly two domains linked to storefront.\"}],\"missingEvidence\":[\"Whether public DNS actually resolves these domains to the server. The graph only shows how domains are assigned in this installation.\"]}",
           "toolCalls": []
         }
       }

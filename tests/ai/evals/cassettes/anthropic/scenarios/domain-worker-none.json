@@ -16,7 +16,7 @@
         "text": "",
         "toolCalls": [
           {
-            "id": "toolu_01AhcHNiFCq2p1zBnV5BZijF",
+            "id": "toolu_017GgY54Fqa8iiCL5pmEhxUs",
             "name": "get_infrastructure_graph",
             "input": {}
           }
@@ -31,7 +31,7 @@
           "content": "",
           "toolCalls": [
             {
-              "id": "toolu_01AhcHNiFCq2p1zBnV5BZijF",
+              "id": "toolu_017GgY54Fqa8iiCL5pmEhxUs",
               "name": "get_infrastructure_graph",
               "input": {}
             }
@@ -40,14 +40,14 @@
       }
     },
     {
-      "key": "05d8bfff48f356897c1f8f242f4d548765301c189bebe46d25695f8d1fe1b206",
+      "key": "e456e89eb2f29627e09e064f2364171f6664be32d4c4796188ba6638843eb5a3",
       "model": "claude-opus-5-5",
       "turn": 2,
       "response": {
         "text": "",
         "toolCalls": [
           {
-            "id": "toolu_014H2zM7VAQqwLsg7CyqqoWR",
+            "id": "toolu_01Vy6WS5cRs1t3HawdoYTkYF",
             "name": "get_service",
             "input": {
               "serviceId": "b18f27df-93b6-4937-8b3e-8edade656aa7"
@@ -57,14 +57,14 @@
         "stopReason": "tool_use",
         "usage": {
           "inputTokens": 8497,
-          "outputTokens": 106
+          "outputTokens": 126
         },
         "message": {
           "role": "assistant",
           "content": "",
           "toolCalls": [
             {
-              "id": "toolu_014H2zM7VAQqwLsg7CyqqoWR",
+              "id": "toolu_01Vy6WS5cRs1t3HawdoYTkYF",
               "name": "get_service",
               "input": {
                 "serviceId": "b18f27df-93b6-4937-8b3e-8edade656aa7"
@@ -77,7 +77,7 @@
               {
                 "type": "thinking",
                 "thinking": "",
-                "signature": "CAQSjwUKEAgTGAI4AUIIdGhpbmtpbmcSDFf1/o+wW97y0ZZCohoMNNWxiboUi3yFNy/9IjBddI9oNn9cy7t5zm18c8kllBHfzDscMREmrv5fJ+ZnYrFFFrpWTNCpjo0ipFALY0YqrATXLBbhQafA6Pzx/gholCe+/M7qAvb+75ZueQ5fYZrYpIxRj5d4hfIclzqK9v/ZPJIb8mipYOKSyAaAOWdG7xUECzjZyO5RYCR09hx3DD9NJoTnjK+dRz8SpBMpKT2A+dzkuSCluTTM4V5BIqx3zjI6dIfd6ftsi0xMee08nLFvUA3yH3iDaMOUGcj6K5zi2F4c7Y/LFcV6otMdo7P6vLWIYYy9mzqALFVxsvCXQs4t46d/4HLfWyaxf8Iw0ePz+zv05auy6UUoy4VKa36CX5kBc1E++borEHfbisVJOwARs7cdEjbpWsLNU/FJsPJ7/b58fmambYyGxHACz0pWDwXR1bZ1vzHlWAMrIrnN+5H0zRSxXc75lJKOPwkJTALHqRH9N7iRkcGHb+P9IKWOgJtH2wCeBdVCmArvsNXHDruEa5DdPg2C/fYRFrKjqEvHgr25gd7Q164KxM5IRq8dUXK5Q5MDLuFyHr8siKMYNFBZhHzSbXX0rmy6ml4U/wNVi2lcTqI1A3JQZ568xTifm+QR60oQzIrk1Vc9gqXuEU9So56H6rsLB8V6yQHfANKq9MjQPIZ8Kie6ei507XwGfcB6cABtMmY4JDFqc58ji9m4Q7Eez2Sj7buqdnxihx1+WVr0iSapdxbPYMlDMoJeyxLJJtpg+g2nHnM0FVpVB2gG2wTehEMjFar1T59gaE2X402r2DsAaoqjYg6skdvgUDBMj4FvDZ15Ek3xh04pGAE="
+                "signature": "CAQSvwUKEAgTGAI4AUIIdGhpbmtpbmcSDGEoUEz+H92MIUWXthoMous61JX+u5LB9SF3IjC+APUvVTXmyAtEmB+IMOMCJap/lkdJwjcTOAzQQKU73TnJrT0SmDafRZLMzJBsdssq3ARRpE+HSmlv2Aqm4PlEKlQ1Tzl0rvge6fffvKY1GLSiEClr5xplkKPRCLY/N95y1b8hboKBdFHvIqhApU3C78EcuoeUOxIArS4YlTGnb2zhbqq66n57blpAJMSkLdi7mkZsb5CQO7q9IrTpjL6GcIPiBE0QQG9VorF4D2CiTUnZw2r57rk3Ryk9FQ9j9f/eM0ibQtZ9UMqFPYly/6FLjw9G/ix6UMx44bU2lzFPpp7mVYlBw+PcIcmHUBp0wh3f/DpOI0kHCIbgx25pikNKvWkNXrK2ND6bL76GFsITkM2+SGKTx0RRWSptZBi5FI+YHY9pIHXA3Gia+dNM88nbdRL6+5aD92LIy6VUNdfYYpIIi+Wd2Xc3WN9C181quRfv11x1NzY7BNZ69NoTGuYSEvJFD0lfrhbZUPnbPqWGYCSiHAsqVZj/bGJUSHrv46V2O159YGPpDgfDC07Ieta74nDKsDJx9QgBvf2y4mXKuxhxcYntZSaD4w9lFBD9QAAntaAkX82O8Q43dyikqOP9P6vqCbf1ECyfrJF6V0LGPaSixFIZRrKmTOLufDEJXR42PNcb92mFeXJTo3IgN3hu+/G9x8/B44eFS9Lwt3DcQzyKDuPwf6Zo7eBcMXdjg7a3QGFDS07LwqusH39TkDnz+oG44X9RqG8dECANdtSd/yUhWT2YSCwj/o7GRnlyyHZSE74CggNhf/BFApHSsLRLG+Lon/31IiyoFnPYmF28RfBONSRTP0n003JqvEIh0jSpvJQfipjMzbpIpLsCxzX58CDgAwcgGlj6ESLJ011CGAE="
               }
             ]
           }
@@ -85,20 +85,20 @@
       }
     },
     {
-      "key": "88f12dbe9566536fb5f3f66f9965f4229d670671ffe68dba5a35c6feaf046084",
+      "key": "e4ec19c2c38edc755aaae7305176fa7fed4a1a9f5032343d98e6a8f1639cd0fd",
       "model": "claude-opus-5-5",
       "turn": 3,
       "response": {
-        "text": "{\"answer\":\"No domain points to the worker service. In the infrastructure graph, none of the domains is linked to worker. The service settings show why: worker has internal port 3000 but no published port, so it isn't reachable from outside. It's currently RUNNING. If worker is meant to be a background job processor, that is normal. If you expected it to have a domain, you would need to add one in the dashboard. I can only read data, so I can't make that change.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Service\",\"id\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"label\":\"worker\"}],\"evidence\":[{\"ref\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"note\":\"In the infrastructure graph, no domain is linked to worker. The service settings show internal port 3000, no published port, status RUNNING.\"}],\"missingEvidence\":[]}",
+        "text": "{\"answer\":\"No domain points to the worker service. In the infrastructure graph, worker has no domain linked to it. The domains that do exist are all linked to other services. The service settings back this up: worker uses internal port 3000, has no published port and no healthcheck, and its status is RUNNING. So it is an internal service that can't be reached from the internet. If you expected worker to have a domain, check its domain settings in Noodara. I can only read the setup, so I can't add one for you.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Service\",\"id\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"label\":\"worker\"}],\"evidence\":[{\"ref\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"note\":\"The infrastructure graph shows no domain linked to worker. All the domains in the graph are linked to other services.\"},{\"ref\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"note\":\"get_service: internalPort 3000, publishedPort null, healthcheck null, status RUNNING, which fits an internal-only service.\"}],\"missingEvidence\":[]}",
         "toolCalls": [],
         "stopReason": "end_turn",
         "usage": {
-          "inputTokens": 8986,
-          "outputTokens": 309
+          "inputTokens": 9006,
+          "outputTokens": 392
         },
         "message": {
           "role": "assistant",
-          "content": "{\"answer\":\"No domain points to the worker service. In the infrastructure graph, none of the domains is linked to worker. The service settings show why: worker has internal port 3000 but no published port, so it isn't reachable from outside. It's currently RUNNING. If worker is meant to be a background job processor, that is normal. If you expected it to have a domain, you would need to add one in the dashboard. I can only read data, so I can't make that change.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Service\",\"id\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"label\":\"worker\"}],\"evidence\":[{\"ref\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"note\":\"In the infrastructure graph, no domain is linked to worker. The service settings show internal port 3000, no published port, status RUNNING.\"}],\"missingEvidence\":[]}",
+          "content": "{\"answer\":\"No domain points to the worker service. In the infrastructure graph, worker has no domain linked to it. The domains that do exist are all linked to other services. The service settings back this up: worker uses internal port 3000, has no published port and no healthcheck, and its status is RUNNING. So it is an internal service that can't be reached from the internet. If you expected worker to have a domain, check its domain settings in Noodara. I can only read the setup, so I can't add one for you.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Service\",\"id\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"label\":\"worker\"}],\"evidence\":[{\"ref\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"note\":\"The infrastructure graph shows no domain linked to worker. All the domains in the graph are linked to other services.\"},{\"ref\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"note\":\"get_service: internalPort 3000, publishedPort null, healthcheck null, status RUNNING, which fits an internal-only service.\"}],\"missingEvidence\":[]}",
           "toolCalls": []
         }
       }

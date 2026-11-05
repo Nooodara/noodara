@@ -16,7 +16,7 @@
         "text": "",
         "toolCalls": [
           {
-            "id": "toolu_019o3stcd9hB3WSvyZpLLxYP",
+            "id": "toolu_01G8LVYSmnEW8PZK3rMkuEyK",
             "name": "list_services",
             "input": {
               "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
@@ -33,7 +33,7 @@
           "content": "",
           "toolCalls": [
             {
-              "id": "toolu_019o3stcd9hB3WSvyZpLLxYP",
+              "id": "toolu_01G8LVYSmnEW8PZK3rMkuEyK",
               "name": "list_services",
               "input": {
                 "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
@@ -44,28 +44,28 @@
       }
     },
     {
-      "key": "8fb7158de1fb8521746fa815c3a51b84618d7d3f10eb4d68a6f54c006aaa555f",
+      "key": "f47657647efe39daaf03e623d054e4d81d741d62c90d20daea7209fc87b36ab4",
       "model": "claude-opus-5-5",
       "turn": 2,
       "response": {
         "text": "",
         "toolCalls": [
           {
-            "id": "toolu_01QBn826DTY1XpLWq5MYy2LN",
+            "id": "toolu_014qybT2HWvG9iukLE9QnF21",
             "name": "get_health",
             "input": {
               "serviceId": "ba9c5821-063e-4eb6-bdfa-2e6960f51340"
             }
           },
           {
-            "id": "toolu_01CjvX2GuWwxi7dbTHRJKrzj",
+            "id": "toolu_0147pLk3hiNjU2L3irH4mNze",
             "name": "get_health",
             "input": {
               "serviceId": "f380f06a-71c1-4a76-bab7-84d1f22a6f1a"
             }
           },
           {
-            "id": "toolu_01CzjfJoGq7axiKp3kEfteBR",
+            "id": "toolu_01LE3V9zuBbAs1uiBNvt1YnY",
             "name": "get_health",
             "input": {
               "serviceId": "9656c11a-6b2a-4418-8a55-3ec0a347f9d8"
@@ -82,21 +82,21 @@
           "content": "",
           "toolCalls": [
             {
-              "id": "toolu_01QBn826DTY1XpLWq5MYy2LN",
+              "id": "toolu_014qybT2HWvG9iukLE9QnF21",
               "name": "get_health",
               "input": {
                 "serviceId": "ba9c5821-063e-4eb6-bdfa-2e6960f51340"
               }
             },
             {
-              "id": "toolu_01CjvX2GuWwxi7dbTHRJKrzj",
+              "id": "toolu_0147pLk3hiNjU2L3irH4mNze",
               "name": "get_health",
               "input": {
                 "serviceId": "f380f06a-71c1-4a76-bab7-84d1f22a6f1a"
               }
             },
             {
-              "id": "toolu_01CzjfJoGq7axiKp3kEfteBR",
+              "id": "toolu_01LE3V9zuBbAs1uiBNvt1YnY",
               "name": "get_health",
               "input": {
                 "serviceId": "9656c11a-6b2a-4418-8a55-3ec0a347f9d8"
@@ -107,52 +107,52 @@
       }
     },
     {
-      "key": "1a4762717c0367cc189cc682de57682322f5431fdfc50fbdb4063328d010e2f8",
+      "key": "efeb699758cc14e06ef7db14aabae0431ea08985929f474dec0848601d0c4f79",
       "model": "claude-opus-5-5",
       "turn": 3,
       "response": {
         "text": "",
         "toolCalls": [
           {
-            "id": "toolu_01TKnggPzxtcruKXMkAD6KND",
+            "id": "toolu_01XAcanBXxWBunWo59NXhZUw",
             "name": "get_server",
             "input": {
               "serverId": "65d53194-0618-4f5a-bb52-f134fc2393aa"
             }
           },
           {
-            "id": "toolu_01RFPDp2UYefp4CjXyBD5pce",
+            "id": "toolu_01KeRvXNyeWjvnjKiEL6YoBP",
             "name": "get_metrics",
             "input": {
               "target": "service",
               "id": "ba9c5821-063e-4eb6-bdfa-2e6960f51340",
-              "points": 6
+              "points": 12
             }
           }
         ],
         "stopReason": "tool_use",
         "usage": {
           "inputTokens": 7689,
-          "outputTokens": 212
+          "outputTokens": 213
         },
         "message": {
           "role": "assistant",
           "content": "",
           "toolCalls": [
             {
-              "id": "toolu_01TKnggPzxtcruKXMkAD6KND",
+              "id": "toolu_01XAcanBXxWBunWo59NXhZUw",
               "name": "get_server",
               "input": {
                 "serverId": "65d53194-0618-4f5a-bb52-f134fc2393aa"
               }
             },
             {
-              "id": "toolu_01RFPDp2UYefp4CjXyBD5pce",
+              "id": "toolu_01KeRvXNyeWjvnjKiEL6YoBP",
               "name": "get_metrics",
               "input": {
                 "target": "service",
                 "id": "ba9c5821-063e-4eb6-bdfa-2e6960f51340",
-                "points": 6
+                "points": 12
               }
             }
           ],
@@ -162,7 +162,7 @@
               {
                 "type": "thinking",
                 "thinking": "",
-                "signature": "CAQShgUKEAgTGAI4AUIIdGhpbmtpbmcSDBc050KbL7DpfwOgQhoMjgI46JQM0natNTbaIjB/QBHxvtSNCaFe9EHFPyYVGkEZPnc/oO5k/082O/FeGyMCJg1V6BSu7k1axwPZyQUqowR0wyN22P6+y9yepxAxyQGLLstjxRVZ7+IAUDprkG9Ykzgq+X1HHIfuWNz9Uc+14RRtv8PMTuxox931xvajGBoXcQCprViZBJrSJMLafPEmjybOa4DKwYh/NRo/+WFbQVuJhAxz6q4HheuFalRtlET7xNh6bI5oCqRg4TxBR2gDiiZ+l+8NlHZGdgpspZsqNtqTERHyXTGztOQpXAy9FuM8bBFubFCSI/LOv7Mmh+NAiPs7B062ZCuYlTsx0iCbEcOfV+55iLgsMwu/AGTEcWfGGk8FKqpCr5IMCPWs29L+QZikkgNGxcI/8MGkd9xMORKu67nJDOvxvu1CrXAiyGpKFdVsWC9uR+Y7QTeeMYlz8E8muzd9tfUHIcP21C3kv96wEIVO9Lhsg6CmnLVifexVoEYt8Lk7dGo4RZ5iByQAAkHSFAiXxP/4Wv152HvzsXHPhaNACNEe4gTIVpYkmYsgNPv6URnF86NLXuPl4y53DDXQtjFiEK0eXG8BAIjrtYr8T3hSz3m2C+HdTEdNWbQ42ky3vSIo95fEnngNQD6Tv++h3eA1ImVc4ixpFrfh0t9g01BDM64VvcRZ4aEN/ROVdCh6KMvpwA4SC+OBkQlDAxvZ7wQYNNUn3s1b6cNEjnKHDttzU+t7z9Dr9RengJzAx72A+hrEjSqHwP3AInHy/lQRdnIY/rm2AusvGpt87r2CugPva4iY/AY0WS86RB5wPG22GAE="
+                "signature": "CAQSiwUKEAgTGAI4AUIIdGhpbmtpbmcSDJdg1K9BbRmbbyj7VxoMjLbP6PPhuZLb8KK+IjBqb/VdlX1o4WuD0e2FDJzKbDtBXIVsVfPCK0UxiRPVbVKX76YdXrT4Vj1azoqmc4AqqAQqOoDS4UQ7t8LHB8b/VoWVd7UW4lN/HsjLrxUXr2xDPZA0K3OH8KcTyhFJBAdIzx6MqcToSinOY8NtSUWYk4mg2See82u+JjqLQv+XoO5SKGgleeXCH/w7KnWdRoAKVvKrWANpQPvmT2oje5UxqU0ra0HOTKWpWB6EugtgB7fuY1VrYKhVGOOCK4P+ZjsVzFAJ237JdKFKfkkKE+9kXIhWh/ug99LHa65ew/B+G1mVkB+FeK4y+mhXl6lfZpSeqcmRRKPf3WjMQa9ODMnrdsEY+fCHv6Kebj3TdGvqyuTSXEkX7GRBDYmqLdStQD6NHeHtfNU4MDx1tUE/SHFkq4udanvQiWZUOoGMjo8uTrNHoA+zse17+meGCy8A8PMYafHk/ewYoEmtaDH28VlweaKMYL6I2Xt9UNzPtwGU3pzwG+sOFd/ekB2B+vXlOYw9xGjycQ5qYxD8AdEBBSAk58kPWZ1hQzrDJ9MZPrsse4jnag7iqcmxuCs3pNTvURCflPleQQNDvktEz456Wg7cAGTIbkuySMOLuUivh5hGgnfj83OEcHAf3cdQoyoQIK4ex5EK2ssr/36/PhEC7y4shu3N2xhNz16SoLwCDr24xRHOVFFTxu+xP5YIMcqlsCTXvq4iY0YzGzFe711wSc/Kzs1lsurSH8W4OxGiBKFz4n98h1Ftd8e+6vXODKIpzfbtV/jdWD8lI5VX+x1aUJwRFc+kpHM+d139YEoYAQ=="
               }
             ]
           }
@@ -170,38 +170,38 @@
       }
     },
     {
-      "key": "8e3755a35542214442a2fd720617d1d7d23b7f613015533bfe9ea60af4533323",
+      "key": "114bd9ce4165201832813d30619f96ff50d7c37a7e4ac96e1ba48f807bae5a53",
       "model": "claude-opus-5-5",
       "turn": 4,
       "response": {
         "text": "",
         "toolCalls": [
           {
-            "id": "toolu_0147iJ8A65BirHLvZuE2kfsg",
+            "id": "toolu_014vR7oSpWANo7p9ByiKfRQm",
             "name": "get_metrics",
             "input": {
               "target": "server",
               "id": "65d53194-0618-4f5a-bb52-f134fc2393aa",
-              "points": 6
+              "points": 12
             }
           }
         ],
         "stopReason": "tool_use",
         "usage": {
-          "inputTokens": 9002,
-          "outputTokens": 139
+          "inputTokens": 9003,
+          "outputTokens": 135
         },
         "message": {
           "role": "assistant",
           "content": "",
           "toolCalls": [
             {
-              "id": "toolu_0147iJ8A65BirHLvZuE2kfsg",
+              "id": "toolu_014vR7oSpWANo7p9ByiKfRQm",
               "name": "get_metrics",
               "input": {
                 "target": "server",
                 "id": "65d53194-0618-4f5a-bb52-f134fc2393aa",
-                "points": 6
+                "points": 12
               }
             }
           ],
@@ -211,7 +211,7 @@
               {
                 "type": "thinking",
                 "thinking": "",
-                "signature": "CAQSwgUKEAgTGAI4AUIIdGhpbmtpbmcSDEuGQjrumntRHv0bIRoMg54Rqm+srjaIv82GIjAkBu9LWx2ExTjCICSyiKhFJjzeIpod/Je4gyM8sLWDAewPf++k0LNfgsZ92Kint0Qq3wQ2IzsO46ckVNVnyGYIgDO2nMeJ/JEJu1Or1r0xjxEAp9o5uTPTPXiDvCjdev6Bztjk0cqzF4YF3xST8WuWvbS5FLNemB4FMw98rdfodkNa8zugkgXHiJd0+XhUG5Ko0tqIBdXjac1VcJygQwCOzvW8/yNO28j7hCRTcJGcLKdbBqgq5O1XR550o6I9gM5fFbaz5pH3OBKmQImroBXwOTKUWms2bXi5T+DO09egp3y9myAdpffu9wdjG8ug8fAol4riSdPlMQiKaZY4AbGHF1AKXgMLFpPrBgGAmy9lgczcax3tI9NNN4u7doWbVcJew8N8q8YsWQxJkPml9r+J37rrf2N7XjcFMA1RQej+0oCo0+RJ20db0PaxD9CxivdnmTS8DFjxsVhoDtdbu0f2BohibcLqqc7M0VPG4Pkrfb0wbyY8QSdAc6Ylmy1wOAD/9HnyuQVbghoIiUkpqcpaMM18S1YH1kG4CyhiQLXpm8UKO3bPmG9shlXJ09/4adLLNVyKklASH2Eec6NqR0U6xF0q7YCGgpt00xlpfE1WlpcBgidjF/FRRBbwwAdvxYhP/5Dzbs0LbNszvkdi6WGGwyIO6EF1k/jg4qQL/bUh/Hm8pjBEcp0EDatwIYLGW/fprr8NTV/mctPI1DT5lA9OaUlzSncvfDh+nj8i6QwKtCZXSAwmYwAdys/M3bsRjuMIZjNmH2gt9Xd93vk0CS6XfcCKT/Rrk8mjpLvm44fXrcOVaeX2ihflGATpBWQqpFHaOEhLVnbTvytRB3gz14aeF3dLCncbYI+PfIvqmnPicpfPGAE="
+                "signature": "CAQSugUKEAgTGAI4AUIIdGhpbmtpbmcSDFKMQUF0Rz4LsuMvBhoMfsxbJLTXpNUFNInsIjBhQ02ZKu4enAMDY/DK8Lk3SuwYmJ/PviHitqN3q9knQAnVQcvQ+O+VCJ/obPU1HAwq1wQ14YOAVzgYHENxLNqdwVrjSWMc09n/uQpxdqu8Aeg5uaFOqy3cGEoSTm+YvSLZ5zt/kYD+mysUkqNBD7U4EuENqNjY69btJEvd7aHS2HUfsgCg85wKZUderPRtC/S+6gTl6xwxAbotCgAxzemSo5T+V6g1MClbdUOfl9PZZyW9rt5ii4hCtm8pwU3H1j4bXXh7jqHWZVzvpYtnXrU9l8BsiwpaHRNRT+AYsPpBaX8QF/28GMm8LSaCbrfHO78GHowQS35uzSu1l7pztUnyBwCaVxxu9Z2dhPy5JFgssmnYExxlQIGpTo39OiLyKi5QqA0VqvlxFK+ox/swLhu/QwYIMgIARfLSfn19o5fNZXWKNSRH0ocibd7n7B0zfYqBq40QE3lNVVDdR/4YZvHD6VScjCrTlntpunFyBquUKEObYs2XvxFy95DquSqwS/t1w2FD30w3Z//ZJ0scy5YnAMjExvsibkqMBiWcrk8FO9OMd0dwCkMww1y7IZV5gwkjYEVQzmmbyydzgfnNpuLQlKbTup2KS0rZ11lyvP2a5p7ueaDz2NfXYJ6kV8ilgefG4p3fMSI+TjuC8Ty9w+2DFd762YRvE7juHw7nrCW5meDzT7/BdSOGqIMM1qDFIyajKsmTEXL49hnRDVia50X87xNdcK1juwOLXAW/zTfn0M+yEpYJ+xFd7ORASBLzc50OqeVHqBvyU67dpe/jbWvTvme8vhkTMHglYIhBWnGNHy+r48NcfHtmw5XkdqaurjR7WJ5M7Yn7NxV9gHyM527TU98t5Qxwu/enWBgB"
               }
             ]
           }
@@ -219,21 +219,31 @@
       }
     },
     {
-      "key": "411240b7611ae4457997ff36b4da8b1a4157eda9ee6a9605617677dbf52a0d75",
+      "key": "61c2d4589032f80a6a11d5034f978dccaa313ed091b78675ab8afecf4f2e1728",
       "model": "claude-opus-5-5",
       "turn": 5,
       "response": {
-        "text": "{\"answer\": \"None of your three services is down. They are all running, with zero restarts, passing healthchecks and a successful last deployment. One service has a warning: acme-api is flagged for high disk usage. Its server, host-b, has used about 91.6% of its disk (75,000 MB of 81,920 MB). The service still works, but if the disk fills up, builds, image pulls, logs and writes can start failing. acme-api's memory is normal at about 48%. acme-web and acme-web-staging have no warnings. I can only read data, so I can't clean up the disk. To free space on host-b, check how many old images and build cache are kept (acme-api keeps 3 old images), and look at log and volume growth on host-b.\", \"diagnosis\": \"high_disk\", \"confidence\": 0.85, \"entities\": [{\"kind\": \"Service\", \"id\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"label\": \"acme-api\"}, {\"kind\": \"Server\", \"id\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"label\": \"host-b\"}], \"evidence\": [{\"ref\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"note\": \"Health check: running, 0 restarts, passing healthcheck, flags.highDisk=true, highMemory=false. Memory is about 48%.\"}, {\"ref\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"note\": \"Connected. Disk is 91.55% used (75000 of 81920 MB). Memory is about 63%.\"}, {\"ref\": \"9a74c2e0-72f7-4d65-8ac8-dd2074f3d9db\", \"note\": \"acme-api's last deployment succeeded.\"}, {\"ref\": \"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\", \"note\": \"acme-web: running, passing healthcheck, no warning flags.\"}, {\"ref\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"note\": \"acme-web-staging: running, passing healthcheck, no warning flags.\"}], \"missingEvidence\": [\"A breakdown of what is using disk space on host-b (images, build cache, volumes, logs)\", \"CPU metrics came back empty for both acme-api and host-b\"]}",
+        "text": "```json\n{\"answer\":\"None of your three services are down, but one has a warning: acme-api has a disk problem.\\n\\nacme-api: the container is running with 0 restarts, its healthcheck at /health passes and its last deployment (9a74c2e0, commit 2b3c4d5) succeeded. Its health summary flags high disk use, though. It runs on server host-b, and that server's disk is about 91.6% full (75,000 MB used of 81,920 MB). The service and server both use more memory each minute (the service went from about 44% to 48% and the server from about 61% to 63% over the last 3 minutes), but neither has the high-memory flag yet. If the disk fills up, acme-api and anything else on host-b could start failing on writes, builds or image pulls. It's worth freeing space on host-b soon, for example old Docker images, build cache or logs. Your services keep 3 old images each.\\n\\nacme-web and acme-web-staging are both healthy: running, 0 restarts, healthcheck passing, last deployment succeeded and no memory or disk flags.\\n\\nI can only look at your setup, not change it. I can't clean up the disk or restart anything for you.\",\"diagnosis\":\"high_disk\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Service\",\"id\":\"ba9c5821-063e-4eb6-bdfa-2e6960f51340\",\"label\":\"acme-api\"},{\"kind\":\"Server\",\"id\":\"65d53194-0618-4f5a-bb52-f134fc2393aa\",\"label\":\"host-b\"},{\"kind\":\"Service\",\"id\":\"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\",\"label\":\"acme-web\"},{\"kind\":\"Service\",\"id\":\"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\",\"label\":\"acme-web-staging\"}],\"evidence\":[{\"ref\":\"ba9c5821-063e-4eb6-bdfa-2e6960f51340\",\"note\":\"get_health: running, restartCount 0, healthcheck healthy, flags.highDisk=true, highMemory=false. Memory rose from 43.9% to 47.9% between 11:58 and 12:00.\"},{\"ref\":\"9a74c2e0-72f7-4d65-8ac8-dd2074f3d9db\",\"note\":\"acme-api last deployment status SUCCESS (commit 2b3c4d5).\"},{\"ref\":\"65d53194-0618-4f5a-bb52-f134fc2393aa\",\"note\":\"host-b: CONNECTED, diskUsedMb 75000 of 81920, disk_used_percent 91.55%. Memory rose from 61.0% to 63.5%.\"},{\"ref\":\"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\",\"note\":\"acme-web: running, 0 restarts, healthcheck healthy, no flags, last deployment SUCCESS.\"},{\"ref\":\"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\",\"note\":\"acme-web-staging: running, 0 restarts, healthcheck healthy, no flags, last deployment SUCCESS.\"}],\"missingEvidence\":[\"No CPU data was returned for acme-api or host-b.\",\"Only one point of disk data was returned, so I can't tell how fast the disk is filling.\",\"I don't know what is using the space on host-b.\"]}\n```",
         "toolCalls": [],
         "stopReason": "end_turn",
         "usage": {
-          "inputTokens": 9964,
-          "outputTokens": 778
+          "inputTokens": 9961,
+          "outputTokens": 1241
         },
         "message": {
           "role": "assistant",
-          "content": "{\"answer\": \"None of your three services is down. They are all running, with zero restarts, passing healthchecks and a successful last deployment. One service has a warning: acme-api is flagged for high disk usage. Its server, host-b, has used about 91.6% of its disk (75,000 MB of 81,920 MB). The service still works, but if the disk fills up, builds, image pulls, logs and writes can start failing. acme-api's memory is normal at about 48%. acme-web and acme-web-staging have no warnings. I can only read data, so I can't clean up the disk. To free space on host-b, check how many old images and build cache are kept (acme-api keeps 3 old images), and look at log and volume growth on host-b.\", \"diagnosis\": \"high_disk\", \"confidence\": 0.85, \"entities\": [{\"kind\": \"Service\", \"id\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"label\": \"acme-api\"}, {\"kind\": \"Server\", \"id\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"label\": \"host-b\"}], \"evidence\": [{\"ref\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"note\": \"Health check: running, 0 restarts, passing healthcheck, flags.highDisk=true, highMemory=false. Memory is about 48%.\"}, {\"ref\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"note\": \"Connected. Disk is 91.55% used (75000 of 81920 MB). Memory is about 63%.\"}, {\"ref\": \"9a74c2e0-72f7-4d65-8ac8-dd2074f3d9db\", \"note\": \"acme-api's last deployment succeeded.\"}, {\"ref\": \"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\", \"note\": \"acme-web: running, passing healthcheck, no warning flags.\"}, {\"ref\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"note\": \"acme-web-staging: running, passing healthcheck, no warning flags.\"}], \"missingEvidence\": [\"A breakdown of what is using disk space on host-b (images, build cache, volumes, logs)\", \"CPU metrics came back empty for both acme-api and host-b\"]}",
-          "toolCalls": []
+          "content": "```json\n{\"answer\":\"None of your three services are down, but one has a warning: acme-api has a disk problem.\\n\\nacme-api: the container is running with 0 restarts, its healthcheck at /health passes and its last deployment (9a74c2e0, commit 2b3c4d5) succeeded. Its health summary flags high disk use, though. It runs on server host-b, and that server's disk is about 91.6% full (75,000 MB used of 81,920 MB). The service and server both use more memory each minute (the service went from about 44% to 48% and the server from about 61% to 63% over the last 3 minutes), but neither has the high-memory flag yet. If the disk fills up, acme-api and anything else on host-b could start failing on writes, builds or image pulls. It's worth freeing space on host-b soon, for example old Docker images, build cache or logs. Your services keep 3 old images each.\\n\\nacme-web and acme-web-staging are both healthy: running, 0 restarts, healthcheck passing, last deployment succeeded and no memory or disk flags.\\n\\nI can only look at your setup, not change it. I can't clean up the disk or restart anything for you.\",\"diagnosis\":\"high_disk\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Service\",\"id\":\"ba9c5821-063e-4eb6-bdfa-2e6960f51340\",\"label\":\"acme-api\"},{\"kind\":\"Server\",\"id\":\"65d53194-0618-4f5a-bb52-f134fc2393aa\",\"label\":\"host-b\"},{\"kind\":\"Service\",\"id\":\"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\",\"label\":\"acme-web\"},{\"kind\":\"Service\",\"id\":\"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\",\"label\":\"acme-web-staging\"}],\"evidence\":[{\"ref\":\"ba9c5821-063e-4eb6-bdfa-2e6960f51340\",\"note\":\"get_health: running, restartCount 0, healthcheck healthy, flags.highDisk=true, highMemory=false. Memory rose from 43.9% to 47.9% between 11:58 and 12:00.\"},{\"ref\":\"9a74c2e0-72f7-4d65-8ac8-dd2074f3d9db\",\"note\":\"acme-api last deployment status SUCCESS (commit 2b3c4d5).\"},{\"ref\":\"65d53194-0618-4f5a-bb52-f134fc2393aa\",\"note\":\"host-b: CONNECTED, diskUsedMb 75000 of 81920, disk_used_percent 91.55%. Memory rose from 61.0% to 63.5%.\"},{\"ref\":\"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\",\"note\":\"acme-web: running, 0 restarts, healthcheck healthy, no flags, last deployment SUCCESS.\"},{\"ref\":\"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\",\"note\":\"acme-web-staging: running, 0 restarts, healthcheck healthy, no flags, last deployment SUCCESS.\"}],\"missingEvidence\":[\"No CPU data was returned for acme-api or host-b.\",\"Only one point of disk data was returned, so I can't tell how fast the disk is filling.\",\"I don't know what is using the space on host-b.\"]}\n```",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS0ggKEAgTGAI4AUIIdGhpbmtpbmcSDLSYMmIDYkAT1gnLcxoM9fy+/lQZAjcHjopAIjCT0w9JzcdX0AVJdt7EGv3FDsBrLYx2xIsfWaCbeGZQmdAzZ8K72/AKnBKfRBm7iPwq7wccqk/fBBKyJUCBmyBG7VUWYcAJ14zJU2a++G6YHIZEqZ6nQQsQTYkT/y1f/28s3q6LTr8rWoIqepS94kL+49NrENGFhM0Id7hGgPQB02YnlUEGz/7IILA3wLjct44TshBOBHIx7gKCz6fx87MM0erYI/clSeQ3LjwU8cj+MzHRqVND++518O7vOwDdbxiHlcglDjVMdRmABTwQj+pgpppmB3QJP7YndSl9I8C9qd67sBfrFu9v1aieq6hPXhq8glIosEiQEqiJxWmmwuUB+HMhZzIkLYn3jST+xxOWaPQrRfmCalSUmJ8PyTtcHe8VitOf3PSrzjT8qQjuW5nhHCMKOLW/Go/ya9PD4NTIMVfJuPesRrHK28sVYrBj5RxX+eZ7Oo0RvvmiqXlaCUt0xeiVT400zy/O7RowS4Z9WyQo1yw5qeEPz9JplcXexyZSw1fLnPNoVeUF45TathGLm/x+pqBJhAB/fJMOrs6PHxTCRDIx2FvJp/L3CTimMVXJ9lyv1OfINIWfMN4mMxTJj3TcZ1OAMNp50NRDWLuuL2Pq4Hn9vjmQR3lDHsm+vdFDBHSyA2BkZiDFy1LnvdozE8FpXSosuG717SbJTvdE375op6oXu9gMxqsehQmXSwAcXXMPbGIx+sGyS4QlVU7OMmb6CCrNOTR/4b33GHtgyimvhQgFoXUlw60aD6vfsN8JmfesjaraGaot+8IlxRS2iV/bCSUPT19TJBOFVi9nRAsbJla7R9A0JoifLztQpZdtLfjQlJI+kGWvjQ62kR5IHyUhHAYDZwVNRPmSZF5PzegRYczVHHvFuOWWADrWaQZIGpDYUZ0Sd51Xls0luwKi3wrJnSsnXudtdhRM4FD+2sfdJqQG10C0SGf6/yPvxW90MHjVlorLu7DMcq9DFdEzQf1lKP6tt8NxlUYs9US6E8MarUPZs5XqoZOBhYRd6/zqVqikH6CusJBHeaIerOrDgiaW5OgXERu/JLvOSc7+tfnrmFy+7ja8CogIuQ5oP0Jyn+gW9ldfLNUDuwEqhzoKHqZH5yVs03n56nMboiX19V7n8YmcoFQMZqtRzQjcFiiH/fqJ6IypUgjD0xciy/jVPCgeJJNbVDadyGYbddq4IUTjaWoaL2pScoFd658XQSr1j1XcDExMCLn/1EoyhNnFj5GUx2XZfuMMvpBuDqnRba58loEpvrIGb/BSU8H53Q1EC74u0rFH5Hk2GisR+gu6gxFn2Q7GcEyEDb3qHiqydoyCssssy/s9M7mKUhV3KlKh0Bm68jlxepxdC0GXPeOYLfIMAgGp6SVMN0IxGSAKNbH5zMEr/1A3qu6v76Z/QIKxtBgB"
+              }
+            ]
+          }
         }
       }
     }

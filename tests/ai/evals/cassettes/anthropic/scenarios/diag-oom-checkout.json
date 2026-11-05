@@ -13,55 +13,61 @@
       "model": "claude-opus-5-5",
       "turn": 1,
       "response": {
-        "text": "",
+        "text": "I'll check the service flagged by the hints and confirm it's the checkout service.",
         "toolCalls": [
           {
-            "id": "toolu_01NvUdo98xRFqKfzZmpo3Qro",
+            "id": "toolu_01KAsRbLPKgYsV3VJJTJttT4",
             "name": "get_service",
             "input": {
               "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc"
             }
           },
           {
-            "id": "toolu_01ApEXwUrCmgeYhob7Lg4cM2",
+            "id": "toolu_01RNdB7F9684A3ErzScMiCZL",
             "name": "get_health",
             "input": {
               "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc"
             }
           },
           {
-            "id": "toolu_01RoGfu1dPF6dxiKnSMXUUkz",
-            "name": "list_services",
-            "input": {}
+            "id": "toolu_01CThyhZXj4eL9o7oCFFdSmc",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc",
+              "limit": 5
+            }
           }
         ],
         "stopReason": "tool_use",
         "usage": {
           "inputTokens": 5492,
-          "outputTokens": 190
+          "outputTokens": 302
         },
         "message": {
           "role": "assistant",
-          "content": "",
+          "content": "I'll check the service flagged by the hints and confirm it's the checkout service.",
           "toolCalls": [
             {
-              "id": "toolu_01NvUdo98xRFqKfzZmpo3Qro",
+              "id": "toolu_01KAsRbLPKgYsV3VJJTJttT4",
               "name": "get_service",
               "input": {
                 "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc"
               }
             },
             {
-              "id": "toolu_01ApEXwUrCmgeYhob7Lg4cM2",
+              "id": "toolu_01RNdB7F9684A3ErzScMiCZL",
               "name": "get_health",
               "input": {
                 "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc"
               }
             },
             {
-              "id": "toolu_01RoGfu1dPF6dxiKnSMXUUkz",
-              "name": "list_services",
-              "input": {}
+              "id": "toolu_01CThyhZXj4eL9o7oCFFdSmc",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc",
+                "limit": 5
+              }
             }
           ],
           "reasoning": {
@@ -70,7 +76,7 @@
               {
                 "type": "thinking",
                 "thinking": "",
-                "signature": "CAQS7wQKEAgTGAI4AUIIdGhpbmtpbmcSDJgVkcOi4khHCy8coxoMbwyljTVSdCPNWYfiIjCq8HIu2BSiJjoobMnmcEJPcgIlKpCX20M6wFSlMV5zi+LYpfO1T4NfHWOmQve8yywqjAQvJq3zywDnd9T2k1X7K3BEV9d7sdx/VB3qshBljMx3oP87Sp6w5t37mLfe5VhqfE8V1F2ftRSXDY5guuthpB+drk6YxX0gXBPCaUqs4AiGRr/x2VZAWl98rMdRJpBhRSCOHPG0xjcb2j9K87h1mRK1DZQ8oHyz7Q4t6eRtbq6Xc1nUGeNMqJ7G/krPDL3Xa4T/cH2JruIfRHAd8UmuYvQy75+t4/fBMKpN1kxw5JaqbUZNfXl9wYIS7mwIQrcJjYiIc3kTNUy5lJiDA+Olr+XsimY5lIMadfJsDMtxzEZGMciCH0VZlfXictcij4F9XBRQaW3X7R3h0sVwpvrg3m2pG7QAU1D2w+LV9snLmWX3JzojtJQrufQRBqx+B8FtW6wlN7jv5+4cT8Iu9g6kBZygpvq7qgRc6h14ALtOZko9Zg4rEqFsqegxvhV0SY4gZUKC23FL3V+5dWTSuHcsL7T3adVWjb+US1tGRPXzi+cSr0IeR6NtWYTB2wdkYu05CFl5b8IbfwcS1JamqobPbrG+GacPbnNx7JWROLJa1rtJispsL41L7KrsMzCLPaCbwu76Kbv/zMOzBDaJbEU/hrjvr5LB8A5tx2ci98a4JG0tnhCjTKeK4K6eAIjXC0wpYwsyBwbn4ZGNN3S+QCyc+cEcofG0dB/4zQOMM1v8512FVhWgib43dszl4xj4AxgB"
+                "signature": "CAQSiQUKEAgTGAI4AUIIdGhpbmtpbmcSDDKw+8AeNpxAuL/lbhoMJ8vBAEyPVUgGdnHQIjALV7Z9GB/SQLN8MAMqdJouGZ9IeSFz0skF0a5acOMZq971dAZZ55AQ9/8DWxc3i6QqpgS5TdF5Tl6TFckU7jLCj0IB2sKJKEawDeXntKBULeS+6satrUqdLLYT+6JbGxn8mcrHwGsFrab/AqsvRtNR3D3dNbZhAs1PcHeKXqOg33NNdDxrdzUK7PYXhUH9L5bnfldGRqOPro0Uc0g962CEXQJTKb13NENu513QIJnPvUaEmCKmoW130MIOYR9RrfVJhygKAhqFSTPg83qkbNN0rUU4r8Hk5WQ+tbl2xs8yblksFInUZKWlEa0cbgCd5Md4UFOY0wsz8MRyaREiB0LlK4l/Fo0Sv9joRSFHljinzzIArWqNLjcZkhWsQCKQbbBMeFEl4WW5kgwd3hUolF/y1gXcwCzYP7nRUx9kntwwFXpHaiEnpCohoqIpjMgToJ9Lc/a9Znv2Tfxdvd8chjWMHAdq6if1LOSRNdgsa3oBrnAr2DlDZ7bIcXZ+eFlwmalbzqVJeSAq6TQVi13U1n+b5rvnajtjiMOnw0jGNk9pDE3gtRGigPHDqk9GBAa5EfQp+RszLJMlOqMLUbOCegvdKcjFyirr5jhdsVqxqNK81y7lwdawqeSt5nC9QH/D27HzQnInLkhX/isWUzmULAska7gQtPJyMmHflO4QQFyIpNDqewzqdLgX82VjQfUU5BG6WZdJBDTEQB5DuHnTO5DrMFr5cqUKjqFI9B5EZmjVLPVk3UDpFErAGkCiLRcbbU/EEXDc1OotICf7sw4WOf5UqBS+lyXDqFvoGAE="
               }
             ]
           }
@@ -78,14 +84,14 @@
       }
     },
     {
-      "key": "cea5d9fe269169fa8fab61670ed0a6b1ec186af0c5e4f9e394373d70c7a10c07",
+      "key": "ed07f48e80b65d62cfd9c02a2686615bd9cf457f2b81465b0f3d2f4f14ba3aff",
       "model": "claude-opus-5-5",
       "turn": 2,
       "response": {
-        "text": "",
+        "text": "The container has exited and the disk is flagged as high. Next I'll check the logs for an OOM kill and look at the metrics.",
         "toolCalls": [
           {
-            "id": "toolu_0156LxQDa5frcAQi6ruZV3Ri",
+            "id": "toolu_01Y2KXv3no6S7Ce1MKFtpSA6",
             "name": "get_logs",
             "input": {
               "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc",
@@ -93,28 +99,35 @@
             }
           },
           {
-            "id": "toolu_01THsdfzs9GTpH3AWcJSEdX7",
+            "id": "toolu_012PjS1gS5fzx1vmgsswusHi",
             "name": "get_metrics",
             "input": {
               "target": "service",
               "id": "fa5ec119-fcfb-410a-983c-e9068fa972cc",
               "from": "2026-10-31T00:00:00Z",
               "to": "2026-11-01T12:00:00Z",
-              "points": 30
+              "points": 20
+            }
+          },
+          {
+            "id": "toolu_0157KuYJZsP3tjVarpzV6Bik",
+            "name": "get_server",
+            "input": {
+              "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
             }
           }
         ],
         "stopReason": "tool_use",
         "usage": {
-          "inputTokens": 9021,
-          "outputTokens": 279
+          "inputTokens": 6995,
+          "outputTokens": 413
         },
         "message": {
           "role": "assistant",
-          "content": "",
+          "content": "The container has exited and the disk is flagged as high. Next I'll check the logs for an OOM kill and look at the metrics.",
           "toolCalls": [
             {
-              "id": "toolu_0156LxQDa5frcAQi6ruZV3Ri",
+              "id": "toolu_01Y2KXv3no6S7Ce1MKFtpSA6",
               "name": "get_logs",
               "input": {
                 "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc",
@@ -122,35 +135,52 @@
               }
             },
             {
-              "id": "toolu_01THsdfzs9GTpH3AWcJSEdX7",
+              "id": "toolu_012PjS1gS5fzx1vmgsswusHi",
               "name": "get_metrics",
               "input": {
                 "target": "service",
                 "id": "fa5ec119-fcfb-410a-983c-e9068fa972cc",
                 "from": "2026-10-31T00:00:00Z",
                 "to": "2026-11-01T12:00:00Z",
-                "points": 30
+                "points": 20
+              }
+            },
+            {
+              "id": "toolu_0157KuYJZsP3tjVarpzV6Bik",
+              "name": "get_server",
+              "input": {
+                "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
               }
             }
-          ]
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSuQUKEAgTGAI4AUIIdGhpbmtpbmcSDOcOAV3nRqYAnpLCkBoMXZNuerRHBZlbzhm3IjDUt5PgU+NBEMVL7xUVBFPc3gXen7mgTLy9cCVfeqIgATbGDUjmy75XI0WxqNcPBDwq1gQR7MrGd+Xv19OwEY30vec/jqtflqrPXgbZc7uikr8U/UsmUzKY07NhDLzo217av3gal0PBOF3oysid85iAkejsQj8MSxAaIVxdJx6KsAt0x4BhkN553v36mOI+bqmscLzVSV8LKvu5vQidJBOfofRCCSyr0C7mdM2ZFJznVbu6uOduqKEiMY8jVas5NjQaFBicoaFcG6zDgut64fxPElvz/KBFuI5Kv/X2EnDHbRay1RVGCSKAckJHVsxzD/as980YE1C6tyOtpFwcYhjHfyaPmLpv4tpfYeuV7HjKJ2JG6MIOck4duM21SSYqaCeOrR3oloZvEfofKEVTyhbNfmeG5nwS/yO4Q1zoTWucM2FCzkV3xXKKgQHw/1LjDBq3RhRTLeYwSsd03VRGmr2repWt0Bd0QsD3gq6nHJWiEdfvsIlMPJ6I5esqXviUpP+BdmW79GIfwjfUH4yxCTVgoTN/yFcW5Jql42VscTDbvCVply1FFPMtXrSkSQQhr5L710JXeDlP++FZRWodrtjs9RBnKbj9mP0+Ptyv/XhDa86FAg+q1GwdH/8Fmuwpcm2mpvC5jKr7VQNmmmL81PEQAZpKaK2Js+oLm5Ub9rvMwvQxE3JK7+Fahs2UFptiHfNJSNqmX5t2lcFv1hbbohZ/Cexl2mO+Ful1I00pi5JWaMBeqUwOXV0mcdnolVpjGviSPdLqG42UQg5BdUb4P97E0R6CnlHQQOPEoCizpRdWzcV+JmLW6Rdx2MkQ69s4vuCNOp1phlP72qfd90PqKhMZa3ba88+JktC1GAE="
+              }
+            ]
+          }
         }
       }
     },
     {
-      "key": "66a5e94f82914db9b8243c2b2a743b1b8960f58ac7d3c5e9f8cf09a39898a2cc",
+      "key": "62a79bd982e4e69d2501a422a13cc590a8fca7ca899388114c5f89427e68d4c5",
       "model": "claude-opus-5-5",
       "turn": 3,
       "response": {
-        "text": "{\"answer\":\"Checkout is failing because its container is running out of memory. The `checkout` service (image ghcr.io/market/checkout:3.2.0) has status FAILED, and its container has exited after 2 restarts.\\n\\n**What the logs show:** At 11:53:20 UTC on 2026-11-01 the app logged \\\"processing cart batch of 5000 items\\\". Twenty seconds later, at 11:53:40, it crashed with \\\"FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory\\\".\\n\\n**What the memory metrics show:** Memory use climbed quickly, from about 450 MiB (87.9%) at 11:58 to about 511 MiB (99.8%) at 12:00. The container keeps hitting its memory limit, gets killed and restarts.\\n\\n**Deployment and disk:** The last deployment (ada6b271-d9c6-4bdf-84e7-65e529c59236, commit 3a4b5c6) finished successfully on 2026-10-31 at 02:41 UTC, so this isn't a failed deployment. The health summary also flags high disk use, but nothing links that to the crash.\\n\\n**What to check:** The 5000-item cart batch is the likely cause. Look at whether that batch can be processed in smaller pieces or streamed. Also review the container's memory limit and the Node heap size (`--max-old-space-size`), and check whether release 3.2.0 changed how much memory batching uses. I can only read your setup, so I can't restart the service, redeploy or change settings myself.\",\"diagnosis\":\"out_of_memory\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Service\",\"id\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"label\":\"checkout\"},{\"kind\":\"Deployment\",\"id\":\"ada6b271-d9c6-4bdf-84e7-65e529c59236\",\"label\":\"checkout last deployment (3a4b5c6)\"}],\"evidence\":[{\"ref\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"note\":\"Runtime log at 2026-11-01T11:53:40Z: 'FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory', right after 'processing cart batch of 5000 items'.\"},{\"ref\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"note\":\"memory_percent climbed from 87.9% to 99.8% between 11:58 and 12:00. The health summary shows the container exited, restartCount 2, runtimeStatus FAILED and the highDisk flag set.\"},{\"ref\":\"ada6b271-d9c6-4bdf-84e7-65e529c59236\",\"note\":\"The last deployment succeeded (finished 2026-10-31T02:41Z), so a failed deployment is ruled out.\"}],\"missingEvidence\":[\"The container's configured memory limit isn't shown directly; it is inferred from memory_percent (about 512 MiB).\",\"No CPU data points were returned for the service.\"]}",
+        "text": "{\"answer\":\"Checkout is failing because its Node.js process is running out of memory, and the container has stopped. The service's status is FAILED and its container is 'exited' after 2 restarts. The last runtime log at 11:53:20 says \\\"processing cart batch of 5000 items\\\". Twenty seconds later, at 11:53:40, it logged \\\"FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory\\\". Memory metrics show the same pattern: usage went from about 88% (≈450 MiB) to 95.7% and then 99.8% (≈511 MiB) between 11:58 and 12:00. The container doesn't have a healthcheck.\\n\\nThe last deployment (image ghcr.io/market/checkout:3.2.0, triggered manually) finished successfully on 2026-10-31, so the deploy itself didn't fail. The crash happens while the service is running, apparently when it processes a large cart batch.\\n\\nA second issue: the health check flags high disk on the server it runs on, app-1. About 47.6 GB of 51.2 GB is used (≈93%). That doesn't explain the crash, but it's worth fixing.\\n\\nI can't restart or change anything. To fix this, someone with access could raise the container's memory limit and Node's heap limit (--max-old-space-size), or make the cart batches smaller or stream them. Then redeploy, and free up disk space on app-1.\",\"diagnosis\":\"out_of_memory\",\"confidence\":0.88,\"entities\":[{\"kind\":\"Service\",\"id\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"label\":\"checkout\"},{\"kind\":\"Deployment\",\"id\":\"ada6b271-d9c6-4bdf-84e7-65e529c59236\",\"label\":\"checkout deployment 3a4b5c6\"},{\"kind\":\"Server\",\"id\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"label\":\"app-1\"}],\"evidence\":[{\"ref\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"note\":\"Service status FAILED; container state exited with restartCount 2; no healthcheck; highDisk flag true.\"},{\"ref\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"note\":\"Runtime log 2026-11-01T11:53:40Z: 'FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory', just after 'processing cart batch of 5000 items'.\"},{\"ref\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"note\":\"memory_percent went 87.9% → 95.7% → 99.8% (≈450→511 MiB) from 11:58 to 12:00.\"},{\"ref\":\"ada6b271-d9c6-4bdf-84e7-65e529c59236\",\"note\":\"Last deployment SUCCESS (manual, image ghcr.io/market/checkout:3.2.0, finished 2026-10-31T02:41Z), so the failure is not a failed deploy.\"},{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"Host app-1 is CONNECTED; disk 47616/51200 MB used (~93%), a secondary high-disk concern.\"}],\"missingEvidence\":[\"The container's configured memory limit and Node heap size are not visible to me.\",\"No CPU metric points came back for the period.\"]}",
         "toolCalls": [],
         "stopReason": "end_turn",
         "usage": {
-          "inputTokens": 10310,
-          "outputTokens": 1101
+          "inputTokens": 8780,
+          "outputTokens": 1252
         },
         "message": {
           "role": "assistant",
-          "content": "{\"answer\":\"Checkout is failing because its container is running out of memory. The `checkout` service (image ghcr.io/market/checkout:3.2.0) has status FAILED, and its container has exited after 2 restarts.\\n\\n**What the logs show:** At 11:53:20 UTC on 2026-11-01 the app logged \\\"processing cart batch of 5000 items\\\". Twenty seconds later, at 11:53:40, it crashed with \\\"FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory\\\".\\n\\n**What the memory metrics show:** Memory use climbed quickly, from about 450 MiB (87.9%) at 11:58 to about 511 MiB (99.8%) at 12:00. The container keeps hitting its memory limit, gets killed and restarts.\\n\\n**Deployment and disk:** The last deployment (ada6b271-d9c6-4bdf-84e7-65e529c59236, commit 3a4b5c6) finished successfully on 2026-10-31 at 02:41 UTC, so this isn't a failed deployment. The health summary also flags high disk use, but nothing links that to the crash.\\n\\n**What to check:** The 5000-item cart batch is the likely cause. Look at whether that batch can be processed in smaller pieces or streamed. Also review the container's memory limit and the Node heap size (`--max-old-space-size`), and check whether release 3.2.0 changed how much memory batching uses. I can only read your setup, so I can't restart the service, redeploy or change settings myself.\",\"diagnosis\":\"out_of_memory\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Service\",\"id\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"label\":\"checkout\"},{\"kind\":\"Deployment\",\"id\":\"ada6b271-d9c6-4bdf-84e7-65e529c59236\",\"label\":\"checkout last deployment (3a4b5c6)\"}],\"evidence\":[{\"ref\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"note\":\"Runtime log at 2026-11-01T11:53:40Z: 'FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory', right after 'processing cart batch of 5000 items'.\"},{\"ref\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"note\":\"memory_percent climbed from 87.9% to 99.8% between 11:58 and 12:00. The health summary shows the container exited, restartCount 2, runtimeStatus FAILED and the highDisk flag set.\"},{\"ref\":\"ada6b271-d9c6-4bdf-84e7-65e529c59236\",\"note\":\"The last deployment succeeded (finished 2026-10-31T02:41Z), so a failed deployment is ruled out.\"}],\"missingEvidence\":[\"The container's configured memory limit isn't shown directly; it is inferred from memory_percent (about 512 MiB).\",\"No CPU data points were returned for the service.\"]}",
+          "content": "{\"answer\":\"Checkout is failing because its Node.js process is running out of memory, and the container has stopped. The service's status is FAILED and its container is 'exited' after 2 restarts. The last runtime log at 11:53:20 says \\\"processing cart batch of 5000 items\\\". Twenty seconds later, at 11:53:40, it logged \\\"FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory\\\". Memory metrics show the same pattern: usage went from about 88% (≈450 MiB) to 95.7% and then 99.8% (≈511 MiB) between 11:58 and 12:00. The container doesn't have a healthcheck.\\n\\nThe last deployment (image ghcr.io/market/checkout:3.2.0, triggered manually) finished successfully on 2026-10-31, so the deploy itself didn't fail. The crash happens while the service is running, apparently when it processes a large cart batch.\\n\\nA second issue: the health check flags high disk on the server it runs on, app-1. About 47.6 GB of 51.2 GB is used (≈93%). That doesn't explain the crash, but it's worth fixing.\\n\\nI can't restart or change anything. To fix this, someone with access could raise the container's memory limit and Node's heap limit (--max-old-space-size), or make the cart batches smaller or stream them. Then redeploy, and free up disk space on app-1.\",\"diagnosis\":\"out_of_memory\",\"confidence\":0.88,\"entities\":[{\"kind\":\"Service\",\"id\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"label\":\"checkout\"},{\"kind\":\"Deployment\",\"id\":\"ada6b271-d9c6-4bdf-84e7-65e529c59236\",\"label\":\"checkout deployment 3a4b5c6\"},{\"kind\":\"Server\",\"id\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"label\":\"app-1\"}],\"evidence\":[{\"ref\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"note\":\"Service status FAILED; container state exited with restartCount 2; no healthcheck; highDisk flag true.\"},{\"ref\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"note\":\"Runtime log 2026-11-01T11:53:40Z: 'FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory', just after 'processing cart batch of 5000 items'.\"},{\"ref\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"note\":\"memory_percent went 87.9% → 95.7% → 99.8% (≈450→511 MiB) from 11:58 to 12:00.\"},{\"ref\":\"ada6b271-d9c6-4bdf-84e7-65e529c59236\",\"note\":\"Last deployment SUCCESS (manual, image ghcr.io/market/checkout:3.2.0, finished 2026-10-31T02:41Z), so the failure is not a failed deploy.\"},{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"Host app-1 is CONNECTED; disk 47616/51200 MB used (~93%), a secondary high-disk concern.\"}],\"missingEvidence\":[\"The container's configured memory limit and Node heap size are not visible to me.\",\"No CPU metric points came back for the period.\"]}",
           "toolCalls": [],
           "reasoning": {
             "provider": "anthropic",
@@ -158,7 +188,7 @@
               {
                 "type": "thinking",
                 "thinking": "",
-                "signature": "CAQSzgYKEAgTGAI4AUIIdGhpbmtpbmcSDOK0o6YYsmOnlvo/AhoMV+Udd8lRW7/SFtOeIjBbKBQZMDVPKPyyxVQl+i5hjcPPFraQeuVWVHRkdW2K34JrBT9Hh8DtMXIZGqBrStEq6wWkcqqvvryIA75CHqwZZzUx0o4azcZsjtDeAQxIAZ38steC2DZqT1RcBpGbmkdcdOOTycRxR5/iPm3v1UYdXv7uL8ZdKvDJpq2HfisKJdR6Etqjt1CXsq4w0LSvh1D6qd6k60LTUfvjIRXK2yZDfJ3A/+9+YmN81eHzrpY3qRhKDs0oFMQro0ODJNPkZ6b1tSBFUmr6D9VGzKJoPU5McVgqRtu8oCJ16AHiPYS0M5EOFfg8XQgoPdzSyYFsTKcJrZmlNmRW0J84Am1FaAzrG6B2lAJIO+UmZZkNy5NJF+k9g8CQguzyGWlAtbYFoIjwNaucRAn2a4vAk+BGUT/OHH1b5JMwODQVLwxjr+kgsmvLKsdT7MrdFC6aTQ97FX8XwsWSf1SjMpBMebNiiR0PJ8GUN2Y2+r3G+7veEI/SFPL1QCi2ik7U5U1nvwjf/ISE1NGJqMrJDa3GKWaFAMrkDQ0y7knxnibeGvyKEAkv+vXhPB9uUCRWL2xu9zmIZ/fwqnEu+bhMnFxYgRc1DTk2PcMCTwX4DkVKUx9TgFaN0/eXiSfFeghJ9+yA3Z4Z6ezjseFlK+7CPFa5eY0Ok6yiVLeUlg7UjhiwrYLpxN6Kq4aUjpLSeWvRbiyqjfhAr9/ZfUCmexYAHJaFaF+GZ/JEpzV9FwnShbyWnqWsPjs+l4wJmA1mhqCMydCMhnaiqGRBERrls6dE0fuHr7gjF0M3pKRvjMjyjqgoHWz1VVKCQ/GcIa5IytTQiqk/bhrzuIZX21H/rSj7XpF84G6oxjQ2MzDqQtZHQJCtoPmbQqLvcl//v39XL/w1dJD99PhLmAWS9nNlYt/JgczIJ3duHAOxRPor7D0df6olK7hVlQkvZmm5ITpvqWqZ1JNPqyODC20aKR5CFJIlsGcpWQX7gMYicKwEWKNRyFFDK0rvm6F9HUodLCfeeXOV4UqjmyZu3K07KGPRjySA95zLvJytHxqkuC9avxomnt/Cqj8YVEcYAQ=="
+                "signature": "CAQShwcKEAgTGAI4AUIIdGhpbmtpbmcSDL6rWXr9+2MLMTfNaRoMM3S7v28ovGgMt0LvIjDHVPIfFekfTGE++4gKm786IvbjPR343A+fHcGVT2CG3bLVOaxKm/DiaqTp+pMtxjAqpAZbyhopvS0VKSkjmfvUBGARgi/meoI4I+3G1BrFuPyF70I8LzsfU1SkUNijtbno5pR4ubHEYdopYFQeBEDNZ37nfVYbK2Ov6obQ0hz+AtCLIKpLHWjMENzWtMS5UXEk2bm/ywX3ivSB+gSe+VXQs+KVm34hjRD6OYMvvaNfyzZHJALVvOgGE0PlrWuBT7t3UlQny3eHnpjtJQZDH+vMqBDHN9t6Cubg2pq8M3TD9DWO9dDxZ6+ImvANpSSnG/QOp9w9xzlYGHGgs3qdqsSUTMq6TVgmzLfm6or6Kkp5G3l+3BnsBs4ztIPIIfCJEGXJH7DpsFwNX3/cqOWbeNJoC1SAMqWEYK/gkbI6T8kSuAhHjwBLQr+kqEZyb25NVPsWJ/V1pENN7haH/o3X1FohL/uZYhqfEpi+4dgeZ/ZbVDwy8ZnaeuVUpkz8dXmCZvBRop9RVQCIhZlQVT5X8OueBHzYsSwwLOK+Qct8M3Vm6DkdiY9ysTw3f6U+OUHKI8x3DUvGCub85kaH3aiRL0qxGmynpqI00sXK+4YvQh5uYJwrIOvUNqnlDr+pwrbkmF1CWrfCiwWdJpYjkuFRXRqB8le9q5uGubt0XQY2raJSRjqa2x4ZOu9t4sQ+gg09b1oUCFarvYMcBMaArOsoDGIViaijBkIs1/n4yQNEORkZA5VbfYbUwiEwZR5p1R1wAojbQ+9zbm6O0fP0P1e9+QxzZakoOR466/w20iFZoKnKaWmSl8YljII6df6jz7A4t4y7uh7M2eBsW7S1vKdzvdfuvkYG+6XB8be2viPKdFrW8xi2GvRsl4PZB28sc6YXR7o+XpdQ9UajWBbbRMRQDVBM4jZdGd2COkHB81AZMc863YHnB9BJ+6lJ18w/EQ668jhIKqCtNikwqCqGtyF7tHekiLEeaIxFft1MvmDJrV0rDRy5xlxcwn5eh9x7JqRaGczaoROx8P9pHdZ+u+Vi2wCZRVGrXPs7M0GEF2OkXqXprp9jnSoSMPe1o8fSG3S2PmGNoBYZLtFx9xu/O/QMMTe6U4/HmR1Viv4bZ+b9hNcXR4Lyb8ksbUsYAQ=="
               }
             ]
           }
