@@ -24,6 +24,7 @@ import type {
   AIToolCallRequest,
   AIToolDefinition,
 } from '../../types.js';
+import { toAnthropicInputSchema } from './wire-schema.js';
 
 // Anthropic Messages API (ADR 0012): adaptive thinking, effort medium, strict tools, tool_choice
 // auto. Every response and stream event is parsed through the schemas below.
@@ -129,7 +130,7 @@ function toWireTool(tool: AIToolDefinition): Anthropic.Tool {
   return {
     name: tool.name,
     description: tool.description,
-    input_schema: { type: 'object', ...tool.inputSchema },
+    input_schema: { type: 'object', ...toAnthropicInputSchema(tool.inputSchema) },
     strict: true,
   };
 }
