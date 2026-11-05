@@ -175,13 +175,30 @@ export type AiSettingsAction = (typeof AI_SETTINGS_ACTIONS)[number];
 const AI_SETTINGS_PROVIDERS: ReadonlySet<unknown> = new Set(['anthropic', 'openai']);
 const AI_SETTINGS_MODEL_PATTERN = /^(?:claude|gpt)-[a-z0-9][a-z0-9.-]{0,56}$/;
 
+/**
+ * 28-05 (A4): one event per question the read-only agent handled, actor `ai`. Kept out of
+ * `ALL_ACTIVITY_ACTIONS`. Metadata is exactly `{ conversationId, tools, toolCalls,
+ * unauthorizedAttempts }`: tool names only, never the question, a tool output or the answer.
+ */
+export const AI_ACTIONS = ['ai.question_answered', 'ai.question_failed', 'ai.question_aborted'] as const;
+
+export type AiAction = (typeof AI_ACTIONS)[number];
+
+/** Mirrors api-contract's AI_TOOL_NAME_PATTERN and AI_MAX_TOOL_CALLS_PER_MESSAGE (not importable here). */
+const AI_EVENT_TOOL_NAME_PATTERN = /^[a-z][a-z0-9_]{0,63}$/;
+const AI_EVENT_MAX_TOOLS = 16;
+const AI_EVENT_MAX_COUNT = 1_000;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const AI_EVENT_METADATA_KEYS: ReadonlySet<string> = new Set(['conversationId', 'tools', 'toolCalls', 'unauthorizedAttempts']);
+
 export type AnyActivityAction =
   | ActivityAction
   | DeployEngineAction
   | DomainAction
   | EnvAction
   | SecretAction
-  | AiSettingsAction;
+  | AiSettingsAction
+  | AiAction;
 
 export const ALL_ACTIVITY_ACTIONS: readonly AnyActivityAction[] = Object.freeze([
   ...AUTH_ACTIONS,
@@ -196,8 +213,10 @@ const ACTIVITY_ACTION_SET: ReadonlySet<string> = new Set<string>([
   ...ENV_ACTIONS,
   ...SECRET_ACTIONS,
   ...AI_SETTINGS_ACTIONS,
+  ...AI_ACTIONS,
 ]);
 
+const AI_ACTION_SET: ReadonlySet<string> = new Set(AI_ACTIONS);
 const AI_SETTINGS_ACTION_SET: ReadonlySet<string> = new Set(AI_SETTINGS_ACTIONS);
 const ENV_ACTION_SET: ReadonlySet<string> = new Set(ENV_ACTIONS);
 const SECRET_ACTION_SET: ReadonlySet<string> = new Set(SECRET_ACTIONS);
@@ -381,6 +400,39 @@ function assertAiSettingsEvent(action: AiSettingsAction, entityType: string, met
   }
 }
 
+function isCount(value: unknown): boolean {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= AI_EVENT_MAX_COUNT;
+}
+
+function assertAiEvent(action: AiAction, input: BuildActivityEventInput, metadata: ActivityMetadata): void {
+  if (input.entityType !== 'ai_conversation') {
+    throw new InvalidActivityActionError(action, 'Activity entityType does not match action');
+  }
+  if (input.actorType !== 'ai') throw new InvalidActivityActionError(action, 'AI activity must have actor ai');
+  const expectedOutcome = action === 'ai.question_answered' ? 'success' : 'failure';
+  if (input.outcome !== expectedOutcome) throw new InvalidActivityActionError(action, 'Activity outcome does not match action');
+  for (const key of AI_EVENT_METADATA_KEYS) {
+    if (!Object.hasOwn(metadata, key)) throw new SensitiveMetadataError(key);
+  }
+  for (const key of Object.keys(metadata)) {
+    if (!AI_EVENT_METADATA_KEYS.has(key)) throw new SensitiveMetadataError(key);
+  }
+  const { conversationId, tools } = metadata;
+  if (typeof conversationId !== 'string' || !UUID_PATTERN.test(conversationId) || conversationId !== input.entityId) {
+    throw new SensitiveMetadataError('conversationId');
+  }
+  if (
+    !Array.isArray(tools) ||
+    tools.length > AI_EVENT_MAX_TOOLS ||
+    new Set(tools).size !== tools.length ||
+    !tools.every((name) => typeof name === 'string' && AI_EVENT_TOOL_NAME_PATTERN.test(name))
+  ) {
+    throw new SensitiveMetadataError('tools');
+  }
+  if (!isCount(metadata.toolCalls)) throw new SensitiveMetadataError('toolCalls');
+  if (!isCount(metadata.unauthorizedAttempts)) throw new SensitiveMetadataError('unauthorizedAttempts');
+}
+
 function assertProxyMetadata(action: ProxyAction, metadata: ActivityMetadata): void {
   const allowed = PROXY_ACTION_METADATA_KEYS[action];
   for (const [key, value] of Object.entries(metadata)) {
@@ -521,6 +573,10 @@ export function buildActivityEvent(input: BuildActivityEventInput, now: Date): A
 
   if (AI_SETTINGS_ACTION_SET.has(input.action)) {
     assertAiSettingsEvent(input.action as AiSettingsAction, input.entityType, metadata);
+  }
+
+  if (AI_ACTION_SET.has(input.action)) {
+    assertAiEvent(input.action as AiAction, input, metadata);
   }
 
   if (Object.hasOwn(PROXY_ACTION_METADATA_KEYS, input.action)) {

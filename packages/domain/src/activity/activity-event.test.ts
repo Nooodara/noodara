@@ -3,6 +3,7 @@ import { secretValue } from '../security/secret-value.js';
 import {
   ACCOUNT_ACTIONS,
   ACTIVITY_ACTOR_TYPES,
+  AI_ACTIONS,
   AI_SETTINGS_ACTIONS,
   ALL_ACTIVITY_ACTIONS,
   AUTH_ACTIONS,
@@ -698,5 +699,67 @@ describe('ai_settings.* actions (28-02 A1)', () => {
     expect(() => build('ai_settings.deleted', 'secret', { provider: 'openai', model: 'gpt-5-2025-08-07' })).toThrow(
       InvalidActivityActionError,
     );
+  });
+});
+
+describe('ai.* actions (28-05 A4)', () => {
+  const CONVERSATION = '0190b5a0-0000-7000-8000-000000000001';
+  const valid = { conversationId: CONVERSATION, tools: ['list_servers', 'get_logs'], toolCalls: 3, unauthorizedAttempts: 0 };
+  const build = (
+    action: (typeof AI_ACTIONS)[number],
+    metadata: Record<string, unknown>,
+    overrides: Partial<{ actorType: ActivityActorType; entityType: string; entityId: string; outcome: 'success' | 'failure' }> = {},
+  ) =>
+    buildActivityEvent(
+      {
+        actorType: overrides.actorType ?? 'ai',
+        actorId: 'u-1',
+        entityType: overrides.entityType ?? 'ai_conversation',
+        entityId: overrides.entityId ?? CONVERSATION,
+        action,
+        outcome: overrides.outcome ?? (action === 'ai.question_answered' ? 'success' : 'failure'),
+        metadata,
+      },
+      NOW,
+    );
+
+  it('accepts conversation id, tool names and counts for each action, with actor ai', () => {
+    expect(AI_ACTIONS).toEqual(['ai.question_answered', 'ai.question_failed', 'ai.question_aborted']);
+    for (const action of AI_ACTIONS) {
+      const event = build(action, valid);
+      expect(event.actorType).toBe('ai');
+      expect(event.metadata).toEqual(valid);
+    }
+    expect(build('ai.question_failed', { ...valid, tools: [], toolCalls: 0 }).metadata.tools).toEqual([]);
+  });
+
+  it('is not part of the legacy action lists', () => {
+    for (const action of AI_ACTIONS) expect(ALL_ACTIVITY_ACTIONS).not.toContain(action);
+  });
+
+  it.each<[Record<string, unknown>]>([
+    [{ ...valid, question: 'why is my api down?' }],
+    [{ ...valid, answer: 'the api is down' }],
+    [{ ...valid, output: '{"logs":[]}' }],
+    [{ conversationId: CONVERSATION, tools: [], toolCalls: 0 }],
+    [{ ...valid, conversationId: 'not-a-uuid' }],
+    [{ ...valid, conversationId: '0190b5a0-0000-7000-8000-000000000002' }],
+    [{ ...valid, tools: 'list_servers' }],
+    [{ ...valid, tools: ['List Servers'] }],
+    [{ ...valid, tools: ['list_servers', 'list_servers'] }],
+    [{ ...valid, tools: [42] }],
+    [{ ...valid, tools: Array.from({ length: 17 }, (_, i) => `tool_${String(i)}`) }],
+    [{ ...valid, toolCalls: -1 }],
+    [{ ...valid, toolCalls: 1.5 }],
+    [{ ...valid, unauthorizedAttempts: '0' }],
+  ])('rejects metadata %j', (metadata) => {
+    expect(() => build('ai.question_answered', metadata)).toThrow(SensitiveMetadataError);
+  });
+
+  it('rejects a non-ai actor, a mismatched entityType or a mismatched outcome', () => {
+    expect(() => build('ai.question_answered', valid, { actorType: 'user' })).toThrow(InvalidActivityActionError);
+    expect(() => build('ai.question_answered', valid, { entityType: 'service' })).toThrow(InvalidActivityActionError);
+    expect(() => build('ai.question_answered', valid, { outcome: 'failure' })).toThrow(InvalidActivityActionError);
+    expect(() => build('ai.question_aborted', valid, { outcome: 'success' })).toThrow(InvalidActivityActionError);
   });
 });
