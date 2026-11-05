@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "source": "none",
+  "note": "No live run yet (OPEN_QUESTIONS #21: provider key). Only NOODARA_AI_EVAL_LIVE=1 pnpm test:ai-evals writes this file."
+}
