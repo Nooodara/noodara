@@ -74,6 +74,12 @@ vi.mock('../../../../../../components/SecretsPanel', () => ({
     <div data-testid="secrets-panel-stub" data-scope={props.owner.scope} data-service={props.owner.serviceId} />
   ),
 }));
+// ServiceMetricsPanel is covered by its own test; here only that the page mounts it for the service.
+vi.mock('../../../../../../components/metrics/ServiceMetricsPanel', () => ({
+  ServiceMetricsPanel: (props: { projectId: string; serviceId: string }) => (
+    <div data-testid="service-metrics-stub" data-project={props.projectId} data-service={props.serviceId} />
+  ),
+}));
 vi.mock('../../../../../../components/EffectiveEnv', () => ({
   EffectiveEnv: (props: { serviceId: string; version?: number }) => (
     <div data-testid="effective-env-stub" data-service={props.serviceId} data-version={props.version ?? 0} />
@@ -243,6 +249,15 @@ describe('Service page (13-12 A1, A3, A5)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('domains-panel-stub')).toHaveAttribute('data-proxy', 'FAILED');
     });
+  });
+
+  it('mounts the status and metrics panel for the service (30-01)', async () => {
+    seed({ current: service({}) });
+    renderPage();
+
+    const stub = await screen.findByTestId('service-metrics-stub');
+    expect(stub).toHaveAttribute('data-project', PROJECT_ID);
+    expect(stub).toHaveAttribute('data-service', SERVICE_ID);
   });
 
   it('mounts variables, secrets and the effective view at service scope (24-02 A1-A3)', async () => {

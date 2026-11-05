@@ -25,6 +25,7 @@ import {
 } from '../../../../../../components/ProjectNav';
 import { SecretsPanel } from '../../../../../../components/SecretsPanel';
 import { ServiceFacts } from '../../../../../../components/ServiceFacts';
+import { ServiceMetricsPanel } from '../../../../../../components/metrics/ServiceMetricsPanel';
 import { REDEPLOY_NEEDED_COPY, ServiceSheet } from '../../../../../../components/ServiceSheet';
 import { ServiceToolbar } from '../../../../../../components/ServiceToolbar';
 import { Toolbar } from '../../../../../../components/Toolbar';
@@ -223,6 +224,8 @@ export default function ServicePage() {
           />
         ) : null}
         <ServiceFacts service={service} serverName={serverName} now={now} />
+        {/* 30-01 (A1/A2): runtime status, last deployment, restarts and metrics. */}
+        <ServiceMetricsPanel projectId={project.id} serviceId={service.id} now={now} />
         {service.sourceType === 'git' ? (
           <div>
             <Link

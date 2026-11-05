@@ -34,6 +34,7 @@ import { ProxyCard } from '../../../../components/ProxyCard';
 import { HostKeyChangedBanner } from '../../../../components/HostKeyChangedBanner';
 import { ServerDetailToolbar } from '../../../../components/ServerDetailToolbar';
 import { ServerFacts } from '../../../../components/ServerFacts';
+import { ServerMetricsPanel } from '../../../../components/metrics/ServerMetricsPanel';
 import { TrustFingerprintDialog } from '../../../../components/TrustFingerprintDialog';
 import { apiGet, type ApiErrorCode, type ServerView } from '../../../../lib/api-client';
 import { reconcileDetailSnapshot, shouldResetLiveChecks } from '../../../../lib/detail-sync';
@@ -330,6 +331,9 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         {detailState === 'discovered' || detailState === 'failed-with-history' ? (
           <ServerFacts server={server} now={now} dimmed={detailState === 'failed-with-history'} warnings={warnings} />
         ) : null}
+
+        {/* 30-01 (A1/A2): connection state, uptime and CPU, memory and disk over time. */}
+        {detailState === 'never-discovered' ? null : <ServerMetricsPanel serverId={server.id} now={now} />}
 
         {/* 24-03 (A1): the reverse proxy, once the server has been discovered. */}
         {detailState === 'discovered' ? (
