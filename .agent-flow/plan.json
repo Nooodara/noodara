@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-05T00:22:09.863Z",
+  "updatedAt": "2026-11-05T00:22:10.060Z",
   "cursor": {
     "phase": "28",
     "task": "28-05"
@@ -10757,14 +10757,19 @@
             "apps/control-plane/src/routes/ai-schemas.ts",
             "apps/control-plane/src/routes/api-scope.ts",
             "apps/control-plane/src/app.ts",
-            "tests/integration/ai/ai-api.test.ts"
+            "tests/integration/ai/ai-api.test.ts",
+            "packages/ai/src/index.ts",
+            "packages/domain/src/activity/activity-event.ts",
+            "packages/domain/src/activity/activity-event.test.ts",
+            "apps/control-plane/src/activity/ai-events.ts",
+            "apps/control-plane/src/activity/ai-events.test.ts"
           ],
           "wave": 4,
           "dependsOn": [
             "28-02",
             "28-04"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
