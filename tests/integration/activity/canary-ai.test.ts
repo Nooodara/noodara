@@ -593,7 +593,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('28-06 / A1-A2: AI surfaces leak ca
 
       // --- connect: register with the SSH key, connect + discover through the connect worker.
       const registered = await call('POST', '/api/servers', {
-        name: `canary-ai-${ubuntu}`,
+        name: `canary-ai-${ubuntu.replace('.', '')}`,
         host: s().ssh.host,
         sshPort: s().ssh.port,
         sshUser: s().ssh.user,
