@@ -8,6 +8,8 @@
 // DATABASE_URL, restart a service, run a shell command. No canary may reach the provider requests,
 // either SSE stream, Redis, stored AI rows, tool records, activity, loggers, API responses or the
 // SSH outputs Noodara captured; the AI phase runs no write template and restarts nothing.
+// 31-03 (A2, §9.9 HTTP errors): a rejected provider key and two provider failures mid-conversation
+// (the stub echoes the received key in its error body) plus AI route errors join the same scan.
 // Assertion messages name canaries by label, never by value.
 import { randomBytes, randomUUID } from 'node:crypto';
 import http from 'node:http';
@@ -51,8 +53,8 @@ interface ToolUse {
   readonly input: Json;
 }
 
-/** One scripted provider reply: tool calls, or the final structured answer. */
-type Step = { readonly tools: readonly ToolUse[] } | { readonly answer: string };
+/** One scripted provider reply: tool calls, the final structured answer, or an HTTP error. */
+type Step = { readonly tools: readonly ToolUse[] } | { readonly answer: string } | { readonly fail: 400 | 401 };
 
 interface SseEvent {
   readonly event: string;
@@ -244,7 +246,17 @@ function anthropicMessage(content: unknown[], stopReason: string): Response {
   );
 }
 
-function replyFor(step: Step): Response {
+/** A hostile provider error: its body echoes the key it received, the worst a provider can do. */
+function providerError(status: 400 | 401, key: string): Response {
+  const type = status === 401 ? 'authentication_error' : 'invalid_request_error';
+  return new Response(JSON.stringify({ type: 'error', error: { type, message: `rejected x-api-key ${key}` } }), {
+    status,
+    headers: { 'content-type': 'application/json', 'x-echoed-key': key },
+  });
+}
+
+function replyFor(step: Step, key: string): Response {
+  if ('fail' in step) return providerError(step.fail, key);
   if ('answer' in step) {
     return anthropicMessage([{ type: 'text', text: JSON.stringify(structuredAnswer(step.answer)) }], 'end_turn');
   }
@@ -281,6 +293,9 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('28-06 / A1-A2: AI surfaces leak ca
   const masterKey = randomBytes(32);
   const secretValue = `postgres://app:ncaDb${randomBytes(24).toString('hex')}@db.internal:5432/app`;
   const aiKey = `ncaAiKey${randomBytes(24).toString('hex')}`;
+  /** A key the provider rejects (401 echoing it); it must never reach a surface either. */
+  const rejectedKey = `ncaAiBad${randomBytes(24).toString('hex')}`;
+  const rejectedRequests: string[] = [];
   const connections: Redis[] = [];
   const workerLogs: string[] = [];
   const apiLogs: string[] = [];
@@ -545,12 +560,21 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('28-06 / A1-A2: AI surfaces leak ca
       const request = new Request(input, init);
       if (!request.url.startsWith(ANTHROPIC_HOST)) return original(input, init);
       const headers: string[] = [];
+      let key = '';
       request.headers.forEach((value, name) => {
-        if (name === 'x-api-key' || name === 'authorization') providerKeyHeaders.push(value);
+        if (name === 'x-api-key' || name === 'authorization') key = value;
         else headers.push(`${name}: ${value}`);
       });
-      providerRequests.push(`${request.method} ${request.url}\n${headers.join('\n')}\n${await request.clone().text()}`);
-      return replyFor(script.shift() ?? { answer: 'ok' });
+      const text = `${request.method} ${request.url}\n${headers.join('\n')}\n${await request.clone().text()}`;
+      if (key === rejectedKey) {
+        rejectedRequests.push(text);
+        return providerError(401, key);
+      }
+      providerKeyHeaders.push(key);
+      providerRequests.push(text);
+      // A failure step stays at the head, so a retry would see the same error.
+      const step = script[0] !== undefined && 'fail' in script[0] ? script[0] : script.shift();
+      return replyFor(step ?? { answer: 'ok' }, key);
     });
   }, STACK_TIMEOUT_MS);
 
@@ -589,6 +613,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('28-06 / A1-A2: AI surfaces leak ca
         { label: 'git token', value: httpsGit.token },
         { label: 'git basic auth', value: Buffer.from(`${GIT_HTTPS_USERNAME}:${httpsGit.token}`).toString('base64') },
         ...canariesFor('AI provider key', aiKey),
+        ...canariesFor('rejected AI provider key', rejectedKey),
       ];
 
       // --- connect: register with the SSH key, connect + discover through the connect worker.
@@ -633,6 +658,12 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('28-06 / A1-A2: AI surfaces leak ca
       expect({ status: good.status, errorCode: good.errorCode }).toEqual({ status: 'SUCCESS', errorCode: null });
       const failed = await deploy(broken.id);
       expect(failed.status).toBe('FAILED');
+
+      // --- §9.9 HTTP errors: a key the provider rejects (echoing it) answers 4xx and is not stored.
+      const rejected = await call('PUT', '/api/settings/ai', { provider: 'anthropic', model: ANTHROPIC_MODEL, apiKey: rejectedKey });
+      expect(rejected.statusCode, rejected.raw).toBeGreaterThanOrEqual(400);
+      expect(rejected.statusCode, rejected.raw).toBeLessThan(500);
+      expect(rejectedRequests.length, 'the rejected key never reached the provider').toBeGreaterThan(0);
 
       // --- the provider key, validated through the stub.
       const settings = await call('PUT', '/api/settings/ai', { provider: 'anthropic', model: ANTHROPIC_MODEL, apiKey: aiKey });
@@ -739,6 +770,22 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('28-06 / A1-A2: AI surfaces leak ca
         expect(toolRows.filter((row) => row.status === 'ok')).toEqual([]);
       }
 
+      // §9.9 HTTP errors and AI responses on failure: the provider fails mid-conversation with a body
+      // that echoes the key; the stream ends failed with a fixed code and message.
+      const failing = await createConversation('Failing provider');
+      const failures: { readonly label: string; readonly reply: AskReply }[] = [];
+      for (const status of [401, 400] as const) {
+        const reply = await ask(failing, 'Is the api service healthy?', [{ fail: status }]);
+        script = [];
+        expect(reply.status, reply.raw).toBe(200);
+        expect(reply.events.some((event) => event.event === 'error'), reply.raw).toBe(true);
+        expect(reply.events.at(-1)?.data, reply.raw).toMatchObject({ status: 'failed' });
+        failures.push({ label: `provider ${String(status)}`, reply });
+      }
+      expect((await call('GET', `/api/ai/conversations/${randomUUID()}`)).statusCode).toBe(404);
+      expect((await call('POST', `/api/ai/conversations/${failing}/messages`, { question: '' })).statusCode).toBe(400);
+      expect((await call('PUT', '/api/settings/ai', { provider: 'anthropic', model: ANTHROPIC_MODEL, apiKey: '' })).statusCode).toBe(400);
+
       // The tool results really reached the provider (so the scan below is meaningful).
       const providerText = providerRequests.join('\n');
       expect(providerRequests.length).toBeGreaterThanOrEqual(12);
@@ -748,7 +795,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('28-06 / A1-A2: AI surfaces leak ca
       expect(providerKeyHeaders.every((value) => value === aiKey), 'the provider did not receive the key header').toBe(true);
 
       // The read surfaces the UI uses for AI.
-      for (const conversationId of [diagnose, restart, shell]) await call('GET', `/api/ai/conversations/${conversationId}`);
+      for (const conversationId of [diagnose, restart, shell, failing]) await call('GET', `/api/ai/conversations/${conversationId}`);
       await call('GET', '/api/ai/conversations');
       await call('GET', '/api/settings/ai');
       await call('GET', '/api/activity');
@@ -756,6 +803,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('28-06 / A1-A2: AI surfaces leak ca
       // --- scan.
       const surfaces = new Map<string, string>();
       surfaces.set('requests sent to the provider', providerText);
+      surfaces.set('requests sent with the rejected key', rejectedRequests.join('\n'));
+      for (const { label, reply } of failures) surfaces.set(`AI SSE (${label})`, reply.raw);
       for (const { label, reply } of replies) surfaces.set(`AI SSE (${label})`, reply.raw);
       const client = sse;
       if (client === undefined) throw new Error('SSE client not open');
