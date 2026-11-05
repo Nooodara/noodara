@@ -7,6 +7,7 @@
 // carries the `environment-<id>` anchor the sidebar links to. Data refetches on stream (re)open
 // and on the projects-changed bus. 13-12: each environment has a New service action that opens
 // ServiceSheet in create mode; a save refetches the project and tells the sidebar.
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Banner, Button, Disclosure, EmptyState, InsetGroup, ListRow, RowMenu, SkeletonRow } from '@noodara/ui';
@@ -17,6 +18,7 @@ import {
   isRoutableId,
   notifyProjectsChanged,
   PROJECTS_HREF,
+  projectHref,
   serviceHref,
   subscribeProjectsChanged,
 } from '../../../../components/ProjectNav';
@@ -207,6 +209,15 @@ export default function ProjectPage() {
         onNewEnvironment={openSheet}
       />
       <div className="mx-auto flex max-w-[1120px] flex-col gap-8 p-8">
+        <div className="-mb-4 flex justify-end px-4">
+          <Link
+            href={`${projectHref(projectId)}/graph`}
+            data-testid="project-graph-link"
+            className="text-callout text-accent-text underline-offset-2 outline-none hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            View infrastructure graph
+          </Link>
+        </div>
         {environments.length === 0 ? (
           <InsetGroup data-testid="environments-list">
             <EmptyState
