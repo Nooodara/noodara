@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@fastify/type-provider-zod": "1.0.0",
+    "@noodara/ai": "workspace:*",
     "@noodara/docker": "workspace:*",
     "@noodara/domain": "workspace:*",
     "@noodara/git": "workspace:*",

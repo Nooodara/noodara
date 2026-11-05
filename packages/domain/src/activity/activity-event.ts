@@ -162,7 +162,26 @@ export const SECRET_ACTIONS = ['secret.created', 'secret.replaced', 'secret.dele
 
 export type SecretAction = (typeof SECRET_ACTIONS)[number];
 
-export type AnyActivityAction = ActivityAction | DeployEngineAction | DomainAction | EnvAction | SecretAction;
+/**
+ * 28-02 (A1): BYOK AI provider settings writes. Kept out of `ALL_ACTIVITY_ACTIONS` like
+ * SECRET_ACTIONS; metadata is exactly `{ provider, model }`, never the key or its hint. This module
+ * cannot import the api-contract allowlist (that package imports this one), so the model is held
+ * to a known family prefix and a closed charset: a provider key (`sk-...`) can never pass.
+ */
+export const AI_SETTINGS_ACTIONS = ['ai_settings.configured', 'ai_settings.replaced', 'ai_settings.deleted'] as const;
+
+export type AiSettingsAction = (typeof AI_SETTINGS_ACTIONS)[number];
+
+const AI_SETTINGS_PROVIDERS: ReadonlySet<unknown> = new Set(['anthropic', 'openai']);
+const AI_SETTINGS_MODEL_PATTERN = /^(?:claude|gpt)-[a-z0-9][a-z0-9.-]{0,56}$/;
+
+export type AnyActivityAction =
+  | ActivityAction
+  | DeployEngineAction
+  | DomainAction
+  | EnvAction
+  | SecretAction
+  | AiSettingsAction;
 
 export const ALL_ACTIVITY_ACTIONS: readonly AnyActivityAction[] = Object.freeze([
   ...AUTH_ACTIONS,
@@ -176,8 +195,10 @@ const ACTIVITY_ACTION_SET: ReadonlySet<string> = new Set<string>([
   ...DOMAIN_ACTIONS,
   ...ENV_ACTIONS,
   ...SECRET_ACTIONS,
+  ...AI_SETTINGS_ACTIONS,
 ]);
 
+const AI_SETTINGS_ACTION_SET: ReadonlySet<string> = new Set(AI_SETTINGS_ACTIONS);
 const ENV_ACTION_SET: ReadonlySet<string> = new Set(ENV_ACTIONS);
 const SECRET_ACTION_SET: ReadonlySet<string> = new Set(SECRET_ACTIONS);
 const ENV_SCOPE_SET: ReadonlySet<unknown> = new Set(ENV_SCOPES);
@@ -347,6 +368,19 @@ function assertSecretEvent(action: SecretAction, entityType: string, metadata: A
   if (typeof metadata.name !== 'string' || !validateSecretName(metadata.name).ok) throw new SensitiveMetadataError('name');
 }
 
+function assertAiSettingsEvent(action: AiSettingsAction, entityType: string, metadata: ActivityMetadata): void {
+  if (entityType !== 'ai_provider_settings') {
+    throw new InvalidActivityActionError(action, 'Activity entityType does not match action');
+  }
+  for (const key of Object.keys(metadata)) {
+    if (key !== 'provider' && key !== 'model') throw new SensitiveMetadataError(key);
+  }
+  if (!AI_SETTINGS_PROVIDERS.has(metadata.provider)) throw new SensitiveMetadataError('provider');
+  if (typeof metadata.model !== 'string' || !AI_SETTINGS_MODEL_PATTERN.test(metadata.model)) {
+    throw new SensitiveMetadataError('model');
+  }
+}
+
 function assertProxyMetadata(action: ProxyAction, metadata: ActivityMetadata): void {
   const allowed = PROXY_ACTION_METADATA_KEYS[action];
   for (const [key, value] of Object.entries(metadata)) {
@@ -483,6 +517,10 @@ export function buildActivityEvent(input: BuildActivityEventInput, now: Date): A
 
   if (SECRET_ACTION_SET.has(input.action)) {
     assertSecretEvent(input.action as SecretAction, input.entityType, metadata);
+  }
+
+  if (AI_SETTINGS_ACTION_SET.has(input.action)) {
+    assertAiSettingsEvent(input.action as AiSettingsAction, input.entityType, metadata);
   }
 
   if (Object.hasOwn(PROXY_ACTION_METADATA_KEYS, input.action)) {

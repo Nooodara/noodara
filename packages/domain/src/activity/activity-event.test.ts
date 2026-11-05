@@ -3,6 +3,7 @@ import { secretValue } from '../security/secret-value.js';
 import {
   ACCOUNT_ACTIONS,
   ACTIVITY_ACTOR_TYPES,
+  AI_SETTINGS_ACTIONS,
   ALL_ACTIVITY_ACTIONS,
   AUTH_ACTIONS,
   DOMAIN_ACTIONS,
@@ -655,6 +656,46 @@ describe('secret.* actions (23-03 A2, H1)', () => {
 
   it('rejects a mismatched entityType', () => {
     expect(() => build('secret.deleted', 'environment_variable', { scope: 'project', name: 'a' })).toThrow(
+      InvalidActivityActionError,
+    );
+  });
+});
+
+describe('ai_settings.* actions (28-02 A1)', () => {
+  const build = (action: (typeof AI_SETTINGS_ACTIONS)[number], entityType: string, metadata: Record<string, unknown>) =>
+    buildActivityEvent({ actorType: 'user', actorId: 'u-1', entityType, entityId: 'ai-1', action, outcome: 'success', metadata }, NOW);
+
+  it('accepts provider and model only, for each action', () => {
+    expect(AI_SETTINGS_ACTIONS).toEqual(['ai_settings.configured', 'ai_settings.replaced', 'ai_settings.deleted']);
+    for (const action of AI_SETTINGS_ACTIONS) {
+      expect(build(action, 'ai_provider_settings', { provider: 'anthropic', model: 'claude-opus-5-5' }).metadata).toEqual({
+        provider: 'anthropic',
+        model: 'claude-opus-5-5',
+      });
+      expect(build(action, 'ai_provider_settings', { provider: 'openai', model: 'gpt-5-2025-08-07' }).action).toBe(action);
+    }
+  });
+
+  it('is not part of the legacy action lists', () => {
+    for (const action of AI_SETTINGS_ACTIONS) expect(ALL_ACTIVITY_ACTIONS).not.toContain(action);
+  });
+
+  it.each<[Record<string, unknown>]>([
+    [{ provider: 'anthropic', model: 'claude-opus-5-5', apiKey: 'sk-ant-canary-123' }],
+    [{ provider: 'anthropic', model: 'claude-opus-5-5', keyHint: '••••••••1234' }],
+    [{ provider: 'anthropic' }],
+    [{ model: 'claude-opus-5-5' }],
+    [{ provider: 'bedrock', model: 'claude-opus-5-5' }],
+    [{ provider: 'anthropic', model: 'sk-ant-api03-CANARY' }],
+    [{ provider: 'anthropic', model: 'claude opus' }],
+    [{ provider: 'anthropic', model: 'x'.repeat(65) }],
+    [{ provider: 'anthropic', model: 42 }],
+  ])('rejects metadata %j', (metadata) => {
+    expect(() => build('ai_settings.configured', 'ai_provider_settings', metadata)).toThrow(SensitiveMetadataError);
+  });
+
+  it('rejects a mismatched entityType', () => {
+    expect(() => build('ai_settings.deleted', 'secret', { provider: 'openai', model: 'gpt-5-2025-08-07' })).toThrow(
       InvalidActivityActionError,
     );
   });
