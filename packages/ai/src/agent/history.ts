@@ -32,22 +32,22 @@ interface Unit {
 }
 
 function toUnits(messages: readonly AIMessage[]): Unit[] {
-  const units: Unit[] = [];
-  let index = 0;
-  while (index < messages.length) {
-    const start = index;
-    const first = messages[index] as AIMessage;
-    const group: AIMessage[] = [first];
-    index += 1;
-    if (first.role === 'assistant' && first.toolCalls.length > 0) {
-      while (index < messages.length && (messages[index] as AIMessage).role === 'tool') {
-        group.push(messages[index] as AIMessage);
-        index += 1;
-      }
+  const groups: { messages: AIMessage[]; start: number }[] = [];
+  messages.forEach((message, index) => {
+    const last = groups.at(-1);
+    const opener = last?.messages[0];
+    // Tool results join the assistant turn that called them.
+    if (message.role === 'tool' && last !== undefined && opener?.role === 'assistant' && opener.toolCalls.length > 0) {
+      last.messages.push(message);
+    } else {
+      groups.push({ messages: [message], start: index });
     }
-    units.push({ messages: group, tokens: group.reduce((sum, message) => sum + estimateTokens(message), 0), start });
-  }
-  return units;
+  });
+  return groups.map((group) => ({
+    messages: group.messages,
+    tokens: group.messages.reduce((sum, message) => sum + estimateTokens(message), 0),
+    start: group.start,
+  }));
 }
 
 /**
@@ -67,10 +67,7 @@ export function boundHistory(
       (sum, unit, i) => (kept[i] === true ? { messages: sum.messages + unit.messages.length, tokens: sum.tokens + unit.tokens } : sum),
       { messages: 0, tokens: overheadTokens },
     );
-  const droppable = (i: number): boolean => {
-    const unit = units[i] as Unit;
-    return unit.start !== protectedFrom && i !== units.length - 1;
-  };
+  const droppable = (i: number): boolean => units[i]?.start !== protectedFrom && i !== units.length - 1;
 
   for (let i = 0; i < units.length; i += 1) {
     const total = count();
@@ -80,8 +77,7 @@ export function boundHistory(
   // A history must open with a user turn: drop any leading non-user unit before the question.
   for (let i = 0; i < units.length; i += 1) {
     if (kept[i] !== true) continue;
-    const unit = units[i] as Unit;
-    if ((unit.messages[0] as AIMessage).role === 'user' || !droppable(i)) break;
+    if (units[i]?.messages[0]?.role === 'user' || !droppable(i)) break;
     kept[i] = false;
   }
 

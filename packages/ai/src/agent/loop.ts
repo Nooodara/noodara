@@ -154,7 +154,9 @@ export async function runAgent(options: RunAgentOptions): Promise<AgentRunResult
 
   const controller = new AbortController();
   let deadlineHit = false;
-  const onCallerAbort = (): void => controller.abort();
+  const onCallerAbort = (): void => {
+    controller.abort();
+  };
   options.signal?.addEventListener('abort', onCallerAbort, { once: true });
   const timer = setTimeout(() => {
     deadlineHit = true;

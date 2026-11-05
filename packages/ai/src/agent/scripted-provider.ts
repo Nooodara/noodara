@@ -62,10 +62,12 @@ export function createScriptedProvider(steps: readonly ScriptedStep[]): Scripted
     model: 'scripted',
     requests,
     chat: (request: AIChatRequest) => turn(request),
-    // eslint-disable-next-line @typescript-eslint/require-await -- the async generator mirrors the provider contract
-    async *stream(): AsyncIterable<AIStreamChunk> {
-      throw new AIProviderError('AI_PROVIDER_UNAVAILABLE', 'unexpected_response');
-    },
+    // The agent loop does not stream; a stream here fails like an unscripted turn.
+    stream: (): AsyncIterable<AIStreamChunk> => ({
+      [Symbol.asyncIterator]: () => ({
+        next: () => Promise.reject(new AIProviderError('AI_PROVIDER_UNAVAILABLE', 'unexpected_response')),
+      }),
+    }),
     toolCall: (request: AIToolCallRequest) => turn(request),
   };
 }
