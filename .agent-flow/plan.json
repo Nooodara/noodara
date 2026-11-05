@@ -11336,7 +11336,8 @@
           "scope": [
             "apps/site/",
             "docs/ui-review/phase-30/",
-            "tests/unit/site/"
+            "tests/unit/site/",
+            "tests/unit/docs/install-docs-accuracy.test.ts"
           ],
           "wave": 6,
           "dependsOn": [

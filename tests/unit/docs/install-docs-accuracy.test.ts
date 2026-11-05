@@ -105,18 +105,24 @@ describe('install docs (apps/site/content/docs) accuracy against install.sh', ()
     }
   });
 
-  it('every NOODARA_ variable named anywhere under apps/site/content/docs occurs in install.sh or is a control-plane proxy knob', () => {
+  it('every NOODARA_ variable named anywhere under apps/site/content/docs occurs in install.sh or is a control-plane proxy or metrics knob', () => {
     const docs = allDocsPages();
     const source = installSh();
     // 24-05: the proxy and certificate knobs are read by the control plane from .env, not by install.sh.
+    // 30-06: the metrics knobs likewise reach the container via the compose env_file.
     const envSource = readFileSync('apps/control-plane/src/env.ts', 'utf8');
-    const knobList = /export const PROXY_ENV_KNOBS = \[([^\]]*)\]/.exec(envSource)?.[1] ?? '';
-    const proxyKnobs = new Set([...knobList.matchAll(/'(NOODARA_[A-Z0-9_]+)'/g)].map((m) => m[1]));
+    const knobsOf = (listName: string): Set<string> => {
+      const list = new RegExp(`export const ${listName} = \\[([^\\]]*)\\]`).exec(envSource)?.[1] ?? '';
+      return new Set([...list.matchAll(/'(NOODARA_[A-Z0-9_]+)'/g)].map((m) => m[1] ?? ''));
+    };
+    const proxyKnobs = knobsOf('PROXY_ENV_KNOBS');
+    const metricsKnobs = knobsOf('METRICS_ENV_KNOBS');
     expect(proxyKnobs.size).toBeGreaterThan(0);
+    expect(metricsKnobs.size).toBeGreaterThan(0);
     const names = new Set([...docs.matchAll(/\bNOODARA_[A-Z0-9_]+\b/g)].map((m) => m[0]));
     expect(names.size).toBeGreaterThan(0);
     for (const name of names) {
-      if (proxyKnobs.has(name)) continue;
+      if (proxyKnobs.has(name) || metricsKnobs.has(name)) continue;
       expect(source, `${name} is documented but does not occur in install.sh`).toContain(name);
     }
   });
