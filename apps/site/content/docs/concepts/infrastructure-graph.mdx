@@ -1,0 +1,51 @@
+---
+title: Infrastructure graph
+description: How servers, projects, environments, services and domains relate, and how dependencies between services are inferred.
+---
+
+A project's **Graph** view draws what Noodara knows about it as nodes and relations: its
+environments and services, the servers they run on and the domains that expose them. It is built from the panel's own records each time you open it: there is nothing to keep in
+sync and no edge to draw by hand.
+
+## Nodes
+
+| Node | One per |
+|---|---|
+| `Server` | Connected or registered server |
+| `Project` | Project |
+| `Environment` | Environment of a project |
+| `Service` | Service |
+| `Domain` | Domain assigned to a service |
+
+Every node links to the detail page of the entity it stands for.
+
+## Relations
+
+| Relation | From | To | Meaning |
+|---|---|---|---|
+| `RUNS_ON` | Service | Server | The service is deployed on that server. |
+| `BELONGS_TO` | Environment or Service | Project or Environment | Ownership. |
+| `EXPOSED_BY` | Service | Domain | The domain routes to the service. |
+| `DEPENDS_ON` | Service | Service | Inferred from a variable, see below. |
+
+## How dependencies are inferred
+
+Service A `DEPENDS_ON` service B when a **plain variable** of A names B:
+
+- by B's container name (`noodara-<service id>`), or
+- by one of B's domains, either as the whole value or as the host of a URL
+  (`https://api.example.com/v1` names `api.example.com`).
+
+Names are compared in lower case. A relation is only drawn when:
+
+- the name matches exactly one service (a name shared by two services is ambiguous and ignored),
+- B is a different service in the same project as A.
+
+The relation lists the variable keys that produced it. **Secrets are never read** for inference:
+a `<secret:name>` reference is skipped by its kind, so a dependency that only appears inside a
+secret value is not drawn. Move the host part to a plain variable if you want it in the graph.
+
+## Limits
+
+A graph holds at most 5000 nodes and 20000 relations. An entity whose parent is missing, or whose
+id appears twice, is left out and listed as omitted instead of breaking the view.

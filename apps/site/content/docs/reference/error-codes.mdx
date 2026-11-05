@@ -60,7 +60,7 @@ nothing else — no internal detail is ever attached to it.
 | `WEBHOOK_NOT_ENABLED` | 409 | The service has no webhook enabled; enable it first. |
 | `WEBHOOK_HOOK_ID_CONFLICT` | 409 | No unique webhook URL could be allocated; nothing was changed. Enable the webhook again. |
 | `WEBHOOK_DELIVERY_REJECTED` | 422 | Webhook receiver (`POST /webhooks/github/:hookId`): the signed delivery was recorded but cannot be deployed; `outcome` says why, such as a push to another branch or repository. |
-| `RATE_LIMITED` | 429 | Webhook receiver: too many deliveries for this hook id or source; retry after the `Retry-After` header. |
+| `RATE_LIMITED` | 429 | Webhook receiver: too many deliveries for this hook id or source. AI assistant: too many questions in a short time. Retry after the `Retry-After` header. |
 | `DOMAIN_ALREADY_ASSIGNED` | 409 | The hostname is already assigned to a service; remove it there first. |
 | `DOMAIN_RESERVED` | 422 | The hostname is the panel's own host (`NOODARA_PUBLIC_URL`) and cannot be assigned to a service. |
 | `DOMAIN_LIMIT_REACHED` | 422 | The service already has the maximum number of domains. |
@@ -78,6 +78,11 @@ nothing else — no internal detail is ever attached to it.
 | `AI_PROVIDER_RATE_LIMITED` | 429 | The AI provider is rate limiting requests. Wait a moment and try again. |
 | `AI_BUDGET_EXCEEDED` | 422 | This question needed more steps than allowed. Ask a narrower question. |
 | `AI_TOOL_NOT_ALLOWED` | 403 | The assistant tried a tool it is not allowed to use. Nothing was changed. |
+| `AI_PROVIDER_INPUT_INVALID` | 422 | The API key or model was refused before contacting the provider; `reason` is `too_short`, `too_long`, `invalid_characters` or `model_not_allowed`. The key is never echoed back. |
+| `AI_QUESTION_EMPTY` | 422 | Ask a question. |
+| `AI_QUESTION_TOO_LONG` | 422 | Questions are limited to 4000 characters. |
+| `AI_CONVERSATION_BUSY` | 409 | This conversation is already answering a question. Wait for it to finish. |
+| `AI_CONVERSATION_NOT_FOUND` | 404 | Conversation not found. |
 | `ENV_KEY_DUPLICATE` | 409 | A variable with this key already exists in the scope. |
 | `ENV_VALUE_MULTILINE` | 422 | The value has a line break or NUL byte; encode multi-line values as base64. |
 | `ENV_LIMIT_REACHED` | 422 | The scope already has the maximum number of variables. |

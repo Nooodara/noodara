@@ -1,0 +1,101 @@
+---
+title: AI assistant
+description: Bring your own Anthropic or OpenAI key, ask questions about your infrastructure, and know exactly what the assistant can read and send.
+---
+
+**Ask Noodara** answers questions about your servers, services and deployments, such as "why
+did the last deploy of `api` fail?" or "which services run on this server?". It reads the same
+data the panel shows you, cites what it read, and **cannot change anything**.
+
+## Set up a provider
+
+You bring your own API key (BYOK). Noodara has no key of its own and sends nothing to a provider
+until you add one.
+
+1. Open **Settings** and find **AI assistant**.
+2. Pick a **Provider** and a **Model**, paste the **API key** and save.
+3. Noodara makes one short call to the provider to check the key. A key the provider rejects is
+   not saved (`AI_PROVIDER_AUTH_FAILED`).
+
+| Provider | Model | Key |
+|---|---|---|
+| Anthropic | `claude-opus-5-5` | An Anthropic API key |
+| OpenAI | The pinned `gpt-5` snapshot shown in the **Model** menu | An OpenAI API key |
+
+- One provider is active at a time. Saving a new key replaces the previous one, and
+  **Remove key** deletes it.
+- A key is 20 to 512 printable characters without spaces (`AI_PROVIDER_INPUT_INVALID`).
+- The key is encrypted at rest like every other credential. After saving, the panel shows only
+  its last 4 characters; it never appears in an API response, a log or the activity feed.
+- Usage is billed by your provider on your account.
+
+Then select **Ask a question** under the saved key to open the **Ask Noodara** panel, and type a
+question of at most 4000 characters. Adding `?ask=1` to any panel URL opens the same panel.
+
+## What the assistant can do
+
+It can only call these read tools, all answered by the panel:
+
+| Tool | Reads |
+|---|---|
+| `get_server`, `list_servers` | Servers and their connection state |
+| `get_service`, `list_services` | Services, their source and runtime status |
+| `get_deployment`, `list_deployments` | Deployments and their steps and failures |
+| `get_health` | Service health, restarts, out-of-memory and crash-loop signals |
+| `get_metrics` | Metric samples |
+| `get_logs` | A bounded window of logs |
+| `get_infrastructure_graph` | The [infrastructure graph](/docs/concepts/infrastructure-graph) |
+
+It cannot deploy, restart, stop, delete, change a setting, run a shell command or read a secret
+value.
+
+## How read-only is enforced
+
+The read-only rule is enforced by the panel, not by asking the model to behave:
+
+- The tool set is closed and every tool is a read. There is no write tool to call, and a name
+  outside the set is refused (`AI_TOOL_NOT_ALLOWED`) without running anything.
+- Tool arguments are validated before a tool runs. No argument reaches a shell or SSH as text;
+  the only remote read is the same bounded `docker logs` window the [Logs](/docs/operate/logs)
+  view uses.
+- A question uses at most 16 tool calls. A question that needs more stops with
+  `AI_BUDGET_EXCEEDED`.
+- Tool results are treated as untrusted data: a log line or commit message that contains
+  instructions cannot change these rules.
+- The answer is checked against a fixed schema, and any entity it cites must come from a tool
+  result in the same conversation.
+
+## What is sent to the provider
+
+For each question, Noodara sends:
+
+- a fixed system prompt with the read-only rules,
+- the definitions of the read tools above,
+- your question and recent turns of the same conversation (at most 40 messages),
+- the results of the tools the model calls, each capped at 32 KiB, with log reads capped at 100
+  lines.
+
+Before anything leaves the panel, tool results are redacted: secret values, private keys and
+tokens are replaced with `[REDACTED:<type>]`. Secret values are never read by any tool;
+a secret appears only as its reference, `<secret:name>`. SSH credentials, host keys, the
+provider key itself and your password are never sent.
+
+Conversations are stored in the panel, redacted the same way. Deleting a conversation removes
+its messages and tool calls.
+
+## Errors
+
+| Code | Meaning |
+|---|---|
+| `AI_PROVIDER_NOT_CONFIGURED` | No provider key is saved. Add one in Settings. |
+| `AI_PROVIDER_INPUT_INVALID` | The key or model was refused before contacting the provider. |
+| `AI_PROVIDER_AUTH_FAILED` | The provider rejected the key. Replace it in Settings. |
+| `AI_PROVIDER_UNAVAILABLE` | The provider is not responding. Try again in a few minutes. |
+| `AI_PROVIDER_RATE_LIMITED` | The provider is rate limiting your key. Wait and try again. |
+| `AI_BUDGET_EXCEEDED` | The question needed more tool calls than allowed. Ask a narrower question. |
+| `AI_TOOL_NOT_ALLOWED` | The model asked for a tool outside the read-only set. Nothing was changed. |
+| `AI_QUESTION_EMPTY` | The question is empty. |
+| `AI_QUESTION_TOO_LONG` | The question is longer than 4000 characters. |
+| `AI_CONVERSATION_BUSY` | The conversation is still answering the previous question. |
+| `AI_CONVERSATION_NOT_FOUND` | The conversation does not exist or was deleted. |
+| `RATE_LIMITED` | Too many questions in a short time. Wait a moment. |

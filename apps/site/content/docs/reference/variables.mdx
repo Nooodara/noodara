@@ -57,3 +57,12 @@ The control plane reads these from `/opt/noodara/.env`; apply an edit with the
 | `NOODARA_CERT_CHECK_INTERVAL_MS` | `600000` (10 minutes) | How often each certificate is checked. 60000 to 3600000. |
 | `NOODARA_CERT_ISSUE_TIMEOUT_MS` | `600000` (10 minutes) | How long a certificate may stay pending before it is marked failed. 60000 to 3600000. |
 | `NOODARA_PROXY_IMAGE` | The Traefik image this release pins | The proxy image. Must be pinned by digest (`@sha256:`). |
+
+## Metrics variables
+
+Read from `/opt/noodara/.env` like the variables above. See [Metrics and status](/docs/operate/metrics).
+
+| Variable | Default | Effect |
+|---|---|---|
+| `NOODARA_METRICS_INTERVAL_MS` | `60000` (60 seconds) | How often each connected server is sampled. 30000 to 300000. |
+| `NOODARA_METRICS_RETENTION_HOURS` | `168` (7 days) | How long samples are kept before they are pruned. 1 to 720. |

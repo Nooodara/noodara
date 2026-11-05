@@ -1,0 +1,45 @@
+---
+title: Logs
+description: One view for build, deploy, runtime and activity logs, with filters, search and follow.
+---
+
+The **Logs** view of a service merges four sources in one timeline, sorted by timestamp.
+
+| Source | What it is | Where it lives |
+|---|---|---|
+| `build` | Image build output of each deployment | Stored by the panel |
+| `deploy` | Deployment steps: pull, start, healthcheck, swap | Stored by the panel |
+| `runtime` | The container's stdout and stderr | Stays on the server; read on demand with `docker logs` |
+| `activity` | Who changed what on the service, and when | Stored by the panel |
+
+Runtime logs are never copied to the panel in bulk. Each page reads a bounded window from the
+server, so a stopped or unreachable server only hides the `runtime` source; the other three
+still load and the view says which source is unavailable.
+
+## Filters and limits
+
+- **Time range**: the last 15 minutes by default, at most 24 hours. A wider range is cut to its
+  newest 24 hours and the page is marked as truncated.
+- **Level**: `info`, `warn` or `error`. A level keeps entries at that level or above.
+- **Search**: plain text, at most 200 characters, case-insensitive.
+- **Page size**: 200 lines by default, at most 1000. When a range has more than one page, the
+  view shows the newest lines; narrow the range or add a search to see older ones.
+- A line longer than 8 KiB is cut and marked as truncated.
+- **Follow** streams new lines as they arrive. Too many open streams for one service or account
+  is refused with `RUNTIME_LOG_FOLLOW_LIMIT_REACHED`; close one and try again.
+
+stdout and stderr are each in order, but Docker does not guarantee their order relative to each
+other, so two lines from different streams with the same timestamp can swap.
+
+## Secrets in logs
+
+Every line is redacted with the service's secret values before it leaves the panel, for every
+source. A secret printed by the application shows as `[REDACTED:<type>]`.
+
+## Errors
+
+| Code | Meaning |
+|---|---|
+| `LOG_QUERY_INVALID` | A source, time range, level or search term is not valid. |
+| `LOG_SOURCE_UNAVAILABLE` | A source could not be read, usually because the server is unreachable. |
+| `RUNTIME_LOG_FOLLOW_LIMIT_REACHED` | Too many live log streams are open. |

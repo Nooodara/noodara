@@ -1,4 +1,17 @@
 {
   "title": "Operate",
-  "pages": ["upgrade", "healthchecks", "webhooks", "domains", "variables-and-secrets", "service-rollback", "rollback", "backups", "troubleshooting"]
+  "pages": [
+    "upgrade",
+    "healthchecks",
+    "webhooks",
+    "domains",
+    "variables-and-secrets",
+    "metrics",
+    "logs",
+    "ai-assistant",
+    "service-rollback",
+    "rollback",
+    "backups",
+    "troubleshooting"
+  ]
 }

@@ -1,0 +1,50 @@
+---
+title: Metrics and status
+description: What Noodara samples on each server, how often, how long it keeps it, and when a status pill turns amber or red.
+---
+
+Noodara samples every connected server and the service containers on it. Server and service
+pages show the samples as charts, with status pills for the thresholds below.
+
+## Sampling
+
+- One sample per connected server every **60 seconds**, over the same SSH connection the panel
+  already uses. Nothing is installed on the server.
+- Change the interval with `NOODARA_METRICS_INTERVAL_MS`, from 30000 (30 seconds) to 300000
+  (5 minutes). A tick that is still running when the next one is due skips it.
+- Samples are kept for **168 hours (7 days)** at full resolution, then pruned. Change it with
+  `NOODARA_METRICS_RETENTION_HOURS`, from 1 to 720 hours (30 days).
+
+Both variables are listed in [Configuration variables](/docs/reference/variables).
+
+## What is measured
+
+| Metric | Server | Service |
+|---|---|---|
+| `cpu_percent` | Host CPU | Container CPU |
+| `memory_used_bytes` | Host memory in use | Container memory in use |
+| `memory_percent` | Of host memory | Of the container limit, or of host memory without a limit |
+| `disk_used_percent` | Root filesystem | — |
+| `restart_count` | — | Container restarts |
+
+A chart shows at most 500 points. Longer ranges are grouped into buckets of at least 60
+seconds. A bucket without samples is a gap in the chart: missing data is never drawn as zero.
+
+## Status thresholds
+
+| Pill | When |
+|---|---|
+| High disk | The root filesystem is at 90% or more. |
+| High memory | Memory is at 90% or more for the last 3 samples in a row. |
+| Crash loop | The container restarted 3 times or more within 10 minutes. |
+| Out of memory | Docker reports the container was OOM killed, or it exited with code 137 while its memory was at 90% or more of the limit. |
+
+The service page also shows the healthcheck result, the last deployment and the restart count.
+
+## Errors
+
+| Code | Meaning |
+|---|---|
+| `METRICS_UNAVAILABLE` | No samples yet. Check that the server is connected and try again in a minute. |
+
+A freshly connected server shows its first sample after one interval.
