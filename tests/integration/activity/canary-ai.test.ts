@@ -783,8 +783,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('28-06 / A1-A2: AI surfaces leak ca
         failures.push({ label: `provider ${String(status)}`, reply });
       }
       expect((await call('GET', `/api/ai/conversations/${randomUUID()}`)).statusCode).toBe(404);
-      expect((await call('POST', `/api/ai/conversations/${failing}/messages`, { question: '' })).statusCode).toBe(400);
-      expect((await call('PUT', '/api/settings/ai', { provider: 'anthropic', model: ANTHROPIC_MODEL, apiKey: '' })).statusCode).toBe(400);
+      expect((await call('POST', `/api/ai/conversations/${failing}/messages`, { question: '' })).statusCode).toBe(422);
+      expect((await call('PUT', '/api/settings/ai', { provider: 'anthropic', model: ANTHROPIC_MODEL, apiKey: '' })).statusCode).toBe(422);
 
       // The tool results really reached the provider (so the scan below is meaningful).
       const providerText = providerRequests.join('\n');
