@@ -186,6 +186,60 @@ jobs:
           path: coverage/
           retention-days: 14
 
+  # 29-04 (H2): the state machines and classifiers at 100% statements/branches/functions/lines
+  # (vitest.state-machine.config.ts). The 22-08 cert-status branch gap reached main because no CI
+  # job ran this gate. ~2s locally, no containers.
+  state-machine:
+    name: state-machine
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:state-machine
+
+  # 29-04 (A1, A3, H1): the AI eval gate (docs/ai/evals.md). Replay only: the 50+ scenarios and the
+  # adversarial set (both under tests/ai/evals, vitest.ai-evals.config.ts) answer every provider
+  # turn from the committed cassettes. This job references no secret, so it runs the same on fork
+  # PRs; only nightly.yml's ai-evals-live job receives the provider key. ~2s locally.
+  ai-evals:
+    name: ai-evals
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          # The baseline update check reads baseline.json at the PR base / the push's previous commit.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # NOODARA_AI_EVAL_LIVE unset, no provider key, cassette directories present and committed.
+      - run: node scripts/ai-baseline-check.mjs guard
+      # Scenarios + adversarial set: misses, crashes, roadmap §10.7 thresholds, baseline provenance.
+      - run: pnpm test:ai-evals
+      # Fails when any replayed metric is worse than the committed baseline.json.
+      - run: node scripts/ai-baseline-check.mjs replay
+      # A baseline.json that lowers a metric needs tests/ai/evals/baseline-justifications/<digest>.md.
+      - name: Refuse a lowered baseline without a justification
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: node scripts/ai-baseline-check.mjs update --base "$BASE_SHA"
+      # Replay never writes: the cassettes and baseline.json are still exactly as committed.
+      - run: node scripts/ai-baseline-check.mjs guard
+
   integration:
     name: integration
     runs-on: ubuntu-latest

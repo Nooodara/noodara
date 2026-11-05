@@ -450,3 +450,65 @@ jobs:
           done
           [ "$failed" -eq 0 ] || exit 1
           echo "no stray noodara.test=true containers, networks or volumes"
+
+  # 29-04 (A2, H1): the live AI eval run against the pinned model (docs/ai/evals.md). The only job
+  # in any workflow that receives the provider key, and only in the live step's env. Without the
+  # ANTHROPIC_API_KEY secret it records an explicit skip with the reason and stays green; ci.yml's
+  # ai-evals replay job still gates every PR. A live run re-records cassettes and baseline.json in
+  # this workspace only: the read-only token and persist-credentials: false mean it can never push
+  # or open a pull request, so a failing (or drifting) live run changes no committed baseline. The
+  # compare step fails the nightly when live metrics fall below the committed baseline.json, and
+  # the run goes to an artifact for a human to re-record locally.
+  ai-evals-live:
+    name: ai-evals-live
+    runs-on: ubuntu-latest
+    # 65 scenarios plus the adversarial set at concurrency 4; the vitest live timeout is 4h, a
+    # healthy run is well under an hour.
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    env:
+      PROVIDER_KEY_CONFIGURED: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    steps:
+      - name: Record the skip when the provider key is not configured
+        if: env.PROVIDER_KEY_CONFIGURED != 'true'
+        run: |
+          reason="the ANTHROPIC_API_KEY secret is not configured, so the live AI eval run was skipped (ci.yml ai-evals still replays every PR)"
+          echo "::notice title=ai-evals-live skipped::${reason}"
+          {
+            echo "### ai-evals-live skipped"
+            echo "${reason}"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        if: env.PROVIDER_KEY_CONFIGURED == 'true'
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        if: env.PROVIDER_KEY_CONFIGURED == 'true'
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        if: env.PROVIDER_KEY_CONFIGURED == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - if: env.PROVIDER_KEY_CONFIGURED == 'true'
+        run: pnpm install --frozen-lockfile
+      - name: Live run (scenarios and adversarial set)
+        if: env.PROVIDER_KEY_CONFIGURED == 'true'
+        env:
+          NOODARA_AI_EVAL_LIVE: '1'
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: pnpm test:ai-evals
+      - name: Compare the live baseline with the committed one
+        if: always() && env.PROVIDER_KEY_CONFIGURED == 'true'
+        run: node scripts/ai-baseline-check.mjs update --base HEAD
+      - name: Upload the live run for review
+        if: always() && env.PROVIDER_KEY_CONFIGURED == 'true'
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: ai-evals-live
+          path: |
+            tests/ai/evals/baseline.json
+            tests/ai/evals/cassettes/
+            tests/ai/evals/adversarial/cassettes/
+          retention-days: 14
+          if-no-files-found: warn
