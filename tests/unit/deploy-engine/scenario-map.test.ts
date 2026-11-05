@@ -2,18 +2,23 @@
 // it reads docs/releases/v0.3-scenarios.md, the roadmap and the mapped test sources under
 // tests/integration/deploy-engine/ (the it-deploy-engine-all suites). 20-06: it runs under pnpm test.
 // 25-01: also docs/releases/v0.4-scenarios.md and the remote-state comparison the proxy suites call.
+// 31-01: also docs/releases/v0.5-scenarios.md (roadmap §10.1-§10.3 and every supported diagnosis).
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { DIAGNOSES, GRAPH_NODE_KINDS, GRAPH_RELATION_TYPES } from '@noodara/domain';
 import { DEPLOY_ENGINE_UBUNTU_VERSIONS } from '../../integration/helpers/deploy-engine.js';
 import {
   checkMappedTest,
   checkScenarioMap,
   checkV04ScenarioMap,
+  checkV05ScenarioMap,
   parseMappedRows,
   parseScenarioMap,
+  readRoadmapChecklist,
   readRoadmapScenarios,
+  readRoadmapSectionBlocks,
   readRoadmapSectionLines,
   REMOTE_STATE_ASSERTION,
   sectionOf,
@@ -21,6 +26,9 @@ import {
   V04_E2E_FLOWS,
   V04_INTEGRATION_SCENARIOS,
   V04_SECTIONS,
+  V05_SECTIONS,
+  v05Expected,
+  type V05Table,
 } from '../../integration/deploy-engine/scenario-map.js';
 import {
   compareProxyState,
@@ -289,5 +297,105 @@ describe('remote proxy state against the database (25-01 A2)', () => {
     expect(compareProxyState(noDomains, database({ services: new Map([[SVC, []]]) }))).toEqual([
       `service ${SVC}: noodara-traefik is still attached to noodara-net-${SVC} without domains`,
     ]);
+  });
+});
+
+describe('docs/releases/v0.5-scenarios.md (31-01 A1)', () => {
+  const roadmap = read(ROADMAP_PATH);
+  const map = read('docs/releases/v0.5-scenarios.md');
+  const check = (overrides: { map?: string; readSource?: (file: string) => string | undefined; diagnoses?: readonly string[] } = {}) =>
+    checkV05ScenarioMap({ roadmap, map, readSource, diagnoses: DIAGNOSES, ...overrides });
+  const rowOf = (table: V05Table, index: number): string => {
+    const line = sectionOf(map, V05_SECTIONS[table])
+      .split('\n')
+      .find((candidate) => new RegExp(`^\\|\\s*${String(index)}\\s*\\|`).test(candidate));
+    if (line === undefined) throw new Error(`row ${String(index)} missing in ${table}`);
+    return line;
+  };
+  const parsedRow = (table: V05Table, index: number) => {
+    const parsed = parseMappedRows(rowOf(table, index), 4)[0];
+    if (parsed === undefined) throw new Error('row did not parse');
+    return parsed;
+  };
+
+  it('reads the §10.1 checklist, the §10.2 sources and functions, the §10.3 nodes and relations and the diagnoses', () => {
+    const expected = v05Expected(roadmap, DIAGNOSES);
+    expect(expected.metrics).toEqual([
+      'CPU',
+      'RAM',
+      'Disk',
+      'Uptime',
+      'Connection state',
+      'Container state',
+      'Restart count',
+      'Healthcheck status',
+      'Last deployment',
+      'Runtime status',
+    ]);
+    expect(expected.logs).toEqual([
+      'build logs',
+      'deployment logs',
+      'runtime/container logs',
+      'agent activity',
+      'stream',
+      'filter',
+      'basic search',
+      'timestamps',
+      'source identification',
+    ]);
+    // A graph node kind or relation type beyond the roadmap minimum must get its own row first.
+    expect(expected.graph).toEqual([...GRAPH_NODE_KINDS, ...GRAPH_RELATION_TYPES]);
+    expect(expected.diagnosis).toEqual(DIAGNOSES.filter((diagnosis) => diagnosis !== 'unknown'));
+    expect(readRoadmapSectionLines(roadmap, '10.8')).toHaveLength(expected.diagnosis.length);
+    expect(readRoadmapChecklist('\n## 1.0 x\n- [ ] One.\n- [x] two;\n- plain\n', '1.0')).toEqual(['One', 'two']);
+    expect(readRoadmapSectionBlocks('\n## 1.0 x\n```text\na\n```\n```text\n b \n```\n## 2.0 y\n```text\nc\n```', '1.0')).toEqual([['a'], ['b']]);
+  });
+
+  it('maps every §10.1-§10.3 item and every supported diagnosis to a named test that runs on both Ubuntu versions', () => {
+    for (const table of Object.keys(V05_SECTIONS) as V05Table[]) {
+      expect(parseMappedRows(sectionOf(map, V05_SECTIONS[table]), 4).map((row) => row.scenario)).toEqual([
+        ...v05Expected(roadmap, DIAGNOSES)[table],
+      ]);
+    }
+    expect(check()).toEqual([]);
+  });
+
+  it.each(Object.keys(V05_SECTIONS) as V05Table[])('fails on a missing, renamed or single-Ubuntu row (%s)', (table) => {
+    const row = rowOf(table, 1);
+    const parsed = parsedRow(table, 1);
+    expect(check({ map: map.replace(row, '') }).join('\n')).toContain(`not mapped: '${parsed.scenario}'`);
+    expect(check({ map: map.replace(row, row.replace(parsed.test, `${parsed.test} (renamed)`)) }).join('\n')).toMatch(/test not found/);
+    expect(check({ map: map.replace(row, row.replace(/22\.04,\s*24\.04/, '24.04')) }).join('\n')).toContain(
+      `'${parsed.scenario}' lacks Ubuntu 22.04`,
+    );
+    expect(check({ map: map.replace(row, row.replace(parsed.file, 'tests/unit/deploy-engine/scenario-map.test.ts')) }).join('\n')).toMatch(
+      /maps outside tests\/integration\//,
+    );
+  });
+
+  it('fails when a mapped test is skipped or its suite runs on one Ubuntu version', () => {
+    const parsed = parsedRow('diagnosis', 1);
+    const patched =
+      (edit: (source: string) => string) =>
+      (file: string): string | undefined =>
+        file === parsed.file ? edit(readSource(file) ?? '') : readSource(file);
+    const title = JSON.stringify(parsed.test).slice(1, -1);
+    const skipped = patched((source) => source.replace(`'${title}'`, `'${title}', () => undefined);\n  it.skip('${title}'`));
+    expect(check({ readSource: skipped }).join('\n')).toMatch(/ambiguous|test is skipped/);
+    const fixme = patched((source) => source.replace(/(\n\s*)it\((\s*)(["'])/g, '$1it.skip($2$3'));
+    expect(check({ readSource: fixme }).join('\n')).toContain(`diagnosis '${parsed.scenario}': test is skipped (it.skip): '${title}'`);
+    const single = patched((source) => source.replaceAll('describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)', "describe.each(['24.04'])"));
+    expect(check({ readSource: single }).join('\n')).toMatch(/does not run per Ubuntu version/);
+    const missingFile = (file: string): string | undefined => (file === parsed.file ? undefined : readSource(file));
+    expect(check({ readSource: missingFile }).join('\n')).toContain(`maps to a missing file: ${parsed.file}`);
+  });
+
+  it('fails when the diagnosis vocabulary grows without a row, or a row names no supported diagnosis', () => {
+    const grown = check({ diagnoses: [...DIAGNOSES, 'disk_full'] });
+    expect(grown).toContain("diagnosis not mapped: 'disk_full'");
+    expect(grown.join('\n')).toMatch(/roadmap §10\.8 lists 9 diagnosis cases, the vocabulary 10/);
+    const shrunk = check({ diagnoses: DIAGNOSES.filter((diagnosis) => diagnosis !== 'high_disk') });
+    expect(shrunk.join('\n')).toMatch(/under \(§10\.8\) is not expected: 'high_disk'/);
+    expect(check({ map: map.replace(/## Diagnósticos[\s\S]*$/, '') })).toContain('no table headed (§10.8)');
   });
 });

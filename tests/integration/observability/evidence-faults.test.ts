@@ -4,6 +4,8 @@
 // composition src/worker.ts runs, and loadServiceEvidence + classifyEvidence must rank that
 // diagnosis first. Right after, the metrics, status and logs APIs are read over HTTP (inject) and
 // the test records which API surfaced each diagnosis (feeds the 28-03 tools).
+// 31-01: first, a healthy deploy proves the roadmap §10.1 metrics and status and the §10.3 graph
+// over the same APIs, once per Ubuntu version (docs/releases/v0.5-scenarios.md).
 import { randomBytes, randomUUID } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -11,13 +13,13 @@ import { fileURLToPath } from 'node:url';
 import { eq } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import parseSetCookie from 'set-cookie-parser';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { classifyEvidence, type Diagnosis, type Evidence } from '@noodara/domain';
 import type { HealthcheckConfig } from '@noodara/domain/deployment';
-import { createRedactor, revealSecret, secretValue } from '@noodara/domain/security';
-import { createSsh2Adapter, formatFingerprint } from '@noodara/ssh';
 import {
   credentials,
+  domains,
+  environmentVariables,
   environments,
   projects,
   servers,
@@ -32,6 +34,7 @@ import { runTeardown, settleWithin } from '../helpers/teardown.js';
 type RuntimeModule = typeof import('../../../apps/control-plane/src/observability/collector-runtime.js');
 type EvidenceModule = typeof import('../../../apps/control-plane/src/observability/diagnosis-evidence.js');
 type DeployWorkerModule = typeof import('../../../apps/control-plane/src/deploy/deploy-worker.js');
+type SecurityModule = typeof import('@noodara/domain/security');
 type WorkerCollectorDeps = Parameters<RuntimeModule['createWorkerCollectorTick']>[0];
 type JobHandler = ReturnType<DeployWorkerModule['createDeployJobHandler']>;
 type ApiApp = ReturnType<typeof import('../../../apps/control-plane/src/app.js')['buildApp']>;
@@ -92,6 +95,32 @@ const DIAGNOSES_UNDER_TEST: readonly Exclude<Diagnosis, 'unknown'>[] = [
   'server_unreachable',
 ];
 const FAILED_STATUSES = ['FAILED', 'ROLLED_BACK'];
+const HEALTHY_CHECK: HealthcheckConfig = {
+  type: 'http',
+  path: '/health',
+  port: 3000,
+  expectedStatuses: [200],
+  probeTimeoutS: 2,
+  intervalS: 1,
+  retries: 3,
+  startPeriodS: 10,
+};
+const HEALTH_NODE = [
+  'node',
+  '-e',
+  "process.on('SIGTERM', () => process.exit(0)); require('http').createServer((q, s) => s.end('ok')).listen(3000)",
+];
+/** A docker HEALTHCHECK that passes: the status API must report it `healthy`. */
+const HEALTHY_FLAGS = [
+  '--health-cmd',
+  "node -e \"require('http').get('http://127.0.0.1:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\"",
+  '--health-timeout',
+  '5s',
+  '--health-interval',
+  '1s',
+  '--health-retries',
+  '3',
+];
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -199,6 +228,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('27-06 diagnosis evidence from real
   let redis: RedisFixture | undefined;
   let runtime: RuntimeModule | undefined;
   let evidenceModule: EvidenceModule | undefined;
+  let security: SecurityModule | undefined;
   let collectorDeps: WorkerCollectorDeps | undefined;
   let handler: JobHandler | undefined;
   let createRow: ((serviceId: string) => Promise<string>) | undefined;
@@ -219,6 +249,10 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('27-06 diagnosis evidence from real
   const s = (): DeployEngineStack => {
     if (stack === undefined) throw new Error('stack not started');
     return stack;
+  };
+  const sec = (): SecurityModule => {
+    if (security === undefined) throw new Error('security module not loaded');
+    return security;
   };
   const db = (): PostgresFixture['db'] => {
     if (postgres === undefined) throw new Error('postgres not started');
@@ -276,7 +310,7 @@ docker build --quiet --tag "$4" "$d" >/dev/null; rc=$?; rm -rf -- "$d"; exit $rc
       const encoded = serviceCredentials.encodeServiceCredential(
         {
           kind: 'deploy_key',
-          privateKey: secretValue(s().deployKey.privateKey, 'ssh_private_key'),
+          privateKey: sec().secretValue(s().deployKey.privateKey, 'ssh_private_key'),
           publicKey: s().deployKey.publicKey,
         },
         { key: masterKey, version: KEY_VERSION },
@@ -363,7 +397,28 @@ docker build --quiet --tag "$4" "$d" >/dev/null; rc=$?; rm -rf -- "$d"; exit $rc
     return captured;
   };
 
+  /** The healthy deploy the §10.1 and §10.3 tests share, deployed once on first use. */
+  let healthyDeploy: Promise<{ serviceId: string; deploymentId: string }> | undefined;
+  const healthy = (): Promise<{ serviceId: string; deploymentId: string }> => {
+    healthyDeploy ??= (async () => {
+      const serviceId = await insertService({ repo: REPOS.healthy, healthcheck: HEALTHY_CHECK });
+      const deploymentId = await deploy(serviceId);
+      return { serviceId, deploymentId };
+    })();
+    return healthyDeploy;
+  };
+  const servicePath = (serviceId: string): string => `/api/projects/${ids.project}/services/${serviceId}`;
+
   beforeAll(async () => {
+    // Each Ubuntu block owns its Postgres/Redis, but the app modules cache their env-bound clients
+    // (env.js, db/client.js getDb(), auth.ts pool). Without a fresh module graph the second block's
+    // buildApp() would reuse the first block's stopped Postgres and Redis (setup -> 500). Domain and
+    // ssh resolve to source, so they are re-evaluated too: take them from the same fresh graph
+    // (SecretValue's #raw is per class, so a stale revealSecret cannot read a fresh token).
+    vi.resetModules();
+    security = await import('@noodara/domain/security');
+    const { createRedactor, revealSecret, secretValue } = security;
+    const { createSsh2Adapter, formatFingerprint } = await import('@noodara/ssh');
     stackStart = startDeployEngineStack({
       ubuntu,
       seedRepositories: [
@@ -551,6 +606,118 @@ docker build --quiet --tag "$4" "$d" >/dev/null; rc=$?; rm -rf -- "$d"; exit $rc
       { stepTimeoutMs: TEARDOWN_STEP_TIMEOUT_MS },
     );
   }, STACK_TIMEOUT_MS);
+
+  it(
+    '31-01 §10.1: a sampled server reports CPU, RAM, disk, uptime and connection state over the metrics API',
+    async () => {
+      await healthy();
+      // CPU needs two /proc/stat reads; two ticks also give the series more than one sample.
+      await tick();
+      await tick();
+      const body = await get(`/api/servers/${ids.server}/metrics`);
+      const percent = (metric: string): number => {
+        const value = latest(body, metric);
+        expect(value, metric).not.toBeNull();
+        expect(value ?? -1, metric).toBeGreaterThanOrEqual(0);
+        expect(value ?? 101, metric).toBeLessThanOrEqual(100);
+        return value ?? -1;
+      };
+      percent('cpu_percent');
+      expect(percent('memory_percent')).toBeGreaterThan(0);
+      expect(latest(body, 'memory_used_bytes') ?? 0).toBeGreaterThan(0);
+      expect(percent('disk_used_percent')).toBeGreaterThan(0);
+      const server = body.server as { connectionState: string; lastSeenAt: string | null; uptimeSeconds: number | null };
+      expect(server.connectionState).toBe('CONNECTED');
+      expect(server.uptimeSeconds ?? 0).toBeGreaterThan(0);
+      expect(Date.now() - Date.parse(server.lastSeenAt ?? '1970-01-01T00:00:00Z')).toBeLessThan(INTERVAL_MS);
+    },
+    CASE_TIMEOUT_MS,
+  );
+
+  it(
+    '31-01 §10.1: the status API reports container state, restarts, healthcheck, last deployment and runtime status',
+    async () => {
+      const { serviceId, deploymentId } = await healthy();
+      const checked = await insertService();
+      await runManaged(checked, ['--memory', '128m', ...HEALTHY_FLAGS], nodeImage, HEALTH_NODE);
+      await waitFor('the docker healthcheck to pass', async () => (await inspect(checked, '{{.State.Health.Status}}')) === 'healthy');
+      await tick();
+
+      const status = await get(`${servicePath(serviceId)}/status`);
+      expect(status).toMatchObject({
+        serviceId,
+        runtimeStatus: 'RUNNING',
+        // The deploy probes /health itself; the image declares no docker HEALTHCHECK.
+        container: { state: 'running', restartCount: 0, healthcheck: 'none' },
+        lastDeployment: { id: deploymentId, status: 'SUCCESS' },
+      });
+      const last = status.lastDeployment as { commitSha: string | null; finishedAt: string | null };
+      expect(last.commitSha ?? '').toMatch(/^[0-9a-f]{7,64}$/);
+      expect(last.finishedAt).not.toBeNull();
+      const metrics = await get(`${servicePath(serviceId)}/metrics`);
+      expect(latest(metrics, 'memory_used_bytes') ?? 0).toBeGreaterThan(0);
+      expect(latest(metrics, 'restart_count')).toBe(0);
+
+      const checkedStatus = await get(`${servicePath(checked)}/status`);
+      expect(checkedStatus).toMatchObject({ runtimeStatus: 'RUNNING', container: { state: 'running', healthcheck: 'healthy' } });
+      await root('docker rm -f -- "$1" >/dev/null', [`noodara-${checked}`]);
+    },
+    CASE_TIMEOUT_MS,
+  );
+
+  it(
+    '31-01 §10.3: the project graph holds the deployed server, project, environment, services and domain with every relation type',
+    async () => {
+      const { serviceId } = await healthy();
+      const upstream = await insertService();
+      const hostname = `api-${randomUUID().slice(0, 8)}.graph.test`;
+      const [domainRow] = await db().insert(domains).values({ projectId: ids.project, serviceId, hostname }).returning({ id: domains.id });
+      if (!domainRow) throw new Error('domain insert returned no row');
+      await db().insert(environmentVariables).values({
+        scope: 'service',
+        projectId: ids.project,
+        serviceId,
+        key: 'UPSTREAM_URL',
+        value: `http://noodara-${upstream}:3000/`,
+      });
+
+      const graph = (await get(`/api/projects/${ids.project}/graph`)) as {
+        nodes: { id: string; kind: string; label: string }[];
+        relations: { id: string; type: string; from: string; to: string }[];
+        truncated: boolean;
+      };
+      const node = (kind: string, id: string): string => `${kind.toLowerCase()}:${id}`;
+      const relation = (type: string, from: string, to: string): string => `${type}:${from}->${to}`;
+      const nodeIds = graph.nodes.map((item) => item.id);
+      const relationIds = graph.relations.map((item) => item.id);
+      expect(graph.truncated).toBe(false);
+      expect(nodeIds).toEqual(
+        expect.arrayContaining([
+          node('Server', ids.server),
+          node('Project', ids.project),
+          node('Environment', ids.environment),
+          node('Service', serviceId),
+          node('Service', upstream),
+          node('Domain', domainRow.id),
+        ]),
+      );
+      expect(new Set(graph.nodes.map((item) => item.kind))).toEqual(new Set(['Server', 'Project', 'Environment', 'Service', 'Domain']));
+      expect(graph.nodes.find((item) => item.id === node('Domain', domainRow.id))?.label).toBe(hostname);
+      expect(relationIds).toEqual(
+        expect.arrayContaining([
+          relation('RUNS_ON', node('Service', serviceId), node('Server', ids.server)),
+          relation('BELONGS_TO', node('Service', serviceId), node('Environment', ids.environment)),
+          relation('BELONGS_TO', node('Environment', ids.environment), node('Project', ids.project)),
+          relation('EXPOSED_BY', node('Service', serviceId), node('Domain', domainRow.id)),
+          relation('DEPENDS_ON', node('Service', serviceId), node('Service', upstream)),
+        ]),
+      );
+      const known = new Set(nodeIds);
+      for (const item of graph.relations) expect(known.has(item.from) && known.has(item.to), item.id).toBe(true);
+      expect(JSON.stringify(graph)).not.toContain(`http://noodara-${upstream}`);
+    },
+    CASE_TIMEOUT_MS,
+  );
 
   it(
     'A1: a memory-constrained allocator is OOM-killed -> out_of_memory',

@@ -2,6 +2,7 @@
 // Every scenario maps to one named test that exists, is not skipped and runs once per Ubuntu
 // version (inside `describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)`). Pure: sources are passed in.
 // 25-01: also docs/releases/v0.4-scenarios.md (QA-15 integration, roadmap §9.8 unit, §9.10 E2E).
+// 31-01: also docs/releases/v0.5-scenarios.md (roadmap §10.1-§10.3 and the §10.8 diagnoses).
 import ts from 'typescript';
 
 export const UBUNTU_VERSIONS = ['22.04', '24.04'] as const;
@@ -25,15 +26,34 @@ export interface ScenarioMapRow {
   readonly ubuntu: readonly string[];
 }
 
-/** The lines of the first ```text block under `## <section> ` in the roadmap. */
-export function readRoadmapSectionLines(roadmap: string, section: string): string[] {
+/** The body under `## <section> ` in the roadmap, up to the next `## ` heading; '' when absent. */
+function roadmapSectionBody(roadmap: string, section: string): string {
   const heading = new RegExp(`\\n## ${section.replaceAll('.', '\\.')} [^\\n]*\\n([\\s\\S]*?)(?:\\n## |$)`);
-  const body = heading.exec(roadmap)?.[1] ?? '';
-  const block = /```text\n([\s\S]*?)```/.exec(body)?.[1] ?? '';
-  return block
+  return heading.exec(roadmap)?.[1] ?? '';
+}
+
+const nonEmptyLines = (text: string): string[] =>
+  text
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
+
+/** The lines of the first ```text block under `## <section> ` in the roadmap. */
+export function readRoadmapSectionLines(roadmap: string, section: string): string[] {
+  return readRoadmapSectionBlocks(roadmap, section)[0] ?? [];
+}
+
+/** Every ```text block under `## <section> ` in the roadmap, as trimmed non-empty lines. */
+export function readRoadmapSectionBlocks(roadmap: string, section: string): string[][] {
+  return [...roadmapSectionBody(roadmap, section).matchAll(/```text\n([\s\S]*?)```/g)].map((match) => nonEmptyLines(match[1] ?? ''));
+}
+
+/** The `- [ ] Item.` checklist entries under `## <section> `, without the trailing `.` or `;`. */
+export function readRoadmapChecklist(roadmap: string, section: string): string[] {
+  return nonEmptyLines(roadmapSectionBody(roadmap, section)).flatMap((line) => {
+    const item = /^- \[[ xX]\] (.+?)[.;]?$/.exec(line)?.[1];
+    return item === undefined ? [] : [item.trim()];
+  });
 }
 
 /** The scenario lines of the first code block under `## 8.8` in the roadmap. */
@@ -390,5 +410,66 @@ export function checkV04ScenarioMap(input: ScenarioMapInput): string[] {
     },
   ];
   for (const spec of tables) problems.push(...checkTable(spec, input.map, input.readSource));
+  return problems;
+}
+
+// 31-01: the v0.5 matrix. One table per roadmap section in docs/releases/v0.5-scenarios.md; every
+// row is an integration test that runs once per Ubuntu version.
+export const V05_SECTIONS = Object.freeze({
+  metrics: '(§10.1)',
+  logs: '(§10.2)',
+  graph: '(§10.3)',
+  diagnosis: '(§10.8)',
+} as const);
+
+export type V05Table = keyof typeof V05_SECTIONS;
+
+/**
+ * The rows each v0.5 table must hold, in order: the §10.1 checklist; the §10.2 sources and then its
+ * checklist; the §10.3 minimal nodes and then its minimal relations; the supported diagnoses.
+ */
+export function v05Expected(roadmap: string, diagnoses: readonly string[]): Record<V05Table, readonly string[]> {
+  const logBlocks = readRoadmapSectionBlocks(roadmap, '10.2');
+  const graphBlocks = readRoadmapSectionBlocks(roadmap, '10.3');
+  return {
+    metrics: readRoadmapChecklist(roadmap, '10.1'),
+    logs: [...(logBlocks[0] ?? []), ...readRoadmapChecklist(roadmap, '10.2')],
+    // Block 1 lists the optional nodes, block 2 the minimal relations.
+    graph: [...(graphBlocks[0] ?? []), ...(graphBlocks[2] ?? [])],
+    diagnosis: diagnoses.filter((diagnosis) => diagnosis !== 'unknown'),
+  };
+}
+
+export interface V05ScenarioMapInput extends ScenarioMapInput {
+  /** The diagnosis vocabulary (`DIAGNOSES` of @noodara/domain); `unknown` is not a case. */
+  readonly diagnoses: readonly string[];
+}
+
+const V05_LABELS: Record<V05Table, string> = { metrics: 'metric', logs: 'log item', graph: 'graph item', diagnosis: 'diagnosis' };
+
+/** Every reason docs/releases/v0.5-scenarios.md does not prove §10.1-§10.3 and the diagnoses; empty when it does. */
+export function checkV05ScenarioMap(input: V05ScenarioMapInput): string[] {
+  const expected = v05Expected(input.roadmap, input.diagnoses);
+  const problems: string[] = [];
+  for (const table of Object.keys(V05_SECTIONS) as V05Table[]) {
+    if (expected[table].length === 0) problems.push(`no ${V05_LABELS[table]} expected for ${V05_SECTIONS[table]}`);
+  }
+  const roadmapCases = readRoadmapSectionLines(input.roadmap, '10.8');
+  if (roadmapCases.length !== expected.diagnosis.length) {
+    problems.push(
+      `roadmap §10.8 lists ${String(roadmapCases.length)} diagnosis cases, the vocabulary ${String(expected.diagnosis.length)}`,
+    );
+  }
+  for (const table of Object.keys(V05_SECTIONS) as V05Table[]) {
+    const spec: TableSpec = {
+      label: V05_LABELS[table],
+      section: V05_SECTIONS[table],
+      cells: 4,
+      expected: expected[table],
+      fileProblem: (file) => (file.startsWith('tests/integration/') && file.endsWith('.test.ts') ? undefined : 'maps outside tests/integration/'),
+      options: () => ({ perUbuntu: true }),
+    };
+    problems.push(...checkTable(spec, input.map, input.readSource));
+  }
   return problems;
 }
