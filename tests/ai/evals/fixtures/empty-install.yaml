@@ -1,0 +1,18 @@
+# A fresh install: one server, one project without services. Questions about services find nothing.
+id: empty-install
+description: A freshly connected server and an empty sandbox project; nothing is deployed yet.
+now: "2026-11-01T12:00:00Z"
+servers:
+  - name: lonely-1
+    status: CONNECTED
+    ramMb: 2048
+    diskTotalMb: 25600
+    diskUsedMb: 6000
+    memoryUsedMb: [400, 410, 405]
+projects:
+  - name: sandbox
+    environments:
+      - name: dev
+secrets:
+  - name: sandbox_placeholder
+    value: "NOODARA_CANARY_2c37e8d0d51d9c52dac4f80098eba8ae"

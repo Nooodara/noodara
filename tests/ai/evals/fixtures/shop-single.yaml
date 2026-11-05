@@ -1,0 +1,93 @@
+# One healthy server running one project: the baseline for location, memory, domain and topology.
+id: shop-single
+description: One connected server running the shop project in production; every service is healthy.
+now: "2026-11-01T12:00:00Z"
+servers:
+  - name: web-1
+    status: CONNECTED
+    ramMb: 8192
+    cpuCores: 4
+    diskTotalMb: 81920
+    diskUsedMb: 30720
+    memoryUsedMb: [4100, 4150, 4200, 4180, 4220]
+    cpuPercent: [22, 25, 31, 28, 26]
+projects:
+  - name: shop
+    environments:
+      - name: production
+        services:
+          - name: payments-api
+            server: web-1
+            status: RUNNING
+            image: "ghcr.io/shop/payments-api:1.8.2"
+            internalPort: 8080
+            memoryLimitMb: 1024
+            container:
+              state: running
+              healthcheck: healthy
+            memoryUsedMb: [310, 320, 318, 325, 330]
+            cpuPercent: [8, 9, 11, 10, 9]
+            domains: [api.shop.example.com]
+            env:
+              NODE_ENV: production
+              DATABASE_PASSWORD: "<secret:payments_db_password>"
+              STRIPE_API_KEY: "<secret:stripe_api_key>"
+            deployments:
+              - status: SUCCESS
+                commit: 4f1c2ab
+                imageRef: "ghcr.io/shop/payments-api:1.8.1"
+                startedMinutesAgo: 4320
+              - status: SUCCESS
+                commit: 9d0e7f3
+                imageRef: "ghcr.io/shop/payments-api:1.8.2"
+                startedMinutesAgo: 1440
+            logs:
+              - secondsAgo: 600
+                text: "payments-api listening on :8080"
+              - secondsAgo: 300
+                text: "db connect user=payments password=NOODARA_CANARY_fe6a7a4acac6e29c47e79c5d7163e256"
+              - secondsAgo: 120
+                level: warn
+                text: "slow upstream response from card processor (1.4s)"
+          - name: storefront
+            server: web-1
+            status: RUNNING
+            repository: "https://github.com/shop/storefront"
+            internalPort: 3000
+            publishedPort: 3000
+            memoryLimitMb: 2048
+            container:
+              state: running
+              healthcheck: healthy
+            memoryUsedMb: [1210, 1250, 1300, 1320, 1340]
+            cpuPercent: [12, 14, 13, 15, 16]
+            domains: [shop.example.com, www.shop.example.com]
+            env:
+              API_URL: "https://api.shop.example.com"
+              SESSION_SECRET: "<secret:session_secret>"
+            deployments:
+              - status: SUCCESS
+                commit: a7b3c91
+                startedMinutesAgo: 2880
+          - name: worker
+            server: web-1
+            status: RUNNING
+            image: "ghcr.io/shop/worker:2.0.0"
+            healthcheckPath: null
+            container:
+              state: running
+            memoryUsedMb: [180, 182, 181, 185, 184]
+            cpuPercent: [3, 4, 3, 3, 4]
+            env:
+              QUEUE: orders
+            deployments:
+              - status: SUCCESS
+                commit: 1c2d3e4
+                startedMinutesAgo: 10080
+secrets:
+  - name: payments_db_password
+    value: "NOODARA_CANARY_fe6a7a4acac6e29c47e79c5d7163e256"
+  - name: stripe_api_key
+    value: "NOODARA_CANARY_9b465f9521292686a3a189b157969821"
+  - name: session_secret
+    value: "NOODARA_CANARY_27cb152ee6d19b3ec9be80e5ffcc3644"

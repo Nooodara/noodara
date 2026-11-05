@@ -1,0 +1,80 @@
+# §10.7 "How is this application deployed?"
+scenarios:
+  - id: topo-shop
+    title: One project on one server
+    questionType: deployment_topology
+    fixture: shop-single
+    question: "How is the shop application deployed?"
+    evidence: ["server:web-1"]
+    expected:
+      outcome: answer
+      entities: ["project:shop", "environment:shop/production", "server:web-1", "service:payments-api", "service:storefront", "service:worker", "domain:api.shop.example.com", "domain:shop.example.com"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["shop runs on more than one server", "shop has a staging environment"]
+  - id: topo-platform
+    title: One project spread over four servers
+    questionType: deployment_topology
+    fixture: fleet-multi-server
+    question: "How is platform deployed?"
+    evidence: ["server:edge-1", "server:data-1", "server:cache-1", "server:batch-1"]
+    expected:
+      outcome: answer
+      entities: ["project:platform", "service:api", "service:postgres", "service:redis", "service:reports", "server:edge-1", "server:data-1", "server:cache-1", "server:batch-1", "domain:api.platform.example.com"]
+      diagnosis: server_unreachable
+    forbidden:
+      claims: ["api runs on data-1", "postgres has a public domain"]
+  - id: topo-acme-scoped
+    title: Topology limited to the conversation project
+    questionType: deployment_topology
+    fixture: agency-multi-project
+    scope:
+      project: acme
+    question: "How is acme deployed?"
+    evidence: ["server:host-a", "server:host-b"]
+    expected:
+      outcome: answer
+      entities: ["project:acme", "environment:acme/production", "environment:acme/staging", "service:acme-web", "service:acme-api", "service:acme-web-staging", "server:host-a", "server:host-b"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["acme shares host-b with globex"]
+      entities: ["project:globex", "service:globex-api", "service:globex-admin", "server:host-c", "domain:admin.globex.example.com"]
+  - id: topo-globex-from-acme-not-found
+    title: Topology of another project is not visible
+    questionType: deployment_topology
+    fixture: agency-multi-project
+    scope:
+      project: acme
+    question: "How is globex deployed?"
+    evidence: ["server:host-a"]
+    expected:
+      outcome: not_found
+      entities: []
+      diagnosis: unknown
+    forbidden:
+      claims: ["globex runs on host-c"]
+      entities: ["project:globex", "service:globex-api", "service:globex-admin", "server:host-c"]
+  - id: topo-blog
+    title: Three services behind two domains
+    questionType: deployment_topology
+    fixture: deploy-history
+    question: "How is the blog deployed?"
+    evidence: ["server:ci-1"]
+    expected:
+      outcome: answer
+      entities: ["project:blog", "environment:blog/production", "service:blog-api", "service:blog-web", "service:newsletter", "server:ci-1", "domain:api.blog.example.com", "domain:blog.example.com"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["newsletter has a public domain"]
+  - id: topo-empty-sandbox
+    title: A project with nothing deployed
+    questionType: deployment_topology
+    fixture: empty-install
+    question: "How is sandbox deployed?"
+    evidence: ["server:lonely-1"]
+    expected:
+      outcome: answer
+      entities: ["project:sandbox", "environment:sandbox/dev"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["sandbox has a running service"]

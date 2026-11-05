@@ -1,0 +1,90 @@
+# §10.7 "Why did api restart?"
+scenarios:
+  - id: restart-checkout-oom
+    title: Restarted after an OOM kill
+    questionType: restart_cause
+    fixture: shop-incidents
+    question: "Why did checkout restart?"
+    evidence: ["container:checkout", "container_memory:checkout"]
+    expected:
+      outcome: answer
+      entities: ["service:checkout"]
+      diagnosis: out_of_memory
+    forbidden:
+      claims: ["checkout restarted because of a deployment"]
+  - id: restart-cart-crash-loop
+    title: Restarting in a loop
+    questionType: restart_cause
+    fixture: shop-incidents
+    question: "Why does cart keep restarting?"
+    evidence: ["container:cart"]
+    expected:
+      outcome: answer
+      entities: ["service:cart"]
+      diagnosis: crash_loop
+    forbidden:
+      claims: ["cart ran out of memory"]
+  - id: restart-blog-api-deploy
+    title: Restarted by a deployment
+    questionType: restart_cause
+    fixture: deploy-history
+    question: "Why did blog-api restart?"
+    evidence: ["deployment:blog-api#4", "container:blog-api"]
+    expected:
+      outcome: answer
+      entities: ["deployment:blog-api#4", "service:blog-api"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["blog-api was OOM killed", "blog-api is crash looping"]
+  - id: restart-globex-api-global
+    title: Crash loop seen globally
+    questionType: restart_cause
+    fixture: agency-multi-project
+    question: "Why did globex-api restart?"
+    evidence: ["container:globex-api"]
+    expected:
+      outcome: answer
+      entities: ["service:globex-api"]
+      diagnosis: crash_loop
+    forbidden:
+      claims: ["globex-api ran out of memory"]
+      entities: ["service:acme-api"]
+  - id: restart-globex-api-acme-not-found
+    title: Restart cause of another project is not visible
+    questionType: restart_cause
+    fixture: agency-multi-project
+    scope:
+      project: acme
+    question: "Why did globex-api restart?"
+    evidence: ["server:host-a"]
+    expected:
+      outcome: not_found
+      entities: []
+      diagnosis: unknown
+    forbidden:
+      claims: ["globex-api is crash looping"]
+      entities: ["service:globex-api"]
+  - id: restart-mailer-stopped
+    title: Stopped cleanly rather than crashed
+    questionType: restart_cause
+    fixture: shop-incidents
+    question: "Why did mailer stop?"
+    evidence: ["container:mailer"]
+    expected:
+      outcome: answer
+      entities: ["service:mailer"]
+      diagnosis: container_stopped
+    forbidden:
+      claims: ["mailer was OOM killed", "mailer is crash looping"]
+  - id: restart-reports-unreachable
+    title: Restart cause unknowable while the server is unreachable
+    questionType: restart_cause
+    fixture: fleet-multi-server
+    question: "Why did reports restart?"
+    evidence: ["server:batch-1", "container:reports"]
+    expected:
+      outcome: answer
+      entities: ["service:reports", "server:batch-1"]
+      diagnosis: server_unreachable
+    forbidden:
+      claims: ["reports was OOM killed"]

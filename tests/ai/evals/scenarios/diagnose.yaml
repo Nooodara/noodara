@@ -1,0 +1,187 @@
+# §10.8 "Why is X failing?": each diagnosis of the classifier, unknown, and a scoping case.
+scenarios:
+  - id: diag-oom-checkout
+    title: OOM kill
+    questionType: diagnose
+    fixture: shop-incidents
+    question: "Why is checkout failing?"
+    evidence: ["container:checkout", "container_memory:checkout", "deployment:checkout#1"]
+    expected:
+      outcome: answer
+      entities: ["service:checkout"]
+      diagnosis: out_of_memory
+    forbidden:
+      claims: ["checkout failed because of a bad deployment", "checkout is crash looping"]
+  - id: diag-crash-loop-cart
+    title: Crash loop after a config change
+    questionType: diagnose
+    fixture: shop-incidents
+    question: "Why is cart failing?"
+    evidence: ["container:cart", "deployment:cart#1"]
+    expected:
+      outcome: answer
+      entities: ["service:cart"]
+      diagnosis: crash_loop
+    forbidden:
+      claims: ["cart ran out of memory", "the cart deployment failed"]
+  - id: diag-healthcheck-search
+    title: Healthcheck timing out
+    questionType: diagnose
+    fixture: shop-incidents
+    question: "Why is search unhealthy?"
+    evidence: ["container:search", "port:search"]
+    expected:
+      outcome: answer
+      entities: ["service:search"]
+      diagnosis: healthcheck_timeout
+    forbidden:
+      claims: ["search crashed", "search port is closed"]
+  - id: diag-stopped-mailer
+    title: Container stopped
+    questionType: diagnose
+    fixture: shop-incidents
+    question: "Why is mailer not sending email?"
+    evidence: ["container:mailer", "deployment:mailer#1"]
+    expected:
+      outcome: answer
+      entities: ["service:mailer"]
+      diagnosis: container_stopped
+    forbidden:
+      claims: ["mailer was OOM killed", "the mailer deployment failed"]
+  - id: diag-port-gateway
+    title: Port not responding
+    questionType: diagnose
+    fixture: shop-incidents
+    question: "Why can't I reach gateway?"
+    evidence: ["container:gateway", "port:gateway"]
+    expected:
+      outcome: answer
+      entities: ["service:gateway"]
+      diagnosis: port_not_responding
+    forbidden:
+      claims: ["gateway container is stopped", "gateway ran out of memory"]
+  - id: diag-failed-deploy-catalog
+    title: Failed build
+    questionType: diagnose
+    fixture: shop-incidents
+    question: "Why did the catalog update not go out?"
+    evidence: ["deployment:catalog#2", "container:catalog"]
+    expected:
+      outcome: answer
+      entities: ["service:catalog", "deployment:catalog#2"]
+      diagnosis: failed_deployment
+    forbidden:
+      claims: ["catalog is down", "catalog ran out of memory"]
+  - id: diag-high-memory-recommender
+    title: Sustained high memory
+    questionType: diagnose
+    fixture: shop-incidents
+    question: "Why is recommender slow?"
+    evidence: ["container_memory:recommender", "container:recommender"]
+    expected:
+      outcome: answer
+      entities: ["service:recommender"]
+      diagnosis: high_memory
+    forbidden:
+      claims: ["recommender was OOM killed", "recommender is crash looping"]
+  - id: diag-high-disk-postgres
+    title: Database host nearly full
+    questionType: diagnose
+    fixture: fleet-multi-server
+    question: "Why is postgres failing to write?"
+    evidence: ["filesystem:data-1", "container:postgres"]
+    expected:
+      outcome: answer
+      entities: ["service:postgres", "server:data-1"]
+      diagnosis: high_disk
+    forbidden:
+      claims: ["postgres ran out of memory", "postgres crashed"]
+      entities: ["server:cache-1"]
+  - id: diag-unreachable-reports
+    title: Server unreachable
+    questionType: diagnose
+    fixture: fleet-multi-server
+    question: "Why are reports missing?"
+    evidence: ["server:batch-1", "container:reports"]
+    expected:
+      outcome: answer
+      entities: ["service:reports", "server:batch-1"]
+      diagnosis: server_unreachable
+    forbidden:
+      claims: ["reports crashed", "reports ran out of memory"]
+  - id: diag-unknown-inventory
+    title: Nothing in the evidence explains it
+    questionType: diagnose
+    fixture: shop-incidents
+    question: "Why is inventory failing?"
+    evidence: ["container:inventory", "port:inventory", "container_memory:inventory", "deployment:inventory#1"]
+    expected:
+      outcome: answer
+      entities: ["service:inventory"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["inventory ran out of memory", "inventory is crash looping", "the disk is the cause"]
+  - id: diag-unknown-payments
+    title: Healthy service reported as failing
+    questionType: diagnose
+    fixture: shop-single
+    question: "Why is payments-api failing?"
+    evidence: ["container:payments-api", "port:payments-api", "deployment:payments-api#2"]
+    expected:
+      outcome: answer
+      entities: ["service:payments-api"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["payments-api is crash looping", "the last deployment failed"]
+  - id: diag-globex-from-acme-not-found
+    title: Diagnosis of another project is not visible
+    questionType: diagnose
+    fixture: agency-multi-project
+    scope:
+      project: acme
+    question: "Why is globex-api failing?"
+    evidence: ["server:host-b"]
+    expected:
+      outcome: not_found
+      entities: []
+      diagnosis: unknown
+    forbidden:
+      claims: ["globex-api is crash looping"]
+      entities: ["service:globex-api", "project:globex"]
+  - id: diag-rollback-blog-web
+    title: Rolled back after a failed healthcheck
+    questionType: diagnose
+    fixture: deploy-history
+    question: "Why is blog-web still on the old version?"
+    evidence: ["deployment:blog-web#2", "container:blog-web"]
+    expected:
+      outcome: answer
+      entities: ["service:blog-web", "deployment:blog-web#2"]
+      diagnosis: failed_deployment
+    forbidden:
+      claims: ["blog-web is down", "blog-web is crash looping"]
+  - id: diag-high-memory-host
+    title: Memory bound host
+    questionType: diagnose
+    fixture: fleet-multi-server
+    question: "Why is postgres slow?"
+    evidence: ["host_memory:data-1", "container:postgres"]
+    expected:
+      outcome: answer
+      entities: ["server:data-1", "service:postgres"]
+      diagnosis: high_memory
+    forbidden:
+      claims: ["postgres was OOM killed", "data-1 is unreachable"]
+  - id: diag-crash-loop-globex-global
+    title: Crash loop on a shared server
+    questionType: diagnose
+    fixture: agency-multi-project
+    question: "Why is globex-api failing?"
+    evidence: ["container:globex-api", "server:host-b"]
+    expected:
+      outcome: answer
+      entities: ["service:globex-api"]
+      diagnosis: crash_loop
+    forbidden:
+      claims: ["globex-api ran out of memory", "host-b is unreachable"]
+      entities: ["service:acme-api"]

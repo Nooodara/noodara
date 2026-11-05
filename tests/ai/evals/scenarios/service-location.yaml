@@ -1,0 +1,94 @@
+# §10.7 "Where does payments-api run?"
+scenarios:
+  - id: loc-payments-api
+    title: Locate a service on a single server
+    questionType: service_location
+    fixture: shop-single
+    question: "Where does payments-api run?"
+    evidence: ["server:web-1", "container:payments-api"]
+    expected:
+      outcome: answer
+      entities: ["service:payments-api", "server:web-1", "environment:shop/production"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["payments-api runs on more than one server", "payments-api is stopped"]
+  - id: loc-postgres-fleet
+    title: Locate a database among several servers
+    questionType: service_location
+    fixture: fleet-multi-server
+    question: "Which server is postgres on?"
+    evidence: ["server:data-1", "container:postgres"]
+    expected:
+      outcome: answer
+      entities: ["service:postgres", "server:data-1"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["postgres runs on edge-1", "postgres is replicated"]
+      entities: ["server:edge-1", "server:cache-1"]
+  - id: loc-reports-unreachable-host
+    title: Locate a service whose server is unreachable
+    questionType: service_location
+    fixture: fleet-multi-server
+    question: "Where does reports run and is it up?"
+    evidence: ["server:batch-1"]
+    expected:
+      outcome: answer
+      entities: ["service:reports", "server:batch-1"]
+      diagnosis: server_unreachable
+    forbidden:
+      claims: ["reports is confirmed running right now"]
+  - id: loc-acme-api-scoped
+    title: Locate a service in a project-scoped conversation on a shared server
+    questionType: service_location
+    fixture: agency-multi-project
+    scope:
+      project: acme
+    question: "Where does acme-api run?"
+    evidence: ["server:host-b", "container:acme-api"]
+    expected:
+      outcome: answer
+      entities: ["service:acme-api", "server:host-b"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["globex-api runs next to acme-api"]
+      entities: ["service:globex-api", "project:globex"]
+  - id: loc-globex-api-from-acme-not-found
+    title: A service of another project is not visible
+    questionType: service_location
+    fixture: agency-multi-project
+    scope:
+      project: acme
+    question: "Where does globex-api run?"
+    evidence: ["server:host-b"]
+    expected:
+      outcome: not_found
+      entities: []
+      diagnosis: unknown
+    forbidden:
+      claims: ["globex-api runs on host-b"]
+      entities: ["service:globex-api", "project:globex"]
+  - id: loc-missing-service-empty
+    title: A service that does not exist
+    questionType: service_location
+    fixture: empty-install
+    question: "Where does payments-api run?"
+    evidence: ["server:lonely-1"]
+    expected:
+      outcome: not_found
+      entities: []
+      diagnosis: unknown
+    forbidden:
+      claims: ["payments-api runs on lonely-1"]
+  - id: loc-acme-staging
+    title: Locate a service by environment
+    questionType: service_location
+    fixture: agency-multi-project
+    question: "Where does the acme staging site run?"
+    evidence: ["server:host-a", "container:acme-web-staging"]
+    expected:
+      outcome: answer
+      entities: ["service:acme-web-staging", "server:host-a", "environment:acme/staging"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["acme staging runs on host-b"]
+      entities: ["service:acme-web"]

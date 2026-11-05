@@ -1,0 +1,74 @@
+# The eval dataset manifest. A scenario id is stable forever: retiring one is a changelog entry,
+# never a silent removal, so baselines (29-02) stay comparable across versions.
+name: noodara-ai-evals
+version: 1.0.0
+changelog:
+  - version: 1.0.0
+    date: "2026-11-04"
+    summary: "Initial dataset: six fixtures and scenarios for the eight question types of roadmap 10.7 and every diagnosis."
+    added:
+      - topo-shop
+      - topo-platform
+      - topo-acme-scoped
+      - topo-globex-from-acme-not-found
+      - topo-blog
+      - topo-empty-sandbox
+      - diag-oom-checkout
+      - diag-crash-loop-cart
+      - diag-healthcheck-search
+      - diag-stopped-mailer
+      - diag-port-gateway
+      - diag-failed-deploy-catalog
+      - diag-high-memory-recommender
+      - diag-high-disk-postgres
+      - diag-unreachable-reports
+      - diag-unknown-inventory
+      - diag-unknown-payments
+      - diag-globex-from-acme-not-found
+      - diag-rollback-blog-web
+      - diag-high-memory-host
+      - diag-crash-loop-globex-global
+      - disk-fleet
+      - disk-market
+      - disk-agency-global
+      - disk-agency-acme-scoped
+      - disk-shop-none
+      - disk-blog-none
+      - lastdeploy-blog-api
+      - lastdeploy-blog-web-rollback
+      - lastdeploy-catalog-failed
+      - lastdeploy-newsletter-cancelled
+      - lastdeploy-payments
+      - lastdeploy-globex-from-acme-not-found
+      - restart-checkout-oom
+      - restart-cart-crash-loop
+      - restart-blog-api-deploy
+      - restart-globex-api-global
+      - restart-globex-api-acme-not-found
+      - restart-mailer-stopped
+      - restart-reports-unreachable
+      - domain-payments
+      - domain-storefront-two
+      - domain-worker-none
+      - domain-gateway-not-responding
+      - domain-globex-admin-from-acme-not-found
+      - domain-acme-staging
+      - loc-payments-api
+      - loc-postgres-fleet
+      - loc-reports-unreachable-host
+      - loc-acme-api-scoped
+      - loc-globex-api-from-acme-not-found
+      - loc-missing-service-empty
+      - loc-acme-staging
+      - topmem-shop-single
+      - topmem-fleet-postgres
+      - topmem-market-relative
+      - topmem-acme-scoped
+      - topmem-agency-global
+      - topmem-blog-single-sample
+      - unhealthy-market
+      - unhealthy-none-shop
+      - unhealthy-acme-scoped
+      - unhealthy-agency-global
+      - unhealthy-fleet-unreachable
+      - unhealthy-empty

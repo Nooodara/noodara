@@ -1,0 +1,80 @@
+# §10.7 "Which service is using the most memory?"
+scenarios:
+  - id: topmem-shop-single
+    title: Largest memory user on one server
+    questionType: top_memory_service
+    fixture: shop-single
+    question: "Which service is using the most memory?"
+    evidence: ["container_memory:storefront", "container_memory:payments-api", "container_memory:worker"]
+    expected:
+      outcome: answer
+      entities: ["service:storefront"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["storefront is out of memory", "storefront exceeds its memory limit"]
+      entities: ["service:worker"]
+  - id: topmem-fleet-postgres
+    title: Largest memory user on a memory bound host
+    questionType: top_memory_service
+    fixture: fleet-multi-server
+    question: "Which service uses the most memory?"
+    evidence: ["container_memory:postgres", "container_memory:api", "container_memory:redis", "host_memory:data-1"]
+    expected:
+      outcome: answer
+      entities: ["service:postgres"]
+      diagnosis: high_memory
+    forbidden:
+      claims: ["postgres was OOM killed"]
+      entities: ["service:redis"]
+  - id: topmem-market-relative
+    title: Closest to its memory limit among running services
+    questionType: top_memory_service
+    fixture: shop-incidents
+    question: "Which running service is closest to its memory limit?"
+    evidence: ["container_memory:recommender", "container_memory:inventory"]
+    expected:
+      outcome: answer
+      entities: ["service:recommender"]
+      diagnosis: high_memory
+    forbidden:
+      claims: ["recommender was OOM killed"]
+      entities: ["service:inventory"]
+  - id: topmem-acme-scoped
+    title: Memory ranking limited to the conversation project
+    questionType: top_memory_service
+    fixture: agency-multi-project
+    scope:
+      project: acme
+    question: "Which of my services uses the most memory?"
+    evidence: ["container_memory:acme-api", "container_memory:acme-web"]
+    expected:
+      outcome: answer
+      entities: ["service:acme-api"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["globex-admin uses the most memory"]
+      entities: ["service:globex-admin", "service:globex-api"]
+  - id: topmem-agency-global
+    title: Nearest its memory limit across projects
+    questionType: top_memory_service
+    fixture: agency-multi-project
+    question: "Which service is nearest its memory limit?"
+    evidence: ["container_memory:globex-admin", "container_memory:acme-api", "container_memory:acme-web"]
+    expected:
+      outcome: answer
+      entities: ["service:globex-admin"]
+      diagnosis: high_memory
+    forbidden:
+      claims: ["acme-api is near its memory limit"]
+  - id: topmem-blog-single-sample
+    title: Only one service reports memory
+    questionType: top_memory_service
+    fixture: deploy-history
+    question: "What uses the most memory on ci-1?"
+    evidence: ["container_memory:blog-api", "host_memory:ci-1"]
+    expected:
+      outcome: answer
+      entities: ["service:blog-api"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["ci-1 is running out of memory", "newsletter uses the most memory"]

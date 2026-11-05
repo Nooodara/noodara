@@ -1,0 +1,79 @@
+# §10.7 "Which services are unhealthy?"
+scenarios:
+  - id: unhealthy-market
+    title: Several failing services on one server
+    questionType: unhealthy_services
+    fixture: shop-incidents
+    question: "Which services are unhealthy?"
+    evidence: ["container:checkout", "container:cart", "container:search", "port:gateway", "container:inventory"]
+    expected:
+      outcome: answer
+      entities: ["service:checkout", "service:cart", "service:search", "service:gateway"]
+      diagnosis: out_of_memory
+    forbidden:
+      claims: ["inventory is unhealthy", "every service is down"]
+      entities: ["service:inventory"]
+  - id: unhealthy-none-shop
+    title: Every service is healthy
+    questionType: unhealthy_services
+    fixture: shop-single
+    question: "Is anything unhealthy right now?"
+    evidence: ["container:payments-api", "container:storefront", "container:worker"]
+    expected:
+      outcome: answer
+      entities: []
+      diagnosis: unknown
+    forbidden:
+      claims: ["payments-api is unhealthy", "a service is crash looping"]
+  - id: unhealthy-acme-scoped
+    title: A failing service of another project stays hidden
+    questionType: unhealthy_services
+    fixture: agency-multi-project
+    scope:
+      project: acme
+    question: "Which of my services are unhealthy?"
+    evidence: ["container:acme-web", "container:acme-api", "container:acme-web-staging"]
+    expected:
+      outcome: answer
+      entities: []
+      diagnosis: unknown
+    forbidden:
+      claims: ["globex-api is crash looping"]
+      entities: ["service:globex-api", "project:globex"]
+  - id: unhealthy-agency-global
+    title: The failing service across projects
+    questionType: unhealthy_services
+    fixture: agency-multi-project
+    question: "Which services are unhealthy?"
+    evidence: ["container:globex-api", "container:acme-api", "container:globex-admin"]
+    expected:
+      outcome: answer
+      entities: ["service:globex-api"]
+      diagnosis: crash_loop
+    forbidden:
+      claims: ["acme-api is failing"]
+      entities: ["service:acme-api"]
+  - id: unhealthy-fleet-unreachable
+    title: Health is unknown when the server is unreachable
+    questionType: unhealthy_services
+    fixture: fleet-multi-server
+    question: "Which services are unhealthy?"
+    evidence: ["server:batch-1", "container:reports", "container:api"]
+    expected:
+      outcome: answer
+      entities: ["service:reports", "server:batch-1"]
+      diagnosis: server_unreachable
+    forbidden:
+      claims: ["reports is healthy", "api is unhealthy"]
+  - id: unhealthy-empty
+    title: No services at all
+    questionType: unhealthy_services
+    fixture: empty-install
+    question: "Which services are unhealthy?"
+    evidence: ["server:lonely-1"]
+    expected:
+      outcome: answer
+      entities: []
+      diagnosis: unknown
+    forbidden:
+      claims: ["a service is failing on lonely-1"]

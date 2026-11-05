@@ -1,0 +1,77 @@
+# §10.7 "What changed in the last deployment?"
+scenarios:
+  - id: lastdeploy-blog-api
+    title: New commit after a failed attempt
+    questionType: last_deployment_changes
+    fixture: deploy-history
+    question: "What changed in the last deployment of blog-api?"
+    evidence: ["deployment:blog-api#4", "deployment:blog-api#2"]
+    expected:
+      outcome: answer
+      entities: ["deployment:blog-api#4", "service:blog-api"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["deployment #4 failed", "the running commit is 55ee66f"]
+  - id: lastdeploy-blog-web-rollback
+    title: The last attempt was rolled back
+    questionType: last_deployment_changes
+    fixture: deploy-history
+    question: "What changed in the last blog-web deployment?"
+    evidence: ["deployment:blog-web#2"]
+    expected:
+      outcome: answer
+      entities: ["deployment:blog-web#2", "deployment:blog-web#1"]
+      diagnosis: failed_deployment
+    forbidden:
+      claims: ["5d4e3f2 is running in production"]
+  - id: lastdeploy-catalog-failed
+    title: The last attempt failed to build
+    questionType: last_deployment_changes
+    fixture: shop-incidents
+    question: "What changed in the last deployment of catalog?"
+    evidence: ["deployment:catalog#2"]
+    expected:
+      outcome: answer
+      entities: ["deployment:catalog#2", "service:catalog"]
+      diagnosis: failed_deployment
+    forbidden:
+      claims: ["f4a5b6c is live", "catalog is down"]
+  - id: lastdeploy-newsletter-cancelled
+    title: The last attempt was cancelled
+    questionType: last_deployment_changes
+    fixture: deploy-history
+    question: "What changed in the last newsletter deployment?"
+    evidence: ["deployment:newsletter#2"]
+    expected:
+      outcome: answer
+      entities: ["deployment:newsletter#2"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["newsletter is running 1.3.0", "the deployment failed"]
+  - id: lastdeploy-payments
+    title: A plain image upgrade
+    questionType: last_deployment_changes
+    fixture: shop-single
+    question: "What changed in the last deployment of payments-api?"
+    evidence: ["deployment:payments-api#2", "deployment:payments-api#1"]
+    expected:
+      outcome: answer
+      entities: ["deployment:payments-api#2"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["the last deployment failed", "the database password changed"]
+  - id: lastdeploy-globex-from-acme-not-found
+    title: Deployments of another project are not visible
+    questionType: last_deployment_changes
+    fixture: agency-multi-project
+    scope:
+      project: acme
+    question: "What changed in globex-api's last deployment?"
+    evidence: ["server:host-a"]
+    expected:
+      outcome: not_found
+      entities: []
+      diagnosis: unknown
+    forbidden:
+      claims: ["globex-api deployed 4d5e6f7"]
+      entities: ["deployment:globex-api#1", "service:globex-api"]

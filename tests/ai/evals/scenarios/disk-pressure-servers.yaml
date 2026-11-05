@@ -1,0 +1,79 @@
+# §10.7 "Which servers are close to running out of disk?"
+scenarios:
+  - id: disk-fleet
+    title: One server over the threshold and one just below
+    questionType: disk_pressure_servers
+    fixture: fleet-multi-server
+    question: "Which servers are close to running out of disk?"
+    evidence: ["filesystem:edge-1", "filesystem:data-1", "filesystem:cache-1"]
+    expected:
+      outcome: answer
+      entities: ["server:data-1"]
+      diagnosis: high_disk
+    forbidden:
+      claims: ["cache-1 is out of disk"]
+      entities: ["server:edge-1"]
+  - id: disk-market
+    title: The only server is nearly full
+    questionType: disk_pressure_servers
+    fixture: shop-incidents
+    question: "Is any server running out of disk?"
+    evidence: ["filesystem:app-1"]
+    expected:
+      outcome: answer
+      entities: ["server:app-1"]
+      diagnosis: high_disk
+    forbidden:
+      claims: ["app-1 disk is full at 100%"]
+  - id: disk-agency-global
+    title: Two servers over the threshold
+    questionType: disk_pressure_servers
+    fixture: agency-multi-project
+    question: "Which servers are close to running out of disk?"
+    evidence: ["filesystem:host-a", "filesystem:host-b", "filesystem:host-c"]
+    expected:
+      outcome: answer
+      entities: ["server:host-b", "server:host-c"]
+      diagnosis: high_disk
+    forbidden:
+      claims: ["host-a is near full"]
+      entities: ["server:host-a"]
+  - id: disk-agency-acme-scoped
+    title: A full server of another project stays hidden
+    questionType: disk_pressure_servers
+    fixture: agency-multi-project
+    scope:
+      project: acme
+    question: "Which of my servers are close to running out of disk?"
+    evidence: ["filesystem:host-a", "filesystem:host-b"]
+    expected:
+      outcome: answer
+      entities: ["server:host-b"]
+      diagnosis: high_disk
+    forbidden:
+      claims: ["host-c is near full"]
+      entities: ["server:host-c"]
+  - id: disk-shop-none
+    title: No server under disk pressure
+    questionType: disk_pressure_servers
+    fixture: shop-single
+    question: "Which servers are close to running out of disk?"
+    evidence: ["filesystem:web-1"]
+    expected:
+      outcome: answer
+      entities: []
+      diagnosis: unknown
+    forbidden:
+      claims: ["web-1 is near full"]
+  - id: disk-blog-none
+    title: Plenty of disk left
+    questionType: disk_pressure_servers
+    fixture: deploy-history
+    question: "Is ci-1 running out of disk?"
+    evidence: ["filesystem:ci-1"]
+    expected:
+      outcome: answer
+      entities: []
+      diagnosis: unknown
+    forbidden:
+      claims: ["ci-1 is running out of disk"]

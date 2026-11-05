@@ -1,0 +1,177 @@
+# One server where each service fails in a different way: one fixture per diagnosis rule.
+id: shop-incidents
+description: The market project in production on one nearly full server, each service showing a distinct failure.
+now: "2026-11-01T12:00:00Z"
+servers:
+  - name: app-1
+    status: CONNECTED
+    ramMb: 4096
+    diskTotalMb: 51200
+    diskUsedMb: 47616
+    memoryUsedMb: [2900, 3000, 3050, 3100]
+    cpuPercent: [55, 61, 58, 64]
+projects:
+  - name: market
+    environments:
+      - name: production
+        services:
+          - name: checkout
+            server: app-1
+            status: FAILED
+            image: "ghcr.io/market/checkout:3.2.0"
+            memoryLimitMb: 512
+            container:
+              state: exited
+              restartCount: 2
+              restartsInWindow: 1
+              exitCode: 137
+              oomKilled: true
+            memoryUsedMb: [450, 490, 511]
+            env:
+              PAYMENT_TOKEN: "<secret:checkout_payment_token>"
+            deployments:
+              - status: SUCCESS
+                commit: 3a4b5c6
+                startedMinutesAgo: 2000
+            logs:
+              - secondsAgo: 400
+                text: "processing cart batch of 5000 items"
+              - secondsAgo: 380
+                level: error
+                stream: stderr
+                text: "FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory"
+          - name: cart
+            server: app-1
+            status: FAILED
+            image: "ghcr.io/market/cart:1.4.0"
+            container:
+              state: restarting
+              restartCount: 14
+              restartsInWindow: 6
+              exitCode: 1
+            env:
+              REDIS_PASSWORD: "<secret:cart_redis_password>"
+            deployments:
+              - status: SUCCESS
+                commit: 7e8f9a0
+                startedMinutesAgo: 90
+            logs:
+              - secondsAgo: 50
+                level: error
+                stream: stderr
+                text: "Error: Cannot find module './config/production.json'"
+              - secondsAgo: 20
+                level: error
+                stream: stderr
+                text: "Error: Cannot find module './config/production.json'"
+          - name: search
+            server: app-1
+            status: RUNNING
+            image: "ghcr.io/market/search:0.9.1"
+            healthcheckPath: /ready
+            container:
+              state: running
+              healthcheck: timeout
+            deployments:
+              - status: SUCCESS
+                commit: b1c2d3e
+                startedMinutesAgo: 600
+            logs:
+              - secondsAgo: 30
+                level: warn
+                text: "index rebuild in progress, readiness deferred"
+          - name: mailer
+            server: app-1
+            status: STOPPED
+            image: "ghcr.io/market/mailer:2.1.0"
+            healthcheckPath: null
+            container:
+              state: exited
+              exitCode: 0
+            deployments:
+              - status: SUCCESS
+                commit: c4d5e6f
+                startedMinutesAgo: 5000
+            logs:
+              - secondsAgo: 7200
+                text: "received SIGTERM, shutting down cleanly"
+          - name: gateway
+            server: app-1
+            status: RUNNING
+            image: "ghcr.io/market/gateway:5.0.3"
+            internalPort: 8443
+            publishedPort: 8443
+            portResponding: false
+            healthcheckPath: null
+            container:
+              state: running
+            domains: [market.example.com]
+            deployments:
+              - status: SUCCESS
+                commit: d7e8f9a
+                startedMinutesAgo: 300
+            logs:
+              - secondsAgo: 280
+                text: "listening on 127.0.0.1:9443"
+          - name: catalog
+            server: app-1
+            status: RUNNING
+            repository: "https://github.com/market/catalog"
+            container:
+              state: running
+              healthcheck: healthy
+            deployments:
+              - status: SUCCESS
+                commit: e1f2a3b
+                startedMinutesAgo: 3000
+              - status: FAILED
+                commit: f4a5b6c
+                errorCode: BUILD_FAILED
+                errorMessage: "npm ERR! code ERESOLVE could not resolve dependency tree"
+                startedMinutesAgo: 45
+                durationSeconds: 95
+            logs:
+              - source: build
+                secondsAgo: 2600
+                level: error
+                text: "npm ERR! code ERESOLVE could not resolve dependency tree"
+          - name: recommender
+            server: app-1
+            status: RUNNING
+            image: "ghcr.io/market/recommender:1.1.0"
+            memoryLimitMb: 512
+            container:
+              state: running
+              healthcheck: healthy
+            memoryUsedMb: [400, 470, 475, 480, 490]
+            cpuPercent: [40, 42, 45, 47, 50]
+            deployments:
+              - status: SUCCESS
+                commit: a9b8c7d
+                startedMinutesAgo: 1500
+          - name: inventory
+            server: app-1
+            status: RUNNING
+            image: "ghcr.io/market/inventory:4.0.0"
+            memoryLimitMb: 1024
+            container:
+              state: running
+              healthcheck: healthy
+            memoryUsedMb: [200, 205, 210]
+            cpuPercent: [5, 6, 5]
+            env:
+              DB_PASSWORD: "<secret:inventory_db_password>"
+            deployments:
+              - status: SUCCESS
+                commit: 0a1b2c3
+                startedMinutesAgo: 800
+            logs:
+              - secondsAgo: 100
+                text: "stock sync finished in 812ms"
+secrets:
+  - name: checkout_payment_token
+    value: "NOODARA_CANARY_21b67e246aa585a3637a28cf98c71be9"
+  - name: cart_redis_password
+    value: "NOODARA_CANARY_4823a47ab1aa05464c07545734d17814"
+  - name: inventory_db_password
+    value: "NOODARA_CANARY_47d7107763d3e441044e0e21f6dd2dcf"

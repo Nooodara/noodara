@@ -1,0 +1,105 @@
+# Several servers with one project spread across them: location, disk pressure and reachability.
+id: fleet-multi-server
+description: The platform project spread over four servers; one is unreachable, one is near full and memory bound.
+now: "2026-11-01T12:00:00Z"
+servers:
+  - name: edge-1
+    status: CONNECTED
+    ramMb: 4096
+    diskTotalMb: 40960
+    diskUsedMb: 16384
+    memoryUsedMb: [1800, 1850, 1900]
+    cpuPercent: [20, 22, 21]
+  - name: data-1
+    status: CONNECTED
+    ramMb: 16384
+    cpuCores: 8
+    diskTotalMb: 204800
+    diskUsedMb: 184320
+    memoryUsedMb: [14500, 15000, 15100, 15200]
+    cpuPercent: [35, 38, 41, 40]
+  - name: cache-1
+    status: CONNECTED
+    ramMb: 2048
+    diskTotalMb: 20480
+    diskUsedMb: 17408
+    memoryUsedMb: [900, 910, 905]
+  - name: batch-1
+    status: UNREACHABLE
+    ramMb: 8192
+    diskTotalMb: 102400
+    diskUsedMb: 51200
+    lastSeenSecondsAgo: 5400
+projects:
+  - name: platform
+    environments:
+      - name: production
+        services:
+          - name: api
+            server: edge-1
+            status: RUNNING
+            repository: "https://github.com/platform/api"
+            internalPort: 4000
+            memoryLimitMb: 1024
+            container:
+              state: running
+              healthcheck: healthy
+            memoryUsedMb: [600, 610, 620]
+            domains: [api.platform.example.com]
+            env:
+              DATABASE_HOST: postgres
+              REDIS_HOST: redis
+              DATABASE_PASSWORD: "<secret:platform_db_password>"
+            deployments:
+              - status: SUCCESS
+                commit: 5b6c7d8
+                startedMinutesAgo: 700
+          - name: postgres
+            server: data-1
+            status: RUNNING
+            image: "postgres:16"
+            internalPort: 5432
+            healthcheckPath: null
+            container:
+              state: running
+            memoryUsedMb: [9000, 9100, 9200]
+            env:
+              POSTGRES_PASSWORD: "<secret:platform_db_password>"
+            deployments:
+              - status: SUCCESS
+                startedMinutesAgo: 40000
+          - name: redis
+            server: cache-1
+            status: RUNNING
+            image: "redis:7"
+            internalPort: 6379
+            healthcheckPath: null
+            container:
+              state: running
+            memoryUsedMb: [300, 305, 310]
+            deployments:
+              - status: SUCCESS
+                startedMinutesAgo: 40000
+          - name: reports
+            server: batch-1
+            status: UNKNOWN
+            image: "ghcr.io/platform/reports:0.4.0"
+            container:
+              state: running
+              healthcheck: healthy
+              observedSecondsAgo: 5400
+            env:
+              DATABASE_HOST: postgres
+              REPORTS_SIGNING_KEY: "<secret:reports_signing_key>"
+            deployments:
+              - status: SUCCESS
+                commit: 8c9d0e1
+                startedMinutesAgo: 9000
+            logs:
+              - secondsAgo: 5500
+                text: "nightly report scheduled for 02:00 UTC"
+secrets:
+  - name: platform_db_password
+    value: "NOODARA_CANARY_21e5f888609a2172759e9fbdbcf62819"
+  - name: reports_signing_key
+    value: "NOODARA_CANARY_1b54bb9b96ae5d9b8a034f78b399bdd4"

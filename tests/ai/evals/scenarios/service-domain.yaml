@@ -1,0 +1,83 @@
+# §10.7 "Which domain points to this service?"
+scenarios:
+  - id: domain-payments
+    title: One domain for an API
+    questionType: service_domain
+    fixture: shop-single
+    question: "Which domain points to payments-api?"
+    evidence: ["port:payments-api"]
+    expected:
+      outcome: answer
+      entities: ["domain:api.shop.example.com", "service:payments-api"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["payments-api is served at shop.example.com"]
+      entities: ["domain:shop.example.com"]
+  - id: domain-storefront-two
+    title: Two domains for one service
+    questionType: service_domain
+    fixture: shop-single
+    question: "Which domains point to storefront?"
+    evidence: ["port:storefront"]
+    expected:
+      outcome: answer
+      entities: ["domain:shop.example.com", "domain:www.shop.example.com"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["storefront is served at api.shop.example.com"]
+      entities: ["domain:api.shop.example.com"]
+  - id: domain-worker-none
+    title: A service without a domain
+    questionType: service_domain
+    fixture: shop-single
+    question: "Which domain points to worker?"
+    evidence: ["container:worker"]
+    expected:
+      outcome: answer
+      entities: []
+      diagnosis: unknown
+    forbidden:
+      claims: ["worker is reachable at shop.example.com"]
+      entities: ["domain:shop.example.com", "domain:api.shop.example.com"]
+  - id: domain-gateway-not-responding
+    title: A domain whose service port does not answer
+    questionType: service_domain
+    fixture: shop-incidents
+    question: "market.example.com is not loading; which service does it point to?"
+    evidence: ["port:gateway"]
+    expected:
+      outcome: answer
+      entities: ["service:gateway", "domain:market.example.com"]
+      diagnosis: port_not_responding
+    forbidden:
+      claims: ["the DNS record is wrong"]
+  - id: domain-globex-admin-from-acme-not-found
+    title: A domain of another project is not visible
+    questionType: service_domain
+    fixture: agency-multi-project
+    scope:
+      project: acme
+    question: "Which service does admin.globex.example.com point to?"
+    evidence: ["server:host-a"]
+    expected:
+      outcome: not_found
+      entities: []
+      diagnosis: unknown
+    forbidden:
+      claims: ["admin.globex.example.com points to globex-admin"]
+      entities: ["service:globex-admin", "domain:admin.globex.example.com"]
+  - id: domain-acme-staging
+    title: The staging domain of a project
+    questionType: service_domain
+    fixture: agency-multi-project
+    scope:
+      project: acme
+    question: "Which domain serves acme staging?"
+    evidence: ["port:acme-web-staging"]
+    expected:
+      outcome: answer
+      entities: ["domain:staging.acme.example.com", "service:acme-web-staging"]
+      diagnosis: unknown
+    forbidden:
+      claims: ["staging is served at www.acme.example.com"]
+      entities: ["domain:www.acme.example.com"]
