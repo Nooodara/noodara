@@ -131,8 +131,8 @@ describe('CapabilityGlyph', () => {
     }
   });
 
-  it('draws a glyph for each v0.4 capability', () => {
-    for (const id of ['domains-https', 'variables', 'secrets'] as const) {
+  it('draws a glyph for each v0.4 and v0.5 capability', () => {
+    for (const id of ['domains-https', 'variables', 'secrets', 'metrics', 'logs', 'infrastructure-graph', 'ai-assistant'] as const) {
       const { container, unmount } = render(<CapabilityGlyph id={id} />);
       expect(container.querySelectorAll('svg rect, svg line, svg path, svg circle').length).toBeGreaterThan(0);
       unmount();
@@ -141,9 +141,9 @@ describe('CapabilityGlyph', () => {
 });
 
 describe('FeatureGrid', () => {
-  it('renders every DELIVERED_CAPABILITIES claim exactly once, grouped into 15 cells (a multiple of the desktop column count, no ragged row)', () => {
+  it('renders every DELIVERED_CAPABILITIES claim exactly once, grouped into 18 cells (a multiple of the desktop column count, no ragged row)', () => {
     render(<FeatureGrid />);
-    expect(FEATURE_GRID_CELLS.length).toBe(15);
+    expect(FEATURE_GRID_CELLS.length).toBe(18);
     expect(FEATURE_GRID_CELLS.length % FEATURE_GRID_DESKTOP_COLUMNS).toBe(0);
     for (const capability of DELIVERED_CAPABILITIES) {
       expect(screen.getByText(capability.claim)).toBeInTheDocument();

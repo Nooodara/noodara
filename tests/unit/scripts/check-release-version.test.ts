@@ -54,7 +54,7 @@ describe('checkReleaseConsistency', () => {
 });
 
 describe('repository release state', () => {
-  it('every workspace package.json and the release notes match 0.4.0', () => {
+  it('every workspace package.json and the release notes match 0.5.0', () => {
     const files = ['package.json'];
     for (const dir of ['apps', 'packages']) {
       for (const entry of readdirSync(path.join(ROOT, dir))) files.push(`${dir}/${entry}/package.json`);
@@ -69,12 +69,12 @@ describe('repository release state', () => {
     }
     let notesExist = true;
     try {
-      readFileSync(path.join(ROOT, 'docs/releases/v0.4.0.md'), 'utf8');
+      readFileSync(path.join(ROOT, 'docs/releases/v0.5.0.md'), 'utf8');
     } catch {
       notesExist = false;
     }
-    expect(checkReleaseConsistency({ tag: 'v0.4.0-rc.1', packageVersions, notesExist })).toEqual([]);
-    expect(checkReleaseConsistency({ tag: 'v0.4.0', packageVersions, notesExist })).toEqual([]);
+    expect(checkReleaseConsistency({ tag: 'v0.5.0-rc.1', packageVersions, notesExist })).toEqual([]);
+    expect(checkReleaseConsistency({ tag: 'v0.5.0', packageVersions, notesExist })).toEqual([]);
   });
 });
 

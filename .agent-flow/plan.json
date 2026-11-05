@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-05T22:14:25.322Z",
+  "updatedAt": "2026-11-05T22:22:48.403Z",
   "cursor": {
     "phase": "31",
     "task": "31-03"
@@ -11474,7 +11474,7 @@
           ],
           "wave": 2,
           "dependsOn": [],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "test",
             "typecheck",
@@ -11518,11 +11518,17 @@
             "docs/releases/v0.5.0.md",
             "README.md",
             "apps/site/",
-            "install.sh"
+            "install.sh",
+            "packages/config/package.json",
+            "packages/docker/package.json",
+            "packages/git/package.json",
+            "packages/ssh/package.json",
+            "packages/ui/package.json",
+            "tests/unit/scripts/check-release-version.test.ts"
           ],
           "wave": 2,
           "dependsOn": [],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",

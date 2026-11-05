@@ -12,14 +12,16 @@ understanding applications and infrastructure on your own servers.
 
 ## Status
 
-This is **v0.4 Domains, Networking, Secrets**: connect a server over SSH, run discovery, organize
+This is **v0.5 Observability + AI Read-Only**: connect a server over SSH, run discovery, organize
 work as projects, environments and services, and deploy a service from a Git repository, a
-Dockerfile or an image, with build and runtime logs and the real container state. Deployments are
-checked with healthchecks, roll back automatically or on demand, and can be triggered by signed
-GitHub webhooks. Each server runs a Traefik proxy that routes your domains to services with
-automatic HTTPS, and services get variables (project, environment, service) and encrypted secrets.
+Dockerfile or an image. Deployments are checked with healthchecks, roll back automatically or on
+demand, and can be triggered by signed GitHub webhooks. Each server runs a Traefik proxy that
+routes your domains to services with automatic HTTPS, and services get variables and encrypted
+secrets. Noodara charts server and service metrics, searches and follows logs, draws an
+infrastructure graph, and answers questions about your infrastructure with your own Anthropic or
+OpenAI key. The assistant is read-only, enforced by the backend.
 
-Release notes: [`docs/releases/v0.4.0.md`](docs/releases/v0.4.0.md).
+Release notes: [`docs/releases/v0.5.0.md`](docs/releases/v0.5.0.md).
 
 ## Install
 
@@ -31,7 +33,7 @@ See [`docs/install.md`](docs/install.md) for requirements, the download-read-run
 supported variables, upgrade, rollback and troubleshooting.
 
 Release candidates (`vX.Y.Z-rc.N`) are published as GitHub prereleases and are never installed by
-default; pin one with `NOODARA_VERSION=0.4.0-rc.1`.
+default; pin one with `NOODARA_VERSION=0.5.0-rc.1`.
 
 ## Development
 

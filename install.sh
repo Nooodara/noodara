@@ -2350,7 +2350,7 @@ noodara_print_summary() {
   case "$_noodara_ps_url" in
     http://*)
       noodara_note ""
-      noodara_note "WARNING: the panel is served over plain HTTP -- traffic, including the session cookie, is unencrypted until v0.4's TLS proxy (or your own) is in front. See docs/install.md."
+      noodara_note "WARNING: the panel is served over plain HTTP -- traffic, including the session cookie, is unencrypted. Noodara's proxy serves your services, not the panel: put your own TLS proxy in front of it. See docs/install.md."
       ;;
   esac
 

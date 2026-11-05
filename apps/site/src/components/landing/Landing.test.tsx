@@ -71,10 +71,10 @@ describe('Landing', () => {
     expect(githubLink).toHaveAttribute('href', GITHUB_URL);
   });
 
-  it('renders a feature grid with every DELIVERED_CAPABILITIES claim, grouped into 15 cells (D-02a, Round 1 fix)', () => {
+  it('renders a feature grid with every DELIVERED_CAPABILITIES claim, grouped into 18 cells (D-02a, Round 1 fix)', () => {
     render(<Landing />);
     const grid = within(screen.getByTestId('feature-grid'));
-    expect(FEATURE_GRID_CELLS.length).toBe(15);
+    expect(FEATURE_GRID_CELLS.length).toBe(18);
     for (const capability of DELIVERED_CAPABILITIES) {
       expect(grid.getByText(claimFor(capability.id))).toBeInTheDocument();
     }
@@ -91,6 +91,16 @@ describe('Landing', () => {
     }
     const scopeBlock = screen.getByTestId('scope-block');
     expect(scopeBlock.textContent).not.toMatch(/domains|environment variables|secrets/i);
+  });
+
+  it('shows the v0.5 metrics, logs, graph and AI capabilities in the feature grid, not in the scope block', () => {
+    render(<Landing />);
+    const grid = within(screen.getByTestId('feature-grid'));
+    for (const id of ['metrics', 'logs', 'infrastructure-graph', 'ai-assistant'] as const) {
+      expect(grid.getByText(claimFor(id))).toBeInTheDocument();
+    }
+    const scopeBlock = screen.getByTestId('scope-block');
+    expect(scopeBlock.textContent).not.toMatch(/metrics|\bAI\b|infrastructure graph/i);
   });
 
   it('renders a tabbed product tour over the 6 APPROVED_SCREENS (D-02a)', () => {

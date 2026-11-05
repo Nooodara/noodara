@@ -54,6 +54,19 @@ describe('ScopeTable v0.4 scope', () => {
   });
 });
 
+describe('ScopeTable v0.5 scope', () => {
+  it('lists metrics, logs, the graph and the AI assistant as included, and AI writes as excluded', () => {
+    render(<ScopeTable />);
+    const ids = DELIVERED_CAPABILITIES.map((c) => c.id);
+    expect(ids).toEqual(expect.arrayContaining(['metrics', 'logs', 'infrastructure-graph', 'ai-assistant']));
+    const exclusionIds: readonly string[] = SCOPE_EXCLUSIONS.map((e) => e.id);
+    expect(exclusionIds).not.toContain('observability-ai');
+    expect(exclusionIds).toContain('ai-write');
+    const table = screen.getByRole('table');
+    expect(table.textContent).not.toMatch(/does not collect metrics/);
+  });
+});
+
 describe('ScopeNote', () => {
   it('renders the statement of the given exclusion id verbatim, and a link to the full scope page', () => {
     render(<ScopeNote id="advanced-deploy" />);

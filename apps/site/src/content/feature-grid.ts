@@ -8,7 +8,8 @@
 // two separate cells. 12 cells is an exact multiple of the one column count FeatureGrid ever uses
 // (3, at >=900px) and of 1 (mobile) -- no ragged row at any breakpoint (FeatureGrid.tsx
 // deliberately has no 2-column tablet tier for this reason). v0.4 adds three cells (domains/HTTPS,
-// variables, secrets): 15 cells, still a multiple of 3.
+// variables, secrets): 15 cells, still a multiple of 3. v0.5 adds three more (metrics and logs in
+// one cell, the infrastructure graph, the AI assistant): 18 cells.
 import { CAPABILITY_TITLES, DELIVERED_CAPABILITIES, type CapabilityId } from './scope';
 
 export interface FeatureCell {
@@ -32,6 +33,9 @@ export const FEATURE_GRID_CELLS: readonly FeatureCell[] = [
   { title: CAPABILITY_TITLES['domains-https'], capabilityIds: ['domains-https'] },
   { title: CAPABILITY_TITLES.variables, capabilityIds: ['variables'] },
   { title: CAPABILITY_TITLES.secrets, capabilityIds: ['secrets'] },
+  { title: 'Metrics and logs', capabilityIds: ['metrics', 'logs'] },
+  { title: CAPABILITY_TITLES['infrastructure-graph'], capabilityIds: ['infrastructure-graph'] },
+  { title: CAPABILITY_TITLES['ai-assistant'], capabilityIds: ['ai-assistant'] },
   { title: CAPABILITY_TITLES['upgrade-rollback'], capabilityIds: ['upgrade-rollback'] },
   { title: 'Secure by default', capabilityIds: ['encrypted-credentials', 'explicit-timeouts'] },
 ];

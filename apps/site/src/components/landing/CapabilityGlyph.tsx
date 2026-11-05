@@ -153,6 +153,42 @@ const GLYPHS: Record<CapabilityId, ReactNode> = {
       <path d="M17 5 H20 V19 H17" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" strokeLinejoin="round" />
     </>
   ),
+  // Bar chart on a baseline: server and container metrics.
+  metrics: (
+    <>
+      <line x1="4" y1="20" x2="20" y2="20" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+      <line x1="7.5" y1="17" x2="7.5" y2="12" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+      <line x1="12" y1="17" x2="12" y2="6" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+      <line x1="16.5" y1="17" x2="16.5" y2="9.5" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+    </>
+  ),
+  // Lines with a search lens: service logs.
+  logs: (
+    <>
+      <line x1="4" y1="6" x2="16" y2="6" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+      <line x1="4" y1="10" x2="12" y2="10" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+      <line x1="4" y1="14" x2="9" y2="14" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+      <circle cx="15.5" cy="15.5" r="3" fill="none" stroke="currentColor" strokeWidth={STROKE} />
+      <line x1="17.7" y1="17.7" x2="20" y2="20" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+    </>
+  ),
+  // Three nodes joined by edges: the infrastructure graph.
+  'infrastructure-graph': (
+    <>
+      <circle cx="12" cy="5.5" r="2.5" fill="none" stroke="currentColor" strokeWidth={STROKE} />
+      <circle cx="6" cy="18" r="2.5" fill="none" stroke="currentColor" strokeWidth={STROKE} />
+      <circle cx="18" cy="18" r="2.5" fill="none" stroke="currentColor" strokeWidth={STROKE} />
+      <path d="M10.9 7.7 L7.1 15.8 M13.1 7.7 L16.9 15.8 M8.5 18 H15.5" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+    </>
+  ),
+  // Speech bubble with a question mark: ask the assistant.
+  'ai-assistant': (
+    <>
+      <path d="M5 5 H19 A1.5 1.5 0 0 1 20.5 6.5 V15 A1.5 1.5 0 0 1 19 16.5 H10 L6 19.5 V16.5 H5 A1.5 1.5 0 0 1 3.5 15 V6.5 A1.5 1.5 0 0 1 5 5 Z" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinejoin="round" />
+      <path d="M10 9 A2 2 0 1 1 12.8 10.8 C12.2 11.1 12 11.5 12 12" fill="none" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" />
+      <circle cx="12" cy="14" r="0.4" fill="none" stroke="currentColor" strokeWidth={STROKE} />
+    </>
+  ),
   // Padlock: credentials encrypted at rest.
   'encrypted-credentials': (
     <>
