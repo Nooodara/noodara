@@ -107,8 +107,8 @@ export function readCassette(file: string): CassetteFile | null {
   return CassetteFileSchema.parse(JSON.parse(readFileSync(file, 'utf8')));
 }
 
-/** A JSON member named like an auth header, or a bearer token. */
-const AUTH_HEADER_PATTERN = /"(?:authorization|proxy-authorization|x-api-key|api-key)"\s*:|\bBearer\s+[A-Za-z0-9._~+/-]{8,}/i;
+/** A JSON member named like an auth header (also inside an escaped JSON string), or a bearer token. */
+const AUTH_HEADER_PATTERN = /\\?"(?:authorization|proxy-authorization|x-api-key|api-key)\\?"\s*:|\bBearer\s+[A-Za-z0-9._~+/-]{8,}/i;
 
 /** Why `text` must not be written: a forbidden value, a real credential shape, or an auth header. */
 export function cassetteProblems(text: string, forbidden: readonly string[]): string[] {

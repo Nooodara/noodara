@@ -3,7 +3,7 @@
 // a miss as a failure. Live re-records the cassettes from the pinned model, writes a report and
 // refreshes baseline.json; nothing else ever writes either file.
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
   runAgent,
@@ -226,7 +226,10 @@ export async function runEvalSuite(options: SuiteOptions): Promise<EvalReport> {
     thresholdFailures: thresholdFailures(metrics),
     scenarios: runs,
   };
-  if (config.mode === 'live') persistLiveRun(report, run.cassettesDir, options.baselineFile ?? BASELINE_FILE, scenarios.map((s) => s.id));
+  if (config.mode === 'live') {
+    const forbidden = config.apiKey === null ? [] : [revealSecret(config.apiKey)];
+    persistLiveRun(report, run.cassettesDir, options.baselineFile ?? BASELINE_FILE, scenarios.map((s) => s.id), forbidden);
+  }
   return report;
 }
 
@@ -292,8 +295,14 @@ export function reportPath(dir: string, provider: EvalConfig['provider']): strin
   return join(dir, provider, 'report.json');
 }
 
-function persistLiveRun(report: EvalReport, cassettesDir: string, baselineFile: string, scenarioIds: readonly string[]): void {
-  writeJson(reportPath(cassettesDir, report.provider), report, []);
+function persistLiveRun(
+  report: EvalReport,
+  cassettesDir: string,
+  baselineFile: string,
+  scenarioIds: readonly string[],
+  forbidden: readonly string[],
+): void {
+  writeJson(reportPath(cassettesDir, report.provider), report, forbidden);
   const baseline: Baseline = {
     schemaVersion: 1,
     source: 'live',
@@ -306,7 +315,7 @@ function persistLiveRun(report: EvalReport, cassettesDir: string, baselineFile: 
     thresholdFailures: [...report.thresholdFailures],
     cassetteDigest: cassetteDigest(cassettesDir, report.provider, scenarioIds),
   };
-  writeJson(baselineFile, BaselineSchema.parse(baseline), []);
+  writeJson(baselineFile, BaselineSchema.parse(baseline), forbidden);
 }
 
 /** Replay: the baseline must come from a live run of this model and dataset over these cassettes. */
@@ -319,8 +328,4 @@ export function baselineProblems(baseline: Baseline, report: EvalReport, digest:
     problems.push(`baseline dataset ${baseline.datasetVersion} is not the current ${report.datasetVersion}`);
   if (baseline.cassetteDigest !== digest) problems.push('the cassettes differ from the live run that produced baseline.json');
   return problems;
-}
-
-export function hasBaseline(file: string = BASELINE_FILE): boolean {
-  return existsSync(file);
 }
