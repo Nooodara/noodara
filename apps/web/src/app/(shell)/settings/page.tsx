@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Banner, SkeletonRow } from '@noodara/ui';
 import { Toolbar } from '../../../components/Toolbar';
 import { SettingsGroups } from '../../../components/SettingsGroups';
+import { AiSettingsGroup } from '../../../components/ai/AiSettingsGroup';
 import { apiGet, type ApiErrorCode } from '../../../lib/api-client';
 import { copyForErrorCode } from '../../../lib/error-copy';
 import type { ConfigResponse } from '../../../lib/settings-rows';
@@ -83,7 +84,13 @@ export default function SettingsPage() {
           />
         ) : null}
 
-        {state.kind === 'ready' ? <SettingsGroups config={state.config} /> : null}
+        {state.kind === 'ready' ? (
+          <div className="flex flex-col gap-8">
+            <SettingsGroups config={state.config} />
+            {/* 30-04: BYOK provider, model and key for the read-only assistant. */}
+            <AiSettingsGroup />
+          </div>
+        ) : null}
       </div>
     </>
   );

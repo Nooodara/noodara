@@ -14,6 +14,8 @@ import { WebhookPanel } from '../../../../../../../components/WebhookPanel';
 import { RuntimeLogPanel } from '../../../../../../../components/RuntimeLogPanel';
 import { getService } from '../../../../../../../lib/deploy-api';
 import { useDeployStream } from '../../../../../../../lib/shell-context';
+import { AiChat } from '../../../../../../../components/ai/AiChat';
+import { isAskOpen } from '../../../../ask-inspector';
 import { InspectorFrame } from '../../../../inspector-frame';
 import { inspectorSelection } from '../../../../inspector-route';
 
@@ -50,6 +52,18 @@ function ServiceInspector() {
   const { projectId, serviceId } = params;
   const routable = isRoutableId(projectId) && isRoutableId(serviceId);
   if (selection === null) {
+    if (isAskOpen(search)) {
+      return (
+        <InspectorFrame
+          title="Ask Noodara"
+          onClose={() => {
+            router.replace(pathname, { scroll: false });
+          }}
+        >
+          <AiChat />
+        </InspectorFrame>
+      );
+    }
     if (search.get(WEBHOOK_PARAM) !== '1' || !routable) return null;
     return (
       <WebhookInspector

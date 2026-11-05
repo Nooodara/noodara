@@ -5,7 +5,7 @@
 // then the structured answer replaces the streamed text. Closing the panel aborts the running ask.
 // Questions and answers live only in component state: nothing is written to browser storage.
 import Link from 'next/link';
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type SyntheticEvent, type ReactNode } from 'react';
 import { Button, Textarea } from '@noodara/ui';
 import {
   AI_QUESTION_MAX_LENGTH,
@@ -108,7 +108,7 @@ export function AiChat(): ReactNode {
   const conversationRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const nextIdRef = useRef(1);
-  const endRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(
     () => () => {
@@ -118,7 +118,9 @@ export function AiChat(): ReactNode {
   );
 
   useEffect(() => {
-    endRef.current?.scrollIntoView?.({ block: 'end' });
+    // Scroll only the chat's own list, never the page behind the inspector.
+    const scroller = scrollerRef.current;
+    if (scroller !== null) scroller.scrollTop = scroller.scrollHeight;
   }, [turns]);
 
   function update(id: number, change: (turn: Turn) => Turn): void {
@@ -169,7 +171,7 @@ export function AiChat(): ReactNode {
     }
   }
 
-  function submit(event: FormEvent<HTMLFormElement>): void {
+  function submit(event: SyntheticEvent): void {
     event.preventDefault();
     void ask(draft);
   }
@@ -183,7 +185,7 @@ export function AiChat(): ReactNode {
 
   return (
     <div data-testid="ai-chat" className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+      <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         {turns.length === 0 ? (
           <div data-testid="ai-chat-empty" className="flex flex-col gap-1 py-6">
             <p className="text-headline font-semibold text-ink">Ask about your infrastructure</p>
@@ -199,7 +201,6 @@ export function AiChat(): ReactNode {
             ))}
           </ol>
         )}
-        <div ref={endRef} />
       </div>
       <form onSubmit={submit} method="post" className="flex flex-col gap-2 border-t border-hairline px-4 py-3">
         <label htmlFor="ai-question-input" className="sr-only">
