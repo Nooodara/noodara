@@ -110,3 +110,83 @@ describe('createTemperatureFetch', () => {
     expect(calls[0]?.body).toBe(body);
   });
 });
+
+describe('createLiveProvider temperature fallback through the real Anthropic provider', () => {
+  // The exact 400 the pinned Anthropic model answers when a request carries `temperature`.
+  const DEPRECATED =
+    '{"type":"error","error":{"type":"invalid_request_error","message":"`temperature` is deprecated for this model."}}';
+
+  function message(text: string): Record<string, unknown> {
+    return {
+      id: 'msg_1',
+      type: 'message',
+      role: 'assistant',
+      model: pinnedModel('anthropic'),
+      content: [{ type: 'text', text }],
+      stop_reason: 'end_turn',
+      stop_sequence: null,
+      usage: { input_tokens: 3, output_tokens: 2 },
+    };
+  }
+
+  function sse(text: string): string {
+    const events: [string, Record<string, unknown>][] = [
+      ['message_start', { type: 'message_start', message: { ...message(''), content: [], stop_reason: null, usage: { input_tokens: 3, output_tokens: 0 } } }],
+      ['content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }],
+      ['content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text } }],
+      ['content_block_stop', { type: 'content_block_stop', index: 0 }],
+      ['message_delta', { type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: 2 } }],
+      ['message_stop', { type: 'message_stop' }],
+    ];
+    return events.map(([event, data]) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`).join('');
+  }
+
+  /** Anthropic as observed live: any body with `temperature` gets the deprecation 400. */
+  function anthropic(bodies: Record<string, unknown>[]): typeof fetch {
+    return async (input, init) => {
+      const raw = init?.body ?? (input instanceof Request ? await input.clone().text() : undefined);
+      const text = typeof raw === 'string' ? raw : raw instanceof Uint8Array ? new TextDecoder().decode(raw) : String(raw);
+      const body = JSON.parse(text) as Record<string, unknown>;
+      bodies.push(body);
+      if ('temperature' in body)
+        return new Response(DEPRECATED, { status: 400, headers: { 'content-type': 'application/json', 'request-id': 'req_1' } });
+      if (body.stream === true) return new Response(sse('ok'), { headers: { 'content-type': 'text/event-stream' } });
+      return new Response(JSON.stringify(message('ok')), { headers: { 'content-type': 'application/json' } });
+    };
+  }
+
+  const request = { system: 'You are Noodara.', maxTokens: 64, messages: [{ role: 'user' as const, content: 'hi' }] };
+  const tools = [{ name: 'list_servers', description: 'List servers', inputSchema: { type: 'object', properties: {} } }];
+
+  function live(bodies: Record<string, unknown>[], state: TemperatureState) {
+    return createLiveProvider(resolveEvalConfig({ NOODARA_AI_EVAL_LIVE: '1', ANTHROPIC_API_KEY: KEY }), state, anthropic(bodies));
+  }
+
+  it('chat: retries without temperature after the deprecation 400 and records null', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const state: TemperatureState = { temperature: 0 };
+    expect((await live(bodies, state).chat(request)).text).toBe('ok');
+    expect(state.temperature).toBeNull();
+    expect(bodies.map((body) => 'temperature' in body)).toEqual([true, false]);
+  });
+
+  it('toolCall: retries without temperature and later calls skip it', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const state: TemperatureState = { temperature: 0 };
+    const provider = live(bodies, state);
+    expect((await provider.toolCall({ ...request, tools })).text).toBe('ok');
+    expect((await provider.toolCall({ ...request, tools })).text).toBe('ok');
+    expect(state.temperature).toBeNull();
+    expect(bodies.map((body) => 'temperature' in body)).toEqual([true, false, false]);
+  });
+
+  it('stream: retries without temperature after the deprecation 400', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const state: TemperatureState = { temperature: 0 };
+    const chunks: unknown[] = [];
+    for await (const chunk of live(bodies, state).stream({ ...request, tools })) chunks.push(chunk);
+    expect(chunks.at(-1)).toMatchObject({ type: 'done' });
+    expect(state.temperature).toBeNull();
+    expect(bodies.map((body) => 'temperature' in body)).toEqual([true, false]);
+  });
+});
