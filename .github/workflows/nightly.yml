@@ -451,6 +451,67 @@ jobs:
           [ "$failed" -eq 0 ] || exit 1
           echo "no stray noodara.test=true containers, networks or volumes"
 
+  # 31-02 (A1, A2, H1): metrics collector soak (several servers, thousands of ticks, bounded sample
+  # tables, no SSH session or process leak) and the concurrent AI ask storm (rate and budget limits,
+  # mid-stream disconnects, follows, no starvation), both in one run per Ubuntu version.
+  metrics-soak:
+    name: metrics-soak (${{ matrix.ubuntu }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ['22.04', '24.04']
+    # Healthy: ~10 min per version (60 real ticks ~3 s each, 3000 replayed ticks ~30 ms each,
+    # AI storm < 1 min) plus the stack start.
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Metrics soak and AI concurrency on Ubuntu ${{ matrix.ubuntu }} (31-02)
+        env:
+          NOODARA_SOAK_TICKS: '3000'
+          NOODARA_SOAK_REAL_TICKS: '60'
+          NOODARA_METRICS_SOAK_ARTIFACT_DIR: ${{ runner.temp }}/metrics-soak-artifacts
+        run: >-
+          NOODARA_STRESS=1 NOODARA_TEST_UBUNTU=${{ matrix.ubuntu }} pnpm exec vitest run
+          --config vitest.integration.config.ts
+          tests/integration/observability/collector-soak.test.ts
+          tests/integration/ai/ai-concurrency.test.ts
+      - name: Upload metrics soak artifact
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: metrics-soak-report-${{ matrix.ubuntu }}
+          path: ${{ runner.temp }}/metrics-soak-artifacts/
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Fail if any noodara.test resource survived
+        if: always()
+        run: |
+          failed=0
+          for kind in container network volume; do
+            case "$kind" in
+              container) stray=$(docker ps -aq --filter "label=noodara.test=true") ;;
+              network) stray=$(docker network ls -q --filter "label=noodara.test=true") ;;
+              volume) stray=$(docker volume ls -q --filter "label=noodara.test=true") ;;
+            esac
+            if [ -n "$stray" ]; then
+              echo "::error::stray ${kind}s labelled noodara.test=true survived the metrics soak run"
+              echo "$stray"
+              failed=1
+            fi
+          done
+          [ "$failed" -eq 0 ] || exit 1
+          echo "no stray noodara.test=true containers, networks or volumes"
+
   # 29-04 (A2, H1): the live AI eval run against the pinned model (docs/ai/evals.md). The only job
   # in any workflow that receives the provider key, and only in the live step's env. Without the
   # ANTHROPIC_API_KEY secret it records an explicit skip with the reason and stays green; ci.yml's
