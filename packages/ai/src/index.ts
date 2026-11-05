@@ -40,3 +40,7 @@ export function createAIProvider(options: CreateAIProviderOptions): AIProvider {
   };
   return id === 'anthropic' ? createAnthropicProvider(config) : createOpenAIProvider(config);
 }
+
+// 28-05: the agent loop and the read-only tool registry, for the control plane's ask route.
+export * from './agent/index.js';
+export * from './tools/index.js';
