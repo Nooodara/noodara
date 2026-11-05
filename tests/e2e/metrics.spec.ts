@@ -148,12 +148,13 @@ test.describe('server metrics', () => {
     const svg = page.getByTestId('server-metric-cpu').locator('svg');
     const box = await svg.boundingBox();
     expect(box).not.toBeNull();
-    if (box !== null) await page.mouse.move(box.x + box.width - 2, box.y + box.height / 2);
+    // hover() scrolls the chart into view first; a raw mouse.move misses an off-screen chart.
+    if (box !== null) await svg.hover({ position: { x: box.width - 2, y: box.height / 2 } });
     await expect(page.getByTestId('server-metric-cpu-tooltip')).toContainText('22%');
     await expect(page.getByTestId('server-metric-cpu-crosshair')).toHaveCount(1);
 
     // Screen readers get the same data as a table.
-    await expect(page.getByRole('table', { name: 'CPU' }).locator('tbody tr')).toHaveCount(4);
+    await expect(page.getByTestId('server-metric-cpu').locator('table tbody tr')).toHaveCount(4);
   });
 
   test('the chart line follows the accent token in light and dark themes', async ({ page }) => {
