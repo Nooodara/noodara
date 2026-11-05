@@ -3,6 +3,7 @@
 // API with page.route, once per theme at 375 and 1280 px, with a full-page screenshot at the end
 // of every test. Run with
 //   caffeinate -is pnpm exec playwright test -c docs/ui-review/phase-30/playwright.capture.config.ts
+// (add `capture.spec.ts` as a filter to rerun only the graph capture),
 // then pick the end-of-test captures from test-results/phase-30-capture into this directory.
 import { defineConfig, devices } from '@playwright/test';
 
@@ -14,8 +15,12 @@ const variants = [
 ] as const;
 
 export default defineConfig({
-  testDir: '../../../tests/e2e',
-  testMatch: ['metrics.spec.ts', 'logs.spec.ts', 'graph.spec.ts', 'ai-settings.spec.ts', 'ai-chat.spec.ts'],
+  testDir: '../../..',
+  testMatch: [
+    ...['metrics', 'logs', 'graph', 'ai-settings', 'ai-chat'].map((name) => `**/tests/e2e/${name}.spec.ts`),
+    // The graph specs end on a detail page or force 375 px; this one captures the graph at each width.
+    '**/docs/ui-review/phase-30/capture.spec.ts',
+  ],
   globalSetup: '../../../tests/e2e/global-setup.ts',
   globalTeardown: '../../../tests/e2e/global-teardown.ts',
   outputDir: '../../../test-results/phase-30-capture',

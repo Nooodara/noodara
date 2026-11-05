@@ -240,10 +240,17 @@ describe('reference pages', () => {
 
   it('error-codes.mdx carries the AI conversation and settings codes with their real status', () => {
     expect(AI_CONVERSATION_ERRORS.length).toBe(5);
+    // The table under "HTTP API errors" mirrors SERVICE_ERROR_STATUS exactly; the AI route codes are
+    // listed in prose below it as `CODE` (status...).
+    const prose = errorCodes.replace(/\s+/g, ' ');
     for (const { code, status } of AI_CONVERSATION_ERRORS) {
-      expect(errorCodes).toMatch(new RegExp(`^\\| \`${code}\` \\| ${String(status)} \\|`, 'm'));
+      if (code === 'RATE_LIMITED') {
+        expect(errorCodes).toMatch(new RegExp(`^\\| \`${code}\` \\| ${String(status)} \\|`, 'm'));
+      } else {
+        expect(prose).toContain(`\`${code}\` (${String(status)}`);
+      }
     }
-    expect(errorCodes).toContain(`| \`AI_PROVIDER_INPUT_INVALID\` | ${String(AI_PROVIDER_INPUT_INVALID_STATUS)} |`);
-    expect(errorCodes).toContain(`limited to ${String(AI_QUESTION_MAX_LENGTH)} characters`);
+    expect(prose).toContain(`\`AI_PROVIDER_INPUT_INVALID\` (${String(AI_PROVIDER_INPUT_INVALID_STATUS)},`);
+    expect(prose).toContain(`limited to ${String(AI_QUESTION_MAX_LENGTH)} characters`);
   });
 });

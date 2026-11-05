@@ -65,13 +65,13 @@ describe('content/docs meta.json tree (D-08 four-group sidebar order)', () => {
   it('concepts/meta.json has the D-08 title and page order', () => {
     const meta = readMetaJson('concepts', 'meta.json');
     expect(meta.title).toBe('Concepts');
-    expect(meta.pages).toEqual(['server', 'project', 'environment', 'service', 'deployment']);
+    expect(meta.pages).toEqual(['server', 'project', 'environment', 'service', 'deployment', 'infrastructure-graph']);
   });
 
   it('operate/meta.json has the D-08 title and page order', () => {
     const meta = readMetaJson('operate', 'meta.json');
     expect(meta.title).toBe('Operate');
-    expect(meta.pages).toEqual(['upgrade', 'healthchecks', 'webhooks', 'domains', 'variables-and-secrets', 'service-rollback', 'rollback', 'backups', 'troubleshooting']);
+    expect(meta.pages).toEqual(['upgrade', 'healthchecks', 'webhooks', 'domains', 'variables-and-secrets', 'metrics', 'logs', 'ai-assistant', 'service-rollback', 'rollback', 'backups', 'troubleshooting']);
   });
 
   it('reference/meta.json has the D-08 title and page order', () => {

@@ -78,11 +78,6 @@ nothing else — no internal detail is ever attached to it.
 | `AI_PROVIDER_RATE_LIMITED` | 429 | The AI provider is rate limiting requests. Wait a moment and try again. |
 | `AI_BUDGET_EXCEEDED` | 422 | This question needed more steps than allowed. Ask a narrower question. |
 | `AI_TOOL_NOT_ALLOWED` | 403 | The assistant tried a tool it is not allowed to use. Nothing was changed. |
-| `AI_PROVIDER_INPUT_INVALID` | 422 | The API key or model was refused before contacting the provider; `reason` is `too_short`, `too_long`, `invalid_characters` or `model_not_allowed`. The key is never echoed back. |
-| `AI_QUESTION_EMPTY` | 422 | Ask a question. |
-| `AI_QUESTION_TOO_LONG` | 422 | Questions are limited to 4000 characters. |
-| `AI_CONVERSATION_BUSY` | 409 | This conversation is already answering a question. Wait for it to finish. |
-| `AI_CONVERSATION_NOT_FOUND` | 404 | Conversation not found. |
 | `ENV_KEY_DUPLICATE` | 409 | A variable with this key already exists in the scope. |
 | `ENV_VALUE_MULTILINE` | 422 | The value has a line break or NUL byte; encode multi-line values as base64. |
 | `ENV_LIMIT_REACHED` | 422 | The scope already has the maximum number of variables. |
@@ -108,6 +103,13 @@ nothing else — no internal detail is ever attached to it.
 A request the server cannot read at all gets one of three fixed codes with the same body shape:
 `MALFORMED_REQUEST` (400, the body is not valid JSON), `PAYLOAD_TOO_LARGE` (413) or
 `UNSUPPORTED_MEDIA_TYPE` (415, send `application/json`).
+
+The [AI assistant](/docs/operate/ai-assistant) endpoints add their own codes, with the same body shape:
+`AI_PROVIDER_INPUT_INVALID` (422, the API key or model was refused before contacting the provider;
+`reason` is `too_short`, `too_long`, `invalid_characters` or `model_not_allowed`, and the key is never
+echoed back), `AI_QUESTION_EMPTY` (422, ask a question), `AI_QUESTION_TOO_LONG` (422, questions are
+limited to 4000 characters), `AI_CONVERSATION_BUSY` (409, the conversation is already answering a
+question) and `AI_CONVERSATION_NOT_FOUND` (404).
 
 A stop, restart or remove runs in the background after its `202`, so its failures never come back as
 an HTTP error. They appear only in the service's activity: `SERVER_UNREACHABLE`,
