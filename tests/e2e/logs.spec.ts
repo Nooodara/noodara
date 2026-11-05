@@ -262,7 +262,8 @@ test.describe('service logs', () => {
       entry('click javascript:alert(2) now', 'runtime'),
     ];
     const requests = await stubService(page, { entries: hostile });
-    const many = Array.from({ length: 10_000 }, (_, i) => entry(`bulk line ${String(i)}`, 'runtime'));
+    // 3 hostile + 9,997 streamed = exactly the 10k buffer cap, so nothing is dropped.
+    const many = Array.from({ length: 9_997 }, (_, i) => entry(`bulk line ${String(i)}`, 'runtime'));
     await page.route(isFollow, (route) =>
       route.fulfill({ status: 200, contentType: 'application/x-ndjson', body: followBody(many, 'idle') }),
     );
@@ -277,8 +278,8 @@ test.describe('service logs', () => {
     expect(dialogs).toEqual([]);
 
     await page.getByRole('switch', { name: 'Follow' }).click();
-    await expect(page.getByTestId('log-list')).toHaveAttribute('data-count', '10003');
-    await expect(page.getByText('bulk line 9999')).toBeVisible();
+    await expect(page.getByTestId('log-list')).toHaveAttribute('data-count', '10000');
+    await expect(page.getByText('bulk line 9996')).toBeVisible();
     expect(await page.getByTestId('log-line').count()).toBeLessThan(100);
 
     // Responsive: jumping to the top renders the first lines within a frame budget.
