@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.4
-milestone_name: Domains, Networking, Secrets
-status: v0_4_complete
-stopped_at: 25-07 v0.4.0 published (tag v0.4.0 = v0.4.0-rc.1 = public d1d956bc; Release 41535064354, Latest, multi-arch); UAT A1/H1/H2 OK on Lima, LE production UNVERIFIED (#20); gate READY
-last_updated: 2026-11-02T22:20:00.000Z
-last_activity: 2026-11-02 -- 25-07: CI 41500911568 10/10 + nightly 41500993949 13/13 on d1d956bc, tag v0.4.0, Release 41535064354, Lima VM upgraded rc.1 -> 0.4.0 with identical data
+milestone: v0.5
+milestone_name: Observability + AI Read-Only
+status: v0_5_in_progress
+stopped_at: phase 30 closed (review pass, ab63cd68); flaky ssh logsWindow fixed (bd828b0a); next 31-01
+last_updated: 2026-11-05T15:00:00.000Z
+last_activity: 2026-11-05 -- phase 30 (30-01..30-06) done, review pass; fix(ssh) awk fflush in logsWindow; pnpm test 10173/10173, typecheck/lint/boundaries green
 progress:
   total_phases: 9
   completed_phases: 8
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** v0.5 — Observability + AI Read-Only, planificado 2026-11-03 como fases 26–31 (33 tareas, 24 requisitos). Siguiente: `/flow-harden` y `/flow-orchestrate` desde 26-01. Bloqueo conocido: OPEN_QUESTIONS #21 (key de proveedor para el baseline en vivo, owner usuario)
+**Current focus:** v0.5 — Observability + AI Read-Only (fases 26–31). Fases 26–30 cerradas; siguiente fase 31 (hardening, seguridad AI, gate y release v0.5) desde 31-01 con `/flow-orchestrate`.
 
 ## Current Position
 
-Phase: 25 cerrada (v0.4 completo: fases 21-25 hechas, review Fable pass 2026-11-02; 15/OPS-05 abierta, owner usuario)
-Plan: 25-07 hecho: rc.1 y v0.4.0 publicados desde `d1d956bc`, UAT Lima (`docs/releases/v0.4-HUMAN-UAT.md`), gate READY (`docs/releases/v0.4-gate.md` § Publicación); Let's Encrypt producción UNVERIFIED (OPEN_QUESTIONS #20). Siguiente: `/flow-plan` para v0.5; follow-up install.sh copy proxy TLS (OPEN_QUESTIONS F3)
-Status: v0.4.0 publicado (público d1d956bc, Latest); v0.3.0 en a0b45618
-Last activity: 2026-11-02
+Phase: 30 cerrada 2026-11-05 (UI de observabilidad, graph y AI, E2E y docs; review tier-1 pass, findings no bloqueantes: columna de mensaje de logs a 375 px, sin guard in-flight en refresh de métricas, timestamps ISO crudos en charts — backlog UI; ver docs/ui-review/phase-30/REPORT.md)
+Plan: siguiente 31-01 (matriz de integración de observabilidad 22.04/24.04). 30-05 A4 (run con proveedor vivo) diferido a 31-06.
+Status: v0.5 en curso; v0.4.0 publicado (d1d956bc)
+Last activity: 2026-11-05 — fix flaky `packages/ssh` logsWindow: BSD `sed -u` partía línea y newline en el pipe compartido O/E; ahora awk+fflush (bd828b0a), verificado en mawk Ubuntu 22.04/24.04 e integración metrics-templates 14/14. Verificación: pnpm test 450 archivos/10173 tests, typecheck, lint, boundaries verdes.
 
 Publicación v0.3.0 (20-05 A2): intento 1 (92a7fbfa, CI 40996535993) rojo por `pnpm audit` (advisories nuevos, 20-10) y un flake de `migration-0011-0012.test.ts` (puerto de seed `20000 + 3 hex`, colisión en `servers_host_port_unique_idx`; seguimiento pendiente). Intento 2: 78dea21 y 770b961 reproducidos → a0b45618; checkout limpio con audit/test/typecheck/lint verdes; CI 41012499661 10/10, Publish site 41012499667, Release 41016597518 verdes; imágenes 0.3.0 amd64+arm64 (control-plane `sha256:a0b37458…`, web `sha256:a1c23cbe…`); release v0.3.0 Latest, no prerelease.
 

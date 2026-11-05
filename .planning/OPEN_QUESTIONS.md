@@ -33,3 +33,4 @@
 - "Deploy tiene la conexión" es check-then-act, no mutex; jobs stop/restart no cuentan como ocupado.
 - Cobertura: salvage H2 y prune de `container_metric_samples` sin prueba de integración real.
 - 2026-11-05 — ~~Flaky conocido: `apps/control-plane/src/secrets/secret-store.test.ts:323` (decryptForDeploy) genera un token aleatorio que a veces contiene `sk-…`, y el redactor por patrón lo enmascara aunque el lease ya se liberó.~~ Resuelto: `canary()` usa hex minúsculo, que no puede formar `sk-`/`ghp_`/`AKIA`.
+- 2026-11-05 — Backlog UI (review fase 30, no bloqueante): logs a 375 px colapsa la columna de mensaje (`ServiceLogsPanel` LogRow); `Server/ServiceMetricsPanel` sin guard de request en vuelo; ejes/tooltip de `MetricChart` con ISO crudo. Decidir si entran en 31 o post-v0.5.
