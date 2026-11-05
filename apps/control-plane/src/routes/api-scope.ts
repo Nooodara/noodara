@@ -23,6 +23,7 @@ import { env } from '../env.js';
 import type { SseBroadcaster } from '../events/sse-broadcaster.js';
 import accountRoutes from './account.js';
 import activityRoutes from './activity.js';
+import aiRoutes, { type AiRoutesOptions } from './ai.js';
 import aiSettingsRoutes from './ai-settings.js';
 import configRoutes from './config.js';
 import deploymentsRoutes from './deployments.js';
@@ -44,6 +45,8 @@ export interface ApiScopeOptions {
   /** 09-06: injected into `accountRoutes` for `PATCH /api/account/profile`'s email-domain check
    *  (D-03) — never a route-owned singleton, so a test app can substitute a fake resolver. */
   readonly dnsChecker: DnsChecker;
+  /** 28-05: the AI conversation routes' runtime and test seams; app.ts owns the runtime. */
+  readonly ai?: AiRoutesOptions;
 }
 
 const apiScope: FastifyPluginCallback<ApiScopeOptions> = (fastify, opts, done) => {
@@ -81,6 +84,7 @@ const apiScope: FastifyPluginCallback<ApiScopeOptions> = (fastify, opts, done) =
     fastify.register(logsRoutes);
     fastify.register(graphRoutes);
     fastify.register(aiSettingsRoutes);
+    fastify.register(aiRoutes, opts.ai ?? {});
     fastify.register(
       createEventsRoutes({
         broadcaster: opts.broadcaster,

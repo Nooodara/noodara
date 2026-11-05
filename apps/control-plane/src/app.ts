@@ -45,6 +45,8 @@ import {
   createQueueRedisConnection,
   createSubscriberRedisConnection,
 } from './redis/connections.js';
+import { createAiAskRuntime } from './ai/conversations/ask-runtime.js';
+import type { AiRoutesOptions } from './routes/ai.js';
 import apiScope from './routes/api-scope.js';
 import authRoutes from './routes/auth.js';
 import healthRoutes from './routes/health.js';
@@ -114,6 +116,8 @@ export interface BuildAppDeps {
   domainApply?: DomainApplier;
   /** 22-03: the domains' DNS check resolver; defaults to `node:dns/promises`. */
   domainDnsResolver?: DnsResolverLike;
+  /** 28-05: AI ask seams (provider factory, tool backend, limits, heartbeat, runtime). */
+  ai?: AiRoutesOptions;
 }
 
 function sshTimeoutsFromEnv() {
@@ -771,9 +775,11 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   // Fastify's shutdown sequence drains in-flight connections *before* running `onClose` hooks, and
   // an SSE stream never ends on its own, so ending it only in `onClose` would deadlock
   // `app.close()` forever waiting for a drain step that can never complete.
+  // 28-05: one ask runtime per app; every open AI stream is aborted before the drain.
+  const aiRuntime = deps.ai?.runtime ?? createAiAskRuntime();
   app.addHook('preClose', async () => {
     // 12-16: open log follows end first (remote docker logs killed), so the drain can complete.
-    await Promise.all([broadcaster.closeAll(), containerLogs.closeAll()]);
+    await Promise.all([broadcaster.closeAll(), containerLogs.closeAll(), aiRuntime.closeAll()]);
   });
 
   app.addHook('onClose', async () => {
@@ -804,6 +810,7 @@ export function buildApp(deps: BuildAppDeps = {}): FastifyInstance {
   app.register(apiScope, {
     broadcaster,
     dnsChecker: deps.dnsChecker ?? createDnsChecker(),
+    ai: { ...deps.ai, runtime: aiRuntime },
     ...(deps.sseHeartbeatMs !== undefined ? { sseHeartbeatMs: deps.sseHeartbeatMs } : {}),
   });
 
