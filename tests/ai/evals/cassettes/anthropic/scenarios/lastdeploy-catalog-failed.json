@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "lastdeploy-catalog-failed",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "629ed18db2e7c7c3f74d7078723f3a9b392cf91763f50acb05c408007becb968",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_018fiLNBSsjENJeYUnJ4ae5S",
+            "name": "list_services",
+            "input": {}
+          },
+          {
+            "id": "toolu_015yG5A4XStidB11TnBk5u2m",
+            "name": "get_deployment",
+            "input": {
+              "deploymentId": "84059a0f-be85-4843-b1d5-045a62b661b5"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5455,
+          "outputTokens": 135
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_018fiLNBSsjENJeYUnJ4ae5S",
+              "name": "list_services",
+              "input": {}
+            },
+            {
+              "id": "toolu_015yG5A4XStidB11TnBk5u2m",
+              "name": "get_deployment",
+              "input": {
+                "deploymentId": "84059a0f-be85-4843-b1d5-045a62b661b5"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSmQUKEAgTGAI4AUIIdGhpbmtpbmcSDHSqxVgZ4IWzfES9nhoM4zhu1SZzUR4swp/gIjAkZX7Tj3JiNSUGuU5O62j+hZiLdWSvbPzTLtG9lRxXbWGg7wAFMIYodEDxR2FzkfoqtgScttzUOkX7223x+xLqYiqn3JzSGVQZPpxOB95CybKq+Od5y7uvU9guKlb3/vro8iIYsjaM4xNfUoyIOTi+6niYQ4fQJFWipKiAY4cbIF+FLmp6bHcySEBAAADRc6zA3YN/3HUzdLXuPWUpsONp86XGseNUx3b3fiCfeqjD0zX/T6cb54aU3lNz1I/Y/1pt6ovRWhwhhjIdVenLTD/DvooFkTHcLEQvDRn4qhkAu8OTDOu3HDOCVjWhyYe2ct/p3eml+YBGef/wt7dsQGX4x2sR0rQuWNmaUeoXf2i8cwVwEc62ntWtSSiIlgvAKj7W71CMGK85aX48FkPx1TXQiFBgcWUw5lGR4uUAtoluQEhFHOCFxJh1lWCh90xDLMWkhG/Kv2EcKGOAmSBJBl5+xkNYb9ApWA59NXGyrR8sfN7E+FudggR4H8KOn6cjflFsXWT/pgMKWTN02y8bxKvDL9hbjwaKMNd7tRHvZQcTGm4/Xit7aovo96O6YDtPSw2iFvPW9d+0182PyImMZkbx6AKTmlBkpyQbWtjvCjSh7YHJQeYkD04YDD9xVlXkxDYLiLp4+I1smNA5QSLIzOoHLtK1rQZ5RzoW+UKvsU2nYdOB3x6mDcohD0Q0+R5CVpgA0+TvOWqyvR784P1Y3tCMclbe7+nEwaNv1Dy3E1QLIDmSGSp7tRf32yPpUf56+GY9yuHfasu9pUUNcOaDnMrqEo8MfzVXIUqVKt6tahnesa1Hl5AAWlBiJRgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "17744ed1a194012574ed2bc236b99c933bd53159197f8358584f35e2c95b3ccf",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01DBEzavLN5pCGR4Rj6Lf9iC",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "73b26f13-cdff-4ed7-a273-cbda4091c9ec",
+              "limit": 5
+            }
+          },
+          {
+            "id": "toolu_01CmgKRaM97FUDx41nCXVCzK",
+            "name": "get_deployment",
+            "input": {
+              "deploymentId": "3b9fc93e-d5f3-469d-b985-e985cfe868df"
+            }
+          },
+          {
+            "id": "toolu_01EWiWVSVL3hfEkeNeEHz6uK",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "73b26f13-cdff-4ed7-a273-cbda4091c9ec",
+              "sources": [
+                "build",
+                "deploy"
+              ],
+              "since": "2026-11-01T11:00:00Z",
+              "limit": 40
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 8739,
+          "outputTokens": 334
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01DBEzavLN5pCGR4Rj6Lf9iC",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "73b26f13-cdff-4ed7-a273-cbda4091c9ec",
+                "limit": 5
+              }
+            },
+            {
+              "id": "toolu_01CmgKRaM97FUDx41nCXVCzK",
+              "name": "get_deployment",
+              "input": {
+                "deploymentId": "3b9fc93e-d5f3-469d-b985-e985cfe868df"
+              }
+            },
+            {
+              "id": "toolu_01EWiWVSVL3hfEkeNeEHz6uK",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "73b26f13-cdff-4ed7-a273-cbda4091c9ec",
+                "sources": [
+                  "build",
+                  "deploy"
+                ],
+                "since": "2026-11-01T11:00:00Z",
+                "limit": 40
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "7f1dfb54a76fa836ce6cbb2c41dd74b9943c133579cfc13187d5f2ed417807b7",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"The last catalog deployment (84059a0f-be85-4843-b1d5-045a62b661b5) was started by hand by admin on 2026-11-01 at 11:15 UTC. It failed during the build after 95 seconds, with error code BUILD_FAILED.\\n\\n**What changed:** only the git commit. The previous deployment that succeeded (3b9fc93e-d5f3-469d-b985-e985cfe868df, 2026-10-30) built commit e1f2a3b. The failed one built commit f4a5b6c. The source settings are the same in both: repo https://github.com/market/catalog, branch main, build context '.', the same Dockerfile, no build target and internal port 3000. So the change is in the code between e1f2a3b and f4a5b6c, not in the deployment settings.\\n\\n**Why it failed:** the build log has one error: 'npm ERR! code ERESOLVE could not resolve dependency tree'. That means npm couldn't find a set of package versions that fit together. The most likely cause is a dependency change in that commit range, such as a change to package.json or the lockfile, or a peer-dependency conflict.\\n\\n**Current state:** the catalog service still shows as RUNNING. Because the build failed, the new commit never replaced what was running. I can't see which commit is actually live, though.\\n\\n**What I can't see:** the code changes between the two commits. To find the conflicting package, compare e1f2a3b with f4a5b6c in the repository, especially package.json and package-lock.json. Running a local npm install should show the full conflict. I can't redeploy or change anything myself.\",\"diagnosis\":\"failed_deployment\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Service\",\"id\":\"73b26f13-cdff-4ed7-a273-cbda4091c9ec\",\"label\":\"catalog\"},{\"kind\":\"Deployment\",\"id\":\"84059a0f-be85-4843-b1d5-045a62b661b5\",\"label\":\"catalog deployment f4a5b6c (FAILED)\"},{\"kind\":\"Deployment\",\"id\":\"3b9fc93e-d5f3-469d-b985-e985cfe868df\",\"label\":\"catalog deployment e1f2a3b (SUCCESS)\"}],\"evidence\":[{\"ref\":\"84059a0f-be85-4843-b1d5-045a62b661b5\",\"note\":\"Latest deployment: manual by admin, commit f4a5b6c, status FAILED, errorCode BUILD_FAILED, 'npm ERR! code ERESOLVE could not resolve dependency tree', previousDeploymentId 3b9fc93e-d5f3-469d-b985-e985cfe868df.\"},{\"ref\":\"3b9fc93e-d5f3-469d-b985-e985cfe868df\",\"note\":\"Previous deployment: commit e1f2a3b, SUCCESS on 2026-10-30. Source settings are the same as the failed deployment; only the commit differs.\"},{\"ref\":\"73b26f13-cdff-4ed7-a273-cbda4091c9ec\",\"note\":\"Service status RUNNING. Build log at 2026-11-01T11:16:40Z has one error: npm ERESOLVE dependency tree failure.\"}],\"missingEvidence\":[\"Code diff between commits e1f2a3b and f4a5b6c (the tools can't read repository contents)\",\"Full npm ERESOLVE output naming the conflicting packages (the build log has only the one-line error)\",\"Which commit the running catalog container is on (likely e1f2a3b, but no tool showed this)\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 10660,
+          "outputTokens": 1251
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"The last catalog deployment (84059a0f-be85-4843-b1d5-045a62b661b5) was started by hand by admin on 2026-11-01 at 11:15 UTC. It failed during the build after 95 seconds, with error code BUILD_FAILED.\\n\\n**What changed:** only the git commit. The previous deployment that succeeded (3b9fc93e-d5f3-469d-b985-e985cfe868df, 2026-10-30) built commit e1f2a3b. The failed one built commit f4a5b6c. The source settings are the same in both: repo https://github.com/market/catalog, branch main, build context '.', the same Dockerfile, no build target and internal port 3000. So the change is in the code between e1f2a3b and f4a5b6c, not in the deployment settings.\\n\\n**Why it failed:** the build log has one error: 'npm ERR! code ERESOLVE could not resolve dependency tree'. That means npm couldn't find a set of package versions that fit together. The most likely cause is a dependency change in that commit range, such as a change to package.json or the lockfile, or a peer-dependency conflict.\\n\\n**Current state:** the catalog service still shows as RUNNING. Because the build failed, the new commit never replaced what was running. I can't see which commit is actually live, though.\\n\\n**What I can't see:** the code changes between the two commits. To find the conflicting package, compare e1f2a3b with f4a5b6c in the repository, especially package.json and package-lock.json. Running a local npm install should show the full conflict. I can't redeploy or change anything myself.\",\"diagnosis\":\"failed_deployment\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Service\",\"id\":\"73b26f13-cdff-4ed7-a273-cbda4091c9ec\",\"label\":\"catalog\"},{\"kind\":\"Deployment\",\"id\":\"84059a0f-be85-4843-b1d5-045a62b661b5\",\"label\":\"catalog deployment f4a5b6c (FAILED)\"},{\"kind\":\"Deployment\",\"id\":\"3b9fc93e-d5f3-469d-b985-e985cfe868df\",\"label\":\"catalog deployment e1f2a3b (SUCCESS)\"}],\"evidence\":[{\"ref\":\"84059a0f-be85-4843-b1d5-045a62b661b5\",\"note\":\"Latest deployment: manual by admin, commit f4a5b6c, status FAILED, errorCode BUILD_FAILED, 'npm ERR! code ERESOLVE could not resolve dependency tree', previousDeploymentId 3b9fc93e-d5f3-469d-b985-e985cfe868df.\"},{\"ref\":\"3b9fc93e-d5f3-469d-b985-e985cfe868df\",\"note\":\"Previous deployment: commit e1f2a3b, SUCCESS on 2026-10-30. Source settings are the same as the failed deployment; only the commit differs.\"},{\"ref\":\"73b26f13-cdff-4ed7-a273-cbda4091c9ec\",\"note\":\"Service status RUNNING. Build log at 2026-11-01T11:16:40Z has one error: npm ERESOLVE dependency tree failure.\"}],\"missingEvidence\":[\"Code diff between commits e1f2a3b and f4a5b6c (the tools can't read repository contents)\",\"Full npm ERESOLVE output naming the conflicting packages (the build log has only the one-line error)\",\"Which commit the running catalog container is on (likely e1f2a3b, but no tool showed this)\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS6gYKEAgTGAI4AUIIdGhpbmtpbmcSDOFBvJoH/bkjtbuOOhoMSbWa3tKDSpDfo4e0IjDIFYS1+oTwJkTi8ffKjm+PFF3qnV3A+9yVA2AUDlaKRMRVrUmYiSPh9VjFFwcd7kgqhwbekEu7wGxewlu7Y59g82iImw5iDuFBDQRCrXP6X0YrEgITcBxQ29aHfA9iJ77mJWnsDFZ80pI5xw3ZQDUta0mXslEi1cIWFSaVnyv/P/aZuGdsmAza8q/WmcrDJ/xP1Z8uvHfxhUKHRCyEU6dT+tVcm8F6cMMsSYn7MagrgX7bteHhOP2JT9Jp+eIaFanDyxi2faByz+m8ihrj6tXoJvkoxHEtCUfNgFOImLB2PMBGOjeu/LPkdqLbdxXgy+CDW9DhIeAHcVhPi8OWlRouKCt9BsR4T8ToVAp4B7bAgIUhVNeIFi+c4NmGs8bpSoqyn4onfJX29iuIdI1qa91rPQmVZzkPAx21FvGu/dFNJ5ZwlPwkbv5nqqZMvRSUmTPl1mhKOWYYG6T/tYE+PwA5g4f5cbwxBaG2X896pganUw85ZJS2xoZqBAraPS3SXHfmA7mc3co9KEYn3sZeqxcg17ieZIqFpq980uHjvkfgu8fLOS4ilWJu5IdjeW42c4PY+eMqFhaQYKrqLFhkl7iklOdSJWUyd6Ggv+fwlNphyMVJZcx3HqeeZWwTmM17hFrwCArVvigOSXf+ecRvfKbe4zLsutW2AbBS8iLPU5DkfNER5ieCeojMtGC48kf1KllGg0hRrU8fw9sa3UqTFTS1x5dz+yFcjy44ohnCFamybJcyZJKO5LdTm8U3EbT+8OXwELQS2JTvpTQKWXToQIIlUdIAVrCWrzpkL87pbhyW7fzR40y4ixcKKaTTJaUlailY9nQC+F26DesAiV4KzUUsCBEYuYzKhOUU0gWYPAgqdZdTIEJ5fXZSVN1CBSKLFgrVA4XWid90PamFhDvPbdkx789jJX9UHLyxugNwm+Kf0pE+tBgqACc/nmJ57+8DVnXJDFqw4S1h5jyTNkKh2RHu4HzvoRcIK2nJPWWBS2KISvE/u2DDuvJpDmYwdkoXk/cAul1Tt8igm5OF0pz1pkRc9lgwL0Dqf9eM1Tg5d4LFaP19+UHZ5Zhl5X1vu5NC/ICML6hr/RaepJyHGAE="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "loc-missing-service-empty",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "c871cf8583db4475fb7b3af5e0ac9e2f6278c5baa193c2f4ff1f18fba8096728",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01J1royJ6HV7i7QmPmHhX74K",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5373,
+          "outputTokens": 26
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01J1royJ6HV7i7QmPmHhX74K",
+              "name": "list_services",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "bd4b1f43540a74b49abeb0a346f9f52ed7c7ef19022fee8296343d7e886c617a",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01GgViZKfQNaZF3BGphuybY5",
+            "name": "get_infrastructure_graph",
+            "input": {}
+          },
+          {
+            "id": "toolu_01DBZT7uH8ziNjrZy3HWFuNJ",
+            "name": "list_servers",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5443,
+          "outputTokens": 78
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01GgViZKfQNaZF3BGphuybY5",
+              "name": "get_infrastructure_graph",
+              "input": {}
+            },
+            {
+              "id": "toolu_01DBZT7uH8ziNjrZy3HWFuNJ",
+              "name": "list_servers",
+              "input": {}
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS6AQKEAgTGAI4AUIIdGhpbmtpbmcSDDoBcTXtL+V6MJspqRoM5KtXaabgoZt9/sVTIjA8CeNnExx3S/jIQgXBPyxG5kJ3Mi9AOohToD0NEOBuPp0/+7EUeuSn53og66nucg8qhQQXmspkwCot9lmol4+JBoXINGwSQFAQ0IGvErJiOpkejA0x8AS+ruONrgRtNnqEcaj00xRDAoWUyO3L7w59XSq2en4XZBS0O3QJ4338qWhDD/WCaJmcP8s1Rkf47xvP8MOlAH4Hqoz/bZfeb0bQF1NfYAb0tOi9TkaM++YftYf576GZ2IADbD/AUSiVTPxutbQHyEzOlKlXDysVCnJNR1JvJn81gsd86QqesAaxA+upnF/fbTy57XGZzuBzoY8zU8eRmuQb5M87Ce+Z0aWtzQY5Js+JTMyfAUy3VX8hXGEwVgWxI7+nw9Rmjws8p6EN1p45WKFO+iOGX8zh7qhYH7tbBuzYP2kNuWNgBvD+jSO3Dv3dJiy3wrkQekCSHGTKJtDdkzoRoBKoJqqsuhV1OYiJxrwFQks3R+DBA4E6Nwg3gCpA6/GQwCxCiYCUTqrTOJ6lZxJuBDZBtIqlMcVzlFvrzUXxPs8EsFRM8uWx7K4zU8bP6p9T9ZSWttyNUpfhqFjeSjPmsnalfhp+SpdyieBEatIcycu3cPtPZFjywQLTQ80Kykr4fzzJ3/O6gE5A4yAsVAv8GMqOMZyPhB72bW68prPpzBNWWiCmCSFGdRzCSN2WcBOx/1fHhj/KPIoYYfuuk+0NLY40noZu1D2VoiWzimx/8k8o8dx5kNx8k3fBYgpH8JQ4GAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "a5e096a24c007baa34e3c3a2d8afbacf316edb4eaf8d4a620cd5e98bb4174121",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"I couldn't find a service called payments-api in this installation, so I can't tell you where it runs. The full service list came back empty, and the infrastructure map shows no services anywhere. Its location therefore isn't known. Check that the name is right. It may also live in a different Noodara installation, or it may not have been created yet.\",\"diagnosis\":\"unknown\",\"confidence\":0.85,\"entities\":[],\"evidence\":[],\"missingEvidence\":[\"The full service list for the whole installation came back empty, so payments-api isn't listed.\",\"The infrastructure map has no service nodes and no links from any service to a server, so I can't tell where payments-api would run.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 6375,
+          "outputTokens": 444
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"I couldn't find a service called payments-api in this installation, so I can't tell you where it runs. The full service list came back empty, and the infrastructure map shows no services anywhere. Its location therefore isn't known. Check that the name is right. It may also live in a different Noodara installation, or it may not have been created yet.\",\"diagnosis\":\"unknown\",\"confidence\":0.85,\"entities\":[],\"evidence\":[],\"missingEvidence\":[\"The full service list for the whole installation came back empty, so payments-api isn't listed.\",\"The infrastructure map has no service nodes and no links from any service to a server, so I can't tell where payments-api would run.\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSzQoKEAgTGAI4AUIIdGhpbmtpbmcSDJ1NAGxPCGMA05tn+BoM20Hsw4gfMyR2oTUjIjDJK0rxy0Rcv9XOQQrIFmUnOIv8zOboy1ueDe/Q6K0vVGJ7NzyCyx2Fj/RdjjXPpDEq6gnFSWPmvLkBqVuqtpZGG9vVgWb5QKj+vX17j/cdhAAUf/5cJ7xjYJ+j0456qx/h7Rat8DS6BHA05N06xMptLHMtNe8A5IMXqL8xuxC6e/jRHAg0Wh0aLhzRKBQ2ZJ06S7clNiUWdZqyVVvzP1Il5GQddHSCHAbgdEgvNHgLmyUku8NwtUVGzGTZwBbhMVNOn6MxInaoA5BuBHo4HCJYHGGRznb2fgImgm0wFm2VoJsKBDaDTMI9PBKhG6EHb6YuKCf/S+L6SCEsCt1iXOHIWU32oIaJaao3k+5wilRNJqIsj+mr0Zxbsl/fGBiQTkBtorcJVnAWDrRLruq4UGCWnMCZO/sUjzU2eg60UuHzZouQ86IbGEz979JGmrM8EWnIXOSz59Ngs1m91YZHkxnOzjx61RxA8S9zpSwf6yDQYNWOh0WdJyz/mpqlltNb0wAy8cJ/6ZQJ7cvRl8CLmJrrPmLjY7wX2c0dW3Xp+rmmIDIDgaEfHjP+SgCyVKZmeNMtmeL0vrqQETQ4FdpwN0pIkSlY234hZZWmu4n1koI8RMB4NlEDuOWRvlEESoPObLg56rd6Q12yBDQJw61It52jbKCKhbvBJoZ6Prh/TITz31JmIlgFZ0ipQOcVXWOPnTSdoChgQ1CRNOwu3c9/amNgMc97RTXQgEM4Sql8kVWsunsQ6cT45FJ6PbkGGN+JEBFk6TVor+uj77PYQYQ3nxCBmptw1sS0x2hQ9sSKnVxyRwbo1K2tBKg/D0qaJExlhV7kRZSEO6mlHuOgtmNV9RVIvuQVNO2or93hhXN3PIpPrv/2SlXAhhAC/r4f3VMxXcVHrXUBVynLitui9Ma5AfWNN1gPj6iJmutk+adywR2g44E/t5RN5vETIOXUMAkEgO6FUkUNMazGpsCCprwNhXxqvmOthmrAPhYiMrlBZWLKAsSiQyYOE9r+KPXXpO+ZJ9LO9GMjsjl2xSGMQ+xqc1X9yTsB/vKSRSvxRB3Spyhn1Q31nBxNakilUgq+OpitTBeRJ2myF7wEh1e7Qpz2FUNUuqSYCtk+2By5UTd5vbNLyDQiKXzn+QrcK/36Lv255cFPnlrauOpM1SPfPsVs79Og2ka1Lq9oSa5jIuWSyWg4WnXs+h9xHibImlop4uFO1f3iLMrqDICseuLMuncvbpXUYXiP9/d3PIH8vXIHjAZ0WV4GsH7qFPip8FfICZjYVaKmcMgIse0gDZ8vLQkwsI1ymzL7IF8BOdL4Kl1LpSl13mV/88umwCLqwjHxDar985ORCVdWBlkr8mokdBrLO81q81xkmejwcgX6Cr4N5ThHzUQs712LcdnGVEh6cCk2aUPvcpk8GoYWNDx2e1q+EL4QHteNS7jpeadbaNKv+bwBc8Yj1nRZZAOFI2GYhZ2e6QtdKzWnyqRMrwIojm+hmrGZdAcB2lJ/dJZZAa9RNYhoJJ1fChT86s5tbeWPF6X/W8II/vWI3PoUr1gy4W15ai230mhnX5VkdwQg6cbDwBZKi6LB88DVki4Jn+LLeeQ63hUOSDpGWl3SMTgJkBkU/4LgRHFN2lk8E0glMuvHhWKWoQKDITQ1Krc01mUR5ZgRLcJX25MyhhCMGk2khb0Jj0wLcaM+b9jEsSAc4O3UixEo09T5Z2GevgXPQuWo1jVn65+CMaTXfm5fK2q2h5izGAE="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

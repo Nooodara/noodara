@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "disk-fleet",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "5ca0929654e95d378a27927f4140c3b887c8bfedaac776e792ac69bb63fb16fd",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01JzmrX8dmRrof2KA4gQ8Mpx",
+            "name": "list_servers",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5450,
+          "outputTokens": 27
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01JzmrX8dmRrof2KA4gQ8Mpx",
+              "name": "list_servers",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "a3e96fd32f5e0c0380d8651eaa9c0a02a223bfc94e2fdbadd98e723817dd90e6",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01KrMDR76aTbYJLTJPKwSM7J",
+            "name": "get_metrics",
+            "input": {
+              "target": "server",
+              "id": "76825c68-8399-4fc0-8f5c-457bcceed234",
+              "points": 12
+            }
+          },
+          {
+            "id": "toolu_01QkwbwtSzLpJ8WhHNNvg7nr",
+            "name": "get_metrics",
+            "input": {
+              "target": "server",
+              "id": "bc7c0f3d-e232-44e8-a1a5-92b84a5f887f",
+              "points": 12
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6624,
+          "outputTokens": 332
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01KrMDR76aTbYJLTJPKwSM7J",
+              "name": "get_metrics",
+              "input": {
+                "target": "server",
+                "id": "76825c68-8399-4fc0-8f5c-457bcceed234",
+                "points": 12
+              }
+            },
+            {
+              "id": "toolu_01QkwbwtSzLpJ8WhHNNvg7nr",
+              "name": "get_metrics",
+              "input": {
+                "target": "server",
+                "id": "bc7c0f3d-e232-44e8-a1a5-92b84a5f887f",
+                "points": 12
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSjQYKEAgTGAI4AUIIdGhpbmtpbmcSDG4abcVGIOurE8iflhoMa7O9fBn1oE/h52uIIjCcdBQR6YfrRh8Or6/oVEXtq39AbqPxIr7Ftn0p/GQbyTGckiKCSw5RDyedKQ/yF9QqqgVZCguL9H5X7yytyGYCzd5zpYnipg3+G9krr2JBoVe3KypkUPPVaMfaGhcCULfVVwDYRNjkHtqHm/MZ8kF8dpa/UTuBNCENtlQ7AT5xMzzN9OX15Jswk6Vbnfe+pxIBx13u5eYbgnwbLEPv7WYEASooSO0opilz64ii1UINOA6l600HYWIHsZygZixzlJ2NOPu6oKYmq3L2CaUSHBHj6VLjXoxpJ3I/3ctUex5VwMssis9lTiT4d6w+a+Xzzvpgg52VcoXmqpOjdXg5w8+kbHfCQsrkCZhI3DeEHJBwTt4AHGrXnE8dkAsc1xG6kS9zYKWJtRtj/eacwC2gHVutEKOSzPOolQg59Sv20b33ogY0J3WkQJ1o6ZmEco5vIojUDtLa0Sc8aoWKV+Z3hX7dGNkBTmMJ6AvA1G4Yzw9ws16DOvWfKZilikLNpwhV20ZDlJp5SPIDzIy1XC3eI9VY6DZLgm0leayBPlloUPyuopuD2nCQCBbrvY7/WIBkh6InBKVMcWYOlOcG47Ifj4XXOWS38Kj216t1EmUnTsqny+1K9meKAW6CXk77M9+haQmECyVCTQVeO9zPK45poQ06gjiuWOtYpb2Pc8yjhHwzKYuE9NW4cbi/LTKqQJBV3/6zJsDjv27AZiSDmXuiEYkoDriKMjyLcjvi6Ykckt0wOr4oUgApFZNicNKARBTbUjfulTE/U1iq1AE8geBg/fKyoQBWn6jwMayhTVmNHduPqP3/9jLZvkzISO5kd5n00y1tSaMPXIRHSyFr7DI5F12k13RXKoCPDiYC0aNp11wH+LMJ5KmE2STEEZeq80Oys9KK3FpMYBoBjqABWgsF9S0kqsitFIMD7BblS4JoGb8qdT0gjb0D7bXTnFa6/KrEnyXXeFf196PwsmCDEDbDGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "9f91cb021672ab44fd6be35388f7feceb841da736747d8e1e631984c059579b2",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "```json\n{\"answer\": \"Two servers are low on disk. These figures come from one sample each at 2026-11-01 12:00 UTC, so I can't tell how fast usage is growing.\\n\\n1. **data-1 is the most urgent at 90% full.** It's using 184,320 MB of 204,800 MB, which leaves about 20 GB free. This server's memory is also high and rising: it went from 88.5% to 92.8% over the last 4 minutes. Keep an eye on that as well.\\n2. **cache-1 is next at 85% full.** It's using 17,408 MB of 20,480 MB. Only about 3 GB is free, so this small disk could fill up quickly.\\n\\nThe other servers aren't close to full: edge-1 is at about 40% (16,384 of 40,960 MB). batch-1 last reported about 50% (51,200 of 102,400 MB), but it's unreachable right now. That number dates from when it was last seen, at 10:30 UTC, so it may be out of date.\\n\\nI can only read data, so I can't free up space myself. To find out what's using the space on data-1 and cache-1, a good place to start is the server itself: look at Docker images, build cache, stopped containers, volumes and container logs.\", \"diagnosis\": \"high_disk\", \"confidence\": 0.85, \"entities\": [{\"kind\": \"Server\", \"id\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"label\": \"data-1\"}, {\"kind\": \"Server\", \"id\": \"bc7c0f3d-e232-44e8-a1a5-92b84a5f887f\", \"label\": \"cache-1\"}], \"evidence\": [{\"ref\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"note\": \"list_servers shows 184,320 of 204,800 MB used. Metrics show disk_used_percent at 90 at 12:00 UTC. Memory went from 88.5% to 92.8% between 11:57 and 12:00 UTC.\"}, {\"ref\": \"bc7c0f3d-e232-44e8-a1a5-92b84a5f887f\", \"note\": \"list_servers shows 17,408 of 20,480 MB used. Metrics show disk_used_percent at 85 at 12:00 UTC, with about 3 GB free.\"}], \"missingEvidence\": [\"Only one disk sample per server, so there's no trend or fill rate\", \"No breakdown of what is using the disk (images, volumes, logs)\", \"batch-1 is UNREACHABLE, so its last reported disk usage (about 50%) dates from 10:30 UTC and may be out of date\"]}\n```",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 8824,
+          "outputTokens": 996
+        },
+        "message": {
+          "role": "assistant",
+          "content": "```json\n{\"answer\": \"Two servers are low on disk. These figures come from one sample each at 2026-11-01 12:00 UTC, so I can't tell how fast usage is growing.\\n\\n1. **data-1 is the most urgent at 90% full.** It's using 184,320 MB of 204,800 MB, which leaves about 20 GB free. This server's memory is also high and rising: it went from 88.5% to 92.8% over the last 4 minutes. Keep an eye on that as well.\\n2. **cache-1 is next at 85% full.** It's using 17,408 MB of 20,480 MB. Only about 3 GB is free, so this small disk could fill up quickly.\\n\\nThe other servers aren't close to full: edge-1 is at about 40% (16,384 of 40,960 MB). batch-1 last reported about 50% (51,200 of 102,400 MB), but it's unreachable right now. That number dates from when it was last seen, at 10:30 UTC, so it may be out of date.\\n\\nI can only read data, so I can't free up space myself. To find out what's using the space on data-1 and cache-1, a good place to start is the server itself: look at Docker images, build cache, stopped containers, volumes and container logs.\", \"diagnosis\": \"high_disk\", \"confidence\": 0.85, \"entities\": [{\"kind\": \"Server\", \"id\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"label\": \"data-1\"}, {\"kind\": \"Server\", \"id\": \"bc7c0f3d-e232-44e8-a1a5-92b84a5f887f\", \"label\": \"cache-1\"}], \"evidence\": [{\"ref\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"note\": \"list_servers shows 184,320 of 204,800 MB used. Metrics show disk_used_percent at 90 at 12:00 UTC. Memory went from 88.5% to 92.8% between 11:57 and 12:00 UTC.\"}, {\"ref\": \"bc7c0f3d-e232-44e8-a1a5-92b84a5f887f\", \"note\": \"list_servers shows 17,408 of 20,480 MB used. Metrics show disk_used_percent at 85 at 12:00 UTC, with about 3 GB free.\"}], \"missingEvidence\": [\"Only one disk sample per server, so there's no trend or fill rate\", \"No breakdown of what is using the disk (images, volumes, logs)\", \"batch-1 is UNREACHABLE, so its last reported disk usage (about 50%) dates from 10:30 UTC and may be out of date\"]}\n```",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS+wcKEAgTGAI4AUIIdGhpbmtpbmcSDIPMR3f1IxPTiNdW3RoM6nEE9iQmAFSnQA26IjBe2dttGfsHjiDvk46yBuAa4XkbGXueecWorlD0bD7lKkH0bnNxTtY3+gaFbZl0NjEqmAeNIQLS3EbzgPTugiN9tBTlzJboJjkW/j1+JLl8xwo+PCwCUQ3wQ9UFiA7UC5VRpF6tmREF1SD20wrwQpowRKvs15qdUrsRX1qaNSJCtmsvHUqKGLpVM21C5eZ+CCFoLcKxPG1uXC/so7XFAFGdJ8PgllO6yCn4ysJFHRcyHAkP7YtAoAnYUiM7ouVHbcOCBw4Gj9H1RN0Sn1vpqYg9tqDDuug6TwejIm3IhMWR27sDAM1lPKsLeyLwoXglewIPREJD6JrxFvfpd8gWaQ/JTZu271Wa1W6jCr4zy9i427Hc9ajafYt3KoYuf5NiqWcaduPdq0hl2+3/9En6qqVkOSp4Q1EYX/cOhFz4Ps+FsbSJec816nOBZEL6aUzFErsJB1pjL5xRAHNj8mi8vbxn0yb2WWFGOq37awPGLSlfZN+kFJp5Tozvj5b0pbfJ1/b4K/u2TQ+aFbidUYNnlP04Zy89oyV92JLDH8FRw1X+6zS20LWJoakP/fqeib37Xc6v9d+gizH4lrl1ZkIcZk1tDjuu1g4D/vUVQ0f251gjlNv3IyEwO9CcNgANNhSTvexMTI6vJ1xojE7IMBCpT1YcqygWY8TTze2FFGxH+VpfsMublKKohuv0A7QDptl1X0zTU/HXZmeYD/QFkIonm+T4oMLfZ3wNllKoG1CEsmXdVy3w8kJU3J4DVCeKOOwl24IeATQM8EpbSQaT2yfLoEFIxogig53wb1y7K5xuC4snYxcnBv/1rdiMigVAEYrzfxhMxOCsthVsRTOqie1AJTo5neoPYKGKLf+rytjK07HX4/ORtppibp9MGtIX+fyZOxXTjjxzSeijcK+5y4OxFoLuwdXWk7vu9gzd66hEILo+UFBT3em8SjgIokZcA8eWSe76Cz6DLvhJkMOvFtCl38P/sRi69JbLUfl/IECYXwj/P/GdbUg9ItFxlzxYZevxd5pC0snkph2QkT3Zl5fvAofhGvbX8SbiU4e+YF4gscRMtYMtoQCOxVSMbjhpyoaX5mnafhm8HbZCqI/Dqd/NMaIsyfz52AquGZcLNu6m/Oh3TbRPt5zIK5BtLMGhbiA8p4MjBohTenpDyg07cdeutJjNjOXemioNkLq0vvmLji4zY9jjY9Mp32bnlrnM2ZnXM1zoqqhAHrcomUn7H/6zMJjqRKmWMXvl+xDLYoBeOhOhqTTdJU+0IavW1d1CdLxQ3R7gfKJDPv2QDUrjUhgB"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

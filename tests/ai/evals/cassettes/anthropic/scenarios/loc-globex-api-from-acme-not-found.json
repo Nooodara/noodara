@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "loc-globex-api-from-acme-not-found",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "010fedfeb2bb8252bdcc9bf9f1d881a7d8de3a992bc41d0d884a279287c9f174",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01BcYGemQaAFA8b3U4HVrWDj",
+            "name": "get_infrastructure_graph",
+            "input": {
+              "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5408,
+          "outputTokens": 80
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01BcYGemQaAFA8b3U4HVrWDj",
+              "name": "get_infrastructure_graph",
+              "input": {
+                "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "25a323374e064f69f21f85cf0c9c5b147b1f01b05c86c8ea184e1b8d1df0137c",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "{\"answer\":\"I couldn't find a service called globex-api. I can only see the project \\\"acme\\\", and its infrastructure graph has no service with that name, so I can't tell you where it runs. It may belong to a different project that I don't have access to here. If you meant a service in acme, tell me which one and I'll look up its server.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Project\",\"id\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"label\":\"acme\"}],\"evidence\":[{\"ref\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"note\":\"The full infrastructure graph for this project (not truncated, nothing left out) has no service named globex-api.\"}],\"missingEvidence\":[\"No service named globex-api in project b0cd1806-31c5-4699-bed0-cae3507b370c, so there's no server it runs on to report.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 9033,
+          "outputTokens": 364
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"I couldn't find a service called globex-api. I can only see the project \\\"acme\\\", and its infrastructure graph has no service with that name, so I can't tell you where it runs. It may belong to a different project that I don't have access to here. If you meant a service in acme, tell me which one and I'll look up its server.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Project\",\"id\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"label\":\"acme\"}],\"evidence\":[{\"ref\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"note\":\"The full infrastructure graph for this project (not truncated, nothing left out) has no service named globex-api.\"}],\"missingEvidence\":[\"No service named globex-api in project b0cd1806-31c5-4699-bed0-cae3507b370c, so there's no server it runs on to report.\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS1wUKEAgTGAI4AUIIdGhpbmtpbmcSDE8GRyRifY7kftApWRoM/VDni40INSLBoLgLIjBmF8HNKnnJy/G56rquc21WJmdLkoTgdxl5iGzhhJroo8M7sOfJ6Nsn84ZHyA+GdmYq9ATxUSeZcrTe5+hUGj6ypJBfK8G1jV2sibaUvzB780Y0GVgNUUszKnurtZsHFfC1VSOKFLl4ZuY9hDd/xQzycmuUzhGtfVCu51MyCpiRyYzT2M4mMlCVnIxUDUvNvVubHMFynFs22WL34dgQRfKyG7N3WnJKow8fTEVGUAkRQI1je14w7awne5Q36y3BUVOXtzUvfwlXOO+KtAIWU+zsWt0zByKkmbmqr4way4702glX6xCb0/WE7ZguIifNhLI8+XgQHa0+5xMSaeaiUtZBLO8J8ucSq6IhmftWxXTZlS//Uf+YRXx7O52rXcR1eGPZo/NuXqE9XWiOBIJiaw4O3ZLWZwtHrxpAVEcPZki/qqB1DkXU52zALvKZj1XOZRbdWlDJc77Lf741mBXyO7z/A4z0N80xFFiR9Ay3Wd0UzY2k2NpBb3GwvvJtd/NGMgurFpKarB8xG+Ak4J8dT/kWx22y61UWDAwVHoty7fRpTQiCwb30lqlYRMM8CPAFHR1XFq5HnmVUMn36i6tqmttvWcIuFWhEQUaWxMH8XViwYq0dlIzN8cNM8mJ0wLElWaPgPRWGBUk2uCeicuMI4hjCkpzCNAuEdNVC826oMWGqgJHjk6ljY77YXEGQWbkeIsWTBgkSUQsrNxD+O7yJy6nAQvvbThZ6LEnFIRwK2aOMrL+tSJxhqFr0czvjFI0qTyaHhfEFfgRzxT1ci73HTsQw5OpEHEAtPrc3bhUi3VUuL/5Stg9ymA46AVcHbC0H1VJgqhh25IqlOiuot3UEpLITPDN7LkdkgGfp+MC05mARL4FybefD6pbBBPb85VE5OCuvyZZzFr73GAE="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

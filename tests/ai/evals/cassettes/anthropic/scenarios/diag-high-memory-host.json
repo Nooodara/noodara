@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "diag-high-memory-host",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "61b1cadcf14158af85f26ba5e3e3036a3c4e0398f847c6910be7404c300fc5b0",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01UjTu7WQFPPCePMGzHaKNMF",
+            "name": "list_services",
+            "input": {}
+          },
+          {
+            "id": "toolu_01Kbg8McaczRzn9x26sYTjP8",
+            "name": "get_server",
+            "input": {
+              "serverId": "76825c68-8399-4fc0-8f5c-457bcceed234"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5446,
+          "outputTokens": 95
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01UjTu7WQFPPCePMGzHaKNMF",
+              "name": "list_services",
+              "input": {}
+            },
+            {
+              "id": "toolu_01Kbg8McaczRzn9x26sYTjP8",
+              "name": "get_server",
+              "input": {
+                "serverId": "76825c68-8399-4fc0-8f5c-457bcceed234"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "962cb63f45dd60fe79cb7bf10ea346d125c159d088c4fef2fa09f775c7b94eb1",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01Sj8EN9Y9CWSVmMqUorQBig",
+            "name": "get_metrics",
+            "input": {
+              "target": "server",
+              "id": "76825c68-8399-4fc0-8f5c-457bcceed234",
+              "points": 12
+            }
+          },
+          {
+            "id": "toolu_011KrqEmrnSK1HrXdTmCK7Lg",
+            "name": "get_health",
+            "input": {
+              "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8"
+            }
+          },
+          {
+            "id": "toolu_01VsryrFKCZEs6YF8HeaMQmj",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8",
+              "points": 12
+            }
+          },
+          {
+            "id": "toolu_01RtpGVtKx9YiX91LGPqddE7",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8",
+              "limit": 30
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7208,
+          "outputTokens": 419
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01Sj8EN9Y9CWSVmMqUorQBig",
+              "name": "get_metrics",
+              "input": {
+                "target": "server",
+                "id": "76825c68-8399-4fc0-8f5c-457bcceed234",
+                "points": 12
+              }
+            },
+            {
+              "id": "toolu_011KrqEmrnSK1HrXdTmCK7Lg",
+              "name": "get_health",
+              "input": {
+                "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8"
+              }
+            },
+            {
+              "id": "toolu_01VsryrFKCZEs6YF8HeaMQmj",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8",
+                "points": 12
+              }
+            },
+            {
+              "id": "toolu_01RtpGVtKx9YiX91LGPqddE7",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8",
+                "limit": 30
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS5QQKEAgTGAI4AUIIdGhpbmtpbmcSDAQTiotEKocWyPA0oRoMGOGSRK3YBXr0Kou/IjACdiskIWtREgY+FAHPkVAEHQLyhu8ymv41eAILg0/TIFO9ECXeRB/11b6G9zIUQ+kqggSeKlpGNH2z03GlUs/U/X5YzmYPfAa3qFm7f9x/fb992XdqzENmr9tQpsFmzVHBKmtnu4qVduWkekd+3Lmg3pz/p+7c7+3qN2FpW5/gpUZUaJm82u71Ubjdz8HNZKtQt7wSAdn4/g8WNNRjM2w2CIuDh/jgY0NeTsIzmfM94kL4EidZ750l1MdveDRsCy3uqQGXPTpqB9YyyEYF2sGfACBvunF6CaXpPOtICvT5pT/TV+wm+HbJUgGY3ZJsK8Penq1FcvEKmRnzY6UlpMEahVbMawSvXTISkVfJSi3s8J8YrqyQV+3crLFOOnQOUFTDNf2VNq7Jax+vlnn001Ix3bQFWrWxvgnOzF+9lhgfhldRyC8DUZ9iuEPZbxjEW8r6zTCr3H4K3U/2eKNna+eTHMFtSkF2QZNew6YFyZc4aaAtKrOQmyOFgu4lyosFVVS1xUygJjNxvLv5GO57UWd2Lkuay2t5ZXTTr0+i3gv9HiDHIZgw9RtrTe9SOM2lkqbBAR9Yfu4Tpi3WTvzHIMPv4bQ0B5MtxNzMa6X731qQGb5SDCL8pkKukm2lzsocIVSPM9rzlNCMQYEYNIuf8rEdpv40Abtk9s5NC+9WiMLdM2eoSGBacVdxIFEqIluhZDrJG1jj8GR+uUsuhGX9QjR3HUrorWQQe3zbmyG2/wiB+ShpONIpGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "9b72599e8cb19dc6d5ea41c14767fa39165a6df3afbb921b03d3bb20037d076e",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01H1FHy7KfmUfxxQQJm9GdhV",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8",
+              "limit": 30
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 9797,
+          "outputTokens": 180
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01H1FHy7KfmUfxxQQJm9GdhV",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8",
+                "limit": 30
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSzwYKEAgTGAI4AUIIdGhpbmtpbmcSDPmdb9CAw38QWPxUrxoMN9AMuRaSymBQ+xvIIjAmhDV42nimzAEXOUAi/EKrIe/3TMcUpd3oTF8HAvltCQ8yZo0IhdJvQYTFYkwWPkcq7AUDGv8KB9irNr5SxpS5FqYlOKT0pKEeO+NRfy5fwK66RRZdMhQjVlShhmzITE6+hsD/73I24RxXfNXVit2IrDdNtXKZhNQSANEo411B7dcWOFtnqxN+kH5ph8IZnnZUMAaEPn9gBgpaFJYEc0HtkKc2KSW9ucYiiaK2P02jGZP5agKOAFxA7kwo7b+NCUlJ9ndZwSz3b/ulwERq4ycKG0xvmtrknZIKqusZ/BM3tKwLeAqIbZUi1/afIic30DY+lz52dlbPM/eByanVgGQDkqLO+TPvZqx5PdNEO6zyGHIKRga4FKtR1wR4uYnWbBZrYVifAoygTsiW4SIVKNv5iSd2hUvCKbmS/EQVknNO4CGNNYPc5KXM6+N7lZP3jleTaCc5A4pEvyZycdwAlZWCyHBJJE45bZuNqrDsll+j0IspgS4U7w7g76vsExy4jICDqffpuSCvuAAGdq9Pyfa9k3y+XztuKIK7VEgatL8HcwG5dV7x5plUJVF4EQv1hkSQKDBgaq5dnLHQeYIGWTg5rSY+dct4rt5Qf082+7z4AXLAKrqWFYBoiDAfBJJA+wv1dta5+QNHAItaKVtTZLGgj8m2zewTaRRNt0EnKJjxgjcQ9mlHUgDJ7Gq+5OIGWNYA7LTthHarUiX0WEixeljDZzsRx5SdiC1qvi1h3kIMwxRdBT/CK6EZHpC0srCnMIhVLgcp6VRCI60Np+GXjdN4GJuiEmmQfRyfIJlxR00hsTDLj7uDV0JnR0uPFPpMF9YR8jAiYPwNkQvdYV+tvMs7gpo23PWuVxsQl4Ug2sQL/2NACWL9a6P/VUyGIs95FAoFojwUf+HsBFmil4qJIY8ZjDNJmeped0h/PMRVlYUFNQflfCQqOXwAWdZWBseiqr2frIhr/tV4y+0cL/yRTmOPAR18a9kamgt0poYjfqlMyXolW+pOXPnezxd9P36Xlc2P4n2j5+oEzN2AEtjDTSPOfGG+StFLsNhwXcHe+0E9GAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "439dd733d3ec7cf9021e26d34b816535cffd5ae0d22d655611a01789b01eb02f",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "{\"answer\":\"The most likely cause is that the server postgres runs on is short of memory. Postgres runs on server data-1 (16 GB RAM, 8 cores), and that server's memory use climbed from 88.5% to 92.8% in the last few minutes (about 15.9 GB used). Postgres alone uses about 9.6 GB (56% of the server) and is still growing. When memory is that tight, the OS has little room left to cache disk reads, so queries slow down. The disk is also 90% full (about 180 of 200 GB), and the system has flagged it as high. That's a second risk: a nearly full disk can slow writes, vacuum and WAL handling. CPU use is moderate (35–41%). The container itself looks fine: it's running, with no restarts, and the last deployment succeeded on 2026-10-04. I can't confirm the exact cause because postgres returned no log entries and there are no query-level metrics. I can only read data, so I can't change anything. Next steps to check: what besides postgres is using the remaining ~6 GB on data-1, postgres's memory settings (shared_buffers, work_mem, max_connections), whether connection counts or long-running queries are growing, and what is filling the disk (table and index bloat, WAL, old images).\",\"diagnosis\":\"high_memory\",\"confidence\":0.6,\"entities\":[{\"kind\":\"Service\",\"id\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"label\":\"postgres\"},{\"kind\":\"Server\",\"id\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"label\":\"data-1\"}],\"evidence\":[{\"ref\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"note\":\"Server memory rose from 88.5% to 92.8% (about 15.9 GB of 16 GB) between 11:57 and 12:00. Disk is 90% used (184320 of 204800 MB). CPU is 35–41%.\"},{\"ref\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"note\":\"postgres (postgres:16) uses about 9.6 GB, 56% of server memory, and is growing. Its container is running with 0 restarts and no healthcheck. The health flags show highDisk true. No log entries were returned.\"},{\"ref\":\"3b6eb201-773e-47c3-bdc8-e50886f34d58\",\"note\":\"The last deployment succeeded on 2026-10-04, so a recent deployment is unlikely to be the cause.\"}],\"missingEvidence\":[\"No postgres log entries were available (no slow-query, checkpoint or out-of-memory messages)\",\"No query-level or connection-count metrics\",\"No per-container breakdown of the roughly 6 GB of server memory postgres isn't using\",\"No breakdown of what is using the disk on data-1\",\"No postgres CPU samples (the series was empty)\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 10079,
+          "outputTokens": 956
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"The most likely cause is that the server postgres runs on is short of memory. Postgres runs on server data-1 (16 GB RAM, 8 cores), and that server's memory use climbed from 88.5% to 92.8% in the last few minutes (about 15.9 GB used). Postgres alone uses about 9.6 GB (56% of the server) and is still growing. When memory is that tight, the OS has little room left to cache disk reads, so queries slow down. The disk is also 90% full (about 180 of 200 GB), and the system has flagged it as high. That's a second risk: a nearly full disk can slow writes, vacuum and WAL handling. CPU use is moderate (35–41%). The container itself looks fine: it's running, with no restarts, and the last deployment succeeded on 2026-10-04. I can't confirm the exact cause because postgres returned no log entries and there are no query-level metrics. I can only read data, so I can't change anything. Next steps to check: what besides postgres is using the remaining ~6 GB on data-1, postgres's memory settings (shared_buffers, work_mem, max_connections), whether connection counts or long-running queries are growing, and what is filling the disk (table and index bloat, WAL, old images).\",\"diagnosis\":\"high_memory\",\"confidence\":0.6,\"entities\":[{\"kind\":\"Service\",\"id\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"label\":\"postgres\"},{\"kind\":\"Server\",\"id\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"label\":\"data-1\"}],\"evidence\":[{\"ref\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"note\":\"Server memory rose from 88.5% to 92.8% (about 15.9 GB of 16 GB) between 11:57 and 12:00. Disk is 90% used (184320 of 204800 MB). CPU is 35–41%.\"},{\"ref\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"note\":\"postgres (postgres:16) uses about 9.6 GB, 56% of server memory, and is growing. Its container is running with 0 restarts and no healthcheck. The health flags show highDisk true. No log entries were returned.\"},{\"ref\":\"3b6eb201-773e-47c3-bdc8-e50886f34d58\",\"note\":\"The last deployment succeeded on 2026-10-04, so a recent deployment is unlikely to be the cause.\"}],\"missingEvidence\":[\"No postgres log entries were available (no slow-query, checkpoint or out-of-memory messages)\",\"No query-level or connection-count metrics\",\"No per-container breakdown of the roughly 6 GB of server memory postgres isn't using\",\"No breakdown of what is using the disk on data-1\",\"No postgres CPU samples (the series was empty)\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

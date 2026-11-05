@@ -1,0 +1,200 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "restart-mailer-stopped",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "8f85e5c6823115a81dff5d2768c217eb1f2ff6fe22c852e81588d0bb6a000a91",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01VfDresFaYteZtpPt3hbJwG",
+            "name": "get_service",
+            "input": {
+              "serviceId": "86a135f8-cdab-4a24-a02a-07c7c2d82556"
+            }
+          },
+          {
+            "id": "toolu_01XHk518M9YQfAwWeoG8Nyfg",
+            "name": "get_health",
+            "input": {
+              "serviceId": "86a135f8-cdab-4a24-a02a-07c7c2d82556"
+            }
+          },
+          {
+            "id": "toolu_01YRGAQXypxZjDobFDank2ta",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "86a135f8-cdab-4a24-a02a-07c7c2d82556",
+              "limit": 5
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5449,
+          "outputTokens": 243
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01VfDresFaYteZtpPt3hbJwG",
+              "name": "get_service",
+              "input": {
+                "serviceId": "86a135f8-cdab-4a24-a02a-07c7c2d82556"
+              }
+            },
+            {
+              "id": "toolu_01XHk518M9YQfAwWeoG8Nyfg",
+              "name": "get_health",
+              "input": {
+                "serviceId": "86a135f8-cdab-4a24-a02a-07c7c2d82556"
+              }
+            },
+            {
+              "id": "toolu_01YRGAQXypxZjDobFDank2ta",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "86a135f8-cdab-4a24-a02a-07c7c2d82556",
+                "limit": 5
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "378e646a94c77ba98886be38622f6fbb17fe8dfedc81b99140a3490b72f59c80",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "High disk flag – check logs and server.",
+        "toolCalls": [
+          {
+            "id": "toolu_01KpPRU7h4gTecKVj785FkBL",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "86a135f8-cdab-4a24-a02a-07c7c2d82556",
+              "limit": 50
+            }
+          },
+          {
+            "id": "toolu_01WpiN1uo4nyFeiEu7qFUF1f",
+            "name": "get_server",
+            "input": {
+              "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6892,
+          "outputTokens": 181
+        },
+        "message": {
+          "role": "assistant",
+          "content": "High disk flag – check logs and server.",
+          "toolCalls": [
+            {
+              "id": "toolu_01KpPRU7h4gTecKVj785FkBL",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "86a135f8-cdab-4a24-a02a-07c7c2d82556",
+                "limit": 50
+              }
+            },
+            {
+              "id": "toolu_01WpiN1uo4nyFeiEu7qFUF1f",
+              "name": "get_server",
+              "input": {
+                "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "861e92da7481ac210b12873033b60d8c5ca94264a96abb629fd614443ea1e964",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01UcbhuoFXDL4XaboDpsPh6N",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "86a135f8-cdab-4a24-a02a-07c7c2d82556",
+              "from": "2026-10-29T00:00:00Z",
+              "to": "2026-11-01T12:00:00Z",
+              "points": 30
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7564,
+          "outputTokens": 236
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01UcbhuoFXDL4XaboDpsPh6N",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "86a135f8-cdab-4a24-a02a-07c7c2d82556",
+                "from": "2026-10-29T00:00:00Z",
+                "to": "2026-11-01T12:00:00Z",
+                "points": 30
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS0AUKEAgTGAI4AUIIdGhpbmtpbmcSDLhRzrm9u9iufAOUzRoMc4bFa2I/Wui5qwF7IjDzVmKwZi8HvMSxRV5YmVnYTuFEefLEF+ZfCjUaVggKOl2DUsV1cJc0J8Gdaeqd4sYq7QT+NMRpoaF/AlVVBJO4nHtOR9Qyb4H7ju0BmhT6t4VlUSFcT0CQm/KEaL6nMuxgTF74re+cg/IlJ+B5nqIRTffeyS6OXIiQ5zGhGQaay+2iaLNPXI0rXZPivhbqJiiEb24XLt+2MOWlqakxslS0syNb1ITWxeO0MdfPZzuJ4FCLcY8OzoJpz42j1lEEqiNzEvD61+NribBr/cccQWX8Hdh1uG907xnWMvjiKvL7yfXJdK/WaXrE6Tk3XIO2+2D5ATOHq6sGmmxkg/ZMXuiWxbeuo09WLb1ukbmkyVXaRURoy8v9i6tkiHCjBmhWPSPTf03pu5NaQGB58xJHgWfwVavyHMON1U/iE4mB3LJDo3I64Dd7olhyp6bReD1UjzinApa6EtF1v6rUPvVkan5PyeXn0zLGCtzBcB562qBoJWzONxp+/x/PelCmajjdjstU/6H0Vnyx4F3J97ybCRbSElYc5USDMy24y2XeemgbWoWbbb/k3hDstNkfRQE23JytlYyf8xDaLTlMecc5KVhRZR74BC8ArRu2IL69uzuYOTPE1J6MJWif+HUjI/7+ahyv+R+NLN9JHGErH+TLVkNLMrMUiFTZKN1bnP0SETO7L4cWnhpWeL+coYZFzlTlZ58ht8Tpg+VkxhC7+9O3fx7QM8aK9T4n7ThRoJH8xvyQ07+tST7Prm5BxVkq8NUWPh7p99cnSZcTxZ7FJpTdwAX8vpWVerRkmqcc9G8VNnEo23Dj+2tP/v0D324pzdzLKMJsN75RfoufY6TcGNBIy7GnVuO1Jw9nsrzibrvkVdR4rpRv64GxMum3q5NdQbWVATsYAQ=="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "a9cad2973c1484ebf4f6e3526ef66b7d5dfbdffacfafdd41d79ab8fb57845715",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "{\"answer\":\"mailer is stopped. Its container is in the 'exited' state with 0 restarts, as of 2026-11-01 11:59:30 UTC. I can confirm that it stopped, but not why. Nothing I can see records the cause.\\n\\nWhat the data shows:\\n- **The last deployment worked.** Deployment 3cf2d4c5 was started manually by admin and finished with SUCCESS on 2026-10-29 at 00:41 UTC. It had no error code. So a failed deploy didn't cause this.\\n- **It isn't a crash loop.** The restart count is 0 and there's no healthcheck set up. That fits a container that exited once, or was stopped on purpose, and was never restarted. It doesn't look like one that kept crashing.\\n- **No logs.** I found no build, deploy, runtime or activity log entries for mailer, so there's no exit message and no record of who stopped it.\\n- **No metrics.** There are no CPU or memory readings since the deploy. Memory isn't flagged as high.\\n- **The disk is nearly full.** mailer's health shows a high-disk flag. Its server, app-1, is connected but has used 47,616 of 51,200 MB (about 93%). A full disk can make a container exit, but nothing here proves that's what happened.\\n\\nWhat to check next: run `docker inspect` on the mailer container on app-1 to see its exit code and the time it stopped. Look at the Docker or system logs on app-1 around that time. Ask admin whether someone stopped it on purpose. Free up disk space on app-1 either way. I can only read data, so I can't restart mailer or clean up the disk for you.\",\"diagnosis\":\"container_stopped\",\"confidence\":0.6,\"entities\":[{\"kind\":\"Service\",\"id\":\"86a135f8-cdab-4a24-a02a-07c7c2d82556\",\"label\":\"mailer\"},{\"kind\":\"Server\",\"id\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"label\":\"app-1\"},{\"kind\":\"Deployment\",\"id\":\"3cf2d4c5-aeb7-4344-985f-e0d35efa229a\",\"label\":\"mailer deployment c4d5e6f\"}],\"evidence\":[{\"ref\":\"86a135f8-cdab-4a24-a02a-07c7c2d82556\",\"note\":\"Status STOPPED; container state 'exited', restartCount 0, no healthcheck; highDisk flag true. Logs query returned no entries; metrics returned no CPU/memory points.\"},{\"ref\":\"3cf2d4c5-aeb7-4344-985f-e0d35efa229a\",\"note\":\"Only deployment: manual by admin, SUCCESS, finished 2026-10-29T00:41Z, no error code.\"},{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"Server app-1 CONNECTED; disk 47616/51200 MB used (~93%).\"}],\"missingEvidence\":[\"Container exit code and time it exited\",\"Any runtime/activity log entries (none returned) showing an exit reason or manual stop\",\"CPU/memory metrics for the service before it stopped\",\"Docker daemon or host logs on app-1 to confirm or rule out disk exhaustion\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 8331,
+          "outputTokens": 1082
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"mailer is stopped. Its container is in the 'exited' state with 0 restarts, as of 2026-11-01 11:59:30 UTC. I can confirm that it stopped, but not why. Nothing I can see records the cause.\\n\\nWhat the data shows:\\n- **The last deployment worked.** Deployment 3cf2d4c5 was started manually by admin and finished with SUCCESS on 2026-10-29 at 00:41 UTC. It had no error code. So a failed deploy didn't cause this.\\n- **It isn't a crash loop.** The restart count is 0 and there's no healthcheck set up. That fits a container that exited once, or was stopped on purpose, and was never restarted. It doesn't look like one that kept crashing.\\n- **No logs.** I found no build, deploy, runtime or activity log entries for mailer, so there's no exit message and no record of who stopped it.\\n- **No metrics.** There are no CPU or memory readings since the deploy. Memory isn't flagged as high.\\n- **The disk is nearly full.** mailer's health shows a high-disk flag. Its server, app-1, is connected but has used 47,616 of 51,200 MB (about 93%). A full disk can make a container exit, but nothing here proves that's what happened.\\n\\nWhat to check next: run `docker inspect` on the mailer container on app-1 to see its exit code and the time it stopped. Look at the Docker or system logs on app-1 around that time. Ask admin whether someone stopped it on purpose. Free up disk space on app-1 either way. I can only read data, so I can't restart mailer or clean up the disk for you.\",\"diagnosis\":\"container_stopped\",\"confidence\":0.6,\"entities\":[{\"kind\":\"Service\",\"id\":\"86a135f8-cdab-4a24-a02a-07c7c2d82556\",\"label\":\"mailer\"},{\"kind\":\"Server\",\"id\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"label\":\"app-1\"},{\"kind\":\"Deployment\",\"id\":\"3cf2d4c5-aeb7-4344-985f-e0d35efa229a\",\"label\":\"mailer deployment c4d5e6f\"}],\"evidence\":[{\"ref\":\"86a135f8-cdab-4a24-a02a-07c7c2d82556\",\"note\":\"Status STOPPED; container state 'exited', restartCount 0, no healthcheck; highDisk flag true. Logs query returned no entries; metrics returned no CPU/memory points.\"},{\"ref\":\"3cf2d4c5-aeb7-4344-985f-e0d35efa229a\",\"note\":\"Only deployment: manual by admin, SUCCESS, finished 2026-10-29T00:41Z, no error code.\"},{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"Server app-1 CONNECTED; disk 47616/51200 MB used (~93%).\"}],\"missingEvidence\":[\"Container exit code and time it exited\",\"Any runtime/activity log entries (none returned) showing an exit reason or manual stop\",\"CPU/memory metrics for the service before it stopped\",\"Docker daemon or host logs on app-1 to confirm or rule out disk exhaustion\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

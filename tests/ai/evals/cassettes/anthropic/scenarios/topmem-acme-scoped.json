@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "topmem-acme-scoped",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "07fc19e1e5b911855dad40c6f888935881ea944ea891b628f70e862a1d664f13",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01KZavn6jDoudLiRxtZdcGi9",
+            "name": "list_services",
+            "input": {
+              "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5411,
+          "outputTokens": 73
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01KZavn6jDoudLiRxtZdcGi9",
+              "name": "list_services",
+              "input": {
+                "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "182ea3ea813cfcd8889ac7c1508d07b9ddc2af6f9082f2fac7be48f275e8c31a",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01M4e4HeJnF7Tcq9aS1WVda4",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "ba9c5821-063e-4eb6-bdfa-2e6960f51340",
+              "points": 10
+            }
+          },
+          {
+            "id": "toolu_01MsptrQLKxKyt3SQYjgegp6",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "f380f06a-71c1-4a76-bab7-84d1f22a6f1a",
+              "points": 10
+            }
+          },
+          {
+            "id": "toolu_012khmbrhTHLo5Uju2xQETNJ",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "9656c11a-6b2a-4418-8a55-3ec0a347f9d8",
+              "points": 10
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6539,
+          "outputTokens": 347
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01M4e4HeJnF7Tcq9aS1WVda4",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "ba9c5821-063e-4eb6-bdfa-2e6960f51340",
+                "points": 10
+              }
+            },
+            {
+              "id": "toolu_01MsptrQLKxKyt3SQYjgegp6",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "f380f06a-71c1-4a76-bab7-84d1f22a6f1a",
+                "points": 10
+              }
+            },
+            {
+              "id": "toolu_012khmbrhTHLo5Uju2xQETNJ",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "9656c11a-6b2a-4418-8a55-3ec0a347f9d8",
+                "points": 10
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "dc21a5822c7df3e69025d6c57ce6723443cbbd45cf3df75a5c538ae2ae376dbe",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\": \"acme-api uses the most memory in absolute terms. In the latest sample (2026-11-01 12:00 UTC) it was using about 980 MiB (1,027,604,480 bytes), which is 47.9% of its memory limit. Its usage also went up steadily over the three samples, from about 900 MiB to 980 MiB, so it's worth keeping an eye on.\\n\\nacme-web uses about half as much: about 520 MiB (545,259,520 bytes). Because its memory limit is smaller, though, that's a higher share of its limit (50.8%) than acme-api's. So by percentage of limit, acme-web is slightly higher. Its usage also rose a little, from 48.8% to 50.8%.\\n\\nacme-web-staging returned no memory data, so I can't say how much it uses. Only three one-minute samples were available, so this is a snapshot, not a long-term average. Neither service has restarted, and memory isn't near a critical level for either one.\", \"diagnosis\": \"unknown\", \"confidence\": 0.8, \"entities\": [{\"kind\": \"Service\", \"id\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"label\": \"acme-api\"}, {\"kind\": \"Service\", \"id\": \"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\", \"label\": \"acme-web\"}, {\"kind\": \"Service\", \"id\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"label\": \"acme-web-staging\"}], \"evidence\": [{\"ref\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"note\": \"memory_used_bytes went from 943,718,400 to 996,147,200 to 1,027,604,480 between 11:58 and 12:00. memory_percent went from 43.9% to 47.9%. restart_count is 0.\"}, {\"ref\": \"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\", \"note\": \"memory_used_bytes went from 524,288,000 to 545,259,520 between 11:58 and 12:00. memory_percent went from 48.8% to 50.8%. restart_count is 0.\"}, {\"ref\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"note\": \"The memory_used_bytes and memory_percent series came back empty. restart_count is 0.\"}], \"missingEvidence\": [\"No memory samples were returned for acme-web-staging, so it can't be ranked.\", \"Only about 3 minutes of memory data was available, so there's no longer history to compare against.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 8923,
+          "outputTokens": 1109
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\": \"acme-api uses the most memory in absolute terms. In the latest sample (2026-11-01 12:00 UTC) it was using about 980 MiB (1,027,604,480 bytes), which is 47.9% of its memory limit. Its usage also went up steadily over the three samples, from about 900 MiB to 980 MiB, so it's worth keeping an eye on.\\n\\nacme-web uses about half as much: about 520 MiB (545,259,520 bytes). Because its memory limit is smaller, though, that's a higher share of its limit (50.8%) than acme-api's. So by percentage of limit, acme-web is slightly higher. Its usage also rose a little, from 48.8% to 50.8%.\\n\\nacme-web-staging returned no memory data, so I can't say how much it uses. Only three one-minute samples were available, so this is a snapshot, not a long-term average. Neither service has restarted, and memory isn't near a critical level for either one.\", \"diagnosis\": \"unknown\", \"confidence\": 0.8, \"entities\": [{\"kind\": \"Service\", \"id\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"label\": \"acme-api\"}, {\"kind\": \"Service\", \"id\": \"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\", \"label\": \"acme-web\"}, {\"kind\": \"Service\", \"id\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"label\": \"acme-web-staging\"}], \"evidence\": [{\"ref\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"note\": \"memory_used_bytes went from 943,718,400 to 996,147,200 to 1,027,604,480 between 11:58 and 12:00. memory_percent went from 43.9% to 47.9%. restart_count is 0.\"}, {\"ref\": \"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\", \"note\": \"memory_used_bytes went from 524,288,000 to 545,259,520 between 11:58 and 12:00. memory_percent went from 48.8% to 50.8%. restart_count is 0.\"}, {\"ref\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"note\": \"The memory_used_bytes and memory_percent series came back empty. restart_count is 0.\"}], \"missingEvidence\": [\"No memory samples were returned for acme-web-staging, so it can't be ranked.\", \"Only about 3 minutes of memory data was available, so there's no longer history to compare against.\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS8AgKEAgTGAI4AUIIdGhpbmtpbmcSDJA1gAxGi2zgwd1mNxoMTCwN6DO5ayDOdvdCIjAj0yyLYHehPGOF0K3slyixcimst+ShdSy6+9RCxwXGMxBqhflnic78dDYjn6SwdMMqjQhrSmnMdStNSfmLdRaVC9SOv6/PHzsNbogMqwgFdtIpfFuhiZnlXbsA35+Qq0+js/z/Pq0yl19j/T1CDdO7i7kNNfNKkmGWp3lQ8Cs9q3uaAXPg6sQ2QrFJggAPipYfbYgsrrKo1EEeDT/Xxz9I/BnguCxTaizQlBXgnJeMOuMCfg1qNoHeZDrfOsWRVyDmoGnhmMxbcECvL99b+L3iIHnFejOO7CWHFhCToYVi4fNbAUc367hOMJOBe1pCWa39tSstHs5o5Vqft0ypogqAJrG6NPPdcgWytITu5tt2MWiZPz4hZ7sq1kdlLnV1viU9Rxy8WahkZ1MBLoccF6B5YEVlSTMlMeibA4xTinf+lwn66YPelVFXqd+4MF+bsJlWthUeFBos5zBMjvqlBExpC+omvzTf+aPCZzkXEwqn1WGjHWGMG55lZrY2wip/CeA+gHOkJ3p0mNFFFLCbJqtOj+UfMTEfz78W4yUHcd+hB3sY+xy3AZ4YtIy7WAZnuX9rWrL5/GIrpkgfaoSbEMnKN348TfW+5MaYTv06yHHacKaqwJuKVmOYO5+XBGY0S3tXsSibmfoPbErgFUKG7mwGVpmOI3L7hDC+H1hm5+1iw5JFpECBWmblnS59emcM2HnTmqnsK4RSKH98ljOnyemjzZln/3aNA4n96DWWNEc/XUSwcstlGQdGJjXWA1n/eY9MTzor1fQe72HMlfiByOb8lEKxd1CKuMvwHDoVxVQw0db+s7XWN0MwFsN2/ntCofG75bGqcOWnpveEtTip7Kb9En15KMgkQPWiT8dWVaIFEpy3lcWZ+DrhSJ/gFNa28PV4f850J4EG+/oompaKtgSuaYoR3CCWP0FhBnC0psqpdxCRal0Ucbl2zzCTDKRVai7uwbK8Xa1Vp+1+Xx3fly5bk6oKK6fekt+V2wCImiCwckuPh5oqGUvLLOCRQa1E8dVdHRCze7kyLP2xYlgqzRakTd7aL4HCrQTR0GkuuiDk3a8XSIlTKZaaSAboglT103A2LTJEuMupYw7KPaJH1HjxTUX/Tf/mmOG02hfsNtb4ltaildsHDZmhkqve3lLfUPeoZa1IqCRu1Ht3b1sOqyowbJs0YQ2re/5ajOeYt988/EknhBSyqPAk1jEp6AOJ0NAL0id2XKGR7SiVpTiG0COPHdAvOfGlLBC1bHwEAXv2DXRq1wknmle3XePtNI3D3OFYMRX1DFuc5Epb1jnSTpQfHGfwJKUXMMk+YXQ4sd0bSxH8yQA0xueJw20m4AA1McQaP/4dn9BpJMR6AhWpkluZ4jKyPAWqgbiNQqOWnonrACXSoeRqjGa3iLnupTjvOB5WsRjQa9FpPRajmAbJ+UuBI+R6tOo50QBOgdK0HIwXHhgB"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

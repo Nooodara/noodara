@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "diag-failed-deploy-catalog",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "377879a8e0f804c88cdc5995981fd17fdc3203f181d72041c2f5697612ec31b4",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01JYAATWo9h7P5hpp84AoQq5",
+            "name": "get_deployment",
+            "input": {
+              "deploymentId": "84059a0f-be85-4843-b1d5-045a62b661b5"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5453,
+          "outputTokens": 76
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01JYAATWo9h7P5hpp84AoQq5",
+              "name": "get_deployment",
+              "input": {
+                "deploymentId": "84059a0f-be85-4843-b1d5-045a62b661b5"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "1dfc1a183d434af860084685e81c8964602a8ac93a4e444558f28a17393be9d3",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01QKLc5HnQoyvajWRD55wkUE",
+            "name": "get_service",
+            "input": {
+              "serviceId": "73b26f13-cdff-4ed7-a273-cbda4091c9ec"
+            }
+          },
+          {
+            "id": "toolu_014Ec19YEwBbsuHLXS4fRrxb",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "73b26f13-cdff-4ed7-a273-cbda4091c9ec",
+              "sources": [
+                "build",
+                "deploy"
+              ],
+              "since": "2026-11-01T11:14:00.000Z",
+              "limit": 50
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6027,
+          "outputTokens": 237
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01QKLc5HnQoyvajWRD55wkUE",
+              "name": "get_service",
+              "input": {
+                "serviceId": "73b26f13-cdff-4ed7-a273-cbda4091c9ec"
+              }
+            },
+            {
+              "id": "toolu_014Ec19YEwBbsuHLXS4fRrxb",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "73b26f13-cdff-4ed7-a273-cbda4091c9ec",
+                "sources": [
+                  "build",
+                  "deploy"
+                ],
+                "since": "2026-11-01T11:14:00.000Z",
+                "limit": 50
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "a823f84c0d846753db155ad516ad1e0550dc1391b68315443307c6d21e230b45",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"The catalog update didn't go out because its build failed, so the new version was never deployed. The deployment 84059a0f-be85-4843-b1d5-045a62b661b5 (commit f4a5b6c on branch main, started manually by admin) began at 11:15:00 UTC on 2026-11-01. It failed at 11:16:35 with error code BUILD_FAILED. The build log shows why: \\\"npm ERR! code ERESOLVE could not resolve dependency tree\\\". npm couldn't find a set of package versions that fit together, so the Docker build stopped before any image was made. The catalog service still shows as RUNNING, so it is most likely still on the previous deployment (3b9fc93e-d5f3-469d-b985-e985cfe868df). I didn't check that deployment directly. To fix this, look at what changed in package.json or package-lock.json in commit f4a5b6c. The usual cause is a package update whose required companion packages (peer dependencies) clash with versions already in the project. Make the versions agree, or regenerate the lock file, then deploy again. I can't start a new deployment myself.\",\"diagnosis\":\"failed_deployment\",\"confidence\":0.93,\"entities\":[{\"kind\":\"Deployment\",\"id\":\"84059a0f-be85-4843-b1d5-045a62b661b5\",\"label\":\"catalog deployment f4a5b6c\"},{\"kind\":\"Service\",\"id\":\"73b26f13-cdff-4ed7-a273-cbda4091c9ec\",\"label\":\"catalog\"}],\"evidence\":[{\"ref\":\"84059a0f-be85-4843-b1d5-045a62b661b5\",\"note\":\"Status FAILED, errorCode BUILD_FAILED, errorMessage 'npm ERR! code ERESOLVE could not resolve dependency tree'; commit f4a5b6c, manual trigger by admin, 2026-11-01 11:15:00–11:16:35 UTC; no image was built.\"},{\"ref\":\"73b26f13-cdff-4ed7-a273-cbda4091c9ec\",\"note\":\"Build log at 11:16:40 UTC shows the same npm ERESOLVE error; the service status is still RUNNING.\"}],\"missingEvidence\":[\"The full npm build output naming which packages clash was not in the logs\",\"I did not confirm that the previous deployment 3b9fc93e-d5f3-469d-b985-e985cfe868df is the version running now\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 6880,
+          "outputTokens": 847
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"The catalog update didn't go out because its build failed, so the new version was never deployed. The deployment 84059a0f-be85-4843-b1d5-045a62b661b5 (commit f4a5b6c on branch main, started manually by admin) began at 11:15:00 UTC on 2026-11-01. It failed at 11:16:35 with error code BUILD_FAILED. The build log shows why: \\\"npm ERR! code ERESOLVE could not resolve dependency tree\\\". npm couldn't find a set of package versions that fit together, so the Docker build stopped before any image was made. The catalog service still shows as RUNNING, so it is most likely still on the previous deployment (3b9fc93e-d5f3-469d-b985-e985cfe868df). I didn't check that deployment directly. To fix this, look at what changed in package.json or package-lock.json in commit f4a5b6c. The usual cause is a package update whose required companion packages (peer dependencies) clash with versions already in the project. Make the versions agree, or regenerate the lock file, then deploy again. I can't start a new deployment myself.\",\"diagnosis\":\"failed_deployment\",\"confidence\":0.93,\"entities\":[{\"kind\":\"Deployment\",\"id\":\"84059a0f-be85-4843-b1d5-045a62b661b5\",\"label\":\"catalog deployment f4a5b6c\"},{\"kind\":\"Service\",\"id\":\"73b26f13-cdff-4ed7-a273-cbda4091c9ec\",\"label\":\"catalog\"}],\"evidence\":[{\"ref\":\"84059a0f-be85-4843-b1d5-045a62b661b5\",\"note\":\"Status FAILED, errorCode BUILD_FAILED, errorMessage 'npm ERR! code ERESOLVE could not resolve dependency tree'; commit f4a5b6c, manual trigger by admin, 2026-11-01 11:15:00–11:16:35 UTC; no image was built.\"},{\"ref\":\"73b26f13-cdff-4ed7-a273-cbda4091c9ec\",\"note\":\"Build log at 11:16:40 UTC shows the same npm ERESOLVE error; the service status is still RUNNING.\"}],\"missingEvidence\":[\"The full npm build output naming which packages clash was not in the logs\",\"I did not confirm that the previous deployment 3b9fc93e-d5f3-469d-b985-e985cfe868df is the version running now\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSuwUKEAgTGAI4AUIIdGhpbmtpbmcSDDAK8OznIkVMcLjwNxoMsEtRVVFFSSW/8sqxIjDDDS/h/SJl+0r/CWjHCUZIbdd1LR+yHhtHFpXUhufbSu+JiBBcX81DfekWs6tcwgUq2AQYnztjU+cZDAV/44/qDib7tKMFfsXeoSTrR5N8YMmU1p1v64spoydjJURkVwnwJUHZVJRhh43vzlua61EYoOiNG5KshDcTFZmwT/7w+mCHl2T7ysmc7lCuwIAwcBpIohOhqhAJpTVBDtWm0RSosdsk0b29+80GSfufuykOuzhiv8LUYN2C/s+w3Npa2SxO6TEz+Otnkmo6khB+GTtz9TBysyJSXhvQKUmTjyBgELdBHnLra+SQRdZCDyXmlP50XAqb4y5IUxnVxvkgrZtXtLmaQ1eU+0nByl/SzsfjSRQ0eQPuM52UItaKHND6dRLIRnjIxLqvQREqblGRI1uue7cvtUev3jNSvMc6ha4y5mGLCd2BfDDcKlPaSxxpn5kLbbgchLGK4TVZ7nxxQbRJawpndo8OIRZlZKnrPgx1d/vCmL47cEI4xNiNeWee5NpT2NOrp0yh+gLtUpYtlSBew31LA188UQtM1PYsheXiPwofkyLqCUHN3fc3XFocrrZZWZjyeFTpgvyU5EyFqo58VyXVVuTQVlNjUXwsWwBhy+QRDmgSld92LsfmYH4Cae/KLvKbXVrXi2jPYkNOMOWGuY/laSdeqg93Zdib4+eZsv7nNBk1w6H2pm5j2nPo7pBkTOg0oK4d+2QuY+zuEZGhxhkd18uyU1bfqKL9B7BRjo02FLfPBq51gV+TqLSmQoO8UUtP6I1GAWmGnOThjzN9KeHjjJiR5uGkur6HpciQMdgXBW84U0WlVssDWHeIalzDtmmVhKGE31nVlV7bNM5hYF/WZKAaLBiYCpIYAQ=="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

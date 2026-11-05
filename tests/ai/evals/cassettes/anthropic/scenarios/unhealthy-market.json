@@ -1,0 +1,292 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "unhealthy-market",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "1b06b68cd38c1dbc4e6b17af12cdb3a6df270264c505fa340625a0cdddf509f2",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_015Lna3PE3KjiZSKogMWHvbC",
+            "name": "list_services",
+            "input": {}
+          },
+          {
+            "id": "toolu_01Sd8aHMnNDPJVwc7uq7gnCg",
+            "name": "get_health",
+            "input": {
+              "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc"
+            }
+          },
+          {
+            "id": "toolu_01Jy3DEbiBU3MZMV442HBqSB",
+            "name": "get_health",
+            "input": {
+              "serviceId": "0d99807f-be81-4f4e-9745-78e43a39027e"
+            }
+          },
+          {
+            "id": "toolu_01DBxvvvQH3FgP7YJB9yVm8o",
+            "name": "get_health",
+            "input": {
+              "serviceId": "1d46ff85-d839-4089-89e8-2977c3ae77aa"
+            }
+          },
+          {
+            "id": "toolu_0198ScBtiXKcjkZ62bqAxfYS",
+            "name": "get_health",
+            "input": {
+              "serviceId": "d7b023d8-aafa-42c0-b31d-f3036a8441a6"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5623,
+          "outputTokens": 335
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_015Lna3PE3KjiZSKogMWHvbC",
+              "name": "list_services",
+              "input": {}
+            },
+            {
+              "id": "toolu_01Sd8aHMnNDPJVwc7uq7gnCg",
+              "name": "get_health",
+              "input": {
+                "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc"
+              }
+            },
+            {
+              "id": "toolu_01Jy3DEbiBU3MZMV442HBqSB",
+              "name": "get_health",
+              "input": {
+                "serviceId": "0d99807f-be81-4f4e-9745-78e43a39027e"
+              }
+            },
+            {
+              "id": "toolu_01DBxvvvQH3FgP7YJB9yVm8o",
+              "name": "get_health",
+              "input": {
+                "serviceId": "1d46ff85-d839-4089-89e8-2977c3ae77aa"
+              }
+            },
+            {
+              "id": "toolu_0198ScBtiXKcjkZ62bqAxfYS",
+              "name": "get_health",
+              "input": {
+                "serviceId": "d7b023d8-aafa-42c0-b31d-f3036a8441a6"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS7wQKEAgTGAI4AUIIdGhpbmtpbmcSDE85cL2SfRcPf9jKyxoM+hattIrNb8TVbKISIjC1mOExYvEcm2+gDtvvENIg/jBmi3ayl8yt3y0owoJea8KGkbxy5XePiCOJ23lf3cYqjAQBFdZQRnaS44cT2gwHh5iY/V+LmA3BtUtfV9IQqcmQ85by/HD3nE4l5h1OibmsbfCShjokID3yLPrXD51DC2jInkLMsofJqcwT2xOb7JrwYHLizuMjhGEl8tfgWR9jp9XxzLTXIZz5d74hA7+G5wtdYHJ/RqUip50ZX8hn+7RSSq45whBuht1zkDFf+h64Sax9EFTm0tsFiZteHk0yEbfeRC4NLF3fLwYcN9debLIFvAuPqs3IVXG9XSvUTYpDh+RuXll2txL8vY9Rq6WFgAbte0NMTQwzzoLD+S7rxhPZibnrOovQlhYtO+QbjASvwiKGZ62+NPhoy8LVeR/JEYC6AlGx0+UckFhMdbih7hRQrMwo9TTilDLTbhIr5XT79/dP/40HOhqcLmi22nT9ooU5KHOoiyYdPqJkcr8m7XDFhYkNXSiq0sZxhxr7aazRNKUd3bdpqeN+H+0N+aQ0d5r/wtjSZ1mK6dxqDZXRIXRr0HdUh5C9Pf7syh80ntak53SJ4osGTuhnJL1/3Uokol/D42xKINSFBh2rw+EBjGeue+2+BRmx3e2OXzTkHMBS7H2Ml2u3MJdkYm/acmK/TPfm1Lhb9btSOD3gFwzj9eFa7kbFuSsyzNtp6TFkKd4Bg2geJbg8CB1Givtzc9LcduP0D/utH2ZaMNlWZPcnttJLyBrZFIXS4mym4BzKvxgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "99a0991a6915b79bad05a00f828af2cc95c1f8eb02100bee158c1056edc106a7",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01QU9h5sLJbgxB9L9GPvDLxt",
+            "name": "get_health",
+            "input": {
+              "serviceId": "73b26f13-cdff-4ed7-a273-cbda4091c9ec"
+            }
+          },
+          {
+            "id": "toolu_01HW9h5ogDVfR9681VVt4DZH",
+            "name": "get_health",
+            "input": {
+              "serviceId": "29ad7a08-d7d4-4a91-8bd2-82c870bd62a1"
+            }
+          },
+          {
+            "id": "toolu_01UjVDncMd8MaNPq8Eifr6uP",
+            "name": "get_health",
+            "input": {
+              "serviceId": "86a135f8-cdab-4a24-a02a-07c7c2d82556"
+            }
+          },
+          {
+            "id": "toolu_01S25Ak2XDJK3wgLmx8AqDu1",
+            "name": "get_health",
+            "input": {
+              "serviceId": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb"
+            }
+          },
+          {
+            "id": "toolu_01Bwz1sqHbjyzgApX16ZzzBe",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc",
+              "limit": 20
+            }
+          },
+          {
+            "id": "toolu_01ACQznHsgHoGnK5fM85tUWZ",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "d7b023d8-aafa-42c0-b31d-f3036a8441a6",
+              "limit": 20
+            }
+          },
+          {
+            "id": "toolu_014crJVh87fXQXHJKEAs6SZr",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "0d99807f-be81-4f4e-9745-78e43a39027e",
+              "limit": 20
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 9790,
+          "outputTokens": 637
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01QU9h5sLJbgxB9L9GPvDLxt",
+              "name": "get_health",
+              "input": {
+                "serviceId": "73b26f13-cdff-4ed7-a273-cbda4091c9ec"
+              }
+            },
+            {
+              "id": "toolu_01HW9h5ogDVfR9681VVt4DZH",
+              "name": "get_health",
+              "input": {
+                "serviceId": "29ad7a08-d7d4-4a91-8bd2-82c870bd62a1"
+              }
+            },
+            {
+              "id": "toolu_01UjVDncMd8MaNPq8Eifr6uP",
+              "name": "get_health",
+              "input": {
+                "serviceId": "86a135f8-cdab-4a24-a02a-07c7c2d82556"
+              }
+            },
+            {
+              "id": "toolu_01S25Ak2XDJK3wgLmx8AqDu1",
+              "name": "get_health",
+              "input": {
+                "serviceId": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb"
+              }
+            },
+            {
+              "id": "toolu_01Bwz1sqHbjyzgApX16ZzzBe",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc",
+                "limit": 20
+              }
+            },
+            {
+              "id": "toolu_01ACQznHsgHoGnK5fM85tUWZ",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "d7b023d8-aafa-42c0-b31d-f3036a8441a6",
+                "limit": 20
+              }
+            },
+            {
+              "id": "toolu_014crJVh87fXQXHJKEAs6SZr",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "0d99807f-be81-4f4e-9745-78e43a39027e",
+                "limit": 20
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSpgYKEAgTGAI4AUIIdGhpbmtpbmcSDFKtE76J63BiXxb1SRoMWVyzPdCFe/dp9sUPIjA0FxLHz8kyZyLAMiI66W2Gy5qD9H8Ogt/390Qv6auKBRhYZ2yvPu4uHPsTZaxU//EqwwVnkV8GUQsgrgMwBWbDAw5zM3tX/6t8kJ8sDDpL2Y39qZaCazWB+yumywDVUhzsHI9CcyH9fHEnpIh6aH42vbsytT80m+RPEsVskCitPAoIJFayBwOnG0x5pNBRW8qOQiA/8MDigwSI20Pe8VzFYl2CmPKAdPfU929VMJTGRDG2OXf9+9xV16Iy5tbQ2b1555LwFXsDwfCGav7xfWjZQk7QM1X590SLLV695J0P+7uxitRf64QS02psnxdBC8G/Xq+F3UcVa/+RMOcfR+p5YQ/kLsjRbLHnOF3aeNxrisFzyVZO0LCyl9L3MxjGw7nrmckNWEm+aGJJOBimKOS8keejfaAvFEI2JTI4xLunAR+C2sxug1rHPk00XbDEmZOrA4/oxVyNR9h3aVqRtHP/boHjWEow2qRjX0w/ZjGWuGYSz0FY1qQIZv4yTNqHD/2HUuRPQdIaLTK+qsq/36grccozI9YO7At1uUQLZQdnEFI0dol7YWNbXSlpOYmco64QYkF1jT/cEGy2WmxfxgX6rtplz0ViU3gDcL/PRmJU4Nl6TcTiHsajgRt5guvXVHaN67dJCTLlxjdIXuI+G5auaNsevOs3SOYt0N4bT96rM72qkv2Hl0I+50GH20v8dAO4DcipfjtRMBzpjgv4WNy0H3nWnswO4O/HwmqZA2UBT8mvuEzGSeiGKOdPYKCSc0cHtrL4YfSjZkh7NDmGQeyyXCvwG5fI3Lz/6r3BO0IZzGFRN3s4/5Nl3HerQJqp1DlCB6GMFSOxUMR4X3vX1AJOYlw4lWDHtjZfMg5gTVlkBGqC9pChclAWl3x8nfUpcAFZnyMap/07aZR1bA4GrBCrIJUSGXOhZ8k6tJuyPNhZWId913dhrdF/YudmFKwW5ZSIcx0sa36WZDqCXXGXrt48P+qJup8Tfrj7w933kILLh401CP4tNxgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "a4a72c1e7fbeaa48db70a9a72c3f5d47b140c37f2fb83dd3691d08a16d3ac8c6",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "```json\n{\"answer\": \"Five services show problems. Four of them are clearly unhealthy:\\n\\n1. **checkout**: Failed. The container has stopped (2 restarts). Its logs show the app ran out of memory while processing a batch of 5,000 cart items. This is the most serious problem.\\n2. **cart**: Failed and restarting over and over (14 restarts so far). Each time it starts, it crashes with `Cannot find module './config/production.json'`. The config file is missing from image 1.4.0 or from the deployment, and this started after the 2026-11-01 10:31 deployment.\\n3. **search**: The container is running, but its `/ready` health check times out.\\n4. **gateway**: Marked as running, but it isn't reachable. Its log says `listening on 127.0.0.1:9443`, while the service is set up for port 8443 and publishes 8443. It's using the wrong port and only accepts connections from inside the container. It has no health check, so nothing flags this.\\n\\nThe fifth is **mailer**, which is stopped (container stopped, 0 restarts). That looks like someone stopped it on purpose, not a crash, but please confirm it should be off.\\n\\nTwo warnings on services that are otherwise healthy:\\n- **recommender** is above the high-memory threshold.\\n- **catalog**'s latest deployment failed, but the running container is still healthy.\\n- Every service is flagged for high disk use, which points to the server they all share (f24510dd-db3a-4d3c-baf5-f926c6895653). I didn't read the server's disk metrics.\\n\\ncatalog, inventory and recommender are passing their health checks.\\n\\nI can only read data, so I can't restart, redeploy or reconfigure anything. To fix these:\\n- **checkout**: raise its memory limit or Node heap size, or make the batches smaller.\\n- **cart**: make sure `config/production.json` is included in the image.\\n- **search**: look at why `/ready` responds slowly.\\n- **gateway**: have it listen on 0.0.0.0:8443.\", \"diagnosis\": \"out_of_memory\", \"confidence\": 0.8, \"entities\": [{\"kind\": \"Service\", \"id\": \"fa5ec119-fcfb-410a-983c-e9068fa972cc\", \"label\": \"checkout\"}, {\"kind\": \"Service\", \"id\": \"0d99807f-be81-4f4e-9745-78e43a39027e\", \"label\": \"cart\"}, {\"kind\": \"Service\", \"id\": \"1d46ff85-d839-4089-89e8-2977c3ae77aa\", \"label\": \"search\"}, {\"kind\": \"Service\", \"id\": \"d7b023d8-aafa-42c0-b31d-f3036a8441a6\", \"label\": \"gateway\"}, {\"kind\": \"Service\", \"id\": \"86a135f8-cdab-4a24-a02a-07c7c2d82556\", \"label\": \"mailer\"}, {\"kind\": \"Service\", \"id\": \"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\", \"label\": \"recommender\"}, {\"kind\": \"Service\", \"id\": \"73b26f13-cdff-4ed7-a273-cbda4091c9ec\", \"label\": \"catalog\"}, {\"kind\": \"Server\", \"id\": \"f24510dd-db3a-4d3c-baf5-f926c6895653\", \"label\": \"host server\"}], \"evidence\": [{\"ref\": \"fa5ec119-fcfb-410a-983c-e9068fa972cc\", \"note\": \"runtimeStatus FAILED, container exited, restartCount 2; log at 11:53:40 shows 'JavaScript heap out of memory' after 'processing cart batch of 5000 items'\"}, {\"ref\": \"0d99807f-be81-4f4e-9745-78e43a39027e\", \"note\": \"runtimeStatus FAILED, container restarting, restartCount 14; repeated error \\\"Cannot find module './config/production.json'\\\"\"}, {\"ref\": \"8dd0cbfe-d2ab-42ed-92c9-2a200726f7d7\", \"note\": \"cart's last deployment (SUCCESS, 2026-11-01T10:31), after which the crash loop is seen\"}, {\"ref\": \"1d46ff85-d839-4089-89e8-2977c3ae77aa\", \"note\": \"container running, health check status 'timeout' (path /ready)\"}, {\"ref\": \"d7b023d8-aafa-42c0-b31d-f3036a8441a6\", \"note\": \"internal and published port 8443, no health check; log says 'listening on 127.0.0.1:9443'\"}, {\"ref\": \"86a135f8-cdab-4a24-a02a-07c7c2d82556\", \"note\": \"runtimeStatus STOPPED, container exited, restartCount 0\"}, {\"ref\": \"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\", \"note\": \"healthy, but highMemory flag true\"}, {\"ref\": \"84059a0f-be85-4843-b1d5-045a62b661b5\", \"note\": \"catalog's latest deployment FAILED at 2026-11-01T11:16:35; catalog container still running and healthy\"}, {\"ref\": \"f24510dd-db3a-4d3c-baf5-f926c6895653\", \"note\": \"all services run on this server and all have the highDisk flag set\"}], \"missingEvidence\": [\"",
+        "toolCalls": [],
+        "stopReason": "max_tokens",
+        "usage": {
+          "inputTokens": 12387,
+          "outputTokens": 2048
+        },
+        "message": {
+          "role": "assistant",
+          "content": "```json\n{\"answer\": \"Five services show problems. Four of them are clearly unhealthy:\\n\\n1. **checkout**: Failed. The container has stopped (2 restarts). Its logs show the app ran out of memory while processing a batch of 5,000 cart items. This is the most serious problem.\\n2. **cart**: Failed and restarting over and over (14 restarts so far). Each time it starts, it crashes with `Cannot find module './config/production.json'`. The config file is missing from image 1.4.0 or from the deployment, and this started after the 2026-11-01 10:31 deployment.\\n3. **search**: The container is running, but its `/ready` health check times out.\\n4. **gateway**: Marked as running, but it isn't reachable. Its log says `listening on 127.0.0.1:9443`, while the service is set up for port 8443 and publishes 8443. It's using the wrong port and only accepts connections from inside the container. It has no health check, so nothing flags this.\\n\\nThe fifth is **mailer**, which is stopped (container stopped, 0 restarts). That looks like someone stopped it on purpose, not a crash, but please confirm it should be off.\\n\\nTwo warnings on services that are otherwise healthy:\\n- **recommender** is above the high-memory threshold.\\n- **catalog**'s latest deployment failed, but the running container is still healthy.\\n- Every service is flagged for high disk use, which points to the server they all share (f24510dd-db3a-4d3c-baf5-f926c6895653). I didn't read the server's disk metrics.\\n\\ncatalog, inventory and recommender are passing their health checks.\\n\\nI can only read data, so I can't restart, redeploy or reconfigure anything. To fix these:\\n- **checkout**: raise its memory limit or Node heap size, or make the batches smaller.\\n- **cart**: make sure `config/production.json` is included in the image.\\n- **search**: look at why `/ready` responds slowly.\\n- **gateway**: have it listen on 0.0.0.0:8443.\", \"diagnosis\": \"out_of_memory\", \"confidence\": 0.8, \"entities\": [{\"kind\": \"Service\", \"id\": \"fa5ec119-fcfb-410a-983c-e9068fa972cc\", \"label\": \"checkout\"}, {\"kind\": \"Service\", \"id\": \"0d99807f-be81-4f4e-9745-78e43a39027e\", \"label\": \"cart\"}, {\"kind\": \"Service\", \"id\": \"1d46ff85-d839-4089-89e8-2977c3ae77aa\", \"label\": \"search\"}, {\"kind\": \"Service\", \"id\": \"d7b023d8-aafa-42c0-b31d-f3036a8441a6\", \"label\": \"gateway\"}, {\"kind\": \"Service\", \"id\": \"86a135f8-cdab-4a24-a02a-07c7c2d82556\", \"label\": \"mailer\"}, {\"kind\": \"Service\", \"id\": \"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\", \"label\": \"recommender\"}, {\"kind\": \"Service\", \"id\": \"73b26f13-cdff-4ed7-a273-cbda4091c9ec\", \"label\": \"catalog\"}, {\"kind\": \"Server\", \"id\": \"f24510dd-db3a-4d3c-baf5-f926c6895653\", \"label\": \"host server\"}], \"evidence\": [{\"ref\": \"fa5ec119-fcfb-410a-983c-e9068fa972cc\", \"note\": \"runtimeStatus FAILED, container exited, restartCount 2; log at 11:53:40 shows 'JavaScript heap out of memory' after 'processing cart batch of 5000 items'\"}, {\"ref\": \"0d99807f-be81-4f4e-9745-78e43a39027e\", \"note\": \"runtimeStatus FAILED, container restarting, restartCount 14; repeated error \\\"Cannot find module './config/production.json'\\\"\"}, {\"ref\": \"8dd0cbfe-d2ab-42ed-92c9-2a200726f7d7\", \"note\": \"cart's last deployment (SUCCESS, 2026-11-01T10:31), after which the crash loop is seen\"}, {\"ref\": \"1d46ff85-d839-4089-89e8-2977c3ae77aa\", \"note\": \"container running, health check status 'timeout' (path /ready)\"}, {\"ref\": \"d7b023d8-aafa-42c0-b31d-f3036a8441a6\", \"note\": \"internal and published port 8443, no health check; log says 'listening on 127.0.0.1:9443'\"}, {\"ref\": \"86a135f8-cdab-4a24-a02a-07c7c2d82556\", \"note\": \"runtimeStatus STOPPED, container exited, restartCount 0\"}, {\"ref\": \"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\", \"note\": \"healthy, but highMemory flag true\"}, {\"ref\": \"84059a0f-be85-4843-b1d5-045a62b661b5\", \"note\": \"catalog's latest deployment FAILED at 2026-11-01T11:16:35; catalog container still running and healthy\"}, {\"ref\": \"f24510dd-db3a-4d3c-baf5-f926c6895653\", \"note\": \"all services run on this server and all have the highDisk flag set\"}], \"missingEvidence\": [\"",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSvwsKEAgTGAI4AUIIdGhpbmtpbmcSDBEAeWDEvOrD+AjzIhoMOGFgV0XJHGjF+qWeIjCX35zI7tBVuaHLJWX2v9LKKeyLrxJOcX9dKxA2JBB+9a2Cfp5h2Ju+kyxZ8WfusZAq3Aq5UsLJ8ZGCLcT/MmGzikAJTd9z6k++t4I26NSYrgt+pVzXxwomdws1oWVY1x0/lDm3xlyM5nlohrOQNn1RccQYhRNjrmdBK6DBDO41yqZWvymp8kf72Blfg6FP5Yg3uFQ5auRSNR1RjuO134P3xxjjU1+MhMbtfPrhV5JM9bhJ7vrGb2SEz4N7+xMeXPWtDb/ZLZW2MVPJaJvWVglMBgXehLH/EpRpDxdjPPn83WR5/tj/49eih34ITJEfTk+Lpf6bc1OMunRBYNN8Umg0fnwWUaEc2VAh36DXsIeVi3GogoDFlOMgq4GjbWXc6cB/n28SNxKZcK3ovyVAUTpMfGax4vqCHQWIOTQWatrOmyOEpauxtAPvGeOYvCC6JTkKJKZx4S3dNYJ9jtoXbuKSYdtIDmCi74vryLZvwx7MgeHId3yy9W2dB6vHHlR2llKhg5O01bjEdwL/yUD412RkPnN1e2uaKBwVlaX8JbKNRs70QGltlspj0rx+KAbs5El4vbKozwarhvtC9rEOPesoIMlp+IYNkZe6V2R9T2e+XNxIDdcvGC7IWc9bJYe3FWYRT0Ib1geDk9ffOLREO8PM3xS/qQDWc6cr5nnzH7uqY9JkaE3OK32k33ZimrV3kXdKKjeT+Z/iCEzvT/Y9UYGxhWvN5A67f0kBB4pQijM9Mv55CTu86KHTIMv7uNncTSPqRlggZ4zByqRxPQVHELiTquzPV7y1A4ZBLIdlfOeabAGH97sLpIlbcgFPQuBRJE7FUovvs3vb5hkRZMDR3/YVNaKL6B9ZmqKs9DHOXOqQ1hsBMdekuO41fE56r8ng/Dv1RLMxL5fb9JXCVd7vDLaUskZsdPy6auPn4ir00+EyfMNdMNtcnZbN/uSn9h4eua7BKLlylqEighjq72JyLwaoB58f6REezjPP9F3gNHyJ6ivIa9g4OZGEHEiVbvWEKhcmQ1L54JNng7tqOA57iL3i6pFHeRVHLaq+TtYz2ztJnQMrjaI7UcSMmfWeQzw3+Gks5Up3loO0WfGOT9ii+W5fg4rFQfwmjuV/GnVdFzL1+0HPbjn2Dgyh7AQvAPtygYmQ7KCRTHvVcK0ijIDa9pqi2NVPB/WX1Gdb5HaDHs6oe2ITiDmFdrBW477ZXM2xcNGY6+NokIW+xPYRcRekLZdhEghdt/gT66USaZMGPCvZD2qcfRVqSeVb7cXwzjKBQiPK+uXqq05IsMQC9Mc7Ulhh7oUN08G69TYwxgU3u2rdrGjeSYRvUkmNPDhI9SNo2Y94RWmxBFqSR3XI2KfnhiR8wqx6MNieTnxQZFV9EORrrffkZn0EUsmZM7eDm/636Zo5nbkkUD6HJ1fjwJywL3q6nKQ2E99fpxyGWaGr/kYNfrcnRYz5im1I4Slvlv3IdllqoWA/tX97SmERilV0jth94jzaiacckcRaNBCfsSanveveCSVmKDSRiIJYcZvXZaega1uwzEgh3RoftfnwXMufCNNI0Kcb6Mz9z0qnWNduvYkq6Ed1y29m70Pysp/floYm9QV4ILWkpd6VjHVfmCKznFDLaL9eVxIFIK3I9chCUqdNMchlhb9zBg79ERg4X56dk6VXmX6+qbiMs9npbh4Vbv7CZ9126cv22KaBDrXckNFy3P+Fw4DIu5cwbG9JPWQls3YLAsTu/jDm9JKrrOu+lJYpuRCz7OnqKRGE+7Zd7vhFkyuTSweGk2bXNVvvl9pBVrcrcqCrvGQPAtdEjAQs7oIZY9tIy0iycl+EKWD/zZ7pE+WM2dUNlpAKSDbS4MkkPg9o8L6PuVN0TfiqW8DJh0tfuI0qmqGdBvt8VpxbGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "37031e316e5261a39029ec36d75cc0853451d5db81aacb9e3c38da6691d2f9ad",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "```json\n{\"answer\": \"Five services show problems. Four of them are clearly unhealthy:\\n\\n1. **checkout**: Failed. The container has stopped (2 restarts). Its logs show the app ran out of memory while processing a batch of 5,000 cart items. This is the most serious problem.\\n2. **cart**: Failed and restarting over and over (14 restarts so far). Each time it starts, it crashes with `Cannot find module './config/production.json'`. The config file is missing from image 1.4.0 or from the deployment, and this started after the 2026-11-01 10:31 deployment.\\n3. **search**: The container is running, but its `/ready` health check times out.\\n4. **gateway**: Marked as running, but it isn't reachable. Its log says `listening on 127.0.0.1:9443`, while the service is set up for port 8443 and publishes 8443. It's using the wrong port and only accepts connections from inside the container. It has no health check, so nothing flags this.\\n\\nThe fifth is **mailer**, which is stopped (container stopped, 0 restarts). That looks like someone stopped it on purpose, not a crash, but please confirm it should be off.\\n\\nTwo warnings on services that are otherwise healthy:\\n- **recommender** is above the high-memory threshold.\\n- **catalog**'s latest deployment failed, but the running container is still healthy.\\n- Every service is flagged for high disk use, which points to the server they all share. I didn't read the server's disk metrics.\\n\\ncatalog, inventory and recommender are passing their health checks.\\n\\nI can only read data, so I can't restart, redeploy or reconfigure anything. To fix these:\\n- **checkout**: raise its memory limit or Node heap size, or make the batches smaller.\\n- **cart**: make sure `config/production.json` is included in the image.\\n- **search**: look at why `/ready` responds slowly.\\n- **gateway**: have it listen on 0.0.0.0:8443.\", \"diagnosis\": \"out_of_memory\", \"confidence\": 0.8, \"entities\": [{\"kind\": \"Service\", \"id\": \"fa5ec119-fcfb-410a-983c-e9068fa972cc\", \"label\": \"checkout\"}, {\"kind\": \"Service\", \"id\": \"0d99807f-be81-4f4e-9745-78e43a39027e\", \"label\": \"cart\"}, {\"kind\": \"Service\", \"id\": \"1d46ff85-d839-4089-89e8-2977c3ae77aa\", \"label\": \"search\"}, {\"kind\": \"Service\", \"id\": \"d7b023d8-aafa-42c0-b31d-f3036a8441a6\", \"label\": \"gateway\"}, {\"kind\": \"Service\", \"id\": \"86a135f8-cdab-4a24-a02a-07c7c2d82556\", \"label\": \"mailer\"}, {\"kind\": \"Service\", \"id\": \"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\", \"label\": \"recommender\"}, {\"kind\": \"Service\", \"id\": \"73b26f13-cdff-4ed7-a273-cbda4091c9ec\", \"label\": \"catalog\"}, {\"kind\": \"Server\", \"id\": \"f24510dd-db3a-4d3c-baf5-f926c6895653\", \"label\": \"host server\"}], \"evidence\": [{\"ref\": \"fa5ec119-fcfb-410a-983c-e9068fa972cc\", \"note\": \"runtimeStatus FAILED, container exited, restartCount 2; log at 11:53:40 shows 'JavaScript heap out of memory' after 'processing cart batch of 5000 items'\"}, {\"ref\": \"0d99807f-be81-4f4e-9745-78e43a39027e\", \"note\": \"runtimeStatus FAILED, container restarting, restartCount 14; repeated error \\\"Cannot find module './config/production.json'\\\"\"}, {\"ref\": \"8dd0cbfe-d2ab-42ed-92c9-2a200726f7d7\", \"note\": \"cart's last deployment (SUCCESS, 2026-11-01T10:31), after which the crash loop is seen\"}, {\"ref\": \"1d46ff85-d839-4089-89e8-2977c3ae77aa\", \"note\": \"container running, health check status 'timeout' (path /ready)\"}, {\"ref\": \"d7b023d8-aafa-42c0-b31d-f3036a8441a6\", \"note\": \"internal and published port 8443, no health check; log says 'listening on 127.0.0.1:9443'\"}, {\"ref\": \"86a135f8-cdab-4a24-a02a-07c7c2d82556\", \"note\": \"runtimeStatus STOPPED, container exited, restartCount 0\"}, {\"ref\": \"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\", \"note\": \"healthy, but highMemory flag true\"}, {\"ref\": \"84059a0f-be85-4843-b1d5-045a62b661b5\", \"note\": \"catalog's latest deployment FAILED at 2026-11-01T11:16:35; catalog container still running and healthy\"}, {\"ref\": \"f24510dd-db3a-4d3c-baf5-f926c6895653\", \"note\": \"all services run on this server and all have the highDisk flag set\"}], \"missingEvidence\": [\"Logs for search explaining the /ready timeout were not read\", \"Server disk metrics were not read to confirm the high-disk flag\", \"No log shows why mailer was stopped\"]}\n```",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 14479,
+          "outputTokens": 1811
+        },
+        "message": {
+          "role": "assistant",
+          "content": "```json\n{\"answer\": \"Five services show problems. Four of them are clearly unhealthy:\\n\\n1. **checkout**: Failed. The container has stopped (2 restarts). Its logs show the app ran out of memory while processing a batch of 5,000 cart items. This is the most serious problem.\\n2. **cart**: Failed and restarting over and over (14 restarts so far). Each time it starts, it crashes with `Cannot find module './config/production.json'`. The config file is missing from image 1.4.0 or from the deployment, and this started after the 2026-11-01 10:31 deployment.\\n3. **search**: The container is running, but its `/ready` health check times out.\\n4. **gateway**: Marked as running, but it isn't reachable. Its log says `listening on 127.0.0.1:9443`, while the service is set up for port 8443 and publishes 8443. It's using the wrong port and only accepts connections from inside the container. It has no health check, so nothing flags this.\\n\\nThe fifth is **mailer**, which is stopped (container stopped, 0 restarts). That looks like someone stopped it on purpose, not a crash, but please confirm it should be off.\\n\\nTwo warnings on services that are otherwise healthy:\\n- **recommender** is above the high-memory threshold.\\n- **catalog**'s latest deployment failed, but the running container is still healthy.\\n- Every service is flagged for high disk use, which points to the server they all share. I didn't read the server's disk metrics.\\n\\ncatalog, inventory and recommender are passing their health checks.\\n\\nI can only read data, so I can't restart, redeploy or reconfigure anything. To fix these:\\n- **checkout**: raise its memory limit or Node heap size, or make the batches smaller.\\n- **cart**: make sure `config/production.json` is included in the image.\\n- **search**: look at why `/ready` responds slowly.\\n- **gateway**: have it listen on 0.0.0.0:8443.\", \"diagnosis\": \"out_of_memory\", \"confidence\": 0.8, \"entities\": [{\"kind\": \"Service\", \"id\": \"fa5ec119-fcfb-410a-983c-e9068fa972cc\", \"label\": \"checkout\"}, {\"kind\": \"Service\", \"id\": \"0d99807f-be81-4f4e-9745-78e43a39027e\", \"label\": \"cart\"}, {\"kind\": \"Service\", \"id\": \"1d46ff85-d839-4089-89e8-2977c3ae77aa\", \"label\": \"search\"}, {\"kind\": \"Service\", \"id\": \"d7b023d8-aafa-42c0-b31d-f3036a8441a6\", \"label\": \"gateway\"}, {\"kind\": \"Service\", \"id\": \"86a135f8-cdab-4a24-a02a-07c7c2d82556\", \"label\": \"mailer\"}, {\"kind\": \"Service\", \"id\": \"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\", \"label\": \"recommender\"}, {\"kind\": \"Service\", \"id\": \"73b26f13-cdff-4ed7-a273-cbda4091c9ec\", \"label\": \"catalog\"}, {\"kind\": \"Server\", \"id\": \"f24510dd-db3a-4d3c-baf5-f926c6895653\", \"label\": \"host server\"}], \"evidence\": [{\"ref\": \"fa5ec119-fcfb-410a-983c-e9068fa972cc\", \"note\": \"runtimeStatus FAILED, container exited, restartCount 2; log at 11:53:40 shows 'JavaScript heap out of memory' after 'processing cart batch of 5000 items'\"}, {\"ref\": \"0d99807f-be81-4f4e-9745-78e43a39027e\", \"note\": \"runtimeStatus FAILED, container restarting, restartCount 14; repeated error \\\"Cannot find module './config/production.json'\\\"\"}, {\"ref\": \"8dd0cbfe-d2ab-42ed-92c9-2a200726f7d7\", \"note\": \"cart's last deployment (SUCCESS, 2026-11-01T10:31), after which the crash loop is seen\"}, {\"ref\": \"1d46ff85-d839-4089-89e8-2977c3ae77aa\", \"note\": \"container running, health check status 'timeout' (path /ready)\"}, {\"ref\": \"d7b023d8-aafa-42c0-b31d-f3036a8441a6\", \"note\": \"internal and published port 8443, no health check; log says 'listening on 127.0.0.1:9443'\"}, {\"ref\": \"86a135f8-cdab-4a24-a02a-07c7c2d82556\", \"note\": \"runtimeStatus STOPPED, container exited, restartCount 0\"}, {\"ref\": \"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\", \"note\": \"healthy, but highMemory flag true\"}, {\"ref\": \"84059a0f-be85-4843-b1d5-045a62b661b5\", \"note\": \"catalog's latest deployment FAILED at 2026-11-01T11:16:35; catalog container still running and healthy\"}, {\"ref\": \"f24510dd-db3a-4d3c-baf5-f926c6895653\", \"note\": \"all services run on this server and all have the highDisk flag set\"}], \"missingEvidence\": [\"Logs for search explaining the /ready timeout were not read\", \"Server disk metrics were not read to confirm the high-disk flag\", \"No log shows why mailer was stopped\"]}\n```",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,194 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "diag-healthcheck-search",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "7860275cebb7f2163824dfd062aa15cf5e0b2809f473bcf00500716107dd3500",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01PHWKRbjDGRTxQTmWUZgVVv",
+            "name": "get_health",
+            "input": {
+              "serviceId": "1d46ff85-d839-4089-89e8-2977c3ae77aa"
+            }
+          },
+          {
+            "id": "toolu_01CRXPkD8Xz5DBomHzUeU5TH",
+            "name": "get_service",
+            "input": {
+              "serviceId": "1d46ff85-d839-4089-89e8-2977c3ae77aa"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5454,
+          "outputTokens": 147
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01PHWKRbjDGRTxQTmWUZgVVv",
+              "name": "get_health",
+              "input": {
+                "serviceId": "1d46ff85-d839-4089-89e8-2977c3ae77aa"
+              }
+            },
+            {
+              "id": "toolu_01CRXPkD8Xz5DBomHzUeU5TH",
+              "name": "get_service",
+              "input": {
+                "serviceId": "1d46ff85-d839-4089-89e8-2977c3ae77aa"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "62caa883359d6aa7a1a17f5cbec5aaf0d1d990d016233d48c40c63eaa5fc1bd5",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_014XZASd2WHirZxXf4QjQiar",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "1d46ff85-d839-4089-89e8-2977c3ae77aa",
+              "limit": 40
+            }
+          },
+          {
+            "id": "toolu_01T6A2LrWQrWiRkJtmBtDMZP",
+            "name": "get_server",
+            "input": {
+              "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6316,
+          "outputTokens": 188
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_014XZASd2WHirZxXf4QjQiar",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "1d46ff85-d839-4089-89e8-2977c3ae77aa",
+                "limit": 40
+              }
+            },
+            {
+              "id": "toolu_01T6A2LrWQrWiRkJtmBtDMZP",
+              "name": "get_server",
+              "input": {
+                "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS7wQKEAgTGAI4AUIIdGhpbmtpbmcSDOLJn+Wlc99xAi+YfxoMxsBgyrDD5jRGzB3xIjCw/lNG8tQbDvuoJcu4c+4U49d3DzGv1SeWDpcvVCKiyTKxJf9lxzJu2z1Dn8cH9NYqjARl4o9vD+u5zBrepLCACt+DoMDxAMn/zHvUT1+A4UoMIUoQH8iEh7luBIofI4wfg/UFJ6A52KRcf+IWdxzc6Cyz+wFvHGZrbbFr5sD3q/RgC60fPQ0D/TRZM7uZ/BpT6nQ23aIb+h0sbTGXaj9G+0d2njAsutnhkKPCuWosgMnqqob7Us31khRDruwTkiGwVQ/wPjw0eCMBydpk5aBYdoMTJSWkBpA2oy2DNd44/JIHiX0SZCoxemyWSRQ3ejsUJREORv21GQS/oFyuAlSzysb78BbPDEAWUZ7iCBEg8rCXNPDPhUSBOepWDZdCR3spBaXCzxtDhWt4XwjSjrrl8t/5vhqgjNVe1X+x4jKfBAZgWnehBydrfVit8Q0iS/HSehWxwCgDstnT0Sb2SP8eA5UI5/Qw8Tyruco0kZX+uDdDJ42t6CpAI1W8DmradMcUpVDfjKwS3wyY0R1HsvzYwTMU4cIVOkqbaTqdGNN/bCN01wcYbj1MAWGyj2yVbrx7SyFG+VO0xGrw2717nkZMfagTIDbwi+sR+Ycwm2vRRLSmi6wFFlliHuSIVfSpqqHlFPC30DeNa/2DxoFt34Y7WL37BswWYEsAO2UIgI5oBEAmSIUX7anQ7OSkZrAOT+GKx6Qp2l1TBnK9GD71hgtFCs+8Y8VvoyCfbsoKgZ8S7HPZEioKw9FxdJbs9nwmExgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "4230b4bd6bf710b19d2e2ab703b8bde4c60dd10914f38e495b29bc88c3815ed1",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_019QQ1vMckb26G4cKkKrvoLL",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "1d46ff85-d839-4089-89e8-2977c3ae77aa",
+              "from": "2026-11-01T01:00:00Z",
+              "to": "2026-11-01T12:00:00Z",
+              "points": 12
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7066,
+          "outputTokens": 225
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_019QQ1vMckb26G4cKkKrvoLL",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "1d46ff85-d839-4089-89e8-2977c3ae77aa",
+                "from": "2026-11-01T01:00:00Z",
+                "to": "2026-11-01T12:00:00Z",
+                "points": 12
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS3gUKEAgTGAI4AUIIdGhpbmtpbmcSDCeeszx+IO4R6iAY3hoMVCvx5vlLZ7Ktiu79IjAOnft9C2nzIL/9o+SjlYLHhQIy1rT29+L29av4FNAB+RkWjJkYmgd9wSxZYy9Piasq+wRlgg4NgHJf7TjeYhgTWKh0oaGgof8QwMySbh75oxFXF/JiVYRurM5K8hWo2q2p7R3zbCuN+Tzobo41CtX/119pSHBfyBmZtFl8uD16WNu4D5X30qpQdHEBD3ZCFCbRBRBKKm8KxsQf54d9JClaPcl0kdduI0mEum78DeXWvAnL2cdDV6KSCHQNFfLvt0/OlDxQWHYZyi0Jaz5alfMDwo0LJ92QWprcAVkfc1TUAx6Y8E6kKaqSKlRxTql2fDyKl5/Rc4D9RksZN8dWsPWolN2ii2KYKBWPQp9qebmQ0MGa7dg+ZRb4+92UZsNWaTZmbHoak0VkFQHWJQ6g2PyIbqGil2OwZv5gyBT4tpiWCUwpfHVu8ZC2KhyqAllqKoL0fZxzsCDBhF73Ro3lWJKqPgmS0ahYU3zdqm/edLHktqivxLAse/r8qW69aiV6Sa2nICErBhYUHcpUOkPzK7M+TtMrEWg0Xyxn9eS//s3lqOM7GO9GAAesgQa6ZJiDA5KDfmt8M5E0LDZ3PvEDB3l4KkhzlN9N+EQ2b5dPigOrln6fbnVYkGgmp0aQsbpTDTg5IQmNpnR6DFsvtjK1O05WJVBH10boJa2iIIMJXCCYCG5ryodFgphwwBeUS0WVnDHHQWHnaEUJ+iGg0NTHqWDO28IkN4vTNgbLEblQ1fuQSzRdu6/kMt8rNlx+Nt+Lxfqvc9olRs3IYaUj1HBgvvGYR7PloLX8DLaT0AoswaJtgilhMO9+8N7ZTnhpOwW2EwvtGBsahJHopiB0lk8U3nlUfcEPAIHLAsIInPitFqLoI27Q8p9uhle7BcRvmcWCaClsS7V90e0L1EBN/XBRpxgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "6287d94a346de1d03a34cfac3346557f5c541a3acc361005ef150a212cb63363",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "{\"answer\":\"The search container is running but failing its healthcheck. The process hasn't crashed: the container has restarted 0 times. The healthcheck on /ready (internal port 3000) is timing out, last seen at 2026-11-01T11:59:30Z.\\n\\nThe likely reason is in the logs. At that same moment the service logged a warning: \\\"index rebuild in progress, readiness deferred\\\". In other words, the app is choosing not to answer /ready until it finishes rebuilding its search index, so the healthcheck times out.\\n\\nThe last deployment (commit b1c2d3e, image ghcr.io/market/search:0.9.1) succeeded at 02:01Z, so a failed deploy isn't the cause.\\n\\nThere's also a disk warning. The service's highDisk flag is on, and its server, app-1, has used 47,616 MB of its 51,200 MB disk (about 93%). An index rebuild needs disk space, so a nearly full disk could slow it down or stop it from finishing. I haven't confirmed that, though: the logs show no disk errors, and I have no CPU, memory or disk-usage history for the service.\\n\\nWhat to check next:\\n- Whether the index rebuild is still making progress.\\n- How much disk the index uses on app-1, and whether space can be freed there.\\n- Whether the healthcheck timeout is long enough to cover a rebuild.\\n\\nI can only read data, so I can't restart the service or change its healthcheck.\",\"diagnosis\":\"healthcheck_timeout\",\"confidence\":0.8,\"entities\":[{\"kind\":\"Service\",\"id\":\"1d46ff85-d839-4089-89e8-2977c3ae77aa\",\"label\":\"search\"},{\"kind\":\"Server\",\"id\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"label\":\"app-1\"},{\"kind\":\"Deployment\",\"id\":\"6d000052-9f53-4aba-84e8-5f7f6d578606\",\"label\":\"last deployment (b1c2d3e)\"}],\"evidence\":[{\"ref\":\"1d46ff85-d839-4089-89e8-2977c3ae77aa\",\"note\":\"Container is running with 0 restarts, but the /ready healthcheck is timing out (11:59:30Z). highDisk flag is on.\"},{\"ref\":\"1d46ff85-d839-4089-89e8-2977c3ae77aa\",\"note\":\"Runtime log at 11:59:30Z: 'index rebuild in progress, readiness deferred'.\"},{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"Server app-1 is connected, with 47,616 of 51,200 MB disk used (~93%).\"},{\"ref\":\"6d000052-9f53-4aba-84e8-5f7f6d578606\",\"note\":\"Last deployment SUCCESS at 2026-11-01T02:01Z (commit b1c2d3e).\"}],\"missingEvidence\":[\"No CPU or memory history for the service in the metrics window (only the restart count came back).\",\"No logs showing how far the index rebuild has got or how long it has been running.\",\"No evidence directly linking the near-full disk to the slow rebuild.\",\"Healthcheck timeout and interval settings were not returned.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 7822,
+          "outputTokens": 1075
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"The search container is running but failing its healthcheck. The process hasn't crashed: the container has restarted 0 times. The healthcheck on /ready (internal port 3000) is timing out, last seen at 2026-11-01T11:59:30Z.\\n\\nThe likely reason is in the logs. At that same moment the service logged a warning: \\\"index rebuild in progress, readiness deferred\\\". In other words, the app is choosing not to answer /ready until it finishes rebuilding its search index, so the healthcheck times out.\\n\\nThe last deployment (commit b1c2d3e, image ghcr.io/market/search:0.9.1) succeeded at 02:01Z, so a failed deploy isn't the cause.\\n\\nThere's also a disk warning. The service's highDisk flag is on, and its server, app-1, has used 47,616 MB of its 51,200 MB disk (about 93%). An index rebuild needs disk space, so a nearly full disk could slow it down or stop it from finishing. I haven't confirmed that, though: the logs show no disk errors, and I have no CPU, memory or disk-usage history for the service.\\n\\nWhat to check next:\\n- Whether the index rebuild is still making progress.\\n- How much disk the index uses on app-1, and whether space can be freed there.\\n- Whether the healthcheck timeout is long enough to cover a rebuild.\\n\\nI can only read data, so I can't restart the service or change its healthcheck.\",\"diagnosis\":\"healthcheck_timeout\",\"confidence\":0.8,\"entities\":[{\"kind\":\"Service\",\"id\":\"1d46ff85-d839-4089-89e8-2977c3ae77aa\",\"label\":\"search\"},{\"kind\":\"Server\",\"id\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"label\":\"app-1\"},{\"kind\":\"Deployment\",\"id\":\"6d000052-9f53-4aba-84e8-5f7f6d578606\",\"label\":\"last deployment (b1c2d3e)\"}],\"evidence\":[{\"ref\":\"1d46ff85-d839-4089-89e8-2977c3ae77aa\",\"note\":\"Container is running with 0 restarts, but the /ready healthcheck is timing out (11:59:30Z). highDisk flag is on.\"},{\"ref\":\"1d46ff85-d839-4089-89e8-2977c3ae77aa\",\"note\":\"Runtime log at 11:59:30Z: 'index rebuild in progress, readiness deferred'.\"},{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"Server app-1 is connected, with 47,616 of 51,200 MB disk used (~93%).\"},{\"ref\":\"6d000052-9f53-4aba-84e8-5f7f6d578606\",\"note\":\"Last deployment SUCCESS at 2026-11-01T02:01Z (commit b1c2d3e).\"}],\"missingEvidence\":[\"No CPU or memory history for the service in the metrics window (only the restart count came back).\",\"No logs showing how far the index rebuild has got or how long it has been running.\",\"No evidence directly linking the near-full disk to the slow rebuild.\",\"Healthcheck timeout and interval settings were not returned.\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

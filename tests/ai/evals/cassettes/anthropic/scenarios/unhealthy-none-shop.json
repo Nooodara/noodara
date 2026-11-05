@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "unhealthy-none-shop",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "c2c057b9edfab328c8d807e44204ae4cf57876ae44a8a5e77f6b9c47f16e95ef",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01NgzKVSVB5Bo1LrggXwJj7m",
+            "name": "list_servers",
+            "input": {}
+          },
+          {
+            "id": "toolu_01W3FU1DPFhdBk22PYErANKR",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5376,
+          "outputTokens": 70
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01NgzKVSVB5Bo1LrggXwJj7m",
+              "name": "list_servers",
+              "input": {}
+            },
+            {
+              "id": "toolu_01W3FU1DPFhdBk22PYErANKR",
+              "name": "list_services",
+              "input": {}
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS4wQKEAgTGAI4AUIIdGhpbmtpbmcSDKlr2TBxJHp+fH/duBoMIzCdWbVMfISiD8J1IjBbZjTQDqJWsbLR9godotsAT6ucTBvlUEPAIB+AKvfu3N+cutJRQ8Bp7F6LOKlEASMqgASl/3vz6S8CEVDQPH/jgdoudCOuyNq9yN2CNnlpUxmzzloezeZKz4aDAWnIf5sLEHecMLdbmeGoqX8E8kzul0c4bW+eNGfPsaaFxmFM7oKJgEFP79hSb3g3yz0U0knBWwWFFVxO3ltDeVDv4rFY8FnUmfqMAL2YdLOCH52MiFvDUlEMteEh4M36F3tJeGo5wHNNgpPod8qudLhJBt8Ru3p/CxkacQdTKE2GvwymIg8HzmbVJiBU5r3Mq5OxyQuEQSxyPgyTtTUcUJNW5NBH+2Voigprz0I2q44g5NWAU3uHShh2FHOYchhsGMElZQYxIMz54zILa5HswfpXZA6V1Nu/PXAoET+MNKcyC4A3+TIH735UVQPI7E0t206H+oTN08ZPkiw+JfT+JvUalbfdtxxep6Pdb55cABeVGp/3pVJlpvZgUJy7BDYaXgc6olfzt+n3IGXuKku45OFPZjls5Q9yhFdkwI3C7z0MhoyKb06i1ZNjUiVQy781dxw04EcG3WjUYPYXN41az4gToJFJTtcJWjs/Q5dYWot6+k0/FbYtPlTdgdBxCPfaIAJfrYcT4olhpHSnXHMJLngXXQM6MAOC/hIH0RUhVaikR/Q/uRjJRYaCfvOUAS2eX5zv836MlFV41fkdI17Vx6+JExvkUlnmdhK7GIWFJs/oVko+K++D4BgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "338fb086e949012b75c0cbb9c7094b9245a8252e44f8c005d1e56c4fbf71a9d0",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01G7huxDxSZZzX168euBvsRx",
+            "name": "get_health",
+            "input": {
+              "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f"
+            }
+          },
+          {
+            "id": "toolu_01KrNZAUN6ztBa1kUE7uji9u",
+            "name": "get_health",
+            "input": {
+              "serviceId": "c41d50ac-4110-4094-94f9-e4698fdd81b9"
+            }
+          },
+          {
+            "id": "toolu_01BAqPGLvsiaEVv47gn3ARtw",
+            "name": "get_health",
+            "input": {
+              "serviceId": "b18f27df-93b6-4937-8b3e-8edade656aa7"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6822,
+          "outputTokens": 218
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01G7huxDxSZZzX168euBvsRx",
+              "name": "get_health",
+              "input": {
+                "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f"
+              }
+            },
+            {
+              "id": "toolu_01KrNZAUN6ztBa1kUE7uji9u",
+              "name": "get_health",
+              "input": {
+                "serviceId": "c41d50ac-4110-4094-94f9-e4698fdd81b9"
+              }
+            },
+            {
+              "id": "toolu_01BAqPGLvsiaEVv47gn3ARtw",
+              "name": "get_health",
+              "input": {
+                "serviceId": "b18f27df-93b6-4937-8b3e-8edade656aa7"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "afdd5f0a52bd2d9db68c7baf990e9f3040f48df3475a415397724334ec498be8",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"Nothing looks unhealthy right now. This installation has one server and three services, and all of them look fine as of the last check at 2026-11-01 11:59:30 UTC.\\n\\n- **Server web-1:** connected. It's using 30,720 of 81,920 MB of disk (about 37%).\\n- **payments-api:** running and passing its health check, with no restarts. Its last deployment (commit 9d0e7f3) succeeded.\\n- **storefront:** running and passing its health check, with no restarts. Its last deployment (commit a7b3c91) succeeded.\\n- **worker:** running with no restarts, and its last deployment (commit 1c2d3e4) succeeded. However, it has no health check set up, so the only sign it's working is that its container is up. Problems inside the app wouldn't show here.\\n\\nNone of the services is flagged for high memory or high disk use. The diagnosis below says \\\"unknown\\\" only because the list of options has no \\\"healthy\\\" choice. I didn't find any problem.\",\"diagnosis\":\"unknown\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Server\",\"id\":\"7892be3e-b2cf-441d-87a4-6846aa412bf7\",\"label\":\"web-1\"},{\"kind\":\"Service\",\"id\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"label\":\"payments-api\"},{\"kind\":\"Service\",\"id\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"label\":\"storefront\"},{\"kind\":\"Service\",\"id\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"label\":\"worker\"}],\"evidence\":[{\"ref\":\"7892be3e-b2cf-441d-87a4-6846aa412bf7\",\"note\":\"Server is CONNECTED, last seen 2026-11-01T11:59:30Z; disk 30720/81920 MB used. It is the only server in scope.\"},{\"ref\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"note\":\"Container running, healthcheck healthy, restartCount 0, no high memory or high disk flags.\"},{\"ref\":\"0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06\",\"note\":\"Latest payments-api deployment status SUCCESS.\"},{\"ref\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"note\":\"Container running, healthcheck healthy, restartCount 0, no high memory or high disk flags.\"},{\"ref\":\"7e439d8c-8b82-4348-8c6e-23839136350b\",\"note\":\"Latest storefront deployment status SUCCESS.\"},{\"ref\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"note\":\"Container running, restartCount 0, no flags; no healthcheck is configured.\"},{\"ref\":\"dd5e1381-f8bf-4f50-9a5d-869f2b12a392\",\"note\":\"Latest worker deployment status SUCCESS.\"}],\"missingEvidence\":[\"None of the diagnosis options means 'healthy', so 'unknown' is used even though no problem was found.\",\"worker has no healthcheck, so whether it works correctly at the application level cannot be confirmed.\",\"Metric time series and runtime logs were not checked; the health flags show no high memory or disk use.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 7952,
+          "outputTokens": 1188
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"Nothing looks unhealthy right now. This installation has one server and three services, and all of them look fine as of the last check at 2026-11-01 11:59:30 UTC.\\n\\n- **Server web-1:** connected. It's using 30,720 of 81,920 MB of disk (about 37%).\\n- **payments-api:** running and passing its health check, with no restarts. Its last deployment (commit 9d0e7f3) succeeded.\\n- **storefront:** running and passing its health check, with no restarts. Its last deployment (commit a7b3c91) succeeded.\\n- **worker:** running with no restarts, and its last deployment (commit 1c2d3e4) succeeded. However, it has no health check set up, so the only sign it's working is that its container is up. Problems inside the app wouldn't show here.\\n\\nNone of the services is flagged for high memory or high disk use. The diagnosis below says \\\"unknown\\\" only because the list of options has no \\\"healthy\\\" choice. I didn't find any problem.\",\"diagnosis\":\"unknown\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Server\",\"id\":\"7892be3e-b2cf-441d-87a4-6846aa412bf7\",\"label\":\"web-1\"},{\"kind\":\"Service\",\"id\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"label\":\"payments-api\"},{\"kind\":\"Service\",\"id\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"label\":\"storefront\"},{\"kind\":\"Service\",\"id\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"label\":\"worker\"}],\"evidence\":[{\"ref\":\"7892be3e-b2cf-441d-87a4-6846aa412bf7\",\"note\":\"Server is CONNECTED, last seen 2026-11-01T11:59:30Z; disk 30720/81920 MB used. It is the only server in scope.\"},{\"ref\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"note\":\"Container running, healthcheck healthy, restartCount 0, no high memory or high disk flags.\"},{\"ref\":\"0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06\",\"note\":\"Latest payments-api deployment status SUCCESS.\"},{\"ref\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"note\":\"Container running, healthcheck healthy, restartCount 0, no high memory or high disk flags.\"},{\"ref\":\"7e439d8c-8b82-4348-8c6e-23839136350b\",\"note\":\"Latest storefront deployment status SUCCESS.\"},{\"ref\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"note\":\"Container running, restartCount 0, no flags; no healthcheck is configured.\"},{\"ref\":\"dd5e1381-f8bf-4f50-9a5d-869f2b12a392\",\"note\":\"Latest worker deployment status SUCCESS.\"}],\"missingEvidence\":[\"None of the diagnosis options means 'healthy', so 'unknown' is used even though no problem was found.\",\"worker has no healthcheck, so whether it works correctly at the application level cannot be confirmed.\",\"Metric time series and runtime logs were not checked; the health flags show no high memory or disk use.\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSzAYKEAgTGAI4AUIIdGhpbmtpbmcSDB7XiLLY6XaC3e+kNxoMhKU5Qu44QtnLyCT5IjB3AOt4NtlmvYYRSSbciROiJm/moF/hYkeAcbmJITZmL9b9Q/gdRwnZKP8kjmkz4gwq6QUAMixyHj1WwTwfkMbFySkY9YJyjNemm3DpzYHtwq1ywh8NmAimN4fRWr6jjJ2aQlfc9P2QyNWbbrIILK8Ke1VSAPzhC0v9Oh3rf5ZXN9kEnVjX7DZcINlyqXQsAw5Jp/QZQiRl/qeXq7V1/rOZRMqe7qYySICvNn4IEVqfeqK8v7Z0MyUCrz2abetToOpJsAL2NIRr+Y1FKU7W8WUTegOGEoRS0XkoZGqpZBex5/VHpBVZmoB638/qriTBx8riqaJcmDh3Pb4Cui9vluS/v5mdGBkvHvRFhMKWdgg0WPgl+wSImokt/byra13xhIfMMrdw84n/dV5muUhvqvyC8HVGElZlcVizpKy3RHI9oS1oW2Gkd1+JEkweogUMr8BDJJ+AzZtLMORlfREwunjQ9MlA2cyZvQs9h3Ehqb2jN2cQye4PkLRu2P1Q6nmzk7usr7iAHUv7UvyNCBR0jZbUxJN1o4PH/uL0rSOWN3IfkKOjBJUc9xwQ5awZsgO0K/TXMwU6KEMnzVu8nk4y2aJ6YbqMiR8c8IT5AOLV/VCkfnglEgq4lHMxcGxLTRtcKT7eKH5VR/k56dcFcmpr2LHoLLxydZQc6AhJ69FqRIvLDGbpob1J2AUADWFwfl55Z0jaJg8XHvViBnwgNAfM+4nB3AcZgFMjv9/DS8fAgmkhGwhHwaZUb1mznonfWdRtE6hIz3fLLh3cDMWGQ6/KLAoq7OYzPiZHB3xRJcgh6CmnmceQIEyqa/VmE2wW0V+vWIaHlwGgkXjYuCe3kKd8V+DKuK+UokspSlbaVo2qunujhajkZxaQsoSUhlvRDclPx1bwv/KR4l477GC60yb1XK0GDIkHXIKHLvT+Mmok3hebV47SldMMuo6C8LnxgGDdJiSdO3rkv+XM99RROkp9ntEeuhfY0YWbjcfE6WksmEYONZRGHjr7TYpm+XUAcbMzrB3j7ZtxCwTEFYs5gh9kK5ivRA4TfpCpG3fK3jldGAE="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

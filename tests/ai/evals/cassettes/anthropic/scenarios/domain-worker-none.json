@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "domain-worker-none",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "f7e432d22745ed94b6ac5d701e318840fcfa39cd794778863371ad517771066f",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01AhcHNiFCq2p1zBnV5BZijF",
+            "name": "get_infrastructure_graph",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5373,
+          "outputTokens": 33
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01AhcHNiFCq2p1zBnV5BZijF",
+              "name": "get_infrastructure_graph",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "05d8bfff48f356897c1f8f242f4d548765301c189bebe46d25695f8d1fe1b206",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_014H2zM7VAQqwLsg7CyqqoWR",
+            "name": "get_service",
+            "input": {
+              "serviceId": "b18f27df-93b6-4937-8b3e-8edade656aa7"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 8497,
+          "outputTokens": 106
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_014H2zM7VAQqwLsg7CyqqoWR",
+              "name": "get_service",
+              "input": {
+                "serviceId": "b18f27df-93b6-4937-8b3e-8edade656aa7"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSjwUKEAgTGAI4AUIIdGhpbmtpbmcSDFf1/o+wW97y0ZZCohoMNNWxiboUi3yFNy/9IjBddI9oNn9cy7t5zm18c8kllBHfzDscMREmrv5fJ+ZnYrFFFrpWTNCpjo0ipFALY0YqrATXLBbhQafA6Pzx/gholCe+/M7qAvb+75ZueQ5fYZrYpIxRj5d4hfIclzqK9v/ZPJIb8mipYOKSyAaAOWdG7xUECzjZyO5RYCR09hx3DD9NJoTnjK+dRz8SpBMpKT2A+dzkuSCluTTM4V5BIqx3zjI6dIfd6ftsi0xMee08nLFvUA3yH3iDaMOUGcj6K5zi2F4c7Y/LFcV6otMdo7P6vLWIYYy9mzqALFVxsvCXQs4t46d/4HLfWyaxf8Iw0ePz+zv05auy6UUoy4VKa36CX5kBc1E++borEHfbisVJOwARs7cdEjbpWsLNU/FJsPJ7/b58fmambYyGxHACz0pWDwXR1bZ1vzHlWAMrIrnN+5H0zRSxXc75lJKOPwkJTALHqRH9N7iRkcGHb+P9IKWOgJtH2wCeBdVCmArvsNXHDruEa5DdPg2C/fYRFrKjqEvHgr25gd7Q164KxM5IRq8dUXK5Q5MDLuFyHr8siKMYNFBZhHzSbXX0rmy6ml4U/wNVi2lcTqI1A3JQZ568xTifm+QR60oQzIrk1Vc9gqXuEU9So56H6rsLB8V6yQHfANKq9MjQPIZ8Kie6ei507XwGfcB6cABtMmY4JDFqc58ji9m4Q7Eez2Sj7buqdnxihx1+WVr0iSapdxbPYMlDMoJeyxLJJtpg+g2nHnM0FVpVB2gG2wTehEMjFar1T59gaE2X402r2DsAaoqjYg6skdvgUDBMj4FvDZ15Ek3xh04pGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "88f12dbe9566536fb5f3f66f9965f4229d670671ffe68dba5a35c6feaf046084",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"No domain points to the worker service. In the infrastructure graph, none of the domains is linked to worker. The service settings show why: worker has internal port 3000 but no published port, so it isn't reachable from outside. It's currently RUNNING. If worker is meant to be a background job processor, that is normal. If you expected it to have a domain, you would need to add one in the dashboard. I can only read data, so I can't make that change.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Service\",\"id\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"label\":\"worker\"}],\"evidence\":[{\"ref\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"note\":\"In the infrastructure graph, no domain is linked to worker. The service settings show internal port 3000, no published port, status RUNNING.\"}],\"missingEvidence\":[]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 8986,
+          "outputTokens": 309
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"No domain points to the worker service. In the infrastructure graph, none of the domains is linked to worker. The service settings show why: worker has internal port 3000 but no published port, so it isn't reachable from outside. It's currently RUNNING. If worker is meant to be a background job processor, that is normal. If you expected it to have a domain, you would need to add one in the dashboard. I can only read data, so I can't make that change.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Service\",\"id\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"label\":\"worker\"}],\"evidence\":[{\"ref\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"note\":\"In the infrastructure graph, no domain is linked to worker. The service settings show internal port 3000, no published port, status RUNNING.\"}],\"missingEvidence\":[]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

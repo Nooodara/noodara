@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "restart-cart-crash-loop",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "5a110267431234ffb58a55af4c178b74feb89d0745ab4fc210e6207b6ae1b8ef",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_0119FsreSZaHBCTefQtehihL",
+            "name": "get_health",
+            "input": {
+              "serviceId": "0d99807f-be81-4f4e-9745-78e43a39027e"
+            }
+          },
+          {
+            "id": "toolu_01996YYTLHwVgXcxeVTtUH3x",
+            "name": "get_service",
+            "input": {
+              "serviceId": "0d99807f-be81-4f4e-9745-78e43a39027e"
+            }
+          },
+          {
+            "id": "toolu_012zBaVXMSpiCBirddohpr1F",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "0d99807f-be81-4f4e-9745-78e43a39027e",
+              "limit": 50
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5449,
+          "outputTokens": 236
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_0119FsreSZaHBCTefQtehihL",
+              "name": "get_health",
+              "input": {
+                "serviceId": "0d99807f-be81-4f4e-9745-78e43a39027e"
+              }
+            },
+            {
+              "id": "toolu_01996YYTLHwVgXcxeVTtUH3x",
+              "name": "get_service",
+              "input": {
+                "serviceId": "0d99807f-be81-4f4e-9745-78e43a39027e"
+              }
+            },
+            {
+              "id": "toolu_012zBaVXMSpiCBirddohpr1F",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "0d99807f-be81-4f4e-9745-78e43a39027e",
+                "limit": 50
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "ef9bf45b84a362a69eacd6219ec0d60eda342d26f44e8a2fc7dcc4ffac2dbf3e",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01UjWXM9f4V6HGbfruDiTG2V",
+            "name": "get_deployment",
+            "input": {
+              "deploymentId": "8dd0cbfe-d2ab-42ed-92c9-2a200726f7d7"
+            }
+          },
+          {
+            "id": "toolu_01RpzFLHYEhegir4t2kt1avy",
+            "name": "get_server",
+            "input": {
+              "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6659,
+          "outputTokens": 202
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01UjWXM9f4V6HGbfruDiTG2V",
+              "name": "get_deployment",
+              "input": {
+                "deploymentId": "8dd0cbfe-d2ab-42ed-92c9-2a200726f7d7"
+              }
+            },
+            {
+              "id": "toolu_01RpzFLHYEhegir4t2kt1avy",
+              "name": "get_server",
+              "input": {
+                "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS2AUKEAgTGAI4AUIIdGhpbmtpbmcSDORVWnTZMd8AOCCunRoMbvXkzWEM4Rrkk4OvIjB+weF6gNyk7S/n8D+AZh2lPZZrt0tenusbUFDptLWMhoAEUcTmxhUOGPAcnFeo7oMq9QSWWik1tMBvLtmfGxy5276j61dau0DVj7ll7BzZHM1MpCLx+Y9TySwujgnQ1PyQzJgYUYamkVKEmb5d9jzw9bAPsfZwkCyGAVfupiSJbSwUBgD5Mq1juqWEWxrN9A7WcJD7bSf9+c1B3Os+MKtFOzVIYM7u5WL7JawpJgWkITxPBngX5TMpkAaUS4og4pUtEkqIkigIb8T0/GM3d7CRSVQavUzT4xfsK2gW/g9VBfAsPLY4+FlPVBOSF5CqFEDinbjhwOcte4rx02pHfF6nTserpgLbiFzQ75h5ArsccAlbHHr5+I/cfhPXGPM0WyyqDITfaU7TgxAKDYd/VS00iLEF8RL4FhwW/KgNpUyAulojsYqLN2ilPyURlRTSSasgFSJSvG6qevuHQkM3wQjpgZJpIGb4D3LQsrQhWP1ST1APcmBuoflj+KPVtiLDHqPBMYN7iG4RSko/FiZ8Rmh0omexPDsoyeTYqja93ixyATdTUNj3Cig8m7h8ArfwLIVmrGFNaMDL4Q+sGEKJ7CCOCs27K5lQT4qt2iBAzuTOXpbPpC9L3jQKWlZxxYv4KK/p+J16nFFMju4+9s0nbl6y+8RLNBQccZWlf6aTCsRIxJiiKfnYeYfA2dgeL2X3IGMb+F1uSsNsd0vDX0Odp3t/GWPpuQ76/RyiZvjBUn3rMIOAqB2b5TpHzFhiGiFeTORdlQ5UJAh6N9iD/S9V2e4S+lL8qU3YZnUGrhEwB3N3w37sfUlJB02iNaDBvDFFp1wQJks2MuhE6IrvVQpEFhUBy/Cr97nkA3vInR254QlwJY+rV5dMleoAWe6NVcYwv36TxUGu19IQdRgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "b13b473a299d542e8325e4eee6ce5ee0abf96fcce35f9c7136de89a1426ec807",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"cart is stuck in a crash loop. Its container is in the \\\"restarting\\\" state, has restarted 14 times (last checked 2026-11-01 11:59:30Z), and the service status is FAILED. The runtime logs show the app crashing at startup again and again with the same error: \\\"Error: Cannot find module './config/production.json'\\\". The app expects a production config file that isn't in the container, so it exits right away and Docker keeps restarting it.\\n\\nThe last deployment was a manual deploy of image ghcr.io/market/cart:1.4.0 on 2026-11-01 between 10:30 and 10:31Z. It's marked SUCCESS with no error code, so the deployment itself finished. The problem only shows up when the app starts. Most likely the 1.4.0 image doesn't include config/production.json, or it expects that file to be mounted from outside and it isn't. I have no earlier deployment to compare with, so I can't confirm that 1.4.0 introduced the problem.\\n\\nWhat to check:\\n1. Whether the cart 1.4.0 image actually contains config/production.json (for example, check the Dockerfile copy step, .dockerignore or build output).\\n2. Whether the app expects that file from a mounted volume or a generated config step that's missing on this server.\\n3. If an earlier image tag worked, deploy that tag again. I'm read-only, so I can't redeploy, roll back or restart anything myself.\\n\\nSeparately, server app-1 has a high-disk flag: about 47.6 GB of 51.2 GB used (around 93%). The log error doesn't point to disk space, but it's worth cleaning up before it causes problems of its own.\",\"diagnosis\":\"crash_loop\",\"confidence\":0.88,\"entities\":[{\"kind\":\"Service\",\"id\":\"0d99807f-be81-4f4e-9745-78e43a39027e\",\"label\":\"cart\"},{\"kind\":\"Deployment\",\"id\":\"8dd0cbfe-d2ab-42ed-92c9-2a200726f7d7\",\"label\":\"cart deployment ghcr.io/market/cart:1.4.0\"},{\"kind\":\"Server\",\"id\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"label\":\"app-1\"}],\"evidence\":[{\"ref\":\"0d99807f-be81-4f4e-9745-78e43a39027e\",\"note\":\"Health check: container state 'restarting', restartCount 14, runtimeStatus FAILED; no healthcheck reported (\\\"none\\\"), although the service is configured with a /health path.\"},{\"ref\":\"0d99807f-be81-4f4e-9745-78e43a39027e\",\"note\":\"Runtime stderr at 11:59:10Z and 11:59:40Z: \\\"Error: Cannot find module './config/production.json'\\\". The app crashes at startup on every restart.\"},{\"ref\":\"8dd0cbfe-d2ab-42ed-92c9-2a200726f7d7\",\"note\":\"Latest deployment: manual deploy of image ghcr.io/market/cart:1.4.0, status SUCCESS, no errorCode, finished 2026-11-01T10:31Z. No previousDeploymentId is recorded.\"},{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"Server app-1 is CONNECTED, disk at 47616/51200 MB used (about 93%), which matches the highDisk flag on cart's health check.\"}],\"missingEvidence\":[\"Contents of the ghcr.io/market/cart:1.4.0 image, to confirm whether config/production.json is missing from it\",\"No earlier deployment is linked (previousDeploymentId is null), so I can't compare 1.4.0 with a working version\",\"Container exit codes and volume or mount configuration\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 7706,
+          "outputTokens": 1251
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"cart is stuck in a crash loop. Its container is in the \\\"restarting\\\" state, has restarted 14 times (last checked 2026-11-01 11:59:30Z), and the service status is FAILED. The runtime logs show the app crashing at startup again and again with the same error: \\\"Error: Cannot find module './config/production.json'\\\". The app expects a production config file that isn't in the container, so it exits right away and Docker keeps restarting it.\\n\\nThe last deployment was a manual deploy of image ghcr.io/market/cart:1.4.0 on 2026-11-01 between 10:30 and 10:31Z. It's marked SUCCESS with no error code, so the deployment itself finished. The problem only shows up when the app starts. Most likely the 1.4.0 image doesn't include config/production.json, or it expects that file to be mounted from outside and it isn't. I have no earlier deployment to compare with, so I can't confirm that 1.4.0 introduced the problem.\\n\\nWhat to check:\\n1. Whether the cart 1.4.0 image actually contains config/production.json (for example, check the Dockerfile copy step, .dockerignore or build output).\\n2. Whether the app expects that file from a mounted volume or a generated config step that's missing on this server.\\n3. If an earlier image tag worked, deploy that tag again. I'm read-only, so I can't redeploy, roll back or restart anything myself.\\n\\nSeparately, server app-1 has a high-disk flag: about 47.6 GB of 51.2 GB used (around 93%). The log error doesn't point to disk space, but it's worth cleaning up before it causes problems of its own.\",\"diagnosis\":\"crash_loop\",\"confidence\":0.88,\"entities\":[{\"kind\":\"Service\",\"id\":\"0d99807f-be81-4f4e-9745-78e43a39027e\",\"label\":\"cart\"},{\"kind\":\"Deployment\",\"id\":\"8dd0cbfe-d2ab-42ed-92c9-2a200726f7d7\",\"label\":\"cart deployment ghcr.io/market/cart:1.4.0\"},{\"kind\":\"Server\",\"id\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"label\":\"app-1\"}],\"evidence\":[{\"ref\":\"0d99807f-be81-4f4e-9745-78e43a39027e\",\"note\":\"Health check: container state 'restarting', restartCount 14, runtimeStatus FAILED; no healthcheck reported (\\\"none\\\"), although the service is configured with a /health path.\"},{\"ref\":\"0d99807f-be81-4f4e-9745-78e43a39027e\",\"note\":\"Runtime stderr at 11:59:10Z and 11:59:40Z: \\\"Error: Cannot find module './config/production.json'\\\". The app crashes at startup on every restart.\"},{\"ref\":\"8dd0cbfe-d2ab-42ed-92c9-2a200726f7d7\",\"note\":\"Latest deployment: manual deploy of image ghcr.io/market/cart:1.4.0, status SUCCESS, no errorCode, finished 2026-11-01T10:31Z. No previousDeploymentId is recorded.\"},{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"Server app-1 is CONNECTED, disk at 47616/51200 MB used (about 93%), which matches the highDisk flag on cart's health check.\"}],\"missingEvidence\":[\"Contents of the ghcr.io/market/cart:1.4.0 image, to confirm whether config/production.json is missing from it\",\"No earlier deployment is linked (previousDeploymentId is null), so I can't compare 1.4.0 with a working version\",\"Container exit codes and volume or mount configuration\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

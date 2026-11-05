@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "disk-shop-none",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "89977dbf70e56e1fb4c6061e1c23c0721aec43b6fa949fc84449940fd64d9e77",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01H77gf4EjKsAi13bA3z9QkP",
+            "name": "list_servers",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5377,
+          "outputTokens": 27
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01H77gf4EjKsAi13bA3z9QkP",
+              "name": "list_servers",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "c9520142c0a6cc19524d0c902b0b828c1a63d45cc6add07296dbba3cb0ccf1bc",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01Daawf1Re8kbahJM4LFQdwj",
+            "name": "get_metrics",
+            "input": {
+              "target": "server",
+              "id": "7892be3e-b2cf-441d-87a4-6846aa412bf7",
+              "points": 12
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5724,
+          "outputTokens": 242
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01Daawf1Re8kbahJM4LFQdwj",
+              "name": "get_metrics",
+              "input": {
+                "target": "server",
+                "id": "7892be3e-b2cf-441d-87a4-6846aa412bf7",
+                "points": 12
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS6AYKEAgTGAI4AUIIdGhpbmtpbmcSDEmH0+nQF9M1HU0cixoMUbUFs9SF27cP0pSvIjDASvYu/Lqk2z0krox0gn/pt1aLOtVG0OPCR/9ltnYIiI24fkgS7OccK3pQlvj6r84qhQavqe3k3ACnFAdD/9dv4TtZbMIHB2tzYe89XJRWNLoovcY8tZc8BZff7tDJbMcl7mFr5YWIWJ7iUo2fpSJf77XjiatZqNTdvMfTdVq7JPrf412aptRJGI/tGqbBPV30SgV4LE64seEEuPAT9LCKPfD49b7nk6y+2xRm1eOkWCLzwGJdhsCKrz60BldpY5L6l9B+K8qYkkTyosCRJYvN1ByNPwohjZt27kEgDVPt4I+lamDnLAl3rDJHhGmq8JTewLPj8/HRuX2ouM7Z2MbA2qgTH4gqEexzB+rCa/8qo83Z1L3k0Q14tv31UAiOvrIifsb2znxHmQF9G7TuoJIxeBfK09g8vXRuTBYsAf/ecr6pIMEo0S5NZbLJS/9mmZFXf+CqZeKP4Bk6WUHIrkricUZzboYLcfrVRUc6AHnquinUY5+VgdcSjzdFPstyzmn+EuuF258wihNRMPuAKQIRRkFh8Sr+K/SUUZb7Tp8ZvOXnBQSXfQx6K6DEighdAOCSa033i7LpdilJnMiaZfaGJ/P1FtO0xsguc8+ycUqmZdRPiKKgPKssqKp85Tj/leQ0ofeT8iXSOd5ap6PduYDn69bU28Ta+0m4E9CPR2sWqfW00rRex3XlgtEHHoHpbDMDZ0l9q/CeVvwIFvFoRCVEAHhULMA9QR/LvsU52mnY5LrqcnAFDkUlgnK5hVnyg/iSQNI1l+edJAkiE27Yu9zdbFJ1LwWVVVNfb5UvG+m/Gu1RtJfMbf9uKeUcMLgrhFSqzjyF7obsV7GE8U9vmOBJnD6/z85Z2ch9QFziUO1+EnHTfjC7aKOW1Ez36Z9r6fY7cBbqigTwZ9d44DMbTsTI2GnFU1SF5FTpRjMH0Pn7v7+mwr+LWaSfV13Z+cEk8tpHn0HSmDmEadClbR5C4IHXLcbEgWjswME2BBeINY1VpOCHam3qZovQw10gFZgD9sYrlK1TEYE4L9XmrdutDICf6twvN79Ogqzkdrb+dB8h2IjXjvkXmHqh9TM9BgxCmBh5Cj+7l9N0sRgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "652e130e4143c37f93cf74fbb0b01ddfd9239ff4afdc3f21f198bbaf6f012ac7",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\": \"None of your servers are close to running out of disk. This installation has one server, web-1. It is connected and uses 30,720 MB of its 81,920 MB disk (37.5%), which leaves about 50 GB free. Its metrics give the same figure: 37.5% disk used at 2026-11-01T12:00Z. I only have that one disk reading, so I can't tell how fast usage is growing, but right now there is plenty of room.\", \"diagnosis\": \"unknown\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Server\", \"id\": \"7892be3e-b2cf-441d-87a4-6846aa412bf7\", \"label\": \"web-1\"}], \"evidence\": [{\"ref\": \"7892be3e-b2cf-441d-87a4-6846aa412bf7\", \"note\": \"This is the only server listed. It is connected and uses 30,720 of 81,920 MB of disk. Its metrics show disk_used_percent = 37.5 at 2026-11-01T12:00Z.\"}], \"missingEvidence\": [\"There is only one disk reading, so the trend in disk growth can't be estimated.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 7042,
+          "outputTokens": 372
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\": \"None of your servers are close to running out of disk. This installation has one server, web-1. It is connected and uses 30,720 MB of its 81,920 MB disk (37.5%), which leaves about 50 GB free. Its metrics give the same figure: 37.5% disk used at 2026-11-01T12:00Z. I only have that one disk reading, so I can't tell how fast usage is growing, but right now there is plenty of room.\", \"diagnosis\": \"unknown\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Server\", \"id\": \"7892be3e-b2cf-441d-87a4-6846aa412bf7\", \"label\": \"web-1\"}], \"evidence\": [{\"ref\": \"7892be3e-b2cf-441d-87a4-6846aa412bf7\", \"note\": \"This is the only server listed. It is connected and uses 30,720 of 81,920 MB of disk. Its metrics show disk_used_percent = 37.5 at 2026-11-01T12:00Z.\"}], \"missingEvidence\": [\"There is only one disk reading, so the trend in disk growth can't be estimated.\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

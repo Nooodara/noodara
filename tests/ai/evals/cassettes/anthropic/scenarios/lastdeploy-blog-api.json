@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "lastdeploy-blog-api",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "257e00caa988901defa31d664ca402e2a4739aa65ad60e9c9a069de9554fc421",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01SQDkv2S92ogYSRxdmqprQK",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5379,
+          "outputTokens": 26
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01SQDkv2S92ogYSRxdmqprQK",
+              "name": "list_services",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "65a117027d4e7cb1f4cc6eab80cc9b44414fb88c0612ff2e530a697b55a8f6db",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01GwuyvQ9MVNVyFKLhBhWGpu",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "ff709c6f-708a-4bef-bf57-8547b9f5cd65",
+              "limit": 5
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6404,
+          "outputTokens": 100
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01GwuyvQ9MVNVyFKLhBhWGpu",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "ff709c6f-708a-4bef-bf57-8547b9f5cd65",
+                "limit": 5
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "4816b61dadade803c9010bd6724b3d9bd123ffc6ac74bab952eb043b73525b14",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01YPKdGi15ToewTGLKXYzEoP",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "ff709c6f-708a-4bef-bf57-8547b9f5cd65",
+              "since": "2026-11-01T11:30:00.000Z",
+              "search": "x",
+              "limit": 30
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 8224,
+          "outputTokens": 256
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01YPKdGi15ToewTGLKXYzEoP",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "ff709c6f-708a-4bef-bf57-8547b9f5cd65",
+                "since": "2026-11-01T11:30:00.000Z",
+                "search": "x",
+                "limit": 30
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSxQYKEAgTGAI4AUIIdGhpbmtpbmcSDCIwjBkjX3fC8QiZ3BoM4Opdrnibic3TqvAtIjA9b/ER3VfKLvfdMwaNNTD+oSjQUEL2qUpYrUWnZliNMUsUIT+wtUqTQh3/qxbNnMgq4gVMOnyuWosMtQpuQpGFGja+7QKKvsYxWdREm+zR1VlNKyR7e6GCp7nOvGOGYIK40O8BsIuGFd8iXcrJSWOxnZsLrP2pROo3/WDaJUvIcQkV8HPhWBc1PpSJqdMQmCc6T8/D0pUQYYxs/rsAoVHtk9rX8VhzbzujldwvDH4QK1yIC2vxbgPntUSqd2nvBDcYQEi9xae0N5BuVSqWko58g5y4HtBcvktI/25pWvQX0ZxX04qsAP9zewvjWsYn57UrXSzaVYaVU0nW2oeHVCDvuHmo8Kqfz8z6dLnXTRyPD7UNgEYG0jPZyQ6x3Z4w36j2IFTEcwCnEwRtGJpr4SzpGbxi39FjLEqC+3K3TH603z7kH7MYwyeFH68bbJO32kQMUlpYE6LH73hI3XJ4z0+KOkw1rTCQ2itXaHvkRNN3ZhtekQ7g8JHrbxVUAROG6GhPnZKAl/WUV5xsUR6SduYMaJYj0cGphBM7BApN83WJge0okj5kCESM+y2jEzISxL14CBCSYPxgG0yIOYmtGWgvltPmKgVqPiOGezGvEO6rShBaD0WtMZ7nDdpIZE8GfRicE/cGznruNKIszO9sXOGyPOPR8Ealakm0/Kl9xI9Z6tSZZqxuYkiOvkPFGtfWmpEUxA68pPMy7XKbgc+CmnI7+JS0Yjv1Vk2ETy4cQZ0DxOSsaDb+4jImOd8XinODCeZqatrujYLnXYvksnKJXZ0RRa/dbWGapA5ieiABuwWJB0LvGCsThv8cmR4BG2nxD83XWPM5IgcDO9B8Xi6kv98ACLgyoiauu25jt9w6ejp9O5gnFrWkgUVZqKbdrBLkyz/cNsAFRUW/wjoMLTZCvPy9teQW0ukUMy12LBEpNCPUZd1o5NxzaIkZWrmQJm+qFCmNvXvz1hP0Vd1Xo7OFgq414MCYk2BWKyGu+lvV30HRpeDnGEvFKnLQNpJbpUGHCkP5fqZsiZPe5rt6mTipkMVCXt50GKQYAQ=="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "01cb305e5b8b143116a5a1ba47270ca0c5919d5bac95285c58e20e680dbcdd1a",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_014Zmhv7cXsWuvsykv4kdRdZ",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "ff709c6f-708a-4bef-bf57-8547b9f5cd65",
+              "since": "2026-11-01T11:30:00.000Z",
+              "search": "77aa88b",
+              "limit": 30
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 8577,
+          "outputTokens": 166
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_014Zmhv7cXsWuvsykv4kdRdZ",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "ff709c6f-708a-4bef-bf57-8547b9f5cd65",
+                "since": "2026-11-01T11:30:00.000Z",
+                "search": "77aa88b",
+                "limit": 30
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "019f712dfc74601aa06a92249ea0c1f24312514879583639abb7c6d28ac64fef",
+      "model": "claude-opus-5-5",
+      "turn": 5,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_015ftEyMmxRkPWVbaAi55RXg",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "ff709c6f-708a-4bef-bf57-8547b9f5cd65",
+              "since": "2026-11-01T11:30:00.000Z",
+              "limit": 30
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 8911,
+          "outputTokens": 150
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_015ftEyMmxRkPWVbaAi55RXg",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "ff709c6f-708a-4bef-bf57-8547b9f5cd65",
+                "since": "2026-11-01T11:30:00.000Z",
+                "limit": 30
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSsgUKEAgTGAI4AUIIdGhpbmtpbmcSDFvfFezqdY8oYxazcBoML/0asaIe6l+t/Q5YIjCSifur6oZQUtH1QCYj4QrpH518TqyWxzgGB2Gm3KGS5Eb1ZFDwTZfigSxbkFS6yokqzwQcQz5Mg0BOOBQOGsrb/UcIuQfrbS7Xj4+AYGC23y+5ZQrRYt+BsKLYPSVkW0pK2L2nIJ4PnT/EwvOmWeDJ6L+67P41NeFkWTn7mezcZKYCeXdfPec4xklQeBQQcffP36Kl//rjSHqfZK4GstUQVR2JaY47ygro6gmL/k3dfwVo1qPRV9zkBVRz0yVxp16h3b/7567tpoQCQyCaYxE6+X0jZYyL5g9jGLSsvuOS59N3XaHC6fRWEmM2CCrLx5FlSY/GT6WiyAes5eSRM5zgbYH6QJjXgBqdCg+BT/zmS4VorwvSHnOY6FS7fb7lcWgQ5jcsBnGlsgrURhVlvJCfYVGI6nZlltGY40XrBap54+elBIqkJEKaC4v2tFuMqCjKzFIDm242NASLLqqSRPcUOkYmsr1JbpinYC1RQF8isjllgJ7uHqG6mUEl85CIiYX70b4K+EWwBX2JcubqynSs0h4m/Je9Aj5x9qUu/W1gJ9g52qO3JXN/mOyT8k9EbUT7K8NmnRBWCBFySNtpnAGb252T5LeVxyjM9UNQoA4PKJFcVTpTtjZBIJqmOSqXoqRkuZ1c9PtZINy/a4GUv4XbgYU89Yy4GmOlI3mF4zwvY4DpF2OXypxdDhzfZcPgPzrNW8OIARtpIvuy2ZS1eWHzj9uCtX10VlUSJcpZ7KTn59c4yRhrOyCcfECieob1E7b/3/eg3gpCZ9vVvy70CeMbbBkRF4Vci0LmW8WBNqVDUd6GFHXwgLhjJSfSqcZjzdY4un+zul+Th8v392HiW+o5THEYAQ=="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "824d5287eccf30d07e133a9ebc4dccd503eefd01090a387d810df82ae4697119",
+      "model": "claude-opus-5-5",
+      "turn": 6,
+      "response": {
+        "text": "{\"answer\":\"The last deployment of blog-api (ec096e59) worked. A webhook started it on 2026-11-01 at 11:35 UTC. It built commit 77aa88b from the main branch of https://github.com/blog/api into the image noodara/blog-api:77aa88b, and finished at 11:37:20 UTC (about 2m20s).\\n\\nWhat changed:\\n- **Code:** the service moved to commit 77aa88b. Before this, the running image was noodara/blog-api:33cc44d, from deployment 26656d61 on 2026-10-26. A manual deployment of commit 55ee66f in between (5d66f202) failed to build because of a TypeScript error in src/routes/posts.ts at line 42, so it never went live. That means this deployment is the first live change since 33cc44d, and it fixed whatever caused the build failure.\\n- **Database:** the startup log says one migration was applied: 20261101_add_post_tags.\\n- **Settings:** nothing changed. The repository, branch (main), Dockerfile, build context and internal port 3000 are the same as in the previous deployments.\\n\\nI can't see commit messages or code diffs, so I can't tell you exactly what code changed between 33cc44d and 77aa88b. You can check that by comparing the two commits on GitHub.\",\"diagnosis\":\"unknown\",\"confidence\":0.8,\"entities\":[{\"kind\":\"Service\",\"id\":\"ff709c6f-708a-4bef-bf57-8547b9f5cd65\",\"label\":\"blog-api\"},{\"kind\":\"Deployment\",\"id\":\"ec096e59-463f-4450-a04f-4a13f57de8af\",\"label\":\"blog-api deployment 77aa88b (latest, SUCCESS)\"},{\"kind\":\"Deployment\",\"id\":\"5d66f202-b62f-4e81-8746-56e1c93184a2\",\"label\":\"blog-api deployment 55ee66f (FAILED)\"},{\"kind\":\"Deployment\",\"id\":\"26656d61-5645-4371-94ec-8c68bc61ac6a\",\"label\":\"blog-api deployment 33cc44d (previous successful)\"}],\"evidence\":[{\"ref\":\"ec096e59-463f-4450-a04f-4a13f57de8af\",\"note\":\"Latest deployment: SUCCESS, webhook trigger, commit 77aa88b, image noodara/blog-api:77aa88b, 2026-11-01 11:35-11:37:20 UTC; source settings unchanged.\"},{\"ref\":\"5d66f202-b62f-4e81-8746-56e1c93184a2\",\"note\":\"Earlier attempt with commit 55ee66f failed: BUILD_FAILED, TypeScript error in src/routes/posts.ts(42,7).\"},{\"ref\":\"26656d61-5645-4371-94ec-8c68bc61ac6a\",\"note\":\"Last successful deployment before the latest one: commit 33cc44d on 2026-10-26.\"},{\"ref\":\"ff709c6f-708a-4bef-bf57-8547b9f5cd65\",\"note\":\"Logs: container replaced for 77aa88b at 11:36:40; startup log reports migration 20261101_add_post_tags applied.\"}],\"missingEvidence\":[\"Commit messages and code diff between 33cc44d and 77aa88b are not available through these tools.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 9311,
+          "outputTokens": 1103
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"The last deployment of blog-api (ec096e59) worked. A webhook started it on 2026-11-01 at 11:35 UTC. It built commit 77aa88b from the main branch of https://github.com/blog/api into the image noodara/blog-api:77aa88b, and finished at 11:37:20 UTC (about 2m20s).\\n\\nWhat changed:\\n- **Code:** the service moved to commit 77aa88b. Before this, the running image was noodara/blog-api:33cc44d, from deployment 26656d61 on 2026-10-26. A manual deployment of commit 55ee66f in between (5d66f202) failed to build because of a TypeScript error in src/routes/posts.ts at line 42, so it never went live. That means this deployment is the first live change since 33cc44d, and it fixed whatever caused the build failure.\\n- **Database:** the startup log says one migration was applied: 20261101_add_post_tags.\\n- **Settings:** nothing changed. The repository, branch (main), Dockerfile, build context and internal port 3000 are the same as in the previous deployments.\\n\\nI can't see commit messages or code diffs, so I can't tell you exactly what code changed between 33cc44d and 77aa88b. You can check that by comparing the two commits on GitHub.\",\"diagnosis\":\"unknown\",\"confidence\":0.8,\"entities\":[{\"kind\":\"Service\",\"id\":\"ff709c6f-708a-4bef-bf57-8547b9f5cd65\",\"label\":\"blog-api\"},{\"kind\":\"Deployment\",\"id\":\"ec096e59-463f-4450-a04f-4a13f57de8af\",\"label\":\"blog-api deployment 77aa88b (latest, SUCCESS)\"},{\"kind\":\"Deployment\",\"id\":\"5d66f202-b62f-4e81-8746-56e1c93184a2\",\"label\":\"blog-api deployment 55ee66f (FAILED)\"},{\"kind\":\"Deployment\",\"id\":\"26656d61-5645-4371-94ec-8c68bc61ac6a\",\"label\":\"blog-api deployment 33cc44d (previous successful)\"}],\"evidence\":[{\"ref\":\"ec096e59-463f-4450-a04f-4a13f57de8af\",\"note\":\"Latest deployment: SUCCESS, webhook trigger, commit 77aa88b, image noodara/blog-api:77aa88b, 2026-11-01 11:35-11:37:20 UTC; source settings unchanged.\"},{\"ref\":\"5d66f202-b62f-4e81-8746-56e1c93184a2\",\"note\":\"Earlier attempt with commit 55ee66f failed: BUILD_FAILED, TypeScript error in src/routes/posts.ts(42,7).\"},{\"ref\":\"26656d61-5645-4371-94ec-8c68bc61ac6a\",\"note\":\"Last successful deployment before the latest one: commit 33cc44d on 2026-10-26.\"},{\"ref\":\"ff709c6f-708a-4bef-bf57-8547b9f5cd65\",\"note\":\"Logs: container replaced for 77aa88b at 11:36:40; startup log reports migration 20261101_add_post_tags applied.\"}],\"missingEvidence\":[\"Commit messages and code diff between 33cc44d and 77aa88b are not available through these tools.\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

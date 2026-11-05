@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "diag-rollback-blog-web",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "b131bb47eecd647d8682c4f22c38b4ee4f89f814cd29e64ae2192ec5a328cbc0",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_019MeuEvknmc9FGxVF3fYL7a",
+            "name": "list_services",
+            "input": {}
+          },
+          {
+            "id": "toolu_016Nnbx22nXMmwf8EX8scemA",
+            "name": "get_deployment",
+            "input": {
+              "deploymentId": "729aa478-4341-4617-9b54-bf0521180978"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5451,
+          "outputTokens": 123
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_019MeuEvknmc9FGxVF3fYL7a",
+              "name": "list_services",
+              "input": {}
+            },
+            {
+              "id": "toolu_016Nnbx22nXMmwf8EX8scemA",
+              "name": "get_deployment",
+              "input": {
+                "deploymentId": "729aa478-4341-4617-9b54-bf0521180978"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS/QQKEAgTGAI4AUIIdGhpbmtpbmcSDPywFKvwF41zJFdP4hoMyZhAPquiF35XLnJ6IjCEnkT6jZ2STaP4f2FknzktwJgS2EONsaJ1txYXzXYqA28n1971Yj5giL0H404vv3YqmgR+3k+G4ZUk2CnltHT+6GncczZlXpZIyZ2z+rSOqUD/zBm2Pn9rQEM9Z2YjSzg9jjlJRnPfS3w6Mym9Tst6iY4iEfVEx9yHUcsbSWZo14CTqimOdurwBzuq8kqqzL4grHWn+k2SKEoT0hWPiy0V08H6fMSm5i5+1L0T3bxhw+w0fDJyJtZtTYtRJyiyUp6AkPGNVImoN+Pe5VRZX8b5YViGvsYG0hNIL8ptrd05Lz/7JtAAu69YwmTUuNGYU6xKVQXbOe/lQS5NiV+QHxNYId2IyhpNPcwb1ojz6bHqaptRo5HlzJwKeiisda4jcsxrvLRkyZQVFlRJ+HDq7hgeqE2LEVJnYNvJJOZ/tgmW8RXaPXvBNngxu23xGVn8YvLrKVmExL0WOKtQ9BVLhOsFlCt3UP7Eru4mV7FjqFrHunIqqkmIeStUVgB64uIvjMGB6Q38MQzfGbSmQ+GGkRsJoUvNXT7tES5weaNCDpKrdPFqkE3IU+O24eyBOUW8M3YXnzh18d0hP4P/+K/eB00ArwSMKRrGBgBXG6H4a4vx1jGCSm2eqQX0EqXg9qPLLgyYFoLYihT5CggAzUgctLQmAGhMKblyTj53MsSTo8I1L6hjTXA/M6Zubu0OmUL7p8yE+fCQ4ruw1KAHt+ETiskTypUhCpSJW5VpTZDstmalwQs+4M0/uzzdZi1U/tEkUFYFRbiCMbSvFVehN3XWGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "a699e8e5428e3ec7d3ea3f3ba44cea23621bfa969d80fbba0d9872baafb1d6c5",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01PVwzW15KQEXwQCoetbssha",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "284d7eb6-35b4-41cc-a1fe-cf1d674852d1",
+              "limit": 5
+            }
+          },
+          {
+            "id": "toolu_01Nzqsdo4KjXQCmXN3RaQ75R",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "284d7eb6-35b4-41cc-a1fe-cf1d674852d1",
+              "since": "2026-11-01T10:25:00.000Z",
+              "until": "2026-11-01T10:40:00.000Z",
+              "limit": 40
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7118,
+          "outputTokens": 270
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01PVwzW15KQEXwQCoetbssha",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "284d7eb6-35b4-41cc-a1fe-cf1d674852d1",
+                "limit": 5
+              }
+            },
+            {
+              "id": "toolu_01Nzqsdo4KjXQCmXN3RaQ75R",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "284d7eb6-35b4-41cc-a1fe-cf1d674852d1",
+                "since": "2026-11-01T10:25:00.000Z",
+                "until": "2026-11-01T10:40:00.000Z",
+                "limit": 40
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "b3e0318b5ef7702fd5b056315923e7dc38b1e7f61913d57e6f1ed0299ff6b32a",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"blog-web is still on the old version because the new deploy failed its healthcheck, and Noodara rolled it back automatically.\\n\\n- **The new deploy:** deployment 729aa478 was started manually by admin on 2026-11-01 at 10:30 UTC for commit 5d4e3f2. It ended with status ROLLED_BACK and error HEALTHCHECK_FAILED. The error message says `/health` returned 500 for 120s.\\n- **The rollback:** auto-rollback is turned on for blog-web. The deploy log at 10:31:40 says \\\"healthcheck failed, restoring deployment #1 (9a8b7c6)\\\".\\n- **What's running now:** the last successful deployment, 9bdf6a9c from 2026-10-29. That is commit 9a8b7c6, image noodara/blog-web:9a8b7c6. The service shows as RUNNING.\\n\\nTo get the new version live, find out why commit 5d4e3f2 returns 500 on `/health`. Likely causes are a missing environment variable or secret, a database or blog-api dependency it can't reach, or a bug in the health route. Fix that and deploy again. The logs I can see don't include the app's own error output from that time window, so I can't tell which of these it was.\",\"diagnosis\":\"failed_deployment\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Service\",\"id\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"label\":\"blog-web\"},{\"kind\":\"Deployment\",\"id\":\"729aa478-4341-4617-9b54-bf0521180978\",\"label\":\"blog-web deploy 5d4e3f2 (ROLLED_BACK)\"},{\"kind\":\"Deployment\",\"id\":\"9bdf6a9c-816d-43be-af7b-83fc3e2be5b1\",\"label\":\"blog-web deploy 9a8b7c6 (SUCCESS, current)\"}],\"evidence\":[{\"ref\":\"729aa478-4341-4617-9b54-bf0521180978\",\"note\":\"Status ROLLED_BACK, errorCode HEALTHCHECK_FAILED: '/health returned 500 for 120s', commit 5d4e3f2, 2026-11-01 10:30–10:33 UTC.\"},{\"ref\":\"9bdf6a9c-816d-43be-af7b-83fc3e2be5b1\",\"note\":\"Last successful deployment (commit 9a8b7c6, image noodara/blog-web:9a8b7c6), restored by the rollback.\"},{\"ref\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"note\":\"autoRollback is true. Deploy log at 10:31:40: 'healthcheck failed, restoring deployment #1 (9a8b7c6)'. Service status is RUNNING.\"}],\"missingEvidence\":[\"The app's own logs from the failed deploy that would explain why /health returned 500 for commit 5d4e3f2\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 8530,
+          "outputTokens": 1019
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"blog-web is still on the old version because the new deploy failed its healthcheck, and Noodara rolled it back automatically.\\n\\n- **The new deploy:** deployment 729aa478 was started manually by admin on 2026-11-01 at 10:30 UTC for commit 5d4e3f2. It ended with status ROLLED_BACK and error HEALTHCHECK_FAILED. The error message says `/health` returned 500 for 120s.\\n- **The rollback:** auto-rollback is turned on for blog-web. The deploy log at 10:31:40 says \\\"healthcheck failed, restoring deployment #1 (9a8b7c6)\\\".\\n- **What's running now:** the last successful deployment, 9bdf6a9c from 2026-10-29. That is commit 9a8b7c6, image noodara/blog-web:9a8b7c6. The service shows as RUNNING.\\n\\nTo get the new version live, find out why commit 5d4e3f2 returns 500 on `/health`. Likely causes are a missing environment variable or secret, a database or blog-api dependency it can't reach, or a bug in the health route. Fix that and deploy again. The logs I can see don't include the app's own error output from that time window, so I can't tell which of these it was.\",\"diagnosis\":\"failed_deployment\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Service\",\"id\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"label\":\"blog-web\"},{\"kind\":\"Deployment\",\"id\":\"729aa478-4341-4617-9b54-bf0521180978\",\"label\":\"blog-web deploy 5d4e3f2 (ROLLED_BACK)\"},{\"kind\":\"Deployment\",\"id\":\"9bdf6a9c-816d-43be-af7b-83fc3e2be5b1\",\"label\":\"blog-web deploy 9a8b7c6 (SUCCESS, current)\"}],\"evidence\":[{\"ref\":\"729aa478-4341-4617-9b54-bf0521180978\",\"note\":\"Status ROLLED_BACK, errorCode HEALTHCHECK_FAILED: '/health returned 500 for 120s', commit 5d4e3f2, 2026-11-01 10:30–10:33 UTC.\"},{\"ref\":\"9bdf6a9c-816d-43be-af7b-83fc3e2be5b1\",\"note\":\"Last successful deployment (commit 9a8b7c6, image noodara/blog-web:9a8b7c6), restored by the rollback.\"},{\"ref\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"note\":\"autoRollback is true. Deploy log at 10:31:40: 'healthcheck failed, restoring deployment #1 (9a8b7c6)'. Service status is RUNNING.\"}],\"missingEvidence\":[\"The app's own logs from the failed deploy that would explain why /health returned 500 for commit 5d4e3f2\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS0QUKEAgTGAI4AUIIdGhpbmtpbmcSDDDldkjQ8gtRlSDznBoMijG6Caxm6O8P6K5yIjCY3DN8J+kP4P03gnVzDHKMrZ4KPEeTfvBZBU4XeWcB5NWcrLlLPZbyzKcK/0uQ8zAq7gSLUGTEK6FuMmVUeZbCUZTOsBPwDBwmSSQZtyWtYQDAavMiDrTNpVCtqcN9TZ/JXgxoUg1GyBVZfIcz8YhX4myG0LM5R06Ziofyy4YYoeqa6vxneTnTGSKvPBBY2BTOXPAn1/tSm0nCEuH37wDzV0e5WTxxHs0uSIXvesxJTbmltBb7tWtET3fyrwPRawC4+5PbVdX8lVs4QGolX3V/dKKtlO8Sg3chUN7pip0LM5bcvGBA4DNsFspPiUh0rqWDY3/CNWGMea1i0ZT0PgGrzp2dyhZ5J/AccPE+WwgxRrT15V132LiIIlfsK/DWPny0vXAyyv0M3quAUjyHxmaAvpFngN7u26b79y/FBfRcWx7EZNrJW0VffYTn8J3F5QjobM4CCWS6h5AHfqxPxqjfVMeGuxK9u0N1LwzBbD6GutAv7Q5z+xjUM4ZmpoXGbKfppxqZXT6yCyYLNz78mrBykWOBkC9ftkMc06kXKnoxueXBtsIkzsJAKU7OcpIuFkAbagNU8qe+wGwUHB/8+RyREJsvRsFpQ8KVasyPkxYUofa1kGj5awgh+dtMtWk7WJOgGjdavcXbO1D18+7XPXn+HXc5Y+U8ZRiqkEZJA2NQ8naxLWPB+l/dDE4hBfH1VG1C0B0Wdo9gpqRHR/F+okHH920xjM44K04ulxe6da+DeoFt/dDZ2ZoVrgndymMhffT2w51tmMXYlCoEKo7KCied7cJsHc045i8EkUs5r/QCgca0spiF/H/Q7t6fS2b9Jc7xzR0hBbXmHYoq0hndvejSc8Yltj/n1tQBwdevrPz/p8+Z7pdwP+UoGjzEmLvDFEEOGAE="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

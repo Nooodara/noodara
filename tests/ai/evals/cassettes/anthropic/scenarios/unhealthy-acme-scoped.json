@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "unhealthy-acme-scoped",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "84d9fbbce3f7a14fac757cf4e012606143ece08cc092eb1ec2bf1a500b6a6cf0",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_019o3stcd9hB3WSvyZpLLxYP",
+            "name": "list_services",
+            "input": {
+              "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5411,
+          "outputTokens": 73
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_019o3stcd9hB3WSvyZpLLxYP",
+              "name": "list_services",
+              "input": {
+                "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "8fb7158de1fb8521746fa815c3a51b84618d7d3f10eb4d68a6f54c006aaa555f",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01QBn826DTY1XpLWq5MYy2LN",
+            "name": "get_health",
+            "input": {
+              "serviceId": "ba9c5821-063e-4eb6-bdfa-2e6960f51340"
+            }
+          },
+          {
+            "id": "toolu_01CjvX2GuWwxi7dbTHRJKrzj",
+            "name": "get_health",
+            "input": {
+              "serviceId": "f380f06a-71c1-4a76-bab7-84d1f22a6f1a"
+            }
+          },
+          {
+            "id": "toolu_01CzjfJoGq7axiKp3kEfteBR",
+            "name": "get_health",
+            "input": {
+              "serviceId": "9656c11a-6b2a-4418-8a55-3ec0a347f9d8"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6539,
+          "outputTokens": 224
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01QBn826DTY1XpLWq5MYy2LN",
+              "name": "get_health",
+              "input": {
+                "serviceId": "ba9c5821-063e-4eb6-bdfa-2e6960f51340"
+              }
+            },
+            {
+              "id": "toolu_01CjvX2GuWwxi7dbTHRJKrzj",
+              "name": "get_health",
+              "input": {
+                "serviceId": "f380f06a-71c1-4a76-bab7-84d1f22a6f1a"
+              }
+            },
+            {
+              "id": "toolu_01CzjfJoGq7axiKp3kEfteBR",
+              "name": "get_health",
+              "input": {
+                "serviceId": "9656c11a-6b2a-4418-8a55-3ec0a347f9d8"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "1a4762717c0367cc189cc682de57682322f5431fdfc50fbdb4063328d010e2f8",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01TKnggPzxtcruKXMkAD6KND",
+            "name": "get_server",
+            "input": {
+              "serverId": "65d53194-0618-4f5a-bb52-f134fc2393aa"
+            }
+          },
+          {
+            "id": "toolu_01RFPDp2UYefp4CjXyBD5pce",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "ba9c5821-063e-4eb6-bdfa-2e6960f51340",
+              "points": 6
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7689,
+          "outputTokens": 212
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01TKnggPzxtcruKXMkAD6KND",
+              "name": "get_server",
+              "input": {
+                "serverId": "65d53194-0618-4f5a-bb52-f134fc2393aa"
+              }
+            },
+            {
+              "id": "toolu_01RFPDp2UYefp4CjXyBD5pce",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "ba9c5821-063e-4eb6-bdfa-2e6960f51340",
+                "points": 6
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQShgUKEAgTGAI4AUIIdGhpbmtpbmcSDBc050KbL7DpfwOgQhoMjgI46JQM0natNTbaIjB/QBHxvtSNCaFe9EHFPyYVGkEZPnc/oO5k/082O/FeGyMCJg1V6BSu7k1axwPZyQUqowR0wyN22P6+y9yepxAxyQGLLstjxRVZ7+IAUDprkG9Ykzgq+X1HHIfuWNz9Uc+14RRtv8PMTuxox931xvajGBoXcQCprViZBJrSJMLafPEmjybOa4DKwYh/NRo/+WFbQVuJhAxz6q4HheuFalRtlET7xNh6bI5oCqRg4TxBR2gDiiZ+l+8NlHZGdgpspZsqNtqTERHyXTGztOQpXAy9FuM8bBFubFCSI/LOv7Mmh+NAiPs7B062ZCuYlTsx0iCbEcOfV+55iLgsMwu/AGTEcWfGGk8FKqpCr5IMCPWs29L+QZikkgNGxcI/8MGkd9xMORKu67nJDOvxvu1CrXAiyGpKFdVsWC9uR+Y7QTeeMYlz8E8muzd9tfUHIcP21C3kv96wEIVO9Lhsg6CmnLVifexVoEYt8Lk7dGo4RZ5iByQAAkHSFAiXxP/4Wv152HvzsXHPhaNACNEe4gTIVpYkmYsgNPv6URnF86NLXuPl4y53DDXQtjFiEK0eXG8BAIjrtYr8T3hSz3m2C+HdTEdNWbQ42ky3vSIo95fEnngNQD6Tv++h3eA1ImVc4ixpFrfh0t9g01BDM64VvcRZ4aEN/ROVdCh6KMvpwA4SC+OBkQlDAxvZ7wQYNNUn3s1b6cNEjnKHDttzU+t7z9Dr9RengJzAx72A+hrEjSqHwP3AInHy/lQRdnIY/rm2AusvGpt87r2CugPva4iY/AY0WS86RB5wPG22GAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "8e3755a35542214442a2fd720617d1d7d23b7f613015533bfe9ea60af4533323",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_0147iJ8A65BirHLvZuE2kfsg",
+            "name": "get_metrics",
+            "input": {
+              "target": "server",
+              "id": "65d53194-0618-4f5a-bb52-f134fc2393aa",
+              "points": 6
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 9002,
+          "outputTokens": 139
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_0147iJ8A65BirHLvZuE2kfsg",
+              "name": "get_metrics",
+              "input": {
+                "target": "server",
+                "id": "65d53194-0618-4f5a-bb52-f134fc2393aa",
+                "points": 6
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSwgUKEAgTGAI4AUIIdGhpbmtpbmcSDEuGQjrumntRHv0bIRoMg54Rqm+srjaIv82GIjAkBu9LWx2ExTjCICSyiKhFJjzeIpod/Je4gyM8sLWDAewPf++k0LNfgsZ92Kint0Qq3wQ2IzsO46ckVNVnyGYIgDO2nMeJ/JEJu1Or1r0xjxEAp9o5uTPTPXiDvCjdev6Bztjk0cqzF4YF3xST8WuWvbS5FLNemB4FMw98rdfodkNa8zugkgXHiJd0+XhUG5Ko0tqIBdXjac1VcJygQwCOzvW8/yNO28j7hCRTcJGcLKdbBqgq5O1XR550o6I9gM5fFbaz5pH3OBKmQImroBXwOTKUWms2bXi5T+DO09egp3y9myAdpffu9wdjG8ug8fAol4riSdPlMQiKaZY4AbGHF1AKXgMLFpPrBgGAmy9lgczcax3tI9NNN4u7doWbVcJew8N8q8YsWQxJkPml9r+J37rrf2N7XjcFMA1RQej+0oCo0+RJ20db0PaxD9CxivdnmTS8DFjxsVhoDtdbu0f2BohibcLqqc7M0VPG4Pkrfb0wbyY8QSdAc6Ylmy1wOAD/9HnyuQVbghoIiUkpqcpaMM18S1YH1kG4CyhiQLXpm8UKO3bPmG9shlXJ09/4adLLNVyKklASH2Eec6NqR0U6xF0q7YCGgpt00xlpfE1WlpcBgidjF/FRRBbwwAdvxYhP/5Dzbs0LbNszvkdi6WGGwyIO6EF1k/jg4qQL/bUh/Hm8pjBEcp0EDatwIYLGW/fprr8NTV/mctPI1DT5lA9OaUlzSncvfDh+nj8i6QwKtCZXSAwmYwAdys/M3bsRjuMIZjNmH2gt9Xd93vk0CS6XfcCKT/Rrk8mjpLvm44fXrcOVaeX2ihflGATpBWQqpFHaOEhLVnbTvytRB3gz14aeF3dLCncbYI+PfIvqmnPicpfPGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "411240b7611ae4457997ff36b4da8b1a4157eda9ee6a9605617677dbf52a0d75",
+      "model": "claude-opus-5-5",
+      "turn": 5,
+      "response": {
+        "text": "{\"answer\": \"None of your three services is down. They are all running, with zero restarts, passing healthchecks and a successful last deployment. One service has a warning: acme-api is flagged for high disk usage. Its server, host-b, has used about 91.6% of its disk (75,000 MB of 81,920 MB). The service still works, but if the disk fills up, builds, image pulls, logs and writes can start failing. acme-api's memory is normal at about 48%. acme-web and acme-web-staging have no warnings. I can only read data, so I can't clean up the disk. To free space on host-b, check how many old images and build cache are kept (acme-api keeps 3 old images), and look at log and volume growth on host-b.\", \"diagnosis\": \"high_disk\", \"confidence\": 0.85, \"entities\": [{\"kind\": \"Service\", \"id\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"label\": \"acme-api\"}, {\"kind\": \"Server\", \"id\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"label\": \"host-b\"}], \"evidence\": [{\"ref\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"note\": \"Health check: running, 0 restarts, passing healthcheck, flags.highDisk=true, highMemory=false. Memory is about 48%.\"}, {\"ref\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"note\": \"Connected. Disk is 91.55% used (75000 of 81920 MB). Memory is about 63%.\"}, {\"ref\": \"9a74c2e0-72f7-4d65-8ac8-dd2074f3d9db\", \"note\": \"acme-api's last deployment succeeded.\"}, {\"ref\": \"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\", \"note\": \"acme-web: running, passing healthcheck, no warning flags.\"}, {\"ref\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"note\": \"acme-web-staging: running, passing healthcheck, no warning flags.\"}], \"missingEvidence\": [\"A breakdown of what is using disk space on host-b (images, build cache, volumes, logs)\", \"CPU metrics came back empty for both acme-api and host-b\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 9964,
+          "outputTokens": 778
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\": \"None of your three services is down. They are all running, with zero restarts, passing healthchecks and a successful last deployment. One service has a warning: acme-api is flagged for high disk usage. Its server, host-b, has used about 91.6% of its disk (75,000 MB of 81,920 MB). The service still works, but if the disk fills up, builds, image pulls, logs and writes can start failing. acme-api's memory is normal at about 48%. acme-web and acme-web-staging have no warnings. I can only read data, so I can't clean up the disk. To free space on host-b, check how many old images and build cache are kept (acme-api keeps 3 old images), and look at log and volume growth on host-b.\", \"diagnosis\": \"high_disk\", \"confidence\": 0.85, \"entities\": [{\"kind\": \"Service\", \"id\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"label\": \"acme-api\"}, {\"kind\": \"Server\", \"id\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"label\": \"host-b\"}], \"evidence\": [{\"ref\": \"ba9c5821-063e-4eb6-bdfa-2e6960f51340\", \"note\": \"Health check: running, 0 restarts, passing healthcheck, flags.highDisk=true, highMemory=false. Memory is about 48%.\"}, {\"ref\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"note\": \"Connected. Disk is 91.55% used (75000 of 81920 MB). Memory is about 63%.\"}, {\"ref\": \"9a74c2e0-72f7-4d65-8ac8-dd2074f3d9db\", \"note\": \"acme-api's last deployment succeeded.\"}, {\"ref\": \"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\", \"note\": \"acme-web: running, passing healthcheck, no warning flags.\"}, {\"ref\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"note\": \"acme-web-staging: running, passing healthcheck, no warning flags.\"}], \"missingEvidence\": [\"A breakdown of what is using disk space on host-b (images, build cache, volumes, logs)\", \"CPU metrics came back empty for both acme-api and host-b\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

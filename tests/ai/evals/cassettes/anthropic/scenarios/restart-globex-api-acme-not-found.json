@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "restart-globex-api-acme-not-found",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "815953af611d86e836ae2c0e969bdd79a2f731e13463ea6ab9f63d9d2c40772c",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_017UhZm6EFuphgVTjVS6r7L5",
+            "name": "list_services",
+            "input": {
+              "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5409,
+          "outputTokens": 73
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_017UhZm6EFuphgVTjVS6r7L5",
+              "name": "list_services",
+              "input": {
+                "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "4c9463167935b83a5610d3f24954479eee9d2b2d12aaf5cacf04e3b8fb8e252d",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01Q8MQgRMQzVDjDcFw6msoCr",
+            "name": "get_infrastructure_graph",
+            "input": {
+              "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6537,
+          "outputTokens": 150
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01Q8MQgRMQzVDjDcFw6msoCr",
+              "name": "get_infrastructure_graph",
+              "input": {
+                "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQShQYKEAgTGAI4AUIIdGhpbmtpbmcSDKClspyn2+fCRRlOSxoM5rEMXtxXdRUBaOLQIjCDZeFeL5/kP/AydB8VMoyIktvsgXVkK3FWMMcpDoE73O07Ns2Cn0x7AYnQbV1/r2wqogVATBrh1IlkcXbXlx8qJCEphOSDry8tpcNwFkgIiYBckXKoxBipPYUomRxqHgOo1HpjDJe0RVPl22dIgTjzu3vR4mSgI4Utse5q7s+Yz02HSQlG9U5qaG7/kc97qy+G+0z4NW447MvjFbibKltt5kr3Trx9LdVmbSgzJS2DqW81gMi0bcB4UmuCmSVTb7ZuM38P3zJQkEGr9jC2hzccB39hWZN2+MzKDbVKPCF3wbkShsQxtwvasva9xfeDKH/jXdoSDVTwr1uGY5cxaPnX8k4cZ6gsf+r+b+ayFNl7xsUd85cNR4XILna6nrpo00FTZang+6PrihEi2VIXyia99XtLBAbhffaCa8n7jZmSVr4vKBsyzJqyynrqLQ1eciGLfSmBBfTmADmvO8gIAj7/NUFdcDs6eMGWguLNAvS11gICldsHMSi+nqeUgVXeQFJ/p28B0TMiiWRfBjTPK/y8btKcx+ChaOxYJV9/2CrwW+CO5VlikswoKT20RDg3qwrhbcfDQ+zcTxZG1aRlaBKqetLNFDEjJyXbWI+QAzDod+sj6P81ErMrVR7yVXA5crjHLrrtHI8Ij00B/DIr+vUy2xUd9d3rzNEGMju52oVkFz9iJdg1OmD1uFDK1JTw8/L2WD3m+BLxNDVSu/2W7LcxxSY2ymrAvHQ9J0u6ze/DTL3camLUpW+XSjR7FNp9l3EpZSfRIygN4akdYlGif53nkPWWyhQTdkGzbfGoVf3qbgHWRuxs1SaxFFc3TJ3yOF4xAWs9W4vO2eTXUCNWMeItycfo7VcPrLGx/JMVAQCsJCh4cpP6Abyr3HwNtsP3ts/UHuBJjGDpHHLgWD7FwQlIht7c5snHWXilcvbZhSvs10iczUsp+AA9U2eMk/8ljGX6akYpGxgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "55b9c39e29e1d0bfa0912eb9c4df9d3b20a472ce0a3c2eb69723ec16c3346580",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\": \"I can't say why globex-api restarted, because I couldn't find a service with that name in the project I have access to. That project (acme, b0cd1806-31c5-4699-bed0-cae3507b370c) contains only acme-api, acme-web and acme-web-staging. globex-api probably belongs to a different project, and I can't look outside this one. Without the service, I have no restart count, container state, deployments or logs to check. To find the cause, open globex-api in the project it belongs to and check its health summary, its latest deployments and its runtime logs around the restart. If you meant acme-api, tell me and I'll look into that service instead.\", \"diagnosis\": \"unknown\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Project\", \"id\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"label\": \"acme\"}], \"evidence\": [{\"ref\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"note\": \"The service list and the infrastructure graph for this project show only acme-api, acme-web and acme-web-staging. No service is called globex-api.\"}], \"missingEvidence\": [\"No service named globex-api exists in project b0cd1806-31c5-4699-bed0-cae3507b370c, so I couldn't read its health, restarts, deployments or logs.\", \"globex-api probably belongs to another project, which is outside what I'm allowed to inspect.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 10232,
+          "outputTokens": 498
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\": \"I can't say why globex-api restarted, because I couldn't find a service with that name in the project I have access to. That project (acme, b0cd1806-31c5-4699-bed0-cae3507b370c) contains only acme-api, acme-web and acme-web-staging. globex-api probably belongs to a different project, and I can't look outside this one. Without the service, I have no restart count, container state, deployments or logs to check. To find the cause, open globex-api in the project it belongs to and check its health summary, its latest deployments and its runtime logs around the restart. If you meant acme-api, tell me and I'll look into that service instead.\", \"diagnosis\": \"unknown\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Project\", \"id\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"label\": \"acme\"}], \"evidence\": [{\"ref\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"note\": \"The service list and the infrastructure graph for this project show only acme-api, acme-web and acme-web-staging. No service is called globex-api.\"}], \"missingEvidence\": [\"No service named globex-api exists in project b0cd1806-31c5-4699-bed0-cae3507b370c, so I couldn't read its health, restarts, deployments or logs.\", \"globex-api probably belongs to another project, which is outside what I'm allowed to inspect.\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSvwUKEAgTGAI4AUIIdGhpbmtpbmcSDFrR0EYEceygeMwrdhoMNoFm4x7Ikk0ufzSTIjA0BnTfW8orR1VuAsE7N7Qi1hRiwXPIzy4HRvw3cftHH9WMvIZIYPYLt/NMKFDc9u0q3AQ5WikJlLdWjHAS1broIfe32SgdNW/iWt3riEBEjNEr/9NY+N6wx162Ce3nPBK2ap2ROPlyTl4ePMyPTtU/+Q3sIudlUAAEcEg3U2whrZ7dT+R40Cdajw0kezhZl4iEuPnavp9lDmsaxDNUh+3oWOGcBi0vRta1UUSbF1zKDFYwt3I23tDjqFJ80BOZ3PM8z7To/+cwcV8o9QjmJZlVlWpDZ9vdrCHFimlum2SiofFWHhlXkEBAKbWaejCLped9Mrh+bXW2lD10+BxyUZzb6R5OTGOV9NrW0/B+6uSegIF+fkuxJCeVPBkNMFCzdy8hzLaeYytkpvjBHA7wMYx4H/o23Teah4J61AaGbCWZKE0feeVFjYuI01nU4vlAZCMH1/8YktBja7Ceh8npfBXn4AKfLOoMaN3g17FHo/FZk/OgO+NRWjbZjktp/QlPQm34I3N7f2+zy3BcJ8bOxNyNlYERIPH3kJ0PQBcDX4NNrwaC1CZ8FaJjywUPLVnTLfWMMsGbQ9OjjByXr4G1TxaWjkxd3vmBjmfyfVL1pfIWmtRwZKOJRiwFUJbLXtutxlPY3IFO0Sl+U1mv/OzZQMyIa3Ifx+LHSFxGFwdukDlseGMGnfBQKDinrSCnv8fVt6EpfGQqDiWWtWopkJ1PjnwLzFERbbHlkiQQpMXxOj/lQuoTTK90faLm8dKdtOqbZm+J+676x0kxMpxDfrBEfj3/nBH+yaVL/1fassRMlDgEFItiiB8Djcc/uUK/TqUgSg4Gn3YEos4lXatFJc0rmQjwSxxZw3z94Tu+W/fmP7pdGAE="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

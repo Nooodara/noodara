@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "diag-high-memory-recommender",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "30deac60c4c9ed90c39dddd4d36be77136ee2eb5838fe3a1b6c24fc655f54053",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01VUiVH9WLcF9WgTa7CRDZj5",
+            "name": "get_service",
+            "input": {
+              "serviceId": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb"
+            }
+          },
+          {
+            "id": "toolu_017FmLgsjW8xbBJiasUX2Vnn",
+            "name": "get_health",
+            "input": {
+              "serviceId": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb"
+            }
+          },
+          {
+            "id": "toolu_01NWCmvWk6sPz6auMcrJhbth",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5451,
+          "outputTokens": 227
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01VUiVH9WLcF9WgTa7CRDZj5",
+              "name": "get_service",
+              "input": {
+                "serviceId": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb"
+              }
+            },
+            {
+              "id": "toolu_017FmLgsjW8xbBJiasUX2Vnn",
+              "name": "get_health",
+              "input": {
+                "serviceId": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb"
+              }
+            },
+            {
+              "id": "toolu_01NWCmvWk6sPz6auMcrJhbth",
+              "name": "list_services",
+              "input": {}
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSvwUKEAgTGAI4AUIIdGhpbmtpbmcSDFSvfEPhOFkDKRTQCBoM8UJEtrAXFU759YfBIjBEZdYgp+/V5poBF2tacXi2Jp1EC9A3K6o5w9JXmWke/50hS6/5nr4dJJ8j74p5XuEq3ASwdmwLVwFlaY7VicnQTiWAS89QECwl8AvcPkPdTzJIG6QZfZ4+aPxmFpEUUlQU1XC/MR3oGBmQ1dSSO3ajvbyZ4kbCtAOnzQNGrBO4bDS3C0SKxZhcXq3R1w79INY+fNT4qM84vZfSwR14syT9f+7BmOgfX9Y0qc0Jq4Q/LEfpooOcwC/1miQ1M4l2CY1fVDSbQkP9d7U6uEIp+RoQ7g4PJqModOGUo5CvI36Ya2RcYwyNpomINXwepmH6BQgkS4EYM5lqEluULX9lUgaMHo8hlsUP2dsyT56lSWGtppcb+J6Jqs8lEbIodZOsmuui+1aPfnXQqP7BQEriqhWiEoElOBnL8O/13DsWBK6RPBQ9Wzp71eLsqj2W5jhUSu/b7kaeKpt9lCxrANQo/hCaWY0WMt349KmSHXS9JXmXa/Od0mooKz2aC+ZBDyQJEwSDQsVG9lUPF8hgFGA16qBDrqdgAGFBqGPeXUYNYxReLDg8rHI8xEV9wb46g3sIxC9FquzvDKCjPJASm9B+CINQtmDPdgY0HrcxxlVHzByy2ekNN3cKBScd7wD6xaQtp0oQPFBVMzZ+GOTxgYrB+xvB6PR4mxkmb5/zOkut/Iqh8+hVV2ZDMWyUB6wadEGAl5xda/MwzeQksNomc52FHIfYnTlqzBbPHvWEGNXJ/8MejH7k1qqqDwOyyvP2US5oe9OaFUXjuiTGvak1otylkTIUhihoZaM70O6QItmgdujgbV3GveZtFxvL4WxcihE6f4iOwXvQ7RCN+GB8EQu0c2iSYJVlogcF51Yu8f4BrEKxGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "4950cbaf1350b43ce492979f712a90f1ca655e6f116a3a0bf4a09507b3a5eb85",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "Both highMemory and highDisk flags. Let me check metrics and logs.",
+        "toolCalls": [
+          {
+            "id": "toolu_01GEmBzz2mYTPBYiCVkdmywz",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb",
+              "points": 12
+            }
+          },
+          {
+            "id": "toolu_01A8x2ywgL3D6wnR7GX5kNAV",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb",
+              "limit": 40
+            }
+          },
+          {
+            "id": "toolu_01A6mcWX1L7smqjT5dzbVB9N",
+            "name": "get_server",
+            "input": {
+              "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 9033,
+          "outputTokens": 313
+        },
+        "message": {
+          "role": "assistant",
+          "content": "Both highMemory and highDisk flags. Let me check metrics and logs.",
+          "toolCalls": [
+            {
+              "id": "toolu_01GEmBzz2mYTPBYiCVkdmywz",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb",
+                "points": 12
+              }
+            },
+            {
+              "id": "toolu_01A8x2ywgL3D6wnR7GX5kNAV",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb",
+                "limit": 40
+              }
+            },
+            {
+              "id": "toolu_01A6mcWX1L7smqjT5dzbVB9N",
+              "name": "get_server",
+              "input": {
+                "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "c0eb80297d9ae7c407e847bb495e21ccfef11a84d28f26a229e04986b9ce119b",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_014Y3TmvFYm2LfdzseK29ZL2",
+            "name": "get_health",
+            "input": {
+              "serviceId": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 10822,
+          "outputTokens": 147
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_014Y3TmvFYm2LfdzseK29ZL2",
+              "name": "get_health",
+              "input": {
+                "serviceId": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS1QYKEAgTGAI4AUIIdGhpbmtpbmcSDM5FmRdUysU5hE47BBoM4vEaBniUV7NTvZsKIjCwQAQ/gILfN6xw8TdpoSgRj7C4WN/5z5kXvec/vl1iLBPVhUA33TeFCel5twUarSYq8gWhohBybDVU0X0GyOBm8lvacPtLE2bI6Ud+zxbpv67M56LXjZ7YdEMwvnqLkzmpq2ZZVHIPPjDu/SQrgrepVCWnWm01OeCxSI9cDfNThEvHKFEkP79p+20wJ5lQ15ENO1PqU0lL0P0h+5/vbYS4IDIrmO/Co7j2K++QcGz+eqVG5WXfRDolWhjnuvU6RRdtQ9tjXGiG/4VyJOmaT/RcnBdaORVT0rDaPt1TzAOEwMq/JxJFEQi6bULFC8IZNTWc8g8+Gs3+kVoouFAk/8OPxF5tPxN4ZnvrXrItXawJ5CzAb20GFT9H7UbPjI751IXAe3wzme0ECpx0q+LyTboJzaDHxGUBHzQeEhReYbHrpfHdNestKML2e2Lhw9tBgvOxvqg5xbnUUo8rGk2AdeNRURaWazb72OQycUycjrGUe88LX2RJBpEjcDt77X8mJKa6U16c0+1EZ4q27QPwquXIj56rXnxUzjDuxyeVH0OjWFO+WgI+sslx1NCrAhACxTUiHq+wdytlDn3Lc/q1i2NzO/Rjznpo+Ojgt52m3PQvePWwpd4BCQg3tmwbe/FWBjRclctgc3PFlR0kWwsJhnjWTU1PubVsVk4AsITkZuIYKZyd640hRGTfhonw8cu/r2W7lQIiGeSfeOVAMfXPlbe1XgLHDi63Bwd3d11pW8fv6X/2MdrkZiksZb8Snoih0ROYGtsMrmNIP4BDXKt3Eu/5fg4CyNRmk8iCZ8RJxddokAQ2A4l8KlteKcOTAx7xeXxZDE+P1Uv9EFwm2HQBu5L2D4oX99PXFVvdYStCmAMEqzemStVWSP0lfRTf855UPCX/oP4W0SA1hrBWvWnUCjB7woyKPfjkNNuYjxJ1iQPSGyQFZY/H51+wp1B6a1rc5qTOupTWvGvgdAszeEaNvLp6reFuDnjJHkOl53UzPkJqjfTNsRnGnFoqrC9fXLy+fnFJH8AcjCI60833eaYM6vbMZAPP+MgYDNRhZwBCYLtVOaitk7HXGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "885290ec854415730d9c17afb6e319d88e4cba2578b2694debef0586faed06c6",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "{\"answer\": \"recommender is most likely slow because its container is almost out of memory. It's running and its healthcheck passes, but memory use went from about 78% (around 400 MiB) at 11:56 to about 96% (around 490 MiB) at 12:00 UTC, and it's still rising. CPU climbed at the same time, from 40% to 50%. A container this close to its memory limit usually slows down from memory pressure (garbage collection or swapping). If it keeps growing, it will probably be killed for running out of memory, though it hasn't restarted yet (0 restarts).\\n\\nThe health check also flags high disk use. On its server, app-1, 47,616 of 51,200 MB is used (about 93%), which could slow down any disk activity.\\n\\nThe last deployment (commit a9b8c7d) succeeded on 2026-10-31, so a failed deploy isn't the cause. I couldn't find any logs for this service, so I can't confirm what is using the memory.\\n\\nWhat to check next:\\n- Whether the memory growth started after the 2026-10-31 deployment, which could point to a leak.\\n- What memory limit the container has.\\n- What is filling the disk on app-1 (for example, old Docker images or logs).\\n\\nI can only read data, so I can't restart the service or change its limits myself.\", \"diagnosis\": \"high_memory\", \"confidence\": 0.75, \"entities\": [{\"kind\": \"Service\", \"id\": \"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\", \"label\": \"recommender\"}, {\"kind\": \"Server\", \"id\": \"f24510dd-db3a-4d3c-baf5-f926c6895653\", \"label\": \"app-1\"}, {\"kind\": \"Deployment\", \"id\": \"e72e7993-2257-4b03-85c1-ef85dc7f2e44\", \"label\": \"last recommender deployment (a9b8c7d)\"}], \"evidence\": [{\"ref\": \"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\", \"note\": \"Memory went from 78.1% to 95.7% between 11:56 and 12:00 UTC, CPU from 40% to 50%. The health check flags highMemory and highDisk. The container is running and healthy with 0 restarts. No log entries were returned.\"}, {\"ref\": \"f24510dd-db3a-4d3c-baf5-f926c6895653\", \"note\": \"Server app-1 is connected. Disk: 47,616 of 51,200 MB used (about 93%). 2 CPU cores, 4,096 MB RAM.\"}, {\"ref\": \"e72e7993-2257-4b03-85c1-ef85dc7f2e44\", \"note\": \"Last deployment SUCCESS, finished 2026-10-31T11:01Z, commit a9b8c7d.\"}], \"missingEvidence\": [\"No log entries for recommender were returned, so I can't see errors, GC pauses or slow requests\", \"Metrics cover only the last 5 minutes, so the longer memory trend since the last deployment is unknown\", \"No request latency metrics are available to measure the slowness directly\", \"The container's memory limit wasn't returned\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 11258,
+          "outputTokens": 1043
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\": \"recommender is most likely slow because its container is almost out of memory. It's running and its healthcheck passes, but memory use went from about 78% (around 400 MiB) at 11:56 to about 96% (around 490 MiB) at 12:00 UTC, and it's still rising. CPU climbed at the same time, from 40% to 50%. A container this close to its memory limit usually slows down from memory pressure (garbage collection or swapping). If it keeps growing, it will probably be killed for running out of memory, though it hasn't restarted yet (0 restarts).\\n\\nThe health check also flags high disk use. On its server, app-1, 47,616 of 51,200 MB is used (about 93%), which could slow down any disk activity.\\n\\nThe last deployment (commit a9b8c7d) succeeded on 2026-10-31, so a failed deploy isn't the cause. I couldn't find any logs for this service, so I can't confirm what is using the memory.\\n\\nWhat to check next:\\n- Whether the memory growth started after the 2026-10-31 deployment, which could point to a leak.\\n- What memory limit the container has.\\n- What is filling the disk on app-1 (for example, old Docker images or logs).\\n\\nI can only read data, so I can't restart the service or change its limits myself.\", \"diagnosis\": \"high_memory\", \"confidence\": 0.75, \"entities\": [{\"kind\": \"Service\", \"id\": \"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\", \"label\": \"recommender\"}, {\"kind\": \"Server\", \"id\": \"f24510dd-db3a-4d3c-baf5-f926c6895653\", \"label\": \"app-1\"}, {\"kind\": \"Deployment\", \"id\": \"e72e7993-2257-4b03-85c1-ef85dc7f2e44\", \"label\": \"last recommender deployment (a9b8c7d)\"}], \"evidence\": [{\"ref\": \"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\", \"note\": \"Memory went from 78.1% to 95.7% between 11:56 and 12:00 UTC, CPU from 40% to 50%. The health check flags highMemory and highDisk. The container is running and healthy with 0 restarts. No log entries were returned.\"}, {\"ref\": \"f24510dd-db3a-4d3c-baf5-f926c6895653\", \"note\": \"Server app-1 is connected. Disk: 47,616 of 51,200 MB used (about 93%). 2 CPU cores, 4,096 MB RAM.\"}, {\"ref\": \"e72e7993-2257-4b03-85c1-ef85dc7f2e44\", \"note\": \"Last deployment SUCCESS, finished 2026-10-31T11:01Z, commit a9b8c7d.\"}], \"missingEvidence\": [\"No log entries for recommender were returned, so I can't see errors, GC pauses or slow requests\", \"Metrics cover only the last 5 minutes, so the longer memory trend since the last deployment is unknown\", \"No request latency metrics are available to measure the slowness directly\", \"The container's memory limit wasn't returned\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "topmem-shop-single",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "72f40549c22e185c219937475e892938cc08cb78d4b6c4832dd82375537ad84d",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01CNMLaZrsZqPQF4CeEXygVj",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5374,
+          "outputTokens": 26
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01CNMLaZrsZqPQF4CeEXygVj",
+              "name": "list_services",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "3a33b7012f8a222b82d43a584214b97b97ed2bd7ee765b46b465fdb49ec63bf4",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_013Vd9bnuARB8oDoez8a7w4v",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+              "points": 5
+            }
+          },
+          {
+            "id": "toolu_01Hu5MGcjVWWSxPVFq32cf9r",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "c41d50ac-4110-4094-94f9-e4698fdd81b9",
+              "points": 5
+            }
+          },
+          {
+            "id": "toolu_017NKyjqnQp8JoXvzzcV39Mq",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "b18f27df-93b6-4937-8b3e-8edade656aa7",
+              "points": 5
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6409,
+          "outputTokens": 341
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_013Vd9bnuARB8oDoez8a7w4v",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+                "points": 5
+              }
+            },
+            {
+              "id": "toolu_01Hu5MGcjVWWSxPVFq32cf9r",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "c41d50ac-4110-4094-94f9-e4698fdd81b9",
+                "points": 5
+              }
+            },
+            {
+              "id": "toolu_017NKyjqnQp8JoXvzzcV39Mq",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "b18f27df-93b6-4937-8b3e-8edade656aa7",
+                "points": 5
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "eb7dc0557e0be7f21f089b4d5d4c0596a0d5c47bb848a2b3c7ce3f8f9f2982be",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "```json\n{\"answer\": \"storefront uses the most memory. At 12:00 UTC it was using about 1.31 GiB (1,405,091,840 bytes), which is about 65.4% of its memory limit. It also kept going up: from about 1,210 MiB at 11:56 to about 1,340 MiB at 12:00, which is roughly 59% to 65% of its limit in 4 minutes. The other two services were using much less at 12:00: payments-api about 330 MiB (32.2% of its limit) and worker about 184 MiB (2.2%). None of the three has restarted. storefront isn't failing right now. The only thing to keep an eye on is that its memory was still rising across the 5 minutes of data I have.\", \"diagnosis\": \"unknown\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Service\", \"id\": \"c41d50ac-4110-4094-94f9-e4698fdd81b9\", \"label\": \"storefront\"}, {\"kind\": \"Service\", \"id\": \"d9061471-c08e-43dd-98cf-d1c33c316c6f\", \"label\": \"payments-api\"}, {\"kind\": \"Service\", \"id\": \"b18f27df-93b6-4937-8b3e-8edade656aa7\", \"label\": \"worker\"}], \"evidence\": [{\"ref\": \"c41d50ac-4110-4094-94f9-e4698fdd81b9\", \"note\": \"memory_used_bytes went from 1,268,776,960 to 1,405,091,840 between 11:56 and 12:00 UTC. memory_percent went from 59.1% to 65.4%. restart_count is 0. This is the highest of all three services listed.\"}, {\"ref\": \"d9061471-c08e-43dd-98cf-d1c33c316c6f\", \"note\": \"memory_used_bytes was 346,030,080 (32.2% of its limit) at 12:00 UTC. restart_count is 0.\"}, {\"ref\": \"b18f27df-93b6-4937-8b3e-8edade656aa7\", \"note\": \"memory_used_bytes was 192,937,984 (2.2% of its limit) at 12:00 UTC. restart_count is 0.\"}], \"missingEvidence\": [\"I only have 5 minutes of metrics (11:56 to 12:00 UTC), so I can't tell whether storefront's rising memory is a long-term trend or a short spike.\", \"I didn't check the health threshold flags, so I can't confirm whether 65% counts as high memory for storefront.\"]}\n```",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 9675,
+          "outputTokens": 1157
+        },
+        "message": {
+          "role": "assistant",
+          "content": "```json\n{\"answer\": \"storefront uses the most memory. At 12:00 UTC it was using about 1.31 GiB (1,405,091,840 bytes), which is about 65.4% of its memory limit. It also kept going up: from about 1,210 MiB at 11:56 to about 1,340 MiB at 12:00, which is roughly 59% to 65% of its limit in 4 minutes. The other two services were using much less at 12:00: payments-api about 330 MiB (32.2% of its limit) and worker about 184 MiB (2.2%). None of the three has restarted. storefront isn't failing right now. The only thing to keep an eye on is that its memory was still rising across the 5 minutes of data I have.\", \"diagnosis\": \"unknown\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Service\", \"id\": \"c41d50ac-4110-4094-94f9-e4698fdd81b9\", \"label\": \"storefront\"}, {\"kind\": \"Service\", \"id\": \"d9061471-c08e-43dd-98cf-d1c33c316c6f\", \"label\": \"payments-api\"}, {\"kind\": \"Service\", \"id\": \"b18f27df-93b6-4937-8b3e-8edade656aa7\", \"label\": \"worker\"}], \"evidence\": [{\"ref\": \"c41d50ac-4110-4094-94f9-e4698fdd81b9\", \"note\": \"memory_used_bytes went from 1,268,776,960 to 1,405,091,840 between 11:56 and 12:00 UTC. memory_percent went from 59.1% to 65.4%. restart_count is 0. This is the highest of all three services listed.\"}, {\"ref\": \"d9061471-c08e-43dd-98cf-d1c33c316c6f\", \"note\": \"memory_used_bytes was 346,030,080 (32.2% of its limit) at 12:00 UTC. restart_count is 0.\"}, {\"ref\": \"b18f27df-93b6-4937-8b3e-8edade656aa7\", \"note\": \"memory_used_bytes was 192,937,984 (2.2% of its limit) at 12:00 UTC. restart_count is 0.\"}], \"missingEvidence\": [\"I only have 5 minutes of metrics (11:56 to 12:00 UTC), so I can't tell whether storefront's rising memory is a long-term trend or a short spike.\", \"I didn't check the health threshold flags, so I can't confirm whether 65% counts as high memory for storefront.\"]}\n```",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS/QoKEAgTGAI4AUIIdGhpbmtpbmcSDFOovjun6w3AJ6q+tBoMic9hoaayHtzJ4u3UIjBhGBv6dWMVc6xK34hZQ/kpq5R/DPHLfi1r7KeKsJK3qRYNuQTC+9QX+FvRzgAb9jAqmgq0BW+bfhpWyazDlP6UHT8BdiMSLBqWeOLY8ZMI+K3MU55eN1jJ8NIDIX7nSDnYsSWNp0rxd+rEdPWYLv+d/P9df7cdl/EgDhF8xR95ipgPI8XuaBlkBEwMpk8ycZi0Sw9OIP2y61Od3dhNHn1XoBu/hb4y5sX3Bgqk3nDnAj2v1ManQxOz5JZDmNgZuny9Yo4gQA9RxbRwxKINoOWC08/0P5rREjldxLM/fdDvxpBvpVgJz1LwlMmEEWj6FKSUZchtLeYihjTP/mgx9iyXbzMKYfTXRwfjmvJpH83+FCkwylHVutbvlKnm6UvljXEw20q/KAnFoFOdpHU7KPvW+gEHt0Lzhxrsa3iDr0rX3KNYXM+fuFKNRThWvlcLSIY6AGsQkJ3IEGytEE14HwGDAw9fdtPQFL/I4rV5Dr4yjzKC3zc4xDLEhPvIlndCzrwpG0CZl44GYOAlER7o3pf8lHFX6wyy7/Vic7uqnAxDS6uukGwqf43MoZk06N4V4Jjg3ooLI/eX7Y2J6vERrtNZiSmek5V20DaIIXErgh2HvBaEz49/J2xR6/T34pEeyrWFjLsT72b2EUdGQAP+UgUJ/0TR/7QtBwi/mRFgf8lsQRcTtt4Qi0FMmNvfHWxjKs/LrloYPGjLTRR0fYSiAJohzWQxjWkm15JLAfyWM9kXUfJeRnhugnY3i7YpXkowO7JkTc/oJa8WNiTy6EIJYhZgS4BhEmqzlsUUUS1dJNwLw5ODpWm4mDZfg99lAUCEjSTXkbfdKAN2VIR9XQLt6xGo+MpQ3S8HO/vrycIo+zChMLqxqn/TZ6U7qu3hQ1J1OJ6yupOCRErHoHoxu4ITo3feRrHzByGQCNFEbolBTgHFWR3EwEoeWvnI2N1YNJqWbACyBlute/WLFKSVIylWA+ZPSKuFsZlSfXUIj83p6h+65eZzpwluJ1bPVTA0zv7BbFuINU4jzt8GEAHy1Eo6BPtuzeL6mEgguOt0oKaIznhpt/mZGYVgAA3GnbAHvQ/psSJqn4QPPPUKsvCUaSy3YfxtKdvakOgmGCx5x+chHnNvRVmMQzxYzdzagG9RA7ZPaFWulX4T2FCG/OzRDZcgdWedJ2q8hdmLPTiqJvHnDYzUXzVhhCU5J0bqLIh2aarNO/UNg77yaQnqRi9s2WU10UzZ/eIgcWcy2kzmc/Dk29KdLfCpe2Va3P3K9rivowocWaAlFfVJ/uB7wkkPieMFa4q/ZfF2lJBTvS+wELonfMf0hdsUuKCpnzKM2lALEOd7chUCrmj+cGFLTla3t6GCUG0bTmVHpHzYrpaIDp/1A7VSyhkUqCyVnHApYWLNIc1546pWX1Iqn7o5ChCbh/TxJTenhddk436SaZ3w53BXiTwHk7rcSM+RURrRHATLnJtKWE9Psh9EabxIHc1LBSM4ojaPHVzFe8Is1hXdBjW0sKErnEogCxZsIiyrBQBt/LHb/s/4Y0J1QdDcNOsE+2iZEjGPuMsUptltMpDNDzOHP12HNTVMaaUZyzpdrPj2h79nLf0U9b9bfAp8TLFzj7sAGU6tKk1wgixC8HNxZUNQCQ/v0R/qLo1voYC3CaNvuIOyH12FfXdb+1aT4QxyK25gP7Gw/LLt8GJJHWRS9FPSHaO9KhUsevSU1DYLjdYH4ZsNd7PJCTYs1zYvyRGgfFUUoAT9mvyjvM+HMS7T/5QHN57yRKCEFANo57LH39ML32TXpFVeBhawmSlKXBJzVJF/GAE="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

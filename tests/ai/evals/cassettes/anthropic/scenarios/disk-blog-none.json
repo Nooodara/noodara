@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "disk-blog-none",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "2f744731c371e5a281b6ff5318e26a27d8998ebfa65069c8dca3e787251a6ea6",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01NA6fQN4vMNCjAqXkSH38EU",
+            "name": "list_servers",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5377,
+          "outputTokens": 27
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01NA6fQN4vMNCjAqXkSH38EU",
+              "name": "list_servers",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "a120dbcfefc5f63379c9907d17637fc7d507c7d8172611eae8ae4eb41b8e456d",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01MzR3koyV9snbXDwATQS88f",
+            "name": "get_metrics",
+            "input": {
+              "target": "server",
+              "id": "fee05993-4b54-4c57-beba-39296ea34582",
+              "from": "2026-10-25T12:00:00Z",
+              "to": "2026-11-01T12:00:00Z",
+              "points": 30
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5722,
+          "outputTokens": 207
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01MzR3koyV9snbXDwATQS88f",
+              "name": "get_metrics",
+              "input": {
+                "target": "server",
+                "id": "fee05993-4b54-4c57-beba-39296ea34582",
+                "from": "2026-10-25T12:00:00Z",
+                "to": "2026-11-01T12:00:00Z",
+                "points": 30
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS6AQKEAgTGAI4AUIIdGhpbmtpbmcSDCTwZSPSwGsbBNJY3RoMYQVo2UMxRANPp1voIjCL25EwlyRqdl7SyHyZcLEDX/rUQRTv8fk2oh+6DPit51lmEvnICz2Ga6oYH63MJsAqhQSBgfOQRTqpWcAdr9vi5+x64cP15B+4li9YgluV0FzL/jrnx77DOHxtYo+BFZlZzunbVjAfsHz2eOHpCB1z9ywIHLjzt+POtxrDeOTqrRMqsLPneUii+JdKKcMvC46/zzcPhiIThjUzIuYOlznscn4MRBBfADgPVlwEtYhESAb4OdSlCeSxiNG1BJk9ZGkBQPUxWCoqzskjiDCh6j2yzsaeR2zALtKknJFlRvtiVTDJsVmox4YEbxXzuCdfm2Od8LCbBdIDhbFREsEijLkcc1pAXkvYtwHtN81DXeCFV0WJhaIk/t+yh1Try6PVPxEA7GmE/q8emzoTidUoq8ZlmtZmH0S47ThVsxNuAufQNhW8EY+MI2l1fCMb+XEn3KEnilv4p8slQ3PEBwnVgUT/UvnF4MjPw+//uo+2G/d0KEnfMcvpUAhDVc9pXHkfv4CZLC2QsvTVYMo/kveR7PjZDjUDBrS4KBtvSOTXmbvhnkiC33JBcH/yshqVu0ItO8zBy/jtZaGDvMPB2PTo1S1om9IJ5CUGsR0P5LBiCY8Ur7EDUlkUL8cWPcm26ASkEIjmS+Tk2OKFZ6eNyMyBrJXtorLczMFd/LXbffNvxBPksG4aE+K8vXTkRLO4IkCKxiDRUgO4c6YsaI4BdzPyDtFI0ye0h8KeiKrIidNQcCzvdNfz5QNoo+SIGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "9f997c323e0f5dd825f1710f0cb57602c7abacda5a68ed254cfbaa426100774b",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_014VS9Pfz6LZ2q9VLDEmjG8G",
+            "name": "get_server",
+            "input": {
+              "serverId": "fee05993-4b54-4c57-beba-39296ea34582"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6735,
+          "outputTokens": 70
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_014VS9Pfz6LZ2q9VLDEmjG8G",
+              "name": "get_server",
+              "input": {
+                "serverId": "fee05993-4b54-4c57-beba-39296ea34582"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "f3308cf7cfd8d9e04186cebe35c1c2a71771e39db52f4c678abea0d7d493defa",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "{\"answer\":\"No, ci-1 is not running out of disk. It is using about 20 GB (20,480 MB) of its 60 GB (61,440 MB) disk, which is about 33%, so roughly 40 GB is free. The current disk reading also shows 33.3%. The server is connected, was last seen at 2026-11-01T11:59:30Z and has been up for 7 days. One limit: I asked for a week of metrics but got back only the current disk reading, so I can't tell how fast usage is growing or when it might fill up. The diagnosis says \\\"unknown\\\" only because none of the available labels means \\\"no problem\\\". Nothing I found points to a disk problem.\",\"diagnosis\":\"unknown\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Server\",\"id\":\"fee05993-4b54-4c57-beba-39296ea34582\",\"label\":\"ci-1\"}],\"evidence\":[{\"ref\":\"fee05993-4b54-4c57-beba-39296ea34582\",\"note\":\"Server record: diskUsedMb 20480 out of diskTotalMb 61440 (about 33%), status CONNECTED, uptime 604800 s (7 days).\"},{\"ref\":\"fee05993-4b54-4c57-beba-39296ea34582\",\"note\":\"Metrics: disk_used_percent is 33.33 at 2026-11-01T12:00Z. Only one point came back even though a 7-day range was requested.\"}],\"missingEvidence\":[\"Disk usage history over time. Only one current reading came back, so I can't estimate how fast usage is growing or when the disk might fill up.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 7143,
+          "outputTokens": 625
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"No, ci-1 is not running out of disk. It is using about 20 GB (20,480 MB) of its 60 GB (61,440 MB) disk, which is about 33%, so roughly 40 GB is free. The current disk reading also shows 33.3%. The server is connected, was last seen at 2026-11-01T11:59:30Z and has been up for 7 days. One limit: I asked for a week of metrics but got back only the current disk reading, so I can't tell how fast usage is growing or when it might fill up. The diagnosis says \\\"unknown\\\" only because none of the available labels means \\\"no problem\\\". Nothing I found points to a disk problem.\",\"diagnosis\":\"unknown\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Server\",\"id\":\"fee05993-4b54-4c57-beba-39296ea34582\",\"label\":\"ci-1\"}],\"evidence\":[{\"ref\":\"fee05993-4b54-4c57-beba-39296ea34582\",\"note\":\"Server record: diskUsedMb 20480 out of diskTotalMb 61440 (about 33%), status CONNECTED, uptime 604800 s (7 days).\"},{\"ref\":\"fee05993-4b54-4c57-beba-39296ea34582\",\"note\":\"Metrics: disk_used_percent is 33.33 at 2026-11-01T12:00Z. Only one point came back even though a 7-day range was requested.\"}],\"missingEvidence\":[\"Disk usage history over time. Only one current reading came back, so I can't estimate how fast usage is growing or when the disk might fill up.\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSngcKEAgTGAI4AUIIdGhpbmtpbmcSDG52S79cIoQdgjzdgRoMGL9HEz+Q4lJeef5HIjCSYmbx0d/7f8XtgAkwgFiVxHFs6cK7ZgVG/BdC1l6Z5HZEG+KukWuj7K7ocrvGyoYquwbtxqd2lAwIqSsR0TcS9zYSG3MTsF+9/l2QM0CHU6pENuxAThymwRqbAGSrS8EMtntrIXOy4aiiiY5YPShZGl+m2WSQgcME3mENExC4iWxF+nNuF77qHk7tDW/+VIxWMC3gZtQko9F8eMtXB5h0Kdma1FtqvGXJUx8vpJv0PS9t81raCOyxc5XfT5RW/H3cXlGHET/TY5DhvRMCCzBg85Lu1SDV41xLbhGfhHHc7oks5OHQpN4m21HLUSkQlvCNgTPSxDRhkW4wpWi1/4nGb4W7GgfUvZ3JW/9I6GTVmAbpbtW+2ImswRig2XUs5PoEp8zdw1baerE8r7JIe67Qq+1ZWhf+c1P8xT8UuaH7yZbQ/l2YIpUh75zSAlm8hNePTRXWqWvWSQnxPssISLRjXMR2urKrfp/GXoCRC6BpRgMNZ8df7OhYcDwmH2g8g0hTXEncGOBzuM2CBhl9k3a/sy8peia6s9m+ooKbdhLFoIro9koalgWkQHm56fNo+2zPx9atB2DlrJa6nOqcJDaOO7iHDgwYiP2pD3bgC8AwKnwP5TJBX9Tj6ep4AJxUyn6xw8fR56YA7T5HLcBJtn19s6sHktWEG/trgCmZSECJuJGSew7E9BqibW4+h4RL6OAxAkNyecof2AiYr/eFp+8BIdmCo2yrH1y1zUXcnfaOlm1t6XjLeDYNbM4v+NQuJRbM7zNZvUglpGFf7uaK1br7UvMPQIxDAg9v3yuxlz7ixT1wsk7F/6QZFm+Nx6nRAFWR5NQHH5X6DZEMhdVVm7+4xOTxGOuXyA4G35rWGE9/Z+S7inXTv4obN+LO+wsAfVNFUhO3XPDuSWLNe6GYlV7ITi+ylPpE5kjpwyoCDT5oiSjR54jsgqccH9HE/j8UVq+ZzsEGG0tNZ4hkVggTOmPSqQNM0jSylXUyoKViS55GcK73/UgONBX9CcqI2I4MNvdj1ZvIchWfoimqBPcow9TvwwbvGAUH+jfGouJ75+XH/hdfzwfDUI+tk/XJexiUe/ZuOJlo9qfZ6jiVl4vIZFIUDHqeHdiw0sx0PG3F3PlVc2P1ctMrvU/+lFKE7Xb+W2JTsBi2dC+3TzdExSO9+hgB"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

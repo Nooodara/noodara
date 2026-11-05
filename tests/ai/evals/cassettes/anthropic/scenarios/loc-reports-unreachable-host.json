@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "loc-reports-unreachable-host",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "dc979509bb594c479753136e1748dd18da6e7d8b5bb91e89b692acf87691efb9",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01N8A7vDW6uLEQUHncNZFSn2",
+            "name": "list_services",
+            "input": {}
+          },
+          {
+            "id": "toolu_0185iNJ3kvHorFRoW9KEmnXc",
+            "name": "list_servers",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5448,
+          "outputTokens": 65
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01N8A7vDW6uLEQUHncNZFSn2",
+              "name": "list_services",
+              "input": {}
+            },
+            {
+              "id": "toolu_0185iNJ3kvHorFRoW9KEmnXc",
+              "name": "list_servers",
+              "input": {}
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS2QQKEAgTGAI4AUIIdGhpbmtpbmcSDJnMovad7+gUK4uMbBoMJHjAWuIYewHPZOENIjC9wC55wfi5iR77AgsLrMWnqagbt2e0J60ctUXACk25+bEGCqwjXVGqKAI6hN0yz9Eq9gPcR2WzlUdd+TJRJV99fpXOMDlck7PwHbWzS4Xhy+4uzzg0f0pPXdAa3MnyN2sEnskBEKujxYtQt84XqGWf/V1y8uTT5dEQ4t311+MVA17fujKWB2zBcu3Z3SKf8l2eh7iVeQ0RacEXy4lELi/iLBfBfZd8FdKL5+dsB/O34pMHOvnQjADXJ1sHHVY9h0FXNJTQqkv+y0Py0JyfXUd6xZzbbDxvkHMzLCZC6dYJIh4TfuCf81LxmUOnZKMqtoIrvtmIW2ZcKn+sqnv4iRBWS2jshS4Yi6P+LQfj34EiY4SAcYOa86JcnpTGMC/ktODStM5dlwgT3towq1afmGsF9bN20ZunmFU2XaMam9Csaj+5nsd4FAyZS/7+/HpETKxw213T2NAaRxuNHsv9UHz9WeTr+I9hfEjEO2Ce+ezjXHD/c9F59yCczxx8c0GCk5GJLcmBw6xPNbStf+eFPvGJs5JBxAYg8S+nu994LPAv7IBmeqaudMOSzvOngoSMoQ29CAZ7FWzqTl+Zew4iaEX+LcfjTiMLtsrAB7rcQ8Tsy5rVobCvhVY4y4nN4Zc3yw+4STvrZo+fODvYfP2AhRd6OUNsI6Mtsfc7ZM/jKJpUjfthlmVUSFkkImUiy/SWDWQVGK8fu+2xds20bKk/UrlsbBnhw0yKG3jGGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "0bc850c2ae45814690cd9bc1f9cd2b6bd1438df8090009d00b2ee50e61b84305",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "Let me check health for reports.",
+        "toolCalls": [
+          {
+            "id": "toolu_01FMnDJbRCBUmTied1MR193x",
+            "name": "get_health",
+            "input": {
+              "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7988,
+          "outputTokens": 88
+        },
+        "message": {
+          "role": "assistant",
+          "content": "Let me check health for reports.",
+          "toolCalls": [
+            {
+              "id": "toolu_01FMnDJbRCBUmTied1MR193x",
+              "name": "get_health",
+              "input": {
+                "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "3fc69794bc7fe5e7b94b7b1f0344d92e4a1329d9d3abfe69b627d4aa3fe2a6c9",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"The reports service (image ghcr.io/platform/reports:0.4.0, internal port 3000, healthcheck /health) runs on the server batch-1. I can't say whether it's up right now. batch-1 shows as UNREACHABLE and was last seen at 2026-11-01T10:30:00Z, so reports' current status is UNKNOWN. The last health reading, also from 10:30:00Z, showed the container running and healthy with 0 restarts. That reading is stale: it was taken just before the server stopped reporting. The last deployment (commit 8c9d0e1) succeeded on 2026-10-26, so this doesn't look like a deployment problem. The real issue is that batch-1 can't be reached. The service may still be running, but nothing can confirm it until batch-1 reconnects. Check that batch-1 is powered on, that its network works, and that its Noodara agent is connected. I can't restart or change anything myself.\",\"diagnosis\":\"server_unreachable\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Service\",\"id\":\"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\",\"label\":\"reports\"},{\"kind\":\"Server\",\"id\":\"695183d3-fe96-443c-934a-ec1611179a22\",\"label\":\"batch-1\"},{\"kind\":\"Deployment\",\"id\":\"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\",\"label\":\"reports last deployment (8c9d0e1)\"}],\"evidence\":[{\"ref\":\"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\",\"note\":\"reports is assigned to server 695183d3-...; runtimeStatus UNKNOWN; last container observation 2026-11-01T10:30:00Z: running, healthy, 0 restarts (stale).\"},{\"ref\":\"695183d3-fe96-443c-934a-ec1611179a22\",\"note\":\"batch-1 status UNREACHABLE, lastSeenAt 2026-11-01T10:30:00Z.\"},{\"ref\":\"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\",\"note\":\"Last deployment SUCCESS, finished 2026-10-26T06:01:00Z.\"}],\"missingEvidence\":[\"Current container state of reports after 2026-11-01T10:30:00Z (batch-1 not reporting)\",\"Why batch-1 is unreachable (power, network or agent)\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 8368,
+          "outputTokens": 818
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"The reports service (image ghcr.io/platform/reports:0.4.0, internal port 3000, healthcheck /health) runs on the server batch-1. I can't say whether it's up right now. batch-1 shows as UNREACHABLE and was last seen at 2026-11-01T10:30:00Z, so reports' current status is UNKNOWN. The last health reading, also from 10:30:00Z, showed the container running and healthy with 0 restarts. That reading is stale: it was taken just before the server stopped reporting. The last deployment (commit 8c9d0e1) succeeded on 2026-10-26, so this doesn't look like a deployment problem. The real issue is that batch-1 can't be reached. The service may still be running, but nothing can confirm it until batch-1 reconnects. Check that batch-1 is powered on, that its network works, and that its Noodara agent is connected. I can't restart or change anything myself.\",\"diagnosis\":\"server_unreachable\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Service\",\"id\":\"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\",\"label\":\"reports\"},{\"kind\":\"Server\",\"id\":\"695183d3-fe96-443c-934a-ec1611179a22\",\"label\":\"batch-1\"},{\"kind\":\"Deployment\",\"id\":\"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\",\"label\":\"reports last deployment (8c9d0e1)\"}],\"evidence\":[{\"ref\":\"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\",\"note\":\"reports is assigned to server 695183d3-...; runtimeStatus UNKNOWN; last container observation 2026-11-01T10:30:00Z: running, healthy, 0 restarts (stale).\"},{\"ref\":\"695183d3-fe96-443c-934a-ec1611179a22\",\"note\":\"batch-1 status UNREACHABLE, lastSeenAt 2026-11-01T10:30:00Z.\"},{\"ref\":\"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\",\"note\":\"Last deployment SUCCESS, finished 2026-10-26T06:01:00Z.\"}],\"missingEvidence\":[\"Current container state of reports after 2026-11-01T10:30:00Z (batch-1 not reporting)\",\"Why batch-1 is unreachable (power, network or agent)\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

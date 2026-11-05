@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "disk-agency-global",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "f042797f062b7adc7857704ce4d1c0edf3e36d2cdb8f81ff4f057a52316ba112",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01YVBsxJFcgmkMkhVzWucrFF",
+            "name": "list_servers",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5482,
+          "outputTokens": 27
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01YVBsxJFcgmkMkhVzWucrFF",
+              "name": "list_servers",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "de58f17f759007371cc436138dc80ab09e1387a62f6c4a9efbc66dc473c666a3",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_0196YXNxgkabC3exBWq5NDFq",
+            "name": "get_metrics",
+            "input": {
+              "target": "server",
+              "id": "65d53194-0618-4f5a-bb52-f134fc2393aa",
+              "points": 12
+            }
+          },
+          {
+            "id": "toolu_018cRsCLiN4dvtXUdK8ZwyYs",
+            "name": "get_metrics",
+            "input": {
+              "target": "server",
+              "id": "7dd82719-3c05-4dac-a1fc-4d91a7eb6103",
+              "points": 12
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6382,
+          "outputTokens": 292
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_0196YXNxgkabC3exBWq5NDFq",
+              "name": "get_metrics",
+              "input": {
+                "target": "server",
+                "id": "65d53194-0618-4f5a-bb52-f134fc2393aa",
+                "points": 12
+              }
+            },
+            {
+              "id": "toolu_018cRsCLiN4dvtXUdK8ZwyYs",
+              "name": "get_metrics",
+              "input": {
+                "target": "server",
+                "id": "7dd82719-3c05-4dac-a1fc-4d91a7eb6103",
+                "points": 12
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSmAUKEAgTGAI4AUIIdGhpbmtpbmcSDA+ak3rWbFnOVkQeaxoM1k79nxETI5GQHXgSIjA+Z/W3M0s//J0eLxWPROP/4c7MgV0WwSIH3NehsLTYBnbrO3aC+odGDaFrbJ/yTpkqtQTzfFZgSNEQy5+LR8lh0GtOr46LGjIZEOgi8BK1ip7rc9gxP101I1AdDy2e78Xyc3fVkZRLf0MvKcOJofGymq39q8c6b4izNtxT14sRAjMSZIsEEo74/SDP0iqPqLbZorJmDl6O+Vej5N4psLFQ/E1NCPorJ2gu0p7vCUihduVZw1eJHzDIO5pgqNWoPo/eqPQtrGi749qRffD89E1GCD0/4IbseCC8WPeUJxBWs+Wi3fTpEuAaM8c9/wkAPGTmBksUrwykskJuS/10AAicrtZ6UWuZvAQcjDPxV1ahdngSvSysVIHtll/BRZD+zFrGpkfEH86PBZIarhNsya4mC/XDlHuiT4K+WOeV4cQfaYeeeVPA4/diG6KZmLqlkio3zhZQyfHxD0Tt50clJkzgIQfQjUhuZdVauDLMjdlw7CmPocPxs6xV3lRSEVamszA03fQeB2Nr8RM1PPXNtqwBsOaNQzoBmh+/LEri1mBU0U/NS/gWK1ixtYMljOeM7CXIg69w1rRfsXXf9KuO73obfLtRdLmTDwnCb6SfZ+aIh4g4P/gStx1VDSL27knBUplOHRboIZPngC6aPejvP8UD7EGwCpSYaYYl4DQyr741W9GLgW4OW51oAIYp7xeKwxrUhmPKEysShVxFfWYa1049jgRgPt+Lop1gfslRCCdCiq3+CJX9CI5ecYmV/VL7Wd/Ec1m0wgINQoAcIOrJ64b4CqiHBo0hvWFp1bfTl+mAXHtuen94dDxHGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "ae8e654a2ebcb74e54a965d612b6bb77c1c54eb46ba1254d1b8f7ecbc9b5d909",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\": \"Two of your three servers are close to running out of disk.\\n\\n1. **host-c is the most urgent.** It's 95.2% full: 39,000 MB used out of 40,960 MB, leaving about 1.9 GB free.\\n2. **host-b is next.** It's 91.6% full: 75,000 MB used out of 81,920 MB, leaving about 6.8 GB free.\\n\\nhost-a is fine at 50% (40,960 of 81,920 MB used).\\n\\nBoth full servers are connected and running normally. I only have one disk reading for each, so I can't tell how fast the disks are filling or what's taking up the space.\\n\\nI can only view these servers, not change anything, so I can't free up space myself. On host-c and host-b, look first at old Docker images and build cache, stopped containers, unused volumes, and log files, since these often take up the most space. If they keep filling up, give them bigger disks.\", \"diagnosis\": \"high_disk\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Server\", \"id\": \"7dd82719-3c05-4dac-a1fc-4d91a7eb6103\", \"label\": \"host-c\"}, {\"kind\": \"Server\", \"id\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"label\": \"host-b\"}], \"evidence\": [{\"ref\": \"7dd82719-3c05-4dac-a1fc-4d91a7eb6103\", \"note\": \"disk_used_percent 95.21 at 2026-11-01T12:00Z; diskUsedMb 39000 of diskTotalMb 40960; status CONNECTED\"}, {\"ref\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"note\": \"disk_used_percent 91.55 at 2026-11-01T12:00Z; diskUsedMb 75000 of diskTotalMb 81920; status CONNECTED. Of the 3 servers listed, host-a was the only other one and was at 50% disk.\"}], \"missingEvidence\": [\"Disk usage history (only one data point per server, so the growth rate is unknown)\", \"Breakdown of disk usage by Docker images, volumes, logs and build cache\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 8387,
+          "outputTokens": 732
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\": \"Two of your three servers are close to running out of disk.\\n\\n1. **host-c is the most urgent.** It's 95.2% full: 39,000 MB used out of 40,960 MB, leaving about 1.9 GB free.\\n2. **host-b is next.** It's 91.6% full: 75,000 MB used out of 81,920 MB, leaving about 6.8 GB free.\\n\\nhost-a is fine at 50% (40,960 of 81,920 MB used).\\n\\nBoth full servers are connected and running normally. I only have one disk reading for each, so I can't tell how fast the disks are filling or what's taking up the space.\\n\\nI can only view these servers, not change anything, so I can't free up space myself. On host-c and host-b, look first at old Docker images and build cache, stopped containers, unused volumes, and log files, since these often take up the most space. If they keep filling up, give them bigger disks.\", \"diagnosis\": \"high_disk\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Server\", \"id\": \"7dd82719-3c05-4dac-a1fc-4d91a7eb6103\", \"label\": \"host-c\"}, {\"kind\": \"Server\", \"id\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"label\": \"host-b\"}], \"evidence\": [{\"ref\": \"7dd82719-3c05-4dac-a1fc-4d91a7eb6103\", \"note\": \"disk_used_percent 95.21 at 2026-11-01T12:00Z; diskUsedMb 39000 of diskTotalMb 40960; status CONNECTED\"}, {\"ref\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"note\": \"disk_used_percent 91.55 at 2026-11-01T12:00Z; diskUsedMb 75000 of diskTotalMb 81920; status CONNECTED. Of the 3 servers listed, host-a was the only other one and was at 50% disk.\"}], \"missingEvidence\": [\"Disk usage history (only one data point per server, so the growth rate is unknown)\", \"Breakdown of disk usage by Docker images, volumes, logs and build cache\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

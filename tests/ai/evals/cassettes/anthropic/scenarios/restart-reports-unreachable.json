@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "restart-reports-unreachable",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "7d530422f27ddaf8abd1a973a9805fd192237a32836eeb1cbdca293b4b8ecb03",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01Gc5Pr1QznNAaJvvqQUy1VM",
+            "name": "list_services",
+            "input": {}
+          },
+          {
+            "id": "toolu_01QcYGixVmPW7acAhwcz919D",
+            "name": "get_server",
+            "input": {
+              "serverId": "695183d3-fe96-443c-934a-ec1611179a22"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5445,
+          "outputTokens": 115
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01Gc5Pr1QznNAaJvvqQUy1VM",
+              "name": "list_services",
+              "input": {}
+            },
+            {
+              "id": "toolu_01QcYGixVmPW7acAhwcz919D",
+              "name": "get_server",
+              "input": {
+                "serverId": "695183d3-fe96-443c-934a-ec1611179a22"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS8wQKEAgTGAI4AUIIdGhpbmtpbmcSDH+GQNada++31y5P9xoMPZVTKABfz11hpPDZIjCRJM0pgKLhod/7zL8LEfnIp5+oJz6y9QhUjfxrFfARNB409UhshJvjKkubfsvUPKMqkATjx6Ly0kwUToIDmk4QIRduCPQk6nR7exfkK9Y/kUfGvf1Jq5oswtV4/t/bQfsF0Zmuua/XMlx31X6aK2VR+CXE8DrLj8kpkIV6abn9wQuR2AVv49JGm14u5lYnxTNPR6ksJqJFOac2fYAblA+iTOoFYxujs5kebFPYPIXcsV3puqpvPorH82LtFaMrvOhBC3UX6UBWwiqALd9agpL/qa6CNivvcM1d6f/be1W0p03c0BFKpVKk6WBB18fj4Ky3BpDd/fTA1nJLMrKAt7Om7gXoIVSXnOy/tCTIzeS15AnmGZG6EcuqH7CPY+Upvm90MdNMx+l9dJh7Fsr6vXgaDoshQq5lqjT1xSBwVBR1cRhyRHV+GuleZo/cWtcGetuN6rRMxGQdDYyQZH/fxEPj9EZeG/lQjg/agKn/YL+VQJq4XI/KZ7bwoMeCTWqx3+lEaVTtlp2PBEsDb+2z9e31NznpeBFtP8w0w4oykbhrLS1zrANwY8HkpNtnccG09vvg8Kp5T23EONxvaDW3jbw1q/wkO1ethnmxGSUjFkxJAK7LFNVEhlEgQ1l2dJ/hjKc4vqMvJ7aJi8+m3h9QrtlYwLmIYl3BYDblwzdHq/qxcsv4EXYzUZuUP45lFCX6bNqJjyNTSBev6+HKBqv27uQbrS3sxS3ztv/yD5S3r4ulpA4jJWcD0Wq75f2s60hbIUWibwIYAQ=="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "aed0e76f5411d2bfd6c69fd3043862914a8c1d20c17c454c4d507d8a53773a62",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01QFUX4uMSxnkd8B7FTG79K4",
+            "name": "get_health",
+            "input": {
+              "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01"
+            }
+          },
+          {
+            "id": "toolu_019nHAi1EqJ3u211o2udwJEM",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01",
+              "limit": 50
+            }
+          },
+          {
+            "id": "toolu_0147LkUJ1tEEJYhcF51X7Dv6",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01",
+              "limit": 5
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7227,
+          "outputTokens": 275
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01QFUX4uMSxnkd8B7FTG79K4",
+              "name": "get_health",
+              "input": {
+                "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01"
+              }
+            },
+            {
+              "id": "toolu_019nHAi1EqJ3u211o2udwJEM",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01",
+                "limit": 50
+              }
+            },
+            {
+              "id": "toolu_0147LkUJ1tEEJYhcF51X7Dv6",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01",
+                "limit": 5
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "0cd34066671665980ce26bb8cd2278178a465140a307fe262648f04e5ccdd31e",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\": \"I can't confirm that reports restarted, and I can't tell you why it would have. The data I have doesn't show a restart. The bigger problem is that its server, batch-1, can't be reached right now, so nothing newer than its last check-in is available.\\n\\nWhat the data shows:\\n- **Server is unreachable:** batch-1 is marked UNREACHABLE. It last checked in at 2026-11-01T10:30:00Z. That's why reports now shows status UNKNOWN.\\n- **No restart in the last health reading:** at 10:30:00Z the reports container was running and healthy, with a restart count of 0.\\n- **No deployment caused it:** the only deployment of reports is a manual one by admin on 2026-10-26 (image ghcr.io/platform/reports:0.4.0). It succeeded and finished at 06:01Z. Nothing was deployed since.\\n- **No logs to check:** runtime logs are unavailable for this service, and no log entries came back.\\n\\nIf reports did restart, it most likely happened after batch-1 stopped responding, possibly because the host itself rebooted or lost its network connection. I can't confirm that from here. Once batch-1 checks in again, look at its uptime (a reset means the host rebooted) and at the restart count and container state of reports. If you can reach the host another way, its system and Docker logs will show what happened.\", \"diagnosis\": \"server_unreachable\", \"confidence\": 0.55, \"entities\": [{\"kind\": \"Service\", \"id\": \"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\", \"label\": \"reports\"}, {\"kind\": \"Server\", \"id\": \"695183d3-fe96-443c-934a-ec1611179a22\", \"label\": \"batch-1\"}, {\"kind\": \"Deployment\", \"id\": \"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\", \"label\": \"reports deployment 2026-10-26\"}], \"evidence\": [{\"ref\": \"695183d3-fe96-443c-934a-ec1611179a22\", \"note\": \"Server batch-1 status UNREACHABLE; lastSeenAt 2026-11-01T10:30:00Z; last reported uptime 604800s.\"}, {\"ref\": \"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\", \"note\": \"Runtime status UNKNOWN; last health reading (10:30:00Z) shows container running, healthy, restartCount 0. Runtime logs unavailable; no log entries came back.\"}, {\"ref\": \"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\", \"note\": \"Only deployment: manual, SUCCESS, finished 2026-10-26T06:01Z. No later deployment that could explain a restart.\"}], \"missingEvidence\": [\"Any record of a restart (restartCount is 0 in the last health reading)\", \"Current container state and restart count after batch-1 stopped responding at 10:30Z\", \"Runtime logs for reports (unavailable)\", \"Server uptime or reboot evidence after batch-1 is reachable again\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 8443,
+          "outputTokens": 1246
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\": \"I can't confirm that reports restarted, and I can't tell you why it would have. The data I have doesn't show a restart. The bigger problem is that its server, batch-1, can't be reached right now, so nothing newer than its last check-in is available.\\n\\nWhat the data shows:\\n- **Server is unreachable:** batch-1 is marked UNREACHABLE. It last checked in at 2026-11-01T10:30:00Z. That's why reports now shows status UNKNOWN.\\n- **No restart in the last health reading:** at 10:30:00Z the reports container was running and healthy, with a restart count of 0.\\n- **No deployment caused it:** the only deployment of reports is a manual one by admin on 2026-10-26 (image ghcr.io/platform/reports:0.4.0). It succeeded and finished at 06:01Z. Nothing was deployed since.\\n- **No logs to check:** runtime logs are unavailable for this service, and no log entries came back.\\n\\nIf reports did restart, it most likely happened after batch-1 stopped responding, possibly because the host itself rebooted or lost its network connection. I can't confirm that from here. Once batch-1 checks in again, look at its uptime (a reset means the host rebooted) and at the restart count and container state of reports. If you can reach the host another way, its system and Docker logs will show what happened.\", \"diagnosis\": \"server_unreachable\", \"confidence\": 0.55, \"entities\": [{\"kind\": \"Service\", \"id\": \"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\", \"label\": \"reports\"}, {\"kind\": \"Server\", \"id\": \"695183d3-fe96-443c-934a-ec1611179a22\", \"label\": \"batch-1\"}, {\"kind\": \"Deployment\", \"id\": \"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\", \"label\": \"reports deployment 2026-10-26\"}], \"evidence\": [{\"ref\": \"695183d3-fe96-443c-934a-ec1611179a22\", \"note\": \"Server batch-1 status UNREACHABLE; lastSeenAt 2026-11-01T10:30:00Z; last reported uptime 604800s.\"}, {\"ref\": \"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\", \"note\": \"Runtime status UNKNOWN; last health reading (10:30:00Z) shows container running, healthy, restartCount 0. Runtime logs unavailable; no log entries came back.\"}, {\"ref\": \"ebbb82b2-0528-4ca5-ac4e-4de461578c9f\", \"note\": \"Only deployment: manual, SUCCESS, finished 2026-10-26T06:01Z. No later deployment that could explain a restart.\"}], \"missingEvidence\": [\"Any record of a restart (restartCount is 0 in the last health reading)\", \"Current container state and restart count after batch-1 stopped responding at 10:30Z\", \"Runtime logs for reports (unavailable)\", \"Server uptime or reboot evidence after batch-1 is reachable again\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS6wkKEAgTGAI4AUIIdGhpbmtpbmcSDMZ02pdW47YBCt88IBoMzglJx39V1YM80GJAIjA1bJ5g5hiCrzOq5o2/tk99tuPYgrsd80im7/ZuLNXomiAKfjumoVvDxMxIdqtmoFwqiAm7pCifa/gma/GZDF08np9mHIoJ4utVGIfV1FUHthPypIoClGUGCIPskAErcag2ntyNX+bRjZK0C6d6CDllUwjsOmNfbCja7+Jx5H6KvfCsWQ5aqbBxz6QM055S3Q0uopGfxe2tZYdGegGZRxmIU15L4nDeTNbZsz5GnhSGL4pt+gjHuwMQ1C/uu9AtOMzMxe9m8/1Q5zvd88km1FnFBOgvJaj+DkQBAVRQFkHYZNn7iSUZ82Cn4hgejnQuyTuRNbTRDroHs7bM6FikaTQxrworLCUk8Lugh75/PuGN+ld9oA9n7ZtP73iY1kQNylM7LWgAKG4NoHq5qwovKT5bdJbAKbxqQ8YNEHr906zsJtrM3Q0rjJspuRXypfNkbwVtSVJ48AzGJ0VbSQi4W8p9TtpL5wAeOJLJ0HbjbWKvz/4SM+2yVKFpk8pTPCGmPsGDdkPcvj10m+96JupRFuBpbacMW6QHqT4D4q4E3oVk8jJSq2r5vgbzN+xoeM4yPGtW6dIjsYSnZHOnAaFGCVP/8fOUg4K6QVCDpWosXJWVfzCYOV4U+vSiCaQgYrDorCoUKBUMpjoUrhceecl40bYOnD4qQc+v8TCjREz9XbLUAX5YJRX2yCryqKfYSeatcf2SHl9Opb281tOBMscD3bg1+sfs+LKvO0TChRzIfbhzNCKfiM32Rk0UtWeQc/oEMa9cMdEoeLTEMdncwivRPq28HlrwJ8E/FWlCbHk1QyCiXeygGIvFg5ecpAqRReEkw7QeaSXHLf3aYIdAiVePkNIRB4PEgAubpO1OCBpwPJQZBHEIVy5WKlsiFJMCQUw29Lle6pQEWfeJ7RwZxGAR+mf/EO5e2B8jid9oriN9MAnisK6odJpnOlhCQMoOP/NysUhjM6w4rvw+KAroRdRB5ak3bW9kTy0estM8pz5IFK7CwvFsmOdc7h1fmn2vWZjEYyq98hvwogOTCmu+gGYJv+90HEgfebwmRhhq/c6X6YPq205aTo3zR10o8hn81eZUYiY9P/qC9lg0yxd4x3yvVLd+PWF66pLge4lKfodiMSuGeKfYsStvihyaGklDxndjGNSfCnF2WVkdBiT8aF7ZXAxNhpRTn7Nlf5ep965ICmWHn0cusUxjlfY2Hp7Fwh56TKyzl872x62zOy5XbAy+rBhbVbTNKcIIHY/pM4vsZuRWHwpJfyXfxh+0ykDAHFj3oHV8OYkR5elTFZswkNlVsH4LYEti2Ix4oBA6i5Z0el/n9knYeL4lMs3mDI+NDD8wz53lG9Je++SvadOaUwMNmSWASp1j0c3BCMmT0V6+rWA1Jy0UYQn9/6bpFjB3a8qigWwRBNbRO9TdsWMXvVufGYIDeNUvW5vWNUF9ljXHogypn1v+tiMmDICUOuZ4TXN28szi7J1QZ2G+8oObxg145ZoJbbWtgLnC6NTxZkHEzWfQpxZRUPo5dkZZK5R/8JumkxsyaR71hbsyEmV+2/zi8ZPKUQJCtyuxzIzCjAoM0f5cZlT6pK7mup9FCiV8b8zHF84kM0BWQGzhfIuXzBgB"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

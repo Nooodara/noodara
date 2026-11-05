@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "unhealthy-agency-global",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "07232f0b5fe9852447cc82e33d242e3e1fba17c93dab0edfecbdd0c130261f1b",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01DaCi2saE1VQWFyxfvrdjjV",
+            "name": "list_services",
+            "input": {}
+          },
+          {
+            "id": "toolu_01VSuca2QEhMc9VYEXwqg7ia",
+            "name": "get_health",
+            "input": {
+              "serviceId": "8ee3a50a-8c9e-406f-ab87-a03d7610c855"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5451,
+          "outputTokens": 124
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01DaCi2saE1VQWFyxfvrdjjV",
+              "name": "list_services",
+              "input": {}
+            },
+            {
+              "id": "toolu_01VSuca2QEhMc9VYEXwqg7ia",
+              "name": "get_health",
+              "input": {
+                "serviceId": "8ee3a50a-8c9e-406f-ab87-a03d7610c855"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS/QQKEAgTGAI4AUIIdGhpbmtpbmcSDH+CCEX00hCSSBWi1hoMRpYoigw5DJzyOfknIjDNz11ukSCNad3KKLxSeoT5+tMRu5cCx517APMhJj4Uvlk9XL1OcE/JWQTASmae5ksqmgTImQ7/G9O/Ks0CIAGV1GHPANPtU9sgHT5/ZW4OBFTHO6m+IbWLQU7SozxnuzqparMspOCe92nSPgHpxqUeqO8KtFRkST9caAE3GgC195DuJquf/tQqk9NsWYkc0IgDhEwfnbtO7eK2paPkZp7ZIOOgeCxeV8PTZR416KwDdfbt+zwOzqlGN9uweikpck5my6Xb1P4M5MOxNtnNzW0senxheBCym9q1AGB/w1B51ikIPEasurwIKbwOCtM2Ijp+gsve2kIZoTr48r7A4K2dgQXAn6QZZXC0SUfcDUhlL6tBEalyly3HnOOzqcQN3f48rkfsATd4tfxp3fuAnd43V4jOhjTQLvjen/xMBSI3rG8a2In6CMBhWqk203gGzG4YCeb/TwWI2RvHUD0h7ecDBpjP+kny5ElRXhdqwmzn/vjylmFP99HibTSZ7m9FsdNHUBnTEPqYvqEmljhGGsK54AzUp+O6bND+iUQQjSYqbkf9QLT6TKNqrltsTKt4RHXEnm/V86yVUiR3G1kE94dER3jR809+F4rfxzu5v9qy1nvvcQB42N+XcZ7pFyvVqcRxBACfI0Av4HBzrVom4w+SnLHqCzy0+Tl8h8PqgxJQxXBQ1/jGiKSfSgzFwQ8TA6dKmUnzoIiBhvZvJff3xYIOHxPi83nxQqFip0+0VzrTCm6RzvhkWSf6ixLwz97L6BEQrd4EoTXBUZgxrnp5GAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "6a536c1a606a145dd6c8b5a17659ace8b105c88a16efd6f0ab3a57e962b1c119",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_017hcjrEf83GwgEyt99TjP1s",
+            "name": "get_health",
+            "input": {
+              "serviceId": "ba9c5821-063e-4eb6-bdfa-2e6960f51340"
+            }
+          },
+          {
+            "id": "toolu_01GixosW5w7hSNAwtE8dhJX2",
+            "name": "get_health",
+            "input": {
+              "serviceId": "f380f06a-71c1-4a76-bab7-84d1f22a6f1a"
+            }
+          },
+          {
+            "id": "toolu_01Y3WG2ufsqYMMbgDxu5Kijp",
+            "name": "get_health",
+            "input": {
+              "serviceId": "9656c11a-6b2a-4418-8a55-3ec0a347f9d8"
+            }
+          },
+          {
+            "id": "toolu_01RZrMXEs9WZeNnBwUkaVF3j",
+            "name": "get_health",
+            "input": {
+              "serviceId": "8ca1aace-0968-4030-8d82-a5aa26351db6"
+            }
+          },
+          {
+            "id": "toolu_012DHBqKdenQt7HS1eiUttax",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "8ee3a50a-8c9e-406f-ab87-a03d7610c855",
+              "limit": 30
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7565,
+          "outputTokens": 423
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_017hcjrEf83GwgEyt99TjP1s",
+              "name": "get_health",
+              "input": {
+                "serviceId": "ba9c5821-063e-4eb6-bdfa-2e6960f51340"
+              }
+            },
+            {
+              "id": "toolu_01GixosW5w7hSNAwtE8dhJX2",
+              "name": "get_health",
+              "input": {
+                "serviceId": "f380f06a-71c1-4a76-bab7-84d1f22a6f1a"
+              }
+            },
+            {
+              "id": "toolu_01Y3WG2ufsqYMMbgDxu5Kijp",
+              "name": "get_health",
+              "input": {
+                "serviceId": "9656c11a-6b2a-4418-8a55-3ec0a347f9d8"
+              }
+            },
+            {
+              "id": "toolu_01RZrMXEs9WZeNnBwUkaVF3j",
+              "name": "get_health",
+              "input": {
+                "serviceId": "8ca1aace-0968-4030-8d82-a5aa26351db6"
+              }
+            },
+            {
+              "id": "toolu_012DHBqKdenQt7HS1eiUttax",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "8ee3a50a-8c9e-406f-ab87-a03d7610c855",
+                "limit": 30
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS2QUKEAgTGAI4AUIIdGhpbmtpbmcSDLgfqaI5c0jZHWQM4BoMcZ5HpSHdejeVwDkPIjD6bPsMY3zyB2ON4yBC5leTcGfCG3qdlI+T4Pyoa0tIfpZnX4NfBOsNcozkLWoiW9wq9gSmqsnFRV2y0MtdUZMLJXOrECoORNVLoUp95LqTeqCJwDGki7larDl1J3+/N1GdEaeepVurhOyDhMNY0LI4Gy5ZSXbiIopof8fmCrWHXD/xqJazMa7/SiNzIeULfW4Pxyf7BO/HtP4OqQZzTlodzh4Ea+TI962JIJXrckWt+kSopGU8V78rVzaU3kVQaHc4hiTRudkqcuU1cXlbFooHQEaC9Cnfu2GnHswmxUFGRBYtsVo8y0vz/VoKV9DSP9uID4jhzMbZJ3Myf3RxhkqO3rPeDz59FdQ9a+2csy+Z+T27Z4rNLKE/90iuAF7gHgznSk+JUO9HQG8NqJcU47OsIyjAUobLra8YSHZWyn+J9csm6rzl6OR2OVLKVmHpC3SVBOKUux+pU+FDXKkJkEEUcaHwrtqxLrcohLTSVK3gar5uStGDVJ/VkdWWzq2jm2uunMaAKbAwoFeXgsAH51oNl2GDpUj/LceWONrU8Dbw9famiw0svN3aVz9/+GiIYyOp2xQp/fMNnJCUBZdVxaLdBCwU2H3e+jQOmrXI8Z2xsaLiHe6c65861/21Z6PwrdYtsPhIEzvvwRHwd9Bk5dzZu3qB6p75ob7RZK06nMw+A64uYkPoZWxxMrXXQMvImUPbIkW4tvxr5+VGtWdJvPzAjgT9b2t7ASVXf+m+yQ4jOskbT0VVG0p3YVZLzRqNfqFLXC8QBN8S8rVQJQ6kFKlaCSMYDrD2IRqqBbla1vVPrw7zP2d5VhMD4hdK++hfch6OSmhQjlu4gw0waA3XupSfoOUPEGhlM6jxGMs8jXYRDueIwGUVtE0JckN5Er1hMZUe4YUgjQJ/P2kYAQ=="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "309ff1f949e84904f4bc7bec9ee368af74cfa681b8f6b4696a29e903983cdb07",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"Only one of your five services is unhealthy: globex-api (8ee3a50a-8c9e-406f-ab87-a03d7610c855). It is stuck in a crash loop. Its status is FAILED and its container keeps restarting: 22 restarts so far, and no healthcheck result is available. The newest runtime log line is \\\"panic: invalid GLOBEX_REGION\\\", so the app is most likely crashing on startup because its GLOBEX_REGION setting is wrong or missing. Its last deployment (1e0d14b1-3f8d-421c-a8bd-a171a183a2ae, commit 4d5e6f7) succeeded at 11:31, so the build and rollout worked and the failure happens when the app starts. To fix it, check the GLOBEX_REGION environment variable on globex-api and redeploy. I can only read your setup, so I can't change the setting or redeploy for you. The other four services (acme-api, acme-web, acme-web-staging, globex-admin) are running and passing their healthchecks with 0 restarts. Two of them have warnings worth watching: acme-api has a high-disk warning, and globex-admin has both high-memory and high-disk warnings.\",\"diagnosis\":\"crash_loop\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Service\",\"id\":\"8ee3a50a-8c9e-406f-ab87-a03d7610c855\",\"label\":\"globex-api\"},{\"kind\":\"Deployment\",\"id\":\"1e0d14b1-3f8d-421c-a8bd-a171a183a2ae\",\"label\":\"globex-api last deployment (4d5e6f7)\"},{\"kind\":\"Service\",\"id\":\"ba9c5821-063e-4eb6-bdfa-2e6960f51340\",\"label\":\"acme-api\"},{\"kind\":\"Service\",\"id\":\"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\",\"label\":\"acme-web\"},{\"kind\":\"Service\",\"id\":\"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\",\"label\":\"acme-web-staging\"},{\"kind\":\"Service\",\"id\":\"8ca1aace-0968-4030-8d82-a5aa26351db6\",\"label\":\"globex-admin\"}],\"evidence\":[{\"ref\":\"8ee3a50a-8c9e-406f-ab87-a03d7610c855\",\"note\":\"Status FAILED, container 'restarting' with restartCount 22, no healthcheck result. Latest runtime log: 'panic: invalid GLOBEX_REGION'. highDisk flag is set.\"},{\"ref\":\"1e0d14b1-3f8d-421c-a8bd-a171a183a2ae\",\"note\":\"Last deployment status SUCCESS, finished 2026-11-01T11:31:00Z, so the crash happens at runtime and not during the deployment.\"},{\"ref\":\"ba9c5821-063e-4eb6-bdfa-2e6960f51340\",\"note\":\"Running and healthy, 0 restarts. highDisk flag is set.\"},{\"ref\":\"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\",\"note\":\"Running and healthy, 0 restarts, no flags.\"},{\"ref\":\"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\",\"note\":\"Running and healthy, 0 restarts, no flags.\"},{\"ref\":\"8ca1aace-0968-4030-8d82-a5aa26351db6\",\"note\":\"Running and healthy, 0 restarts. highMemory and highDisk flags are set.\"}],\"missingEvidence\":[\"The configured value of GLOBEX_REGION for globex-api (configuration and secret values are not available to me)\",\"Older runtime logs from before the first crash\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 9407,
+          "outputTokens": 1408
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"Only one of your five services is unhealthy: globex-api (8ee3a50a-8c9e-406f-ab87-a03d7610c855). It is stuck in a crash loop. Its status is FAILED and its container keeps restarting: 22 restarts so far, and no healthcheck result is available. The newest runtime log line is \\\"panic: invalid GLOBEX_REGION\\\", so the app is most likely crashing on startup because its GLOBEX_REGION setting is wrong or missing. Its last deployment (1e0d14b1-3f8d-421c-a8bd-a171a183a2ae, commit 4d5e6f7) succeeded at 11:31, so the build and rollout worked and the failure happens when the app starts. To fix it, check the GLOBEX_REGION environment variable on globex-api and redeploy. I can only read your setup, so I can't change the setting or redeploy for you. The other four services (acme-api, acme-web, acme-web-staging, globex-admin) are running and passing their healthchecks with 0 restarts. Two of them have warnings worth watching: acme-api has a high-disk warning, and globex-admin has both high-memory and high-disk warnings.\",\"diagnosis\":\"crash_loop\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Service\",\"id\":\"8ee3a50a-8c9e-406f-ab87-a03d7610c855\",\"label\":\"globex-api\"},{\"kind\":\"Deployment\",\"id\":\"1e0d14b1-3f8d-421c-a8bd-a171a183a2ae\",\"label\":\"globex-api last deployment (4d5e6f7)\"},{\"kind\":\"Service\",\"id\":\"ba9c5821-063e-4eb6-bdfa-2e6960f51340\",\"label\":\"acme-api\"},{\"kind\":\"Service\",\"id\":\"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\",\"label\":\"acme-web\"},{\"kind\":\"Service\",\"id\":\"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\",\"label\":\"acme-web-staging\"},{\"kind\":\"Service\",\"id\":\"8ca1aace-0968-4030-8d82-a5aa26351db6\",\"label\":\"globex-admin\"}],\"evidence\":[{\"ref\":\"8ee3a50a-8c9e-406f-ab87-a03d7610c855\",\"note\":\"Status FAILED, container 'restarting' with restartCount 22, no healthcheck result. Latest runtime log: 'panic: invalid GLOBEX_REGION'. highDisk flag is set.\"},{\"ref\":\"1e0d14b1-3f8d-421c-a8bd-a171a183a2ae\",\"note\":\"Last deployment status SUCCESS, finished 2026-11-01T11:31:00Z, so the crash happens at runtime and not during the deployment.\"},{\"ref\":\"ba9c5821-063e-4eb6-bdfa-2e6960f51340\",\"note\":\"Running and healthy, 0 restarts. highDisk flag is set.\"},{\"ref\":\"f380f06a-71c1-4a76-bab7-84d1f22a6f1a\",\"note\":\"Running and healthy, 0 restarts, no flags.\"},{\"ref\":\"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\",\"note\":\"Running and healthy, 0 restarts, no flags.\"},{\"ref\":\"8ca1aace-0968-4030-8d82-a5aa26351db6\",\"note\":\"Running and healthy, 0 restarts. highMemory and highDisk flags are set.\"}],\"missingEvidence\":[\"The configured value of GLOBEX_REGION for globex-api (configuration and secret values are not available to me)\",\"Older runtime logs from before the first crash\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSiwkKEAgTGAI4AUIIdGhpbmtpbmcSDBbiqVt1ZfaXrKRKwxoMMF6jbUH/5PX8azZUIjBcW37/cH77fWDSaX+DCLzUCp9JYcRYVM+5e/1BYDHlWcQRZjJBNsfiLermZUeBBRUqqAhvUg6yeaemtmxzjQZ+UlxLXPp5FVn8dQ60vdf+gBYQYyQly868UodYDSpA5t6rsl3tALWjBROts8MoAy7OyDEFlLgrbTs880j7eXyGQ63I8nc2QBeqsfMaVbMWpWQQwxK0Cod7LqeHWngVln+ND1ncPMkodAbrGMR2gpciaILxuD/eEgYJU/nIlz0Mx0fsLsgJWQIc85d2OiAQhqV+WsBHOtIvEUvxOfBnWWpoEPWQMtuZkcmOWEghPiH700JVeuPlhAFh11OoFgWUHaO6VHoVi/NxyvuCBGERfkBew3sv7egYch8gaKrNbbNZXTZzW2OHIpK8LWJRWfFOsIdOmfQNTJyyG0WDdJ2934q9L9u9HbrAfmiNiIOzRa+oJdfPp/I4U6DU71VriQCq5yTJxAfP1G1P9ccd/POmr2qcZOuSbNMicEtfjJVTsSg2mOl3SDEnRJ56Wi1vHgzVPDbrniAVxtzneb79nIp3+77/dtjyKoQWg9bIOGzlJWl+P74b0p7JxTK5g8I2uGPNV8M37kd9/zxqfgWfdDPd43C5hUG31bRbIFVwU44+TvL5pTWAYiZ4J7FM4oekwML/EWU2JStwuhQF7aB0vfMjvtHGFCByHQ6082irVqmNs5UGporDy+ibHsmTMXZrEWw+K274GwERnZiaaK9y3bV8QTytaboFZXn6zs7rVNzqbVcwUNqsKIwQjdsK1RH3d7oH4icL2kvRTWbbmWf2mlSYUPctmd+bVWYSg5YP2yb6npsmbew7S6xSXcLwU/2ZmjeiZqZksv5eKvqHiZBCSW7JUwwJVzCxSf83BDZCGvCFejSfapQCyxpOmL3xTeNb6XePgTj4UqCsGRyA7X0Zxvqxil6vmsz1QvBqVm/tKCCaKF7x7ahhISFn25kk2sdmcrtMtTtkPK/ilVpsaSn+Y3UWNgT8A2oy8zQD7Go7brMXLW88JL45K/0JhfBi+D3qcrmP0nZrLC637Y7MX65X4hath7/Ri4TmRjSn+pDCPiOwBghvr+T97vITJlz0sJ52MI559x+09Kyy7r8X/U3dSgX1sQPY7U0DVY2WDSuUemoj4zkbnRYFH6JplVD6wTT/UkXIwmKZRSqRdEBbOKozSZIRGQxGsn3m53dVzofF34DxW+Kl2Kh4XiYYNzw4GxKQKEzJyOGQLVeb9PQ8tnQD787cqDjCqPIgbR+KYjjmzFGvX8AtK1nQswgndNN5xqCe3Ugwgkydc/QPKkGO8IYXFaOTBglekOPgjfYAaRS7z+S7xziLC6m6qPmfBV3rNs78DlYfXFUm/256qXolwYk9AfjxBu1RjXQ7tfyW1Q25W9hzydzRA+brvA1ge02YWDZ63VnNWJzl4B6Xy/5H9tJywsslguxdmRWa+jlJDP/Pmp4A/brRZnKt1k4cFtN9uSEGzBgB"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

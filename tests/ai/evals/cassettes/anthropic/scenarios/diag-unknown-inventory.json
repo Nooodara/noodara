@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "diag-unknown-inventory",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "766f85ceb99a0643262fa7969a09d4499a8cae4289ff4a032a09d7222af9c696",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_011Mx5CGzoXUdMBzFHjRkEdm",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5373,
+          "outputTokens": 26
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_011Mx5CGzoXUdMBzFHjRkEdm",
+              "name": "list_services",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "1a717db06101b2b1e344fd81523f1d2942a34fa5bf5b73098f203fd5ca4078c5",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01KJrapiLtPMJ1Y2P5yWT7oY",
+            "name": "get_health",
+            "input": {
+              "serviceId": "29ad7a08-d7d4-4a91-8bd2-82c870bd62a1"
+            }
+          },
+          {
+            "id": "toolu_017FYgz44kkVYvnuMHwMX6uq",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "29ad7a08-d7d4-4a91-8bd2-82c870bd62a1",
+              "limit": 5
+            }
+          },
+          {
+            "id": "toolu_0113W7sCCMVtfYEFjXDs2XEs",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "29ad7a08-d7d4-4a91-8bd2-82c870bd62a1",
+              "limit": 50
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 8002,
+          "outputTokens": 275
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01KJrapiLtPMJ1Y2P5yWT7oY",
+              "name": "get_health",
+              "input": {
+                "serviceId": "29ad7a08-d7d4-4a91-8bd2-82c870bd62a1"
+              }
+            },
+            {
+              "id": "toolu_017FYgz44kkVYvnuMHwMX6uq",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "29ad7a08-d7d4-4a91-8bd2-82c870bd62a1",
+                "limit": 5
+              }
+            },
+            {
+              "id": "toolu_0113W7sCCMVtfYEFjXDs2XEs",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "29ad7a08-d7d4-4a91-8bd2-82c870bd62a1",
+                "limit": 50
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "5d2a6091a8b20fd619d22fa75c24543530ecd92d73c1593e8fe110a897ee07e9",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01PzudJ3EUpt4aH32ddJFp7j",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "29ad7a08-d7d4-4a91-8bd2-82c870bd62a1",
+              "points": 12
+            }
+          },
+          {
+            "id": "toolu_013GJfH5LXQCuXbYt1zC3rnd",
+            "name": "get_server",
+            "input": {
+              "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 9272,
+          "outputTokens": 210
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01PzudJ3EUpt4aH32ddJFp7j",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "29ad7a08-d7d4-4a91-8bd2-82c870bd62a1",
+                "points": 12
+              }
+            },
+            {
+              "id": "toolu_013GJfH5LXQCuXbYt1zC3rnd",
+              "name": "get_server",
+              "input": {
+                "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSiAUKEAgTGAI4AUIIdGhpbmtpbmcSDJaPhsrYWv9PAHREbxoMfZi1c64zMVauNZ9fIjCEZDvfFOVXxe1vxOj7WVXoa5VvYf3hnSEj+DXV/nL1hqjcf5oG4kmY0Ko/n62vEhMqpQQ5XPn+L3kw/PeS59ML78NmejLgulP+9SJVa+iCm4wGBnGuUrPKR8lBL57J3h/bOMixMouxiiFafXsKvxmXblWbDZ+z04qaIQQUYVTyJ/MAx7pBVamNlLl5AgcRzFyqhCCtIeU7KN7usU3XG+L9LuPsg58iBzEo5CRvLQjTmDo3cf1HWQ6yC+NvU3NVmYBgyTW4eu+h91JnhEvmCp9dwwm6sFIVraCjxlePm0r1sW9Zq2dM+8DxD8BjxOSpC4HYvZ6SdVQoAFVv0WrQf+h4zTI/1THUkaIIu6QqL8NBcPHgF70KRlD8q8LFUZibFwcToJpUN6HKrH9CjB/GIYt+cfZovtTD7vVw+jQdMwhs7xIGbMX5zmcm+/nkbeHVGsdRzki5nxMxJfX6Voe3GbxMH/2Kxtigfx10f2LVZSZpQbUBq8pMJIjWC5F1p2LSSslsk6yqiRDKQoyB+ob/Asp6PMQQoZhHeqBEze8UUUvfwIaor6xXpam94csqmWRiy74CQIR7uwFBVFI4/iY4UERY0ocQX/qensyJ0VnvOZQE1Nt8KTtsEU/3WAE0qev7KFYk6Vz0yYO3Z6tuIfA2q0t6d0ox3XarkE5q5RzBwIVkCJHn5Bcr4dPPXxgAF/JvANyzqmkEgHRq46MyDHgNIpPh0RagIw+JKFzHcZfqUhcQPkXKPjrzIgvhCkYzRgSkYzP0Xxob1SI548Jxzf5qTuvLbKaYwOkNDT8YAQ=="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "3aef9bad02ec233e5600d91cd8c924879e39220367991ee0e50baf87111b2e48",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_011eMoHzpJvpVVw6ATMwueSy",
+            "name": "get_metrics",
+            "input": {
+              "target": "server",
+              "id": "f24510dd-db3a-4d3c-baf5-f926c6895653",
+              "points": 12
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 10669,
+          "outputTokens": 248
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_011eMoHzpJvpVVw6ATMwueSy",
+              "name": "get_metrics",
+              "input": {
+                "target": "server",
+                "id": "f24510dd-db3a-4d3c-baf5-f926c6895653",
+                "points": 12
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQShQgKEAgTGAI4AUIIdGhpbmtpbmcSDAWi42ptnZkh5F8VIRoMYpc69UEO6unrIyZJIjB4dk/41eAJTx7Njyq07NICxYImgywxWYC416R2CuCL2vfigqhRfzjtqGglubWTzSwqogfCh4KSXYrj+tos1C5ao2JW5PMcMQxNuWIAiy1SrHRtxNiT0xlV7ussNUheV4vQXyQSlpnP5GmHqrciqu04d16m/Bdl/eeJ1ikdkd1EanQX6wvxAD8pFMxRtLwprvMkIYHzxJnUpm/0htBTe35DRyHQ+YMaO8ZUm64wru06QQ2VfO095VgP5Vrv4ihvGKxgCZSIDJ2TADMrAwSXPyM1ViveI/qq5lBLlHpeu8wFxPrOY5+qZbk3K3UyGTXi46fkfxQisPqBMnigYaGL5E3ySMD469/sy7wJDVOjjOIZ9WoICCWMHD1oamMivVoAqQMKSf3ENcA4uKjjbmJgAbnYEM/o+85mNoLGtGqXeC4wWtUfwkiYjjcEdCjz+KGBFn/zps7ipq6+Lv0sR2K0/w7lheUIMFYe0yUnA0UmkTUme7LalklRCUEjHmUvo8kWA8cdFP3cR2YVimRr2IPsJEi40RMvBER0TwZL6TRUufddGaN3fwhBABEhKuWY4jfRqz703Kr02+49DYVkyKjSBjOQygnvr6SIXdpkMRzwf24hHIXSgPhTeoQK7wwbbgN8AptxytAclJmmsrtwv7XSb581vmJTRHCZ9/PxdK5hsdhNsRRWN3Bjvz2vnIVNOTPgqDQAJ9BHJ/KXXuuXuumqwaLbX3AVUkKdmphOSVwSmKxFVbpL4SjqJPqZj7RIO2efNc9kI7+wzPaKZRV01URN+JTgW2i+6uqgCgy4k0vxrbq1Am5MpSmIZrLDhx4Grzy4HnrXJOTGs5JQoPz9Z82SVcPDoqBbdeQBNHGIPEaPMY8t1XQ1hQvoBCuN2jMHjc5fsB/ENiORyhtFp06cE9IDvT6dvbynDYpHC5AphzoUynOUvDqljdSaKcIsIMnnoFve3bZbSQgzNcCpr292D+8Bj504i6bUIv4puF5Dw1Uv0zHyMg0BklM8IlmozSjBu1NTFronYX26wi2Fx2SpHAh+iw5rASiYYT7CqDjH10JIrIVkeARJ7NEM3JnLFFRajKpVX7kt5DAUTgLsB3vRUlZkxgnDOeVHx6zOIvw1pQqkqiMwedX5kGMUydl9PKtdW2xC4qULwTaLfKsoy9/nLNYuPwN19DmSdUf6jonBkAZQa7JNUKjw0NLxS6y8dD7U8Tddp9UqHPgrc9xxkKg4yNK8qb3YFvyB3fMcDvzjrenFfgkvjdEhk8dG+DgU/RnuvA40tALCm50pl31AoSUUPPlZiqc6u+OCmNkYAQ=="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "4ed8ab8756479de596296cbde9c8306cc82af872a9a507a05769faa00bf39644",
+      "model": "claude-opus-5-5",
+      "turn": 5,
+      "response": {
+        "text": "{\"answer\":\"Nothing I can see shows inventory failing right now. The service status is RUNNING. Its container was running and its healthcheck was passing at 11:59:30, with 0 restarts. Its only deployment (de0559a3, image ghcr.io/market/inventory:4.0.0) succeeded on 2026-10-31 at 22:41. The newest log line is a normal message at 11:58:20 ('stock sync finished in 812ms'), and there are no errors. The service is using little CPU (about 5%) and about 20% of its memory.\\n\\nThe one warning sign is the high-disk flag on inventory's health check. Its server, app-1, has 93% of its disk in use (47,616 of 51,200 MB). That isn't breaking inventory yet, but if the disk fills up, writes, image pulls and logging can start to fail. This is the most likely cause of any problems you've been seeing. Server memory is also rising, from about 71% to 76% over the last few minutes, so keep an eye on it.\\n\\nI can only look, not change anything. To free space, check app-1's disk usage, such as old Docker images, unused volumes and container logs. If you saw a specific error from inventory, tell me when it happened so I can check the logs for that time.\",\"diagnosis\":\"high_disk\",\"confidence\":0.5,\"entities\":[{\"kind\":\"Service\",\"id\":\"29ad7a08-d7d4-4a91-8bd2-82c870bd62a1\",\"label\":\"inventory\"},{\"kind\":\"Server\",\"id\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"label\":\"app-1\"},{\"kind\":\"Deployment\",\"id\":\"de0559a3-0832-4fa2-a734-0e764ec825e4\",\"label\":\"inventory deployment (SUCCESS)\"}],\"evidence\":[{\"ref\":\"29ad7a08-d7d4-4a91-8bd2-82c870bd62a1\",\"note\":\"Health: container running, healthcheck passing, 0 restarts, highDisk flag true, highMemory false. Newest log line is a normal 'stock sync finished' at 11:58:20 with no errors.\"},{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"Server app-1 is CONNECTED, with 93% disk in use (47616/51200 MB). Memory rose from about 71% to 76% between 11:57 and 12:00.\"},{\"ref\":\"de0559a3-0832-4fa2-a734-0e764ec825e4\",\"note\":\"Only deployment, SUCCESS, finished 2026-10-31T22:41, no error code.\"}],\"missingEvidence\":[\"No error logs or failure event for inventory that would show what kind of failure the user saw\",\"Only a few minutes of metrics history; nothing from earlier, when a failure may have happened\",\"No breakdown of what is using disk space on app-1\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 11899,
+          "outputTokens": 950
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"Nothing I can see shows inventory failing right now. The service status is RUNNING. Its container was running and its healthcheck was passing at 11:59:30, with 0 restarts. Its only deployment (de0559a3, image ghcr.io/market/inventory:4.0.0) succeeded on 2026-10-31 at 22:41. The newest log line is a normal message at 11:58:20 ('stock sync finished in 812ms'), and there are no errors. The service is using little CPU (about 5%) and about 20% of its memory.\\n\\nThe one warning sign is the high-disk flag on inventory's health check. Its server, app-1, has 93% of its disk in use (47,616 of 51,200 MB). That isn't breaking inventory yet, but if the disk fills up, writes, image pulls and logging can start to fail. This is the most likely cause of any problems you've been seeing. Server memory is also rising, from about 71% to 76% over the last few minutes, so keep an eye on it.\\n\\nI can only look, not change anything. To free space, check app-1's disk usage, such as old Docker images, unused volumes and container logs. If you saw a specific error from inventory, tell me when it happened so I can check the logs for that time.\",\"diagnosis\":\"high_disk\",\"confidence\":0.5,\"entities\":[{\"kind\":\"Service\",\"id\":\"29ad7a08-d7d4-4a91-8bd2-82c870bd62a1\",\"label\":\"inventory\"},{\"kind\":\"Server\",\"id\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"label\":\"app-1\"},{\"kind\":\"Deployment\",\"id\":\"de0559a3-0832-4fa2-a734-0e764ec825e4\",\"label\":\"inventory deployment (SUCCESS)\"}],\"evidence\":[{\"ref\":\"29ad7a08-d7d4-4a91-8bd2-82c870bd62a1\",\"note\":\"Health: container running, healthcheck passing, 0 restarts, highDisk flag true, highMemory false. Newest log line is a normal 'stock sync finished' at 11:58:20 with no errors.\"},{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"Server app-1 is CONNECTED, with 93% disk in use (47616/51200 MB). Memory rose from about 71% to 76% between 11:57 and 12:00.\"},{\"ref\":\"de0559a3-0832-4fa2-a734-0e764ec825e4\",\"note\":\"Only deployment, SUCCESS, finished 2026-10-31T22:41, no error code.\"}],\"missingEvidence\":[\"No error logs or failure event for inventory that would show what kind of failure the user saw\",\"Only a few minutes of metrics history; nothing from earlier, when a failure may have happened\",\"No breakdown of what is using disk space on app-1\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

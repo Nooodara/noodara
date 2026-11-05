@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "unhealthy-empty",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "af335137cd11989e85af79a8cc961bf28c6673167ed154039524d4885084c88c",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01L4D5dyv29psFuaFQEc3dHs",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5374,
+          "outputTokens": 26
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01L4D5dyv29psFuaFQEc3dHs",
+              "name": "list_services",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "4726be12729648cdf09be2dd34fd117e7f630f0364344cf305f46e38fa5f5532",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_011N84rM6nRZkr9wtj8h3N6x",
+            "name": "list_servers",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5444,
+          "outputTokens": 44
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_011N84rM6nRZkr9wtj8h3N6x",
+              "name": "list_servers",
+              "input": {}
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS2wQKEAgTGAI4AUIIdGhpbmtpbmcSDJbaa9hec12JORONjRoM31qBOFJrp88LEZWGIjBK1bxXB1Mx9zeROLOjX46oQLzVmqE8+OQLW7Gs1EYb7t6t5gWHQUq8ANR6EmL2a/kq+ANmgyXPzzDGiLBeegSQd7O9qQcYneZJhnITiGKY4POug6H5LOltH2xYzslZdjH7Kty0exM04vXTXg/PEO0qT2t/ipAjKZ5qtFiExHV0WV3l6jh+7XZ09w3WOZJQQKvkgcH176mtO0L5Ie9Z00duGRi4iWCv7c1zvz2qgCbw7pxumcItF/fwlG6TIiX1QrvegHemrQpBHEu0YMIcSKpvHQjmCLHfB96xf2en3vqinGSHQpaqhp9v8p43dI+kaRrJti6+78PNol6Wu6nGtnBNsxYMd/rXA9rdiEoIseSoDP4anLKOnAwK/RaimlGIvCL10TJX1KQWKOvA0HMnf9ri3x2tY8MDhTfamMwfJtnrgzbvK58rh6tPUIMZeOvm7qPpz/duAUcAuvc/UF5XLTAgcBrdHEv9IecAva1AHAc+nGQFVonN8gemMRYIcFFZtVTbKBRbLOjatk1dqj0n2n+iB7TPqRy6nWZkyMQJmRp5yrFXhWFE6Yk6oButIrFeCoBcrN/KMQHA0dlmDJAWEpi2RbbSbwPJ9+YrRVM0A4r3TTUmHKuJ1tFOfA5lOV71ifcmBUefEUMOfNdQM6vIYjlTvV+S3HR6ofNuLA+k/Sm8hlkQ4iTaQWPynhIk7IxXuqy6XKSF4wlJU7wFoneXCQyDKsj1rdaxq0lEZRIYAQ=="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "1cc08f44351e17605bc522a61cfdc9ed4ba1d8dd5f81da587195ae38f5a2b016",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01LgSD4Ad3QGtuWdoAgtVvzd",
+            "name": "get_infrastructure_graph",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5809,
+          "outputTokens": 33
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01LgSD4Ad3QGtuWdoAgtVvzd",
+              "name": "get_infrastructure_graph",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "f6e5170f93989a9a8ea7401692455725d9052e156047b31f7b2e4ef92b549b22",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_015bqck7jyb5vcpztCaJz2yF",
+            "name": "get_server",
+            "input": {
+              "serverId": "72d7d568-4728-4a37-835d-49ed74100d10"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6321,
+          "outputTokens": 161
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_015bqck7jyb5vcpztCaJz2yF",
+              "name": "get_server",
+              "input": {
+                "serverId": "72d7d568-4728-4a37-835d-49ed74100d10"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSowcKEAgTGAI4AUIIdGhpbmtpbmcSDDVJ81QmBstgxVprihoM2vYl+WzkNjyCVewRIjCl1aUv633874B4gv/WZfzmE4BB7JqJYWSnJqwfpCjT021WBV857eWKtFsjgNiMkh8qwAbUKFN2aBHoUGOx+evXefxHkG56/RQUGtWYIIjNSdh/P9edx6Prac93fhlfa8ZCiImTbdxnVQG/fTjBhBID5rB+Gs6qYNDFGpo0Rp6yOPW1tkeWS4SeLzJkBRLTwqcDiD7ee12CHssO0s+Zt92C+AYg4sUnJatrEkqGfezzHfxyreGROcdfKtskwz1ev/3uywkgY415cQcgwaIub018XEkjM0e0I8i5CWwZUJAwbu9GX0ZbeJVXcxZGVzNEDXfeDWSctFo4P2wMp/T6IA6tXuRAibxlKlj0RtmgYkiU9dO2QxtgiOZ0EplvlRqtCH60/S7nGCYc7lA+XTovQM+zTdlvOGw1o5BFXPBNPlRzQAWofwhWdtrsjV23TwnZ+xWhs+d+X4nKvOV8SPsXqiUUosB8X2Af63dZlKy1VOnz8eWBH1G4l+6/RSAPXUzMsfq/9BSj5c2hKiSDOs2A9UYK9ZqS6yvHPKJVy+Pn6b+DoJ3EdZmRm4wyJ2d8wqPJK/TMhYroRAbTskGVmQjmji+5BAFEpooeKOHYKEutlJ29yMu139ahRzSgwRPoR4gSNWhBc9rGDq3n8vbjYjA4tnbjiMo5aXM+/W0BKOZXdNo2r3+CazHAUA7dOC9xYkaemcKAuxdcggvMgiWY8eUk04IFT4ra+jt9liZ3bc1miJBafyK3lqB6ICVhvw6m9l5I7yPq114haRYSwIj8ZBXhL5qp5cWu5i0ArWmerSipk4nEsguJX+U9xUo/qxeFDN+8CoFZKtoiNb5MNaTyLSy5/pQmo2hWvR7uRi+ACr0CY/IUSd9wgSQ+4xkJTszwiod+PbND1XfjDYCvCWXbcFJwrp1VfQ7Q7ULZwd/H4vHHtKIMR+MwPXL6RDb30uQM1eBAdXt49H43VY6LdnFikg+vq8xE8g91R/GupfLYJ8H5hpT4YhfmQMxARtePSYUpBIJ8Yyjzpspj7hhUXCVbp2VfDuZSNUEcd4dsKf548RFGS5YUG/xF3ixfueK4Ws3BWuhrrRfW52gyvR+AUsUOyq4WGg05QT1WKeXeO/6ELZt2nTzANIj2TZ749jumxK1ncSzmmCq9m6qZFoYRcHk2qz0gNRjsfBCIGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "b283a16dda03ff63cd4aa7a85d58887a6f38ce552e0fd8e4f50733cb3120bbe4",
+      "model": "claude-opus-5-5",
+      "turn": 5,
+      "response": {
+        "text": "{\"answer\":\"None of your services are unhealthy, because this installation has no services. The service list came back empty, and the infrastructure map has no services or domains either. It only shows one project (sandbox) with one environment (dev), plus one server. That server, lonely-1, is connected and was last seen at 2026-11-01T11:59:30Z. It has Docker 27.3.1 installed and uses about 6,000 of its 25,600 MB of disk. So nothing is failing. Once you add a service, I can check its health.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Server\",\"id\":\"72d7d568-4728-4a37-835d-49ed74100d10\",\"label\":\"lonely-1\"},{\"kind\":\"Environment\",\"id\":\"c758d752-2873-432a-8aff-41216a5f3592\",\"label\":\"dev\"}],\"evidence\":[{\"ref\":\"72d7d568-4728-4a37-835d-49ed74100d10\",\"note\":\"This is the only server. It is connected, Docker is installed, and it uses 6,000 of 25,600 MB of disk. The service list for the whole installation was empty, so no services run on it.\"},{\"ref\":\"c758d752-2873-432a-8aff-41216a5f3592\",\"note\":\"The dev environment of the sandbox project has no services in the infrastructure map.\"}],\"missingEvidence\":[\"There are no services in this installation, so there is no service health to report.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 6824,
+          "outputTokens": 468
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"None of your services are unhealthy, because this installation has no services. The service list came back empty, and the infrastructure map has no services or domains either. It only shows one project (sandbox) with one environment (dev), plus one server. That server, lonely-1, is connected and was last seen at 2026-11-01T11:59:30Z. It has Docker 27.3.1 installed and uses about 6,000 of its 25,600 MB of disk. So nothing is failing. Once you add a service, I can check its health.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Server\",\"id\":\"72d7d568-4728-4a37-835d-49ed74100d10\",\"label\":\"lonely-1\"},{\"kind\":\"Environment\",\"id\":\"c758d752-2873-432a-8aff-41216a5f3592\",\"label\":\"dev\"}],\"evidence\":[{\"ref\":\"72d7d568-4728-4a37-835d-49ed74100d10\",\"note\":\"This is the only server. It is connected, Docker is installed, and it uses 6,000 of 25,600 MB of disk. The service list for the whole installation was empty, so no services run on it.\"},{\"ref\":\"c758d752-2873-432a-8aff-41216a5f3592\",\"note\":\"The dev environment of the sandbox project has no services in the infrastructure map.\"}],\"missingEvidence\":[\"There are no services in this installation, so there is no service health to report.\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

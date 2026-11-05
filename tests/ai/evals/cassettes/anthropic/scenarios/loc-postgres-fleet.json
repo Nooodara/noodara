@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "loc-postgres-fleet",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "50bf0564685d06cfd0c2fb7c4020addb28c5f96a3a7848f69ade76e50594610e",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01JRdCbnxLKxRSXzdV5McBiC",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5373,
+          "outputTokens": 26
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01JRdCbnxLKxRSXzdV5McBiC",
+              "name": "list_services",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "33a99620a2fd3bae41739187b0f2ad240baa082c4fbdb606db5d6f93a5a67fd5",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01Ggp4ogYpVhquowoSCnN4rq",
+            "name": "get_server",
+            "input": {
+              "serverId": "76825c68-8399-4fc0-8f5c-457bcceed234"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6680,
+          "outputTokens": 72
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01Ggp4ogYpVhquowoSCnN4rq",
+              "name": "get_server",
+              "input": {
+                "serverId": "76825c68-8399-4fc0-8f5c-457bcceed234"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "41c2a75ce29f9b83ee6c2a93016f93216ae8a9db1f4f67a69975fbbbc7e2d448",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\": \"Postgres runs on the server data-1. The service uses the image postgres:16 on internal port 5432, and its status is RUNNING. data-1 is connected and was last seen at 2026-11-01T11:59:30Z. It runs Ubuntu 24.04 with 8 CPU cores, 16 GB of RAM and Docker 27.3.1.\\n\\nOne thing to watch: data-1's disk is about 90% full (184,320 MB of 204,800 MB used). A database server needs room to grow, so it may be worth checking.\", \"diagnosis\": \"unknown\", \"confidence\": 0.95, \"entities\": [{\"kind\": \"Service\", \"id\": \"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\", \"label\": \"postgres\"}, {\"kind\": \"Server\", \"id\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"label\": \"data-1\"}], \"evidence\": [{\"ref\": \"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\", \"note\": \"The postgres service (image postgres:16, port 5432, status RUNNING) has serverId 76825c68-8399-4fc0-8f5c-457bcceed234.\"}, {\"ref\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"note\": \"Server data-1 is connected, runs Ubuntu 24.04 and has 184,320 of 204,800 MB of disk used (about 90%).\"}], \"missingEvidence\": []}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 7092,
+          "outputTokens": 666
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\": \"Postgres runs on the server data-1. The service uses the image postgres:16 on internal port 5432, and its status is RUNNING. data-1 is connected and was last seen at 2026-11-01T11:59:30Z. It runs Ubuntu 24.04 with 8 CPU cores, 16 GB of RAM and Docker 27.3.1.\\n\\nOne thing to watch: data-1's disk is about 90% full (184,320 MB of 204,800 MB used). A database server needs room to grow, so it may be worth checking.\", \"diagnosis\": \"unknown\", \"confidence\": 0.95, \"entities\": [{\"kind\": \"Service\", \"id\": \"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\", \"label\": \"postgres\"}, {\"kind\": \"Server\", \"id\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"label\": \"data-1\"}], \"evidence\": [{\"ref\": \"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\", \"note\": \"The postgres service (image postgres:16, port 5432, status RUNNING) has serverId 76825c68-8399-4fc0-8f5c-457bcceed234.\"}, {\"ref\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"note\": \"Server data-1 is connected, runs Ubuntu 24.04 and has 184,320 of 204,800 MB of disk used (about 90%).\"}], \"missingEvidence\": []}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSzQcKEAgTGAI4AUIIdGhpbmtpbmcSDPT1yrBh9U36DVtz9xoM/6UMwVs6/smtaX9BIjD1o5qXLWo1Xj7W9Asw+szTQa9nTkzHz2tIMnnfvoPO/8V1QnXwNQlKWksequT6vtcq6gb+Z3oKVN77Ovot3cC0TqaBMjVv9S4ahCR21yoP/DC9vGb+mP3YJS1Q2vdqcUIakPT8rn7hQ2EeKvLwXyknK4NoLGN8vCkEYdCdOc9yjLFu6jhT1nPFCSIxNVsFBuFhwzKHuss4bXR+Q5bn/jbKhnL8+N/CvV66Kz/pgktrbOdGhlewoW7M4nVvW0xuCXlH0J9E1/GjBSryPOMR1sDSbJqEjY1ot0y42xcUCFUW+xlLB4VYZSbo5RZX3yf5nDe4VRiECjnedLCDZWbCqRj5LguAszvbz+84nxR09V5g2mWsV40NA1OX87oTpVuhkZAxvAKYQHQrYcalVmonoCII6Rch/DwLsVt9i5wHKk+dRcoONJjGrrncivtS57Q2Df65XJhimHG9RXf84SHMlRs7qQtxSFYOsQoXw4Lg6RnMGopol3m/bQwmKtgoiEbh4MmMcaZA12ktBEfLijAcWdLByi235Xj09z5fb0z91y/09m8cb630s9cKf4yUplMeDSXvyPir0B5x4VQVu+BC0vt3yOiQvLWz1Iri+haMBNHy7MzYzxS5NroYOZMvUUeTxdA9ASyzb4B5KkitxbjvQcyrWKVuVECYq3lx7mdSXsIdJix+PxQnt/rSyvi2bb09JHqYqcPk4Gczw61cB+R0B3YssUMlJEZxBSY162xFPWRR6VD8wfaYym8FIbmrQVkkvQ83JZcR4+vpt2kdtJLnF8EW0TMhaNDWBpMB0PMEF/FWM79QDGw07hgUZ0FN54d+FeEslH2+XyT4TeeK5s1DzA2aSpn8KJXB2aCsQWoGQChUov++1tMU1qTd6V+WKyWEgB7E3KHLDbC7ez80zRwJjTglLLcfjxjPqmR4d5rrITUlArU5tKff0sslvI8+pzHsCgK7XMSi6Yc4wSJSwsLaToZYLXyXsJ5nqT9PZrsnJDFKtUNgDJbJZL8d31Ati2+YkR+Do1OsjVP7k+vjUAUqdoV+/wEFM6TIPrFPAGjyJnuG0z9gO7WrSGU4hb5fyb333sLTvnb8zPCNzAGOhtM36cJWlr5Z3oePDP+PaihZZP8Ss527MSTDbaRscayxr7t9LxihWncyZdGACQMzDFxBNDFVb2wcxSpsDpT7xTOMDkhYLIqIqS56t3r/bNxKCv7XDMVVlomFYZt+syjuR2CEGAE="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

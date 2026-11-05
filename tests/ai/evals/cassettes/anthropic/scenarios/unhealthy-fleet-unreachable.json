@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "unhealthy-fleet-unreachable",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "bd78e85da76b6227671b7dc9169dd82943558cf24bde35a6300d681d8673bb01",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01PFQiw4yPRE68x7CJCrzDsC",
+            "name": "list_services",
+            "input": {}
+          },
+          {
+            "id": "toolu_011LEJ9skKoYSAbYZWPv9FT8",
+            "name": "get_server",
+            "input": {
+              "serverId": "695183d3-fe96-443c-934a-ec1611179a22"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5447,
+          "outputTokens": 120
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01PFQiw4yPRE68x7CJCrzDsC",
+              "name": "list_services",
+              "input": {}
+            },
+            {
+              "id": "toolu_011LEJ9skKoYSAbYZWPv9FT8",
+              "name": "get_server",
+              "input": {
+                "serverId": "695183d3-fe96-443c-934a-ec1611179a22"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSgAUKEAgTGAI4AUIIdGhpbmtpbmcSDP5qbsP9OSfNog+lxxoMIgcNIgSM2GgnLyqzIjDD3ZS+XT1JJriLsoa4QdQk/L31wp839w9CRDAG7dPpwozcYobDlK6gY8qsadnsvcQqnQSNPO09RdXP9BzkRXg2R1YO/+iXgFtg5oskYsMviBK33YdtXW2yKvuFXKqPl5+C3vHW1FHCQKY/g2vyLidBVdYiqonPLb3XrDjgw7JfNT7ADIgvLOecSL7cgA5w239xHXwdlRyzTZBwE5qhzz75yo9pZu5CqECGDXdS2KJIIIedoXThJy+w9/i5tPlY3tOLfoaRlhpiaFb4yPVmCi0qQWIESNgucpD3X+L8THQ40tFCi2k9SrIa/lbmWCeCWcqVexw3bk3Od/0aTadsDvVAmuzsakxt+YIHZTVIo/vTPqVa1UJ8gMUPIZvO51bRP8g36Veqj4R3ZVpvvu7Iofa+6Nsh7aDqKAnnNW6SkOnSBBlnfl1rfC25lY/h61k6K+jrOiMgoKc7P75dyJYpfu+o3/cYqDocPOClNnGVD36WTVJgIIamsi4hTNg5Wn/Vy/dciDvgFQzvRJUINtWDH/741GtOL9uiDM2dPFMQvoLewGlLIa+7uTyMh/gFxzL9U9Xv27pZJBuQESmZj59kBWRn3Zmy17QWsmjJIcCGJY3/o+RtF/tSznW2bs9x3Yvmb++af+oL1JZy2nruFDxCAeAzF0mHHL5zFPYGCWWrV5uL9ZT+dz5qiiTemo/M84lfAEri9dk2whzLWfhdpbqJqLJoDw+MrkrRUQajrpPgtBOft3PfGS3wotuONKk1o0DygDwKf//vYoAwiu0JiZHW/vrXGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "679ee0fa269d015e26e1d7802463f232c949e2ac0550a4be41aca30366f6ebc7",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "Let me check health of all services to confirm.",
+        "toolCalls": [
+          {
+            "id": "toolu_01UDogJkSwUe6gnrcW9o4TUb",
+            "name": "get_health",
+            "input": {
+              "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01"
+            }
+          },
+          {
+            "id": "toolu_018r24uXeSw6mMEfW8dBCgwU",
+            "name": "get_health",
+            "input": {
+              "serviceId": "e028df06-4ef3-429c-a817-4bf749ba1c46"
+            }
+          },
+          {
+            "id": "toolu_01TV6ZwZV86tNrRNbwadG2TT",
+            "name": "get_health",
+            "input": {
+              "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8"
+            }
+          },
+          {
+            "id": "toolu_01DdV3w6GC6q22RK6G9t8SWj",
+            "name": "get_health",
+            "input": {
+              "serviceId": "9539e967-029e-403e-99ec-9c7b702ce78b"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7234,
+          "outputTokens": 307
+        },
+        "message": {
+          "role": "assistant",
+          "content": "Let me check health of all services to confirm.",
+          "toolCalls": [
+            {
+              "id": "toolu_01UDogJkSwUe6gnrcW9o4TUb",
+              "name": "get_health",
+              "input": {
+                "serviceId": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01"
+              }
+            },
+            {
+              "id": "toolu_018r24uXeSw6mMEfW8dBCgwU",
+              "name": "get_health",
+              "input": {
+                "serviceId": "e028df06-4ef3-429c-a817-4bf749ba1c46"
+              }
+            },
+            {
+              "id": "toolu_01TV6ZwZV86tNrRNbwadG2TT",
+              "name": "get_health",
+              "input": {
+                "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8"
+              }
+            },
+            {
+              "id": "toolu_01DdV3w6GC6q22RK6G9t8SWj",
+              "name": "get_health",
+              "input": {
+                "serviceId": "9539e967-029e-403e-99ec-9c7b702ce78b"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "bbbd2ef9d6c72308c1ae1e31d1503bbac76b055ef4d2532e2f1ac247874a7fbd",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01AHMCbAgbYkorVmrbkgHZDx",
+            "name": "get_server",
+            "input": {
+              "serverId": "76825c68-8399-4fc0-8f5c-457bcceed234"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 8747,
+          "outputTokens": 127
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01AHMCbAgbYkorVmrbkgHZDx",
+              "name": "get_server",
+              "input": {
+                "serverId": "76825c68-8399-4fc0-8f5c-457bcceed234"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSrwYKEAgTGAI4AUIIdGhpbmtpbmcSDH+7gFRbxHDp1A+G4hoMiHt3p0olLM3Ps6QZIjCzdhsOM7IDJ8he/fS0KP2ixEtH0GNvvENIJNlKPboG45aQ5x9jZGZc1SyIiQL3VeQqzAWLpM7IdtswM5zfaXUlSIpzFk/RBnc53XZamxzX66SdnyWmg9XWECo9vCVU9DlshngzoYoGXOtyD7XRowMzjA8l77vaMsZriq2FzZSTjfNbxIBFzDKzYwkI5npU/skoh5+AmoHUGMgncIxCP6oiIyTR+/RR+LcVZgAy+Evbl6telPQ5UVYar1UU7NAKO5RuNRWhPFRmlSWz+w0TO6OffaSaVybDS/eLNYBTBuv/7cG73BBc3mzFn7PfIYQIC/4eoeRCGDGigaHAa1JkRZiKTqgHh11kb0CnbmiS5ROcnMffrEiyL50UpOG4bcN/jftLdOQ6WHMSNuQHdhgHQadCkGHaw2hWVreWk6DT699qtIvRr8LSJ4jj/8CSyJ2Ou7+gV/P8ygrp8/3j5Puf9nHNabgy8RTH8vHECNxDn5XtFgj/9vUffQLKBm5lGqOI5cmf0zyV9Gv/ZJZd6UbBGaOnuxU59e6zX1QC8D98zpVOf7pxQyWKdVmjIzfp2efIZbQkxQECbKTfQvoOGjHAAcxcvhWZdrwgvvOk97JmxhFPLENR7XWfZ+e3eRCd5NomaPVyp5fkvZ2vYIdZvp7fzl9BnZW1xg6ZV+Jiv6QU8Yz5tS40liHFlpX7vGIbkOI+NAOwe+U0+B11YnzN0P/KhDhOMEwxxdDbjZjqYSYXKnRhDGZEavh3L1cjIgEZ8OpMqTRfAqGnwuX9EN3L4xhqwrH9nvheIBgeiTNMKnSRsMbThzrbuUYzzOpxgBQihXvesudCe+a+66XPlaM48pwCqL8qEbpFGuBvZvFFHwa7WVJiUYv6AJHtMtz0a6WdyH53AhFMSb+L31XYBvjtzzCPPxmzuJEodVA1hHqmb31KTwQl8mno6tQ7PMULMn3eRAJRpDE9FzLWowzS8UdaXQ5a5nU2xLAqH82YCImTRPlS6mSwzyqgxD0QwP+N0EV8BbEOSxgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "c6871db857612e83dba1681f1d1c68ffccc629c89ee63d304ed76ead360cf8a3",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "{\"answer\":\"Two services need attention. The other two, api and redis, are running normally.\\n\\n1. **reports: status unknown because its server can't be reached (main issue).** reports runs on server batch-1, and batch-1 is marked UNREACHABLE. It was last seen at 2026-11-01T10:30:00Z. Because of that, reports' status is UNKNOWN. Its last health check said the container was running and healthy, with no restarts, and its last deployment succeeded. But that check is from 10:30, when the server was last seen, so it's out of date. The other services were checked at 11:59:30. This doesn't prove reports is down. It means we can't see it. I can't fix this from here because I can only read data. Start with batch-1 itself: is the host powered on, is the network reachable, and is the Noodara agent connected?\\n\\n2. **postgres: disk almost full (secondary issue).** postgres is running with no restarts, but its health check has the high-disk flag set. Its server, data-1, is using 184,320 MB of 204,800 MB, about 90%. If nobody frees up space or adds disk, the database could run out of room.\",\"diagnosis\":\"server_unreachable\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Service\",\"id\":\"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\",\"label\":\"reports\"},{\"kind\":\"Server\",\"id\":\"695183d3-fe96-443c-934a-ec1611179a22\",\"label\":\"batch-1\"},{\"kind\":\"Service\",\"id\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"label\":\"postgres\"},{\"kind\":\"Server\",\"id\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"label\":\"data-1\"}],\"evidence\":[{\"ref\":\"695183d3-fe96-443c-934a-ec1611179a22\",\"note\":\"Server batch-1 status UNREACHABLE, lastSeenAt 2026-11-01T10:30:00Z\"},{\"ref\":\"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\",\"note\":\"reports runs on batch-1; runtimeStatus UNKNOWN; last container check is from 10:30, when the server was last seen\"},{\"ref\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"note\":\"postgres health check has highDisk flag set to true; container running, 0 restarts\"},{\"ref\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"note\":\"data-1 disk usage 184320/204800 MB (~90%)\"}],\"missingEvidence\":[\"Current container state of reports while batch-1 is unreachable\",\"Why batch-1 lost its connection (host or network logs are not available through these tools)\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 9214,
+          "outputTokens": 930
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"Two services need attention. The other two, api and redis, are running normally.\\n\\n1. **reports: status unknown because its server can't be reached (main issue).** reports runs on server batch-1, and batch-1 is marked UNREACHABLE. It was last seen at 2026-11-01T10:30:00Z. Because of that, reports' status is UNKNOWN. Its last health check said the container was running and healthy, with no restarts, and its last deployment succeeded. But that check is from 10:30, when the server was last seen, so it's out of date. The other services were checked at 11:59:30. This doesn't prove reports is down. It means we can't see it. I can't fix this from here because I can only read data. Start with batch-1 itself: is the host powered on, is the network reachable, and is the Noodara agent connected?\\n\\n2. **postgres: disk almost full (secondary issue).** postgres is running with no restarts, but its health check has the high-disk flag set. Its server, data-1, is using 184,320 MB of 204,800 MB, about 90%. If nobody frees up space or adds disk, the database could run out of room.\",\"diagnosis\":\"server_unreachable\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Service\",\"id\":\"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\",\"label\":\"reports\"},{\"kind\":\"Server\",\"id\":\"695183d3-fe96-443c-934a-ec1611179a22\",\"label\":\"batch-1\"},{\"kind\":\"Service\",\"id\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"label\":\"postgres\"},{\"kind\":\"Server\",\"id\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"label\":\"data-1\"}],\"evidence\":[{\"ref\":\"695183d3-fe96-443c-934a-ec1611179a22\",\"note\":\"Server batch-1 status UNREACHABLE, lastSeenAt 2026-11-01T10:30:00Z\"},{\"ref\":\"bc2abfda-bebd-4f49-b1c1-2ac474ff3a01\",\"note\":\"reports runs on batch-1; runtimeStatus UNKNOWN; last container check is from 10:30, when the server was last seen\"},{\"ref\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"note\":\"postgres health check has highDisk flag set to true; container running, 0 restarts\"},{\"ref\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"note\":\"data-1 disk usage 184320/204800 MB (~90%)\"}],\"missingEvidence\":[\"Current container state of reports while batch-1 is unreachable\",\"Why batch-1 lost its connection (host or network logs are not available through these tools)\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

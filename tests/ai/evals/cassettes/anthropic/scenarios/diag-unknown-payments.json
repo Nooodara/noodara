@@ -1,0 +1,286 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "diag-unknown-payments",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "179b2da5eea36c1843711364845d9e00791aca54aff875ccc0fda00497ab5e73",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01ELfUL8BYNdF7ah3BCv4Q1V",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5374,
+          "outputTokens": 26
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01ELfUL8BYNdF7ah3BCv4Q1V",
+              "name": "list_services",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "715147a3a58b59be7c9047434c8f390983b52a55a22454133e633780cbb93011",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01RrxDdrWnd5mP7TyvGJEoD7",
+            "name": "get_health",
+            "input": {
+              "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f"
+            }
+          },
+          {
+            "id": "toolu_019uV4TrGUbhx56hAUvSx31A",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+              "limit": 5
+            }
+          },
+          {
+            "id": "toolu_01Q3JmqTmF9qkpnWWBiNt6jd",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+              "limit": 50
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6409,
+          "outputTokens": 266
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01RrxDdrWnd5mP7TyvGJEoD7",
+              "name": "get_health",
+              "input": {
+                "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f"
+              }
+            },
+            {
+              "id": "toolu_019uV4TrGUbhx56hAUvSx31A",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+                "limit": 5
+              }
+            },
+            {
+              "id": "toolu_01Q3JmqTmF9qkpnWWBiNt6jd",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+                "limit": 50
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "d231b30768bcfaed269b94370133f19886f146882a514ff9fa00eaa91e4da05f",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01Eyid8PJiB2gAfiPUm3MhLV",
+            "name": "get_server",
+            "input": {
+              "serverId": "7892be3e-b2cf-441d-87a4-6846aa412bf7"
+            }
+          },
+          {
+            "id": "toolu_01NtDvZRFbabi4smaEzGvawZ",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+              "level": "error",
+              "limit": 50
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 8250,
+          "outputTokens": 216
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01Eyid8PJiB2gAfiPUm3MhLV",
+              "name": "get_server",
+              "input": {
+                "serverId": "7892be3e-b2cf-441d-87a4-6846aa412bf7"
+              }
+            },
+            {
+              "id": "toolu_01NtDvZRFbabi4smaEzGvawZ",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+                "level": "error",
+                "limit": 50
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSkAUKEAgTGAI4AUIIdGhpbmtpbmcSDLGGaGovLEahaC0HxRoMhoQQZpCebZ4sfoxEIjDjY9ADAemHwPUhGBYEGr/EKiHnJATOqkFGtuAy8Jzhv1Q0a0MDcvi3cveXSmeflecqrQQN4I3CPwfpR/k85/Zgvs713yJyL3K9JJyKF3UBa3xFA73+zh8BibzeMS+fwluROy6mMo98E3mKRj0NMRRBiKp3z1mGXCmVz1i0Y6ftJHz4Xqk9iUBIn71aY9Q6Jf1gIDUwWXIm2mhhey2W9XEJEfgnvGW081kTcI/mgjxdEYbI5XOd9PTAlPOtIDTEg/m0Bv/iDmcqWJd87rH03HT/bYsyzMewLKIESGj+kVQvZxbO4cSB+WE9Lggwz07Jyd5NBdQfAo3AJs5Wre9lsRDXxInLPR6rlsmEhGH5y8o1EkQI3+k5xToUhBlaHq25/xp72Fzkm81qx86Eq1uwTslK/2TPJ74Ia0YWHth7AxNrqNN/xEbE19MI7gH7NI20wI2erLqa6KjBVdvRcaOtI3fStTB6IiACLq4cM8hPhzvzJF2dG8/H22d+gtYUrz2ShxwVws0REMLhs3VMaD53yY5WKOWr7ACN1k4/r0F9Zbsj2pP9bXh4EOAwcmeJsYneZRfLqmzs/ihPuHAl9hY1bSVP5gH2kuvw/yMPbRETD+454oNRfgJdeaSb7ZYpbwJaUC2CqS//jupzz1T2s/Yew2gsIJwsZxmQfJk/uNgIgFssLlfE0/IfF69nK5wmTMA6QG7BB6GaGqNTBuSdiaggWSyyMT9u+KPd2AzZYkQEkbxKa0ML8KbCThPKrjf6sjettLHcPxdCfS4HaBrsF+0KcK2CNPETblx2GGKKDcLJG2jOLxgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "a3694f0c943fbf91132b2313f35c1bd6c9ba27bdd928e9d33b179338a03c8e76",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01XjSs3xATV556sTiH2dnyVN",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+              "points": 12
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 8959,
+          "outputTokens": 165
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01XjSs3xATV556sTiH2dnyVN",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+                "points": 12
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSnAYKEAgTGAI4AUIIdGhpbmtpbmcSDC5CtPV6Wazkc5gAyhoMBttwC7erDFrdep4kIjD1Vtv3r+0JKwL4sokQ9L2u3E6moQH1PzOvrmFGNZH23uWs+bawnqDBEN9Px6S9eUIquQUwgFJTm6ntuvuFTvStI7ZL3RcbHAyApv5Tvk7QrUoV2l0KCvrHpTjBbL6g2+pezhmCbnSMKgXyEuCQ28d7QvvVxmHyuBgQUT2tdOI2nc2R8rsSbb7veSdfG44BbyohXIHuj+2x9C22lSx26HhNNkILb+puJgNCjBdYzHpu1/QHO28lewe3kP2Og+x9Qn2steeAGIlm8k6yOixZlRIaaw5DoAgiSd5nE+Kxq/mg89iGu0yKOKmAmNKMsd5RrygoZ+PqvqqqlUAi2tTHNtYNLJm3xCGE0n/4VQ9AVV+wb0f3d+4ly4TDnX4JS3zedZfkjfAbbj179lhGFGHLhVRij4MBoeWQW2KLSW42GbkVyy6yv60PwJHqTKNYaT3Ryy+9yT6tlKzPcnu4/FAWGySUBtAmKO5rpYjbNh6BxHWthNoQ0U8vfxOfiuGb30yhZUvNs/jAgFc80KOumqsIdMXtzsDejY4ySoJDWyvq620IcS7pLjm7B0vtu1/dU65lMIIk10wJPxHIzUdTT6x03Vhco5n1j9p0vC1uVYYhQ4avIaaeUcR6Lq68h8Oam0//zCme4A5dbhb0BVgKJPsArLu+ib/QlqRBYf38IRZVXqO075QDyjc/AQfc6yyf26Nj2OLwol+N+8kTny/wmoDoqXYZPSCAlkAJxQgCCojWgMisd2kjFNsak+BnsTR6Sg0c0HMUNguLfp/Zd8MTp43fLDhXIhXMwQtUEuQ1UvQAqJinsRUCyciIJA62H3bOf5oCpFkHZqllKMhTmXI1RUGCP+dLSeOt6WYHS9OEZrLPEiYaoOWk5A8aX15WqqeXwe+zTGO+7jgJWur80Yian9vsYwcYg5xK1E0nOG6j+k2o4njFnh4rHSQNMlHxVVQQ80L3xSzF/FgnBSA7XqcPViViqaGJt5fFW3zdLDNaNJsYGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "bd49c6454bb8388411801a078aadb4602b73ab9b7147dd571c68eef384a76371",
+      "model": "claude-opus-5-5",
+      "turn": 5,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01J6UVjmD632Rs9XYTsGcUeA",
+            "name": "get_deployment",
+            "input": {
+              "deploymentId": "0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 10073,
+          "outputTokens": 83
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01J6UVjmD632Rs9XYTsGcUeA",
+              "name": "get_deployment",
+              "input": {
+                "deploymentId": "0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "a283e5235c8343ffc2bf2b5a3159839ad0962fb5661b6d447f4835e01675aab7",
+      "model": "claude-opus-5-5",
+      "turn": 6,
+      "response": {
+        "text": "{\"answer\": \"I couldn't find anything showing that payments-api is failing. Every signal I checked looks healthy:\\n\\n- **Container:** running, with 0 restarts. Its healthcheck on /health reports healthy (last checked 2026-11-01 11:59:30 UTC).\\n- **Latest deployment:** succeeded on 2026-10-31 with image ghcr.io/shop/payments-api:1.8.2 and no error. The deployment before it also succeeded.\\n- **Logs:** no error-level entries. The app logged that it was listening on :8080 and connected to its database normally.\\n- **Resources:** CPU is about 8–11% and memory about 30–32% over the last few minutes. The service isn't flagged for high memory or disk.\\n- **Server:** web-1 is connected and was last seen at 11:59:30 UTC. Disk use is about 30 of 80 GB.\\n\\nThe only possible clue is one warning at 11:58: a slow response (1.4s) from the card processor, an outside service payments-api calls. If users are seeing slow or failed payments, that dependency is the most likely cause, but one warning isn't enough to be sure.\\n\\nAlso, the service has no published port, so it's only reachable inside the server. If something is trying to reach it from outside, that would fail even though the service is healthy.\\n\\nCould you tell me what failure you're seeing (error messages, HTTP status codes, the time it happened, or which client is affected)? With that I can narrow it down.\", \"diagnosis\": \"unknown\", \"confidence\": 0.3, \"entities\": [{\"kind\": \"Service\", \"id\": \"d9061471-c08e-43dd-98cf-d1c33c316c6f\", \"label\": \"payments-api\"}, {\"kind\": \"Deployment\", \"id\": \"0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06\", \"label\": \"payments-api deployment 9d0e7f3 (1.8.2)\"}, {\"kind\": \"Server\", \"id\": \"7892be3e-b2cf-441d-87a4-6846aa412bf7\", \"label\": \"web-1\"}], \"evidence\": [{\"ref\": \"d9061471-c08e-43dd-98cf-d1c33c316c6f\", \"note\": \"Health: container running, restartCount 0, healthcheck healthy at 11:59:30Z. No error-level logs. One warning at 11:58: 'slow upstream response from card processor (1.4s)'. CPU 8–11%, memory 30–32%, restart_count 0. publishedPort is null (internal port 8080 only).\"}, {\"ref\": \"0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06\", \"note\": \"Latest deployment status SUCCESS (2026-10-31, image 1.8.2), no errorCode or errorMessage.\"}, {\"ref\": \"7892be3e-b2cf-441d-87a4-6846aa412bf7\", \"note\": \"Server web-1 CONNECTED, last seen 11:59:30Z, disk 30/80 GB used.\"}], \"missingEvidence\": [\"The symptom you are seeing (error messages, HTTP status codes, time, affected client)\", \"Request-level and error-rate data for payments-api (not available from these tools)\", \"Status and latency of the outside card processor\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 10659,
+          "outputTokens": 1104
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\": \"I couldn't find anything showing that payments-api is failing. Every signal I checked looks healthy:\\n\\n- **Container:** running, with 0 restarts. Its healthcheck on /health reports healthy (last checked 2026-11-01 11:59:30 UTC).\\n- **Latest deployment:** succeeded on 2026-10-31 with image ghcr.io/shop/payments-api:1.8.2 and no error. The deployment before it also succeeded.\\n- **Logs:** no error-level entries. The app logged that it was listening on :8080 and connected to its database normally.\\n- **Resources:** CPU is about 8–11% and memory about 30–32% over the last few minutes. The service isn't flagged for high memory or disk.\\n- **Server:** web-1 is connected and was last seen at 11:59:30 UTC. Disk use is about 30 of 80 GB.\\n\\nThe only possible clue is one warning at 11:58: a slow response (1.4s) from the card processor, an outside service payments-api calls. If users are seeing slow or failed payments, that dependency is the most likely cause, but one warning isn't enough to be sure.\\n\\nAlso, the service has no published port, so it's only reachable inside the server. If something is trying to reach it from outside, that would fail even though the service is healthy.\\n\\nCould you tell me what failure you're seeing (error messages, HTTP status codes, the time it happened, or which client is affected)? With that I can narrow it down.\", \"diagnosis\": \"unknown\", \"confidence\": 0.3, \"entities\": [{\"kind\": \"Service\", \"id\": \"d9061471-c08e-43dd-98cf-d1c33c316c6f\", \"label\": \"payments-api\"}, {\"kind\": \"Deployment\", \"id\": \"0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06\", \"label\": \"payments-api deployment 9d0e7f3 (1.8.2)\"}, {\"kind\": \"Server\", \"id\": \"7892be3e-b2cf-441d-87a4-6846aa412bf7\", \"label\": \"web-1\"}], \"evidence\": [{\"ref\": \"d9061471-c08e-43dd-98cf-d1c33c316c6f\", \"note\": \"Health: container running, restartCount 0, healthcheck healthy at 11:59:30Z. No error-level logs. One warning at 11:58: 'slow upstream response from card processor (1.4s)'. CPU 8–11%, memory 30–32%, restart_count 0. publishedPort is null (internal port 8080 only).\"}, {\"ref\": \"0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06\", \"note\": \"Latest deployment status SUCCESS (2026-10-31, image 1.8.2), no errorCode or errorMessage.\"}, {\"ref\": \"7892be3e-b2cf-441d-87a4-6846aa412bf7\", \"note\": \"Server web-1 CONNECTED, last seen 11:59:30Z, disk 30/80 GB used.\"}], \"missingEvidence\": [\"The symptom you are seeing (error messages, HTTP status codes, time, affected client)\", \"Request-level and error-rate data for payments-api (not available from these tools)\", \"Status and latency of the outside card processor\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSyQUKEAgTGAI4AUIIdGhpbmtpbmcSDEC4mPAKvF3MIszJTxoMZYPg6HrI7lZn0YtfIjAv3+zqTlYtdkJeMLf+MmnDLXy01Kx3e3/x70wUHAD5MZWBR2EDZ3qnuPZifmV6DFAq5gTxXcK5CaRh2Cu47y1NGgAv+Z5lqORT/BOUK0T0BSrFds8Uz0qs94IpfJHYvDk3Fyif0JQjSArRHoyhOTqqvd+2mrJ/awdPwzkjD09yX38tySKYvj/7H9DX90NnehiT5OapbDW/izTZX2Ud26l/6duZllkXGhFKxtY4fiQysi3/7Yo1E+SwQrHZcveTTpb6IN4BLEdLVg26WATpbfKGgyD8ZwpK6Fp/6qe6880EkhfnMWGfOltu2Z/ALRKt3NmhTxfAGbzxTotaxeRqPFaferaDLBKlIpAIvQbHlD9tjxGSJHyoYW0pAiMX05OH3p0EDIzRlCidnVhAg9vxWNFlm/FRDQKJ5bYKX+Mzokv3xRe+wPworEUlegFAVwHoZwOafK8aYWfkrUseMdseedrKLDU0mjqWskIxlSKCeAWXG0VXUg+HPs+rSO6g4RG4tDj4PcAy4FNf6A31xPI8/a/AjAfL0ymHYN7CbYqlN65VqFPF4qOwK++ZGtQrIsfJmfATmpAUl2qVJml7nzEfl50vwJyKui+RG7OU2990h8jla3oBDtFGQeMg/5kvWsGy3BlAj9s0NtRa1E3yLEG/z3Kmmv/oXPjdfRKP4ObBX732Om+QXNZUnHrMACXahQZCsJgYITKHvn0f0WjCS4QigJRsApzg/qExBZHhnxG5ppQJR446s8VrCq8BNYq2COf/6BgDpAWqQOLFRElQ/nNdNGjWdZQhIqqaQykLpSRCaQcdit+0atOMqe2J/9jF9KC0o67APlRbfmq53YZcDWnIomsqQPCsVT8x3p8GiSRL6G5fycawG2jS1KIJOhgB"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

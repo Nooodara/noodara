@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "loc-acme-staging",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "07da20d279b5a8e91f40a9b6812a3be3b439eac4aaaa822c1462f63f3bcc021a",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01WUGDtsm3c5KJiyHoTssA8C",
+            "name": "get_infrastructure_graph",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5375,
+          "outputTokens": 33
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01WUGDtsm3c5KJiyHoTssA8C",
+              "name": "get_infrastructure_graph",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "74a66001f94222cec96f1fda065e67b4803cce51f9a46cd159e2249ccf502662",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "```json\n{\"answer\": \"The acme staging site is the service acme-web-staging. It's in the staging environment of the acme project and is served at staging.acme.example.com. It runs on the server host-a. This comes from the infrastructure graph. I didn't check its health or recent deployments. Nothing is wrong that I know of, so the diagnosis is set to \\\"unknown\\\".\", \"diagnosis\": \"unknown\", \"confidence\": 0.95, \"entities\": [{\"kind\": \"Service\", \"id\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"label\": \"acme-web-staging\"}, {\"kind\": \"Server\", \"id\": \"cd751bfb-7d65-4628-99fc-0f7fd1c7d142\", \"label\": \"host-a\"}, {\"kind\": \"Domain\", \"id\": \"128f798f-ba13-4cca-b8a8-10dbddbc3225\", \"label\": \"staging.acme.example.com\"}, {\"kind\": \"Environment\", \"id\": \"c0fe22dc-1aa8-426c-93d7-398c8eb01e0c\", \"label\": \"staging\"}, {\"kind\": \"Project\", \"id\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"label\": \"acme\"}], \"evidence\": [{\"ref\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"note\": \"The infrastructure graph shows acme-web-staging in the staging environment of project acme, running on host-a.\"}, {\"ref\": \"128f798f-ba13-4cca-b8a8-10dbddbc3225\", \"note\": \"The domain staging.acme.example.com points to acme-web-staging.\"}, {\"ref\": \"cd751bfb-7d65-4628-99fc-0f7fd1c7d142\", \"note\": \"host-a is the server acme-web-staging runs on.\"}], \"missingEvidence\": [\"I didn't check whether the service is running or healthy, because the question only asked where it runs.\"]}\n```",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 10598,
+          "outputTokens": 759
+        },
+        "message": {
+          "role": "assistant",
+          "content": "```json\n{\"answer\": \"The acme staging site is the service acme-web-staging. It's in the staging environment of the acme project and is served at staging.acme.example.com. It runs on the server host-a. This comes from the infrastructure graph. I didn't check its health or recent deployments. Nothing is wrong that I know of, so the diagnosis is set to \\\"unknown\\\".\", \"diagnosis\": \"unknown\", \"confidence\": 0.95, \"entities\": [{\"kind\": \"Service\", \"id\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"label\": \"acme-web-staging\"}, {\"kind\": \"Server\", \"id\": \"cd751bfb-7d65-4628-99fc-0f7fd1c7d142\", \"label\": \"host-a\"}, {\"kind\": \"Domain\", \"id\": \"128f798f-ba13-4cca-b8a8-10dbddbc3225\", \"label\": \"staging.acme.example.com\"}, {\"kind\": \"Environment\", \"id\": \"c0fe22dc-1aa8-426c-93d7-398c8eb01e0c\", \"label\": \"staging\"}, {\"kind\": \"Project\", \"id\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"label\": \"acme\"}], \"evidence\": [{\"ref\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"note\": \"The infrastructure graph shows acme-web-staging in the staging environment of project acme, running on host-a.\"}, {\"ref\": \"128f798f-ba13-4cca-b8a8-10dbddbc3225\", \"note\": \"The domain staging.acme.example.com points to acme-web-staging.\"}, {\"ref\": \"cd751bfb-7d65-4628-99fc-0f7fd1c7d142\", \"note\": \"host-a is the server acme-web-staging runs on.\"}], \"missingEvidence\": [\"I didn't check whether the service is running or healthy, because the question only asked where it runs.\"]}\n```",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS0AYKEAgTGAI4AUIIdGhpbmtpbmcSDEsFHjy0S2lsTgpS4RoMnqn9tMLiCefjjtddIjA7Z5JSTj7gEzjtkZUSZOsZkNWH6V12jlhimFFzPzMEeZtQVALHxtvUCujdWtamI4sq7QXzcFvQWofnG2BsODy9C2MAj3vgWk71QQmjHozo7HLh/AsvsJZkW2RwCUH2IgOcwuflbGaS7Ecsn26tzkLWnSVyi9acrLqZiA5H0hbXHcMsrZwacYHg69XcHHMuVmoPi1cgUpcVXhnTvK4YSkidOO82YxLz2tSrFiXsyp9jQi1oAonN3Qxu5j5krJajlF0ToZzmzQtQN1lEjBGlsYPvGM7x3CAqxolruEvHmkcQBcHuMxQeU22NdgBUxnmpmSWMC6Up8iwHJNXzbtzEQpYYdhfLHnzIQH799P7gwaitIS9ZYFhfLumAoVVz7LpyFcwpspNoD1hCBTD87zJQs+yQlC2PWXv3JzvJRbFh2sjLk4psnNZbd37MrEZAVyNdXZdVOpzF5KJD7rssjyc7C+YtW1F0sARLwcCI1l3A+8MLjTRpHbR7OUDJo0COTeCIbNGeMTllzCvv8hmbOqMyoWRbSMvcva3BIuMcUExqi4Ufkk3OfHElMeWuGHSmOF91L7pb4EF4Dye/Zw7ahgbWluKFxiyUQ74yejcvWzcq+dNtxMbFy+AMYqjks4TqXWgkERYtgcS8RvI4RONf1ezjWq1CEQ/JpxelY0FiGLhZmSBFL9Jo9VRjYLfbHi0rXUHFR8l5k1eeU1bKqJMNOIAhM3wNyo/42FQDTKtVf18ttWVUGur33Y/68dKHJKzMmoLZunPHzibrArNkd84IQUK6ko+IcK8LGuO92a5Gl0YuOa++fE8r5PMXv6338ed0HsgdpUpfOovBY5sRa/9pzKk5lmlHPKVNK9QRbfG3tjcixDBehG0ZZa6vF5IUA/Ee9mZPZswaORajpcEc7gUrxA2fIjaHmGkO6x2jjh7SRlpeD/odK9rR30E6sDpx5aFyG9ctPx//+sPrg8Vw0TGpSvjRI1UDeLnSENw5BstpdIKJ1pgYD4SspbSKClF5a0FZNnX083T5c+Pi1TBmjy2lezhrXA+RvSS4fgZl5zIrQfXOQvKFMRgB"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

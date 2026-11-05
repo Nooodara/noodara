@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "domain-payments",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "dea09920f6cc9813dbbd8f33d4856d116b5d3e0b0f5b80e99cc9fa3074d20c83",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01PgwFwpa3kWTRUZvpgbEk4D",
+            "name": "get_infrastructure_graph",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5375,
+          "outputTokens": 33
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01PgwFwpa3kWTRUZvpgbEk4D",
+              "name": "get_infrastructure_graph",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "119254f6d5d7c6e53f636ab47289112792cac6494bcadf78266172ebc6e982c1",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "{\"answer\":\"Only one domain points to payments-api: api.shop.example.com. The infrastructure graph links the payments-api service to this domain and to no other.\",\"diagnosis\":\"unknown\",\"confidence\":0.95,\"entities\":[{\"kind\":\"Domain\",\"id\":\"fe976544-b235-41d6-bceb-02bc382ee9cb\",\"label\":\"api.shop.example.com\"},{\"kind\":\"Service\",\"id\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"label\":\"payments-api\"}],\"evidence\":[{\"ref\":\"fe976544-b235-41d6-bceb-02bc382ee9cb\",\"note\":\"The domain api.shop.example.com has serviceId d9061471-c08e-43dd-98cf-d1c33c316c6f, which is payments-api.\"},{\"ref\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"note\":\"The graph has an EXPOSED_BY link from payments-api to api.shop.example.com. No other domain is linked to this service.\"}],\"missingEvidence\":[]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 8499,
+          "outputTokens": 361
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"Only one domain points to payments-api: api.shop.example.com. The infrastructure graph links the payments-api service to this domain and to no other.\",\"diagnosis\":\"unknown\",\"confidence\":0.95,\"entities\":[{\"kind\":\"Domain\",\"id\":\"fe976544-b235-41d6-bceb-02bc382ee9cb\",\"label\":\"api.shop.example.com\"},{\"kind\":\"Service\",\"id\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"label\":\"payments-api\"}],\"evidence\":[{\"ref\":\"fe976544-b235-41d6-bceb-02bc382ee9cb\",\"note\":\"The domain api.shop.example.com has serviceId d9061471-c08e-43dd-98cf-d1c33c316c6f, which is payments-api.\"},{\"ref\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"note\":\"The graph has an EXPOSED_BY link from payments-api to api.shop.example.com. No other domain is linked to this service.\"}],\"missingEvidence\":[]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

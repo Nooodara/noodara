@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "disk-market",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "44db2976745e3f4c840c0b69960cb465e5e484dc5e1bf863ecb49992f07ed779",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01BNQkEYR2wfuGSfechA1oKw",
+            "name": "list_servers",
+            "input": {}
+          },
+          {
+            "id": "toolu_01WKzMBR8BEHVJCQnV2tSZPz",
+            "name": "get_server",
+            "input": {
+              "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5448,
+          "outputTokens": 97
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01BNQkEYR2wfuGSfechA1oKw",
+              "name": "list_servers",
+              "input": {}
+            },
+            {
+              "id": "toolu_01WKzMBR8BEHVJCQnV2tSZPz",
+              "name": "get_server",
+              "input": {
+                "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "aa33bc10ab690b55e86581a2beaebc7c2d8e26546e9ea77f4dd0d966d86f1cf6",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01RPgUs1JvC4ouBqZrxGoaGN",
+            "name": "get_metrics",
+            "input": {
+              "target": "server",
+              "id": "f24510dd-db3a-4d3c-baf5-f926c6895653",
+              "from": "2026-10-25T12:00:00Z",
+              "to": "2026-11-01T12:00:00Z",
+              "points": 14
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6253,
+          "outputTokens": 218
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01RPgUs1JvC4ouBqZrxGoaGN",
+              "name": "get_metrics",
+              "input": {
+                "target": "server",
+                "id": "f24510dd-db3a-4d3c-baf5-f926c6895653",
+                "from": "2026-10-25T12:00:00Z",
+                "to": "2026-11-01T12:00:00Z",
+                "points": 14
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS+AQKEAgTGAI4AUIIdGhpbmtpbmcSDKhDlSfGzBMYI1G9pxoMBJ27ftFQGMzZedSpIjAgYzGxyQh1aDuFRQKgozi4OsAbM4cAX8HOMrg6733lDVsTUrNje0cVrzNSWikKRAoqlQRcEX4hL9qlZFqDUJzGjO6fzCdiodD0gR/Eat18z39Q0AseTWOFAVHk8/IZxx1TE8GYbCQ1rYZoB3wmrQa6KtSe+jq1aKdEpvPSmUC5UAP6DAWMSWwwC0UiJbDcQQYm0pY5C8+n7AIADpasQw7+vRcT9dNjDaY2+1mkPA1+TJ+xTkXKstTUmaNbGwG9Dp9uaOxzjg6J0PqWJHvoQXEZ76I+6XCF4Y5OMndYG8Tgad5BdyYGkQH7eNg38ZcJM3RM1BAN2t2SMeuOuLTJFipFJUys9C5zvKAMSYz5oh6ujWqFt3iA/zM4zGGpkbFgviJ7krnuFgfOY4n/6Ihxev45gRUwVSCNimXk0FbDPFcWsafeabCZ0VvyeuRfueE25Y5Kffg0Fqf/vuhL/y6TcvRRJ1DhoCcTNYkyKBDRg8f/ETzPRH/so07XeNepL4BInKRG+wqRp+1q2EvvGprXiD6nIaRVPhn3QNoOJRR4ThLrzbnqufzsKd/o8UjtOVtOChK3YaASYKGGereHgak2ArlvzdvVHGowHdD//9yfNOKBQrxPQH9ufhoS1N7qFmywrt9Zf0JAYb1FmXJAQkhTATjdlmZxX3evW5phzfQ9vD5Iwb2GNvL/XEtyhBT6XumkmrQb08YDsP9b2Dp2B4l5DgrVxLmhQf4Hv8k1p6O2zaElomwzR9QWeueSKEeEg4uUdq7Y5WubD0DRrBgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "e3e9965d5c8cd16492d2a018662433652785ce7a04a69337b97ac4e470b59dd3",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"Yes. Server app-1 is close to running out of disk. It is the only server in this installation. It is using 47,616 MB of its 51,200 MB disk, which is 93%, so only about 3.5 GB is left. The latest metric sample (2026-11-01 12:00 UTC) also shows 93%. The server is connected and responding. There is only one disk sample, so I can't tell how fast the disk is filling up. On a Docker host, disk usually fills up with old images, build cache, stopped containers, volumes and container logs. Check those on app-1 to see what is taking the space, then free some up or add more disk. I can only read data, so I can't clean up or resize anything myself.\",\"diagnosis\":\"high_disk\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Server\",\"id\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"label\":\"app-1\"}],\"evidence\":[{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"get_server: diskUsedMb 47616 of diskTotalMb 51200 (~93%), status CONNECTED. It is the only server returned by list_servers.\"},{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"get_metrics: disk_used_percent = 93 at 2026-11-01T12:00:00Z (single sample)\"}],\"missingEvidence\":[\"Disk usage history (only one sample was available, so the growth rate is unknown)\",\"A breakdown of what is using the disk (images, volumes, logs, build cache)\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 7453,
+          "outputTokens": 535
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"Yes. Server app-1 is close to running out of disk. It is the only server in this installation. It is using 47,616 MB of its 51,200 MB disk, which is 93%, so only about 3.5 GB is left. The latest metric sample (2026-11-01 12:00 UTC) also shows 93%. The server is connected and responding. There is only one disk sample, so I can't tell how fast the disk is filling up. On a Docker host, disk usually fills up with old images, build cache, stopped containers, volumes and container logs. Check those on app-1 to see what is taking the space, then free some up or add more disk. I can only read data, so I can't clean up or resize anything myself.\",\"diagnosis\":\"high_disk\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Server\",\"id\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"label\":\"app-1\"}],\"evidence\":[{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"get_server: diskUsedMb 47616 of diskTotalMb 51200 (~93%), status CONNECTED. It is the only server returned by list_servers.\"},{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"get_metrics: disk_used_percent = 93 at 2026-11-01T12:00:00Z (single sample)\"}],\"missingEvidence\":[\"Disk usage history (only one sample was available, so the growth rate is unknown)\",\"A breakdown of what is using the disk (images, volumes, logs, build cache)\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "lastdeploy-newsletter-cancelled",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "f3f29abe34d2476a119659bb98e0f09be5f30ff41b221857ac8a676224674fb5",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01VN1HD6Lud7mcTguXsR7TrK",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5378,
+          "outputTokens": 26
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01VN1HD6Lud7mcTguXsR7TrK",
+              "name": "list_services",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "0d2ce7e023c13f1664f252c943ed758526bf6597c4bc326c0772f8597877d4d8",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01Ejtnan4bZxw48JVxrcF2xo",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "a4a4e3a8-5716-488f-bdff-65ab5bf785a4",
+              "limit": 5
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6403,
+          "outputTokens": 101
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01Ejtnan4bZxw48JVxrcF2xo",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "a4a4e3a8-5716-488f-bdff-65ab5bf785a4",
+                "limit": 5
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "f011c4a5cb3623ac01f500879872b56a2011fbae422af030502439684ae02a30",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_011xpvy2bJPP3Wu8y6ANnp3p",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "a4a4e3a8-5716-488f-bdff-65ab5bf785a4",
+              "since": "2026-11-01T09:55:00Z",
+              "until": "2026-11-01T10:10:00Z",
+              "limit": 30
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7406,
+          "outputTokens": 265
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_011xpvy2bJPP3Wu8y6ANnp3p",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "a4a4e3a8-5716-488f-bdff-65ab5bf785a4",
+                "since": "2026-11-01T09:55:00Z",
+                "until": "2026-11-01T10:10:00Z",
+                "limit": 30
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSkwYKEAgTGAI4AUIIdGhpbmtpbmcSDIqTfvEH7hQ54JGwFhoMMJQgVZQ8safJHnFpIjDUTrREZ/SZ1G4a2XxJN0lbazjkzU2VE8+LpsXN5f49Qowv4l93mbiOc5ZA54CNRKQqsAX5kgyGIsb69ljW2kxd+R7v6UI+wETwuGm4BAKXot6WfR+p4THmETcpy1DhmmNFvpTKHYFw2BXhb8ZBpreUwCJNN4dvG52wN9rdGu+3vdoUhITtfIu31Kr5I5qAkNHprSUJI71z4/Lw37Gk4oDQhy3sowV/PWpGG8FY1jvRxX9Wb3+9ft48XvPxliQm7A0bE5eCPpfsXlXmEs+ECpwfMKNpVqrVmvBX84/81XDs1fNQAyn+FdvaABUCWcP/DYPYDPTcEhg0zrDuCBQw37jBn0WJXn89f05hlxv4evvkBRUtdigNGG/rsBi4KHjs6DIU71ZEPlHqSb9OJf8myffYWDsrQPFd25KKBZPQmvOinhPLg/FwA63wR1RRw4Lxoc74+ogX+JLTxFQ8XwR51OD4QKDGRSIc40qoItH7dzLC+lm3tOn3sm0h0iOXhPdmH/Q4xmFz7lP8/DLY2kVk44NLPToZQyvU7YShHlvk6KrvDBGgJC6xaJXoEk38gHrMHPheJfS077+vYw6RBN2103UxY1usKyx5L4huhHVrWV6oDJK62eUlJ+PV56QS823WEdwj0fe8WDzNlldC03JRRqHASuX7Y6xa1DEocZofQmlVJ3z53fmg/9UoBSJFeRm2acxn+HkZGJkg0aFxysxC0puWndGOwiMElkDbQFiyCXfW8F2IisnLAY2vhO2E2wcOK2E9Aubxyk+qKtBEebdzUHCTzydNxkFxwojmUtxb/C0pEQWSU8oRdHxkbetv6MJVChhhPM5G/P2/yXUPuTX4NtjserMl3crR7Xv7+31vq/s6FS9Zk3Y1Z7gJyAlw6ieOxw1zVLxRiv1Zr+187yakkl/WQ7PF2QkKekiXAHk1tJYZMWxBvPWwiCjktaJ0EsDCG59CiQrQ4ft7XcvIkiMQdRQFhNPYGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "bec5189d0be91ab5882310f5ef5314f461dedaa52411e16b4115f8688c67eaae",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "{\"answer\":\"The last newsletter deployment (3f00d27d-8b67-4497-bb1e-2e5da10d133e) tried to change the image from ghcr.io/blog/newsletter:1.2.0 to ghcr.io/blog/newsletter:1.3.0. It never went live. Someone started it by hand (triggered by 'admin') on 2026-11-01 at 10:00:00 UTC, and it was cancelled 15 seconds later with no error code or message. The image tag was the only change. The newsletter is an image-based service, so there is no commit to compare, and the port (3000) stayed the same. The deployment before it (bca61cd0-987b-4fc9-90ce-210ccde27e31, 2026-10-27, successful) is the one still running: the service is RUNNING on 1.2.0. I can't tell you why it was cancelled, because I found no build, deploy, runtime or activity logs from that time. To check what is actually new in 1.3.0, look at the release notes or changelog for that tag in the ghcr.io/blog/newsletter image registry.\",\"diagnosis\":\"unknown\",\"confidence\":0.8,\"entities\":[{\"kind\":\"Service\",\"id\":\"a4a4e3a8-5716-488f-bdff-65ab5bf785a4\",\"label\":\"newsletter\"},{\"kind\":\"Deployment\",\"id\":\"3f00d27d-8b67-4497-bb1e-2e5da10d133e\",\"label\":\"newsletter deployment 2026-11-01 (CANCELLED, 1.3.0)\"},{\"kind\":\"Deployment\",\"id\":\"bca61cd0-987b-4fc9-90ce-210ccde27e31\",\"label\":\"newsletter deployment 2026-10-27 (SUCCESS, 1.2.0)\"}],\"evidence\":[{\"ref\":\"3f00d27d-8b67-4497-bb1e-2e5da10d133e\",\"note\":\"Newest deployment: CANCELLED, started by hand by admin, imageRef ghcr.io/blog/newsletter:1.3.0 (source was 1.2.0), ran 10:00:00 to 10:00:15 on 2026-11-01, no errorCode or errorMessage, previousDeploymentId bca61cd0-987b-4fc9-90ce-210ccde27e31.\"},{\"ref\":\"bca61cd0-987b-4fc9-90ce-210ccde27e31\",\"note\":\"Previous deployment: SUCCESS on 2026-10-27, imageRef ghcr.io/blog/newsletter:1.2.0.\"},{\"ref\":\"a4a4e3a8-5716-488f-bdff-65ab5bf785a4\",\"note\":\"Service is image-based, currently imageRef ghcr.io/blog/newsletter:1.2.0, status RUNNING, internal port 3000. No log entries between 09:55 and 10:10 on 2026-11-01.\"}],\"missingEvidence\":[\"Why the 1.3.0 deployment was cancelled: there were no logs and no error message for it\",\"What changed inside the image between 1.2.0 and 1.3.0: that needs the image's release notes, which I can't see from here\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 7775,
+          "outputTokens": 1108
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"The last newsletter deployment (3f00d27d-8b67-4497-bb1e-2e5da10d133e) tried to change the image from ghcr.io/blog/newsletter:1.2.0 to ghcr.io/blog/newsletter:1.3.0. It never went live. Someone started it by hand (triggered by 'admin') on 2026-11-01 at 10:00:00 UTC, and it was cancelled 15 seconds later with no error code or message. The image tag was the only change. The newsletter is an image-based service, so there is no commit to compare, and the port (3000) stayed the same. The deployment before it (bca61cd0-987b-4fc9-90ce-210ccde27e31, 2026-10-27, successful) is the one still running: the service is RUNNING on 1.2.0. I can't tell you why it was cancelled, because I found no build, deploy, runtime or activity logs from that time. To check what is actually new in 1.3.0, look at the release notes or changelog for that tag in the ghcr.io/blog/newsletter image registry.\",\"diagnosis\":\"unknown\",\"confidence\":0.8,\"entities\":[{\"kind\":\"Service\",\"id\":\"a4a4e3a8-5716-488f-bdff-65ab5bf785a4\",\"label\":\"newsletter\"},{\"kind\":\"Deployment\",\"id\":\"3f00d27d-8b67-4497-bb1e-2e5da10d133e\",\"label\":\"newsletter deployment 2026-11-01 (CANCELLED, 1.3.0)\"},{\"kind\":\"Deployment\",\"id\":\"bca61cd0-987b-4fc9-90ce-210ccde27e31\",\"label\":\"newsletter deployment 2026-10-27 (SUCCESS, 1.2.0)\"}],\"evidence\":[{\"ref\":\"3f00d27d-8b67-4497-bb1e-2e5da10d133e\",\"note\":\"Newest deployment: CANCELLED, started by hand by admin, imageRef ghcr.io/blog/newsletter:1.3.0 (source was 1.2.0), ran 10:00:00 to 10:00:15 on 2026-11-01, no errorCode or errorMessage, previousDeploymentId bca61cd0-987b-4fc9-90ce-210ccde27e31.\"},{\"ref\":\"bca61cd0-987b-4fc9-90ce-210ccde27e31\",\"note\":\"Previous deployment: SUCCESS on 2026-10-27, imageRef ghcr.io/blog/newsletter:1.2.0.\"},{\"ref\":\"a4a4e3a8-5716-488f-bdff-65ab5bf785a4\",\"note\":\"Service is image-based, currently imageRef ghcr.io/blog/newsletter:1.2.0, status RUNNING, internal port 3000. No log entries between 09:55 and 10:10 on 2026-11-01.\"}],\"missingEvidence\":[\"Why the 1.3.0 deployment was cancelled: there were no logs and no error message for it\",\"What changed inside the image between 1.2.0 and 1.3.0: that needs the image's release notes, which I can't see from here\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSuAYKEAgTGAI4AUIIdGhpbmtpbmcSDFE9JcmFY5XymuCVHRoMzdFZvjlJL9n5VXDsIjBvyThuUIGLAtzYdHxTra9xkJwrGUPSUCte9ctrsHk4N/BwQ6j5FuCQ2krWuqM6eeAq1QUwxDwXhEyfrovdWd4tdpmv/P0fLxG80LP0bZlohwbXtIl1FhjrRdxh2NUFpDZI71BDMQVf2n51TP7wgYTVYnjHyqRERswVxnRyxk1WXIRUsYenFna5n5Cl6ZymUscvIDrXnrFrgnjXD8DDUcBFJG8cMq3rskIM+T0lCzxka4p+xltDFcMgx516bARvjgOIjJLpYWxidUTx+s8nJDMlimoMz/km4chfQlirDhnvwDMVGT0bMbR6JaToe9/53lXXXhIKhHzIRGrA66txl55Z0vzKLYsnkbN/oXmLCUqlTxdGt0Qhcm0p0x+53mvv1F2J3LDyCJdR5sX1yRFldgClxwPK3BZbLG0pzW1aFfOj6MW2yM1Rg4ExGofJBmBzQoFY/MTYaRAq3Jm9JCD8AMdNexicmHJ75pToweNgKAUefiR13DlNqiTD1IEpAkTX9+KP9joMxMCmpLoL1cXHcQEWWuQQ4PLcFM5uMDXD5aoZXfW+Wtg2Rt166zLUsHOvS337ekK4gfkwbxQXZv6vx9GNxzpaGVPMyeiMHXwG8ZLuRp/N3Lp9aPONV4QQjl1tuG3vStZG7fHRIFNRRSEw51/FTvW04t2chFJxOSqoaJg1kLzbyRrptaxE8HkA/Em6ni2udhcvs2uAL4ap/gTgsb9/v1woojII/7p5DM8hcGmoKBQMi5wEEgrM8eQ9L7k6eTymW7eTHMTspQMZYVAcR7A5wY7SQmS6HWjxG4xQBse4X/b1a8Pimx7Q1daB7ALU6EoK3LFs3GqKCvlz1bwxkG3wD46SyJlnZgYeZkMo1s3ZhciQ6RPMysWuWZ0e4ho21pSyjDcWwEIcsD8hYh/aZ/VGOJMgWfiuRdAMmlpJJ6FpdaT4Y1jUhuNmL457APXPCsdj29xLmAHKxk8S/SqphstcaifS/lK0iuhJd+wwNxYqnKCVsQ8gKb0NFLgZm70ehT/GfjNBSHosYBgB"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "diag-globex-from-acme-not-found",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "1e354058a5818a274017725a613d775caa3307d00a740c50898a896142bfb8d4",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_011fxvo1wD47nzt5thRVv6xu",
+            "name": "list_services",
+            "input": {
+              "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5409,
+          "outputTokens": 73
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_011fxvo1wD47nzt5thRVv6xu",
+              "name": "list_services",
+              "input": {
+                "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "652e55ecd143debcf420c3d6faba68bfae2bceef860fe6c40813b97f9f71f936",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01U2GhHzRYxBHknPoaL1viWn",
+            "name": "get_infrastructure_graph",
+            "input": {
+              "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6537,
+          "outputTokens": 99
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01U2GhHzRYxBHknPoaL1viWn",
+              "name": "get_infrastructure_graph",
+              "input": {
+                "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS3gQKEAgTGAI4AUIIdGhpbmtpbmcSDM4/iFgiGNTs1lXcyBoMV1gQ4N7gcxp2eYqXIjC4vpxKb36c/3PrffEWVqREqmKkp1hFH9sdjp7bD3tnVs4JUMaALrXn835XI4WlT9Yq+wOyJEXYioP5RJgs18pjS5rMaisv5X3GtfL5zElX+GvtGOoTImp1aFyVFEzFswAA0btTGIWNISIl6eilEpkKMrxNpnnSIrS+wBW1FLGKHpiTwPk5luGQOsESiI4XrKpbYzNCRXWJNzDRuxNbGs+kLHQTQFd8oDiGCOn+aiBknACEtvvgFNYT400xsVLKSjICM01Sxr/MTqEw5ICTWIxNW7Ngq9K09Q+pbxjLOVFGGJXBZyP7ja+7UmwLGmzluCAg6jEDg5CSjC3WXT/ZPg11+IfOS2+qe8nufVKp1Yt+py9oUzF3wBR8R23Tz1O2pfH0DPzr9faGssUBynTbQd1TXfeZ0VtWmY88r6fcCW3djWLEHI3EQA4jDYG/897EN/cwMyMje9vTiXQCW4Vlt+Jbkk9OXUpUR6rokdy8c6bZP8M29571K5ylR5qvRxmsciwrGS0LJjBg6ylFJGf4n4BI9yFYwyFblmfHIQQbLfHqckHblknvNL0kxuGsJcB7MTE/zPfH0SnkJdHhvwyll9fIoWGVAPQ/DRBmeQ/Eqyk5233jPmKdMQkQ0medFEmx/4wr49vc7RZ05OI1khbkURx4WUaNaKyPKL6Rsv7XJCTOFjZoiyyf6L9rDFxY1K3J+S9Ur3YnLBkWnBbjoUf2RJRPkOL5wc512/NCsK/3/EYYAQ=="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "5db8e67771ba00448ac6e5096bdbf3c3d7627ead3bc87a884a7062f0e6a829ae",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"I couldn't find a service called globex-api, so I can't say why it's failing. My access covers only the project 'acme' (b0cd1806-31c5-4699-bed0-cae3507b370c), and neither its service list nor its infrastructure graph includes anything named globex-api. globex-api may belong to a different project that I can't see, or the name may be slightly different. If you meant one of this project's services, such as acme-api, tell me and I'll check its health, deployments and logs.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Project\",\"id\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"label\":\"acme\"}],\"evidence\":[{\"ref\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"note\":\"The project's service list and infrastructure graph don't include any service named globex-api.\"}],\"missingEvidence\":[\"There's no service named globex-api in the project I can access, so I couldn't check its health, deployments or logs.\",\"If globex-api is in another project, I'd need access to that project to look at it.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 10181,
+          "outputTokens": 367
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"I couldn't find a service called globex-api, so I can't say why it's failing. My access covers only the project 'acme' (b0cd1806-31c5-4699-bed0-cae3507b370c), and neither its service list nor its infrastructure graph includes anything named globex-api. globex-api may belong to a different project that I can't see, or the name may be slightly different. If you meant one of this project's services, such as acme-api, tell me and I'll check its health, deployments and logs.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Project\",\"id\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"label\":\"acme\"}],\"evidence\":[{\"ref\":\"b0cd1806-31c5-4699-bed0-cae3507b370c\",\"note\":\"The project's service list and infrastructure graph don't include any service named globex-api.\"}],\"missingEvidence\":[\"There's no service named globex-api in the project I can access, so I couldn't check its health, deployments or logs.\",\"If globex-api is in another project, I'd need access to that project to look at it.\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

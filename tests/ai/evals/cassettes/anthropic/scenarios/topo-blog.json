@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "topo-blog",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "d1b4e641ba537dcbdc1a715a3c683c325dfb9affadcb8f7194e8c7132b12ebf0",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01RrqL6tZ3iyA2o5NXfohrnh",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5373,
+          "outputTokens": 26
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01RrqL6tZ3iyA2o5NXfohrnh",
+              "name": "list_services",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "1acc4da9a20fc8d7143f2d30294499cab593ee417637c706da144c5c3e9f66fd",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01UdikGjYwrQnUv3qSbQeuoX",
+            "name": "get_infrastructure_graph",
+            "input": {
+              "projectId": "0cfe8791-0ada-4417-8105-49993668ddce"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6398,
+          "outputTokens": 131
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01UdikGjYwrQnUv3qSbQeuoX",
+              "name": "get_infrastructure_graph",
+              "input": {
+                "projectId": "0cfe8791-0ada-4417-8105-49993668ddce"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS0QUKEAgTGAI4AUIIdGhpbmtpbmcSDFxLgf5u0XwDUB/G1hoMY+6F9gy3DaUkd7P8IjDxZ+KRbEPY0YZWB5RY1rATrJojiI06/79YHLad9xosJMr40vPY+XnaFngjpkxgYToq7gTX5cspzVqbZWvT7gPr0WkL0InkFdjTvI056FTsgA8w94H3je8XS6KNp+DbEcIDxjHELei0y6u3qY5Hnv3QNbvck7vPohEj7In2T/pnPN7THW++JMzDoejaR6qA6GQE0gig7J4qwvRxXWjxy7i0OG96NZQaQg2vXfSDaLuN5zp9kVSTdciFoMSxNAwJ2/BTQIlUaF87wPfeZwrK+2N+cEIMcFHjkz3PAy9xtdX/ExmJ3sh3c7Ln0e728Byzs2GQk73NIU3LUadrwtPyec+WqhbRYR8Ee+/VUpip9sTwDoIol+IzqEja1s1moVIFj35y2IYbe+iwiFqq1ql0AVYMqaidReV4kwbF3B9XpTkPgZzDNphAFY/YLvKQ8WLpRRMSkKpAq9ImBrRwyF91YF/SdYJVNtot54CSqy+BmmwSy+A8sIXEQuQVg1lGt5NxsfrgV65kJVS5ouFSv4V+larXj7pb2gHkQ8MUfTvlTuLn2VuQskc4YaneX9x0cW4PVd/KMNStwcJ+iQ7B1uSjRwiCyt8X8VuTenxtZcNQXx80Mpt1hia0RqSf77lNpLdckZ0rsQ2BiZ7AhbhZMCn+6bssWsBr97hMOTsyDi5cetFTpEfmke97n4nNTrigsUZR9iKvHnrhEQk0etikdAMjTnxVjLCIsRFLiDxfZa/jeaTOERPpkcVhzWNI0K/V3795sVHs6mdnUjA6RXJWeYZEtK7uuO4a7oZ3st88k2yWT723hc+9ruSCHjnbW0h7PYHts4Mhd06NTMfRu3gS81jBUdI+k9bqu13JOPsNQn/SvXg396CV0OXFa2ErLQsudx8nLvBJGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "afcc177ad4f97e0078275aae453ce307f488e5618fee100386662655689bded3",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01E47SMdbHHVbgJn7vSoQcf2",
+            "name": "get_infrastructure_graph",
+            "input": {
+              "projectId": "0cfe8791-0ada-4417-8105-49993668ddce"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 9204,
+          "outputTokens": 190
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01E47SMdbHHVbgJn7vSoQcf2",
+              "name": "get_infrastructure_graph",
+              "input": {
+                "projectId": "0cfe8791-0ada-4417-8105-49993668ddce"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS/gcKEAgTGAI4AUIIdGhpbmtpbmcSDIUhnF8xNLDe+n0ewxoMiJ09lIMpBLTtf6n8IjCxKEqweMJ6NtOQnoYWj0JGx3/s6D17r7Cf1PVukWWJ1ksYB0st6yFyvBnMa8SolwMqmwfgoauVgAg972jeu18XHGe5iSkibnGgsX238NPbI+6vjH2+53iwglix9n1X47r340OgNlCyiOG93cuOvcsZ79NyBie4dcjFCrwr7p+yrcQjnr4lxaZkrtRyvDIYVk50GwNJtjka7coqGp1RPntdqNJk4cS/dos52FSuhL5CT9QFjBBvn9MS3j9ezvOMe0rUnJA10V1DbHVfXzCPOOOAnZxjBJgSDE/ZhJR+EjUrdbaAgRhxn6X3r1WjEsArX7bnI05UBv447uDAdm+u2sjsv2BLuZTrIq8HDAv3QAj6huwOs/gNnjpLvgzPBcYl3Q65cCz02pyORwrMHLbp5BxAuD6jpWd8ozXsjq8NxbjU7IWqFrQpjX2TR3HsanFXTat7qy9BgppONtKoPYVnS7w9Zr+3PznI+/fPKiXAX7O1UZWLyi275FiqYc8yv78+G47mbEBbcqkRtwzMxBRwpoAEJI+L59Gq3qXj8qaoI9ejQyI/db3QyxYJp2H7FK8lEiHaCbOoO4fOeWVv0QyH6A1MLdGqLzPKMInFtIJ9yvY+In26GaxdxJeKp3KaHL7G/YRcFGJl17bhgnZRTh5m8PsqEus1p5x5sb+dicmiaCikvId+2beo1VhGyAoFDEpM9iXDxvOpp5Mx5K+syeNG92ggtLcFWpp043reKdUV27E0tbfnBZvS2OVppuNQIAcw6bl3xNIQy9+p95lxHYsHwGHSjvoWBZGIIKXI/jlWeIYpf5h7hCJ50itcCewbAYANmYA6oe/dyEk+2PeiLXFZnwGeYgUqywDgX9NMiv6nv4gooKsyg3D4tVPRHWt79zn4ZpZF/4jXzsFmuiQ7R2EMxEfih3G3mqMvc6TwK0zPOLQVuBVN7FYkG06eNbi9qHngOVUCn4WftbTmsqjBhyPgr4sB+yogXHLibHYC/rh5RBIOLors0C8YNFkF8NIl0ZWKX/gYN6C8xG7p8aLV0el34L/nWp9FYRCoomuQLUHYtEuq6e783v8edF4FWO8Wh5m6wK6hl9t75Es+RH5h2GRjOBzTWtfG+tVEMWsoFW/OQcjt/K0hZ1NDAe0F3sjeKEyxDXfm2M9GNtdbyu10DKGDjNAHTdLiLoFkDsMDytxwdRZpCdYKvyyyNFTKUNXKoqWjavV+2x+3Jiv3901qEr6SiULKHVYohDxJLV8Zb8To0C+xrRoOOPE4g/fSU6Lck6RXPLiVX/7fapbC34Z+j1tmaRgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "1965b39555d800ce2ce4e412e1e0881809f2a458f5608d6f95122f25fb05bb7d",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01M6hWcEBrqyffHwW8E8RYWE",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "284d7eb6-35b4-41cc-a1fe-cf1d674852d1",
+              "limit": 3
+            }
+          },
+          {
+            "id": "toolu_0163Wy6kpqPHjTGZycA7GDD8",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "ff709c6f-708a-4bef-bf57-8547b9f5cd65",
+              "limit": 3
+            }
+          },
+          {
+            "id": "toolu_01NMQ4VxPoRAfYY8sNC5Pd3h",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "a4a4e3a8-5716-488f-bdff-65ab5bf785a4",
+              "limit": 3
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 12069,
+          "outputTokens": 296
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01M6hWcEBrqyffHwW8E8RYWE",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "284d7eb6-35b4-41cc-a1fe-cf1d674852d1",
+                "limit": 3
+              }
+            },
+            {
+              "id": "toolu_0163Wy6kpqPHjTGZycA7GDD8",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "ff709c6f-708a-4bef-bf57-8547b9f5cd65",
+                "limit": 3
+              }
+            },
+            {
+              "id": "toolu_01NMQ4VxPoRAfYY8sNC5Pd3h",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "a4a4e3a8-5716-488f-bdff-65ab5bf785a4",
+                "limit": 3
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "af39244f66223440a4604a325effae70ea8cc1596d7325bd44468b99a4f3e0f5",
+      "model": "claude-opus-5-5",
+      "turn": 5,
+      "response": {
+        "text": "{\"answer\":\"\\\"The blog\\\" is the project **blog**. It has one environment, **production**, with three services. All three run on the server **ci-1** and are currently listed as RUNNING.\\n\\n1. **blog-web** (the site at blog.example.com)\\n   - Built with the Dockerfile from the `main` branch of https://github.com/blog/web.\\n   - Container port 3000, no port published on the host. Healthcheck is `/health`. Auto-rollback is on and the last 3 images are kept.\\n   - The latest deploy (commit 5d4e3f2, started by admin on 2026-11-01) failed its healthcheck: `/health` returned 500 for 120s. It was rolled back automatically. The live version should be the previous successful deploy, image `noodara/blog-web:9a8b7c6` from 2026-10-29.\\n\\n2. **blog-api** (at api.blog.example.com)\\n   - Built with the Dockerfile from the `main` branch of https://github.com/blog/api.\\n   - Container port 3000, healthcheck `/health`, auto-rollback on, keeps 3 images.\\n   - The latest deploy succeeded on 2026-11-01 at 11:37. A webhook started it and it produced image `noodara/blog-api:77aa88b`. An earlier manual deploy that day (commit 55ee66f) failed with a TypeScript build error.\\n\\n3. **newsletter** (no domain)\\n   - Not built from source: it runs the ready-made image `ghcr.io/blog/newsletter:1.2.0`.\\n   - Container port 3000, no healthcheck, auto-rollback on.\\n   - An upgrade to 1.3.0 was cancelled on 2026-11-01, so 1.2.0 is still the configured version. It was deployed successfully on 2026-10-27.\\n\\nThere's no fault diagnosis here because you asked about setup, not a problem. I can only read this information; I can't change or redeploy anything.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Project\",\"id\":\"0cfe8791-0ada-4417-8105-49993668ddce\",\"label\":\"blog\"},{\"kind\":\"Environment\",\"id\":\"9ebc8dd4-846f-4cc5-bfc7-955bd4fa3910\",\"label\":\"production\"},{\"kind\":\"Server\",\"id\":\"fee05993-4b54-4c57-beba-39296ea34582\",\"label\":\"ci-1\"},{\"kind\":\"Service\",\"id\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"label\":\"blog-web\"},{\"kind\":\"Service\",\"id\":\"ff709c6f-708a-4bef-bf57-8547b9f5cd65\",\"label\":\"blog-api\"},{\"kind\":\"Service\",\"id\":\"a4a4e3a8-5716-488f-bdff-65ab5bf785a4\",\"label\":\"newsletter\"},{\"kind\":\"Domain\",\"id\":\"b80cf8fa-3d6d-4147-918e-47dabf4aaf38\",\"label\":\"blog.example.com\"},{\"kind\":\"Domain\",\"id\":\"69bfa107-6e77-46e3-a0ca-469f7fb8c34f\",\"label\":\"api.blog.example.com\"}],\"evidence\":[{\"ref\":\"0cfe8791-0ada-4417-8105-49993668ddce\",\"note\":\"Project 'blog' has one environment (production) and three services, all on server ci-1.\"},{\"ref\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"note\":\"blog-web: built from github.com/blog/web on branch main using a Dockerfile, port 3000, healthcheck /health, autoRollback on, served at blog.example.com, status RUNNING.\"},{\"ref\":\"729aa478-4341-4617-9b54-bf0521180978\",\"note\":\"Latest blog-web deploy (commit 5d4e3f2) was ROLLED_BACK after HEALTHCHECK_FAILED: /health returned 500 for 120s.\"},{\"ref\":\"9bdf6a9c-816d-43be-af7b-83fc3e2be5b1\",\"note\":\"Previous successful blog-web deploy, image noodara/blog-web:9a8b7c6 (2026-10-29).\"},{\"ref\":\"ff709c6f-708a-4bef-bf57-8547b9f5cd65\",\"note\":\"blog-api: built from github.com/blog/api on branch main using a Dockerfile, port 3000, healthcheck /health, served at api.blog.example.com, status RUNNING.\"},{\"ref\":\"ec096e59-463f-4450-a04f-4a13f57de8af\",\"note\":\"Latest blog-api deploy succeeded; started by webhook; image noodara/blog-api:77aa88b.\"},{\"ref\":\"5d66f202-b62f-4e81-8746-56e1c93184a2\",\"note\":\"Earlier blog-api deploy (commit 55ee66f) failed with BUILD_FAILED (TypeScript error).\"},{\"ref\":\"a4a4e3a8-5716-488f-bdff-65ab5bf785a4\",\"note\":\"newsletter: runs the image ghcr.io/blog/newsletter:1.2.0, no healthcheck, no domain, status RUNNING.\"},{\"ref\":\"3f00d27d-8b67-4497-bb1e-2e5da10d133e\",\"note\":\"The newsletter upgrade to 1.3.0 was CANCELLED.\"},{\"ref\":\"fee05993-4b54-4c57-beba-39296ea34582\",\"note\":\"Server ci-1 hosts all three blog services.\"}],\"missingEvidence\":[\"Server details for ci-1 (OS, Docker and proxy state) were not read.\",\"No fault was asked about, so no diagnosis was attempted.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 15586,
+          "outputTokens": 2011
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"\\\"The blog\\\" is the project **blog**. It has one environment, **production**, with three services. All three run on the server **ci-1** and are currently listed as RUNNING.\\n\\n1. **blog-web** (the site at blog.example.com)\\n   - Built with the Dockerfile from the `main` branch of https://github.com/blog/web.\\n   - Container port 3000, no port published on the host. Healthcheck is `/health`. Auto-rollback is on and the last 3 images are kept.\\n   - The latest deploy (commit 5d4e3f2, started by admin on 2026-11-01) failed its healthcheck: `/health` returned 500 for 120s. It was rolled back automatically. The live version should be the previous successful deploy, image `noodara/blog-web:9a8b7c6` from 2026-10-29.\\n\\n2. **blog-api** (at api.blog.example.com)\\n   - Built with the Dockerfile from the `main` branch of https://github.com/blog/api.\\n   - Container port 3000, healthcheck `/health`, auto-rollback on, keeps 3 images.\\n   - The latest deploy succeeded on 2026-11-01 at 11:37. A webhook started it and it produced image `noodara/blog-api:77aa88b`. An earlier manual deploy that day (commit 55ee66f) failed with a TypeScript build error.\\n\\n3. **newsletter** (no domain)\\n   - Not built from source: it runs the ready-made image `ghcr.io/blog/newsletter:1.2.0`.\\n   - Container port 3000, no healthcheck, auto-rollback on.\\n   - An upgrade to 1.3.0 was cancelled on 2026-11-01, so 1.2.0 is still the configured version. It was deployed successfully on 2026-10-27.\\n\\nThere's no fault diagnosis here because you asked about setup, not a problem. I can only read this information; I can't change or redeploy anything.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Project\",\"id\":\"0cfe8791-0ada-4417-8105-49993668ddce\",\"label\":\"blog\"},{\"kind\":\"Environment\",\"id\":\"9ebc8dd4-846f-4cc5-bfc7-955bd4fa3910\",\"label\":\"production\"},{\"kind\":\"Server\",\"id\":\"fee05993-4b54-4c57-beba-39296ea34582\",\"label\":\"ci-1\"},{\"kind\":\"Service\",\"id\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"label\":\"blog-web\"},{\"kind\":\"Service\",\"id\":\"ff709c6f-708a-4bef-bf57-8547b9f5cd65\",\"label\":\"blog-api\"},{\"kind\":\"Service\",\"id\":\"a4a4e3a8-5716-488f-bdff-65ab5bf785a4\",\"label\":\"newsletter\"},{\"kind\":\"Domain\",\"id\":\"b80cf8fa-3d6d-4147-918e-47dabf4aaf38\",\"label\":\"blog.example.com\"},{\"kind\":\"Domain\",\"id\":\"69bfa107-6e77-46e3-a0ca-469f7fb8c34f\",\"label\":\"api.blog.example.com\"}],\"evidence\":[{\"ref\":\"0cfe8791-0ada-4417-8105-49993668ddce\",\"note\":\"Project 'blog' has one environment (production) and three services, all on server ci-1.\"},{\"ref\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"note\":\"blog-web: built from github.com/blog/web on branch main using a Dockerfile, port 3000, healthcheck /health, autoRollback on, served at blog.example.com, status RUNNING.\"},{\"ref\":\"729aa478-4341-4617-9b54-bf0521180978\",\"note\":\"Latest blog-web deploy (commit 5d4e3f2) was ROLLED_BACK after HEALTHCHECK_FAILED: /health returned 500 for 120s.\"},{\"ref\":\"9bdf6a9c-816d-43be-af7b-83fc3e2be5b1\",\"note\":\"Previous successful blog-web deploy, image noodara/blog-web:9a8b7c6 (2026-10-29).\"},{\"ref\":\"ff709c6f-708a-4bef-bf57-8547b9f5cd65\",\"note\":\"blog-api: built from github.com/blog/api on branch main using a Dockerfile, port 3000, healthcheck /health, served at api.blog.example.com, status RUNNING.\"},{\"ref\":\"ec096e59-463f-4450-a04f-4a13f57de8af\",\"note\":\"Latest blog-api deploy succeeded; started by webhook; image noodara/blog-api:77aa88b.\"},{\"ref\":\"5d66f202-b62f-4e81-8746-56e1c93184a2\",\"note\":\"Earlier blog-api deploy (commit 55ee66f) failed with BUILD_FAILED (TypeScript error).\"},{\"ref\":\"a4a4e3a8-5716-488f-bdff-65ab5bf785a4\",\"note\":\"newsletter: runs the image ghcr.io/blog/newsletter:1.2.0, no healthcheck, no domain, status RUNNING.\"},{\"ref\":\"3f00d27d-8b67-4497-bb1e-2e5da10d133e\",\"note\":\"The newsletter upgrade to 1.3.0 was CANCELLED.\"},{\"ref\":\"fee05993-4b54-4c57-beba-39296ea34582\",\"note\":\"Server ci-1 hosts all three blog services.\"}],\"missingEvidence\":[\"Server details for ci-1 (OS, Docker and proxy state) were not read.\",\"No fault was asked about, so no diagnosis was attempted.\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSlQcKEAgTGAI4AUIIdGhpbmtpbmcSDLjh0EnTvyFO5DRedxoM25aBaQyLd46hsyG1IjAGYALRpvvUvmA5wHbPxlNLcMoSIY0FXgPU30uNI+Aj2iuz+Bzo/IVNx2k9FLDrn+sqsga9VseLtn5T8yQH96R3lgwNwbz2Nf3NfTCSqGDUexogvCtLYJl51wTMk/rGwZB804pn/g20OM4T5nfLbBZlL7jkAxLqfwlU2TM+dGb58pvY+UnYrhJxajoDmTp0znPbwEeP096aPlvI+EZuBpCjHYnMJ3K4bLOPXi34NYL+S4l0kpiv54Jv4mYbzkWkzYhW3NxaYQfyCwCotwgHTdXBG/QL5iz1UbhpAUya93FLDthCkX/bfVytG0iEEoKibE7OcHTUERAyM1cg7kh5iAkBBLT8AvAoZdviWhR+9XBg7F4OxvI272lRSEnffwbBfxSMDNgfSQpe9JzIRgXa4IiymPJaa3bnrdz5Vu/ykNvTgA3ExaGa2iQKkxCdypsmwjSI/69xWxsBDxft/1hmmBkOYmkz9kahkElitLTkNRiwHSTG+jgqhmxohk2aimozuEFjgnXvA05Ew0NfrTpCfMKakKpAb8OR4VTH9UEaKIQIiMGvIxwV8cXnNqi6VhY/1bZIUK35rP1GZ73aNU+moAoE8LGeUtZlCJnurcAv5uk/ZSUmWzLK7nzOKVGaxpuusVFd8+i18XCpit/IwQ37H3wPLvZP2wb9kSKxZ16a2g3NfiuIVbO0R8R5vvqp/vLNRLA9yNljk2r21KdtM/7y01TYqFHpwj9iAfKSZWkfPRaiq8KyaRUUBTMNJqLauN4MWTM+UxyndajnNF6ezOVolvcuacRcZ6WjZTB2webAQdY9KkAX3KvAdYeW7gulVDcHeLpStOIhHuVlA6JUyS1qX0DnAzgm1JedzlFgQjTYf8Kzn4hQbqreLRItBrUJn/RXMyNlhXDP65FvQGZy5571btGgCUx+Fer5tV5GnRuTJEubeYPUmFI89SkG7Wsve/ek4I7lA94FGkSLxWzkSvtOQjd0yGPRMK5P8xMIapsURbVRI6dAGHRjNmI3GhuC8vTKA1pMT1lwSo+1mQ9k7jjj0VFlSlhiBs8bBzInKIyT6I2J6z9oyf9gT+C1a4PaaqmT96lB0dwpeMWWw7JDyFp0O70FRBtDBu47guXDkBINQfKqHdwTL2fB5rZvzxugFxwhIl1lThs5SxgB"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

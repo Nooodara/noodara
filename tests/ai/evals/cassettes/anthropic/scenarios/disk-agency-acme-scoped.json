@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "disk-agency-acme-scoped",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "56a0c5382afcaedfe0cec62af8ecaffd5ceae9c6b51d354e9b89a787a91452f3",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01RxftiJhEMR19TKP8s8r84j",
+            "name": "list_servers",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5488,
+          "outputTokens": 27
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01RxftiJhEMR19TKP8s8r84j",
+              "name": "list_servers",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "3d9a0f2e93ee2255d3c38a7e1a958ae36ec22a08d26a13f533a89ef29861e386",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01PF9HPUDAQTZixzoGQYqU1t",
+            "name": "get_metrics",
+            "input": {
+              "target": "server",
+              "id": "65d53194-0618-4f5a-bb52-f134fc2393aa",
+              "points": 12
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6148,
+          "outputTokens": 180
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01PF9HPUDAQTZixzoGQYqU1t",
+              "name": "get_metrics",
+              "input": {
+                "target": "server",
+                "id": "65d53194-0618-4f5a-bb52-f134fc2393aa",
+                "points": 12
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSsgUKEAgTGAI4AUIIdGhpbmtpbmcSDHywxuHqZwoRnoU9VBoMXOAsNfdL4vJbQ6n+IjB3W3FajbXfqczCy10SfKQu1bIwNKQt0rVKzESyF3a1i+3gm16XQ194r+y2aq2GjpkqzwTV/Mh/Nnz9YL4rqCpJiU0htHA7i2r6YxoO7PfMAgP+eDmbabkgDK65K56abwDNWSOR1baWEK6vKE3wMZUd2o9Qbgo2sWel4b0Gdj75a4mDpsCuzYApX4jV5Wmvvf+r8vOnOVxE3rJd8/uA8y70cCVwe/r00UsmXonSlpKI6lGPoqsj0sCs1mWbqa+7muCPtARpN50nF0oYVG/LuX/cFvsW2yrL6kN+VHvLNBbm1CZR9G7X4V3x+bxDeOGs1gz1SdXryE+5Dq5VKgbjXNMkVKewMmo/hI3lZ8jP7OT0j68t615zg7ouY4khx8wYQNsMHY2Oy6AFCn/kwNDU0WCX4VPy5hzLGydEoV6Zw8gQzhg5lSGOkeGcw2+Q8BLHz31dsZrIFT81tWu4AnUa1P/D+i0QbOloebIyv97MQh/mDqSk3fqN+vnv5RvzbpqOHsQZsVMRDDSdl3ZIRGSxyOhUDmTJQwwAl+Ev4LAHwSxorup0pnmkJygP64luXOEip+BcxC0T+tuQOLymHARMqY6yMcX4OkgqZicQHWYwHZltMhOaKabNaD0uQLYh9A65wvrnrjChhd+/fHRr+up9StSIQ1Ds707ONZ/yMKBelN/7gORulrpbpH3VAJyGidIh+3AHjreQOg/UYhlUCU6l/imdNkWtqzW9luml8fSvwFRsCFEzlN8LS9vSl9L4i8/5qV811tuFvYWdx/N711uyi7o6r+aE1XfZnktg8jpOBOCN1HU+9umbYq0aSkVDNrScQnI2W9dgn4pgY0fyALFfmOfHITMYAQ=="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "26dcc0128924f4becbb4cad3bf078ba2e9100ef1f4c7a1b00b939ac6186c8d13",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\": \"One of your servers, host-b, is close to running out of disk. It is using 75,000 MB of its 81,920 MB, which is about 91.6% full and leaves roughly 6.9 GB free. Its latest disk reading (2026-11-01 12:00 UTC) shows the same 91.55%. There's only one disk reading, so I can't tell how fast it's filling up or when it will run out. host-a is fine: it's using 40,960 MB of 81,920 MB, which is 50%. I can only read data, so I can't free up space myself. To find what's using the space on host-b, look at Docker images, build cache, stopped containers, volumes and container logs that keep growing.\", \"diagnosis\": \"high_disk\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Server\", \"id\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"label\": \"host-b\"}, {\"kind\": \"Server\", \"id\": \"cd751bfb-7d65-4628-99fc-0f7fd1c7d142\", \"label\": \"host-a\"}], \"evidence\": [{\"ref\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"note\": \"list_servers: diskUsedMb 75000 of diskTotalMb 81920 (~91.6%); get_metrics disk_used_percent 91.55% at 2026-11-01T12:00:00Z\"}, {\"ref\": \"cd751bfb-7d65-4628-99fc-0f7fd1c7d142\", \"note\": \"list_servers: diskUsedMb 40960 of diskTotalMb 81920 (50%), not at risk\"}], \"missingEvidence\": [\"Disk usage history for host-b (only one reading), needed to estimate when it will fill up\", \"Breakdown of what is using the disk on host-b (images, volumes, logs)\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 7151,
+          "outputTokens": 616
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\": \"One of your servers, host-b, is close to running out of disk. It is using 75,000 MB of its 81,920 MB, which is about 91.6% full and leaves roughly 6.9 GB free. Its latest disk reading (2026-11-01 12:00 UTC) shows the same 91.55%. There's only one disk reading, so I can't tell how fast it's filling up or when it will run out. host-a is fine: it's using 40,960 MB of 81,920 MB, which is 50%. I can only read data, so I can't free up space myself. To find what's using the space on host-b, look at Docker images, build cache, stopped containers, volumes and container logs that keep growing.\", \"diagnosis\": \"high_disk\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Server\", \"id\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"label\": \"host-b\"}, {\"kind\": \"Server\", \"id\": \"cd751bfb-7d65-4628-99fc-0f7fd1c7d142\", \"label\": \"host-a\"}], \"evidence\": [{\"ref\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"note\": \"list_servers: diskUsedMb 75000 of diskTotalMb 81920 (~91.6%); get_metrics disk_used_percent 91.55% at 2026-11-01T12:00:00Z\"}, {\"ref\": \"cd751bfb-7d65-4628-99fc-0f7fd1c7d142\", \"note\": \"list_servers: diskUsedMb 40960 of diskTotalMb 81920 (50%), not at risk\"}], \"missingEvidence\": [\"Disk usage history for host-b (only one reading), needed to estimate when it will fill up\", \"Breakdown of what is using the disk on host-b (images, volumes, logs)\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

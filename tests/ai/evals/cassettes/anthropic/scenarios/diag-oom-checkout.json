@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "diag-oom-checkout",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "59460c991948a70c7e9999524944e9c34b0397bf659d62bfc3c83296d2b42dc7",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01NvUdo98xRFqKfzZmpo3Qro",
+            "name": "get_service",
+            "input": {
+              "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc"
+            }
+          },
+          {
+            "id": "toolu_01ApEXwUrCmgeYhob7Lg4cM2",
+            "name": "get_health",
+            "input": {
+              "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc"
+            }
+          },
+          {
+            "id": "toolu_01RoGfu1dPF6dxiKnSMXUUkz",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5492,
+          "outputTokens": 190
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01NvUdo98xRFqKfzZmpo3Qro",
+              "name": "get_service",
+              "input": {
+                "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc"
+              }
+            },
+            {
+              "id": "toolu_01ApEXwUrCmgeYhob7Lg4cM2",
+              "name": "get_health",
+              "input": {
+                "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc"
+              }
+            },
+            {
+              "id": "toolu_01RoGfu1dPF6dxiKnSMXUUkz",
+              "name": "list_services",
+              "input": {}
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS7wQKEAgTGAI4AUIIdGhpbmtpbmcSDJgVkcOi4khHCy8coxoMbwyljTVSdCPNWYfiIjCq8HIu2BSiJjoobMnmcEJPcgIlKpCX20M6wFSlMV5zi+LYpfO1T4NfHWOmQve8yywqjAQvJq3zywDnd9T2k1X7K3BEV9d7sdx/VB3qshBljMx3oP87Sp6w5t37mLfe5VhqfE8V1F2ftRSXDY5guuthpB+drk6YxX0gXBPCaUqs4AiGRr/x2VZAWl98rMdRJpBhRSCOHPG0xjcb2j9K87h1mRK1DZQ8oHyz7Q4t6eRtbq6Xc1nUGeNMqJ7G/krPDL3Xa4T/cH2JruIfRHAd8UmuYvQy75+t4/fBMKpN1kxw5JaqbUZNfXl9wYIS7mwIQrcJjYiIc3kTNUy5lJiDA+Olr+XsimY5lIMadfJsDMtxzEZGMciCH0VZlfXictcij4F9XBRQaW3X7R3h0sVwpvrg3m2pG7QAU1D2w+LV9snLmWX3JzojtJQrufQRBqx+B8FtW6wlN7jv5+4cT8Iu9g6kBZygpvq7qgRc6h14ALtOZko9Zg4rEqFsqegxvhV0SY4gZUKC23FL3V+5dWTSuHcsL7T3adVWjb+US1tGRPXzi+cSr0IeR6NtWYTB2wdkYu05CFl5b8IbfwcS1JamqobPbrG+GacPbnNx7JWROLJa1rtJispsL41L7KrsMzCLPaCbwu76Kbv/zMOzBDaJbEU/hrjvr5LB8A5tx2ci98a4JG0tnhCjTKeK4K6eAIjXC0wpYwsyBwbn4ZGNN3S+QCyc+cEcofG0dB/4zQOMM1v8512FVhWgib43dszl4xj4AxgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "cea5d9fe269169fa8fab61670ed0a6b1ec186af0c5e4f9e394373d70c7a10c07",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_0156LxQDa5frcAQi6ruZV3Ri",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc",
+              "limit": 50
+            }
+          },
+          {
+            "id": "toolu_01THsdfzs9GTpH3AWcJSEdX7",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "fa5ec119-fcfb-410a-983c-e9068fa972cc",
+              "from": "2026-10-31T00:00:00Z",
+              "to": "2026-11-01T12:00:00Z",
+              "points": 30
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 9021,
+          "outputTokens": 279
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_0156LxQDa5frcAQi6ruZV3Ri",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "fa5ec119-fcfb-410a-983c-e9068fa972cc",
+                "limit": 50
+              }
+            },
+            {
+              "id": "toolu_01THsdfzs9GTpH3AWcJSEdX7",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "fa5ec119-fcfb-410a-983c-e9068fa972cc",
+                "from": "2026-10-31T00:00:00Z",
+                "to": "2026-11-01T12:00:00Z",
+                "points": 30
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "66a5e94f82914db9b8243c2b2a743b1b8960f58ac7d3c5e9f8cf09a39898a2cc",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"Checkout is failing because its container is running out of memory. The `checkout` service (image ghcr.io/market/checkout:3.2.0) has status FAILED, and its container has exited after 2 restarts.\\n\\n**What the logs show:** At 11:53:20 UTC on 2026-11-01 the app logged \\\"processing cart batch of 5000 items\\\". Twenty seconds later, at 11:53:40, it crashed with \\\"FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory\\\".\\n\\n**What the memory metrics show:** Memory use climbed quickly, from about 450 MiB (87.9%) at 11:58 to about 511 MiB (99.8%) at 12:00. The container keeps hitting its memory limit, gets killed and restarts.\\n\\n**Deployment and disk:** The last deployment (ada6b271-d9c6-4bdf-84e7-65e529c59236, commit 3a4b5c6) finished successfully on 2026-10-31 at 02:41 UTC, so this isn't a failed deployment. The health summary also flags high disk use, but nothing links that to the crash.\\n\\n**What to check:** The 5000-item cart batch is the likely cause. Look at whether that batch can be processed in smaller pieces or streamed. Also review the container's memory limit and the Node heap size (`--max-old-space-size`), and check whether release 3.2.0 changed how much memory batching uses. I can only read your setup, so I can't restart the service, redeploy or change settings myself.\",\"diagnosis\":\"out_of_memory\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Service\",\"id\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"label\":\"checkout\"},{\"kind\":\"Deployment\",\"id\":\"ada6b271-d9c6-4bdf-84e7-65e529c59236\",\"label\":\"checkout last deployment (3a4b5c6)\"}],\"evidence\":[{\"ref\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"note\":\"Runtime log at 2026-11-01T11:53:40Z: 'FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory', right after 'processing cart batch of 5000 items'.\"},{\"ref\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"note\":\"memory_percent climbed from 87.9% to 99.8% between 11:58 and 12:00. The health summary shows the container exited, restartCount 2, runtimeStatus FAILED and the highDisk flag set.\"},{\"ref\":\"ada6b271-d9c6-4bdf-84e7-65e529c59236\",\"note\":\"The last deployment succeeded (finished 2026-10-31T02:41Z), so a failed deployment is ruled out.\"}],\"missingEvidence\":[\"The container's configured memory limit isn't shown directly; it is inferred from memory_percent (about 512 MiB).\",\"No CPU data points were returned for the service.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 10310,
+          "outputTokens": 1101
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"Checkout is failing because its container is running out of memory. The `checkout` service (image ghcr.io/market/checkout:3.2.0) has status FAILED, and its container has exited after 2 restarts.\\n\\n**What the logs show:** At 11:53:20 UTC on 2026-11-01 the app logged \\\"processing cart batch of 5000 items\\\". Twenty seconds later, at 11:53:40, it crashed with \\\"FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory\\\".\\n\\n**What the memory metrics show:** Memory use climbed quickly, from about 450 MiB (87.9%) at 11:58 to about 511 MiB (99.8%) at 12:00. The container keeps hitting its memory limit, gets killed and restarts.\\n\\n**Deployment and disk:** The last deployment (ada6b271-d9c6-4bdf-84e7-65e529c59236, commit 3a4b5c6) finished successfully on 2026-10-31 at 02:41 UTC, so this isn't a failed deployment. The health summary also flags high disk use, but nothing links that to the crash.\\n\\n**What to check:** The 5000-item cart batch is the likely cause. Look at whether that batch can be processed in smaller pieces or streamed. Also review the container's memory limit and the Node heap size (`--max-old-space-size`), and check whether release 3.2.0 changed how much memory batching uses. I can only read your setup, so I can't restart the service, redeploy or change settings myself.\",\"diagnosis\":\"out_of_memory\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Service\",\"id\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"label\":\"checkout\"},{\"kind\":\"Deployment\",\"id\":\"ada6b271-d9c6-4bdf-84e7-65e529c59236\",\"label\":\"checkout last deployment (3a4b5c6)\"}],\"evidence\":[{\"ref\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"note\":\"Runtime log at 2026-11-01T11:53:40Z: 'FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory', right after 'processing cart batch of 5000 items'.\"},{\"ref\":\"fa5ec119-fcfb-410a-983c-e9068fa972cc\",\"note\":\"memory_percent climbed from 87.9% to 99.8% between 11:58 and 12:00. The health summary shows the container exited, restartCount 2, runtimeStatus FAILED and the highDisk flag set.\"},{\"ref\":\"ada6b271-d9c6-4bdf-84e7-65e529c59236\",\"note\":\"The last deployment succeeded (finished 2026-10-31T02:41Z), so a failed deployment is ruled out.\"}],\"missingEvidence\":[\"The container's configured memory limit isn't shown directly; it is inferred from memory_percent (about 512 MiB).\",\"No CPU data points were returned for the service.\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSzgYKEAgTGAI4AUIIdGhpbmtpbmcSDOK0o6YYsmOnlvo/AhoMV+Udd8lRW7/SFtOeIjBbKBQZMDVPKPyyxVQl+i5hjcPPFraQeuVWVHRkdW2K34JrBT9Hh8DtMXIZGqBrStEq6wWkcqqvvryIA75CHqwZZzUx0o4azcZsjtDeAQxIAZ38steC2DZqT1RcBpGbmkdcdOOTycRxR5/iPm3v1UYdXv7uL8ZdKvDJpq2HfisKJdR6Etqjt1CXsq4w0LSvh1D6qd6k60LTUfvjIRXK2yZDfJ3A/+9+YmN81eHzrpY3qRhKDs0oFMQro0ODJNPkZ6b1tSBFUmr6D9VGzKJoPU5McVgqRtu8oCJ16AHiPYS0M5EOFfg8XQgoPdzSyYFsTKcJrZmlNmRW0J84Am1FaAzrG6B2lAJIO+UmZZkNy5NJF+k9g8CQguzyGWlAtbYFoIjwNaucRAn2a4vAk+BGUT/OHH1b5JMwODQVLwxjr+kgsmvLKsdT7MrdFC6aTQ97FX8XwsWSf1SjMpBMebNiiR0PJ8GUN2Y2+r3G+7veEI/SFPL1QCi2ik7U5U1nvwjf/ISE1NGJqMrJDa3GKWaFAMrkDQ0y7knxnibeGvyKEAkv+vXhPB9uUCRWL2xu9zmIZ/fwqnEu+bhMnFxYgRc1DTk2PcMCTwX4DkVKUx9TgFaN0/eXiSfFeghJ9+yA3Z4Z6ezjseFlK+7CPFa5eY0Ok6yiVLeUlg7UjhiwrYLpxN6Kq4aUjpLSeWvRbiyqjfhAr9/ZfUCmexYAHJaFaF+GZ/JEpzV9FwnShbyWnqWsPjs+l4wJmA1mhqCMydCMhnaiqGRBERrls6dE0fuHr7gjF0M3pKRvjMjyjqgoHWz1VVKCQ/GcIa5IytTQiqk/bhrzuIZX21H/rSj7XpF84G6oxjQ2MzDqQtZHQJCtoPmbQqLvcl//v39XL/w1dJD99PhLmAWS9nNlYt/JgczIJ3duHAOxRPor7D0df6olK7hVlQkvZmm5ITpvqWqZ1JNPqyODC20aKR5CFJIlsGcpWQX7gMYicKwEWKNRyFFDK0rvm6F9HUodLCfeeXOV4UqjmyZu3K07KGPRjySA95zLvJytHxqkuC9avxomnt/Cqj8YVEcYAQ=="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

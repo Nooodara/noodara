@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "domain-globex-admin-from-acme-not-found",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "2cc8a6b48b4a359c864799a0ea26bf67f742e31e79cf9569334c7f750206105d",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01TcKsU1sUzZRgRFDhSP8zvw",
+            "name": "get_infrastructure_graph",
+            "input": {
+              "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5415,
+          "outputTokens": 80
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01TcKsU1sUzZRgRFDhSP8zvw",
+              "name": "get_infrastructure_graph",
+              "input": {
+                "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "59548f7c85ddc41bb248bf8e8864427ed7478575597283b3976cf71ebe2834c2",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "```json\n{\"answer\": \"I couldn't find admin.globex.example.com in the project I can see (acme), so I can't say which service it points to. The project's infrastructure graph came back complete, with nothing cut off. It lists only three domains: staging.acme.example.com, www.acme.example.com and api.acme.example.com. None of them is admin.globex.example.com. The domain may belong to a different project that I can't see, or it may not be set up in Noodara at all. To check, look at the domain settings in the project that owns the globex domains, or check where the domain's DNS records point.\", \"diagnosis\": \"unknown\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Project\", \"id\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"label\": \"acme\"}], \"evidence\": [{\"ref\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"note\": \"The project's infrastructure graph was complete and lists only three domains: staging.acme.example.com, www.acme.example.com and api.acme.example.com. admin.globex.example.com is not among them.\"}], \"missingEvidence\": [\"No domain record for admin.globex.example.com exists in project b0cd1806-31c5-4699-bed0-cae3507b370c, so there is no link from that domain to any service I can see.\"]}\n```",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 9040,
+          "outputTokens": 489
+        },
+        "message": {
+          "role": "assistant",
+          "content": "```json\n{\"answer\": \"I couldn't find admin.globex.example.com in the project I can see (acme), so I can't say which service it points to. The project's infrastructure graph came back complete, with nothing cut off. It lists only three domains: staging.acme.example.com, www.acme.example.com and api.acme.example.com. None of them is admin.globex.example.com. The domain may belong to a different project that I can't see, or it may not be set up in Noodara at all. To check, look at the domain settings in the project that owns the globex domains, or check where the domain's DNS records point.\", \"diagnosis\": \"unknown\", \"confidence\": 0.9, \"entities\": [{\"kind\": \"Project\", \"id\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"label\": \"acme\"}], \"evidence\": [{\"ref\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"note\": \"The project's infrastructure graph was complete and lists only three domains: staging.acme.example.com, www.acme.example.com and api.acme.example.com. admin.globex.example.com is not among them.\"}], \"missingEvidence\": [\"No domain record for admin.globex.example.com exists in project b0cd1806-31c5-4699-bed0-cae3507b370c, so there is no link from that domain to any service I can see.\"]}\n```",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSuwUKEAgTGAI4AUIIdGhpbmtpbmcSDPFAK/wasIBzAJWt+BoMlRzYtLfZ4vAg8TwLIjD46JJsyBb1pqHcJwBvHiwlFN+mx0ouUuHEat6zZWZBXXqhi6GTDf49lPHMK8gV+vEq2ARoOWT2qbKKaE5egs6lWqk6F3XCUd8No1YA1WVrQmqrVrTCnv/tXOIVrXGfxHuZ54FN3MYbh7UGUD9Iooh2ssYoAOPfFu/MM0LRLg8S0i452OteDjM+Zp3ffZtLEDTC4LNzf/C6+STy/1GDSkgYCDHHPKY1Zu1NgX2yshlAbbfn7oT4R3nhBNs2i8GQsS96+qAF2Z+BN0H0XlyRwAdYFAPZnFHQVt05Tmt+JtUA3UZwgEBAS4NlmAik0TTzO7q28s3fc4b1zE/Avr3ylo84eGA/wupLKbcWz8A9vZ8rulMKMMc9eoYIRvuQWhvWU95HZParM+7/X+ilLJ0btKNFa6NQZAGvFCO8O/pI9oO4sLaTGKUf6E4V2IQ9Ab6+UtWUyEgZLEcWG01JhKf3jvQwumf5Ara7Gj1AtSCIrhxhTPc6gm3gF5H+hRAmniRzOOS26hr70AFpQjs8QCLLbrNMv1US5YBHdDpYFqqAxfheU5wPFc4zRK3twZ3SUGscjCrT2oR51Xokc6LUNgzrBukv755MUO9v+Yp6bXOKt/x3fjIgZC7U9iSk1PK66y1bYH4GIBfSkhUHdLO81Fo88dRIvuawwkdnLRaCdvlqysuoNeLQHBsbg3ezO6bg/FiPgio4WsH47sXv7/f7bkz+Fvpmj2blIOwqDNzeGateh+fO2eohBLXfbERtY5+R0TNIv853fSbVT6aci+uPhAnpYeRSceWT+7c+1bNEO9R/2EI62Lx2Mfx/keJqX827JQXNQuCFZr5rnClCm6i+lLlJIfj6UfxdwOfJeoWa+sUYAQ=="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

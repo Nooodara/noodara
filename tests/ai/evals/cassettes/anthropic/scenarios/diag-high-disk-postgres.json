@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "diag-high-disk-postgres",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "87c388061f5ba972c13fd5047b8fa7f53dc33afbddbf86179e1af449d5ac15a6",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_016gX7kqPQWA8Jm6BHKU4ofn",
+            "name": "list_services",
+            "input": {}
+          },
+          {
+            "id": "toolu_01SRnhRnUn9kEwyexuk4E4PJ",
+            "name": "get_server",
+            "input": {
+              "serverId": "76825c68-8399-4fc0-8f5c-457bcceed234"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5448,
+          "outputTokens": 95
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_016gX7kqPQWA8Jm6BHKU4ofn",
+              "name": "list_services",
+              "input": {}
+            },
+            {
+              "id": "toolu_01SRnhRnUn9kEwyexuk4E4PJ",
+              "name": "get_server",
+              "input": {
+                "serverId": "76825c68-8399-4fc0-8f5c-457bcceed234"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "0d9becec0da3349d45ba71c976384667b5d0509bc9f24dcd9dfb574839c420c8",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "Disk 90% used. Check logs and metrics.",
+        "toolCalls": [
+          {
+            "id": "toolu_01NTjBidrZWiPkRauyDp8CkW",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8",
+              "limit": 30
+            }
+          },
+          {
+            "id": "toolu_0131tHKJ8JEgHxV9wZQS5mrq",
+            "name": "get_metrics",
+            "input": {
+              "target": "server",
+              "id": "76825c68-8399-4fc0-8f5c-457bcceed234",
+              "points": 10
+            }
+          },
+          {
+            "id": "toolu_01LsSgPoMfAu9qnKWHNtEynn",
+            "name": "get_health",
+            "input": {
+              "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7210,
+          "outputTokens": 303
+        },
+        "message": {
+          "role": "assistant",
+          "content": "Disk 90% used. Check logs and metrics.",
+          "toolCalls": [
+            {
+              "id": "toolu_01NTjBidrZWiPkRauyDp8CkW",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8",
+                "limit": 30
+              }
+            },
+            {
+              "id": "toolu_0131tHKJ8JEgHxV9wZQS5mrq",
+              "name": "get_metrics",
+              "input": {
+                "target": "server",
+                "id": "76825c68-8399-4fc0-8f5c-457bcceed234",
+                "points": 10
+              }
+            },
+            {
+              "id": "toolu_01LsSgPoMfAu9qnKWHNtEynn",
+              "name": "get_health",
+              "input": {
+                "serviceId": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "af73168dfc9ed78ed376b7fcc671f739609221c503a428dc1a25197910016cca",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"The most likely cause is that the disk on postgres's server, data-1, is almost full. I couldn't confirm that this is why writes are failing, because postgres returned no log entries.\\n\\nWhat I found:\\n- **The disk is almost full.** data-1 has used 184,320 MB of its 204,800 MB disk (90%), leaving about 20 GB free. The health check for postgres flags high disk use.\\n- **The container itself is fine.** Postgres (postgres:16) is running, has restarted 0 times and has no healthcheck set up. Its last deployment (3b6eb201) succeeded on 2026-10-04, so a crash or a bad deploy isn't the cause.\\n- **No error messages to confirm it.** Postgres returned no log entries, so I can't see errors like \\\"No space left on device\\\" or \\\"could not extend file\\\". 20 GB free isn't completely full, but space can run out quickly, for example when write-ahead log (WAL) files build up or a large write happens.\\n- **Memory is also high.** data-1's memory use went from 88.5% to 92.8% over the last few minutes. The service isn't flagged for high memory, but it's worth keeping an eye on.\\n\\nWhat to check next (I can only read data, so I can't make changes):\\n1. Find out what is using the disk on data-1: the postgres data folder, WAL files, old Docker images and containers, and log files.\\n2. Look for leftover replication slots or WAL archiving that is stuck, since both stop old WAL files from being deleted.\\n3. Get the exact error postgres shows when a write fails, so we can confirm whether it's about disk space.\\n4. Free up space or make the disk bigger.\",\"diagnosis\":\"high_disk\",\"confidence\":0.65,\"entities\":[{\"kind\":\"Service\",\"id\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"label\":\"postgres\"},{\"kind\":\"Server\",\"id\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"label\":\"data-1\"}],\"evidence\":[{\"ref\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"note\":\"Disk 184320/204800 MB used; disk_used_percent = 90 at 2026-11-01T12:00Z; memory_percent rose from 88.5% to 92.8%.\"},{\"ref\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"note\":\"Health: container running, 0 restarts, no healthcheck, flags.highDisk = true. The logs query returned no entries.\"},{\"ref\":\"3b6eb201-773e-47c3-bdc8-e50886f34d58\",\"note\":\"Last deployment SUCCESS (2026-10-04), so a failed deployment is unlikely.\"}],\"missingEvidence\":[\"No postgres log entries were returned, so no write error (such as ENOSPC or 'No space left on device') could be confirmed.\",\"No breakdown of what is using the disk on data-1 (data folder, WAL, Docker images, logs).\",\"Only one disk-usage data point, so the growth trend is unknown.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 8942,
+          "outputTokens": 1121
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"The most likely cause is that the disk on postgres's server, data-1, is almost full. I couldn't confirm that this is why writes are failing, because postgres returned no log entries.\\n\\nWhat I found:\\n- **The disk is almost full.** data-1 has used 184,320 MB of its 204,800 MB disk (90%), leaving about 20 GB free. The health check for postgres flags high disk use.\\n- **The container itself is fine.** Postgres (postgres:16) is running, has restarted 0 times and has no healthcheck set up. Its last deployment (3b6eb201) succeeded on 2026-10-04, so a crash or a bad deploy isn't the cause.\\n- **No error messages to confirm it.** Postgres returned no log entries, so I can't see errors like \\\"No space left on device\\\" or \\\"could not extend file\\\". 20 GB free isn't completely full, but space can run out quickly, for example when write-ahead log (WAL) files build up or a large write happens.\\n- **Memory is also high.** data-1's memory use went from 88.5% to 92.8% over the last few minutes. The service isn't flagged for high memory, but it's worth keeping an eye on.\\n\\nWhat to check next (I can only read data, so I can't make changes):\\n1. Find out what is using the disk on data-1: the postgres data folder, WAL files, old Docker images and containers, and log files.\\n2. Look for leftover replication slots or WAL archiving that is stuck, since both stop old WAL files from being deleted.\\n3. Get the exact error postgres shows when a write fails, so we can confirm whether it's about disk space.\\n4. Free up space or make the disk bigger.\",\"diagnosis\":\"high_disk\",\"confidence\":0.65,\"entities\":[{\"kind\":\"Service\",\"id\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"label\":\"postgres\"},{\"kind\":\"Server\",\"id\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"label\":\"data-1\"}],\"evidence\":[{\"ref\":\"76825c68-8399-4fc0-8f5c-457bcceed234\",\"note\":\"Disk 184320/204800 MB used; disk_used_percent = 90 at 2026-11-01T12:00Z; memory_percent rose from 88.5% to 92.8%.\"},{\"ref\":\"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\",\"note\":\"Health: container running, 0 restarts, no healthcheck, flags.highDisk = true. The logs query returned no entries.\"},{\"ref\":\"3b6eb201-773e-47c3-bdc8-e50886f34d58\",\"note\":\"Last deployment SUCCESS (2026-10-04), so a failed deployment is unlikely.\"}],\"missingEvidence\":[\"No postgres log entries were returned, so no write error (such as ENOSPC or 'No space left on device') could be confirmed.\",\"No breakdown of what is using the disk on data-1 (data folder, WAL, Docker images, logs).\",\"Only one disk-usage data point, so the growth trend is unknown.\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSnwYKEAgTGAI4AUIIdGhpbmtpbmcSDLVALGGHYfb53sluORoMvkTPwY9poBUe4XTtIjBpVyn9lmOvx1EVuFFZuuY8tT2A3mifyaR6FLH+3Er5ngIH1mNM1u+/pkwdklSuIJYqvAXTP2nf1ebryD6QdszjZ01zy6V7cVbBCUouJunwv0IOQIpIdPmfMoBT4bqmb8Pi0k4ksxprGdBF+wf7Xa6e6YsRInowhr7lE2YmYhtyoRAgMd1s7k8sZWtr8k01OfFsylK5jK9caff89VG9cXld1WwjYjHXhP0VhNInolUueNvruIUbN7NxPdXnf2BsDScDePghedaGaBBSA6v/Lfp3GedveWOrpR7gOnkH76uPHrG9Rnee8c9/c0iXPJbFsTLxDVE/tC2ztr6jAlu2yssPjxdqoonOnKj2B3zHbF0vGbmUbByn3tkVLUfj+/EPI8vIJ0ctjetlWc9b8p84QLb3ia8CZiW2GQUZ7dKNPVdKuS7EmQ7zbdG2LR4ywtVXsiGQUQe98f32vCZEZpAf4GTvGrcsvJahIo6kzQ8P+gKfVZh+GaZGfuZ5WaYwtTLYKi6x0RQXnpeFw6ggXMcl4eyoyEpGHk2pc+PCh3yFto3NGIA0nC/FJ6FSxI8Ykk1J7RU64yQSfVTUnrshjw8sz7Yhr+Cs/twU/+tqp8CQfumMoEdWlU8r43vme+oWrvdB4ZIZHoZ/hSjbzGDR4KYMMVYnhRxM6jIywaRHgeA9fEootVKn/Uj8zKW7jNBjhaOntyBtiRJJMBG1jzh+rcrWJHC6fhjrc1bYgNEzw211QdLpVxWtAVrmnPou851O3JfOQPCKgnY3Rql5obHBssDI1nOwkZKP24yb3xgjORHZ3Ls1OJ4Syb3uXl+93IkIvlXy1WBBqiapPk2lyClwLUbiuq8dzDYxMmBW9DEqTr+np+XUd4Nx/MLxmRgUZ1lxW/gLzZoqm+hyWQtzoyh9kVV6Qci2MXMInk65b1RAy6ZVxZBnlPGexumnO5oviwkveBic2HPSmKMJys2zHqUgxEWEn/tto/BQG2EP33Ge2UM6lKzBGAE="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

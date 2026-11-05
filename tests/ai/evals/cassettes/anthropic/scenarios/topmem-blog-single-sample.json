@@ -1,0 +1,290 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "topmem-blog-single-sample",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "00469f9abd86563022740bf2438052cc2f35d8009ffef546983c36221d6e6453",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01LnbsKGHbyLg45VwtQG7A9Q",
+            "name": "list_servers",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5377,
+          "outputTokens": 27
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01LnbsKGHbyLg45VwtQG7A9Q",
+              "name": "list_servers",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "6e9ca81ed8fa6582c974a3f3e254478d3ca3393767ac1aa4ce36e3f55ebd9731",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_0164z2L6beAgQXPp5qJVsnm3",
+            "name": "get_infrastructure_graph",
+            "input": {}
+          },
+          {
+            "id": "toolu_01XjFeqNFHe4Bd1ERoZoRaJ2",
+            "name": "get_metrics",
+            "input": {
+              "target": "server",
+              "id": "fee05993-4b54-4c57-beba-39296ea34582",
+              "points": 10
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5722,
+          "outputTokens": 142
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_0164z2L6beAgQXPp5qJVsnm3",
+              "name": "get_infrastructure_graph",
+              "input": {}
+            },
+            {
+              "id": "toolu_01XjFeqNFHe4Bd1ERoZoRaJ2",
+              "name": "get_metrics",
+              "input": {
+                "target": "server",
+                "id": "fee05993-4b54-4c57-beba-39296ea34582",
+                "points": 10
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "3606e2c2a29b1a7674333669acbc50d54e7e1f16457c46625f739db63071e9a4",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01QDgNufQGmuo4s7kQgtqNdE",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "284d7eb6-35b4-41cc-a1fe-cf1d674852d1",
+              "points": 10
+            }
+          },
+          {
+            "id": "toolu_01NWdDe53xDL9BrQsK9w88gT",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "a4a4e3a8-5716-488f-bdff-65ab5bf785a4",
+              "points": 10
+            }
+          },
+          {
+            "id": "toolu_01FX1De7ueE2BBL3Di84mn1C",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "ff709c6f-708a-4bef-bf57-8547b9f5cd65",
+              "points": 10
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 9365,
+          "outputTokens": 347
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01QDgNufQGmuo4s7kQgtqNdE",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "284d7eb6-35b4-41cc-a1fe-cf1d674852d1",
+                "points": 10
+              }
+            },
+            {
+              "id": "toolu_01NWdDe53xDL9BrQsK9w88gT",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "a4a4e3a8-5716-488f-bdff-65ab5bf785a4",
+                "points": 10
+              }
+            },
+            {
+              "id": "toolu_01FX1De7ueE2BBL3Di84mn1C",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "ff709c6f-708a-4bef-bf57-8547b9f5cd65",
+                "points": 10
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "f781243925ba5f91450c8857c8c37adcff577209a69e893627e9975f89f5e0d4",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01XjMaAraTbKSxoaQUwoSENn",
+            "name": "get_health",
+            "input": {
+              "serviceId": "284d7eb6-35b4-41cc-a1fe-cf1d674852d1"
+            }
+          },
+          {
+            "id": "toolu_01QQdwmnVm3yFwf6srMLW7u4",
+            "name": "get_health",
+            "input": {
+              "serviceId": "a4a4e3a8-5716-488f-bdff-65ab5bf785a4"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 11575,
+          "outputTokens": 212
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01XjMaAraTbKSxoaQUwoSENn",
+              "name": "get_health",
+              "input": {
+                "serviceId": "284d7eb6-35b4-41cc-a1fe-cf1d674852d1"
+              }
+            },
+            {
+              "id": "toolu_01QQdwmnVm3yFwf6srMLW7u4",
+              "name": "get_health",
+              "input": {
+                "serviceId": "a4a4e3a8-5716-488f-bdff-65ab5bf785a4"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSnAYKEAgTGAI4AUIIdGhpbmtpbmcSDNcs3VZdztcsqDvq+BoMSWssACNFVuRS2XkTIjAjPD2L1Ea4NB7zBY53IQUNwv4+OehiT5NVsuw9z88BzWiB/bdpBrfpwouG97HF1E0quQU7j4YchVcw2bSFKeTXY6h/R4KABvgsV1lidcyYiWkEE24HmJnaitAUfnZYMUZlb/jaf1HUpKg9Ia484w2l039jKT0lDi7BI22Vk2i3pUVjJB9JImcN48GE9MbdalYGPe3E+okj6/mK2uXmY26IuyTEyV2o7DAHm6vKJwcaHMUJIBS/aFq9D9nq2mLPIuqaxnh5stflTIQogzWQ6t9P4g7R7Vli2PdZE5+5XbI1tVWFYAb5Oy28/kLCsBRNSFCr3ZB+LN4lGZ5OFezDsyVVOCRGHxHj+dNy/Jo+sQHU5WSEhTj1fYux/LbaZcfS4Z6OhxTLdHZ5uUy5/6nGVwPl4IhEbZFFiL0zvMaiM4XnrvYMKhisiO+448aH+scQnztQzvYsHDibdWj65XFepHE2aI1kVKCcObdCuvH+30ee6T6pJ3zZsiBGaotl8uYmf5RCPgVOsSVMTlIkTjEpEoDnNd6BY6ytVvRwJF3v+oUfMoNNkpQLO7LydUxstXint+By6yfPYO+MyO7A+jqp0u60+L4vaHUzyu1EKZWX1ZHRFOkP/01DDnzreQvAG9tfLABFGCKql1aqFTPYDLURrkkOXNDM7GI2Q5CgtX4Mqnyt9B02/6Y6cbmI6YWI8Nw7uCpA0UbJOfAAQEsrfZJ4Rkq2ELyQWryak7CAyUnUGHivdeBUfJy3KdF15T+6lkWD41hXqkE3gHaiZAFYoJYVjOt2Esak4HkNPTfjShJaWvJmIJ9T3SPfJRdQnmJZLSnDGI8LKkkAhqVeh7DSeajUNNh0+YXiWAOQeI8JioIHNaFTnihDYr264UvCD86SIeD5q4szRVsLkpjDtd2dBxO90W1mdSll4xz295c3PFkfEM0jqR3YdGFPpysTTWPIoIPY8G13jN1+k42tkofOQr+rcjRvboDG4oFQlettLQQoGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "eb23c576acac39b7494beb968fa466d4001e68ca388a947dadda1182d2c8a5c8",
+      "model": "claude-opus-5-5",
+      "turn": 5,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_017jvqGnwduvwYtSA8BuvBum",
+            "name": "get_health",
+            "input": {
+              "serviceId": "ff709c6f-708a-4bef-bf57-8547b9f5cd65"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 12396,
+          "outputTokens": 247
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_017jvqGnwduvwYtSA8BuvBum",
+              "name": "get_health",
+              "input": {
+                "serviceId": "ff709c6f-708a-4bef-bf57-8547b9f5cd65"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSvQgKEAgTGAI4AUIIdGhpbmtpbmcSDIptbTnsfrMuThppKRoMVd4EkNfi/WmCkfSeIjDS7TQwYz68PTMH7JhIXGIws7wim/cGGD3WZKovKAHlfy6N+TtvATRHwxRJP1JbxWoq2geuThkMuiXa17w07F+rjZdnIzrD9b3tM3ScbpyW/vMk25ws+U564RP5l4lE/y8Sx8e76gJWJ9JyiphBP7ERcWokR9WcCd/Xs0A76f3hGNvenHyZYrsN0W7AXD2kyHBcD2cSKNkJ6VByoy5sCmSQpVP0cbCd9AnF1UeXs3qmBSaH7Xt+VkqHVqcGvAEgI8c0UUBWceSdgosogPiCga5LQH+H4bKyuyQac3JdzBKVVPIvHF70gPPRC4Oagx1w8q+DYgd9WQJcwNKSDv8n4citAGCtWUFGf18F3njjjp6ESmj6u1ZD6ePX1l4fNa4KSjIn308ONKKLH8qkLQdh57Wu8SvVL9q5Wh+eWOVOIqoXlEz2D/j1iwQnbVP58Ed/ZeKUCCUZu7xWN3JwitZ9G59tejE5v/7/+iAXceAFodMtuVoBiJNJIkjFoMlqTqF3umyPcqyPwJMsoIRBvlx+M7vJNrey7RItZSnwToNA061tkOG0nREsIPOxwNLnjJa8vNpCrOAJweb8Kk2ppIXT571zI/nKwgBHWa5BhaIYEmDASRHhUqWYb+NZwwWl6CM4CiI+PQPc/tZEXjxUeKxIHYFNs7LQx4d8Lmc+Ay2rdXwOq/fZs2rsXKaK3IVA4TOYk4GKv454ODAywVG+hF4+sPOLRMILGVPcENM1TJ/CH9VJ9FgqF7X3le6dL6sypdBLllDJAKtrVEAKPL+hUWpI1/2SODVuvFKe2BS+wZ0CtRCSLjRipJ4+wFc/dDoEtiz1hcF5zuByWGCWnXWsqE4En/FvLveV1VCsN5+rykIGkwLwFtX/ktT0gYdTMDblyyp7lmJXEMk09uEcClRtirx+CC27AUgsuOfZg6Vgdz7CKckcpS4s4Kt3Pk7bmqAaJDnch+LdJEcrwmynclTL0lEoU8Q4A++NN7/JCbY50Z4VTwd5wwAsg/HBKo7u8Ch7SUxN7QT9Wd7M2UlbIGHjq2YJqCkW/2Rvec0t2ru6uRZCH0L4YIXW0QtXoD+gia0GLwY1schP1wLzfzP0kwtxTtrqWl+Shcphrqfy8T2gxzInsME6PwnBv/LeVp2NPl9PkO2nbC/JvNIho/p13VC/xQAQMM2WYYDg4Cf7tyF9e6X4ClEEUS8rO8BcZxvRO4bHd6Bh9xYrNVVMFFDKEtkiQXibEGG0LjgV/tY7OFp+ojsqKfTqzQ8uSFmWUphCOh1BIB9tE6flQhPB8fzcnVGrxKxXH+8yzyBbnaiHdqp2FLrIrZSYOPrljd/UgkUHTxyA4RJUBVHK8CrenOJAUARxO8YyTtpkAVpJMQMBSAQvBoXeThgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "8691c0902298881011dbf73ca78d7f748c2b1e42b57ecc2b70d2c4ff634ad1f0",
+      "model": "claude-opus-5-5",
+      "turn": 6,
+      "response": {
+        "text": "{\"answer\":\"Of the services that report memory data, blog-api uses the most memory on ci-1. I can't fully confirm it's the top user, though, because the other two services on the server send no memory data.\\n\\n**Server ci-1:** 4096 MB RAM. Between 11:58 and 12:00 it used about 1.47–1.48 GiB, which is around 37%. That's normal, and no high-memory flag is set.\\n\\n**blog-api:** about 300–310 MiB, rising slowly over the three samples (314,572,800 → 325,058,560 bytes). That's about 30% of its own memory figure, which suggests a container limit of about 1 GiB (worked out from the numbers, not reported directly). It's running and healthy, with 1 restart and no high-memory flag.\\n\\n**blog-web and newsletter:** both are running, but neither returned any memory readings. So I can't rule out that one of them uses more than blog-api.\\n\\nThe server uses about 1.48 GiB in total and blog-api accounts for about 0.31 GiB, so roughly 1.17 GiB is unaccounted for. That's blog-web, newsletter, Docker and the OS combined. Nothing looks wrong with memory right now.\",\"diagnosis\":\"unknown\",\"confidence\":0.55,\"entities\":[{\"kind\":\"Server\",\"id\":\"fee05993-4b54-4c57-beba-39296ea34582\",\"label\":\"ci-1\"},{\"kind\":\"Service\",\"id\":\"ff709c6f-708a-4bef-bf57-8547b9f5cd65\",\"label\":\"blog-api\"},{\"kind\":\"Service\",\"id\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"label\":\"blog-web\"},{\"kind\":\"Service\",\"id\":\"a4a4e3a8-5716-488f-bdff-65ab5bf785a4\",\"label\":\"newsletter\"}],\"evidence\":[{\"ref\":\"fee05993-4b54-4c57-beba-39296ea34582\",\"note\":\"Server memory_used_bytes ~1.57–1.59e9 (36.6–37.1% of 4096 MB) from 11:58 to 12:00; connected\"},{\"ref\":\"ff709c6f-708a-4bef-bf57-8547b9f5cd65\",\"note\":\"memory_used_bytes 314572800 → 325058560 (29.3% → 30.3%); running, healthy, restartCount 1, highMemory false\"},{\"ref\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"note\":\"Running and healthy, but its memory_used_bytes series came back empty\"},{\"ref\":\"a4a4e3a8-5716-488f-bdff-65ab5bf785a4\",\"note\":\"Running (no healthcheck), but its memory_used_bytes series came back empty\"}],\"missingEvidence\":[\"Memory metrics for blog-web and newsletter (empty series), so I can't confirm blog-api is the top user\",\"A per-process breakdown of the ~1.17 GiB server memory that no service accounts for (OS, Docker, other)\",\"Memory history before 11:58 (only 3 samples available)\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 12923,
+          "outputTokens": 1041
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"Of the services that report memory data, blog-api uses the most memory on ci-1. I can't fully confirm it's the top user, though, because the other two services on the server send no memory data.\\n\\n**Server ci-1:** 4096 MB RAM. Between 11:58 and 12:00 it used about 1.47–1.48 GiB, which is around 37%. That's normal, and no high-memory flag is set.\\n\\n**blog-api:** about 300–310 MiB, rising slowly over the three samples (314,572,800 → 325,058,560 bytes). That's about 30% of its own memory figure, which suggests a container limit of about 1 GiB (worked out from the numbers, not reported directly). It's running and healthy, with 1 restart and no high-memory flag.\\n\\n**blog-web and newsletter:** both are running, but neither returned any memory readings. So I can't rule out that one of them uses more than blog-api.\\n\\nThe server uses about 1.48 GiB in total and blog-api accounts for about 0.31 GiB, so roughly 1.17 GiB is unaccounted for. That's blog-web, newsletter, Docker and the OS combined. Nothing looks wrong with memory right now.\",\"diagnosis\":\"unknown\",\"confidence\":0.55,\"entities\":[{\"kind\":\"Server\",\"id\":\"fee05993-4b54-4c57-beba-39296ea34582\",\"label\":\"ci-1\"},{\"kind\":\"Service\",\"id\":\"ff709c6f-708a-4bef-bf57-8547b9f5cd65\",\"label\":\"blog-api\"},{\"kind\":\"Service\",\"id\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"label\":\"blog-web\"},{\"kind\":\"Service\",\"id\":\"a4a4e3a8-5716-488f-bdff-65ab5bf785a4\",\"label\":\"newsletter\"}],\"evidence\":[{\"ref\":\"fee05993-4b54-4c57-beba-39296ea34582\",\"note\":\"Server memory_used_bytes ~1.57–1.59e9 (36.6–37.1% of 4096 MB) from 11:58 to 12:00; connected\"},{\"ref\":\"ff709c6f-708a-4bef-bf57-8547b9f5cd65\",\"note\":\"memory_used_bytes 314572800 → 325058560 (29.3% → 30.3%); running, healthy, restartCount 1, highMemory false\"},{\"ref\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"note\":\"Running and healthy, but its memory_used_bytes series came back empty\"},{\"ref\":\"a4a4e3a8-5716-488f-bdff-65ab5bf785a4\",\"note\":\"Running (no healthcheck), but its memory_used_bytes series came back empty\"}],\"missingEvidence\":[\"Memory metrics for blog-web and newsletter (empty series), so I can't confirm blog-api is the top user\",\"A per-process breakdown of the ~1.17 GiB server memory that no service accounts for (OS, Docker, other)\",\"Memory history before 11:58 (only 3 samples available)\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

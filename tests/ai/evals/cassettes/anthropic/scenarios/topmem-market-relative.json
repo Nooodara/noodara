@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "topmem-market-relative",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "50b39339248644d5e9b22ab63a5c54296406872c29423c81c20a0246bb8a6711",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01FcJDFThPiTRVzyyQL18w6b",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5456,
+          "outputTokens": 48
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01FcJDFThPiTRVzyyQL18w6b",
+              "name": "list_services",
+              "input": {}
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS9AQKEAgTGAI4AUIIdGhpbmtpbmcSDNKbxVOTsaXxBOnn6xoMftNiW8pWiOdeZIXrIjBMy2dhlYw9W3d2d7Yelu7pSmWPPTphfi0UVUcmFRAMXIr3UvkoCYsOMjkkAFle3GIqkQSE0fkidLwiLN66OBNltCdAQqwASxNIjf1LOhxMAR2pdcPa6h9JnctvV1M5ptg6VgRBEhFW/6gfZ3EszTgqGa16C/R9NDOhGH0YKTi54NjCfLSHymweaWc7THoHWkw0mZCzmDNr3TNEYeVNdsNXOTd+g1yMcuT9JxD4a9IiCIwaEYDKMur6BA1hEy7JxJ45uiPSz1C+Rq6sho71gS04oWB8BTQjs9pK32Ejx2ZFhjV+99VFmskY5vKdpQm9c7EFXmtMDpNUHytIQFKJSBEt5lCGAbOQK6+t/g8SqKEavzDC5lbG2zPDhzsyGTdxABXnDJNA8Ue1qqToJxTQ2Jsy6rgmQhs+hTp9MSC/Bocf5bp806Q+MpuQ+tJVnaqerp43KEytymvQz5gjR6W/wEhF9OEtRkrgWkO8YSPJhudw6Dxz+YFss7d3arMspipXxHohaJNV9KuV1R3OUc1J7A0TlZBn/JGi1E4QBK/Qh8e+kXsM9yyOx+YsnFkxAvekq2TMS/MU2IMHApxe329yG6YFQGhE2/T4Qkaw2Vpml7POYyz7YqJSrJjBO6KiDB+NiCII/wysLWEfhJ9Ag1Okbd8O7FpE0lSjGfhOayV4jos7BAW6EicZLAdZThExnAIopv8VOq1aPAUKhikebgu1CVA7Y33eX4bgkb90lo/wy6ULPIkIfZpTiG/0zwTgtFXw32tIhSjGGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "3e6e3afff9006a5d829b17f8c9158ca134745dc91079737931bc6455db14e5d3",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "Running: catalog, gateway, inventory, recommender, search. Check health for each.",
+        "toolCalls": [
+          {
+            "id": "toolu_01Xo5v1n8hzZLfYizkgNHjV9",
+            "name": "get_health",
+            "input": {
+              "serviceId": "73b26f13-cdff-4ed7-a273-cbda4091c9ec"
+            }
+          },
+          {
+            "id": "toolu_01TRkt6E2AXHMJwVdrjmP6j8",
+            "name": "get_health",
+            "input": {
+              "serviceId": "d7b023d8-aafa-42c0-b31d-f3036a8441a6"
+            }
+          },
+          {
+            "id": "toolu_0149ZkPQNA721bhUQzW5QPhT",
+            "name": "get_health",
+            "input": {
+              "serviceId": "29ad7a08-d7d4-4a91-8bd2-82c870bd62a1"
+            }
+          },
+          {
+            "id": "toolu_01XCsgGFtwYJpoovPhsUA5N7",
+            "name": "get_health",
+            "input": {
+              "serviceId": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb"
+            }
+          },
+          {
+            "id": "toolu_015emo57W2brRPxrrkUfGpWM",
+            "name": "get_health",
+            "input": {
+              "serviceId": "1d46ff85-d839-4089-89e8-2977c3ae77aa"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 8107,
+          "outputTokens": 399
+        },
+        "message": {
+          "role": "assistant",
+          "content": "Running: catalog, gateway, inventory, recommender, search. Check health for each.",
+          "toolCalls": [
+            {
+              "id": "toolu_01Xo5v1n8hzZLfYizkgNHjV9",
+              "name": "get_health",
+              "input": {
+                "serviceId": "73b26f13-cdff-4ed7-a273-cbda4091c9ec"
+              }
+            },
+            {
+              "id": "toolu_01TRkt6E2AXHMJwVdrjmP6j8",
+              "name": "get_health",
+              "input": {
+                "serviceId": "d7b023d8-aafa-42c0-b31d-f3036a8441a6"
+              }
+            },
+            {
+              "id": "toolu_0149ZkPQNA721bhUQzW5QPhT",
+              "name": "get_health",
+              "input": {
+                "serviceId": "29ad7a08-d7d4-4a91-8bd2-82c870bd62a1"
+              }
+            },
+            {
+              "id": "toolu_01XCsgGFtwYJpoovPhsUA5N7",
+              "name": "get_health",
+              "input": {
+                "serviceId": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb"
+              }
+            },
+            {
+              "id": "toolu_015emo57W2brRPxrrkUfGpWM",
+              "name": "get_health",
+              "input": {
+                "serviceId": "1d46ff85-d839-4089-89e8-2977c3ae77aa"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "1f925218192d147fe487281174200f6c1a2943576ed2a0c15c6d5bb430a96559",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "Let me get metrics to compare actual memory usage.",
+        "toolCalls": [
+          {
+            "id": "toolu_018bSEzfeAza2KBsoECNMoAj",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb",
+              "points": 5
+            }
+          },
+          {
+            "id": "toolu_0166eET9exR3gRuLtbeJw2b5",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "73b26f13-cdff-4ed7-a273-cbda4091c9ec",
+              "points": 5
+            }
+          },
+          {
+            "id": "toolu_01Ud1Jd1WNjbM7uq9pzhj96f",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "d7b023d8-aafa-42c0-b31d-f3036a8441a6",
+              "points": 5
+            }
+          },
+          {
+            "id": "toolu_01L7eBnYLGZ3z226q9fCJbmU",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "29ad7a08-d7d4-4a91-8bd2-82c870bd62a1",
+              "points": 5
+            }
+          },
+          {
+            "id": "toolu_013cw8JD5k3HYohtgJjroiwa",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "1d46ff85-d839-4089-89e8-2977c3ae77aa",
+              "points": 5
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 10030,
+          "outputTokens": 594
+        },
+        "message": {
+          "role": "assistant",
+          "content": "Let me get metrics to compare actual memory usage.",
+          "toolCalls": [
+            {
+              "id": "toolu_018bSEzfeAza2KBsoECNMoAj",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "8f5526e9-bb5c-4e9d-bedf-095d9c5233bb",
+                "points": 5
+              }
+            },
+            {
+              "id": "toolu_0166eET9exR3gRuLtbeJw2b5",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "73b26f13-cdff-4ed7-a273-cbda4091c9ec",
+                "points": 5
+              }
+            },
+            {
+              "id": "toolu_01Ud1Jd1WNjbM7uq9pzhj96f",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "d7b023d8-aafa-42c0-b31d-f3036a8441a6",
+                "points": 5
+              }
+            },
+            {
+              "id": "toolu_01L7eBnYLGZ3z226q9fCJbmU",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "29ad7a08-d7d4-4a91-8bd2-82c870bd62a1",
+                "points": 5
+              }
+            },
+            {
+              "id": "toolu_013cw8JD5k3HYohtgJjroiwa",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "1d46ff85-d839-4089-89e8-2977c3ae77aa",
+                "points": 5
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "505bb0780cce4e44008ebc054b1a7fb7a00917f9d91fec3da9bf92039bc7ee94",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "{\"answer\":\"recommender (8f5526e9-bb5c-4e9d-bedf-095d9c5233bb) is the running service closest to its memory limit. It is at about 95.7% of its limit: 513,802,240 bytes (about 490 MiB) used at 12:00. Working back from those figures, the limit is about 512 MiB. Memory use climbed every minute from 11:56 to 12:00: 78.1%, 91.8%, 92.8%, 93.8%, then 95.7%. Its health summary has the high-memory flag on. It is otherwise healthy: the container is running, the healthcheck passes and it has 0 restarts. If this growth keeps up, it is likely to hit its limit and be killed for running out of memory soon. Of the other running services, only inventory reported memory data, at about 20.5% of its limit. catalog, gateway and search returned no memory data in this time window, so I can't give their exact numbers. All three have the high-memory flag off, which suggests they're below the threshold. I can't restart the service or change its limit. To fix this, check recommender's runtime logs and recent traffic for a memory leak, or raise its memory limit.\",\"diagnosis\":\"high_memory\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Service\",\"id\":\"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\",\"label\":\"recommender\"}],\"evidence\":[{\"ref\":\"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\",\"note\":\"memory_percent went from 78.1% to 95.7% between 11:56 and 12:00. memory_used_bytes was 513,802,240 at 12:00. The health summary has highMemory=true. The container is running and healthy with 0 restarts.\"},{\"ref\":\"29ad7a08-d7d4-4a91-8bd2-82c870bd62a1\",\"note\":\"inventory: the only other running service with memory data, at about 20.5% of its limit. highMemory=false.\"},{\"ref\":\"73b26f13-cdff-4ed7-a273-cbda4091c9ec\",\"note\":\"catalog: running, no memory data points, highMemory=false.\"},{\"ref\":\"d7b023d8-aafa-42c0-b31d-f3036a8441a6\",\"note\":\"gateway: running, no memory data points, highMemory=false.\"},{\"ref\":\"1d46ff85-d839-4089-89e8-2977c3ae77aa\",\"note\":\"search: running, no memory data points, highMemory=false.\"}],\"missingEvidence\":[\"No memory data was returned for catalog, gateway or search, so I can only rank them using the highMemory flag.\",\"None of the tools return the configured memory limit directly. The ~512 MiB figure is worked out from memory_used_bytes and memory_percent.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 14100,
+          "outputTokens": 1000
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"recommender (8f5526e9-bb5c-4e9d-bedf-095d9c5233bb) is the running service closest to its memory limit. It is at about 95.7% of its limit: 513,802,240 bytes (about 490 MiB) used at 12:00. Working back from those figures, the limit is about 512 MiB. Memory use climbed every minute from 11:56 to 12:00: 78.1%, 91.8%, 92.8%, 93.8%, then 95.7%. Its health summary has the high-memory flag on. It is otherwise healthy: the container is running, the healthcheck passes and it has 0 restarts. If this growth keeps up, it is likely to hit its limit and be killed for running out of memory soon. Of the other running services, only inventory reported memory data, at about 20.5% of its limit. catalog, gateway and search returned no memory data in this time window, so I can't give their exact numbers. All three have the high-memory flag off, which suggests they're below the threshold. I can't restart the service or change its limit. To fix this, check recommender's runtime logs and recent traffic for a memory leak, or raise its memory limit.\",\"diagnosis\":\"high_memory\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Service\",\"id\":\"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\",\"label\":\"recommender\"}],\"evidence\":[{\"ref\":\"8f5526e9-bb5c-4e9d-bedf-095d9c5233bb\",\"note\":\"memory_percent went from 78.1% to 95.7% between 11:56 and 12:00. memory_used_bytes was 513,802,240 at 12:00. The health summary has highMemory=true. The container is running and healthy with 0 restarts.\"},{\"ref\":\"29ad7a08-d7d4-4a91-8bd2-82c870bd62a1\",\"note\":\"inventory: the only other running service with memory data, at about 20.5% of its limit. highMemory=false.\"},{\"ref\":\"73b26f13-cdff-4ed7-a273-cbda4091c9ec\",\"note\":\"catalog: running, no memory data points, highMemory=false.\"},{\"ref\":\"d7b023d8-aafa-42c0-b31d-f3036a8441a6\",\"note\":\"gateway: running, no memory data points, highMemory=false.\"},{\"ref\":\"1d46ff85-d839-4089-89e8-2977c3ae77aa\",\"note\":\"search: running, no memory data points, highMemory=false.\"}],\"missingEvidence\":[\"No memory data was returned for catalog, gateway or search, so I can only rank them using the highMemory flag.\",\"None of the tools return the configured memory limit directly. The ~512 MiB figure is worked out from memory_used_bytes and memory_percent.\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSgAcKEAgTGAI4AUIIdGhpbmtpbmcSDF7b3zojut5LItr7dRoM5qOEL/tffHJ7bauEIjA0zvpFl4+Mljj7VzWvMjva1UPyYwRWXveJmGW/yYVAlqyctfOoAO1PqYr4G8yYCk4qnQbbL/O6X9Ew24FvVY/4trMIP6c/YRl3nlZHDhgL0M8oZb3xVltj4xf2LqT8MpjJlA0Sje4ApcmnU8yiRVz/kRdKc7Z1qHz2ZanP/F3TwsNq1mXqItEspkEV2KW4AgOHqgyjzyHj8UvCU/SgYzo3HeOQOKmETRX1/aint268K9SoLQ7vfy8+NBQ1bM41LLKQU6M0fPuqqkqkVm0chz1SkzScfPvmaIecEYG43NAw2wIkPZhL6y6AKoQyx6T7vU9Ru8VuElaK/6gZBAcTDn6QK5IOn85Z8SzN0DoiGjzqxl/YEe97RrCy/XSiXf2KVo63oO4B3KgqhYazLpzi8R5cE+MKKCMUc20Msc/EYJlkNj/6yJ8v6E8Qj50ueXxLz+UYV1kPrEb4xYcz6pjVKKMMVp5QnGV2nx6hLkWF3/r/ky3gwqG7L8qSSSHS51HwzE+BsNXzqONn6jThxippG8GuVENoAzuGRe0K+R5fIPA+vg7tkQf7ASTQ3iWURvPI1OSsyPAFHNgBzniqVRvagrADv4i0tEzqQzIXBVnBtZVQmQA+6j0TrNb2mIu7oyTUVF+BdkgOroBhMLYnAuC6LOx/iKFAocDUjhsa9LaPHTqcpjo7EFCve61xrkXpKIPacARJeXeIeISrZR5OBDfegNvAGb6fs48pllhIpeyEH6OzftuNk8/bv0S5ZBXcywpK7HbsAHriZnzaBrumwOm5VexULa5UZcba5xPK8oldyvsU/mpVue2s1bUg38mbKqjV93iH1TvjT7HDli92FMlC/Y4PTPIp14TKvF14IsvhO0s1my1nRaLgVJRqCTikOt0kqP3nVBjGQbPyHmgH/5ndAVtcqlYwL7jCU+fmbia9RtLko1Oy01qad+MQwrdtA4iItrgWnoYtDFwCK/QANZoO4Vd3y8F4L4coXWREJs7aL8TdUWnzPUxnIxhCZ7u1lB7PwhxZDMvco8cfq6DE5uSjgQj6lqDmEpVKmVj1yQTvYorkb9mAJAAjHgsZSJ8kXx+F4khYeOTWzBOSahd9QkY5JPw7GzKJuV/QjacAu/wmX6MVnBgB"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

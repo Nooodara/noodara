@@ -1,0 +1,249 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "topo-shop",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "85c6e0d41d9ba5c446ab686ad8f9b71440f847464115ee2e7c1064237b62949d",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_011PoSrp3ZsapMkPViwLBduK",
+            "name": "get_infrastructure_graph",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5374,
+          "outputTokens": 33
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_011PoSrp3ZsapMkPViwLBduK",
+              "name": "get_infrastructure_graph",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "c0b2fb46468008b2cdc8ce4a69399535129526c3d5932a185b1dfeeafcd54b15",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01HeeSGMaRUX13vau6pQmzdL",
+            "name": "get_service",
+            "input": {
+              "serviceId": "c41d50ac-4110-4094-94f9-e4698fdd81b9"
+            }
+          },
+          {
+            "id": "toolu_01TLssgMdgKt226V7v1bTENS",
+            "name": "get_service",
+            "input": {
+              "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f"
+            }
+          },
+          {
+            "id": "toolu_01VfmnxJhRkzVMEjgwwxxjMU",
+            "name": "get_service",
+            "input": {
+              "serviceId": "b18f27df-93b6-4937-8b3e-8edade656aa7"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 8498,
+          "outputTokens": 253
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01HeeSGMaRUX13vau6pQmzdL",
+              "name": "get_service",
+              "input": {
+                "serviceId": "c41d50ac-4110-4094-94f9-e4698fdd81b9"
+              }
+            },
+            {
+              "id": "toolu_01TLssgMdgKt226V7v1bTENS",
+              "name": "get_service",
+              "input": {
+                "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f"
+              }
+            },
+            {
+              "id": "toolu_01VfmnxJhRkzVMEjgwwxxjMU",
+              "name": "get_service",
+              "input": {
+                "serviceId": "b18f27df-93b6-4937-8b3e-8edade656aa7"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSswUKEAgTGAI4AUIIdGhpbmtpbmcSDFW/XbtqV4xGInufzxoM1Dow7yK1nohOeAisIjBXKQIcutsHVummFrssHRMNrm5d771KcckYkbAFFP10BKFKecoJM4k4gU5MhKstK6wq0ARTowgAfmwqtHbFP2v0AuVQifjAYgiPuvRboq0RqBkeGIpXxktrwFFbH+k1VuuI01nk5tPAKs0foUOH/EHkK0MG/+krzxR5DsEueD/Ahp6+fNZo7hG7liPIJ9PbpBwCkzZw3YWgEmtnn6mgPJK/I7hG6ppmoo8LFgFnRdCro/rT1ETf4LfOX9v7yOqXDGP49mHxKbOLrI0yxR2/Qe+5tmapa8sJRV0sSoZKOoJbDaKUbTfuJtm7ScaxCQ3nSz/sxUL6WfBX9vgKlSTpivDJTSNTrlbJLXNzBg6hfsYagOzUmueBCa6L/ZsxGlX++flS+2NKCvp5SKPKSM01JLE710jcA0pUaUPekBeJS0Hgkfj3OCrq+bgfR14iir/rzrf4/U5NELgvL1ZX5hUWIGbv4GBmSjSCnUlG+aIrQUga0AmvWFjTvea5sf7xY7LZkRX33JVPLUx7o3NVQpemAZ3xb/rNPTMXNa6IeU+6EIbd1jYXqKbXg1RHvyN0qOxIoFlsoaVycMeNHmbg8LiljzS8qKLGqXujtM70HaAettTC7d+1So3fazIetz5bP3+FJedEI5W++CIwY+qJpl4lebt+J+2Tzk7WlpBjV/frV0Iml+DFbZQpkVktzWGcwnpkztW9j/snQcqIaoGxKi7xfARfE4+XNM47+TjA+zH/Nh0XHvpHj5xomf1HjUrwQtSriUqUW5Jh+6C1WytC5pUrLI1/Qi0zQWhM0nookJgQXWE7Ek0n9YdPG61+9qIqnhN2zTuMUbRgBjqMYnCkbgaa6xkm85hYGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "3a4dacede2eb91942277c874182d208a0d203f93c5f0ce821746bd70d033315a",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_0157uaXBLs8Ke2D5pM2SaKgc",
+            "name": "get_server",
+            "input": {
+              "serverId": "7892be3e-b2cf-441d-87a4-6846aa412bf7"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 9988,
+          "outputTokens": 122
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_0157uaXBLs8Ke2D5pM2SaKgc",
+              "name": "get_server",
+              "input": {
+                "serverId": "7892be3e-b2cf-441d-87a4-6846aa412bf7"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSlwYKEAgTGAI4AUIIdGhpbmtpbmcSDBHTAcNX11+jRkh6oRoMJWf/9CfBjKfFC8E5IjC0A3MGBTUpsXDKReMVbRBn/w6ccX6+AvWPODYjPKRtsWrr+0OKf90XNB4jDCDpGWEqtAV/33TGMqVkYFXTPcjegg0xd5KXu4nEMe4sellOLgM9+m5wY3lee0oIO6Q/8MblyDGFpokTGRgcMBZRJ65ixPdJLuhq4BPhUigR9/JG9Ub7ka9eiBezO7KNV4Am3BZ9LDtCM6v2v2jTNpMcOIZuei8FlyFDGxhKkWjiCy+6ly/Qiw9fP5Y+x0tRsGjyVpXQ6wqJMINm8iuoADjjcSvcFoBIX6bM3LkY6nxI72XVZSY4t+wBdLJtKRifYhtZwXx5tCMUBS7qKEwGO+GWUU7h0MdL5163RBr314069ZoPQFa8f3Z9quda0R7f4xm7iPZVxW00I5CU11fcJU91rTl4ziVj8bG4LeiD5XdPSpYLgkwYvXspDSxEc3u6HiWVG6V+LuaH5afMxDWmN/Qvg0epbMkl9sGDSn1t2et+olWhei48/3inbEvMPpQgolf3EBWpXtc0ZdTnHPvaXommcJFOwiHM+1mjqxipCf6Dj2+XmE9tH21vafo8v9zXNG1/xYe6anb0e4tjSQArRlmo5ISdH9NcmRmd/W7thOgeq6rrvHBwMmLdHU+pPq4qQP2neZp7KqTbN8DmI+UiULtWbaQmUo2ujhmELB9bd024jfFt1ZUX9HMoyhaH4zwqX26jXWueYMuXgKdVg3RnG0brosf/uYDAgDH3lQTlj6ni3oGTFlG7G16Iup0Cocz3pNLI2Dr/G6Yg5nJxLW4hD9tgyRj0NpeyJ/b7n0kQiMTPM9NLE9XVYfT4woSvVVuLLGDHBASvWDenUP50qnVyiBkIKWwrhX+4/TD0whzSlV5+BJpfPOr+mEgRhRquDyzf38PrsJpwQTy8PuLG1frSa9djaqGHPiwyhGHVmLYxuUSvUOd/lp8XC0PoPRFdfiMRxeAwHJiTB83FILrNSuHWvMgzXo3JdysmAdRUzxgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "119efa12c724037b6cbe856347f75a8fee8c5cf61ab5899e624e3f585b4bfbfa",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_013peFEiQKmzPZxBv1tVPFYG",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "c41d50ac-4110-4094-94f9-e4698fdd81b9",
+              "limit": 1
+            }
+          },
+          {
+            "id": "toolu_01KrZYTnzBnsQPowySKDZ21Q",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+              "limit": 1
+            }
+          },
+          {
+            "id": "toolu_0129vXAuwA4SwfBuo7FcLwEB",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "b18f27df-93b6-4937-8b3e-8edade656aa7",
+              "limit": 1
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 10454,
+          "outputTokens": 290
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_013peFEiQKmzPZxBv1tVPFYG",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "c41d50ac-4110-4094-94f9-e4698fdd81b9",
+                "limit": 1
+              }
+            },
+            {
+              "id": "toolu_01KrZYTnzBnsQPowySKDZ21Q",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+                "limit": 1
+              }
+            },
+            {
+              "id": "toolu_0129vXAuwA4SwfBuo7FcLwEB",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "b18f27df-93b6-4937-8b3e-8edade656aa7",
+                "limit": 1
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "23e3c72607017a0496d998fbd124e80114c9e71b129b4628eb5259dbaff470b9",
+      "model": "claude-opus-5-5",
+      "turn": 5,
+      "response": {
+        "text": "{\"answer\":\"The shop project has one environment, production. It runs three Docker services, all on one server, web-1 (Ubuntu 24.04, 4 CPU cores, 8 GB RAM, Docker 27.3.1, status CONNECTED).\\n\\n1. **storefront**: built from the main branch of https://github.com/shop/storefront using the Dockerfile at the repo root. It listens on port 3000 inside the container, and that port is also opened on the server. It is served at shop.example.com and www.shop.example.com, has a /health check, and depends on payments-api. Its latest deployment succeeded on 2026-10-30 (commit a7b3c91, started by hand by admin).\\n2. **payments-api**: runs the ready-made image ghcr.io/shop/payments-api:1.8.2. It listens on port 8080 inside the container, which is not opened on the server. It is served at api.shop.example.com and has a /health check. Its latest deployment succeeded on 2026-10-31 (started by hand by admin) and replaced an earlier one.\\n3. **worker**: runs the ready-made image ghcr.io/shop/worker:2.0.0. It listens on port 3000 inside the container, which is not opened on the server. It has no domain and no health check. Its latest deployment succeeded on 2026-10-25 (started by hand by admin).\\n\\nAll three services are RUNNING, roll back automatically if a deployment fails, and keep their last 3 images. The latest deployments shown were all started by hand, none by a webhook. I didn't see a problem, which is why the diagnosis field says unknown.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Project\",\"id\":\"d41e191d-a257-4c4d-adcf-bd7d2496306a\",\"label\":\"shop\"},{\"kind\":\"Environment\",\"id\":\"5000b3ce-75d0-4bd7-a346-5b532aa87c21\",\"label\":\"production\"},{\"kind\":\"Server\",\"id\":\"7892be3e-b2cf-441d-87a4-6846aa412bf7\",\"label\":\"web-1\"},{\"kind\":\"Service\",\"id\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"label\":\"storefront\"},{\"kind\":\"Service\",\"id\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"label\":\"payments-api\"},{\"kind\":\"Service\",\"id\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"label\":\"worker\"},{\"kind\":\"Domain\",\"id\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"label\":\"shop.example.com\"},{\"kind\":\"Domain\",\"id\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"label\":\"www.shop.example.com\"},{\"kind\":\"Domain\",\"id\":\"fe976544-b235-41d6-bceb-02bc382ee9cb\",\"label\":\"api.shop.example.com\"},{\"kind\":\"Deployment\",\"id\":\"7e439d8c-8b82-4348-8c6e-23839136350b\",\"label\":\"storefront latest deployment\"},{\"kind\":\"Deployment\",\"id\":\"0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06\",\"label\":\"payments-api latest deployment\"},{\"kind\":\"Deployment\",\"id\":\"dd5e1381-f8bf-4f50-9a5d-869f2b12a392\",\"label\":\"worker latest deployment\"}],\"evidence\":[{\"ref\":\"d41e191d-a257-4c4d-adcf-bd7d2496306a\",\"note\":\"The shop project contains the production environment and three services.\"},{\"ref\":\"7892be3e-b2cf-441d-87a4-6846aa412bf7\",\"note\":\"All three services run on web-1: CONNECTED, Ubuntu 24.04, 4 cores, 8 GB RAM, Docker 27.3.1.\"},{\"ref\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"note\":\"Built from GitHub (main branch, Dockerfile); internal port 3000, published port 3000; /health check; RUNNING; depends on payments-api.\"},{\"ref\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"note\":\"Image ghcr.io/shop/payments-api:1.8.2; internal port 8080, not published; /health check; RUNNING.\"},{\"ref\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"note\":\"Image ghcr.io/shop/worker:2.0.0; internal port 3000, not published; no health check; RUNNING.\"},{\"ref\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"note\":\"Domain served by storefront.\"},{\"ref\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"note\":\"Domain served by storefront.\"},{\"ref\":\"fe976544-b235-41d6-bceb-02bc382ee9cb\",\"note\":\"Domain served by payments-api.\"},{\"ref\":\"7e439d8c-8b82-4348-8c6e-23839136350b\",\"note\":\"storefront deployment SUCCESS on 2026-10-30, commit a7b3c91, started by hand.\"},{\"ref\":\"0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06\",\"note\":\"payments-api deployment SUCCESS on 2026-10-31, started by hand.\"},{\"ref\":\"dd5e1381-f8bf-4f50-9a5d-869f2b12a392\",\"note\":\"worker deployment SUCCESS on 2026-10-25, started by hand.\"}],\"missingEvidence\":[\"No problem was investigated, because the question was about how the app is deployed, not about a fault.\",\"Health summaries, metrics and logs were not checked.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 12249,
+          "outputTokens": 1949
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"The shop project has one environment, production. It runs three Docker services, all on one server, web-1 (Ubuntu 24.04, 4 CPU cores, 8 GB RAM, Docker 27.3.1, status CONNECTED).\\n\\n1. **storefront**: built from the main branch of https://github.com/shop/storefront using the Dockerfile at the repo root. It listens on port 3000 inside the container, and that port is also opened on the server. It is served at shop.example.com and www.shop.example.com, has a /health check, and depends on payments-api. Its latest deployment succeeded on 2026-10-30 (commit a7b3c91, started by hand by admin).\\n2. **payments-api**: runs the ready-made image ghcr.io/shop/payments-api:1.8.2. It listens on port 8080 inside the container, which is not opened on the server. It is served at api.shop.example.com and has a /health check. Its latest deployment succeeded on 2026-10-31 (started by hand by admin) and replaced an earlier one.\\n3. **worker**: runs the ready-made image ghcr.io/shop/worker:2.0.0. It listens on port 3000 inside the container, which is not opened on the server. It has no domain and no health check. Its latest deployment succeeded on 2026-10-25 (started by hand by admin).\\n\\nAll three services are RUNNING, roll back automatically if a deployment fails, and keep their last 3 images. The latest deployments shown were all started by hand, none by a webhook. I didn't see a problem, which is why the diagnosis field says unknown.\",\"diagnosis\":\"unknown\",\"confidence\":0.9,\"entities\":[{\"kind\":\"Project\",\"id\":\"d41e191d-a257-4c4d-adcf-bd7d2496306a\",\"label\":\"shop\"},{\"kind\":\"Environment\",\"id\":\"5000b3ce-75d0-4bd7-a346-5b532aa87c21\",\"label\":\"production\"},{\"kind\":\"Server\",\"id\":\"7892be3e-b2cf-441d-87a4-6846aa412bf7\",\"label\":\"web-1\"},{\"kind\":\"Service\",\"id\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"label\":\"storefront\"},{\"kind\":\"Service\",\"id\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"label\":\"payments-api\"},{\"kind\":\"Service\",\"id\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"label\":\"worker\"},{\"kind\":\"Domain\",\"id\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"label\":\"shop.example.com\"},{\"kind\":\"Domain\",\"id\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"label\":\"www.shop.example.com\"},{\"kind\":\"Domain\",\"id\":\"fe976544-b235-41d6-bceb-02bc382ee9cb\",\"label\":\"api.shop.example.com\"},{\"kind\":\"Deployment\",\"id\":\"7e439d8c-8b82-4348-8c6e-23839136350b\",\"label\":\"storefront latest deployment\"},{\"kind\":\"Deployment\",\"id\":\"0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06\",\"label\":\"payments-api latest deployment\"},{\"kind\":\"Deployment\",\"id\":\"dd5e1381-f8bf-4f50-9a5d-869f2b12a392\",\"label\":\"worker latest deployment\"}],\"evidence\":[{\"ref\":\"d41e191d-a257-4c4d-adcf-bd7d2496306a\",\"note\":\"The shop project contains the production environment and three services.\"},{\"ref\":\"7892be3e-b2cf-441d-87a4-6846aa412bf7\",\"note\":\"All three services run on web-1: CONNECTED, Ubuntu 24.04, 4 cores, 8 GB RAM, Docker 27.3.1.\"},{\"ref\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"note\":\"Built from GitHub (main branch, Dockerfile); internal port 3000, published port 3000; /health check; RUNNING; depends on payments-api.\"},{\"ref\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"note\":\"Image ghcr.io/shop/payments-api:1.8.2; internal port 8080, not published; /health check; RUNNING.\"},{\"ref\":\"b18f27df-93b6-4937-8b3e-8edade656aa7\",\"note\":\"Image ghcr.io/shop/worker:2.0.0; internal port 3000, not published; no health check; RUNNING.\"},{\"ref\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"note\":\"Domain served by storefront.\"},{\"ref\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"note\":\"Domain served by storefront.\"},{\"ref\":\"fe976544-b235-41d6-bceb-02bc382ee9cb\",\"note\":\"Domain served by payments-api.\"},{\"ref\":\"7e439d8c-8b82-4348-8c6e-23839136350b\",\"note\":\"storefront deployment SUCCESS on 2026-10-30, commit a7b3c91, started by hand.\"},{\"ref\":\"0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06\",\"note\":\"payments-api deployment SUCCESS on 2026-10-31, started by hand.\"},{\"ref\":\"dd5e1381-f8bf-4f50-9a5d-869f2b12a392\",\"note\":\"worker deployment SUCCESS on 2026-10-25, started by hand.\"}],\"missingEvidence\":[\"No problem was investigated, because the question was about how the app is deployed, not about a fault.\",\"Health summaries, metrics and logs were not checked.\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

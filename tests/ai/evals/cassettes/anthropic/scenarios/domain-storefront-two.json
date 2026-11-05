@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "domain-storefront-two",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "153ca5de3c1abdf1d4e2350845cccd102988914a4ad2fab63163f152f657cc53",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_015r824SBinUQX3zCYNzxBAz",
+            "name": "get_infrastructure_graph",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5374,
+          "outputTokens": 33
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_015r824SBinUQX3zCYNzxBAz",
+              "name": "get_infrastructure_graph",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "d73c1978a9546089b7df9adb843e8fc21505ab7626d1978216325ae2888856f8",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "{\"answer\":\"Two domains point to the storefront service (shop project, production environment): shop.example.com and www.shop.example.com. The infrastructure graph links storefront to both of them. This shows how domains are linked inside Noodara. It doesn't check public DNS records.\",\"diagnosis\":\"unknown\",\"confidence\":0.95,\"entities\":[{\"kind\":\"Service\",\"id\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"label\":\"storefront\"},{\"kind\":\"Domain\",\"id\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"label\":\"shop.example.com\"},{\"kind\":\"Domain\",\"id\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"label\":\"www.shop.example.com\"}],\"evidence\":[{\"ref\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"note\":\"The graph links storefront to shop.example.com, and this domain's serviceId is storefront.\"},{\"ref\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"note\":\"The graph links storefront to www.shop.example.com, and this domain's serviceId is storefront.\"},{\"ref\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"note\":\"Storefront is linked to these 2 domains in the graph and to no others. The graph was complete (not truncated).\"}],\"missingEvidence\":[\"No DNS check was done. These are domain links set up in Noodara, not proof that public DNS points to the server.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 8498,
+          "outputTokens": 525
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"Two domains point to the storefront service (shop project, production environment): shop.example.com and www.shop.example.com. The infrastructure graph links storefront to both of them. This shows how domains are linked inside Noodara. It doesn't check public DNS records.\",\"diagnosis\":\"unknown\",\"confidence\":0.95,\"entities\":[{\"kind\":\"Service\",\"id\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"label\":\"storefront\"},{\"kind\":\"Domain\",\"id\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"label\":\"shop.example.com\"},{\"kind\":\"Domain\",\"id\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"label\":\"www.shop.example.com\"}],\"evidence\":[{\"ref\":\"ed605ccc-9df8-4ff9-a153-2eecf754824d\",\"note\":\"The graph links storefront to shop.example.com, and this domain's serviceId is storefront.\"},{\"ref\":\"167ebc14-c3c6-4a14-b082-3c55efb164d4\",\"note\":\"The graph links storefront to www.shop.example.com, and this domain's serviceId is storefront.\"},{\"ref\":\"c41d50ac-4110-4094-94f9-e4698fdd81b9\",\"note\":\"Storefront is linked to these 2 domains in the graph and to no others. The graph was complete (not truncated).\"}],\"missingEvidence\":[\"No DNS check was done. These are domain links set up in Noodara, not proof that public DNS points to the server.\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

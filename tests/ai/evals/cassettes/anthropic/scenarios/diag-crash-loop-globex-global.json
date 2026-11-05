@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "diag-crash-loop-globex-global",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "a20726b6e6d0f811342c1adc6e6477420d69c78fdb761d513dfc7ce0862d1e1a",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01QYKyKLMjzWkX1fQ5A1kbb7",
+            "name": "get_health",
+            "input": {
+              "serviceId": "8ee3a50a-8c9e-406f-ab87-a03d7610c855"
+            }
+          },
+          {
+            "id": "toolu_01WJv89uag2jGNRtYkm2hdkS",
+            "name": "get_service",
+            "input": {
+              "serviceId": "8ee3a50a-8c9e-406f-ab87-a03d7610c855"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5451,
+          "outputTokens": 149
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01QYKyKLMjzWkX1fQ5A1kbb7",
+              "name": "get_health",
+              "input": {
+                "serviceId": "8ee3a50a-8c9e-406f-ab87-a03d7610c855"
+              }
+            },
+            {
+              "id": "toolu_01WJv89uag2jGNRtYkm2hdkS",
+              "name": "get_service",
+              "input": {
+                "serviceId": "8ee3a50a-8c9e-406f-ab87-a03d7610c855"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "fef2011413ab4ea96f916fbd2fd2c45ee908006db5c9db34afe2a1b1db612f39",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01Wc8zbj6BphPNe4j3Ja1f76",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "8ee3a50a-8c9e-406f-ab87-a03d7610c855",
+              "limit": 40
+            }
+          },
+          {
+            "id": "toolu_019UDAEwRrhCCoY1A5WtMnRG",
+            "name": "get_server",
+            "input": {
+              "serverId": "65d53194-0618-4f5a-bb52-f134fc2393aa"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6320,
+          "outputTokens": 171
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01Wc8zbj6BphPNe4j3Ja1f76",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "8ee3a50a-8c9e-406f-ab87-a03d7610c855",
+                "limit": 40
+              }
+            },
+            {
+              "id": "toolu_019UDAEwRrhCCoY1A5WtMnRG",
+              "name": "get_server",
+              "input": {
+                "serverId": "65d53194-0618-4f5a-bb52-f134fc2393aa"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "9bc9456cc09fd92b411eeef438d37023ed4b6338078d878fffd992023fe2a384",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "```json\n{\"answer\": \"globex-api is stuck in a crash loop. Its container is in the \\\"restarting\\\" state and has restarted 22 times (as of 2026-11-01T11:59:30Z), so the service status is FAILED. The newest runtime log line, at 11:59:45Z, shows the cause: the app panics on startup with \\\"panic: invalid GLOBEX_REGION\\\". That points to a configuration problem: the GLOBEX_REGION environment variable is either missing or set to a value that image ghcr.io/globex/api:7.0.0 won't accept. The last deployment (commit 4d5e6f7, finished 11:31Z) is marked SUCCESS, so the image deployed fine and the failure happens when the app starts. I can only read, so I can't change variables or redeploy. To fix it, check what GLOBEX_REGION is set to for this service and environment against the values version 7.0.0 accepts (the release notes may say if they changed), correct it, then redeploy. Separately, the health check flags high disk usage on host-b (75000 of 81920 MB used, about 92%). Probably not the cause of the crash, but it needs attention.\", \"diagnosis\": \"crash_loop\", \"confidence\": 0.85, \"entities\": [{\"kind\": \"Service\", \"id\": \"8ee3a50a-8c9e-406f-ab87-a03d7610c855\", \"label\": \"globex-api\"}, {\"kind\": \"Deployment\", \"id\": \"1e0d14b1-3f8d-421c-a8bd-a171a183a2ae\", \"label\": \"last deployment (commit 4d5e6f7)\"}, {\"kind\": \"Server\", \"id\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"label\": \"host-b\"}], \"evidence\": [{\"ref\": \"8ee3a50a-8c9e-406f-ab87-a03d7610c855\", \"note\": \"Health: runtimeStatus FAILED, container state restarting, restartCount 22. Runtime log at 11:59:45Z: 'panic: invalid GLOBEX_REGION'.\"}, {\"ref\": \"1e0d14b1-3f8d-421c-a8bd-a171a183a2ae\", \"note\": \"Last deployment SUCCESS (commit 4d5e6f7, finished 11:31Z), so the failure happens at app startup, not during the deployment.\"}, {\"ref\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"note\": \"Server CONNECTED. Disk 75000/81920 MB used (highDisk flag set), a secondary issue.\"}], \"missingEvidence\": [\"The configured value of GLOBEX_REGION (environment variable values are not visible to me)\", \"Whether the crashes began with the 7.0.0 image or with a config change (only one log line was available)\"]}\n```",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 7052,
+          "outputTokens": 1030
+        },
+        "message": {
+          "role": "assistant",
+          "content": "```json\n{\"answer\": \"globex-api is stuck in a crash loop. Its container is in the \\\"restarting\\\" state and has restarted 22 times (as of 2026-11-01T11:59:30Z), so the service status is FAILED. The newest runtime log line, at 11:59:45Z, shows the cause: the app panics on startup with \\\"panic: invalid GLOBEX_REGION\\\". That points to a configuration problem: the GLOBEX_REGION environment variable is either missing or set to a value that image ghcr.io/globex/api:7.0.0 won't accept. The last deployment (commit 4d5e6f7, finished 11:31Z) is marked SUCCESS, so the image deployed fine and the failure happens when the app starts. I can only read, so I can't change variables or redeploy. To fix it, check what GLOBEX_REGION is set to for this service and environment against the values version 7.0.0 accepts (the release notes may say if they changed), correct it, then redeploy. Separately, the health check flags high disk usage on host-b (75000 of 81920 MB used, about 92%). Probably not the cause of the crash, but it needs attention.\", \"diagnosis\": \"crash_loop\", \"confidence\": 0.85, \"entities\": [{\"kind\": \"Service\", \"id\": \"8ee3a50a-8c9e-406f-ab87-a03d7610c855\", \"label\": \"globex-api\"}, {\"kind\": \"Deployment\", \"id\": \"1e0d14b1-3f8d-421c-a8bd-a171a183a2ae\", \"label\": \"last deployment (commit 4d5e6f7)\"}, {\"kind\": \"Server\", \"id\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"label\": \"host-b\"}], \"evidence\": [{\"ref\": \"8ee3a50a-8c9e-406f-ab87-a03d7610c855\", \"note\": \"Health: runtimeStatus FAILED, container state restarting, restartCount 22. Runtime log at 11:59:45Z: 'panic: invalid GLOBEX_REGION'.\"}, {\"ref\": \"1e0d14b1-3f8d-421c-a8bd-a171a183a2ae\", \"note\": \"Last deployment SUCCESS (commit 4d5e6f7, finished 11:31Z), so the failure happens at app startup, not during the deployment.\"}, {\"ref\": \"65d53194-0618-4f5a-bb52-f134fc2393aa\", \"note\": \"Server CONNECTED. Disk 75000/81920 MB used (highDisk flag set), a secondary issue.\"}], \"missingEvidence\": [\"The configured value of GLOBEX_REGION (environment variable values are not visible to me)\", \"Whether the crashes began with the 7.0.0 image or with a config change (only one log line was available)\"]}\n```",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSywYKEAgTGAI4AUIIdGhpbmtpbmcSDCEM8ySJQQKNgaTLFBoMSwYnQHGFYl0j7gsVIjCZsLWbpjEBQ7nPSDbcMAdqn/sQR5lhRLI5Pjk9ZD5oDWDDtGDtYOpp6t8FcWcbcLsq6AVzrNTgEY2Ld3m75qrUlkzwEmX38tA+Lu7M32e+PSqeAJ3XJT6ns2b9IurWDEKIBhz5sK+UanXYYPSapvC+S6QbiOpp6uaCeIGWa1BHhVJ9g7o4w7hp67bgukVdTdiLM/O0wmFrxjI7tT/LkO3MGEA4kRL6gfEAtM1nmFA4APexP/Ou94Lt9bHezEeBnuY+nl/c5s/OgSGpGV2qxnMTaGVbjzj+bI1KF0oIX/cM3b0b/yVSAacVy8382si54FbF/1DSevWWFqzoylfOJzGL4IK0iyUQqrvxlvtdRrPFaPvVTtuZOH6MpzOLvaYbFAxSk1mY/q2qmZAtRgtm9o5yyRRquvz6yGV7GqSKAFzKfxaCcEGYRYpY8MFxR88IkRw1ie850xSeMCVFmjtrY74+MqhEO0BDXG0j8/eqQ4S4bJOUmiGoOLZ8cKqIvqeU+1Mb6Dnk2ulkq0uMfI1tV+RFzv5l13UY6d3wjjmAZhKLy9VMgmUadzJK51bUH7PhX0VLq72S3bqhvBb6gK+d5GxRX6hBLjQPs0VQLwSginkC4Vassdo2htRpTCMVLESTlQpsl04Gq2G/Sy2F86X4fRN/86PwFMJw0lEYRbxN8y1JYwybrvMG2CseYn6H6UO0LlOo3IZrQe1znyUP9b3f9dslHDy+GYhZ6I8INvjV9gB2bIRqTH7AGEkrGl6Ujru8p5EtTU10G01RrAoYi2xkejQsiV9CHjrs4i7cDDABYw7EWsa4mYiMb1oGghA9+q09OG3Lhlfb7o74qcNGNR8YrPVSfOz/reXM3mR377ntEtNzdetd7tf6imaH30av59cYtW9xzu4OJfTDp513jMMTVn5NX1mY7bHvEgNskYia/SkNxsJpdUxtrDMccGtirJfmWYettrCEvy1BBgMH7HGKUYH7/7W/QWc4aRrKNA5xoYhCrpcFkeZUvRHBC6D6pbkZSNsKqaLrL7ZW1ewujcl/tSnaVMLIuXAY7kg3buoYAQ=="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

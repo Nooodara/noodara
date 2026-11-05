@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "domain-gateway-not-responding",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "db08e2cc760e0705367da3d7bb8ebf1dec5230bfc35eb62a329c0bb7afb62477",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01QX9tkNTEP3yKFgMBbubi2W",
+            "name": "get_infrastructure_graph",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5459,
+          "outputTokens": 33
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01QX9tkNTEP3yKFgMBbubi2W",
+              "name": "get_infrastructure_graph",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "376621c49b14512920128cce6edcd22eaa53f7efe2cd94d77ab0a07661a68eb1",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01LtZkQq6V7HZWqCdFvQRyeh",
+            "name": "get_health",
+            "input": {
+              "serviceId": "d7b023d8-aafa-42c0-b31d-f3036a8441a6"
+            }
+          },
+          {
+            "id": "toolu_01JcGvYStVfSbdZuiPPDMkEL",
+            "name": "get_service",
+            "input": {
+              "serviceId": "d7b023d8-aafa-42c0-b31d-f3036a8441a6"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 10174,
+          "outputTokens": 149
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01LtZkQq6V7HZWqCdFvQRyeh",
+              "name": "get_health",
+              "input": {
+                "serviceId": "d7b023d8-aafa-42c0-b31d-f3036a8441a6"
+              }
+            },
+            {
+              "id": "toolu_01JcGvYStVfSbdZuiPPDMkEL",
+              "name": "get_service",
+              "input": {
+                "serviceId": "d7b023d8-aafa-42c0-b31d-f3036a8441a6"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "aaf16522f3fe02bd0842801ce12cae474df88c7629257f10d1564686eca73169",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01P1i8TTZfRpieGXb35843Mi",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "d7b023d8-aafa-42c0-b31d-f3036a8441a6",
+              "limit": 40
+            }
+          },
+          {
+            "id": "toolu_01MTkoXETg2MWFGGHyDYKVab",
+            "name": "get_server",
+            "input": {
+              "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 11037,
+          "outputTokens": 184
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01P1i8TTZfRpieGXb35843Mi",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "d7b023d8-aafa-42c0-b31d-f3036a8441a6",
+                "limit": 40
+              }
+            },
+            {
+              "id": "toolu_01MTkoXETg2MWFGGHyDYKVab",
+              "name": "get_server",
+              "input": {
+                "serverId": "f24510dd-db3a-4d3c-baf5-f926c6895653"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS8QQKEAgTGAI4AUIIdGhpbmtpbmcSDO9JYt2TXwoPTLNF1xoMuj3a3drmlnBHPMMkIjC/+BhGOJR1s1eRtx0UOhwAlnd8Gjc99Q8dQXl4bqZoIUmwOxRJRrSL8sClG1K/wp8qjgRx1bVXb7y2tMPSZGam9UUu6XG/yZlV8Pbs0Cmp0oFUvc3rSZ+fWJ36iSkNSzJwx4lWEXKAowSgDeVRp7Sc3K5pTE0sQ7NllGCob4UfZ7i2QZw8IsdT9ySDsCqm/FrNf2QUcLKGuBTi94B/KJ7HnzZHhX5AMDq/1IQgqOcNtCtRdp8y902TBkH9gqU8KV99H55IZKNTHGeN5Gml4uym6v5Zx4qLhM/WvN1YRbJoPmTxpiWpcR2/5Rt5BUjnn5lU2RWNEAEK3AOvB8X4YssMPpqfwKyPF8cy74Z6pcBXakdEUbNd39AHInIMDR5jDo3Et9UTp1utqy6UEZ8tJRzg19VZzCuEdSNN01g7+MF4o/CSajutBO+8wFPYmKkz/WQUUASYyDRbjKw7XgUBWN1wVXllSS0CoA3iX/W8kbXeaX5I4xbtnC/TKxluJDGD4wgxvfWLi9AgA/+SwIhj2rKYcc+5mzNp9ZB6jZeT6ViN7NyVN9Z0AwtEgfxpUUTwY80wo82l4at2D50xXnbfPL8piSzNdd91L38pdlHQfnxY6SVsnJ5TtizN0xYXMcyFPErqTpokRDoJ6zAM2KUTrSQrpUecTjdZQTWrFx4y3bt8omwtEd4mJVZ7EBe6V7srBasnL3j9fympDTKAL2i2uzjqYdfROWHXaNLAQ3WTVVspkNR7eevmJy4NG7lQXWUeW6wqGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "96835019caa748616176bd05ac8ea241ac785f4d7591baa9f59ccb86ff010b9d",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "{\"answer\":\"market.example.com points to the service **gateway** (production environment of the market project). Gateway runs on the server app-1.\\n\\nThe likely reason the site isn't loading is a port mismatch. Gateway is set up to receive traffic on port 8443, but its most recent startup log (11:55:20 UTC) says it is \\\"listening on 127.0.0.1:9443\\\". That's a different port, and 127.0.0.1 only accepts connections from inside the container, so requests sent to port 8443 have nothing to answer them.\\n\\nThe container is still reported as running with 0 restarts, because gateway has no healthcheck to catch this. Its last deployment (commit d7e8f9a, image ghcr.io/market/gateway:5.0.3) succeeded at 07:01 UTC. I don't have that deployment's logs, so I can't tell whether it introduced the problem.\\n\\nOne more thing: app-1's disk is about 93% full (47,616 of 51,200 MB), and gateway's high-disk flag is on. It's probably not what's blocking the site, but it should be cleared.\\n\\nI can only read data, so I can't change the service for you. To fix it, set the app to listen on 0.0.0.0:8443, or change gateway's configured port to match where the app actually listens. Then redeploy and check that the startup log shows the expected address. Adding a healthcheck would catch this kind of mismatch in the future. Also free up disk space on app-1.\",\"diagnosis\":\"port_not_responding\",\"confidence\":0.8,\"entities\":[{\"kind\":\"Domain\",\"id\":\"37261ae6-4f47-44d0-89fd-a0a3274d9b7a\",\"label\":\"market.example.com\"},{\"kind\":\"Service\",\"id\":\"d7b023d8-aafa-42c0-b31d-f3036a8441a6\",\"label\":\"gateway\"},{\"kind\":\"Server\",\"id\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"label\":\"app-1\"},{\"kind\":\"Deployment\",\"id\":\"93248114-3ffc-4b49-b613-c1de10a06c5b\",\"label\":\"gateway last deployment (d7e8f9a)\"}],\"evidence\":[{\"ref\":\"37261ae6-4f47-44d0-89fd-a0a3274d9b7a\",\"note\":\"In the infrastructure graph, market.example.com is exposed by service d7b023d8-aafa-42c0-b31d-f3036a8441a6 (gateway).\"},{\"ref\":\"d7b023d8-aafa-42c0-b31d-f3036a8441a6\",\"note\":\"Service config: internalPort 8443 and publishedPort 8443, no healthcheck. Runtime log at 2026-11-01T11:55:20Z: 'listening on 127.0.0.1:9443', which is a different port and loopback-only. Container is running with restartCount 0 and the highDisk flag is true.\"},{\"ref\":\"93248114-3ffc-4b49-b613-c1de10a06c5b\",\"note\":\"Last deployment SUCCESS, commit d7e8f9a, finished 2026-11-01T07:01:00Z.\"},{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"Server app-1 is CONNECTED; disk used is 47,616 of 51,200 MB (about 93%).\"}],\"missingEvidence\":[\"No direct probe of port 8443 or of the domain, so the mismatch is inferred from config compared with the startup log\",\"proxyStatus for app-1 is null, so the reverse proxy routing could not be verified\",\"No logs from the latest deployment to confirm when the listen address changed\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 11782,
+          "outputTokens": 1254
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"market.example.com points to the service **gateway** (production environment of the market project). Gateway runs on the server app-1.\\n\\nThe likely reason the site isn't loading is a port mismatch. Gateway is set up to receive traffic on port 8443, but its most recent startup log (11:55:20 UTC) says it is \\\"listening on 127.0.0.1:9443\\\". That's a different port, and 127.0.0.1 only accepts connections from inside the container, so requests sent to port 8443 have nothing to answer them.\\n\\nThe container is still reported as running with 0 restarts, because gateway has no healthcheck to catch this. Its last deployment (commit d7e8f9a, image ghcr.io/market/gateway:5.0.3) succeeded at 07:01 UTC. I don't have that deployment's logs, so I can't tell whether it introduced the problem.\\n\\nOne more thing: app-1's disk is about 93% full (47,616 of 51,200 MB), and gateway's high-disk flag is on. It's probably not what's blocking the site, but it should be cleared.\\n\\nI can only read data, so I can't change the service for you. To fix it, set the app to listen on 0.0.0.0:8443, or change gateway's configured port to match where the app actually listens. Then redeploy and check that the startup log shows the expected address. Adding a healthcheck would catch this kind of mismatch in the future. Also free up disk space on app-1.\",\"diagnosis\":\"port_not_responding\",\"confidence\":0.8,\"entities\":[{\"kind\":\"Domain\",\"id\":\"37261ae6-4f47-44d0-89fd-a0a3274d9b7a\",\"label\":\"market.example.com\"},{\"kind\":\"Service\",\"id\":\"d7b023d8-aafa-42c0-b31d-f3036a8441a6\",\"label\":\"gateway\"},{\"kind\":\"Server\",\"id\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"label\":\"app-1\"},{\"kind\":\"Deployment\",\"id\":\"93248114-3ffc-4b49-b613-c1de10a06c5b\",\"label\":\"gateway last deployment (d7e8f9a)\"}],\"evidence\":[{\"ref\":\"37261ae6-4f47-44d0-89fd-a0a3274d9b7a\",\"note\":\"In the infrastructure graph, market.example.com is exposed by service d7b023d8-aafa-42c0-b31d-f3036a8441a6 (gateway).\"},{\"ref\":\"d7b023d8-aafa-42c0-b31d-f3036a8441a6\",\"note\":\"Service config: internalPort 8443 and publishedPort 8443, no healthcheck. Runtime log at 2026-11-01T11:55:20Z: 'listening on 127.0.0.1:9443', which is a different port and loopback-only. Container is running with restartCount 0 and the highDisk flag is true.\"},{\"ref\":\"93248114-3ffc-4b49-b613-c1de10a06c5b\",\"note\":\"Last deployment SUCCESS, commit d7e8f9a, finished 2026-11-01T07:01:00Z.\"},{\"ref\":\"f24510dd-db3a-4d3c-baf5-f926c6895653\",\"note\":\"Server app-1 is CONNECTED; disk used is 47,616 of 51,200 MB (about 93%).\"}],\"missingEvidence\":[\"No direct probe of port 8443 or of the domain, so the mismatch is inferred from config compared with the startup log\",\"proxyStatus for app-1 is null, so the reverse proxy routing could not be verified\",\"No logs from the latest deployment to confirm when the listen address changed\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS9wUKEAgTGAI4AUIIdGhpbmtpbmcSDKQaWpSSj645JxNrNxoMKYyOWdq+7VEIPvGPIjANhBbq+ny4KxfxaOYMWDo5Ci7sbocqnuHYI/8pwYp7KsAMxG7QpyjMucGsYplhLyAqlAUGp73rWoEhS6re0JoOqVS9VBgtXcXWc/j6/FFlFFIGknY0gRg0MrcJHlcfeMDFS/c93wUol1PjFmPH4d8y9+lQ6gk2YDe9RmMFhks+K6PeYbnNPcD1b+MC2b0r7b4s7hQICDBTbNYjmWoKxdXqzhhmVu2ehMG4kqbUgTLEfx0Y0iK1+2iHa4DzOvBKEIF4VEBZbXQkHpvptfPp+N4msju1QsuiLHZm9TP9JoTvkLQqIX6TfDzOQTGmL8KSJtN16Za5rCU4Tb90Z2XWH/yaVQc2DhCrtJZ5MooEGwr7G3rLOIJByIpuFJbV+96w9rA/QsgczyD4gmNVJ7kn7bUqlXb0BLAE8p9g1xpeDZjhWYaemiXfe+zrUB+E/PDw0h5bFPTjrQzR4lfITxOXnfsQ6nCrrB8eAdfv0TCOGPwZ5X/Wf86eFtF7tNZIXTYKYVW+NkhgK6B0BE1EQ+eMCvfuDL/DO8hznfHx4xgaFMXznfK6cUXI39m4K3aDzy9MpwzAaqiMkF3M7+6ljETDs8tthIPEKPYc+vMO5CEtORNIKeG/nzcGIbFMX/aYm8NNHzFsjV9XH+zlK4ycqjYYeFyxDX1eD5gRN+I6kG5emZJBEf1I0qQdZUB5VcOJmEJalZvDhmkJDv2/i8+ELILcZhopU9T+OHlIWZKLcWrZGziK6iR+qurX8t2PrBHgMUoLpIpeBBlzXVATs4uEkrvBiedyQIwFNFL88XN1X5Uk2oS+cTu6NI6AyYsBtF+jEN8HrBT7QXfMamf7MQaikNiRQhWun/b4UicdK/xCL6lBNxgSTti4CWtcwOzzAi0hFtpkY53JmvbLFukmP2kwLdkyTplRuG3vgxz7NhGHxkWh4PihSrxTcXQwuKMYAQ=="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

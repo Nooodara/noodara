@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "topo-empty-sandbox",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "129cfb03e6985acf4d30a66ad0383ec108eddcb45c8df145fe678204e13a4c6e",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_012vAoWWvZVnULHwpftZjJrR",
+            "name": "get_infrastructure_graph",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5374,
+          "outputTokens": 79
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_012vAoWWvZVnULHwpftZjJrR",
+              "name": "get_infrastructure_graph",
+              "input": {}
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSqgUKEAgTGAI4AUIIdGhpbmtpbmcSDDOQ9ytbRdZ8fW8cqhoMCjPwMwiX6g62AZ57IjB89P8sN9oUc73oBSxlFVhtIiuOTOiJdSo44FOhThJala7pmM8U0q/r/Elmu8B+XTAqxwT7QqeNGZe/50h7Fd22AHpLvW7mUrfOm+iPuoa7EXGUuGDpvwhOGCT5d4NdN+BBaB/ErPf3zNvjEtpLMm9Iz+RNSmLeIJweQCK2ku4c3gIf9mt42jiyvSA0bxhp4F2XZJmGQEd0xA0rhgfJSNxyMFbi2IARr/2+6FuZJYG8+pAgzFYMLARgpFWSkWBhg6V+yTNrj9eFa+RsP7hQr0YlbHSfseOc/pB3XcQoDIaK7FNcXkTIwWA+nsq5ANlhZ6fBAWM5mE5nJh4oM3DmfCklWEBEmFTmatPeoD3PV5as63aj9DTUZlEUVoGYstbGlCssqyO/lC7PBsAOiSzm08wsmhMkvTWeiM3kUD8qfNQ6GXBV6AhLUKPcsqFnhDTDKdEyuHpjEFcXBOFaOnZQdmR3wVP/2FNzjjGi3tKsgvE+myJ4HM6Cmuqm3u5vfzDiMDQxlmHfHCDAe2FlLsBuIGKzhKNeuiknCMeYBM4yTtvPbXOE5JkavJRpk0QQk/H1GghLR5/epQKpcG3Nq/AjbxqsNfNjUZvAGDk3cTxqYsjHiAQVbcJZtPaJSDxiZKLDSBGH1ypHXAavBNFd0jANwtxiDxONRhjHhxGGFi5Ix1P39WNetwTRkB8em/LvhZEi1QSLYA5jH0rbfSRj8kJkQ3BCqOStOzsoNJHNdA7ZhP0peNamSA7TtU//9bQDl2Re8woJKxv584rmE8/mvlsU8Y79vPndWCBo0ESkCpobxMN3Rvn+un8vWG0hA6iv7floArLOGMh1a0iE9pVIGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "8d7148ab8d45dd266f5b8bf57e86c58f82a596624c1f3032264ed4f877d4cf03",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_018tkxEcYbXRDdPEFxxAX1x1",
+            "name": "list_services",
+            "input": {
+              "projectId": "30bb23ac-53c4-4195-af22-ce2f8191e2e5"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5932,
+          "outputTokens": 103
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_018tkxEcYbXRDdPEFxxAX1x1",
+              "name": "list_services",
+              "input": {
+                "projectId": "30bb23ac-53c4-4195-af22-ce2f8191e2e5"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS0AUKEAgTGAI4AUIIdGhpbmtpbmcSDPrM5TJ97cMOABZeSRoMMn7qA+W9RNkxOXa1IjB9FubAb5hd/406cKGNC1sN8vitl7SxE8ZUCAilV5ZBLYyABHz65N0ZNSBSdyUl1tAq7QQ581+xR0dWhmEVS93YSGTV+501wYN3vRx7K74BUj7G3JTtqUlxnlj9slchAE1Oi9rD5vy7kadgrUytff9OMPKfN1p0uIrCljvYp51+Qi/hXl+lK4oXjAoyrapy89v6oBkAoUkZi7eZJzWffBtJyM/9O6IXpLue/HhVby1tmdnMVt/1tazpNCIZuD5ratZP0I92ZRtwByen9u3/2e6ZlqVV0N+kw8p9HM+trUAPM7cKaaG3Y+Sx/jTTtVGhBix5jXoKa0NTadf6gQd7v3+A7xWJDvTGbHjNXwpaXMTSR3JQNSqVwDhfAZQvrTG2WTrIVDAB2wyMyh5UdtUVAm9+zIZ5IMvmD5W5lmmDYWcOhxZSA00NYhOBGps++UDCXECNvo6DAcK6DP0dNfGy/32oj9o3T3D7HqCr+n1PyobyAwoi9wow7BO/W9LjYfXRutcAZ78+OmnslEcl1qU233YEMHt7Mf+H3FYktZcJ3jxgscKG5tMayY2yvF1yYSFfthC6vsVK1nrBBNRyS5NeP9cO+BPpvh2HWzyWpOSi2ZQAYJqtYL5LWvszLun0zav37Anc7YIflMMu2Ml+2uyso3eTSJ1l3mgpfX3ZIbYf/I4Dl4PRcoJf2TOgSpEHqftmiBzYW510Hidqn9CDY82PiHpzSzjbGFu19qVfKtc7vTvqeEGx46diSRXCn3T49a4Og7VX2nmR1MWlrTLk00LaNFLv2jKri7w0BoVYyTEJuDeyhfxFYyVDmEJamp8BogFspu/3vx0EFQnXYh79UZEhiAWTMrGp0WerY1q08gMNg0kDGbkp5ckgrD9sAIvtG+eBCU0YAQ=="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "12d635867f1bd2753ce3e8fc7ad41fb34dfee6ca68d83d934ff0ff8c7c37acbf",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_018QVfBvXuXB5knpPysse4wC",
+            "name": "list_services",
+            "input": {
+              "environmentId": "c758d752-2873-432a-8aff-41216a5f3592"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6118,
+          "outputTokens": 104
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_018QVfBvXuXB5knpPysse4wC",
+              "name": "list_services",
+              "input": {
+                "environmentId": "c758d752-2873-432a-8aff-41216a5f3592"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS1AUKEAgTGAI4AUIIdGhpbmtpbmcSDJZPJEcWoj2Nx1SVkxoM/xKPQvhNoEGGXJ+tIjAxBch9O9hD0z8nFhzOz7ypOv5J0/Qq4xXfEacmCSknrrLLxLPB4SbcdqG+6kMY3Mgq8QRag0Fbbmi2KMYtSlSDG0f2LUGPQtCNf0ZiePpwQU0mhgphYHOJpfEOdmxbDREIHRsaQws2su6yy1hf300pxqiuaHk4Fft2gXUHEqGRB8i8OJ8t6cEwTjTA9ecON+NP5doQA6Zu9j7DmFU6O34v85sev/9Ui+TX6bKxfYSKfkAm239DADIx+11gmVTCxD9cRxVhwTMW5NWi9+N2LnShlBLrjZp6ehRUdnhZkC8F+JBoq3JZ5vGe3a70ljO4C5XeGDzM3nbQJ4SjsNin6uJmLeZQ3rDEFi/sYE216cRA8G/YGZ6bqVUbjWYkch0o5ztbx5OyowDOCoeBrkxTCCSgc2LpniRr7qb0Agw+2MJkG0bDuQbjHdcJCPSgP5qTjjetOaDkIw3naMzTlrg/ZK2Z85gDw77Rq7ONmYZ3UAduH8RXCx6X5W89uZwvPspqRph1e2Bqzken6msOrS/TLVwradYo+b85Bop/N9xfUk1zgcMs21p9FZXubl/BA8AJ8cjv6AjtIVHZe5wrTFcnEyulgMfCVk1VMParS5Z8W+n8wLsHLzp63VQmOP2J05hCZVeEzcSCdTWtZYaSTpaWtQx86RgUCQJVAHQnTFtTAlrrRTqYFyL9D+Be/p2Ov73B3Qi5FNoQHyttIzlkV5Xcu/DgAlEZnWFli/tuP4zOYQ9a8cS4BJdVvnPkB7ejOMPa6UjSJaLduMv65ALtJgZqAgottkQBS2LzE4d6iP3nekKOUqouLubcAyX85Pq7rtucJOTFYdBbtm0ozvfiloPWrYuA/aElRu9iw/di4D3MJn1EHngdpv3hApw4XDyLVmPV7t9MQjCtGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "92f6f4bb102f1e7ad13db886ad5b86ec8a650c44171577e5fa24a95cf24cee42",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "{\"answer\":\"Nothing is deployed in sandbox right now. sandbox is a project with one environment, dev. That environment has no services: I listed services for the project and for the environment, and both lists came back empty. Because there are no services, there are also no deployments, ports, domains or server links to report. No server is linked to the sandbox project in the infrastructure graph. If you expected something to be running in sandbox, it was either never created there or it was removed.\",\"diagnosis\":\"unknown\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Project\",\"id\":\"30bb23ac-53c4-4195-af22-ce2f8191e2e5\",\"label\":\"sandbox\"},{\"kind\":\"Environment\",\"id\":\"c758d752-2873-432a-8aff-41216a5f3592\",\"label\":\"dev\"}],\"evidence\":[{\"ref\":\"30bb23ac-53c4-4195-af22-ce2f8191e2e5\",\"note\":\"Project 'sandbox' exists. Listing services for this project returned an empty list.\"},{\"ref\":\"c758d752-2873-432a-8aff-41216a5f3592\",\"note\":\"Environment 'dev' belongs to sandbox. Listing services for this environment returned an empty list, and no server or domain relations are shown for it.\"}],\"missingEvidence\":[\"sandbox has no services, so there are no deployments, runtime status or server placement to inspect.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 6301,
+          "outputTokens": 450
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"Nothing is deployed in sandbox right now. sandbox is a project with one environment, dev. That environment has no services: I listed services for the project and for the environment, and both lists came back empty. Because there are no services, there are also no deployments, ports, domains or server links to report. No server is linked to the sandbox project in the infrastructure graph. If you expected something to be running in sandbox, it was either never created there or it was removed.\",\"diagnosis\":\"unknown\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Project\",\"id\":\"30bb23ac-53c4-4195-af22-ce2f8191e2e5\",\"label\":\"sandbox\"},{\"kind\":\"Environment\",\"id\":\"c758d752-2873-432a-8aff-41216a5f3592\",\"label\":\"dev\"}],\"evidence\":[{\"ref\":\"30bb23ac-53c4-4195-af22-ce2f8191e2e5\",\"note\":\"Project 'sandbox' exists. Listing services for this project returned an empty list.\"},{\"ref\":\"c758d752-2873-432a-8aff-41216a5f3592\",\"note\":\"Environment 'dev' belongs to sandbox. Listing services for this environment returned an empty list, and no server or domain relations are shown for it.\"}],\"missingEvidence\":[\"sandbox has no services, so there are no deployments, runtime status or server placement to inspect.\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

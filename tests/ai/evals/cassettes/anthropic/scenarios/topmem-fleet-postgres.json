@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "topmem-fleet-postgres",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "dd0f16b3b73ab61b03f1354cd79e31509845a77d4836499ee907cf2479239738",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01PaYSEh3DXcRD5hrQtz7j7M",
+            "name": "list_services",
+            "input": {}
+          },
+          {
+            "id": "toolu_01Xb75gNQ1xwWzEVg5FhTMzv",
+            "name": "get_server",
+            "input": {
+              "serverId": "76825c68-8399-4fc0-8f5c-457bcceed234"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5447,
+          "outputTokens": 118
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01PaYSEh3DXcRD5hrQtz7j7M",
+              "name": "list_services",
+              "input": {}
+            },
+            {
+              "id": "toolu_01Xb75gNQ1xwWzEVg5FhTMzv",
+              "name": "get_server",
+              "input": {
+                "serverId": "76825c68-8399-4fc0-8f5c-457bcceed234"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS/QQKEAgTGAI4AUIIdGhpbmtpbmcSDK2lZocMO9KUNW+6xxoMMOzABxr2hAcW78yvIjCBW1tzOwLayXoIyEMwT+4+x+yMo+AN11GNqjCg2Xi0lxNMoiqhEP7zajhCmtoo3rMqmgToaHzcZlMDbELDgGgOsJ7rCNsgZUve6vr0UxKM11EaSjQe/xEgRIa6FAj9/n8+ILbDD+6N5e0ZmC1VqhHY140oiQgWnPDYr0+ydYive+artSgb0UcakTG4p23QbIbHx9QQP15ezJmB63Rpo6zRw/W6LfEFtbdrKOE+YIbm31JbaRG7ZKV8u9DaRUXU0mPR6h9rqjUTL+CtGmiHAzEzyGHxaCvGolP6ypyVsVwrwO92/MKzM5eYHBrHeuH/+Pzd4shbaK9cGlhgQ1VGk0AAb1oNdVQAjdXgkCfXZ6eEnZ/uAsqpA6m9BQbKzoo0Le7dm7vkviGyNxYvRCTYqaFOVTz59L4VqykqDnOZ/9/78HLU4dB7grUTK/aU/88eb5GZjVRIr+txi3hhQMR9SRB8vqYWR4ytL4BqjQ8fjfQLRnp9yRbnrnOsunBYu0PM8riVB9Q1FE+Psc/iRsRXwjoUs3tM/UATNtIdccMiEajYrqyqY5Zf1j4nyglxmmE7QfjAKND1U7fsydBYcaVqwUpUtP785wdTwf9WpsIE8j0VxGN06aik9f196nhLyh4prWzZpeYHycBHvq8/tYGQZ1tmbUZu5en+6pwJG+cVGwdnnl8chou2wmzdWwW48SZ6TLhnxW5LYCkBcTP5F510eHSBcimbsIq7K9aR58LZ9BeTwiTSUzRXDmpH77si8BcYqACBReeUGdH6PC5Zg6txGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "9439eb7159e74e7d132d5c30d5438c269c7e12ac252c6458f4486d59069581a2",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_017MPGrMyyq29sgwREt89oaS",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "e028df06-4ef3-429c-a817-4bf749ba1c46",
+              "points": 5
+            }
+          },
+          {
+            "id": "toolu_01Gd1fLpNwGQRTqofNW9dT8g",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8",
+              "points": 5
+            }
+          },
+          {
+            "id": "toolu_012iiDLcfAoCUXL1FxtHLKeD",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "9539e967-029e-403e-99ec-9c7b702ce78b",
+              "points": 5
+            }
+          },
+          {
+            "id": "toolu_014WuppjFX8SrbTVTtw9i6RA",
+            "name": "get_metrics",
+            "input": {
+              "target": "service",
+              "id": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01",
+              "points": 5
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7232,
+          "outputTokens": 457
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_017MPGrMyyq29sgwREt89oaS",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "e028df06-4ef3-429c-a817-4bf749ba1c46",
+                "points": 5
+              }
+            },
+            {
+              "id": "toolu_01Gd1fLpNwGQRTqofNW9dT8g",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "84e8810b-2879-4ce7-be8c-7d4ed845c3e8",
+                "points": 5
+              }
+            },
+            {
+              "id": "toolu_012iiDLcfAoCUXL1FxtHLKeD",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "9539e967-029e-403e-99ec-9c7b702ce78b",
+                "points": 5
+              }
+            },
+            {
+              "id": "toolu_014WuppjFX8SrbTVTtw9i6RA",
+              "name": "get_metrics",
+              "input": {
+                "target": "service",
+                "id": "bc2abfda-bebd-4f49-b1c1-2ac474ff3a01",
+                "points": 5
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "d55415c572316e744cd2111fd7ab2fbfa951ea463b5ce88e262fd84aa82926c8",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01EwAppDdrxdjZChx5Lqj8hM",
+            "name": "get_metrics",
+            "input": {
+              "target": "server",
+              "id": "76825c68-8399-4fc0-8f5c-457bcceed234",
+              "points": 5
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 10441,
+          "outputTokens": 429
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01EwAppDdrxdjZChx5Lqj8hM",
+              "name": "get_metrics",
+              "input": {
+                "target": "server",
+                "id": "76825c68-8399-4fc0-8f5c-457bcceed234",
+                "points": 5
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSnwsKEAgTGAI4AUIIdGhpbmtpbmcSDDO6ytxyWWHofI/nrRoMxLYJScELhOpw5rqOIjBJ2GYCiU8F/DXJvlwiHMy2+X7lUDIVCQ5C6aJZEhIWbFu2mP/V7Bz0nmP/y/hnxPMqvAqz8gqWqv88vkQrxPZB3VNyTW80zm0tiasTu6Lt/Qm2EBeEDCZGTOXelKiErb1GEOY62wREOqB5Dft6XeUYdpcIj2Bv6w+/DByHp8VYXhGvMPfs8L+MzMxfQrHJovLoB1CAq4gdyZNHOWuHpiEYBIC23GpICL2X+buGGe7LzYJunluaSHznb451MEp/AbIuOUWpfKxQorSzkaGYwbexBc1Rp7osMOipG0oQgfiBQHPs+1T5a+zGLRkfWaXgvIrRDtYChIxn+WwDnHZbS/fypnfJ3OieQIBKYvyYfP7lpS/FHJbYekdhTk+z208rcxL9fdGxR3PWKFAIeALKmW29dm2ACITdyYWECV3jaWnUAQWhAb6bpNA9e5hsV/b1XvUq9cZv8YP4n7IjpOAiGgsXQp7NJf9vIyO/4OUJrl3C+KUkjqYaLOij9M1ADU2LBUcCarULvj50BrInZNPXpdKGrZov3hVBzJoBVQu+Sp0ZzBbPvHLCzzQIXmttoYXPqd3jpGbVW2rXxLYqrmE1KswxncoJ402/NWM9G8lGwBfVVs6ATJHcb257DNlN2hINopDwx/xnW0Q4dSN+HMb9i0iU/LtcFtk+N0nrnaWO0EpFzRcAN6kyJsNWpG9ijZR6VwUEHB3DBEwd1jMOllJua9MfKk1X/5Skhp26S7a/aQyEPiM3QDg0dxu4mZgqPQPn3q/dOCtRTopb7qIF6TX/Lzh6FNYpHub67Onwyeme6fJaJ8t0sf7YrD/8al7EChh1GyAWebCugCQ0ZVMvmqNdL/tzpjI9G6/UP0YDYRROK2FckEvTRRw/fMYMOOUNxdSrMNcBGE4Ixcl4RiBMF5aU2lyhwQ2QXXT3Rt5pVTFAEzS8nzd9CXTc/PgDOInmtcoVBWxGxjuixwlq2PlzR5OF8VU7SFqJigMfcKzxdn/DOpyJYo/C2twlRdDzjeFuXI8GPylQcCvpPUh3ETLQXGfQnbblRXD/MIXtyze8r3VZ2oCPw2W9/LM3WG4hS+v2KVE7wweKp+EGReX7OcGa5VpH4TC8dvIv6WJbYkItMjsRgdHIq9tyoPP5zmRjYxwke0y/qDG4elah14pYuqMFtfPSn19q1R0U56niC5f/uMHHzSbhqkJS8atbSPlNL8+ENQZZNtX9LmUyr7GYjFOBe/qwnAeEgu3Ec4enU7bEbmrgupxrkzKFWtzig0Z2SyVdJKtRQV+VmxekLRWoJIpXjY1lkgG14iGFxSfNjJcXQpcu/6uNHQ5iCwj2NGhXYG+DApt0fja1svhgvIQDSgdkfVFxdtlJ8rJXfR/9l6xx7ueiuUCy1A+WHcOYXiI1BWBx/a8lVhpgrXLLDfKX48t/NcYsO25P+WuMQ+T3Uwlt0I9irumgIBr2wsIIVE+QIzs1QkmotmH9V1hgdhjhPV/rssZSJqQcD7OyfDnMhycWhSGEpk1f7s/eC+aAJHf41gMuVLelDvmqoqbHXhBt3s2KPO08pPRVmh9fbkfMc7vDPMJs3oy2wqfh3+n8NrwTu3tH6T8mWW8hi2wOwStz9J8K7Q14wZn85vSs5mdMP4uQdmQIt9+xVYC2WYXuDNRI3GLJT619y/2/t9YVFAH+6dXS9p0mdWU5y8OZDsm0fneOG2pyLMoU81/K9ouuj5Tb6bbvOU/THuBHcd6jjLwf+EekxKgMG7ghj1H/fEupc/gL+C66pYsPPuCRNoIDiuVeHVKfFeLFaiP0k9YfyOoVv0NL7XABgeQjLy1D7/phsciSAQgqhQTwBZ1M5Cti6X83sIyisEpJWhgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "45c34b9bfdedb8709e4e733e92ba1be73343f6e8a80ff297477fd2117dc3682e",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "```json\n{\"answer\": \"The postgres service (postgres:16) uses the most memory. At 2026-11-01 12:00 UTC it was at about 9.65 GB (9,646,899,200 bytes, roughly 56% of memory), up from about 9.44 GB two minutes earlier. Of the other services I could measure, api was at about 650 MB and redis at about 325 MB. api shows a higher memory percentage (about 60.5%), but that is measured against its own, much smaller memory base, not the server's total RAM. I couldn't measure reports: it has no memory data and its status is UNKNOWN. postgres runs on the server data-1 (16 GB RAM). data-1's memory use is high, at 92.8% (about 15.9 GB) and still climbing, and postgres alone accounts for about 60% of it. If you want to lower memory use on data-1, start by looking at postgres's memory settings or setting a memory limit for it. I can only read data, so I can't make that change myself.\", \"diagnosis\": \"high_memory\", \"confidence\": 0.85, \"entities\": [{\"kind\": \"Service\", \"id\": \"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\", \"label\": \"postgres\"}, {\"kind\": \"Server\", \"id\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"label\": \"data-1\"}], \"evidence\": [{\"ref\": \"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\", \"note\": \"memory_used_bytes rose from 9,437,184,000 to 9,646,899,200 between 11:58 and 12:00 (memory_percent 54.9% to 56.2%). This is the highest absolute value among the services with data: api about 650 MB, redis about 325 MB, reports had no data.\"}, {\"ref\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"note\": \"Server data-1 has 16,384 MB RAM. Memory use went from 88.5% to 92.8% (about 15.94 GB) between 11:57 and 12:00. postgres runs on this server.\"}], \"missingEvidence\": [\"The reports service had no memory metrics (status UNKNOWN), so I couldn't compare its usage.\", \"The metrics cover only the last few minutes, so I can't see longer-term trends or peaks.\"]}\n```",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 11848,
+          "outputTokens": 827
+        },
+        "message": {
+          "role": "assistant",
+          "content": "```json\n{\"answer\": \"The postgres service (postgres:16) uses the most memory. At 2026-11-01 12:00 UTC it was at about 9.65 GB (9,646,899,200 bytes, roughly 56% of memory), up from about 9.44 GB two minutes earlier. Of the other services I could measure, api was at about 650 MB and redis at about 325 MB. api shows a higher memory percentage (about 60.5%), but that is measured against its own, much smaller memory base, not the server's total RAM. I couldn't measure reports: it has no memory data and its status is UNKNOWN. postgres runs on the server data-1 (16 GB RAM). data-1's memory use is high, at 92.8% (about 15.9 GB) and still climbing, and postgres alone accounts for about 60% of it. If you want to lower memory use on data-1, start by looking at postgres's memory settings or setting a memory limit for it. I can only read data, so I can't make that change myself.\", \"diagnosis\": \"high_memory\", \"confidence\": 0.85, \"entities\": [{\"kind\": \"Service\", \"id\": \"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\", \"label\": \"postgres\"}, {\"kind\": \"Server\", \"id\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"label\": \"data-1\"}], \"evidence\": [{\"ref\": \"84e8810b-2879-4ce7-be8c-7d4ed845c3e8\", \"note\": \"memory_used_bytes rose from 9,437,184,000 to 9,646,899,200 between 11:58 and 12:00 (memory_percent 54.9% to 56.2%). This is the highest absolute value among the services with data: api about 650 MB, redis about 325 MB, reports had no data.\"}, {\"ref\": \"76825c68-8399-4fc0-8f5c-457bcceed234\", \"note\": \"Server data-1 has 16,384 MB RAM. Memory use went from 88.5% to 92.8% (about 15.94 GB) between 11:57 and 12:00. postgres runs on this server.\"}], \"missingEvidence\": [\"The reports service had no memory metrics (status UNKNOWN), so I couldn't compare its usage.\", \"The metrics cover only the last few minutes, so I can't see longer-term trends or peaks.\"]}\n```",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS/AUKEAgTGAI4AUIIdGhpbmtpbmcSDBTlbSPw3Ezosh+jOBoMvH7ufLVPAMYBMR+WIjCi4KVZ03WHSs2rX8PEMxKByodveciQfasu7QGiFEroOhLEqdopK4DhicZeyOl6k6YqmQWeJ+00FGpWVZO9KWeAy6wLbTdDYQnVOweskIITEwFV6kpFpS5CQlTRb247YqcaTFG7v6FaRTY1kl9rT4/YC3cfppntHenoouGkQy1HdSbgPS1jSfmibNUVrFm8OO8nOLYL/mEyjeeMIERfh4WtBaVUIerOw+QfC3gtJRokpfZXQagWuoM7OKYUtrkp52ztaEqgW0yslzil0/Bnk92NlD3vO2GdMXyejYPB2ai+KTTpGIShl2NgTXoMesPWzv1ksprLp8j6637tTRM6LEnJr599NO1SFmJOqi7UnblpVHj1DW9MlPbK6caDitHA1vFEpezPtGjy9vQe1nLHmJdozVc+RZVVXto0a6rF3z2Sm46ZOgd9wO5+e7WVNbVrjQd81Ge+ZJEMSnovUHhLFWbhbyVeD5vS7ahNFEtTTgF7ufL3wGRoFQvBSuZgjZVHeFrlpQs2htccVd+2haYR8f0WZVCyDBf/748P4YlY+AsY6sDKhRHdSMoZ5l+hvHpC/m4jcyTf/4niBMi2ztadb8rrVNO9+BTeohjaVlgwNgXjJj17l+16uBYa20BlEyuEPLQk4lYARAqH2zpTAilfUwkN/SyIA1KSlfBDRLSQZgAFmluaD5wZJL7UvuSi7NZsAvLbxxt5rZFEXFr5E93qvkLcnajaunQh3ZZYJQQy9nGWqicLU/FJKUmUj44E/lEl9K40XyassNoSkYm4oNm8vgTa2eX6CoelyBmF+9I/v2FhR4Ic91TwU4hkiDA2o+016Df8uBD2F1O0gUXEbOeMW8f+EdJ+MtvXHcbUeZzU9vwlZVIJ5/WwSIN6r4OHusMbIj333Err87oL0C6g9tL+sn4grkPfV5c3e6ZNm7DUbgIpJFIiCExnEgdlcPzvUBgB"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

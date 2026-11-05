@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "loc-payments-api",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "c871cf8583db4475fb7b3af5e0ac9e2f6278c5baa193c2f4ff1f18fba8096728",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_018WwaQRas6naMjDKv81xWWE",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5373,
+          "outputTokens": 26
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_018WwaQRas6naMjDKv81xWWE",
+              "name": "list_services",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "8fadbda9505d5f0cd0efa3261cbe48b178fe8f42da4f411ca7bf27ff4f1ecd73",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_018chvWzX3rYywRdz6xvP4FC",
+            "name": "get_server",
+            "input": {
+              "serverId": "7892be3e-b2cf-441d-87a4-6846aa412bf7"
+            }
+          },
+          {
+            "id": "toolu_01QagX5S1jKBB8tw8WUQ8bLy",
+            "name": "get_infrastructure_graph",
+            "input": {
+              "environmentId": "5000b3ce-75d0-4bd7-a346-5b532aa87c21"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6408,
+          "outputTokens": 154
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_018chvWzX3rYywRdz6xvP4FC",
+              "name": "get_server",
+              "input": {
+                "serverId": "7892be3e-b2cf-441d-87a4-6846aa412bf7"
+              }
+            },
+            {
+              "id": "toolu_01QagX5S1jKBB8tw8WUQ8bLy",
+              "name": "get_infrastructure_graph",
+              "input": {
+                "environmentId": "5000b3ce-75d0-4bd7-a346-5b532aa87c21"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "ce25e36e5fdd00e3e60b8d0c6c913363de877fa2bf93d6c21d89a31afa12626b",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"payments-api runs on the server web-1. web-1 is connected and runs Ubuntu 24.04 on x86_64, with 4 CPU cores and 8 GB of RAM. payments-api belongs to the production environment and is served at the domain api.shop.example.com. It runs the image ghcr.io/shop/payments-api:1.8.2 on internal port 8080. No host port is published, and it has a /health healthcheck. Its last recorded status is RUNNING.\",\"diagnosis\":\"unknown\",\"confidence\":0.95,\"entities\":[{\"kind\":\"Service\",\"id\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"label\":\"payments-api\"},{\"kind\":\"Server\",\"id\":\"7892be3e-b2cf-441d-87a4-6846aa412bf7\",\"label\":\"web-1\"},{\"kind\":\"Environment\",\"id\":\"5000b3ce-75d0-4bd7-a346-5b532aa87c21\",\"label\":\"production\"},{\"kind\":\"Domain\",\"id\":\"fe976544-b235-41d6-bceb-02bc382ee9cb\",\"label\":\"api.shop.example.com\"}],\"evidence\":[{\"ref\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"note\":\"The service is listed on serverId 7892be3e… in environment 5000b3ce…. Image ghcr.io/shop/payments-api:1.8.2, internal port 8080, status RUNNING.\"},{\"ref\":\"7892be3e-b2cf-441d-87a4-6846aa412bf7\",\"note\":\"Server web-1 is CONNECTED and runs Ubuntu 24.04 on x86_64 with 4 cores and 8192 MB of RAM. The infrastructure graph has a RUNS_ON link from payments-api to this server.\"},{\"ref\":\"fe976544-b235-41d6-bceb-02bc382ee9cb\",\"note\":\"The infrastructure graph has an EXPOSED_BY link from payments-api to the domain api.shop.example.com.\"},{\"ref\":\"5000b3ce-75d0-4bd7-a346-5b532aa87c21\",\"note\":\"payments-api belongs to the production environment.\"}],\"missingEvidence\":[]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 9857,
+          "outputTokens": 742
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"payments-api runs on the server web-1. web-1 is connected and runs Ubuntu 24.04 on x86_64, with 4 CPU cores and 8 GB of RAM. payments-api belongs to the production environment and is served at the domain api.shop.example.com. It runs the image ghcr.io/shop/payments-api:1.8.2 on internal port 8080. No host port is published, and it has a /health healthcheck. Its last recorded status is RUNNING.\",\"diagnosis\":\"unknown\",\"confidence\":0.95,\"entities\":[{\"kind\":\"Service\",\"id\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"label\":\"payments-api\"},{\"kind\":\"Server\",\"id\":\"7892be3e-b2cf-441d-87a4-6846aa412bf7\",\"label\":\"web-1\"},{\"kind\":\"Environment\",\"id\":\"5000b3ce-75d0-4bd7-a346-5b532aa87c21\",\"label\":\"production\"},{\"kind\":\"Domain\",\"id\":\"fe976544-b235-41d6-bceb-02bc382ee9cb\",\"label\":\"api.shop.example.com\"}],\"evidence\":[{\"ref\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"note\":\"The service is listed on serverId 7892be3e… in environment 5000b3ce…. Image ghcr.io/shop/payments-api:1.8.2, internal port 8080, status RUNNING.\"},{\"ref\":\"7892be3e-b2cf-441d-87a4-6846aa412bf7\",\"note\":\"Server web-1 is CONNECTED and runs Ubuntu 24.04 on x86_64 with 4 cores and 8192 MB of RAM. The infrastructure graph has a RUNS_ON link from payments-api to this server.\"},{\"ref\":\"fe976544-b235-41d6-bceb-02bc382ee9cb\",\"note\":\"The infrastructure graph has an EXPOSED_BY link from payments-api to the domain api.shop.example.com.\"},{\"ref\":\"5000b3ce-75d0-4bd7-a346-5b532aa87c21\",\"note\":\"payments-api belongs to the production environment.\"}],\"missingEvidence\":[]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

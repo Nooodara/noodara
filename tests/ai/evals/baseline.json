@@ -1,5 +1,20 @@
 {
   "schemaVersion": 1,
-  "source": "none",
-  "note": "No live run yet (OPEN_QUESTIONS #21: provider key). Only NOODARA_AI_EVAL_LIVE=1 pnpm test:ai-evals writes this file."
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "datasetVersion": "1.0.0",
+  "date": "2026-11-05",
+  "temperature": null,
+  "metrics": {
+    "scenarios": 65,
+    "entitySelection": 0.9692307692307692,
+    "evidenceGrounding": 1,
+    "diagnosisAccuracy": 0.9692307692307692,
+    "hallucinatedResources": 0,
+    "secretLeakage": 0,
+    "unauthorizedWrites": 0
+  },
+  "thresholdFailures": [],
+  "cassetteDigest": "0940c6e1cf5c8bee128bf5763a8a8a25868a6478b54749fd3fa5fa7475ccaa17"
 }

@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "lastdeploy-payments",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "5702187000998ad1aff9fc443af4206b93715f4f5c400377f88c247fa2444d30",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_012mHaFEUEeQrw5JzTm75qhk",
+            "name": "list_services",
+            "input": {}
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5379,
+          "outputTokens": 26
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_012mHaFEUEeQrw5JzTm75qhk",
+              "name": "list_services",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "7d74b293eea66e75ed373e72da1f0e4fc0660db42202849545e9b996ddcd23c0",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_016bMFGweKN2DvLizGXSzfcK",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+              "limit": 5
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 6414,
+          "outputTokens": 99
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_016bMFGweKN2DvLizGXSzfcK",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+                "limit": 5
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "3dce53ee4f79434e53b371b9a05a5eabfa0952f16c7912454801c64cab2126e1",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01AcEFgi99NxWrZfQb5vUSu6",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+              "since": "2026-10-31T11:55:00Z",
+              "until": "2026-10-31T12:10:00Z",
+              "search": "deploy",
+              "limit": 30
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7419,
+          "outputTokens": 353
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01AcEFgi99NxWrZfQb5vUSu6",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+                "since": "2026-10-31T11:55:00Z",
+                "until": "2026-10-31T12:10:00Z",
+                "search": "deploy",
+                "limit": 30
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQSrwcKEAgTGAI4AUIIdGhpbmtpbmcSDMn5GbA7Ddv3o/vIERoMLvIfeyg0FFJ8MwX3IjBKrFvrlyp85f51hWqsh+X3L0eU14hc5d5VkMvUFxZ3ennyYlM8gv7FxY6IoobkrqAqzAaLyUbVVAjMwsySOSWqoPZ71jCLDQv901q4wB093OVa35uDfiOh5cl/UozL+s7k02w3UwTEqnLxI4C4P3K8BE95ztMZOc5ZCSpXQZ2vGdyi6ZWSuZPCaBh0TA2276S/m3BHNzzxs4TVHr8iTBjgjAXpPI4OJu04R7wvNpogDGf9T6H1NTq33eucl6rMnE3SP+qZMe+Cg4b7eo9C4DyUh7W+L+2WfXZZjhb08C3eXw+LWQ3ZVdt/+TksWyCGI71AUuVw4n2qWIWORNZ6NAOREXfwsrhyUoub6b7pRWHcYZnMdHTkWfDumoRIhJPGfE8vbkeRhAUAj6KfqmTmjE5BySvkG9JyfRhIBDcExdcaXU2VEKO4SFlRdD932jfm05Gkgvdl2ids2CqBaQhqBM7EBBFgnkeY76ScMhqrkgSo2GoKCKrh0aG6PPTqaq5z+cemGXaNbim46LPcXfgz/E6RUbZyVopBBXGkrAxC7rk5eviZJaYBpAPf0rjSc3DACfykZyRXs77VyIyym1mNPczCl9jSONH7+PAsmOO0Jp91vwH9zXcEf0XLHDQrxTI7SR3BZCVfamrsITVD9u6nlA3ZRKzsegLo7rv0T2KYDVkswLsXYb3bYDO+JvT6KX/MhmEOGahUhtzh4UjApYqy3t5PsIaTVFgD+qcrrc78KG2yj+i0V20Z3miUSE18xdazRngG3R1I50o8i4ZGFrnL4j8nw48T0j1DnQdXfd4UifMkmwzvHmaOW8CCEjajDoexHpe5V06oZP8UpEIfZozanWcKts5IAhxKh1jBpQLecCSs9hmDXC2baNJWCkx1pEm0t7VcpjdApoL1KSOjQur5lUBQv2cZH4vTib5hoS2QuspIlb9++CHr51RT/59zAjzcpenEBpcSw4I896gGhfLCRDk/XtvqDNTKb8MR4rjPiNvWkY9jppKQA1Yz+2IWtZWBkda7sfCuILi7Aafo2Pa3Q6ccM+8g2B7lqJYNaLnJwudyqGpCb4lHsmUgfUoUXcj5a4C33Kf4CgMeNOqhSVCy5I8YISWQe6laab0L8ITpv93IpaQ1w/eCLHd6VCBc44CvnEVrIQthRsRx3D5aPLaEqT6mKxZ/pAV2b3SkD/ToJD3EGAE="
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "4b715a369fed517661d862dc0487a146dec6efa1e2b53e07ebb338b429cc460c",
+      "model": "claude-opus-5-5",
+      "turn": 4,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01GcYcPG21Rnz4ErTZRvnfzn",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+              "since": "2026-10-31T11:55:00Z",
+              "until": "2026-10-31T12:10:00Z",
+              "limit": 30
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7871,
+          "outputTokens": 166
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01GcYcPG21Rnz4ErTZRvnfzn",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "d9061471-c08e-43dd-98cf-d1c33c316c6f",
+                "since": "2026-10-31T11:55:00Z",
+                "until": "2026-10-31T12:10:00Z",
+                "limit": 30
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "7c5b7b9b224d66606bfb1db2ca710f8b69eb40e78b565b5c532645ccb9ccdc2a",
+      "model": "claude-opus-5-5",
+      "turn": 5,
+      "response": {
+        "text": "{\"answer\":\"The last deployment of payments-api (0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06) was started manually by admin on 2026-10-31 at 12:00 UTC. It succeeded in about 60 seconds with no error. Compared with the deployment before it (432e1417-4410-4dff-a091-a3e1120c9321, on 2026-10-29), two things changed:\\n\\n- **Image:** it moved from ghcr.io/shop/payments-api:1.8.1 to ghcr.io/shop/payments-api:1.8.2. This is a patch version update.\\n- **Commit:** the recorded commit moved from 4f1c2ab to 9d0e7f3.\\n\\nThese stayed the same: the source type (image), the internal port (8080), no published port, and the manual trigger by admin. Neither deployment was a rollback.\\n\\nOne inconsistency: the earlier deployment's saved source settings already list 1.8.2, but the image it actually deployed was 1.8.1.\\n\\nI can't tell you what changed in the code between 1.8.1 and 1.8.2. The service runs from a container image with no linked repository, so the actual changes between the two commits aren't visible to me. There were also no log entries for the service around the deployment time. For a code-level diff, check the release notes or the commit history between 4f1c2ab and 9d0e7f3 in the image's source repository. The service currently shows as RUNNING. I didn't find any fault, so no diagnosis applies.\",\"diagnosis\":\"unknown\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Service\",\"id\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"label\":\"payments-api\"},{\"kind\":\"Deployment\",\"id\":\"0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06\",\"label\":\"payments-api latest deployment (2026-10-31)\"},{\"kind\":\"Deployment\",\"id\":\"432e1417-4410-4dff-a091-a3e1120c9321\",\"label\":\"payments-api previous deployment (2026-10-29)\"}],\"evidence\":[{\"ref\":\"0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06\",\"note\":\"Status SUCCESS, manual trigger by admin, image ghcr.io/shop/payments-api:1.8.2, commit 9d0e7f3, 2026-10-31 12:00–12:01 UTC, no errorCode, previousDeploymentId 432e1417-4410-4dff-a091-a3e1120c9321.\"},{\"ref\":\"432e1417-4410-4dff-a091-a3e1120c9321\",\"note\":\"Status SUCCESS, manual trigger by admin, deployed image ghcr.io/shop/payments-api:1.8.1 (saved source settings list 1.8.2), commit 4f1c2ab, 2026-10-29.\"},{\"ref\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"note\":\"Image-based service, no repository linked, current imageRef 1.8.2, port 8080, status RUNNING. No log entries found between 11:55 and 12:10 UTC on 2026-10-31.\"}],\"missingEvidence\":[\"Code-level changes between commits 4f1c2ab and 9d0e7f3 (no repository is linked to this image-based service)\",\"Deploy or runtime log entries around the 2026-10-31 deployment (none returned)\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 8139,
+          "outputTokens": 1164
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"The last deployment of payments-api (0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06) was started manually by admin on 2026-10-31 at 12:00 UTC. It succeeded in about 60 seconds with no error. Compared with the deployment before it (432e1417-4410-4dff-a091-a3e1120c9321, on 2026-10-29), two things changed:\\n\\n- **Image:** it moved from ghcr.io/shop/payments-api:1.8.1 to ghcr.io/shop/payments-api:1.8.2. This is a patch version update.\\n- **Commit:** the recorded commit moved from 4f1c2ab to 9d0e7f3.\\n\\nThese stayed the same: the source type (image), the internal port (8080), no published port, and the manual trigger by admin. Neither deployment was a rollback.\\n\\nOne inconsistency: the earlier deployment's saved source settings already list 1.8.2, but the image it actually deployed was 1.8.1.\\n\\nI can't tell you what changed in the code between 1.8.1 and 1.8.2. The service runs from a container image with no linked repository, so the actual changes between the two commits aren't visible to me. There were also no log entries for the service around the deployment time. For a code-level diff, check the release notes or the commit history between 4f1c2ab and 9d0e7f3 in the image's source repository. The service currently shows as RUNNING. I didn't find any fault, so no diagnosis applies.\",\"diagnosis\":\"unknown\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Service\",\"id\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"label\":\"payments-api\"},{\"kind\":\"Deployment\",\"id\":\"0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06\",\"label\":\"payments-api latest deployment (2026-10-31)\"},{\"kind\":\"Deployment\",\"id\":\"432e1417-4410-4dff-a091-a3e1120c9321\",\"label\":\"payments-api previous deployment (2026-10-29)\"}],\"evidence\":[{\"ref\":\"0b13b8ff-b65d-4a4f-84a7-1e2e4e96ca06\",\"note\":\"Status SUCCESS, manual trigger by admin, image ghcr.io/shop/payments-api:1.8.2, commit 9d0e7f3, 2026-10-31 12:00–12:01 UTC, no errorCode, previousDeploymentId 432e1417-4410-4dff-a091-a3e1120c9321.\"},{\"ref\":\"432e1417-4410-4dff-a091-a3e1120c9321\",\"note\":\"Status SUCCESS, manual trigger by admin, deployed image ghcr.io/shop/payments-api:1.8.1 (saved source settings list 1.8.2), commit 4f1c2ab, 2026-10-29.\"},{\"ref\":\"d9061471-c08e-43dd-98cf-d1c33c316c6f\",\"note\":\"Image-based service, no repository linked, current imageRef 1.8.2, port 8080, status RUNNING. No log entries found between 11:55 and 12:10 UTC on 2026-10-31.\"}],\"missingEvidence\":[\"Code-level changes between commits 4f1c2ab and 9d0e7f3 (no repository is linked to this image-based service)\",\"Deploy or runtime log entries around the 2026-10-31 deployment (none returned)\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

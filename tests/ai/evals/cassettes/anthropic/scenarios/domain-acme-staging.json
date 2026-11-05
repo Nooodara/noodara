@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "domain-acme-staging",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "c6829f826247bc3d14f960918a75aaaa3ec6f70c50a4e81e74dba073cc55251b",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01BPJVGwS8BLLGzZKMVqqRiK",
+            "name": "get_infrastructure_graph",
+            "input": {
+              "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5410,
+          "outputTokens": 80
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01BPJVGwS8BLLGzZKMVqqRiK",
+              "name": "get_infrastructure_graph",
+              "input": {
+                "projectId": "b0cd1806-31c5-4699-bed0-cae3507b370c"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "cd57ed72e5cad21ff330a8b8195e92125013a3b349097d2ca7c4b54ef06d600b",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01FtBieqLk5VULnGpoctgTAn",
+            "name": "get_infrastructure_graph",
+            "input": {
+              "environmentId": "c0fe22dc-1aa8-426c-93d7-398c8eb01e0c"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 9035,
+          "outputTokens": 85
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01FtBieqLk5VULnGpoctgTAn",
+              "name": "get_infrastructure_graph",
+              "input": {
+                "environmentId": "c0fe22dc-1aa8-426c-93d7-398c8eb01e0c"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "31a487c1ca47d4d7246db01a522e9437913d1178e88ed4ec6c46d7984f718a7b",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\": \"staging.acme.example.com serves acme staging. In the acme project, the staging environment has one service, acme-web-staging, and that service is exposed through this domain. It is the only domain in the staging environment. I only looked up which domain is set up; I didn't check whether the service or domain is healthy right now.\", \"diagnosis\": \"unknown\", \"confidence\": 0.95, \"entities\": [{\"kind\": \"Domain\", \"id\": \"128f798f-ba13-4cca-b8a8-10dbddbc3225\", \"label\": \"staging.acme.example.com\"}, {\"kind\": \"Environment\", \"id\": \"c0fe22dc-1aa8-426c-93d7-398c8eb01e0c\", \"label\": \"staging\"}, {\"kind\": \"Service\", \"id\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"label\": \"acme-web-staging\"}, {\"kind\": \"Project\", \"id\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"label\": \"acme\"}], \"evidence\": [{\"ref\": \"128f798f-ba13-4cca-b8a8-10dbddbc3225\", \"note\": \"Domain staging.acme.example.com is in the staging environment and acme-web-staging is exposed through it; it is the only domain in that environment.\"}, {\"ref\": \"c0fe22dc-1aa8-426c-93d7-398c8eb01e0c\", \"note\": \"Staging environment of the acme project; it contains one service, acme-web-staging.\"}, {\"ref\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"note\": \"acme-web-staging is the staging service exposed through staging.acme.example.com.\"}], \"missingEvidence\": [\"No health or reachability check was run for the domain or service. The question only asked which domain is set up.\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 10286,
+          "outputTokens": 609
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\": \"staging.acme.example.com serves acme staging. In the acme project, the staging environment has one service, acme-web-staging, and that service is exposed through this domain. It is the only domain in the staging environment. I only looked up which domain is set up; I didn't check whether the service or domain is healthy right now.\", \"diagnosis\": \"unknown\", \"confidence\": 0.95, \"entities\": [{\"kind\": \"Domain\", \"id\": \"128f798f-ba13-4cca-b8a8-10dbddbc3225\", \"label\": \"staging.acme.example.com\"}, {\"kind\": \"Environment\", \"id\": \"c0fe22dc-1aa8-426c-93d7-398c8eb01e0c\", \"label\": \"staging\"}, {\"kind\": \"Service\", \"id\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"label\": \"acme-web-staging\"}, {\"kind\": \"Project\", \"id\": \"b0cd1806-31c5-4699-bed0-cae3507b370c\", \"label\": \"acme\"}], \"evidence\": [{\"ref\": \"128f798f-ba13-4cca-b8a8-10dbddbc3225\", \"note\": \"Domain staging.acme.example.com is in the staging environment and acme-web-staging is exposed through it; it is the only domain in that environment.\"}, {\"ref\": \"c0fe22dc-1aa8-426c-93d7-398c8eb01e0c\", \"note\": \"Staging environment of the acme project; it contains one service, acme-web-staging.\"}, {\"ref\": \"9656c11a-6b2a-4418-8a55-3ec0a347f9d8\", \"note\": \"acme-web-staging is the staging service exposed through staging.acme.example.com.\"}], \"missingEvidence\": [\"No health or reachability check was run for the domain or service. The question only asked which domain is set up.\"]}",
+          "toolCalls": []
+        }
+      }
+    }
+  ]
+}

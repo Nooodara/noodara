@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "source": "live",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "scenarioId": "lastdeploy-blog-web-rollback",
+  "datasetVersion": "1.0.0",
+  "recordedOn": "2026-11-05",
+  "temperature": null,
+  "interactions": [
+    {
+      "key": "db3c02d0170e6e8b501cdfdb9d2780118f25346f53922d4029be74eeb583ed91",
+      "model": "claude-opus-5-5",
+      "turn": 1,
+      "response": {
+        "text": "",
+        "toolCalls": [
+          {
+            "id": "toolu_01L2mFaj7uoe73CcsUPPFeoX",
+            "name": "list_services",
+            "input": {}
+          },
+          {
+            "id": "toolu_01CTjriXyhVHUEaioohc5JHN",
+            "name": "get_deployment",
+            "input": {
+              "deploymentId": "729aa478-4341-4617-9b54-bf0521180978"
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 5452,
+          "outputTokens": 125
+        },
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "toolCalls": [
+            {
+              "id": "toolu_01L2mFaj7uoe73CcsUPPFeoX",
+              "name": "list_services",
+              "input": {}
+            },
+            {
+              "id": "toolu_01CTjriXyhVHUEaioohc5JHN",
+              "name": "get_deployment",
+              "input": {
+                "deploymentId": "729aa478-4341-4617-9b54-bf0521180978"
+              }
+            }
+          ],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS/gQKEAgTGAI4AUIIdGhpbmtpbmcSDPs9rCn9YjZlN7CH1hoMY1U1Ufsj3PCcNpi9IjBFSC4FbagtizhRMRWI8ojBfyupljodxuc5ZVMPwBqQzzLuSAISmekzwBhJhxOdh5IqmwTEiY3HQanrVM6OsN0ec8oKIA1q68UlZ/iqFozx/4XenwlrQLuB/1Z9awlRE2Fn3uQNAc0ePPMSdi+0vWWgtL1K9n/7uwf8rQK1vliUfkUjU3ACMJqWm8pyFhRM85Ey5XLl09Qvqm8sbMN61gTk9H20Va1EJQw2JFDoUogS0WvmCBaywBfNIef2rMaUAd375B7njifYO56yzdFAtFtnr88BYRDOcBn6rNBDW/kfdNglZcZ2GR/EUQhoSHrBLfwRAugLKhgrpPMObtY0Wch1RW0xncaRx/zvN08g5doqv6m9ydzOltTvjeDKR1oruUwEAzvkjZt94gEypvInYKjZlu+TY7pY+Lroys2ZTEMiedntwPUrKtAf+gfLur78c+vsnjzGQnN4A/+yOrnDafEk3KafAmCHJNEzB/BmZGZwcSs4QW5j+M2UqnicDlQcLOxDcCMK0UQPBLoOJ40lkj420UMWLZQntqDbD31+4aMwFSNYV8OzZr0lbrI0v0O+qaE1sZuLAY/XcWcBrLkKqEWlHJVNodamcmJfxOX5QDHJSvkzZ35ktpDbu8e0tEQlsYa94IVgmM3gz7VcHIWYohatbptEGxBrBnYiJCqqloaNDteco9zopoc0zMGbk63LYl5gHPEnhQGkS/Zf6qxGx4Yw+db0AMKKafpdUiDEHn7wGQz8aSGfbEe0+qLaoutmKyq2u1QUQ6Nf6b/vN+wliBgB"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "efdd9184d3918e66a2f49e107482efaf82543adc0680b3cfb4ebed0da8b65a12",
+      "model": "claude-opus-5-5",
+      "turn": 2,
+      "response": {
+        "text": "Let me check the deployment list and the previous deployment for comparison.",
+        "toolCalls": [
+          {
+            "id": "toolu_014u7BhcWJQTUHxQfNehb1Lu",
+            "name": "list_deployments",
+            "input": {
+              "serviceId": "284d7eb6-35b4-41cc-a1fe-cf1d674852d1",
+              "limit": 5
+            }
+          },
+          {
+            "id": "toolu_01VwtpYqpXEESgbmHa9XkZqm",
+            "name": "get_deployment",
+            "input": {
+              "deploymentId": "9bdf6a9c-816d-43be-af7b-83fc3e2be5b1"
+            }
+          },
+          {
+            "id": "toolu_01Y5VZaqS47qN8CUWx8cbiAc",
+            "name": "get_logs",
+            "input": {
+              "serviceId": "284d7eb6-35b4-41cc-a1fe-cf1d674852d1",
+              "since": "2026-11-01T10:25:00.000Z",
+              "until": "2026-11-01T10:40:00.000Z",
+              "limit": 40
+            }
+          }
+        ],
+        "stopReason": "tool_use",
+        "usage": {
+          "inputTokens": 7121,
+          "outputTokens": 370
+        },
+        "message": {
+          "role": "assistant",
+          "content": "Let me check the deployment list and the previous deployment for comparison.",
+          "toolCalls": [
+            {
+              "id": "toolu_014u7BhcWJQTUHxQfNehb1Lu",
+              "name": "list_deployments",
+              "input": {
+                "serviceId": "284d7eb6-35b4-41cc-a1fe-cf1d674852d1",
+                "limit": 5
+              }
+            },
+            {
+              "id": "toolu_01VwtpYqpXEESgbmHa9XkZqm",
+              "name": "get_deployment",
+              "input": {
+                "deploymentId": "9bdf6a9c-816d-43be-af7b-83fc3e2be5b1"
+              }
+            },
+            {
+              "id": "toolu_01Y5VZaqS47qN8CUWx8cbiAc",
+              "name": "get_logs",
+              "input": {
+                "serviceId": "284d7eb6-35b4-41cc-a1fe-cf1d674852d1",
+                "since": "2026-11-01T10:25:00.000Z",
+                "until": "2026-11-01T10:40:00.000Z",
+                "limit": 40
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "9f3d10ac7478f6e9612150adb6507c88cffccf58c3a8a6927a92755cc77fd129",
+      "model": "claude-opus-5-5",
+      "turn": 3,
+      "response": {
+        "text": "{\"answer\":\"The only thing that changed in the last blog-web deployment (729aa478-4341-4617-9b54-bf0521180978) was the git commit. It went from 9a8b7c6 to 5d4e3f2. The deployment settings were the same as the previous successful deployment (9bdf6a9c-816d-43be-af7b-83fc3e2be5b1): same repository (https://github.com/blog/web), branch main, build context '.', Dockerfile, no build target and internal port 3000. Both deployments were started manually by admin.\\n\\nWhat happened: the new deployment started at 2026-11-01 10:30 UTC and failed with HEALTHCHECK_FAILED, because '/health returned 500 for 120s'. At 10:31:40 the deploy log says the healthcheck failed and the previous deployment (9a8b7c6) is being restored. The deployment ended as ROLLED_BACK at 10:33:30. blog-web is RUNNING, and given the rollback it is most likely on the older image noodara/blog-web:9a8b7c6 from 2026-10-29. The deployment record doesn't confirm which image is live.\\n\\nThe code changes themselves are the likely cause of the 500 on /health, but I can't see what changed in the code between 9a8b7c6 and 5d4e3f2. To find out, compare those two commits in the blog/web repository. Also check the app's runtime errors around 10:30–10:33 UTC: I found no runtime log lines from the failed container in that window.\",\"diagnosis\":\"failed_deployment\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Service\",\"id\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"label\":\"blog-web\"},{\"kind\":\"Deployment\",\"id\":\"729aa478-4341-4617-9b54-bf0521180978\",\"label\":\"blog-web deployment 5d4e3f2 (ROLLED_BACK)\"},{\"kind\":\"Deployment\",\"id\":\"9bdf6a9c-816d-43be-af7b-83fc3e2be5b1\",\"label\":\"blog-web deployment 9a8b7c6 (SUCCESS)\"}],\"evidence\":[{\"ref\":\"729aa478-4341-4617-9b54-bf0521180978\",\"note\":\"Latest deployment: commit 5d4e3f2, manual by admin, status ROLLED_BACK, errorCode HEALTHCHECK_FAILED, '/health returned 500 for 120s'. Previous deployment is 9bdf6a9c.\"},{\"ref\":\"9bdf6a9c-816d-43be-af7b-83fc3e2be5b1\",\"note\":\"Previous successful deployment: commit 9a8b7c6, image noodara/blog-web:9a8b7c6. Source config is identical to the latest deployment.\"},{\"ref\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"note\":\"Deploy log at 10:31:40: healthcheck failed, restoring deployment #1 (9a8b7c6). Service status RUNNING, autoRollback enabled.\"}],\"missingEvidence\":[\"The code diff between commits 9a8b7c6 and 5d4e3f2 (no tool here shows it)\",\"Runtime logs from the failed 5d4e3f2 container explaining the HTTP 500 on /health\"]}",
+        "toolCalls": [],
+        "stopReason": "end_turn",
+        "usage": {
+          "inputTokens": 9124,
+          "outputTokens": 1159
+        },
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"The only thing that changed in the last blog-web deployment (729aa478-4341-4617-9b54-bf0521180978) was the git commit. It went from 9a8b7c6 to 5d4e3f2. The deployment settings were the same as the previous successful deployment (9bdf6a9c-816d-43be-af7b-83fc3e2be5b1): same repository (https://github.com/blog/web), branch main, build context '.', Dockerfile, no build target and internal port 3000. Both deployments were started manually by admin.\\n\\nWhat happened: the new deployment started at 2026-11-01 10:30 UTC and failed with HEALTHCHECK_FAILED, because '/health returned 500 for 120s'. At 10:31:40 the deploy log says the healthcheck failed and the previous deployment (9a8b7c6) is being restored. The deployment ended as ROLLED_BACK at 10:33:30. blog-web is RUNNING, and given the rollback it is most likely on the older image noodara/blog-web:9a8b7c6 from 2026-10-29. The deployment record doesn't confirm which image is live.\\n\\nThe code changes themselves are the likely cause of the 500 on /health, but I can't see what changed in the code between 9a8b7c6 and 5d4e3f2. To find out, compare those two commits in the blog/web repository. Also check the app's runtime errors around 10:30–10:33 UTC: I found no runtime log lines from the failed container in that window.\",\"diagnosis\":\"failed_deployment\",\"confidence\":0.85,\"entities\":[{\"kind\":\"Service\",\"id\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"label\":\"blog-web\"},{\"kind\":\"Deployment\",\"id\":\"729aa478-4341-4617-9b54-bf0521180978\",\"label\":\"blog-web deployment 5d4e3f2 (ROLLED_BACK)\"},{\"kind\":\"Deployment\",\"id\":\"9bdf6a9c-816d-43be-af7b-83fc3e2be5b1\",\"label\":\"blog-web deployment 9a8b7c6 (SUCCESS)\"}],\"evidence\":[{\"ref\":\"729aa478-4341-4617-9b54-bf0521180978\",\"note\":\"Latest deployment: commit 5d4e3f2, manual by admin, status ROLLED_BACK, errorCode HEALTHCHECK_FAILED, '/health returned 500 for 120s'. Previous deployment is 9bdf6a9c.\"},{\"ref\":\"9bdf6a9c-816d-43be-af7b-83fc3e2be5b1\",\"note\":\"Previous successful deployment: commit 9a8b7c6, image noodara/blog-web:9a8b7c6. Source config is identical to the latest deployment.\"},{\"ref\":\"284d7eb6-35b4-41cc-a1fe-cf1d674852d1\",\"note\":\"Deploy log at 10:31:40: healthcheck failed, restoring deployment #1 (9a8b7c6). Service status RUNNING, autoRollback enabled.\"}],\"missingEvidence\":[\"The code diff between commits 9a8b7c6 and 5d4e3f2 (no tool here shows it)\",\"Runtime logs from the failed 5d4e3f2 container explaining the HTTP 500 on /health\"]}",
+          "toolCalls": [],
+          "reasoning": {
+            "provider": "anthropic",
+            "blocks": [
+              {
+                "type": "thinking",
+                "thinking": "",
+                "signature": "CAQS+AUKEAgTGAI4AUIIdGhpbmtpbmcSDAiMQvntu2Lhg3KSLxoMd4OtJERmqkdDQX1XIjDnhSuB+l0HTPgEx6R8Gi4gZf2jtw1JK2sHae1J9ussRJtgo5gdu6jjnXJMwpJahBgqlQVByV5yK7W4zVzQv+27jmqCkgcrpdFnoRZ9qDpBe3a8C2v08RNfuT9v83HNyhCMnHmcqOXAuv6a3CUW/yoJpqL4G7i3tihIgKC5dfqdQHhde3S/UkqAO/DVt9fVzq05pv0LrkGhJ0wkc5Ooz/NRBblJoYOoQPJ3WxANmvUgIJ+e4WpIGkTCdvqe/Wl7mKibPCPOTb9NJxtG4DajZw4X2rE9CH3Kikd1af1U+ftKV8ufSDpgt/jMD6yAYa4v0DjyLzTO4NY0Ubbh/cr4tNJ0HtIwU+yLvGouanfS9b9FKUbid5kAc9wnEBil+61gyp5CaIiTn6T852iRx6OT1V3CJUgJGjcIp0aoPTDuPze0Xwp2t9BFsHvnMn16e1GHkQVQRPKDYVoVxpGhBMZ0WJwE4z6WyTUhc7RaMzdHjJwfnMKOVa7IeYkloxzaQpWoAaa2JrgFznpkq3MxmnJACqE50N2NcukqueB9uzLusYcsNeaQdCNTiqt90cUxvaPiWxacFYY4WmB5dY8o7fcgTUm+ZgX7d75AF+toa8uTSWfCfOWlYZY9WAGOcME9VSiK/UZdaqzWSkkSb1JRzeknaLM6WbHBDFukGem1NEMvkJWviBruBEQjqV7DqN19yxH2Iol/AwUecw1gf/L6VDElXSFz4MBfG6TWMIKTAELBErUzYhbjNDqiuxSJu/T2m8AzHbfwiy9ej0iMjKFtepXc/wQ/eIv3JQNBSLudUhOMOo7bBDZax26xSywK6LsLg3/ceQdXqdlcH7G0QJFQ2syVUNEgBZpbSAZB+uMIX2Hb4EKp/PNiOHB8i4+FaDiuZc+6CLtUSWPPpKpW9I5j+LpoiVdGk1ejpA6OS4pBwKgbAygo51vmb7ifXL6fGAE="
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
