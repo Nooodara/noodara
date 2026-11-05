@@ -38,8 +38,9 @@ const CHAIN: ScopeChain = {
 };
 const FOREIGN_PROJECT = '00000000-0000-7000-8000-0000000000ff';
 
+// Lowercase hex: base64url could randomly form `sk-…`/`ghp_…`, which the redactor masks structurally.
 function canary(length: number): string {
-  return randomBytes(length).toString('base64url').slice(0, length);
+  return randomBytes(Math.ceil(length / 2)).toString('hex').slice(0, length);
 }
 
 function appSecret(raw: string) {

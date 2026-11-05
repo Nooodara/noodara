@@ -32,4 +32,4 @@
 - `createDeployConnect` ignora el AbortSignal: el deadline del tick no corta el connect SSH; con connect timeout > 30 s el lock Redis puede expirar.
 - "Deploy tiene la conexión" es check-then-act, no mutex; jobs stop/restart no cuentan como ocupado.
 - Cobertura: salvage H2 y prune de `container_metric_samples` sin prueba de integración real.
-- 2026-11-05 — Flaky conocido: `apps/control-plane/src/secrets/secret-store.test.ts:323` (decryptForDeploy) genera un token aleatorio que a veces contiene `sk-…`, y el redactor por patrón lo enmascara aunque el lease ya se liberó. Arreglo pendiente (/flow-quick): fixture determinística o que no coincida con patrones de claves.
+- 2026-11-05 — ~~Flaky conocido: `apps/control-plane/src/secrets/secret-store.test.ts:323` (decryptForDeploy) genera un token aleatorio que a veces contiene `sk-…`, y el redactor por patrón lo enmascara aunque el lease ya se liberó.~~ Resuelto: `canary()` usa hex minúsculo, que no puede formar `sk-`/`ghp_`/`AKIA`.
