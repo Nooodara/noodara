@@ -31,6 +31,22 @@ describe('buildSystemPrompt', () => {
     expect(global).toContain('Diagnosis hints: none');
   });
 
+  it('requires every evidence ref to be an entity id a tool returned, never a tool name or label', () => {
+    expect(global).toContain('Every evidence ref must be exactly one entity id (a UUID) that a tool returned');
+    expect(global).toContain('never a tool name (such as get_infrastructure_graph or list_services), a label, a prefixed ref or an invented id');
+    expect(global).not.toContain('the id of one of your tool calls');
+  });
+
+  it('routes evidence that is not about one entity into a note or missingEvidence', () => {
+    expect(global).toContain('put it in the note of an entity evidence item or in missingEvidence');
+    expect(global).toContain('If no tool returned an entity you can cite, leave evidence empty and say what was missing in missingEvidence');
+  });
+
+  it('limits entities to what the question is about or what directly supports the conclusion', () => {
+    expect(global).toContain('List in entities only the entities the question is about or that directly support your conclusion');
+    expect(global).toContain('Do not list or mention neighbouring or unrelated entities as context');
+  });
+
   it('describes a project scope', () => {
     const project = buildSystemPrompt({ scope: { kind: 'project', projectId: '7d1f3c2a-4b5e-4f60-8a71-92b3c4d5e6f7' } });
     expect(project).toContain('only project 7d1f3c2a-4b5e-4f60-8a71-92b3c4d5e6f7');
