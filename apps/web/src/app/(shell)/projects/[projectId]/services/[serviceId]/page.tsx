@@ -25,6 +25,7 @@ import {
 } from '../../../../../../components/ProjectNav';
 import { SecretsPanel } from '../../../../../../components/SecretsPanel';
 import { ServiceFacts } from '../../../../../../components/ServiceFacts';
+import { ServiceLogsPanel } from '../../../../../../components/logs/ServiceLogsPanel';
 import { ServiceMetricsPanel } from '../../../../../../components/metrics/ServiceMetricsPanel';
 import { REDEPLOY_NEEDED_COPY, ServiceSheet } from '../../../../../../components/ServiceSheet';
 import { ServiceToolbar } from '../../../../../../components/ServiceToolbar';
@@ -226,6 +227,12 @@ export default function ServicePage() {
         <ServiceFacts service={service} serverName={serverName} now={now} />
         {/* 30-01 (A1/A2): runtime status, last deployment, restarts and metrics. */}
         <ServiceMetricsPanel projectId={project.id} serviceId={service.id} now={now} />
+        {/* 30-02: unified logs (build, deploy, runtime, activity). */}
+        <InsetGroup title="Logs" data-testid="service-logs-group">
+          <div className="px-5 py-3">
+            <ServiceLogsPanel projectId={project.id} serviceId={service.id} />
+          </div>
+        </InsetGroup>
         {service.sourceType === 'git' ? (
           <div>
             <Link
