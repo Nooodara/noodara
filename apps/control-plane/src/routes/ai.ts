@@ -250,29 +250,31 @@ export function createAiRoutes(opts: AiRoutesOptions = {}): FastifyPluginCallbac
         };
         reply.raw.on('close', onClose);
 
-        let stream: (AskSink & { end(): void }) | null = null;
+        // A holder, not a `let`: the stream is opened inside a callback, so flow narrowing must not pin it to null.
+        const sse: { stream: (AskSink & { end(): void }) | null } = { stream: null };
+        let result: Awaited<ReturnType<typeof askQuestion>>;
         try {
-          const result = await askQuestion(await askDeps(), {
+          result = await askQuestion(await askDeps(), {
             userId,
             conversationId: request.params.id,
             question,
             clientGone: clientGone.signal,
-            open: () => (stream = openStream(reply, heartbeatMs)),
+            open: () => (sse.stream = openStream(reply, heartbeatMs)),
           });
-          if (result.streamed || stream !== null) return;
-          switch (result.code) {
-            case 'RATE_LIMITED':
-              void reply.header('Retry-After', Math.max(1, Math.ceil(result.retryAfterMs / 1000)).toString());
-              return sendNamed(reply, 'RATE_LIMITED');
-            case 'AI_CONVERSATION_NOT_FOUND':
-            case 'AI_CONVERSATION_BUSY':
-              return sendNamed(reply, result.code);
-            default:
-              return reply.code(mapServiceCodeToStatus(result.code) as 409 | 503).send(toV05ErrorBody(result.code));
-          }
         } finally {
-          (stream as (AskSink & { end(): void }) | null)?.end();
+          sse.stream?.end();
           reply.raw.off('close', onClose);
+        }
+        if (result.streamed || sse.stream !== null) return;
+        switch (result.code) {
+          case 'RATE_LIMITED':
+            void reply.header('Retry-After', Math.max(1, Math.ceil(result.retryAfterMs / 1000)).toString());
+            return sendNamed(reply, 'RATE_LIMITED');
+          case 'AI_CONVERSATION_NOT_FOUND':
+          case 'AI_CONVERSATION_BUSY':
+            return sendNamed(reply, result.code);
+          default:
+            return reply.code(mapServiceCodeToStatus(result.code) as 409 | 503).send(toV05ErrorBody(result.code));
         }
       },
     });

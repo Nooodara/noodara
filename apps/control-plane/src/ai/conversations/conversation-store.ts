@@ -59,7 +59,7 @@ function toMessageView(row: MessageRow, toolCalls: readonly ToolCallRow[]): AiMe
     role: row.role as AiMessageView['role'],
     status: row.status as AiMessageView['status'],
     content: row.content,
-    answer: (row.answer ?? null) as AiStructuredAnswer | null,
+    answer: row.answer,
     toolCalls: toolCalls.map(toToolCallView),
     errorCode: row.errorCode as AiMessageView['errorCode'],
     createdAt: iso(row.createdAt),
