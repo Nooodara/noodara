@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.5
 milestone_name: Observability + AI Read-Only
 status: v0_5_in_progress
-stopped_at: phase 30 closed (review pass, ab63cd68); flaky ssh logsWindow fixed (bd828b0a); next 31-01
-last_updated: 2026-11-05T15:00:00.000Z
-last_activity: 2026-11-05 -- phase 30 (30-01..30-06) done, review pass; fix(ssh) awk fflush in logsWindow; pnpm test 10173/10173, typecheck/lint/boundaries green
+stopped_at: 31-05 gate local done on cd0b7bbc (NOT READY only on CI/nightly); next 31-06 (rc.1, UAT Lima, v0.5.0)
+last_updated: 2026-11-06T18:00:00.000Z
+last_activity: 2026-11-06 -- 31-05 release gate v0.5 (docs/releases/v0.5-gate.md): it-full 1796 pass, e2e-full 283/283, unit 10185, evals replay = live baseline; criterios 10 y 14 pendientes de CI/nightly en rc.1
 progress:
   total_phases: 9
   completed_phases: 8
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** v0.5 — Observability + AI Read-Only (fases 26–31). Fases 26–30 cerradas; siguiente fase 31 (hardening, seguridad AI, gate y release v0.5) desde 31-01 con `/flow-orchestrate`.
+**Current focus:** v0.5 — Observability + AI Read-Only (fases 26–31). Fases 26–30 cerradas; fase 31 en curso: 31-01..31-05 hechas, siguiente 31-06 (rc.1, UAT Lima con proveedor en vivo, tag v0.5.0).
 
 ## Current Position
 
-Phase: 30 cerrada 2026-11-05 (UI de observabilidad, graph y AI, E2E y docs; review tier-1 pass, findings no bloqueantes: columna de mensaje de logs a 375 px, sin guard in-flight en refresh de métricas, timestamps ISO crudos en charts — backlog UI; ver docs/ui-review/phase-30/REPORT.md)
-Plan: siguiente 31-01 (matriz de integración de observabilidad 22.04/24.04). 30-05 A4 (run con proveedor vivo) diferido a 31-06.
+Phase: 31 en curso (31-01..31-05 hechas).
+Plan: siguiente 31-06 (v0.5.0-rc.1, CI y nightly sobre el rc, UAT en Lima con key del usuario, OPEN_QUESTIONS #21, tag v0.5.0).
 Status: v0.5 en curso; v0.4.0 publicado (d1d956bc)
-Last activity: 2026-11-05 — fix flaky `packages/ssh` logsWindow: BSD `sed -u` partía línea y newline en el pipe compartido O/E; ahora awk+fflush (bd828b0a), verificado en mawk Ubuntu 22.04/24.04 e integración metrics-templates 14/14. Verificación: pnpm test 450 archivos/10173 tests, typecheck, lint, boundaries verdes.
+Last activity: 2026-11-06 — gate v0.5 (31-05, `docs/releases/v0.5-gate.md`) NOT READY solo por criterios 10 y 14 (CI/nightly sobre un commit v0.5). Local verde: lint, typecheck, boundaries, unit 450/10185, leak canary, e2e-full 283/283 sobre cd0b7bbc; it-full 139 archivos/1796 tests sobre 99b44771; evals replay = baseline live (entity 95.38%, diagnosis 96.92%, halluc 0, leaks 0, writes 0). El primer e2e-full tuvo 11 fallos (locator status-pill, contraste/axe del panel de logs), arreglados en d9a7601c y 46fc17f8.
 
 Publicación v0.3.0 (20-05 A2): intento 1 (92a7fbfa, CI 40996535993) rojo por `pnpm audit` (advisories nuevos, 20-10) y un flake de `migration-0011-0012.test.ts` (puerto de seed `20000 + 3 hex`, colisión en `servers_host_port_unique_idx`; seguimiento pendiente). Intento 2: 78dea21 y 770b961 reproducidos → a0b45618; checkout limpio con audit/test/typecheck/lint verdes; CI 41012499661 10/10, Publish site 41012499667, Release 41016597518 verdes; imágenes 0.3.0 amd64+arm64 (control-plane `sha256:a0b37458…`, web `sha256:a1c23cbe…`); release v0.3.0 Latest, no prerelease.
 

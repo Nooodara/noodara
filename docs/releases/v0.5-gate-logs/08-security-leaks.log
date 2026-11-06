@@ -1,5 +1,5 @@
 $ pnpm security:scan-leaks
-# commit 0993961b (tree 68758ed2), working tree clean for code (only .agent-flow/ and docs/ui-build-prompt.md differ) 2026-11-05T23:03:23Z
+# commit cd0b7bbc (tree b98b01f3), working tree clean for code (only .agent-flow/ and docs/ui-build-prompt.md differ) 2026-11-06T17:19:53Z
 
 
 > noodara@0.5.0 security:scan-leaks /Users/xch4rt/work/myself/noodara/code
@@ -24,20 +24,15 @@ $ pnpm security:scan-leaks
 @noodara/domain:build: > tsc -p tsconfig.build.json
 @noodara/domain:build: 
 @noodara/ai:build: cache hit, replaying logs 94b1be314777af49
-@noodara/ssh:build: cache hit, replaying logs 2ad63e3d218edd0d
 @noodara/ai:build: 
 @noodara/ai:build: > @noodara/ai@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/ai
 @noodara/ai:build: > tsc -p tsconfig.build.json
+@noodara/ai:build: 
+@noodara/ssh:build: cache hit, replaying logs 2ad63e3d218edd0d
 @noodara/ssh:build: 
 @noodara/ssh:build: > @noodara/ssh@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
 @noodara/ssh:build: > tsc -p tsconfig.build.json
 @noodara/ssh:build: 
-@noodara/ui:build: cache hit, replaying logs e54704dfeb567e70
-@noodara/ai:build: 
-@noodara/ui:build: 
-@noodara/ui:build: > @noodara/ui@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
-@noodara/ui:build: > tsc -p tsconfig.build.json
-@noodara/ui:build: 
 @noodara/git:build: cache hit, replaying logs bc16df3c44990626
 @noodara/git:build: 
 @noodara/git:build: > @noodara/git@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/git
@@ -48,13 +43,18 @@ $ pnpm security:scan-leaks
 @noodara/docker:build: > @noodara/docker@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/docker
 @noodara/docker:build: > tsc -p tsconfig.build.json
 @noodara/docker:build: 
+@noodara/ui:build: cache hit, replaying logs e54704dfeb567e70
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
 @noodara/control-plane:build: cache hit, replaying logs 1a1105903ead38f6
 @noodara/control-plane:build: 
 @noodara/control-plane:build: > @noodara/control-plane@0.5.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
 @noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
 @noodara/control-plane:build: 
 @noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
-@noodara/web:build: cache hit, replaying logs 7b9f5f5312141355
+@noodara/web:build: cache hit, replaying logs c459855e7f20dd99
 @noodara/web:build: 
 @noodara/web:build: > @noodara/web@0.5.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
 @noodara/web:build: > node scripts/sync-brand-assets.mjs && next build
@@ -62,19 +62,19 @@ $ pnpm security:scan-leaks
 @noodara/web:build: sync-brand-assets: no files changed (fully idempotent run).
 @noodara/web:build: sync-brand-assets: 7 file(s) already up to date.
 @noodara/web:build: ▲ Next.js 16.4.1 (Turbopack)
-@noodara/web:build: ✓ Running next.config.ts took 60ms
+@noodara/web:build: ✓ Running next.config.ts took 87ms
 @noodara/web:build: 
 @noodara/web:build:   Creating an optimized production build ...
-@noodara/web:build: ✓ Compiled successfully in 707ms
+@noodara/web:build: ✓ Compiled successfully in 905ms
 @noodara/web:build:   Running TypeScript ...
-@noodara/web:build:   Finished TypeScript in 775ms ...
+@noodara/web:build:   Finished TypeScript in 1197ms ...
 @noodara/web:build:   Collecting page data using 13 workers ...
 @noodara/web:build:   Generating static pages using 13 workers (0/16) ...
 @noodara/web:build: ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
 @noodara/web:build:   Generating static pages using 13 workers (4/16) 
 @noodara/web:build:   Generating static pages using 13 workers (8/16) 
 @noodara/web:build:   Generating static pages using 13 workers (12/16) 
-@noodara/web:build: ✓ Generating static pages using 13 workers (16/16) in 164ms
+@noodara/web:build: ✓ Generating static pages using 13 workers (16/16) in 142ms
 @noodara/web:build:   Finalizing page optimization ...
 @noodara/web:build: 
 @noodara/web:build: Route (app)
@@ -107,32 +107,32 @@ $ pnpm security:scan-leaks
 
  Tasks:    8 successful, 8 total
 Cached:    8 cached, 8 total
-  Time:    40ms >>> FULL TURBO
+  Time:    83ms >>> FULL TURBO
 
-{"level":40,"time":1793920291779,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"7259bb187fe28c24","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
-(node:60085) [FSTWRN004] FastifyWarning: It seems that you are overriding an errorHandler in the same scope, which can lead to subtle bugs. To disable this behavior, set 'allowErrorHandlerOverride' to false. For more information, visit: https://fastify.dev/docs/latest/Reference/Server/#allowerrorhandleroverride
+{"level":40,"time":1793986129659,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"fc7f8d8b4e7648ff","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+(node:5512) [FSTWRN004] FastifyWarning: It seems that you are overriding an errorHandler in the same scope, which can lead to subtle bugs. To disable this behavior, set 'allowErrorHandlerOverride' to false. For more information, visit: https://fastify.dev/docs/latest/Reference/Server/#allowerrorhandleroverride
 (Use `node --trace-warnings ...` to show where the warning was created)
-{"level":40,"time":1793920291802,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
-{"level":40,"time":1793920291856,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
-{"level":40,"time":1793920291961,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
-{"level":40,"time":1793920292115,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
-{"level":40,"time":1793920292319,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
-{"level":40,"time":1793920292573,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
-{"level":40,"time":1793920292876,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
-{"level":40,"time":1793920293228,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
-{"level":40,"time":1793920293629,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
-{"level":40,"time":1793920293802,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
-{"level":30,"time":1793920293805,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"GET","url":"/__canary/throw","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
-{"level":30,"time":1793920293810,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":500},"responseTime":4.382957999999235,"msg":"request completed"}
-{"level":40,"time":1793920294084,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
-{"level":40,"time":1793920294589,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
-{"level":40,"time":1793920295143,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
-{"level":40,"time":1793920295746,"pid":60085,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793986129691,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793986129744,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793986129847,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793986129999,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793986130200,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793986130453,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793986130758,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793986131114,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793986131518,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793986131693,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793986131696,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"GET","url":"/__canary/throw","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793986131701,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":500},"responseTime":5.360208000000057,"msg":"request completed"}
+{"level":40,"time":1793986131974,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793986132487,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793986133041,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793986133646,"pid":5512,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
 
  Test Files  7 passed (7)
       Tests  14 passed (14)
-   Start at  17:03:24
-   Duration  499.68s (tests 99%, import 1%)
+   Start at  11:19:54
+   Duration  548.80s (tests 99%, import 1%)
 
 
 > noodara@0.5.0 build /Users/xch4rt/work/myself/noodara/code
@@ -161,11 +161,11 @@ Cached:    8 cached, 8 total
 @noodara/ssh:build: 
 @noodara/ui:build: cache hit, replaying logs e54704dfeb567e70
 @noodara/git:build: cache hit, replaying logs bc16df3c44990626
+@noodara/docker:build: cache hit, replaying logs 35a799f93ca605c8
 @noodara/ui:build: 
 @noodara/ui:build: > @noodara/ui@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
 @noodara/ui:build: > tsc -p tsconfig.build.json
 @noodara/ui:build: 
-@noodara/docker:build: cache hit, replaying logs 35a799f93ca605c8
 @noodara/git:build: 
 @noodara/git:build: > @noodara/git@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/git
 @noodara/git:build: > tsc -p tsconfig.build.json
@@ -180,7 +180,7 @@ Cached:    8 cached, 8 total
 @noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
 @noodara/control-plane:build: 
 @noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
-@noodara/web:build: cache hit, replaying logs 7b9f5f5312141355
+@noodara/web:build: cache hit, replaying logs c459855e7f20dd99
 @noodara/web:build: 
 @noodara/web:build: > @noodara/web@0.5.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
 @noodara/web:build: > node scripts/sync-brand-assets.mjs && next build
@@ -188,19 +188,19 @@ Cached:    8 cached, 8 total
 @noodara/web:build: sync-brand-assets: no files changed (fully idempotent run).
 @noodara/web:build: sync-brand-assets: 7 file(s) already up to date.
 @noodara/web:build: ▲ Next.js 16.4.1 (Turbopack)
-@noodara/web:build: ✓ Running next.config.ts took 60ms
+@noodara/web:build: ✓ Running next.config.ts took 87ms
 @noodara/web:build: 
 @noodara/web:build:   Creating an optimized production build ...
-@noodara/web:build: ✓ Compiled successfully in 707ms
+@noodara/web:build: ✓ Compiled successfully in 905ms
 @noodara/web:build:   Running TypeScript ...
-@noodara/web:build:   Finished TypeScript in 775ms ...
+@noodara/web:build:   Finished TypeScript in 1197ms ...
 @noodara/web:build:   Collecting page data using 13 workers ...
 @noodara/web:build:   Generating static pages using 13 workers (0/16) ...
 @noodara/web:build: ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
 @noodara/web:build:   Generating static pages using 13 workers (4/16) 
 @noodara/web:build:   Generating static pages using 13 workers (8/16) 
 @noodara/web:build:   Generating static pages using 13 workers (12/16) 
-@noodara/web:build: ✓ Generating static pages using 13 workers (16/16) in 164ms
+@noodara/web:build: ✓ Generating static pages using 13 workers (16/16) in 142ms
 @noodara/web:build:   Finalizing page optimization ...
 @noodara/web:build: 
 @noodara/web:build: Route (app)
@@ -233,13 +233,13 @@ Cached:    8 cached, 8 total
 
  Tasks:    8 successful, 8 total
 Cached:    8 cached, 8 total
-  Time:    48ms >>> FULL TURBO
+  Time:    74ms >>> FULL TURBO
 
 
 Running 1 test using 1 worker
 
-  ✓  1 [chromium] › tests/e2e/canary-ui.spec.ts:53:1 › @canary a per-run password canary and a per-run passphrase canary never reach rendered HTML, console, storage, the URL/history, or any response body across the whole UI flow (8.3s)
+  ✓  1 [chromium] › tests/e2e/canary-ui.spec.ts:53:1 › @canary a per-run password canary and a per-run passphrase canary never reach rendered HTML, console, storage, the URL/history, or any response body across the whole UI flow (8.9s)
 
-  1 passed (18.6s)
+  1 passed (19.9s)
 
-# exit 0 2026-11-05T23:12:03Z
+# exit 0 2026-11-06T17:29:23Z

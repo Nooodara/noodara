@@ -227,7 +227,7 @@ Planificados 2026-11-03 (fases 26–31). Fuente: `docs/roadmap-v0.1-v0.5.md` §1
 - [x] **UI-15**: Métricas y estado de servidores y servicios, la vista de logs y el Infrastructure Graph dentro del design system, aprobados por `noodara-ux-review` en ambos temas.
 - [x] **UI-16**: Settings de AI (proveedor, modelo, key write-only) y el chat en el inspector: respuesta primero, diagnóstico y confianza, chips de entidades navegables, evidencia colapsada, tools consultadas, `unknown` explica la evidencia faltante; la salida del modelo se renderiza inerte.
 - [x] **DOCS-05**: El sitio documenta métricas (intervalo, retención), logs, el graph y su regla de inferencia, setup BYOK por proveedor, qué datos se envían al proveedor, la garantía read-only y cómo se aplica, y los códigos de error nuevos, con test de exactitud.
-- [ ] **QA-19**: La suite de integración de observabilidad pasa en Ubuntu 22.04 y 24.04, y un soak del collector mantiene las tablas dentro de la retención sin fugas de sesiones SSH.
+- [x] **QA-19**: La suite de integración de observabilidad pasa en Ubuntu 22.04 y 24.04, y un soak del collector mantiene las tablas dentro de la retención sin fugas de sesiones SSH.
 - [x] **QA-20**: Los E2E cubren los tres flujos de §10.12 (consulta de infraestructura, diagnóstico OOM, seguridad de secrets) contra el stack real.
 - [ ] **QA-21**: Gate de release v0.5 con evidencia por criterio de §10.13, security review (`docs/security/v0.5-review.md`), CI y nightly verdes, UAT en host real (Lima) con proveedor en vivo y `v0.5.0` publicado.
 
@@ -405,8 +405,8 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | UI-16 | Phase 30 | Complete |
 | DOCS-05 | Phase 30 | Complete |
 | QA-20 | Phase 30 | Complete |
-| QA-19 | Phase 31 | Pending |
-| QA-21 | Phase 31 | Pending |
+| QA-19 | Phase 31 | Complete |
+| QA-21 | Phase 31 | Pending (gate local 31-05 NOT READY: CI/nightly, UAT y tag en 31-06) |
 
 **Coverage:**
 - v1 requirements: 61 total
