@@ -291,7 +291,7 @@ export function ServiceLogsPanel({ projectId, serviceId }: ServiceLogsPanelProps
               className={cn(
                 'inline-flex h-7 items-center rounded-pill border px-3 text-callout outline-none',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-                on ? 'border-accent bg-accent-soft text-accent-text' : 'border-hairline text-ink-secondary',
+                on ? 'border-accent bg-accent-soft text-ink' : 'border-hairline text-ink-secondary',
               )}
             >
               {SOURCE_LABELS[source]}
@@ -366,9 +366,13 @@ export function ServiceLogsPanel({ projectId, serviceId }: ServiceLogsPanelProps
         <div className="relative">
           <div
             ref={scrollerRef}
+            role="region"
+            aria-label="Log output"
+            // Focusable so keyboard users can scroll its overflow (axe scrollable-region-focusable).
+            tabIndex={0}
             data-testid="log-scroller"
             onScroll={onScroll}
-            className="overflow-auto rounded-md border border-hairline bg-canvas"
+            className="overflow-auto rounded-md border border-hairline bg-canvas outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             style={{ height: VIEWPORT_HEIGHT }}
           >
             {lines.length === 0 ? (

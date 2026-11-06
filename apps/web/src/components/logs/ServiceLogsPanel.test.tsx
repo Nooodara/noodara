@@ -51,6 +51,26 @@ describe('ServiceLogsPanel', () => {
     expect(screen.getByTestId('log-list').className).toContain('font-mono');
   });
 
+  it('pressed source chips use --ink text on --accent-soft, never --accent-text (4.44:1 in dark)', async () => {
+    api.getServiceLogs.mockResolvedValue(page([entry('line')]));
+    render();
+    await screen.findAllByTestId('log-line');
+    for (const source of ['build', 'deploy', 'runtime', 'activity']) {
+      const chip = screen.getByTestId(`log-source-${source}`);
+      expect(chip).toHaveClass('bg-accent-soft', 'text-ink');
+      expect(chip).not.toHaveClass('text-accent-text');
+    }
+  });
+
+  it('the log scroller is a named, keyboard-focusable region so its overflow is reachable', async () => {
+    api.getServiceLogs.mockResolvedValue(page([entry('line')]));
+    render();
+    await screen.findAllByTestId('log-line');
+    const scroller = screen.getByRole('region', { name: 'Log output' });
+    expect(scroller).toBe(screen.getByTestId('log-scroller'));
+    expect(scroller).toHaveAttribute('tabindex', '0');
+  });
+
   it('renders hostile text inert: no element, no anchor, the text verbatim', async () => {
     const hostile = '<img src=x onerror="alert(1)"> \u001b[31mred\u001b[0m javascript:alert(1)';
     api.getServiceLogs.mockResolvedValue(page([entry(hostile)]));
