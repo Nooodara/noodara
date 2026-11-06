@@ -236,7 +236,7 @@ test('@critical the whole roadmap SS6.6 flow: login -> Servers -> add server -> 
 
     // 5. Settle: Connected pill, the settled one-line summary. A run settling auto-collapses the
     // section (05-18's own D-07 behaviour) -- expand it to see the six steps again.
-    await expect(page.getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTED', { timeout: 60_000 });
+    await expect(page.getByTestId('server-detail-toolbar').getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTED', { timeout: 60_000 });
     await expect(page.getByTestId('discovery-summary')).toBeVisible();
     await expect(page.getByTestId('discovery-summary')).toContainText('Discovered');
     await page.getByTestId('discovery-summary').click();
@@ -305,13 +305,13 @@ test('@critical the whole roadmap SS6.6 flow: login -> Servers -> add server -> 
     const row = page.getByTestId('servers-row').filter({ hasText: serverName });
     await row.getByRole('link').click();
     await expect(page).toHaveURL(/\/servers\/[0-9a-f-]+$/);
-    await expect(page.getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTED');
+    await expect(page.getByTestId('server-detail-toolbar').getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTED');
 
     await resetInstrumentation(page);
     await page.getByTestId('discovery-rerun-button').click();
 
     await assertLiveProgress(page, 'second run (re-run discovery)');
-    await expect(page.getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTED', { timeout: 60_000 });
+    await expect(page.getByTestId('server-detail-toolbar').getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTED', { timeout: 60_000 });
     await expect(page.getByTestId('discovery-summary')).toContainText('Discovered');
   } finally {
     // 10. Teardown -- idempotent alongside stack.ts's own stopStack safety net (stopCriticalPathSshd

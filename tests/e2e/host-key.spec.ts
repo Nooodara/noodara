@@ -508,7 +508,7 @@ test('@hostkey UF-01/GR-02 regression: editing the host while ERROR/HOST_KEY_CHA
 
     await page.getByTestId('server-sheet-save-connect').click();
     await expect(page).toHaveURL(/\/servers\/[0-9a-f-]+$/);
-    await expect(page.getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTED', { timeout: 45_000 });
+    await expect(page.getByTestId('server-detail-toolbar').getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTED', { timeout: 45_000 });
 
     const serverId = page.url().split('/').pop();
     if (serverId === undefined) throw new Error('could not read server id from the URL');
@@ -607,7 +607,7 @@ test('@hostkey the real trust-fingerprint POST succeeds end to end against the r
 
     await page.getByTestId('server-sheet-save-connect').click();
     await expect(page).toHaveURL(/\/servers\/[0-9a-f-]+$/);
-    await expect(page.getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTED', { timeout: 45_000 });
+    await expect(page.getByTestId('server-detail-toolbar').getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTED', { timeout: 45_000 });
 
     const serverId = page.url().split('/').pop();
     if (serverId === undefined) throw new Error('could not read server id from the URL');
@@ -657,7 +657,7 @@ test('@hostkey the real trust-fingerprint POST succeeds end to end against the r
     // No stub anywhere on this route in this test -- a 400/409 here means the real backend
     // genuinely rejected the request, which fails the assertions below, never a false green.
     await expect(page.getByTestId('trust-fingerprint-dialog')).toHaveCount(0);
-    await expect(page.getByTestId('status-pill')).toHaveAttribute('data-status', 'PENDING', { timeout: 15_000 });
+    await expect(page.getByTestId('server-detail-toolbar').getByTestId('status-pill')).toHaveAttribute('data-status', 'PENDING', { timeout: 15_000 });
 
     expect(trustRequests).toHaveLength(1);
     expect(trustRequests[0]?.postDataJSON()).toEqual({ fingerprint: observedFingerprint });

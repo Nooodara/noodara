@@ -622,7 +622,7 @@ test('@ssh-live a real connect-and-discover run against a real sshd fixture deli
     await page.getByTestId('server-sheet-save-connect').click();
     await expect(page).toHaveURL(/\/servers\/[0-9a-f-]+$/);
 
-    await expect(page.getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTED', { timeout: 45_000 });
+    await expect(page.getByTestId('server-detail-toolbar').getByTestId('status-pill')).toHaveAttribute('data-status', 'CONNECTED', { timeout: 45_000 });
     await expect(page.getByTestId('discovery-summary')).toBeVisible();
     await expect(page.getByTestId('discovery-summary')).toContainText('Discovered');
 
