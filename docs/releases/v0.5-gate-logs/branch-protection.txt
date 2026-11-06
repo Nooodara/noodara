@@ -1,0 +1,5 @@
+$ gh api repos/Nooodara/noodara/branches/main/protection/required_status_checks --jq "{strict, contexts}"
+# 2026-11-05T23:04:31Z
+
+{"contexts":["lint","typecheck","boundaries","site","unit","state-machine","ai-evals","integration","security","boot-smoke","e2e"],"strict":false}
+# exit 0

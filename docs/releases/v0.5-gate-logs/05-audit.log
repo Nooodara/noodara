@@ -1,0 +1,7 @@
+$ pnpm audit --audit-level=high
+# commit 0993961b (tree 68758ed2), working tree clean for code (only .agent-flow/ and docs/ui-build-prompt.md differ) 2026-11-05T23:00:58Z
+
+19 vulnerabilities found
+Severity: 5 low | 14 moderate
+
+# exit 0 2026-11-05T23:00:59Z

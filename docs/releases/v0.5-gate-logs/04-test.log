@@ -1,0 +1,22 @@
+$ pnpm test
+# commit 0993961b (tree 68758ed2), working tree clean for code (only .agent-flow/ and docs/ui-build-prompt.md differ) 2026-11-05T23:00:28Z
+
+
+> noodara@0.5.0 test /Users/xch4rt/work/myself/noodara/code
+> vitest run
+
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+{"level":40,"time":1793919631594,"pid":39379,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"de64602faf957ec4","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+
+ Test Files  450 passed (450)
+      Tests  10183 passed (10183)
+   Start at  17:00:29
+   Duration  28.92s (tests 42%, import 21%, environment 21%, transform 9%, setup 6%)
+
+
+# exit 0 2026-11-05T23:00:58Z

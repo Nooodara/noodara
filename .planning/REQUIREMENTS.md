@@ -191,44 +191,44 @@ Planificados 2026-11-03 (fases 26–31). Fuente: `docs/roadmap-v0.1-v0.5.md` §1
 
 ### Métricas y estado (MET)
 
-- [ ] **MET-01**: Noodara muestrea por SSH, en un ciclo acotado por servidor `CONNECTED` (`NOODARA_METRICS_INTERVAL_MS`), CPU, RAM, disco, uptime y estado de conexión del host, y CPU/memoria por contenedor gestionado; las muestras se guardan con retención (`NOODARA_METRICS_RETENTION_HOURS`) y poda acotada; un servidor inalcanzable registra su estado sin tumbar el worker.
-- [ ] **MET-02**: Cada servicio expone estado del contenedor, restart count, estado de healthcheck, último deployment y runtime status, leídos con `docker inspect` restringido a `.State` y `.HostConfig.Memory` (nunca `.Config.Env`); crash loop y OOM generan un `ActivityEvent` de sistema.
-- [ ] **MET-03**: Umbrales `high_memory` y `high_disk`, detección de crash loop y OOM, y la clasificación de evidencia en el vocabulario cerrado de diagnósticos (incluido `unknown`) son funciones puras en `packages/domain` con 100% de branch coverage.
+- [x] **MET-01**: Noodara muestrea por SSH, en un ciclo acotado por servidor `CONNECTED` (`NOODARA_METRICS_INTERVAL_MS`), CPU, RAM, disco, uptime y estado de conexión del host, y CPU/memoria por contenedor gestionado; las muestras se guardan con retención (`NOODARA_METRICS_RETENTION_HOURS`) y poda acotada; un servidor inalcanzable registra su estado sin tumbar el worker.
+- [x] **MET-02**: Cada servicio expone estado del contenedor, restart count, estado de healthcheck, último deployment y runtime status, leídos con `docker inspect` restringido a `.State` y `.HostConfig.Memory` (nunca `.Config.Env`); crash loop y OOM generan un `ActivityEvent` de sistema.
+- [x] **MET-03**: Umbrales `high_memory` y `high_disk`, detección de crash loop y OOM, y la clasificación de evidencia en el vocabulario cerrado de diagnósticos (incluido `unknown`) son funciones puras en `packages/domain` con 100% de branch coverage.
 
 ### Logs (LOG)
 
-- [ ] **LOG-05**: Una vista unificada por servicio reúne build logs, deployment logs, runtime logs (ventana acotada de `docker logs` pedida bajo demanda, nunca copiada en masa) y actividad, cada línea con timestamp e identificación de fuente.
-- [ ] **LOG-06**: Los logs se filtran por fuente, ventana de tiempo y nivel, admiten búsqueda por substring y modo follow acotado; todo pasa por el Redactor y los límites devuelven `truncated` en vez de fallar.
+- [x] **LOG-05**: Una vista unificada por servicio reúne build logs, deployment logs, runtime logs (ventana acotada de `docker logs` pedida bajo demanda, nunca copiada en masa) y actividad, cada línea con timestamp e identificación de fuente.
+- [x] **LOG-06**: Los logs se filtran por fuente, ventana de tiempo y nivel, admiten búsqueda por substring y modo follow acotado; todo pasa por el Redactor y los límites devuelven `truncated` en vez de fallar.
 
 ### Infrastructure Graph (GRF)
 
-- [ ] **GRF-01**: `buildGraph(snapshot)` en `packages/domain` deriva nodos Server, Project, Environment, Service, Domain y relaciones `RUNS_ON`, `BELONGS_TO`, `EXPOSED_BY`, `DEPENDS_ON` (inferida de valores de env planos que nombran otro servicio registrado, nunca de secrets), determinística y con invariantes probados por propiedades.
-- [ ] **GRF-02**: La API sirve el graph global, por proyecto y por environment desde un snapshot consistente, y refleja altas y bajas de infraestructura registrada sin relaciones colgantes.
+- [x] **GRF-01**: `buildGraph(snapshot)` en `packages/domain` deriva nodos Server, Project, Environment, Service, Domain y relaciones `RUNS_ON`, `BELONGS_TO`, `EXPOSED_BY`, `DEPENDS_ON` (inferida de valores de env planos que nombran otro servicio registrado, nunca de secrets), determinística y con invariantes probados por propiedades.
+- [x] **GRF-02**: La API sirve el graph global, por proyecto y por environment desde un snapshot consistente, y refleja altas y bajas de infraestructura registrada sin relaciones colgantes.
 
 ### AI read-only (AI)
 
-- [ ] **AI-01**: `packages/ai` define `AIProvider` (`chat`, `stream`, `toolCall`) con Anthropic y OpenAI implementados y la interfaz abierta a OpenAI-compatible, OpenRouter, Azure OpenAI y Bedrock; ningún SDK de proveedor se importa fuera de `packages/ai/src/providers`.
-- [ ] **AI-02**: BYOK: la API key se guarda cifrada (`ai_provider_key`), se valida al guardarla, nunca vuelve por API, logs ni activity, y se borra con la configuración; el modelo se elige de una allowlist por proveedor.
-- [ ] **AI-03**: La AI es técnicamente incapaz de escribir: el registry de tools es cerrado y solo contiene las diez tools de lectura, el tipo `AITool` solo admite `kind: 'read'`, ninguna tool llega a un shell, y un nombre fuera del registry se rechaza sin ejecutarse y se cuenta como intento no autorizado.
-- [ ] **AI-04**: La AI solo ve recursos autorizados: cada tool recibe un `AuthorizationScope` aplicado en backend y lo que queda fuera responde `NOT_FOUND`.
-- [ ] **AI-05**: La AI nunca recibe secrets en claro: todo input y output del modelo pasa por el Redactor, los secrets aparecen solo como `<secret:name>`, las conversaciones se guardan redactadas y el canary de fugas cubre prompt, tool results, respuesta, SSE y conversación guardada.
-- [ ] **AI-06**: El agente responde con `diagnosis`, `entities`, `evidence` y `confidence` validados por schema, dentro de presupuestos de iteraciones, tool calls, tokens y tiempo; entidades y evidencia sin respaldo en una tool se descartan y marcan como alucinadas; la UI muestra las tools consultadas.
-- [ ] **AI-07**: Los nueve diagnósticos de §10.8 se sostienen con evidencia real capturada (OOM, crash loop, contenedor detenido, healthcheck timeout, puerto sin respuesta, deploy fallido, memoria alta, disco alto, servidor inalcanzable), probada con fallos reales en integración.
+- [x] **AI-01**: `packages/ai` define `AIProvider` (`chat`, `stream`, `toolCall`) con Anthropic y OpenAI implementados y la interfaz abierta a OpenAI-compatible, OpenRouter, Azure OpenAI y Bedrock; ningún SDK de proveedor se importa fuera de `packages/ai/src/providers`.
+- [x] **AI-02**: BYOK: la API key se guarda cifrada (`ai_provider_key`), se valida al guardarla, nunca vuelve por API, logs ni activity, y se borra con la configuración; el modelo se elige de una allowlist por proveedor.
+- [x] **AI-03**: La AI es técnicamente incapaz de escribir: el registry de tools es cerrado y solo contiene las diez tools de lectura, el tipo `AITool` solo admite `kind: 'read'`, ninguna tool llega a un shell, y un nombre fuera del registry se rechaza sin ejecutarse y se cuenta como intento no autorizado.
+- [x] **AI-04**: La AI solo ve recursos autorizados: cada tool recibe un `AuthorizationScope` aplicado en backend y lo que queda fuera responde `NOT_FOUND`.
+- [x] **AI-05**: La AI nunca recibe secrets en claro: todo input y output del modelo pasa por el Redactor, los secrets aparecen solo como `<secret:name>`, las conversaciones se guardan redactadas y el canary de fugas cubre prompt, tool results, respuesta, SSE y conversación guardada.
+- [x] **AI-06**: El agente responde con `diagnosis`, `entities`, `evidence` y `confidence` validados por schema, dentro de presupuestos de iteraciones, tool calls, tokens y tiempo; entidades y evidencia sin respaldo en una tool se descartan y marcan como alucinadas; la UI muestra las tools consultadas.
+- [x] **AI-07**: Los nueve diagnósticos de §10.8 se sostienen con evidencia real capturada (OOM, crash loop, contenedor detenido, healthcheck timeout, puerto sin respuesta, deploy fallido, memoria alta, disco alto, servidor inalcanzable), probada con fallos reales en integración.
 
 ### Evaluación (EVAL)
 
-- [ ] **EVAL-01**: `tests/ai/evals/` versiona al menos 50 escenarios YAML (fixture, evidencia, pregunta, entidades esperadas, diagnóstico esperado, claims prohibidos) que cubren las ocho preguntas de §10.7, los nueve diagnósticos y `unknown`.
-- [ ] **EVAL-02**: Un scorer mide entity selection, evidence grounding, diagnosis accuracy, hallucinated resources, secret leakage y unauthorized writes sin comparar wording; `baseline.json` versiona el resultado de una corrida en vivo (modelo, versión del dataset, fecha).
-- [ ] **EVAL-03**: CI reproduce la suite (cassettes de respuestas grabadas en vivo a través del loop, tools y scorer reales) como job obligatorio que bloquea el merge bajo ≥95% entidades, ≥90% diagnóstico, <1% alucinación, 0% fugas, 0 escrituras no autorizadas o ante una caída frente al baseline; nightly corre en vivo cuando hay key.
-- [ ] **EVAL-04**: La suite adversarial (§10.11 más inyección vía nombre de servicio, contenido de logs y commit message) afirma ninguna escritura ejecutada y ningún secret revelado.
+- [x] **EVAL-01**: `tests/ai/evals/` versiona al menos 50 escenarios YAML (fixture, evidencia, pregunta, entidades esperadas, diagnóstico esperado, claims prohibidos) que cubren las ocho preguntas de §10.7, los nueve diagnósticos y `unknown`.
+- [x] **EVAL-02**: Un scorer mide entity selection, evidence grounding, diagnosis accuracy, hallucinated resources, secret leakage y unauthorized writes sin comparar wording; `baseline.json` versiona el resultado de una corrida en vivo (modelo, versión del dataset, fecha).
+- [x] **EVAL-03**: CI reproduce la suite (cassettes de respuestas grabadas en vivo a través del loop, tools y scorer reales) como job obligatorio que bloquea el merge bajo ≥95% entidades, ≥90% diagnóstico, <1% alucinación, 0% fugas, 0 escrituras no autorizadas o ante una caída frente al baseline; nightly corre en vivo cuando hay key.
+- [x] **EVAL-04**: La suite adversarial (§10.11 más inyección vía nombre de servicio, contenido de logs y commit message) afirma ninguna escritura ejecutada y ningún secret revelado.
 
 ### UI, docs y calidad
 
-- [ ] **UI-15**: Métricas y estado de servidores y servicios, la vista de logs y el Infrastructure Graph dentro del design system, aprobados por `noodara-ux-review` en ambos temas.
-- [ ] **UI-16**: Settings de AI (proveedor, modelo, key write-only) y el chat en el inspector: respuesta primero, diagnóstico y confianza, chips de entidades navegables, evidencia colapsada, tools consultadas, `unknown` explica la evidencia faltante; la salida del modelo se renderiza inerte.
-- [ ] **DOCS-05**: El sitio documenta métricas (intervalo, retención), logs, el graph y su regla de inferencia, setup BYOK por proveedor, qué datos se envían al proveedor, la garantía read-only y cómo se aplica, y los códigos de error nuevos, con test de exactitud.
+- [x] **UI-15**: Métricas y estado de servidores y servicios, la vista de logs y el Infrastructure Graph dentro del design system, aprobados por `noodara-ux-review` en ambos temas.
+- [x] **UI-16**: Settings de AI (proveedor, modelo, key write-only) y el chat en el inspector: respuesta primero, diagnóstico y confianza, chips de entidades navegables, evidencia colapsada, tools consultadas, `unknown` explica la evidencia faltante; la salida del modelo se renderiza inerte.
+- [x] **DOCS-05**: El sitio documenta métricas (intervalo, retención), logs, el graph y su regla de inferencia, setup BYOK por proveedor, qué datos se envían al proveedor, la garantía read-only y cómo se aplica, y los códigos de error nuevos, con test de exactitud.
 - [ ] **QA-19**: La suite de integración de observabilidad pasa en Ubuntu 22.04 y 24.04, y un soak del collector mantiene las tablas dentro de la retención sin fugas de sesiones SSH.
-- [ ] **QA-20**: Los E2E cubren los tres flujos de §10.12 (consulta de infraestructura, diagnóstico OOM, seguridad de secrets) contra el stack real.
+- [x] **QA-20**: Los E2E cubren los tres flujos de §10.12 (consulta de infraestructura, diagnóstico OOM, seguridad de secrets) contra el stack real.
 - [ ] **QA-21**: Gate de release v0.5 con evidencia por criterio de §10.13, security review (`docs/security/v0.5-review.md`), CI y nightly verdes, UAT en host real (Lima) con proveedor en vivo y `v0.5.0` publicado.
 
 ## v2 Requirements
@@ -383,28 +383,28 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | QA-15 | Phase 25 | Complete |
 | QA-17 | Phase 25 | Complete |
 | QA-18 | Phase 25 | Complete (v0.4.0 → d1d956bc, 2026-11-02) |
-| MET-03 | Phase 26 | Pending |
-| GRF-01 | Phase 26 | Pending |
-| MET-01 | Phase 27 | Pending |
-| MET-02 | Phase 27 | Pending |
-| LOG-05 | Phase 27 | Pending |
-| LOG-06 | Phase 27 | Pending |
-| GRF-02 | Phase 27 | Pending |
-| AI-01 | Phase 28 | Pending |
-| AI-02 | Phase 28 | Pending |
-| AI-03 | Phase 28 | Pending |
-| AI-04 | Phase 28 | Pending |
-| AI-05 | Phase 28 | Pending |
-| AI-06 | Phase 28 | Pending |
-| AI-07 | Phase 28 | Pending |
-| EVAL-01 | Phase 29 | Pending |
-| EVAL-02 | Phase 29 | Pending |
-| EVAL-03 | Phase 29 | Pending |
-| EVAL-04 | Phase 29 | Pending |
-| UI-15 | Phase 30 | Pending |
-| UI-16 | Phase 30 | Pending |
-| DOCS-05 | Phase 30 | Pending |
-| QA-20 | Phase 30 | Pending |
+| MET-03 | Phase 26 | Complete |
+| GRF-01 | Phase 26 | Complete |
+| MET-01 | Phase 27 | Complete |
+| MET-02 | Phase 27 | Complete |
+| LOG-05 | Phase 27 | Complete |
+| LOG-06 | Phase 27 | Complete |
+| GRF-02 | Phase 27 | Complete |
+| AI-01 | Phase 28 | Complete |
+| AI-02 | Phase 28 | Complete |
+| AI-03 | Phase 28 | Complete |
+| AI-04 | Phase 28 | Complete |
+| AI-05 | Phase 28 | Complete |
+| AI-06 | Phase 28 | Complete |
+| AI-07 | Phase 28 | Complete |
+| EVAL-01 | Phase 29 | Complete |
+| EVAL-02 | Phase 29 | Complete |
+| EVAL-03 | Phase 29 | Complete |
+| EVAL-04 | Phase 29 | Complete |
+| UI-15 | Phase 30 | Complete |
+| UI-16 | Phase 30 | Complete |
+| DOCS-05 | Phase 30 | Complete |
+| QA-20 | Phase 30 | Complete |
 | QA-19 | Phase 31 | Pending |
 | QA-21 | Phase 31 | Pending |
 

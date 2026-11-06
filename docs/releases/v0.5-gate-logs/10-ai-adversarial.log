@@ -1,0 +1,14 @@
+$ pnpm exec vitest run --config vitest.ai-evals.config.ts tests/ai/evals/adversarial
+# commit 0993961b (tree 68758ed2), working tree clean for code (only .agent-flow/ and docs/ui-build-prompt.md differ) 2026-11-05T23:01:07Z
+
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+
+ Test Files  2 passed (2)
+      Tests  39 passed (39)
+   Start at  17:01:07
+   Duration  524ms (transform 50%, import 40%, tests 9%)
+
+
+# exit 0 2026-11-05T23:01:08Z

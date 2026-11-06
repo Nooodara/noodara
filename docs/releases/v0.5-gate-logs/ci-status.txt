@@ -1,0 +1,25 @@
+$ gh api repos/Nooodara/noodara/commits/main --jq .sha; gh api repos/Nooodara/noodara/tags --jq ".[0:4][]|.name+\" \"+.commit.sha"; gh run list -R Nooodara/noodara -L 10 --json ...
+# 2026-11-05T23:04:14Z, local HEAD 0993961b (tree 68758ed2)
+
+public main: d1d956bce58f394c0d4fb872cff8d7dad00f102a
+
+public tags:
+v0.4.0  d1d956bce58f394c0d4fb872cff8d7dad00f102a
+v0.4.0-rc.1  d1d956bce58f394c0d4fb872cff8d7dad00f102a
+v0.3.0  a0b456189697eab270c3d81c07e286229d2f81dd
+v0.3.0-rc.1  2d1e1c69dc84f9ba0564dff76f7ee1ad9d4ed80b
+
+2026-11-05T10:08:25Z  Nightly  run 42008190322  success  schedule  headSha d1d956bce58f394c0d4fb872cff8d7dad00f102a
+2026-11-04T10:15:00Z  Nightly  run 41812912980  success  schedule  headSha d1d956bce58f394c0d4fb872cff8d7dad00f102a
+2026-11-03T10:21:24Z  Nightly  run 41618575976  failure  schedule  headSha d1d956bce58f394c0d4fb872cff8d7dad00f102a
+2026-11-02T22:11:17Z  Release  run 41535064354  success  push  headSha d1d956bce58f394c0d4fb872cff8d7dad00f102a
+2026-11-02T19:14:23Z  Release  run 41508069777  success  push  headSha d1d956bce58f394c0d4fb872cff8d7dad00f102a
+2026-11-02T18:29:00Z  Nightly  run 41500993949  success  workflow_dispatch  headSha d1d956bce58f394c0d4fb872cff8d7dad00f102a
+2026-11-02T18:28:28Z  CI  run 41500911568  success  push  headSha d1d956bce58f394c0d4fb872cff8d7dad00f102a
+2026-11-02T18:28:28Z  Publish site  run 41500911311  success  push  headSha d1d956bce58f394c0d4fb872cff8d7dad00f102a
+2026-11-02T10:23:30Z  Nightly  run 41428425981  failure  schedule  headSha a0b456189697eab270c3d81c07e286229d2f81dd
+2026-11-01T09:56:07Z  Nightly  run 41295237379  success  schedule  headSha a0b456189697eab270c3d81c07e286229d2f81dd
+
+No CI or nightly run exists on any v0.5 commit: every run above is on d1d956bc (v0.4.0) or older.
+The v0.5 tree (local 0993961b) reaches the public repo with v0.5.0-rc.1 in task 31-06; this task does not push or tag.
+Note: the ai-evals job (ci.yml) and the metrics-soak and ai-evals-live nightly jobs (nightly.yml) are v0.5 additions and have never run remotely.

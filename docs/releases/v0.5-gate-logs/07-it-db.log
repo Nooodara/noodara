@@ -1,0 +1,115 @@
+$ pnpm exec vitest run --config vitest.integration.config.ts tests/integration/db
+# commit 0993961b (tree 68758ed2), working tree clean for code (only .agent-flow/ and docs/ui-build-prompt.md differ) 2026-11-05T23:01:08Z
+
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+
+> noodara@0.5.0 build /Users/xch4rt/work/myself/noodara/code
+> turbo run build --filter=!@noodara/site
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/ai, @noodara/config, @noodara/control-plane, @noodara/docker, @noodara/domain, @noodara/git, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 9 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs fc53296f9ee914d2
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ai:build: cache hit, replaying logs 94b1be314777af49
+@noodara/ai:build: 
+@noodara/ai:build: > @noodara/ai@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/ai
+@noodara/ai:build: > tsc -p tsconfig.build.json
+@noodara/ai:build: 
+@noodara/ssh:build: cache hit, replaying logs 2ad63e3d218edd0d
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/git:build: cache hit, replaying logs bc16df3c44990626
+@noodara/git:build: 
+@noodara/git:build: > @noodara/git@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/git
+@noodara/git:build: > tsc -p tsconfig.build.json
+@noodara/git:build: 
+@noodara/docker:build: cache hit, replaying logs 35a799f93ca605c8
+@noodara/docker:build: 
+@noodara/docker:build: > @noodara/docker@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/docker
+@noodara/docker:build: > tsc -p tsconfig.build.json
+@noodara/docker:build: 
+@noodara/ui:build: cache hit, replaying logs e54704dfeb567e70
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/control-plane:build: cache hit, replaying logs 1a1105903ead38f6
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.5.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
+@noodara/web:build: cache hit, replaying logs 7b9f5f5312141355
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.5.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > node scripts/sync-brand-assets.mjs && next build
+@noodara/web:build: 
+@noodara/web:build: sync-brand-assets: no files changed (fully idempotent run).
+@noodara/web:build: sync-brand-assets: 7 file(s) already up to date.
+@noodara/web:build: ▲ Next.js 16.4.1 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 60ms
+@noodara/web:build: 
+@noodara/web:build:   Creating an optimized production build ...
+@noodara/web:build: ✓ Compiled successfully in 707ms
+@noodara/web:build:   Running TypeScript ...
+@noodara/web:build:   Finished TypeScript in 775ms ...
+@noodara/web:build:   Collecting page data using 13 workers ...
+@noodara/web:build:   Generating static pages using 13 workers (0/16) ...
+@noodara/web:build: ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+@noodara/web:build:   Generating static pages using 13 workers (4/16) 
+@noodara/web:build:   Generating static pages using 13 workers (8/16) 
+@noodara/web:build:   Generating static pages using 13 workers (12/16) 
+@noodara/web:build: ✓ Generating static pages using 13 workers (16/16) in 164ms
+@noodara/web:build:   Finalizing page optimization ...
+@noodara/web:build: 
+@noodara/web:build: Route (app)
+@noodara/web:build: ┌ ƒ /
+@noodara/web:build: ├ ƒ /_not-found
+@noodara/web:build: ├ ƒ /activity
+@noodara/web:build: ├ ƒ /api/events
+@noodara/web:build: ├ ○ /apple-icon.png
+@noodara/web:build: ├ ○ /icon.svg
+@noodara/web:build: ├ ○ /icon1.png
+@noodara/web:build: ├ ○ /icon2.png
+@noodara/web:build: ├ ƒ /login
+@noodara/web:build: ├ ○ /manifest.webmanifest
+@noodara/web:build: ├ ○ /opengraph-image.png
+@noodara/web:build: ├ ƒ /projects
+@noodara/web:build: ├ ƒ /projects/[projectId]
+@noodara/web:build: ├ ƒ /projects/[projectId]/graph
+@noodara/web:build: ├ ƒ /projects/[projectId]/services/[serviceId]
+@noodara/web:build: ├ ƒ /servers
+@noodara/web:build: ├ ƒ /servers/[id]
+@noodara/web:build: ├ ƒ /settings
+@noodara/web:build: └ ○ /setup
+@noodara/web:build: 
+@noodara/web:build: 
+@noodara/web:build: ƒ Proxy (Middleware)
+@noodara/web:build: 
+@noodara/web:build: ○  (Static)   prerendered as static content
+@noodara/web:build: ƒ  (Dynamic)  server-rendered on demand
+@noodara/web:build: 
+
+ Tasks:    8 successful, 8 total
+Cached:    8 cached, 8 total
+  Time:    61ms >>> FULL TURBO
+
+
+ Test Files  9 passed (9)
+      Tests  372 passed (372)
+   Start at  17:01:08
+   Duration  94.48s (tests 95%, import 5%)
+
+
+# exit 0 2026-11-05T23:02:43Z

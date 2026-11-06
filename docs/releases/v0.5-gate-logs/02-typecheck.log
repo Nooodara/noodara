@@ -1,0 +1,95 @@
+$ pnpm typecheck
+# commit 0993961b (tree 68758ed2), working tree clean for code (only .agent-flow/ and docs/ui-build-prompt.md differ) 2026-11-05T23:00:16Z
+
+
+> noodara@0.5.0 typecheck /Users/xch4rt/work/myself/noodara/code
+> turbo run typecheck && tsc -p tests/integration/ssh/tsconfig.json --noEmit && tsc -p tests/integration/deploy-engine/tsconfig.json --noEmit && tsc -p tests/integration/proxy/tsconfig.json --noEmit && tsc -p tests/e2e/tsconfig.json --noEmit && tsc -p tests/integration/installer/tsconfig.json --noEmit && tsc -p scripts/brand/tsconfig.json --noEmit && tsc -p scripts/ui/tsconfig.json --noEmit
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/ai, @noodara/config, @noodara/control-plane, @noodara/docker, @noodara/domain, @noodara/git, @noodara/site, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running typecheck in 10 packages
+   • Remote caching disabled
+
+@noodara/domain:typecheck: cache hit, replaying logs f161f0e56d8254e5
+@noodara/domain:build: cache hit, replaying logs 3b0b2499521495e0
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/domain:typecheck: 
+@noodara/domain:typecheck: > @noodara/domain@0.5.0 typecheck /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:typecheck: > tsc --noEmit
+@noodara/domain:typecheck: 
+@noodara/ai:build: cache hit, replaying logs acbb839aa1000f2b
+@noodara/ui:typecheck: cache hit, replaying logs fda11578df8eb712
+@noodara/ai:build: 
+@noodara/ai:build: > @noodara/ai@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/ai
+@noodara/ai:build: > tsc -p tsconfig.build.json
+@noodara/ai:build: 
+@noodara/ssh:build: cache hit, replaying logs a7d222cfaeb62fc3
+@noodara/ssh:typecheck: cache hit, replaying logs 75ad82fc00a30562
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ui:build: cache hit, replaying logs 1b8386f46fb5990d
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/ai:typecheck: cache hit, replaying logs 38da05b1b13ca3ce
+@noodara/ui:typecheck: 
+@noodara/ui:typecheck: > @noodara/ui@0.5.0 typecheck /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:typecheck: > tsc --noEmit
+@noodara/ui:typecheck: 
+@noodara/git:build: cache hit, replaying logs 956b09247869134f
+@noodara/docker:build: cache hit, replaying logs 8020a5d2c2b9e415
+@noodara/ssh:typecheck: 
+@noodara/ssh:typecheck: > @noodara/ssh@0.5.0 typecheck /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:typecheck: > tsc --noEmit
+@noodara/ssh:typecheck: 
+@noodara/git:build: 
+@noodara/git:build: > @noodara/git@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/git
+@noodara/git:build: > tsc -p tsconfig.build.json
+@noodara/git:build: 
+@noodara/docker:build: 
+@noodara/docker:build: > @noodara/docker@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/docker
+@noodara/docker:build: > tsc -p tsconfig.build.json
+@noodara/docker:build: 
+@noodara/ai:typecheck: 
+@noodara/ai:typecheck: > @noodara/ai@0.5.0 typecheck /Users/xch4rt/work/myself/noodara/code/packages/ai
+@noodara/ai:typecheck: > tsc --noEmit
+@noodara/ai:typecheck: 
+@noodara/docker:typecheck: cache hit, replaying logs 1e3294e72c355c14
+@noodara/git:typecheck: cache hit, replaying logs 01c1b5a88d05b626
+@noodara/site:typecheck: cache hit, replaying logs fb85de54071bb1f1
+@noodara/git:typecheck: 
+@noodara/git:typecheck: > @noodara/git@0.5.0 typecheck /Users/xch4rt/work/myself/noodara/code/packages/git
+@noodara/git:typecheck: > tsc --noEmit
+@noodara/git:typecheck: 
+@noodara/web:typecheck: cache hit, replaying logs 4e7bc5e9029906a1
+@noodara/docker:typecheck: 
+@noodara/docker:typecheck: > @noodara/docker@0.5.0 typecheck /Users/xch4rt/work/myself/noodara/code/packages/docker
+@noodara/docker:typecheck: > tsc --noEmit
+@noodara/docker:typecheck: 
+@noodara/site:typecheck: 
+@noodara/site:typecheck: > @noodara/site@0.5.0 typecheck /Users/xch4rt/work/myself/noodara/code/apps/site
+@noodara/site:typecheck: > tsc --noEmit
+@noodara/site:typecheck: 
+@noodara/control-plane:typecheck: cache hit, replaying logs adbc8628727974f4
+@noodara/web:typecheck: 
+@noodara/web:typecheck: > @noodara/web@0.5.0 typecheck /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:typecheck: > tsc --noEmit
+@noodara/web:typecheck: 
+@noodara/control-plane:typecheck: 
+@noodara/control-plane:typecheck: > @noodara/control-plane@0.5.0 typecheck /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:typecheck: > tsc --noEmit
+@noodara/control-plane:typecheck: 
+
+ Tasks:    15 successful, 15 total
+Cached:    15 cached, 15 total
+  Time:    16ms >>> FULL TURBO
+
+
+# exit 0 2026-11-05T23:00:28Z

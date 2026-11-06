@@ -1,0 +1,818 @@
+$ pnpm test:integration
+# commit 0993961b (tree 68758ed2), working tree clean for code (only .agent-flow/ and docs/ui-build-prompt.md differ) 2026-11-05T23:22:37Z
+
+
+> noodara@0.5.0 test:integration /Users/xch4rt/work/myself/noodara/code
+> vitest run --config vitest.integration.config.ts
+
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+
+> noodara@0.5.0 build /Users/xch4rt/work/myself/noodara/code
+> turbo run build --filter=!@noodara/site
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/ai, @noodara/config, @noodara/control-plane, @noodara/docker, @noodara/domain, @noodara/git, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 9 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache hit, replaying logs fc53296f9ee914d2
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ai:build: cache hit, replaying logs 94b1be314777af49
+@noodara/ssh:build: cache hit, replaying logs 2ad63e3d218edd0d
+@noodara/ai:build: 
+@noodara/ai:build: > @noodara/ai@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/ai
+@noodara/ai:build: > tsc -p tsconfig.build.json
+@noodara/ai:build: 
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ui:build: cache hit, replaying logs e54704dfeb567e70
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/docker:build: cache hit, replaying logs 35a799f93ca605c8
+@noodara/git:build: cache hit, replaying logs bc16df3c44990626
+@noodara/docker:build: 
+@noodara/docker:build: > @noodara/docker@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/docker
+@noodara/docker:build: > tsc -p tsconfig.build.json
+@noodara/docker:build: 
+@noodara/git:build: 
+@noodara/git:build: > @noodara/git@0.5.0 build /Users/xch4rt/work/myself/noodara/code/packages/git
+@noodara/git:build: > tsc -p tsconfig.build.json
+@noodara/git:build: 
+@noodara/control-plane:build: cache hit, replaying logs 1a1105903ead38f6
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.5.0 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
+@noodara/web:build: cache hit, replaying logs 7b9f5f5312141355
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.5.0 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > node scripts/sync-brand-assets.mjs && next build
+@noodara/web:build: 
+@noodara/web:build: sync-brand-assets: no files changed (fully idempotent run).
+@noodara/web:build: sync-brand-assets: 7 file(s) already up to date.
+@noodara/web:build: ▲ Next.js 16.4.1 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 60ms
+@noodara/web:build: 
+@noodara/web:build:   Creating an optimized production build ...
+@noodara/web:build: ✓ Compiled successfully in 707ms
+@noodara/web:build:   Running TypeScript ...
+@noodara/web:build:   Finished TypeScript in 775ms ...
+@noodara/web:build:   Collecting page data using 13 workers ...
+@noodara/web:build:   Generating static pages using 13 workers (0/16) ...
+@noodara/web:build: ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+@noodara/web:build:   Generating static pages using 13 workers (4/16) 
+@noodara/web:build:   Generating static pages using 13 workers (8/16) 
+@noodara/web:build:   Generating static pages using 13 workers (12/16) 
+@noodara/web:build: ✓ Generating static pages using 13 workers (16/16) in 164ms
+@noodara/web:build:   Finalizing page optimization ...
+@noodara/web:build: 
+@noodara/web:build: Route (app)
+@noodara/web:build: ┌ ƒ /
+@noodara/web:build: ├ ƒ /_not-found
+@noodara/web:build: ├ ƒ /activity
+@noodara/web:build: ├ ƒ /api/events
+@noodara/web:build: ├ ○ /apple-icon.png
+@noodara/web:build: ├ ○ /icon.svg
+@noodara/web:build: ├ ○ /icon1.png
+@noodara/web:build: ├ ○ /icon2.png
+@noodara/web:build: ├ ƒ /login
+@noodara/web:build: ├ ○ /manifest.webmanifest
+@noodara/web:build: ├ ○ /opengraph-image.png
+@noodara/web:build: ├ ƒ /projects
+@noodara/web:build: ├ ƒ /projects/[projectId]
+@noodara/web:build: ├ ƒ /projects/[projectId]/graph
+@noodara/web:build: ├ ƒ /projects/[projectId]/services/[serviceId]
+@noodara/web:build: ├ ƒ /servers
+@noodara/web:build: ├ ƒ /servers/[id]
+@noodara/web:build: ├ ƒ /settings
+@noodara/web:build: └ ○ /setup
+@noodara/web:build: 
+@noodara/web:build: 
+@noodara/web:build: ƒ Proxy (Middleware)
+@noodara/web:build: 
+@noodara/web:build: ○  (Static)   prerendered as static content
+@noodara/web:build: ƒ  (Dynamic)  server-rendered on demand
+@noodara/web:build: 
+
+ Tasks:    8 successful, 8 total
+Cached:    8 cached, 8 total
+  Time:    60ms >>> FULL TURBO
+
+{"level":40,"time":1793920993453,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"1355fc88a82b0ec3","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":30,"time":1793920993483,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","msg":"Server listening at http://127.0.0.1:52350"}
+{"level":30,"time":1793920993490,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793920993547,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":56.94141700000182,"msg":"request completed"}
+{"level":30,"time":1793920993547,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793920993586,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":38.52850000000035,"msg":"request completed"}
+{"level":30,"time":1793920993592,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"GET","url":"/api/events","host":"127.0.0.1:52350","remoteAddress":"127.0.0.1","remotePort":52356},"msg":"incoming request"}
+{"level":30,"time":1793921000168,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"GET","url":"/api/deployments/01a1ae06-0944-72bc-9496-6bf12d62b0f3/logs?phase=build&since=2&limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921000181,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":200},"responseTime":12.995957999999519,"msg":"request completed"}
+{"level":30,"time":1793921000182,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","req":{"method":"GET","url":"/api/deployments/01a1ae06-0944-72bc-9496-6bf12d62b0f3/logs?phase=prepare&since=0&limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921000186,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","res":{"statusCode":200},"responseTime":4.420959000002767,"msg":"request completed"}
+{"level":30,"time":1793921000187,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","req":{"method":"GET","url":"/api/deployments/01a1ae06-0944-72bc-9496-6bf12d62b0f3/logs","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921000188,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","res":{"statusCode":401},"responseTime":0.9482090000019525,"msg":"request completed"}
+{"level":30,"time":1793921000188,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","req":{"method":"GET","url":"/api/deployments/01a1ae06-0944-72bc-9496-6bf12d62b0f3/logs?since=-1","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921000191,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","res":{"statusCode":400},"responseTime":2.9819170000046142,"msg":"request completed"}
+{"level":30,"time":1793921000192,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","req":{"method":"GET","url":"/api/deployments/01a1ae06-0944-72bc-9496-6bf12d62b0f3/logs?limit=101","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921000194,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","res":{"statusCode":400},"responseTime":2.0475839999999152,"msg":"request completed"}
+{"level":30,"time":1793921000194,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","req":{"method":"GET","url":"/api/deployments/29a9df46-29e9-4e02-8a7a-d83b57998d0e/logs","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921000196,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","res":{"statusCode":404},"responseTime":2.6169579999987036,"msg":"request completed"}
+{"level":30,"time":1793921000199,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","req":{"method":"GET","url":"/api/events","host":"127.0.0.1:52350","remoteAddress":"127.0.0.1","remotePort":52363},"msg":"incoming request"}
+{"level":30,"time":1793921006782,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","req":{"method":"GET","url":"/api/deployments/01a1ae06-2317-7aee-899f-8930cc223ce3/logs?phase=prepare&since=0&limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921006790,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","res":{"statusCode":200},"responseTime":7.707249999999476,"msg":"request completed"}
+{"level":30,"time":1793921006795,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","req":{"method":"GET","url":"/api/events","host":"127.0.0.1:52350","remoteAddress":"127.0.0.1","remotePort":52365},"msg":"incoming request"}
+{"level":40,"time":1793921205255,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"21889718695a9386","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":30,"time":1793921205272,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","msg":"Server listening at http://127.0.0.1:52455"}
+{"level":30,"time":1793921205275,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921205330,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":54.91433300002245,"msg":"request completed"}
+{"level":30,"time":1793921205330,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921205369,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":39.22025000001304,"msg":"request completed"}
+{"level":30,"time":1793921205375,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"GET","url":"/api/events","host":"127.0.0.1:52455","remoteAddress":"127.0.0.1","remotePort":52461},"msg":"incoming request"}
+{"level":30,"time":1793921211951,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"GET","url":"/api/deployments/01a1ae09-4488-738f-ad0e-bcb9b28a46a0/logs?phase=build&since=2&limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921211968,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":200},"responseTime":16.97995800001081,"msg":"request completed"}
+{"level":30,"time":1793921211968,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","req":{"method":"GET","url":"/api/deployments/01a1ae09-4488-738f-ad0e-bcb9b28a46a0/logs?phase=prepare&since=0&limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921211975,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","res":{"statusCode":200},"responseTime":6.285459000006085,"msg":"request completed"}
+{"level":30,"time":1793921211975,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","req":{"method":"GET","url":"/api/deployments/01a1ae09-4488-738f-ad0e-bcb9b28a46a0/logs","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921211976,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","res":{"statusCode":401},"responseTime":0.8727080000098795,"msg":"request completed"}
+{"level":30,"time":1793921211976,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","req":{"method":"GET","url":"/api/deployments/01a1ae09-4488-738f-ad0e-bcb9b28a46a0/logs?since=-1","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921211981,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","res":{"statusCode":400},"responseTime":4.572500000009313,"msg":"request completed"}
+{"level":30,"time":1793921211981,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","req":{"method":"GET","url":"/api/deployments/01a1ae09-4488-738f-ad0e-bcb9b28a46a0/logs?limit=101","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921211984,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","res":{"statusCode":400},"responseTime":3.2774590000044554,"msg":"request completed"}
+{"level":30,"time":1793921211985,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","req":{"method":"GET","url":"/api/deployments/864fe625-dd7b-4dea-941f-3c3392abcd56/logs","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921211988,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","res":{"statusCode":404},"responseTime":2.8428750000020955,"msg":"request completed"}
+{"level":30,"time":1793921211989,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","req":{"method":"GET","url":"/api/events","host":"127.0.0.1:52455","remoteAddress":"127.0.0.1","remotePort":52468},"msg":"incoming request"}
+{"level":30,"time":1793921218552,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","req":{"method":"GET","url":"/api/deployments/01a1ae09-5e5e-733d-ad80-8d1137ffa723/logs?phase=prepare&since=0&limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793921218562,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","res":{"statusCode":200},"responseTime":9.551207999989856,"msg":"request completed"}
+{"level":30,"time":1793921218568,"pid":63289,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","req":{"method":"GET","url":"/api/events","host":"127.0.0.1:52455","remoteAddress":"127.0.0.1","remotePort":52470},"msg":"incoming request"}
+{"level":40,"time":1793922126039,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"60b7bfae7f231c5c","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":30,"time":1793922126071,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922126127,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":55.932417000003625,"msg":"request completed"}
+{"level":30,"time":1793922126127,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922126166,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":38.63154100000247,"msg":"request completed"}
+{"level":30,"time":1793922133988,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"GET","url":"/api/servers/01a1ae17-505a-72b0-8fe7-13b9f521a3c0/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922134014,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":200},"responseTime":25.571209000001545,"msg":"request completed"}
+{"level":30,"time":1793922138561,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-5159-7041-b269-9ae2a68b18b8/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922138579,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":200},"responseTime":17.856708999999682,"msg":"request completed"}
+{"level":30,"time":1793922138581,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-5159-7041-b269-9ae2a68b18b8/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922138589,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","res":{"statusCode":200},"responseTime":7.6869169999990845,"msg":"request completed"}
+{"level":30,"time":1793922138589,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-7000-707e-ac04-c0599285d332/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922138595,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","res":{"statusCode":200},"responseTime":5.930457999995269,"msg":"request completed"}
+{"level":30,"time":1793922138703,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/graph","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922138725,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","res":{"statusCode":200},"responseTime":22.675083000001905,"msg":"request completed"}
+{"level":30,"time":1793922141548,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","req":{"method":"GET","url":"/api/servers/01a1ae17-505a-72b0-8fe7-13b9f521a3c0/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922141548,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-8267-77e5-8864-995f5f74bbf1/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922141549,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-8267-77e5-8864-995f5f74bbf1/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922141549,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-8267-77e5-8864-995f5f74bbf1/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922141558,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","res":{"statusCode":200},"responseTime":10.303583999993862,"msg":"request completed"}
+{"level":30,"time":1793922141566,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","res":{"statusCode":200},"responseTime":17.123625000000175,"msg":"request completed"}
+{"level":30,"time":1793922141569,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","res":{"statusCode":200},"responseTime":19.664708000003884,"msg":"request completed"}
+{"level":30,"time":1793922141574,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","res":{"statusCode":200},"responseTime":25.04908300000534,"msg":"request completed"}
+{"level":30,"time":1793922157575,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","req":{"method":"GET","url":"/api/servers/01a1ae17-505a-72b0-8fe7-13b9f521a3c0/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922157575,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-d","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-8d87-762c-975e-4ab51a1b867e/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922157576,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-e","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-8d87-762c-975e-4ab51a1b867e/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922157576,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-f","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-8d87-762c-975e-4ab51a1b867e/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922157602,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","res":{"statusCode":200},"responseTime":26.7132500000007,"msg":"request completed"}
+{"level":30,"time":1793922157603,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-d","res":{"statusCode":200},"responseTime":27.10716699999466,"msg":"request completed"}
+{"level":30,"time":1793922157603,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-f","res":{"statusCode":200},"responseTime":27.15604099999473,"msg":"request completed"}
+{"level":30,"time":1793922157607,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-e","res":{"statusCode":200},"responseTime":31.021958999990602,"msg":"request completed"}
+{"level":30,"time":1793922163423,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-g","req":{"method":"GET","url":"/api/servers/01a1ae17-505a-72b0-8fe7-13b9f521a3c0/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922163423,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-h","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-cc6a-70db-8985-26bc74c398d9/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922163423,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-i","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-cc6a-70db-8985-26bc74c398d9/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922163423,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-j","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-cc6a-70db-8985-26bc74c398d9/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922163431,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-i","res":{"statusCode":200},"responseTime":8.309124999999767,"msg":"request completed"}
+{"level":30,"time":1793922163432,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-h","res":{"statusCode":200},"responseTime":8.834625000003143,"msg":"request completed"}
+{"level":30,"time":1793922163433,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-g","res":{"statusCode":200},"responseTime":9.927292000007583,"msg":"request completed"}
+{"level":30,"time":1793922163433,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-j","res":{"statusCode":200},"responseTime":9.886917000010726,"msg":"request completed"}
+{"level":30,"time":1793922170888,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-k","req":{"method":"GET","url":"/api/servers/01a1ae17-505a-72b0-8fe7-13b9f521a3c0/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922170889,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-l","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-e2e9-7af8-a5a5-5079669e0ea3/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922170889,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-m","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-e2e9-7af8-a5a5-5079669e0ea3/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922170890,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-n","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae17-e2e9-7af8-a5a5-5079669e0ea3/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922170900,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-k","res":{"statusCode":200},"responseTime":11.718583000008948,"msg":"request completed"}
+{"level":30,"time":1793922170903,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-n","res":{"statusCode":200},"responseTime":13.19708399999945,"msg":"request completed"}
+{"level":30,"time":1793922170903,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-m","res":{"statusCode":200},"responseTime":13.579833000010694,"msg":"request completed"}
+{"level":30,"time":1793922170904,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-l","res":{"statusCode":200},"responseTime":14.255124999996042,"msg":"request completed"}
+{"level":30,"time":1793922182689,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-o","req":{"method":"GET","url":"/api/servers/01a1ae17-505a-72b0-8fe7-13b9f521a3c0/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922182690,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-p","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-0098-7f89-90cf-0da577b1594b/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922182691,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-q","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-0098-7f89-90cf-0da577b1594b/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922182691,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-r","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-0098-7f89-90cf-0da577b1594b/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922182728,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-o","res":{"statusCode":200},"responseTime":39.32449999998789,"msg":"request completed"}
+{"level":30,"time":1793922182729,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-p","res":{"statusCode":200},"responseTime":39.03050000000803,"msg":"request completed"}
+{"level":30,"time":1793922182733,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-q","res":{"statusCode":200},"responseTime":42.649915999994846,"msg":"request completed"}
+{"level":30,"time":1793922182734,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-r","res":{"statusCode":200},"responseTime":43.405541000000085,"msg":"request completed"}
+{"level":30,"time":1793922186941,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-s","req":{"method":"GET","url":"/api/servers/01a1ae17-505a-72b0-8fe7-13b9f521a3c0/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922186941,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-t","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-2ef3-7d7d-8fee-28062395d686/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922186941,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-u","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-2ef3-7d7d-8fee-28062395d686/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922186941,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-v","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-2ef3-7d7d-8fee-28062395d686/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922186951,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-u","res":{"statusCode":200},"responseTime":10.169957999998587,"msg":"request completed"}
+{"level":30,"time":1793922186952,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-t","res":{"statusCode":200},"responseTime":10.94520800000464,"msg":"request completed"}
+{"level":30,"time":1793922186954,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-v","res":{"statusCode":200},"responseTime":12.740749999997206,"msg":"request completed"}
+{"level":30,"time":1793922186955,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-s","res":{"statusCode":200},"responseTime":14.095000000001164,"msg":"request completed"}
+{"level":30,"time":1793922189688,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-w","req":{"method":"GET","url":"/api/servers/01a1ae17-505a-72b0-8fe7-13b9f521a3c0/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922189688,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-x","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-3ecd-7c8c-bf31-0586524dfd9a/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922189688,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-y","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-3ecd-7c8c-bf31-0586524dfd9a/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922189688,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-z","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-3ecd-7c8c-bf31-0586524dfd9a/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922189693,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-x","res":{"statusCode":200},"responseTime":5.3720419999881415,"msg":"request completed"}
+{"level":30,"time":1793922189694,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-w","res":{"statusCode":200},"responseTime":6.115749999997206,"msg":"request completed"}
+{"level":30,"time":1793922189695,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-y","res":{"statusCode":200},"responseTime":6.814958999995724,"msg":"request completed"}
+{"level":30,"time":1793922189696,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-z","res":{"statusCode":200},"responseTime":8.328249999991385,"msg":"request completed"}
+{"level":30,"time":1793922196298,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-10","req":{"method":"GET","url":"/api/servers/01a1ae17-505a-72b0-8fe7-13b9f521a3c0/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922196299,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-11","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-4981-7bd1-9188-dab12e8a7938/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922196299,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-12","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-4981-7bd1-9188-dab12e8a7938/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922196300,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-13","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-4981-7bd1-9188-dab12e8a7938/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922196309,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-11","res":{"statusCode":200},"responseTime":10.473167000003741,"msg":"request completed"}
+{"level":30,"time":1793922196310,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-12","res":{"statusCode":200},"responseTime":10.827375000008033,"msg":"request completed"}
+{"level":30,"time":1793922196312,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-10","res":{"statusCode":200},"responseTime":14.152625000002445,"msg":"request completed"}
+{"level":30,"time":1793922196314,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-13","res":{"statusCode":200},"responseTime":14.752791999999317,"msg":"request completed"}
+{"level":30,"time":1793922247743,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-14","req":{"method":"GET","url":"/api/servers/01a1ae17-505a-72b0-8fe7-13b9f521a3c0/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922247745,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-15","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-6378-7875-995d-4cc4d9c92740/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922247745,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-16","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-6378-7875-995d-4cc4d9c92740/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922247745,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-17","req":{"method":"GET","url":"/api/projects/01a1ae17-505d-7486-83b1-059b5e3d5a9a/services/01a1ae18-6378-7875-995d-4cc4d9c92740/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922247775,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-14","res":{"statusCode":200},"responseTime":31.478917000000365,"msg":"request completed"}
+{"level":30,"time":1793922247776,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-15","res":{"statusCode":200},"responseTime":31.596875000017462,"msg":"request completed"}
+{"level":30,"time":1793922247780,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-17","res":{"statusCode":200},"responseTime":34.88841699998011,"msg":"request completed"}
+{"level":30,"time":1793922247780,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-16","res":{"statusCode":200},"responseTime":35.43454200000269,"msg":"request completed"}
+{"level":40,"time":1793922293181,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"b314a1dfa1208793","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":30,"time":1793922293208,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922293273,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":64.66137499999604,"msg":"request completed"}
+{"level":30,"time":1793922293273,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922293310,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":36.48008400000981,"msg":"request completed"}
+{"level":30,"time":1793922301031,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"GET","url":"/api/servers/01a1ae19-dd3b-7205-856b-db837904d162/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922301050,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":200},"responseTime":18.668249999987893,"msg":"request completed"}
+{"level":30,"time":1793922305571,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae19-de40-70fd-8e0b-6c11a29b8d98/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922305587,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":200},"responseTime":16.083582999999635,"msg":"request completed"}
+{"level":30,"time":1793922305588,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae19-de40-70fd-8e0b-6c11a29b8d98/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922305594,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","res":{"statusCode":200},"responseTime":5.913208999991184,"msg":"request completed"}
+{"level":30,"time":1793922305594,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae19-fc7b-70be-a216-ebaeb25f4292/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922305599,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","res":{"statusCode":200},"responseTime":4.672458999993978,"msg":"request completed"}
+{"level":30,"time":1793922305708,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/graph","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922305725,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-7","res":{"statusCode":200},"responseTime":17.32025000001886,"msg":"request completed"}
+{"level":30,"time":1793922308541,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","req":{"method":"GET","url":"/api/servers/01a1ae19-dd3b-7205-856b-db837904d162/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922308542,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-0ebe-70d1-becd-bf554443949f/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922308542,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-0ebe-70d1-becd-bf554443949f/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922308542,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-0ebe-70d1-becd-bf554443949f/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922308549,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-8","res":{"statusCode":200},"responseTime":7.79525000002468,"msg":"request completed"}
+{"level":30,"time":1793922308557,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-9","res":{"statusCode":200},"responseTime":15.317332999984501,"msg":"request completed"}
+{"level":30,"time":1793922308558,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-b","res":{"statusCode":200},"responseTime":16.138416000001598,"msg":"request completed"}
+{"level":30,"time":1793922308564,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-a","res":{"statusCode":200},"responseTime":21.99466600001324,"msg":"request completed"}
+{"level":30,"time":1793922324439,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","req":{"method":"GET","url":"/api/servers/01a1ae19-dd3b-7205-856b-db837904d162/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922324439,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-d","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-19d4-7b92-910e-3bb10d5eb8d6/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922324440,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-e","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-19d4-7b92-910e-3bb10d5eb8d6/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922324440,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-f","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-19d4-7b92-910e-3bb10d5eb8d6/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922324467,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-d","res":{"statusCode":200},"responseTime":27.54320800001733,"msg":"request completed"}
+{"level":30,"time":1793922324468,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-c","res":{"statusCode":200},"responseTime":29.34124999999767,"msg":"request completed"}
+{"level":30,"time":1793922324469,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-f","res":{"statusCode":200},"responseTime":28.740542000014102,"msg":"request completed"}
+{"level":30,"time":1793922324473,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-e","res":{"statusCode":200},"responseTime":32.959499999997206,"msg":"request completed"}
+{"level":30,"time":1793922330197,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-g","req":{"method":"GET","url":"/api/servers/01a1ae19-dd3b-7205-856b-db837904d162/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922330198,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-h","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-583a-7ee2-a16d-d2a82e0fdf32/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922330198,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-i","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-583a-7ee2-a16d-d2a82e0fdf32/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922330198,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-j","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-583a-7ee2-a16d-d2a82e0fdf32/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922330208,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-g","res":{"statusCode":200},"responseTime":10.01425000000745,"msg":"request completed"}
+{"level":30,"time":1793922330209,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-h","res":{"statusCode":200},"responseTime":11.346500000014203,"msg":"request completed"}
+{"level":30,"time":1793922330209,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-i","res":{"statusCode":200},"responseTime":11.408750000002328,"msg":"request completed"}
+{"level":30,"time":1793922330210,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-j","res":{"statusCode":200},"responseTime":12.189666999998735,"msg":"request completed"}
+{"level":30,"time":1793922336592,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-k","req":{"method":"GET","url":"/api/servers/01a1ae19-dd3b-7205-856b-db837904d162/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922336592,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-l","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-6e63-7b87-a018-3eb4b34963e0/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922336592,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-m","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-6e63-7b87-a018-3eb4b34963e0/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922336593,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-n","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-6e63-7b87-a018-3eb4b34963e0/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922336602,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-m","res":{"statusCode":200},"responseTime":9.954958999995142,"msg":"request completed"}
+{"level":30,"time":1793922336603,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-n","res":{"statusCode":200},"responseTime":10.098540999984834,"msg":"request completed"}
+{"level":30,"time":1793922336603,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-k","res":{"statusCode":200},"responseTime":11.299999999988358,"msg":"request completed"}
+{"level":30,"time":1793922336604,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-l","res":{"statusCode":200},"responseTime":11.548915999999736,"msg":"request completed"}
+{"level":30,"time":1793922348226,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-o","req":{"method":"GET","url":"/api/servers/01a1ae19-dd3b-7205-856b-db837904d162/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922348226,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-p","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-87ca-728c-9579-de4342b31395/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922348226,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-q","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-87ca-728c-9579-de4342b31395/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922348226,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-r","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-87ca-728c-9579-de4342b31395/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922348251,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-p","res":{"statusCode":200},"responseTime":25.113292000023648,"msg":"request completed"}
+{"level":30,"time":1793922348252,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-r","res":{"statusCode":200},"responseTime":25.335250000003725,"msg":"request completed"}
+{"level":30,"time":1793922348253,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-o","res":{"statusCode":200},"responseTime":27.18804199999431,"msg":"request completed"}
+{"level":30,"time":1793922348258,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-q","res":{"statusCode":200},"responseTime":31.507666000019526,"msg":"request completed"}
+{"level":30,"time":1793922352436,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-s","req":{"method":"GET","url":"/api/servers/01a1ae19-dd3b-7205-856b-db837904d162/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922352437,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-t","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-b568-724f-907a-0b386d753814/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922352437,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-u","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-b568-724f-907a-0b386d753814/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922352437,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-v","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-b568-724f-907a-0b386d753814/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922352447,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-u","res":{"statusCode":200},"responseTime":10.075167000002693,"msg":"request completed"}
+{"level":30,"time":1793922352448,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-t","res":{"statusCode":200},"responseTime":11.145499999984168,"msg":"request completed"}
+{"level":30,"time":1793922352448,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-s","res":{"statusCode":200},"responseTime":12.015916000003926,"msg":"request completed"}
+{"level":30,"time":1793922352454,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-v","res":{"statusCode":200},"responseTime":17.490916999988258,"msg":"request completed"}
+{"level":30,"time":1793922355209,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-w","req":{"method":"GET","url":"/api/servers/01a1ae19-dd3b-7205-856b-db837904d162/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922355209,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-x","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-c548-76e3-872b-b96b06e2770a/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922355210,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-y","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-c548-76e3-872b-b96b06e2770a/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922355210,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-z","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-c548-76e3-872b-b96b06e2770a/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922355219,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-x","res":{"statusCode":200},"responseTime":9.412124999973457,"msg":"request completed"}
+{"level":30,"time":1793922355219,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-y","res":{"statusCode":200},"responseTime":9.714500000001863,"msg":"request completed"}
+{"level":30,"time":1793922355221,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-w","res":{"statusCode":200},"responseTime":12.26833400002215,"msg":"request completed"}
+{"level":30,"time":1793922355222,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-z","res":{"statusCode":200},"responseTime":12.809959000034723,"msg":"request completed"}
+{"level":30,"time":1793922361740,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-10","req":{"method":"GET","url":"/api/servers/01a1ae19-dd3b-7205-856b-db837904d162/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922361741,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-11","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-d017-73e6-939f-de49e3140139/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922361741,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-12","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-d017-73e6-939f-de49e3140139/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922361741,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-13","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-d017-73e6-939f-de49e3140139/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922361751,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-11","res":{"statusCode":200},"responseTime":9.953166999970563,"msg":"request completed"}
+{"level":30,"time":1793922361752,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-10","res":{"statusCode":200},"responseTime":11.200124999973923,"msg":"request completed"}
+{"level":30,"time":1793922361757,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-12","res":{"statusCode":200},"responseTime":16.02808299998287,"msg":"request completed"}
+{"level":30,"time":1793922361757,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-13","res":{"statusCode":200},"responseTime":16.39254199998686,"msg":"request completed"}
+{"level":30,"time":1793922413308,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-14","req":{"method":"GET","url":"/api/servers/01a1ae19-dd3b-7205-856b-db837904d162/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922413309,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-15","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-e9bc-77bf-b4f1-a027613c046f/metrics","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922413309,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-16","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-e9bc-77bf-b4f1-a027613c046f/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922413309,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-17","req":{"method":"GET","url":"/api/projects/01a1ae19-dd3f-7943-a695-aa155817d9b9/services/01a1ae1a-e9bc-77bf-b4f1-a027613c046f/logs/entries?sources=build&sources=deploy&sources=activity&limit=1000","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793922413346,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-15","res":{"statusCode":200},"responseTime":37.09704199997941,"msg":"request completed"}
+{"level":30,"time":1793922413347,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-14","res":{"statusCode":200},"responseTime":39.049583000014536,"msg":"request completed"}
+{"level":30,"time":1793922413350,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-16","res":{"statusCode":200},"responseTime":40.60562500002561,"msg":"request completed"}
+{"level":30,"time":1793922413352,"pid":67007,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-17","res":{"statusCode":200},"responseTime":43.18312500003958,"msg":"request completed"}
+{"level":40,"time":1793925347255,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"069e791f2ce9f3cd","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925347312,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925347415,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925347570,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925347775,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925348028,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925348332,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925348684,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925349087,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925349287,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925349290,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925349361,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":70.42770800000017,"msg":"request completed"}
+{"level":30,"time":1793925349361,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925349403,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":41.2880839999998,"msg":"request completed"}
+{"level":30,"time":1793925349403,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925349541,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925349542,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1793925349544,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":140.73541600000044,"msg":"request completed"}
+{"level":40,"time":1793925350047,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925350601,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925351206,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925355316,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"24bccc23fbce076d","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925355372,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925355473,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925355624,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925355827,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925356079,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925356383,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925356738,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925357141,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925357340,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925357341,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925357411,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":69.77337499999885,"msg":"request completed"}
+{"level":30,"time":1793925357411,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925357455,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":43.86987500000032,"msg":"request completed"}
+{"level":30,"time":1793925357455,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925357594,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1793925357596,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":141.35641699999906,"msg":"request completed"}
+{"level":30,"time":1793925357597,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925357597,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":30,"time":1793925357607,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":409},"responseTime":10.591207999999824,"msg":"request completed"}
+{"level":40,"time":1793925358099,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925358652,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925359255,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925362818,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"24667eeb61a1efc5","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925362880,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925362981,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925363134,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925363337,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925363589,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925363892,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925364244,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925364649,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925364859,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925364861,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925364960,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":98.4439999999995,"msg":"request completed"}
+{"level":30,"time":1793925364960,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925365001,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":41.0870419999992,"msg":"request completed"}
+{"level":30,"time":1793925365001,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925365100,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925365101,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1793925365102,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":100.21537499999977,"msg":"request completed"}
+{"level":30,"time":1793925365102,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925365113,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":409},"responseTime":11.063666999998532,"msg":"request completed"}
+{"level":40,"time":1793925365603,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925366158,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925366763,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925370209,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"a598a7d2705bf518","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925370264,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925370367,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925370520,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925370722,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925370973,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925371276,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925371628,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925372030,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925372225,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925372225,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925372341,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":115.64258300000074,"msg":"request completed"}
+{"level":30,"time":1793925372341,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925372395,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":53.991916000002675,"msg":"request completed"}
+{"level":30,"time":1793925372396,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925372399,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":400},"responseTime":3.132291999998415,"msg":"request completed"}
+{"level":40,"time":1793925372482,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925372985,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925373539,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925374143,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925377202,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"b97d32ace41b8732","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925377256,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925377358,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925377511,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925377714,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925377966,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925378268,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925378619,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925379023,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925379216,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925379217,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925379288,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":70.95679199999722,"msg":"request completed"}
+{"level":30,"time":1793925379288,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925379325,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":37.53504100000282,"msg":"request completed"}
+{"level":30,"time":1793925379326,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925379329,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":400},"responseTime":3.669958000005863,"msg":"request completed"}
+{"level":40,"time":1793925379476,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925379981,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925380535,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925381140,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925384536,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"4b86d71f157dbb13","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925384564,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925384616,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925384717,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925384867,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925385069,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925385320,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925385623,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925385976,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925386380,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925386563,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925386564,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925386663,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":98.3505839999998,"msg":"request completed"}
+{"level":30,"time":1793925386663,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925386705,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":42.12962499999412,"msg":"request completed"}
+{"level":30,"time":1793925386706,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925386708,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":400},"responseTime":2.38916700000118,"msg":"request completed"}
+{"level":40,"time":1793925386834,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925387339,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925387892,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925388497,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925392123,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"bfa2d14c44c31589","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925392136,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925392186,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925392288,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925392439,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925392641,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925392893,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925393196,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925393548,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925393950,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925394137,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925394138,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925394141,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":401},"responseTime":2.503082999995968,"msg":"request completed"}
+{"level":40,"time":1793925394405,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925394910,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925395470,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925396073,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925399056,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"dd6928ebd6c07a35","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925399114,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925399216,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925399366,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925399569,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925399820,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925400122,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925400475,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925400876,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925401080,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925401083,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925401152,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":68.64104100000259,"msg":"request completed"}
+{"level":30,"time":1793925401152,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925401191,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":39.67412499999773,"msg":"request completed"}
+{"level":30,"time":1793925401192,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925401329,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1793925401330,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":138.31362499999523,"msg":"request completed"}
+{"level":30,"time":1793925401330,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925401331,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925401833,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925402385,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1793925402385,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":201},"responseTime":1054.507249999995,"msg":"request completed"}
+{"level":30,"time":1793925402385,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","req":{"method":"GET","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925402386,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":30,"time":1793925402392,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","res":{"statusCode":200},"responseTime":6.6808339999988675,"msg":"request completed"}
+{"level":40,"time":1793925402987,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925403642,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925404345,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925407136,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"8d1bf4f0a940f9e9","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925407146,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925407198,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925407298,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925407450,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925407653,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925407906,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925408208,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925408562,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925408964,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925409147,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925409148,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"GET","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925409149,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":401},"responseTime":1.4117909999913536,"msg":"request completed"}
+{"level":40,"time":1793925409416,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925409920,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925410474,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925411078,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925414998,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"8f6bd73cdf61ba07","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925415056,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925415158,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925415309,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925415512,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925415764,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925416065,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925416420,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925416822,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925417019,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925417020,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925417097,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":76.99799999999232,"msg":"request completed"}
+{"level":30,"time":1793925417098,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925417139,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":41.46087500000431,"msg":"request completed"}
+{"level":30,"time":1793925417139,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925417276,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925417277,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1793925417278,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":138.2070420000091,"msg":"request completed"}
+{"level":30,"time":1793925417278,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"GET","url":"/api/servers/01a1ae49-88b8-7a16-b90c-b1159d523ebf","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925417285,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":200},"responseTime":7.2352499999979045,"msg":"request completed"}
+{"level":40,"time":1793925417780,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925418335,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925418938,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925422398,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"fe2fd8c11686eaf8","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925422453,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925422554,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925422706,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925422908,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925423161,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925423462,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925423813,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925424214,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925424413,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925424414,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925424498,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":83.53287500000442,"msg":"request completed"}
+{"level":30,"time":1793925424498,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925424542,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":44.04858400000376,"msg":"request completed"}
+{"level":30,"time":1793925424542,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"GET","url":"/api/servers/78739085-5385-4d91-a833-f32acd1d95d6","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925424546,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":404},"responseTime":3.325417000000016,"msg":"request completed"}
+{"level":40,"time":1793925424666,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925425171,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925425724,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925426327,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925429400,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"839aa69f50568403","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925429457,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925429558,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925429710,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925429913,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925430165,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925430467,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925430819,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925431221,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925431419,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925431426,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925431496,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":69.95579200000793,"msg":"request completed"}
+{"level":30,"time":1793925431496,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925431537,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":40.787000000011176,"msg":"request completed"}
+{"level":30,"time":1793925431537,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"GET","url":"/api/servers/not-a-uuid","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925431539,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":400},"responseTime":1.6630000000004657,"msg":"request completed"}
+{"level":40,"time":1793925431674,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925432177,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925432729,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925433333,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925436353,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"44803bcf28c848a9","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925436366,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925436417,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925436519,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925436671,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925436873,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925437126,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925437428,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925437783,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925438188,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925438367,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925438367,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"GET","url":"/api/servers/d38688bd-7431-45a1-ae25-c1e328d53592","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925438369,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":401},"responseTime":1.2292499999894062,"msg":"request completed"}
+{"level":40,"time":1793925438641,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925439145,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925439700,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925440303,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925443054,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"077ae75eb09c7ce1","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925443109,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925443210,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925443361,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925443571,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925443822,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925444126,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925444479,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925444882,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925445073,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925445075,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925445143,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":68.31837500000256,"msg":"request completed"}
+{"level":30,"time":1793925445143,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925445184,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":40.24683400000504,"msg":"request completed"}
+{"level":30,"time":1793925445184,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925445334,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925445334,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1793925445336,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":151.74883399999817,"msg":"request completed"}
+{"level":30,"time":1793925445336,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"PATCH","url":"/api/servers/01a1ae49-f646-7522-ab92-1413d64ec38f","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925445836,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925446390,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925446391,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1793925446391,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":200},"responseTime":1054.875291999997,"msg":"request completed"}
+{"level":40,"time":1793925446995,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925447650,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925448354,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925452346,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"6beeed7ea39a2b86","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925452402,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925452504,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925452659,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925452863,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925453115,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925453419,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925453772,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925454177,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925454377,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925454377,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925454442,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":64.61549999999988,"msg":"request completed"}
+{"level":30,"time":1793925454442,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925454481,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":38.879833999992115,"msg":"request completed"}
+{"level":30,"time":1793925454481,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925454630,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925454631,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1793925454633,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":151.6037090000027,"msg":"request completed"}
+{"level":30,"time":1793925454633,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"PATCH","url":"/api/servers/01a1ae4a-1a98-76b9-907b-ab2e5e612589","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925454643,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":400},"responseTime":9.757958000001963,"msg":"request completed"}
+{"level":40,"time":1793925455136,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925455690,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925456295,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925459544,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"d6eb6c6a8b89c846","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925459562,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925459614,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925459717,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925459869,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925460071,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925460324,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925460628,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925460980,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925461381,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925461565,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925461566,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925461640,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":73.92741699999897,"msg":"request completed"}
+{"level":30,"time":1793925461640,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925461681,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":40.56395799999882,"msg":"request completed"}
+{"level":30,"time":1793925461681,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925461835,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925461836,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1793925461837,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":155.68966600000567,"msg":"request completed"}
+{"level":30,"time":1793925461847,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"PATCH","url":"/api/servers/01a1ae4a-36b6-7442-8068-6849045c177c","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925461853,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":409},"responseTime":6.630334000001312,"msg":"request completed"}
+{"level":40,"time":1793925462337,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925462892,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925463495,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925466818,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"6e2a25e317294f4d","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925466831,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925466882,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925466985,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925467138,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925467341,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925467594,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925467896,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925468250,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925468652,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925468829,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925468830,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"PATCH","url":"/api/servers/6f02819b-f6d2-45e3-90c1-292e5bd85d4c","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925468831,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":401},"responseTime":1.012749999994412,"msg":"request completed"}
+{"level":40,"time":1793925469107,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925469612,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925470166,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925470768,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925473810,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"bf7ba06dfb989c11","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925473865,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925473969,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925474121,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925474323,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925474575,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925474878,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925475229,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925475630,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925475834,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925475835,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925475903,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":68.40916599999764,"msg":"request completed"}
+{"level":30,"time":1793925475904,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925475944,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":40.48470800000359,"msg":"request completed"}
+{"level":30,"time":1793925475944,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925476083,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925476084,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1793925476084,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":139.6274170000106,"msg":"request completed"}
+{"level":30,"time":1793925476084,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"DELETE","url":"/api/servers/01a1ae4a-6e6d-7aed-85fb-8dbf15f15d00","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925476586,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925477139,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925477140,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1793925477141,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":200},"responseTime":1056.6766249999928,"msg":"request completed"}
+{"level":40,"time":1793925477744,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925478397,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925479101,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925482568,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"0f4350f42a05384d","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925482624,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925482727,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925482880,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925483081,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925483334,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925483637,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925483988,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925484396,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925484584,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925484585,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925484664,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":78.9898749999993,"msg":"request completed"}
+{"level":30,"time":1793925484664,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925484706,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":41.432749999978114,"msg":"request completed"}
+{"level":30,"time":1793925484706,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925484849,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925484849,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1793925484850,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":144.30849999998463,"msg":"request completed"}
+{"level":30,"time":1793925484851,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"DELETE","url":"/api/servers/01a1ae4a-90a7-7f69-9dbb-2b06b865e217","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925484865,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":409},"responseTime":14.498666999978013,"msg":"request completed"}
+{"level":40,"time":1793925485353,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925485908,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925486512,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925490020,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"7f0aeafcf23f50c6","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925490079,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925490181,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925490334,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925490537,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925490788,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925491091,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925491445,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925491851,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925492049,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925492050,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925492153,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":103.4429999999993,"msg":"request completed"}
+{"level":30,"time":1793925492153,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925492201,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":47.424958000017796,"msg":"request completed"}
+{"level":30,"time":1793925492201,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"DELETE","url":"/api/servers/ab50a923-db90-4bdf-8ce5-5dad16b2d447","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925492206,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":404},"responseTime":4.899499999999534,"msg":"request completed"}
+{"level":40,"time":1793925492303,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925492806,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925493362,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925493966,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925497342,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"cc9471dc1131403b","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925497357,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925497409,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925497513,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925497667,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925497871,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925498123,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925498426,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925498780,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925499188,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925499355,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925499356,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"DELETE","url":"/api/servers/7d07660c-2bc9-42c8-9c7d-4035a9abd23a","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925499362,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":401},"responseTime":5.840874999994412,"msg":"request completed"}
+{"level":40,"time":1793925499644,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925500149,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925500704,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925501308,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925505005,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","keyFingerprint":"e4e0124c174cbd08","msg":"Back up NOODARA_MASTER_KEY; credentials are unrecoverable without it"}
+{"level":40,"time":1793925505062,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925505167,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925505320,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925505522,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925505773,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925506076,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925506432,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925506838,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925507032,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"Error"},"msg":"sse broadcaster failed to start within the boot window"}
+{"level":30,"time":1793925507037,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","req":{"method":"POST","url":"/api/setup","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925507131,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-1","res":{"statusCode":200},"responseTime":93.61162499999045,"msg":"request completed"}
+{"level":30,"time":1793925507131,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","req":{"method":"POST","url":"/api/auth/sign-in/email","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925507174,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-2","res":{"statusCode":200},"responseTime":42.681042000011075,"msg":"request completed"}
+{"level":30,"time":1793925507174,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","req":{"method":"POST","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925507292,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"MaxRetriesPerRequestError"},"msg":"failed to publish server event"}
+{"level":30,"time":1793925507293,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-3","res":{"statusCode":201},"responseTime":118.8228330000129,"msg":"request completed"}
+{"level":30,"time":1793925507294,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","req":{"method":"GET","url":"/api/servers/01a1ae4a-e86d-774b-8bfb-89de882df6e7","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793925507294,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":30,"time":1793925507299,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-4","res":{"statusCode":200},"responseTime":5.513999999995576,"msg":"request completed"}
+{"level":30,"time":1793925507299,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","req":{"method":"PATCH","url":"/api/servers/01a1ae4a-e86d-774b-8bfb-89de882df6e7","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925507310,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-5","res":{"statusCode":400},"responseTime":10.60204200001317,"msg":"request completed"}
+{"level":30,"time":1793925507310,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","req":{"method":"GET","url":"/api/servers","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793925507315,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","reqId":"req-6","res":{"statusCode":200},"responseTime":4.5664580000157,"msg":"request completed"}
+{"level":40,"time":1793925507796,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925508350,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+{"level":40,"time":1793925508954,"pid":77490,"hostname":"Pablos-MacBook-Pro.local","err":{"name":"AggregateError"},"msg":"sse broadcaster subscriber redis error"}
+Scope: all 11 workspace projects
+Lockfile is up to date, resolution step is skipped
+Already up to date
+
+Done in 504ms using pnpm v10.34.5
+
+   ╭──────────────────────────────────────────╮
+   │                                          │
+   │   Update available! 10.34.5 → 12.18.0.   │
+   │   Changelog: https://pnpm.io/v/12.18.0   │
+   │     To update, run: pnpm self-update     │
+   │                                          │
+   ╰──────────────────────────────────────────╯
+
