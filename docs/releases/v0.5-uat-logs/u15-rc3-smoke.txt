@@ -1,0 +1,89 @@
+# u15 2026-11-07T18:19:30Z rc.3 smoke after upgrade 0.5.0-rc.2 -> 0.5.0-rc.3 (installer rc=0, migrations 20, counts kept: u15-upgrade-rc3.log)
+$ on VM: api/worker/web containers
+noodara-api-1 status=running health=healthy restarts=0 image=ghcr.io/nooodara/noodara-control-plane:0.5.0-rc.3
+noodara-worker-1 status=running health=n/a restarts=0 image=ghcr.io/nooodara/noodara-control-plane:0.5.0-rc.3
+noodara-web-1 status=running health=healthy restarts=0 image=ghcr.io/nooodara/noodara-web:0.5.0-rc.3
+$ on VM: worker log lines with level >= 50 (error/fatal)
+0
+$ on VM: last worker metrics tick
+{"msg":"metrics tick complete","servers":1,"sampled":1,"failed":0,"containers":3}
+$ GET /api/servers
+[{"name":"uat-lima","status":"CONNECTED","proxyStatus":"RUNNING"}]
+$ GET /api/servers/:id/metrics (latest point per series, collected after the upgrade)
+[{"metric":"cpu_percent","last":{"t":"2026-11-07T18:19:00.000Z","v":4.987531172069826}},{"metric":"memory_used_bytes","last":{"t":"2026-11-07T18:19:00.000Z","v":972918784}},{"metric":"memory_percent","last":{"t":"2026-11-07T18:19:00.000Z","v":23.764853721421876}},{"metric":"disk_used_percent","last":{"t":"2026-11-07T18:19:00.000Z","v":25.67997388760773}}]
+$ GET /api/settings/ai (key kept across the upgrade, hint masked)
+{"settings":{"provider":"anthropic","model":"claude-opus-5-5","keyHint":"••••••••<last4>","validatedAt":"2026-11-07T17:10:40.382Z","updatedAt":"2026-11-07T17:10:40.382Z"}}
+HTTP 200
+$ ask (live claude-opus-5-5): "Which services run on uat-lima and are they healthy?"
+conversation=01a1b73c-b1c5-7536-a357-df695f60fad1
+tool_calls: list_servers, get_infrastructure_graph, get_health(Service), get_health(Service), get_health(Service), get_health(Service), get_deployment(Deployment), get_logs(Service), get_deployment(Deployment)
+errors: (none)
+done: {"messageId": "01a1b73c-b1dc-729a-8a59-358cf17e66cd", "status": "complete"}
+answer: {
+ "answer": "Four services run on uat-lima. The server is connected and its proxy is running. Two services are healthy and two are not.\n\n1. **node-api: healthy.** Its container is running with 0 restarts. Its last deployment succeeded on 2026-11-07 at 17:01 UTC. No healthcheck is set up, so 'running' is the only health signal available.\n2. **node-api-v03: healthy.** Its container is running with 0 restarts, and its last deployment (2026-10-30) succeeded. It also has no healthcheck.\n3. **bad-image: not healthy.** Its status is FAILED and it has no container. Its only deployment failed on 2026-10-30 with IMAGE_PULL_FAILED: the server couldn't download the image ghcr.io/nooodara/uat-does-not-exist:1. Check that the image name and tag exist and that the registry login is correct, then redeploy it. I can't redeploy it for you.\n4. **oom-demo: not healthy.** It is marked as never deployed through Noodara, but there is a stopped container for it that has restarted 2 times. It has no log entries, so I can't tell why it stopped. Its name suggests a memory test, but no data I have shows it running out of memory, and its high-memory flag is off.\n\nOne thing to watch: uat-lima had only been up about 250 seconds when it last checked in (18:19 UTC), so it probably restarted recently. The container states above were last recorded between 16:18 and 17:09 UTC, before that restart, so they may be out of date.",
+ "diagnosis": "failed_deployment",
+ "confidence": 0.6,
+ "entities": [
+  {
+   "kind": "Server",
+   "id": "01a18ab5-1d58-74d5-9acd-857acae5efcf",
+   "label": "uat-lima"
+  },
+  {
+   "kind": "Service",
+   "id": "01a18ab6-3139-7679-97c3-3857c88d847a",
+   "label": "node-api"
+  },
+  {
+   "kind": "Service",
+   "id": "01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f",
+   "label": "node-api-v03"
+  },
+  {
+   "kind": "Service",
+   "id": "01a18ab6-f399-7496-9ce1-902d26a4d2aa",
+   "label": "bad-image"
+  },
+  {
+   "kind": "Service",
+   "id": "01a1b6fc-0554-7bf1-8194-f98c768709b7",
+   "label": "oom-demo"
+  },
+  {
+   "kind": "Deployment",
+   "id": "01a18ab6-f3e2-75e5-a481-5dd8f075e31c",
+   "label": "bad-image failed deployment"
+  }
+ ],
+ "evidence": [
+  {
+   "ref": "01a18ab5-1d58-74d5-9acd-857acae5efcf",
+   "note": "Server is connected and its proxy is running. Uptime was 250s at last check-in (2026-11-07T18:19Z), so it probably restarted recently. The infrastructure graph shows 4 services running on it."
+  },
+  {
+   "ref": "01a18ab6-3139-7679-97c3-3857c88d847a",
+   "note": "Status RUNNING, container running, 0 restarts, no healthcheck set up."
+  },
+  {
+   "ref": "01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f",
+   "note": "Status RUNNING, container running, 0 restarts, no healthcheck set up. Last deployment succeeded."
+  },
+  {
+   "ref": "01a18ab6-f399-7496-9ce1-902d26a4d2aa",
+   "note": "Status FAILED, no container."
+  },
+  {
+   "ref": "01a18ab6-f3e2-75e5-a481-5dd8f075e31c",
+   "note": "Failed with IMAGE_PULL_FAILED for image ghcr.io/nooodara/uat-does-not-exist:1."
+  },
+  {
+   "ref": "01a1b6fc-0554-7bf1-8194-f98c768709b7",
+   "note": "Marked NEVER_DEPLOYED, but a container exists in state 'exited' with 2 restarts. No log entries were found."
+  }
+ ],
+ "missingEvidence": [
+  "Logs or an exit reason for the oom-demo container, so it is unclear why it stopped",
+  "Container states recorded after uat-lima's recent restart (current ones date from 16:18–17:09 UTC)",
+  "No healthchecks are set up, so the running services' health is only judged by their containers running"
+ ]
+}

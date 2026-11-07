@@ -1,0 +1,214 @@
+# u15 20261107T181740Z pre-upgrade state
+NOODARA_VERSION=0.5.0-rc.2
+        t        | count 
+-----------------+-------
+ users           |     1
+ servers         |     1
+ projects        |     1
+ environments    |     1
+ services        |     4
+ deployments     |    13
+ secrets         |     2
+ domains         |     1
+ activity_events |    79
+(9 rows)
+
+ migrations 
+------------
+         20
+(1 row)
+
+           secrets_md5            
+----------------------------------
+ 52109420a55899bb276cad7ca98414d2
+(1 row)
+
+-rw------- env-pre-v050-rc3-20261107T181740Z
+-rw------- pre-v050-rc3-20261107T181740Z.dump
+# services before
+noodara-01a18ab6-3139-7679-97c3-3857c88d847a	Up 2 minutes
+noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f	Up 2 minutes
+# upgrade to v0.5.0-rc.3
+Noodara installer
+Checking system requirements...
+System requirements satisfied.
+Docker Engine and the Compose plugin are already installed; nothing to do.
+Pulling images...
+ Image ghcr.io/nooodara/noodara-control-plane:0.5.0-rc.3 Pulling 
+ Image ghcr.io/nooodara/noodara-web:0.5.0-rc.3 Pulling 
+ Image postgres:17-alpine Pulling 
+ Image redis:7-alpine Pulling 
+ Image redis:7-alpine Pulled 
+ Image postgres:17-alpine Pulled 
+ 5e18db480109 Pulling fs layer 0B
+ 2d66c782e484 Pulling fs layer 0B
+ a044f3bd5c10 Pulling fs layer 0B
+ 27c8f30973f4 Pulling fs layer 0B
+ b8da3bb2ce20 Pulling fs layer 0B
+ e1fa61ef5c24 Pulling fs layer 0B
+ 4676a2012f4f Pulling fs layer 0B
+ 33ea1952272f Pulling fs layer 0B
+ ffae0ced71a6 Pulling fs layer 0B
+ 317c2dcbcdda Pulling fs layer 0B
+ 4f4fb700ef54 Pulling fs layer 0B
+ 8c58814203f1 Pulling fs layer 0B
+ c4476dee87e1 Pulling fs layer 0B
+ 8662e48654eb Pulling fs layer 0B
+ 663f082875b7 Pulling fs layer 0B
+ 2d66c782e484 Pulling fs layer 0B
+ e1fa61ef5c24 Pulling fs layer 0B
+ a044f3bd5c10 Pulling fs layer 0B
+ 33ea1952272f Pulling fs layer 0B
+ b8da3bb2ce20 Pulling fs layer 0B
+ 27c8f30973f4 Pulling fs layer 0B
+ af0bcef9edc8 Pulling fs layer 0B
+ b97209a249ca Pulling fs layer 0B
+ 18cf4dcad8d2 Pulling fs layer 0B
+ 9a61bf92ccf5 Pulling fs layer 0B
+ 885f67cd13de Pulling fs layer 0B
+ 33ea1952272f Already exists 0B
+ b8da3bb2ce20 Already exists 0B
+ e1fa61ef5c24 Already exists 0B
+ 2d66c782e484 Already exists 0B
+ a044f3bd5c10 Already exists 0B
+ a044f3bd5c10 Already exists 0B
+ b8da3bb2ce20 Already exists 0B
+ 4f4fb700ef54 Already exists 0B
+ e1fa61ef5c24 Already exists 0B
+ 33ea1952272f Already exists 0B
+ 2d66c782e484 Already exists 0B
+ 4f4fb700ef54 Pull complete 0B
+ 317c2dcbcdda Download complete 0B
+ 27c8f30973f4 Download complete 0B
+ 27c8f30973f4 Download complete 0B
+ 27c8f30973f4 Pull complete 0B
+ 27c8f30973f4 Extracting 1B
+ ffae0ced71a6 Download complete 0B
+ 317c2dcbcdda Pull complete 0B
+ ffae0ced71a6 Pull complete 0B
+ 5e18db480109 Download complete 0B
+ 8c58814203f1 Download complete 0B
+ 4676a2012f4f Downloading 2.097MB
+ 4676a2012f4f Downloading 7.34MB
+ 4676a2012f4f Downloading 10.49MB
+ 4676a2012f4f Download complete 0B
+ 8662e48654eb Download complete 0B
+ 4676a2012f4f Extracting 1B
+ 4676a2012f4f Extracting 1B
+ 5e18db480109 Pull complete 0B
+ 4676a2012f4f Pull complete 0B
+ Image ghcr.io/nooodara/noodara-web:0.5.0-rc.3 Pulled 
+ 663f082875b7 Download complete 0B
+ c4476dee87e1 Downloading 2.097MB
+ c4476dee87e1 Downloading 8.389MB
+ c4476dee87e1 Downloading 11.53MB
+ af0bcef9edc8 Download complete 0B
+ 18cf4dcad8d2 Download complete 0B
+ af0bcef9edc8 Pull complete 0B
+ c4476dee87e1 Download complete 0B
+ b97209a249ca Download complete 0B
+ c4476dee87e1 Extracting 1B
+ 9a61bf92ccf5 Download complete 0B
+ c4476dee87e1 Extracting 1B
+ 885f67cd13de Download complete 0B
+ c4476dee87e1 Extracting 1B
+ c4476dee87e1 Extracting 1B
+ c4476dee87e1 Extracting 1B
+ c4476dee87e1 Extracting 1B
+ c4476dee87e1 Extracting 1B
+ 8c58814203f1 Pull complete 0B
+ 8662e48654eb Pull complete 0B
+ 663f082875b7 Pull complete 0B
+ 18cf4dcad8d2 Pull complete 0B
+ c4476dee87e1 Pull complete 0B
+ b97209a249ca Pull complete 0B
+ 9a61bf92ccf5 Pull complete 0B
+ 885f67cd13de Pull complete 0B
+ Image ghcr.io/nooodara/noodara-control-plane:0.5.0-rc.3 Pulled 
+Starting services...
+ Container noodara-postgres-1 Running 
+ Container noodara-redis-1 Running 
+ Container noodara-migrate-1 Recreate 
+ Container noodara-migrate-1 Recreated 
+ Container noodara-api-1 Recreate 
+ Container noodara-worker-1 Recreate 
+ Container noodara-worker-1 Recreated 
+ Container noodara-api-1 Recreated 
+ Container noodara-web-1 Recreate 
+ Container noodara-web-1 Recreated 
+ Container noodara-postgres-1 Waiting 
+ Container noodara-postgres-1 Healthy 
+ Container noodara-migrate-1 Starting 
+ Container noodara-migrate-1 Started 
+ Container noodara-migrate-1 Waiting 
+ Container noodara-redis-1 Waiting 
+ Container noodara-migrate-1 Waiting 
+ Container noodara-redis-1 Waiting 
+ Container noodara-migrate-1 Exited 
+ Container noodara-redis-1 Healthy 
+ Container noodara-redis-1 Healthy 
+ Container noodara-api-1 Starting 
+ Container noodara-migrate-1 Exited 
+ Container noodara-worker-1 Starting 
+ Container noodara-api-1 Started 
+ Container noodara-api-1 Waiting 
+ Container noodara-worker-1 Started 
+ Container noodara-api-1 Healthy 
+ Container noodara-web-1 Starting 
+ Container noodara-web-1 Started 
+Waiting for services to report healthy...
+All services are healthy.
+
+Noodara is running.
+Panel: http://localhost:3000
+An admin account already exists.
+
+WARNING: the panel is served over plain HTTP -- traffic, including the session cookie, is unencrypted. Noodara's proxy serves your services, not the panel: put your own TLS proxy in front of it. See docs/install.md.
+
+ufw is active on this server. Docker publishes container ports by inserting its own iptables rules, which typically bypass ufw's rules entirely for published ports -- a port Docker publishes may be reachable from the internet even if ufw shows it as denied.
+If you rely on ufw to restrict access to this port, see docs/install.md for the DOCKER-USER-chain configuration needed to make ufw actually govern Docker's published ports.
+To allow the panel port through ufw anyway: sudo ufw allow 3000/tcp
+Remember your cloud provider's own firewall/security-group rules also apply -- ufw only governs this host.
+
+Upgraded from 0.5.0-rc.2 to 0.5.0-rc.3. To go back: re-run this installer with NOODARA_VERSION=0.5.0-rc.2.
+installer rc=0
+# reapply UAT Pebble override
+ Container noodara-api-1 Starting 
+ Container noodara-worker-1 Started 
+ Container noodara-api-1 Started 
+ Container noodara-api-1 Waiting 
+ Container noodara-api-1 Healthy 
+# post-upgrade state
+NOODARA_VERSION=0.5.0-rc.3
+        t        | count 
+-----------------+-------
+ users           |     1
+ servers         |     1
+ projects        |     1
+ environments    |     1
+ services        |     4
+ deployments     |    13
+ secrets         |     2
+ domains         |     1
+ activity_events |    79
+(9 rows)
+
+ migrations 
+------------
+         20
+(1 row)
+
+           secrets_md5            
+----------------------------------
+ 52109420a55899bb276cad7ca98414d2
+(1 row)
+
+noodara-worker-1	ghcr.io/nooodara/noodara-control-plane:0.5.0-rc.3	Up 20 seconds
+noodara-api-1	ghcr.io/nooodara/noodara-control-plane:0.5.0-rc.3	Up 20 seconds (healthy)
+noodara-web-1	ghcr.io/nooodara/noodara-web:0.5.0-rc.3	Up 27 seconds (healthy)
+noodara-01a18ab6-3139-7679-97c3-3857c88d847a	noodara/01a18ab6-3139-7679-97c3-3857c88d847a:01a1b6f5-382f-74a9-8b34-8855ccba47be	Up 3 minutes
+noodara-postgres-1	postgres:17-alpine	Up 3 minutes (healthy)
+noodara-redis-1	redis:7-alpine	Up 3 minutes (healthy)
+noodara-traefik	traefik:v3.7.14	Up 3 minutes
+pebble	ghcr.io/letsencrypt/pebble:2.10.1	Up 3 minutes
+noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f	noodara/01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f:01a18abc-5110-74b2-99a2-60938d863121	Up 3 minutes
