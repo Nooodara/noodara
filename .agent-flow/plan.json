@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-07T18:11:29.079Z",
+  "updatedAt": "2026-11-07T18:12:14.902Z",
   "cursor": {
     "phase": "31",
     "task": "31-06"
@@ -11700,6 +11700,31 @@
           "tier": "deep"
         },
         {
+          "id": "31-09",
+          "title": "Raise CI integration job timeout to 90 min",
+          "scope": [
+            ".github/workflows/ci.yml"
+          ],
+          "wave": 5,
+          "dependsOn": [
+            "31-07"
+          ],
+          "status": "done",
+          "gates": [
+            "test",
+            "lint"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "CI integration job timeout-minutes is 90 (rc.2 run 42393699240 was cancelled at 60 min while still passing tests; v0.4 took ~46 min). The required check name `integration` is unchanged and no test is excluded",
+              "proof": "manual"
+            }
+          ],
+          "waives": [],
+          "tier": "light"
+        },
+        {
           "id": "31-06",
           "title": "UAT on a real host (Lima) with a live provider key, rc.1, publish v0.5.0",
           "scope": [
@@ -11715,7 +11740,8 @@
           "dependsOn": [
             "31-05",
             "31-07",
-            "31-08"
+            "31-08",
+            "31-09"
           ],
           "status": "pending",
           "gates": [

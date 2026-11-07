@@ -252,7 +252,7 @@ jobs:
     # both versions, so ~5 min.
     # 31-07: +10 min for tests/integration/boot/control-plane-image.test.ts, which builds the real
     # control-plane image cold and boots dist/server.js and dist/worker.js from it (rc.1 F1).
-    timeout-minutes: 60
+    timeout-minutes: 90
     permissions:
       contents: read
     # D-11: deploy-engine suites run Ubuntu 24.04 on pull requests and 22.04 + 24.04 on main. Only
