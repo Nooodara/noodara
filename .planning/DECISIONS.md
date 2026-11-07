@@ -112,3 +112,4 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-11-07: (user) OPEN_QUESTIONS #21 resolved. Anthropic key in `.env`; spend whatever is needed to validate v0.5 (live eval baseline, cassettes, adversarial set, live UAT). If 31-06 UAT passes, publish v0.5.0 without further confirmation.
 - 2026-11-07: 31-06 scope widened with `.gitleaks.toml` (precedent 25-07): cassette request hashes and v0.5 synthetic canaries flagged by gitleaks; narrow allowlist (exact hash line shape, per-file canary fixtures).
 - 2026-11-07: v0.5.0-rc.1 UAT failed (API image lacks packages/ai/dist; CI unit/security red). Added 31-07 to fix F1-F3 (handoffs/31-06.md); 31-06 depends on it and re-runs as rc.2.
+- 2026-11-07: rc.2 UAT on Lima passed with the live key, but CI e2e red (projects-dod H1 log scroller unreachable by Tab; failed with retries). No publish. Added 31-08; 31-06 resumes as rc.3 after it.

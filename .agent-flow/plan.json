@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-07T16:53:46.610Z",
+  "updatedAt": "2026-11-07T17:14:10.598Z",
   "cursor": {
     "phase": "31",
-    "task": "31-06"
+    "task": "31-08"
   },
   "phases": [
     {
@@ -11657,6 +11657,49 @@
           "tier": "deep"
         },
         {
+          "id": "31-08",
+          "title": "Fix rc.2 CI e2e: runtime log scroller unreachable by keyboard",
+          "scope": [
+            "apps/web/src/components/logs/ServiceLogsPanel.tsx",
+            "apps/web/src/components/logs/ServiceLogsPanel.test.tsx",
+            "apps/web/src/components/LogView.tsx",
+            "apps/web/src/components/LogView.test.tsx",
+            "tests/e2e/projects-dod.spec.ts",
+            "tests/e2e/helpers/"
+          ],
+          "wave": 5,
+          "dependsOn": [
+            "31-07"
+          ],
+          "status": "active",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "e2e-full"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Root cause of CI run 42393699240 e2e failure (projects-dod.spec.ts:790 H1 inspector-runtime-logs [dark]: `div[log-scroller] \"Log output\"` unreachable by Tab) is identified and reproduced locally (RED) before the fix, e.g. under CI viewport/CPU conditions",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "The log scroller is reachable by keyboard in document order with a visible focus ring whenever it is focusable, and stays an accessible named region (axe scrollable-region-focusable still passes at 375 px); no assertion in projects-dod.spec.ts is weakened",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "projects-dod.spec.ts passes repeatedly (>=5 consecutive runs, incl. under CPU throttling) and e2e-full is green",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
           "id": "31-06",
           "title": "UAT on a real host (Lima) with a live provider key, rc.1, publish v0.5.0",
           "scope": [
@@ -11668,10 +11711,11 @@
             ".planning/OPEN_QUESTIONS.md",
             ".gitleaks.toml"
           ],
-          "wave": 5,
+          "wave": 6,
           "dependsOn": [
             "31-05",
-            "31-07"
+            "31-07",
+            "31-08"
           ],
           "status": "pending",
           "gates": [
