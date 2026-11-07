@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.5
 milestone_name: Observability + AI Read-Only
 status: v0_5_in_progress
-stopped_at: 31-05 gate local done on cd0b7bbc (NOT READY only on CI/nightly); next 31-06 (rc.1, UAT Lima, v0.5.0)
-last_updated: 2026-11-06T18:00:00.000Z
-last_activity: 2026-11-06 -- 31-05 release gate v0.5 (docs/releases/v0.5-gate.md): it-full 1796 pass, e2e-full 283/283, unit 10185, evals replay = live baseline; criterios 10 y 14 pendientes de CI/nightly en rc.1
+stopped_at: 31-06 blocked -- rc.1 pushed (3796cdd3) but image misses packages/ai/dist (API crash), CI unit+security red; fix tasks needed, then rc.2 + UAT
+last_updated: 2026-11-07T16:25:00.000Z
+last_activity: 2026-11-07 -- 31-06 A2 live evals OK; rc.1 UAT FAIL (docs/releases/v0.5-HUMAN-UAT.md F1-F3); 2026-11-06 -- 31-05 release gate v0.5 (docs/releases/v0.5-gate.md): it-full 1796 pass, e2e-full 283/283, unit 10185, evals replay = live baseline; criterios 10 y 14 pendientes de CI/nightly en rc.1
 progress:
   total_phases: 9
   completed_phases: 8

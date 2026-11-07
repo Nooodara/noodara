@@ -1,0 +1,114 @@
+# u01 20261107T161559Z pre-upgrade state
+NOODARA_VERSION=0.4.0
+        t        | count 
+-----------------+-------
+ users           |     1
+ servers         |     1
+ projects        |     1
+ environments    |     1
+ services        |     3
+ deployments     |    12
+ secrets         |     1
+ domains         |     0
+ activity_events |    60
+(9 rows)
+
+ migrations 
+------------
+         18
+(1 row)
+
+           secrets_md5            
+----------------------------------
+ 4397462777cb90879eef092c70e18fa6
+(1 row)
+
+-rw------- env-pre-v050-rc1-20261107T161559Z
+-rw------- pre-v050-rc1-20261107T161559Z.dump
+# services before
+noodara-01a18ab6-3139-7679-97c3-3857c88d847a	Up 2 minutes
+noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f	Up 2 minutes
+# upgrade to v0.5.0-rc.1
+Noodara installer
+Checking system requirements...
+System requirements satisfied.
+Docker Engine and the Compose plugin are already installed; nothing to do.
+Starting services...
+ Container noodara-postgres-1 Recreate 
+ Container noodara-redis-1 Recreate 
+ Container noodara-postgres-1 Recreated 
+ Container noodara-migrate-1 Recreate 
+ Container noodara-redis-1 Recreated 
+ Container noodara-migrate-1 Recreated 
+ Container noodara-api-1 Recreate 
+ Container noodara-worker-1 Recreate 
+ Container noodara-api-1 Recreated 
+ Container noodara-web-1 Recreate 
+ Container noodara-web-1 Recreated 
+ Container noodara-worker-1 Recreated 
+ Container noodara-redis-1 Starting 
+ Container noodara-postgres-1 Starting 
+ Container noodara-redis-1 Started 
+ Container noodara-postgres-1 Started 
+ Container noodara-postgres-1 Healthy 
+ Container noodara-migrate-1 Starting 
+ Container noodara-migrate-1 Started 
+ Container noodara-redis-1 Healthy 
+ Container noodara-redis-1 Healthy 
+ Container noodara-migrate-1 Exited 
+ Container noodara-worker-1 Starting 
+ Container noodara-migrate-1 Exited 
+ Container noodara-api-1 Starting 
+ Container noodara-worker-1 Started 
+ Container noodara-api-1 Started 
+ Container noodara-api-1 Error dependency api failed to start
+dependency failed to start: container noodara-api-1 is unhealthy
+NAME                 IMAGE                                               COMMAND                  SERVICE    CREATED              STATUS                                  PORTS
+noodara-api-1        ghcr.io/nooodara/noodara-control-plane:0.5.0-rc.1   "docker-entrypoint.s…"   api        2 minutes ago        Restarting (1) Less than a second ago   
+noodara-migrate-1    ghcr.io/nooodara/noodara-control-plane:0.5.0-rc.1   "docker-entrypoint.s…"   migrate    2 minutes ago        Exited (0) 2 seconds ago                
+noodara-postgres-1   postgres:17-alpine                                  "docker-entrypoint.s…"   postgres   2 minutes ago        Up 8 seconds (healthy)                  5432/tcp
+noodara-redis-1      redis:7-alpine                                      "docker-entrypoint.s…"   redis      2 minutes ago        Up 8 seconds (healthy)                  6379/tcp
+noodara-web-1        ghcr.io/nooodara/noodara-web:0.5.0-rc.1             "docker-entrypoint.s…"   web        About a minute ago   Created                                 
+noodara-worker-1     ghcr.io/nooodara/noodara-control-plane:0.5.0-rc.1   "docker-entrypoint.s…"   worker     2 minutes ago        Up 2 seconds                            3000/tcp
+.env restored to NOODARA_VERSION=0.4.0 (the upgrade did not start).
+noodara: Failed to start services with docker compose up -d -- see Compose's own error and the service state above. Data and secrets are untouched. To go back, re-run this installer with NOODARA_VERSION=0.4.0.
+installer rc=51
+# reapply UAT Pebble override
+ Container noodara-api-1 Started 
+ Container noodara-api-1 Healthy 
+ Container noodara-web-1 Starting 
+ Container noodara-web-1 Started 
+# post-upgrade state
+NOODARA_VERSION=0.4.0
+        t        | count 
+-----------------+-------
+ users           |     1
+ servers         |     1
+ projects        |     1
+ environments    |     1
+ services        |     3
+ deployments     |    12
+ secrets         |     1
+ domains         |     0
+ activity_events |    60
+(9 rows)
+
+ migrations 
+------------
+         20
+(1 row)
+
+           secrets_md5            
+----------------------------------
+ 4397462777cb90879eef092c70e18fa6
+(1 row)
+
+noodara-web-1	ghcr.io/nooodara/noodara-web:0.4.0	Up 15 seconds (healthy)
+noodara-api-1	ghcr.io/nooodara/noodara-control-plane:0.4.0	Up 20 seconds (healthy)
+noodara-worker-1	ghcr.io/nooodara/noodara-control-plane:0.4.0	Up 20 seconds
+noodara-postgres-1	postgres:17-alpine	Up 32 seconds (healthy)
+noodara-redis-1	redis:7-alpine	Up 32 seconds (healthy)
+noodara-01a18ab6-3139-7679-97c3-3857c88d847a	noodara/01a18ab6-3139-7679-97c3-3857c88d847a:01a19dcc-3891-755f-ac6e-ff37c4d23d8e	Up 5 minutes
+noodara-traefik	traefik:v3.7.14	Up 5 minutes
+pebble	ghcr.io/letsencrypt/pebble:2.10.1	Up 5 minutes
+noodara-01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f	noodara/01a18ab9-2057-75fb-b41d-9b2f2bd4ae8f:01a18abc-5110-74b2-99a2-60938d863121	Up 5 minutes
