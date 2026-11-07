@@ -70,3 +70,31 @@ paths = [
   # Phase 11 plan quoting the same public Vitest fixture key from vitest.config.ts.
   '''^\.planning/phases/11-motor-de-deploy-fundamentos/11-05-PLAN\.md$''',
 ]
+
+# 31-06: AI eval cassettes key each recorded turn by the sha256 of the redacted request
+# ("key": "<64 hex>"); generic-api-key reads the hash as a key. Only that exact shape is allowed,
+# so anything else committed under the cassette directories still fails the scan.
+[[allowlists]]
+description = "AI eval cassette request hashes (sha256 of the redacted request), not credentials."
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''^tests/ai/evals/cassettes/''',
+  '''^tests/ai/evals/adversarial/cassettes/''',
+]
+regexes = ['''"key": "[0-9a-f]{64}"''']
+
+# 31-06: v0.5 AI leak-canary and redaction fixtures: fixed synthetic values (canary…, a fake
+# AKIA… key, sk-live… test strings) planted on purpose to prove they never reach the model,
+# a log or a response. Listed file by file.
+[[allowlists]]
+description = "v0.5 AI leak-canary and redaction test fixtures; synthetic values, never real secrets."
+condition = "OR"
+paths = [
+  '''^apps/web/src/components/ai/AiSettingsGroup\.test\.tsx$''',
+  '''^tests/e2e/ai-settings\.spec\.ts$''',
+  '''^tests/ai/evals/lib/scorer\.test\.ts$''',
+  '''^tests/ai/evals/fixtures/shop-single\.yaml$''',
+  '''^tests/ai/evals/adversarial/fixtures/adversarial-shop\.yaml$''',
+  '''^packages/docker/src/observability-operations\.test\.ts$''',
+]
