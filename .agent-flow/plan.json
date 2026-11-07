@@ -11769,6 +11769,54 @@
           ],
           "waives": [],
           "tier": "deep"
+        },
+        {
+          "id": "31-10",
+          "title": "Address phase 31 review: throttled e2e evidence, drop rc.1 pin from docs",
+          "scope": [
+            "docs/releases/v0.5.0.md",
+            "README.md",
+            "apps/site/content/docs/operate/upgrade.mdx",
+            "apps/site/content/docs/reference/variables.mdx",
+            "tests/unit/docs/",
+            "docs/releases/v0.5-gate-logs/",
+            "docs/releases/v0.5-gate.md"
+          ],
+          "wave": 6,
+          "dependsOn": [
+            "31-08",
+            "31-09"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "lint",
+            "site-build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "User-facing docs (docs/releases/v0.5.0.md, README.md, site upgrade.mdx and variables.mdx) no longer tell users to pin 0.5.0-rc.1 (boot-crashing build); the version example is a stable release (e.g. 0.5.0) and docs-accuracy tests pass",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "The published GitHub release body of v0.5.0 on Nooodara/noodara matches the corrected docs/releases/v0.5.0.md (no rc.1 pin); evidence (gh release view output) saved under docs/releases/v0.5-gate-logs/",
+              "proof": "manual"
+            },
+            {
+              "id": "A3",
+              "text": "Evidence for 31-08 A1/A3 recorded under docs/releases/v0.5-gate-logs/: the new slow-first-page tests fail (RED) against the pre-9b2c03dc projects-dod.spec.ts, and projects-dod.spec.ts passes >=5 consecutive runs with NOODARA_E2E_CPU_THROTTLE set; referenced from v0.5-gate.md",
+              "proof": "manual"
+            },
+            {
+              "id": "A4",
+              "text": "Fixed docs are replayed to public main (same publish procedure: tree-eq, ff, no trailers, gitleaks clean); the tag v0.5.0 is NOT moved",
+              "proof": "manual"
+            }
+          ],
+          "waives": [],
+          "tier": "standard"
         }
       ]
     }
