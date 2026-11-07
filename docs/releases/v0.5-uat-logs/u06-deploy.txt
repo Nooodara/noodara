@@ -1,0 +1,10 @@
+# u06 2026-11-07T17:01:50Z deploy node-api on 0.5.0-rc.2
+{"id":"01a1b6f5-382f-74a9-8b34-8855ccba47be","status":"SUCCESS","trigger":"manual","commitSha":"1ddd071174ede64c9ff0a8772c79c458dc4b92a7","startedAt":"2026-11-07T17:01:26.459Z"}
+$ GET /api/deployments/:id/logs (phase/chunk summary)
+[{"phase": "prepare", "chunks": 3}, {"phase": "build", "chunks": 2}, {"phase": "deploy", "chunks": 4}] hasMore=false
+$ log lines mentioning UAT_V05_TOKEN
+  UAT_V05_TOKEN = <secret:uat_v05_token>
+$ container env vs secret (sha256 compare, value not printed)
+UAT_V05_TOKEN in container matches the secret: yes
+$ curl service :8081/health on VM
+ok HTTP 200

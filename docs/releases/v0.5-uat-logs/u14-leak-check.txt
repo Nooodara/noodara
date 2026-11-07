@@ -1,0 +1,21 @@
+# u14 2026-11-07T17:12:41Z leak check: secret value and provider key (counts of exact matches; values never printed)
+docker logs noodara-api-1                                      bytes=200171    secret=0 key=0
+docker logs noodara-worker-1                                   bytes=4766      secret=0 key=0
+docker logs noodara-web-1                                      bytes=363       secret=0 key=0
+docker logs noodara-traefik                                    bytes=12314     secret=0 key=0
+docker logs noodara-<node-api>                                 bytes=0         secret=0 key=0
+pg_dump (full, plain)                                          bytes=176917    secret=0 key=0
+redis dump.rdb after SAVE (binary, grep -a)                    bytes=90190     secret=0 key=0
+GET /api/ai/conversations (list)                               bytes=780       secret=0 key=0
+GET /api/ai/conversations/<id> (u11-u13)                       bytes=2492      secret=0 key=0
+GET /api/ai/conversations/<id> (u11-u13)                       bytes=4495      secret=0 key=0
+GET /api/ai/conversations/<id> (u11-u13)                       bytes=1029      secret=0 key=0
+GET /api/ai/conversations/<id> (u11-u13)                       bytes=1097      secret=0 key=0
+GET /api/ai/conversations/<id> (u11-u13)                       bytes=2601      secret=0 key=0
+GET /api/settings/ai                                           bytes=177       secret=0 key=0
+GET /api/activity                                              bytes=19206     secret=0 key=0
+GET env/effective node-api                                     bytes=360       secret=0 key=0
+GET /api/projects/:p/graph                                     bytes=4416      secret=0 key=0
+panel HTML /projects/<p>/graph                                 bytes=30938     secret=0 key=0
+# positive control: docker inspect of the node-api container holds the secret value (expected 1+), key not in it
+docker inspect noodara-<node-api>                              bytes=8233      secret=1 key=0

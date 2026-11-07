@@ -1,0 +1,18 @@
+# u08 2026-11-07T17:08:52Z §10.12 diagnosis setup: constrained container OOM
+$ POST /api/projects/:p/services (image service oom-demo, registered only)
+{"id":"01a1b6fc-0554-7bf1-8194-f98c768709b7","projectId":"01a18ab5-b0ee-7f52-9297-7eebaeb143e2","environmentId":"01a18ab5-c0bb-7510-8b81-5e9e498ea579","serverId":"01a18ab5-1d58-74d5-9acd-857acae5efcf","name":"oom-demo","sourceType":"image","repositoryUrl":null,"branch":null,"buildContext":null,"dockerfilePath":null,"buildTarget":null,"imageRef":"noodara-uat/oom-allocator:local","internalPort":3000,"publishedPort":null,"healthcheck":null,"autoRollback":true,"status":"NEVER_DEPLOYED","createdAt":"2026-11-07T17:08:52.184Z","updatedAt":"2026-11-07T17:08:52.184Z"}
+HTTP 201
+$ on VM: docker run --detach --name noodara-<oom-demo id> --label noodara.managed=true --memory 32m --memory-swap 32m --restart on-failure:2 noodara-uat/oom-allocator:local
+9a466854bc89
+$ on VM: docker inspect state
+status=exited exitCode=137 oomKilled=true restartCount=2 memory=33554432
+$ on VM: docker logs (tail 5)
+NOODARA_OOM_ALLOCATING
+NOODARA_OOM_ALLOCATING
+NOODARA_OOM_ALLOCATING
+$ 2026-11-07T17:10:08Z GET .../services/oom-demo/status
+{"serviceId":"01a1b6fc-0554-7bf1-8194-f98c768709b7","runtimeStatus":"NEVER_DEPLOYED","container":{"state":"exited","restartCount":2,"healthcheck":"none","observedAt":"2026-11-07T17:09:24.946Z"},"lastDeployment":null,"flags":{"highMemory":false,"highDisk":false}}
+$ GET .../services/oom-demo/logs?tail=5
+{"lines":[{"stream":"stdout","timestamp":"2026-11-07T17:08:58.868510095Z","text":"NOODARA_OOM_ALLOCATING"},{"stream":"stdout","timestamp":"2026-11-07T17:08:59.085368461Z","text":"NOODARA_OOM_ALLOCATING"},{"stream":"stdout","timestamp":"2026-11-07T17:08:59.394567766Z","text":"NOODARA_OOM_ALLOCATING"}],"truncated":false}
+$ GET .../services/oom-demo/metrics (latest non-null per series)
+[{"metric":"cpu_percent","latest":null},{"metric":"memory_used_bytes","latest":null},{"metric":"memory_percent","latest":null},{"metric":"restart_count","latest":{"t":"2026-11-07T17:09:00.000Z","v":2}}]

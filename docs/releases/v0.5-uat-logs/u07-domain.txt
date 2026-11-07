@@ -1,0 +1,17 @@
+# u07 2026-11-07T17:02:12Z expose node-api on a domain (Pebble ACME)
+$ POST /api/projects/:p/services/:s/domains {hostname:"app.vm-ip.sslip.io", httpsRedirect:true}
+{"id":"01a1b6f5-ed9b-7419-b1ac-f6650524d87e","projectId":"01a18ab5-b0ee-7f52-9297-7eebaeb143e2","serviceId":"01a18ab6-3139-7679-97c3-3857c88d847a","hostname":"app.vm-ip.sslip.io","httpsRedirect":true,"certStatus":"PENDING","certNotAfter":null,"certErrorCode":null,"dnsStatus":null,"dnsCheckedAt":null,"applyStatus":"APPLIED","createdAt":"2026-11-07T17:02:12.887Z","updatedAt":"2026-11-07T17:02:15.763Z"}
+HTTP 201
+$ POST dns-check, then GET .../domains (the hostname reuses the v0.4 UAT certificate kept in acme.json)
+{"hostname":"app.vm-ip.sslip.io","certStatus":"ISSUED","certNotAfter":"2027-01-31T19:24:27.000Z","certErrorCode":null,"dnsStatus":"RESOLVES","applyStatus":"APPLIED"}
+$ on VM: curl http://<host>/health
+HTTP 302 -> https://app.vm-ip.sslip.io/health
+$ on VM: served certificate (Pebble roots are regenerated on every Pebble restart, so the cert issued before the VM stop no longer chains to the live root; verify=0 as in the v0.4 UAT)
+subject=
+issuer=CN = Pebble Intermediate CA 43d358
+notBefore=Nov  2 19:24:28 2026 GMT
+notAfter=Jan 31 19:24:27 2027 GMT
+X509v3 Subject Alternative Name: critical
+    DNS:app.vm-ip.sslip.io
+$ on VM: curl -k https://<host>/health
+ok HTTP 200

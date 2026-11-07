@@ -1,0 +1,10 @@
+# u10 2026-11-07T17:10:39Z BYOK: configure the user's Anthropic key (loaded from file, never printed)
+$ GET /api/settings/ai (before)
+{"settings":null}
+HTTP 200
+$ PUT /api/settings/ai {provider:"anthropic", model:"claude-opus-5-5", apiKey:<from 0600 file>}
+{"provider":"anthropic","model":"claude-opus-5-5","keyHint":"••••••••<last4>","validatedAt":"2026-11-07T17:10:40.382Z","updatedAt":"2026-11-07T17:10:40.382Z"}
+HTTP 200
+$ GET /api/settings/ai (after)
+{"settings":{"provider":"anthropic","model":"claude-opus-5-5","keyHint":"••••••••<last4>","validatedAt":"2026-11-07T17:10:40.382Z","updatedAt":"2026-11-07T17:10:40.382Z"}}
+HTTP 200

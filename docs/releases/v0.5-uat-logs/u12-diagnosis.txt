@@ -1,0 +1,38 @@
+# u12 2026-11-07T17:11:12Z §10.12 Diagnosis (live claude-opus-5-5)
+Setup: oom-demo constrained to 32 MiB, OOM-killed and restarted twice, final exit 137 with OOMKilled=true (u08).
+$ ask: "Why did the oom-demo service restart?"
+conversation=01a1b6fe-28c5-7ff8-a9e7-fd896f6c483e
+tool_calls: list_services, get_health(Service), list_deployments(Service), get_logs(Service)
+errors: (none)
+done: {"messageId": "01a1b6fe-28db-776b-92c5-d8c867fe032d", "status": "complete"}
+answer: {
+ "answer": "oom-demo restarted because its container ran out of memory. The runtime logs show the container printing \"NOODARA_OOM_ALLOCATING\" three times between 17:08:58 and 17:08:59 UTC on 2026-11-07. At 17:09:24 the activity log recorded \"service.container_changed: out_of_memory\". The health check at that time shows the container has exited and has restarted 2 times. The service has no deployments yet (status NEVER_DEPLOYED), so a failed deployment did not cause this. The container was started directly from the image noodara-uat/oom-allocator:local. Its name and log messages suggest it is meant to use up memory on purpose. I couldn't see the container's memory limit or a memory graph from just before the restarts. The highMemory flag shows false, probably because it was checked after the container had already exited. To stop it happening, either raise the container's memory limit or limit how much memory the program uses. I can only read your setup, so I can't change either of these for you.",
+ "diagnosis": "out_of_memory",
+ "confidence": 0.85,
+ "entities": [
+  {
+   "kind": "Service",
+   "id": "01a1b6fc-0554-7bf1-8194-f98c768709b7",
+   "label": "oom-demo"
+  }
+ ],
+ "evidence": [
+  {
+   "ref": "01a1b6fc-0554-7bf1-8194-f98c768709b7",
+   "note": "Activity log at 2026-11-07T17:09:24.946Z: 'service.container_changed: out_of_memory' (warn)."
+  },
+  {
+   "ref": "01a1b6fc-0554-7bf1-8194-f98c768709b7",
+   "note": "Runtime logs show repeated 'NOODARA_OOM_ALLOCATING' output at 17:08:58–17:08:59 just before the OOM event."
+  },
+  {
+   "ref": "01a1b6fc-0554-7bf1-8194-f98c768709b7",
+   "note": "Health: container state 'exited', restartCount 2, no healthcheck; runtimeStatus NEVER_DEPLOYED and no deployments, so a deployment didn't cause the restarts."
+  }
+ ],
+ "missingEvidence": [
+  "The container's configured memory limit",
+  "Memory metrics from just before the OOM event (the highMemory flag is false, probably because it was checked after the container exited)",
+  "The container exit code (e.g. 137) confirming the kernel OOM kill"
+ ]
+}

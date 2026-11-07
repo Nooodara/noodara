@@ -1,0 +1,12 @@
+# u09 2026-11-07T17:10:18Z metrics, logs and graph
+$ GET /api/servers/:id/metrics (series, non-null points, latest)
+[{"metric":"cpu_percent","points":12,"latest":0.9852216748768473},{"metric":"memory_used_bytes","points":12,"latest":965210112},{"metric":"memory_percent","points":12,"latest":23.576535420781234},{"metric":"disk_used_percent","points":12,"latest":24.97636425261451}]
+$ GET .../services/node-api/metrics
+[{"metric":"cpu_percent","points":12,"latest":0},{"metric":"memory_used_bytes","points":12,"latest":15204352},{"metric":"memory_percent","points":12,"latest":0.3713864359908674},{"metric":"restart_count","points":12,"latest":0}]
+$ GET .../services/node-api/status
+{"runtimeStatus":"RUNNING","container":{"state":"running","restartCount":0,"healthcheck":"none","observedAt":"2026-11-07T17:02:25.803Z"},"lastDeployment":{"status":"SUCCESS","commitSha":"1ddd071174ede64c9ff0a8772c79c458dc4b92a7"},"flags":{"highMemory":false,"highDisk":false}}
+$ GET .../services/node-api/logs?tail=20 (the node-api fixture writes no runtime logs; oom-demo logs are in u08)
+{"lines":0,"truncated":false}
+$ GET /api/projects/:p/graph (node and edge counts by type)
+{"keys":["nodes","omitted","relations","truncated"]}
+{"nodes":{"Domain":1,"Environment":1,"Project":1,"Server":1,"Service":4},"relations":{"BELONGS_TO":5,"EXPOSED_BY":1,"RUNS_ON":4},"omitted":[],"truncated":false,"edges":["environment -BELONGS_TO-> project","service -BELONGS_TO-> environment","service -EXPOSED_BY-> domain","service -RUNS_ON-> server"]}

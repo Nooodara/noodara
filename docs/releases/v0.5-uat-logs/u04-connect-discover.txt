@@ -1,0 +1,16 @@
+# u04 2026-11-07T17:00:48Z connect + discover on 0.5.0-rc.2
+$ POST /api/servers/:id/connect
+{"server":{"id":"01a18ab5-1d58-74d5-9acd-857acae5efcf","name":"uat-lima","host":"<vm-ip>","sshPort":22,"sshUser":"paas","status":"CONNECTED","hostFingerprint":"ssh-ed25519 SHA256:T2f2fHOkHJ+XoJqY1J1i9vuulL4zeIt7roe0Vw60J48","hostFingerprintCapturedAt":"2026-11-02T19:19:32.696Z","pendingFingerprint":null,"pendingFingerprintSeenAt":null,"hostname":"lima-noodara-uat","osDistribution":"Ubuntu","osVersion":"24.04","arch":"aarch64","cpuCores":4,"ramMb":3904,"diskTotalMb":28690,"diskUsedMb":5507,"uptimeSeconds":3038,"dockerInstalled":true,"dockerVersion":"29.9.2","dockerComposeVersion":"5.6.1","lastSeenAt":"2026-11-07T17:00:25.134Z","lastErrorCode":null,"createdAt":"2026-10-30T02:48:07.766Z","updatedAt":"2026-11-02T19:20:12.845Z","credentialType":"ssh_private_key","proxyStatus":"RUNNING","proxyErrorCode":null,"proxyAcmeEmail":"uat@example.com","proxyInstalledAt":"2026-11-02T19:20:12.845Z"},"jobId":"connect-01a18ab5-1d58-74d5-9acd-857acae5efcf"}
+HTTP 202
+
+$ POST /api/servers/:id/discover
+{"error":"ALREADY_CONNECTING","message":"A connection attempt is already in flight"}
+HTTP 409
+
+$ GET /api/servers/:id (after connect)
+{"status":"CONNECTED","lastErrorCode":null,"osDistribution":"Ubuntu","osVersion":"24.04","arch":"aarch64","dockerInstalled":true,"dockerVersion":"29.9.2","proxyStatus":"RUNNING","lastSeenAt":"2026-11-07T17:00:50.546Z"}
+$ POST /api/servers/:id/discover
+{"server":{"id":"01a18ab5-1d58-74d5-9acd-857acae5efcf","name":"uat-lima","host":"<vm-ip>","sshPort":22,"sshUser":"paas","status":"CONNECTED","hostFingerprint":"ssh-ed25519 SHA256:T2f2fHOkHJ+XoJqY1J1i9vuulL4zeIt7roe0Vw60J48","hostFingerprintCapturedAt":"2026-11-02T19:19:32.696Z","pendingFingerprint":null,"pendingFingerprintSeenAt":null,"hostname":"lima-noodara-uat","osDistribution":"Ubuntu","osVersion":"24.04","arch":"aarch64","cpuCores":4,"ramMb":3904,"diskTotalMb":28690,"diskUsedMb":7117,"uptimeSeconds":244,"dockerInstalled":true,"dockerVersion":"29.9.2","dockerComposeVersion":"5.6.1","lastSeenAt":"2026-11-07T17:00:50.546Z","lastErrorCode":null,"createdAt":"2026-10-30T02:48:07.766Z","updatedAt":"2026-11-07T17:00:50.550Z","credentialType":"ssh_private_key","proxyStatus":"RUNNING","proxyErrorCode":null,"proxyAcmeEmail":"uat@example.com","proxyInstalledAt":"2026-11-02T19:20:12.845Z"},"jobId":"connect-01a18ab5-1d58-74d5-9acd-857acae5efcf"} HTTP 202 
+$ GET /api/servers/:id/discovery
+{"status":null,"keys":["checks","collectedAt","outcome","warnings"]}
+{"collectedAt":"2026-11-07T17:00:56.668Z","outcome":"ok","warnings":[],"checks":[{"name":"hostname","status":"pass"},{"name":"os_release","status":"pass"},{"name":"arch","status":"pass"},{"name":"cpu","status":"pass"},{"name":"memory","status":"pass"},{"name":"disk","status":"pass"},{"name":"uptime","status":"pass"},{"name":"docker_version","status":"pass"},{"name":"docker_compose_version","status":"pass"},{"name":"docker_buildkit","status":"pass"},{"name":"sudo","status":"pass"},{"name":"docker_group","status":"pass"}]}

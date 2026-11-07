@@ -1,0 +1,56 @@
+# u11 2026-11-07T17:10:59Z §10.12 Infrastructure query (live claude-opus-5-5)
+Setup: server connected (u04), node-api deployed (u06), exposed on app.vm-ip.sslip.io (u07).
+$ ask: "Where is the service behind app.vm-ip.sslip.io running?"
+conversation=01a1b6fd-f8c0-75da-9a97-dece2631fdab
+tool_calls: get_infrastructure_graph
+errors: (none)
+done: {"messageId": "01a1b6fd-f8ea-76bc-adb3-2e69d2575630", "status": "complete"}
+answer: {
+ "answer": "The domain app.vm-ip.sslip.io points to the service node-api. node-api runs on the server uat-lima, in the production environment of the uat project. I only looked up where it's placed, not whether it's healthy right now. I can check its runtime state if you'd like.",
+ "diagnosis": "unknown",
+ "confidence": 0.95,
+ "entities": [
+  {
+   "kind": "Domain",
+   "id": "01a1b6f5-ed9b-7419-b1ac-f6650524d87e",
+   "label": "app.vm-ip.sslip.io"
+  },
+  {
+   "kind": "Service",
+   "id": "01a18ab6-3139-7679-97c3-3857c88d847a",
+   "label": "node-api"
+  },
+  {
+   "kind": "Server",
+   "id": "01a18ab5-1d58-74d5-9acd-857acae5efcf",
+   "label": "uat-lima"
+  },
+  {
+   "kind": "Environment",
+   "id": "01a18ab5-c0bb-7510-8b81-5e9e498ea579",
+   "label": "production"
+  },
+  {
+   "kind": "Project",
+   "id": "01a18ab5-b0ee-7f52-9297-7eebaeb143e2",
+   "label": "uat"
+  }
+ ],
+ "evidence": [
+  {
+   "ref": "01a1b6f5-ed9b-7419-b1ac-f6650524d87e",
+   "note": "The infrastructure graph shows this domain is served by the service node-api."
+  },
+  {
+   "ref": "01a18ab6-3139-7679-97c3-3857c88d847a",
+   "note": "The graph has a RUNS_ON link from node-api to the server uat-lima. node-api belongs to the production environment of the uat project."
+  },
+  {
+   "ref": "01a18ab5-1d58-74d5-9acd-857acae5efcf",
+   "note": "uat-lima is the server node-api runs on."
+  }
+ ],
+ "missingEvidence": [
+  "Not checked: whether node-api is running or healthy right now (no service or health lookup was made)."
+ ]
+}
