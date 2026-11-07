@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-07T08:21:59.357Z",
+  "updatedAt": "2026-11-07T16:21:43.607Z",
   "cursor": {
     "phase": "31",
-    "task": "31-06"
+    "task": "31-07"
   },
   "phases": [
     {
@@ -11601,6 +11601,62 @@
           "tier": "deep"
         },
         {
+          "id": "31-07",
+          "title": "Fix rc.1 blockers: image missing packages/ai/dist, CI unit and provenance",
+          "scope": [
+            "apps/control-plane/Dockerfile",
+            "vitest.shared.ts",
+            "vitest.config.ts",
+            "tests/unit/deploy-engine/scenario-map.test.ts",
+            "scripts/check-package-provenance.mjs",
+            "tests/unit/scripts/",
+            "tests/integration/boot/",
+            ".github/workflows/ci.yml",
+            "package.json"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "31-05"
+          ],
+          "status": "active",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-boot",
+            "audit",
+            "security-leaks"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "The control-plane runtime image includes every workspace package dist the API and worker import (incl. @noodara/ai); a check that builds the image and boots/imports dist/server.js and the worker entry fails on the rc.1 Dockerfile (RED) and passes after the fix, and runs in CI",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Unit tests resolve @noodara/ai from source on a clean checkout (verified with `rm -rf packages/ai/dist && pnpm test`), like domain/ssh/ui",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "tests/unit/deploy-engine/scenario-map.test.ts no longer times out under CI load (cached parse or explicit timeout), without weakening its assertions",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "scripts/check-package-provenance.mjs expects @anthropic-ai/sdk, openai and msw at their lockfile versions after checking each on npmjs.com; the provenance check passes",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap"
+          ],
+          "tier": "deep"
+        },
+        {
           "id": "31-06",
           "title": "UAT on a real host (Lima) with a live provider key, rc.1, publish v0.5.0",
           "scope": [
@@ -11612,11 +11668,12 @@
             ".planning/OPEN_QUESTIONS.md",
             ".gitleaks.toml"
           ],
-          "wave": 4,
+          "wave": 5,
           "dependsOn": [
-            "31-05"
+            "31-05",
+            "31-07"
           ],
-          "status": "active",
+          "status": "pending",
           "gates": [
             "test",
             "typecheck",
