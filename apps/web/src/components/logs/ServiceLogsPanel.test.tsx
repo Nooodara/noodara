@@ -71,6 +71,27 @@ describe('ServiceLogsPanel', () => {
     expect(scroller).toHaveAttribute('tabindex', '0');
   });
 
+  it('31-08: shows its skeleton from the first render and mounts the focusable scroller only once the page lands', async () => {
+    let resolvePage: (value: ReturnType<typeof page>) => void = () => undefined;
+    api.getServiceLogs.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePage = resolve;
+      }),
+    );
+    render();
+    // The e2e keyboard walk waits for this skeleton to go: until then no scroller is tabbable.
+    expect(screen.getByTestId('log-loading')).toBeInTheDocument();
+    expect(screen.queryByTestId('log-scroller')).toBeNull();
+    await act(async () => {
+      resolvePage(page([entry('line')]));
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(screen.queryByTestId('log-loading')).toBeNull();
+    });
+    expect(screen.getByRole('region', { name: 'Log output' })).toHaveAttribute('tabindex', '0');
+  });
+
   it('renders hostile text inert: no element, no anchor, the text verbatim', async () => {
     const hostile = '<img src=x onerror="alert(1)"> \u001b[31mred\u001b[0m javascript:alert(1)';
     api.getServiceLogs.mockResolvedValue(page([entry(hostile)]));

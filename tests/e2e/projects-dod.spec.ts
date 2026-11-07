@@ -17,6 +17,7 @@ import { AxeBuilder } from '@axe-core/playwright';
 import type { Locator, Page } from '@playwright/test';
 import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './fixtures/stack.js';
 import { expect, test, type DeployHost } from './fixtures/deploy-host.js';
+import { throttleCpuFromEnv } from './helpers/cpu-throttle.js';
 
 const BASE_URL = 'http://localhost:3000';
 const WIDTHS = [375, 900, 1280, 1920] as const;
@@ -29,6 +30,8 @@ const SHOTS_DIR_14 = path.resolve('docs/ui-review/phase-14');
 const LONG_NAME_LENGTH = 200;
 const LONG_REPO_URL_LENGTH = 300;
 const LONG_LOG_LINES = 10_000;
+/** 31-08: delay for the logs panel's first page, longer than the rest of the service page takes. */
+const SLOW_LOGS_MS = 4_000;
 
 // ---- API helpers ----
 
@@ -254,6 +257,15 @@ async function openWithTrigger(page: Page, href: string, trigger: Locator, sheet
   await settle(page);
 }
 
+/** 31-08: the service page's logs panel loads its first page on its own, after the toolbar and
+ *  the inspector. It mounts with its skeleton (so the skeleton is in the DOM as soon as the panel
+ *  is), then swaps it for the scroller, a new tabbable. A screen is shown once that swap is done. */
+async function serviceLogsLoaded(page: Page): Promise<void> {
+  const panel = page.getByTestId('service-logs-view');
+  await expect(panel).toBeVisible();
+  await expect(panel.getByTestId('log-loading')).toHaveCount(0, { timeout: 30_000 });
+}
+
 const SCREENS: readonly Screen[] = [
   {
     name: 'projects',
@@ -277,6 +289,7 @@ const SCREENS: readonly Screen[] = [
       await page.goto(serviceHref(fx.imageServiceId));
       await expect(page.getByTestId('service-toolbar')).toBeVisible();
       await expect(page.getByTestId(`deployment-row-${fx.deploymentId}`)).toBeVisible();
+      await serviceLogsLoaded(page);
     },
   },
   {
@@ -307,6 +320,7 @@ const SCREENS: readonly Screen[] = [
       await expect(page.getByTestId('build-log-panel')).toBeVisible();
       await expect(page.getByTestId('build-log-loading')).toHaveCount(0);
       await expect(page.getByTestId('build-log-status')).toBeVisible();
+      await serviceLogsLoaded(page);
     },
   },
   {
@@ -315,6 +329,7 @@ const SCREENS: readonly Screen[] = [
       await page.goto(`${serviceHref(fx.imageServiceId)}?logs=runtime`);
       await expect(page.getByTestId('runtime-log-panel')).toBeVisible();
       await expect(page.getByTestId('runtime-log-loading')).toHaveCount(0, { timeout: 30_000 });
+      await serviceLogsLoaded(page);
     },
   },
 ];
@@ -724,6 +739,7 @@ test.describe('@projects-dod Phase 13 screens', () => {
   });
 
   test.beforeEach(async ({ page }) => {
+    await throttleCpuFromEnv(page);
     await login(page);
   });
 
@@ -786,21 +802,47 @@ test.describe('@projects-dod Phase 13 screens', () => {
     });
   }
 
+  /** Tabs through the whole screen: every stop in document order with a visible, contrasting
+   *  ring, and no visible tabbable left unstamped. */
+  async function expectKeyboardWalk(page: Page, screen: Screen, theme: Theme): Promise<void> {
+    await show(page, screen, theme, 1280);
+    await sidebarTreeLoaded(page);
+    const stops = await tabWalk(page);
+    expect(stops.length, `${screen.name} [${theme}] has focusable controls`).toBeGreaterThan(3);
+    const outOfOrder = stops.filter((stop, index) => index > 0 && stop.order < (stops[index - 1]?.order ?? -1)).map((stop) => stop.where);
+    expect(outOfOrder, `${screen.name} [${theme}] tab order follows the document`).toEqual([]);
+    const noRing = stops.filter((stop) => !stop.ringVisible).map((stop) => stop.where);
+    expect(noRing, `${screen.name} [${theme}] focus ring visible`).toEqual([]);
+    const faintRing = stops.filter((stop) => stop.ringContrast < 3).map((stop) => `${stop.where} ${String(stop.ringContrast)}`);
+    expect(faintRing, `${screen.name} [${theme}] focus ring contrast >= 3`).toEqual([]);
+    expect(await page.evaluate(unreachedTabbables, null), `${screen.name} [${theme}] unreachable controls`).toEqual([]);
+  }
+
   for (const screen of SCREENS.filter((candidate) => candidate.sheet === undefined)) {
     test(`H1 ${screen.name}: every control is keyboard reachable in document order with a visible focus ring`, async ({ page }) => {
       for (const theme of THEMES) {
-        await show(page, screen, theme, 1280);
-        await sidebarTreeLoaded(page);
-        const stops = await tabWalk(page);
-        expect(stops.length, `${screen.name} [${theme}] has focusable controls`).toBeGreaterThan(3);
-        const outOfOrder = stops.filter((stop, index) => index > 0 && stop.order < (stops[index - 1]?.order ?? -1)).map((stop) => stop.where);
-        expect(outOfOrder, `${screen.name} [${theme}] tab order follows the document`).toEqual([]);
-        const noRing = stops.filter((stop) => !stop.ringVisible).map((stop) => stop.where);
-        expect(noRing, `${screen.name} [${theme}] focus ring visible`).toEqual([]);
-        const faintRing = stops.filter((stop) => stop.ringContrast < 3).map((stop) => `${stop.where} ${String(stop.ringContrast)}`);
-        expect(faintRing, `${screen.name} [${theme}] focus ring contrast >= 3`).toEqual([]);
-        expect(await page.evaluate(unreachedTabbables, null), `${screen.name} [${theme}] unreachable controls`).toEqual([]);
+        await expectKeyboardWalk(page, screen, theme);
       }
+    });
+  }
+
+  // 31-08: CI run 42393699240 failed the walk above on inspector-runtime-logs with the log scroller
+  // unreachable. The service page's logs panel loads its first page on its own, after the toolbar
+  // and the inspector; until then it shows a skeleton and no scroller, so a walk that started
+  // early never stamped the scroller mounted afterwards. A slow first page reproduces that
+  // deterministically on every service-page screen.
+  for (const name of ['service', 'inspector-build-log', 'inspector-runtime-logs']) {
+    test(`H1 ${name}: the keyboard walk reaches the log scroller when the logs panel's first page is slow`, async ({ page }) => {
+      const screen = SCREENS.find((candidate) => candidate.name === name);
+      if (screen === undefined) throw new Error(`no screen ${name}`);
+      await page.route(/\/api\/projects\/[^/]+\/services\/[^/]+\/logs\/entries\?/, async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, SLOW_LOGS_MS));
+        await route.continue();
+      });
+      await expectKeyboardWalk(page, screen, 'dark');
+      // Once the panel has its page, nothing the walk could have reached is left unstamped.
+      await expect(page.getByTestId('service-logs-view').getByTestId('log-scroller')).toBeVisible({ timeout: 30_000 });
+      expect(await page.evaluate(unreachedTabbables, null), `${name} [dark] unreachable controls after the logs load`).toEqual([]);
     });
   }
 
