@@ -33,7 +33,7 @@ See [`docs/install.md`](docs/install.md) for requirements, the download-read-run
 supported variables, upgrade, rollback and troubleshooting.
 
 Release candidates (`vX.Y.Z-rc.N`) are published as GitHub prereleases and are never installed by
-default; pin one with `NOODARA_VERSION=0.5.0-rc.1`.
+default; pin a release with `NOODARA_VERSION=0.5.0` (no leading `v`).
 
 ## Development
 

@@ -1,0 +1,13 @@
+# 31-10 A2: GitHub release v0.5.0 (Nooodara/noodara) body after gh release edit --notes-file docs/releases/v0.5.0.md, 2026-11-07T23:12:35Z
+# gh release view v0.5.0 -R Nooodara/noodara --json tagName,name,isPrerelease,isDraft,publishedAt,url
+{"isDraft":false,"isPrerelease":false,"name":"v0.5.0","publishedAt":"2026-11-07T22:54:06Z","tagName":"v0.5.0","url":"https://github.com/Nooodara/noodara/releases/tag/v0.5.0"}
+# diff docs/releases/v0.5.0.md <(release body) (empty apart from gh's trailing newline):
+86a87
+> 
+# rc pins in release body (grep -c 'rc\.1'): 0
+# NOODARA_VERSION lines:
+60:curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sudo NOODARA_VERSION=0.5.0 sh
+70:curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sudo NOODARA_VERSION=0.4.0 sh
+# tag unchanged (git ls-remote refs/tags/v0.5.0, before and after the edit):
+72219f30036012a79e9380252316ae30dce2173b	refs/tags/v0.5.0
+fa3314b3b68beae96a5ae9591b58cbe846e7f0a2	refs/tags/v0.5.0^{}

@@ -322,3 +322,26 @@ describe('docs/adr/0007-production-topology-and-installer.md', () => {
     }
   });
 });
+
+// 31-10: the v0.5.0 notes, README and site told users to pin 0.5.0-rc.1, the build whose API
+// crashes on boot. User-facing install docs show only stable pins (X.Y.Z) as examples.
+describe('user-facing version pins', () => {
+  const pages = (): [string, string][] => [
+    ['README.md', readme()],
+    ['docs/releases/v0.5.0.md', readFileSync('docs/releases/v0.5.0.md', 'utf8')],
+    ...listMdxFiles().map((file): [string, string] => [file, readFileSync(file, 'utf8')]),
+  ];
+
+  it('never shows a release candidate as a NOODARA_VERSION example', () => {
+    const rcPin = /NOODARA_VERSION=v?\d+\.\d+\.\d+-rc\.\d+|`v?\d+\.\d+\.\d+-rc\.\d+`/;
+    for (const [file, text] of pages()) {
+      expect(rcPin.exec(text)?.[0], `${file} pins a release candidate`).toBeUndefined();
+    }
+  });
+
+  it('the v0.5.0 notes and the upgrade page pin the stable 0.5.0 release', () => {
+    expect(readFileSync('docs/releases/v0.5.0.md', 'utf8')).toContain('sudo NOODARA_VERSION=0.5.0 sh');
+    expect(docsPage('operate/upgrade')).toContain('`NOODARA_VERSION=0.5.0`');
+    expect(readme()).toContain('`NOODARA_VERSION=0.5.0`');
+  });
+});
