@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v0.5
 milestone_name: Observability + AI Read-Only
-status: v0_5_in_progress
-stopped_at: 31-06 blocked -- rc.1 pushed (3796cdd3) but image misses packages/ai/dist (API crash), CI unit+security red; fix tasks needed, then rc.2 + UAT
-last_updated: 2026-11-07T16:25:00.000Z
-last_activity: 2026-11-07 -- 31-06 A2 live evals OK; rc.1 UAT FAIL (docs/releases/v0.5-HUMAN-UAT.md F1-F3); 2026-11-06 -- 31-05 release gate v0.5 (docs/releases/v0.5-gate.md): it-full 1796 pass, e2e-full 283/283, unit 10185, evals replay = live baseline; criterios 10 y 14 pendientes de CI/nightly en rc.1
+status: v0_5_released
+stopped_at: 31-06 done -- v0.5.0 published (fa3314b3, Latest, amd64+arm64); CI 42400211715, nightly 42400264260, Release 42422548050 green; UAT Lima OK (rc.2 full, rc.3 smoke)
+last_updated: 2026-11-07T23:00:00.000Z
+last_activity: 2026-11-07 -- 31-06 v0.5.0 published (gate READY, docs/releases/v0.5-gate.md; UAT docs/releases/v0.5-HUMAN-UAT.md); earlier 31-06 A2 live evals OK; rc.1 UAT FAIL (docs/releases/v0.5-HUMAN-UAT.md F1-F3); 2026-11-06 -- 31-05 release gate v0.5 (docs/releases/v0.5-gate.md): it-full 1796 pass, e2e-full 283/283, unit 10185, evals replay = live baseline; criterios 10 y 14 pendientes de CI/nightly en rc.1
 progress:
   total_phases: 9
   completed_phases: 8
@@ -21,14 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** v0.5 — Observability + AI Read-Only (fases 26–31). Fases 26–30 cerradas; fase 31 en curso: 31-01..31-05 hechas, siguiente 31-06 (rc.1, UAT Lima con proveedor en vivo, tag v0.5.0).
+**Current focus:** v0.5 — Observability + AI Read-Only (fases 26–31). `v0.5.0` publicado 2026-11-07 (`fa3314b3`); falta cerrar la fase 31 (review, /flow-verify, /flow-close).
 
 ## Current Position
 
-Phase: 31 en curso (31-01..31-05 hechas).
-Plan: siguiente 31-06 (v0.5.0-rc.1, CI y nightly sobre el rc, UAT en Lima con key del usuario, OPEN_QUESTIONS #21, tag v0.5.0).
-Status: v0.5 en curso; v0.4.0 publicado (d1d956bc)
-Last activity: 2026-11-06 — gate v0.5 (31-05, `docs/releases/v0.5-gate.md`) NOT READY solo por criterios 10 y 14 (CI/nightly sobre un commit v0.5). Local verde: lint, typecheck, boundaries, unit 450/10185, leak canary, e2e-full 283/283 sobre cd0b7bbc; it-full 139 archivos/1796 tests sobre 99b44771; evals replay = baseline live (entity 95.38%, diagnosis 96.92%, halluc 0, leaks 0, writes 0). El primer e2e-full tuvo 11 fallos (locator status-pill, contraste/axe del panel de logs), arreglados en d9a7601c y 46fc17f8.
+Phase: 31, tareas 31-01..31-09 hechas (31-06 cerrada: v0.5.0 publicado).
+Plan: siguiente revisión de fase 31 y cierre de v0.5 (pnpm test:integration, /flow-verify, /flow-close, REQUIREMENTS/ROADMAP).
+Status: v0.5.0 publicado (fa3314b3 = v0.5.0-rc.3), Latest, imágenes amd64+arm64
+Last activity: 2026-11-07 — 31-06: rc.1 falló (imagen sin packages/ai/dist, 31-07), rc.2 UAT completo OK en Lima con la key en vivo pero CI rojo (e2e projects-dod, integration a 60 min; 31-08, 31-09), rc.3 (fa3314b3) CI 42400211715 12/12, nightly 42400264260 16/16 (e2e-repeat 20/20, 16417 s de 18000 s), smoke UAT OK; v0.5.0 tag en fa3314b3, Release 42422548050, Latest. Hallazgo F5 (bajo): dos de tres pedidos de secret dieron el fallback no estructurado (falla segura).
+
+Antes: 2026-11-06 — gate v0.5 (31-05, `docs/releases/v0.5-gate.md`) NOT READY solo por criterios 10 y 14 (CI/nightly sobre un commit v0.5). Local verde: lint, typecheck, boundaries, unit 450/10185, leak canary, e2e-full 283/283 sobre cd0b7bbc; it-full 139 archivos/1796 tests sobre 99b44771; evals replay = baseline live (entity 95.38%, diagnosis 96.92%, halluc 0, leaks 0, writes 0). El primer e2e-full tuvo 11 fallos (locator status-pill, contraste/axe del panel de logs), arreglados en d9a7601c y 46fc17f8.
 
 Publicación v0.3.0 (20-05 A2): intento 1 (92a7fbfa, CI 40996535993) rojo por `pnpm audit` (advisories nuevos, 20-10) y un flake de `migration-0011-0012.test.ts` (puerto de seed `20000 + 3 hex`, colisión en `servers_host_port_unique_idx`; seguimiento pendiente). Intento 2: 78dea21 y 770b961 reproducidos → a0b45618; checkout limpio con audit/test/typecheck/lint verdes; CI 41012499661 10/10, Publish site 41012499667, Release 41016597518 verdes; imágenes 0.3.0 amd64+arm64 (control-plane `sha256:a0b37458…`, web `sha256:a1c23cbe…`); release v0.3.0 Latest, no prerelease.
 

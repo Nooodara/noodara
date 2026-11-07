@@ -113,3 +113,4 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-11-07: 31-06 scope widened with `.gitleaks.toml` (precedent 25-07): cassette request hashes and v0.5 synthetic canaries flagged by gitleaks; narrow allowlist (exact hash line shape, per-file canary fixtures).
 - 2026-11-07: v0.5.0-rc.1 UAT failed (API image lacks packages/ai/dist; CI unit/security red). Added 31-07 to fix F1-F3 (handoffs/31-06.md); 31-06 depends on it and re-runs as rc.2.
 - 2026-11-07: rc.2 UAT on Lima passed with the live key, but CI e2e red (projects-dod H1 log scroller unreachable by Tab; failed with retries). No publish. Added 31-08; 31-06 resumes as rc.3 after it.
+- 2026-11-07: v0.5.0 tagged on the rc.3 commit (fa3314b3) per the 2026-11-07 authorization: rc.2 full UAT plus rc.3 smoke (runtime code identical) counts as UAT green; CI 42400211715, nightly 42400264260 and Release 42422548050 green.

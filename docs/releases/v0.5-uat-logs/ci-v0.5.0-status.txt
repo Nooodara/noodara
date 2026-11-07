@@ -1,0 +1,91 @@
+# 2026-11-07T22:54:28Z public CI/nightly/release state for v0.5.0 (commit fa3314b3 = tags v0.5.0-rc.3 and v0.5.0)
+$ gh api repos/Nooodara/noodara/git/refs/tags/v0.5.0 (peeled) ; gh api .../commits/main
+v0.5.0 -> fa3314b3b68beae96a5ae9591b58cbe846e7f0a2
+v0.5.0-rc.3 -> fa3314b3b68beae96a5ae9591b58cbe846e7f0a2
+main -> fa3314b3b68beae96a5ae9591b58cbe846e7f0a2
+
+CI run 42400211715 success push ref=main sha=fa3314b3 2026-11-07T18:13:40Z -> 2026-11-07T19:17:59Z
+  site  success
+  boundaries  success
+  state-machine  success
+  ai-evals  success
+  lint  success
+  installer  success
+  boot-smoke  success
+  e2e  success
+  typecheck  success
+  security  success
+  integration  success
+  unit  success
+
+Nightly run 42400264260 success workflow_dispatch ref=v0.5.0-rc.3 sha=fa3314b3 2026-11-07T18:14:17Z -> 2026-11-07T22:50:20Z
+  installer  success
+  soak  success
+  ai-evals-live  success
+  stress-connections  success
+  proxy (22.04)  success
+  proxy (24.04)  success
+  cycles (24.04)  success
+  domain-cycles (24.04)  success
+  cycles (22.04)  success
+  deploy-engine (22.04)  success
+  e2e-repeat  success
+  canary  success
+  deploy-engine (24.04)  success
+  metrics-soak (24.04)  success
+  domain-cycles (22.04)  success
+  metrics-soak (22.04)  success
+
+Release run 42400213638 success push ref=v0.5.0-rc.3 sha=fa3314b3 2026-11-07T18:13:41Z -> 2026-11-07T18:17:30Z
+  prepare  success
+  build (noodara-control-plane, amd64)  success
+  build (noodara-control-plane, arm64)  success
+  build (noodara-web, amd64)  success
+  build (noodara-web, arm64)  success
+  manifest (noodara-web)  success
+  manifest (noodara-control-plane)  success
+  verify (noodara-control-plane)  success
+  verify (noodara-web)  success
+  release  success
+
+Release run 42422548050 success push ref=v0.5.0 sha=fa3314b3 2026-11-07T22:51:21Z -> 2026-11-07T22:54:09Z
+  prepare  success
+  build (noodara-control-plane, arm64)  success
+  build (noodara-control-plane, amd64)  success
+  build (noodara-web, amd64)  success
+  build (noodara-web, arm64)  success
+  manifest (noodara-control-plane)  success
+  manifest (noodara-web)  success
+  verify (noodara-web)  success
+  verify (noodara-control-plane)  success
+  release  success
+
+Nightly run 42393776678 success workflow_dispatch ref=v0.5.0-rc.2 sha=1ddd0711 2026-11-07T16:56:13Z -> 2026-11-07T21:40:29Z
+  e2e-repeat  success
+  stress-connections  success
+  proxy (22.04)  success
+  deploy-engine (22.04)  success
+  canary  success
+  domain-cycles (24.04)  success
+  ai-evals-live  success
+  installer  success
+  metrics-soak (24.04)  success
+  soak  success
+  cycles (22.04)  success
+  proxy (24.04)  success
+  domain-cycles (22.04)  success
+  metrics-soak (22.04)  success
+  cycles (24.04)  success
+  deploy-engine (24.04)  success
+
+$ e2e-repeat summaries
+nightly 42400264260 (rc.3): e2e-repeat: all 20/20 iterations passed in 16417s total.
+nightly 42393776678 (rc.2): e2e-repeat: all 20/20 iterations passed in 16971s total.
+
+$ gh release view v0.5.0 --json tagName,isPrerelease,isDraft,publishedAt ; gh api repos/Nooodara/noodara/releases/latest --jq .tag_name
+{"tagName":"v0.5.0","isPrerelease":false,"isDraft":false,"publishedAt":"2026-11-07T22:54:06Z","assets":[]}
+latest: v0.5.0
+
+$ docker manifest inspect ghcr.io/nooodara/<image>:0.5.0 (platforms)
+noodara-control-plane: linux/amd64 linux/arm64
+noodara-web: linux/amd64 linux/arm64
