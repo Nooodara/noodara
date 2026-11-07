@@ -107,3 +107,12 @@ export const uiSourceAliases: AliasOptions = [
     replacement: fileURLToPath(new URL('./packages/ui/src/index.ts', import.meta.url)),
   },
 ];
+
+// 31-07 (rc.1 F2): same rationale for @noodara/ai. Without it a clean checkout (no
+// packages/ai/dist) failed every unit test that imports the package; a stale local dist hid it.
+export const aiSourceAliases: AliasOptions = [
+  {
+    find: /^@noodara\/ai$/,
+    replacement: fileURLToPath(new URL('./packages/ai/src/index.ts', import.meta.url)),
+  },
+];

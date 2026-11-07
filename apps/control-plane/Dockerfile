@@ -84,11 +84,15 @@ RUN groupadd --system noodara && useradd --system --gid noodara --home-dir /app 
 # package.json + node_modules symlinks from prod-deps, and only the compiled `dist/` of
 # apps/control-plane and the workspace packages it imports from the builder. The workspace
 # symlinks resolve because packages/*/dist land at the same paths the builder compiled them in.
+# Every @noodara/* runtime dependency needs its dist line here (31-07: rc.1 shipped without ai);
+# tests/unit/scripts/control-plane-image-layout.test.ts and tests/integration/boot/
+# control-plane-image.test.ts enforce it.
 COPY --from=prod-deps --chown=noodara:noodara /app /app
 COPY --from=builder --chown=noodara:noodara /app/packages/domain/dist /app/packages/domain/dist
 COPY --from=builder --chown=noodara:noodara /app/packages/ssh/dist /app/packages/ssh/dist
 COPY --from=builder --chown=noodara:noodara /app/packages/git/dist /app/packages/git/dist
 COPY --from=builder --chown=noodara:noodara /app/packages/docker/dist /app/packages/docker/dist
+COPY --from=builder --chown=noodara:noodara /app/packages/ai/dist /app/packages/ai/dist
 COPY --from=builder --chown=noodara:noodara /app/apps/control-plane/dist /app/apps/control-plane/dist
 # Version-stamped by the builder's NOODARA_IMAGE_VERSION step; read at runtime by
 # src/config-version.ts as dist/../package.json.

@@ -41,15 +41,26 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const MAP_PATH = 'docs/releases/v0.3-scenarios.md';
 const ROADMAP_PATH = 'docs/roadmap-v0.1-v0.5.md';
 const read = (file: string): string => readFileSync(path.join(REPO_ROOT, file), 'utf8');
-const readSource = (file: string): string | undefined =>
-  existsSync(path.join(REPO_ROOT, file)) ? readFileSync(path.join(REPO_ROOT, file), 'utf8') : undefined;
+// 31-07 (rc.1 F2): each check re-reads and re-parses every mapped integration source, so the
+// v0.5 cases took ~0.4 s locally and hit Vitest's 5 s default on a loaded CI runner. Reads are
+// cached (sources never change during a run) and the suites that walk real sources get an
+// explicit budget; the assertions are unchanged.
+const SOURCE_SUITE_TIMEOUT_MS = 30_000;
+const sourceCache = new Map<string, string | undefined>();
+const readSource = (file: string): string | undefined => {
+  if (!sourceCache.has(file)) {
+    const full = path.join(REPO_ROOT, file);
+    sourceCache.set(file, existsSync(full) ? readFileSync(full, 'utf8') : undefined);
+  }
+  return sourceCache.get(file);
+};
 
 const IMPORT = "import { DEPLOY_ENGINE_UBUNTU_VERSIONS } from '../helpers/deploy-engine.js';\n";
 const perVersion = (inner: string, table = 'DEPLOY_ENGINE_UBUNTU_VERSIONS', suite = 'describe.each'): string =>
   `${IMPORT}${suite}(${table})('suite %s', (ubuntu) => {\n${inner}\n});\n`;
 const TITLE = 'deploys';
 
-describe('scenario map checker (H1)', () => {
+describe('scenario map checker (H1)', { timeout: SOURCE_SUITE_TIMEOUT_MS }, () => {
   it('accepts a test that runs inside describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)', () => {
     expect(checkMappedTest(perVersion(`  it('${TITLE}', async () => { expect(ubuntu).toBeTruthy(); });`), 'a.test.ts', TITLE)).toEqual([]);
     expect(checkMappedTest(perVersion(`  it.each(['A', 'B'])('${TITLE}', async (s) => { void s; });`), 'a.test.ts', TITLE)).toEqual([]);
@@ -116,7 +127,7 @@ describe('scenario map checker (H1)', () => {
   });
 });
 
-describe('docs/releases/v0.3-scenarios.md (A1)', () => {
+describe('docs/releases/v0.3-scenarios.md (A1)', { timeout: SOURCE_SUITE_TIMEOUT_MS }, () => {
   it('maps each of the twelve roadmap §8.8 scenarios, in order, to one named test per Ubuntu version', () => {
     const scenarios = readRoadmapScenarios(read(ROADMAP_PATH));
     expect(scenarios).toHaveLength(12);
@@ -135,7 +146,7 @@ describe('docs/releases/v0.3-scenarios.md (A1)', () => {
 // 25-01 A1: the v0.4 matrix (QA-15 integration scenarios, roadmap §9.8 unit areas, §9.10 E2E flows).
 const V04_MAP_PATH = 'docs/releases/v0.4-scenarios.md';
 
-describe('docs/releases/v0.4-scenarios.md (25-01 A1)', () => {
+describe('docs/releases/v0.4-scenarios.md (25-01 A1)', { timeout: SOURCE_SUITE_TIMEOUT_MS }, () => {
   const roadmap = read(ROADMAP_PATH);
   const map = read(V04_MAP_PATH);
   const rowOf = (section: string, index: number): string => {
@@ -300,7 +311,7 @@ describe('remote proxy state against the database (25-01 A2)', () => {
   });
 });
 
-describe('docs/releases/v0.5-scenarios.md (31-01 A1)', () => {
+describe('docs/releases/v0.5-scenarios.md (31-01 A1)', { timeout: SOURCE_SUITE_TIMEOUT_MS }, () => {
   const roadmap = read(ROADMAP_PATH);
   const map = read('docs/releases/v0.5-scenarios.md');
   const check = (overrides: { map?: string; readSource?: (file: string) => string | undefined; diagnoses?: readonly string[] } = {}) =>

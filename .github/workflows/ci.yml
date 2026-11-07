@@ -250,7 +250,9 @@ jobs:
     # 11-03 (D-11): +5 min for tests/integration/deploy-engine. One harness run on 24.04 measured
     # ~99s locally including a fresh image build (~35s no-cache); +50% per version, and main runs
     # both versions, so ~5 min.
-    timeout-minutes: 50
+    # 31-07: +10 min for tests/integration/boot/control-plane-image.test.ts, which builds the real
+    # control-plane image cold and boots dist/server.js and dist/worker.js from it (rc.1 F1).
+    timeout-minutes: 60
     permissions:
       contents: read
     # D-11: deploy-engine suites run Ubuntu 24.04 on pull requests and 22.04 + 24.04 on main. Only

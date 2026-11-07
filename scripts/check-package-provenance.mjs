@@ -222,6 +222,15 @@ const EXPECTED_PACKAGES = [
   { name: 'fumadocs-mdx', expectedOwnerRepo: 'fuma-nama/fumadocs' },
   { name: 'flexsearch', expectedOwnerRepo: 'nextapps-de/flexsearch' },
   { name: '@types/mdx', expectedOwnerRepo: 'DefinitelyTyped/DefinitelyTyped' },
+
+  // 31-07 (v0.5 AI, rc.1 F3): packages/ai's provider SDKs and its MSW test stack. Checked on
+  // npmjs.com and via `npm view <pkg>@<locked-version> repository.url` on 2026-11-07:
+  // @anthropic-ai/sdk@0.137.0 (Anthropic maintainers), openai@7.39.0 (OpenAI maintainers),
+  // msw@2.15.0 (kettanaito). msw declares a postinstall, which never runs: pnpm-workspace.yaml's
+  // onlyBuiltDependencies allows argon2 alone.
+  { name: '@anthropic-ai/sdk', expectedOwnerRepo: 'anthropics/anthropic-sdk-typescript' },
+  { name: 'openai', expectedOwnerRepo: 'openai/openai-node' },
+  { name: 'msw', expectedOwnerRepo: 'mswjs/msw' },
 ];
 
 const EXPECTED_BY_NAME = new Map(

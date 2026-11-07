@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { domainSourceAliases, sshSourceAliases, uiSourceAliases } from '../../../vitest.shared.js';
 
@@ -60,4 +61,35 @@ describe('vitest.shared.ts source aliases cover every JS/TS subpath export', () 
       }
     });
   }
+});
+
+// 31-07 (rc.1 F2): @noodara/ai shipped with a dist-only `exports` map and no source alias, so a
+// clean checkout (no packages/ai/dist) failed every unit test that imports it. Every workspace
+// package whose root export points at dist/ must resolve to source in the unit config itself.
+describe('vitest.config.ts resolves every dist-exported workspace package to source', () => {
+  it('has a bare-specifier alias to an existing source file for each packages/* with a dist export', async () => {
+    const { default: config } = (await import('../../../vitest.config.js')) as {
+      default: { resolve?: { alias?: AliasEntry[] } };
+    };
+    const aliases = config.resolve?.alias ?? [];
+    const distExported = readdirSync('packages', { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && existsSync(path.join('packages', entry.name, 'package.json')))
+      .map((entry) => JSON.parse(readFileSync(path.join('packages', entry.name, 'package.json'), 'utf8')) as {
+        name: string;
+        exports?: Record<string, { default?: string } | string>;
+      })
+      .filter((pkg) => {
+        const root = pkg.exports?.['.'];
+        return typeof root === 'object' && root.default?.startsWith('./dist/') === true;
+      })
+      .map((pkg) => pkg.name);
+
+    expect(distExported).toContain('@noodara/ai');
+    for (const name of distExported) {
+      const alias = findAlias(aliases, name);
+      expect(alias, `no unit-config alias for "${name}"`).toBeDefined();
+      expect(alias!.replacement, `alias for "${name}" must point at source`).toMatch(/\/src\/[^/]+\.tsx?$/);
+      expect(existsSync(alias!.replacement), `alias for "${name}" points at a missing file`).toBe(true);
+    }
+  });
 });

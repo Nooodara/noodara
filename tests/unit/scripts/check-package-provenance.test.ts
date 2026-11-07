@@ -9,12 +9,31 @@ import { describe, expect, it } from 'vitest';
 // `enumerateLockedDependencies` shells out to the local `pnpm list -r --depth 0 --json` (no
 // network call — pnpm already has the workspace's node_modules resolved on disk), so this stays
 // a fast, deterministic unit test rather than an integration test against a real registry.
-import { enumerateLockedDependencies, normaliseRepoUrl } from '../../../scripts/check-package-provenance.mjs';
+import { EXPECTED_PACKAGES, enumerateLockedDependencies, normaliseRepoUrl } from '../../../scripts/check-package-provenance.mjs';
 
 // The exact packages WR-C-14 named as missing from the old hardcoded EXPECTED_PACKAGES list.
 const WR_C_14_PACKAGES = ['ssh2', 'argon2', 'better-auth', 'pg', 'fastify', 'pino', 'zod'];
 
 describe('check-package-provenance.mjs enumerateLockedDependencies', () => {
+  // 31-07 (rc.1 F3): the v0.5 AI stack reached the lockfile without EXPECTED_PACKAGES entries, so
+  // CI `security` failed closed only after a full registry walk. Same rule, checked offline here.
+  it('has an EXPECTED_PACKAGES entry for every enumerated package', () => {
+    const expected = new Set(EXPECTED_PACKAGES.map((pkg: { name: string }) => pkg.name));
+    const missing = enumerateLockedDependencies()
+      .map((pkg) => pkg.name)
+      .filter((name) => !expected.has(name));
+    expect(missing).toEqual([]);
+  });
+
+  it('expects the v0.5 AI stack at the repositories reviewed on npmjs.com', () => {
+    const byName = new Map(EXPECTED_PACKAGES.map((pkg: { name: string; expectedOwnerRepo: string }) => [pkg.name, pkg.expectedOwnerRepo]));
+    expect(byName.get('@anthropic-ai/sdk')).toBe('anthropics/anthropic-sdk-typescript');
+    expect(byName.get('openai')).toBe('openai/openai-node');
+    expect(byName.get('msw')).toBe('mswjs/msw');
+    const locked = new Map(enumerateLockedDependencies().map((pkg) => [pkg.name, pkg.version]));
+    expect([locked.get('@anthropic-ai/sdk'), locked.get('openai'), locked.get('msw')]).toEqual(['0.137.0', '7.39.0', '2.15.0']);
+  });
+
   it('includes every WR-C-14 package the old hardcoded list was missing', () => {
     const enumerated = enumerateLockedDependencies();
     const names = enumerated.map((pkg) => pkg.name);
