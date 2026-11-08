@@ -11,12 +11,13 @@ import type { Database } from '../../db/client.js';
 import { environments, projects, servers, services } from '../../db/schema/index.js';
 import { loadScopedGraph, type GraphScopeRequest } from '../../observability/graph/graph-snapshot.js';
 import { toGraphView } from '../../observability/graph/graph-view.js';
-import type { LogConnect, LogServiceRef } from '../../observability/logs/log-sources.js';
+import { openServiceRedactor, type LogConnect, type LogServiceRef, type ServiceRedactor } from '../../observability/logs/log-sources.js';
 import { queryServiceLogs } from '../../observability/logs/log-query.js';
 import { parseMetricRange } from '../../observability/metric-range.js';
 import { readServerMetrics, readServiceMetrics, readServiceStatus, type ServerRef, type ServiceRef } from '../../observability/metrics-read.js';
 import type { MasterKeys } from '../../services/server-service-deps.js';
 import { getDeployment, listDeployments } from '../../services/deployment-services.js';
+import { SERVER_COLUMNS, SERVICE_COLUMNS } from './read-projections.js';
 
 export type ToolScope = { readonly kind: 'global' } | { readonly kind: 'project'; readonly projectId: string };
 
@@ -66,59 +67,12 @@ export const AI_TOOL_LIST_MAX_ROWS = 100;
 const RUNTIME_TIMEOUT_DEFAULT_MS = 15_000;
 
 const NOT_FOUND: ReadOutcome = Object.freeze({ ok: false, code: 'NOT_FOUND' });
+const UNAVAILABLE: ReadOutcome = Object.freeze({ ok: false, code: 'TOOL_UNAVAILABLE' });
 const INVALID: ReadOutcome = Object.freeze({ ok: false, code: 'INVALID_ARGUMENTS' });
 
 function ok(data: unknown): ReadOutcome {
   return { ok: true, data };
 }
-
-// The AI projection of a server: no host, SSH user or port, credential, fingerprints or ACME email.
-const SERVER_COLUMNS = {
-  id: servers.id,
-  name: servers.name,
-  status: servers.status,
-  hostname: servers.hostname,
-  osDistribution: servers.osDistribution,
-  osVersion: servers.osVersion,
-  arch: servers.arch,
-  cpuCores: servers.cpuCores,
-  ramMb: servers.ramMb,
-  diskTotalMb: servers.diskTotalMb,
-  diskUsedMb: servers.diskUsedMb,
-  uptimeSeconds: servers.uptimeSeconds,
-  dockerInstalled: servers.dockerInstalled,
-  dockerVersion: servers.dockerVersion,
-  dockerComposeVersion: servers.dockerComposeVersion,
-  dockerBuildkitAvailable: servers.dockerBuildkitAvailable,
-  proxyStatus: servers.proxyStatus,
-  proxyErrorCode: servers.proxyErrorCode,
-  lastSeenAt: servers.lastSeenAt,
-  createdAt: servers.createdAt,
-} as const;
-
-// The AI projection of a service: no credential ids, git host keys, webhook ids or pending triggers.
-const SERVICE_COLUMNS = {
-  id: services.id,
-  projectId: services.projectId,
-  environmentId: services.environmentId,
-  serverId: services.serverId,
-  name: services.name,
-  sourceType: services.sourceType,
-  repositoryUrl: services.repositoryUrl,
-  branch: services.branch,
-  buildContext: services.buildContext,
-  dockerfilePath: services.dockerfilePath,
-  buildTarget: services.buildTarget,
-  imageRef: services.imageRef,
-  internalPort: services.internalPort,
-  publishedPort: services.publishedPort,
-  healthcheck: services.healthcheck,
-  autoRollback: services.autoRollback,
-  imageRetention: services.imageRetention,
-  status: services.status,
-  createdAt: services.createdAt,
-  updatedAt: services.updatedAt,
-} as const;
 
 function page<T>(rows: readonly T[]): { items: T[]; truncated: boolean } {
   return { items: rows.slice(0, AI_TOOL_LIST_MAX_ROWS), truncated: rows.length > AI_TOOL_LIST_MAX_ROWS };
@@ -143,6 +97,35 @@ export function createReadToolBackend(deps: ReadToolBackendDeps): ControlPlaneRe
       .where(scope.kind === 'project' ? and(eq(services.id, serviceId), eq(services.projectId, scope.projectId)) : eq(services.id, serviceId))
       .limit(1);
     return row ?? null;
+  }
+
+  /**
+   * 31-11 (A3): `value` redacted with the secret values of every service in `refs` (project,
+   * environment and service scope), released afterwards; null when a secret cannot be read, so the
+   * caller fails closed instead of answering unredacted.
+   */
+  async function redactForServices<T>(refs: readonly LogServiceRef[], value: T): Promise<{ value: T } | null> {
+    const opened: ServiceRedactor[] = [];
+    try {
+      for (const ref of refs) opened.push(await openServiceRedactor(db, ref, deps.masterKeys));
+      let redacted = value;
+      for (const { redactor } of opened) redacted = redactor.redact(redacted);
+      return { value: redacted };
+    } catch {
+      return null;
+    } finally {
+      for (const { release } of opened) release();
+    }
+  }
+
+  /** Host-discovered text is whatever the host printed: redact it with every hosted service's secrets. */
+  async function redactServerRows<T>(serverIds: readonly string[], value: T): Promise<{ value: T } | null> {
+    if (serverIds.length === 0) return { value };
+    const hosted = await db
+      .select({ id: services.id, projectId: services.projectId, environmentId: services.environmentId, serverId: services.serverId })
+      .from(services)
+      .where(inArray(services.serverId, [...serverIds]));
+    return redactForServices(hosted, value);
   }
 
   /** In a project scope a server is visible only while it hosts one of the project's services. */
@@ -199,7 +182,9 @@ export function createReadToolBackend(deps: ReadToolBackendDeps): ControlPlaneRe
         .from(servers)
         .where(and(eq(servers.id, input.serverId), serverVisibility(scope)))
         .limit(1);
-      return row === undefined ? NOT_FOUND : ok(row);
+      if (row === undefined) return NOT_FOUND;
+      const redacted = await redactServerRows([row.id], row);
+      return redacted === null ? UNAVAILABLE : ok(redacted.value);
     },
 
     async list_servers(_input, scope) {
@@ -209,14 +194,21 @@ export function createReadToolBackend(deps: ReadToolBackendDeps): ControlPlaneRe
         .where(serverVisibility(scope))
         .orderBy(asc(servers.name), asc(servers.id))
         .limit(AI_TOOL_LIST_MAX_ROWS + 1);
-      return ok(page(rows));
+      const listed = page(rows);
+      const redacted = await redactServerRows(
+        listed.items.map((row) => row.id),
+        listed,
+      );
+      return redacted === null ? UNAVAILABLE : ok(redacted.value);
     },
 
     async get_service(input, scope) {
       const visible = await visibleService(input.serviceId, scope);
       if (visible === null) return NOT_FOUND;
       const [row] = await db.select(SERVICE_COLUMNS).from(services).where(eq(services.id, visible.id)).limit(1);
-      return row === undefined ? NOT_FOUND : ok(row);
+      if (row === undefined) return NOT_FOUND;
+      const redacted = await redactForServices([visible], row);
+      return redacted === null ? UNAVAILABLE : ok(redacted.value);
     },
 
     async list_services(input, scope) {
@@ -233,20 +225,27 @@ export function createReadToolBackend(deps: ReadToolBackendDeps): ControlPlaneRe
         )
         .orderBy(asc(services.name), asc(services.id))
         .limit(AI_TOOL_LIST_MAX_ROWS + 1);
-      return ok(page(rows));
+      const listed = page(rows);
+      const redacted = await redactForServices(listed.items, listed);
+      return redacted === null ? UNAVAILABLE : ok(redacted.value);
     },
 
     async get_deployment(input, scope) {
       const deployment = await getDeployment({ db }, input.deploymentId);
       if (deployment === null) return NOT_FOUND;
-      return (await visibleService(deployment.serviceId, scope)) === null ? NOT_FOUND : ok(deployment);
+      const service = await visibleService(deployment.serviceId, scope);
+      if (service === null) return NOT_FOUND;
+      const redacted = await redactForServices([service], deployment);
+      return redacted === null ? UNAVAILABLE : ok(redacted.value);
     },
 
     async list_deployments(input, scope) {
-      if ((await visibleService(input.serviceId, scope)) === null) return NOT_FOUND;
+      const service = await visibleService(input.serviceId, scope);
+      if (service === null) return NOT_FOUND;
       const result = await listDeployments({ db }, input.serviceId, { limit: input.limit });
       if (result === null) return NOT_FOUND;
-      return ok({ items: result.items, hasOlder: result.nextCursor !== null });
+      const redacted = await redactForServices([service], { items: result.items, hasOlder: result.nextCursor !== null });
+      return redacted === null ? UNAVAILABLE : ok(redacted.value);
     },
 
     async get_health(input, scope) {
