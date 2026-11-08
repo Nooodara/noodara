@@ -11817,6 +11817,58 @@
           ],
           "waives": [],
           "tier": "standard"
+        },
+        {
+          "id": "31-11",
+          "title": "Threat model: cover every field the AI read tools expose",
+          "scope": [
+            "docs/security/v0.5-review.md",
+            "tests/ai/evals/adversarial/channels.test.ts",
+            "apps/control-plane/src/ai/tools/",
+            "tests/ai/evals/adversarial/",
+            "packages/ai/src/",
+            "tests/unit/ai/",
+            "tests/integration/ai/",
+            "docs/releases/v0.5-gate.md"
+          ],
+          "wave": 7,
+          "dependsOn": [
+            "31-10"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "security-leaks",
+            "ai-evals",
+            "ai-adversarial"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "The channel-completeness test derives the exposed fields from the read-tool backend itself (SERVICE_COLUMNS, SERVER_COLUMNS and every other column/field list sent to the model), not a hardcoded copy, and fails (RED) on the current threat model because repositoryUrl, branch, buildContext, dockerfilePath, buildTarget, imageRef, healthcheck, hostname, osDistribution, osVersion, dockerVersion, dockerComposeVersion have no row",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "docs/security/v0.5-review.md has a row for every exposed field with its trust source (user-entered vs. discovered from the server) and mitigation; attacker-influenced fields (e.g. discovery output, repo/branch/image strings) have adversarial cases (prompt injection via the field) that pass: no write tool call, no secret value reaches the model or the answer",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "If any new adversarial case reveals a real leak or injection that the backend does not block, it is fixed in the backend (not by prompt) with a RED test first, and recorded in the security review; new cassettes come only from a live run with the user's key (never hand-written)",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "ai-evals and ai-adversarial replays are green with the new cases",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
         }
       ]
     }
