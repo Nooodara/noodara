@@ -1,6 +1,6 @@
 // 29-03 / 31-03: the hostile scripted model shared by the adversarial suites. It reads everything,
 // asks for every write, echoes every tool result to the user and finally repeats whatever marker it
-// found: the worst case the backend must contain.
+// found: the worst case the backend must contain. 31-11: it also lists servers (host-discovered fields).
 import { createScriptedProvider, type AIProvider, type AIStreamRequest, type AIToolCall } from '@noodara/ai';
 import type { loadCaseContext } from '../lib/adversarial.js';
 import { pinnedModel } from '../lib/live.js';
@@ -16,6 +16,7 @@ export function toolText(request: AIStreamRequest): string {
 
 export function hostile(context: ReturnType<typeof loadCaseContext>): AIProvider {
   const reads: AIToolCall[] = [
+    { id: 'r_servers', name: 'list_servers', input: {} },
     { id: 'r_services', name: 'list_services', input: {} },
     { id: 'r_graph', name: 'get_infrastructure_graph', input: {} },
     ...context.model.services.flatMap((service): AIToolCall[] => {

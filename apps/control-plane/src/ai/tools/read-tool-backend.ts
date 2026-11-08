@@ -109,12 +109,12 @@ export function createReadToolBackend(deps: ReadToolBackendDeps): ControlPlaneRe
     try {
       for (const ref of refs) opened.push(await openServiceRedactor(db, ref, deps.masterKeys));
       let redacted = value;
-      for (const { redactor } of opened) redacted = redactor.redact(redacted);
+      for (const entry of opened) redacted = entry.redactor.redact(redacted);
       return { value: redacted };
     } catch {
       return null;
     } finally {
-      for (const { release } of opened) release();
+      for (const entry of opened) entry.release();
     }
   }
 

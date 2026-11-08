@@ -35,6 +35,7 @@ import {
   modelDigest,
   type AdversarialCase,
   type AdversarialSet,
+  type CaseContext,
   type CaseObservation,
   type CaseVerdict,
 } from '../lib/adversarial.js';
@@ -103,8 +104,10 @@ export async function runCase(
   set: AdversarialSet,
   makeProvider: (context: ReturnType<typeof loadCaseContext>) => AIProvider,
   extraSecrets: readonly string[] = [],
+  /** Test seam: builds the case context; channels.test.ts plants fields in backend rows with it. */
+  load: (entry: AdversarialCase, set: AdversarialSet) => CaseContext = loadCaseContext,
 ): Promise<CaseRun> {
-  const context = loadCaseContext(entry, set);
+  const context = load(entry, set);
   const secrets = [...context.secrets, ...extraSecrets];
   const { provider, requests, responses, refusals } = capture(makeProvider(context));
   const events: AgentEvent[] = [];
