@@ -3,7 +3,7 @@
 > Generated from `.agent-flow/plan.json` by `agent-flow plan render`. Edit the plan, not this file.
 
 **Milestone:** v0.5
-**Progress:** 194/197 tasks (98%), 19/21 phases
+**Progress:** 202/204 tasks (99%), 20/22 phases
 
 ## Phase 11: Motor de deploy — fundamentos — done
 **Goal:** Everything the engine needs to be built RED-first exists and is proven on real infrastructure: spikes resolved (ADR 0008), pure domain, schema, parameterized allowlist templates, streaming exec, git/docker packages, sshd+dockerd fixture and official fixtures.
@@ -1229,7 +1229,7 @@
   - A1 [site-build]: The site documents metrics (interval, retention), logs sources and limits, the graph and its inference rule, AI setup per provider, what is sent to the provider, the read-only guarantee and its enforcement, and the new error codes; an accuracy test checks codes, defaults and limits
   - A2 [manual]: noodara-ux-review over 30-01..30-04 in both themes recorded in docs/ui-review/phase-30/REPORT.md with no BLOCK
 
-## Phase 31: Hardening, seguridad AI y gate de release v0.5 — active
+## Phase 31: Hardening, seguridad AI y gate de release v0.5 — done
 **Goal:** Prove the §10.13 acceptance criteria: the observability matrix on both Ubuntu versions, a bounded collector soak, a security review of AI and observability with the full leak scan, release prep (including the F3 install.sh copy), the release gate, a real-host UAT with a live provider and v0.5.0.
 **Requirements:** QA-19, QA-21
 **Depends on:** 29, 30
@@ -1248,10 +1248,45 @@
 - [x] 31-04 (wave 2) Release prep: 0.5.0 version, v0.5.0 notes with upgrade and downgrade, README, site, install.sh proxy copy (F3) — done
   - A1 [build]: Versions are 0.5.0; notes cover new env knobs, migrations 0018-0019, BYOK setup, what is sent to providers, upgrade from 0.4.0 and downgrade limits
   - A2 [posix-sh]: install.sh no longer claims the panel will sit behind the v0.4 proxy (OPEN_QUESTIONS F3); posix-sh passes
-- [ ] 31-05 (wave 3) Release gate v0.5 evidence (§10.13) — active
+- [x] 31-05 (wave 3) Release gate v0.5 evidence (§10.13) — done
   - A1 [manual]: docs/releases/v0.5-gate.md gives evidence for each §10.13 criterion, including eval metrics from the latest live baseline and the replay run on the release commit
   - A2 [manual]: CI and nightly are green on the release candidate commit
-- [ ] 31-06 (wave 4) UAT on a real host (Lima) with a live provider key, rc.1, publish v0.5.0 — pending
+- [x] 31-07 (wave 4) Fix rc.1 blockers: image missing packages/ai/dist, CI unit and provenance — done
+  - A1 [test]: The control-plane runtime image includes every workspace package dist the API and worker import (incl. @noodara/ai); a check that builds the image and boots/imports dist/server.js and the worker entry fails on the rc.1 Dockerfile (RED) and passes after the fix, and runs in CI
+  - A2 [test]: Unit tests resolve @noodara/ai from source on a clean checkout (verified with `rm -rf packages/ai/dist && pnpm test`), like domain/ssh/ui
+  - A3 [test]: tests/unit/deploy-engine/scenario-map.test.ts no longer times out under CI load (cached parse or explicit timeout), without weakening its assertions
+  - A4 [test]: scripts/check-package-provenance.mjs expects @anthropic-ai/sdk, openai and msw at their lockfile versions after checking each on npmjs.com; the provenance check passes
+- [x] 31-08 (wave 5) Fix rc.2 CI e2e: runtime log scroller unreachable by keyboard — done
+  - A1 [test]: Root cause of CI run 42393699240 e2e failure (projects-dod.spec.ts:790 H1 inspector-runtime-logs [dark]: `div[log-scroller] "Log output"` unreachable by Tab) is identified and reproduced locally (RED) before the fix, e.g. under CI viewport/CPU conditions
+  - A2 [test]: The log scroller is reachable by keyboard in document order with a visible focus ring whenever it is focusable, and stays an accessible named region (axe scrollable-region-focusable still passes at 375 px); no assertion in projects-dod.spec.ts is weakened
+  - A3 [test]: projects-dod.spec.ts passes repeatedly (>=5 consecutive runs, incl. under CPU throttling) and e2e-full is green
+- [x] 31-09 (wave 5) Raise CI integration job timeout to 90 min — done
+  - A1 [manual]: CI integration job timeout-minutes is 90 (rc.2 run 42393699240 was cancelled at 60 min while still passing tests; v0.4 took ~46 min). The required check name `integration` is unchanged and no test is excluded
+- [x] 31-06 (wave 6) UAT on a real host (Lima) with a live provider key, rc.1, publish v0.5.0 — done
   - A1 [manual]: On a Lima Ubuntu VM: install v0.5.0-rc.1, connect, deploy, view metrics and logs, open the graph, configure a BYOK key and run the three §10.12 flows against the live provider; evidence recorded
   - A2 [manual]: The live eval baseline is recorded with the user-provided key (OPEN_QUESTIONS #21); if no key is provided, the live rows are UNVERIFIED and the criterion is not weakened
   - A3 [manual]: Tag v0.5.0 after CI, nightly and UAT are green; the release is Latest and multi-arch
+- [x] 31-10 (wave 6) Address phase 31 review: throttled e2e evidence, drop rc.1 pin from docs — done
+  - A1 [test]: User-facing docs (docs/releases/v0.5.0.md, README.md, site upgrade.mdx and variables.mdx) no longer tell users to pin 0.5.0-rc.1 (boot-crashing build); the version example is a stable release (e.g. 0.5.0) and docs-accuracy tests pass
+  - A2 [manual]: The published GitHub release body of v0.5.0 on Nooodara/noodara matches the corrected docs/releases/v0.5.0.md (no rc.1 pin); evidence (gh release view output) saved under docs/releases/v0.5-gate-logs/
+  - A3 [manual]: Evidence for 31-08 A1/A3 recorded under docs/releases/v0.5-gate-logs/: the new slow-first-page tests fail (RED) against the pre-9b2c03dc projects-dod.spec.ts, and projects-dod.spec.ts passes >=5 consecutive runs with NOODARA_E2E_CPU_THROTTLE set; referenced from v0.5-gate.md
+  - A4 [manual]: Fixed docs are replayed to public main (same publish procedure: tree-eq, ff, no trailers, gitleaks clean); the tag v0.5.0 is NOT moved
+- [x] 31-11 (wave 7) Threat model: cover every field the AI read tools expose — done
+  - A1 [test]: The channel-completeness test derives the exposed fields from the read-tool backend itself (SERVICE_COLUMNS, SERVER_COLUMNS and every other column/field list sent to the model), not a hardcoded copy, and fails (RED) on the current threat model because repositoryUrl, branch, buildContext, dockerfilePath, buildTarget, imageRef, healthcheck, hostname, osDistribution, osVersion, dockerVersion, dockerComposeVersion have no row
+  - A2 [test]: docs/security/v0.5-review.md has a row for every exposed field with its trust source (user-entered vs. discovered from the server) and mitigation; attacker-influenced fields (e.g. discovery output, repo/branch/image strings) have adversarial cases (prompt injection via the field) that pass: no write tool call, no secret value reaches the model or the answer
+  - A3 [test]: If any new adversarial case reveals a real leak or injection that the backend does not block, it is fixed in the backend (not by prompt) with a RED test first, and recorded in the security review; new cassettes come only from a live run with the user's key (never hand-written)
+  - A4 [test]: ai-evals and ai-adversarial replays are green with the new cases
+
+## Phase 32: Security hotfix v0.5.1 — AI host-sourced secret redaction — active
+**Goal:** Distribute the 31-11 H2 fix as v0.5.1 after rc CI/nightly and a real Lima regression smoke; preserve v0.5.0.
+**Requirements:** AI-05, QA-21
+**Depends on:** 31
+
+- [x] 32-01 (wave 1) Prepare v0.5.1 with H2 fix and release traceability — done
+  - A1 [test]: All workspace versions and release notes match 0.5.1; v0.5.0 gate explicitly records that H2 was discovered after publication.
+  - A2 [manual]: The release source includes b464cd3b and 03a7111e, the focused integration gate is required, and RC/final publication are tracked in 32-02.
+- [ ] 32-02 (wave 2) Publish rc, verify CI/nightly and Lima H2 smoke, publish v0.5.1 — pending
+  - A0 [manual]: Public rc includes the fix by tree-equivalent replay; scan clean, no attribution trailers, existing tags unchanged.
+  - A1 [manual]: CI and every nightly job succeed on the exact rc commit; logs and workflow IDs saved.
+  - A2 [manual]: Lima upgrade preserves data/BYOK; a synthetic hosted-service secret planted in discovery fields and deployment errorMessage is absent from actual AI tool results and model-bound payloads; live read-only ask succeeds; fixtures restored.
+  - A3 [manual]: Final v0.5.1 tag uses the validated rc commit, Release succeeds, both public images include amd64 and arm64; Latest is v0.5.1, v0.5.0 tag unchanged.

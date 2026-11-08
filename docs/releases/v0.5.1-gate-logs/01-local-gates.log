@@ -1,0 +1,13 @@
+# Local base 8eddbbfb plus 32-01 release preparation
+# NOODARA_TEST_PORT_OVERRIDE=13100 DOCKER_HOST=<local Docker socket> agent-flow gate --task 32-01 --strict
+agent-flow gate ▣
+Task: 32-01 — Prepare and publish v0.5.1-rc.1 with H2 fix and release traceability
+ok test: passed (pnpm test)
+ok typecheck: passed (pnpm typecheck)
+ok lint: passed (pnpm lint)
+ok boundaries: passed (pnpm boundaries)
+ok build: passed (NOODARA_API_ORIGIN=http://localhost:3100 pnpm build)
+ok it-ai-tools: passed (pnpm exec vitest run --config vitest.integration.config.ts tests/integration/ai/tools.test.ts)
+ok ai-evals: passed (pnpm test:ai-evals)
+ok all gates green
+Next: agent-flow advance --task 32-01

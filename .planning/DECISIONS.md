@@ -116,3 +116,5 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-11-07: v0.5.0 tagged on the rc.3 commit (fa3314b3) per the 2026-11-07 authorization: rc.2 full UAT plus rc.3 smoke (runtime code identical) counts as UAT green; CI 42400211715, nightly 42400264260 and Release 42422548050 green.
 - 2026-11-07: phase 31 review fail (missing throttled e2e evidence for 31-08; v0.5.0 notes/README/site still pin boot-crashing 0.5.0-rc.1). Added 31-10; the v0.5.0 tag stays, only docs and the release body change.
 - 2026-11-07: phase 31 re-review fail: threat model misses fields the AI read tools expose (service build/repo fields, discovered server fields). Added 31-11 (deep). If it finds a real backend gap it ships as v0.5.1.
+
+- 2026-11-07: User authorized handling v0.5.1 end to end: prepare rc, require CI and nightly green on its commit, run Lima smoke including H2 regression, then publish final tag. Preserve v0.5.0 and append hotfix phase 32; do not reopen completed phase 31.

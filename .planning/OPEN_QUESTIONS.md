@@ -34,3 +34,7 @@
 - Cobertura: salvage H2 y prune de `container_metric_samples` sin prueba de integración real.
 - 2026-11-05 — ~~Flaky conocido: `apps/control-plane/src/secrets/secret-store.test.ts:323` (decryptForDeploy) genera un token aleatorio que a veces contiene `sk-…`, y el redactor por patrón lo enmascara aunque el lease ya se liberó.~~ Resuelto: `canary()` usa hex minúsculo, que no puede formar `sk-`/`ghp_`/`AKIA`.
 - 2026-11-05 — Backlog UI (review fase 30, no bloqueante): logs a 375 px colapsa la columna de mensaje (`ServiceLogsPanel` LogRow); `Server/ServiceMetricsPanel` sin guard de request en vuelo; ejes/tooltip de `MetricChart` con ISO crudo. Decidir si entran en 31 o post-v0.5.
+
+## Security hotfix v0.5.1 (phase 32)
+
+- OPEN: H2 (31-11) affects published v0.5.0; b464cd3b and 03a7111e fix it locally only. Distribution requires v0.5.1-rc.1, CI/nightly, Lima H2 regression smoke and v0.5.1 final. User authorized release execution 2026-11-07.

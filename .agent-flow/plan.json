@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-08T00:42:54.195Z",
+  "updatedAt": "2026-11-08T03:37:06.874Z",
   "cursor": {
-    "phase": null,
-    "task": null
+    "phase": "32",
+    "task": "32-02"
   },
   "phases": [
     {
@@ -11865,6 +11865,102 @@
               "id": "A4",
               "text": "ai-evals and ai-adversarial replays are green with the new cases",
               "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        }
+      ]
+    },
+    {
+      "id": "32",
+      "title": "Security hotfix v0.5.1 — AI host-sourced secret redaction",
+      "goal": "Distribute the 31-11 H2 fix as v0.5.1 after rc CI/nightly and a real Lima regression smoke; preserve v0.5.0.",
+      "requirements": [
+        "AI-05",
+        "QA-21"
+      ],
+      "dependsOn": [
+        "31"
+      ],
+      "status": "active",
+      "tasks": [
+        {
+          "id": "32-01",
+          "title": "Prepare v0.5.1 with H2 fix and release traceability",
+          "scope": [
+            "package.json",
+            "apps/*/package.json",
+            "packages/*/package.json",
+            "tests/unit/scripts/check-release-version.test.ts",
+            "docs/releases/",
+            ".planning/",
+            ".memory/",
+            ".agent-flow/config.json"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "done",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build",
+            "it-ai-tools",
+            "ai-evals"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "All workspace versions and release notes match 0.5.1; v0.5.0 gate explicitly records that H2 was discovered after publication.",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "The release source includes b464cd3b and 03a7111e, the focused integration gate is required, and RC/final publication are tracked in 32-02.",
+              "proof": "manual"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "32-02",
+          "title": "Publish rc, verify CI/nightly and Lima H2 smoke, publish v0.5.1",
+          "scope": [
+            "docs/releases/",
+            ".planning/",
+            ".memory/"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "32-01"
+          ],
+          "status": "pending",
+          "gates": [
+            "test"
+          ],
+          "acceptance": [
+            {
+              "id": "A0",
+              "text": "Public rc includes the fix by tree-equivalent replay; scan clean, no attribution trailers, existing tags unchanged.",
+              "proof": "manual"
+            },
+            {
+              "id": "A1",
+              "text": "CI and every nightly job succeed on the exact rc commit; logs and workflow IDs saved.",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "Lima upgrade preserves data/BYOK; a synthetic hosted-service secret planted in discovery fields and deployment errorMessage is absent from actual AI tool results and model-bound payloads; live read-only ask succeeds; fixtures restored.",
+              "proof": "manual"
+            },
+            {
+              "id": "A3",
+              "text": "Final v0.5.1 tag uses the validated rc commit, Release succeeds, both public images include amd64 and arm64; Latest is v0.5.1, v0.5.0 tag unchanged.",
+              "proof": "manual"
             }
           ],
           "waives": [],

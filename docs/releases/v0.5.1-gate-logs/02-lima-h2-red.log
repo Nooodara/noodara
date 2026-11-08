@@ -1,0 +1,2 @@
+# Image 0.5.0-rc.3 (same runtime as v0.5.0); synthetic canary, transaction rolled back
+{"result":"FAIL","check":"tool-get_server-plaintext","errorClass":"AssertionError"}
