@@ -118,3 +118,5 @@ Architecture decisions live in `docs/adr/`; GSD per-phase decisions in `.plannin
 - 2026-11-07: phase 31 re-review fail: threat model misses fields the AI read tools expose (service build/repo fields, discovered server fields). Added 31-11 (deep). If it finds a real backend gap it ships as v0.5.1.
 
 - 2026-11-07: User authorized handling v0.5.1 end to end: prepare rc, require CI and nightly green on its commit, run Lima smoke including H2 regression, then publish final tag. Preserve v0.5.0 and append hotfix phase 32; do not reopen completed phase 31.
+
+- 2026-11-07: User explicitly approved the v0.5.1 live smoke to Anthropic (`claude-opus-5-5`), using the existing BYOK and redacted service/server/latest-deployment metadata of synthetic UAT resources `node-api`/`uat-lima`. The call passed; no known credential value in its response.

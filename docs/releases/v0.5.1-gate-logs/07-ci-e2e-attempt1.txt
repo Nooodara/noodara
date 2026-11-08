@@ -1,0 +1,5 @@
+CI run 42443547066, e2e job 128617623257, candidate eeacb80f
+Result: 285 passed, 1 failed (host-key.spec.ts:481 UF-01/GR-02)
+Failure: host-key-changed-banner no longer found at line 551 after its initial visibility check passed.
+Playwright error context shows the server detail request rendered the intentional NETWORK_ERROR error state (Could not reach the server; Retry).
+Root network failure not established: report contains no trace or stack-process logs. Same-commit job rerun requested; do not treat the original run as clean.

@@ -1,0 +1,17 @@
+{
+  "result": "PASS",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "byokPreserved": true,
+  "structuredAnswer": true,
+  "toolCalls": [
+    "list_services",
+    "get_service",
+    "get_server",
+    "list_deployments",
+    "get_deployment",
+    "get_health"
+  ],
+  "sensitiveMatches": 0,
+  "conversationId": "01a1b944-9a24-7923-92fb-ac79dc251f9f"
+}

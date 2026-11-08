@@ -1,0 +1,16 @@
+Public rc: eeacb80fcd3a88fdd5c68c6c351180be250f8170
+Local source: 0e759d4d4193e0e5b834b46352592f6662d07bf7
+Public tree: 73010559dd65dbf3fe6fc703874027e95b75939c
+Local tree: 73010559dd65dbf3fe6fc703874027e95b75939c
+Original v0.5.0 annotated tag: 72219f30036012a79e9380252316ae30dce2173b
+Original v0.5.0 peeled commit: fa3314b3b68beae96a5ae9591b58cbe846e7f0a2
+
+    ○
+    │╲
+    │ ○
+    ○ ░
+    ░    gitleaks
+
+9:37PM INF 7 commits scanned.
+9:37PM INF scanned ~69746 bytes (69.75 KB) in 51.4ms
+9:37PM INF no leaks found
