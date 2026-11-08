@@ -37,4 +37,6 @@
 
 ## Security hotfix v0.5.1 (phase 32)
 
-- OPEN: H2 (31-11) affects published v0.5.0; b464cd3b and 03a7111e fix it locally only. Distribution requires v0.5.1-rc.1, CI/nightly, Lima H2 regression smoke and v0.5.1 final. User authorized release execution 2026-11-07.
+- RESOLVED 2026-11-08: H2 (31-11) distributed as v0.5.1 (`eeacb80f`), Latest, public amd64/arm64 images. CI 42443547066 12/12, nightly 42443546664 16/16 (20 E2E iterations), Lima upgrade/H2/live smoke PASS; Release 42460990499. v0.5.0 tag preserved; gate docs/releases/v0.5.1-gate.md.
+
+- 2026-11-08 — Release validation follow-up (non-blocking): first v0.5.1 CI E2E had a NETWORK_ERROR on server-detail refresh in host-key.spec.ts; same-commit rerun 286/286 and nightly20x286 passed without changing assertions/retries. Underlying transport cause not established because trace=on-first-retry and retries=0 produced no trace; consider sanitized failure diagnostics. Evidence: v0.5.1-gate-logs/07-ci-e2e-attempt1.txt and 08-ci.json.

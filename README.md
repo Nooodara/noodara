@@ -21,7 +21,7 @@ secrets. Noodara charts server and service metrics, searches and follows logs, d
 infrastructure graph, and answers questions about your infrastructure with your own Anthropic or
 OpenAI key. The assistant is read-only, enforced by the backend.
 
-Release notes: [`docs/releases/v0.5.0.md`](docs/releases/v0.5.0.md).
+Release notes: [`docs/releases/v0.5.1.md`](docs/releases/v0.5.1.md).
 
 ## Install
 
@@ -33,7 +33,7 @@ See [`docs/install.md`](docs/install.md) for requirements, the download-read-run
 supported variables, upgrade, rollback and troubleshooting.
 
 Release candidates (`vX.Y.Z-rc.N`) are published as GitHub prereleases and are never installed by
-default; pin a release with `NOODARA_VERSION=0.5.0` (no leading `v`).
+default; pin a release with `NOODARA_VERSION=0.5.1` (no leading `v`).
 
 ## Development
 

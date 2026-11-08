@@ -1,0 +1,109 @@
+{
+  "id": 42443546664,
+  "headSha": "eeacb80fcd3a88fdd5c68c6c351180be250f8170",
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/Nooodara/noodara/actions/runs/42443546664",
+  "updatedAt": "2026-11-08T07:58:07Z",
+  "jobs": [
+    {
+      "id": 128617625627,
+      "name": "stress-connections",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625704,
+      "name": "cycles (22.04)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625714,
+      "name": "canary",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625756,
+      "name": "deploy-engine (24.04)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625780,
+      "name": "ai-evals-live",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625837,
+      "name": "domain-cycles (24.04)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625838,
+      "name": "deploy-engine (22.04)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625840,
+      "name": "e2e-repeat",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625848,
+      "name": "metrics-soak (22.04)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625856,
+      "name": "cycles (24.04)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625859,
+      "name": "soak",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625860,
+      "name": "installer",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625869,
+      "name": "proxy (22.04)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625870,
+      "name": "proxy (24.04)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625896,
+      "name": "metrics-soak (24.04)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 128617625909,
+      "name": "domain-cycles (22.04)",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "e2eIterations": 20,
+  "e2eTestsPerIteration": 286,
+  "e2eTotalPasses": 5720
+}

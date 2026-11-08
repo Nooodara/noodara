@@ -4,11 +4,15 @@ description: Upgrading is re-running the exact same install command.
 ---
 
 Upgrading is re-running the exact same install command, optionally pinning a specific release with
-`NOODARA_VERSION` (for example `NOODARA_VERSION=0.5.0`, written without a leading `v`; this installer also accepts one):
+`NOODARA_VERSION` (for example `NOODARA_VERSION=0.5.1`, written without a leading `v`; this installer also accepts one):
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sh
 ```
+
+Using the AI assistant on v0.5.0? Upgrade to v0.5.1 for the [secret redaction
+fix](https://github.com/nooodara/noodara/blob/main/docs/releases/v0.5.1.md) in server discovery
+data and deployment errors. This hotfix adds no migrations or configuration variables.
 
 Upgrading from v0.4.0? Read the [v0.5.0 release
 notes](https://github.com/nooodara/noodara/blob/main/docs/releases/v0.5.0.md) first: they cover the

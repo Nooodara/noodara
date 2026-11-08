@@ -1,0 +1,10 @@
+# Post-release install docs guard
+# RED: new 0.5.1 expectation with the old 0.5.0 README/site pins
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  1 failed | 25 passed (26)
+   Duration  124ms (tests 47%, transform 37%, import 12%, worker 4%)
+# GREEN: README and upgrade page now pin 0.5.1; historical v0.5.0 notes unchanged
+ Test Files  1 passed (1)
+      Tests  26 passed (26)
+   Duration  102ms (tests 40%, transform 38%, import 16%, worker 5%)

@@ -11931,7 +11931,10 @@
           "scope": [
             "docs/releases/",
             ".planning/",
-            ".memory/"
+            ".memory/",
+            "README.md",
+            "apps/site/content/docs/operate/upgrade.mdx",
+            "tests/unit/docs/install-docs-accuracy.test.ts"
           ],
           "wave": 2,
           "dependsOn": [
@@ -11939,7 +11942,9 @@
           ],
           "status": "pending",
           "gates": [
-            "test"
+            "test",
+            "lint",
+            "site-build"
           ],
           "acceptance": [
             {
@@ -11961,6 +11966,11 @@
               "id": "A3",
               "text": "Final v0.5.1 tag uses the validated rc commit, Release succeeds, both public images include amd64 and arm64; Latest is v0.5.1, v0.5.0 tag unchanged.",
               "proof": "manual"
+            },
+            {
+              "id": "A4",
+              "text": "Post-release README and upgrade docs recommend 0.5.1 and its notes; historical notes remain intact, docs accuracy and site build pass; docs-only publication never moves validated release tags.",
+              "proof": "test"
             }
           ],
           "waives": [],

@@ -1,0 +1,8 @@
+# Local runtime unchanged from 0e759d4d/eeacb80f; post-release README/site pins + accuracy test
+agent-flow gate ▣
+Task: 32-02 — Publish rc, verify CI/nightly and Lima H2 smoke, publish v0.5.1
+ok test: passed (pnpm test)
+ok lint: passed (pnpm lint)
+ok site-build: passed (pnpm --filter @noodara/site build)
+ok all gates green
+Next: agent-flow advance --task 32-02

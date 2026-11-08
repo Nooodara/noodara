@@ -1,0 +1,19 @@
+{
+  "id": 438111623,
+  "tag": "v0.5.1",
+  "url": "https://github.com/Nooodara/noodara/releases/tag/v0.5.1",
+  "prerelease": false,
+  "draft": false,
+  "publishedAt": "2026-11-08T08:02:03Z",
+  "sourceSha": "eeacb80fcd3a88fdd5c68c6c351180be250f8170",
+  "workflowRun": 42460990499,
+  "workflow": {
+    "id": 42460990499,
+    "headSha": "eeacb80fcd3a88fdd5c68c6c351180be250f8170",
+    "conclusion": "success"
+  },
+  "annotatedTag": "de90946163e9f5c6709c757c4aa83687208141a9",
+  "peeledCommit": "eeacb80fcd3a88fdd5c68c6c351180be250f8170",
+  "preservedV050AnnotatedTag": "72219f30036012a79e9380252316ae30dce2173b",
+  "preservedV050Commit": "fa3314b3b68beae96a5ae9591b58cbe846e7f0a2"
+}

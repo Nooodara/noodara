@@ -1,0 +1,23 @@
+{
+  "id": 42443547066,
+  "attempt": 2,
+  "headSha": "eeacb80fcd3a88fdd5c68c6c351180be250f8170",
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/Nooodara/noodara/actions/runs/42443547066",
+  "updatedAt": "2026-11-08T05:01:35Z",
+  "jobsPassed": 12,
+  "jobsTotal": 12,
+  "e2eRerun": {
+    "jobId": 128631002377,
+    "summary": "2026-11-08T05:01:29.9970626Z   286 passed (15.6m)",
+    "unchangedAssertions": true,
+    "playwrightRetries": 0
+  },
+  "firstAttempt": {
+    "jobId": 128617623257,
+    "passed": 285,
+    "failed": 1,
+    "causeObserved": "NETWORK_ERROR state while refreshing server detail; underlying transport cause not established"
+  }
+}

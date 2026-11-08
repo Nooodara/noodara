@@ -1290,3 +1290,4 @@
   - A1 [manual]: CI and every nightly job succeed on the exact rc commit; logs and workflow IDs saved.
   - A2 [manual]: Lima upgrade preserves data/BYOK; a synthetic hosted-service secret planted in discovery fields and deployment errorMessage is absent from actual AI tool results and model-bound payloads; live read-only ask succeeds; fixtures restored.
   - A3 [manual]: Final v0.5.1 tag uses the validated rc commit, Release succeeds, both public images include amd64 and arm64; Latest is v0.5.1, v0.5.0 tag unchanged.
+  - A4 [test]: Post-release README and upgrade docs recommend 0.5.1 and its notes; historical notes remain intact, docs accuracy and site build pass; docs-only publication never moves validated release tags.

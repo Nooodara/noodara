@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v0.5
 milestone_name: Observability + AI Read-Only
-status: v0_5_1_in_progress
-stopped_at: v0.5.1-rc.1 published source eeacb80f; CI 42443547066, nightly 42443546664, RC Release 42443547051 green; Lima upgrade, H2 GREEN and live Anthropic smoke PASS; CI e2e failed with transient NETWORK_ERROR in host-key detail; CI integration + other 10 jobs green; E2E rerun attempt 2 running; nightly 15/16, e2e-repeat pending
-last_updated: 2026-11-08T04:44:34.000Z
-last_activity: 2026-11-07 -- 31-06 v0.5.0 published (gate READY, docs/releases/v0.5-gate.md; UAT docs/releases/v0.5-HUMAN-UAT.md); earlier 31-06 A2 live evals OK; rc.1 UAT FAIL (docs/releases/v0.5-HUMAN-UAT.md F1-F3); 2026-11-06 -- 31-05 release gate v0.5 (docs/releases/v0.5-gate.md): it-full 1796 pass, e2e-full 283/283, unit 10185, evals replay = live baseline; criterios 10 y 14 pendientes de CI/nightly en rc.1
+status: v0_5_1_released
+stopped_at: v0.5.1 published Latest (eeacb80f), Release 42460990499; all gates and Lima PASS; phase 32 independent review/close pending
+last_updated: 2026-11-08T08:05:00.000Z
+last_activity: 2026-11-08 -- v0.5.1 published; H2 distributed, CI12/12, nightly16/16 (E2E20x286), Lima H2/live PASS, anonymous multiarch images verified
 progress:
   total_phases: 7
   completed_phases: 6
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** v0.5.1 security hotfix (phase 32). H2 remains in published v0.5.0; fixes b464cd3b + 03a7111e are in public rc eeacb80f. Phase 31 closed in 8eddbbfb; publish rc, require CI/nightly green and Lima regression smoke, then final tag.
+**Current focus:** v0.5.1 security hotfix published 2026-11-08 (`eeacb80f`), Latest, amd64/arm64. H2 from 31-11 is distributed; v0.5.0 tag preserved. Phase 32 independent review/close remains pending: the reviewer stopped at its usage limit without producing a verdict. Documentation follow-up prepared for publication; do not mark the phase complete.
 
 ## Current Position
 
 Phase: 32 — v0.5.1 security hotfix (phase 31 closed).
-Plan: 32-01 done (local gates green); 32-02 rc eeacb80f published, CI/nightly and image build running; then Lima H2 smoke and final release.
-Status: v0.5.0 publicado (fa3314b3 = v0.5.0-rc.3), Latest, imágenes amd64+arm64
-Last activity: 2026-11-07 — 31-06: rc.1 falló (imagen sin packages/ai/dist, 31-07), rc.2 UAT completo OK en Lima con la key en vivo pero CI rojo (e2e projects-dod, integration a 60 min; 31-08, 31-09), rc.3 (fa3314b3) CI 42400211715 12/12, nightly 42400264260 16/16 (e2e-repeat 20/20, 16417 s de 18000 s), smoke UAT OK; v0.5.0 tag en fa3314b3, Release 42422548050, Latest. Hallazgo F5 (bajo): dos de tres pedidos de secret dieron el fallback no estructurado (falla segura).
+Plan: 32-01 done; 32-02 release validation complete, independent review and phase close pending.
+Status: v0.5.1 published (eeacb80f = rc.1), Latest; public control-plane/web images amd64+arm64.
+Last activity: 2026-11-08 — v0.5.1: CI 42443547066 attempt2 12/12 (E2E286/286), nightly 42443546664 16/16 (E2E20x286=5720, 15466s), Release 42460990499; Lima upgrade preserves data/BYOK, H2 canary GREEN and live Anthropic smoke PASS. First CI E2E transport failure retained in evidence; no assertions weakened. Gate docs/releases/v0.5.1-gate.md READY.
 
 Antes: 2026-11-06 — gate v0.5 (31-05, `docs/releases/v0.5-gate.md`) NOT READY solo por criterios 10 y 14 (CI/nightly sobre un commit v0.5). Local verde: lint, typecheck, boundaries, unit 450/10185, leak canary, e2e-full 283/283 sobre cd0b7bbc; it-full 139 archivos/1796 tests sobre 99b44771; evals replay = baseline live (entity 95.38%, diagnosis 96.92%, halluc 0, leaks 0, writes 0). El primer e2e-full tuvo 11 fallos (locator status-pill, contraste/axe del panel de logs), arreglados en d9a7601c y 46fc17f8.
 
@@ -696,12 +696,11 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-09-30T14:51:26.390Z
-Stopped at: Completed 11-12-PLAN.md
-Resume file: None
+Last session: 2026-11-08T08:05:00Z
+Stopped at: v0.5.1 published, phase 32 independent review/close pending
+Resume file: .agent-flow/handoffs/32-02.md
 
 ## Operator Next Steps
 
-- Phase 07 wave 5 next: `/gsd-execute-phase 7` continues with 07-06 (asset exports) + 07-07 (mount on the real surfaces), both unblocked by the BRAND-03 approval record
-- The favicon at 16 px in a real browser tab is still a human-only check; it becomes a real verification item in 07-09
-- Phases 11-12 (engine backend) may be planned in parallel with 8-10 if wall-clock matters
+- Retry the independent phase 32 review when reviewer capacity is available, record its actual verdict, then advance 32-02. No verdict was produced: reviewer usage limit. Documentation can be published without moving release tags; phase remains open.
+- Release evidence: docs/releases/v0.5.1-gate.md. Existing post-v0.5 follow-ups remain in OPEN_QUESTIONS.md.
