@@ -8,6 +8,7 @@
 // fixtures/deploy-host.ts's worker-scoped `deployHost` fixture start it, with its own bounded
 // startup timeout; global-teardown.ts sweeps everything labelled with the run id.
 import { defineConfig, devices } from '@playwright/test';
+import { resolveE2ePorts } from './tests/e2e/fixtures/ports.js';
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -28,7 +29,7 @@ export default defineConfig({
   },
   reporter: [['html'], ['list']],
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: resolveE2ePorts().webOrigin,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'off',

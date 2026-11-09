@@ -1,0 +1,9 @@
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+
+ Test Files  2 passed (2)
+      Tests  28 passed (28)
+   Start at  23:18:09
+   Duration  1.28s (tests 94%, transform 4%, import 2%)
+

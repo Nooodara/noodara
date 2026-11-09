@@ -231,6 +231,27 @@ Planificados 2026-11-03 (fases 26–31). Fuente: `docs/roadmap-v0.1-v0.5.md` §1
 - [x] **QA-20**: Los E2E cubren los tres flujos de §10.12 (consulta de infraestructura, diagnóstico OOM, seguridad de secrets) contra el stack real.
 - [x] **QA-21**: Gate de release v0.5 con evidencia por criterio de §10.13, security review (`docs/security/v0.5-review.md`), CI y nightly verdes, UAT en host real (Lima) con proveedor en vivo y `v0.5.0` publicado.
 
+## Post-v0.5.1 security hardening — legacy runtime logs (phase 33)
+
+Cierre local 2026-11-09: ocho gates originales de 33-03 y revisión tier-1 independiente PASS; avance completado. [Evidencia final](../docs/security/legacy-runtime-log-redaction/33-03-closure.md). M2 no se ha distribuido: v0.5.1 publicado conserva la exposición legacy; requiere release autorizado por separado.
+
+- [x] **SEC-01**: Tail y follow legacy usan redacción scoped de los secrets visibles del proyecto/environment/servicio, bajo la política existente de longitud mínima; no abren salida remota si no se puede cargar/descifrar el registro. Los contratos HTTP y JSON/NDJSON existentes se conservan.
+- [x] **SEC-02**: El lease de redacción vive hasta el último flush y teardown (incluida reconexión) y se libera exactamente una vez en todos los finales; se conservan límites, autorización, cancelación y limpieza de procesos/sesiones/slots.
+- [x] **SEC-03**: Regresión RED/GREEN por HTTP con secrets cifrados en PostgreSQL y SSH/Docker reales en Ubuntu22.04/24.04; el canary de fugas cubre ambos endpoints legacy. Security review y revisión independiente documentan evidencia y límites de la garantía antes de cerrar M2 localmente.
+
+- [x] **QA-22**: Playwright permite puertos host web/API alternativos validados y coherentes con proxy, auth y Origin, con defaults3000/3100; preflight y teardown preservan listeners ajenos. El gate security:scan-leaks completo puede ejecutarse con puertos alternativos sin relajar sus pruebas.
+
+## Publicación v0.5.2 — legacy log hardening (phases 34–35)
+
+Planificado y endurecido independientemente 2026-11-09; todos pendientes. Seis criterios nuevos en34-02/35-01 cubren concurrencia/artefactos, emisión/captura real, límites, restauración y resolución estable. La fase33 permanece cerrada localmente en `ca9818ee`.
+Plan detallado: [34–35 release](34-35-v0.5.2-release.md). La planificación no publica ni modifica versiones.
+
+- [ ] **REL-01**: Versiones base0.5.2 en todos los workspaces, notas y guard RC/final coherentes, sin cambios funcionales ajenos al hardening validado; preparación con gates y procedencia de fase33/H2.
+- [ ] **REL-02**: RC público inmutable/no Latest con fuente equivalente verificada, imágenes públicas amd64/arm64 y CI/nightly completos sobre su SHA exacto; evidencia de intentos/skips y revisión independiente antes de promoción.
+- [ ] **REL-03**: Upgrade Lima real conserva datos, cifrados/BYOK y configuración; smoke HTTP instalado demuestra redacción legacy tail/follow con secretos sintéticos, restauración/limpieza y H2 sin proveedor externo.
+- [ ] **REL-04**: v0.5.2 estable/Latest en el commit exacto del RC aprobado, Release e imágenes públicas multiarch verificadas, smoke de imagen estable verde y tags históricos intactos.
+- [ ] **REL-05**: README/upgrade recomiendan0.5.2 después de publicar; accuracy/site/CI documental verdes, gate final acreditado y M2 distribuido con límites documentados y revisión final independiente.
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -407,6 +428,16 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | QA-20 | Phase 30 | Complete |
 | QA-19 | Phase 31 | Complete |
 | QA-21 | Phases 31, 32 | Complete: v0.5.0 published; post-release H2 distributed as v0.5.1, CI/nightly/Lima green (docs/releases/v0.5.1-gate.md) |
+| SEC-01 | Phase 33 | Complete locally — eight 33-03 gates and independent tier-1 PASS; published v0.5.1 unchanged |
+| SEC-02 | Phase 33 | Complete locally — eight 33-03 gates and independent tier-1 PASS; published v0.5.1 unchanged |
+| SEC-03 | Phase 33 | Complete locally — eight 33-03 gates and independent tier-1 PASS; published v0.5.1 unchanged |
+| QA-22 | Phase 33 | Complete locally — 33-04/609239a8 and full 33-03 leak gate PASS; independent phase PASS |
+
+| REL-01 | Phase 34 | Pending |
+| REL-02 | Phase 34 | Pending |
+| REL-03 | Phase 34 | Pending |
+| REL-04 | Phase 35 | Pending |
+| REL-05 | Phase 35 | Pending |
 
 **Coverage:**
 - v1 requirements: 61 total
@@ -415,6 +446,7 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 - v0.3 requirements: 19 total, mapped to Phases 16–20 (16: 3 · 17: 6 · 18: 4 · 19: 3 · 20: 3)
 - v0.4 requirements: 23 total, mapped to Phases 21–25 (21: 4 · 22: 5 · 23: 6 · 24: 3 · 25: 4)
 - v0.5 requirements: 24 total, mapped to Phases 26–31 (26: 2 · 27: 5 · 28: 7 · 29: 4 · 30: 4 · 31: 2)
+- v0.5.2 release: 5 total, mapped to Phases 34–35 (34: 3 · 35: 2)
 - Unmapped: 0 ✓
 
 ---

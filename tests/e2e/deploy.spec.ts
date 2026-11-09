@@ -1,3 +1,4 @@
+import { resolveE2ePorts } from './fixtures/ports.js';
 // 13-16 (QA-09): the critical deploy path through the real UI against the e2e deploy host
 // (fixtures/deploy-host.ts): project -> environment -> service -> deploy, failing build, cancel,
 // ownership and secret hygiene. Every wait is on observable UI or host state, never a fixed sleep;
@@ -11,7 +12,7 @@ import type { BrowserContext, Page } from '@playwright/test';
 import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './fixtures/stack.js';
 import { SLOW_BUILD_LINE_PREFIX, expect, test, type DeployHost } from './fixtures/deploy-host.js';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = resolveE2ePorts().webOrigin;
 /** Per test; below the CI e2e job timeout, above one cold deploy plus a failed one. */
 const TEST_TIMEOUT_MS = 8 * 60_000;
 const DEPLOY_TIMEOUT_MS = 4 * 60_000;

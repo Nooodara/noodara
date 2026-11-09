@@ -2,6 +2,7 @@
 // engine-rollback). A per-test git repository on the deploy host's git server, a service wired to
 // it over the API, the push webhook enabled in the UI (payload URL and secret read from the panel)
 // and a signed-delivery helper that signs the exact bytes it sends (H1).
+import { resolveE2ePorts } from './ports.js';
 import { createHmac, randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -9,7 +10,7 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './stack.js';
 import { expect, type DeployHost } from './deploy-host.js';
 
-export const BASE_URL = 'http://localhost:3000';
+export const BASE_URL = resolveE2ePorts().webOrigin;
 export const WEBHOOK_PATH_PREFIX = `${BASE_URL}/webhooks/github/`;
 /** Per test: several builds, a healthcheck window and cleanup, below the CI e2e job timeout. */
 export const ENGINE_TEST_TIMEOUT_MS = 12 * 60_000;

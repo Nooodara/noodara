@@ -1,0 +1,17 @@
+{
+  "purpose": "33-03 focused final canary source provenance",
+  "sha256": [
+    {
+      "path": "fixtures/env-api/server.js",
+      "digest": "2042233691629c0851c599724d5e68083b209d69759ded69d3bcf4fbcd16ca8b"
+    },
+    {
+      "path": "tests/unit/fixtures/official-fixtures.test.ts",
+      "digest": "6b672710d8ab829089472cffa5456440cba72693386cd409d31fa38bf6ee9a0d"
+    },
+    {
+      "path": "tests/integration/activity/canary-env-secrets.test.ts",
+      "digest": "4eabb94f43297f3497699fa95f294ebb5ca4e985323af02a25fb7efd02633bf0"
+    }
+  ]
+}

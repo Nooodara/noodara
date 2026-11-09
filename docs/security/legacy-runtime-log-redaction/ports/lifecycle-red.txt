@@ -1,0 +1,256 @@
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+ ❯ |root| tests/unit/e2e/stack-ports.test.ts (7 tests | 7 failed) 2070ms
+   ❯ selected-port stack lifecycle (7)
+     × rejects invalid selections before builds or resources without echoing input 419ms
+     × preflights only selected NOODARA_E2E_WEB_PORT and leaves its listener alive 414ms
+     × preflights only selected NOODARA_E2E_API_PORT and leaves its listener alive 412ms
+     × cleans up postgres when redis startup fails 2ms
+     × survives a foreign api check/bind race and cleans every owned handle 409ms
+     × survives a foreign web check/bind race and cleans every owned handle 409ms
+     × propagates selected origins to build, API, worker and explicit Next binding; teardown is idempotent 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |root| tests/unit/e2e/stack-ports.test.ts > selected-port stack lifecycle > rejects invalid selections before builds or resources without echoing input
+AssertionError: expected [Function] to throw error including 'NOODARA_E2E_WEB_PORT' but got 'startStack: the web app did not becom…'
+
+- Expected
++ Received
+
+- NOODARA_E2E_WEB_PORT
++ startStack: the web app did not become ready — boot process exited with code 1 before stdout matched /Ready in \d+ms/
++ --- stdout ---
++
++ --- stderr ---
++ node:internal/errors:542
++       throw error;
++       ^
++
++ RangeError [ERR_SOCKET_BAD_PORT]: options.port should be >= 0 and < 65536. Received type number (NaN).
++     at Server.listen (node:net:2091:5)
++     at [eval]:1:36
++     at runScriptInThisContext (node:internal/vm:219:10)
++     at node:internal/process/execution:451:12
++     at [eval]-wrapper:6:24
++     at runScriptInContext (node:internal/process/execution:449:60)
++     at evalFunction (node:internal/process/execution:283:30)
++     at evalTypeScript (node:internal/process/execution:295:3)
++     at node:internal/main/eval_string:71:3 {
++   code: 'ERR_SOCKET_BAD_PORT'
++ }
++
++ Node.js v24.13.0
++
+
+ ❯ tests/unit/e2e/stack-ports.test.ts:97:31
+     95|   it('rejects invalid selections before builds or resources without ec…
+     96|     vi.stubEnv('NOODARA_E2E_WEB_PORT', 'synthetic-sensitive-invalid');
+     97|     await expect(startStack()).rejects.toThrow('NOODARA_E2E_WEB_PORT');
+       |                               ^
+     98|     expect(state.build).not.toHaveBeenCalled();
+     99|     expect(state.postgresStart).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  |root| tests/unit/e2e/stack-ports.test.ts > selected-port stack lifecycle > preflights only selected NOODARA_E2E_WEB_PORT and leaves its listener alive
+AssertionError: expected [Function] to throw error including 'host ports in use: 51350' but got 'startStack: the web app did not becom…'
+
+- Expected
++ Received
+
+- host ports in use: 51350
++ startStack: the web app did not become ready — boot process exited with code 1 before stdout matched /Ready in \d+ms/
++ --- stdout ---
++
++ --- stderr ---
++ node:internal/errors:542
++       throw error;
++       ^
++
++ RangeError [ERR_SOCKET_BAD_PORT]: options.port should be >= 0 and < 65536. Received type number (NaN).
++     at Server.listen (node:net:2091:5)
++     at [eval]:1:36
++     at runScriptInThisContext (node:internal/vm:219:10)
++     at node:internal/process/execution:451:12
++     at [eval]-wrapper:6:24
++     at runScriptInContext (node:internal/process/execution:449:60)
++     at evalFunction (node:internal/process/execution:283:30)
++     at evalTypeScript (node:internal/process/execution:295:3)
++     at node:internal/main/eval_string:71:3 {
++   code: 'ERR_SOCKET_BAD_PORT'
++ }
++
++ Node.js v24.13.0
++
+
+ ❯ tests/unit/e2e/stack-ports.test.ts:104:31
+    102|     const port = Number(process.env[name]);
+    103|     await listen(port);
+    104|     await expect(startStack()).rejects.toThrow(`host ports in use: ${S…
+       |                               ^
+    105|     expect(state.build).not.toHaveBeenCalled();
+    106|     expect(state.postgresStart).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  |root| tests/unit/e2e/stack-ports.test.ts > selected-port stack lifecycle > preflights only selected NOODARA_E2E_API_PORT and leaves its listener alive
+AssertionError: expected [Function] to throw error including 'host ports in use: 51353' but got 'startStack: the web app did not becom…'
+
+- Expected
++ Received
+
+- host ports in use: 51353
++ startStack: the web app did not become ready — boot process exited with code 1 before stdout matched /Ready in \d+ms/
++ --- stdout ---
++
++ --- stderr ---
++ node:internal/errors:542
++       throw error;
++       ^
++
++ RangeError [ERR_SOCKET_BAD_PORT]: options.port should be >= 0 and < 65536. Received type number (NaN).
++     at Server.listen (node:net:2091:5)
++     at [eval]:1:36
++     at runScriptInThisContext (node:internal/vm:219:10)
++     at node:internal/process/execution:451:12
++     at [eval]-wrapper:6:24
++     at runScriptInContext (node:internal/process/execution:449:60)
++     at evalFunction (node:internal/process/execution:283:30)
++     at evalTypeScript (node:internal/process/execution:295:3)
++     at node:internal/main/eval_string:71:3 {
++   code: 'ERR_SOCKET_BAD_PORT'
++ }
++
++ Node.js v24.13.0
++
+
+ ❯ tests/unit/e2e/stack-ports.test.ts:104:31
+    102|     const port = Number(process.env[name]);
+    103|     await listen(port);
+    104|     await expect(startStack()).rejects.toThrow(`host ports in use: ${S…
+       |                               ^
+    105|     expect(state.build).not.toHaveBeenCalled();
+    106|     expect(state.postgresStart).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  |root| tests/unit/e2e/stack-ports.test.ts > selected-port stack lifecycle > cleans up postgres when redis startup fails
+AssertionError: expected "vi.fn()" to be called once, but got 0 times
+ ❯ tests/unit/e2e/stack-ports.test.ts:112:32
+    110|     state.redisStart.mockRejectedValueOnce(new Error('fixture failure'…
+    111|     await expect(startStack()).rejects.toThrow('fixture failure');
+    112|     expect(state.postgresStop).toHaveBeenCalledOnce();
+       |                                ^
+    113|     expect(state.spawns).toHaveLength(0);
+    114|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  |root| tests/unit/e2e/stack-ports.test.ts > selected-port stack lifecycle > survives a foreign api check/bind race and cleans every owned handle
+AssertionError: expected [Function] to throw error including 'on port 51357 did not become ready wi…' but got 'startStack: the web app did not becom…'
+
+- Expected
++ Received
+
+- on port 51357 did not become ready within 60000ms
++ startStack: the web app did not become ready — boot process exited with code 1 before stdout matched /Ready in \d+ms/
++ --- stdout ---
++
++ --- stderr ---
++ node:internal/errors:542
++       throw error;
++       ^
++
++ RangeError [ERR_SOCKET_BAD_PORT]: options.port should be >= 0 and < 65536. Received type number (NaN).
++     at Server.listen (node:net:2091:5)
++     at [eval]:1:36
++     at runScriptInThisContext (node:internal/vm:219:10)
++     at node:internal/process/execution:451:12
++     at [eval]-wrapper:6:24
++     at runScriptInContext (node:internal/process/execution:449:60)
++     at evalFunction (node:internal/process/execution:283:30)
++     at evalTypeScript (node:internal/process/execution:295:3)
++     at node:internal/main/eval_string:71:3 {
++   code: 'ERR_SOCKET_BAD_PORT'
++ }
++
++ Node.js v24.13.0
++
+
+ ❯ tests/unit/e2e/stack-ports.test.ts:119:31
+    117|     const port = Number(process.env[kind === 'api' ? 'NOODARA_E2E_API_…
+    118|     state.inject = async () => { await listen(port); };
+    119|     await expect(startStack()).rejects.toThrow(`on port ${String(port)…
+       |                               ^
+    120|     expect(state.build).toHaveBeenCalledOnce();
+    121|     expect(state.spawns).toHaveLength(kind === 'api' ? 1 : 3);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  |root| tests/unit/e2e/stack-ports.test.ts > selected-port stack lifecycle > survives a foreign web check/bind race and cleans every owned handle
+AssertionError: expected [Function] to throw error including 'on port 51358 did not become ready wi…' but got 'startStack: the web app did not becom…'
+
+- Expected
++ Received
+
+- on port 51358 did not become ready within 60000ms
++ startStack: the web app did not become ready — boot process exited with code 1 before stdout matched /Ready in \d+ms/
++ --- stdout ---
++
++ --- stderr ---
++ node:internal/errors:542
++       throw error;
++       ^
++
++ RangeError [ERR_SOCKET_BAD_PORT]: options.port should be >= 0 and < 65536. Received type number (NaN).
++     at Server.listen (node:net:2091:5)
++     at [eval]:1:36
++     at runScriptInThisContext (node:internal/vm:219:10)
++     at node:internal/process/execution:451:12
++     at [eval]-wrapper:6:24
++     at runScriptInContext (node:internal/process/execution:449:60)
++     at evalFunction (node:internal/process/execution:283:30)
++     at evalTypeScript (node:internal/process/execution:295:3)
++     at node:internal/main/eval_string:71:3 {
++   code: 'ERR_SOCKET_BAD_PORT'
++ }
++
++ Node.js v24.13.0
++
+
+ ❯ tests/unit/e2e/stack-ports.test.ts:119:31
+    117|     const port = Number(process.env[kind === 'api' ? 'NOODARA_E2E_API_…
+    118|     state.inject = async () => { await listen(port); };
+    119|     await expect(startStack()).rejects.toThrow(`on port ${String(port)…
+       |                               ^
+    120|     expect(state.build).toHaveBeenCalledOnce();
+    121|     expect(state.spawns).toHaveLength(kind === 'api' ? 1 : 3);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+ FAIL  |root| tests/unit/e2e/stack-ports.test.ts > selected-port stack lifecycle > propagates selected origins to build, API, worker and explicit Next binding; teardown is idempotent
+AssertionError: expected 'http://localhost:3100' to be 'http://localhost:51361' // Object.is equality
+
+Expected: "http://localhost:51361"
+Received: "http://localhost:3100"
+
+ ❯ tests/unit/e2e/stack-ports.test.ts:132:46
+    130|     const apiPort = Number(process.env.NOODARA_E2E_API_PORT);
+    131|     state.build.mockImplementationOnce(() => {
+    132|       expect(process.env.NOODARA_API_ORIGIN).toBe(`http://localhost:${…
+       |                                              ^
+    133|       expect(process.env.NOODARA_PUBLIC_URL).toBe(`http://localhost:${…
+    134|     });
+ ❯ Module.startStack tests/e2e/fixtures/stack.ts:199:3
+ ❯ tests/unit/e2e/stack-ports.test.ts:135:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  7 failed (7)
+   Start at  23:14:12
+   Duration  2.18s (tests 98%, transform 1%, import 1%)
+

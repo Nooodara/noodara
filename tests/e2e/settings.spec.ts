@@ -1,3 +1,4 @@
+import { resolveE2ePorts } from './fixtures/ports.js';
 // 05-16-PLAN.md Task 3: the settings screen (SET-01), verified in a real browser. Runs against the
 // same real stack.ts stack smoke.spec.ts/auth.spec.ts/servers-list.spec.ts/activity.spec.ts use
 // (Postgres, Redis, the API, the worker, the built web app), with the preseeded E2E admin.
@@ -35,7 +36,7 @@ test('@settings the Instance group shows the version and public URL with exactly
   const main = page.getByRole('main');
   await expect(main.getByText('Version')).toBeVisible();
   await expect(main.getByText('Public URL')).toBeVisible();
-  await expect(main.getByText('http://localhost:3000')).toBeVisible();
+  await expect(main.getByText(resolveE2ePorts().webOrigin)).toBeVisible();
   await expect(main.getByRole('button', { name: /copy/i })).toHaveCount(1);
 });
 

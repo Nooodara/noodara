@@ -1,3 +1,4 @@
+import { resolveE2ePorts } from './fixtures/ports.js';
 // 13-17: UI Definition of Done for the Phase 13 screens -- /projects, a project, a service, the
 // Project/Environment/Service create sheets and the inspector's build and runtime logs -- measured
 // in a real browser against the real stack and the e2e deploy host (a CONNECTED server with Docker
@@ -19,7 +20,7 @@ import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './fixtures/stack.js';
 import { expect, test, type DeployHost } from './fixtures/deploy-host.js';
 import { throttleCpuFromEnv } from './helpers/cpu-throttle.js';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = resolveE2ePorts().webOrigin;
 const WIDTHS = [375, 900, 1280, 1920] as const;
 const THEMES = ['light', 'dark'] as const;
 type Theme = (typeof THEMES)[number];

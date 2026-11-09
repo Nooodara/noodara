@@ -1,0 +1,17 @@
+Command: pnpm exec vitest run tests/unit/scripts/check-release-version.test.ts
+Actual exit: 0. All 11 root/workspace manifests, including packages/ai, and notes present.
+
+ RUN  v5.0.0 <repo>
+
+
+ Test Files  1 passed (1)
+      Tests  25 passed (25)
+   Start at  10:47:12
+   Duration  91ms (transform 58%, import 23%, tests 13%, worker 6%)
+
+
+Command: node scripts/check-release-version.mjs v0.5.2
+check-release-version: v0.5.2 consistent (prerelease=false)
+Command: node scripts/check-release-version.mjs v0.5.2-rc.1
+check-release-version: v0.5.2-rc.1 consistent (prerelease=true)
+Both CLI commands exited 0. Existing CLI hardcoded list omits packages/ai; the exhaustive workspace regression above covers it for both tags.

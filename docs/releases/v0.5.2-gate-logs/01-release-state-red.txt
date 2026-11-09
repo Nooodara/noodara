@@ -1,0 +1,49 @@
+Command: pnpm exec vitest run tests/unit/scripts/check-release-version.test.ts
+Expected exit: 1; actual exit: 1. Test changed before any package bump or v0.5.2 notes.
+
+ RUN  v5.0.0 <repo>
+
+ ❯ |root| tests/unit/scripts/check-release-version.test.ts (25 tests | 1 failed) 9ms
+   ❯ repository release state (1)
+     × every workspace package.json and the release notes match 0.5.2 5ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |root| tests/unit/scripts/check-release-version.test.ts > repository release state > every workspace package.json and the release notes match 0.5.2
+AssertionError: expected [ …(12) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "package.json version is \"0.5.1\", expected \"0.5.2\" for tag v0.5.2-rc.1",
++   "apps/control-plane/package.json version is \"0.5.1\", expected \"0.5.2\" for tag v0.5.2-rc.1",
++   "apps/site/package.json version is \"0.5.1\", expected \"0.5.2\" for tag v0.5.2-rc.1",
++   "apps/web/package.json version is \"0.5.1\", expected \"0.5.2\" for tag v0.5.2-rc.1",
++   "packages/ai/package.json version is \"0.5.1\", expected \"0.5.2\" for tag v0.5.2-rc.1",
++   "packages/config/package.json version is \"0.5.1\", expected \"0.5.2\" for tag v0.5.2-rc.1",
++   "packages/docker/package.json version is \"0.5.1\", expected \"0.5.2\" for tag v0.5.2-rc.1",
++   "packages/domain/package.json version is \"0.5.1\", expected \"0.5.2\" for tag v0.5.2-rc.1",
++   "packages/git/package.json version is \"0.5.1\", expected \"0.5.2\" for tag v0.5.2-rc.1",
++   "packages/ssh/package.json version is \"0.5.1\", expected \"0.5.2\" for tag v0.5.2-rc.1",
++   "packages/ui/package.json version is \"0.5.1\", expected \"0.5.2\" for tag v0.5.2-rc.1",
++   "docs/releases/v0.5.2.md is missing for tag v0.5.2-rc.1",
++ ]
+
+ ❯ tests/unit/scripts/check-release-version.test.ts:76:90
+     74|       notesExist = false;
+     75|     }
+     76|     expect(checkReleaseConsistency({ tag: 'v0.5.2-rc.1', packageVersio…
+       |                                                                                          ^
+     77|     expect(checkReleaseConsistency({ tag: 'v0.5.2', packageVersions, n…
+     78|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 24 passed (25)
+   Start at  10:46:17
+   Duration  101ms (transform 48%, tests 26%, import 21%, worker 5%)
+

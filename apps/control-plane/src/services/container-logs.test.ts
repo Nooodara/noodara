@@ -1,8 +1,8 @@
 // 12-16: runtime container logs on demand (tail and a bounded follow). The fake session answers
 // each allowlisted template by name; a follow is held open until it is aborted or times out.
-import { createRedactor } from '@noodara/domain/security';
+import { createRedactor, type Redactor } from '@noodara/domain/security';
 import type { RemoteCommand, SshDeploySession, StreamOptions, StreamResult } from '@noodara/ssh';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   CONTAINER_LOGS_MESSAGES,
   createContainerLogs,
@@ -65,6 +65,7 @@ interface Call {
 class FakeSession {
   readonly calls: Call[] = [];
   closed = 0;
+  redactor?: Redactor;
   /** Group state the kill template and group_alive agree on. */
   groupAlive = false;
   private readonly cursors = new Map<string, number>();
@@ -100,8 +101,8 @@ class FakeSession {
     const stdout = script.stdout ?? '';
     const stderr = script.stderr ?? '';
     let seq = 0;
-    if (stdout.length > 0) options.onChunk({ stream: 'stdout', text: stdout, seq: seq++, truncatedLine: false });
-    if (stderr.length > 0) options.onChunk({ stream: 'stderr', text: stderr, seq: seq++, truncatedLine: false });
+    if (stdout.length > 0) options.onChunk({ stream: 'stdout', text: this.redactor?.redact(stdout) ?? stdout, seq: seq++, truncatedLine: false });
+    if (stderr.length > 0) options.onChunk({ stream: 'stderr', text: this.redactor?.redact(stderr) ?? stderr, seq: seq++, truncatedLine: false });
     const result = (outcome: StreamResult['outcome'], exitCode: number | null): StreamResult => ({
       commandName: command.name,
       outcome,
@@ -154,13 +155,14 @@ function depsFor(
   return {
     connects,
     warnings,
-    connect: (serverId) => {
+    connect: (serverId, redactor) => {
       connects.push(serverId);
       const session = queue.length > 1 ? queue.shift() : queue[0];
       if (session === undefined) throw new Error('no session');
+      session.redactor = redactor;
       return Promise.resolve({ ok: true, session: session.asSession(), close: () => session.close() });
     },
-    createRedactor,
+    openRedactor: () => Promise.resolve({ redactor: createRedactor(), release: () => undefined }),
     limits: LIMITS,
     newStreamId: () => STREAM_ID,
     logger: { warn: (fields) => warnings.push(fields) },
@@ -175,7 +177,7 @@ async function openAndPump(
   const logs = createContainerLogs(deps);
   const opened = await logs.openFollow({
     serverId: request.serverId ?? SERVER_ID,
-    serviceId: SERVICE_ID,
+    projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID,
     userId: request.userId ?? USER_ID,
     tail: request.tail ?? 10,
     signal: request.signal ?? new AbortController().signal,
@@ -214,7 +216,7 @@ describe('tail', () => {
       },
     });
     const deps = depsFor(session);
-    const result = await createContainerLogs(deps).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 25 });
+    const result = await createContainerLogs(deps).tail({ serverId: SERVER_ID, projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID, tail: 25 });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -233,7 +235,7 @@ describe('tail', () => {
 
   it('keeps a line without a timestamp as text with a null timestamp', async () => {
     const session = new FakeSession({ 'docker.logs': { stdout: 'no stamp here\n' } });
-    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 5 });
+    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID, tail: 5 });
 
     expect(result.ok && result.lines).toEqual([{ stream: 'stdout', timestamp: null, text: 'no stamp here' }]);
   });
@@ -247,7 +249,7 @@ describe('tail', () => {
         stderr: '2026-10-05T08:08:38.123456789Z worker started\n2026-10-05T08:08:42.000000001Z warn: slow\n',
       },
     });
-    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 5 });
+    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID, tail: 5 });
 
     expect(result.ok && result.lines.map((line) => line.text)).toEqual(['worker started', 'warn: slow', 'GET / 200', 'GET /a 200']);
   });
@@ -256,7 +258,7 @@ describe('tail', () => {
     const session = new FakeSession({
       'docker.logs': { stdout: `${TS} out-1\n${TS} out-2\n`, stderr: `${TS} err-1\n` },
     });
-    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 5 });
+    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID, tail: 5 });
 
     expect(result.ok && result.lines.map((line) => line.text)).toEqual(['out-1', 'out-2', 'err-1']);
   });
@@ -265,7 +267,7 @@ describe('tail', () => {
     const session = new FakeSession({
       'docker.logs': { stdout: '2026-10-05T10:00:00+02:00 later-text-earlier\n', stderr: '2026-10-05T09:00:00Z earlier-text-later\n' },
     });
-    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 5 });
+    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID, tail: 5 });
 
     expect(result.ok && result.lines.map((line) => line.text)).toEqual(['later-text-earlier', 'earlier-text-later']);
   });
@@ -277,7 +279,7 @@ describe('tail', () => {
         stderr: '2026-10-05T08:08:40Z err-a\n2026-10-05T08:08:43Z err-b\n',
       },
     });
-    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 10 });
+    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID, tail: 10 });
 
     expect(result.ok && result.lines.map((line) => line.text)).toEqual([
       'leading rest',
@@ -291,7 +293,7 @@ describe('tail', () => {
 
   it('reports CONTAINER_NOT_FOUND when the service has no managed container, without running docker logs', async () => {
     const session = new FakeSession({ 'docker.ps': { stdout: `${psLine('noodara-other')}\n` } });
-    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 5 });
+    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID, tail: 5 });
 
     expect(result).toEqual({ ok: false, code: 'CONTAINER_NOT_FOUND', message: CONTAINER_LOGS_MESSAGES.CONTAINER_NOT_FOUND });
     expect(session.names()).toEqual(['docker.ps']);
@@ -304,7 +306,7 @@ describe('tail', () => {
   ])('maps %s to a closed code', async (_label, overrides, code) => {
     const result = await createContainerLogs(depsFor(new FakeSession(), overrides)).tail({
       serverId: SERVER_ID,
-      serviceId: SERVICE_ID,
+      projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID,
       tail: 5,
     });
 
@@ -319,7 +321,7 @@ describe('tail', () => {
     ['a daemon that is down', { 'docker.ps': { exitCode: 1, stderr: 'Cannot connect to the Docker daemon at unix:///var/run/docker.sock' } }, 'SERVER_DOCKER_UNAVAILABLE'],
   ])('maps %s to a closed code and never returns remote stderr', async (_label, scripts, code) => {
     const session = new FakeSession(scripts);
-    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 5 });
+    const result = await createContainerLogs(depsFor(session)).tail({ serverId: SERVER_ID, projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID, tail: 5 });
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -331,7 +333,7 @@ describe('tail', () => {
 
   it('refuses a tail outside the bound before touching the server (defense in depth)', async () => {
     const deps = depsFor(new FakeSession());
-    const result = await createContainerLogs(deps).tail({ serverId: SERVER_ID, serviceId: SERVICE_ID, tail: 10_001 });
+    const result = await createContainerLogs(deps).tail({ serverId: SERVER_ID, projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID, tail: 10_001 });
 
     expect(result.ok ? null : result.code).toBe('RUNTIME_LOG_TAIL_INVALID');
     expect(deps.connects).toEqual([]);
@@ -500,7 +502,7 @@ describe('follow caps (H1)', () => {
   it('caps concurrent follows per server with RUNTIME_LOG_FOLLOW_LIMIT_REACHED, before connecting', async () => {
     const deps = holdingDeps({ maxFollowsPerServer: 1, maxFollowsPerUser: 5 });
     const logs = createContainerLogs(deps);
-    const request = { serviceId: SERVICE_ID, tail: 5, signal: new AbortController().signal };
+    const request = { projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID, tail: 5, signal: new AbortController().signal };
 
     const first = await logs.openFollow({ ...request, serverId: SERVER_ID, userId: 'a' });
     const second = await logs.openFollow({ ...request, serverId: SERVER_ID, userId: 'b' });
@@ -519,7 +521,7 @@ describe('follow caps (H1)', () => {
 
   it('caps concurrent follows per user', async () => {
     const logs = createContainerLogs(holdingDeps({ maxFollowsPerServer: 5, maxFollowsPerUser: 1 }));
-    const request = { serviceId: SERVICE_ID, tail: 5, signal: new AbortController().signal, userId: USER_ID };
+    const request = { projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID, tail: 5, signal: new AbortController().signal, userId: USER_ID };
 
     expect((await logs.openFollow({ ...request, serverId: SERVER_ID })).ok).toBe(true);
     const second = await logs.openFollow({ ...request, serverId: OTHER_SERVER_ID });
@@ -530,7 +532,7 @@ describe('follow caps (H1)', () => {
 
   it('frees the slot when the stream ends', async () => {
     const logs = createContainerLogs(holdingDeps({ maxFollowsPerServer: 1, followMaxMs: 5 }));
-    const request = { serverId: SERVER_ID, serviceId: SERVICE_ID, userId: USER_ID, tail: 5, signal: new AbortController().signal };
+    const request = { serverId: SERVER_ID, projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID, userId: USER_ID, tail: 5, signal: new AbortController().signal };
 
     const first = await logs.openFollow(request);
     if (!first.ok) throw new Error('expected open');
@@ -548,7 +550,7 @@ describe('follow caps (H1)', () => {
     const logs = createContainerLogs(depsFor(session));
     const opened = await logs.openFollow({
       serverId: SERVER_ID,
-      serviceId: SERVICE_ID,
+      projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID,
       userId: USER_ID,
       tail: 5,
       signal: new AbortController().signal,
@@ -568,7 +570,7 @@ describe('follow caps (H1)', () => {
     const logs = createContainerLogs(depsFor(session));
     const opened = await logs.openFollow({
       serverId: SERVER_ID,
-      serviceId: SERVICE_ID,
+      projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID,
       userId: USER_ID,
       tail: 5,
       signal: new AbortController().signal,
@@ -592,5 +594,256 @@ describe('follow caps (H1)', () => {
     });
 
     expect(end).toEqual({ reason: 'client_closed', remoteStopped: true });
+  });
+});
+
+// Phase 33 RED: an ordinary app secret has no structural provider pattern.
+describe('scoped app-secret regression', () => {
+  it('opens the scoped lease before reading ordinary secret output', async () => {
+    const raw = 'ordinary-app-canary-482013';
+    const session = new FakeSession({ 'docker.logs': { stdout: `${raw}\n` } });
+    let released = 0;
+    const scoped = { openRedactor: () => {
+      const redactor = createRedactor();
+      redactor.register(raw, 'app_secret');
+      return Promise.resolve({ redactor, release: () => { released += 1; redactor.release(raw); } });
+    } };
+    const result = await createContainerLogs(depsFor(session, { ...scoped })).tail({ serverId: SERVER_ID, projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID, tail: 1 });
+    expect(JSON.stringify(result)).not.toContain(raw);
+    expect(released).toBe(1);
+  });
+});
+
+const SCOPE_REQUEST = { projectId: 'project-1', environmentId: 'environment-1', serviceId: SERVICE_ID, serverId: SERVER_ID, tail: 5 };
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (error: unknown) => void;
+  const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+}
+function trackedLease() {
+  const redactor = createRedactor();
+  const raw = 'ordinary-lifecycle-secret-9182';
+  redactor.register(raw, 'app_secret');
+  const release = vi.fn(() => { redactor.release(raw); });
+  return { redactor, raw, release };
+}
+
+describe('scoped lease lifetime', () => {
+  it.each(['tail', 'follow'] as const)('fails closed on a rejected %s lease without SSH or logger text', async (kind) => {
+    const deps = depsFor(new FakeSession(), { openRedactor: () => Promise.reject(new Error(RAW)) });
+    const logs = createContainerLogs(deps);
+    const result = kind === 'tail' ? await logs.tail(SCOPE_REQUEST) : await logs.openFollow({ ...SCOPE_REQUEST, userId: USER_ID, signal: new AbortController().signal });
+    expect(result).toEqual({ ok: false, code: 'RUNTIME_LOGS_FAILED', message: CONTAINER_LOGS_MESSAGES.RUNTIME_LOGS_FAILED });
+    expect(deps.connects).toEqual([]);
+    expect(deps.warnings).toEqual([]);
+    expect(logs.activeFollows()).toBe(0);
+  });
+
+  it.each(['deadline', 'abort', 'shutdown'] as const)('bounds a stalled opener on %s and releases a late lease exactly once', async (stop) => {
+    vi.useFakeTimers();
+    try {
+      const lease = trackedLease();
+      const pending = deferred<ReturnType<typeof trackedLease>>();
+      const deps = depsFor(new FakeSession(), { openRedactor: () => pending.promise, limits: { ...LIMITS, stepMs: 20 } });
+      const logs = createContainerLogs(deps);
+      const client = new AbortController();
+      const opening = logs.openFollow({ ...SCOPE_REQUEST, userId: USER_ID, signal: client.signal });
+      await Promise.resolve();
+      expect(logs.activeFollows()).toBe(1);
+      if (stop === 'deadline') await vi.advanceTimersByTimeAsync(20);
+      if (stop === 'abort') client.abort();
+      if (stop === 'shutdown') await logs.closeAll();
+      expect(await opening).toMatchObject({ ok: false, code: 'RUNTIME_LOGS_FAILED' });
+      expect(logs.activeFollows()).toBe(0);
+      pending.resolve(lease);
+      await vi.runAllTimersAsync();
+      expect(lease.release).toHaveBeenCalledTimes(1);
+      expect(deps.connects).toEqual([]);
+      expect(deps.warnings).toEqual([]);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it.each(['deadline', 'abort', 'shutdown'] as const)('consumes a late opener rejection after %s', async (stop) => {
+    vi.useFakeTimers();
+    try {
+      const pending = deferred<ReturnType<typeof trackedLease>>();
+      const deps = depsFor(new FakeSession(), { openRedactor: () => pending.promise, limits: { ...LIMITS, stepMs: 20 } });
+      const logs = createContainerLogs(deps);
+      const client = new AbortController();
+      const opening = logs.openFollow({ ...SCOPE_REQUEST, userId: USER_ID, signal: client.signal });
+      await Promise.resolve();
+      if (stop === 'deadline') await vi.advanceTimersByTimeAsync(20);
+      if (stop === 'abort') client.abort();
+      if (stop === 'shutdown') await logs.closeAll();
+      expect(await opening).toMatchObject({ ok: false, code: 'RUNTIME_LOGS_FAILED' });
+      pending.reject(new Error(RAW));
+      await vi.runAllTimersAsync();
+      expect(logs.activeFollows()).toBe(0);
+      expect(deps.connects).toEqual([]);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('bounds a stalled tail lease and releases its late result', async () => {
+    vi.useFakeTimers();
+    try {
+      const pending = deferred<ReturnType<typeof trackedLease>>();
+      const lease = trackedLease();
+      const deps = depsFor(new FakeSession(), { openRedactor: () => pending.promise, limits: { ...LIMITS, stepMs: 20 } });
+      const tail = createContainerLogs(deps).tail(SCOPE_REQUEST);
+      await vi.advanceTimersByTimeAsync(20);
+      expect(await tail).toMatchObject({ ok: false, code: 'RUNTIME_LOGS_FAILED' });
+      pending.resolve(lease);
+      await vi.runAllTimersAsync();
+      expect(lease.release).toHaveBeenCalledTimes(1);
+      expect(deps.connects).toEqual([]);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('never opens leases for invalid tail or rejected capacity', async () => {
+    const openRedactor = vi.fn(() => Promise.resolve(trackedLease()));
+    const logs = createContainerLogs(depsFor(new FakeSession(), { openRedactor, limits: { ...LIMITS, maxFollowsPerServer: 1 } }));
+    await logs.tail({ ...SCOPE_REQUEST, tail: 0 });
+    await logs.openFollow({ ...SCOPE_REQUEST, tail: 0, userId: USER_ID, signal: new AbortController().signal });
+    expect(openRedactor).not.toHaveBeenCalled();
+    const request = { ...SCOPE_REQUEST, userId: USER_ID, signal: new AbortController().signal };
+    expect((await logs.openFollow(request)).ok).toBe(true);
+    expect(await logs.openFollow(request)).toMatchObject({ ok: false, code: 'RUNTIME_LOG_FOLLOW_LIMIT_REACHED' });
+    expect(openRedactor).toHaveBeenCalledTimes(1);
+    await logs.closeAll();
+  });
+
+  it.each([
+    ['success', {}], ['output timeout', { 'docker.logs': { outcome: 'timed_out' as const } }],
+    ['container failure', { 'docker.ps': { stdout: '' } }],
+    ['output failure', { 'docker.logs': { reject: new Error(RAW) } }],
+  ])('holds a tail lease through session close on %s', async (_label, scripts) => {
+    const lease = trackedLease();
+    const session = new FakeSession(scripts);
+    const close = session.close.bind(session);
+    session.close = async () => {
+      expect(lease.release).not.toHaveBeenCalled();
+      expect(lease.redactor.redact(lease.raw)).not.toContain(lease.raw);
+      await close();
+    };
+    await createContainerLogs(depsFor(session, { openRedactor: () => Promise.resolve(lease) })).tail(SCOPE_REQUEST);
+    expect(lease.release).toHaveBeenCalledTimes(1);
+    expect(session.closed).toBe(1);
+  });
+
+  it.each(['tail', 'follow'] as const)('releases a %s lease on connect failure', async (kind) => {
+    const lease = trackedLease();
+    const logs = createContainerLogs(depsFor(new FakeSession(), { openRedactor: () => Promise.resolve(lease), connect: () => Promise.reject(new Error(RAW)) }));
+    if (kind === 'tail') await logs.tail(SCOPE_REQUEST);
+    else await logs.openFollow({ ...SCOPE_REQUEST, userId: USER_ID, signal: new AbortController().signal });
+    expect(lease.release).toHaveBeenCalledTimes(1);
+    expect(logs.activeFollows()).toBe(0);
+  });
+
+  it.each(['success', 'timeout', 'abort', 'cap', 'drop', 'callback', 'shutdown', 'unpumped', 'unpumped-abort', 'reconnect'] as const)(
+    'holds the follow lease through %s teardown, flush and close', async (mode) => {
+      const lease = trackedLease();
+      const session = new FakeSession({
+        'process.supervise': mode === 'drop' ? { reject: new Error(RAW) } : { stdout: `${lease.raw}\n`, hold: ['abort', 'shutdown', 'callback'].includes(mode), outcome: mode === 'timeout' ? 'timed_out' : 'completed' },
+        ...(mode === 'reconnect' ? { 'process.kill_group': { reject: new Error(RAW) } } : {}),
+      });
+      const second = new FakeSession();
+      const deps = depsFor([session, second], { openRedactor: () => Promise.resolve(lease), limits: { ...LIMITS, followMaxTotalBytes: mode === 'cap' ? 1 : LIMITS.followMaxTotalBytes } });
+      const connect = deps.connect;
+      const guardedDeps = { ...deps, connect: async (...args: Parameters<typeof connect>) => {
+        expect(args[1]).toBe(lease.redactor);
+        expect(lease.release).not.toHaveBeenCalled();
+        const result = await connect(...args);
+        if (!result.ok) return result;
+        return { ...result, close: async () => {
+          expect(lease.release).not.toHaveBeenCalled();
+          // Models a final buffered SSH flush while closing.
+          expect(lease.redactor.redact(lease.raw)).not.toContain(lease.raw);
+          await result.close();
+        } };
+      } };
+      const logs = createContainerLogs(guardedDeps);
+      const client = new AbortController();
+      const opened = await logs.openFollow({ ...SCOPE_REQUEST, userId: USER_ID, signal: client.signal });
+      if (!opened.ok) throw new Error('expected open');
+      expect(lease.release).not.toHaveBeenCalled();
+      if (mode === 'unpumped') await logs.closeAll();
+      else if (mode === 'unpumped-abort') { client.abort(); await opened.stream.pump(() => undefined); }
+      else {
+        const done = opened.stream.pump(() => {
+          if (mode === 'callback') throw new Error('callback');
+          if (mode === 'abort') client.abort();
+        });
+        if (mode === 'shutdown') await logs.closeAll();
+        await done;
+      }
+      expect(lease.release).toHaveBeenCalledTimes(1);
+      expect(logs.activeFollows()).toBe(0);
+      expect(session.closed).toBe(1);
+      if (mode === 'reconnect') expect(second.closed).toBe(1);
+    },
+  );
+
+  it.each([ { 'docker.ps': { stdout: '' } }, { 'fs.prepare_workspace': { exitCode: 1 } }, { 'fs.prepare_workspace': { reject: new Error(RAW) } } ])(
+    'releases a lease after opening failure cleanup: %j', async (scripts) => {
+      const lease = trackedLease();
+      const session = new FakeSession(scripts);
+      const { logs, opened } = await openAndPump(depsFor(session, { openRedactor: () => Promise.resolve(lease) }));
+      expect(opened.ok).toBe(false);
+      expect(lease.release).toHaveBeenCalledTimes(1);
+      expect(session.closed).toBe(1);
+      expect(logs.activeFollows()).toBe(0);
+    },
+  );
+
+  it('keeps concurrent leases independent until each request closes', async () => {
+    const a = trackedLease();
+    const b = trackedLease();
+    const leases = [a, b];
+    const logs = createContainerLogs(depsFor([new FakeSession(), new FakeSession()], { openRedactor: () => {
+      const lease = leases.shift();
+      if (lease === undefined) throw new Error('no lease');
+      return Promise.resolve(lease);
+    } }));
+    const request = { ...SCOPE_REQUEST, userId: USER_ID, signal: new AbortController().signal };
+    const [one, two] = await Promise.all([logs.openFollow(request), logs.openFollow(request)]);
+    if (!one.ok || !two.ok) throw new Error('expected open');
+    expect(a.redactor).not.toBe(b.redactor);
+    await one.stream.pump(() => undefined);
+    expect(a.release).toHaveBeenCalledTimes(1);
+    expect(b.release).not.toHaveBeenCalled();
+    expect(b.redactor.redact(b.raw)).not.toContain(b.raw);
+    await two.stream.pump(() => undefined);
+    expect(b.release).toHaveBeenCalledTimes(1);
+  });
+});
+
+
+describe('follow cancellation during SSH opening', () => {
+  it.each(['abort', 'shutdown'] as const)('holds the lease until the opening session closes after %s', async (mode) => {
+    const lease = trackedLease();
+    const session = new FakeSession();
+    const pending = deferred<{ ok: true; session: SshDeploySession; close: () => Promise<void> }>();
+    const started = deferred<undefined>();
+    const logs = createContainerLogs(depsFor(session, {
+      openRedactor: () => Promise.resolve(lease),
+      connect: () => { started.resolve(undefined); return pending.promise; },
+    }));
+    const client = new AbortController();
+    const opening = logs.openFollow({ ...SCOPE_REQUEST, userId: USER_ID, signal: client.signal });
+    await started.promise;
+    const shutdown = mode === 'shutdown' ? logs.closeAll() : Promise.resolve();
+    if (mode === 'abort') client.abort();
+    expect(lease.release).not.toHaveBeenCalled();
+    pending.resolve({ ok: true, session: session.asSession(), close: () => {
+      expect(lease.release).not.toHaveBeenCalled();
+      return session.close();
+    } });
+    expect(await opening).toMatchObject({ ok: false, code: 'RUNTIME_LOGS_FAILED' });
+    await shutdown;
+    expect(session.calls).toEqual([]);
+    expect(session.closed).toBe(1);
+    expect(lease.release).toHaveBeenCalledTimes(1);
+    expect(logs.activeFollows()).toBe(0);
   });
 });

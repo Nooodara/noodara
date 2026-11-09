@@ -210,8 +210,14 @@ export function leaseSecrets(values: ReadonlyMap<string, SecretValue>, redactor:
   for (const value of values.values()) {
     const raw = revealSecret(value);
     if (raw.length < MIN_REDACTABLE_SECRET_LENGTH) continue;
-    redactor.register(raw, 'app_secret');
-    registered.push(raw);
+    // SSH redacts complete lines separately, including a final partial line.
+    // Apply the same minimum to each line component; never register short fragments.
+    const variants = new Set([raw, ...raw.split(/\r\n|\n|\r/)]);
+    for (const variant of variants) {
+      if (variant.length < MIN_REDACTABLE_SECRET_LENGTH) continue;
+      redactor.register(variant, 'app_secret');
+      registered.push(variant);
+    }
   }
   let released = false;
   return {

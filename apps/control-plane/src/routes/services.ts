@@ -391,14 +391,14 @@ const servicesRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
   };
   const logsUrl = '/api/projects/:projectId/services/:serviceId/logs';
 
-  async function findService(reply: FastifyReply, projectId: string, serviceId: string): Promise<string | null> {
+  async function findService(reply: FastifyReply, projectId: string, serviceId: string): Promise<{ serverId: string; environmentId: string } | null> {
     // Scoped to the path's project first: another project's service reads as missing (A4).
     const service = await (await fastify.getServiceServices()).getService(projectId, serviceId);
     if (!service) {
       await sendFailure(reply, { code: 'NOT_FOUND', message: `Service "${serviceId}" not found` });
       return null;
     }
-    return service.serverId;
+    return service;
   }
 
   app.route({
@@ -417,9 +417,9 @@ const servicesRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         await sendFailure(reply, tail);
         return;
       }
-      const serverId = await findService(reply, request.params.projectId, request.params.serviceId);
-      if (serverId === null) return;
-      const result = await logs.tail({ serverId, serviceId: request.params.serviceId, tail: tail.value });
+      const service = await findService(reply, request.params.projectId, request.params.serviceId);
+      if (service === null) return;
+      const result = await logs.tail({ ...service, projectId: request.params.projectId, serviceId: request.params.serviceId, tail: tail.value });
       if (!result.ok) {
         await sendFailure(reply, result);
         return;
@@ -444,8 +444,8 @@ const servicesRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
         await sendFailure(reply, tail);
         return;
       }
-      const serverId = await findService(reply, request.params.projectId, request.params.serviceId);
-      if (serverId === null) return;
+      const service = await findService(reply, request.params.projectId, request.params.serviceId);
+      if (service === null) return;
 
       // The response's close fires when the client leaves (or after our own end): either way the
       // stream must stop. Registered before opening, so a client gone mid-open still aborts.
@@ -457,7 +457,8 @@ const servicesRoutes: FastifyPluginCallback = (fastify, _opts, done) => {
       if (request.raw.destroyed || request.raw.socket.destroyed) abort();
 
       const opened = await logs.openFollow({
-        serverId,
+        ...service,
+        projectId: request.params.projectId,
         serviceId: request.params.serviceId,
         // The per-user cap key; a system actor never reaches a session-guarded route.
         userId: actor.type === 'user' ? actor.id : 'system',

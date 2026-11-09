@@ -4,10 +4,7 @@
 // never a parallel implementation. Teardown only ever checks containers this run started (13-06):
 // other runs' `noodara.test=true` containers (e.g. a concurrent integration suite) are not ours.
 //
-// Port/origin contract is docs/adr/0006's, fixed rather than OS-assigned: the API listens on
-// 3100, the web app on 3000, and NOODARA_PUBLIC_URL is the web origin so a mutating request's real
-// browser `Origin` header satisfies the control plane's Origin guard instead of 403
-// FORBIDDEN_ORIGIN (T-5-41).
+// Test-only host ports preserve localhost and the real browser Origin guard.
 import { execFile } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import net from 'node:net';
@@ -23,15 +20,9 @@ import {
 import { startPostgres, type PostgresFixture } from '../../integration/helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../../integration/helpers/redis.js';
 import { startSshd, type SshdFixture } from '../../integration/helpers/ssh.js';
+import { resolveE2ePorts, type E2ePorts } from './ports.js';
 
 const execFileAsync = promisify(execFile);
-
-const API_PORT = 3100;
-const WEB_PORT = 3000;
-const WEB_ORIGIN = `http://localhost:${String(WEB_PORT)}`;
-const API_ORIGIN = `http://localhost:${String(API_PORT)}`;
-
-const LISTENING_PATTERN = /Server listening at http:\/\/[^:]+:(\d+)/;
 const WORKER_READY_PATTERN = /Worker ready/;
 // Confirmed against this project's real `next start` output (Next.js 16.3.5): "✓ Ready in 147ms".
 const WEB_READY_PATTERN = /Ready in \d+ms/;
@@ -98,6 +89,7 @@ export interface Stack {
 }
 
 interface RunningStack extends Stack {
+  readonly ports: E2ePorts;
   readonly postgres: PostgresFixture;
   readonly redis: RedisFixture;
   readonly api: BootProcess;
@@ -127,8 +119,8 @@ let activeSshd: SshdFixture | undefined;
 function waitForReady(bootProcess: BootProcess, pattern: RegExp, label: string, timeoutMs: number): Promise<void> {
   return bootProcess.waitForStdoutMatch(pattern, timeoutMs).then(
     () => undefined,
-    (err: unknown) => {
-      throw new Error(`startStack: ${label} did not become ready — ${err instanceof Error ? err.message : String(err)}`);
+    () => {
+      throw new Error(`startStack: ${label} did not become ready within ${String(timeoutMs)}ms`);
     },
   );
 }
@@ -147,8 +139,7 @@ async function assertContainersGone(ids: readonly string[]): Promise<void> {
   }
 }
 
-/** Fails if anything still listens on the stack's fixed ports (an orphaned next-server/node). */
-async function assertPortsFree(ports: readonly number[]): Promise<void> {
+async function assertPortsFree(ports: readonly number[], stage: string): Promise<void> {
   const busy: number[] = [];
   for (const port of ports) {
     const inUse = await new Promise<boolean>((resolve) => {
@@ -165,7 +156,7 @@ async function assertPortsFree(ports: readonly number[]): Promise<void> {
     if (inUse) busy.push(port);
   }
   if (busy.length > 0) {
-    throw new Error(`stopStack: ports still in use after teardown: ${busy.join(', ')}`);
+    throw new Error(`${stage}: host ports in use: ${busy.join(', ')}`);
   }
 }
 
@@ -188,51 +179,51 @@ export async function startStack(): Promise<Stack> {
     throw new Error('startStack: a stack is already running — call stopStack first');
   }
 
-  // apps/web's `next.config.ts` fails fast on a missing NOODARA_API_ORIGIN at build time
-  // (docs/adr/0006) — CI's workflow-level env already provides it for `pnpm build`
-  // (05-07-PLAN.md), but a plain local `pnpm test:e2e` invocation has no reason to have it set
-  // in the ambient shell, so this fixture sets it itself before building.
-  process.env.NOODARA_API_ORIGIN = API_ORIGIN;
-  // Always exercises current sources, never a stale dist/.next (mirrors
-  // tests/integration/global-setup.ts's own rationale, now also covering apps/web's `next build`
-  // since Plan 05-07 wired it into the shared `build` task graph).
+  const ports = resolveE2ePorts();
+  const { apiPort, webPort, apiOrigin, webOrigin } = ports;
+  await assertPortsFree([webPort, apiPort], 'startStack');
+  const dir = runDir();
+  // Turbo includes NOODARA_API_ORIGIN in the build hash: a different selected API cannot reuse
+  // a rewrite baked for another origin. Both the build and runtime must see the selected pair.
+  process.env.NOODARA_API_ORIGIN = apiOrigin;
+  process.env.NOODARA_PUBLIC_URL = webOrigin;
   buildWorkspace();
 
-  const postgres = await startPostgres({ migrate: true });
-  const redis = await startRedis();
-
-  const dir = runDir();
-  const sharedEnv: NodeJS.ProcessEnv = {
-    ...buildValidBootEnv(postgres.connectionString, redis.connectionUrl),
-    PORT: String(API_PORT),
-    NOODARA_PUBLIC_URL: WEB_ORIGIN,
-    NOODARA_API_ORIGIN: API_ORIGIN,
-    NOODARA_ADMIN_EMAIL: E2E_ADMIN_EMAIL,
-    NOODARA_ADMIN_PASSWORD: E2E_ADMIN_PASSWORD,
-    NOODARA_ACME_CA_URL: E2E_ACME_CA_URL,
-    NOODARA_ACME_CA_ROOT_FILE: path.join(dir, ACME_ROOT_FILE_NAME),
-    NOODARA_CERT_CHECK_INTERVAL_MS: E2E_CERT_TIMING_MS,
-    NOODARA_CERT_ISSUE_TIMEOUT_MS: E2E_CERT_TIMING_MS,
-  };
-
-  const api = spawnBootProcess({
-    command: process.execPath,
-    args: ['--import', DNS_SEAM, '--import', AI_SEAM, path.join(CONTROL_PLANE_DIR, 'dist/server.js')],
-    cwd: CONTROL_PLANE_DIR,
-    env: {
-      ...sharedEnv,
-      E2E_DNS_SERVER_FILE: path.join(dir, DNS_SERVER_FILE_NAME),
-      E2E_AI_REPLAY_FILE: path.join(dir, AI_REPLAY_FILE_NAME),
-    },
-  });
-  const processes: Record<string, BootProcess | undefined> = { api };
-  const stopLogs = mirrorLogs(dir, processes);
-
+  let postgres: PostgresFixture | undefined;
+  let redis: RedisFixture | undefined;
+  let api: BootProcess | undefined;
   let worker: BootProcess | undefined;
   let web: BootProcess | undefined;
-
+  const processes: Record<string, BootProcess | undefined> = {};
+  const stopLogs = mirrorLogs(dir, processes);
   try {
-    await waitForReady(api, LISTENING_PATTERN, 'the API', 60_000);
+    postgres = await startPostgres({ migrate: true });
+    redis = await startRedis();
+    const sharedEnv: NodeJS.ProcessEnv = {
+      ...buildValidBootEnv(postgres.connectionString, redis.connectionUrl),
+      PORT: String(apiPort),
+      NOODARA_PUBLIC_URL: webOrigin,
+      NOODARA_API_ORIGIN: apiOrigin,
+      NOODARA_ADMIN_EMAIL: E2E_ADMIN_EMAIL,
+      NOODARA_ADMIN_PASSWORD: E2E_ADMIN_PASSWORD,
+      NOODARA_ACME_CA_URL: E2E_ACME_CA_URL,
+      NOODARA_ACME_CA_ROOT_FILE: path.join(dir, ACME_ROOT_FILE_NAME),
+      NOODARA_CERT_CHECK_INTERVAL_MS: E2E_CERT_TIMING_MS,
+      NOODARA_CERT_ISSUE_TIMEOUT_MS: E2E_CERT_TIMING_MS,
+    };
+
+    api = spawnBootProcess({
+      command: process.execPath,
+      args: ['--import', DNS_SEAM, '--import', AI_SEAM, path.join(CONTROL_PLANE_DIR, 'dist/server.js')],
+      cwd: CONTROL_PLANE_DIR,
+      env: {
+        ...sharedEnv,
+        E2E_DNS_SERVER_FILE: path.join(dir, DNS_SERVER_FILE_NAME),
+        E2E_AI_REPLAY_FILE: path.join(dir, AI_REPLAY_FILE_NAME),
+      },
+    });
+    processes['api'] = api;
+    await waitForReady(api, new RegExp(`Server listening at http://[^ ]*:${String(apiPort)}(?:[^0-9]|$)`), `the API on port ${String(apiPort)}`, 60_000);
 
     worker = spawnBootProcess({
       command: process.execPath,
@@ -245,35 +236,32 @@ export async function startStack(): Promise<Stack> {
 
     web = spawnBootProcess({
       command: 'pnpm',
-      args: ['--filter', '@noodara/web', 'start'],
+      args: ['--filter', '@noodara/web', 'exec', 'next', 'start', '--port', String(webPort)],
       cwd: repoRoot,
       env: {
         ...(process.env.PATH !== undefined ? { PATH: process.env.PATH } : {}),
         ...(process.env.HOME !== undefined ? { HOME: process.env.HOME } : {}),
-        NOODARA_API_ORIGIN: API_ORIGIN,
+        PORT: String(webPort),
+        NOODARA_PUBLIC_URL: webOrigin,
+        NOODARA_API_ORIGIN: apiOrigin,
       },
     });
     processes['web'] = web;
-    await waitForReady(web, WEB_READY_PATTERN, 'the web app', 60_000);
+    await waitForReady(web, WEB_READY_PATTERN, `the web app on port ${String(webPort)}`, 60_000);
+    activeStack = {
+      baseUrl: webOrigin, adminEmail: E2E_ADMIN_EMAIL, adminPassword: E2E_ADMIN_PASSWORD,
+      ports, postgres, redis, api, worker, web, stopLogs,
+    };
   } catch (err) {
+    await Promise.allSettled([
+      ...Object.values(processes).filter((proc): proc is BootProcess => proc !== undefined).map((proc) => proc.killGroup()),
+    ]);
     stopLogs();
-    await Promise.allSettled([api.killGroup(), worker?.killGroup(), web?.killGroup()]);
-    await postgres.stop();
-    await redis.stop();
+    await Promise.allSettled([postgres?.stop(), redis?.stop()]);
+    // A foreign listener may have won the check/bind race. Never kill it or require its port
+    // to be free after failed startup; only the process handles above belong to this run.
     throw err;
   }
-
-  activeStack = {
-    baseUrl: WEB_ORIGIN,
-    adminEmail: E2E_ADMIN_EMAIL,
-    adminPassword: E2E_ADMIN_PASSWORD,
-    postgres,
-    redis,
-    api,
-    worker,
-    web,
-    stopLogs,
-  };
 
   return { baseUrl: activeStack.baseUrl, adminEmail: activeStack.adminEmail, adminPassword: activeStack.adminPassword };
 }
@@ -341,6 +329,6 @@ export async function stopStack(stack: Stack): Promise<void> {
     console.warn(`stopStack: Postgres container did not stop cleanly: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  await assertPortsFree([WEB_PORT, API_PORT]);
+  await assertPortsFree([handle.ports.webPort, handle.ports.apiPort], 'stopStack');
   await assertContainersGone([handle.postgres.container.getId(), handle.redis.container.getId()]);
 }

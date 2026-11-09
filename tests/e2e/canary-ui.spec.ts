@@ -1,3 +1,4 @@
+import { resolveE2ePorts } from './fixtures/ports.js';
 // 05-21-PLAN.md Task 1 (QA-05): the browser-side half of the secrets canary. Every backend surface
 // (success/error bodies, a forced 500, SSE frames, logs, activity_events.metadata,
 // discovery_snapshots.payload) is already proven leak-free by
@@ -247,7 +248,7 @@ test(
       // initial `/setup` URL, never a later navigation.
       const distinctUrlsCarryingSetupToken = [...new Set(visitedUrls.filter((url) => url.includes(setupTokenCanary)))];
       expect(distinctUrlsCarryingSetupToken).toHaveLength(1);
-      expect(distinctUrlsCarryingSetupToken[0]).toBe(`http://localhost:3000/setup?token=${setupTokenCanary}`);
+      expect(distinctUrlsCarryingSetupToken[0]).toBe(`${resolveE2ePorts().webOrigin}/setup?token=${setupTokenCanary}`);
 
       // ---- 10. console and uncaught page errors -------------------------------------------------
       const consoleText = consoleMessages.join('\n');

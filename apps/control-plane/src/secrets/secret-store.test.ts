@@ -373,3 +373,34 @@ describe('decryptForDeploy', () => {
     ).rejects.toMatchObject({ code: 'SECRET_TAMPERED' });
   });
 });
+
+
+describe('multiline leases for line-oriented SSH', () => {
+  it.each(['\n', '\r\n', '\r'])('registers long line components and encoded whole values for %j, with balanced release', (newline) => {
+    const a = 'multiline-first-canary-23984';
+    const b = 'multiline-final-canary-20374';
+    const raw = `${a}${newline}${b}`;
+    const redactor = createRedactor();
+    redactor.register(a, 'app_secret');
+    const lease = leaseSecrets(new Map([['one', appSecret(raw)], ['two', appSecret(raw)]]), redactor);
+    for (const value of [a, b, raw, encodeURIComponent(raw), Buffer.from(raw).toString('base64')]) {
+      expect(redactor.redact(value)).not.toContain(a);
+      expect(redactor.redact(value)).not.toContain(b);
+      expect(redactor.redact(value)).not.toBe(value);
+    }
+    lease.release(); lease.release();
+    expect(redactor.redact(b)).toBe(b);
+    expect(redactor.redact(a)).not.toBe(a);
+    redactor.release(a);
+    expect(redactor.redact(raw)).toBe(raw);
+  });
+
+  it('preserves the minimum length policy for multiline components', () => {
+    const redactor = createRedactor();
+    const lease = leaseSecrets(new Map([['one', appSecret('abc\nlong-enough-component')]]), redactor);
+    expect(redactor.redact('abc')).toBe('abc');
+    expect(redactor.redact('long-enough-component')).not.toBe('long-enough-component');
+    lease.release();
+    expect(redactor.redact('long-enough-component')).toBe('long-enough-component');
+  });
+});

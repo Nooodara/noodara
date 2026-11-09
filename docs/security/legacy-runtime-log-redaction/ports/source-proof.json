@@ -1,0 +1,66 @@
+{
+  "head": "d79e435f55c744fdbe8ba4f359e3d1bcf7731697",
+  "note": "Dirty worktree including preserved 33-03 WIP; no commits made. E2E recorded before an import whitespace edit and unit-only env restoration/port-release assertions; final focused regressions pass.",
+  "sha256": [
+    {
+      "path": "playwright.config.ts",
+      "digest": "e89cbb0a6d5a71c17ff90c0a9ab3c85edabef39d0a90c4572cf29ed49d3b4afe"
+    },
+    {
+      "path": "tests/e2e/fixtures/ports.ts",
+      "digest": "a92a512b7e9cb37f463e4d10d482295efb4b20163b1f60beb695f688b29bdc1d"
+    },
+    {
+      "path": "tests/e2e/fixtures/stack.ts",
+      "digest": "a90d9f4804a179950c3e16343428a250d5d1f96b601aa6c4ef26108eb15fd39e"
+    },
+    {
+      "path": "tests/e2e/fixtures/engine.ts",
+      "digest": "661c8ececa3369686f1dfdea9dc01d7252a060022d08adc8ffc21be3010dd173"
+    },
+    {
+      "path": "tests/e2e/canary-ui.spec.ts",
+      "digest": "a9267de6976032fa14123b61d8b34a2fff519c8157c88b3a5704fc1d51ad5772"
+    },
+    {
+      "path": "tests/e2e/settings.spec.ts",
+      "digest": "000429b30ea2df81f35ff050ab651767b2457dcbfb17499590310efed8946579"
+    },
+    {
+      "path": "tests/e2e/theme-first-paint.spec.ts",
+      "digest": "fb6d5e487939cb304242610c76419300bf6b3d56db26945a05ae6fd72023d81f"
+    },
+    {
+      "path": "tests/e2e/deploy.spec.ts",
+      "digest": "2723a26d33038b5e6b46f49539b5b7f7a13b829a3996c369fd071c1481ace100"
+    },
+    {
+      "path": "tests/e2e/projects-dod.spec.ts",
+      "digest": "61307c49e2efa8d2e98c4074dba92ccd267ebb9c704800d252ef18e736e4c300"
+    },
+    {
+      "path": "tests/unit/e2e/ports.test.ts",
+      "digest": "7f795b2b2b31e1d18871e936b0b5ba035a91e4f772e7efc06eee0890200f1e64"
+    },
+    {
+      "path": "tests/unit/e2e/stack-ports.test.ts",
+      "digest": "ebd11087b341cf4b798fb8797f25d5c321f22cf59a2308d6ddbafd8ad46d2a20"
+    },
+    {
+      "path": "turbo.json",
+      "digest": "16ccedca5a1e5e0d602032f994b8f55f804c2cde167fe9e6e518832580413b01"
+    },
+    {
+      "path": "fixtures/env-api/server.js",
+      "digest": "2042233691629c0851c599724d5e68083b209d69759ded69d3bcf4fbcd16ca8b"
+    },
+    {
+      "path": "tests/integration/activity/canary-env-secrets.test.ts",
+      "digest": "4eabb94f43297f3497699fa95f294ebb5ca4e985323af02a25fb7efd02633bf0"
+    },
+    {
+      "path": "tests/unit/fixtures/official-fixtures.test.ts",
+      "digest": "6b672710d8ab829089472cffa5456440cba72693386cd409d31fa38bf6ee9a0d"
+    }
+  ]
+}

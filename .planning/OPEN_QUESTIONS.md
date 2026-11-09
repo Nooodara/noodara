@@ -40,3 +40,17 @@
 - RESOLVED 2026-11-08: H2 (31-11) distributed as v0.5.1 (`eeacb80f`), Latest, public amd64/arm64 images. CI 42443547066 12/12, nightly 42443546664 16/16 (20 E2E iterations), Lima upgrade/H2/live smoke PASS; Release 42460990499. v0.5.0 tag preserved; gate docs/releases/v0.5.1-gate.md.
 
 - 2026-11-08 — Release validation follow-up (non-blocking): first v0.5.1 CI E2E had a NETWORK_ERROR on server-detail refresh in host-key.spec.ts; same-commit rerun 286/286 and nightly20x286 passed without changing assertions/retries. Underlying transport cause not established because trace=on-first-retry and retries=0 produced no trace; consider sanitized failure diagnostics. Evidence: v0.5.1-gate-logs/07-ci-e2e-attempt1.txt and 08-ci.json.
+
+## Legacy runtime-log hardening (phase 33, planned 2026-11-08)
+
+- M2 remains open in published v0.5.1 for legacy tail/follow; RESOLVED LOCALLY 2026-11-09: 33-03 eight authoritative gates PASS, independent tier-1 PASS recorded and phase33 advanced complete; SEC-01/02/03 and QA-22 complete locally. Distribution remains open. Reuse openServiceRedactor and existing >=8-character app-secret policy. Scope is the current service-visible secret snapshot at request open; deleted/rotated historical values, short secrets and another service's secrets are outside that guarantee. Whether to expand that policy is a separate product/security decision.
+- This phase closes the code/test/review gap locally; selecting and publishing a subsequent release is separate work. No release number or tag is authorized by this planning invocation.
+
+- 2026-11-09: Fixed-port blocker resolved by completed33-04 (609239a8; five authoritative task gates PASS). Resume33-03 unchanged full gates with integration override33992 and E2E web/API33993/33994; preserve unrelated3000 and existing canary WIP/evidence. Historical pending status superseded: all eight full33-03 gates and separate phase review PASS; phase advanced complete locally. See `docs/security/legacy-runtime-log-redaction/33-03-closure.md`.
+
+## v0.5.2 release planning (phases34–35, 2026-11-09)
+
+- Target patch0.5.2 verified unused on GitHub at planning time; recheck before tag creation. Latest0.5.1/public main aa5ff7cf remain unchanged.
+- Access to Actions/GHCR/Lima and installed UAT state must be discovered during execution, not assumed from earlier evidence. RC validation and independent PASS precede stable promotion.
+- Existing CI integration timeout90min may need investigation if remote run fails; local phase33 took >3h. Preserve actual failures and scope boundaries, not retries/assertion/gate weakening.
+- No additional local live provider query is needed for legacy logs; H2 uses simulated provider-boundary harness. Existing optional nightly live-step skips must be disclosed accurately.

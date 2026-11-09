@@ -1,0 +1,14 @@
+agent-flow gate ▣
+Task: 34-01 — Prepare0.5.2 versions, release notes and candidate gates
+ok test: passed (pnpm test)
+ok typecheck: passed (pnpm typecheck)
+ok lint: passed (pnpm lint)
+ok boundaries: passed (pnpm boundaries)
+ok build: passed (NOODARA_API_ORIGIN=http://localhost:3100 pnpm build)
+ok release-v052: passed (node scripts/check-release-version.mjs v0.5.2)
+ok it-legacy-log-redaction: passed (NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/legacy-log-redaction.test.ts tests/integration/deploy-engine/runtime-container-logs.test.ts)
+ok it-ai-tools: passed (pnpm exec vitest run --config vitest.integration.config.ts tests/integration/ai/tools.test.ts)
+ok ai-evals: passed (pnpm test:ai-evals)
+ok audit: passed (pnpm audit --audit-level=high)
+ok all gates green
+Next: agent-flow advance --task 34-01

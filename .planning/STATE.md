@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5
 milestone_name: Observability + AI Read-Only
-status: v0_5_1_released
-stopped_at: v0.5.1 published Latest (eeacb80f), Release 42460990499; all gates and Lima PASS; phase 32 independent review/close pending
-last_updated: 2026-11-08T08:05:00.000Z
-last_activity: 2026-11-08 -- v0.5.1 published; H2 distributed, CI12/12, nightly16/16 (E2E20x286), Lima H2/live PASS, anonymous multiarch images verified
+status: phase_34_active
+stopped_at: 34-01 complete with ten authoritative gates PASS; 34-02 RC validation next
+last_updated: 2026-11-09T17:06:58.774535Z
+last_activity: 2026-11-09 -- 34-01 prepared0.5.2 and passed all ten gates; RC publication still pending
 progress:
-  total_phases: 7
-  completed_phases: 6
-  total_plans: 40
-  completed_plans: 39
-  percent: 98
+  total_phases: 10
+  completed_phases: 8
+  total_plans: 48
+  completed_plans: 45
+  percent: 94
 ---
 
 # Project State
@@ -21,13 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** v0.5.1 security hotfix published 2026-11-08 (`eeacb80f`), Latest, amd64/arm64. H2 from 31-11 is distributed; v0.5.0 tag preserved. Phase 32 independent review/close remains pending: the reviewer stopped at its usage limit without producing a verdict. Documentation follow-up prepared for publication; do not mark the phase complete.
+**Current focus:** Phase34 en ejecución.34-01 completada tras diez gates autoritativos PASS: versiones base0.5.2, guard RED/GREEN25/25 y notas preparadas, sin cambio funcional nuevo. Evidencia: `docs/releases/v0.5.2-gate-logs/04-authoritative-prep-gates.txt`. Sigue34-02: publicación RC inmutable, CI/nightly exact-SHA, upgrade y smoke instalado Lima con hardening H1–H4; revisión independiente antes de fase35. Release continúa NOT READY; no RC/tag/push/upgrade/provider call realizado todavía. Phase33 cerrada localmente/ca9818ee; M2 sigue sin distribuirse. Plan: `.planning/34-35-v0.5.2-release.md`.
 
 ## Current Position
 
-Phase: 32 — v0.5.1 security hotfix (phase 31 closed).
-Plan: 32-01 done; 32-02 release validation complete, independent review and phase close pending.
-Status: v0.5.1 published (eeacb80f = rc.1), Latest; public control-plane/web images amd64+arm64.
+Phase: 34 — v0.5.2 preparation complete; RC publication/validation next; phase35 depends on its independent PASS.
+Plan: 34-01 done (ten gates PASS) → 34-02 pending → phase34 review → 35-01 pending → 35-02 pending → phase35 review.
+Status:34-01 advanced complete; next34-02. Selected phases26–35:8/10 done,45/48 plans done. Fase33 complete locally/ca9818ee; M2 not yet distributed, published v0.5.1 unchanged. Preserve unrelated listeners via supported integration33992/E2E33993/33994 overrides after occupancy checks.
+
 Last activity: 2026-11-08 — v0.5.1: CI 42443547066 attempt2 12/12 (E2E286/286), nightly 42443546664 16/16 (E2E20x286=5720, 15466s), Release 42460990499; Lima upgrade preserves data/BYOK, H2 canary GREEN and live Anthropic smoke PASS. First CI E2E transport failure retained in evidence; no assertions weakened. Gate docs/releases/v0.5.1-gate.md READY.
 
 Antes: 2026-11-06 — gate v0.5 (31-05, `docs/releases/v0.5-gate.md`) NOT READY solo por criterios 10 y 14 (CI/nightly sobre un commit v0.5). Local verde: lint, typecheck, boundaries, unit 450/10185, leak canary, e2e-full 283/283 sobre cd0b7bbc; it-full 139 archivos/1796 tests sobre 99b44771; evals replay = baseline live (entity 95.38%, diagnosis 96.92%, halluc 0, leaks 0, writes 0). El primer e2e-full tuvo 11 fallos (locator status-pill, contraste/axe del panel de logs), arreglados en d9a7601c y 46fc17f8.
@@ -696,11 +697,11 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-11-08T08:05:00Z
-Stopped at: v0.5.1 published, phase 32 independent review/close pending
-Resume file: .agent-flow/handoffs/32-02.md
+Last session: 2026-11-09T17:06:58.774535Z
+Stopped at:34-01 advanced complete with ten gates PASS;34-02 pending; release NOT READY.
+Resume file: .planning/34-35-v0.5.2-release.md (historical .planning/33-03-HANDOFF.md retained)
 
 ## Operator Next Steps
 
-- Retry the independent phase 32 review when reviewer capacity is available, record its actual verdict, then advance 32-02. No verdict was produced: reviewer usage limit. Documentation can be published without moving release tags; phase remains open.
-- Release evidence: docs/releases/v0.5.1-gate.md. Existing post-v0.5 follow-ups remain in OPEN_QUESTIONS.md.
+1. Continuar34-02: RC, CI/nightly exact-SHA y Lima; cerrar fase34 solo con revisión independiente PASS. Otra invocación de `/flow-orchestrate` continúa fase35.
+2. Preservar evidencia de fase33, tags históricos, datos/BYOK de Lima y procesos ajenos; no dar por publicada0.5.2 antes de35-01.

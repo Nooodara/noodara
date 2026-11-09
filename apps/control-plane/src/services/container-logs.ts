@@ -23,6 +23,7 @@ import {
   type StreamResult,
 } from '@noodara/ssh';
 import { randomUUID } from 'node:crypto';
+import type { ServiceRedactor } from '../observability/logs/log-sources.js';
 import type { DeployJobDeps } from '../deploy/deploy-worker.js';
 
 export type ContainerLogsFailureCode =
@@ -115,6 +116,8 @@ export type TailResult = { readonly ok: true; readonly lines: ContainerLogLine[]
 export type OpenFollowResult = { readonly ok: true; readonly stream: FollowStream } | ContainerLogsFailure;
 
 export interface TailRequest {
+  readonly projectId: string;
+  readonly environmentId: string;
   readonly serverId: string;
   readonly serviceId: string;
   readonly tail: number;
@@ -139,7 +142,7 @@ export interface ContainerLogs {
 
 export interface ContainerLogsDeps {
   readonly connect: DeployJobDeps['connect'];
-  readonly createRedactor: () => Redactor;
+  readonly openRedactor: (request: TailRequest) => Promise<ServiceRedactor>;
   readonly limits: ContainerLogsLimits;
   readonly newStreamId?: () => string;
   /** Ids and outcomes only, never log content. */
@@ -252,6 +255,45 @@ export function createContainerLogs(deps: ContainerLogsDeps): ContainerLogs {
   const perUser = new Map<string, number>();
   const active = new Set<{ readonly stop: () => void; readonly done: Promise<unknown> }>();
   let slots = 0;
+  let closing = false;
+
+  // Opening is bounded independently of a DB/key provider that ignores cancellation.
+  // The continuation owns any late lease and never starts SSH after cancellation.
+  async function openLease(request: TailRequest, signal?: AbortSignal): Promise<ServiceRedactor> {
+    if (closing || signal?.aborted) throw new StepFailure('RUNTIME_LOGS_FAILED');
+    let abandoned = false;
+    const mustAbandon = (): boolean => abandoned || closing || signal?.aborted === true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let cancel: () => void = () => undefined;
+    const cancelled = new Promise<never>((_, reject) => {
+      cancel = () => { abandoned = true; reject(new StepFailure('RUNTIME_LOGS_FAILED')); };
+      timer = setTimeout(cancel, limits.stepMs);
+    });
+    let resolveDone: () => void = () => undefined;
+    const done = new Promise<void>((resolve) => { resolveDone = resolve; });
+    const entry = { stop: cancel, done };
+    active.add(entry);
+    signal?.addEventListener('abort', cancel, { once: true });
+    const attempt = Promise.resolve().then(() => deps.openRedactor(request)).then((lease) => {
+      if (abandoned) { lease.release(); throw new StepFailure('RUNTIME_LOGS_FAILED'); }
+      return lease;
+    });
+    try {
+      const lease = await Promise.race([attempt, cancelled]);
+      if (mustAbandon()) {
+        lease.release();
+        throw new StepFailure('RUNTIME_LOGS_FAILED');
+      }
+      return lease;
+    } catch {
+      throw new StepFailure('RUNTIME_LOGS_FAILED');
+    } finally {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', cancel);
+      active.delete(entry);
+      resolveDone();
+    }
+  }
 
   const bump = (map: Map<string, number>, key: string, delta: number): void => {
     const next = (map.get(key) ?? 0) + delta;
@@ -348,9 +390,11 @@ export function createContainerLogs(deps: ContainerLogsDeps): ContainerLogs {
     if (!validTail(request.tail, limits)) return failure('RUNTIME_LOG_TAIL_INVALID');
     const container = containerNameFor(request.serviceId);
     if (!container.ok) return failure('RUNTIME_LOGS_FAILED');
-    const redactor = deps.createRedactor();
+    let lease: ServiceRedactor | undefined;
     let connected: Connected | null = null;
     try {
+      lease = await openLease(request);
+      const { redactor } = lease;
       connected = await connect(request.serverId, redactor);
       await requireContainer(connected.session, redactor, container.value);
       const lines: ContainerLogLine[] = [];
@@ -376,6 +420,7 @@ export function createContainerLogs(deps: ContainerLogsDeps): ContainerLogs {
       return codeOf(error);
     } finally {
       await safeClose(connected);
+      lease?.release();
     }
   }
 
@@ -387,17 +432,34 @@ export function createContainerLogs(deps: ContainerLogsDeps): ContainerLogs {
     const release = acquire(request.serverId, request.userId);
     if (release === null) return failure('RUNTIME_LOG_FOLLOW_LIMIT_REACHED');
 
-    const redactor = deps.createRedactor();
+    const openingStop = new AbortController();
+    const openingSignal = AbortSignal.any([request.signal, openingStop.signal]);
+    const requireOpening = (): void => {
+      if (openingSignal.aborted) throw new StepFailure('RUNTIME_LOGS_FAILED');
+    };
+    let resolveOpening: () => void = () => undefined;
+    const openingDone = new Promise<void>((resolve) => { resolveOpening = resolve; });
+    const openingEntry = { stop: () => { openingStop.abort(); }, done: openingDone };
+    active.add(openingEntry);
+    let lease: ServiceRedactor | undefined;
     let connected: Connected | null = null;
     try {
+      lease = await openLease(request, openingSignal);
+      requireOpening();
+      const { redactor } = lease;
       connected = await connect(request.serverId, redactor);
+      requireOpening();
       await requireContainer(connected.session, redactor, container.value);
+      requireOpening();
       const prepared = await runStep(connected.session, prepareWorkspace(workspace.value));
       if (prepared.outcome !== 'completed') throw new StepFailure('RUNTIME_LOGS_TIMEOUT');
       if (prepared.exitCode !== 0) throw new StepFailure('RUNTIME_LOGS_FAILED');
     } catch (error) {
       await safeClose(connected);
+      lease?.release();
       release();
+      active.delete(openingEntry);
+      resolveOpening();
       return codeOf(error);
     }
 
@@ -405,10 +467,12 @@ export function createContainerLogs(deps: ContainerLogsDeps): ContainerLogs {
       request,
       container: container.value,
       workspace: workspace.value,
-      redactor,
+      redactor: lease.redactor,
       connected,
-      release,
+      release: () => { lease.release(); release(); },
     });
+    active.delete(openingEntry);
+    resolveOpening();
     return { ok: true, stream };
   }
 
@@ -430,12 +494,14 @@ export function createContainerLogs(deps: ContainerLogsDeps): ContainerLogs {
     };
     const onClientAbort = (): void => {
       stopWith('client_closed');
+      if (!started) pumped ??= pump(() => undefined);
     };
     let resolveDone: (() => void) | undefined;
     const done = new Promise<void>((resolve) => {
       resolveDone = resolve;
     });
     let pumped: Promise<FollowEnd> | null = null;
+    let started = false;
     // An un-pumped stream still holds a slot and a run dir: shutdown pumps it to its teardown.
     const entry = {
       stop: () => {
@@ -445,6 +511,9 @@ export function createContainerLogs(deps: ContainerLogsDeps): ContainerLogs {
       done,
     };
     active.add(entry);
+    request.signal.addEventListener('abort', onClientAbort, { once: true });
+    if (request.signal.aborted) onClientAbort();
+    else if (closing) entry.stop();
 
     async function kill(session: SshDeploySession): Promise<boolean> {
       const result = await killSupervisedOperation({
@@ -484,9 +553,9 @@ export function createContainerLogs(deps: ContainerLogsDeps): ContainerLogs {
     }
 
     async function pump(onLine: (line: ContainerLogLine) => void): Promise<FollowEnd> {
+      started = true;
       let launched = false;
       let reason: FollowEndReason;
-      request.signal.addEventListener('abort', onClientAbort);
       try {
         if (request.signal.aborted) stopWith('client_closed');
         if (stop.signal.aborted) {
@@ -538,15 +607,18 @@ export function createContainerLogs(deps: ContainerLogsDeps): ContainerLogs {
       } catch {
         remoteStopped = false;
       }
-      if (!remoteStopped) {
-        deps.logger?.warn(
+      try {
+        if (!remoteStopped) deps.logger?.warn(
           { serverId: request.serverId, serviceId: request.serviceId, reason },
           'runtime log follow: remote docker logs not confirmed stopped',
         );
+      } catch {
+        // A logger failure must never prevent teardown or reject the pump.
+      } finally {
+        release();
+        active.delete(entry);
+        resolveDone?.();
       }
-      release();
-      active.delete(entry);
-      resolveDone?.();
       return { reason, remoteStopped };
     }
 
@@ -561,6 +633,7 @@ export function createContainerLogs(deps: ContainerLogsDeps): ContainerLogs {
     openFollow,
     activeFollows: () => slots,
     closeAll: async () => {
+      closing = true;
       const pending = [...active];
       for (const entry of pending) entry.stop();
       await Promise.all(pending.map((entry) => entry.done));

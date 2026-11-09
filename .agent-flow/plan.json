@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-08T03:37:06.874Z",
+  "updatedAt": "2026-11-09T17:06:23.322Z",
   "cursor": {
-    "phase": "32",
-    "task": "32-02"
+    "phase": "34",
+    "task": "34-02"
   },
   "phases": [
     {
@@ -11883,7 +11883,7 @@
       "dependsOn": [
         "31"
       ],
-      "status": "active",
+      "status": "done",
       "tasks": [
         {
           "id": "32-01",
@@ -11940,7 +11940,7 @@
           "dependsOn": [
             "32-01"
           ],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "lint",
@@ -11970,6 +11970,592 @@
             {
               "id": "A4",
               "text": "Post-release README and upgrade docs recommend 0.5.1 and its notes; historical notes remain intact, docs accuracy and site build pass; docs-only publication never moves validated release tags.",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        }
+      ]
+    },
+    {
+      "id": "33",
+      "title": "Security hardening — legacy runtime log secret redaction",
+      "goal": "Close M2 for legacy runtime tail and follow using scoped service-secret redaction, fail-closed opening and bounded lease cleanup, with real HTTP/SSH regression evidence and unchanged public response contracts.",
+      "requirements": [
+        "SEC-01",
+        "SEC-02",
+        "SEC-03",
+        "QA-22"
+      ],
+      "dependsOn": [
+        "32"
+      ],
+      "status": "done",
+      "tasks": [
+        {
+          "id": "33-01",
+          "title": "RED-first: scoped secret leases for legacy tail/follow and production wiring",
+          "scope": [
+            "apps/control-plane/src/services/container-logs.ts",
+            "apps/control-plane/src/services/container-logs.test.ts",
+            "apps/control-plane/src/services/legacy-log-redactor.ts",
+            "apps/control-plane/src/services/legacy-log-redactor.test.ts",
+            "apps/control-plane/src/app.ts",
+            "apps/control-plane/src/routes/services.ts",
+            "tests/integration/deploy-engine/runtime-container-logs.test.ts",
+            ".planning/",
+            ".memory/",
+            "apps/control-plane/src/secrets/secret-store.ts",
+            "apps/control-plane/src/secrets/secret-store.test.ts"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "done",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Record a RED regression before the fix: ordinary non-provider-shaped app secrets of at least MIN_REDACTABLE_SECRET_LENGTH are visible with the old empty redactor. Replace the empty-redactor dependency with an asynchronous scoped lease backed by openServiceRedactor; production app wiring must use it and must never silently fall back to a bare redactor. Preserve lazy app startup (no DB/SSH/key access until a logs request).",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Resolve the service/project/environment/server chain from authoritative service data after the existing project-scoped authorization check. Register all currently visible project, environment and service secrets before SSH/log output; no keys from other projects/environments/services may be loaded. Reuse the existing redactor and minimum-length policy without duplicating crypto or adding plaintext storage.",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Tail/follow fail closed with fixed existing RUNTIME_LOGS_FAILED (502) when service-secret lookup, master-key retrieval or decryption fails: no SSH log read, no tail body or NDJSON frames containing raw output, and no exception/secret text in errors or logger. Invalid tail, unauthorized/not-found and capacity rejection retain existing behavior and do not open a secret lease.",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Unit lifecycle tests assert that a lease is held through output flush, session close and follow teardown/reconnect, and released exactly once on success, connect/container/preparation failures, timeout, client abort (including mid-open), output cap, dropped connection, callback error, shutdown and an opened-but-unpumped follow. Slots/sessions settle on every path; concurrent requests never share a mutable redactor or release another request registration.",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "Compatibility tests preserve tail line ordering/timestamps/sanitization/truncated, follow NDJSON line/end frames and reason vocabulary, existing time/byte/concurrency bounds, and kill-confirmation/run-dir cleanup. Test fixtures migrate explicitly to the scoped lease contract; do not keep an insecure optional fallback to make old tests pass.",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Bound the new asynchronous secret-opening stage as part of request opening: a stalled service lookup, key read or lease opener cannot hold a follow slot or shutdown indefinitely. Deferred-promise/fake-clock tests cover deadline, client abort and shutdown before opening resolves; a late successful lease is released exactly once without starting SSH or emitting output, and a late rejection produces no unhandled rejection. Preserve the fixed RUNTIME_LOGS_FAILED opening error and existing public response contracts.",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Challenge stale scope references between the route's project-scoped lookup and lease opening: if the service disappears or the authoritative project/environment/server reference no longer matches the authorized request, stop before secret decryption and SSH rather than treating it as a no-secret service or using a caller-supplied server/scope fallback. Assert no unrelated rows are decrypted and that follow capacity is restored.",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "persistence/atomic-write",
+            "persistence/missing-file-boot"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "33-02",
+          "title": "Real HTTP, encrypted DB and SSH regression for legacy log redaction",
+          "scope": [
+            "tests/integration/deploy-engine/legacy-log-redaction.test.ts",
+            "tests/integration/deploy-engine/runtime-container-logs.test.ts",
+            ".agent-flow/config.json",
+            "docs/security/legacy-runtime-log-redaction/",
+            ".planning/",
+            ".memory/"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "33-01"
+          ],
+          "status": "done",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "it-legacy-log-redaction",
+            "it-logs"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Add it-legacy-log-redaction gate running legacy-log-redaction.test.ts and runtime-container-logs.test.ts with NOODARA_TEST_UBUNTU=all. Real migrated PostgreSQL stores encrypted secrets; a real sshd+dockerd container emits those values on stdout/stderr. Exercise both legacy HTTP endpoints through the default buildApp container-log resolver (do not inject containerLogs or pre-register canaries into a test-only redactor). Save bounded, sanitized RED-on-old-code/GREEN evidence on Ubuntu22.04 and24.04.",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Test project, environment and service secrets (ordinary unique >=8-char values, no vendor pattern), exact/base64/URL-encoded variants, secret split across SSH data events, an unterminated final line, and unrelated printable text. Assert zero canary values in tail JSON, follow NDJSON, HTTP errors and captured app logs; assert markers and readable ordinary text. Tests of scope selection separately prove unrelated secret rows are not loaded; a no-secret service still works.",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "HTTP regressions cover DB/key/decrypt opening failures (502, no raw remote read/body/stream), authenticated wrong-project and missing-service404, unauthenticated401, invalid numeric tail422, malformed query400 and follow-limit429 with no secret-opening side effects. A subsequent valid request succeeds after failure; no leaked slots/leases/sessions. Preserve existing request validation and response schemas.",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Real follow tests cover timeout and client cancellation, including redacted final partial output where applicable, and verify no orphan docker logs process/run directory. Unit instrumentation covers exactly-once lease cleanup and reconnect lifetime; existing unified logs integration remains green. Preserve existing integration teardown budgets and do not kill unrelated host processes or weaken assertions/retries.",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Include an ordinary multiline application-secret value with constituent lines at least MIN_REDACTABLE_SECRET_LENGTH in the real stdout/stderr regression. Assert that neither eligible plaintext line survives tail JSON or follow NDJSON, including CRLF and an unterminated final line; SSH's line-oriented delivery must not bypass redaction merely because the registered database value contains a newline. Keep the existing minimum-length policy and ordinary-text readability.",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/url-scheme-allowlist",
+            "persistence/atomic-write",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "33-04",
+          "title": "Playwright alternate host ports with safe lifecycle and origin compatibility",
+          "scope": [
+            "playwright.config.ts",
+            "tests/e2e/fixtures/ports.ts",
+            "tests/e2e/fixtures/stack.ts",
+            "tests/unit/e2e/ports.test.ts",
+            "tests/unit/e2e/stack-ports.test.ts",
+            "tests/e2e/canary-ui.spec.ts",
+            "tests/e2e/fixtures/engine.ts",
+            "tests/e2e/deploy.spec.ts",
+            "tests/e2e/projects-dod.spec.ts",
+            "tests/e2e/settings.spec.ts",
+            "tests/e2e/theme-first-paint.spec.ts",
+            "docs/testing/e2e-ports.md",
+            "docs/security/legacy-runtime-log-redaction/ports/",
+            ".planning/",
+            ".memory/",
+            ".agent-flow/config.json"
+          ],
+          "wave": 3,
+          "dependsOn": [
+            "33-02"
+          ],
+          "status": "done",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "e2e-port-compat"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "RED-first: add one pure test-only port resolver shared by Playwright config/stack/spec consumers. NOODARA_E2E_WEB_PORT and NOODARA_E2E_API_PORT default only when absent to3000/3100. Reject empty, whitespace, signed, fractional, non-decimal, zero, out-of-range and equal ports before building or starting resources; allow a single override only if the resolved pair remains valid. Preserve localhost host/scheme and keep these separate from NOODARA_TEST_PORT_OVERRIDE and application-container ports.",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Propagate the selected pair consistently through Playwright baseURL, stack.baseUrl, API PORT, explicit Next/web PORT, build-time and runtime NOODARA_API_ORIGIN, NOODARA_PUBLIC_URL, worker environment, web readiness and setup-token URLs. Keep same-origin API proxying, authentication/cookies and real Origin guard enabled. Cover custom and default pairs and partial overrides with focused tests, and prove API requests through the web reach the selected API rather than a cached/default origin.",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Replace actual host-origin literals in canary-ui, settings, theme-first-paint, deploy, projects-dod and engine helpers with the shared resolved origin or existing fixture baseUrl. Audit remaining literal3000/3100 uses: retain intentional container internalPort/APP_PORT and assertions about default behavior. Preserve existing assertions, retries0, canary strength and production/dev configuration.",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Preflight only the selected host ports before build/resource creation. An occupied selected port fails with a clear port-only diagnostic and never reuses/kills the foreign listener. Start/partial-start failure and normal teardown terminate only this run process handles/groups and labelled containers, checking the selected pair rather than unconditional3000/3100. Test invalid/occupied selection, partial startup failure, idempotent teardown and a surviving unrelated listener; retain bounded cleanup.",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "Run the e2e-port-compat gate against custom web/API ports: real canary-ui, settings and theme-first-paint specs pass without assertion weakening or skips. Record a non-default end-to-end run with an unrelated listener on3000, verify that same listener remains afterward and that chosen test ports/containers are released. Keep sanitized commands, source identity and results under the scoped ports evidence directory. Defaults remain3000/3100 by unit regression; use real default smoke only in an isolated free environment.",
+              "proof": "manual"
+            },
+            {
+              "id": "A6",
+              "text": "Document test-only env names, defaults, valid range/distinctness, concrete alternate-port invocations for playwright and unchanged pnpm security:scan-leaks, the independent integration override, collision/cleanup behavior and same-origin build requirements. Do not add production env knobs, migrations, release/tag changes or automatic port fallback. Retain33-03 WIP/evidence and resume its unchanged original gates only after33-04 passes.",
+              "proof": "test"
+            },
+            {
+              "id": "A7",
+              "text": "No secrets in logs or errors: port validation/collision diagnostics contain only env variable names and safe numeric port information, never process.env, boot env objects, setup tokens, credentials or the raw invalid env value. Unit-test an invalid synthetic value is absent from the error; preserve existing canary logging assertions.",
+              "proof": "test"
+            },
+            {
+              "id": "H1",
+              "text": "Exercise the documented check/bind race: after successful selected-port preflight, inject a foreign listener before API or web binding. Startup must fail within its existing bounded readiness budget, never fall back to another port or treat the foreign listener as the stack, and clean up all already-created owned processes/containers while the injected listener still responds afterward. Cover both selected API and web ports with lifecycle regressions.",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "http-api/input-validation",
+            "http-api/url-scheme-allowlist",
+            "persistence/atomic-write",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot",
+            "randomness/crypto-random",
+            "auth-secrets/password-hashing"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "33-03",
+          "title": "Canary coverage, security review and closure evidence for M2",
+          "scope": [
+            "package.json",
+            "tests/integration/activity/canary-env-secrets.test.ts",
+            "docs/security/v0.5-review.md",
+            "docs/security/legacy-runtime-log-redaction/",
+            ".planning/",
+            ".memory/",
+            "fixtures/env-api/server.js",
+            "tests/unit/fixtures/official-fixtures.test.ts"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "33-02",
+            "33-04"
+          ],
+          "status": "done",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-full",
+            "site-build",
+            "audit",
+            "security-leaks"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Extend the existing application-secret leak canary to make the deployed app deliberately print its known >=8-char secret and scan both legacy tail and follow HTTP surfaces plus captured API logs/errors. It must be exercised by the existing pnpm security:scan-leaks command (wire package.json only if necessary); no real provider calls, production secrets, secret-shaped fixtures or broad scan allowlists. If an emission hook is needed in fixtures/env-api, make it explicitly test-opt-in, preserve its default digest-only/no-echo behavior, and cover that default in the fixture test.",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Update M2 in the security review with code/test/evidence links and an accurate status: fixed locally only after regression/canary success, distributed only after a separately authorized release. Document exact scope of the guarantee: existing minimum-length policy, request-open snapshot of currently visible secrets, historical/deleted/rotated secret values not loaded, and no guarantee for other services secrets printed by a compromised app. Retain historical v0.5.1 AI hotfix evidence and tags.",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Complete the scoped security review, keep sanitized RED/GREEN and gate evidence under docs/security/legacy-runtime-log-redaction/, run all required gates without skips and obtain a separate tier-1 phase PASS before closure. Record lifecycle, fail-closed, authorization, resource cleanup and compatibility evidence; update requirement/state/memory truthfully. This phase does not publish a release or alter package versions/tags.",
+              "proof": "manual"
+            },
+            {
+              "id": "A4",
+              "text": "Run the unchanged security:scan-leaks command and all original gates with NOODARA_E2E_WEB_PORT=33993, NOODARA_E2E_API_PORT=33994 and the supported integration override33992 (or explicitly recorded free alternative pair). Both Vitest and Playwright stages must pass, with unrelated listeners preserved and all test-owned resources cleaned. Existing focused33-03 evidence is retained but does not substitute for full gates.",
+              "proof": "manual"
+            }
+          ],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap"
+          ],
+          "tier": "deep"
+        }
+      ]
+    },
+    {
+      "id": "34",
+      "title": "v0.5.2 RC — legacy log hardening release validation",
+      "goal": "Prepare the phase33 legacy-log security fix as0.5.2, publish an immutable RC and prove exact-source CI/nightly plus installed Lima upgrade/redaction before a separate independent phase review permits stable promotion.",
+      "requirements": [
+        "REL-01",
+        "REL-02",
+        "REL-03"
+      ],
+      "dependsOn": [
+        "33"
+      ],
+      "status": "active",
+      "tasks": [
+        {
+          "id": "34-01",
+          "title": "Prepare0.5.2 versions, release notes and candidate gates",
+          "scope": [
+            "package.json",
+            "apps/control-plane/package.json",
+            "apps/site/package.json",
+            "apps/web/package.json",
+            "packages/ai/package.json",
+            "packages/config/package.json",
+            "packages/docker/package.json",
+            "packages/domain/package.json",
+            "packages/git/package.json",
+            "packages/ssh/package.json",
+            "packages/ui/package.json",
+            "tests/unit/scripts/check-release-version.test.ts",
+            ".agent-flow/config.json",
+            "docs/releases/v0.5.2.md",
+            "docs/releases/v0.5.2-gate.md",
+            "docs/releases/v0.5.2-gate-logs/",
+            "docs/releases/v0.5.2-uat/",
+            ".planning/",
+            ".memory/"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "done",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "build",
+            "release-v052",
+            "it-legacy-log-redaction",
+            "it-ai-tools",
+            "ai-evals",
+            "audit"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Update the existing repository release-state test to0.5.2 first and retain sanitized RED-before-version-bump/GREEN evidence. All root/apps/packages package versions, including packages/ai, use base0.5.2; both v0.5.2 and v0.5.2-rc.1 pass the existing consistency script and all-workspace regression. No dependency upgrades or production behavior changes.",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Write v0.5.2 notes describing affected authenticated legacy tail/follow endpoints, service-visible scoped fail-closed redaction and upgrade/downgrade. Retain >=8-character/snapshot/multiline policy, historical/rotated/later-follow/other-service limits, and no retrospective Docker-log cleanup; downgrading to0.5.1 restores M2. Verify rather than assume no migrations/config changes. Preserve historical notes/tags and keep current operator docs on the published stable.",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Source provenance includes phase33 implementation ad2ab5b8, regression d784c8a0, port harness609239a8 and final closure ca9818ee, while preserving v0.5.1 H2 fix/tests. Save candidate-source identity and explicit gate table NOT READY until actual evidence exists; historical phase33 local PASS is not remote candidate validation.",
+              "proof": "manual"
+            },
+            {
+              "id": "A4",
+              "text": "All declared preparation gates pass on final prepared tree. Run legacy regressions with NOODARA_TEST_UBUNTU=all, integration port33992 and explicit E2E33993/33994 when needed, checking occupancy before use; preserve foreign processes. Keep original assertions, fixture no-echo default and provider-free local AI replay.",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "http-api/body-cap"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "34-02",
+          "title": "Publish immutable RC and validate exact-source CI nightly and Lima",
+          "scope": [
+            "docs/releases/v0.5.2.md",
+            "docs/releases/v0.5.2-gate.md",
+            "docs/releases/v0.5.2-gate-logs/",
+            "docs/releases/v0.5.2-uat/",
+            ".planning/",
+            ".memory/"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "34-01"
+          ],
+          "status": "pending",
+          "gates": [
+            "release-v052",
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "security-leaks",
+            "site-build",
+            "audit"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Re-read public main/Latest/tag refs before mutation. In an isolated clean publication checkout, reconcile local/public history by reviewed replay with equivalent source tree and per-file provenance map; scan the actual outgoing changes. Preserve Pablo Gutierrez git identity without attribution trailers. Capture all historical v0.5 tag object/peeled identities. Publish new v0.5.2-rc.1 (or a new unused rc.N after failure), prerelease/no Latest; RC Release succeeds and both public images expose amd64/arm64. Never force-push, move/delete/reuse a published tag or alter this workspace remote.",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "CI and every required nightly job conclude success on the exact RC source SHA, including full integration/installer, E2E/repeats, stress/cleanup, leakage and AI replay as configured. Save workflow/job IDs, source SHAs, URLs, attempts and actual skips. Pending/cancelled/failed or omitted required jobs block promotion. Preserve earlier failures and justify same-SHA reruns without assertion/retry/timeout weakening. Optional unconfigured AI-live steps must be recorded as not executed, never claimed live PASS; do not configure secrets or add provider calls for evidence.",
+              "proof": "manual"
+            },
+            {
+              "id": "A3",
+              "text": "Before Lima upgrade, discover installed version/resource ownership, create private restrictive-mode backups and capture safe data/encryption/BYOK/migration comparisons. Upgrade the actual noodara-uat installation to the RC using installer/public images; health/auth and persisted data remain intact. Keep current UAT proxy/ACME settings, unrelated listeners and services; do not prune or expose backup/env/credential material. Verify backup completeness/readability before upgrading; retain a recovery path without exposing backup contents.",
+              "proof": "manual"
+            },
+            {
+              "id": "A4",
+              "text": "A reproducible scoped script exercises authenticated legacy tail and follow through real HTTP on the installed candidate using a disposable synthetic hosted service and ordinary >=8-character current secret. Application emits secret, encoded variants and eligible multiline components to stdout/stderr; assert marker, readable ordinary text and zero canary values in captured HTTP/error/log surfaces. No injected reader/redactor. Cover follow cancellation/end, restore fixtures on success/error/abort, and prove no owned process/run-dir/resource leak. Record installed image/source identity; historical source-level RED/GREEN remains distinct from this installed-image GREEN.",
+              "proof": "manual"
+            },
+            {
+              "id": "A5",
+              "text": "Revalidate prior H2 behavior with the existing simulated AIProvider boundary harness against installed candidate, without external provider calls. Run the unchanged security:scan-leaks command with both Vitest and Playwright stages using explicitly free alternate ports. Save sanitized counts/booleans, source hashes and cleanup/listener-preservation evidence; never publish synthetic plaintext, cookies or BYOK.",
+              "proof": "test"
+            },
+            {
+              "id": "A6",
+              "text": "Gate evidence truthfully distinguishes RC VALIDATED from stable publication, with exact candidate SHA and all remote/Lima proof. Independent tier1 phase34 PASS must be recorded and phase advanced complete before phase35 may create a stable tag; preliminary reviewer comments or quota failures are not a verdict.",
+              "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "Before publishing or accepting an RC, inspect queued/running Release runs across all refs, including workflow_dispatch version inputs: the existing per-ref concurrency group does not serialize writers to the same normalized image version. An overlapping writer or a dispatch whose checkout SHA differs from the RC blocks acceptance; do not dispatch a published version for a rebuild. Record sanitized run/ref/version/SHA evidence and re-read both image manifest and platform digests after UAT; any change from the tested artifacts invalidates RC acceptance.",
+              "proof": "manual"
+            },
+            {
+              "id": "H2",
+              "text": "The installed legacy-log smoke must fail closed against vacuous success: privately verify that the synthetic container actually emitted each expected canary representation, and correlate a fresh nonsecret run marker with both successful tail and follow HTTP captures. Missing emission, empty/partial capture, non-success status, parse failure or deadline expiry cannot count as zero leakage; save only sanitized presence/count/status results, never raw source logs.",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "The new installed HTTP/follow smoke has explicit connection/overall deadlines and captured-byte limits. A stalled or excessive stream yields a sanitized failing result, aborts its request and reaches the existing owned-resource cleanup path; exercise these limits with local controlled responses without changing the installed API or making provider calls.",
+              "proof": "test"
+            },
+            {
+              "id": "H4",
+              "text": "Before replacing the installed version, demonstrate backup recoverability by restoring the captured database backup into an isolated temporary database, checking the expected migration/data and encrypted credential/BYOK comparisons against the pre-upgrade snapshot. Verify the matching private key/config recovery material is present without displaying it; remove only rehearsal-owned resources on success/error/abort. A readable archive listing alone is insufficient and failed rehearsal blocks the upgrade.",
+              "proof": "manual"
+            }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "persistence/atomic-write",
+            "persistence/missing-file-boot",
+            "auth-secrets/password-hashing"
+          ],
+          "tier": "deep"
+        }
+      ]
+    },
+    {
+      "id": "35",
+      "title": "v0.5.2 stable publication and operator guidance",
+      "goal": "Publish v0.5.2 on the independently approved RC commit, verify stable artifacts and installed log redaction, then publish accurate upgrade guidance and final distribution evidence without moving validated tags.",
+      "requirements": [
+        "REL-04",
+        "REL-05"
+      ],
+      "dependsOn": [
+        "34"
+      ],
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "35-01",
+          "title": "Promote approved RC commit and verify stable distribution",
+          "scope": [
+            "docs/releases/v0.5.2.md",
+            "docs/releases/v0.5.2-gate.md",
+            "docs/releases/v0.5.2-gate-logs/",
+            "docs/releases/v0.5.2-uat/",
+            ".planning/",
+            ".memory/"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "release-v052",
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Verify phase34 completed with recorded independent PASS, candidate SHA, all required CI/nightly conclusions and installed Lima smoke. Freshly check public refs and no candidate drift. Create v0.5.2 at the exact peeled commit of the approved RC, not a newer docs/metadata HEAD; any functional source change requires a new immutable RC and renewed CI/nightly/UAT/review before promotion.",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "Final Release workflow succeeds; GitHub release v0.5.2 is non-draft/non-prerelease and Latest. Both control-plane/web image tags are anonymously pullable with amd64/arm64 and verified source provenance to the approved SHA. Record manifests/digests and run/release URLs; rebuilt final images need not have identical RC digests, so do not assert digest equality without proof.",
+              "proof": "manual"
+            },
+            {
+              "id": "A3",
+              "text": "Perform bounded installed stable-image health/auth and legacy tail/follow redaction smoke, verify persisted data/BYOK and restore any synthetic resources. Capture installed image identity and zero canary counts without publishing values; a failed image/smoke keeps release gate NOT READY and requires remediation rather than a false distribution claim.",
+              "proof": "manual"
+            },
+            {
+              "id": "A4",
+              "text": "Compare historical v0.5 tag object/peeled identities with the pre-RC snapshot: unchanged, including v0.5.0/v0.5.1. Record stable publication evidence separately from later documentation commits; no force-push, tag rewrite, broad cleanup or additional provider call.",
+              "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "Before stable publication and final acceptance, inspect queued/running Release publishers across all refs and workflow_dispatch version inputs for the stable version; conflicting writers block acceptance. After the stable smoke, re-resolve both stable image manifests and platform digests and compare them with the artifacts verified before installation and the installed platform image identities; changed or mismatched artifacts invalidate stable validation and require remediation with fresh evidence, never a silent same-version rebuild.",
+              "proof": "manual"
+            },
+            {
+              "id": "H2",
+              "text": "After stable publication, exercise the unmodified tagged installer version-resolution path with no version override and assert that it resolves exactly 0.5.2 rather than an RC or the former stable. Record the tagged installer source identity and sanitized resolved version; use resolution only so this check does not create an additional installation or disturb the UAT instance.",
+              "proof": "manual"
+            }
+          ],
+          "waives": [
+            "persistence/atomic-write",
+            "persistence/concurrent-writes",
+            "persistence/missing-file-boot"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "35-02",
+          "title": "Publish upgrade guidance and close distributed M2 evidence",
+          "scope": [
+            "README.md",
+            "apps/site/content/docs/operate/upgrade.mdx",
+            "tests/unit/docs/install-docs-accuracy.test.ts",
+            "docs/security/v0.5-review.md",
+            "docs/security/legacy-runtime-log-redaction/README.md",
+            "docs/releases/v0.5.2.md",
+            "docs/releases/v0.5.2-gate.md",
+            "docs/releases/v0.5.2-gate-logs/",
+            "docs/releases/v0.5.2-uat/",
+            ".planning/",
+            ".memory/"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "35-01"
+          ],
+          "status": "pending",
+          "gates": [
+            "release-v052",
+            "test",
+            "typecheck",
+            "lint",
+            "site-build"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "After stable verification, evolve the existing install-docs accuracy guard with RED/GREEN, then update README and upgrade guidance to recommend0.5.2 and its notes. Preserve historical0.5.0/0.5.1 note pins and installer compatibility. Explain affected legacy logs and current-snapshot/minimum-length limits without implying historical log scrubbing or expanded guarantees.",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Mark M2 distributed only using35-01 stable evidence; retain phase33 historical local closure and H2 evidence. v0.5.2 gate READY requires every criterion linked to actual candidate/stable CI/nightly/Lima/artifact/review evidence; missing or failed evidence remains NOT READY/UNVERIFIED. Update REL requirements/state and append-only memory truthfully, without closing unrelated phase15/OPS-05 debt.",
+              "proof": "manual"
+            },
+            {
+              "id": "A3",
+              "text": "Publish documentation in a separate reviewed commit after the validated tag; no tag moves. Record its public source mapping and successful CI plus Publish site on that docs commit, with actual job results rather than extrapolating from RC. Keep candidate validation and docs-publication evidence separate; do not publish unrelated local untracked files.",
+              "proof": "manual"
+            },
+            {
+              "id": "A4",
+              "text": "All declared documentation gates pass; gitleaks scans outgoing changes/evidence clean with redaction. Obtain a fresh independent tier1 phase35 PASS, advance before closure commit, and leave reviewable final handoff showing published version/SHA/artifacts, preservation/cleanup and any remaining unrelated debt.",
               "proof": "test"
             }
           ],

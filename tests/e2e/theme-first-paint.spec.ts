@@ -1,3 +1,4 @@
+import { resolveE2ePorts } from './fixtures/ports.js';
 // 09-07-PLAN.md Task 2 (D-09, D-11, SET-04/SET-05): proves the SSR root layout carries the user's
 // theme/motion/density preferences on the very first byte of HTML, with zero flash, with or
 // without JS. Runs against the same real stack.ts stack every other spec in this directory uses
@@ -23,7 +24,7 @@ async function addPreferencesCookie(context: BrowserContext, value: string): Pro
     {
       name: PREFERENCES_COOKIE_NAME,
       value,
-      url: 'http://localhost:3000',
+      url: resolveE2ePorts().webOrigin,
     },
   ]);
 }
@@ -207,7 +208,7 @@ test('@theme-first-paint no theme flash on reload for dark and light, on /login 
   // `dark.on.compact` before the no-flash assertion on /servers -- the same real PATCH the
   // Settings screen issues. The response also re-issues the mirror cookie server-side (D-09).
   const patched = await page.request.patch('/api/account/preferences', {
-    headers: { origin: 'http://localhost:3000' },
+    headers: { origin: resolveE2ePorts().webOrigin },
     data: { theme: 'dark', reduceMotion: 'on', density: 'compact' },
   });
   expect(patched.ok()).toBe(true);
@@ -222,7 +223,7 @@ test('@theme-first-paint no theme flash on reload for dark and light, on /login 
   } finally {
     // Restore the shared E2E admin's stored preferences so later specs start from the defaults.
     const restored = await page.request.patch('/api/account/preferences', {
-      headers: { origin: 'http://localhost:3000' },
+      headers: { origin: resolveE2ePorts().webOrigin },
       data: { theme: 'auto', reduceMotion: 'system', density: 'comfortable' },
     });
     expect(restored.ok()).toBe(true);

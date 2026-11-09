@@ -1,0 +1,15 @@
+33-03 focused application-secret canary — sanitized evidence
+Command: NOODARA_TEST_PORT_OVERRIDE=33992 NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/activity/canary-env-secrets.test.ts
+Result: exit0; 1 file passed; 2/2 tests passed; duration138.07s; no skips.
+Ubuntu22.04/24.04 real API/worker deployment, encrypted DB, Redis and pinned SSH/dockerd.
+Deliberately emitted current ordinary application secret, base64 and URL forms.
+Real authenticated tail and follow retained stdout/stderr/redaction markers;
+follow received a seeded emission and then a second live emission.
+Existing scan found no canary on either HTTP surface or captured API logs/errors,
+worker/SSH output, DB, SSE/Redis and host/image surfaces. Assertions name labels only.
+Normal fixture/resource guards and teardown passed. This is a focused proof only:
+it is not pnpm security:scan-leaks and not authoritative full integration/phase PASS.
+Source hashes:33-03-canary-source-proof.json.
+Fixture unit suite:27/27 PASS. Focused TS check including both changed TS files:PASS.
+Full security scan is blocked at its Playwright stage: unrelated port3000 occupied;
+no existing alternate-port option. No unrelated process stopped or config edited.

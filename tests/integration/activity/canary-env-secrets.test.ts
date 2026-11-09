@@ -186,6 +186,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('25-04 / A2: application-secret lea
   let environmentId = '';
   let serviceId = '';
   let serviceName = '';
+  let apiPort = 0;
 
   const masterKey = randomBytes(32);
   const values = {
@@ -373,6 +374,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('25-04 / A2: application-secret lea
     app = buildApp({ logger: apiLogger as unknown as ApiApp['log'] });
     await app.listen({ port: 0, host: '127.0.0.1' });
     const port = (app.server.address() as AddressInfo).port;
+    apiPort = port;
     const issued = await issueToken(db(), 'setup', new Date());
     const setup = await app.inject({
       method: 'POST',
@@ -538,6 +540,12 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('25-04 / A2: application-secret lea
         expect(response.statusCode, label).toBeGreaterThanOrEqual(400);
       }
 
+      // Explicitly opt in only this deployed test application to deliberate runtime emission.
+      const emissionVariable = await call('POST', serviceEnv(), {
+        key: 'NOODARA_TEST_EMIT_SECRET_NAME', value: SECRET_KEY,
+      });
+      expect(emissionVariable.statusCode).toBe(201);
+
       // --- rotate: a new value reaches the next deploy only.
       const rotated = await call('PUT', `${base()}/secrets/${secretId}`, { value: values.rotated });
       expect(rotated.statusCode, rotated.raw).toBe(200);
@@ -560,7 +568,64 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('25-04 / A2: application-secret lea
       await call('GET', `${base()}/secrets/${secretId}`);
       await call('GET', serviceEnv());
       await call('GET', `${serviceEnv()}/effective`);
-      const appLogs = await call('GET', `${base()}/services/${serviceId}/logs`);
+      // Exercise both legacy endpoints over real authenticated HTTP, including new follow data.
+      // Emit only the currently loaded value: old/deleted secret values are outside the guarantee.
+      const logsUrl = `http://127.0.0.1:${String(apiPort)}${base()}/services/${serviceId}/logs`;
+      const emitScript = "fetch('http://127.0.0.1:3000/test-emit-secret',{method:'POST'}).then(r=>process.stdout.write(String(r.status))).catch(()=>process.exit(3))";
+      const emit = async () => {
+        expect(await rootOut(['docker', 'exec', `noodara-${serviceId}`, 'node', '-e', emitScript])).toBe('204');
+      };
+      // Seed output so the legacy route sends its headers (it flushes on its first frame).
+      await emit();
+      const controller = new AbortController();
+      let followText = '';
+      const followResponse = await fetch(`${logsUrl}/follow?tail=100`, {
+        headers: { cookie }, signal: controller.signal,
+      });
+      expect(followResponse.status).toBe(200);
+      const readFollow = (async () => {
+        const reader = followResponse.body?.getReader();
+        if (!reader) throw new Error('legacy follow body missing');
+        const decoder = new TextDecoder();
+        try {
+          for (;;) {
+            const chunk = await reader.read();
+            if (chunk.done) break;
+            followText += decoder.decode(chunk.value as Uint8Array, { stream: true });
+          }
+        } catch (error) {
+          if (!controller.signal.aborted) throw error;
+        }
+      })();
+      try {
+        const waitForEmissions = async (count: number) => {
+          const deadline = Date.now() + 20_000;
+          while (followText.split('canary-runtime-err').length - 1 < count) {
+            if (Date.now() > deadline) throw new Error('legacy follow never delivered deliberate runtime output');
+            await delay(100);
+          }
+        };
+        await waitForEmissions(1);
+        await emit();
+        await waitForEmissions(2);
+        const deadline = Date.now() + 20_000;
+        while (!followText.includes('canary-runtime-out')) {
+          if (Date.now() > deadline) throw new Error('legacy follow never delivered deliberate runtime output');
+          await delay(100);
+        }
+        expect(followText.includes('canary-runtime-out')).toBe(true);
+        expect(followText.includes('[REDACTED:app_secret]')).toBe(true);
+      } finally {
+        controller.abort();
+        await readFollow;
+      }
+      const tailResponse = await fetch(`${logsUrl}?tail=100`, { headers: { cookie } });
+      const tailText = await tailResponse.text();
+      responses.push({ label: 'legacy runtime tail HTTP', body: tailText });
+      expect(tailResponse.status).toBe(200);
+      expect(tailText.includes('canary-runtime-out')).toBe(true);
+      expect(tailText.includes('canary-runtime-err')).toBe(true);
+      expect(tailText.includes('[REDACTED:app_secret]')).toBe(true);
       const logsApi: string[] = [];
       for (const deploymentId of deploymentIds) {
         logsApi.push(await readAllLogs(deploymentId));
@@ -582,6 +647,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('25-04 / A2: application-secret lea
       // --- delete: the variables, the secret, then the service with its container.
       expect((await call('DELETE', `${serviceEnv()}/${String(doomedVariable.body.id)}`)).statusCode).toBe(204);
       expect((await call('DELETE', `${serviceEnv()}/${variableId}`)).statusCode).toBe(204);
+      expect((await call('DELETE', `${serviceEnv()}/${String(emissionVariable.body.id)}`)).statusCode).toBe(204);
       expect((await call('DELETE', `${base()}/secrets/${secretId}`)).statusCode).toBe(204);
       const removed = await call('DELETE', `${base()}/services/${serviceId}`, { confirmName: serviceName });
       expect(removed.statusCode, removed.raw).toBe(200);
@@ -591,7 +657,8 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('25-04 / A2: application-secret lea
       // --- scan.
       const surfaces = new Map<string, string>();
       surfaces.set('logs API', logsApi.join('\n'));
-      surfaces.set('runtime container logs API', appLogs.raw);
+      surfaces.set('legacy runtime tail HTTP', tailText);
+      surfaces.set('legacy runtime follow HTTP', followText);
       surfaces.set('deployment_log_chunks', JSON.stringify(await db().select().from(deploymentLogChunks)));
       surfaces.set('deployments rows (runtime config snapshots)', JSON.stringify(await db().select().from(deployments)));
       surfaces.set('environment_variables rows', JSON.stringify(await db().select().from(environmentVariables)));

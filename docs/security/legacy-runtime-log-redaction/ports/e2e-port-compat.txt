@@ -1,0 +1,133 @@
+
+> noodara@0.5.1 build /Users/xch4rt/work/myself/noodara/code
+> turbo run build --filter=!@noodara/site
+
+• turbo 2.10.12
+
+   • Packages in scope: @noodara/ai, @noodara/config, @noodara/control-plane, @noodara/docker, @noodara/domain, @noodara/git, @noodara/ssh, @noodara/ui, @noodara/web
+   • Running build in 9 packages
+   • Remote caching disabled
+
+@noodara/domain:build: cache miss, executing e78cbe3c493d8faa
+@noodara/domain:build: 
+@noodara/domain:build: > @noodara/domain@0.5.1 build /Users/xch4rt/work/myself/noodara/code/packages/domain
+@noodara/domain:build: > tsc -p tsconfig.build.json
+@noodara/domain:build: 
+@noodara/ssh:build: cache miss, executing 7f51d110264be5c4
+@noodara/ui:build: cache miss, executing 9f983d9dae8b6327
+@noodara/ai:build: cache miss, executing a1c15798fde26bb4
+@noodara/ssh:build: 
+@noodara/ssh:build: > @noodara/ssh@0.5.1 build /Users/xch4rt/work/myself/noodara/code/packages/ssh
+@noodara/ssh:build: > tsc -p tsconfig.build.json
+@noodara/ssh:build: 
+@noodara/ai:build: 
+@noodara/ai:build: > @noodara/ai@0.5.1 build /Users/xch4rt/work/myself/noodara/code/packages/ai
+@noodara/ai:build: > tsc -p tsconfig.build.json
+@noodara/ai:build: 
+@noodara/ui:build: 
+@noodara/ui:build: > @noodara/ui@0.5.1 build /Users/xch4rt/work/myself/noodara/code/packages/ui
+@noodara/ui:build: > tsc -p tsconfig.build.json
+@noodara/ui:build: 
+@noodara/git:build: cache miss, executing 3f387fbe1e9bae5a
+@noodara/docker:build: cache miss, executing f799543b4dea1019
+@noodara/docker:build: 
+@noodara/docker:build: > @noodara/docker@0.5.1 build /Users/xch4rt/work/myself/noodara/code/packages/docker
+@noodara/docker:build: > tsc -p tsconfig.build.json
+@noodara/docker:build: 
+@noodara/git:build: 
+@noodara/git:build: > @noodara/git@0.5.1 build /Users/xch4rt/work/myself/noodara/code/packages/git
+@noodara/git:build: > tsc -p tsconfig.build.json
+@noodara/git:build: 
+@noodara/web:build: cache miss, executing 27d78c30b1c5fc49
+@noodara/control-plane:build: cache miss, executing 0ddb83ab606e1877
+@noodara/web:build: 
+@noodara/web:build: > @noodara/web@0.5.1 build /Users/xch4rt/work/myself/noodara/code/apps/web
+@noodara/web:build: > node scripts/sync-brand-assets.mjs && next build
+@noodara/web:build: 
+@noodara/web:build: sync-brand-assets: no files changed (fully idempotent run).
+@noodara/web:build: sync-brand-assets: 7 file(s) already up to date.
+@noodara/control-plane:build: 
+@noodara/control-plane:build: > @noodara/control-plane@0.5.1 build /Users/xch4rt/work/myself/noodara/code/apps/control-plane
+@noodara/control-plane:build: > tsc -p tsconfig.build.json && node scripts/copy-migration-assets.mjs
+@noodara/control-plane:build: 
+@noodara/web:build: ▲ Next.js 16.4.1 (Turbopack)
+@noodara/web:build: ✓ Running next.config.ts took 67ms
+@noodara/web:build: 
+@noodara/web:build:   Creating an optimized production build ...
+@noodara/web:build: ✓ Compiled successfully in 1003ms
+@noodara/web:build:   Running TypeScript ...
+@noodara/web:build:   Finished TypeScript in 915ms ...
+@noodara/web:build:   Collecting page data using 13 workers ...
+@noodara/web:build:   Generating static pages using 13 workers (0/16) ...
+@noodara/web:build: ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+@noodara/web:build:   Generating static pages using 13 workers (4/16) 
+@noodara/web:build:   Generating static pages using 13 workers (8/16) 
+@noodara/web:build:   Generating static pages using 13 workers (12/16) 
+@noodara/web:build: ✓ Generating static pages using 13 workers (16/16) in 378ms
+@noodara/web:build:   Finalizing page optimization ...
+@noodara/control-plane:build: copy-migration-assets: copied /Users/xch4rt/work/myself/noodara/code/apps/control-plane/src/db/migrations -> /Users/xch4rt/work/myself/noodara/code/apps/control-plane/dist/db/migrations
+@noodara/web:build: 
+@noodara/web:build: Route (app)
+@noodara/web:build: ┌ ƒ /
+@noodara/web:build: ├ ƒ /_not-found
+@noodara/web:build: ├ ƒ /activity
+@noodara/web:build: ├ ƒ /api/events
+@noodara/web:build: ├ ○ /apple-icon.png
+@noodara/web:build: ├ ○ /icon.svg
+@noodara/web:build: ├ ○ /icon1.png
+@noodara/web:build: ├ ○ /icon2.png
+@noodara/web:build: ├ ƒ /login
+@noodara/web:build: ├ ○ /manifest.webmanifest
+@noodara/web:build: ├ ○ /opengraph-image.png
+@noodara/web:build: ├ ƒ /projects
+@noodara/web:build: ├ ƒ /projects/[projectId]
+@noodara/web:build: ├ ƒ /projects/[projectId]/graph
+@noodara/web:build: ├ ƒ /projects/[projectId]/services/[serviceId]
+@noodara/web:build: ├ ƒ /servers
+@noodara/web:build: ├ ƒ /servers/[id]
+@noodara/web:build: ├ ƒ /settings
+@noodara/web:build: └ ○ /setup
+@noodara/web:build: 
+@noodara/web:build: 
+@noodara/web:build: ƒ Proxy (Middleware)
+@noodara/web:build: 
+@noodara/web:build: ○  (Static)   prerendered as static content
+@noodara/web:build: ƒ  (Dynamic)  server-rendered on demand
+@noodara/web:build: 
+
+ Tasks:    8 successful, 8 total
+Cached:    0 cached, 8 total
+  Time:    7.882s 
+
+
+Running 25 tests using 1 worker
+
+(node:64628) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/e2e/canary-ui.spec.ts:54:1 › @canary a per-run password canary and a per-run passphrase canary never reach rendered HTML, console, storage, the URL/history, or any response body across the whole UI flow (8.9s)
+  ✓   2 [chromium] › tests/e2e/settings.spec.ts:30:1 › @settings the Instance group shows the version and public URL with exactly one copy button, always expanded (473ms)
+  ✓   3 [chromium] › tests/e2e/settings.spec.ts:43:1 › @settings the Advanced group is collapsed on load and expands to exactly five rows, each captioned (508ms)
+  ✓   4 [chromium] › tests/e2e/settings.spec.ts:63:1 › @settings the master key fingerprint renders a short mono digest with no 44-character base64-looking string anywhere (460ms)
+  ✓   5 [chromium] › tests/e2e/settings.spec.ts:82:1 › @settings the SSH timeout rows render seconds, never a raw millisecond count (366ms)
+  ✓   6 [chromium] › tests/e2e/settings.spec.ts:104:1 › @settings the Instance/Advanced groups have zero form controls and no save/apply/edit button (472ms)
+  ✓   7 [chromium] › tests/e2e/settings.spec.ts:122:1 › @settings a 500 shows the exact error banner with the code in mono, and Retry re-issues the request (360ms)
+  ✓   8 [chromium] › tests/e2e/settings.spec.ts:145:1 › @settings the loading state shows skeleton rows and no spinner (419ms)
+  ✓   9 [chromium] › tests/e2e/settings.spec.ts:172:1 › @settings profile edit updates the account menu without reload (4.1s)
+  ✓  10 [chromium] › tests/e2e/settings.spec.ts:213:1 › @settings wrong current password shows the field error (2.3s)
+  ✓  11 [chromium] › tests/e2e/settings.spec.ts:231:1 › @settings password change revokes other sessions and keeps this one (17.3s)
+  ✓  12 [chromium] › tests/e2e/settings.spec.ts:281:1 › @settings Instance and Advanced stay read-only (501ms)
+  ✓  13 [chromium] › tests/e2e/settings.spec.ts:418:1 › @settings theme choice persists with no theme flash on reload (972ms)
+  ✓  14 [chromium] › tests/e2e/settings.spec.ts:442:1 › @settings manual theme override wins over the OS (587ms)
+  ✓  15 [chromium] › tests/e2e/settings.spec.ts:458:1 › @settings theme preference follows the account to a second browser (864ms)
+  ✓  16 [chromium] › tests/e2e/settings.spec.ts:487:1 › @settings reduce motion On forces the Sheet fallback (1.8s)
+  ✓  17 [chromium] › tests/e2e/settings.spec.ts:532:1 › @settings density Compact shrinks rows app-wide (755ms)
+  ✓  18 [chromium] › tests/e2e/theme-first-paint.spec.ts:103:1 › @theme-first-paint GET /login with a dark/on/compact cookie renders data-theme, data-motion and data-density on <html> in the raw SSR HTML (7ms)
+  ✓  19 [chromium] › tests/e2e/theme-first-paint.spec.ts:116:1 › @theme-first-paint GET /login with a light/system/comfortable cookie renders data-theme="light" and omits data-motion/data-density (7ms)
+  ✓  20 [chromium] › tests/e2e/theme-first-paint.spec.ts:129:1 › @theme-first-paint GET /login with no cookie omits data-theme from the raw SSR HTML; the bootstrap script resolves it before first paint (129ms)
+  ✓  21 [chromium] › tests/e2e/theme-first-paint.spec.ts:142:1 › @theme-first-paint GET /login with an auto cookie also omits data-theme from the raw SSR HTML (7ms)
+  ✓  22 [chromium] › tests/e2e/theme-first-paint.spec.ts:152:1 › @theme-first-paint a tampered noodara-prefs cookie never yields a data-theme attribute and is never echoed raw into the response body (7ms)
+  ✓  23 [chromium] › tests/e2e/theme-first-paint.spec.ts:169:3 › with JavaScript disabled › @theme-first-paint a dark cookie renders data-theme="dark" on <html> and a dark canvas background with JS disabled (77ms)
+  ✓  24 [chromium] › tests/e2e/theme-first-paint.spec.ts:182:1 › @theme-first-paint no theme flash on reload for dark and light, on /login and on /servers after login (1.1s)
+  ✓  25 [chromium] › tests/e2e/theme-first-paint.spec.ts:233:1 › @theme-first-paint no theme flash for a light preference on /login (217ms)
+
+  25 passed (1.1m)

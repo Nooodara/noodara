@@ -1,0 +1,31 @@
+{
+  "baseline": "09387d5d9bf4750f8902a4c4cbcfc86d00f697a7",
+  "production_source": {
+    "apps/control-plane/src/app.ts": {
+      "sha256": "356db498eab09574096a368e50ea7293e063bf7ad77d11241a89a36deaad2b53",
+      "matches_baseline": true
+    },
+    "apps/control-plane/src/services/container-logs.ts": {
+      "sha256": "4e1287f19cfdb45798fad1f28d34be48d870697bba5a3dc40fafc439194769e5",
+      "matches_baseline": true
+    },
+    "apps/control-plane/src/routes/services.ts": {
+      "sha256": "f67ca05c05e27dafeebcdc37547e5c0c7b16cfc586ab83c96a35000911b464c3",
+      "matches_baseline": true
+    },
+    "apps/control-plane/src/secrets/secret-store.ts": {
+      "sha256": "57628ec424f079b9c2e365771a1a4f7b538ef39f7f7adb89a143d60866d7e740",
+      "matches_baseline": true
+    }
+  },
+  "runner": "vitest.red.config.ts, focused source-only copy of integration config; same port/resource/leak guards; omitted unrelated compiled web build (external node_modules symlink rejected by Next filesystem root)",
+  "test": "regression at recorded SHA256; final fixture additionally poisons a third project-scope row, without changing RED assertions or emitted values",
+  "test_name_pattern": "redacts project|redacts follow NDJSON|redacts CRLF",
+  "ubuntu": [
+    "22.04",
+    "24.04"
+  ],
+  "test_sha256": "a36ab2b0b3fa0fc98834a8bb71afd8c6cc8d4b6edad282a7cf8bd26d9742b42f",
+  "final_test_sha256": "1a80ebd20a7526d4ad310a7b86688c0afffc92ab741fe6c997d3bb765ad655fb",
+  "final_fixture_refinement": "one additional malformed project-scope row in a third project; separately verified2/2 on22.04+24.04; emitted values and RED assertions unchanged"
+}

@@ -1,0 +1,38 @@
+Current production commit ad2ab5b8; Ubuntu22.04+24.04; exit0.
+Combined30-case source test SHA256 is the recorded RED test hash (same regression).
+Final fixture additionally poisons a third project-scope row; separate scope proof follows.
+Port/resource prechecks and leak guard retained; no teardown/leak failures.
+
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 22.04 (33-02) > redacts project, environment, service and multiline values and variants in both streams 255ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 22.04 (33-02) > keeps unrelated poisoned rows outside the loaded scope and serves a service with no secrets 329ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 22.04 (33-02) > rejects auth, scope and validation before opening secrets or SSH 37ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 22.04 (33-02) > fails closed for DB, key and decrypt opening errors, then recovers without leaked slots 572ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 22.04 (33-02) > redacts follow NDJSON through its timeout and removes its process and run directory 10218ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 22.04 (33-02) > enforces follow capacity before opening secrets and releases all client-cancelled resources 724ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 22.04 (33-02) > redacts CRLF multiline components and final unterminated stdout/stderr in tail and follow 481ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 22.04 (33-02) > never includes any canary representation in captured HTTP errors or application logs 3ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 24.04 (33-02) > redacts project, environment, service and multiline values and variants in both streams 138ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 24.04 (33-02) > keeps unrelated poisoned rows outside the loaded scope and serves a service with no secrets 212ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 24.04 (33-02) > rejects auth, scope and validation before opening secrets or SSH 23ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 24.04 (33-02) > fails closed for DB, key and decrypt opening errors, then recovers without leaked slots 372ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 24.04 (33-02) > redacts follow NDJSON through its timeout and removes its process and run directory 10159ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 24.04 (33-02) > enforces follow capacity before opening secrets and releases all client-cancelled resources 690ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 24.04 (33-02) > redacts CRLF multiline components and final unterminated stdout/stderr in tail and follow 470ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 24.04 (33-02) > never includes any canary representation in captured HTTP errors or application logs 3ms
+ ✓ tests/integration/deploy-engine/runtime-container-logs.test.ts > runtime container logs on Ubuntu 22.04 (12-16) > A1: tail returns the last N lines with timestamps; the default tail returns the whole short log 227ms
+ ✓ tests/integration/deploy-engine/runtime-container-logs.test.ts > runtime container logs on Ubuntu 22.04 (12-16) > 25-03 (F1): a tail across stdout and stderr comes back in chronological order 87ms
+ ✓ tests/integration/deploy-engine/runtime-container-logs.test.ts > runtime container logs on Ubuntu 22.04 (12-16) > A3: ANSI escapes and binary bytes never reach the client 86ms
+ ✓ tests/integration/deploy-engine/runtime-container-logs.test.ts > runtime container logs on Ubuntu 22.04 (12-16) > H1: tail outside 1..10000 or not an integer is a named 422; no SSH work is done 8ms
+ ✓ tests/integration/deploy-engine/runtime-container-logs.test.ts > runtime container logs on Ubuntu 22.04 (12-16) > ERR: a service without a container is CONTAINER_NOT_FOUND (409); an unknown service is 404 155ms
+ ✓ tests/integration/deploy-engine/runtime-container-logs.test.ts > runtime container logs on Ubuntu 22.04 (12-16) > A2: follow streams live lines and ends at the max duration, killing the remote docker logs 4300ms
+ ✓ tests/integration/deploy-engine/runtime-container-logs.test.ts > runtime container logs on Ubuntu 22.04 (12-16) > A2: a client that disconnects ends the follow and the remote docker logs is killed 248ms
+ ✓ tests/integration/deploy-engine/runtime-container-logs.test.ts > runtime container logs on Ubuntu 24.04 (12-16) > A1: tail returns the last N lines with timestamps; the default tail returns the whole short log 157ms
+ ✓ tests/integration/deploy-engine/runtime-container-logs.test.ts > runtime container logs on Ubuntu 24.04 (12-16) > 25-03 (F1): a tail across stdout and stderr comes back in chronological order 77ms
+ ✓ tests/integration/deploy-engine/runtime-container-logs.test.ts > runtime container logs on Ubuntu 24.04 (12-16) > A3: ANSI escapes and binary bytes never reach the client 76ms
+ ✓ tests/integration/deploy-engine/runtime-container-logs.test.ts > runtime container logs on Ubuntu 24.04 (12-16) > H1: tail outside 1..10000 or not an integer is a named 422; no SSH work is done 3ms
+ ✓ tests/integration/deploy-engine/runtime-container-logs.test.ts > runtime container logs on Ubuntu 24.04 (12-16) > ERR: a service without a container is CONTAINER_NOT_FOUND (409); an unknown service is 404 121ms
+ ✓ tests/integration/deploy-engine/runtime-container-logs.test.ts > runtime container logs on Ubuntu 24.04 (12-16) > A2: follow streams live lines and ends at the max duration, killing the remote docker logs 4136ms
+ ✓ tests/integration/deploy-engine/runtime-container-logs.test.ts > runtime container logs on Ubuntu 24.04 (12-16) > A2: a client that disconnects ends the follow and the remote docker logs is killed 167ms
+ Test Files  2 passed (2)
+      Tests  30 passed (30)
+   Duration  245.31s (tests 99%)

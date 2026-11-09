@@ -1,0 +1,24 @@
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+ ❯ |root| tests/unit/e2e/ports.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |root| tests/unit/e2e/ports.test.ts [ tests/unit/e2e/ports.test.ts ]
+Error: Cannot find module '../../e2e/fixtures/ports.js' imported from /Users/xch4rt/work/myself/noodara/code/tests/unit/e2e/ports.test.ts
+ ❯ tests/unit/e2e/ports.test.ts:2:1
+      1| import { describe, expect, it } from 'vitest';
+      2| import { resolveE2ePorts } from '../../e2e/fixtures/ports.js';
+       | ^
+      3|
+      4| describe('test-only host ports', () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  23:12:16
+   Duration  82ms (worker 97%, environment 3%)
+

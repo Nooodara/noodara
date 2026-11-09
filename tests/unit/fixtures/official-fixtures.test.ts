@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { runInNewContext } from 'node:vm';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -127,6 +129,47 @@ describe('official fixtures (D-13)', () => {
     expect(server).toContain("createHash('sha256')");
     // The response is the digest: the raw variable is never written back.
     expect(server).not.toMatch(/res\.end\(value\)/);
+  });
+
+  it.each([false, true])('env-api runtime emission requires explicit test opt-in (%s)', (enabled) => {
+    const value = 'ordinary-fixture-value';
+    const output: string[] = [];
+    interface Response { writeHead(status: number): void; end(body?: string): void }
+    let handler: ((request: { method: string; url: string }, response: Response) => void) | undefined;
+    const source = readFixtureFile('env-api', 'server.js').replace(/^import .*;\n/gm, '');
+    runInNewContext(source, {
+      createHash, URL, Buffer,
+      createServer: (callback: typeof handler) => {
+        handler = callback;
+        return { listen: () => undefined, close: () => undefined };
+      },
+      process: {
+        env: { API_TOKEN: value, ...(enabled ? { NOODARA_TEST_EMIT_SECRET_NAME: 'API_TOKEN' } : {}) },
+        stdout: { write: (text: string) => output.push(text) },
+        stderr: { write: (text: string) => output.push(text) },
+        on: () => undefined,
+      },
+    });
+    const request = (method: string, url: string) => {
+      let status = 0;
+      let body = '';
+      if (!handler) throw new Error('fixture handler missing');
+      handler({ method, url }, { writeHead: (code) => { status = code; }, end: (text) => { body = text ?? ''; } });
+      return { status, body };
+    };
+    expect(request('GET', '/env-digest?name=API_TOKEN')).toEqual({
+      status: 200, body: createHash('sha256').update(value).digest('hex'),
+    });
+    expect(output).toEqual([]);
+    expect(request('GET', '/test-emit-secret').status).toBe(404);
+    const emitted = request('POST', '/test-emit-secret');
+    expect(emitted).toEqual({ status: enabled ? 204 : 404, body: enabled ? '' : 'not found' });
+    if (enabled) {
+      expect(output.join('')).toContain(value);
+      expect(output.join('')).toContain(Buffer.from(value).toString('base64'));
+    } else {
+      expect(output).toEqual([]);
+    }
   });
 
   it('pnpm-workspace.yaml does not turn fixtures/* into workspace packages', () => {

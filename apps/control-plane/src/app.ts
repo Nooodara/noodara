@@ -54,6 +54,7 @@ import { toClientRequestError, toErrorBody, toValidationErrorBody } from './rout
 import setupRoutes from './routes/setup.js';
 import { createWebhookRoutes } from './routes/webhooks.js';
 import type { SecretServiceDeps } from './secrets/secret-services.js';
+import { openLegacyLogRedactor } from './services/legacy-log-redactor.js';
 import {
   createContainerLogs,
   DEFAULT_CONTAINER_LOGS_LIMITS,
@@ -382,7 +383,7 @@ function createContainerLogsResolver(deps: BuildAppDeps, logger: FastifyBaseLogg
   return createContainerLogs({
     // A rejection here is mapped to SERVER_UNREACHABLE by createContainerLogs.
     connect: async (serverId, redactor, signal) => (await resolveConnect())(serverId, redactor, signal),
-    createRedactor,
+    openRedactor: async (request) => openLegacyLogRedactor(await getDb(), request, masterKeysFromEnvironment()),
     limits: {
       ...DEFAULT_CONTAINER_LOGS_LIMITS,
       defaultTail: env.NOODARA_RUNTIME_LOG_TAIL,

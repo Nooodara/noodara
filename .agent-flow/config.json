@@ -100,7 +100,10 @@
       "e2e-logs": "pnpm exec playwright test tests/e2e/logs.spec.ts",
       "e2e-graph": "pnpm exec playwright test tests/e2e/graph.spec.ts",
       "e2e-ai-chat": "pnpm exec playwright test tests/e2e/ai-settings.spec.ts tests/e2e/ai-chat.spec.ts",
-      "e2e-ai": "pnpm exec playwright test tests/e2e/ai-query.spec.ts tests/e2e/ai-diagnosis.spec.ts tests/e2e/ai-secret-safety.spec.ts"
+      "e2e-ai": "pnpm exec playwright test tests/e2e/ai-query.spec.ts tests/e2e/ai-diagnosis.spec.ts tests/e2e/ai-secret-safety.spec.ts",
+      "it-legacy-log-redaction": "NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/legacy-log-redaction.test.ts tests/integration/deploy-engine/runtime-container-logs.test.ts",
+      "e2e-port-compat": "NOODARA_E2E_WEB_PORT=33993 NOODARA_E2E_API_PORT=33994 pnpm exec playwright test tests/e2e/canary-ui.spec.ts tests/e2e/settings.spec.ts tests/e2e/theme-first-paint.spec.ts",
+      "release-v052": "node scripts/check-release-version.mjs v0.5.2"
     },
     "defaultGates": [
       "test",

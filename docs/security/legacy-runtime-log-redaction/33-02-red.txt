@@ -1,0 +1,14 @@
+Baseline09387d5d; Ubuntu22.04+24.04; exit1 (expected RED).
+All six failures: canary escaped redaction: expected true to be false.
+Ten other tests unselected by --testNamePattern; no code skips.
+Port/resource prechecks and leak guard retained; no teardown/leak failures.
+
+ × tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 22.04 (33-02) > redacts project, environment, service and multiline values and variants in both streams 139ms
+ × tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 22.04 (33-02) > redacts follow NDJSON through its timeout and removes its process and run directory 10116ms
+ × tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 22.04 (33-02) > redacts CRLF multiline components and final unterminated stdout/stderr in tail and follow 615ms
+ × tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 24.04 (33-02) > redacts project, environment, service and multiline values and variants in both streams 133ms
+ × tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 24.04 (33-02) > redacts follow NDJSON through its timeout and removes its process and run directory 10118ms
+ × tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 24.04 (33-02) > redacts CRLF multiline components and final unterminated stdout/stderr in tail and follow 357ms
+ Test Files  1 failed (1)
+      Tests  6 failed | 10 skipped (16)
+   Duration  139.88s (tests 99%)

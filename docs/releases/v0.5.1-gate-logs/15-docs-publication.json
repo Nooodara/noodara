@@ -1,0 +1,96 @@
+{
+  "checkedAt": "2026-11-08T19:11:27Z",
+  "repository": "Nooodara/noodara",
+  "docsCommit": "aa5ff7cf015ed6792ba07e0e301ca393f06266f8",
+  "note": "Post-release documentation publication; validated release commit and tags unchanged. CI integration is still running; this snapshot does not declare full docs CI success.",
+  "runs": [
+    {
+      "runId": 42509546658,
+      "jobs": [
+        {
+          "id": 128819401756,
+          "name": "unit",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 128819401832,
+          "name": "integration",
+          "status": "in_progress",
+          "conclusion": null
+        },
+        {
+          "id": 128819401838,
+          "name": "typecheck",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 128819401855,
+          "name": "boot-smoke",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 128819401878,
+          "name": "ai-evals",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 128819401879,
+          "name": "lint",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 128819401916,
+          "name": "state-machine",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 128819401917,
+          "name": "boundaries",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 128819401963,
+          "name": "site",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 128819401976,
+          "name": "e2e",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 128819401989,
+          "name": "security",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 128819402042,
+          "name": "installer",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "runId": 42509546714,
+      "jobs": [
+        {
+          "id": 128819401750,
+          "name": "deploy",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}

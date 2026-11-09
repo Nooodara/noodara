@@ -1,0 +1,11 @@
+Final fixture SHA256 1a80ebd20a7526d4ad310a7b86688c0afffc92ab741fe6c997d3bb765ad655fb; Ubuntu22.04+24.04; exit0.
+Added malformed project-scope secret in a third project; exact loaded IDs and no-secret service succeed.
+Command: NOODARA_TEST_PORT_OVERRIDE=33992 NOODARA_TEST_UBUNTU=all pnpm exec vitest run --config vitest.integration.config.ts tests/integration/deploy-engine/legacy-log-redaction.test.ts --testNamePattern="keeps unrelated poisoned rows" --reporter=verbose
+Fourteen other tests unselected by CLI pattern; no code skips.
+Port/resource guards and teardown clean.
+
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 22.04 (33-02) > keeps unrelated poisoned rows outside the loaded scope and serves a service with no secrets 301ms
+ ✓ tests/integration/deploy-engine/legacy-log-redaction.test.ts > legacy log secret redaction on Ubuntu 24.04 (33-02) > keeps unrelated poisoned rows outside the loaded scope and serves a service with no secrets 258ms
+ Test Files  1 passed (1)
+      Tests  2 passed | 14 skipped (16)
+   Duration  123.72s (tests 99%)

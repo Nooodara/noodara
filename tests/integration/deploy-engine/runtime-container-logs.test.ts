@@ -107,6 +107,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('runtime container logs on Ubuntu %
   let logs: ContainerLogs | undefined;
   let baseUrl = '';
   const projectId = randomUUID();
+  const environmentId = randomUUID();
   const serviceId = randomUUID();
   /** A service whose container was never created. */
   const missingServiceId = randomUUID();
@@ -171,7 +172,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('runtime container logs on Ubuntu %
         const { session } = outcome;
         return { ok: true, session, close: () => session.close() };
       },
-      createRedactor,
+      openRedactor: () => Promise.resolve({ redactor: createRedactor(), release: () => undefined }),
       limits: {
         ...containerLogs.DEFAULT_CONTAINER_LOGS_LIMITS,
         followMaxMs: FOLLOW_MAX_MS,
@@ -213,7 +214,7 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('runtime container logs on Ubuntu %
     const known = new Set<string>([serviceId, missingServiceId, interleavedServiceId]);
     const fakeServices = {
       getService: (pid: string, sid: string) =>
-        Promise.resolve(pid === projectId && known.has(sid) ? { id: sid, serverId } : null),
+        Promise.resolve(pid === projectId && known.has(sid) ? { id: sid, projectId, environmentId, serverId } : null),
     } as unknown as ServiceServices;
     const fastify = await importFromControlPlane<{ default: FastifyFactory }>('fastify');
     const zodProvider = await importFromControlPlane<ZodProviderModule>('@fastify/type-provider-zod');
