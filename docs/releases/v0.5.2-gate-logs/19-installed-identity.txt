@@ -1,0 +1,6 @@
+/noodara-api-1 ghcr.io/nooodara/noodara-control-plane:0.5.2-rc.1 sha256:f10c9915216424fddaeed7eb9c5beaac07d56fd07d70ea53b634be7ac8584a97
+/noodara-worker-1 ghcr.io/nooodara/noodara-control-plane:0.5.2-rc.1 sha256:f10c9915216424fddaeed7eb9c5beaac07d56fd07d70ea53b634be7ac8584a97
+/noodara-web-1 ghcr.io/nooodara/noodara-web:0.5.2-rc.1 sha256:2782e556bf366ae37b9805e7036dc5559b7c56f8ba99fb5b9bb901c91756d6ca
+9a00dbe17f40c0deb2e8dadc9d7d199c0b70d8cd50673a5f9d4bf97e9cba60c7  dist/services/container-logs.js
+8ed2fefcc97783378321957b2218267967d98b78745e0d5ef0d757aad214461c  dist/observability/logs/log-sources.js
+52b6aeb8424e19bd3da024e4e63f85f2f973edb5e0d248ef201775a9473a42de  /app/packages/domain/dist/security/redactor.js

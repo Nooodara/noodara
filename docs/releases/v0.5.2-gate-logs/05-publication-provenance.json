@@ -1,0 +1,525 @@
+{
+  "localBaseline": "5d391903063e2ee94e63dbd4f08584a20af13858",
+  "publicBaseline": "aa5ff7cf015ed6792ba07e0e301ca393f06266f8",
+  "baselineTree": "a262ad8a23c2a4b416a964c5884f9b9938b2df8c",
+  "localSource": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+  "sourceTree": "0d8d99ee5f9f7477696890d9a4b567ff5cf05c76",
+  "files": [
+    {
+      "path": ".agent-flow/config.json",
+      "sourceBlob": "f5253fabc8ff9880964cada037ea221fe953a031",
+      "latestLocalCommit": "5df770a618abcf4c3f71c6fa5c2de4a8e8728b7a",
+      "publicStagedBlob": "f5253fabc8ff9880964cada037ea221fe953a031"
+    },
+    {
+      "path": ".agent-flow/plan.json",
+      "sourceBlob": "4e229ad1ad292378860f87dba2dcbc3001ed1de3",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "4e229ad1ad292378860f87dba2dcbc3001ed1de3"
+    },
+    {
+      "path": ".agent-flow/reviews/32.json",
+      "sourceBlob": "a849c6bc0c3925e6df9e82a1eab0920d3b1d2fc0",
+      "latestLocalCommit": "8c90bc41fc55394665af92742f25f0af263ece82",
+      "publicStagedBlob": "a849c6bc0c3925e6df9e82a1eab0920d3b1d2fc0"
+    },
+    {
+      "path": ".agent-flow/reviews/33.json",
+      "sourceBlob": "92e2d7db676dac024a58d73c99aecfb7a0aa83db",
+      "latestLocalCommit": "ca9818eed784461a89d84f97778058eec4237c5d",
+      "publicStagedBlob": "92e2d7db676dac024a58d73c99aecfb7a0aa83db"
+    },
+    {
+      "path": ".memory/decisions.jsonl",
+      "sourceBlob": "82cc574341950427b45f81f6b58ca888afea7667",
+      "latestLocalCommit": "71cfaf4629ec996845e09d23b7754c188551d487",
+      "publicStagedBlob": "82cc574341950427b45f81f6b58ca888afea7667"
+    },
+    {
+      "path": ".memory/errors.jsonl",
+      "sourceBlob": "3299517f3d5a7520e41d7f333fd8d4592c0a9b0a",
+      "latestLocalCommit": "d784c8a0527819a70bfe5ca13f132c54fb30c4f2",
+      "publicStagedBlob": "3299517f3d5a7520e41d7f333fd8d4592c0a9b0a"
+    },
+    {
+      "path": ".memory/events.jsonl",
+      "sourceBlob": "c5f274f7a3d04bb8b2d8f3e4205900fb0be78110",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "c5f274f7a3d04bb8b2d8f3e4205900fb0be78110"
+    },
+    {
+      "path": ".planning/33-01-HANDOFF.md",
+      "sourceBlob": "fb6f91bf2fc6c118c5a94e402d87618c8c64432d",
+      "latestLocalCommit": "ad2ab5b8370e25ed4f9a554e32d76c282a9dceb4",
+      "publicStagedBlob": "fb6f91bf2fc6c118c5a94e402d87618c8c64432d"
+    },
+    {
+      "path": ".planning/33-02-HANDOFF.md",
+      "sourceBlob": "082a0ac98b8f2109b72197c4c49805a42fcea3f0",
+      "latestLocalCommit": "d784c8a0527819a70bfe5ca13f132c54fb30c4f2",
+      "publicStagedBlob": "082a0ac98b8f2109b72197c4c49805a42fcea3f0"
+    },
+    {
+      "path": ".planning/33-03-HANDOFF.md",
+      "sourceBlob": "1e4803bc9faad094e89dea96189e3481d0f5ceb5",
+      "latestLocalCommit": "ca9818eed784461a89d84f97778058eec4237c5d",
+      "publicStagedBlob": "1e4803bc9faad094e89dea96189e3481d0f5ceb5"
+    },
+    {
+      "path": ".planning/33-04-HANDOFF.md",
+      "sourceBlob": "604ee90b38cb59d0770e24a92dcaca5007024767",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "604ee90b38cb59d0770e24a92dcaca5007024767"
+    },
+    {
+      "path": ".planning/33-legacy-log-redaction.md",
+      "sourceBlob": "eeb0be887452dbcfd0182348097ecae2e89a1e3c",
+      "latestLocalCommit": "d79e435f55c744fdbe8ba4f359e3d1bcf7731697",
+      "publicStagedBlob": "eeb0be887452dbcfd0182348097ecae2e89a1e3c"
+    },
+    {
+      "path": ".planning/33-playwright-alternate-ports.md",
+      "sourceBlob": "c53c44e6261862a07ecacf64735f3d64445baa93",
+      "latestLocalCommit": "d79e435f55c744fdbe8ba4f359e3d1bcf7731697",
+      "publicStagedBlob": "c53c44e6261862a07ecacf64735f3d64445baa93"
+    },
+    {
+      "path": ".planning/34-35-v0.5.2-release.md",
+      "sourceBlob": "566fd8bbbfdf5a55d30ba11f2d3a846dc1341c20",
+      "latestLocalCommit": "71cfaf4629ec996845e09d23b7754c188551d487",
+      "publicStagedBlob": "566fd8bbbfdf5a55d30ba11f2d3a846dc1341c20"
+    },
+    {
+      "path": ".planning/DECISIONS.md",
+      "sourceBlob": "ef601ee21ab7bbcd53bdf52aedeb44f38c3d2051",
+      "latestLocalCommit": "71cfaf4629ec996845e09d23b7754c188551d487",
+      "publicStagedBlob": "ef601ee21ab7bbcd53bdf52aedeb44f38c3d2051"
+    },
+    {
+      "path": ".planning/OPEN_QUESTIONS.md",
+      "sourceBlob": "e291c4c74936e219ab9be757e4eb1a50e0ef0ed3",
+      "latestLocalCommit": "5df770a618abcf4c3f71c6fa5c2de4a8e8728b7a",
+      "publicStagedBlob": "e291c4c74936e219ab9be757e4eb1a50e0ef0ed3"
+    },
+    {
+      "path": ".planning/REQUIREMENTS.md",
+      "sourceBlob": "6a8bdf6c9bb9608d49e709f0d635d5d71b0fe010",
+      "latestLocalCommit": "71cfaf4629ec996845e09d23b7754c188551d487",
+      "publicStagedBlob": "6a8bdf6c9bb9608d49e709f0d635d5d71b0fe010"
+    },
+    {
+      "path": ".planning/ROADMAP.md",
+      "sourceBlob": "73c45867f70523b095438d3f0cb2bb7bceaf2082",
+      "latestLocalCommit": "71cfaf4629ec996845e09d23b7754c188551d487",
+      "publicStagedBlob": "73c45867f70523b095438d3f0cb2bb7bceaf2082"
+    },
+    {
+      "path": ".planning/STATE.md",
+      "sourceBlob": "33eb97a416135faab6d922bff09f51a4f5996c88",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "33eb97a416135faab6d922bff09f51a4f5996c88"
+    },
+    {
+      "path": "apps/control-plane/package.json",
+      "sourceBlob": "3d0c885b223d2fd42f539f720e2eb52c41797e22",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "3d0c885b223d2fd42f539f720e2eb52c41797e22"
+    },
+    {
+      "path": "apps/control-plane/src/app.ts",
+      "sourceBlob": "3cb164c199f07874fc01be8ec1586419f72a2acc",
+      "latestLocalCommit": "ad2ab5b8370e25ed4f9a554e32d76c282a9dceb4",
+      "publicStagedBlob": "3cb164c199f07874fc01be8ec1586419f72a2acc"
+    },
+    {
+      "path": "apps/control-plane/src/routes/services.ts",
+      "sourceBlob": "172f8ae3c8aefc18dbaebded4e3799641ce81d9b",
+      "latestLocalCommit": "ad2ab5b8370e25ed4f9a554e32d76c282a9dceb4",
+      "publicStagedBlob": "172f8ae3c8aefc18dbaebded4e3799641ce81d9b"
+    },
+    {
+      "path": "apps/control-plane/src/secrets/secret-store.test.ts",
+      "sourceBlob": "e7724e121182b760d7a8f6f94a0df2867429b51c",
+      "latestLocalCommit": "ad2ab5b8370e25ed4f9a554e32d76c282a9dceb4",
+      "publicStagedBlob": "e7724e121182b760d7a8f6f94a0df2867429b51c"
+    },
+    {
+      "path": "apps/control-plane/src/secrets/secret-store.ts",
+      "sourceBlob": "ddeaa58a2c8e99207753b7f122111ffef32bd919",
+      "latestLocalCommit": "ad2ab5b8370e25ed4f9a554e32d76c282a9dceb4",
+      "publicStagedBlob": "ddeaa58a2c8e99207753b7f122111ffef32bd919"
+    },
+    {
+      "path": "apps/control-plane/src/services/container-logs.test.ts",
+      "sourceBlob": "7eb67bfbf5d954412f4d77c3f6330fbb76575082",
+      "latestLocalCommit": "ad2ab5b8370e25ed4f9a554e32d76c282a9dceb4",
+      "publicStagedBlob": "7eb67bfbf5d954412f4d77c3f6330fbb76575082"
+    },
+    {
+      "path": "apps/control-plane/src/services/container-logs.ts",
+      "sourceBlob": "8fd3cae7925c4001d46ac388fd5da3ec88503150",
+      "latestLocalCommit": "ad2ab5b8370e25ed4f9a554e32d76c282a9dceb4",
+      "publicStagedBlob": "8fd3cae7925c4001d46ac388fd5da3ec88503150"
+    },
+    {
+      "path": "apps/control-plane/src/services/legacy-log-redactor.test.ts",
+      "sourceBlob": "a507275d6c80fadea2bb17c16f7908b04f9f5007",
+      "latestLocalCommit": "ad2ab5b8370e25ed4f9a554e32d76c282a9dceb4",
+      "publicStagedBlob": "a507275d6c80fadea2bb17c16f7908b04f9f5007"
+    },
+    {
+      "path": "apps/control-plane/src/services/legacy-log-redactor.ts",
+      "sourceBlob": "6d16908e42db76fe781e0a894705c9ec2a96623f",
+      "latestLocalCommit": "ad2ab5b8370e25ed4f9a554e32d76c282a9dceb4",
+      "publicStagedBlob": "6d16908e42db76fe781e0a894705c9ec2a96623f"
+    },
+    {
+      "path": "apps/site/package.json",
+      "sourceBlob": "d80e5a1965026f31e83ad248221ebb69c7f37bbe",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "d80e5a1965026f31e83ad248221ebb69c7f37bbe"
+    },
+    {
+      "path": "apps/web/package.json",
+      "sourceBlob": "5d29d4b9f9adef55ff7df891bb50d0eb5fc9354e",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "5d29d4b9f9adef55ff7df891bb50d0eb5fc9354e"
+    },
+    {
+      "path": "docs/releases/v0.5.1-gate-logs/15-docs-publication.json",
+      "sourceBlob": "3e869d40398b402b9fa07605893f6b361d8ec941",
+      "latestLocalCommit": "8c90bc41fc55394665af92742f25f0af263ece82",
+      "publicStagedBlob": "3e869d40398b402b9fa07605893f6b361d8ec941"
+    },
+    {
+      "path": "docs/releases/v0.5.1-gate.md",
+      "sourceBlob": "bb8bf6f1c405f1bd17263e8bbcae9a938ae4bbb2",
+      "latestLocalCommit": "8c90bc41fc55394665af92742f25f0af263ece82",
+      "publicStagedBlob": "bb8bf6f1c405f1bd17263e8bbcae9a938ae4bbb2"
+    },
+    {
+      "path": "docs/releases/v0.5.2-gate-logs/01-release-state-red.txt",
+      "sourceBlob": "f0e607341fba6397d37c7672d26d27292155f8da",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "f0e607341fba6397d37c7672d26d27292155f8da"
+    },
+    {
+      "path": "docs/releases/v0.5.2-gate-logs/02-release-state-green.txt",
+      "sourceBlob": "2bb6d98b3726aca807c67dbea5745d4c12e9bf59",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "2bb6d98b3726aca807c67dbea5745d4c12e9bf59"
+    },
+    {
+      "path": "docs/releases/v0.5.2-gate-logs/03-candidate-source.md",
+      "sourceBlob": "674ca6146e9a47256ac756fd50d0a88e76e07bf7",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "674ca6146e9a47256ac756fd50d0a88e76e07bf7"
+    },
+    {
+      "path": "docs/releases/v0.5.2-gate-logs/04-authoritative-prep-gates.txt",
+      "sourceBlob": "ed19da0dba10df7918f3892d49626a478d042bf1",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "ed19da0dba10df7918f3892d49626a478d042bf1"
+    },
+    {
+      "path": "docs/releases/v0.5.2-gate.md",
+      "sourceBlob": "ffae331be38031e19ca162a8f7225349624edeea",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "ffae331be38031e19ca162a8f7225349624edeea"
+    },
+    {
+      "path": "docs/releases/v0.5.2.md",
+      "sourceBlob": "4a36a6bf3fec6b818824834af90563f21384ca75",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "4a36a6bf3fec6b818824834af90563f21384ca75"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/33-02-green.txt",
+      "sourceBlob": "c5aa26757d5003b1822f9d90b1bb6a1532309238",
+      "latestLocalCommit": "d784c8a0527819a70bfe5ca13f132c54fb30c4f2",
+      "publicStagedBlob": "c5aa26757d5003b1822f9d90b1bb6a1532309238"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/33-02-integration-evidence.md",
+      "sourceBlob": "0dad62d1c7ab84bb5a57d6db8bf11bcf0cc58227",
+      "latestLocalCommit": "d784c8a0527819a70bfe5ca13f132c54fb30c4f2",
+      "publicStagedBlob": "0dad62d1c7ab84bb5a57d6db8bf11bcf0cc58227"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/33-02-red-source-proof.json",
+      "sourceBlob": "6e009caef95589082d7479cd1741d64eb345b75a",
+      "latestLocalCommit": "d784c8a0527819a70bfe5ca13f132c54fb30c4f2",
+      "publicStagedBlob": "6e009caef95589082d7479cd1741d64eb345b75a"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/33-02-red.txt",
+      "sourceBlob": "aec305687112cf1b3826e3f842a207adae7616d1",
+      "latestLocalCommit": "d784c8a0527819a70bfe5ca13f132c54fb30c4f2",
+      "publicStagedBlob": "aec305687112cf1b3826e3f842a207adae7616d1"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/33-02-scope-green.txt",
+      "sourceBlob": "6cef70bbcee9e72302a74ff4c615c8471cac6ff6",
+      "latestLocalCommit": "d784c8a0527819a70bfe5ca13f132c54fb30c4f2",
+      "publicStagedBlob": "6cef70bbcee9e72302a74ff4c615c8471cac6ff6"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/33-03-authoritative-gates.txt",
+      "sourceBlob": "a5b5ec0570bf8c37790b0ae53a63970a0401c5b1",
+      "latestLocalCommit": "ca9818eed784461a89d84f97778058eec4237c5d",
+      "publicStagedBlob": "a5b5ec0570bf8c37790b0ae53a63970a0401c5b1"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/33-03-canary-green.txt",
+      "sourceBlob": "f59a8725dac4a82eb4b1bd105627b0da29b9022f",
+      "latestLocalCommit": "ca9818eed784461a89d84f97778058eec4237c5d",
+      "publicStagedBlob": "f59a8725dac4a82eb4b1bd105627b0da29b9022f"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/33-03-canary-source-proof.json",
+      "sourceBlob": "ecf4939f3537fb9cdcd24ec572996f5aad3bb600",
+      "latestLocalCommit": "ca9818eed784461a89d84f97778058eec4237c5d",
+      "publicStagedBlob": "ecf4939f3537fb9cdcd24ec572996f5aad3bb600"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/33-03-closure.md",
+      "sourceBlob": "8f03dca312012a251bf08432ddf3a0b770f5bf7f",
+      "latestLocalCommit": "ca9818eed784461a89d84f97778058eec4237c5d",
+      "publicStagedBlob": "8f03dca312012a251bf08432ddf3a0b770f5bf7f"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/README.md",
+      "sourceBlob": "8bd98f96fb396a9fc8490ded8f0310e7b199cb9f",
+      "latestLocalCommit": "ca9818eed784461a89d84f97778058eec4237c5d",
+      "publicStagedBlob": "8bd98f96fb396a9fc8490ded8f0310e7b199cb9f"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/ports/README.md",
+      "sourceBlob": "fcad1f66b0fb130883e9539fac3fd747e672c7d9",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "fcad1f66b0fb130883e9539fac3fd747e672c7d9"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/ports/built-rewrites.json",
+      "sourceBlob": "86828bb014f003b6263a5855a70ff6ea9bb71193",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "86828bb014f003b6263a5855a70ff6ea9bb71193"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/ports/cleanup-proof.json",
+      "sourceBlob": "090a77a85b69c4609bebbcaad1a82be8965c6a6a",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "090a77a85b69c4609bebbcaad1a82be8965c6a6a"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/ports/default-api-listener-during.txt",
+      "sourceBlob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/ports/e2e-port-compat.txt",
+      "sourceBlob": "4b1c4007d3be2ec8628828600131539a89c0c209",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "4b1c4007d3be2ec8628828600131539a89c0c209"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/ports/focused-green.txt",
+      "sourceBlob": "0c154f7d3e77a85586bd3c23638052f45fa4000a",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "0c154f7d3e77a85586bd3c23638052f45fa4000a"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/ports/lifecycle-red.txt",
+      "sourceBlob": "9e5307c32cff09258d1305e6d075c04a24581e56",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "9e5307c32cff09258d1305e6d075c04a24581e56"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/ports/listener-3000-after.txt",
+      "sourceBlob": "308ca7cb539a0ecddcceb15307f892991bbfbad4",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "308ca7cb539a0ecddcceb15307f892991bbfbad4"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/ports/listener-3000-before.txt",
+      "sourceBlob": "308ca7cb539a0ecddcceb15307f892991bbfbad4",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "308ca7cb539a0ecddcceb15307f892991bbfbad4"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/ports/resolver-red.txt",
+      "sourceBlob": "d111141f1cf682f52c22dc09548434940eb22aee",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "d111141f1cf682f52c22dc09548434940eb22aee"
+    },
+    {
+      "path": "docs/security/legacy-runtime-log-redaction/ports/source-proof.json",
+      "sourceBlob": "a0b70f67e3e217cdcf50dd6b1c6b58965fc176c2",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "a0b70f67e3e217cdcf50dd6b1c6b58965fc176c2"
+    },
+    {
+      "path": "docs/security/v0.5-review.md",
+      "sourceBlob": "8b95ed8278b0773a193c92e1de7eb0c8d2ce75c8",
+      "latestLocalCommit": "ca9818eed784461a89d84f97778058eec4237c5d",
+      "publicStagedBlob": "8b95ed8278b0773a193c92e1de7eb0c8d2ce75c8"
+    },
+    {
+      "path": "docs/testing/e2e-ports.md",
+      "sourceBlob": "110a76521bc351b3f682d206e051d33439af23e2",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "110a76521bc351b3f682d206e051d33439af23e2"
+    },
+    {
+      "path": "fixtures/env-api/server.js",
+      "sourceBlob": "6b975e444f50389f8a3b54926ca765fcf2e96d80",
+      "latestLocalCommit": "ca9818eed784461a89d84f97778058eec4237c5d",
+      "publicStagedBlob": "6b975e444f50389f8a3b54926ca765fcf2e96d80"
+    },
+    {
+      "path": "package.json",
+      "sourceBlob": "617a00de3ce493bfa6ab86c63f3fad9f12612f24",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "617a00de3ce493bfa6ab86c63f3fad9f12612f24"
+    },
+    {
+      "path": "packages/ai/package.json",
+      "sourceBlob": "093ffbf50fbe070a8f88cb4e00ef4fb631a39bd6",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "093ffbf50fbe070a8f88cb4e00ef4fb631a39bd6"
+    },
+    {
+      "path": "packages/config/package.json",
+      "sourceBlob": "e8077dfcab74996342d030dc949d5b6881541a4c",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "e8077dfcab74996342d030dc949d5b6881541a4c"
+    },
+    {
+      "path": "packages/docker/package.json",
+      "sourceBlob": "811cffb166cfd28994333ef340d743a9b8e83b17",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "811cffb166cfd28994333ef340d743a9b8e83b17"
+    },
+    {
+      "path": "packages/domain/package.json",
+      "sourceBlob": "ed63d9cf06d9b3a4b73b4ef5302a36f30f2979d0",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "ed63d9cf06d9b3a4b73b4ef5302a36f30f2979d0"
+    },
+    {
+      "path": "packages/git/package.json",
+      "sourceBlob": "e845d3cc36fdbbbc95a6819f52d4697df379bbb7",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "e845d3cc36fdbbbc95a6819f52d4697df379bbb7"
+    },
+    {
+      "path": "packages/ssh/package.json",
+      "sourceBlob": "6aaf37dc664c1f725aa134aacd1b1f4e29dbedc6",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "6aaf37dc664c1f725aa134aacd1b1f4e29dbedc6"
+    },
+    {
+      "path": "packages/ui/package.json",
+      "sourceBlob": "a389e7fad1a6cc4ac1388bcf6ee188b850876280",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "a389e7fad1a6cc4ac1388bcf6ee188b850876280"
+    },
+    {
+      "path": "playwright.config.ts",
+      "sourceBlob": "3af838b7a6f46fd573055d767f34374ad8cd33f0",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "3af838b7a6f46fd573055d767f34374ad8cd33f0"
+    },
+    {
+      "path": "tests/e2e/canary-ui.spec.ts",
+      "sourceBlob": "2f4ca4523383f782fcb3c80fad640f457fa88edd",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "2f4ca4523383f782fcb3c80fad640f457fa88edd"
+    },
+    {
+      "path": "tests/e2e/deploy.spec.ts",
+      "sourceBlob": "4084e89e3adeccb97ef6d212e2ea52c274043c64",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "4084e89e3adeccb97ef6d212e2ea52c274043c64"
+    },
+    {
+      "path": "tests/e2e/fixtures/engine.ts",
+      "sourceBlob": "d49ae97efd4fe2bfb3f94779db056becec1f479a",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "d49ae97efd4fe2bfb3f94779db056becec1f479a"
+    },
+    {
+      "path": "tests/e2e/fixtures/ports.ts",
+      "sourceBlob": "ac7a51a5103a65a8b65038552c7b274ebbdf4797",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "ac7a51a5103a65a8b65038552c7b274ebbdf4797"
+    },
+    {
+      "path": "tests/e2e/fixtures/stack.ts",
+      "sourceBlob": "49290d13f78b96fd5c3abe070c4bbd13167eef08",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "49290d13f78b96fd5c3abe070c4bbd13167eef08"
+    },
+    {
+      "path": "tests/e2e/projects-dod.spec.ts",
+      "sourceBlob": "3ea6e68b7fb601ac54f6e9fa569e4c4c00600c62",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "3ea6e68b7fb601ac54f6e9fa569e4c4c00600c62"
+    },
+    {
+      "path": "tests/e2e/settings.spec.ts",
+      "sourceBlob": "60d076734513260407ac036114215d73b955a644",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "60d076734513260407ac036114215d73b955a644"
+    },
+    {
+      "path": "tests/e2e/theme-first-paint.spec.ts",
+      "sourceBlob": "89fe8db3b23ecb9014f1c8c3a3316d3b22bbfeca",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "89fe8db3b23ecb9014f1c8c3a3316d3b22bbfeca"
+    },
+    {
+      "path": "tests/integration/activity/canary-env-secrets.test.ts",
+      "sourceBlob": "b2b5a62ac656025ead9f03fa4b0e8aa41157a963",
+      "latestLocalCommit": "ca9818eed784461a89d84f97778058eec4237c5d",
+      "publicStagedBlob": "b2b5a62ac656025ead9f03fa4b0e8aa41157a963"
+    },
+    {
+      "path": "tests/integration/deploy-engine/legacy-log-redaction.test.ts",
+      "sourceBlob": "ffd6be19b579c0d4ba00bc3114b471b77dc08d9d",
+      "latestLocalCommit": "d784c8a0527819a70bfe5ca13f132c54fb30c4f2",
+      "publicStagedBlob": "ffd6be19b579c0d4ba00bc3114b471b77dc08d9d"
+    },
+    {
+      "path": "tests/integration/deploy-engine/runtime-container-logs.test.ts",
+      "sourceBlob": "24f4f3e8d73609e753743e7289c6c63f4d802239",
+      "latestLocalCommit": "ad2ab5b8370e25ed4f9a554e32d76c282a9dceb4",
+      "publicStagedBlob": "24f4f3e8d73609e753743e7289c6c63f4d802239"
+    },
+    {
+      "path": "tests/unit/e2e/ports.test.ts",
+      "sourceBlob": "4f5adc2eed5e0bb3ff74999d009b677d3b787d21",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "4f5adc2eed5e0bb3ff74999d009b677d3b787d21"
+    },
+    {
+      "path": "tests/unit/e2e/stack-ports.test.ts",
+      "sourceBlob": "8821e1a0b95b2940710d1e13707b07de50daa8b6",
+      "latestLocalCommit": "609239a85bc352ba4fa743c4077c9a04b055c060",
+      "publicStagedBlob": "8821e1a0b95b2940710d1e13707b07de50daa8b6"
+    },
+    {
+      "path": "tests/unit/fixtures/official-fixtures.test.ts",
+      "sourceBlob": "9b2e4a1b5242c905b0ccad68d7a21c29ee0604d4",
+      "latestLocalCommit": "ca9818eed784461a89d84f97778058eec4237c5d",
+      "publicStagedBlob": "9b2e4a1b5242c905b0ccad68d7a21c29ee0604d4"
+    },
+    {
+      "path": "tests/unit/scripts/check-release-version.test.ts",
+      "sourceBlob": "b84956f7e9da1c308a7083e89ac333001e5f5143",
+      "latestLocalCommit": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+      "publicStagedBlob": "b84956f7e9da1c308a7083e89ac333001e5f5143"
+    }
+  ]
+}

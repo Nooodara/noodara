@@ -1,0 +1,8 @@
+{
+  "existingAdminLogin": true,
+  "signOut": true,
+  "providerCalls": 0,
+  "result": "PASS",
+  "postHttpH2AuthPersistedSnapshot": "equal",
+  "ownedCookieRemoved": true
+}

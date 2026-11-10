@@ -1,0 +1,7 @@
+{
+  "existingAdminLogin": true,
+  "signOut": true,
+  "providerCalls": 0,
+  "result": "PASS",
+  "postHttpUatPersistedSnapshot": "equal"
+}

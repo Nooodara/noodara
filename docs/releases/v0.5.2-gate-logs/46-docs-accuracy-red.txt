@@ -1,0 +1,77 @@
+
+ RUN  v5.0.0 /Users/xch4rt/work/myself/noodara/code
+
+ ❯ |root| tests/unit/docs/install-docs-accuracy.test.ts (26 tests | 1 failed) 27ms
+   ❯ user-facing version pins (2)
+     × historical release notes keep their pins while current install docs recommend the 0.5.2 hotfix 5ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |root| tests/unit/docs/install-docs-accuracy.test.ts > user-facing version pins > historical release notes keep their pins while current install docs recommend the 0.5.2 hotfix
+AssertionError: expected '---\ntitle: Upgrade\ndescription: Upg…' to contain '`NOODARA_VERSION=0.5.2`'
+
+- Expected
++ Received
+
+- `NOODARA_VERSION=0.5.2`
++ ---
++ title: Upgrade
++ description: Upgrading is re-running the exact same install command.
++ ---
++
++ Upgrading is re-running the exact same install command, optionally pinning a specific release with
++ `NOODARA_VERSION` (for example `NOODARA_VERSION=0.5.1`, written without a leading `v`; this installer also accepts one):
++
++ ```sh
++ curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sh
++ ```
++
++ Using the AI assistant on v0.5.0? Upgrade to v0.5.1 for the [secret redaction
++ fix](https://github.com/nooodara/noodara/blob/main/docs/releases/v0.5.1.md) in server discovery
++ data and deployment errors. This hotfix adds no migrations or configuration variables.
++
++ Upgrading from v0.4.0? Read the [v0.5.0 release
++ notes](https://github.com/nooodara/noodara/blob/main/docs/releases/v0.5.0.md) first: they cover the
++ new migrations, the metrics variables, setting up an AI provider key, and the downgrade caveat.
++
++ Upgrading from v0.3.0? Read the [v0.4.0 release
++ notes](https://github.com/nooodara/noodara/blob/main/docs/releases/v0.4.0.md) first: they cover the
++ new migrations, installing the proxy on each server, and the downgrade caveat.
++
++ What actually happens depends on what the installer finds:
++
++ - **Same version, stack already healthy** — a true no-op. Nothing is written: no backup, no image
++   pull, no `docker compose up`. Only a single, immediate health check runs, and the summary is
++   printed again.
++ - **Same version, stack stopped or unhealthy** — a repair. The installer prints "The stack is not
++   healthy; starting it.", then pulls images and brings the stack back up. `.env` is not touched —
++   there is nothing to change when the version has not moved.
++ - **Different version** — a genuine upgrade. The installer backs up `.env` to a timestamped copy
++   (see below), records the version you are moving from, updates `.env`'s version line, pulls the
++   new images and brings the stack up on the new version.
++
++ Every one of these paths preserves your existing secrets and data. Nothing here ever regenerates a
++ secret, deletes a volume, or touches a value already present in `.env` — an upgrade only ever adds
++ a variable a newer release genuinely requires, and only when it is not already there.
++
++ Before any upgrade write, the installer copies the current `.env` to
++ `/opt/noodara/.env.bak-<timestamp>`, mode `600`. **This backup file contains the same secrets as
++ `.env` itself** — treat it with the same care.
++
+
+ ❯ tests/unit/docs/install-docs-accuracy.test.ts:345:41
+    343|     expect(readFileSync('docs/releases/v0.5.0.md', 'utf8')).toContain(…
+    344|     expect(readFileSync('docs/releases/v0.5.1.md', 'utf8')).toContain(…
+    345|     expect(docsPage('operate/upgrade')).toContain('`NOODARA_VERSION=0.…
+       |                                         ^
+    346|     expect(docsPage('operate/upgrade')).toContain('docs/releases/v0.5.…
+    347|     expect(readme()).toContain('`NOODARA_VERSION=0.5.2`');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 25 passed (26)
+   Start at  20:25:42
+   Duration  133ms (tests 49%, transform 34%, import 13%, worker 4%)
+

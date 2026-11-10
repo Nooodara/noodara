@@ -339,10 +339,18 @@ describe('user-facing version pins', () => {
     }
   });
 
-  it('historical v0.5.0 notes keep their pin while current install docs recommend the 0.5.1 hotfix', () => {
+  it('historical release notes keep their pins while current install docs recommend the 0.5.2 hotfix', () => {
     expect(readFileSync('docs/releases/v0.5.0.md', 'utf8')).toContain('sudo NOODARA_VERSION=0.5.0 sh');
-    expect(docsPage('operate/upgrade')).toContain('`NOODARA_VERSION=0.5.1`');
-    expect(readme()).toContain('`NOODARA_VERSION=0.5.1`');
-    expect(readme()).toContain('docs/releases/v0.5.1.md');
+    expect(readFileSync('docs/releases/v0.5.1.md', 'utf8')).toContain('sudo NOODARA_VERSION=0.5.1 sh');
+    expect(docsPage('operate/upgrade')).toContain('`NOODARA_VERSION=0.5.2`');
+    expect(docsPage('operate/upgrade')).toContain('docs/releases/v0.5.2.md');
+    expect(readme()).toContain('`NOODARA_VERSION=0.5.2`');
+    expect(readme()).toContain('docs/releases/v0.5.2.md');
+    for (const text of [readme(), docsPage('operate/upgrade')]) {
+      expect(text).toContain('8 characters');
+      expect(text).toContain('snapshot');
+      expect(text).toContain('historical');
+      expect(text).toContain('Docker');
+    }
   });
 });

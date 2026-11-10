@@ -1,0 +1,51 @@
+{
+  "observed_at": "2026-11-10T02:17:51.961023+00:00",
+  "anonymous": true,
+  "credential_source": "anonymous GHCR pull token; no account credential",
+  "version": "0.5.2",
+  "images": {
+    "noodara-control-plane": {
+      "digest": "sha256:4e43356d5ee6904078b0bf637f156877f50b958591e1a70fc1194108a21b3d53",
+      "platforms": [
+        {
+          "digest": "sha256:45375bdac579e3b1c94bf225758ee13b5c19fb093a09e9ffe5ce2996c876d243",
+          "config_digest": "sha256:bb1b106fcf26c97a3310af0df7fd8cc210e75e6eb797eabaa3d7f048e8e34e55",
+          "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+          }
+        },
+        {
+          "digest": "sha256:5c61cf1d7fccf4913370ec88006725bf1baf57c3582dd683796ff5b74bfe8acc",
+          "config_digest": "sha256:3cd8d6e9e2f0504f32b5615b35dfe206031dafecdb37787b422a1ea4ffd04b6e",
+          "platform": {
+            "architecture": "arm64",
+            "os": "linux"
+          }
+        }
+      ]
+    },
+    "noodara-web": {
+      "digest": "sha256:a4aeeb6197725de81cec2f537aa3062bcbe6b12cfc5e3ed3e7addf90df4d11bd",
+      "platforms": [
+        {
+          "digest": "sha256:4ca760470803740c309b427e5f9fd6e1376e69938784ca058b9f4bef7133f641",
+          "config_digest": "sha256:c9f099d16f09c247f97cea497bd6907af2f1abfeae2e39679366d8c7044389b8",
+          "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+          }
+        },
+        {
+          "digest": "sha256:cad24e163b7cbc7289e202799d44f0836560ab5be35d31e51bf9fdec48667ed3",
+          "config_digest": "sha256:b0f840dfe9a2e6ad19deeff6588c711c5be119cf49373b251f42f2906af004eb",
+          "platform": {
+            "architecture": "arm64",
+            "os": "linux"
+          }
+        }
+      ]
+    }
+  },
+  "matches_before_install": true
+}

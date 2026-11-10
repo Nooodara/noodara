@@ -1,0 +1,17 @@
+{
+  "tag": "v0.5.2-rc.1",
+  "tagObject": "04411c749cf445d26e45b0eb120fbfe48ea5ac40",
+  "candidateSource": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+  "candidateTree": "0d8d99ee5f9f7477696890d9a4b567ff5cf05c76",
+  "localSource": "8570968cfadbc2d7f29ef2328dfe83e6360b9772",
+  "treeEquality": true,
+  "publicBaseline": "aa5ff7cf015ed6792ba07e0e301ca393f06266f8",
+  "gitIdentity": "Pablo Gutierrez <pab203.guti@gmail.com> / Pablo Gutierrez <pab203.guti@gmail.com>",
+  "attributionTrailers": false,
+  "publication": "atomic non-force push of main and new annotated tag",
+  "workspaceRemote": "unchanged: none",
+  "latest": "v0.5.1",
+  "releaseCreated": false,
+  "artifactsVerified": false,
+  "installedUpgrade": false
+}

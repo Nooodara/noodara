@@ -1,0 +1,255 @@
+{
+  "observed_at": "2026-11-10T02:09:04.268490+00:00",
+  "refs": {
+    "refs/heads/main": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+    "refs/tags/v0.5.0": "72219f30036012a79e9380252316ae30dce2173b",
+    "refs/tags/v0.5.0^{}": "fa3314b3b68beae96a5ae9591b58cbe846e7f0a2",
+    "refs/tags/v0.5.0-rc.1": "efd263e4d74a7dce70137e11c92a94ece074adf9",
+    "refs/tags/v0.5.0-rc.1^{}": "3796cdd3f1c9c2e85b073ae7b10d6d60f98fac0d",
+    "refs/tags/v0.5.0-rc.2": "84e4bf893e7683f57087e2eabe1483e604add01c",
+    "refs/tags/v0.5.0-rc.2^{}": "1ddd071174ede64c9ff0a8772c79c458dc4b92a7",
+    "refs/tags/v0.5.0-rc.3": "1086e7d918e004f968cc5a427abd1573b5df9cd3",
+    "refs/tags/v0.5.0-rc.3^{}": "fa3314b3b68beae96a5ae9591b58cbe846e7f0a2",
+    "refs/tags/v0.5.1": "de90946163e9f5c6709c757c4aa83687208141a9",
+    "refs/tags/v0.5.1^{}": "eeacb80fcd3a88fdd5c68c6c351180be250f8170",
+    "refs/tags/v0.5.1-rc.1": "9fc377daff5a43b1cddb49783e04d6ec08c3e9e7",
+    "refs/tags/v0.5.1-rc.1^{}": "eeacb80fcd3a88fdd5c68c6c351180be250f8170",
+    "refs/tags/v0.5.2-rc.1": "04411c749cf445d26e45b0eb120fbfe48ea5ac40",
+    "refs/tags/v0.5.2-rc.1^{}": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba"
+  },
+  "historical_tags_equal": true,
+  "publishers": {
+    "all_ref_runs": 15,
+    "active": [],
+    "dispatch": []
+  },
+  "runs": [
+    {
+      "id": 42661926639,
+      "head_sha": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1,
+      "url": "https://github.com/Nooodara/noodara/actions/runs/42661926639",
+      "jobs": [
+        {
+          "id": 129315442559,
+          "name": "unit",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315442897,
+          "name": "typecheck",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315443034,
+          "name": "state-machine",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315443038,
+          "name": "site",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315443094,
+          "name": "lint",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315443115,
+          "name": "ai-evals",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315443168,
+          "name": "installer",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315443196,
+          "name": "integration",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315443201,
+          "name": "security",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315443216,
+          "name": "boundaries",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315443284,
+          "name": "boot-smoke",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315443319,
+          "name": "e2e",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 42661925606,
+      "head_sha": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1,
+      "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606",
+      "jobs": [
+        {
+          "id": 129315447869,
+          "name": "e2e-repeat",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448332,
+          "name": "proxy (24.04)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448451,
+          "name": "ai-evals-live",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448498,
+          "name": "proxy (22.04)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448518,
+          "name": "installer",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448603,
+          "name": "deploy-engine (22.04)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448626,
+          "name": "canary",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448654,
+          "name": "soak",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448657,
+          "name": "deploy-engine (24.04)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448704,
+          "name": "domain-cycles (24.04)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448743,
+          "name": "stress-connections",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448764,
+          "name": "metrics-soak (24.04)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448771,
+          "name": "metrics-soak (22.04)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448784,
+          "name": "cycles (24.04)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448877,
+          "name": "domain-cycles (22.04)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315448960,
+          "name": "cycles (22.04)",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 42661927391,
+      "head_sha": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1,
+      "url": "https://github.com/Nooodara/noodara/actions/runs/42661927391",
+      "jobs": [
+        {
+          "id": 129315445453,
+          "name": "prepare",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315538243,
+          "name": "build (noodara-control-plane, amd64)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315538273,
+          "name": "build (noodara-control-plane, arm64)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315538454,
+          "name": "build (noodara-web, arm64)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129315538638,
+          "name": "build (noodara-web, amd64)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129317889190,
+          "name": "manifest (noodara-web)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129317889264,
+          "name": "manifest (noodara-control-plane)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129318114407,
+          "name": "verify (noodara-control-plane)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129318114508,
+          "name": "verify (noodara-web)",
+          "conclusion": "success"
+        },
+        {
+          "id": 129318201543,
+          "name": "release",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "independent_phase34_review": {
+    "phase": "34",
+    "signature": "0b2574ffc537c414c722b4a2e97b98fd69851d0660ff2996eb07beb298211468",
+    "verdict": "pass",
+    "notes": "Independent phase34 review confirms reconciled durable RC validation for exact source 3a34f0daa0a045c48039b2edc882d5ba3bf90fba, immutable artifacts, completed required remote jobs, recoverable installed upgrade/redaction/H2 evidence and all eight final authoritative gates PASS; stable promotion remains phase35 after verdict recording and advancement.",
+    "at": "2026-11-09T23:14:36.385Z"
+  }
+}

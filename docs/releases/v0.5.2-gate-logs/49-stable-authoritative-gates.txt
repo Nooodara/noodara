@@ -1,0 +1,9 @@
+agent-flow gate ▣
+Task: 35-01 — Promote approved RC commit and verify stable distribution
+ok release-v052: passed (node scripts/check-release-version.mjs v0.5.2)
+ok test: passed (pnpm test)
+ok typecheck: passed (pnpm typecheck)
+ok lint: passed (pnpm lint)
+ok boundaries: passed (pnpm boundaries)
+ok all gates green
+Next: agent-flow advance --task 35-01

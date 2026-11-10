@@ -1,0 +1,8 @@
+307aae765fcae2a24ee30c0ff1cc363931b493838c800868ec7e55bb11a5b4b2  docs/releases/v0.5.2-uat/backup-rehearsal.sh
+cd2a38b661f17e7363a53263b59a45ff61fe776c16325580d3285fc43df92945  docs/releases/v0.5.2-uat/bounded-http.mjs
+abf5d464fb904b8467616f95bf439e6f09f996792ec25d668302e5df117259be  docs/releases/v0.5.2-uat/bounded-http.test.mjs
+291928cc92bcafef9da183b4a8fb60425d755264f3e186572d6397a1bec19587  docs/releases/v0.5.2-uat/http-capture.mjs
+ae3ebddcbbf24f97dc26d8e4dbe0ad635486085d67a8e2f7b7a831bae8d610d0  docs/releases/v0.5.2-uat/http-fixture.mjs
+10c7cf11d1481964d5cac2e99e67db3951823034db7e01f20ffdee8bdb5ac4a2  docs/releases/v0.5.2-uat/installed-http.py
+96c1a0f5bf97b57d26ae9049b69c7578668c414c96d08d61e39262ac18e026b3  docs/releases/v0.5.2-uat/upgrade.sh
+08c670cbfb772b1b90843682e6e3d877584258ee6dda87bc3fcba184935d0e99  docs/releases/v0.5.1-uat/h2-smoke.mjs

@@ -1,0 +1,12 @@
+{
+  "observed_at": "2026-11-10T02:11:43.275013+00:00",
+  "tag": "v0.5.2",
+  "tag_object": "b852e4a29a18ed837a1b11e06e7b904fed051ed4",
+  "peeled_commit": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+  "approved_rc": "v0.5.2-rc.1",
+  "publication": "new annotated tag push only; no main push, no force, no tag rewrite",
+  "run_id": 42740774327,
+  "run_url": "https://github.com/Nooodara/noodara/actions/runs/42740774327",
+  "last_observed_status": "in_progress",
+  "stable_acceptance": "NOT READY; final Release/images/installed smoke/default resolution/continuity pending"
+}

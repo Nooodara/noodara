@@ -1,0 +1,48 @@
+{
+  "observed_at": "2026-11-09T22:56:29.216467+00:00",
+  "anonymous": true,
+  "credential_source": "none; anonymous GHCR pull token",
+  "images": {
+    "noodara-control-plane": {
+      "digest": "sha256:f10c9915216424fddaeed7eb9c5beaac07d56fd07d70ea53b634be7ac8584a97",
+      "platforms": [
+        {
+          "digest": "sha256:b71ef6e3482d2c897ee1708d2a8587e5dcb4f77d642029095210767650aaee2b",
+          "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+          }
+        },
+        {
+          "digest": "sha256:53d4ac0d465b686c9ff38c39796e18207c27dc5bd77091b9af4bab698e6b29a9",
+          "platform": {
+            "architecture": "arm64",
+            "os": "linux"
+          }
+        }
+      ]
+    },
+    "noodara-web": {
+      "digest": "sha256:2782e556bf366ae37b9805e7036dc5559b7c56f8ba99fb5b9bb901c91756d6ca",
+      "platforms": [
+        {
+          "digest": "sha256:2c3ac4123ce13b8a952a9fdb7d02c8d5c02f539a02fe55b3ab7a03166ccf123c",
+          "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+          }
+        },
+        {
+          "digest": "sha256:0940b48a25bd0d3c5f1c2f6aafc7a72d47dca2f84f8da4e134cb3a7e7b05fef6",
+          "platform": {
+            "architecture": "arm64",
+            "os": "linux"
+          }
+        }
+      ]
+    }
+  },
+  "matches_before_uat": true,
+  "prior_after_uat_evidence": "docs/releases/v0.5.2-gate-logs/21-artifact-continuity-after-uat.json",
+  "matches_after_uat": true
+}

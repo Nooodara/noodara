@@ -1,0 +1,161 @@
+{
+  "observed_at": "2026-11-09T22:57:13.566021+00:00",
+  "source": "gh api --paginate repos/Nooodara/noodara/actions/workflows/release.yml/runs?per_page=100; no branch/ref/status filter",
+  "all_ref_release_runs": [
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.5.2-rc.1",
+      "head_sha": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/42661927391",
+      "id": 42661927391,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.5.1",
+      "head_sha": "eeacb80fcd3a88fdd5c68c6c351180be250f8170",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/42460990499",
+      "id": 42460990499,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.5.1-rc.1",
+      "head_sha": "eeacb80fcd3a88fdd5c68c6c351180be250f8170",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/42443547051",
+      "id": 42443547051,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.5.0",
+      "head_sha": "fa3314b3b68beae96a5ae9591b58cbe846e7f0a2",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/42422548050",
+      "id": 42422548050,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.5.0-rc.3",
+      "head_sha": "fa3314b3b68beae96a5ae9591b58cbe846e7f0a2",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/42400213638",
+      "id": 42400213638,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.5.0-rc.2",
+      "head_sha": "1ddd071174ede64c9ff0a8772c79c458dc4b92a7",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/42393700854",
+      "id": 42393700854,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.5.0-rc.1",
+      "head_sha": "3796cdd3f1c9c2e85b073ae7b10d6d60f98fac0d",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/42390094743",
+      "id": 42390094743,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.4.0",
+      "head_sha": "d1d956bce58f394c0d4fb872cff8d7dad00f102a",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/41535064354",
+      "id": 41535064354,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.4.0-rc.1",
+      "head_sha": "d1d956bce58f394c0d4fb872cff8d7dad00f102a",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/41508069777",
+      "id": 41508069777,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.3.0",
+      "head_sha": "a0b456189697eab270c3d81c07e286229d2f81dd",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/41016597518",
+      "id": 41016597518,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.3.0-rc.1",
+      "head_sha": "2d1e1c69dc84f9ba0564dff76f7ee1ad9d4ed80b",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/39281150628",
+      "id": 39281150628,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.2.0",
+      "head_sha": "d828db46bf7f5edb7b87f72ed32248788251d244",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/38606580357",
+      "id": 38606580357,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.2.0-rc.2",
+      "head_sha": "d828db46bf7f5edb7b87f72ed32248788251d244",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/38603523696",
+      "id": 38603523696,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.2.0-rc.1",
+      "head_sha": "48038ce466db134c8fb7173da025096bd71c4796",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/38160392096",
+      "id": 38160392096,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "v0.1.0",
+      "head_sha": "faef4dc9f9dc32451217d547a570852678440427",
+      "html_url": "https://github.com/Nooodara/noodara/actions/runs/35692383407",
+      "id": 35692383407,
+      "run_attempt": 1,
+      "status": "completed"
+    }
+  ],
+  "active_publishers": [],
+  "workflow_dispatch_runs": [],
+  "workflow_dispatch_inputs": "No Release workflow_dispatch exists across complete paginated collection; version/checkout inputs are therefore not applicable. No dispatch performed.",
+  "overlapping_rc_writers": false,
+  "run_count": 15
+}

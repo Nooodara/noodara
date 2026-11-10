@@ -4,15 +4,26 @@ description: Upgrading is re-running the exact same install command.
 ---
 
 Upgrading is re-running the exact same install command, optionally pinning a specific release with
-`NOODARA_VERSION` (for example `NOODARA_VERSION=0.5.1`, written without a leading `v`; this installer also accepts one):
+`NOODARA_VERSION` (for example `NOODARA_VERSION=0.5.2`, written without a leading `v`; this installer also accepts one):
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/nooodara/noodara/main/install.sh | sh
 ```
 
-Using the AI assistant on v0.5.0? Upgrade to v0.5.1 for the [secret redaction
-fix](https://github.com/nooodara/noodara/blob/main/docs/releases/v0.5.1.md) in server discovery
-data and deployment errors. This hotfix adds no migrations or configuration variables.
+Upgrade from v0.5.1 or earlier to v0.5.2 for the [legacy runtime log secret redaction
+fix](https://github.com/nooodara/noodara/blob/main/docs/releases/v0.5.2.md). The authenticated
+legacy JSON tail and NDJSON follow endpoints now redact the selected service's currently
+visible project, environment and service secrets before returning output. This release also
+includes the v0.5.1 AI tool-result redaction fix. It adds no migrations or configuration variables.
+
+Each request uses a snapshot of authorized secrets visible when it opens, with the existing
+minimum length of 8 characters (including eligible multiline components). Deleted or rotated
+historical values, changes after a follow starts, shorter values and another service's secrets
+are outside the guarantee. Docker's original logs are not scrubbed. Investigate prior exposure
+and rotate affected secrets; upgrading cannot undo already disclosed output.
+
+Back up the database, installation configuration and encryption key before upgrading. The
+installer's `.env` backup alone is not a full recovery backup.
 
 Upgrading from v0.4.0? Read the [v0.5.0 release
 notes](https://github.com/nooodara/noodara/blob/main/docs/releases/v0.5.0.md) first: they cover the

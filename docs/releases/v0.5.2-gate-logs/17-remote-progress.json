@@ -1,0 +1,3882 @@
+{
+  "capturedAt": "2026-11-09T17:21:11.024275+00:00",
+  "runs": {
+    "release": {
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 42661927391,
+      "event": "push",
+      "headBranch": "v0.5.2-rc.1",
+      "headSha": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+      "jobs": [
+        {
+          "completedAt": "2026-11-09T17:10:10Z",
+          "conclusion": "success",
+          "databaseId": 129315445453,
+          "name": "prepare",
+          "startedAt": "2026-11-09T17:10:03Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:05Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:07Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:08Z",
+              "conclusion": "success",
+              "name": "Compute and validate the release version (must match install.sh's noodara_resolve_version)",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:08Z",
+              "conclusion": "success",
+              "name": "Lower-case the repository owner (GHCR requires a lowercase image path)",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:08Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 8,
+              "startedAt": "2026-11-09T17:10:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:08Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 9,
+              "startedAt": "2026-11-09T17:10:08Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661927391/job/129315445453"
+        },
+        {
+          "completedAt": "2026-11-09T17:12:41Z",
+          "conclusion": "success",
+          "databaseId": 129315538243,
+          "name": "build (noodara-control-plane, amd64)",
+          "startedAt": "2026-11-09T17:10:43Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:46Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:44Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:48Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:46Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:56Z",
+              "conclusion": "success",
+              "name": "Run docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:48Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:57Z",
+              "conclusion": "success",
+              "name": "Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:56Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:10Z",
+              "conclusion": "success",
+              "name": "Build and push noodara-control-plane (amd64)",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:57Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:10Z",
+              "conclusion": "skipped",
+              "name": "Build and push noodara-web (amd64)",
+              "number": 6,
+              "startedAt": "2026-11-09T17:12:10Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:12Z",
+              "conclusion": "success",
+              "name": "Post Build and push noodara-control-plane (amd64)",
+              "number": 9,
+              "startedAt": "2026-11-09T17:12:10Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:12Z",
+              "conclusion": "success",
+              "name": "Post Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 10,
+              "startedAt": "2026-11-09T17:12:12Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:38Z",
+              "conclusion": "success",
+              "name": "Post Run docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069",
+              "number": 11,
+              "startedAt": "2026-11-09T17:12:12Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:38Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 12,
+              "startedAt": "2026-11-09T17:12:38Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:38Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 13,
+              "startedAt": "2026-11-09T17:12:38Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661927391/job/129315538243"
+        },
+        {
+          "completedAt": "2026-11-09T17:11:45Z",
+          "conclusion": "success",
+          "databaseId": 129315538273,
+          "name": "build (noodara-control-plane, arm64)",
+          "startedAt": "2026-11-09T17:10:25Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:27Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:26Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:28Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:27Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:34Z",
+              "conclusion": "success",
+              "name": "Run docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:28Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:34Z",
+              "conclusion": "success",
+              "name": "Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:34Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:32Z",
+              "conclusion": "success",
+              "name": "Build and push noodara-control-plane (arm64)",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:34Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:32Z",
+              "conclusion": "skipped",
+              "name": "Build and push noodara-web (arm64)",
+              "number": 6,
+              "startedAt": "2026-11-09T17:11:32Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:33Z",
+              "conclusion": "success",
+              "name": "Post Build and push noodara-control-plane (arm64)",
+              "number": 9,
+              "startedAt": "2026-11-09T17:11:32Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:33Z",
+              "conclusion": "success",
+              "name": "Post Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 10,
+              "startedAt": "2026-11-09T17:11:33Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:43Z",
+              "conclusion": "success",
+              "name": "Post Run docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069",
+              "number": 11,
+              "startedAt": "2026-11-09T17:11:33Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:43Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 12,
+              "startedAt": "2026-11-09T17:11:43Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:43Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 13,
+              "startedAt": "2026-11-09T17:11:43Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661927391/job/129315538273"
+        },
+        {
+          "completedAt": "2026-11-09T17:12:29Z",
+          "conclusion": "success",
+          "databaseId": 129315538454,
+          "name": "build (noodara-web, arm64)",
+          "startedAt": "2026-11-09T17:11:06Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:11:08Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:11:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:11Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:11:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:17Z",
+              "conclusion": "success",
+              "name": "Run docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069",
+              "number": 3,
+              "startedAt": "2026-11-09T17:11:11Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:17Z",
+              "conclusion": "success",
+              "name": "Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 4,
+              "startedAt": "2026-11-09T17:11:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:17Z",
+              "conclusion": "skipped",
+              "name": "Build and push noodara-control-plane (arm64)",
+              "number": 5,
+              "startedAt": "2026-11-09T17:11:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:19Z",
+              "conclusion": "success",
+              "name": "Build and push noodara-web (arm64)",
+              "number": 6,
+              "startedAt": "2026-11-09T17:11:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:20Z",
+              "conclusion": "success",
+              "name": "Post Build and push noodara-web (arm64)",
+              "number": 9,
+              "startedAt": "2026-11-09T17:12:19Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:20Z",
+              "conclusion": "success",
+              "name": "Post Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 10,
+              "startedAt": "2026-11-09T17:12:20Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:28Z",
+              "conclusion": "success",
+              "name": "Post Run docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069",
+              "number": 11,
+              "startedAt": "2026-11-09T17:12:20Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:28Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 12,
+              "startedAt": "2026-11-09T17:12:28Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:28Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 13,
+              "startedAt": "2026-11-09T17:12:28Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661927391/job/129315538454"
+        },
+        {
+          "completedAt": "2026-11-09T17:14:16Z",
+          "conclusion": "success",
+          "databaseId": 129315538638,
+          "name": "build (noodara-web, amd64)",
+          "startedAt": "2026-11-09T17:12:43Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:12:45Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:12:44Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:46Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:12:45Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:51Z",
+              "conclusion": "success",
+              "name": "Run docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069",
+              "number": 3,
+              "startedAt": "2026-11-09T17:12:46Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:51Z",
+              "conclusion": "success",
+              "name": "Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 4,
+              "startedAt": "2026-11-09T17:12:51Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:51Z",
+              "conclusion": "skipped",
+              "name": "Build and push noodara-control-plane (amd64)",
+              "number": 5,
+              "startedAt": "2026-11-09T17:12:51Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:00Z",
+              "conclusion": "success",
+              "name": "Build and push noodara-web (amd64)",
+              "number": 6,
+              "startedAt": "2026-11-09T17:12:51Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:01Z",
+              "conclusion": "success",
+              "name": "Post Build and push noodara-web (amd64)",
+              "number": 9,
+              "startedAt": "2026-11-09T17:14:00Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:01Z",
+              "conclusion": "success",
+              "name": "Post Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 10,
+              "startedAt": "2026-11-09T17:14:01Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:15Z",
+              "conclusion": "success",
+              "name": "Post Run docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069",
+              "number": 11,
+              "startedAt": "2026-11-09T17:14:01Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:15Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 12,
+              "startedAt": "2026-11-09T17:14:15Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:15Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 13,
+              "startedAt": "2026-11-09T17:14:15Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661927391/job/129315538638"
+        },
+        {
+          "completedAt": "2026-11-09T17:14:39Z",
+          "conclusion": "success",
+          "databaseId": 129317889190,
+          "name": "manifest (noodara-web)",
+          "startedAt": "2026-11-09T17:14:21Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:14:22Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:14:21Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:34Z",
+              "conclusion": "success",
+              "name": "Run docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069",
+              "number": 2,
+              "startedAt": "2026-11-09T17:14:22Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:35Z",
+              "conclusion": "success",
+              "name": "Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 3,
+              "startedAt": "2026-11-09T17:14:34Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:36Z",
+              "conclusion": "success",
+              "name": "Combine the two per-arch tags into one multi-arch manifest at the final version tag",
+              "number": 4,
+              "startedAt": "2026-11-09T17:14:35Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:37Z",
+              "conclusion": "success",
+              "name": "Post Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 7,
+              "startedAt": "2026-11-09T17:14:36Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:37Z",
+              "conclusion": "success",
+              "name": "Post Run docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069",
+              "number": 8,
+              "startedAt": "2026-11-09T17:14:37Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:37Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 9,
+              "startedAt": "2026-11-09T17:14:37Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661927391/job/129317889190"
+        },
+        {
+          "completedAt": "2026-11-09T17:14:33Z",
+          "conclusion": "success",
+          "databaseId": 129317889264,
+          "name": "manifest (noodara-control-plane)",
+          "startedAt": "2026-11-09T17:14:18Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:14:20Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:14:18Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:27Z",
+              "conclusion": "success",
+              "name": "Run docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069",
+              "number": 2,
+              "startedAt": "2026-11-09T17:14:20Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:28Z",
+              "conclusion": "success",
+              "name": "Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 3,
+              "startedAt": "2026-11-09T17:14:27Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:30Z",
+              "conclusion": "success",
+              "name": "Combine the two per-arch tags into one multi-arch manifest at the final version tag",
+              "number": 4,
+              "startedAt": "2026-11-09T17:14:28Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:30Z",
+              "conclusion": "success",
+              "name": "Post Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 7,
+              "startedAt": "2026-11-09T17:14:30Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:30Z",
+              "conclusion": "success",
+              "name": "Post Run docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069",
+              "number": 8,
+              "startedAt": "2026-11-09T17:14:30Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:31Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 9,
+              "startedAt": "2026-11-09T17:14:30Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661927391/job/129317889264"
+        },
+        {
+          "completedAt": "2026-11-09T17:14:46Z",
+          "conclusion": "success",
+          "databaseId": 129318114407,
+          "name": "verify (noodara-control-plane)",
+          "startedAt": "2026-11-09T17:14:41Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:14:42Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:14:42Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:43Z",
+              "conclusion": "success",
+              "name": "Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 2,
+              "startedAt": "2026-11-09T17:14:42Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:44Z",
+              "conclusion": "success",
+              "name": "Verify the published manifest covers both linux/amd64 and linux/arm64",
+              "number": 3,
+              "startedAt": "2026-11-09T17:14:43Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:44Z",
+              "conclusion": "success",
+              "name": "Post Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 6,
+              "startedAt": "2026-11-09T17:14:44Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:44Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 7,
+              "startedAt": "2026-11-09T17:14:44Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661927391/job/129318114407"
+        },
+        {
+          "completedAt": "2026-11-09T17:14:48Z",
+          "conclusion": "success",
+          "databaseId": 129318114508,
+          "name": "verify (noodara-web)",
+          "startedAt": "2026-11-09T17:14:41Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:14:43Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:14:42Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:44Z",
+              "conclusion": "success",
+              "name": "Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 2,
+              "startedAt": "2026-11-09T17:14:43Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:46Z",
+              "conclusion": "success",
+              "name": "Verify the published manifest covers both linux/amd64 and linux/arm64",
+              "number": 3,
+              "startedAt": "2026-11-09T17:14:44Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:46Z",
+              "conclusion": "success",
+              "name": "Post Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+              "number": 6,
+              "startedAt": "2026-11-09T17:14:46Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:46Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 7,
+              "startedAt": "2026-11-09T17:14:46Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661927391/job/129318114508"
+        },
+        {
+          "completedAt": "2026-11-09T17:14:56Z",
+          "conclusion": "success",
+          "databaseId": 129318201543,
+          "name": "release",
+          "startedAt": "2026-11-09T17:14:50Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:14:51Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:14:51Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:53Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:14:51Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:55Z",
+              "conclusion": "success",
+              "name": "Create the GitHub Release (prerelease and not latest for -rc.N)",
+              "number": 3,
+              "startedAt": "2026-11-09T17:14:53Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:55Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 6,
+              "startedAt": "2026-11-09T17:14:55Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:55Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 7,
+              "startedAt": "2026-11-09T17:14:55Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661927391/job/129318201543"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/42661927391"
+    },
+    "ci": {
+      "attempt": 1,
+      "conclusion": "",
+      "databaseId": 42661926639,
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+      "jobs": [
+        {
+          "completedAt": "2026-11-09T17:14:19Z",
+          "conclusion": "success",
+          "databaseId": 129315442559,
+          "name": "unit",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:06Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:07Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:06Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:13Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:16Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:13Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:14Z",
+              "conclusion": "success",
+              "name": "Run pnpm test --coverage",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:16Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:17Z",
+              "conclusion": "success",
+              "name": "Upload coverage report",
+              "number": 7,
+              "startedAt": "2026-11-09T17:14:14Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:17Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 12,
+              "startedAt": "2026-11-09T17:14:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:17Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 13,
+              "startedAt": "2026-11-09T17:14:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:17Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 14,
+              "startedAt": "2026-11-09T17:14:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:17Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 15,
+              "startedAt": "2026-11-09T17:14:17Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661926639/job/129315442559"
+        },
+        {
+          "completedAt": "2026-11-09T17:11:20Z",
+          "conclusion": "success",
+          "databaseId": 129315442897,
+          "name": "typecheck",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:05Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:06Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:08Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:06Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:14Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:17Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:14Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:17Z",
+              "conclusion": "success",
+              "name": "Run pnpm typecheck",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:17Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 10,
+              "startedAt": "2026-11-09T17:11:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:17Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 11,
+              "startedAt": "2026-11-09T17:11:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:18Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 12,
+              "startedAt": "2026-11-09T17:11:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:18Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 13,
+              "startedAt": "2026-11-09T17:11:18Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661926639/job/129315442897"
+        },
+        {
+          "completedAt": "2026-11-09T17:10:19Z",
+          "conclusion": "success",
+          "databaseId": 129315443034,
+          "name": "state-machine",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:03Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:02Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:05Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:06Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:11Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:06Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:14Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:11Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:17Z",
+              "conclusion": "success",
+              "name": "Run pnpm test:state-machine",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:14Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:17Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 10,
+              "startedAt": "2026-11-09T17:10:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:17Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 11,
+              "startedAt": "2026-11-09T17:10:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:17Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 12,
+              "startedAt": "2026-11-09T17:10:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:17Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 13,
+              "startedAt": "2026-11-09T17:10:17Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661926639/job/129315443034"
+        },
+        {
+          "completedAt": "2026-11-09T17:10:42Z",
+          "conclusion": "success",
+          "databaseId": 129315443038,
+          "name": "site",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:03Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:02Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:05Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:06Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:10Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:06Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:14Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:10Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:37Z",
+              "conclusion": "success",
+              "name": "Run pnpm site:build",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:14Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:40Z",
+              "conclusion": "success",
+              "name": "Run pnpm exec vitest run tests/unit/docs tests/unit/site",
+              "number": 7,
+              "startedAt": "2026-11-09T17:10:37Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:40Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 12,
+              "startedAt": "2026-11-09T17:10:40Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:40Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 13,
+              "startedAt": "2026-11-09T17:10:40Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:40Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 14,
+              "startedAt": "2026-11-09T17:10:40Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:40Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 15,
+              "startedAt": "2026-11-09T17:10:40Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661926639/job/129315443038"
+        },
+        {
+          "completedAt": "2026-11-09T17:11:12Z",
+          "conclusion": "success",
+          "databaseId": 129315443094,
+          "name": "lint",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:03Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:02Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:05Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:06Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:11Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:06Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:14Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:11Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:07Z",
+              "conclusion": "success",
+              "name": "Run pnpm lint",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:14Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:07Z",
+              "conclusion": "success",
+              "name": "Run pnpm check:ui-safety",
+              "number": 7,
+              "startedAt": "2026-11-09T17:11:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:07Z",
+              "conclusion": "success",
+              "name": "Run pnpm brand:check",
+              "number": 8,
+              "startedAt": "2026-11-09T17:11:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:08Z",
+              "conclusion": "success",
+              "name": "Run pnpm check:posix-sh",
+              "number": 9,
+              "startedAt": "2026-11-09T17:11:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:08Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 16,
+              "startedAt": "2026-11-09T17:11:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:08Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 17,
+              "startedAt": "2026-11-09T17:11:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:08Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 18,
+              "startedAt": "2026-11-09T17:11:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:08Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 19,
+              "startedAt": "2026-11-09T17:11:08Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661926639/job/129315443094"
+        },
+        {
+          "completedAt": "2026-11-09T17:10:21Z",
+          "conclusion": "success",
+          "databaseId": 129315443115,
+          "name": "ai-evals",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:03Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:05Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:07Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:10Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:13Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:10Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:13Z",
+              "conclusion": "success",
+              "name": "Run node scripts/ai-baseline-check.mjs guard",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:13Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:17Z",
+              "conclusion": "success",
+              "name": "Run pnpm test:ai-evals",
+              "number": 7,
+              "startedAt": "2026-11-09T17:10:13Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:18Z",
+              "conclusion": "success",
+              "name": "Run node scripts/ai-baseline-check.mjs replay",
+              "number": 8,
+              "startedAt": "2026-11-09T17:10:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:19Z",
+              "conclusion": "success",
+              "name": "Refuse a lowered baseline without a justification",
+              "number": 9,
+              "startedAt": "2026-11-09T17:10:18Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:19Z",
+              "conclusion": "success",
+              "name": "Run node scripts/ai-baseline-check.mjs guard",
+              "number": 10,
+              "startedAt": "2026-11-09T17:10:19Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:19Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 18,
+              "startedAt": "2026-11-09T17:10:19Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:19Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 19,
+              "startedAt": "2026-11-09T17:10:19Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:19Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 20,
+              "startedAt": "2026-11-09T17:10:19Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:19Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 21,
+              "startedAt": "2026-11-09T17:10:19Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661926639/job/129315443115"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 129315443168,
+          "name": "installer",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "in_progress",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:03Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:02Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:05Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:07Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:12Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:15Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:12Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:25Z",
+              "conclusion": "success",
+              "name": "Reclaim runner disk for the Docker-in-Docker suite",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:15Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Run pnpm test:installer",
+              "number": 7,
+              "startedAt": "2026-11-09T17:11:25Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test container survived",
+              "number": 8,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 14,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 15,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 16,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661926639/job/129315443168"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 129315443196,
+          "name": "integration",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "in_progress",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:03Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:02Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:05Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:06Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:11Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:06Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:15Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:11Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Run pnpm test:integration --exclude 'tests/integration/deploy-engine/**' --exclude 'tests/integration/proxy/**'",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:15Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test container survived",
+              "number": 7,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test network survived",
+              "number": 8,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 14,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 15,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 16,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661926639/job/129315443196"
+        },
+        {
+          "completedAt": "2026-11-09T17:20:09Z",
+          "conclusion": "success",
+          "databaseId": 129315443201,
+          "name": "security",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:03Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:05Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:07Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:12Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:15Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:12Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:32Z",
+              "conclusion": "success",
+              "name": "Run pnpm exec playwright install --with-deps chromium",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:15Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:33Z",
+              "conclusion": "success",
+              "name": "Run pnpm audit --audit-level=high",
+              "number": 7,
+              "startedAt": "2026-11-09T17:10:32Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:04Z",
+              "conclusion": "success",
+              "name": "Run node scripts/check-package-provenance.mjs",
+              "number": 8,
+              "startedAt": "2026-11-09T17:10:33Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:20:03Z",
+              "conclusion": "success",
+              "name": "Run pnpm security:scan-leaks",
+              "number": 9,
+              "startedAt": "2026-11-09T17:11:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:20:03Z",
+              "conclusion": "success",
+              "name": "Fail if any noodara.test container survived",
+              "number": 10,
+              "startedAt": "2026-11-09T17:20:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:20:03Z",
+              "conclusion": "success",
+              "name": "Install gitleaks (pinned release, checksum-verified)",
+              "number": 11,
+              "startedAt": "2026-11-09T17:20:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:20:04Z",
+              "conclusion": "success",
+              "name": "gitleaks (diff / pushed commits)",
+              "number": 12,
+              "startedAt": "2026-11-09T17:20:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:20:07Z",
+              "conclusion": "success",
+              "name": "gitleaks (full tree, main only)",
+              "number": 13,
+              "startedAt": "2026-11-09T17:20:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:20:07Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 24,
+              "startedAt": "2026-11-09T17:20:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:20:07Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 25,
+              "startedAt": "2026-11-09T17:20:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:20:07Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 26,
+              "startedAt": "2026-11-09T17:20:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:20:07Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 27,
+              "startedAt": "2026-11-09T17:20:07Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661926639/job/129315443201"
+        },
+        {
+          "completedAt": "2026-11-09T17:10:21Z",
+          "conclusion": "success",
+          "databaseId": 129315443216,
+          "name": "boundaries",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:06Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:08Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:06Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:14Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:17Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:14Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:18Z",
+              "conclusion": "success",
+              "name": "Run pnpm boundaries",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:18Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 10,
+              "startedAt": "2026-11-09T17:10:18Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:18Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 11,
+              "startedAt": "2026-11-09T17:10:18Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:18Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 12,
+              "startedAt": "2026-11-09T17:10:18Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:18Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 13,
+              "startedAt": "2026-11-09T17:10:18Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661926639/job/129315443216"
+        },
+        {
+          "completedAt": "2026-11-09T17:12:12Z",
+          "conclusion": "success",
+          "databaseId": 129315443284,
+          "name": "boot-smoke",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:07Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:08Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:15Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:18Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:15Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:55Z",
+              "conclusion": "success",
+              "name": "Run pnpm build",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:18Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:08Z",
+              "conclusion": "success",
+              "name": "Run pnpm test:boot",
+              "number": 7,
+              "startedAt": "2026-11-09T17:10:55Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:08Z",
+              "conclusion": "success",
+              "name": "Fail if any noodara.test container survived",
+              "number": 8,
+              "startedAt": "2026-11-09T17:12:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:08Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 14,
+              "startedAt": "2026-11-09T17:12:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:08Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 15,
+              "startedAt": "2026-11-09T17:12:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:09Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 16,
+              "startedAt": "2026-11-09T17:12:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:09Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 17,
+              "startedAt": "2026-11-09T17:12:09Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661926639/job/129315443284"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 129315443319,
+          "name": "e2e",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "in_progress",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:03Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:02Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:05Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:07Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:11Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:15Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:11Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:30Z",
+              "conclusion": "success",
+              "name": "Run pnpm exec playwright install --with-deps chromium",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:15Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:07Z",
+              "conclusion": "success",
+              "name": "Run pnpm build",
+              "number": 7,
+              "startedAt": "2026-11-09T17:10:30Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Run pnpm test:e2e",
+              "number": 8,
+              "startedAt": "2026-11-09T17:11:07Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if Playwright artifacts hold private key material",
+              "number": 9,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Upload Playwright report",
+              "number": 10,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test container survived",
+              "number": 11,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 20,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 21,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 22,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661926639/job/129315443319"
+        }
+      ],
+      "status": "in_progress",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/42661926639"
+    },
+    "nightly": {
+      "attempt": 1,
+      "conclusion": "",
+      "databaseId": 42661925606,
+      "event": "workflow_dispatch",
+      "headBranch": "v0.5.2-rc.1",
+      "headSha": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+      "jobs": [
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 129315447869,
+          "name": "e2e-repeat",
+          "startedAt": "2026-11-09T17:10:03Z",
+          "status": "in_progress",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:05Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:07Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:08Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:16Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:19Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:16Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:52Z",
+              "conclusion": "success",
+              "name": "Run pnpm exec playwright install --with-deps chromium",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:19Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:34Z",
+              "conclusion": "success",
+              "name": "Run pnpm build",
+              "number": 7,
+              "startedAt": "2026-11-09T17:10:52Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Run pnpm test:e2e:repeat",
+              "number": 8,
+              "startedAt": "2026-11-09T17:11:34Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test container survived",
+              "number": 9,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 16,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 17,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 18,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315447869"
+        },
+        {
+          "completedAt": "2026-11-09T17:18:42Z",
+          "conclusion": "success",
+          "databaseId": 129315448332,
+          "name": "proxy (24.04)",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:05Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:06Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:11Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:06Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:15Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:11Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:45Z",
+              "conclusion": "success",
+              "name": "Run pnpm build",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:15Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:18:40Z",
+              "conclusion": "success",
+              "name": "Proxy suites on Ubuntu 24.04 (ADR 0011)",
+              "number": 7,
+              "startedAt": "2026-11-09T17:10:45Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:18:40Z",
+              "conclusion": "success",
+              "name": "Fail if any noodara.test container survived",
+              "number": 8,
+              "startedAt": "2026-11-09T17:18:40Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:18:40Z",
+              "conclusion": "success",
+              "name": "Fail if any noodara.test network survived",
+              "number": 9,
+              "startedAt": "2026-11-09T17:18:40Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:18:40Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 16,
+              "startedAt": "2026-11-09T17:18:40Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:18:40Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 17,
+              "startedAt": "2026-11-09T17:18:40Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:18:40Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 18,
+              "startedAt": "2026-11-09T17:18:40Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:18:40Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 19,
+              "startedAt": "2026-11-09T17:18:40Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448332"
+        },
+        {
+          "completedAt": "2026-11-09T17:10:06Z",
+          "conclusion": "success",
+          "databaseId": 129315448451,
+          "name": "ai-evals-live",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "success",
+              "name": "Record the skip when the provider key is not configured",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "skipped",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "skipped",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "skipped",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "skipped",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "skipped",
+              "name": "Live run (scenarios and adversarial set)",
+              "number": 7,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "skipped",
+              "name": "Compare the live baseline with the committed one",
+              "number": 8,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "skipped",
+              "name": "Upload the live run for review",
+              "number": 9,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 10,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448451"
+        },
+        {
+          "completedAt": "2026-11-09T17:17:44Z",
+          "conclusion": "success",
+          "databaseId": 129315448498,
+          "name": "proxy (22.04)",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:06Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:07Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:06Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:13Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:16Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:13Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:54Z",
+              "conclusion": "success",
+              "name": "Run pnpm build",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:16Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:17:42Z",
+              "conclusion": "success",
+              "name": "Proxy suites on Ubuntu 22.04 (ADR 0011)",
+              "number": 7,
+              "startedAt": "2026-11-09T17:10:54Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:17:42Z",
+              "conclusion": "success",
+              "name": "Fail if any noodara.test container survived",
+              "number": 8,
+              "startedAt": "2026-11-09T17:17:42Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:17:42Z",
+              "conclusion": "success",
+              "name": "Fail if any noodara.test network survived",
+              "number": 9,
+              "startedAt": "2026-11-09T17:17:42Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:17:42Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 16,
+              "startedAt": "2026-11-09T17:17:42Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:17:42Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 17,
+              "startedAt": "2026-11-09T17:17:42Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:17:42Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 18,
+              "startedAt": "2026-11-09T17:17:42Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:17:42Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 19,
+              "startedAt": "2026-11-09T17:17:42Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448498"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 129315448518,
+          "name": "installer",
+          "startedAt": "2026-11-09T17:10:22Z",
+          "status": "in_progress",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:25Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:23Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:26Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:25Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:28Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:26Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:34Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:28Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:37Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:34Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:49Z",
+              "conclusion": "success",
+              "name": "Reclaim runner disk for the Docker-in-Docker suite",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:37Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Run pnpm test:installer",
+              "number": 7,
+              "startedAt": "2026-11-09T17:11:49Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test container survived",
+              "number": 8,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 14,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 15,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 16,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448518"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 129315448603,
+          "name": "deploy-engine (22.04)",
+          "startedAt": "2026-11-09T17:10:07Z",
+          "status": "in_progress",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:09Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:10Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:09Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:11Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:10Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:15Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:11Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:18Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:15Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:46Z",
+              "conclusion": "success",
+              "name": "Run pnpm build",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:18Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Deploy-engine suites on Ubuntu 22.04 (D-11)",
+              "number": 7,
+              "startedAt": "2026-11-09T17:10:46Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test container survived",
+              "number": 8,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test network survived",
+              "number": 9,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 16,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 17,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 18,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448603"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 129315448626,
+          "name": "canary",
+          "startedAt": "2026-11-09T17:12:14Z",
+          "status": "in_progress",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:12:16Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:12:15Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:19Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:12:16Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:20Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:12:19Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:27Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:12:20Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:30Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:12:27Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:54Z",
+              "conclusion": "success",
+              "name": "Run pnpm exec playwright install --with-deps chromium",
+              "number": 6,
+              "startedAt": "2026-11-09T17:12:30Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Run pnpm security:scan-leaks",
+              "number": 7,
+              "startedAt": "2026-11-09T17:12:54Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test container survived",
+              "number": 8,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 14,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 15,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 16,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448626"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 129315448654,
+          "name": "soak",
+          "startedAt": "2026-11-09T17:10:21Z",
+          "status": "in_progress",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:23Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:22Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:25Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:23Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:26Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:25Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:26Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:36Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:33Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:14Z",
+              "conclusion": "success",
+              "name": "Run pnpm build",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:36Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Deploy-engine soak on Ubuntu 22.04 and 24.04 (QA-08)",
+              "number": 7,
+              "startedAt": "2026-11-09T17:11:14Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Upload soak artifact",
+              "number": 8,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test resource survived",
+              "number": 9,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 16,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 17,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 18,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448654"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 129315448657,
+          "name": "deploy-engine (24.04)",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "in_progress",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:05Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:06Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:11Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:06Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:15Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:11Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:38Z",
+              "conclusion": "success",
+              "name": "Run pnpm build",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:15Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Deploy-engine suites on Ubuntu 24.04 (D-11)",
+              "number": 7,
+              "startedAt": "2026-11-09T17:10:38Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test container survived",
+              "number": 8,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test network survived",
+              "number": 9,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 16,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 17,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 18,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448657"
+        },
+        {
+          "completedAt": "2026-11-09T17:15:32Z",
+          "conclusion": "success",
+          "databaseId": 129315448704,
+          "name": "domain-cycles (24.04)",
+          "startedAt": "2026-11-09T17:10:03Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:06Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:07Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:06Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:09Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:16Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:09Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:19Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:16Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:58Z",
+              "conclusion": "success",
+              "name": "Run pnpm build",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:19Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:15:27Z",
+              "conclusion": "success",
+              "name": "Domain cycles on Ubuntu 24.04 (25-02)",
+              "number": 7,
+              "startedAt": "2026-11-09T17:10:58Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:15:28Z",
+              "conclusion": "success",
+              "name": "Upload domain cycles artifact",
+              "number": 8,
+              "startedAt": "2026-11-09T17:15:27Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:15:28Z",
+              "conclusion": "success",
+              "name": "Fail if any noodara.test resource survived",
+              "number": 9,
+              "startedAt": "2026-11-09T17:15:28Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:15:29Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 16,
+              "startedAt": "2026-11-09T17:15:28Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:15:29Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 17,
+              "startedAt": "2026-11-09T17:15:29Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:15:29Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 18,
+              "startedAt": "2026-11-09T17:15:29Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:15:29Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 19,
+              "startedAt": "2026-11-09T17:15:29Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448704"
+        },
+        {
+          "completedAt": "2026-11-09T17:14:01Z",
+          "conclusion": "success",
+          "databaseId": 129315448743,
+          "name": "stress-connections",
+          "startedAt": "2026-11-09T17:12:31Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:12:33Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:12:31Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:34Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:12:33Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:35Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:12:34Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:39Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:12:35Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:42Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:12:39Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:13:59Z",
+              "conclusion": "success",
+              "name": "100 consecutive successful connections (roadmap \u00a76.7, QA-03)",
+              "number": 6,
+              "startedAt": "2026-11-09T17:12:42Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:13:59Z",
+              "conclusion": "success",
+              "name": "Fail if any noodara.test container survived",
+              "number": 7,
+              "startedAt": "2026-11-09T17:13:59Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:13:59Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 12,
+              "startedAt": "2026-11-09T17:13:59Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:13:59Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 13,
+              "startedAt": "2026-11-09T17:13:59Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:13:59Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 14,
+              "startedAt": "2026-11-09T17:13:59Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:13:59Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 15,
+              "startedAt": "2026-11-09T17:13:59Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448743"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 129315448764,
+          "name": "metrics-soak (24.04)",
+          "startedAt": "2026-11-09T17:10:12Z",
+          "status": "in_progress",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:14Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:13Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:16Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:14Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:17Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:16Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:28Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:31Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:28Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:12Z",
+              "conclusion": "success",
+              "name": "Run pnpm build",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:31Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Metrics soak and AI concurrency on Ubuntu 24.04 (31-02)",
+              "number": 7,
+              "startedAt": "2026-11-09T17:11:12Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Upload metrics soak artifact",
+              "number": 8,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test resource survived",
+              "number": 9,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 16,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 17,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 18,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448764"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 129315448771,
+          "name": "metrics-soak (22.04)",
+          "startedAt": "2026-11-09T17:11:14Z",
+          "status": "in_progress",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:11:16Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:11:15Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:17Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:11:16Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:19Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:11:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:25Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:11:19Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:29Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:11:25Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:03Z",
+              "conclusion": "success",
+              "name": "Run pnpm build",
+              "number": 6,
+              "startedAt": "2026-11-09T17:11:29Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Metrics soak and AI concurrency on Ubuntu 22.04 (31-02)",
+              "number": 7,
+              "startedAt": "2026-11-09T17:12:03Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Upload metrics soak artifact",
+              "number": 8,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test resource survived",
+              "number": 9,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 16,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 17,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 18,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448771"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 129315448784,
+          "name": "cycles (24.04)",
+          "startedAt": "2026-11-09T17:11:22Z",
+          "status": "in_progress",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:11:24Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:11:22Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:26Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:11:24Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:27Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:11:26Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:32Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:11:27Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:35Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:11:32Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:02Z",
+              "conclusion": "success",
+              "name": "Run pnpm build",
+              "number": 6,
+              "startedAt": "2026-11-09T17:11:35Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Deploy/rollback cycles on Ubuntu 24.04 (20-02)",
+              "number": 7,
+              "startedAt": "2026-11-09T17:12:02Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Upload cycles artifact",
+              "number": 8,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test resource survived",
+              "number": 9,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 16,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 17,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 18,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448784"
+        },
+        {
+          "completedAt": "2026-11-09T17:16:57Z",
+          "conclusion": "success",
+          "databaseId": 129315448877,
+          "name": "domain-cycles (22.04)",
+          "startedAt": "2026-11-09T17:11:46Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:11:49Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:11:47Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:51Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:11:49Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:52Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:11:51Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:58Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:11:52Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:02Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:11:58Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:12:32Z",
+              "conclusion": "success",
+              "name": "Run pnpm build",
+              "number": 6,
+              "startedAt": "2026-11-09T17:12:02Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:16:52Z",
+              "conclusion": "success",
+              "name": "Domain cycles on Ubuntu 22.04 (25-02)",
+              "number": 7,
+              "startedAt": "2026-11-09T17:12:32Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:16:53Z",
+              "conclusion": "success",
+              "name": "Upload domain cycles artifact",
+              "number": 8,
+              "startedAt": "2026-11-09T17:16:52Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:16:53Z",
+              "conclusion": "success",
+              "name": "Fail if any noodara.test resource survived",
+              "number": 9,
+              "startedAt": "2026-11-09T17:16:53Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:16:53Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 16,
+              "startedAt": "2026-11-09T17:16:53Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:16:53Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 17,
+              "startedAt": "2026-11-09T17:16:53Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:16:54Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 18,
+              "startedAt": "2026-11-09T17:16:53Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:16:54Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 19,
+              "startedAt": "2026-11-09T17:16:54Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448877"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 129315448960,
+          "name": "cycles (22.04)",
+          "startedAt": "2026-11-09T17:14:03Z",
+          "status": "in_progress",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:14:05Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:14:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:07Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:14:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:08Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:14:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:14Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:14:08Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:17Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:14:14Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:14:56Z",
+              "conclusion": "success",
+              "name": "Run pnpm build",
+              "number": 6,
+              "startedAt": "2026-11-09T17:14:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Deploy/rollback cycles on Ubuntu 22.04 (20-02)",
+              "number": 7,
+              "startedAt": "2026-11-09T17:14:56Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Upload cycles artifact",
+              "number": 8,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Fail if any noodara.test resource survived",
+              "number": 9,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 16,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 17,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 18,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606/job/129315448960"
+        }
+      ],
+      "status": "in_progress",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/42661925606"
+    },
+    "site": {
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 42661926673,
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+      "jobs": [
+        {
+          "completedAt": "2026-11-09T17:11:02Z",
+          "conclusion": "success",
+          "databaseId": 129315442456,
+          "name": "deploy",
+          "startedAt": "2026-11-09T17:10:02Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-11-09T17:10:04Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-11-09T17:10:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:05Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 2,
+              "startedAt": "2026-11-09T17:10:04Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:07Z",
+              "conclusion": "success",
+              "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 3,
+              "startedAt": "2026-11-09T17:10:05Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:11Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 4,
+              "startedAt": "2026-11-09T17:10:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:15Z",
+              "conclusion": "success",
+              "name": "Run pnpm install --frozen-lockfile",
+              "number": 5,
+              "startedAt": "2026-11-09T17:10:11Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:10:41Z",
+              "conclusion": "success",
+              "name": "Run pnpm site:build",
+              "number": 6,
+              "startedAt": "2026-11-09T17:10:15Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:00Z",
+              "conclusion": "success",
+              "name": "Deploy to Cloudflare Pages",
+              "number": 7,
+              "startedAt": "2026-11-09T17:10:41Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:00Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+              "number": 12,
+              "startedAt": "2026-11-09T17:11:00Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:00Z",
+              "conclusion": "success",
+              "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+              "number": 13,
+              "startedAt": "2026-11-09T17:11:00Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:01Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+              "number": 14,
+              "startedAt": "2026-11-09T17:11:00Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-11-09T17:11:01Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 15,
+              "startedAt": "2026-11-09T17:11:01Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/Nooodara/noodara/actions/runs/42661926673/job/129315442456"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/42661926673"
+    }
+  }
+}

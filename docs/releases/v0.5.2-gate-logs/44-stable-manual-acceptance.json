@@ -1,0 +1,74 @@
+{
+  "observed_at": "2026-11-10T02:19:34.063235+00:00",
+  "task": "35-01",
+  "manual_acceptance": "PASS",
+  "root_authoritative_gates": "pending; no claim of task advance or phase closure",
+  "source_sha": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+  "tag_object": "b852e4a29a18ed837a1b11e06e7b904fed051ed4",
+  "A1": "PASS: independent phase34 PASS; fresh exact-SHA required workflow success; tag exact RC, historical source unchanged",
+  "A2": "PASS: Release42740774327 success10/10 attempt1; non-draft/non-prerelease Latest; anonymous both indexes/4 platforms/4 configs; actual source checkout and build-output provenance36",
+  "A3": "PASS: stable installer/health/auth;8 variants emitted both streams; tail24/follow23/end56; zero plaintext; data/migrations/cipher/BYOK equal; owned resources0",
+  "A4": "PASS: all6 historical v0.5 object/peeled identities equal06; no force/tag rewrite/main/docs push/provider calls",
+  "H1": "PASS: all-ref active0/dispatch0 before publication and final acceptance; after-smoke both indexes/4 platform digests equal before install and installed arm64 image identities",
+  "H2": "PASS: unmodified exact-tagged installer resolves0.5.2 with override unset, main never executed",
+  "installed_final_artifact_comparison": "PASS",
+  "optional_ai_live": "NOT EXECUTED; existing candidate nightly key unconfigured; no new CI/nightly/live/provider calls",
+  "evidence_sha256": [
+    {
+      "path": "30-stable-prepublication.json",
+      "sha256": "d4dd617b7539cabb644f1dd4c553cc8618bcd1b6d166925eb45aecdb751323d6"
+    },
+    {
+      "path": "31-stable-promotion.json",
+      "sha256": "1e9700b8956907abd7770f1deefab2b0c6c57f5803bd00a6536a3a3bc126e0d4"
+    },
+    {
+      "path": "32-stable-backup.json",
+      "sha256": "bde1d8e3afbb2648aeb25d57fa0de00305865aa1c16841c148242176407fbe2e"
+    },
+    {
+      "path": "33-stable-release-before-uat.json",
+      "sha256": "c4a19de72274581cb66c5bc07dad478a2a7791da51a4329fdbdb7d81194133be"
+    },
+    {
+      "path": "34-stable-images-before-uat.json",
+      "sha256": "ec826777f2874904d727dd5e8aafd15219804ef0acc617a22fa3f85ac79bd955"
+    },
+    {
+      "path": "35-stable-upgrade.txt",
+      "sha256": "9977906baeb5d37eee0b707d6fcbd18544bd009dcf4fae50a728df5b5e95a426"
+    },
+    {
+      "path": "36-stable-build-source-provenance.json",
+      "sha256": "f0b84a54a4811e6a0b4f9bc70f9e96771f14a83c9308c01bcd4b5bbaabc6ce34"
+    },
+    {
+      "path": "37-stable-default-resolution.json",
+      "sha256": "c470c1dda3cfa2c0eb74429502e9991fd1404747f26245b2d7c408300d3cca95"
+    },
+    {
+      "path": "38-stable-installed-http.json",
+      "sha256": "894c27c220f679ba7caf9fd663f92313ebc5260efc1db3c85bb755c214343533"
+    },
+    {
+      "path": "39-stable-installed-identity.json",
+      "sha256": "6b13e2558991952faefb96647e103ca45cf14b34a0ec3a01b38b9be68f0b36ad"
+    },
+    {
+      "path": "40-stable-h2-simulated.json",
+      "sha256": "e6cebf590e858c4823ec80a1657cd4d95d349bb7cfb852b7c76177369f1db083"
+    },
+    {
+      "path": "41-stable-auth-preservation.json",
+      "sha256": "83eea65525e5f415eb93d1e884fc3ed424f1e71936baf7a809e126b130d2b1dd"
+    },
+    {
+      "path": "42-stable-final-refs-publishers-release.json",
+      "sha256": "8de4923bf18a1b05d79eba18b4c3631676329fca7fcd527244e57ec27613acbf"
+    },
+    {
+      "path": "43-stable-artifact-continuity-after-uat.json",
+      "sha256": "3097b9e5941d6db74dad085f2a5739e47db4f07119e6752b3776152b18682e0f"
+    }
+  ]
+}

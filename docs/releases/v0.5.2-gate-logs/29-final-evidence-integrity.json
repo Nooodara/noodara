@@ -1,0 +1,20 @@
+{
+  "observed_at": "2026-11-09T22:57:47.480678+00:00",
+  "tracked_binary_diff_sha256_before": "299eff7bfc0f633cedeafde44b5ea3592db9dda50f1ef6c3819604620457ccf5",
+  "tracked_binary_diff_sha256_after": "299eff7bfc0f633cedeafde44b5ea3592db9dda50f1ef6c3819604620457ccf5",
+  "tracked_tree_frozen": true,
+  "gitleaks_exit": 0,
+  "gitleaks_findings": 0,
+  "scanned_input_bytes": 124786,
+  "evidence_sha256": {
+    "24-final-remote.json": "57efdf8ae882e40871ec2759ac9ce18b0081421e2947dfe54d168dbeddad13e8",
+    "25-final-publishers.json": "f74ee3992a8af0dbac1ec562c1d0c84d534e8501b3fde04a870293559e09eaa1",
+    "26-final-artifact-continuity.json": "f4e4392e0f5a65707fad303ac55cd6a4871920a0c9582c2ea710e8e3a52f3090",
+    "27-final-refs.json": "5b90352f56ac3aa996d191ed1d860c211cd63470aead2d827995ce369cf1c3dd",
+    "28-final-job-counts-skips.json": "1a00eef4fc8e4786f2812454d2191d3cc76beb3d82de5d39d217be5a5ab1226b",
+    "FINAL.md": "cb40afd1efb40c8ef0af32a372493715e38a817d6da32bab4dc00945ca6e6f6f",
+    "anonymous-final-images.py": "fce3c481cd7efe56b9dfa34cbda0d86c5beaacfa32b6b128f0a8d5e89bedd609"
+  },
+  "writes": "Ignored handoff directory only; no cache, tracked source/docs/STATE changes",
+  "actions": "Read-only remote metadata/log/registry reads; no duplicate tests/UAT/VM/provider/publication actions"
+}

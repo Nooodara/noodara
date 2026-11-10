@@ -1,0 +1,11 @@
+{
+  "backupPath": "/opt/noodara-backup/v052-20261110T021244Z",
+  "databaseRestore": "PASS",
+  "migrationDataEncryptedCredentialsBYOK": "equal",
+  "masterKeyAndAuthRecovery": "present",
+  "configAndACMERecovery": "equal",
+  "rehearsalDatabaseRemoved": true,
+  "backupDirectoryMode": "700",
+  "backupFilesMode": "600",
+  "plaintextPublished": false
+}

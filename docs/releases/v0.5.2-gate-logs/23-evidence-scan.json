@@ -1,0 +1,32 @@
+{
+  "recordedAt": "2026-11-09T17:38:35.176104+00:00",
+  "scope": "all recursively sorted .md/.json/.txt/.sh/.mjs/.py files in gate-logs then uat, concatenated as bytes",
+  "priorFinding": {
+    "rule": "generic-api-key",
+    "path": "docs/releases/v0.5.2-gate-logs/08-backup-rehearsal.txt",
+    "localLine": 13,
+    "classification": "false-positive encrypted-row MD5 comparison digest",
+    "sourcePath": "docs/releases/v0.5.2-uat/backup-rehearsal.sh",
+    "sourceLine": 31,
+    "provenance": "PostgreSQL md5(string_agg(id::text||encrypted_value||key_version::text, comma order by id)) over secrets; before/restored compare is required at line53",
+    "digestLength": 32,
+    "digestPreservedExactly": true,
+    "representationChange": "secret_state assignment changed to explicitly labeled MD5 digest text",
+    "fileSha256Before": "8964be13a7eec11012c953fbb5da6f43786a57d2b8f3614863e0ac11277316d4",
+    "fileSha256After": "b5df6bc027ddd6cbf2db26254cc2f46334c45a0dd29b12e7090b6974894c6be2"
+  },
+  "configurationUnchanged": true,
+  "allowlistAdded": false,
+  "assertionsWeakened": false,
+  "uatRerun": false,
+  "externalProviderCalls": 0,
+  "remoteConclusions": "pending; root monitoring",
+  "historicalFailuresPreserved": true,
+  "rescan": {
+    "command": "gitleaks stdin --config .gitleaks.toml --redact --no-banner --report-format json",
+    "exitCode": 0,
+    "findings": 0,
+    "fileCount": 34,
+    "includesThisEvidenceFile": true
+  }
+}

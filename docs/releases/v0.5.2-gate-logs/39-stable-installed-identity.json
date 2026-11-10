@@ -1,0 +1,53 @@
+{
+  "observed_at": "2026-11-10T02:17:00.730032+00:00",
+  "containers": [
+    {
+      "service": "api",
+      "container_id": "4bfb1a983bf5e7aee293bdb1379eb94d84e30a07dff76c7bfb417fb6e65a98af",
+      "configured_image": "ghcr.io/nooodara/noodara-control-plane:0.5.2",
+      "container_image_index": "sha256:4e43356d5ee6904078b0bf637f156877f50b958591e1a70fc1194108a21b3d53",
+      "installed_platform_manifest": "sha256:5c61cf1d7fccf4913370ec88006725bf1baf57c3582dd683796ff5b74bfe8acc",
+      "platform": {
+        "architecture": "arm64",
+        "os": "linux"
+      },
+      "matches_before_install_registry_identity": true,
+      "running": true
+    },
+    {
+      "service": "worker",
+      "container_id": "d16fbc11dfffbc44cade4d6b6473a7c06532bfd3cd7e6704cda07ae953707024",
+      "configured_image": "ghcr.io/nooodara/noodara-control-plane:0.5.2",
+      "container_image_index": "sha256:4e43356d5ee6904078b0bf637f156877f50b958591e1a70fc1194108a21b3d53",
+      "installed_platform_manifest": "sha256:5c61cf1d7fccf4913370ec88006725bf1baf57c3582dd683796ff5b74bfe8acc",
+      "platform": {
+        "architecture": "arm64",
+        "os": "linux"
+      },
+      "matches_before_install_registry_identity": true,
+      "running": true
+    },
+    {
+      "service": "web",
+      "container_id": "c6b2913b74987620c84488975070fc36cd7182685f1a58380ccfd9da468f76aa",
+      "configured_image": "ghcr.io/nooodara/noodara-web:0.5.2",
+      "container_image_index": "sha256:a4aeeb6197725de81cec2f537aa3062bcbe6b12cfc5e3ed3e7addf90df4d11bd",
+      "installed_platform_manifest": "sha256:cad24e163b7cbc7289e202799d44f0836560ab5be35d31e51bf9fdec48667ed3",
+      "platform": {
+        "architecture": "arm64",
+        "os": "linux"
+      },
+      "matches_before_install_registry_identity": true,
+      "running": true
+    }
+  ],
+  "health": {
+    "status": "ok",
+    "version": "0.5.2",
+    "checks": {
+      "postgres": "pass",
+      "redis": "pass",
+      "worker": "pass"
+    }
+  }
+}

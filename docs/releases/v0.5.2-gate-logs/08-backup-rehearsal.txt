@@ -1,0 +1,15 @@
+backupPath=/opt/noodara-backup/v052-20261109T171111Z
+backupDirectoryMode=700 backupFilesMode=600 databaseRestore=PASS migrationDataEncryptedCredentialsBYOK=equal masterKeyAndAuthRecovery=present configAndACMERecovery=equal rehearsalDatabaseRemoved=true
+users=1
+servers=1
+projects=1
+environments=1
+services=4
+deployments=13
+secrets=2
+domains=1
+migrations=20
+migration_state=12b53d58f134c50cb3d4858fbc04636b
+secret_state MD5 digest cdd767a655b0784b448acee4d513fb09
+credential_state=d4164b44aee446ba545384c6b8951279
+ai_settings=69ba19c3a76db18abb03d478b8c02bd2

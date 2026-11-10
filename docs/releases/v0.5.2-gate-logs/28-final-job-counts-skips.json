@@ -1,0 +1,321 @@
+{
+  "observed_at": "2026-11-09T22:56:59.785Z",
+  "scope": "Sanitized numeric test/file summaries and cleanup/optional-skip notices from actual CI/nightly job logs; workflow step skips are fully recorded in24-final-remote.json. No raw job logs persisted.",
+  "jobs": [
+    {
+      "workflow": "ci",
+      "job_id": 129315442559,
+      "job_name": "unit",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:14:14.2107701Z  Test Files  454 passed (454)",
+        "2026-11-09T17:14:14.2200379Z       Tests  10267 passed (10267)"
+      ]
+    },
+    {
+      "workflow": "ci",
+      "job_id": 129315442897,
+      "job_name": "typecheck",
+      "log_available": true,
+      "summary_lines": []
+    },
+    {
+      "workflow": "ci",
+      "job_id": 129315443034,
+      "job_name": "state-machine",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:10:17.2720547Z  Test Files  7 passed (7)",
+        "2026-11-09T17:10:17.2722248Z       Tests  590 passed (590)"
+      ]
+    },
+    {
+      "workflow": "ci",
+      "job_id": 129315443038,
+      "job_name": "site",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:10:39.9535431Z  Test Files  18 passed (18)",
+        "2026-11-09T17:10:39.9536497Z       Tests  212 passed (212)"
+      ]
+    },
+    {
+      "workflow": "ci",
+      "job_id": 129315443094,
+      "job_name": "lint",
+      "log_available": true,
+      "summary_lines": []
+    },
+    {
+      "workflow": "ci",
+      "job_id": 129315443115,
+      "job_name": "ai-evals",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:10:17.2393360Z  Test Files  8 passed (8)",
+        "2026-11-09T17:10:17.2399103Z       Tests  414 passed (414)"
+      ]
+    },
+    {
+      "workflow": "ci",
+      "job_id": 129315443168,
+      "job_name": "installer",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:37:49.1638608Z  Test Files  10 passed (10)",
+        "2026-11-09T17:37:49.1639853Z       Tests  56 passed (56)",
+        "2026-11-09T17:37:49.3226658Z no stray noodara.test=true containers"
+      ]
+    },
+    {
+      "workflow": "ci",
+      "job_id": 129315443196,
+      "job_name": "integration",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T18:07:05.8507411Z  Test Files  108 passed | 3 skipped (111)",
+        "2026-11-09T18:07:05.8512753Z       Tests  1307 passed | 10 skipped (1317)",
+        "2026-11-09T18:07:05.9599548Z no stray noodara.test=true containers",
+        "2026-11-09T18:07:05.9798046Z no stray noodara.test=true networks"
+      ]
+    },
+    {
+      "workflow": "ci",
+      "job_id": 129315443201,
+      "job_name": "security",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:19:40.0882535Z  Test Files  7 passed (7)",
+        "2026-11-09T17:19:40.0883454Z       Tests  14 passed (14)",
+        "2026-11-09T17:20:03.0872606Z   1 passed (22.2s)",
+        "2026-11-09T17:20:03.1628985Z no stray noodara.test=true containers"
+      ]
+    },
+    {
+      "workflow": "ci",
+      "job_id": 129315443216,
+      "job_name": "boundaries",
+      "log_available": true,
+      "summary_lines": []
+    },
+    {
+      "workflow": "ci",
+      "job_id": 129315443284,
+      "job_name": "boot-smoke",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:12:08.4622420Z  Test Files  1 passed (1)",
+        "2026-11-09T17:12:08.4623373Z       Tests  7 passed (7)",
+        "2026-11-09T17:12:08.6061049Z no stray noodara.test=true containers"
+      ]
+    },
+    {
+      "workflow": "ci",
+      "job_id": 129315443319,
+      "job_name": "e2e",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:26:42.1094621Z   286 passed (15.5m)",
+        "2026-11-09T17:26:42.2381166Z no stray noodara.test=true containers"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315447869,
+      "job_name": "e2e-repeat",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:27:17.2258416Z   286 passed (15.7m)",
+        "2026-11-09T17:41:59.5942273Z   286 passed (14.7m)",
+        "2026-11-09T17:56:19.3646279Z   286 passed (14.3m)",
+        "2026-11-09T18:09:45.9294634Z   286 passed (13.4m)",
+        "2026-11-09T18:23:13.2486993Z   286 passed (13.4m)",
+        "2026-11-09T18:36:45.0448410Z   286 passed (13.5m)",
+        "2026-11-09T18:50:03.4123488Z   286 passed (13.3m)",
+        "2026-11-09T19:03:31.4422916Z   286 passed (13.4m)",
+        "2026-11-09T19:16:45.2978927Z   286 passed (13.2m)",
+        "2026-11-09T19:31:08.8191876Z   286 passed (14.4m)",
+        "2026-11-09T19:45:39.0667013Z   286 passed (14.5m)",
+        "2026-11-09T20:00:16.4345172Z   286 passed (14.6m)",
+        "2026-11-09T20:14:50.7354245Z   286 passed (14.5m)",
+        "2026-11-09T20:29:29.9522029Z   286 passed (14.6m)",
+        "2026-11-09T20:44:18.2644260Z   286 passed (14.8m)",
+        "2026-11-09T20:59:04.1416314Z   286 passed (14.7m)",
+        "2026-11-09T21:13:50.0024990Z   286 passed (14.7m)",
+        "2026-11-09T21:28:33.7218296Z   286 passed (14.7m)",
+        "2026-11-09T21:43:19.3306581Z   286 passed (14.7m)",
+        "2026-11-09T21:58:00.6767601Z   286 passed (14.7m)",
+        "2026-11-09T21:58:00.7273448Z e2e-repeat: all 20/20 iterations passed in 17186s total.",
+        "2026-11-09T21:58:00.7777256Z no stray noodara.test=true containers"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448332,
+      "job_name": "proxy (24.04)",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:18:39.9333638Z  Test Files  7 passed | 1 skipped (8)",
+        "2026-11-09T17:18:39.9334710Z       Tests  67 passed | 3 skipped (70)",
+        "2026-11-09T17:18:40.0780108Z no stray noodara.test=true containers",
+        "2026-11-09T17:18:40.1061642Z no stray noodara.test=true networks"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448451,
+      "job_name": "ai-evals-live",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:10:04.3219746Z ##[notice]the ANTHROPIC_API_KEY secret is not configured, so the live AI eval run was skipped (ci.yml ai-evals still replays every PR)"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448498,
+      "job_name": "proxy (22.04)",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:17:41.9343685Z  Test Files  7 passed | 1 skipped (8)",
+        "2026-11-09T17:17:41.9345256Z       Tests  67 passed | 3 skipped (70)",
+        "2026-11-09T17:17:42.0794789Z no stray noodara.test=true containers",
+        "2026-11-09T17:17:42.1092389Z no stray noodara.test=true networks"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448518,
+      "job_name": "installer",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:38:31.6371279Z  Test Files  10 passed (10)",
+        "2026-11-09T17:38:31.6372067Z       Tests  56 passed (56)",
+        "2026-11-09T17:38:31.7908053Z no stray noodara.test=true containers"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448603,
+      "job_name": "deploy-engine (22.04)",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:35:42.8799975Z  Test Files  26 passed | 2 skipped (28)",
+        "2026-11-09T17:35:42.8800606Z       Tests  205 passed | 3 skipped (208)",
+        "2026-11-09T17:35:43.0190097Z no stray noodara.test=true containers",
+        "2026-11-09T17:35:43.0429095Z no stray noodara.test=true networks"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448626,
+      "job_name": "canary",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:21:42.8029197Z  Test Files  7 passed (7)",
+        "2026-11-09T17:21:42.8030311Z       Tests  14 passed (14)",
+        "2026-11-09T17:22:06.2807476Z   1 passed (22.7s)",
+        "2026-11-09T17:22:06.3541008Z no stray noodara.test=true containers"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448654,
+      "job_name": "soak",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:23:10.8630092Z  Test Files  1 passed (1)",
+        "2026-11-09T17:23:10.8631129Z       Tests  4 passed (4)",
+        "2026-11-09T17:23:12.5171917Z no stray noodara.test=true containers, networks or volumes"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448657,
+      "job_name": "deploy-engine (24.04)",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:35:27.8574530Z  Test Files  26 passed | 2 skipped (28)",
+        "2026-11-09T17:35:27.8575284Z       Tests  205 passed | 3 skipped (208)",
+        "2026-11-09T17:35:27.9742567Z no stray noodara.test=true containers",
+        "2026-11-09T17:35:27.9980244Z no stray noodara.test=true networks"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448704,
+      "job_name": "domain-cycles (24.04)",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:15:27.2385412Z  Test Files  1 passed (1)",
+        "2026-11-09T17:15:27.2386062Z       Tests  3 passed (3)",
+        "2026-11-09T17:15:28.8445564Z no stray noodara.test=true containers, networks or volumes"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448743,
+      "job_name": "stress-connections",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:13:58.9441412Z  Test Files  1 passed (1)",
+        "2026-11-09T17:13:58.9442312Z       Tests  1 passed (1)",
+        "2026-11-09T17:13:59.0482221Z no stray noodara.test=true containers"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448764,
+      "job_name": "metrics-soak (24.04)",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:28:22.7637460Z  Test Files  2 passed (2)",
+        "2026-11-09T17:28:22.7638547Z       Tests  6 passed (6)",
+        "2026-11-09T17:28:24.0866107Z no stray noodara.test=true containers, networks or volumes"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448771,
+      "job_name": "metrics-soak (22.04)",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:29:05.2675883Z  Test Files  2 passed (2)",
+        "2026-11-09T17:29:05.2676752Z       Tests  6 passed (6)",
+        "2026-11-09T17:29:06.9067179Z no stray noodara.test=true containers, networks or volumes"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448784,
+      "job_name": "cycles (24.04)",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:27:19.6092488Z  Test Files  1 passed (1)",
+        "2026-11-09T17:27:19.6093853Z       Tests  1 passed (1)",
+        "2026-11-09T17:27:20.7755363Z no stray noodara.test=true containers, networks or volumes"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448877,
+      "job_name": "domain-cycles (22.04)",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:16:52.0746229Z  Test Files  1 passed (1)",
+        "2026-11-09T17:16:52.0746748Z       Tests  3 passed (3)",
+        "2026-11-09T17:16:53.6646327Z no stray noodara.test=true containers, networks or volumes"
+      ]
+    },
+    {
+      "workflow": "nightly",
+      "job_id": 129315448960,
+      "job_name": "cycles (22.04)",
+      "log_available": true,
+      "summary_lines": [
+        "2026-11-09T17:31:04.4158687Z  Test Files  1 passed (1)",
+        "2026-11-09T17:31:04.4160755Z       Tests  1 passed (1)",
+        "2026-11-09T17:31:05.6613546Z no stray noodara.test=true containers, networks or volumes"
+      ]
+    }
+  ]
+}

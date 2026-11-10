@@ -1,0 +1,70 @@
+{
+  "source": "exact tagged workflow SHA and checkout logs bound to published platform digest",
+  "attestations": "disabled by existing workflow; no cryptographic source attestation claimed",
+  "platforms": [
+    {
+      "job_id": 129581028655,
+      "name": "build (noodara-control-plane, arm64)",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/42740774327/job/129581028655",
+      "source_sha": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+      "checkout_sha_present_in_actual_log": true,
+      "published_platform_digest": "sha256:5c61cf1d7fccf4913370ec88006725bf1baf57c3582dd683796ff5b74bfe8acc",
+      "matching_build_log_lines": [
+        "2026-11-10T02:10:57.7181021Z #31 exporting manifest sha256:5c61cf1d7fccf4913370ec88006725bf1baf57c3582dd683796ff5b74bfe8acc done",
+        "2026-11-10T02:11:01.0978479Z #31 pushing manifest for ghcr.io/nooodara/noodara-control-plane:0.5.2-arm64@sha256:5c61cf1d7fccf4913370ec88006725bf1baf57c3582dd683796ff5b74bfe8acc",
+        "2026-11-10T02:11:01.5045015Z #31 pushing manifest for ghcr.io/nooodara/noodara-control-plane:0.5.2-arm64@sha256:5c61cf1d7fccf4913370ec88006725bf1baf57c3582dd683796ff5b74bfe8acc 0.4s done",
+        "2026-11-10T02:11:01.5557362Z sha256:5c61cf1d7fccf4913370ec88006725bf1baf57c3582dd683796ff5b74bfe8acc",
+        "2026-11-10T02:11:01.5655691Z     \"digest\": \"sha256:5c61cf1d7fccf4913370ec88006725bf1baf57c3582dd683796ff5b74bfe8acc\",",
+        "2026-11-10T02:11:01.5657330Z   \"containerimage.digest\": \"sha256:5c61cf1d7fccf4913370ec88006725bf1baf57c3582dd683796ff5b74bfe8acc\","
+      ]
+    },
+    {
+      "job_id": 129581028678,
+      "name": "build (noodara-web, amd64)",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/42740774327/job/129581028678",
+      "source_sha": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+      "checkout_sha_present_in_actual_log": true,
+      "published_platform_digest": "sha256:4ca760470803740c309b427e5f9fd6e1376e69938784ca058b9f4bef7133f641",
+      "matching_build_log_lines": [
+        "2026-11-10T02:10:58.9713611Z #23 exporting manifest sha256:4ca760470803740c309b427e5f9fd6e1376e69938784ca058b9f4bef7133f641 done",
+        "2026-11-10T02:11:01.7233642Z #23 pushing manifest for ghcr.io/nooodara/noodara-web:0.5.2-amd64@sha256:4ca760470803740c309b427e5f9fd6e1376e69938784ca058b9f4bef7133f641",
+        "2026-11-10T02:11:02.2250653Z #23 pushing manifest for ghcr.io/nooodara/noodara-web:0.5.2-amd64@sha256:4ca760470803740c309b427e5f9fd6e1376e69938784ca058b9f4bef7133f641 0.5s done",
+        "2026-11-10T02:11:02.2651743Z sha256:4ca760470803740c309b427e5f9fd6e1376e69938784ca058b9f4bef7133f641",
+        "2026-11-10T02:11:02.2829398Z     \"digest\": \"sha256:4ca760470803740c309b427e5f9fd6e1376e69938784ca058b9f4bef7133f641\",",
+        "2026-11-10T02:11:02.2831532Z   \"containerimage.digest\": \"sha256:4ca760470803740c309b427e5f9fd6e1376e69938784ca058b9f4bef7133f641\","
+      ]
+    },
+    {
+      "job_id": 129581028704,
+      "name": "build (noodara-web, arm64)",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/42740774327/job/129581028704",
+      "source_sha": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+      "checkout_sha_present_in_actual_log": true,
+      "published_platform_digest": "sha256:cad24e163b7cbc7289e202799d44f0836560ab5be35d31e51bf9fdec48667ed3",
+      "matching_build_log_lines": [
+        "2026-11-10T02:10:55.8696930Z #23 exporting manifest sha256:cad24e163b7cbc7289e202799d44f0836560ab5be35d31e51bf9fdec48667ed3 done",
+        "2026-11-10T02:10:57.9607488Z #23 pushing manifest for ghcr.io/nooodara/noodara-web:0.5.2-arm64@sha256:cad24e163b7cbc7289e202799d44f0836560ab5be35d31e51bf9fdec48667ed3",
+        "2026-11-10T02:10:58.4587345Z #23 pushing manifest for ghcr.io/nooodara/noodara-web:0.5.2-arm64@sha256:cad24e163b7cbc7289e202799d44f0836560ab5be35d31e51bf9fdec48667ed3 0.5s done",
+        "2026-11-10T02:10:58.5027706Z sha256:cad24e163b7cbc7289e202799d44f0836560ab5be35d31e51bf9fdec48667ed3",
+        "2026-11-10T02:10:58.5129069Z     \"digest\": \"sha256:cad24e163b7cbc7289e202799d44f0836560ab5be35d31e51bf9fdec48667ed3\",",
+        "2026-11-10T02:10:58.5130712Z   \"containerimage.digest\": \"sha256:cad24e163b7cbc7289e202799d44f0836560ab5be35d31e51bf9fdec48667ed3\","
+      ]
+    },
+    {
+      "job_id": 129581028718,
+      "name": "build (noodara-control-plane, amd64)",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/42740774327/job/129581028718",
+      "source_sha": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+      "checkout_sha_present_in_actual_log": true,
+      "published_platform_digest": "sha256:45375bdac579e3b1c94bf225758ee13b5c19fb093a09e9ffe5ce2996c876d243",
+      "matching_build_log_lines": [
+        "2026-11-10T02:10:56.3034193Z #31 exporting manifest sha256:45375bdac579e3b1c94bf225758ee13b5c19fb093a09e9ffe5ce2996c876d243 done",
+        "2026-11-10T02:10:59.6807923Z #31 pushing manifest for ghcr.io/nooodara/noodara-control-plane:0.5.2-amd64@sha256:45375bdac579e3b1c94bf225758ee13b5c19fb093a09e9ffe5ce2996c876d243",
+        "2026-11-10T02:11:00.1264610Z #31 pushing manifest for ghcr.io/nooodara/noodara-control-plane:0.5.2-amd64@sha256:45375bdac579e3b1c94bf225758ee13b5c19fb093a09e9ffe5ce2996c876d243 0.4s done",
+        "2026-11-10T02:11:00.1784623Z sha256:45375bdac579e3b1c94bf225758ee13b5c19fb093a09e9ffe5ce2996c876d243",
+        "2026-11-10T02:11:00.1957063Z     \"digest\": \"sha256:45375bdac579e3b1c94bf225758ee13b5c19fb093a09e9ffe5ce2996c876d243\",",
+        "2026-11-10T02:11:00.1959164Z   \"containerimage.digest\": \"sha256:45375bdac579e3b1c94bf225758ee13b5c19fb093a09e9ffe5ce2996c876d243\","
+      ]
+    }
+  ]
+}

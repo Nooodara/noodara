@@ -1,0 +1,1 @@
+{"check": "follow-cancel-streams", "cleanup": {"fixturesRestored": true, "ownedFixtureRows": 0}, "emission": {"allEmittedStderr": true, "allEmittedStdout": true, "expectedRepresentations": 8, "freshMarker": true}, "errorClass": "RuntimeError", "ownedContainers": 0, "result": "FAIL"}

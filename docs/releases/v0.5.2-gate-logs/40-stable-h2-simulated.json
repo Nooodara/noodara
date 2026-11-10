@@ -1,0 +1,11 @@
+{
+  "toolResultsChecked": 8,
+  "providerRequestsChecked": 4,
+  "toolResultsInProviderRequests": 8,
+  "failClosedCases": 4,
+  "plaintextMatches": 0,
+  "unauthorizedWrites": 0,
+  "fixturesRestored": true,
+  "result": "PASS",
+  "externalProviderCalls": 0
+}

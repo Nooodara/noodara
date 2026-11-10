@@ -1,0 +1,54 @@
+{
+  "observed_at": "2026-11-09T22:56:45.916Z",
+  "main": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba",
+  "latest": {
+    "id": 438111623,
+    "tag": "v0.5.1",
+    "url": "https://github.com/Nooodara/noodara/releases/tag/v0.5.1",
+    "prerelease": false
+  },
+  "rc": {
+    "id": 439421530,
+    "tag": "v0.5.2-rc.1",
+    "url": "https://github.com/Nooodara/noodara/releases/tag/v0.5.2-rc.1",
+    "prerelease": true,
+    "draft": false
+  },
+  "tags": [
+    {
+      "tag": "v0.5.0",
+      "object": "72219f30036012a79e9380252316ae30dce2173b",
+      "peeled": "fa3314b3b68beae96a5ae9591b58cbe846e7f0a2"
+    },
+    {
+      "tag": "v0.5.0-rc.1",
+      "object": "efd263e4d74a7dce70137e11c92a94ece074adf9",
+      "peeled": "3796cdd3f1c9c2e85b073ae7b10d6d60f98fac0d"
+    },
+    {
+      "tag": "v0.5.0-rc.2",
+      "object": "84e4bf893e7683f57087e2eabe1483e604add01c",
+      "peeled": "1ddd071174ede64c9ff0a8772c79c458dc4b92a7"
+    },
+    {
+      "tag": "v0.5.0-rc.3",
+      "object": "1086e7d918e004f968cc5a427abd1573b5df9cd3",
+      "peeled": "fa3314b3b68beae96a5ae9591b58cbe846e7f0a2"
+    },
+    {
+      "tag": "v0.5.1",
+      "object": "de90946163e9f5c6709c757c4aa83687208141a9",
+      "peeled": "eeacb80fcd3a88fdd5c68c6c351180be250f8170"
+    },
+    {
+      "tag": "v0.5.1-rc.1",
+      "object": "9fc377daff5a43b1cddb49783e04d6ec08c3e9e7",
+      "peeled": "eeacb80fcd3a88fdd5c68c6c351180be250f8170"
+    },
+    {
+      "tag": "v0.5.2-rc.1",
+      "object": "04411c749cf445d26e45b0eb120fbfe48ea5ac40",
+      "peeled": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba"
+    }
+  ]
+}

@@ -21,7 +21,7 @@ secrets. Noodara charts server and service metrics, searches and follows logs, d
 infrastructure graph, and answers questions about your infrastructure with your own Anthropic or
 OpenAI key. The assistant is read-only, enforced by the backend.
 
-Release notes: [`docs/releases/v0.5.1.md`](docs/releases/v0.5.1.md).
+Release notes: [`docs/releases/v0.5.2.md`](docs/releases/v0.5.2.md).
 
 ## Install
 
@@ -33,7 +33,7 @@ See [`docs/install.md`](docs/install.md) for requirements, the download-read-run
 supported variables, upgrade, rollback and troubleshooting.
 
 Release candidates (`vX.Y.Z-rc.N`) are published as GitHub prereleases and are never installed by
-default; pin a release with `NOODARA_VERSION=0.5.1` (no leading `v`).
+default; pin a release with `NOODARA_VERSION=0.5.2` (no leading `v`).
 
 ## Development
 
@@ -63,3 +63,9 @@ pnpm check:posix-sh
 - [`docs/roadmap-v0.1-v0.5.md`](docs/roadmap-v0.1-v0.5.md) — the roadmap from v0.1 through v0.5.
 - [`docs/adr/`](docs/adr/) — architecture decision records.
 - [`LICENSE`](LICENSE) — Apache License 2.0.
+
+For legacy runtime log tail/follow on v0.5.1 and earlier, upgrade to v0.5.2 for
+[service-scoped secret redaction](docs/releases/v0.5.2.md). Requests use a snapshot of
+currently visible authorized service secrets of at least 8 characters. Deleted or rotated
+historical values, later changes and other services' secrets are outside this guarantee.
+Docker's original logs are not scrubbed; investigate prior exposure and rotate affected secrets.

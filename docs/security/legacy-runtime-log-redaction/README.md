@@ -5,7 +5,11 @@ Phase 33 completed locally on 2026-11-09: regression/canary green, all eight aut
 SEC-01/02/03 and QA-22 complete locally; selected phases26–33 are 8/8 phases and44/44 plans done.
 Prerequisite33-04 completed with five authoritative gates PASS (609239a8).
 [Final gate/review/cleanup evidence](33-03-closure.md) records the closure; this index is not release approval.
-Published v0.5.1 remains exposed on the legacy endpoints until a separately authorized release.
+M2 is distributed fixed in stable v0.5.2 (2026-11-10), exact approved source
+`3a34f0daa0a045c48039b2edc882d5ba3bf90fba`. [Stable35-01 evidence](../../releases/v0.5.2-gate.md#final-stable-distribution-evidence--2026-11-10)
+records Release/Latest, public multiarch artifacts, backup/restore and installed Lima HTTP/H2/auth
+with data/BYOK preservation. v0.5.1 remains exposed on the legacy endpoints. This distribution
+closure preserves the historical local phase33 closure below and the scoped snapshot/length limits.
 No version, release or historical tag changes are part of phase 33.
 
 ## Code and tests
@@ -55,7 +59,7 @@ No version, release or historical tag changes are part of phase 33.
 
 Only after successful regression and canary proof may M2 be called **fixed locally**. Closure
 requires all declared gates without skips and the separate independent PASS; distribution
-requires a subsequent separately authorized release. Historical AI hotfix evidence remains at
+is now proven separately by the stable35-01 evidence linked above. Historical AI hotfix evidence remains at
 [the v0.5.1 gate](../../releases/v0.5.1-gate.md) and its gate-log directory; tags are unchanged.
 
 Prerequisite [33-04 port evidence](ports/README.md) and [test port instructions](../../testing/e2e-ports.md)
