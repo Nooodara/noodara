@@ -23,10 +23,69 @@ import { startWithPortBindingRetry } from "./port-binding-retry.js";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const IMAGES_CONTEXT = path.resolve(HERE, "../images");
 
+/** Diagnostics never receive exceptions, fixture credentials, Docker objects or raw output.
+ * A sink is a nonblocking observer: false/Promise means stop producing, with no queue or retry.
+ * Promise rejections are consumed; diagnostic failure must not affect startup or cleanup. */
+export type SshDiagnosticStage =
+  | "image_build" | "container_create" | "container_start"
+  | "published_port" | "ssh_readiness" | "cleanup";
+export type SshDiagnosticOutcome = "begin" | "success" | "failure" | "timeout" | "cancelled";
+export interface SshDiagnosticEvent {
+  readonly owner: string;
+  readonly stage: SshDiagnosticStage;
+  readonly outcome: SshDiagnosticOutcome;
+  readonly elapsedMs: number;
+  readonly category?: "operation_failed" | "deadline" | "cancelled";
+}
+export type SshDiagnosticSink =
+  (event: SshDiagnosticEvent) => void | boolean | Promise<unknown>;
+
+export function createSshDiagnostics(
+  owner: string,
+  sink?: SshDiagnosticSink,
+  now: () => number = () => performance.now(),
+): { record: (stage: SshDiagnosticStage, outcome: SshDiagnosticOutcome, error?: unknown) => void } {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(owner)) {
+    throw new Error("Invalid SSH fixture owner");
+  }
+  const origin = now();
+  let elapsedMs = 0;
+  let count = 0;
+  let writable = true;
+  return {
+    record(stage, outcome, _error): void {
+      // An exception is intentionally unused. Its message, cause and custom serializers may
+      // contain credentials; safe categories derive exclusively from the observed outcome.
+      if (!sink || !writable || count >= 64) return;
+      if (!["image_build", "container_create", "container_start", "published_port", "ssh_readiness", "cleanup"].includes(stage)
+        || !["begin", "success", "failure", "timeout", "cancelled"].includes(outcome)) return;
+      count += 1;
+      try {
+        const elapsed = now() - origin;
+        if (Number.isFinite(elapsed)) elapsedMs = Math.max(elapsedMs, Math.floor(elapsed));
+        const category = outcome === "failure" ? "operation_failed"
+          : outcome === "timeout" ? "deadline" : outcome === "cancelled" ? "cancelled" : undefined;
+        const event: SshDiagnosticEvent = Object.freeze({
+          owner, stage, outcome, elapsedMs, ...(category === undefined ? {} : { category }),
+        });
+        const result = sink(event);
+        if (result === false) writable = false;
+        if (result instanceof Promise) {
+          writable = false;
+          void result.catch(() => undefined);
+        }
+      } catch {
+        writable = false;
+      }
+    },
+  };
+}
+
 export type UbuntuVersion = "22.04" | "24.04";
 
 export interface StartSshdOptions {
   readonly ubuntu: UbuntuVersion;
+  readonly diagnostics?: SshDiagnosticSink;
   readonly dockerCli?: boolean;
   readonly slowDf?: boolean;
   /** Fixed host port binding — the HOST_KEY_CHANGED scenario needs two successive containers
@@ -64,10 +123,24 @@ export async function startSshd(
 ): Promise<SshdFixture> {
   const { ubuntu, dockerCli = false, slowDf = false, hostPort } = options;
 
+  // Ownership exists before either build or start is awaited.
+  const owner = randomUUID();
+  const diagnostic = createSshDiagnostics(owner, options.diagnostics ?? (
+    process.env.NOODARA_SSH_DIAGNOSTICS === "1"
+      ? (event) => process.stdout.write(`${JSON.stringify(event)}\n`) : undefined
+  ));
+  let activeStage: SshDiagnosticStage = "image_build";
+  const record = (stage: SshDiagnosticStage, outcome: SshDiagnosticOutcome): void => {
+    if (outcome === "begin") activeStage = stage;
+    diagnostic.record(stage, outcome);
+  };
   const password = randomUUID();
   const keyPassphrase = randomUUID();
 
-  const image = await GenericContainer.fromDockerfile(
+  const imageName = `noodara-test/sshd-diagnostics:${owner}`;
+  record("image_build", "begin");
+  try {
+    await GenericContainer.fromDockerfile(
     IMAGES_CONTEXT,
     `sshd-ubuntu-${ubuntu}/Dockerfile`,
   )
@@ -75,14 +148,45 @@ export async function startSshd(
       WITH_DOCKER_CLI: String(dockerCli),
       WITH_SLOW_DF: String(slowDf),
     })
-    .build();
+    .build(imageName);
+    record("image_build", "success");
+  } catch (error: unknown) {
+    record("image_build", "failure");
+    throw error;
+  }
+
+  // Hooks observe testcontainers' actual milestones. containerStarting runs only after its
+  // published-port inspector succeeds; start+port intervals overlap deliberately, since that
+  // library does not expose a hook between Docker.start and its port-inspection loop.
+  class DiagnosticSshContainer extends GenericContainer {
+    protected override beforeContainerCreated(): Promise<void> {
+      record("container_create", "begin");
+      return Promise.resolve();
+    }
+    protected override containerCreated(): Promise<void> {
+      record("container_create", "success");
+      record("container_start", "begin");
+      record("published_port", "begin");
+      return Promise.resolve();
+    }
+    protected override containerStarting(): Promise<void> {
+      record("container_start", "success");
+      record("published_port", "success");
+      record("ssh_readiness", "begin");
+      return Promise.resolve();
+    }
+    protected override containerStarted(): Promise<void> {
+      record("ssh_readiness", "success");
+      return Promise.resolve();
+    }
+  }
 
   // A name of our own so a container Docker CREATED but could not START (a host-port binding race,
   // see port-binding-retry.ts) can be removed by name -- testcontainers hands back no handle for a
   // container whose start() threw, and a never-started `noodara.test=true` container is exactly
   // what the nightly's stray-container guard reports.
-  const containerName = `noodara-sshd-${ubuntu}-${randomUUID()}`;
-  const container = image
+  const containerName = `noodara-sshd-${ubuntu}-${owner}`;
+  const container = new DiagnosticSshContainer(imageName)
     .withName(containerName)
     .withLabels({ "noodara.test": "true" })
     .withEnvironment({
@@ -95,13 +199,17 @@ export async function startSshd(
     .withWaitStrategy(Wait.forLogMessage(/Server listening on .* port 22/));
 
   const removeCreatedContainer = (): void => {
+    record("cleanup", "begin");
     try {
       execFileSync("docker", ["rm", "-f", containerName], {
         stdio: "ignore",
         timeout: 30_000,
       });
+      record("cleanup", "success");
     } catch {
-      // Nothing to remove -- Docker never got as far as creating it.
+      // Keep the startup failure primary. This also covers an already-removed container;
+      // no raw CLI failure is emitted and no absence claim is inferred from a rejected rm.
+      record("cleanup", "failure");
     }
   };
 
@@ -121,6 +229,7 @@ export async function startSshd(
       },
     );
   } catch (error: unknown) {
+    record(activeStage, "failure");
     removeCreatedContainer();
     throw error;
   }
@@ -129,7 +238,14 @@ export async function startSshd(
   const stop = async (): Promise<void> => {
     if (stopped) return;
     stopped = true;
-    await started.stop();
+    record("cleanup", "begin");
+    try {
+      await started.stop();
+      record("cleanup", "success");
+    } catch (error: unknown) {
+      record("cleanup", "failure");
+      throw error;
+    }
   };
 
   return {
