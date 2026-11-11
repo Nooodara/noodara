@@ -16,6 +16,24 @@ const DOCKER_TIMEOUT_MS = 60_000;
 
 export type DockerRunner = (args: readonly string[]) => Promise<string>;
 
+export const SSH_OWNER_LABEL = 'noodara.test.ssh-owner';
+
+/** An owner label is removal authority; a baseline difference or shared test label is not. */
+export async function reapOwnedSshContainers(owner: string, docker: DockerRunner = dockerCli): Promise<void> {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(owner)) {
+    throw new Error('Invalid SSH fixture owner');
+  }
+  try {
+    const inventory = () => docker(['ps', '-aq', '--no-trunc', '--filter', `label=${SSH_OWNER_LABEL}=${owner}`]);
+    const ids = lines(await inventory());
+    if (ids.length > 0) await docker(['rm', '-f', '-v', ...ids]);
+    if (lines(await inventory()).length > 0) throw new Error('survivors');
+  } catch {
+    // Docker errors can embed environment/credentials. Fail closed with a bounded category.
+    throw new Error('SSH fixture cleanup unverified');
+  }
+}
+
 export const dockerCli: DockerRunner = async (args) => {
   const { stdout } = await execFileAsync('docker', [...args], {
     timeout: DOCKER_TIMEOUT_MS,

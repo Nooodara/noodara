@@ -19,7 +19,45 @@ import {
 } from '../../integration/helpers/boot-process.js';
 import { startPostgres, type PostgresFixture } from '../../integration/helpers/postgres.js';
 import { startRedis, type RedisFixture } from '../../integration/helpers/redis.js';
-import { startSshd, type SshdFixture } from '../../integration/helpers/ssh.js';
+import { startSshd, createSshdLifecycle, type SshdFixture, type StartSshdOptions, type SshdLifecycle } from '../../integration/helpers/ssh.js';
+import { test as base } from '@playwright/test';
+
+type StartOwnedSshd = (options: StartSshdOptions) => Promise<SshdFixture>;
+
+/** Playwright owns this fixture before test code awaits image build. Teardown runs on setup
+ * failure and test timeout, including when no SshdFixture handle was ever returned. */
+export const sshTest = base.extend<{ startOwnedSshd: StartOwnedSshd }>({
+  startOwnedSshd: async ({}, use, testInfo) => {
+    const began = performance.now();
+    const owners: SshdLifecycle[] = [];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    try {
+      await use((options) => {
+        const owner = createSshdLifecycle(options);
+        owners.push(owner);
+        let startupTimer: ReturnType<typeof setTimeout> | undefined;
+        // Read the current timeout at invocation: test.setTimeout may run inside the test.
+        // This is the existing outer budget, not a new or increased startup budget.
+        if (testInfo.timeout > 0) {
+          const remaining = Math.max(0, testInfo.timeout - (performance.now() - began));
+          startupTimer = setTimeout(() => owner.cancel(new Error('SSH fixture test deadline')), remaining);
+          timers.push(startupTimer);
+        }
+        // The captured deadline bounds startup only. Once a handle is returned, the runner
+        // owns its lifetime and may legitimately extend the test budget (discovery does).
+        // Real timeout teardown still cancels and joins every registered owner below.
+        return owner.result.finally(() => clearTimeout(startupTimer));
+      });
+    } finally {
+      for (const timer of timers) clearTimeout(timer);
+      for (const owner of owners) owner.cancel();
+      const results = await Promise.allSettled(owners.map((owner) => owner.stop()));
+      if (results.some((result) => result.status === 'rejected')) {
+        throw new Error('SSH fixture cleanup unverified');
+      }
+    }
+  },
+});
 import { resolveE2ePorts, type E2ePorts } from './ports.js';
 
 const execFileAsync = promisify(execFile);
@@ -271,11 +309,11 @@ export async function startStack(): Promise<Stack> {
  * container-lifecycle implementation) and registers it on this module's own `activeSshd` handle —
  * `stopStack` tears it down as a safety net even if the caller's own `finally` never runs.
  */
-export async function startCriticalPathSshd(): Promise<SshdFixture> {
+export async function startCriticalPathSshd(start: () => Promise<SshdFixture> = () => startSshd({ ubuntu: '24.04' })): Promise<SshdFixture> {
   if (activeSshd !== undefined) {
     throw new Error('startCriticalPathSshd: an sshd fixture is already running — call stopCriticalPathSshd first');
   }
-  const fixture = await startSshd({ ubuntu: '24.04' });
+  const fixture = await start();
   activeSshd = fixture;
   return fixture;
 }

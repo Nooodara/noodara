@@ -20,6 +20,7 @@ export function isPortBindingRace(error: unknown): boolean {
 }
 
 export interface PortBindingRetryOptions {
+  readonly signal?: AbortSignal;
   /** Total attempts including the first one. Default 5. */
   readonly attempts?: number;
   /** Pause between attempts, in milliseconds. Default 1000. */
@@ -44,10 +45,12 @@ export async function startWithPortBindingRetry<T>(
 
   let attempt = 0;
   for (;;) {
+    options.signal?.throwIfAborted();
     attempt += 1;
     try {
       return await start();
     } catch (error: unknown) {
+      options.signal?.throwIfAborted();
       if (!isPortBindingRace(error) || attempt >= attempts) throw error;
       await options.onFailedAttempt?.(error, attempt);
       await sleep(delayMs);

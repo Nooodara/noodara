@@ -23,6 +23,7 @@ export function isPortBindTimeout(error: unknown): boolean {
 }
 
 export interface StartLabelledOptions {
+  readonly signal?: AbortSignal;
   /** Total attempts including the first one. Default 3. */
   readonly attempts?: number;
   /** Injectable for tests; defaults to the bounded `docker` CLI runner. */
@@ -51,12 +52,14 @@ export async function startLabelledContainer<T>(
   if (attempts < 1) throw new RangeError('attempts must be at least 1');
 
   for (let attempt = 1; ; attempt += 1) {
+    options.signal?.throwIfAborted();
     const startId = randomUUID();
     try {
       return await start({ 'noodara.test': 'true', [START_LABEL]: startId });
     } catch (error: unknown) {
       // Best effort: the leak guard still reaps by `noodara.test` if this removal fails.
       await removeAttempt(startId, docker).catch(() => undefined);
+      options.signal?.throwIfAborted();
       if (!isPortBindTimeout(error)) throw error;
       if (attempt >= attempts) {
         throw new Error(

@@ -7,10 +7,10 @@
 // connect-and-discover run against a real sshd Testcontainers fixture end to end -- the one thing
 // route interception cannot prove: that genuine, time-separated `server.discovery_progress` SSE
 // frames reach a real, already-mounted browser page and it never needs a reload to reflect them.
-import { expect, test, type Page, type Request } from '@playwright/test';
+import { expect, type Page, type Request } from '@playwright/test';
 import { DISCOVERY_CHECK_IDS, type DiscoveryCheck, type DiscoveryCheckStatus } from '@noodara/domain/discovery';
-import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './fixtures/stack.js';
-import { startSshd, type SshdFixture } from '../integration/helpers/ssh.js';
+import { sshTest as test, E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from './fixtures/stack.js';
+import { type SshdFixture } from '../integration/helpers/ssh.js';
 
 async function login(page: Page): Promise<void> {
   await page.goto('/login');
@@ -568,9 +568,9 @@ test('@discovery-ring a page that joins mid-run shows an intermediate, non-loopi
 });
 
 test('@ssh-live a real connect-and-discover run against a real sshd fixture delivers live, time-separated per-check SSE progress into the already-mounted browser page, with no reload', async ({
-  page,
+  page, startOwnedSshd,
 }) => {
-  const sshd: SshdFixture = await startSshd({ ubuntu: '24.04' });
+  const sshd: SshdFixture = await startOwnedSshd({ ubuntu: '24.04' });
 
   try {
     // A subclassed EventSource that adds its own independent `server.discovery_progress`

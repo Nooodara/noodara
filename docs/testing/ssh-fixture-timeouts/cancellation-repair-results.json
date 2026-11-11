@@ -1,0 +1,1097 @@
+{
+  "historicalCause": "INCONCLUSIVE",
+  "sourceSha256": {
+    "tests/integration/helpers/ssh.ts": "25bb0cfc7f5c706d19896e59602cfe0815cc050440a2dd58415c720964c924c2",
+    "tests/integration/helpers/container-start.ts": "749ab01c34a3f7b11604379341b6b0bcc3255864a0ade0c3fd120e7dedde86ce",
+    "tests/integration/helpers/port-binding-retry.ts": "f57888a5589904df315b48f8d0974608424cd32738e93c381703761456f126c9",
+    "tests/integration/helpers/test-resources.ts": "893d025a31c1c9517d090c2e6b19bc845f8f6ceb45e233cd426ab6f6f36366ea",
+    "tests/integration/ssh/fixture-lifecycle.test.ts": "a25b84e26d83240870981c3588a9f6080be4edad99d849fdb116509e8ff27054",
+    "tests/e2e/critical-path.spec.ts": "23ac7a557141e06e050a4fcc16a2c94f4b1810ce671f3ed4724b4781628ab31e",
+    "tests/e2e/discovery.spec.ts": "cfc3a3a6632c0f8c14ab3f1427f262be053beb66f5f9b32f62aeafb6c1f39adc",
+    "tests/e2e/fixtures/stack.ts": "db2e3a9a550e64502c28e593ac219199798ca012461f533e69e27345c12253bf",
+    "tests/unit/integration-helpers/ssh-cancellation.test.ts": "2d4b358a2b09967da7470cdc27cede6213776ec79ee4e76f1c0b148fa6e79967",
+    "tests/unit/integration-helpers/ssh-diagnostics.test.ts": "e111a0be80a2993136519891a8c100de7aaec7547aeaecb44bfd2094b08dccfd",
+    "tests/unit/integration-helpers/ssh-stage-events.test.ts": "6c779d4102bba1517d25a8cb69cd56918881879c871daf2cbcfbc972329536e7",
+    "tests/unit/integration-helpers/ssh-playwright-cancellation.test.ts": "9b8ab54ead72cbe187dce58d41b00158b1ff248fe8b7d3fee7b3651d3f8e13ba",
+    "tests/unit/integration-helpers/port-binding-retry.test.ts": "7f362919bfd31478b62abe5f5c46f4eae88672ed26857ee8267f437b60dce167"
+  },
+  "focused": {
+    "passed": 52,
+    "failed": 0,
+    "skipped": 0,
+    "files": 5,
+    "actualPlaywrightOuterTimeout": true,
+    "retries": 0,
+    "durationSeconds": 9.41,
+    "sourceCheckpoint": "final-source-v6.sha256"
+  },
+  "cachePreservationRed": {
+    "passed": 24,
+    "failed": 1,
+    "failure": "shared parent-cache sentinel removed by default image-rm behavior",
+    "kind": "behavioral unit model of documented Docker semantics"
+  },
+  "realLifecycle": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "files": 1,
+    "durationSeconds": 331.57,
+    "ubuntu": [
+      "22.04",
+      "24.04"
+    ],
+    "testTimeoutMs": 120000,
+    "hookTimeoutMs": 120000,
+    "coldDefinition": "withCache(false) bypasses fixture layers; existing base image may remain local",
+    "contexts": [
+      {
+        "ubuntu": "22.04",
+        "scenario": "cold",
+        "owner": "4a975856-ccc4-42d5-8b7f-0752ec0bb740",
+        "buildMs": 79381,
+        "readyMs": 80602
+      },
+      {
+        "ubuntu": "22.04",
+        "scenario": "warm",
+        "owner": "a29f4f6a-30ea-4458-9641-1e5e5ce275ea",
+        "buildMs": 14617,
+        "readyMs": 15952
+      },
+      {
+        "ubuntu": "22.04",
+        "scenario": "held-build-cancel",
+        "owner": "e956f3c6-e164-4d0f-837d-2fc15413f3b8",
+        "buildMs": 24946,
+        "readyMs": null
+      },
+      {
+        "ubuntu": "22.04",
+        "scenario": "concurrent-held-build",
+        "owner": "755251b1-2dd5-4ab0-b9b6-c1d5467eee7b",
+        "buildMs": 9588,
+        "readyMs": 10721
+      },
+      {
+        "ubuntu": "22.04",
+        "scenario": "late-start-cancel",
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "buildMs": 11104,
+        "readyMs": 13215
+      },
+      {
+        "ubuntu": "22.04",
+        "scenario": "concurrent-late-start",
+        "owner": "e046d15c-75bd-4e4f-b264-fffea2d52c67",
+        "buildMs": 9366,
+        "readyMs": 10520
+      },
+      {
+        "ubuntu": "24.04",
+        "scenario": "cold",
+        "owner": "ea7bce27-2123-4ad4-a7a1-0af1e928e33f",
+        "buildMs": 77577,
+        "readyMs": 80066
+      },
+      {
+        "ubuntu": "24.04",
+        "scenario": "warm",
+        "owner": "65b02e06-3bf9-4297-b6a0-40b4fb106d91",
+        "buildMs": 14705,
+        "readyMs": 16306
+      },
+      {
+        "ubuntu": "24.04",
+        "scenario": "held-build-cancel",
+        "owner": "4aed0ab4-9901-4703-bf02-be01edb92445",
+        "buildMs": 23628,
+        "readyMs": null
+      },
+      {
+        "ubuntu": "24.04",
+        "scenario": "concurrent-held-build",
+        "owner": "afd3f60f-e745-4fd1-ac17-769361ff1ade",
+        "buildMs": 8636,
+        "readyMs": 9557
+      },
+      {
+        "ubuntu": "24.04",
+        "scenario": "late-start-cancel",
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "buildMs": 9723,
+        "readyMs": 11516
+      },
+      {
+        "ubuntu": "24.04",
+        "scenario": "concurrent-late-start",
+        "owner": "f89ab84d-56af-4b82-a960-ab5ce1a6209e",
+        "buildMs": 8776,
+        "readyMs": 9986
+      }
+    ],
+    "events": [
+      {
+        "owner": "4a975856-ccc4-42d5-8b7f-0752ec0bb740",
+        "stage": "image_build",
+        "outcome": "begin",
+        "elapsedMs": 0
+      },
+      {
+        "owner": "4a975856-ccc4-42d5-8b7f-0752ec0bb740",
+        "stage": "image_build",
+        "outcome": "success",
+        "elapsedMs": 79381
+      },
+      {
+        "owner": "4a975856-ccc4-42d5-8b7f-0752ec0bb740",
+        "stage": "container_create",
+        "outcome": "begin",
+        "elapsedMs": 79383
+      },
+      {
+        "owner": "4a975856-ccc4-42d5-8b7f-0752ec0bb740",
+        "stage": "container_create",
+        "outcome": "success",
+        "elapsedMs": 79813
+      },
+      {
+        "owner": "4a975856-ccc4-42d5-8b7f-0752ec0bb740",
+        "stage": "container_start",
+        "outcome": "begin",
+        "elapsedMs": 79813
+      },
+      {
+        "owner": "4a975856-ccc4-42d5-8b7f-0752ec0bb740",
+        "stage": "published_port",
+        "outcome": "begin",
+        "elapsedMs": 79813
+      },
+      {
+        "owner": "4a975856-ccc4-42d5-8b7f-0752ec0bb740",
+        "stage": "container_start",
+        "outcome": "success",
+        "elapsedMs": 80202
+      },
+      {
+        "owner": "4a975856-ccc4-42d5-8b7f-0752ec0bb740",
+        "stage": "published_port",
+        "outcome": "success",
+        "elapsedMs": 80202
+      },
+      {
+        "owner": "4a975856-ccc4-42d5-8b7f-0752ec0bb740",
+        "stage": "ssh_readiness",
+        "outcome": "begin",
+        "elapsedMs": 80202
+      },
+      {
+        "owner": "4a975856-ccc4-42d5-8b7f-0752ec0bb740",
+        "stage": "ssh_readiness",
+        "outcome": "success",
+        "elapsedMs": 80602
+      },
+      {
+        "owner": "4a975856-ccc4-42d5-8b7f-0752ec0bb740",
+        "stage": "cleanup",
+        "outcome": "begin",
+        "elapsedMs": 80604
+      },
+      {
+        "owner": "4a975856-ccc4-42d5-8b7f-0752ec0bb740",
+        "stage": "cleanup",
+        "outcome": "success",
+        "elapsedMs": 85363
+      },
+      {
+        "owner": "a29f4f6a-30ea-4458-9641-1e5e5ce275ea",
+        "stage": "image_build",
+        "outcome": "begin",
+        "elapsedMs": 0
+      },
+      {
+        "owner": "a29f4f6a-30ea-4458-9641-1e5e5ce275ea",
+        "stage": "image_build",
+        "outcome": "success",
+        "elapsedMs": 14617
+      },
+      {
+        "owner": "a29f4f6a-30ea-4458-9641-1e5e5ce275ea",
+        "stage": "container_create",
+        "outcome": "begin",
+        "elapsedMs": 14619
+      },
+      {
+        "owner": "a29f4f6a-30ea-4458-9641-1e5e5ce275ea",
+        "stage": "container_create",
+        "outcome": "success",
+        "elapsedMs": 15130
+      },
+      {
+        "owner": "a29f4f6a-30ea-4458-9641-1e5e5ce275ea",
+        "stage": "container_start",
+        "outcome": "begin",
+        "elapsedMs": 15130
+      },
+      {
+        "owner": "a29f4f6a-30ea-4458-9641-1e5e5ce275ea",
+        "stage": "published_port",
+        "outcome": "begin",
+        "elapsedMs": 15130
+      },
+      {
+        "owner": "a29f4f6a-30ea-4458-9641-1e5e5ce275ea",
+        "stage": "container_start",
+        "outcome": "success",
+        "elapsedMs": 15538
+      },
+      {
+        "owner": "a29f4f6a-30ea-4458-9641-1e5e5ce275ea",
+        "stage": "published_port",
+        "outcome": "success",
+        "elapsedMs": 15538
+      },
+      {
+        "owner": "a29f4f6a-30ea-4458-9641-1e5e5ce275ea",
+        "stage": "ssh_readiness",
+        "outcome": "begin",
+        "elapsedMs": 15538
+      },
+      {
+        "owner": "a29f4f6a-30ea-4458-9641-1e5e5ce275ea",
+        "stage": "ssh_readiness",
+        "outcome": "success",
+        "elapsedMs": 15952
+      },
+      {
+        "owner": "a29f4f6a-30ea-4458-9641-1e5e5ce275ea",
+        "stage": "cleanup",
+        "outcome": "begin",
+        "elapsedMs": 15955
+      },
+      {
+        "owner": "a29f4f6a-30ea-4458-9641-1e5e5ce275ea",
+        "stage": "cleanup",
+        "outcome": "success",
+        "elapsedMs": 20302
+      },
+      {
+        "owner": "e956f3c6-e164-4d0f-837d-2fc15413f3b8",
+        "stage": "image_build",
+        "outcome": "begin",
+        "elapsedMs": 0
+      },
+      {
+        "owner": "755251b1-2dd5-4ab0-b9b6-c1d5467eee7b",
+        "stage": "image_build",
+        "outcome": "begin",
+        "elapsedMs": 0
+      },
+      {
+        "owner": "755251b1-2dd5-4ab0-b9b6-c1d5467eee7b",
+        "stage": "image_build",
+        "outcome": "success",
+        "elapsedMs": 9588
+      },
+      {
+        "owner": "755251b1-2dd5-4ab0-b9b6-c1d5467eee7b",
+        "stage": "container_create",
+        "outcome": "begin",
+        "elapsedMs": 9591
+      },
+      {
+        "owner": "755251b1-2dd5-4ab0-b9b6-c1d5467eee7b",
+        "stage": "container_create",
+        "outcome": "success",
+        "elapsedMs": 9714
+      },
+      {
+        "owner": "755251b1-2dd5-4ab0-b9b6-c1d5467eee7b",
+        "stage": "container_start",
+        "outcome": "begin",
+        "elapsedMs": 9714
+      },
+      {
+        "owner": "755251b1-2dd5-4ab0-b9b6-c1d5467eee7b",
+        "stage": "published_port",
+        "outcome": "begin",
+        "elapsedMs": 9714
+      },
+      {
+        "owner": "755251b1-2dd5-4ab0-b9b6-c1d5467eee7b",
+        "stage": "container_start",
+        "outcome": "success",
+        "elapsedMs": 9951
+      },
+      {
+        "owner": "755251b1-2dd5-4ab0-b9b6-c1d5467eee7b",
+        "stage": "published_port",
+        "outcome": "success",
+        "elapsedMs": 9951
+      },
+      {
+        "owner": "755251b1-2dd5-4ab0-b9b6-c1d5467eee7b",
+        "stage": "ssh_readiness",
+        "outcome": "begin",
+        "elapsedMs": 9951
+      },
+      {
+        "owner": "755251b1-2dd5-4ab0-b9b6-c1d5467eee7b",
+        "stage": "ssh_readiness",
+        "outcome": "success",
+        "elapsedMs": 10721
+      },
+      {
+        "owner": "e956f3c6-e164-4d0f-837d-2fc15413f3b8",
+        "stage": "image_build",
+        "outcome": "success",
+        "elapsedMs": 24946
+      },
+      {
+        "owner": "e956f3c6-e164-4d0f-837d-2fc15413f3b8",
+        "stage": "image_build",
+        "outcome": "cancelled",
+        "elapsedMs": 24946,
+        "category": "cancelled"
+      },
+      {
+        "owner": "e956f3c6-e164-4d0f-837d-2fc15413f3b8",
+        "stage": "cleanup",
+        "outcome": "begin",
+        "elapsedMs": 24946
+      },
+      {
+        "owner": "e956f3c6-e164-4d0f-837d-2fc15413f3b8",
+        "stage": "cleanup",
+        "outcome": "success",
+        "elapsedMs": 25306
+      },
+      {
+        "owner": "755251b1-2dd5-4ab0-b9b6-c1d5467eee7b",
+        "stage": "cleanup",
+        "outcome": "begin",
+        "elapsedMs": 11319
+      },
+      {
+        "owner": "755251b1-2dd5-4ab0-b9b6-c1d5467eee7b",
+        "stage": "cleanup",
+        "outcome": "success",
+        "elapsedMs": 14996
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "image_build",
+        "outcome": "begin",
+        "elapsedMs": 0
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "image_build",
+        "outcome": "success",
+        "elapsedMs": 11104
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "container_create",
+        "outcome": "begin",
+        "elapsedMs": 11105
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "container_create",
+        "outcome": "success",
+        "elapsedMs": 11726
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "container_start",
+        "outcome": "begin",
+        "elapsedMs": 11726
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "published_port",
+        "outcome": "begin",
+        "elapsedMs": 11726
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "container_start",
+        "outcome": "success",
+        "elapsedMs": 12055
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "published_port",
+        "outcome": "success",
+        "elapsedMs": 12055
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "ssh_readiness",
+        "outcome": "begin",
+        "elapsedMs": 12055
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "ssh_readiness",
+        "outcome": "success",
+        "elapsedMs": 13215
+      },
+      {
+        "owner": "e046d15c-75bd-4e4f-b264-fffea2d52c67",
+        "stage": "image_build",
+        "outcome": "begin",
+        "elapsedMs": 0
+      },
+      {
+        "owner": "e046d15c-75bd-4e4f-b264-fffea2d52c67",
+        "stage": "image_build",
+        "outcome": "success",
+        "elapsedMs": 9366
+      },
+      {
+        "owner": "e046d15c-75bd-4e4f-b264-fffea2d52c67",
+        "stage": "container_create",
+        "outcome": "begin",
+        "elapsedMs": 9368
+      },
+      {
+        "owner": "e046d15c-75bd-4e4f-b264-fffea2d52c67",
+        "stage": "container_create",
+        "outcome": "success",
+        "elapsedMs": 9485
+      },
+      {
+        "owner": "e046d15c-75bd-4e4f-b264-fffea2d52c67",
+        "stage": "container_start",
+        "outcome": "begin",
+        "elapsedMs": 9485
+      },
+      {
+        "owner": "e046d15c-75bd-4e4f-b264-fffea2d52c67",
+        "stage": "published_port",
+        "outcome": "begin",
+        "elapsedMs": 9485
+      },
+      {
+        "owner": "e046d15c-75bd-4e4f-b264-fffea2d52c67",
+        "stage": "container_start",
+        "outcome": "success",
+        "elapsedMs": 9706
+      },
+      {
+        "owner": "e046d15c-75bd-4e4f-b264-fffea2d52c67",
+        "stage": "published_port",
+        "outcome": "success",
+        "elapsedMs": 9706
+      },
+      {
+        "owner": "e046d15c-75bd-4e4f-b264-fffea2d52c67",
+        "stage": "ssh_readiness",
+        "outcome": "begin",
+        "elapsedMs": 9706
+      },
+      {
+        "owner": "e046d15c-75bd-4e4f-b264-fffea2d52c67",
+        "stage": "ssh_readiness",
+        "outcome": "success",
+        "elapsedMs": 10520
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "cleanup",
+        "outcome": "begin",
+        "elapsedMs": 23737
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "cleanup",
+        "outcome": "cancelled",
+        "elapsedMs": 23748,
+        "category": "cancelled"
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "cleanup",
+        "outcome": "begin",
+        "elapsedMs": 23748
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "cleanup",
+        "outcome": "success",
+        "elapsedMs": 25334
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "stage": "cleanup",
+        "outcome": "success",
+        "elapsedMs": 25559
+      },
+      {
+        "owner": "e046d15c-75bd-4e4f-b264-fffea2d52c67",
+        "stage": "cleanup",
+        "outcome": "begin",
+        "elapsedMs": 12561
+      },
+      {
+        "owner": "e046d15c-75bd-4e4f-b264-fffea2d52c67",
+        "stage": "cleanup",
+        "outcome": "success",
+        "elapsedMs": 15534
+      },
+      {
+        "owner": "ea7bce27-2123-4ad4-a7a1-0af1e928e33f",
+        "stage": "image_build",
+        "outcome": "begin",
+        "elapsedMs": 0
+      },
+      {
+        "owner": "ea7bce27-2123-4ad4-a7a1-0af1e928e33f",
+        "stage": "image_build",
+        "outcome": "success",
+        "elapsedMs": 77577
+      },
+      {
+        "owner": "ea7bce27-2123-4ad4-a7a1-0af1e928e33f",
+        "stage": "container_create",
+        "outcome": "begin",
+        "elapsedMs": 77581
+      },
+      {
+        "owner": "ea7bce27-2123-4ad4-a7a1-0af1e928e33f",
+        "stage": "container_create",
+        "outcome": "success",
+        "elapsedMs": 78739
+      },
+      {
+        "owner": "ea7bce27-2123-4ad4-a7a1-0af1e928e33f",
+        "stage": "container_start",
+        "outcome": "begin",
+        "elapsedMs": 78739
+      },
+      {
+        "owner": "ea7bce27-2123-4ad4-a7a1-0af1e928e33f",
+        "stage": "published_port",
+        "outcome": "begin",
+        "elapsedMs": 78739
+      },
+      {
+        "owner": "ea7bce27-2123-4ad4-a7a1-0af1e928e33f",
+        "stage": "container_start",
+        "outcome": "success",
+        "elapsedMs": 79101
+      },
+      {
+        "owner": "ea7bce27-2123-4ad4-a7a1-0af1e928e33f",
+        "stage": "published_port",
+        "outcome": "success",
+        "elapsedMs": 79101
+      },
+      {
+        "owner": "ea7bce27-2123-4ad4-a7a1-0af1e928e33f",
+        "stage": "ssh_readiness",
+        "outcome": "begin",
+        "elapsedMs": 79101
+      },
+      {
+        "owner": "ea7bce27-2123-4ad4-a7a1-0af1e928e33f",
+        "stage": "ssh_readiness",
+        "outcome": "success",
+        "elapsedMs": 80066
+      },
+      {
+        "owner": "ea7bce27-2123-4ad4-a7a1-0af1e928e33f",
+        "stage": "cleanup",
+        "outcome": "begin",
+        "elapsedMs": 80067
+      },
+      {
+        "owner": "ea7bce27-2123-4ad4-a7a1-0af1e928e33f",
+        "stage": "cleanup",
+        "outcome": "success",
+        "elapsedMs": 85175
+      },
+      {
+        "owner": "65b02e06-3bf9-4297-b6a0-40b4fb106d91",
+        "stage": "image_build",
+        "outcome": "begin",
+        "elapsedMs": 0
+      },
+      {
+        "owner": "65b02e06-3bf9-4297-b6a0-40b4fb106d91",
+        "stage": "image_build",
+        "outcome": "success",
+        "elapsedMs": 14705
+      },
+      {
+        "owner": "65b02e06-3bf9-4297-b6a0-40b4fb106d91",
+        "stage": "container_create",
+        "outcome": "begin",
+        "elapsedMs": 14706
+      },
+      {
+        "owner": "65b02e06-3bf9-4297-b6a0-40b4fb106d91",
+        "stage": "container_create",
+        "outcome": "success",
+        "elapsedMs": 15144
+      },
+      {
+        "owner": "65b02e06-3bf9-4297-b6a0-40b4fb106d91",
+        "stage": "container_start",
+        "outcome": "begin",
+        "elapsedMs": 15144
+      },
+      {
+        "owner": "65b02e06-3bf9-4297-b6a0-40b4fb106d91",
+        "stage": "published_port",
+        "outcome": "begin",
+        "elapsedMs": 15144
+      },
+      {
+        "owner": "65b02e06-3bf9-4297-b6a0-40b4fb106d91",
+        "stage": "container_start",
+        "outcome": "success",
+        "elapsedMs": 15653
+      },
+      {
+        "owner": "65b02e06-3bf9-4297-b6a0-40b4fb106d91",
+        "stage": "published_port",
+        "outcome": "success",
+        "elapsedMs": 15653
+      },
+      {
+        "owner": "65b02e06-3bf9-4297-b6a0-40b4fb106d91",
+        "stage": "ssh_readiness",
+        "outcome": "begin",
+        "elapsedMs": 15653
+      },
+      {
+        "owner": "65b02e06-3bf9-4297-b6a0-40b4fb106d91",
+        "stage": "ssh_readiness",
+        "outcome": "success",
+        "elapsedMs": 16306
+      },
+      {
+        "owner": "65b02e06-3bf9-4297-b6a0-40b4fb106d91",
+        "stage": "cleanup",
+        "outcome": "begin",
+        "elapsedMs": 16306
+      },
+      {
+        "owner": "65b02e06-3bf9-4297-b6a0-40b4fb106d91",
+        "stage": "cleanup",
+        "outcome": "success",
+        "elapsedMs": 22199
+      },
+      {
+        "owner": "4aed0ab4-9901-4703-bf02-be01edb92445",
+        "stage": "image_build",
+        "outcome": "begin",
+        "elapsedMs": 0
+      },
+      {
+        "owner": "afd3f60f-e745-4fd1-ac17-769361ff1ade",
+        "stage": "image_build",
+        "outcome": "begin",
+        "elapsedMs": 0
+      },
+      {
+        "owner": "afd3f60f-e745-4fd1-ac17-769361ff1ade",
+        "stage": "image_build",
+        "outcome": "success",
+        "elapsedMs": 8636
+      },
+      {
+        "owner": "afd3f60f-e745-4fd1-ac17-769361ff1ade",
+        "stage": "container_create",
+        "outcome": "begin",
+        "elapsedMs": 8637
+      },
+      {
+        "owner": "afd3f60f-e745-4fd1-ac17-769361ff1ade",
+        "stage": "container_create",
+        "outcome": "success",
+        "elapsedMs": 8808
+      },
+      {
+        "owner": "afd3f60f-e745-4fd1-ac17-769361ff1ade",
+        "stage": "container_start",
+        "outcome": "begin",
+        "elapsedMs": 8808
+      },
+      {
+        "owner": "afd3f60f-e745-4fd1-ac17-769361ff1ade",
+        "stage": "published_port",
+        "outcome": "begin",
+        "elapsedMs": 8808
+      },
+      {
+        "owner": "afd3f60f-e745-4fd1-ac17-769361ff1ade",
+        "stage": "container_start",
+        "outcome": "success",
+        "elapsedMs": 9025
+      },
+      {
+        "owner": "afd3f60f-e745-4fd1-ac17-769361ff1ade",
+        "stage": "published_port",
+        "outcome": "success",
+        "elapsedMs": 9026
+      },
+      {
+        "owner": "afd3f60f-e745-4fd1-ac17-769361ff1ade",
+        "stage": "ssh_readiness",
+        "outcome": "begin",
+        "elapsedMs": 9026
+      },
+      {
+        "owner": "afd3f60f-e745-4fd1-ac17-769361ff1ade",
+        "stage": "ssh_readiness",
+        "outcome": "success",
+        "elapsedMs": 9557
+      },
+      {
+        "owner": "4aed0ab4-9901-4703-bf02-be01edb92445",
+        "stage": "image_build",
+        "outcome": "success",
+        "elapsedMs": 23628
+      },
+      {
+        "owner": "4aed0ab4-9901-4703-bf02-be01edb92445",
+        "stage": "image_build",
+        "outcome": "cancelled",
+        "elapsedMs": 23628,
+        "category": "cancelled"
+      },
+      {
+        "owner": "4aed0ab4-9901-4703-bf02-be01edb92445",
+        "stage": "cleanup",
+        "outcome": "begin",
+        "elapsedMs": 23628
+      },
+      {
+        "owner": "4aed0ab4-9901-4703-bf02-be01edb92445",
+        "stage": "cleanup",
+        "outcome": "success",
+        "elapsedMs": 23927
+      },
+      {
+        "owner": "afd3f60f-e745-4fd1-ac17-769361ff1ade",
+        "stage": "cleanup",
+        "outcome": "begin",
+        "elapsedMs": 10158
+      },
+      {
+        "owner": "afd3f60f-e745-4fd1-ac17-769361ff1ade",
+        "stage": "cleanup",
+        "outcome": "success",
+        "elapsedMs": 15596
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "image_build",
+        "outcome": "begin",
+        "elapsedMs": 0
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "image_build",
+        "outcome": "success",
+        "elapsedMs": 9723
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "container_create",
+        "outcome": "begin",
+        "elapsedMs": 9725
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "container_create",
+        "outcome": "success",
+        "elapsedMs": 10234
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "container_start",
+        "outcome": "begin",
+        "elapsedMs": 10234
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "published_port",
+        "outcome": "begin",
+        "elapsedMs": 10234
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "container_start",
+        "outcome": "success",
+        "elapsedMs": 10523
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "published_port",
+        "outcome": "success",
+        "elapsedMs": 10523
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "ssh_readiness",
+        "outcome": "begin",
+        "elapsedMs": 10523
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "ssh_readiness",
+        "outcome": "success",
+        "elapsedMs": 11516
+      },
+      {
+        "owner": "f89ab84d-56af-4b82-a960-ab5ce1a6209e",
+        "stage": "image_build",
+        "outcome": "begin",
+        "elapsedMs": 0
+      },
+      {
+        "owner": "f89ab84d-56af-4b82-a960-ab5ce1a6209e",
+        "stage": "image_build",
+        "outcome": "success",
+        "elapsedMs": 8776
+      },
+      {
+        "owner": "f89ab84d-56af-4b82-a960-ab5ce1a6209e",
+        "stage": "container_create",
+        "outcome": "begin",
+        "elapsedMs": 8777
+      },
+      {
+        "owner": "f89ab84d-56af-4b82-a960-ab5ce1a6209e",
+        "stage": "container_create",
+        "outcome": "success",
+        "elapsedMs": 8967
+      },
+      {
+        "owner": "f89ab84d-56af-4b82-a960-ab5ce1a6209e",
+        "stage": "container_start",
+        "outcome": "begin",
+        "elapsedMs": 8967
+      },
+      {
+        "owner": "f89ab84d-56af-4b82-a960-ab5ce1a6209e",
+        "stage": "published_port",
+        "outcome": "begin",
+        "elapsedMs": 8967
+      },
+      {
+        "owner": "f89ab84d-56af-4b82-a960-ab5ce1a6209e",
+        "stage": "container_start",
+        "outcome": "success",
+        "elapsedMs": 9243
+      },
+      {
+        "owner": "f89ab84d-56af-4b82-a960-ab5ce1a6209e",
+        "stage": "published_port",
+        "outcome": "success",
+        "elapsedMs": 9243
+      },
+      {
+        "owner": "f89ab84d-56af-4b82-a960-ab5ce1a6209e",
+        "stage": "ssh_readiness",
+        "outcome": "begin",
+        "elapsedMs": 9243
+      },
+      {
+        "owner": "f89ab84d-56af-4b82-a960-ab5ce1a6209e",
+        "stage": "ssh_readiness",
+        "outcome": "success",
+        "elapsedMs": 9986
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "cleanup",
+        "outcome": "begin",
+        "elapsedMs": 21503
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "cleanup",
+        "outcome": "cancelled",
+        "elapsedMs": 21507,
+        "category": "cancelled"
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "cleanup",
+        "outcome": "begin",
+        "elapsedMs": 21507
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "cleanup",
+        "outcome": "success",
+        "elapsedMs": 23794
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "stage": "cleanup",
+        "outcome": "success",
+        "elapsedMs": 24167
+      },
+      {
+        "owner": "f89ab84d-56af-4b82-a960-ab5ce1a6209e",
+        "stage": "cleanup",
+        "outcome": "begin",
+        "elapsedMs": 12909
+      },
+      {
+        "owner": "f89ab84d-56af-4b82-a960-ab5ce1a6209e",
+        "stage": "cleanup",
+        "outcome": "success",
+        "elapsedMs": 18018
+      }
+    ],
+    "completedOwnedInventory": [
+      {
+        "owner": "4a975856-ccc4-42d5-8b7f-0752ec0bb740",
+        "containers": 0,
+        "ownedImages": 0
+      },
+      {
+        "owner": "a29f4f6a-30ea-4458-9641-1e5e5ce275ea",
+        "containers": 0,
+        "ownedImages": 0
+      },
+      {
+        "owner": "e956f3c6-e164-4d0f-837d-2fc15413f3b8",
+        "containers": 0,
+        "ownedImages": 0
+      },
+      {
+        "owner": "755251b1-2dd5-4ab0-b9b6-c1d5467eee7b",
+        "containers": 0,
+        "ownedImages": 0
+      },
+      {
+        "owner": "8a8eaef7-fb19-41f2-b01f-1ca1211effb7",
+        "containers": 0,
+        "ownedImages": 0
+      },
+      {
+        "owner": "e046d15c-75bd-4e4f-b264-fffea2d52c67",
+        "containers": 0,
+        "ownedImages": 0
+      },
+      {
+        "owner": "ea7bce27-2123-4ad4-a7a1-0af1e928e33f",
+        "containers": 0,
+        "ownedImages": 0
+      },
+      {
+        "owner": "65b02e06-3bf9-4297-b6a0-40b4fb106d91",
+        "containers": 0,
+        "ownedImages": 0
+      },
+      {
+        "owner": "4aed0ab4-9901-4703-bf02-be01edb92445",
+        "containers": 0,
+        "ownedImages": 0
+      },
+      {
+        "owner": "afd3f60f-e745-4fd1-ac17-769361ff1ade",
+        "containers": 0,
+        "ownedImages": 0
+      },
+      {
+        "owner": "9bb0f07e-090a-461f-abb9-9c89750d7cea",
+        "containers": 0,
+        "ownedImages": 0
+      },
+      {
+        "owner": "f89ab84d-56af-4b82-a960-ab5ce1a6209e",
+        "containers": 0,
+        "ownedImages": 0
+      }
+    ],
+    "completedSharedTestInventory": {
+      "containers": 0,
+      "networks": 0,
+      "volumes": 0,
+      "ryukForRun": 0
+    },
+    "sourceCheckpoint": "final-source-v5.sha256; retained completed run, not rerun for R1",
+    "sourceSha256": {
+      "tests/integration/helpers/ssh.ts": "25bb0cfc7f5c706d19896e59602cfe0815cc050440a2dd58415c720964c924c2",
+      "tests/integration/helpers/container-start.ts": "749ab01c34a3f7b11604379341b6b0bcc3255864a0ade0c3fd120e7dedde86ce",
+      "tests/integration/helpers/port-binding-retry.ts": "f57888a5589904df315b48f8d0974608424cd32738e93c381703761456f126c9",
+      "tests/integration/helpers/test-resources.ts": "893d025a31c1c9517d090c2e6b19bc845f8f6ceb45e233cd426ab6f6f36366ea",
+      "tests/integration/ssh/fixture-lifecycle.test.ts": "a25b84e26d83240870981c3588a9f6080be4edad99d849fdb116509e8ff27054",
+      "tests/e2e/critical-path.spec.ts": "23ac7a557141e06e050a4fcc16a2c94f4b1810ce671f3ed4724b4781628ab31e",
+      "tests/e2e/discovery.spec.ts": "cfc3a3a6632c0f8c14ab3f1427f262be053beb66f5f9b32f62aeafb6c1f39adc",
+      "tests/e2e/fixtures/stack.ts": "28c6adac99142a1411fba57ff797e5b7ae793d779554ad23cfd8f30539c710bd",
+      "tests/unit/integration-helpers/ssh-cancellation.test.ts": "2d4b358a2b09967da7470cdc27cede6213776ec79ee4e76f1c0b148fa6e79967",
+      "tests/unit/integration-helpers/ssh-diagnostics.test.ts": "e111a0be80a2993136519891a8c100de7aaec7547aeaecb44bfd2094b08dccfd",
+      "tests/unit/integration-helpers/ssh-stage-events.test.ts": "6c779d4102bba1517d25a8cb69cd56918881879c871daf2cbcfbc972329536e7",
+      "tests/unit/integration-helpers/ssh-playwright-cancellation.test.ts": "6842a847381be2638d6a1a963996a9ab23d613b4f140ea2229be15ff16908a66",
+      "tests/unit/integration-helpers/port-binding-retry.test.ts": "7f362919bfd31478b62abe5f5c46f4eae88672ed26857ee8267f437b60dce167"
+    }
+  },
+  "scopedTypecheck": {
+    "ssh": "PASS",
+    "e2e": "PASS"
+  },
+  "playwrightCollection": {
+    "tests": 15,
+    "files": 2,
+    "execution": false
+  },
+  "pending": [
+    "all nine root authoritative gates",
+    "full unchanged E2E/security execution",
+    "independent public-baseline review and allowlisted source/tree mapping",
+    "exact repair-SHA relevant CI results and every triggered job status",
+    "tag/release/image identity continuity checks",
+    "publication acceptance and durable historical diagnosis closeout"
+  ],
+  "originalCancellationRed": {
+    "passed": 6,
+    "failed": 2,
+    "file": "ssh-stage-events.test.ts",
+    "contracts": [
+      "reject an already cancelled fixture before any build",
+      "do not create after a held build completes following cancellation"
+    ],
+    "evidence": "preserved prior-executor cancellation-red.log; no retroactive baseline restore"
+  },
+  "budgetExtensionRegression": {
+    "reviewFinding": "R1, candidate75bfdd9a6e690be61af782b9dc42505c267bf285",
+    "red": {
+      "passed": 1,
+      "failed": 1,
+      "reason": "successfully returned fixture unusable at3000ms despite runner extension1000ms to6000ms; exec exit1/gone",
+      "stackSha256": "28c6adac99142a1411fba57ff797e5b7ae793d779554ad23cfd8f30539c710bd"
+    },
+    "green": {
+      "passed": 52,
+      "failed": 0,
+      "skipped": 0,
+      "files": 5,
+      "realPlaywrightResult": "timedOut",
+      "alivePastOriginalDeadline": true,
+      "reapCompleted": true,
+      "survivors": false,
+      "cleanupSucceeded": true,
+      "subprocessBoundMs": 15000,
+      "testBoundMs": 20000
+    },
+    "boundary": "Real Playwright runner and real SSH lifecycle; synthetic Testcontainers success handle and exact-owner Docker CLI resource model. No real Docker run claimed.",
+    "fix": "Clear captured startup deadline on result settlement; retain startup deadline and registered owners until real runner teardown.",
+    "existingCallerBudgetsAndRetriesUnchanged": true,
+    "scopedTypechecks": {
+      "ssh": 0,
+      "e2e": 0
+    },
+    "realLifecycleMapping": "SSH helper, container-start, port-binding retry, test-resource cleanup and real lifecycle test bytes unchanged from completed v5 run; E2E wrapper and unit runner harness changed only."
+  }
+}

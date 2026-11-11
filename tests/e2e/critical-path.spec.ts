@@ -22,9 +22,9 @@
 // an SPA transition -- both discovery runs below stay on one continuously-mounted page instance
 // from "Save and connect"/"Re-run discovery" through settlement (the part that actually needs the
 // live SSE pipeline proven), the only reloads are the plain cross-screen visits in between.
-import { expect, test, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { DISCOVERY_CHECK_IDS } from '@noodara/domain/discovery';
-import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD, startCriticalPathSshd, stopCriticalPathSshd } from './fixtures/stack.js';
+import { sshTest as test, E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD, startCriticalPathSshd, stopCriticalPathSshd } from './fixtures/stack.js';
 import { readTestKey } from '../integration/helpers/ssh.js';
 
 const RESOLVED_SEVERITIES = new Set(['pass', 'warning', 'fail', 'skipped', 'not_applicable']);
@@ -192,11 +192,11 @@ async function resetInstrumentation(page: Page): Promise<void> {
 }
 
 test('@critical the whole roadmap SS6.6 flow: login -> Servers -> add server -> connect -> live discovery -> detail, against a real sshd container', async ({
-  page,
+  page, startOwnedSshd,
 }) => {
   test.setTimeout(180_000);
 
-  const sshd = await startCriticalPathSshd();
+  const sshd = await startCriticalPathSshd(() => startOwnedSshd({ ubuntu: '24.04' }));
 
   try {
     await installDiscoveryInstrumentation(page);
