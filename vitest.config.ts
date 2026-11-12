@@ -1,5 +1,11 @@
 import { defineConfig } from 'vitest/config';
 import { aiSourceAliases, domainSourceAliases, sshSourceAliases, uiSourceAliases } from './vitest.shared.js';
+import { RUNNER_TIMEOUT_DEFAULTS, resolveRunnerTimeoutScale } from './tests/support/timeout-scale.js';
+
+// 36-01: runner-level timeouts are derived from tests/support/timeout-scale.ts (opt-in
+// NOODARA_TEST_TIMEOUT_SCALE, exactly 1 when unset and never set in CI); an invalid value throws
+// here, before any test, global setup, container or port is touched.
+const timeouts = resolveRunnerTimeoutScale('vitest');
 
 // Vitest 5 uses `projects` (the config key that superseded the deprecated one removed since
 // 3.2). Each monorepo package gets its own project scoped to `src/**/*.test.ts` so integration
@@ -27,6 +33,9 @@ export default defineConfig({
   // never goes through this Vite config at all.
   oxc: { jsx: { runtime: 'automatic' } },
   test: {
+    // Vitest's implicit node-environment defaults, made explicit; every project below inherits them.
+    testTimeout: timeouts.scaled(RUNNER_TIMEOUT_DEFAULTS.unit.testTimeout),
+    hookTimeout: timeouts.scaled(RUNNER_TIMEOUT_DEFAULTS.unit.hookTimeout),
     projects: [
       {
         extends: true,
