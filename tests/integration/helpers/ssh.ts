@@ -14,6 +14,11 @@ import {
 } from "testcontainers";
 import { expect } from "vitest";
 import { startLabelledContainer } from "./container-start.js";
+import {
+  FIXTURE_IDENTITY_BUILD_ARG, FIXTURE_IMAGE_PULL_BUDGET_MS, FIXTURE_REGISTRY_ENV,
+  computeFixtureIdentitySync, createDockerCliFacade, resolveFixtureImage, runDockerCli,
+  sshdFixtureImageSpec,
+} from "./fixture-image.js";
 import { startWithPortBindingRetry } from "./port-binding-retry.js";
 import {
   dockerCli as runDocker, listOwnedSshResources, reapOwnedSshContainers, SSH_OWNER_LABEL,
@@ -96,6 +101,11 @@ export interface StartSshdOptions {
    *  reachable at the same host:port. Omit for an OS-assigned free port (the default for every
    *  other scenario). */
   readonly hostPort?: number;
+  /** 36-04 image source. 'build' (startSshd/createSshdLifecycle default): always build into the
+   *  owner tag, starting the build synchronously, then best-effort publish the content-hash tag.
+   *  'reuse' (createSshdTestScope().start default): a verified local content-addressed image, then
+   *  the opt-in NOODARA_TEST_FIXTURE_REGISTRY pull, then the build path. */
+  readonly image?: "reuse" | "build";
 }
 
 export interface SshdFixture {
@@ -236,7 +246,7 @@ export function createSshdTestScope(options: SshdTestScopeOptions = {}): SshdTes
   const tracked: { readonly lifecycle: SshdLifecycle; readonly testName: string }[] = [];
   return {
     start(startOptions) {
-      const lifecycle = createLifecycle(startOptions);
+      const lifecycle = createLifecycle({ ...startOptions, image: startOptions.image ?? "reuse" });
       tracked.push({ lifecycle, testName: currentTestName() ?? "(suite hook)" });
       return lifecycle.result;
     },
@@ -304,7 +314,7 @@ async function runSshd(
   onCleanupUnverified: () => void = () => undefined,
   owner: string = randomUUID(),
 ): Promise<SshdFixture> {
-  const { ubuntu, dockerCli = false, slowDf = false, hostPort, signal } = options;
+  const { ubuntu, dockerCli = false, slowDf = false, hostPort, signal, image = "build" } = options;
   const checkCancelled = (): void => { signal?.throwIfAborted(); };
   checkCancelled();
 
@@ -334,20 +344,37 @@ async function runSshd(
     imageBuilt = false;
   };
   record("image_build", "begin");
+  // The build (when it runs) is joined even after resolveFixtureImage rejected on abort, so a late
+  // owner tag is removed below and startup never settles before the build does.
+  let building: Promise<void> | undefined;
   try {
-    await GenericContainer.fromDockerfile(
-    IMAGES_CONTEXT,
-    `sshd-ubuntu-${ubuntu}/Dockerfile`,
-  )
-    .withBuildArgs({
-      WITH_DOCKER_CLI: String(dockerCli),
-      WITH_SLOW_DF: String(slowDf),
-    })
-    .build(imageName);
+    // Same spec scripts/fixture-images.mjs publishes, so the pulled tag is the published tag (H8).
+    const { name: fixtureName, dockerfile, buildArgs } = sshdFixtureImageSpec(ubuntu, { dockerCli, slowDf });
+    // Synchronous: 'build' mode must start the build before the first await.
+    const identity = computeFixtureIdentitySync({ contextDir: IMAGES_CONTEXT, dockerfile, buildArgs });
+    const build = (): Promise<void> => (building = GenericContainer.fromDockerfile(IMAGES_CONTEXT, dockerfile)
+      .withBuildArgs({ ...buildArgs, [FIXTURE_IDENTITY_BUILD_ARG]: identity })
+      .build(imageName)
+      .then(() => { imageBuilt = true; }));
+    await resolveFixtureImage({
+      name: fixtureName,
+      identity,
+      target: imageName,
+      // Metadata, tag and untag go through the bounded test-resources CLI; only the opt-in pull
+      // needs its own scaled deadline and abort signal.
+      docker: createDockerCliFacade((args, runOptions) =>
+        args[0] === "pull" ? runDockerCli(args, runOptions) : runDocker(args)),
+      build,
+      registry: process.env[FIXTURE_REGISTRY_ENV],
+      pullDeadlineMs: resolveRunnerTimeoutScale("vitest").scaled(FIXTURE_IMAGE_PULL_BUDGET_MS),
+      signal,
+      mode: image,
+    });
     imageBuilt = true;
     record("image_build", "success");
     checkCancelled();
   } catch (error: unknown) {
+    await building?.catch(() => undefined);
     record("image_build", signal?.aborted === true ? "cancelled" : "failure");
     if (imageBuilt) {
       record("cleanup", "begin");

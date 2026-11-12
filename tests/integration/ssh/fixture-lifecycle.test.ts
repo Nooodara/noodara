@@ -41,20 +41,29 @@ for (const ubuntu of versions) {
   describe(`real SSH fixture lifecycle Ubuntu ${ubuntu}`, () => {
     for (const cache of ['cold', 'warm'] as const) {
       it(`builds and reaches SSH readiness (${cache}), stops twice, and preserves a foreign listener`, async () => {
-        if (cache === 'cold') {
-          // Bypass fixture layers for this owned build without deleting shared images/cache.
-          // The existing base image may remain local; no registry-cold claim is implied.
-          const fromDockerfile = GenericContainer.fromDockerfile.bind(GenericContainer);
-          vi.spyOn(GenericContainer, 'fromDockerfile').mockImplementation((...args) =>
-            fromDockerfile(...args).withCache(false));
+        if (cache === 'warm') {
+          // 36-04: prime the verified content-addressed image (built, or pulled when the opt-in
+          // registry is configured) so the measured start below is a local cache hit.
+          const primed = await trackedStart({ ubuntu, image: 'reuse' });
+          await primed.stop();
         }
+        const fromDockerfile = GenericContainer.fromDockerfile.bind(GenericContainer);
+        // Cold: bypass fixture layers for this owned build without deleting shared images/cache.
+        // The existing base image may remain local; no registry-cold claim is implied.
+        // Warm: a pass-through spy proving the cached image is reused without any build.
+        const builds = vi.spyOn(GenericContainer, 'fromDockerfile').mockImplementation((...args) =>
+          cache === 'cold' ? fromDockerfile(...args).withCache(false) : fromDockerfile(...args));
         sentinel = net.createServer((socket) => socket.end('sentinel'));
         await new Promise<void>((resolve) => sentinel?.listen(0, '127.0.0.1', resolve));
         const address = sentinel.address();
         if (address === null || typeof address === 'string') throw new Error('Sentinel did not bind');
         const events: SshDiagnosticEvent[] = [];
-        const fixture = await trackedStart({ ubuntu, diagnostics: recordEvents(events) });
+        const fixture = await trackedStart({
+          ubuntu, image: cache === 'cold' ? 'build' : 'reuse', diagnostics: recordEvents(events),
+        });
         fixtures.push(fixture);
+        if (cache === 'cold') expect(builds).toHaveBeenCalledTimes(1);
+        else expect(builds).not.toHaveBeenCalled();
         expect(events.some((event) => event.stage === 'ssh_readiness' && event.outcome === 'success')).toBe(true);
         await fixture.stop();
         await fixture.stop();
@@ -92,7 +101,8 @@ for (const ubuntu of versions) {
         });
         return builder;
       });
-      const owner = createSshdLifecycle({ ubuntu, diagnostics: recordEvents(events) });
+      // 'build': the held build must actually run, whatever the local fixture image cache holds.
+      const owner = createSshdLifecycle({ ubuntu, image: 'build', diagnostics: recordEvents(events) });
       owners.push(owner);
       try {
         // Startup failure/cancellation must reject this wait; it must never authorize
