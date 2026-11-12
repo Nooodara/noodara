@@ -18,6 +18,21 @@ import {
   resolveRunnerTimeoutScale,
   scaleTimeout,
 } from '../../support/timeout-scale.js';
+import { injectedTimeoutScale } from '../../support/vitest-provided.js';
+
+describe('injectedTimeoutScale (36-02: the factor Vitest `provide`s to every unit worker)', () => {
+  it('equals the factor this run resolved from the environment (exactly 1 when unset)', () => {
+    const scale = injectedTimeoutScale();
+    expect(scale.factor).toBe(parseTimeoutScale(process.env[TIMEOUT_SCALE_ENV]));
+    expect(scale.scaled(30_000)).toBe(scaleTimeout(30_000, scale.factor));
+  });
+
+  it('fails loudly instead of defaulting when the factor was not provided or is out of range', () => {
+    for (const bad of [undefined, 0, 0.5, 11, Number.NaN, '2']) {
+      expect(() => injectedTimeoutScale(() => bad)).toThrow(/vitest\.config\.ts|NOODARA_TEST_TIMEOUT_SCALE/);
+    }
+  });
+});
 
 const RANGE_PATTERN = /NOODARA_TEST_TIMEOUT_SCALE.*\[1, 10\]/;
 

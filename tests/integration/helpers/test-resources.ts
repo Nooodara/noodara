@@ -18,13 +18,40 @@ export type DockerRunner = (args: readonly string[]) => Promise<string>;
 
 export const SSH_OWNER_LABEL = 'noodara.test.ssh-owner';
 
+const OWNER_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+function assertOwner(owner: string): void {
+  if (!OWNER_PATTERN.test(owner)) throw new Error('Invalid SSH fixture owner');
+}
+
+/** Docker ANDs repeated label filters: only resources carrying BOTH labels ever match. The owner
+ *  filter stays last (tests/unit/integration-helpers/ssh-cancellation.test.ts's fake reads it). */
+function ownedFilters(owner: string): string[] {
+  return ['--filter', TEST_LABEL_FILTER, '--filter', `label=${SSH_OWNER_LABEL}=${owner}`];
+}
+
+/** The image tag an SSH fixture owner builds; it never names shared parent layers. */
+export function sshFixtureImageTag(owner: string): string {
+  assertOwner(owner);
+  return `noodara-test/sshd-diagnostics:${owner}`;
+}
+
+/**
+ * Names of the resources one SSH fixture owner still holds: containers carrying both the
+ * noodara.test label and this owner label, plus the owner's image tag. Read-only.
+ */
+export async function listOwnedSshResources(owner: string, docker: DockerRunner = dockerCli): Promise<string[]> {
+  assertOwner(owner);
+  const containers = lines(await docker(['ps', '-a', '--no-trunc', '--format', '{{.Names}}', ...ownedFilters(owner)]));
+  const images = lines(await docker(['image', 'ls', '--format', '{{.Repository}}:{{.Tag}}', sshFixtureImageTag(owner)]));
+  return [...containers.map((name) => `container ${name}`), ...images.map((tag) => `image ${tag}`)];
+}
+
 /** An owner label is removal authority; a baseline difference or shared test label is not. */
 export async function reapOwnedSshContainers(owner: string, docker: DockerRunner = dockerCli): Promise<void> {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(owner)) {
-    throw new Error('Invalid SSH fixture owner');
-  }
+  assertOwner(owner);
   try {
-    const inventory = () => docker(['ps', '-aq', '--no-trunc', '--filter', `label=${SSH_OWNER_LABEL}=${owner}`]);
+    const inventory = () => docker(['ps', '-aq', '--no-trunc', ...ownedFilters(owner)]);
     const ids = lines(await inventory());
     if (ids.length > 0) await docker(['rm', '-f', '-v', ...ids]);
     if (lines(await inventory()).length > 0) throw new Error('survivors');

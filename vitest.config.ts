@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import { aiSourceAliases, domainSourceAliases, sshSourceAliases, uiSourceAliases } from './vitest.shared.js';
-import { RUNNER_TIMEOUT_DEFAULTS, resolveRunnerTimeoutScale } from './tests/support/timeout-scale.js';
+import { RUNNER_TIMEOUT_DEFAULTS, TIMEOUT_SCALE_PROVIDE_KEY, resolveRunnerTimeoutScale } from './tests/support/timeout-scale.js';
 
 // 36-01: runner-level timeouts are derived from tests/support/timeout-scale.ts (opt-in
 // NOODARA_TEST_TIMEOUT_SCALE, exactly 1 when unset and never set in CI); an invalid value throws
@@ -36,6 +36,9 @@ export default defineConfig({
     // Vitest's implicit node-environment defaults, made explicit; every project below inherits them.
     testTimeout: timeouts.scaled(RUNNER_TIMEOUT_DEFAULTS.unit.testTimeout),
     hookTimeout: timeouts.scaled(RUNNER_TIMEOUT_DEFAULTS.unit.hookTimeout),
+    // 36-02: workspace-package tests cannot import tests/support (pnpm boundaries); they read the
+    // same resolved factor through `inject` (tests/support/vitest-provided.ts). Exactly 1 unset.
+    provide: { [TIMEOUT_SCALE_PROVIDE_KEY]: timeouts.factor },
     projects: [
       {
         extends: true,

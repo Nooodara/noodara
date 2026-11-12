@@ -16,14 +16,24 @@ import {
   hostKeyFingerprint,
   readTestKey,
   startBlackholeListener,
-  startSshd,
+  createSshdTestScope,
   waitForSlowCommandStart,
   type BlackholeListener,
   type SshdFixture,
   type UbuntuVersion,
 } from '../helpers/ssh.js';
+import { resolveRunnerTimeoutScale } from '../../support/timeout-scale.js';
 
 const UBUNTU_VERSIONS = ['22.04', '24.04'] as const satisfies readonly UbuntuVersion[];
+
+// 36-02 (QA-26): every fixture belongs to the test that started it. Each afterEach reaps the
+// test's fixtures -- including one still building/starting after a primary timeout, which the
+// test never received a handle for -- before asserting an empty inventory, so that primary
+// failure cannot reappear as an unrelated stray in every later test.
+const sshd = createSshdTestScope();
+const scaled = (ms: number): number => resolveRunnerTimeoutScale('vitest').scaled(ms);
+/** Unscaled ceiling for the measured graceful channel close after the transport dies. */
+const CHANNEL_CLOSE_WAIT_MS = 10_000;
 
 // --- Shared spike plumbing (Tasks 1-3) --------------------------------------------------------
 
@@ -102,13 +112,13 @@ describe('Task 1: hostVerifier raw-key contract (open question 1, D-04/D-05)', (
   afterEach(async () => {
     openClient?.end();
     openClient = undefined;
-    await fixture?.stop();
+    await sshd.reap();
     fixture = undefined;
     await assertNoStrayTestContainers();
   });
 
   it('hostVerifier receives the raw host key as a Buffer beginning with its RFC 4253 algorithm-name field, and default negotiation picks ed25519 first', async () => {
-    fixture = await startSshd({ ubuntu: '24.04' });
+    fixture = await sshd.start({ ubuntu: '24.04' });
     const privateKey = await readTestKey(fixture, 'ed25519');
 
     let observed: Buffer | undefined;
@@ -149,7 +159,7 @@ describe('Task 1: hostVerifier raw-key contract (open question 1, D-04/D-05)', (
   });
 
   it('utils.parseKey accepts the raw hostVerifier Buffer directly and yields the ed25519 algorithm name via .type (technique (a))', async () => {
-    fixture = await startSshd({ ubuntu: '24.04' });
+    fixture = await sshd.start({ ubuntu: '24.04' });
     const privateKey = await readTestKey(fixture, 'ed25519');
 
     let observed: Buffer | undefined;
@@ -183,7 +193,7 @@ describe('Task 1: hostVerifier raw-key contract (open question 1, D-04/D-05)', (
   it.each(['ed25519', 'rsa3072', 'ecdsa'] as const)(
     'the computed SHA256 fingerprint of the raw hostVerifier Buffer for a %s host key matches ssh-keygen -lf exactly (D-04)',
     async (keyName) => {
-      fixture = await startSshd({ ubuntu: '24.04' });
+      fixture = await sshd.start({ ubuntu: '24.04' });
       const privateKey = await readTestKey(fixture, 'ed25519'); // user-auth key; unrelated to which host key type is forced below
 
       const forcedAlgorithm = (
@@ -224,7 +234,7 @@ describe('Task 1: hostVerifier raw-key contract (open question 1, D-04/D-05)', (
   );
 
   it('a wrong passphrase and a truncated key both fail utils.parseKey, and are distinguishable by message (A2)', async () => {
-    fixture = await startSshd({ ubuntu: '24.04' });
+    fixture = await sshd.start({ ubuntu: '24.04' });
     const locked = await readTestKey(fixture, 'ed25519_locked');
 
     const correct = utils.parseKey(locked, fixture.keyPassphrase);
@@ -264,13 +274,13 @@ describe.each(UBUNTU_VERSIONS)('Task 2: docker version detection shapes (Ubuntu 
   let fixture: SshdFixture | undefined;
 
   afterEach(async () => {
-    await fixture?.stop();
+    await sshd.reap();
     fixture = undefined;
     await assertNoStrayTestContainers();
   });
 
   it('docker version --format json exits 127 with empty stdout when the docker binary is absent (plain image)', async () => {
-    fixture = await startSshd({ ubuntu });
+    fixture = await sshd.start({ ubuntu });
 
     const result = await runAs(fixture, commandFor('docker.version'), 'deployer');
 
@@ -280,7 +290,7 @@ describe.each(UBUNTU_VERSIONS)('Task 2: docker version detection shapes (Ubuntu 
   });
 
   it('docker version --format json exits non-zero but stdout is valid JSON with a Client key when the CLI is present and the daemon is unreachable', async () => {
-    fixture = await startSshd({ ubuntu, dockerCli: true });
+    fixture = await sshd.start({ ubuntu, dockerCli: true });
 
     const result = await runAs(fixture, commandFor('docker.version'), 'deployer');
 
@@ -296,7 +306,7 @@ describe.each(UBUNTU_VERSIONS)('Task 2: docker version detection shapes (Ubuntu 
   });
 
   it('docker compose version --short exits 127 when the docker binary is absent (plain image)', async () => {
-    fixture = await startSshd({ ubuntu });
+    fixture = await sshd.start({ ubuntu });
 
     const result = await runAs(fixture, commandFor('docker.compose_version'), 'deployer');
 
@@ -305,7 +315,7 @@ describe.each(UBUNTU_VERSIONS)('Task 2: docker version detection shapes (Ubuntu 
   });
 
   it('docker compose version --short succeeds without a daemon when the CLI is present', async () => {
-    fixture = await startSshd({ ubuntu, dockerCli: true });
+    fixture = await sshd.start({ ubuntu, dockerCli: true });
 
     const result = await runAs(fixture, commandFor('docker.compose_version'), 'deployer');
 
@@ -321,7 +331,7 @@ describe('Task 3: CONNECT_TIMEOUT candidate selection (open question 3, A4)', ()
   let blackhole: BlackholeListener | undefined;
 
   afterEach(async () => {
-    await fixture?.stop();
+    await sshd.reap();
     fixture = undefined;
     await blackhole?.stop();
     blackhole = undefined;
@@ -357,7 +367,7 @@ describe('Task 3: CONNECT_TIMEOUT candidate selection (open question 3, A4)', ()
   });
 
   it('candidate (b) — the sshd fixture container-internal bridge IP, unpublished — fails on this host (recorded but rejected; see ADR for the CI-portability concern)', async () => {
-    fixture = await startSshd({ ubuntu: '24.04' });
+    fixture = await sshd.start({ ubuntu: '24.04' });
     const [networkName] = fixture.container.getNetworkNames();
     const internalIp = fixture.container.getIpAddress(networkName as string);
 
@@ -393,13 +403,13 @@ describe('Task 3: ssh2 error-shape table (SERV-07, A5)', () => {
   let fixture: SshdFixture | undefined;
 
   afterEach(async () => {
-    await fixture?.stop();
+    await sshd.reap();
     fixture = undefined;
     await assertNoStrayTestContainers();
   });
 
   it('wrong password against pwuser -> level client-authentication, "All configured authentication methods failed"', async () => {
-    fixture = await startSshd({ ubuntu: '24.04' });
+    fixture = await sshd.start({ ubuntu: '24.04' });
 
     const attempt = await attemptConnect({
       host: fixture.host,
@@ -418,7 +428,7 @@ describe('Task 3: ssh2 error-shape table (SERV-07, A5)', () => {
   });
 
   it('a valid-but-unauthorized key against deployer -> the same client-authentication shape', async () => {
-    fixture = await startSshd({ ubuntu: '24.04' });
+    fixture = await sshd.start({ ubuntu: '24.04' });
     const key = await readTestKey(fixture, 'ed25519_unauthorized');
 
     const attempt = await attemptConnect({
@@ -438,7 +448,7 @@ describe('Task 3: ssh2 error-shape table (SERV-07, A5)', () => {
   });
 
   it('a correct key against a nonexistent username -> the same client-authentication shape', async () => {
-    fixture = await startSshd({ ubuntu: '24.04' });
+    fixture = await sshd.start({ ubuntu: '24.04' });
     const key = await readTestKey(fixture, 'ed25519');
 
     const attempt = await attemptConnect({
@@ -492,7 +502,7 @@ describe('Task 3: ssh2 error-shape table (SERV-07, A5)', () => {
   });
 
   it('the host/port of a stopped container is refused -> level client-socket, code ECONNREFUSED', async () => {
-    fixture = await startSshd({ ubuntu: '24.04' });
+    fixture = await sshd.start({ ubuntu: '24.04' });
     const { host, port } = fixture;
     await fixture.stop();
     fixture = undefined;
@@ -514,7 +524,7 @@ describe('Task 3: ssh2 error-shape table (SERV-07, A5)', () => {
   });
 
   it('a pinned fingerprint mismatch (hostVerifier returns false) -> level handshake, "Host denied (verification failed)"', async () => {
-    fixture = await startSshd({ ubuntu: '24.04' });
+    fixture = await sshd.start({ ubuntu: '24.04' });
     const key = await readTestKey(fixture, 'ed25519');
 
     const attempt = await attemptConnect({
@@ -539,11 +549,12 @@ describe.each(UBUNTU_VERSIONS)(
   'Task 3: mid-exec transport death, no error event ever fires (Ubuntu %s)',
   (ubuntu) => {
     afterEach(async () => {
+      await sshd.reap();
       await assertNoStrayTestContainers();
     });
 
     it('a channel with an exec in flight closes with no exit code and no error event when the transport dies mid-command', async () => {
-      const fixture = await startSshd({ ubuntu, slowDf: true });
+      const fixture = await sshd.start({ ubuntu, slowDf: true });
       const key = await readTestKey(fixture, 'ed25519');
 
       const connectResult = await attemptConnect({
@@ -618,7 +629,7 @@ describe.each(UBUNTU_VERSIONS)(
         new Promise((_resolve, reject) => {
           setTimeout(() => {
             reject(new Error('timed out waiting for channel close'));
-          }, 10_000);
+          }, scaled(CHANNEL_CLOSE_WAIT_MS));
         }),
       ]);
 

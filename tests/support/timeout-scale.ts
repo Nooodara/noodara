@@ -17,6 +17,11 @@ export const TIMEOUT_SCALE_MAX = 10;
 export const NODE_TIMER_MAX_MS = 2_147_483_647;
 /** Per-process cache slot on globalThis, so repeated config loads in one process agree. */
 export const TIMEOUT_SCALE_CACHE_KEY: unique symbol = Symbol.for('noodara.testTimeoutScale');
+/**
+ * Vitest `provide`/`inject` key under which the root unit config hands the resolved factor to
+ * tests inside workspace packages, which may not import this file (pnpm boundaries).
+ */
+export const TIMEOUT_SCALE_PROVIDE_KEY = 'noodaraTestTimeoutScale';
 
 /** Unscaled runner-level defaults. These are the values CI runs with. */
 export const RUNNER_TIMEOUT_DEFAULTS = {

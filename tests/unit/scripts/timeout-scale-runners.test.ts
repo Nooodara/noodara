@@ -6,7 +6,12 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { TIMEOUT_SCALE_ANNOUNCED_ENV, TIMEOUT_SCALE_CACHE_KEY, TIMEOUT_SCALE_ENV } from '../../support/timeout-scale.js';
+import {
+  TIMEOUT_SCALE_ANNOUNCED_ENV,
+  TIMEOUT_SCALE_CACHE_KEY,
+  TIMEOUT_SCALE_ENV,
+  TIMEOUT_SCALE_PROVIDE_KEY,
+} from '../../support/timeout-scale.js';
 
 interface VitestTimeouts {
   testTimeout?: number;
@@ -19,7 +24,8 @@ interface LoadedVitestConfig {
     fileParallelism?: boolean;
     pool?: string;
     maxWorkers?: number;
-    projects?: { test?: VitestTimeouts }[];
+    projects?: { test?: VitestTimeouts & { provide?: Record<string, unknown> } }[];
+    provide?: Record<string, unknown>;
   };
 }
 
@@ -128,6 +134,21 @@ describe('runner timeout defaults derive from the single timeout-scale module', 
       expect(project.test?.testTimeout).toBeUndefined();
       expect(project.test?.hookTimeout).toBeUndefined();
     }
+  });
+
+  // 36-02: tests inside a workspace package cannot import tests/support (pnpm boundaries), so the
+  // root unit config hands them the factor through Vitest `provide`, resolved by the same module.
+  it('the unit config provides exactly factor 1 to every project when the scale is unset', async () => {
+    const config = (await load('unit', undefined)) as LoadedVitestConfig;
+    expect(config.test?.provide).toEqual({ [TIMEOUT_SCALE_PROVIDE_KEY]: 1 });
+    for (const project of config.test?.projects ?? []) {
+      expect(project.test?.provide).toBeUndefined();
+    }
+  });
+
+  it('the unit config provides the resolved factor when the scale is set', async () => {
+    const config = (await load('unit', '2.5')) as LoadedVitestConfig;
+    expect(config.test?.provide).toEqual({ [TIMEOUT_SCALE_PROVIDE_KEY]: 2.5 });
   });
 
   it('ai-evals live budgets keep their historical 4h values when unscaled', async () => {
@@ -244,5 +265,39 @@ describe('the timeout scale is test-only', () => {
       return source.includes(TIMEOUT_SCALE_ENV) || /timeout-scale(\.js|\.ts)?['"]/.test(source);
     });
     expect(offenders).toEqual([]);
+  });
+
+  function workspaceTestFiles(): string[] {
+    const out: string[] = [];
+    const visit = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '.next') continue;
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) visit(full);
+        else if (/\.(test|spec)\.(c|m)?(t|j)sx?$/.test(entry.name)) out.push(full);
+      }
+    };
+    for (const root of ['apps', 'packages']) {
+      for (const workspace of readdirSync(root, { withFileTypes: true })) {
+        const src = path.join(root, workspace.name, 'src');
+        if (workspace.isDirectory() && statSync(src, { throwIfNoEntry: false })?.isDirectory()) visit(src);
+      }
+    }
+    return out;
+  }
+
+  it('workspace tests read the factor through inject, never by importing tests/support (pnpm boundaries)', () => {
+    const files = workspaceTestFiles();
+    expect(files.length).toBeGreaterThan(50);
+    const offenders = files.filter((file) => /['"][./]*tests\/support\//.test(readFileSync(file, 'utf8')));
+    expect(offenders).toEqual([]);
+    const injecting = files.filter((file) => readFileSync(file, 'utf8').includes(`inject('${TIMEOUT_SCALE_PROVIDE_KEY}')`));
+    // Each injecting test declares the same ProvidedContext key (it cannot import the shared one).
+    for (const file of injecting) {
+      expect(readFileSync(file, 'utf8')).toMatch(new RegExp(`interface ProvidedContext \\{\\s*${TIMEOUT_SCALE_PROVIDE_KEY}: number;`));
+    }
+    expect(injecting.map((file) => path.relative('.', file).split(path.sep).join('/'))).toContain(
+      'apps/control-plane/src/services/legacy-log-redactor.test.ts',
+    );
   });
 });
