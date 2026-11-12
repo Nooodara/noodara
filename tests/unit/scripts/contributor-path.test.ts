@@ -127,8 +127,13 @@ describe('docs accuracy (H7)', () => {
     for (const name of named) expect(Object.keys(scripts), `pnpm ${name}`).toContain(name);
   });
 
-  it('every pnpm script in the CLAUDE.md commands table exists, including verify and test:doctor', () => {
-    const claude = readFileSync(path.join(ROOT, 'CLAUDE.md'), 'utf8');
+  // CLAUDE.md is git-ignored: it exists in a maintainer's working copy but never in a clean
+  // checkout (CI, a contributor's clone), where there is no commands table to keep accurate.
+  const claudePath = path.join(ROOT, 'CLAUDE.md');
+  let claudePresent = true;
+  try { readFileSync(claudePath); } catch { claudePresent = false; }
+  it.skipIf(!claudePresent)('every pnpm script in the CLAUDE.md commands table exists, including verify and test:doctor', () => {
+    const claude = readFileSync(claudePath, 'utf8');
     const table = /### 3\.2 Comandos[\s\S]*?```bash\n([\s\S]*?)```/.exec(claude)?.[1];
     expect(table).toBeDefined();
     const named = pnpmScriptsNamed(table as string);
