@@ -42,7 +42,7 @@ type Probes = ReturnType<typeof createHostProbes>;
 
 function fakeProbes(overrides: Partial<Record<keyof Probes, unknown>> = {}): Probes {
   const base = {
-    packageJson: () => ({ engines: { node: '>=22.12.0' }, packageManager: 'pnpm@10.34.5' }),
+    packageJson: () => ({ engines: { node: '>=22.18.0' }, packageManager: 'pnpm@10.34.5' }),
     nodeVersion: () => 'v24.1.0',
     pnpmVersion: () => '10.34.5',
     docker: () => ({ state: 'reachable', version: '28.1.1' }),
@@ -124,6 +124,23 @@ describe('tier evaluation (A2)', () => {
     }
   });
 
+  // The unit suite runs scripts/fixture-images.mjs, which imports a .ts helper through unflagged
+  // type stripping (Node 22.18+). The floor lives only in package.json engines.node; the doctor
+  // reads it through the real packageJson probe and the library hardcodes no Node release.
+  it('judges Node against the package.json floor: 22.17.x fails, 22.18.0 passes', async () => {
+    const realPackageJson = createHostProbes({ env: {} }).packageJson;
+    expect(parseEnginesNode(realPackageJson())).toEqual([22, 18, 0]);
+    for (const tier of TIERS) {
+      const old = await report(tier, { packageJson: realPackageJson, nodeVersion: () => 'v22.17.1' });
+      expect(check(old, 'node')).toMatchObject({ status: 'fail', hard: true, message: MESSAGES.nodeTooOld });
+      expect(exitCodeFor(old)).toBe(EXIT_PREREQ_MISSING);
+      const floor = await report(tier, { packageJson: realPackageJson, nodeVersion: () => 'v22.18.0' });
+      expect(check(floor, 'node')).toMatchObject({ status: 'ok', hard: true });
+    }
+    const lib = readFileSync(path.join(ROOT, 'scripts/test-preflight-lib.mjs'), 'utf8');
+    expect(lib).not.toMatch(/\b22\.\d+/);
+  });
+
   it('distinguishes a pnpm major mismatch (hard) from a minor drift (warning)', async () => {
     const major = await report('unit', { pnpmVersion: () => '9.15.0' });
     expect(check(major, 'pnpm')).toMatchObject({ status: 'fail', message: MESSAGES.pnpmMajor });
@@ -183,9 +200,33 @@ describe('tier evaluation (A2)', () => {
       return 'free';
     };
     await report('e2e', { port }, { NOODARA_TEST_PORT_OVERRIDE: '33992', NOODARA_E2E_WEB_PORT: '4300', NOODARA_E2E_API_PORT: '4400' });
-    expect(seen.sort()).toEqual([33992, 4300, 4400].sort());
+    // The integration override names no port the harness binds: it is never probed.
+    expect(seen.sort()).toEqual([4300, 4400].sort());
     const r = await report('e2e', { port: () => 'in-use' }, { NOODARA_E2E_WEB_PORT: '4300' });
     expect(check(r, 'port:NOODARA_E2E_WEB_PORT').message).toBe(MESSAGES.portInUse('The port from NOODARA_E2E_WEB_PORT'));
+  });
+
+  it('a valid NOODARA_TEST_PORT_OVERRIDE only skips the port 3000 precheck: nothing is probed or hard-failed', async () => {
+    const seen: number[] = [];
+    const port = (p: number) => {
+      seen.push(p);
+      return 'in-use';
+    };
+    const r = await report('integration', { port }, { NOODARA_TEST_PORT_OVERRIDE: '33992' });
+    // Only the (soft, for this tier) E2E defaults are probed; the override value never is.
+    expect(seen.sort()).toEqual([3000, 3100]);
+    expect(check(r, 'port:NOODARA_TEST_PORT_OVERRIDE')).toMatchObject({ status: 'ok', hard: true, message: MESSAGES.portPrecheckSkipped });
+    expect(exitCodeFor(r)).toBe(EXIT_OK);
+    expect(JSON.stringify(r)).not.toContain('33992');
+    // Unset, the doctor probes port 3000 like the integration precheck does.
+    const unset = await report('integration', { port: (p: number) => (p === 3000 ? 'in-use' : 'free') });
+    expect(check(unset, 'port:NOODARA_TEST_PORT_OVERRIDE')).toMatchObject({ status: 'fail', message: MESSAGES.portInUse('Port 3000') });
+  });
+
+  it.each(['0', '65536', 'abc', '3000x', ''])('an invalid NOODARA_TEST_PORT_OVERRIDE (%j) still hard-fails the integration tier', async (value) => {
+    const r = await report('integration', {}, { NOODARA_TEST_PORT_OVERRIDE: value });
+    expect(check(r, 'port-var:NOODARA_TEST_PORT_OVERRIDE')).toMatchObject({ status: 'fail', hard: true });
+    expect(exitCodeFor(r)).toBe(EXIT_PREREQ_MISSING);
   });
 
   it('fails e2e when the web and API ports collide', async () => {
@@ -220,8 +261,8 @@ describe('bounded, fail-closed probes (A3, H6)', () => {
     ['range engines', { packageJson: () => ({ engines: { node: '^22 || ^24' }, packageManager: 'pnpm@10.34.5' }) }, 'node'],
     ['unreadable package.json', { packageJson: () => { throw new Error('ENOENT /secret/path'); } }, 'node'],
     ['garbage node version', { nodeVersion: () => 'twenty-two' }, 'node'],
-    ['missing packageManager', { packageJson: () => ({ engines: { node: '>=22.12.0' } }) }, 'pnpm'],
-    ['yarn packageManager', { packageJson: () => ({ engines: { node: '>=22.12.0' }, packageManager: 'yarn@4.1.0' }) }, 'pnpm'],
+    ['missing packageManager', { packageJson: () => ({ engines: { node: '>=22.18.0' } }) }, 'pnpm'],
+    ['yarn packageManager', { packageJson: () => ({ engines: { node: '>=22.18.0' }, packageManager: 'yarn@4.1.0' }) }, 'pnpm'],
     ['garbage pnpm output', { pnpmVersion: () => 'Corepack is about to download' }, 'pnpm'],
     ['pnpm unavailable', { pnpmVersion: () => undefined }, 'pnpm'],
   ])('%s yields could-not-determine and a hard failure', async (_name, overrides, id) => {
@@ -267,7 +308,7 @@ describe('bounded, fail-closed probes (A3, H6)', () => {
     expect(parseVersion('10.34.5\n')).toEqual([10, 34, 5]);
     expect(parseVersion('10.34')).toBeUndefined();
     expect(parseVersion(undefined)).toBeUndefined();
-    expect(parseEnginesNode({ engines: { node: '>=22.12.0' } })).toEqual([22, 12, 0]);
+    expect(parseEnginesNode({ engines: { node: '>=22.18.0' } })).toEqual([22, 18, 0]);
     expect(parseEnginesNode({ engines: { node: 22 } })).toBeUndefined();
     expect(parseEnginesNode(null)).toBeUndefined();
     expect(parsePackageManager({ packageManager: 'pnpm@10.34.5+sha512.abc' })).toEqual([10, 34, 5]);

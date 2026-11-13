@@ -15,7 +15,16 @@ const mock = vi.hoisted(() => ({
   docker: vi.fn<(args: readonly string[]) => Promise<string>>(),
   failRemoval: false,
   failInventory: false,
+  /** Stand-in for fixture-image.ts' real `docker pull` runner (execFile). Never a real CLI. */
+  pull: vi.fn<(args: readonly string[]) => Promise<string>>(),
 }));
+// A contributor may have NOODARA_TEST_FIXTURE_REGISTRY exported (docs/testing/fixture-images.md).
+// The unit run must never reach a real Docker CLI or registry: the pull seam is faked here and
+// the variable is removed for every test (see beforeEach), so the default path is the fake build.
+vi.mock('../../integration/helpers/fixture-image.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../integration/helpers/fixture-image.js')>();
+  return { ...actual, runDockerCli: (args: readonly string[]) => mock.pull(args) };
+});
 vi.mock('../../integration/helpers/test-resources.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../integration/helpers/test-resources.js')>();
   const docker = (args: readonly string[]) => mock.docker(args);
@@ -91,6 +100,9 @@ function strayTestContainers(): string[] {
 }
 
 beforeEach(() => {
+  vi.stubEnv('NOODARA_TEST_FIXTURE_REGISTRY', undefined);
+  mock.pull.mockReset();
+  mock.pull.mockRejectedValue(new Error('unit tests never pull a fixture image'));
   mock.containers.clear();
   mock.images.clear();
   mock.failRemoval = false;
@@ -111,7 +123,28 @@ beforeEach(() => {
     return '';
   });
 });
-afterEach(() => { vi.useRealTimers(); });
+afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); });
+
+describe('isolation: the unit run never reaches a real docker pull', () => {
+  it('an exported NOODARA_TEST_FIXTURE_REGISTRY is removed for each test and the default start builds without pulling', async () => {
+    expect(process.env.NOODARA_TEST_FIXTURE_REGISTRY).toBeUndefined();
+    const scope = createSshdTestScope();
+    await scope.start({ ubuntu: '24.04' });
+    expect(mock.pull).not.toHaveBeenCalled();
+    expect(mock.images.size).toBe(1);
+    await scope.reap();
+  });
+
+  it('even with a registry set inside a test, the pull goes to the fake runner and falls back to the build', async () => {
+    vi.stubEnv('NOODARA_TEST_FIXTURE_REGISTRY', 'localhost:1/noodara-test-fixtures');
+    const scope = createSshdTestScope();
+    await scope.start({ ubuntu: '24.04' });
+    expect(mock.pull).toHaveBeenCalledTimes(1);
+    expect(mock.pull.mock.calls[0]![0][0]).toBe('pull');
+    expect(mock.images.size).toBe(1);
+    await scope.reap();
+  });
+});
 
 describe('A3: a timed-out test leaves nothing behind for the next test', () => {
   it('mechanism: the legacy `fixture = await startSshd()` + `fixture?.stop()` pattern leaks a late container', async () => {
@@ -182,10 +215,19 @@ describe('H1: reaping is bounded and scoped to the ownership id', () => {
   it('a scope reap leaves a concurrent owner\'s fixture running', async () => {
     const other = createSshdTestScope();
     await other.start({ ubuntu: '24.04' });
+    const othersImages = [...mock.images];
+    expect(othersImages.length).toBeGreaterThan(0);
     const scope = createSshdTestScope();
     await scope.start({ ubuntu: '24.04' });
     await scope.reap();
     expect(strayTestContainers()).toHaveLength(1);
+    // Another owner's image survives the reap, and no image rm ever targeted it.
+    for (const image of othersImages) expect(mock.images.has(image), image).toBe(true);
+    const imageRemovals = mock.docker.mock.calls
+      .map(([args]) => args)
+      .filter((args) => args[0] === 'image' && args[1] === 'rm')
+      .map((args) => args.at(-1));
+    for (const image of othersImages) expect(imageRemovals).not.toContain(image);
     await other.reap();
     expect(strayTestContainers()).toEqual([]);
   });

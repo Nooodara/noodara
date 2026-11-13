@@ -17,6 +17,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   FIXTURE_FALLBACK_MESSAGES,
   FIXTURE_IDENTITY_BUILD_ARG,
+  FIXTURE_IMAGE_PULL_BUDGET_MS,
   FIXTURE_REGISTRY_ENV,
   INVALID_REGISTRY_MESSAGE,
   classifyPullFailure,
@@ -40,6 +41,12 @@ import {
   type FixturePlatform,
   type ResolveFixtureImageOptions,
 } from "../../integration/helpers/fixture-image";
+import {
+  RUNNER_TIMEOUT_DEFAULTS,
+  TIMEOUT_SCALE_MAX,
+  TIMEOUT_SCALE_MIN,
+  scaleTimeout,
+} from "../../support/timeout-scale";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -943,6 +950,137 @@ describe("resolution order (A2, H5)", () => {
 });
 
 // ----------------------------------------------------------------------------------------------
+// A2: the pull budget leaves room for the build fallback; failed pulls are not retried
+// ----------------------------------------------------------------------------------------------
+
+describe("pull budget and failed-pull memory (A2)", () => {
+  it("the pull budget is strictly less than half the integration test budget at every scale", async () => {
+    const config = await readFile(
+      path.join(repoRoot, "vitest.integration.config.ts"),
+      "utf8",
+    );
+    expect(config).toContain(
+      "testTimeout: timeouts.scaled(RUNNER_TIMEOUT_DEFAULTS.integration.testTimeout)",
+    );
+    const testBudget = RUNNER_TIMEOUT_DEFAULTS.integration.testTimeout;
+    expect(FIXTURE_IMAGE_PULL_BUDGET_MS).toBeGreaterThan(0);
+    expect(FIXTURE_IMAGE_PULL_BUDGET_MS * 2).toBeLessThan(testBudget);
+    for (let factor = TIMEOUT_SCALE_MIN; factor <= TIMEOUT_SCALE_MAX; factor += 0.5) {
+      expect(scaleTimeout(FIXTURE_IMAGE_PULL_BUDGET_MS, factor) * 2).toBeLessThan(
+        scaleTimeout(testBudget, factor),
+      );
+    }
+  });
+
+  it("a failed pull is not retried in-process: the next resolution goes straight to local/build", async () => {
+    const fake = createFakeDocker();
+    const firstTarget = fixtureOwnerTag(NAME);
+    const first = await resolveFixtureImage(
+      options(fake, { registry: REGISTRY, target: firstTarget }),
+    );
+    expect(first.source).toBe("build");
+    expect(fake.pulls).toHaveLength(1);
+    // Simulate a later caller that finds no local cache (e.g. it was removed meanwhile).
+    fake.images.delete(HASH_REF);
+    const secondTarget = fixtureOwnerTag(NAME);
+    const second = options(fake, { registry: REGISTRY, target: secondTarget });
+    await expect(resolveFixtureImage(second)).resolves.toEqual({
+      ref: secondTarget,
+      source: "build",
+    });
+    expect(fake.pulls).toHaveLength(1);
+    expect(second.build).toHaveBeenCalledTimes(1);
+    expect(fake.images.get(HASH_REF)?.label).toBe(IDENTITY);
+    expect(reports).toEqual([FIXTURE_FALLBACK_MESSAGES["not-found"]]);
+    // A third caller reuses the hash tag the fallback build published.
+    const third = options(fake, { registry: REGISTRY });
+    await expect(resolveFixtureImage(third)).resolves.toMatchObject({
+      source: "local",
+    });
+    expect(fake.pulls).toHaveLength(1);
+    expectInvariants(fake, [firstTarget, secondTarget, third.target]);
+  });
+
+  it("a timed-out pull is not retried in-process and the timeout is reported once", async () => {
+    const fake = createFakeDocker();
+    fake.pullImpl = abortingPull();
+    const first = options(fake, { registry: REGISTRY, pullDeadlineMs: 20 });
+    await expect(resolveFixtureImage(first)).resolves.toMatchObject({
+      source: "build",
+    });
+    fake.images.delete(HASH_REF);
+    const second = options(fake, { registry: REGISTRY, pullDeadlineMs: 20 });
+    await expect(resolveFixtureImage(second)).resolves.toMatchObject({
+      source: "build",
+    });
+    expect(fake.pulls).toHaveLength(1);
+    expect(reports).toEqual([FIXTURE_FALLBACK_MESSAGES.timeout]);
+  });
+
+  it("a pulled image with the wrong label is not pulled again in-process", async () => {
+    const fake = createFakeDocker();
+    fake.pullImpl = (ref) => {
+      fake.images.set(ref, good("foreign", OTHER_IDENTITY));
+      return Promise.resolve();
+    };
+    await resolveFixtureImage(options(fake, { registry: REGISTRY }));
+    fake.images.delete(HASH_REF);
+    await expect(
+      resolveFixtureImage(options(fake, { registry: REGISTRY })),
+    ).resolves.toMatchObject({ source: "build" });
+    expect(fake.pulls).toHaveLength(1);
+    expect(reports).toEqual([FIXTURE_FALLBACK_MESSAGES["label-mismatch"]]);
+  });
+
+  it("the memory is keyed by registry, name and identity", async () => {
+    const fake = createFakeDocker();
+    await resolveFixtureImage(options(fake, { registry: REGISTRY }));
+    fake.images.clear();
+    await resolveFixtureImage(
+      options(fake, { registry: "ghcr.io/other/fixtures" }),
+    );
+    fake.images.clear();
+    await resolveFixtureImage(
+      options(fake, { registry: REGISTRY, identity: OTHER_IDENTITY }),
+    );
+    expect(fake.pulls.map((pull) => pull.ref)).toEqual([
+      REMOTE_REF,
+      remoteFixtureRef("ghcr.io/other/fixtures", NAME, IDENTITY),
+      remoteFixtureRef(REGISTRY, NAME, OTHER_IDENTITY),
+    ]);
+  });
+
+  it("a pull aborted by the caller is not remembered as a failure", async () => {
+    const fake = createFakeDocker();
+    fake.pullImpl = abortingPull();
+    const controller = new AbortController();
+    const pending = resolveFixtureImage(
+      options(fake, { registry: REGISTRY, signal: controller.signal }),
+    );
+    await vi.waitFor(() => expect(fake.pulls).toHaveLength(1));
+    controller.abort();
+    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    fake.pullImpl = (ref) => {
+      fake.images.set(ref, good("pulled"));
+      return Promise.resolve();
+    };
+    await expect(
+      resolveFixtureImage(options(fake, { registry: REGISTRY })),
+    ).resolves.toMatchObject({ source: "pull" });
+    expect(fake.pulls).toHaveLength(2);
+  });
+
+  it("resetFixtureImageState forgets failed pulls", async () => {
+    const fake = createFakeDocker();
+    await resolveFixtureImage(options(fake, { registry: REGISTRY }));
+    fake.images.clear();
+    resetFixtureImageState();
+    await resolveFixtureImage(options(fake, { registry: REGISTRY }));
+    expect(fake.pulls).toHaveLength(2);
+  });
+});
+
+// ----------------------------------------------------------------------------------------------
 // A3 / H5: cancellation
 // ----------------------------------------------------------------------------------------------
 
@@ -1159,6 +1297,29 @@ describe("concurrent resolution of one identity (H6)", () => {
     expect(second.build).toHaveBeenCalledTimes(1);
     expect(fake.images.get(HASH_REF)?.id).toBe("built");
     expectInvariants(fake, [first.target, second.target]);
+  });
+
+  it("never runs two builds of one identity at once, however many rounds a waiter waits", async () => {
+    const fake = createFakeDocker();
+    let active = 0;
+    let maxActive = 0;
+    const failingBuild = () =>
+      vi.fn(async () => {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        await tick(5);
+        active -= 1;
+        throw new Error("build failed");
+      });
+    const callers = Array.from({ length: 6 }, () =>
+      options(fake, { build: failingBuild() }),
+    );
+    const results = await Promise.allSettled(
+      callers.map((caller) => resolveFixtureImage(caller)),
+    );
+    expect(results.every((result) => result.status === "rejected")).toBe(true);
+    expect(maxActive).toBe(1);
+    for (const caller of callers) expect(caller.build).toHaveBeenCalledTimes(1);
   });
 
   it("an aborted waiter leaves the initiator untouched", async () => {

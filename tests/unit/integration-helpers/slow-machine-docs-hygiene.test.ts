@@ -1,9 +1,9 @@
 // 36-02 H5: the slow-machine run reports under docs/testing/slow-machines/ are written from real
-// runs on contributor machines, so they must never carry home paths, IP addresses, the run
-// machine's hostname, token-shaped strings or full UUIDs. This enforces the A1 rule on every
-// `pnpm test` instead of leaving it to review.
+// runs on contributor machines, so they must never carry home paths, IP addresses, host or user
+// names, token-shaped strings or full UUIDs. This enforces the A1 rule on every `pnpm test`
+// instead of leaving it to review. The verdict depends only on the committed text, never on the
+// machine running the suite (no os.hostname()/os.userInfo() literals; see MachineIdentities).
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -24,21 +24,33 @@ const RULES: readonly { readonly name: string; readonly pattern: RegExp }[] = [
   { name: 'JWT', pattern: /\beyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\./ },
   { name: 'private key', pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
   { name: 'credential assignment', pattern: /\b(?:password|passwd|secret|token|api[_-]?key)\s*[:=]\s*['"]?[^\s'"`]{8,}/i },
+  { name: 'user@host prompt', pattern: /\b[a-z_][a-z0-9_.-]{0,31}@[A-Za-z0-9][A-Za-z0-9.-]{0,62}:[~/]/ },
+  { name: 'Windows default hostname', pattern: /\b(?:DESKTOP|LAPTOP)-[A-Z0-9]{7,8}\b/ },
 ];
 
-const IGNORED_HOSTNAMES = new Set(['localhost', 'docker-desktop']);
+/**
+ * Literal machine identities (a hostname or user name) are optional, injected inputs; they are
+ * never read from the machine running the suite, so the verdict on a committed report does not
+ * depend on who runs `pnpm test`. An injected value is only matched when it is distinctive
+ * (6+ characters with a digit or a hyphen, e.g. `build-box-07`): ordinary words such as `ubuntu`,
+ * `test` or `noodara` legitimately appear in a run report. Host and user names are otherwise
+ * caught structurally: home paths, `user@host:` prompts and Windows default hostnames.
+ */
+interface MachineIdentities { readonly hostname?: string; readonly username?: string }
 
-function hostnameRule(hostname: string): { name: string; pattern: RegExp } | undefined {
-  const host = hostname.trim().toLowerCase();
-  if (host.length < 4 || IGNORED_HOSTNAMES.has(host)) return undefined;
-  const escaped = host.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return { name: 'run machine hostname', pattern: new RegExp(`(?<![\\w-])${escaped}(?![\\w-])`, 'i') };
+function identityRule(name: string, value: string | undefined): { name: string; pattern: RegExp } | undefined {
+  const literal = (value ?? '').trim().toLowerCase();
+  if (literal.length < 6 || !/[0-9-]/.test(literal)) return undefined;
+  const escaped = literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return { name, pattern: new RegExp(`(?<![\\w-])${escaped}(?![\\w-])`, 'i') };
 }
 
-function findLeaks(text: string, hostname: string = os.hostname()): string[] {
+function findLeaks(text: string, identities: MachineIdentities = {}): string[] {
   const rules = [...RULES];
-  const hostRule = hostnameRule(hostname);
-  if (hostRule !== undefined) rules.push(hostRule);
+  for (const rule of [
+    identityRule('run machine hostname', identities.hostname),
+    identityRule('run machine user name', identities.username),
+  ]) if (rule !== undefined) rules.push(rule);
   const leaks: string[] = [];
   text.split('\n').forEach((line, index) => {
     for (const rule of rules) if (rule.pattern.test(line)) leaks.push(`line ${String(index + 1)}: ${rule.name}`);
@@ -85,11 +97,37 @@ describe('docs/testing/slow-machines hygiene (36-02 H5)', () => {
     ['private key', `-----BEGIN ${'OPENSSH'} PRIVATE KEY-----`],
     ['credential assignment', `${'pass'}word=${'hunter2hunter2'}`],
   ])('flags a %s', (rule, sample) => {
-    expect(findLeaks(sample, 'example')).toContain(`line 1: ${rule}`);
+    expect(findLeaks(sample)).toContain(`line 1: ${rule}`);
   });
 
-  it('flags the run machine hostname, whatever its case', () => {
-    expect(findLeaks('built on Build-Box-07 at night', 'build-box-07')).toEqual(['line 1: run machine hostname']);
+  // The verdict on a committed report must not depend on the machine running the suite: ordinary
+  // hostnames and user names that also appear as words in a report never flag it.
+  it.each(files.filter((file) => file.endsWith('.md')).flatMap((file) => [
+    'ubuntu', 'docker', 'test', 'noodara', 'wsl2', 'local', 'build',
+  ].map((word) => [path.basename(file), word, file])))(
+    '%s is not flagged when the runner hostname and user name are the ordinary word %s', (_name, word, file) => {
+      expect(findLeaks(readFileSync(file, 'utf8'), { hostname: word, username: word })).toEqual([]);
+    },
+  );
+
+  it('does not read the live machine: an injected ordinary hostname or user name never flags a line', () => {
+    expect(findLeaks('Ubuntu 24.04 test run on the noodara VM', { hostname: 'ubuntu', username: 'test' })).toEqual([]);
+  });
+
+  it('flags a distinctive injected hostname, whatever its case', () => {
+    expect(findLeaks('built on Build-Box-07 at night', { hostname: 'build-box-07' }))
+      .toEqual(['line 1: run machine hostname']);
+  });
+
+  it('flags a distinctive injected user name', () => {
+    expect(findLeaks('owned by dev-user42 today', { username: 'dev-user42' })).toEqual(['line 1: run machine user name']);
+  });
+
+  it.each([
+    ['user@host prompt', `${user}@${'build-box'}:~/noodara$ pnpm test`],
+    ['Windows default hostname', `${'DESKTOP'}-${'A1B2C3D'} ran the suite`],
+  ])('flags a %s structurally, without any injected identity', (rule, sample) => {
+    expect(findLeaks(sample)).toContain(`line 1: ${rule}`);
   });
 
   it.each([
@@ -99,6 +137,6 @@ describe('docs/testing/slow-machines hygiene (36-02 H5)', () => {
     'owner prefix 3f2b8c1d, short sha 19c4fd70',
     'the token-shaped strings rule and readyTimeout: 5000',
   ])('does not flag ordinary run data: %s', (line) => {
-    expect(findLeaks(line, 'example')).toEqual([]);
+    expect(findLeaks(line)).toEqual([]);
   });
 });

@@ -16,13 +16,27 @@ declare module 'vitest' {
 
 /** Unscaled budget for cold-importing the whole app (see 'production default wiring'). */
 const PRODUCTION_WIRING_COLD_IMPORT_BUDGET_MS = 30_000;
-const TIMEOUT_SCALE_FACTOR: unknown = inject('noodaraTestTimeoutScale');
-if (typeof TIMEOUT_SCALE_FACTOR !== 'number' || !(TIMEOUT_SCALE_FACTOR >= 1)) {
-  throw new Error('noodaraTestTimeoutScale was not provided: run this test through the root vitest.config.ts');
+// Mirrors TIMEOUT_SCALE_MIN / TIMEOUT_SCALE_MAX and NODE_TIMER_MAX_MS of tests/support/timeout-scale.ts.
+const TIMEOUT_SCALE_MIN = 1;
+const TIMEOUT_SCALE_MAX = 10;
+const NODE_TIMER_MAX_MS = 2_147_483_647;
+/** The injected factor, rejected unless it is a finite number in [1, 10] (as the shared parser). */
+function checkedScaleFactor(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error('noodaraTestTimeoutScale was not provided: run this test through the root vitest.config.ts');
+  }
+  if (value < TIMEOUT_SCALE_MIN || value > TIMEOUT_SCALE_MAX) {
+    throw new Error(`noodaraTestTimeoutScale must be in [${String(TIMEOUT_SCALE_MIN)}, ${String(TIMEOUT_SCALE_MAX)}]`);
+  }
+  return value;
 }
-const providedFactor: number = TIMEOUT_SCALE_FACTOR;
-/** Same rounding as tests/support/timeout-scale.ts scaleTimeout; the factor is validated there. */
-const scaleBy = (ms: number, factor: number): number => Math.ceil(ms * factor);
+const providedFactor: number = checkedScaleFactor(inject('noodaraTestTimeoutScale'));
+/** Same rounding and Node timer ceiling as tests/support/timeout-scale.ts scaleTimeout. */
+const scaleBy = (ms: number, factor: number): number => {
+  const result = Math.ceil(ms * checkedScaleFactor(factor));
+  if (result > NODE_TIMER_MAX_MS) throw new Error('scaled timeout exceeds the Node.js timer limit');
+  return result;
+};
 const scaled = (ms: number): number => scaleBy(ms, providedFactor);
 
 vi.mock('../observability/logs/log-sources.js', () => ({
@@ -85,6 +99,18 @@ describe('production default wiring', () => {
     expect(PRODUCTION_WIRING_COLD_IMPORT_BUDGET_MS).toBe(30_000);
     expect(scaleBy(PRODUCTION_WIRING_COLD_IMPORT_BUDGET_MS, 1)).toBe(30_000);
     expect(scaled(PRODUCTION_WIRING_COLD_IMPORT_BUDGET_MS)).toBeGreaterThanOrEqual(30_000);
+  });
+
+  it.each([0, 0.5, 10.5, 11, -1, Number.NaN, Number.POSITIVE_INFINITY, '2', undefined, null])(
+    'rejects an injected timeout scale factor outside [1, 10] or non-finite (%s)',
+    (value) => {
+      expect(() => checkedScaleFactor(value)).toThrow(/noodaraTestTimeoutScale/);
+    },
+  );
+
+  it.each([1, 1.5, 3, 10])('accepts an injected timeout scale factor of %s', (value) => {
+    expect(checkedScaleFactor(value)).toBe(value);
+    expect(scaleBy(PRODUCTION_WIRING_COLD_IMPORT_BUDGET_MS, value)).toBe(Math.ceil(30_000 * value));
   });
 
   it('builds and closes lazily, then fails closed through the scoped opener on a logs request', async () => {

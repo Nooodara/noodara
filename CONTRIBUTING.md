@@ -90,8 +90,13 @@ build or port is touched.
 
 ## Machine requirements
 
-- Minimum: 4 CPUs and 6 GB of memory available to Docker. All tiers pass there, but the Docker-backed
-  ones need `NOODARA_TEST_TIMEOUT_SCALE=3` and only one test command may run at a time.
+- Minimum: 4 CPUs and 6 GB of memory available to Docker. On that machine the tiers have passed with
+  `NOODARA_TEST_TIMEOUT_SCALE` set (scaled local evidence), the Docker-backed ones at
+  `NOODARA_TEST_TIMEOUT_SCALE=3`, and only one test command may run at a time. The full unit run was
+  intermittent there on 2026-11-12: on the same tree at scale 3 it passed 4 times and failed 2 times,
+  each failure time-based (cause not proven; memory pressure is suspected). If a time-based failure
+  shows up on such a machine, close other heavy applications and retry once before treating it as a
+  regression.
 - Recommended: 8 CPUs and 16 GB of memory available to Docker, and an SSD. No timeout scale is needed.
 
 ## Slow machines: `NOODARA_TEST_TIMEOUT_SCALE`
@@ -112,7 +117,7 @@ a scale is a slow test, not a passing one, and its budget on CI stays the same.
 
 | Variable | Default | Used by |
 |---|---|---|
-| `NOODARA_TEST_PORT_OVERRIDE` | unset | Integration: when set, skips the port 3000 precheck. Must be a port number. |
+| `NOODARA_TEST_PORT_OVERRIDE` | unset | Integration: when set, skips the port 3000 precheck. The tests never bind this value and `pnpm test:doctor` does not probe it. Must be a port number (1 to 65535). |
 | `NOODARA_E2E_WEB_PORT` | `3000` | End to end: host port of the web UI. |
 | `NOODARA_E2E_API_PORT` | `3100` | End to end: host port of the API. Must differ from the web port. |
 

@@ -77,6 +77,7 @@ export const MESSAGES = Object.freeze({
   portsNotDistinct: 'NOODARA_E2E_WEB_PORT and NOODARA_E2E_API_PORT must be distinct.',
   portInUse: (/** @type {string} */ subject) => `${subject} is in use. Free it or choose another port with the override variable.`,
   portUnknown: (/** @type {string} */ subject) => `${subject}: could not determine availability (bind failed or timed out).`,
+  portPrecheckSkipped: 'NOODARA_TEST_PORT_OVERRIDE is set: the integration port 3000 precheck is skipped (the variable names no port the tests bind).',
   leftoversUnknown: 'Leftover noodara.test resources: could not determine (Docker not reachable or the listing timed out).',
   leftoversFound:
     'Leftover noodara.test resources from an earlier run. Integration and E2E setups refuse to start; inspect and remove them yourself (this tool never removes anything).',
@@ -479,7 +480,12 @@ async function portChecks({ tier, env, probes, g, setup }) {
     }
     valid.set(v.name, r.port);
     if (setup) continue;
-    // The integration override only bypasses the port 3000 precheck; it names no port of its own.
+    // The integration override only bypasses the port 3000 precheck; it names no port of its own,
+    // so a valid value is never probed (tests/integration/helpers/port-checker.ts).
+    if (v.name === 'NOODARA_TEST_PORT_OVERRIDE' && r.fromEnv) {
+      checks.push({ id: `port:${v.name}`, label: `Port 3000 precheck (${v.tier})`, hard, status: 'ok', message: MESSAGES.portPrecheckSkipped });
+      continue;
+    }
     const subject = r.fromEnv ? `The port from ${v.name}` : `Port ${String(r.port)}`;
     const probe = await g(() => probes.port(r.port));
     const state = probe.ok ? probe.value : 'unknown';

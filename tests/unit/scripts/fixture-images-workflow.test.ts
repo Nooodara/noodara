@@ -170,6 +170,39 @@ describe('fixture-images.yml hardening (H9)', () => {
     expect(runScripts(source).join('\n')).not.toMatch(/docker login|GITHUB_TOKEN/);
   });
 
+  it('the publishing job runs only for refs/heads/main, including a manual dispatch', () => {
+    const jobs = jobBlocks(workflow());
+    const publishing = [...jobs].filter(([, block]) => /node scripts\/fixture-images\.mjs publish\b/.test(block));
+    expect(publishing.length).toBeGreaterThan(0);
+    for (const [name, block] of publishing) {
+      // A job-level condition (4-space indent), not a step-level one.
+      expect(block, name).toMatch(
+        /\n {4}if: github\.ref == 'refs\/heads\/main' && vars\.NOODARA_FIXTURE_PUBLISH_ENABLED == 'true'\s*(?:#.*)?\n/,
+      );
+    }
+  });
+
+  it('the header comment describes the ref guard and the publish switch accurately', () => {
+    const header = workflow().split('\non:')[0] ?? '';
+    const text = header.replace(/^#\s?/gm, '').replace(/\s+/g, ' ');
+    expect(text).toMatch(/refs\/heads\/main/);
+    expect(text).toMatch(/manual dispatch/i);
+    expect(text).toContain('NOODARA_FIXTURE_PUBLISH_ENABLED');
+    expect(text).toMatch(/publishes nothing/i);
+    expect(text).toMatch(/maintainer approval/i);
+    expect(text).not.toMatch(/Nothing from a fork or an unmerged branch reaches this job\./);
+  });
+
+  it('the header comment states that a published image lets anyone reaching the fixture port log in as root', () => {
+    const header = workflow().split('\non:')[0] ?? '';
+    const text = header.replace(/^#\s?/gm, '').replace(/\s+/g, ' ');
+    expect(text).toMatch(/private keys/i);
+    expect(text).toMatch(/passwordless sudo/i);
+    expect(text).toMatch(/all host interfaces/i);
+    expect(text).toMatch(/as root/i);
+    expect(text).toMatch(/untrusted networks/i);
+  });
+
   it('never mentions a timeout scale (CI budgets stay unscaled)', () => {
     expect(workflow()).not.toMatch(/TIMEOUT_SCALE/i);
   });
@@ -196,6 +229,18 @@ describe('docs/testing/fixture-images.md (H10 trust model)', () => {
     expect(text).toMatch(/never (?:be )?treat(?:ed)? (?:them )?as secrets/i);
   });
 
+  it('states the root-login exposure of a published image as a precondition of publication', () => {
+    const trust = /## Trust model\n([\s\S]*?)(?=\n## |$)/.exec(doc())?.[1]?.replace(/\s+/g, ' ') ?? '';
+    expect(trust).toMatch(/private keys/i);
+    expect(trust).toMatch(/`root`/);
+    expect(trust).toMatch(/`deployer`/);
+    expect(trust).toMatch(/passwordless sudo/i);
+    expect(trust).toMatch(/all (?:of the )?host(?:'s)? (?:network )?interfaces/i);
+    expect(trust).toMatch(/log in to the fixture container as root/i);
+    expect(trust).toMatch(/before (?:publishing|the first publish)/i);
+    expect(trust).toMatch(/untrusted networks/i);
+  });
+
   it('explains identity, resolution order, the image option and how to enable or disable the pull', () => {
     const text = doc();
     expect(text).toContain('NOODARA_TEST_FIXTURE_REGISTRY');
@@ -206,10 +251,26 @@ describe('docs/testing/fixture-images.md (H10 trust model)', () => {
     expect(text).toContain('node scripts/fixture-images.mjs list');
   });
 
+  it('states the Node.js version the list command needs (unflagged type stripping)', () => {
+    const text = doc().replace(/\s+/g, ' ');
+    expect(text).toMatch(/type stripping/i);
+    expect(text).toMatch(/Node\.js 22\.18 or later/);
+    expect(text).toMatch(/Node\.js 24/);
+  });
+
   it('says nothing is published yet and that publication needs maintainer approval', () => {
     const text = doc().replace(/\s+/g, ' ');
     expect(text).toMatch(/nothing has been published yet/i);
     expect(text).toMatch(/maintainer approval/i);
+  });
+
+  it('says the workflow publishes nothing until a maintainer sets the publish switch to true', () => {
+    const publication = /## Publication\n([\s\S]*?)(?=\n## |$)/.exec(doc())?.[1]?.replace(/\s+/g, ' ') ?? '';
+    expect(publication).toContain('NOODARA_FIXTURE_PUBLISH_ENABLED');
+    expect(publication).toMatch(/manual dispatch/i);
+    expect(publication).toMatch(/pushes to `?main`?/i);
+    expect(publication).toMatch(/publishes nothing unless/i);
+    expect(publication).toContain('`true`');
   });
 
   it('carries no home paths, IP addresses or full UUIDs', () => {

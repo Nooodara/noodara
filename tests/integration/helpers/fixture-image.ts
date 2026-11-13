@@ -42,7 +42,10 @@ export const FIXTURE_REGISTRY_ENV = "NOODARA_TEST_FIXTURE_REGISTRY";
 /** Local repository prefix for fixture images (cache and owner tags). */
 export const FIXTURE_LOCAL_REPOSITORY_PREFIX = "noodara-test";
 /** Unscaled pull budget; callers pass it through their runner timeout scale. */
-export const FIXTURE_IMAGE_PULL_BUDGET_MS = 180_000;
+// Unscaled pull deadline. It is kept strictly below half the integration test budget
+// (RUNNER_TIMEOUT_DEFAULTS.integration.testTimeout, scaled by the same factor) so a stalled or slow
+// pull still leaves room for the build fallback inside the test that started the fixture.
+export const FIXTURE_IMAGE_PULL_BUDGET_MS = 30_000;
 /** Bound for each metadata call (inspect, version, tag, rm) of the CLI facade. */
 export const DOCKER_METADATA_TIMEOUT_MS = 30_000;
 /** Bound for `git ls-files` when executable bits come from the index (Windows checkouts). */
@@ -52,7 +55,6 @@ export const PULL_SETTLE_GRACE_MS = 5_000;
 /** Length cap for NOODARA_TEST_FIXTURE_REGISTRY. */
 export const FIXTURE_REGISTRY_MAX_LENGTH = 200;
 
-const MAX_SINGLE_FLIGHT_WAITS = 3;
 const IDENTITY_PATTERN = /^[0-9a-f]{64}$/;
 const NAME_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
 const TARGET_PATTERN =
@@ -702,11 +704,15 @@ export interface ResolvedFixtureImage {
 
 const inflight = new Map<string, Promise<void>>();
 const reported = new Set<FallbackReason>();
+// `<registry>/<name>:<identity>` references whose pull failed or timed out in this process; later
+// resolutions skip the pull and go straight to the local cache and the build.
+const failedPulls = new Set<string>();
 
-/** Clears the in-process single-flight table and the report-once memory (tests only). */
+/** Clears the single-flight table, the report-once memory and the failed-pull memory (tests only). */
 export function resetFixtureImageState(): void {
   inflight.clear();
   reported.clear();
+  failedPulls.clear();
 }
 
 interface ResolveContext {
@@ -895,6 +901,13 @@ async function tryPull(context: ResolveContext): Promise<boolean> {
     return false;
   }
   const remoteRef = remoteFixtureRef(validation.registry, name, identity);
+  // Already reported once; a pull that failed in this process is not retried.
+  if (failedPulls.has(remoteRef)) return false;
+  const fail = (reason: FallbackReason): false => {
+    failedPulls.add(remoteRef);
+    report(options, reason);
+    return false;
+  };
   const deadline = AbortSignal.timeout(options.pullDeadlineMs);
   const combined =
     signal === undefined ? deadline : AbortSignal.any([signal, deadline]);
@@ -913,8 +926,7 @@ async function tryPull(context: ResolveContext): Promise<boolean> {
     if (combined.aborted) await reapLatePull(context, pulling, remoteRef);
     else await safeRemove(docker, remoteRef);
     throwIfAborted(signal);
-    report(options, deadline.aborted ? "timeout" : classifyPullFailure(error));
-    return false;
+    return fail(deadline.aborted ? "timeout" : classifyPullFailure(error));
   }
   if (signal?.aborted) {
     await safeRemove(docker, remoteRef);
@@ -924,21 +936,18 @@ async function tryPull(context: ResolveContext): Promise<boolean> {
     await docker.tag(remoteRef, target);
   } catch {
     await safeRemove(docker, remoteRef);
-    report(options, "failed");
-    return false;
+    return fail("failed");
   }
   await safeRemove(docker, remoteRef);
   const pulled = await safeInspect(docker, target);
   const platform = await platformOf(context);
   if (pulled?.label !== identity) {
     await safeRemove(docker, target);
-    report(options, "label-mismatch");
-    return false;
+    return fail("label-mismatch");
   }
   if (!isVerified(pulled, identity, platform)) {
     await safeRemove(docker, target);
-    report(options, "platform-mismatch");
-    return false;
+    return fail("platform-mismatch");
   }
   if (signal?.aborted) {
     await safeRemove(docker, target);
@@ -1016,28 +1025,28 @@ export async function resolveFixtureImage(
   }
 
   const key = `${options.name}@${options.identity}`;
-  for (let wait = 0; wait < MAX_SINGLE_FLIGHT_WAITS; wait += 1) {
+  // A waiter waits as many rounds as it takes: it never starts a pull/build while another one of
+  // the same identity is in flight. It races its own signal, and takes over when the in-flight
+  // resolution fails or aborts. No await separates the final check from `inflight.set`.
+  for (;;) {
     throwIfAborted(options.signal);
     if (await useLocal(context))
       return { ref: options.target, source: "local" };
     const pending = inflight.get(key);
     if (pending === undefined) break;
-    // A waiter races its own signal; if the initiator fails or aborts, the waiter takes over.
     await raceAbort(pending, options.signal);
   }
   throwIfAborted(options.signal);
 
   const work = acquire(context);
-  if (!inflight.has(key)) {
-    const settled = work.then(
-      () => undefined,
-      () => undefined,
-    );
-    inflight.set(key, settled);
-    void settled.then(() => {
-      if (inflight.get(key) === settled) inflight.delete(key);
-    });
-  }
+  const settled = work.then(
+    () => undefined,
+    () => undefined,
+  );
+  inflight.set(key, settled);
+  void settled.then(() => {
+    if (inflight.get(key) === settled) inflight.delete(key);
+  });
   return work;
 }
 

@@ -11,8 +11,22 @@ name: Fixture images
 # must never be deployed or treated as secrets. Pulling them stays opt-in on contributor machines,
 # and no workflow in this repository enables the pull (docs/testing/fixture-images.md).
 #
-# Runs only on a manual dispatch or on a push to main that changes the fixture contexts. Nothing
-# from a fork or an unmerged branch reaches this job. Every `uses:` is pinned to a commit SHA
+# Consequence to weigh before enabling the publish switch or making the package public: the images
+# contain the private keys authorized for `root` and for `deployer` (passwordless sudo), and the
+# test helpers publish the container's SSH port on all host interfaces
+# (tests/integration/helpers/ssh.ts). Anyone who has a published image and can reach that port on
+# a machine running the tests can log in to the fixture container as root; once the package is
+# public, anyone has the image. Do not run the tests on a host whose ports are reachable from
+# untrusted networks (Trust model in docs/testing/fixture-images.md).
+#
+# Triggers on a manual dispatch or on a push to main that changes the fixture contexts. The
+# publishing job carries a job-level guard with two conditions. `github.ref == 'refs/heads/main'`
+# makes a manual dispatch on any other branch or tag skip it: only code merged to main can publish.
+# `vars.NOODARA_FIXTURE_PUBLISH_ENABLED == 'true'` is a publish switch: unless a maintainer has set
+# that repository variable to exactly `true`, the job is skipped and the workflow publishes nothing,
+# including on the push that first brings this workflow to main. Setting it needs maintainer
+# approval; nothing has been published yet. Pull requests
+# (forks included) never trigger this workflow. Every `uses:` is pinned to a commit SHA
 # already reviewed in ci.yml / release.yml, the only credential is the built-in GITHUB_TOKEN
 # (handed to docker/login-action, never to a script), and no `run:` script interpolates an
 # expression: values reach the shell through `env:` only.
@@ -35,6 +49,9 @@ concurrency:
 jobs:
   publish:
     name: publish
+    # Only main publishes, also for workflow_dispatch: a dispatch on another ref skips the job. The
+    # repository variable must also be exactly 'true' (an unset variable is '' and skips the job).
+    if: github.ref == 'refs/heads/main' && vars.NOODARA_FIXTURE_PUBLISH_ENABLED == 'true'
     runs-on: ubuntu-24.04
     # Eight small Ubuntu images (two versions x docker CLI x slow df), each built and pushed once.
     # The script bounds every build at 20 min and every push at 15 min; 60 min caps the whole job
