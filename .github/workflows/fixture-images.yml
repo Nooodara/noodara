@@ -1,0 +1,90 @@
+name: Fixture images
+
+# 36-04: publishes the content-addressed SSH test fixture images to GHCR as
+# ghcr.io/<owner>/noodara-test-fixtures/<name>:<identity>, where <identity> is the hash
+# scripts/fixture-images.mjs computes with the very same code the integration tests use
+# (tests/integration/helpers/fixture-image.ts). An existing <name>:<identity> tag is never
+# overwritten: the script checks for it before building and again right before pushing, and an
+# inconclusive check stops without pushing.
+#
+# These images are test fixtures, not product images: they carry build-time test SSH key pairs and
+# must never be deployed or treated as secrets. Pulling them stays opt-in on contributor machines,
+# and no workflow in this repository enables the pull (docs/testing/fixture-images.md).
+#
+# Consequence to weigh before enabling the publish switch or making the package public: the images
+# contain the private keys authorized for `root` and for `deployer` (passwordless sudo), and the
+# test helpers publish the container's SSH port on all host interfaces
+# (tests/integration/helpers/ssh.ts). Anyone who has a published image and can reach that port on
+# a machine running the tests can log in to the fixture container as root; once the package is
+# public, anyone has the image. Do not run the tests on a host whose ports are reachable from
+# untrusted networks (Trust model in docs/testing/fixture-images.md).
+#
+# Triggers on a manual dispatch or on a push to main that changes the fixture contexts. The
+# publishing job carries a job-level guard with two conditions. `github.ref == 'refs/heads/main'`
+# makes a manual dispatch on any other branch or tag skip it: only code merged to main can publish.
+# `vars.NOODARA_FIXTURE_PUBLISH_ENABLED == 'true'` is a publish switch: unless a maintainer has set
+# that repository variable to exactly `true`, the job is skipped and the workflow publishes nothing,
+# including on the push that first brings this workflow to main. Setting it needs maintainer
+# approval; nothing has been published yet. Pull requests
+# (forks included) never trigger this workflow. Every `uses:` is pinned to a commit SHA
+# already reviewed in ci.yml / release.yml, the only credential is the built-in GITHUB_TOKEN
+# (handed to docker/login-action, never to a script), and no `run:` script interpolates an
+# expression: values reach the shell through `env:` only.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/integration/images/**'
+
+permissions: {}
+
+# One publisher at a time per ref, and a running publish is never cancelled half-way: the second
+# run queues and then skips every tag the first one already pushed.
+concurrency:
+  group: fixture-images-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish
+    # Only main publishes, also for workflow_dispatch: a dispatch on another ref skips the job. The
+    # repository variable must also be exactly 'true' (an unset variable is '' and skips the job).
+    if: github.ref == 'refs/heads/main' && vars.NOODARA_FIXTURE_PUBLISH_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    # Eight small Ubuntu images (two versions x docker CLI x slow df), each built and pushed once.
+    # The script bounds every build at 20 min and every push at 15 min; 60 min caps the whole job
+    # well below the six-hour default.
+    timeout-minutes: 60
+    # Minimum for a GHCR push with the built-in GITHUB_TOKEN.
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      # Node 24 loads the TypeScript identity module directly (type stripping), so no install step.
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Resolve the fixture registry (GHCR requires a lowercase path)
+        id: registry
+        env:
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          set -eu
+          owner=$(printf '%s' "$REPO_OWNER" | tr '[:upper:]' '[:lower:]')
+          echo "registry=ghcr.io/$owner/noodara-test-fixtures" >> "$GITHUB_OUTPUT"
+      - name: List fixture identities
+        run: node scripts/fixture-images.mjs list
+      - name: Publish absent fixture tags
+        env:
+          FIXTURE_REGISTRY: ${{ steps.registry.outputs.registry }}
+        run: node scripts/fixture-images.mjs publish --registry "$FIXTURE_REGISTRY"

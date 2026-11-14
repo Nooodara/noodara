@@ -14,8 +14,16 @@ import {
 } from "testcontainers";
 import { expect } from "vitest";
 import { startLabelledContainer } from "./container-start.js";
+import {
+  FIXTURE_IDENTITY_BUILD_ARG, FIXTURE_IMAGE_PULL_BUDGET_MS, FIXTURE_REGISTRY_ENV,
+  computeFixtureIdentitySync, createDockerCliFacade, resolveFixtureImage, runDockerCli,
+  sshdFixtureImageSpec,
+} from "./fixture-image.js";
 import { startWithPortBindingRetry } from "./port-binding-retry.js";
-import { dockerCli as runDocker, reapOwnedSshContainers, SSH_OWNER_LABEL } from "./test-resources.js";
+import {
+  dockerCli as runDocker, listOwnedSshResources, reapOwnedSshContainers, SSH_OWNER_LABEL,
+} from "./test-resources.js";
+import { resolveRunnerTimeoutScale } from "../../support/timeout-scale.js";
 
 // Resolved from this file's own location, matching how tests/integration/helpers/migrations.ts
 // resolves the migrations folder — never process.cwd(), so this module works regardless of which
@@ -93,6 +101,11 @@ export interface StartSshdOptions {
    *  reachable at the same host:port. Omit for an OS-assigned free port (the default for every
    *  other scenario). */
   readonly hostPort?: number;
+  /** 36-04 image source. 'build' (startSshd/createSshdLifecycle default): always build into the
+   *  owner tag, starting the build synchronously, then best-effort publish the content-hash tag.
+   *  'reuse' (createSshdTestScope().start default): a verified local content-addressed image, then
+   *  the opt-in NOODARA_TEST_FIXTURE_REGISTRY pull, then the build path. */
+  readonly image?: "reuse" | "build";
 }
 
 export interface SshdFixture {
@@ -108,6 +121,8 @@ export interface SshdFixture {
 }
 
 export interface SshdLifecycle {
+  /** crypto.randomUUID ownership id: the only removal authority for this fixture's resources. */
+  readonly owner: string;
   readonly result: Promise<SshdFixture>;
   /** Always fulfilled; joins startup and any late cleanup, even after result was cancelled. */
   readonly settled: Promise<void>;
@@ -119,6 +134,14 @@ export interface SshdLifecycle {
 // They disappear only after the operation and its late cleanup actually finish.
 const pendingLifecycles = new Set<Promise<void>>();
 
+/**
+ * How long `SshdLifecycle.stop` waits for an in-flight build/start to settle before failing
+ * closed. Deliberately UNSCALED: it does not bound image build/start/readiness (the operation
+ * keeps running and stays owned), and 35-04's ssh-cancellation.test.ts pins exactly this value.
+ * The per-test reap below waits beyond it, under a scaled() deadline.
+ */
+export const LIFECYCLE_STOP_SETTLE_CAP_MS = 30_000;
+
 /** Register this owner in the caller before awaiting result. Cancellation rejects result
  * promptly, but never detaches the build/start promise: stop joins it and fails closed if
  * Docker cannot settle. No zero-survivor claim is made until the final owned inventory. */
@@ -129,7 +152,8 @@ export function createSshdLifecycle(options: StartSshdOptions): SshdLifecycle {
   if (options.signal?.aborted === true) forwardAbort();
   let fixture: SshdFixture | undefined;
   let cleanupFailed = false;
-  const startup = runSshd({ ...options, signal: controller.signal }, () => { cleanupFailed = true; });
+  const owner = randomUUID();
+  const startup = runSshd({ ...options, signal: controller.signal }, () => { cleanupFailed = true; }, owner);
   let rejectCancellation!: (reason: unknown) => void;
   const cancelled = new Promise<never>((_resolve, reject) => { rejectCancellation = reject; });
   const onAbort = (): void => { rejectCancellation(controller.signal.reason); };
@@ -153,7 +177,7 @@ export function createSshdLifecycle(options: StartSshdOptions): SshdLifecycle {
   const cancel = (reason = new Error("SSH fixture cancelled")): void => { controller.abort(reason); };
   let stopping: Promise<void> | undefined;
   return {
-    result, settled, cancel,
+    owner, result, settled, cancel,
     stop() {
       stopping ??= (async () => {
         if (fixture === undefined) cancel();
@@ -171,7 +195,10 @@ export function createSshdLifecycle(options: StartSshdOptions): SshdLifecycle {
           await Promise.race([
             cleanup,
             new Promise<never>((_resolve, reject) => {
-              timer = setTimeout(() => reject(new Error("SSH fixture cleanup unverified: creation did not settle")), 30_000);
+              timer = setTimeout(
+                () => reject(new Error("SSH fixture cleanup unverified: creation did not settle")),
+                LIFECYCLE_STOP_SETTLE_CAP_MS,
+              );
             }),
           ]);
         } finally { clearTimeout(timer); }
@@ -179,6 +206,91 @@ export function createSshdLifecycle(options: StartSshdOptions): SshdLifecycle {
       return stopping;
     },
   };
+}
+
+/**
+ * Unscaled upper bound for reaping the SSH fixtures one test started (stop + settle of a build or
+ * start still in flight after a timeout). It sits above LIFECYCLE_STOP_SETTLE_CAP_MS and below the
+ * 120 s integration hook default, and is always applied through scaled().
+ */
+export const SSH_FIXTURE_REAP_BUDGET_MS = 90_000;
+
+export interface SshdTestScopeOptions {
+  readonly createLifecycle?: (options: StartSshdOptions) => SshdLifecycle;
+  /** Read-only inventory of what one owner still holds (default: listOwnedSshResources). */
+  readonly inventory?: (owner: string) => Promise<readonly string[]>;
+  readonly currentTestName?: () => string | undefined;
+  /** Resolved lazily at reap time, so importing this module never announces the scale. */
+  readonly reapBudgetMs?: () => number;
+}
+
+export interface SshdTestScope {
+  /** Starts a fixture owned by the running test. Its resources are reaped by reap(), even when
+   *  the test timed out before the returned promise settled (so it never got the handle). */
+  start: (options: StartSshdOptions) => Promise<SshdFixture>;
+  /** Stops every fixture started since the previous reap, waits for late build/start to settle
+   *  within a scaled() deadline, then verifies the owners' inventory is empty. Throws (never
+   *  swallows) naming the originating test and the surviving resources otherwise. Call it in
+   *  afterEach before assertNoStrayTestContainers. */
+  reap: () => Promise<void>;
+}
+
+/** 36-02 (QA-26): per-test ownership for SSH fixtures, so one primary timeout cannot leave a late
+ *  container behind that fails every later test's empty-inventory check for an unrelated reason. */
+export function createSshdTestScope(options: SshdTestScopeOptions = {}): SshdTestScope {
+  const createLifecycle = options.createLifecycle ?? createSshdLifecycle;
+  const inventory = options.inventory ?? ((owner: string) => listOwnedSshResources(owner));
+  const currentTestName = options.currentTestName ?? (() => expect.getState().currentTestName);
+  const reapBudgetMs = options.reapBudgetMs
+    ?? (() => resolveRunnerTimeoutScale("vitest").scaled(SSH_FIXTURE_REAP_BUDGET_MS));
+  const tracked: { readonly lifecycle: SshdLifecycle; readonly testName: string }[] = [];
+  return {
+    start(startOptions) {
+      const lifecycle = createLifecycle({ ...startOptions, image: startOptions.image ?? "reuse" });
+      tracked.push({ lifecycle, testName: currentTestName() ?? "(suite hook)" });
+      return lifecycle.result;
+    },
+    async reap() {
+      const entries = tracked.splice(0);
+      if (entries.length === 0) return;
+      const budgetMs = reapBudgetMs();
+      const failures = (await Promise.all(entries.map((entry) => reapOne(entry, budgetMs, inventory))))
+        .filter((failure): failure is string => failure !== undefined);
+      if (failures.length > 0) throw new Error(`SSH fixture reap failed: ${failures.join("; ")}`);
+    },
+  };
+}
+
+async function reapOne(
+  entry: { readonly lifecycle: SshdLifecycle; readonly testName: string },
+  budgetMs: number,
+  inventory: (owner: string) => Promise<readonly string[]>,
+): Promise<string | undefined> {
+  const { lifecycle, testName } = entry;
+  const origin = `test "${testName}" (fixture owner ${lifecycle.owner})`;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let problem: string | undefined;
+  try {
+    const outcome = await Promise.race([
+      (async () => {
+        // stop() fails closed after LIFECYCLE_STOP_SETTLE_CAP_MS; keep joining the still-owned
+        // operation (settled always fulfils) and let the final inventory be the verdict.
+        await lifecycle.stop().catch(() => undefined);
+        await lifecycle.settled;
+        return "settled" as const;
+      })(),
+      new Promise<"deadline">((resolve) => { timer = setTimeout(() => { resolve("deadline"); }, budgetMs); }),
+    ]);
+    if (outcome === "deadline") problem = `build/start did not settle within the ${String(budgetMs)} ms reap deadline`;
+  } finally { clearTimeout(timer); }
+  let survivors: readonly string[];
+  try { survivors = await inventory(lifecycle.owner); } catch {
+    // Docker errors can embed environment/credentials: report a bounded category only.
+    return `${origin}: owned resource inventory unavailable${problem === undefined ? "" : `; ${problem}`}`;
+  }
+  if (problem === undefined && survivors.length === 0) return undefined;
+  return `${origin}: ${problem ?? "cleanup left owned resources"}; surviving: ${
+    survivors.length === 0 ? "none listed yet (operation still in flight)" : survivors.join(", ")}`;
 }
 
 /** The names `readTestKey` accepts — matches the keys tests/integration/images/sshd-common's
@@ -200,13 +312,13 @@ export function startSshd(options: StartSshdOptions): Promise<SshdFixture> {
 async function runSshd(
   options: StartSshdOptions,
   onCleanupUnverified: () => void = () => undefined,
+  owner: string = randomUUID(),
 ): Promise<SshdFixture> {
-  const { ubuntu, dockerCli = false, slowDf = false, hostPort, signal } = options;
+  const { ubuntu, dockerCli = false, slowDf = false, hostPort, signal, image = "build" } = options;
   const checkCancelled = (): void => { signal?.throwIfAborted(); };
   checkCancelled();
 
   // Ownership exists before either build or start is awaited.
-  const owner = randomUUID();
   const diagnostic = createSshDiagnostics(owner, options.diagnostics ?? (
     process.env.NOODARA_SSH_DIAGNOSTICS === "1"
       ? (event) => process.stdout.write(`${JSON.stringify(event)}\n`) : undefined
@@ -219,6 +331,7 @@ async function runSshd(
   const password = randomUUID();
   const keyPassphrase = randomUUID();
 
+  // Must equal test-resources.ts sshFixtureImageTag(owner) (ssh-test-scope.test.ts pins it).
   const imageName = `noodara-test/sshd-diagnostics:${owner}`;
   let imageBuilt = false;
   const removeOwnedImage = async (): Promise<void> => {
@@ -231,20 +344,37 @@ async function runSshd(
     imageBuilt = false;
   };
   record("image_build", "begin");
+  // The build (when it runs) is joined even after resolveFixtureImage rejected on abort, so a late
+  // owner tag is removed below and startup never settles before the build does.
+  let building: Promise<void> | undefined;
   try {
-    await GenericContainer.fromDockerfile(
-    IMAGES_CONTEXT,
-    `sshd-ubuntu-${ubuntu}/Dockerfile`,
-  )
-    .withBuildArgs({
-      WITH_DOCKER_CLI: String(dockerCli),
-      WITH_SLOW_DF: String(slowDf),
-    })
-    .build(imageName);
+    // Same spec scripts/fixture-images.mjs publishes, so the pulled tag is the published tag (H8).
+    const { name: fixtureName, dockerfile, buildArgs } = sshdFixtureImageSpec(ubuntu, { dockerCli, slowDf });
+    // Synchronous: 'build' mode must start the build before the first await.
+    const identity = computeFixtureIdentitySync({ contextDir: IMAGES_CONTEXT, dockerfile, buildArgs });
+    const build = (): Promise<void> => (building = GenericContainer.fromDockerfile(IMAGES_CONTEXT, dockerfile)
+      .withBuildArgs({ ...buildArgs, [FIXTURE_IDENTITY_BUILD_ARG]: identity })
+      .build(imageName)
+      .then(() => { imageBuilt = true; }));
+    await resolveFixtureImage({
+      name: fixtureName,
+      identity,
+      target: imageName,
+      // Metadata, tag and untag go through the bounded test-resources CLI; only the opt-in pull
+      // needs its own scaled deadline and abort signal.
+      docker: createDockerCliFacade((args, runOptions) =>
+        args[0] === "pull" ? runDockerCli(args, runOptions) : runDocker(args)),
+      build,
+      registry: process.env[FIXTURE_REGISTRY_ENV],
+      pullDeadlineMs: resolveRunnerTimeoutScale("vitest").scaled(FIXTURE_IMAGE_PULL_BUDGET_MS),
+      signal,
+      mode: image,
+    });
     imageBuilt = true;
     record("image_build", "success");
     checkCancelled();
   } catch (error: unknown) {
+    await building?.catch(() => undefined);
     record("image_build", signal?.aborted === true ? "cancelled" : "failure");
     if (imageBuilt) {
       record("cleanup", "begin");

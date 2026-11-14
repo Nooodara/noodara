@@ -60,3 +60,8 @@ RUN chmod 0755 /usr/local/bin/entrypoint.sh
 
 EXPOSE 22
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+# 36-04: content-addressed identity of this build (tests/integration/helpers/fixture-image.ts).
+# Last, so it never invalidates the layers above; the helper excludes it from the hashed args.
+ARG NOODARA_FIXTURE_IDENTITY=unset
+LABEL noodara.test.fixture-identity=$NOODARA_FIXTURE_IDENTITY

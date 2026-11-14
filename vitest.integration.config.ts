@@ -1,5 +1,11 @@
 import { defineConfig } from 'vitest/config';
 import { domainSourceAliases, sshSourceAliases } from './vitest.shared.js';
+import { RUNNER_TIMEOUT_DEFAULTS, resolveRunnerTimeoutScale } from './tests/support/timeout-scale.js';
+
+// 36-01: runner-level timeouts are derived from tests/support/timeout-scale.ts (opt-in
+// NOODARA_TEST_TIMEOUT_SCALE, exactly 1 when unset and never set in CI); an invalid value throws
+// here, before any test, global setup, container or port is touched.
+const timeouts = resolveRunnerTimeoutScale('vitest integration');
 
 // Separate config for Testcontainers-backed integration tests: heavier timeouts, no coverage,
 // and file-parallelism disabled since containers are heavy and must not race each other.
@@ -14,8 +20,8 @@ export default defineConfig({
     // Docker-in-Docker -- excluded here so it never inflates this suite's ~32 min PR-gate budget.
     // Not untested: see vitest.installer.config.ts.
     exclude: ['tests/integration/installer/**'],
-    testTimeout: 120_000,
-    hookTimeout: 120_000,
+    testTimeout: timeouts.scaled(RUNNER_TIMEOUT_DEFAULTS.integration.testTimeout),
+    hookTimeout: timeouts.scaled(RUNNER_TIMEOUT_DEFAULTS.integration.hookTimeout),
     pool: 'forks',
     fileParallelism: false,
     // Post-execution fix (orchestrator audit WR-08): this suite is long populated -- leaving

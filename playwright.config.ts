@@ -9,6 +9,12 @@
 // startup timeout; global-teardown.ts sweeps everything labelled with the run id.
 import { defineConfig, devices } from '@playwright/test';
 import { resolveE2ePorts } from './tests/e2e/fixtures/ports.js';
+import { RUNNER_TIMEOUT_DEFAULTS, resolveRunnerTimeoutScale } from './tests/support/timeout-scale.js';
+
+// 36-01: runner-level timeouts are derived from tests/support/timeout-scale.ts (opt-in
+// NOODARA_TEST_TIMEOUT_SCALE, exactly 1 when unset and never set in CI); an invalid value throws
+// here, before any test, global setup, container or port is touched.
+const timeouts = resolveRunnerTimeoutScale('playwright');
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -23,9 +29,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   // Sized for a real SSH-and-worker flow (connect + discovery over a real sshd container), not a
   // typical UI-only assertion budget.
-  timeout: 60_000,
+  timeout: timeouts.scaled(RUNNER_TIMEOUT_DEFAULTS.playwright.timeout),
   expect: {
-    timeout: 15_000,
+    timeout: timeouts.scaled(RUNNER_TIMEOUT_DEFAULTS.playwright.expectTimeout),
   },
   reporter: [['html'], ['list']],
   use: {

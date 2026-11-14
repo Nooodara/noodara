@@ -51,11 +51,14 @@ async function listen(port = 0): Promise<number> {
   await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(port, resolve); });
   return (server.address() as net.AddressInfo).port;
 }
-async function freePort(): Promise<number> {
-  const port = await listen();
-  const server = foreign.pop();
-  await new Promise<void>((resolve) => server?.close(() => resolve()));
-  return port;
+// Both listeners stay open until both ports are known: releasing the first before asking for the
+// second lets the OS hand the same ephemeral port back, which the stack rejects as non-distinct.
+async function distinctFreePorts(): Promise<[number, number]> {
+  const first = await listen();
+  const second = await listen();
+  const servers = foreign.splice(-2);
+  await Promise.all(servers.map((server) => new Promise<void>((resolve) => server.close(() => resolve()))));
+  return [first, second];
 }
 async function responds(port: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -76,8 +79,9 @@ beforeEach(async () => {
   vi.stubEnv('NOODARA_E2E_RUN_DIR', dir);
   vi.stubEnv('NOODARA_API_ORIGIN', process.env.NOODARA_API_ORIGIN);
   vi.stubEnv('NOODARA_PUBLIC_URL', process.env.NOODARA_PUBLIC_URL);
-  vi.stubEnv('NOODARA_E2E_WEB_PORT', String(await freePort()));
-  vi.stubEnv('NOODARA_E2E_API_PORT', String(await freePort()));
+  const [webPort, apiPort] = await distinctFreePorts();
+  vi.stubEnv('NOODARA_E2E_WEB_PORT', String(webPort));
+  vi.stubEnv('NOODARA_E2E_API_PORT', String(apiPort));
   state.postgresStart.mockResolvedValue({ connectionString: 'fixture-db', stop: state.postgresStop, container: { getId: () => 'fixture-postgres' } });
   state.redisStart.mockImplementation(async () => {
     if (state.race === 'api') await state.inject?.();

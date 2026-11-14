@@ -1,5 +1,11 @@
 import { defineConfig } from 'vitest/config';
 import { domainSourceAliases, sshSourceAliases } from './vitest.shared.js';
+import { RUNNER_TIMEOUT_DEFAULTS, resolveRunnerTimeoutScale } from './tests/support/timeout-scale.js';
+
+// 36-01: runner-level timeouts are derived from tests/support/timeout-scale.ts (opt-in
+// NOODARA_TEST_TIMEOUT_SCALE, exactly 1 when unset and never set in CI); an invalid value throws
+// here, before any test, global setup, container or port is touched.
+const timeouts = resolveRunnerTimeoutScale('vitest installer');
 
 // Separate config for the installer's Testcontainers/Docker-in-Docker suite (06-01-PLAN.md Task
 // 3). This suite builds real production Docker images (apps/control-plane, apps/web) and runs
@@ -14,8 +20,8 @@ export default defineConfig({
   resolve: { alias: [...domainSourceAliases, ...sshSourceAliases] },
   test: {
     include: ['tests/integration/installer/**/*.test.ts'],
-    testTimeout: 900_000,
-    hookTimeout: 900_000,
+    testTimeout: timeouts.scaled(RUNNER_TIMEOUT_DEFAULTS.installer.testTimeout),
+    hookTimeout: timeouts.scaled(RUNNER_TIMEOUT_DEFAULTS.installer.hookTimeout),
     pool: 'forks',
     fileParallelism: false,
     // Post-execution fix (orchestrator audit WR-08): this suite is long populated

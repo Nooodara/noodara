@@ -29,7 +29,37 @@ export interface RunManifest {
   readonly baseline: TestResourceSnapshot;
 }
 
-export default async function globalSetup(): Promise<void> {
+interface PreflightModule {
+  assertTierPrerequisites(tier: 'integration' | 'e2e'): Promise<void>;
+}
+
+// 36-03: a runtime URL keeps the untyped .mjs out of the type graph (no declaration file).
+const PREFLIGHT_LIB_URL = new URL('../../scripts/test-preflight-lib.mjs', import.meta.url).href;
+
+/** Hard prerequisites of the e2e tier, with the fixed messages `pnpm test:doctor --tier e2e` prints. */
+export async function requireE2ePrerequisites(): Promise<void> {
+  const lib = (await import(/* @vite-ignore */ PREFLIGHT_LIB_URL)) as PreflightModule;
+  await lib.assertTierPrerequisites('e2e');
+}
+
+export interface E2eGlobalSetupDeps {
+  readonly preflight: () => Promise<void>;
+  readonly startRun: () => Promise<void>;
+}
+
+/** 36-03: the tier preflight runs before the manifest, the leak precheck, any container or port. */
+export async function runE2eGlobalSetup(
+  deps: E2eGlobalSetupDeps = { preflight: requireE2ePrerequisites, startRun },
+): Promise<void> {
+  await deps.preflight();
+  await deps.startRun();
+}
+
+export default function globalSetup(): Promise<void> {
+  return runE2eGlobalSetup();
+}
+
+async function startRun(): Promise<void> {
   // A stale manifest must never point teardown at another run's resources.
   rmSync(RUN_MANIFEST_PATH, { force: true });
   await assertNoTestResources('e2e globalSetup');

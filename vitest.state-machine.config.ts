@@ -1,5 +1,11 @@
 import { defineConfig } from 'vitest/config';
 import { domainSourceAliases } from './vitest.shared.js';
+import { RUNNER_TIMEOUT_DEFAULTS, resolveRunnerTimeoutScale } from './tests/support/timeout-scale.js';
+
+// 36-01: runner-level timeouts are derived from tests/support/timeout-scale.ts (opt-in
+// NOODARA_TEST_TIMEOUT_SCALE, exactly 1 when unset and never set in CI); an invalid value throws
+// here, before any test, global setup, container or port is touched.
+const timeouts = resolveRunnerTimeoutScale('vitest state-machine');
 
 // Gate coverage-state-machine (16-02, ROADMAP §8.7; 21-02; 26-02; 26-03): the deployment and certificate state
 // machines, the observability thresholds, the diagnosis classifier, the Infrastructure Graph and the log
@@ -18,6 +24,9 @@ export default defineConfig({
       'packages/domain/src/logs/merge-log-entries.test.ts',
     ],
     exclude: ['**/node_modules/**', '**/dist/**'],
+    // Vitest's implicit node-environment defaults, made explicit.
+    testTimeout: timeouts.scaled(RUNNER_TIMEOUT_DEFAULTS.unit.testTimeout),
+    hookTimeout: timeouts.scaled(RUNNER_TIMEOUT_DEFAULTS.unit.hookTimeout),
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary'],

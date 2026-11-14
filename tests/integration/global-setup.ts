@@ -17,6 +17,10 @@
 //     resources, and return a teardown that removes whatever this run added and fails loudly
 //     naming it -- Ryuk is shared across processes and cannot be relied on (helpers/test-resources.ts).
 //
+// (e) Tier prerequisites (36-03): before (c), the hard prerequisites of the integration tier
+//     (Node/pnpm versions, Docker daemon, a valid NOODARA_TEST_PORT_OVERRIDE) are checked with the
+//     same fixed messages `pnpm test:doctor --tier integration` prints (scripts/test-preflight-lib.mjs).
+//
 // Uses the exact same `buildWorkspace()` helper `boot-command.test.ts`'s Test 4 restores `dist`
 // with after deliberately deleting it, so there is exactly one definition of "build the
 // workspace" and the two paths can never drift apart.
@@ -24,10 +28,46 @@ import { buildWorkspace } from './helpers/boot-process.js';
 import { checkPort } from './helpers/port-checker.js';
 import { assertNoLeakedTestResources, assertNoTestResources, snapshotTestResources } from './helpers/test-resources.js';
 
-export default async function globalSetup(): Promise<() => Promise<void>> {
+interface PreflightModule {
+  assertTierPrerequisites(tier: 'integration' | 'e2e'): Promise<void>;
+}
+
+// A runtime URL keeps the untyped .mjs out of the type graph (the lib has no declaration file).
+const PREFLIGHT_LIB_URL = new URL('../../scripts/test-preflight-lib.mjs', import.meta.url).href;
+
+/** Throws with the fixed preflight messages when a hard prerequisite of `tier` is missing. */
+export async function requireTierPrerequisites(tier: 'integration' | 'e2e'): Promise<void> {
+  const lib = (await import(/* @vite-ignore */ PREFLIGHT_LIB_URL)) as PreflightModule;
+  await lib.assertTierPrerequisites(tier);
+}
+
+export interface IntegrationGlobalSetupDeps {
+  readonly preflight: () => Promise<void>;
+  readonly checkPort: typeof checkPort;
+  readonly assertNoTestResources: typeof assertNoTestResources;
+  readonly snapshotTestResources: typeof snapshotTestResources;
+  readonly buildWorkspace: typeof buildWorkspace;
+  readonly assertNoLeakedTestResources: typeof assertNoLeakedTestResources;
+  readonly exit: (code: number) => never;
+}
+
+const defaultDeps: IntegrationGlobalSetupDeps = {
+  preflight: () => requireTierPrerequisites('integration'),
+  checkPort,
+  assertNoTestResources,
+  snapshotTestResources,
+  buildWorkspace,
+  assertNoLeakedTestResources,
+  exit: (code) => process.exit(code),
+};
+
+export async function runIntegrationGlobalSetup(deps: IntegrationGlobalSetupDeps = defaultDeps): Promise<() => Promise<void>> {
+  // (e) Hard prerequisites first: nothing below may run without them.
+  await deps.preflight();
+
   // Precheck: port 3000 availability (Task 14-11 — OPEN_QUESTIONS #3).
   // This runs before any Docker containers or databases are started.
-  const portCheck = await checkPort(3000);
+  const portCheck = await deps.checkPort(3000);
   if (!portCheck.success) {
     const message = portCheck.message ?? `Port ${portCheck.port} is in use`;
     console.error(`\n${'='.repeat(80)}`);
@@ -36,15 +76,19 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     console.error(`\n${message}\n`);
     console.error('To skip this check, set: NOODARA_TEST_PORT_OVERRIDE=<alternative-port>');
     console.error(`${'='.repeat(80)}\n`);
-    process.exit(1);
+    deps.exit(1);
   }
 
-  await assertNoTestResources('vitest globalSetup');
-  const baseline = await snapshotTestResources();
+  await deps.assertNoTestResources('vitest globalSetup');
+  const baseline = await deps.snapshotTestResources();
 
-  buildWorkspace();
+  deps.buildWorkspace();
 
   return async () => {
-    await assertNoLeakedTestResources('this vitest run', baseline, { settleMs: 2_000 });
+    await deps.assertNoLeakedTestResources('this vitest run', baseline, { settleMs: 2_000 });
   };
+}
+
+export default function globalSetup(): Promise<() => Promise<void>> {
+  return runIntegrationGlobalSetup();
 }

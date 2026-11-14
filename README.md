@@ -37,6 +37,9 @@ default; pin a release with `NOODARA_VERSION=0.5.2` (no leading `v`).
 
 ## Development
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the test tiers, what to run before a push and how to check
+your machine.
+
 ```sh
 pnpm install
 pnpm dev

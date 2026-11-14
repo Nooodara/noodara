@@ -5,6 +5,11 @@
 import path from 'node:path';
 import { afterAll } from 'vitest';
 import { assertNoLeakedTestResources, snapshotTestResources } from './test-resources.js';
+import { resolveRunnerTimeoutScale } from '../../support/timeout-scale.js';
+
+/** Unscaled budget for the file-level reap + verification. The 2 s settle below is NOT scaled:
+ *  lengthening it would only hide late leaks (36-02 A3). */
+const LEAK_GUARD_HOOK_BUDGET_MS = 180_000;
 
 const baseline = await snapshotTestResources();
 
@@ -12,4 +17,4 @@ const baseline = await snapshotTestResources();
 afterAll(async ({}, suite) => {
   const file = 'filepath' in suite ? path.relative(process.cwd(), suite.filepath) : suite.name;
   await assertNoLeakedTestResources(file, baseline, { settleMs: 2_000 });
-}, 180_000);
+}, resolveRunnerTimeoutScale('vitest').scaled(LEAK_GUARD_HOOK_BUDGET_MS));
