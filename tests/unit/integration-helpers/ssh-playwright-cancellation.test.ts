@@ -4,14 +4,24 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, it } from 'vitest';
+import { resolveRunnerTimeoutScale } from '../../support/timeout-scale.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+
+// Outer bounds only: the real Playwright subprocess and the Vitest case around it. They honor the
+// opt-in NOODARA_TEST_TIMEOUT_SCALE (unset = exactly 1, so CI keeps 15 s / 20 s byte-for-byte).
+// The inner spec budgets (200 ms, 1000 -> 6000 ms) are what these cases test and are never scaled.
+const PLAYWRIGHT_SUBPROCESS_BUDGET_MS = 15_000;
+const PLAYWRIGHT_CASE_BUDGET_MS = 20_000;
+const scaled = (ms: number): number => resolveRunnerTimeoutScale('vitest').scaled(ms);
 
 it('cancels the real Playwright fixture during timeout before any handle is returned and joins the late build rejection', () => {
   const directory = mkdtempSync(path.join(os.tmpdir(), 'noodara-ssh-playwright-'));
   const report = path.join(directory, 'report.json');
   const evidence = path.join(directory, 'evidence.json');
-  const stack = path.join(root, 'tests/e2e/fixtures/stack.ts');
+  // The dependency-light module that owns the single sshTest definition (stack.ts re-exports
+  // it). A clean checkout has no workspace dist, so the subprocess must never load stack.ts.
+  const stack = path.join(root, 'tests/e2e/fixtures/ssh-fixture.ts');
   const containers = path.join(root, 'node_modules/testcontainers/build/index.js');
   const playwright = path.join(root, 'node_modules/@playwright/test/index.mjs');
   try {
@@ -57,7 +67,7 @@ test('controlled outer timeout', async ({ startOwnedSshd }) => {
 });
 `);
     const result = spawnSync(process.execPath, [path.join(root, 'node_modules/@playwright/test/cli.js'), 'test', '--config', path.join(directory, 'playwright.config.ts')], {
-      cwd: root, encoding: 'utf8', timeout: 15_000, maxBuffer: 1024 * 1024,
+      cwd: root, encoding: 'utf8', timeout: scaled(PLAYWRIGHT_SUBPROCESS_BUDGET_MS), maxBuffer: 1024 * 1024,
     });
     expect(result.error).toBeUndefined();
     // An actual outer timeout is the induced fault. No retry, skipped case, or fake runner.
@@ -70,7 +80,7 @@ test('controlled outer timeout', async ({ startOwnedSshd }) => {
     const results = summary.suites.flatMap((suite) => suite.specs.flatMap((spec) => spec.tests.flatMap((test) => test.results)));
     expect(results.map((result) => result.status)).toEqual(['timedOut']);
   } finally { rmSync(directory, { recursive: true, force: true }); }
-}, 20_000);
+}, scaled(PLAYWRIGHT_CASE_BUDGET_MS));
 
 it('keeps a successfully started fixture usable after a runner budget extension and cleans it on the actual outer timeout', () => {
   const directory = mkdtempSync(path.join(os.tmpdir(), 'noodara-ssh-playwright-budget-'));
@@ -78,7 +88,9 @@ it('keeps a successfully started fixture usable after a runner budget extension 
   const evidence = path.join(directory, 'evidence.json');
   const live = path.join(directory, 'live-owner');
   const reaped = path.join(directory, 'reaped-owner');
-  const stack = path.join(root, 'tests/e2e/fixtures/stack.ts');
+  // The dependency-light module that owns the single sshTest definition (stack.ts re-exports
+  // it). A clean checkout has no workspace dist, so the subprocess must never load stack.ts.
+  const stack = path.join(root, 'tests/e2e/fixtures/ssh-fixture.ts');
   const containers = path.join(root, 'node_modules/testcontainers/build/index.js');
   const playwright = path.join(root, 'node_modules/@playwright/test/index.mjs');
   try {
@@ -154,7 +166,7 @@ test('successful fixture lives through extended budget', async ({ startOwnedSshd
 `);
     const result = spawnSync(process.execPath, [path.join(root, 'node_modules/@playwright/test/cli.js'), 'test', '--config', path.join(directory, 'playwright.config.ts')], {
       cwd: root, env: { ...process.env, PATH: `${directory}${path.delimiter}${process.env.PATH ?? ''}` },
-      encoding: 'utf8', timeout: 15_000, maxBuffer: 1024 * 1024,
+      encoding: 'utf8', timeout: scaled(PLAYWRIGHT_SUBPROCESS_BUDGET_MS), maxBuffer: 1024 * 1024,
     });
     expect(result.error).toBeUndefined();
     expect(result.status).toBe(1);
@@ -167,4 +179,4 @@ test('successful fixture lives through extended budget', async ({ startOwnedSshd
     const results = summary.suites.flatMap((suite) => suite.specs.flatMap((spec) => spec.tests.flatMap((test) => test.results)));
     expect(results.map((result) => result.status)).toEqual(['timedOut']);
   } finally { rmSync(directory, { recursive: true, force: true }); }
-}, 20_000);
+}, scaled(PLAYWRIGHT_CASE_BUDGET_MS));

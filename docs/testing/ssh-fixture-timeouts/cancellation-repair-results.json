@@ -1093,5 +1093,52 @@
       "e2e": 0
     },
     "realLifecycleMapping": "SSH helper, container-start, port-binding retry, test-resource cleanup and real lifecycle test bytes unchanged from completed v5 run; E2E wrapper and unit runner harness changed only."
+  },
+  "distFreeUnitRepair": {
+    "criterion": "35-04 A7",
+    "red": {
+      "ci": {
+        "run_id": 43043093057,
+        "run_attempt": 1,
+        "job": "unit",
+        "job_id": 130599799155,
+        "commit": "19c4fd7023714c76ddf7ade28b76d558743b04df",
+        "failed": 2,
+        "file": "tests/unit/integration-helpers/ssh-playwright-cancellation.test.ts",
+        "reason": "real-Playwright subprocess loaded tests/e2e/fixtures/stack.ts; its graph reaches apps/control-plane and @noodara/domain dist, absent without a build step"
+      },
+      "local": {
+        "workspaceDistDirs": 0,
+        "failed": 2,
+        "passed": 0,
+        "file": "tests/unit/integration-helpers/ssh-playwright-cancellation.test.ts"
+      }
+    },
+    "fix": "Single sshTest definition moved to dependency-light tests/e2e/fixtures/ssh-fixture.ts (imports only the SSH lifecycle helper and @playwright/test); stack.ts re-exports the identical binding for critical-path/discovery; the real-Playwright subprocess imports ssh-fixture.ts. No build step, pre-build, alias/loader shim, skip, retry or budget change.",
+    "guard": {
+      "file": "tests/unit/integration-helpers/ssh-fixture-module-graph.test.ts",
+      "tests": 3,
+      "mutationRed": "appending an import of tests/integration/helpers/postgres.ts to ssh-fixture.ts failed the guard (1 failed / 2 passed: reaches apps/control-plane/src/db/client.ts and migrate.ts); original bytes restored and hash-verified"
+    },
+    "green": {
+      "command": "pnpm test",
+      "workspaceDistDirsBefore": 0,
+      "workspaceDistDirsAfter": 0,
+      "testFiles": 459,
+      "tests": 10315,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "cancellationFile": "2 passed",
+      "graphGuardFile": "3 passed"
+    },
+    "sourceSha256": {
+      "tests/e2e/fixtures/ssh-fixture.ts": "bb7dc71b8612940c2edd0f611fc36d7e765f2c6e871d0bc6bbfc0cf085b6cd94",
+      "tests/e2e/fixtures/stack.ts": "802c6c890a90933a8acae0cc3f6007277d9e99b8843d2ba9beb50ddaa558b0d8",
+      "tests/unit/integration-helpers/ssh-playwright-cancellation.test.ts": "740ac53f8fbc76ce5afdf24de18c9fd438832a16ca92e7618d5c090475687863",
+      "tests/unit/integration-helpers/ssh-fixture-module-graph.test.ts": "cc887a2e6413655d33f48eb14f9293c94207713a0ad46180f1896f96d3f3d64f"
+    },
+    "ciAttemptEvidence": "ci-43043093057-attempt1.json",
+    "notClaimed": "No new CI run, typecheck/lint/E2E gate or exact-SHA result is claimed here; e2e/security/installer DNS and integration failures of 43043093057 are not fixed by this change."
   }
 }
